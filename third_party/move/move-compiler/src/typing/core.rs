@@ -414,7 +414,7 @@ impl Subst {
 
 impl ast_debug::AstDebug for Subst {
     fn ast_debug(&self, w: &mut ast_debug::AstWriter) {
-        let Subst { tvars, num_vars } = self;
+        let Self { tvars, num_vars } = self;
 
         w.write("tvars:");
         w.indent(4, |w| {

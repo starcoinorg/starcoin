@@ -63,21 +63,21 @@ pub fn assert_single_value(mut values: Values) -> Value {
 impl Value {
     pub fn is_ref(&self) -> bool {
         match self {
-            Value::Ref(_) => true,
-            Value::NonRef => false,
+            Self::Ref(_) => true,
+            Self::NonRef => false,
         }
     }
 
     pub fn as_vref(&self) -> Option<RefID> {
         match self {
-            Value::Ref(id) => Some(*id),
-            Value::NonRef => None,
+            Self::Ref(id) => Some(*id),
+            Self::NonRef => None,
         }
     }
 
     fn remap_refs(&mut self, id_map: &BTreeMap<RefID, RefID>) {
         match self {
-            Value::Ref(id) if id_map.contains_key(id) => *id = id_map[id],
+            Self::Ref(id) if id_map.contains_key(id) => *id = id_map[id],
             _ => (),
         }
     }
@@ -89,7 +89,7 @@ impl BorrowState {
         acquired_resources: BTreeMap<StructName, Loc>,
         prev_had_errors: bool,
     ) -> Self {
-        let mut new_state = BorrowState {
+        let mut new_state = Self {
             locals: locals.ref_map(|_, _| Value::NonRef),
             borrows: BorrowGraph::new(),
             next_id: locals.len() + 1,
@@ -915,14 +915,14 @@ impl BorrowState {
     }
 
     fn leq(&self, other: &Self) -> bool {
-        let BorrowState {
+        let Self {
             locals: self_locals,
             borrows: self_borrows,
             next_id: self_next,
             acquired_resources: self_resources,
             prev_had_errors: self_prev_had_errors,
         } = self;
-        let BorrowState {
+        let Self {
             locals: other_locals,
             borrows: other_borrows,
             next_id: other_next,
@@ -961,9 +961,9 @@ impl AbstractDomain for BorrowState {
 impl std::fmt::Display for Label {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Label::Local(s) => write!(f, "local%{}", s),
-            Label::Resource(s) => write!(f, "resource%{}", s),
-            Label::Field(s) => write!(f, "{}", s),
+            Self::Local(s) => write!(f, "local%{}", s),
+            Self::Resource(s) => write!(f, "resource%{}", s),
+            Self::Field(s) => write!(f, "{}", s),
         }
     }
 }
@@ -971,8 +971,8 @@ impl std::fmt::Display for Label {
 impl std::fmt::Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Value::NonRef => write!(f, "_"),
-            Value::Ref(id) => write!(f, "{:?}", id),
+            Self::NonRef => write!(f, "_"),
+            Self::Ref(id) => write!(f, "{:?}", id),
         }
     }
 }

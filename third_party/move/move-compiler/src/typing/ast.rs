@@ -227,13 +227,13 @@ impl BuiltinFunction_ {
         use crate::naming::ast::BuiltinFunction_ as NB;
         use BuiltinFunction_ as B;
         match self {
-            B::MoveTo(_) => NB::MOVE_TO,
-            B::MoveFrom(_) => NB::MOVE_FROM,
-            B::BorrowGlobal(false, _) => NB::BORROW_GLOBAL,
-            B::BorrowGlobal(true, _) => NB::BORROW_GLOBAL_MUT,
-            B::Exists(_) => NB::EXISTS,
-            B::Freeze(_) => NB::FREEZE,
-            B::Assert(_) => NB::ASSERT_MACRO,
+            Self::MoveTo(_) => NB::MOVE_TO,
+            Self::MoveFrom(_) => NB::MOVE_FROM,
+            Self::BorrowGlobal(false, _) => NB::BORROW_GLOBAL,
+            Self::BorrowGlobal(true, _) => NB::BORROW_GLOBAL_MUT,
+            Self::Exists(_) => NB::EXISTS,
+            Self::Freeze(_) => NB::FREEZE,
+            Self::Assert(_) => NB::ASSERT_MACRO,
         }
     }
 }
@@ -254,7 +254,7 @@ impl fmt::Display for BuiltinFunction_ {
 
 impl AstDebug for Program {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let Program { modules, scripts } = self;
+        let Self { modules, scripts } = self;
 
         for (m, mdef) in modules.key_cloned_iter() {
             w.write(&format!("module {}", m));
@@ -272,7 +272,7 @@ impl AstDebug for Program {
 
 impl AstDebug for Script {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let Script {
+        let Self {
             package_name,
             attributes,
             loc: _loc,
@@ -294,7 +294,7 @@ impl AstDebug for Script {
 
 impl AstDebug for ModuleDefinition {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let ModuleDefinition {
+        let Self {
             package_name,
             attributes,
             is_source_module,
@@ -398,12 +398,12 @@ impl AstDebug for SequenceItem_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         use SequenceItem_ as I;
         match self {
-            I::Seq(e) => e.ast_debug(w),
-            I::Declare(sp!(_, bs)) => {
+            Self::Seq(e) => e.ast_debug(w),
+            Self::Declare(sp!(_, bs)) => {
                 w.write("let ");
                 bs.ast_debug(w);
             }
-            I::Bind(sp!(_, bs), expected_types, e) => {
+            Self::Bind(sp!(_, bs), expected_types, e) => {
                 w.write("let ");
                 bs.ast_debug(w);
                 w.write(": (");
@@ -420,40 +420,40 @@ impl AstDebug for UnannotatedExp_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         use UnannotatedExp_ as E;
         match self {
-            E::Unit { trailing } if !trailing => w.write("()"),
-            E::Unit {
+            Self::Unit { trailing } if !trailing => w.write("()"),
+            Self::Unit {
                 trailing: _trailing,
             } => w.write("/*()*/"),
-            E::Value(v) => v.ast_debug(w),
-            E::Move {
+            Self::Value(v) => v.ast_debug(w),
+            Self::Move {
                 from_user: false,
                 var: v,
             } => w.write(&format!("move {}", v)),
-            E::Move {
+            Self::Move {
                 from_user: true,
                 var: v,
             } => w.write(&format!("move@{}", v)),
-            E::Copy {
+            Self::Copy {
                 from_user: false,
                 var: v,
             } => w.write(&format!("copy {}", v)),
-            E::Copy {
+            Self::Copy {
                 from_user: true,
                 var: v,
             } => w.write(&format!("copy@{}", v)),
-            E::Use(v) => w.write(&format!("use@{}", v)),
-            E::Constant(None, c) => w.write(&format!("{}", c)),
-            E::Constant(Some(m), c) => w.write(&format!("{}::{}", m, c)),
-            E::ModuleCall(mcall) => {
+            Self::Use(v) => w.write(&format!("use@{}", v)),
+            Self::Constant(None, c) => w.write(&format!("{}", c)),
+            Self::Constant(Some(m), c) => w.write(&format!("{}::{}", m, c)),
+            Self::ModuleCall(mcall) => {
                 mcall.ast_debug(w);
             }
-            E::Builtin(bf, rhs) => {
+            Self::Builtin(bf, rhs) => {
                 bf.ast_debug(w);
                 w.write("(");
                 rhs.ast_debug(w);
                 w.write(")");
             }
-            E::Vector(_loc, usize, ty, elems) => {
+            Self::Vector(_loc, usize, ty, elems) => {
                 w.write(format!("vector#{}", usize));
                 w.write("<");
                 ty.ast_debug(w);
@@ -462,7 +462,7 @@ impl AstDebug for UnannotatedExp_ {
                 elems.ast_debug(w);
                 w.write("]");
             }
-            E::Pack(m, s, tys, fields) => {
+            Self::Pack(m, s, tys, fields) => {
                 w.write(&format!("{}::{}", m, s));
                 w.write("<");
                 tys.ast_debug(w);
@@ -477,7 +477,7 @@ impl AstDebug for UnannotatedExp_ {
                 });
                 w.write("}");
             }
-            E::IfElse(b, t, f) => {
+            Self::IfElse(b, t, f) => {
                 w.write("if (");
                 b.ast_debug(w);
                 w.write(") ");
@@ -485,13 +485,13 @@ impl AstDebug for UnannotatedExp_ {
                 w.write(" else ");
                 f.ast_debug(w);
             }
-            E::While(b, e) => {
+            Self::While(b, e) => {
                 w.write("while (");
                 b.ast_debug(w);
                 w.write(")");
                 e.ast_debug(w);
             }
-            E::Loop { has_break, body } => {
+            Self::Loop { has_break, body } => {
                 w.write("loop");
                 if *has_break {
                     w.write("#with_break");
@@ -499,14 +499,14 @@ impl AstDebug for UnannotatedExp_ {
                 w.write(" ");
                 body.ast_debug(w);
             }
-            E::Block(seq) => w.block(|w| seq.ast_debug(w)),
-            E::ExpList(es) => {
+            Self::Block(seq) => w.block(|w| seq.ast_debug(w)),
+            Self::ExpList(es) => {
                 w.write("(");
                 w.comma(es, |w, e| e.ast_debug(w));
                 w.write(")");
             }
 
-            E::Assign(sp!(_, lvalues), expected_types, rhs) => {
+            Self::Assign(sp!(_, lvalues), expected_types, rhs) => {
                 lvalues.ast_debug(w);
                 w.write(": (");
                 expected_types.ast_debug(w);
@@ -514,33 +514,33 @@ impl AstDebug for UnannotatedExp_ {
                 rhs.ast_debug(w);
             }
 
-            E::Mutate(lhs, rhs) => {
+            Self::Mutate(lhs, rhs) => {
                 w.write("*");
                 lhs.ast_debug(w);
                 w.write(" = ");
                 rhs.ast_debug(w);
             }
 
-            E::Return(e) => {
+            Self::Return(e) => {
                 w.write("return ");
                 e.ast_debug(w);
             }
-            E::Abort(e) => {
+            Self::Abort(e) => {
                 w.write("abort ");
                 e.ast_debug(w);
             }
-            E::Break => w.write("break"),
-            E::Continue => w.write("continue"),
-            E::Dereference(e) => {
+            Self::Break => w.write("break"),
+            Self::Continue => w.write("continue"),
+            Self::Dereference(e) => {
                 w.write("*");
                 e.ast_debug(w)
             }
-            E::UnaryExp(op, e) => {
+            Self::UnaryExp(op, e) => {
                 op.ast_debug(w);
                 w.write(" ");
                 e.ast_debug(w);
             }
-            E::BinopExp(l, op, ty, r) => {
+            Self::BinopExp(l, op, ty, r) => {
                 l.ast_debug(w);
                 w.write(" ");
                 op.ast_debug(w);
@@ -549,7 +549,7 @@ impl AstDebug for UnannotatedExp_ {
                 w.write(" ");
                 r.ast_debug(w)
             }
-            E::Borrow(mut_, e, f) => {
+            Self::Borrow(mut_, e, f) => {
                 w.write("&");
                 if *mut_ {
                     w.write("mut ");
@@ -557,35 +557,35 @@ impl AstDebug for UnannotatedExp_ {
                 e.ast_debug(w);
                 w.write(&format!(".{}", f));
             }
-            E::TempBorrow(mut_, e) => {
+            Self::TempBorrow(mut_, e) => {
                 w.write("&");
                 if *mut_ {
                     w.write("mut ");
                 }
                 e.ast_debug(w);
             }
-            E::BorrowLocal(mut_, v) => {
+            Self::BorrowLocal(mut_, v) => {
                 w.write("&");
                 if *mut_ {
                     w.write("mut ");
                 }
                 w.write(&format!("{}", v));
             }
-            E::Cast(e, ty) => {
+            Self::Cast(e, ty) => {
                 w.write("(");
                 e.ast_debug(w);
                 w.write(" as ");
                 ty.ast_debug(w);
                 w.write(")");
             }
-            E::Annotate(e, ty) => {
+            Self::Annotate(e, ty) => {
                 w.write("annot(");
                 e.ast_debug(w);
                 w.write(": ");
                 ty.ast_debug(w);
                 w.write(")");
             }
-            E::Spec(u, used_locals) => {
+            Self::Spec(u, used_locals) => {
                 w.write(&format!("spec #{}", u));
                 if !used_locals.is_empty() {
                     w.write("uses [");
@@ -595,21 +595,21 @@ impl AstDebug for UnannotatedExp_ {
                     w.write("]");
                 }
             }
-            E::UnresolvedError => w.write("_|_"),
+            Self::UnresolvedError => w.write("_|_"),
         }
     }
 }
 
 impl AstDebug for Exp {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let Exp { ty, exp } = self;
+        let Self { ty, exp } = self;
         w.annotate(|w| exp.ast_debug(w), ty)
     }
 }
 
 impl AstDebug for ModuleCall {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let ModuleCall {
+        let Self {
             module,
             name,
             type_arguments,
@@ -648,13 +648,13 @@ impl AstDebug for BuiltinFunction_ {
         use crate::naming::ast::BuiltinFunction_ as NF;
         use BuiltinFunction_ as F;
         let (n, bt_opt) = match self {
-            F::MoveTo(bt) => (NF::MOVE_TO, Some(bt)),
-            F::MoveFrom(bt) => (NF::MOVE_FROM, Some(bt)),
-            F::BorrowGlobal(true, bt) => (NF::BORROW_GLOBAL_MUT, Some(bt)),
-            F::BorrowGlobal(false, bt) => (NF::BORROW_GLOBAL, Some(bt)),
-            F::Exists(bt) => (NF::EXISTS, Some(bt)),
-            F::Freeze(bt) => (NF::FREEZE, Some(bt)),
-            F::Assert(_) => (NF::ASSERT_MACRO, None),
+            Self::MoveTo(bt) => (NF::MOVE_TO, Some(bt)),
+            Self::MoveFrom(bt) => (NF::MOVE_FROM, Some(bt)),
+            Self::BorrowGlobal(true, bt) => (NF::BORROW_GLOBAL_MUT, Some(bt)),
+            Self::BorrowGlobal(false, bt) => (NF::BORROW_GLOBAL, Some(bt)),
+            Self::Exists(bt) => (NF::EXISTS, Some(bt)),
+            Self::Freeze(bt) => (NF::FREEZE, Some(bt)),
+            Self::Assert(_) => (NF::ASSERT_MACRO, None),
         };
         w.write(n);
         if let Some(bt) = bt_opt {
@@ -668,8 +668,8 @@ impl AstDebug for BuiltinFunction_ {
 impl AstDebug for ExpListItem {
     fn ast_debug(&self, w: &mut AstWriter) {
         match self {
-            ExpListItem::Single(e, st) => w.annotate(|w| e.ast_debug(w), st),
-            ExpListItem::Splat(_, e, ss) => {
+            Self::Single(e, st) => w.annotate(|w| e.ast_debug(w), st),
+            Self::Splat(_, e, ss) => {
                 w.write("~");
                 w.annotate(|w| e.ast_debug(w), ss)
             }
@@ -703,9 +703,9 @@ impl AstDebug for LValue_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         use LValue_ as L;
         match self {
-            L::Ignore => w.write("_"),
-            L::Var(v, st) => w.annotate(|w| w.write(&format!("{}", v)), st),
-            L::Unpack(m, s, tys, fields) => {
+            Self::Ignore => w.write("_"),
+            Self::Var(v, st) => w.annotate(|w| w.write(&format!("{}", v)), st),
+            Self::Unpack(m, s, tys, fields) => {
                 w.write(&format!("{}::{}", m, s));
                 w.write("<");
                 tys.ast_debug(w);
@@ -719,7 +719,7 @@ impl AstDebug for LValue_ {
                 });
                 w.write("}");
             }
-            L::BorrowUnpack(mut_, m, s, tys, fields) => {
+            Self::BorrowUnpack(mut_, m, s, tys, fields) => {
                 w.write("&");
                 if *mut_ {
                     w.write("mut ");

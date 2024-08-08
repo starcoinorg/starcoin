@@ -746,13 +746,13 @@ fn has_compiled_module_magic_number(path: &str) -> bool {
 impl PassResult {
     pub fn equivalent_pass(&self) -> Pass {
         match self {
-            PassResult::Parser(_) => PASS_PARSER,
-            PassResult::Expansion(_) => PASS_EXPANSION,
-            PassResult::Naming(_) => PASS_NAMING,
-            PassResult::Typing(_) => PASS_TYPING,
-            PassResult::HLIR(_) => PASS_HLIR,
-            PassResult::CFGIR(_) => PASS_CFGIR,
-            PassResult::Compilation(_, _) => PASS_COMPILATION,
+            Self::Parser(_) => PASS_PARSER,
+            Self::Expansion(_) => PASS_EXPANSION,
+            Self::Naming(_) => PASS_NAMING,
+            Self::Typing(_) => PASS_TYPING,
+            Self::HLIR(_) => PASS_HLIR,
+            Self::CFGIR(_) => PASS_CFGIR,
+            Self::Compilation(_, _) => PASS_COMPILATION,
         }
     }
 }

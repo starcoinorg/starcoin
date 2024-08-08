@@ -59,7 +59,7 @@ mod count {
 
     impl Context {
         pub fn new(signature: &FunctionSignature) -> Self {
-            let mut ctx = Context {
+            let mut ctx = Self {
                 assigned: BTreeMap::new(),
                 used: BTreeMap::new(),
             };
@@ -92,7 +92,7 @@ mod count {
         }
 
         pub fn finish(self) -> BTreeSet<Var> {
-            let Context { assigned, used } = self;
+            let Self { assigned, used } = self;
             assigned
                 .into_iter()
                 .filter(|(_v, count)| count.map(|c| c == 1).unwrap_or(false))
@@ -286,7 +286,7 @@ mod eliminate {
 
     impl Context {
         pub fn new(ssa_temps: BTreeSet<Var>) -> Self {
-            Context {
+            Self {
                 ssa_temps,
                 eliminated: BTreeMap::new(),
             }

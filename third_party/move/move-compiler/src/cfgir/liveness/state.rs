@@ -18,7 +18,7 @@ pub struct LivenessState(pub BTreeSet<Var>);
 
 impl LivenessState {
     pub fn initial() -> Self {
-        LivenessState(BTreeSet::new())
+        Self(BTreeSet::new())
     }
 
     pub fn extend(&mut self, other: &Self) {

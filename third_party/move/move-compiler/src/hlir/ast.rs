@@ -428,7 +428,7 @@ impl Exp {
 
 impl UnannotatedExp_ {
     pub fn is_unit(&self) -> bool {
-        matches!(self, UnannotatedExp_::Unit { case: _case })
+        matches!(self, Self::Unit { case: _case })
     }
 }
 
@@ -454,15 +454,15 @@ impl BaseType_ {
             }
         };
         let n = sp(loc, TypeName_::Builtin(sp(loc, b_)));
-        sp(loc, BaseType_::Apply(kind, n, ty_args))
+        sp(loc, Self::Apply(kind, n, ty_args))
     }
 
     pub fn abilities(&self, loc: Loc) -> AbilitySet {
         match self {
-            BaseType_::Apply(abilities, _, _) | BaseType_::Param(TParam { abilities, .. }) => {
+            Self::Apply(abilities, _, _) | Self::Param(TParam { abilities, .. }) => {
                 abilities.clone()
             }
-            BaseType_::Unreachable | BaseType_::UnresolvedError => AbilitySet::all(loc),
+            Self::Unreachable | Self::UnresolvedError => AbilitySet::all(loc),
         }
     }
 
@@ -501,7 +501,7 @@ impl BaseType_ {
 
 impl SingleType_ {
     pub fn base(sp!(loc, b_): BaseType) -> SingleType {
-        sp(loc, SingleType_::Base(sp(loc, b_)))
+        sp(loc, Self::Base(sp(loc, b_)))
     }
 
     pub fn bool(loc: Loc) -> SingleType {
@@ -538,8 +538,8 @@ impl SingleType_ {
 
     pub fn abilities(&self, loc: Loc) -> AbilitySet {
         match self {
-            SingleType_::Ref(_, _) => AbilitySet::references(loc),
-            SingleType_::Base(b) => b.value.abilities(loc),
+            Self::Ref(_, _) => AbilitySet::references(loc),
+            Self::Base(b) => b.value.abilities(loc),
         }
     }
 }
@@ -550,7 +550,7 @@ impl Type_ {
     }
 
     pub fn single(sp!(loc, s_): SingleType) -> Type {
-        sp(loc, Type_::Single(sp(loc, s_)))
+        sp(loc, Self::Single(sp(loc, s_)))
     }
 
     pub fn bool(loc: Loc) -> Type {
@@ -587,12 +587,12 @@ impl Type_ {
 
     pub fn type_at_index(&self, idx: usize) -> &SingleType {
         match self {
-            Type_::Unit => panic!("ICE type mismatch on index lookup"),
-            Type_::Single(s) => {
+            Self::Unit => panic!("ICE type mismatch on index lookup"),
+            Self::Single(s) => {
                 assert!(idx == 0);
                 s
             }
-            Type_::Multiple(ss) => {
+            Self::Multiple(ss) => {
                 assert!(idx < ss.len());
                 ss.get(idx).unwrap()
             }
@@ -601,9 +601,9 @@ impl Type_ {
 
     pub fn from_vec(loc: Loc, mut ss: Vec<SingleType>) -> Type {
         let t_ = match ss.len() {
-            0 => Type_::Unit,
-            1 => Type_::Single(ss.pop().unwrap()),
-            _ => Type_::Multiple(ss),
+            0 => Self::Unit,
+            1 => Self::Single(ss.pop().unwrap()),
+            _ => Self::Multiple(ss),
         };
         sp(loc, t_)
     }
@@ -635,7 +635,7 @@ impl std::fmt::Display for Label {
 
 impl AstDebug for Program {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let Program { modules, scripts } = self;
+        let Self { modules, scripts } = self;
 
         for (m, mdef) in modules.key_cloned_iter() {
             w.write(&format!("module {}", m));
@@ -653,7 +653,7 @@ impl AstDebug for Program {
 
 impl AstDebug for Script {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let Script {
+        let Self {
             package_name,
             attributes,
             loc: _loc,
@@ -675,7 +675,7 @@ impl AstDebug for Script {
 
 impl AstDebug for ModuleDefinition {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let ModuleDefinition {
+        let Self {
             package_name,
             attributes,
             is_source_module,
@@ -805,7 +805,7 @@ impl AstDebug for (&UniqueMap<Var, SingleType>, &Block) {
 
 impl AstDebug for FunctionSignature {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let FunctionSignature {
+        let Self {
             type_parameters,
             parameters,
             return_type,
@@ -844,8 +844,8 @@ impl AstDebug for (ConstantName, &Constant) {
 impl AstDebug for TypeName_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         match self {
-            TypeName_::Builtin(bt) => bt.ast_debug(w),
-            TypeName_::ModuleType(m, s) => w.write(&format!("{}::{}", m, s)),
+            Self::Builtin(bt) => bt.ast_debug(w),
+            Self::ModuleType(m, s) => w.write(&format!("{}::{}", m, s)),
         }
     }
 }
@@ -853,8 +853,8 @@ impl AstDebug for TypeName_ {
 impl AstDebug for BaseType_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         match self {
-            BaseType_::Param(tp) => tp.ast_debug(w),
-            BaseType_::Apply(abilities, m, ss) => {
+            Self::Param(tp) => tp.ast_debug(w),
+            Self::Apply(abilities, m, ss) => {
                 w.annotate_gen(
                     |w| {
                         m.ast_debug(w);
@@ -873,8 +873,8 @@ impl AstDebug for BaseType_ {
                     },
                 );
             }
-            BaseType_::Unreachable => w.write("_|_"),
-            BaseType_::UnresolvedError => w.write("_"),
+            Self::Unreachable => w.write("_|_"),
+            Self::UnresolvedError => w.write("_"),
         }
     }
 }
@@ -882,8 +882,8 @@ impl AstDebug for BaseType_ {
 impl AstDebug for SingleType_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         match self {
-            SingleType_::Base(b) => b.ast_debug(w),
-            SingleType_::Ref(mut_, s) => {
+            Self::Base(b) => b.ast_debug(w),
+            Self::Ref(mut_, s) => {
                 w.write("&");
                 if *mut_ {
                     w.write("mut ");
@@ -897,9 +897,9 @@ impl AstDebug for SingleType_ {
 impl AstDebug for Type_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         match self {
-            Type_::Unit => w.write("()"),
-            Type_::Single(s) => s.ast_debug(w),
-            Type_::Multiple(ss) => {
+            Self::Unit => w.write("()"),
+            Self::Single(s) => s.ast_debug(w),
+            Self::Multiple(ss) => {
                 w.write("(");
                 ss.ast_debug(w);
                 w.write(")")
@@ -945,8 +945,8 @@ impl AstDebug for Statement_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         use Statement_ as S;
         match self {
-            S::Command(cmd) => cmd.ast_debug(w),
-            S::IfElse {
+            Self::Command(cmd) => cmd.ast_debug(w),
+            Self::IfElse {
                 cond,
                 if_block,
                 else_block,
@@ -958,13 +958,13 @@ impl AstDebug for Statement_ {
                 w.write(" else ");
                 w.block(|w| else_block.ast_debug(w));
             }
-            S::While { cond, block } => {
+            Self::While { cond, block } => {
                 w.write("while (");
                 cond.ast_debug(w);
                 w.write(")");
                 w.block(|w| block.ast_debug(w))
             }
-            S::Loop { block, has_break } => {
+            Self::Loop { block, has_break } => {
                 w.write("loop");
                 if *has_break {
                     w.write("#has_break");
@@ -980,40 +980,40 @@ impl AstDebug for Command_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         use Command_ as C;
         match self {
-            C::Assign(lvalues, rhs) => {
+            Self::Assign(lvalues, rhs) => {
                 lvalues.ast_debug(w);
                 w.write(" = ");
                 rhs.ast_debug(w);
             }
-            C::Mutate(lhs, rhs) => {
+            Self::Mutate(lhs, rhs) => {
                 w.write("*");
                 lhs.ast_debug(w);
                 w.write(" = ");
                 rhs.ast_debug(w);
             }
-            C::Abort(e) => {
+            Self::Abort(e) => {
                 w.write("abort ");
                 e.ast_debug(w);
             }
-            C::Return { exp: e, from_user } if *from_user => {
+            Self::Return { exp: e, from_user } if *from_user => {
                 w.write("return@");
                 e.ast_debug(w);
             }
-            C::Return { exp: e, .. } => {
+            Self::Return { exp: e, .. } => {
                 w.write("return ");
                 e.ast_debug(w);
             }
-            C::Break => w.write("break"),
-            C::Continue => w.write("continue"),
-            C::IgnoreAndPop { pop_num, exp } => {
+            Self::Break => w.write("break"),
+            Self::Continue => w.write("continue"),
+            Self::IgnoreAndPop { pop_num, exp } => {
                 w.write("pop ");
                 w.comma(0..*pop_num, |w, _| w.write("_"));
                 w.write(" = ");
                 exp.ast_debug(w);
             }
-            C::Jump { target, from_user } if *from_user => w.write(&format!("jump@{}", target.0)),
-            C::Jump { target, .. } => w.write(&format!("jump {}", target.0)),
-            C::JumpIf {
+            Self::Jump { target, from_user } if *from_user => w.write(&format!("jump@{}", target.0)),
+            Self::Jump { target, .. } => w.write(&format!("jump {}", target.0)),
+            Self::JumpIf {
                 cond,
                 if_true,
                 if_false,
@@ -1030,15 +1030,15 @@ impl AstDebug for Value_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         use Value_ as V;
         match self {
-            V::Address(addr) => w.write(&format!("@{}", addr)),
-            V::U8(u) => w.write(&format!("{}u8", u)),
-            V::U16(u) => w.write(&format!("{}u16", u)),
-            V::U32(u) => w.write(&format!("{}u32", u)),
-            V::U64(u) => w.write(&format!("{}u64", u)),
-            V::U128(u) => w.write(&format!("{}u128", u)),
-            V::U256(u) => w.write(&format!("{}u256", u)),
-            V::Bool(b) => w.write(&format!("{}", b)),
-            V::Vector(ty, elems) => {
+            Self::Address(addr) => w.write(&format!("@{}", addr)),
+            Self::U8(u) => w.write(&format!("{}u8", u)),
+            Self::U16(u) => w.write(&format!("{}u16", u)),
+            Self::U32(u) => w.write(&format!("{}u32", u)),
+            Self::U64(u) => w.write(&format!("{}u64", u)),
+            Self::U128(u) => w.write(&format!("{}u128", u)),
+            Self::U256(u) => w.write(&format!("{}u256", u)),
+            Self::Bool(b) => w.write(&format!("{}", b)),
+            Self::Vector(ty, elems) => {
                 w.write("vector#value");
                 w.write("<");
                 ty.ast_debug(w);
@@ -1053,7 +1053,7 @@ impl AstDebug for Value_ {
 
 impl AstDebug for Exp {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let Exp { ty, exp } = self;
+        let Self { ty, exp } = self;
         w.annotate(|w| exp.ast_debug(w), ty)
     }
 }
@@ -1062,17 +1062,17 @@ impl AstDebug for UnannotatedExp_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         use UnannotatedExp_ as E;
         match self {
-            E::Unit {
+            Self::Unit {
                 case: UnitCase::FromUser,
             } => w.write("()"),
-            E::Unit {
+            Self::Unit {
                 case: UnitCase::Implicit,
             } => w.write("/*()*/"),
-            E::Unit {
+            Self::Unit {
                 case: UnitCase::Trailing,
             } => w.write("/*;()*/"),
-            E::Value(v) => v.ast_debug(w),
-            E::Move { annotation, var: v } => {
+            Self::Value(v) => v.ast_debug(w),
+            Self::Move { annotation, var: v } => {
                 let case = match annotation {
                     MoveOpAnnotation::FromUser => "@",
                     MoveOpAnnotation::InferredLastUsage => "#last ",
@@ -1080,25 +1080,25 @@ impl AstDebug for UnannotatedExp_ {
                 };
                 w.write(&format!("move{}{}", case, v))
             }
-            E::Copy {
+            Self::Copy {
                 from_user: false,
                 var: v,
             } => w.write(&format!("copy {}", v)),
-            E::Copy {
+            Self::Copy {
                 from_user: true,
                 var: v,
             } => w.write(&format!("copy@{}", v)),
-            E::Constant(c) => w.write(&format!("{}", c)),
-            E::ModuleCall(mcall) => {
+            Self::Constant(c) => w.write(&format!("{}", c)),
+            Self::ModuleCall(mcall) => {
                 mcall.ast_debug(w);
             }
-            E::Builtin(bf, rhs) => {
+            Self::Builtin(bf, rhs) => {
                 bf.ast_debug(w);
                 w.write("(");
                 rhs.ast_debug(w);
                 w.write(")");
             }
-            E::Vector(_loc, n, ty, elems) => {
+            Self::Vector(_loc, n, ty, elems) => {
                 w.write(&format!("vector#{}", n));
                 w.write("<");
                 ty.ast_debug(w);
@@ -1107,12 +1107,12 @@ impl AstDebug for UnannotatedExp_ {
                 elems.ast_debug(w);
                 w.write("]");
             }
-            E::Freeze(e) => {
+            Self::Freeze(e) => {
                 w.write("freeze(");
                 e.ast_debug(w);
                 w.write(")");
             }
-            E::Pack(s, tys, fields) => {
+            Self::Pack(s, tys, fields) => {
                 w.write(&format!("{}", s));
                 w.write("<");
                 tys.ast_debug(w);
@@ -1126,29 +1126,29 @@ impl AstDebug for UnannotatedExp_ {
                 w.write("}");
             }
 
-            E::ExpList(es) => {
+            Self::ExpList(es) => {
                 w.write("(");
                 w.comma(es, |w, e| e.ast_debug(w));
                 w.write(")");
             }
 
-            E::Dereference(e) => {
+            Self::Dereference(e) => {
                 w.write("*");
                 e.ast_debug(w)
             }
-            E::UnaryExp(op, e) => {
+            Self::UnaryExp(op, e) => {
                 op.ast_debug(w);
                 w.write(" ");
                 e.ast_debug(w);
             }
-            E::BinopExp(l, op, r) => {
+            Self::BinopExp(l, op, r) => {
                 l.ast_debug(w);
                 w.write(" ");
                 op.ast_debug(w);
                 w.write(" ");
                 r.ast_debug(w)
             }
-            E::Borrow(mut_, e, f) => {
+            Self::Borrow(mut_, e, f) => {
                 w.write("&");
                 if *mut_ {
                     w.write("mut ");
@@ -1156,21 +1156,21 @@ impl AstDebug for UnannotatedExp_ {
                 e.ast_debug(w);
                 w.write(&format!(".{}", f));
             }
-            E::BorrowLocal(mut_, v) => {
+            Self::BorrowLocal(mut_, v) => {
                 w.write("&");
                 if *mut_ {
                     w.write("mut ");
                 }
                 w.write(&format!("{}", v));
             }
-            E::Cast(e, bt) => {
+            Self::Cast(e, bt) => {
                 w.write("(");
                 e.ast_debug(w);
                 w.write(" as ");
                 bt.ast_debug(w);
                 w.write(")");
             }
-            E::Spec(u, used_locals) => {
+            Self::Spec(u, used_locals) => {
                 w.write(&format!("spec #{}", u));
                 if !used_locals.is_empty() {
                     w.write("uses [");
@@ -1180,15 +1180,15 @@ impl AstDebug for UnannotatedExp_ {
                     w.write("]");
                 }
             }
-            E::UnresolvedError => w.write("_|_"),
-            E::Unreachable => w.write("unreachable"),
+            Self::UnresolvedError => w.write("_|_"),
+            Self::Unreachable => w.write("unreachable"),
         }
     }
 }
 
 impl AstDebug for ModuleCall {
     fn ast_debug(&self, w: &mut AstWriter) {
-        let ModuleCall {
+        let Self {
             module,
             name,
             type_arguments,
@@ -1215,11 +1215,11 @@ impl AstDebug for BuiltinFunction_ {
         use crate::naming::ast::BuiltinFunction_ as NF;
         use BuiltinFunction_ as F;
         let (n, bt) = match self {
-            F::MoveTo(bt) => (NF::MOVE_TO, bt),
-            F::MoveFrom(bt) => (NF::MOVE_FROM, bt),
-            F::BorrowGlobal(true, bt) => (NF::BORROW_GLOBAL_MUT, bt),
-            F::BorrowGlobal(false, bt) => (NF::BORROW_GLOBAL, bt),
-            F::Exists(bt) => (NF::EXISTS, bt),
+            Self::MoveTo(bt) => (NF::MOVE_TO, bt),
+            Self::MoveFrom(bt) => (NF::MOVE_FROM, bt),
+            Self::BorrowGlobal(true, bt) => (NF::BORROW_GLOBAL_MUT, bt),
+            Self::BorrowGlobal(false, bt) => (NF::BORROW_GLOBAL, bt),
+            Self::Exists(bt) => (NF::EXISTS, bt),
         };
         w.write(n);
         w.write("<");
@@ -1231,8 +1231,8 @@ impl AstDebug for BuiltinFunction_ {
 impl AstDebug for ExpListItem {
     fn ast_debug(&self, w: &mut AstWriter) {
         match self {
-            ExpListItem::Single(e, st) => w.annotate(|w| e.ast_debug(w), st),
-            ExpListItem::Splat(_, e, ss) => {
+            Self::Single(e, st) => w.annotate(|w| e.ast_debug(w), st),
+            Self::Splat(_, e, ss) => {
                 w.write("~");
                 w.annotate(|w| e.ast_debug(w), ss)
             }
@@ -1257,13 +1257,13 @@ impl AstDebug for LValue_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         use LValue_ as L;
         match self {
-            L::Ignore => w.write("_"),
-            L::Var(v, st) => {
+            Self::Ignore => w.write("_"),
+            Self::Var(v, st) => {
                 w.write(&format!("({}: ", v));
                 st.ast_debug(w);
                 w.write(")");
             }
-            L::Unpack(s, tys, fields) => {
+            Self::Unpack(s, tys, fields) => {
                 w.write(&format!("{}", s));
                 w.write("<");
                 tys.ast_debug(w);

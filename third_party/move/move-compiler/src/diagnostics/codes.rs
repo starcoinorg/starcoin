@@ -280,9 +280,9 @@ impl Severity {
     pub fn into_codespan_severity(self) -> codespan_reporting::diagnostic::Severity {
         use codespan_reporting::diagnostic::Severity as CSRSeverity;
         match self {
-            Severity::Bug => CSRSeverity::Bug,
-            Severity::BlockingError | Severity::NonblockingError => CSRSeverity::Error,
-            Severity::Warning => CSRSeverity::Warning,
+            Self::Bug => CSRSeverity::Bug,
+            Self::BlockingError | Self::NonblockingError => CSRSeverity::Error,
+            Self::Warning => CSRSeverity::Warning,
         }
     }
 }

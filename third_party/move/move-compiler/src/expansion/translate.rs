@@ -186,7 +186,7 @@ pub fn program(
         for s in scripts {
             collected
                 .entry(s.function_name.value())
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(s)
         }
         let mut keyed: BTreeMap<Symbol, E::Script> = BTreeMap::new();
@@ -2526,7 +2526,7 @@ fn check_valid_address_name_(
 
 fn check_valid_local_name(context: &mut Context, v: &Var) {
     fn is_valid(s: Symbol) -> bool {
-        s.starts_with('_') || s.starts_with(|c| matches!(c, 'a'..='z'))
+        s.starts_with('_') || s.starts_with(|c| c.is_ascii_lowercase())
     }
     if !is_valid(v.value()) {
         let msg = format!(
@@ -2552,10 +2552,10 @@ enum ModuleMemberKind {
 impl ModuleMemberKind {
     fn case(self) -> NameCase {
         match self {
-            ModuleMemberKind::Constant => NameCase::Constant,
-            ModuleMemberKind::Function => NameCase::Function,
-            ModuleMemberKind::Struct => NameCase::Struct,
-            ModuleMemberKind::Schema => NameCase::Schema,
+            Self::Constant => NameCase::Constant,
+            Self::Function => NameCase::Function,
+            Self::Struct => NameCase::Struct,
+            Self::Schema => NameCase::Schema,
         }
     }
 }
@@ -2576,18 +2576,18 @@ enum NameCase {
 impl NameCase {
     const fn name(&self) -> &'static str {
         match self {
-            NameCase::Constant => "constant",
-            NameCase::Function => "function",
-            NameCase::Struct => "struct",
-            NameCase::Schema => "schema",
-            NameCase::Module => "module",
-            NameCase::ModuleMemberAlias(ModuleMemberKind::Function) => "function alias",
-            NameCase::ModuleMemberAlias(ModuleMemberKind::Constant) => "constant alias",
-            NameCase::ModuleMemberAlias(ModuleMemberKind::Struct) => "struct alias",
-            NameCase::ModuleMemberAlias(ModuleMemberKind::Schema) => "schema alias",
-            NameCase::ModuleAlias => "module alias",
-            NameCase::Variable => "variable",
-            NameCase::Address => "address",
+            Self::Constant => "constant",
+            Self::Function => "function",
+            Self::Struct => "struct",
+            Self::Schema => "schema",
+            Self::Module => "module",
+            Self::ModuleMemberAlias(ModuleMemberKind::Function) => "function alias",
+            Self::ModuleMemberAlias(ModuleMemberKind::Constant) => "constant alias",
+            Self::ModuleMemberAlias(ModuleMemberKind::Struct) => "struct alias",
+            Self::ModuleMemberAlias(ModuleMemberKind::Schema) => "schema alias",
+            Self::ModuleAlias => "module alias",
+            Self::Variable => "variable",
+            Self::Address => "address",
         }
     }
 }
@@ -2686,7 +2686,7 @@ fn check_valid_module_member_name_impl(
 }
 
 pub fn is_valid_struct_constant_or_schema_name(s: &str) -> bool {
-    s.starts_with(|c| matches!(c, 'A'..='Z'))
+    s.starts_with(|c| c.is_ascii_uppercase())
 }
 
 // Checks for a restricted name in any decl case
