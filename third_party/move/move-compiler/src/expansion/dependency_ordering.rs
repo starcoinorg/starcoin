@@ -133,10 +133,7 @@ impl<'a> Context<'a> {
             .neighbors_by_node
             .entry(current.clone())
             .or_insert_with(UniqueMap::new);
-        let current_used_addresses = self
-            .addresses_by_node
-            .entry(current.clone())
-            .or_default();
+        let current_used_addresses = self.addresses_by_node.entry(current.clone()).or_default();
         current_neighbors.remove(&mident);
         current_neighbors.add(mident, neighbor).unwrap();
         current_used_addresses.insert(mident.value.address);

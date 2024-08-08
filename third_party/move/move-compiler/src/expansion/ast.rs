@@ -54,9 +54,7 @@ pub type Attribute = Spanned<Attribute_>;
 impl Attribute_ {
     pub fn attribute_name(&self) -> &Name {
         match self {
-            Self::Name(nm)
-            | Self::Assigned(nm, _)
-            | Self::Parameterized(nm, _) => nm,
+            Self::Name(nm) | Self::Assigned(nm, _) | Self::Parameterized(nm, _) => nm,
         }
     }
 }
@@ -1417,7 +1415,6 @@ impl AstDebug for VecDeque<SequenceItem> {
 
 impl AstDebug for SequenceItem_ {
     fn ast_debug(&self, w: &mut AstWriter) {
-        use SequenceItem_ as I;
         match self {
             Self::Seq(e) => e.ast_debug(w),
             Self::Declare(sp!(_, bs), ty_opt) => {
@@ -1439,7 +1436,6 @@ impl AstDebug for SequenceItem_ {
 
 impl AstDebug for Value_ {
     fn ast_debug(&self, w: &mut AstWriter) {
-        use Value_ as V;
         match self {
             Self::Address(addr) => w.write(&format!("@{}", addr)),
             Self::InferredNum(u) => w.write(&format!("{}", u)),
@@ -1457,7 +1453,6 @@ impl AstDebug for Value_ {
 
 impl AstDebug for Exp_ {
     fn ast_debug(&self, w: &mut AstWriter) {
-        use Exp_ as E;
         match self {
             Self::Unit { trailing } if !trailing => w.write("()"),
             Self::Unit {
@@ -1643,7 +1638,6 @@ impl AstDebug for Exp_ {
 
 impl AstDebug for ExpDotted_ {
     fn ast_debug(&self, w: &mut AstWriter) {
-        use ExpDotted_ as D;
         match self {
             Self::Exp(e) => e.ast_debug(w),
             Self::Dot(e, n) => {
@@ -1669,7 +1663,6 @@ impl AstDebug for Vec<LValue> {
 
 impl AstDebug for LValue_ {
     fn ast_debug(&self, w: &mut AstWriter) {
-        use LValue_ as L;
         match self {
             Self::Var(v, tys_opt) => {
                 w.write(&format!("{}", v));

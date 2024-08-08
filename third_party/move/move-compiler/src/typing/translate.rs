@@ -2019,7 +2019,6 @@ fn exp_dotted_to_owned_value(
 
 impl crate::shared::ast_debug::AstDebug for ExpDotted_ {
     fn ast_debug(&self, w: &mut crate::shared::ast_debug::AstWriter) {
-        use ExpDotted_ as D;
         match self {
             Self::Exp(e) => e.ast_debug(w),
             Self::TmpBorrow(e, ty) => {

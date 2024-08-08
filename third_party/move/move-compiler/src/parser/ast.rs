@@ -130,9 +130,7 @@ pub type Attributes = Spanned<Vec<Attribute>>;
 impl Attribute_ {
     pub fn attribute_name(&self) -> &Name {
         match self {
-            Self::Name(nm)
-            | Self::Assigned(nm, _)
-            | Self::Parameterized(nm, _) => nm,
+            Self::Name(nm) | Self::Assigned(nm, _) | Self::Parameterized(nm, _) => nm,
         }
     }
 }
@@ -790,14 +788,12 @@ impl UnaryOp_ {
     pub const NOT: &'static str = "!";
 
     pub fn symbol(&self) -> &'static str {
-        use UnaryOp_ as U;
         match self {
             Self::Not => Self::NOT,
         }
     }
 
     pub fn is_pure(&self) -> bool {
-        use UnaryOp_ as U;
         match self {
             Self::Not => true,
         }
@@ -828,7 +824,6 @@ impl BinOp_ {
     pub const RANGE: &'static str = "..";
 
     pub fn symbol(&self) -> &'static str {
-        use BinOp_ as B;
         match self {
             Self::Add => Self::ADD,
             Self::Sub => Self::SUB,
@@ -855,9 +850,10 @@ impl BinOp_ {
     }
 
     pub fn is_pure(&self) -> bool {
-        use BinOp_ as B;
         match self {
-            Self::Add | Self::Sub | Self::Mul | Self::Mod | Self::Div | Self::Shl | Self::Shr => false,
+            Self::Add | Self::Sub | Self::Mul | Self::Mod | Self::Div | Self::Shl | Self::Shr => {
+                false
+            }
             Self::BitOr
             | Self::BitAnd
             | Self::Xor
@@ -876,7 +872,6 @@ impl BinOp_ {
     }
 
     pub fn is_spec_only(&self) -> bool {
-        use BinOp_ as B;
         matches!(self, Self::Range | Self::Implies | Self::Iff)
     }
 }
@@ -889,9 +884,7 @@ impl Visibility {
 
     pub fn loc(&self) -> Option<Loc> {
         match self {
-            Self::Public(loc) | Self::Script(loc) | Self::Friend(loc) => {
-                Some(*loc)
-            }
+            Self::Public(loc) | Self::Script(loc) | Self::Friend(loc) => Some(*loc),
             Self::Internal => None,
         }
     }
@@ -1663,7 +1656,6 @@ impl AstDebug
 
 impl AstDebug for SequenceItem_ {
     fn ast_debug(&self, w: &mut AstWriter) {
-        use SequenceItem_ as I;
         match self {
             Self::Seq(e) => e.ast_debug(w),
             Self::Declare(sp!(_, bs), ty_opt) => {
@@ -1688,7 +1680,6 @@ impl AstDebug for SequenceItem_ {
 
 impl AstDebug for Exp_ {
     fn ast_debug(&self, w: &mut AstWriter) {
-        use Exp_ as E;
         match self {
             Self::Unit => w.write("()"),
             Self::Value(v) => v.ast_debug(w),
@@ -1906,7 +1897,6 @@ impl AstDebug for (Bind, Exp) {
 
 impl AstDebug for Value_ {
     fn ast_debug(&self, w: &mut AstWriter) {
-        use Value_ as V;
         w.write(&match self {
             Self::Address(addr) => format!("@{}", addr),
             Self::Num(u) => u.to_string(),
@@ -1942,7 +1932,6 @@ impl AstDebug for Vec<Vec<Exp>> {
 
 impl AstDebug for Bind_ {
     fn ast_debug(&self, w: &mut AstWriter) {
-        use Bind_ as B;
         match self {
             Self::Var(v) => w.write(&format!("{}", v)),
             Self::Unpack(ma, tys_opt, fields) => {

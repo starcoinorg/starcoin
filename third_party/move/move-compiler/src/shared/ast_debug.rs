@@ -109,11 +109,7 @@ impl AstWriter {
         self.annotate_gen(f, annot, |w, annot| annot.ast_debug(w))
     }
 
-    pub fn annotate_gen<
-        F: FnOnce(&mut Self),
-        Annot,
-        FAnnot: FnOnce(&mut Self, &Annot),
-    >(
+    pub fn annotate_gen<F: FnOnce(&mut Self), Annot, FAnnot: FnOnce(&mut Self, &Annot)>(
         &mut self,
         f: F,
         annot: &Annot,
