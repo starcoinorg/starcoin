@@ -121,17 +121,17 @@ impl MoveValue {
     }
 
     pub fn vector_u8(v: Vec<u8>) -> Self {
-        MoveValue::Vector(v.into_iter().map(MoveValue::U8).collect())
+        Self::Vector(v.into_iter().map(MoveValue::U8).collect())
     }
 
     /// Converts the `Vec<MoveValue>` to a `Vec<u8>` if the inner `MoveValue` is a `MoveValue::U8`,
     /// or returns an error otherwise.
-    pub fn vec_to_vec_u8(vec: Vec<MoveValue>) -> AResult<Vec<u8>> {
+    pub fn vec_to_vec_u8(vec: Vec<Self>) -> AResult<Vec<u8>> {
         let mut vec_u8 = Vec::with_capacity(vec.len());
 
         for byte in vec {
             match byte {
-                MoveValue::U8(u8) => {
+                Self::U8(u8) => {
                     vec_u8.push(u8);
                 }
                 _ => {
@@ -146,14 +146,14 @@ impl MoveValue {
     }
 
     pub fn vector_address(v: Vec<AccountAddress>) -> Self {
-        MoveValue::Vector(v.into_iter().map(MoveValue::Address).collect())
+        Self::Vector(v.into_iter().map(MoveValue::Address).collect())
     }
 
     pub fn decorate(self, layout: &MoveTypeLayout) -> Self {
         match (self, layout) {
-            (MoveValue::Struct(s), MoveTypeLayout::Struct(l)) => MoveValue::Struct(s.decorate(l)),
-            (MoveValue::Vector(vals), MoveTypeLayout::Vector(t)) => {
-                MoveValue::Vector(vals.into_iter().map(|v| v.decorate(t)).collect())
+            (Self::Struct(s), MoveTypeLayout::Struct(l)) => Self::Struct(s.decorate(l)),
+            (Self::Vector(vals), MoveTypeLayout::Vector(t)) => {
+                Self::Vector(vals.into_iter().map(|v| v.decorate(t)).collect())
             }
             (v, _) => v,
         }
@@ -161,9 +161,9 @@ impl MoveValue {
 
     pub fn undecorate(self) -> Self {
         match self {
-            Self::Struct(s) => MoveValue::Struct(s.undecorate()),
+            Self::Struct(s) => Self::Struct(s.undecorate()),
             Self::Vector(vals) => {
-                MoveValue::Vector(vals.into_iter().map(MoveValue::undecorate).collect())
+                Self::Vector(vals.into_iter().map(Self::undecorate).collect())
             }
             v => v,
         }
@@ -201,16 +201,16 @@ impl MoveStruct {
 
     pub fn decorate(self, layout: &MoveStructLayout) -> Self {
         match (self, layout) {
-            (MoveStruct::Runtime(vals), MoveStructLayout::WithFields(layouts)) => {
-                MoveStruct::WithFields(
+            (Self::Runtime(vals), MoveStructLayout::WithFields(layouts)) => {
+                Self::WithFields(
                     vals.into_iter()
                         .zip(layouts)
                         .map(|(v, l)| (l.name.clone(), v.decorate(&l.layout)))
                         .collect(),
                 )
             }
-            (MoveStruct::Runtime(vals), MoveStructLayout::WithTypes { type_, fields }) => {
-                MoveStruct::WithTypes {
+            (Self::Runtime(vals), MoveStructLayout::WithTypes { type_, fields }) => {
+                Self::WithTypes {
                     type_: type_.clone(),
                     fields: vals
                         .into_iter()
@@ -219,8 +219,8 @@ impl MoveStruct {
                         .collect(),
                 }
             }
-            (MoveStruct::WithFields(vals), MoveStructLayout::WithTypes { type_, fields }) => {
-                MoveStruct::WithTypes {
+            (Self::WithFields(vals), MoveStructLayout::WithTypes { type_, fields }) => {
+                Self::WithTypes {
                     type_: type_.clone(),
                     fields: vals
                         .into_iter()
@@ -442,17 +442,17 @@ impl<'d> serde::de::DeserializeSeed<'d> for &MoveStructLayout {
 impl serde::Serialize for MoveValue {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         match self {
-            MoveValue::Struct(s) => s.serialize(serializer),
-            MoveValue::Bool(b) => serializer.serialize_bool(*b),
-            MoveValue::U8(i) => serializer.serialize_u8(*i),
-            MoveValue::U16(i) => serializer.serialize_u16(*i),
-            MoveValue::U32(i) => serializer.serialize_u32(*i),
-            MoveValue::U64(i) => serializer.serialize_u64(*i),
-            MoveValue::U128(i) => serializer.serialize_u128(*i),
-            MoveValue::U256(i) => i.serialize(serializer),
-            MoveValue::Address(a) => a.serialize(serializer),
-            MoveValue::Signer(a) => a.serialize(serializer),
-            MoveValue::Vector(v) => {
+            Self::Struct(s) => s.serialize(serializer),
+            Self::Bool(b) => serializer.serialize_bool(*b),
+            Self::U8(i) => serializer.serialize_u8(*i),
+            Self::U16(i) => serializer.serialize_u16(*i),
+            Self::U32(i) => serializer.serialize_u32(*i),
+            Self::U64(i) => serializer.serialize_u64(*i),
+            Self::U128(i) => serializer.serialize_u128(*i),
+            Self::U256(i) => i.serialize(serializer),
+            Self::Address(a) => a.serialize(serializer),
+            Self::Signer(a) => a.serialize(serializer),
+            Self::Vector(v) => {
                 let mut t = serializer.serialize_seq(Some(v.len()))?;
                 for val in v {
                     t.serialize_element(val)?;
@@ -593,18 +593,18 @@ impl TryInto<StructTag> for &MoveStructLayout {
 impl fmt::Display for MoveValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            MoveValue::U8(u) => write!(f, "{}u8", u),
-            MoveValue::U16(u) => write!(f, "{}u16", u),
-            MoveValue::U32(u) => write!(f, "{}u32", u),
-            MoveValue::U64(u) => write!(f, "{}u64", u),
-            MoveValue::U128(u) => write!(f, "{}u128", u),
-            MoveValue::U256(u) => write!(f, "{}u256", u),
-            MoveValue::Bool(false) => write!(f, "false"),
-            MoveValue::Bool(true) => write!(f, "true"),
-            MoveValue::Address(a) => write!(f, "{}", a.to_hex_literal()),
-            MoveValue::Signer(a) => write!(f, "signer({})", a.to_hex_literal()),
-            MoveValue::Vector(v) => fmt_list(f, "vector[", v, "]"),
-            MoveValue::Struct(s) => fmt::Display::fmt(s, f),
+            Self::U8(u) => write!(f, "{}u8", u),
+            Self::U16(u) => write!(f, "{}u16", u),
+            Self::U32(u) => write!(f, "{}u32", u),
+            Self::U64(u) => write!(f, "{}u64", u),
+            Self::U128(u) => write!(f, "{}u128", u),
+            Self::U256(u) => write!(f, "{}u256", u),
+            Self::Bool(false) => write!(f, "false"),
+            Self::Bool(true) => write!(f, "true"),
+            Self::Address(a) => write!(f, "{}", a.to_hex_literal()),
+            Self::Signer(a) => write!(f, "signer({})", a.to_hex_literal()),
+            Self::Vector(v) => fmt_list(f, "vector[", v, "]"),
+            Self::Struct(s) => fmt::Display::fmt(s, f),
         }
     }
 }
@@ -612,11 +612,11 @@ impl fmt::Display for MoveValue {
 impl fmt::Display for MoveStruct {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            MoveStruct::Runtime(v) => fmt_list(f, "struct[", v, "]"),
-            MoveStruct::WithFields(fields) => {
+            Self::Runtime(v) => fmt_list(f, "struct[", v, "]"),
+            Self::WithFields(fields) => {
                 fmt_list(f, "{", fields.iter().map(DisplayFieldBinding), "}")
             }
-            MoveStruct::WithTypes { type_, fields } => {
+            Self::WithTypes { type_, fields } => {
                 fmt::Display::fmt(type_, f)?;
                 fmt_list(f, " {", fields.iter().map(DisplayFieldBinding), "}")
             }

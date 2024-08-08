@@ -24,17 +24,17 @@ pub enum TransactionArgument {
 impl fmt::Debug for TransactionArgument {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            TransactionArgument::U8(value) => write!(f, "{{U8: {}}}", value),
-            TransactionArgument::U64(value) => write!(f, "{{U64: {}}}", value),
-            TransactionArgument::U128(value) => write!(f, "{{U128: {}}}", value),
-            TransactionArgument::Bool(boolean) => write!(f, "{{BOOL: {}}}", boolean),
-            TransactionArgument::Address(address) => write!(f, "{{ADDRESS: {:?}}}", address),
-            TransactionArgument::U8Vector(vector) => {
+            Self::U8(value) => write!(f, "{{U8: {}}}", value),
+            Self::U64(value) => write!(f, "{{U64: {}}}", value),
+            Self::U128(value) => write!(f, "{{U128: {}}}", value),
+            Self::Bool(boolean) => write!(f, "{{BOOL: {}}}", boolean),
+            Self::Address(address) => write!(f, "{{ADDRESS: {:?}}}", address),
+            Self::U8Vector(vector) => {
                 write!(f, "{{U8Vector: 0x{}}}", hex::encode(vector))
             }
-            TransactionArgument::U16(value) => write!(f, "{{U16: {}}}", value),
-            TransactionArgument::U32(value) => write!(f, "{{U32: {}}}", value),
-            TransactionArgument::U256(value) => write!(f, "{{U256: {}}}", value),
+            Self::U16(value) => write!(f, "{{U16: {}}}", value),
+            Self::U32(value) => write!(f, "{{U32: {}}}", value),
+            Self::U256(value) => write!(f, "{{U256: {}}}", value),
         }
     }
 }
@@ -42,15 +42,15 @@ impl fmt::Debug for TransactionArgument {
 impl From<TransactionArgument> for MoveValue {
     fn from(val: TransactionArgument) -> Self {
         match val {
-            TransactionArgument::U8(i) => MoveValue::U8(i),
-            TransactionArgument::U64(i) => MoveValue::U64(i),
-            TransactionArgument::U128(i) => MoveValue::U128(i),
-            TransactionArgument::Address(a) => MoveValue::Address(a),
-            TransactionArgument::Bool(b) => MoveValue::Bool(b),
-            TransactionArgument::U8Vector(v) => MoveValue::vector_u8(v),
-            TransactionArgument::U16(i) => MoveValue::U16(i),
-            TransactionArgument::U32(i) => MoveValue::U32(i),
-            TransactionArgument::U256(i) => MoveValue::U256(i),
+            TransactionArgument::U8(i) => Self::U8(i),
+            TransactionArgument::U64(i) => Self::U64(i),
+            TransactionArgument::U128(i) => Self::U128(i),
+            TransactionArgument::Address(a) => Self::Address(a),
+            TransactionArgument::Bool(b) => Self::Bool(b),
+            TransactionArgument::U8Vector(v) => Self::vector_u8(v),
+            TransactionArgument::U16(i) => Self::U16(i),
+            TransactionArgument::U32(i) => Self::U32(i),
+            TransactionArgument::U256(i) => Self::U256(i),
         }
     }
 }
@@ -59,12 +59,12 @@ impl TryFrom<MoveValue> for TransactionArgument {
     type Error = Error;
     fn try_from(val: MoveValue) -> Result<Self> {
         Ok(match val {
-            MoveValue::U8(i) => TransactionArgument::U8(i),
-            MoveValue::U64(i) => TransactionArgument::U64(i),
-            MoveValue::U128(i) => TransactionArgument::U128(i),
-            MoveValue::Address(a) => TransactionArgument::Address(a),
-            MoveValue::Bool(b) => TransactionArgument::Bool(b),
-            MoveValue::Vector(v) => TransactionArgument::U8Vector(
+            MoveValue::U8(i) => Self::U8(i),
+            MoveValue::U64(i) => Self::U64(i),
+            MoveValue::U128(i) => Self::U128(i),
+            MoveValue::Address(a) => Self::Address(a),
+            MoveValue::Bool(b) => Self::Bool(b),
+            MoveValue::Vector(v) => Self::U8Vector(
                 v.into_iter()
                     .map(|mv| {
                         if let MoveValue::U8(byte) = mv {
@@ -78,9 +78,9 @@ impl TryFrom<MoveValue> for TransactionArgument {
             MoveValue::Signer(_) | MoveValue::Struct(_) => {
                 return Err(anyhow!("invalid transaction argument: {:?}", val))
             }
-            MoveValue::U16(i) => TransactionArgument::U16(i),
-            MoveValue::U32(i) => TransactionArgument::U32(i),
-            MoveValue::U256(i) => TransactionArgument::U256(i),
+            MoveValue::U16(i) => Self::U16(i),
+            MoveValue::U32(i) => Self::U32(i),
+            MoveValue::U256(i) => Self::U256(i),
         })
     }
 }
@@ -102,7 +102,7 @@ pub struct VecBytes(Vec<serde_bytes::ByteBuf>);
 
 impl VecBytes {
     pub fn from(vec_bytes: Vec<Vec<u8>>) -> Self {
-        VecBytes(
+        Self(
             vec_bytes
                 .into_iter()
                 .map(serde_bytes::ByteBuf::from)
@@ -123,15 +123,15 @@ impl VecBytes {
 impl fmt::Display for TransactionArgument {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            TransactionArgument::U8(value) => write!(f, "{}u8", value),
-            TransactionArgument::U64(value) => write!(f, "{}u64", value),
-            TransactionArgument::U128(value) => write!(f, "{}u128", value),
-            TransactionArgument::Bool(boolean) => write!(f, "{}", boolean),
-            TransactionArgument::Address(address) => write!(f, "{}", address),
-            TransactionArgument::U8Vector(vector) => write!(f, "x\"{}\"", hex::encode(vector)),
-            TransactionArgument::U16(value) => write!(f, "{}u16", value),
-            TransactionArgument::U32(value) => write!(f, "{}u32", value),
-            TransactionArgument::U256(value) => write!(f, "{}u256", value),
+            Self::U8(value) => write!(f, "{}u8", value),
+            Self::U64(value) => write!(f, "{}u64", value),
+            Self::U128(value) => write!(f, "{}u128", value),
+            Self::Bool(boolean) => write!(f, "{}", boolean),
+            Self::Address(address) => write!(f, "{}", address),
+            Self::U8Vector(vector) => write!(f, "x\"{}\"", hex::encode(vector)),
+            Self::U16(value) => write!(f, "{}u16", value),
+            Self::U32(value) => write!(f, "{}u32", value),
+            Self::U256(value) => write!(f, "{}u256", value),
         }
     }
 }

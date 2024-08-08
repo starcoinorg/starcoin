@@ -89,7 +89,7 @@ pub enum KeptVMStatus {
 
 impl KeptVMStatus {
     pub fn is_success(&self) -> bool {
-        matches!(self, KeptVMStatus::Executed)
+        matches!(self, Self::Executed)
     }
 }
 
@@ -152,14 +152,14 @@ impl VMStatus {
     /// should be discarded
     pub fn keep_or_discard(self) -> Result<KeptVMStatus, DiscardedVMStatus> {
         match self {
-            VMStatus::Executed => Ok(KeptVMStatus::Executed),
-            VMStatus::MoveAbort(location, code) => Ok(KeptVMStatus::MoveAbort(location, code)),
-            VMStatus::ExecutionFailure {
+            Self::Executed => Ok(KeptVMStatus::Executed),
+            Self::MoveAbort(location, code) => Ok(KeptVMStatus::MoveAbort(location, code)),
+            Self::ExecutionFailure {
                 status_code: StatusCode::OUT_OF_GAS,
                 ..
             }
-            | VMStatus::Error(StatusCode::OUT_OF_GAS) => Ok(KeptVMStatus::OutOfGas),
-            VMStatus::ExecutionFailure {
+            | Self::Error(StatusCode::OUT_OF_GAS) => Ok(KeptVMStatus::OutOfGas),
+            Self::ExecutionFailure {
                 status_code: _status_code,
                 location,
                 function,
@@ -169,7 +169,7 @@ impl VMStatus {
                 function,
                 code_offset,
             }),
-            VMStatus::Error(code) => {
+            Self::Error(code) => {
                 match code.status_type() {
                     // Any unknown error should be discarded
                     StatusType::Unknown => Err(code),
@@ -200,12 +200,12 @@ impl VMStatus {
 impl fmt::Display for StatusType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let string = match self {
-            StatusType::Validation => "Validation",
-            StatusType::Verification => "Verification",
-            StatusType::InvariantViolation => "Invariant violation",
-            StatusType::Deserialization => "Deserialization",
-            StatusType::Execution => "Execution",
-            StatusType::Unknown => "Unknown",
+            Self::Validation => "Validation",
+            Self::Verification => "Verification",
+            Self::InvariantViolation => "Invariant violation",
+            Self::Deserialization => "Deserialization",
+            Self::Execution => "Execution",
+            Self::Unknown => "Unknown",
         };
         write!(f, "{}", string)
     }
@@ -216,7 +216,7 @@ impl fmt::Display for VMStatus {
         let status_type = self.status_type();
         let mut status = format!("status {:#?} of type {}", self.status_code(), status_type);
 
-        if let VMStatus::MoveAbort(_, code) = self {
+        if let Self::MoveAbort(_, code) = self {
             status = format!("{} with sub status {}", status, code);
         }
 
@@ -228,13 +228,13 @@ impl fmt::Display for KeptVMStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "status ")?;
         match self {
-            KeptVMStatus::Executed => write!(f, "EXECUTED"),
-            KeptVMStatus::OutOfGas => write!(f, "OUT_OF_GAS"),
-            KeptVMStatus::MiscellaneousError => write!(f, "MISCELLANEOUS_ERROR"),
-            KeptVMStatus::MoveAbort(location, code) => {
+            Self::Executed => write!(f, "EXECUTED"),
+            Self::OutOfGas => write!(f, "OUT_OF_GAS"),
+            Self::MiscellaneousError => write!(f, "MISCELLANEOUS_ERROR"),
+            Self::MoveAbort(location, code) => {
                 write!(f, "ABORTED with code {} in {}", code, location)
             }
-            KeptVMStatus::ExecutionFailure {
+            Self::ExecutionFailure {
                 location,
                 function,
                 code_offset,
@@ -250,14 +250,14 @@ impl fmt::Display for KeptVMStatus {
 impl fmt::Debug for VMStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            VMStatus::Executed => write!(f, "EXECUTED"),
-            VMStatus::Error(code) => f.debug_struct("ERROR").field("status_code", code).finish(),
-            VMStatus::MoveAbort(location, code) => f
+            Self::Executed => write!(f, "EXECUTED"),
+            Self::Error(code) => f.debug_struct("ERROR").field("status_code", code).finish(),
+            Self::MoveAbort(location, code) => f
                 .debug_struct("ABORTED")
                 .field("code", code)
                 .field("location", location)
                 .finish(),
-            VMStatus::ExecutionFailure {
+            Self::ExecutionFailure {
                 status_code,
                 location,
                 function,
@@ -276,14 +276,14 @@ impl fmt::Debug for VMStatus {
 impl fmt::Debug for KeptVMStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            KeptVMStatus::Executed => write!(f, "EXECUTED"),
-            KeptVMStatus::OutOfGas => write!(f, "OUT_OF_GAS"),
-            KeptVMStatus::MoveAbort(location, code) => f
+            Self::Executed => write!(f, "EXECUTED"),
+            Self::OutOfGas => write!(f, "OUT_OF_GAS"),
+            Self::MoveAbort(location, code) => f
                 .debug_struct("ABORTED")
                 .field("code", code)
                 .field("location", location)
                 .finish(),
-            KeptVMStatus::ExecutionFailure {
+            Self::ExecutionFailure {
                 location,
                 function,
                 code_offset,
@@ -293,7 +293,7 @@ impl fmt::Debug for KeptVMStatus {
                 .field("function_definition", function)
                 .field("code_offset", code_offset)
                 .finish(),
-            KeptVMStatus::MiscellaneousError => write!(f, "MISCELLANEOUS_ERROR"),
+            Self::MiscellaneousError => write!(f, "MISCELLANEOUS_ERROR"),
         }
     }
 }
@@ -301,8 +301,8 @@ impl fmt::Debug for KeptVMStatus {
 impl fmt::Display for AbortLocation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            AbortLocation::Script => write!(f, "Script"),
-            AbortLocation::Module(id) => write!(f, "{}", id),
+            Self::Script => write!(f, "Script"),
+            Self::Module(id) => write!(f, "{}", id),
         }
     }
 }
@@ -802,8 +802,8 @@ impl<'de> de::Deserialize<'de> for StatusCode {
 }
 
 impl From<StatusCode> for u64 {
-    fn from(status: StatusCode) -> u64 {
-        status as u64
+    fn from(status: StatusCode) -> Self {
+        status as Self
     }
 }
 
@@ -829,7 +829,7 @@ impl Arbitrary for StatusCode {
         (any::<usize>())
             .prop_map(|index| {
                 let status_code_value = STATUS_CODE_VALUES[index % STATUS_CODE_VALUES.len()];
-                StatusCode::try_from(status_code_value).unwrap()
+                Self::try_from(status_code_value).unwrap()
             })
             .boxed()
     }

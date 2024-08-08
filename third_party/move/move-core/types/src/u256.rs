@@ -129,7 +129,7 @@ impl<'de> Deserialize<'de> for U256 {
     where
         D: Deserializer<'de>,
     {
-        Ok(U256::from_le_bytes(
+        Ok(Self::from_le_bytes(
             &(<[u8; U256_NUM_BYTES]>::deserialize(deserializer)?),
         ))
     }
@@ -171,111 +171,111 @@ impl Shr<u8> for U256 {
     }
 }
 
-impl BitOr<U256> for U256 {
+impl BitOr<Self> for U256 {
     type Output = Self;
 
-    fn bitor(self, rhs: U256) -> Self::Output {
+    fn bitor(self, rhs: Self) -> Self::Output {
         let Self(lhs) = self;
         let Self(rhs) = rhs;
         Self(lhs | rhs)
     }
 }
 
-impl BitAnd<U256> for U256 {
+impl BitAnd<Self> for U256 {
     type Output = Self;
 
-    fn bitand(self, rhs: U256) -> Self::Output {
+    fn bitand(self, rhs: Self) -> Self::Output {
         let Self(lhs) = self;
         let Self(rhs) = rhs;
         Self(lhs & rhs)
     }
 }
 
-impl BitXor<U256> for U256 {
+impl BitXor<Self> for U256 {
     type Output = Self;
 
-    fn bitxor(self, rhs: U256) -> Self::Output {
+    fn bitxor(self, rhs: Self) -> Self::Output {
         let Self(lhs) = self;
         let Self(rhs) = rhs;
         Self(lhs ^ rhs)
     }
 }
 
-impl BitAndAssign<U256> for U256 {
-    fn bitand_assign(&mut self, rhs: U256) {
+impl BitAndAssign<Self> for U256 {
+    fn bitand_assign(&mut self, rhs: Self) {
         *self = *self & rhs;
     }
 }
 
 // Ignores overflows
-impl Add<U256> for U256 {
+impl Add<Self> for U256 {
     type Output = Self;
 
-    fn add(self, rhs: U256) -> Self::Output {
+    fn add(self, rhs: Self) -> Self::Output {
         self.wrapping_add(rhs)
     }
 }
 
-impl AddAssign<U256> for U256 {
-    fn add_assign(&mut self, rhs: U256) {
+impl AddAssign<Self> for U256 {
+    fn add_assign(&mut self, rhs: Self) {
         *self = *self + rhs;
     }
 }
 
 // Ignores underflows
-impl Sub<U256> for U256 {
+impl Sub<Self> for U256 {
     type Output = Self;
 
-    fn sub(self, rhs: U256) -> Self::Output {
+    fn sub(self, rhs: Self) -> Self::Output {
         self.wrapping_sub(rhs)
     }
 }
 
-impl SubAssign<U256> for U256 {
-    fn sub_assign(&mut self, rhs: U256) {
+impl SubAssign<Self> for U256 {
+    fn sub_assign(&mut self, rhs: Self) {
         *self = *self - rhs;
     }
 }
 
 // Ignores overflows
-impl Mul<U256> for U256 {
+impl Mul<Self> for U256 {
     type Output = Self;
 
-    fn mul(self, rhs: U256) -> Self::Output {
+    fn mul(self, rhs: Self) -> Self::Output {
         self.wrapping_mul(rhs)
     }
 }
 
-impl MulAssign<U256> for U256 {
-    fn mul_assign(&mut self, rhs: U256) {
+impl MulAssign<Self> for U256 {
+    fn mul_assign(&mut self, rhs: Self) {
         *self = *self * rhs;
     }
 }
 
-impl Div<U256> for U256 {
+impl Div<Self> for U256 {
     type Output = Self;
 
-    fn div(self, rhs: U256) -> Self::Output {
+    fn div(self, rhs: Self) -> Self::Output {
         Self(self.0 / rhs.0)
     }
 }
 
-impl DivAssign<U256> for U256 {
-    fn div_assign(&mut self, rhs: U256) {
+impl DivAssign<Self> for U256 {
+    fn div_assign(&mut self, rhs: Self) {
         *self = *self / rhs;
     }
 }
 
-impl Rem<U256> for U256 {
+impl Rem<Self> for U256 {
     type Output = Self;
 
-    fn rem(self, rhs: U256) -> Self::Output {
+    fn rem(self, rhs: Self) -> Self::Output {
         Self(self.0 % rhs.0)
     }
 }
 
-impl RemAssign<U256> for U256 {
-    fn rem_assign(&mut self, rhs: U256) {
+impl RemAssign<Self> for U256 {
+    fn rem_assign(&mut self, rhs: Self) {
         *self = Self(self.0 % rhs.0);
     }
 }
@@ -425,7 +425,7 @@ impl U256 {
     fn wmul(self, b: Self) -> (Self, Self) {
         let half = 128;
         #[allow(non_snake_case)]
-        let LOWER_MASK: U256 = Self::max_value() >> half;
+        let LOWER_MASK: Self = Self::max_value() >> half;
 
         let mut low = (self & LOWER_MASK).wrapping_mul(b & LOWER_MASK);
         let mut t = low >> half;
@@ -446,49 +446,49 @@ impl U256 {
 
 impl From<u8> for U256 {
     fn from(n: u8) -> Self {
-        U256(PrimitiveU256::from(n))
+        Self(PrimitiveU256::from(n))
     }
 }
 
 impl From<u16> for U256 {
     fn from(n: u16) -> Self {
-        U256(PrimitiveU256::from(n))
+        Self(PrimitiveU256::from(n))
     }
 }
 
 impl From<u32> for U256 {
     fn from(n: u32) -> Self {
-        U256(PrimitiveU256::from(n))
+        Self(PrimitiveU256::from(n))
     }
 }
 
 impl From<u64> for U256 {
     fn from(n: u64) -> Self {
-        U256(PrimitiveU256::from(n))
+        Self(PrimitiveU256::from(n))
     }
 }
 
 impl From<u128> for U256 {
     fn from(n: u128) -> Self {
-        U256(PrimitiveU256::from(n))
+        Self(PrimitiveU256::from(n))
     }
 }
 
 /// TODO (ade): Remove conversions and migrate Prover & Move Model code from BigInt
 impl From<&U256> for BigInt {
     fn from(n: &U256) -> Self {
-        BigInt::from_bytes_le(Sign::Plus, &n.to_le_bytes())
+        Self::from_bytes_le(Sign::Plus, &n.to_le_bytes())
     }
 }
 
 /// TODO (ade): Remove conversions and migrate Prover & Move Model code from EthnumU256
 impl From<&U256> for EthnumU256 {
-    fn from(n: &U256) -> EthnumU256 {
+    fn from(n: &U256) -> Self {
         // TODO (ade): use better solution for conversion
         // Currently using str because EthnumU256 can be little or big endian
         let num_str = format!("{:X}", n.0);
         // TODO (ade): remove expect()
-        EthnumU256::from_str_radix(&num_str, 16).expect("Cannot convert to U256")
+        Self::from_str_radix(&num_str, 16).expect("Cannot convert to U256")
     }
 }
 
@@ -496,10 +496,10 @@ impl TryFrom<U256> for u8 {
     type Error = U256CastError;
     fn try_from(n: U256) -> Result<Self, Self::Error> {
         let n = n.0.low_u64();
-        if n > u8::MAX as u64 {
+        if n > Self::MAX as u64 {
             Err(U256CastError::new(n, U256CastErrorKind::TooLargeForU8))
         } else {
-            Ok(n as u8)
+            Ok(n as Self)
         }
     }
 }
@@ -509,10 +509,10 @@ impl TryFrom<U256> for u16 {
 
     fn try_from(n: U256) -> Result<Self, Self::Error> {
         let n = n.0.low_u64();
-        if n > u16::MAX as u64 {
+        if n > Self::MAX as u64 {
             Err(U256CastError::new(n, U256CastErrorKind::TooLargeForU16))
         } else {
-            Ok(n as u16)
+            Ok(n as Self)
         }
     }
 }
@@ -522,10 +522,10 @@ impl TryFrom<U256> for u32 {
 
     fn try_from(n: U256) -> Result<Self, Self::Error> {
         let n = n.0.low_u64();
-        if n > u32::MAX as u64 {
+        if n > Self::MAX as u64 {
             Err(U256CastError::new(n, U256CastErrorKind::TooLargeForU32))
         } else {
-            Ok(n as u32)
+            Ok(n as Self)
         }
     }
 }
@@ -535,10 +535,10 @@ impl TryFrom<U256> for u64 {
 
     fn try_from(n: U256) -> Result<Self, Self::Error> {
         let n = n.0.low_u128();
-        if n > u64::MAX as u128 {
+        if n > Self::MAX as u128 {
             Err(U256CastError::new(n, U256CastErrorKind::TooLargeForU64))
         } else {
-            Ok(n as u64)
+            Ok(n as Self)
         }
     }
 }
@@ -547,7 +547,7 @@ impl TryFrom<U256> for u128 {
     type Error = U256CastError;
 
     fn try_from(n: U256) -> Result<Self, Self::Error> {
-        if n > U256::from(u128::MAX) {
+        if n > U256::from(Self::MAX) {
             Err(U256CastError::new(n, U256CastErrorKind::TooLargeForU128))
         } else {
             Ok(n.0.low_u128())
@@ -613,7 +613,7 @@ impl UniformSampler for UniformU256 {
             U256::zero()
         };
 
-        UniformU256 {
+        Self {
             low,
             range,
             z: ints_to_reject,
@@ -691,7 +691,7 @@ impl proptest::prelude::Arbitrary for U256 {
     fn arbitrary_with(_params: Self::Parameters) -> Self::Strategy {
         use proptest::strategy::Strategy as _;
         proptest::arbitrary::any::<[u8; U256_NUM_BYTES]>()
-            .prop_map(|q| U256::from_le_bytes(&q))
+            .prop_map(|q| Self::from_le_bytes(&q))
             .boxed()
     }
 }
@@ -700,7 +700,7 @@ impl proptest::prelude::Arbitrary for U256 {
 impl<'a> arbitrary::Arbitrary<'a> for U256 {
     fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
         let bytes = <[u8; U256_NUM_BYTES]>::arbitrary(u)?;
-        Ok(U256::from_le_bytes(&bytes))
+        Ok(Self::from_le_bytes(&bytes))
     }
 }
 

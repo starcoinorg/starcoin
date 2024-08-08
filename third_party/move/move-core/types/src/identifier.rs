@@ -184,9 +184,9 @@ impl fmt::Display for Identifier {
 pub struct IdentStr(str);
 
 impl IdentStr {
-    pub fn new(s: &str) -> Result<&IdentStr> {
+    pub fn new(s: &str) -> Result<&Self> {
         if Self::is_valid(s) {
-            Ok(IdentStr::ref_cast(s))
+            Ok(Self::ref_cast(s))
         } else {
             bail!("Invalid identifier '{}'", s);
         }
@@ -250,7 +250,7 @@ impl Arbitrary for Identifier {
         ALLOWED_NO_SELF_IDENTIFIERS
             .prop_map(|s| {
                 // Identifier::new will verify that generated identifiers are correct.
-                Identifier::new(s).unwrap()
+                Self::new(s).unwrap()
             })
             .boxed()
     }

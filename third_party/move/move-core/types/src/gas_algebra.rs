@@ -183,7 +183,7 @@ impl<U> Ord for GasQuantity<U> {
  * Addition & Subtraction
  *
  **************************************************************************************************/
-impl<U> Add<GasQuantity<U>> for GasQuantity<U> {
+impl<U> Add<Self> for GasQuantity<U> {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
@@ -191,8 +191,8 @@ impl<U> Add<GasQuantity<U>> for GasQuantity<U> {
     }
 }
 
-impl<U> AddAssign<GasQuantity<U>> for GasQuantity<U> {
-    fn add_assign(&mut self, rhs: GasQuantity<U>) {
+impl<U> AddAssign<Self> for GasQuantity<U> {
+    fn add_assign(&mut self, rhs: Self) {
         *self = *self + rhs
     }
 }

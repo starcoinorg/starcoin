@@ -180,7 +180,7 @@ impl ResourceKey {
 
 impl ResourceKey {
     pub fn new(address: AccountAddress, type_: StructTag) -> Self {
-        ResourceKey { address, type_ }
+        Self { address, type_ }
     }
 }
 
@@ -202,7 +202,7 @@ impl From<ModuleId> for (AccountAddress, Identifier) {
 
 impl ModuleId {
     pub fn new(address: AccountAddress, name: Identifier) -> Self {
-        ModuleId { address, name }
+        Self { address, name }
     }
 
     pub fn name(&self) -> &IdentStr {
@@ -256,17 +256,17 @@ impl Display for StructTag {
 impl Display for TypeTag {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         match self {
-            TypeTag::Struct(s) => write!(f, "{}", s),
-            TypeTag::Vector(ty) => write!(f, "vector<{}>", ty),
-            TypeTag::U8 => write!(f, "u8"),
-            TypeTag::U16 => write!(f, "u16"),
-            TypeTag::U32 => write!(f, "u32"),
-            TypeTag::U64 => write!(f, "u64"),
-            TypeTag::U128 => write!(f, "u128"),
-            TypeTag::U256 => write!(f, "u256"),
-            TypeTag::Address => write!(f, "address"),
-            TypeTag::Signer => write!(f, "signer"),
-            TypeTag::Bool => write!(f, "bool"),
+            Self::Struct(s) => write!(f, "{}", s),
+            Self::Vector(ty) => write!(f, "vector<{}>", ty),
+            Self::U8 => write!(f, "u8"),
+            Self::U16 => write!(f, "u16"),
+            Self::U32 => write!(f, "u32"),
+            Self::U64 => write!(f, "u64"),
+            Self::U128 => write!(f, "u128"),
+            Self::U256 => write!(f, "u256"),
+            Self::Address => write!(f, "address"),
+            Self::Signer => write!(f, "signer"),
+            Self::Bool => write!(f, "bool"),
         }
     }
 }
@@ -278,8 +278,8 @@ impl Display for ResourceKey {
 }
 
 impl From<StructTag> for TypeTag {
-    fn from(t: StructTag) -> TypeTag {
-        TypeTag::Struct(Box::new(t))
+    fn from(t: StructTag) -> Self {
+        Self::Struct(Box::new(t))
     }
 }
 

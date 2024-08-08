@@ -59,14 +59,14 @@ impl AccountAddress {
     pub const TWO: Self = Self::get_hex_address_two();
 
     const fn get_hex_address_one() -> Self {
-        let mut addr = [0u8; AccountAddress::LENGTH];
-        addr[AccountAddress::LENGTH - 1] = 1u8;
+        let mut addr = [0u8; Self::LENGTH];
+        addr[Self::LENGTH - 1] = 1u8;
         Self(addr)
     }
 
     const fn get_hex_address_two() -> Self {
-        let mut addr = [0u8; AccountAddress::LENGTH];
-        addr[AccountAddress::LENGTH - 1] = 2u8;
+        let mut addr = [0u8; Self::LENGTH];
+        addr[Self::LENGTH - 1] = 2u8;
         Self(addr)
     }
 
@@ -119,7 +119,7 @@ impl AccountAddress {
         if !literal.starts_with("0x") {
             return Err(AccountAddressParseError);
         }
-        let literal = literal.strip_prefix("0x").unwrap_or_else(|| literal);
+        let literal = literal.strip_prefix("0x").unwrap_or(literal);
         let hex_len = literal.len();
 
         // If the string is too short, pad it
@@ -128,10 +128,10 @@ impl AccountAddress {
             for _ in 0..Self::LENGTH * 2 - hex_len {
                 hex_str.push('0');
             }
-            hex_str.push_str(&literal);
-            AccountAddress::from_hex(hex_str)
+            hex_str.push_str(literal);
+            Self::from_hex(hex_str)
         } else {
-            AccountAddress::from_hex(&literal)
+            Self::from_hex(literal)
         }
     }
 
@@ -175,11 +175,11 @@ impl AccountAddress {
 
         let data: Vec<u8> = bech32::FromBase32::from_base32(&data[1..])?;
 
-        if data.len() == AccountAddress::LENGTH {
+        if data.len() == Self::LENGTH {
             Ok(data)
-        } else if data.len() == AccountAddress::LENGTH + 32 {
+        } else if data.len() == Self::LENGTH + 32 {
             // for address + auth key format, just ignore auth key
-            Ok(data[0..AccountAddress::LENGTH].to_vec())
+            Ok(data[0..Self::LENGTH].to_vec())
         } else {
             anyhow::bail!("Invalid address's length");
         }
@@ -248,8 +248,8 @@ impl fmt::UpperHex for AccountAddress {
     }
 }
 
-impl From<[u8; AccountAddress::LENGTH]> for AccountAddress {
-    fn from(bytes: [u8; AccountAddress::LENGTH]) -> Self {
+impl From<[u8; Self::LENGTH]> for AccountAddress {
+    fn from(bytes: [u8; Self::LENGTH]) -> Self {
         Self::new(bytes)
     }
 }
@@ -258,7 +258,7 @@ impl TryFrom<&[u8]> for AccountAddress {
     type Error = AccountAddressParseError;
 
     /// Tries to convert the provided byte array into Address.
-    fn try_from(bytes: &[u8]) -> Result<AccountAddress, AccountAddressParseError> {
+    fn try_from(bytes: &[u8]) -> Result<Self, AccountAddressParseError> {
         Self::from_bytes(bytes)
     }
 }
@@ -267,19 +267,19 @@ impl TryFrom<Vec<u8>> for AccountAddress {
     type Error = AccountAddressParseError;
 
     /// Tries to convert the provided byte buffer into Address.
-    fn try_from(bytes: Vec<u8>) -> Result<AccountAddress, AccountAddressParseError> {
+    fn try_from(bytes: Vec<u8>) -> Result<Self, AccountAddressParseError> {
         Self::from_bytes(bytes)
     }
 }
 
 impl From<AccountAddress> for Vec<u8> {
-    fn from(addr: AccountAddress) -> Vec<u8> {
+    fn from(addr: AccountAddress) -> Self {
         addr.0.to_vec()
     }
 }
 
 impl From<&AccountAddress> for Vec<u8> {
-    fn from(addr: &AccountAddress) -> Vec<u8> {
+    fn from(addr: &AccountAddress) -> Self {
         addr.0.to_vec()
     }
 }
@@ -297,7 +297,7 @@ impl From<&AccountAddress> for [u8; AccountAddress::LENGTH] {
 }
 
 impl From<&AccountAddress> for String {
-    fn from(addr: &AccountAddress) -> String {
+    fn from(addr: &AccountAddress) -> Self {
         ::hex::encode(addr.as_ref())
     }
 }
@@ -305,8 +305,8 @@ impl From<&AccountAddress> for String {
 impl TryFrom<String> for AccountAddress {
     type Error = AccountAddressParseError;
 
-    fn try_from(s: String) -> Result<AccountAddress, AccountAddressParseError> {
-        AccountAddress::from_str(s.as_str())
+    fn try_from(s: String) -> Result<Self, AccountAddressParseError> {
+        Self::from_str(s.as_str())
     }
 }
 
@@ -315,9 +315,9 @@ impl FromStr for AccountAddress {
 
     fn from_str(s: &str) -> Result<Self, AccountAddressParseError> {
         if s.starts_with("stc") {
-            AccountAddress::from_bech32(s)
+            Self::from_bech32(s)
         } else {
-            AccountAddress::from_hex_literal(s)
+            Self::from_hex_literal(s)
         }
     }
 }
@@ -329,7 +329,7 @@ impl<'de> Deserialize<'de> for AccountAddress {
     {
         if deserializer.is_human_readable() {
             let s = <String>::deserialize(deserializer)?;
-            AccountAddress::from_str(&s).map_err(D::Error::custom)
+            Self::from_str(&s).map_err(D::Error::custom)
         } else {
             // In order to preserve the Serde data model and help analysis tools,
             // make sure to wrap our value in a container with the same name
@@ -339,7 +339,7 @@ impl<'de> Deserialize<'de> for AccountAddress {
             struct Value([u8; AccountAddress::LENGTH]);
 
             let value = Value::deserialize(deserializer)?;
-            Ok(AccountAddress::new(value.0))
+            Ok(Self::new(value.0))
         }
     }
 }
@@ -423,7 +423,7 @@ mod tests {
 
         assert_eq!(
             bytes.len(),
-            AccountAddress::LENGTH as usize,
+            { AccountAddress::LENGTH },
             "Address {:?} is not {}-bytes long. Addresses must be {} bytes",
             bytes,
             AccountAddress::LENGTH,
