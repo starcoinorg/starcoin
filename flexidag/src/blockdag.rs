@@ -115,7 +115,6 @@ impl BlockDAG {
         self.commit(genesis, origin)?;
         self.save_dag_state(DagState {
             tips: vec![genesis_id],
-            pruning_point: genesis_id,
         })?;
         Ok(origin)
     }
@@ -350,13 +349,9 @@ impl BlockDAG {
         block_header: &BlockHeader,
         genesis_id: HashValue,
     ) -> anyhow::Result<()> {
-        let dag_state = DagState {
-            tips: block_header.parents(),
-            pruning_point: block_header.pruning_point(),
-        };
         let ghostdata = self.ghost_dag_manager().ghostdag(&block_header.parents())?;
         let next_pruning_point = self.pruning_point_manager().next_pruning_point(
-            &dag_state,
+            block_header.pruning_point(),
             &ghostdata,
             pruning_depth,
             pruning_finality,
@@ -401,24 +396,36 @@ impl BlockDAG {
             info,
             storage.get_accumulator_store(AccumulatorStoreType::Block),
         );
-        match self.storage.state_store.read().get_state_by_hash(
+
+        let read_guard = self.storage.state_store.read();
+
+        let update_dag_state = match read_guard.get_state_by_hash(
             accumulator
                 .get_leaf(0)?
                 .ok_or_else(|| format_err!("no leaf when upgrading dag db"))?,
         ) {
-            anyhow::Result::Ok(dag_state) => match self.storage.state_store.read().get_state() {
+            anyhow::Result::Ok(dag_state) => match read_guard.get_state() {
                 anyhow::Result::Ok(saved_dag_state) => {
                     info!("The dag state is {:?}", saved_dag_state);
+                    None
                 }
-                Err(_) => {
-                    info!("The dag state will be saved as {:?}", dag_state);
-                    self.storage.state_store.write().insert(dag_state)?;
-                }
+                Err(_) => Some(dag_state),
             },
             Err(_) => {
-                warn!("Cannot get the dag state by genesis id. Might be it is a new node. The dag state will be: {:?}", self.storage.state_store.read().get_state()?);
+                warn!("Cannot get the dag state by genesis id. Might be it is a new node. The dag state will be: {:?}", read_guard.get_state()?);
+                None
             }
+        };
+
+        drop(read_guard);
+
+        if let Some(dag_state) = update_dag_state {
+            let write_guard = self.storage.state_store.write();
+            info!("The dag state will be saved as {:?}", dag_state);
+            write_guard.insert(dag_state)?;
+            drop(write_guard);
         }
+
         anyhow::Ok(())
     }
 }
