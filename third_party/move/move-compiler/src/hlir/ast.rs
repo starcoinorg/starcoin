@@ -943,7 +943,6 @@ impl AstDebug for (Block, Box<Exp>) {
 
 impl AstDebug for Statement_ {
     fn ast_debug(&self, w: &mut AstWriter) {
-        use Statement_ as S;
         match self {
             Self::Command(cmd) => cmd.ast_debug(w),
             Self::IfElse {
@@ -978,7 +977,6 @@ impl AstDebug for Statement_ {
 
 impl AstDebug for Command_ {
     fn ast_debug(&self, w: &mut AstWriter) {
-        use Command_ as C;
         match self {
             Self::Assign(lvalues, rhs) => {
                 lvalues.ast_debug(w);
@@ -1011,7 +1009,9 @@ impl AstDebug for Command_ {
                 w.write(" = ");
                 exp.ast_debug(w);
             }
-            Self::Jump { target, from_user } if *from_user => w.write(&format!("jump@{}", target.0)),
+            Self::Jump { target, from_user } if *from_user => {
+                w.write(&format!("jump@{}", target.0))
+            }
             Self::Jump { target, .. } => w.write(&format!("jump {}", target.0)),
             Self::JumpIf {
                 cond,
@@ -1028,7 +1028,6 @@ impl AstDebug for Command_ {
 
 impl AstDebug for Value_ {
     fn ast_debug(&self, w: &mut AstWriter) {
-        use Value_ as V;
         match self {
             Self::Address(addr) => w.write(&format!("@{}", addr)),
             Self::U8(u) => w.write(&format!("{}u8", u)),
@@ -1060,7 +1059,6 @@ impl AstDebug for Exp {
 
 impl AstDebug for UnannotatedExp_ {
     fn ast_debug(&self, w: &mut AstWriter) {
-        use UnannotatedExp_ as E;
         match self {
             Self::Unit {
                 case: UnitCase::FromUser,
@@ -1213,7 +1211,7 @@ impl AstDebug for ModuleCall {
 impl AstDebug for BuiltinFunction_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         use crate::naming::ast::BuiltinFunction_ as NF;
-        use BuiltinFunction_ as F;
+
         let (n, bt) = match self {
             Self::MoveTo(bt) => (NF::MOVE_TO, bt),
             Self::MoveFrom(bt) => (NF::MOVE_FROM, bt),
@@ -1255,7 +1253,6 @@ impl AstDebug for Vec<LValue> {
 
 impl AstDebug for LValue_ {
     fn ast_debug(&self, w: &mut AstWriter) {
-        use LValue_ as L;
         match self {
             Self::Ignore => w.write("_"),
             Self::Var(v, st) => {

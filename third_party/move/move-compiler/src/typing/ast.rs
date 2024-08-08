@@ -225,7 +225,7 @@ pub fn splat_item(splat_loc: Loc, e: Exp) -> ExpListItem {
 impl BuiltinFunction_ {
     pub fn display_name(&self) -> &'static str {
         use crate::naming::ast::BuiltinFunction_ as NB;
-        use BuiltinFunction_ as B;
+
         match self {
             Self::MoveTo(_) => NB::MOVE_TO,
             Self::MoveFrom(_) => NB::MOVE_FROM,
@@ -396,7 +396,6 @@ impl AstDebug for VecDeque<SequenceItem> {
 
 impl AstDebug for SequenceItem_ {
     fn ast_debug(&self, w: &mut AstWriter) {
-        use SequenceItem_ as I;
         match self {
             Self::Seq(e) => e.ast_debug(w),
             Self::Declare(sp!(_, bs)) => {
@@ -418,7 +417,6 @@ impl AstDebug for SequenceItem_ {
 
 impl AstDebug for UnannotatedExp_ {
     fn ast_debug(&self, w: &mut AstWriter) {
-        use UnannotatedExp_ as E;
         match self {
             Self::Unit { trailing } if !trailing => w.write("()"),
             Self::Unit {
@@ -646,7 +644,7 @@ impl AstDebug for ModuleCall {
 impl AstDebug for BuiltinFunction_ {
     fn ast_debug(&self, w: &mut AstWriter) {
         use crate::naming::ast::BuiltinFunction_ as NF;
-        use BuiltinFunction_ as F;
+
         let (n, bt_opt) = match self {
             Self::MoveTo(bt) => (NF::MOVE_TO, Some(bt)),
             Self::MoveFrom(bt) => (NF::MOVE_FROM, Some(bt)),
@@ -701,7 +699,6 @@ impl AstDebug for Vec<LValue> {
 
 impl AstDebug for LValue_ {
     fn ast_debug(&self, w: &mut AstWriter) {
-        use LValue_ as L;
         match self {
             Self::Ignore => w.write("_"),
             Self::Var(v, st) => w.annotate(|w| w.write(&format!("{}", v)), st),

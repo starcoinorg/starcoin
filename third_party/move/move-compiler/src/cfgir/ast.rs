@@ -289,7 +289,6 @@ impl AstDebug for (ConstantName, &Constant) {
 
 impl AstDebug for MoveValue {
     fn ast_debug(&self, w: &mut AstWriter) {
-        use MoveValue as V;
         match self {
             Self::U8(u) => w.write(&format!("{}", u)),
             Self::U16(u) => w.write(&format!("{}", u)),

@@ -365,7 +365,6 @@ impl BuiltinTypeName_ {
     }
 
     pub fn resolve(name_str: &str) -> Option<Self> {
-        use BuiltinTypeName_ as BT;
         match name_str {
             Self::ADDRESS => Some(Self::Address),
             Self::SIGNER => Some(Self::Signer),
@@ -382,19 +381,22 @@ impl BuiltinTypeName_ {
     }
 
     pub fn declared_abilities(&self, loc: Loc) -> AbilitySet {
-        use BuiltinTypeName_ as B;
         // Match here to make sure this function is fixed when collections are added
         match self {
-            Self::Address | Self::U8 | Self::U16 | Self::U32 | Self::U64 | Self::U128 | Self::U256 | Self::Bool => {
-                AbilitySet::primitives(loc)
-            }
+            Self::Address
+            | Self::U8
+            | Self::U16
+            | Self::U32
+            | Self::U64
+            | Self::U128
+            | Self::U256
+            | Self::Bool => AbilitySet::primitives(loc),
             Self::Signer => AbilitySet::signer(loc),
             Self::Vector => AbilitySet::collection(loc),
         }
     }
 
     pub fn tparam_constraints(&self, _loc: Loc) -> Vec<AbilitySet> {
-        use BuiltinTypeName_ as B;
         // Match here to make sure this function is fixed when collections are added
         match self {
             Self::Address
@@ -452,7 +454,6 @@ impl BuiltinFunction_ {
     }
 
     pub fn resolve(name_str: &str, arg: Option<Type>) -> Option<Self> {
-        use BuiltinFunction_ as BF;
         match name_str {
             Self::MOVE_TO => Some(Self::MoveTo(arg)),
             Self::MOVE_FROM => Some(Self::MoveFrom(arg)),
@@ -465,7 +466,6 @@ impl BuiltinFunction_ {
     }
 
     pub fn display_name(&self) -> &'static str {
-        use BuiltinFunction_ as BF;
         match self {
             Self::MoveTo(_) => Self::MOVE_TO,
             Self::MoveFrom(_) => Self::MOVE_FROM,
@@ -580,7 +580,6 @@ impl Value_ {
 
 impl fmt::Display for BuiltinTypeName_ {
     fn fmt(&self, f: &mut fmt::Formatter) -> std::fmt::Result {
-        use BuiltinTypeName_ as BT;
         write!(
             f,
             "{}",
@@ -925,7 +924,6 @@ impl AstDebug for VecDeque<SequenceItem> {
 
 impl AstDebug for SequenceItem_ {
     fn ast_debug(&self, w: &mut AstWriter) {
-        use SequenceItem_ as I;
         match self {
             Self::Seq(e) => e.ast_debug(w),
             Self::Declare(sp!(_, bs), ty_opt) => {
@@ -947,7 +945,6 @@ impl AstDebug for SequenceItem_ {
 
 impl AstDebug for Exp_ {
     fn ast_debug(&self, w: &mut AstWriter) {
-        use Exp_ as E;
         match self {
             Self::Unit { trailing } if !trailing => w.write("()"),
             Self::Unit {
@@ -1110,7 +1107,6 @@ impl AstDebug for Exp_ {
 
 impl AstDebug for BuiltinFunction_ {
     fn ast_debug(&self, w: &mut AstWriter) {
-        use BuiltinFunction_ as F;
         let (n, bt) = match self {
             Self::MoveTo(bt) => (Self::MOVE_TO, bt),
             Self::MoveFrom(bt) => (Self::MOVE_FROM, bt),
@@ -1131,7 +1127,6 @@ impl AstDebug for BuiltinFunction_ {
 
 impl AstDebug for ExpDotted_ {
     fn ast_debug(&self, w: &mut AstWriter) {
-        use ExpDotted_ as D;
         match self {
             Self::Exp(e) => e.ast_debug(w),
             Self::Dot(e, n) => {
@@ -1157,7 +1152,6 @@ impl AstDebug for Vec<LValue> {
 
 impl AstDebug for LValue_ {
     fn ast_debug(&self, w: &mut AstWriter) {
-        use LValue_ as L;
         match self {
             Self::Ignore => w.write("_"),
             Self::Var(v) => w.write(&format!("{}", v)),
