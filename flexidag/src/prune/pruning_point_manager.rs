@@ -40,9 +40,10 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
     pub fn prune(
         &self,
         dag_state: &DagState,
+        current_pruning_point: HashValue,
         next_pruning_point: HashValue,
     ) -> anyhow::Result<Vec<HashValue>> {
-        if dag_state.pruning_point == HashValue::zero() {
+        if current_pruning_point == HashValue::zero() {
             return Ok(dag_state.tips.clone());
         }
         anyhow::Ok(
@@ -60,12 +61,12 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
 
     pub(crate) fn next_pruning_point(
         &self,
-        dag_state: &DagState,
+        pruning_point: HashValue,
         ghostdata: &GhostdagData,
         pruning_depth: u64,
         pruning_finality: u64,
     ) -> anyhow::Result<HashValue> {
-        let pruning_ghostdata = self.ghost_dag_store.get_data(dag_state.pruning_point)?;
+        let pruning_ghostdata = self.ghost_dag_store.get_data(pruning_point)?;
         let min_required_blue_score_for_next_pruning_point =
             (self.finality_score(pruning_ghostdata.blue_score, pruning_finality) + 1)
                 * pruning_finality;
@@ -80,7 +81,7 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
             .get_compact_data(dag_state.pruning_point)?;
         if min_required_blue_score_for_next_pruning_point + pruning_depth <= ghostdata.blue_score {
             for child in self.reachability_service().forward_chain_iterator(
-                dag_state.pruning_point,
+                pruning_point,
                 ghostdata.selected_parent,
                 true,
             ) {
@@ -107,7 +108,7 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
         }
 
         if latest_pruning_ghost_data.selected_parent == HashValue::new(ORIGIN) {
-            anyhow::Ok(dag_state.pruning_point) // still genesis
+            anyhow::Ok(pruning_point) // still genesis
         } else {
             anyhow::Ok(latest_pruning_ghost_data.selected_parent)
         }
