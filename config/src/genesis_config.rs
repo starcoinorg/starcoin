@@ -494,6 +494,13 @@ impl ChainNetwork {
         &self.genesis_config
     }
 
+    pub fn pruning_config(&self) -> (u64, u64) {
+        (
+            self.genesis_config.pruning_depth,
+            self.genesis_config.pruning_finality,
+        )
+    }
+
     pub fn time_service(&self) -> Arc<dyn TimeService> {
         self.time_service.clone()
     }
@@ -653,6 +660,9 @@ pub struct GenesisConfig {
 
     /// pruning finality
     pub pruning_finality: u64,
+
+    /// block header version
+    pub block_header_version: starcoin_types::block::Version,
 }
 
 impl GenesisConfig {
@@ -799,6 +809,7 @@ pub static G_DAG_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         transaction_timeout: ONE_DAY,
         pruning_depth: 17280,
         pruning_finality: 8640,
+        block_header_version: 1,
     }
 });
 
@@ -851,6 +862,7 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         transaction_timeout: ONE_DAY,
         pruning_depth: 17280,
         pruning_finality: 8640,
+        block_header_version: 1,
     }
 });
 
@@ -906,6 +918,7 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         transaction_timeout: ONE_DAY,
         pruning_depth: 17280,
         pruning_finality: 8640,
+        block_header_version: 1,
     }
 });
 
@@ -966,6 +979,7 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         transaction_timeout: ONE_DAY,
         pruning_depth: 17280,
         pruning_finality: 8640,
+        block_header_version: 1,
     }
 });
 
@@ -1027,6 +1041,7 @@ pub static G_PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         // todo: rollback it to zero and initialize BlockDag properly
         pruning_depth: 17280,
         pruning_finality: 8640,
+        block_header_version: 1,
     }
 });
 
@@ -1086,6 +1101,7 @@ pub static G_BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         transaction_timeout: ONE_DAY,
         pruning_depth: 17280,
         pruning_finality: 8640,
+        block_header_version: 1,
     }
 });
 
@@ -1159,6 +1175,7 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         transaction_timeout: ONE_DAY,
         pruning_depth: 17280,
         pruning_finality: 8640,
+        block_header_version: 1,
     }
 });
 
@@ -1216,6 +1233,7 @@ pub static G_VEGA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         transaction_timeout: ONE_DAY,
         pruning_depth: 17280,
         pruning_finality: 8640,
+        block_header_version: 1,
     }
 });
 

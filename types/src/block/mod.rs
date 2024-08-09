@@ -506,13 +506,13 @@ impl BlockHeader {
         Self::check_upgrade(self.number(), self.chain_id())
     }
 
-    fn check_upgrade(number: BlockNumber, chain_id: ChainId) -> bool {
+    pub fn check_upgrade(number: BlockNumber, chain_id: ChainId) -> bool {
         if number == 0 {
             false
         } else if chain_id.is_vega() {
-            number >= 2300000
+            number >= 3000000
         } else if chain_id.is_halley() {
-            number >= 2100000
+            number >= 2800000
         } else if chain_id.is_proxima() {
             number >= 200
         } else {
