@@ -4,6 +4,7 @@
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
 };
+use move_model::ty::ReferenceKind;
 use move_model::{
     ast::Attribute,
     model::{FunctionEnv, GlobalEnv, Loc, ModuleEnv, QualifiedId, StructId},
@@ -58,7 +59,7 @@ impl<'a> ExtendedChecker<'a> {
 
     fn has_attribute_iter(
         &self,
-        mut attrs: impl Iterator<Item = &'a Attribute>,
+        mut attrs: impl Iterator<Item=&'a Attribute>,
         attr_name: &str,
     ) -> bool {
         attrs.any(|attr| {
@@ -127,10 +128,11 @@ impl<'a> ExtendedChecker<'a> {
             Primitive(_) | TypeParameter(_) => {
                 // Any primitive type allowed, any parameter expected to instantiate with primitive
             }
-            //todo(simon): give it a try to change me to Reference(ReferenceKind::Immutable, bt)
-            Reference(false, bt) if matches!(bt.as_ref(), Primitive(PrimitiveType::Signer)) => {
-                // Reference to signer allowed
-            }
+            Reference(ReferenceKind::Immutable, bt)
+            if matches!(bt.as_ref(), Primitive(PrimitiveType::Signer)) =>
+                {
+                    // Reference to signer allowed
+                }
             Vector(ety) => {
                 // Vectors are allowed if element type is allowed
                 self.check_transaction_input_type(loc, ety)
