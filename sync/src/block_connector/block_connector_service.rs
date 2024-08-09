@@ -15,7 +15,6 @@ use crate::tasks::{BlockConnectedEvent, BlockConnectedFinishEvent, BlockDiskChec
 use anyhow::{bail, format_err, Ok, Result};
 use network_api::PeerProvider;
 use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
-use starcoin_config::genesis_config::G_DAG_TEST_CONFIG;
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
@@ -377,21 +376,23 @@ where
     fn handle(
         &mut self,
         _msg: MinerRequest,
-        _ctx: &mut ServiceContext<Self>,
+        ctx: &mut ServiceContext<Self>,
     ) -> <MinerRequest as ServiceRequest>::Response {
         let main = self.chain_service.get_main();
         let dag = self.chain_service.get_dag();
         let epoch = main.epoch().clone();
         let strategy = epoch.strategy();
         let on_chain_block_gas_limit = epoch.block_gas_limit();
+        let (pruning_depth, pruning_finality) = ctx
+            .get_shared::<Arc<NodeConfig>>()?
+            .base()
+            .net()
+            .pruning_config();
         let MineNewDagBlockInfo {
             tips,
             blue_blocks,
             pruning_point,
-        } = dag.calc_mergeset_and_tips(
-            G_DAG_TEST_CONFIG.pruning_depth,
-            G_DAG_TEST_CONFIG.pruning_finality,
-        )?;
+        } = dag.calc_mergeset_and_tips(pruning_depth, pruning_finality)?;
         if blue_blocks.is_empty() {
             bail!("failed to get the blue blocks from the DAG");
         }

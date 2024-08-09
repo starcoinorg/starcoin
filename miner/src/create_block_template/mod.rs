@@ -21,7 +21,7 @@ use starcoin_storage::{Storage, Store};
 use starcoin_sync::block_connector::{BlockConnectorService, MinerRequest, MinerResponse};
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_types::block::{Block, BlockHeader, BlockTemplate};
+use starcoin_types::block::{Block, BlockHeader, BlockTemplate, Version};
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::cmp::min;
 use std::sync::Arc;
@@ -106,9 +106,14 @@ impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
     fn handle(
         &mut self,
         _msg: BlockTemplateRequest,
-        _ctx: &mut ServiceContext<Self>,
+        ctx: &mut ServiceContext<Self>,
     ) -> Result<BlockTemplateResponse> {
-        self.inner.create_block_template()
+        let header_version = ctx
+            .get_shared::<Arc<NodeConfig>>()?
+            .net()
+            .genesis_config()
+            .block_header_version;
+        self.inner.create_block_template(header_version)
     }
 }
 
@@ -173,7 +178,7 @@ where
         })
     }
 
-    pub fn create_block_template(&self) -> Result<BlockTemplateResponse> {
+    pub fn create_block_template(&self, version: Version) -> Result<BlockTemplateResponse> {
         let MinerResponse {
             previous_header,
             tips_hash,
@@ -230,6 +235,14 @@ where
             now_millis,
         );
 
+        let header_version =
+            if BlockHeader::check_upgrade(previous_header.number() + 1, previous_header.chain_id())
+            {
+                version
+            } else {
+                0
+            };
+
         let mut opened_block = OpenedBlock::new(
             self.storage.clone(),
             previous_header.clone(),
@@ -242,7 +255,7 @@ where
             self.vm_metrics.clone(),
             tips_hash,
             blue_blocks,
-            0,
+            header_version,
             pruning_point,
         )?;
 
