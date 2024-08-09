@@ -63,7 +63,10 @@ impl TransactionMetadata {
         let gas_token_code = match gas_token_code {
             Ok(gas_token_code) => gas_token_code,
             Err(_) => {
-                return Err(VMStatus::error(StatusCode::BAD_TRANSACTION_FEE_CURRENCY, None));
+                return Err(VMStatus::error(
+                    StatusCode::BAD_TRANSACTION_FEE_CURRENCY,
+                    None,
+                ));
             }
         };
 

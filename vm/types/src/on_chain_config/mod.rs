@@ -22,6 +22,7 @@ mod flexi_dag_config;
 mod gas_schedule;
 mod genesis_gas_schedule;
 mod move_lang_version;
+mod timestamp;
 mod version;
 mod vm_config;
 
@@ -40,6 +41,7 @@ pub use self::{
         v4_native_table, G_LATEST_INSTRUCTION_TABLE, G_LATEST_NATIVE_TABLE,
     },
     move_lang_version::MoveLanguageVersion,
+    timestamp::CurrentTimeMicroseconds,
     version::{version_config_type_tag, Version, G_VERSION_CONFIG_IDENTIFIER},
     vm_config::*,
 };

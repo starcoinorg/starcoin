@@ -26,6 +26,7 @@ schemars = { workspace = true }
 starcoin-accumulator = { workspace = true }
 starcoin-crypto = { workspace = true }
 vm = { workspace = true }
+bytes = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }
