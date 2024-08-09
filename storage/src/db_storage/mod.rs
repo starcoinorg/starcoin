@@ -478,16 +478,6 @@ impl InnerStore for DBStorage {
 
 // Raw Db Operations
 impl DBStorage {
-    pub fn raw_iterator_cf_opt(
-        &self,
-        prefix_name: &str,
-        mode: IteratorMode,
-        readopts: ReadOptions,
-    ) -> Result<DBIterator> {
-        let cf_handle = self.get_cf_handle(prefix_name)?;
-        Ok(self.db.iterator_cf_opt(cf_handle, readopts, mode))
-    }
-
     pub fn raw_iterator_opt(&self, mode: IteratorMode, readopts: ReadOptions) -> DBIterator {
         self.db.iterator_opt(mode, readopts)
     }

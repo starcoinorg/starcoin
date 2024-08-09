@@ -114,7 +114,7 @@ impl DbRelationsStore {
         // Update `children` for each parent
         for parent in parents.iter().cloned() {
             self.children_access
-                .write(BatchDbWriter::new(batch), parent, hash)?;
+                .write(BatchDbWriter::new(batch, &self.db), parent, hash)?;
         }
 
         Ok(())

@@ -14,7 +14,7 @@ use crate::ghostdag::protocol::GhostdagManager;
 use crate::{process_key_already_error, reachability};
 use anyhow::{bail, Ok};
 use parking_lot::RwLock;
-use starcoin_config::{temp_dir, RocksdbConfig};
+use starcoin_config::temp_dir;
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_logger::prelude::{debug, info};
 use starcoin_types::block::BlockHeader;
