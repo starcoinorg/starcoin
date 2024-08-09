@@ -2,13 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::util::make_native_from_func;
-use move_binary_format::errors::{PartialVMError, PartialVMResult};
-use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
-use move_core_types::vm_status::StatusCode;
+use move_binary_format::errors::PartialVMResult;
+use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::loaded_data::runtime_types::Type;
 use move_vm_types::natives::function::NativeResult;
-use move_vm_types::pop_arg;
 use move_vm_types::values::Value;
 use smallvec::smallvec;
 use std::collections::VecDeque;
@@ -18,6 +16,7 @@ use std::collections::VecDeque;
 // DO NOT PUT HELPER FUNCTIONS HERE!
 
 /// Abort code when from_bytes fails (0x01 == INVALID_ARGUMENT)
+#[allow(dead_code)]
 const EFROM_BYTES: u64 = 0x01_0001;
 
 /***************************************************************************************************
@@ -29,7 +28,7 @@ const EFROM_BYTES: u64 = 0x01_0001;
 
 fn native_from_bytes(
     gas_params: &GasParameters,
-    context: &mut NativeContext,
+    _context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {

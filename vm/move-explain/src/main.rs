@@ -2,9 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use clap::Parser;
-use move_core_types::{
-    account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
-};
 #[derive(Debug, Parser)]
 #[clap(
     name = "Move Explain",

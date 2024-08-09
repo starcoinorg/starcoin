@@ -1,9 +1,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use move_core_types::{
-    errmap::{ErrorDescription, ErrorMapping},
-};
+use move_core_types::errmap::{ErrorDescription, ErrorMapping};
 
 /// Given the module ID and the abort code raised from that module, returns the human-readable
 /// explanation of that abort if possible.

@@ -6,7 +6,6 @@
 //! gas schedule.
 
 use crate::gas_meter::EXECUTION_GAS_MULTIPLIER as MUL;
-use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::{
     InternalGas, InternalGasPerAbstractMemoryUnit, InternalGasPerArg, InternalGasPerByte,
 };

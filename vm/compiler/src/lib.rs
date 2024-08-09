@@ -189,8 +189,7 @@ pub fn compile_source_string_no_report(
     for dep in deps {
         windows_line_ending_to_unix_in_file(dep)?;
     }
-    let flags = Flags::empty()
-        .set_sources_shadow_deps(true);
+    let flags = Flags::empty().set_sources_shadow_deps(true);
     let compiler = move_compiler::Compiler::from_files(
         targets,
         deps.to_vec(),

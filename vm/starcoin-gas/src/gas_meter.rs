@@ -5,6 +5,7 @@
 //! parameters and traits to help manipulate them.
 
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
+use move_binary_format::file_format::CodeOffset;
 use move_core_types::gas_algebra::{
     AbstractMemorySize, InternalGasPerAbstractMemoryUnit, InternalGasPerArg, InternalGasPerByte,
     NumArgs, NumTypeNodes,
@@ -22,7 +23,6 @@ use starcoin_gas_algebra_ext::{
 #[cfg(testing)]
 use starcoin_logger::prelude::*;
 use std::collections::BTreeMap;
-use move_binary_format::file_format::CodeOffset;
 
 use move_binary_format::file_format_common::Opcodes;
 use move_core_types::account_address::AccountAddress;
@@ -229,7 +229,6 @@ fn simple_instr_to_opcode(instr: SimpleInstruction) -> Opcodes {
     match instr {
         SimpleInstruction::Nop => Opcodes::NOP,
         SimpleInstruction::Ret => Opcodes::RET,
-
 
         SimpleInstruction::LdU8 => Opcodes::LD_U8,
         SimpleInstruction::LdU64 => Opcodes::LD_U64,
