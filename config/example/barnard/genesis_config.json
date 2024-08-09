@@ -400,5 +400,6 @@
   "time_service_type": "RealTimeService",
   "transaction_timeout": 86400,
   "pruning_depth": 17280,
-  "pruning_finality": 8640
+  "pruning_finality": 8640,
+  "block_header_version": 1
 }
