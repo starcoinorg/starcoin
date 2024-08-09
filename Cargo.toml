@@ -79,7 +79,6 @@ members = [
     "vm/parallel-executor",
     "vm/transaction-builder",
     "vm/transaction-builder-generator",
-    "vm/move-coverage",
     "vm/resource-viewer",
     "vm/starcoin-gas",
     "vm/dev",
@@ -91,7 +90,6 @@ members = [
     "vm/parallel-executor",
     "vm/transaction-benchmarks",
     "vm/e2e-tests",
-    "vm/proptest-helpers",
     "abi/types",
     "abi/decoder",
     "abi/resolver",
@@ -191,7 +189,6 @@ default-members = [
     "vm/parallel-executor",
     "vm/transaction-builder",
     "vm/transaction-builder-generator",
-    "vm/move-coverage",
     "vm/resource-viewer",
     "vm/starcoin-gas",
     "vm/dev",
@@ -343,31 +340,33 @@ log4rs = { version = "1.2.0", features = ["background_rotation", "gzip"] }
 lru = "0.7.8"
 merkletree = { version = "0.22.1" }
 mirai-annotations = "1.10.1"
-move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "905484b15b2a2218013fdb2c034f1d7898d29a25" }
-move-bytecode-source-map = { git = "https://github.com/starcoinorg/move", rev = "905484b15b2a2218013fdb2c034f1d7898d29a25" }
-move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "905484b15b2a2218013fdb2c034f1d7898d29a25" }
-move-cli = { git = "https://github.com/starcoinorg/move", rev = "905484b15b2a2218013fdb2c034f1d7898d29a25" }
-move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "905484b15b2a2218013fdb2c034f1d7898d29a25" }
-move-compiler = { git = "https://github.com/starcoinorg/move", rev = "905484b15b2a2218013fdb2c034f1d7898d29a25" }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "905484b15b2a2218013fdb2c034f1d7898d29a25" }
-move-coverage = { git = "https://github.com/starcoinorg/move", rev = "905484b15b2a2218013fdb2c034f1d7898d29a25" }
-move-disassembler = { git = "https://github.com/starcoinorg/move", rev = "905484b15b2a2218013fdb2c034f1d7898d29a25" }
-move-docgen = { git = "https://github.com/starcoinorg/move", rev = "905484b15b2a2218013fdb2c034f1d7898d29a25" }
-move-errmapgen = { git = "https://github.com/starcoinorg/move", rev = "905484b15b2a2218013fdb2c034f1d7898d29a25" }
-move-ir-compiler = { git = "https://github.com/starcoinorg/move", rev = "905484b15b2a2218013fdb2c034f1d7898d29a25" }
-move-ir-types = { git = "https://github.com/starcoinorg/move", rev = "905484b15b2a2218013fdb2c034f1d7898d29a25" }
-move-model = { git = "https://github.com/starcoinorg/move", rev = "905484b15b2a2218013fdb2c034f1d7898d29a25" }
-move-package = { git = "https://github.com/starcoinorg/move", rev = "905484b15b2a2218013fdb2c034f1d7898d29a25" }
-move-prover = { git = "https://github.com/starcoinorg/move", rev = "905484b15b2a2218013fdb2c034f1d7898d29a25" }
-move-prover-test-utils = { git = "https://github.com/starcoinorg/move", rev = "905484b15b2a2218013fdb2c034f1d7898d29a25" }
-move-resource-viewer = { git = "https://github.com/starcoinorg/move", rev = "905484b15b2a2218013fdb2c034f1d7898d29a25" }
-move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "905484b15b2a2218013fdb2c034f1d7898d29a25" }
-move-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "905484b15b2a2218013fdb2c034f1d7898d29a25" }
-move-unit-test = { git = "https://github.com/starcoinorg/move", rev = "905484b15b2a2218013fdb2c034f1d7898d29a25", features = ["table-extension"] }
-move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "905484b15b2a2218013fdb2c034f1d7898d29a25" }
-move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "905484b15b2a2218013fdb2c034f1d7898d29a25" }
-move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "905484b15b2a2218013fdb2c034f1d7898d29a25" }
-move-vm-test-utils = { git = "https://github.com/starcoinorg/move", rev = "905484b15b2a2218013fdb2c034f1d7898d29a25", features = ["table-extension"] }
+
+# Move dependencies
+move-binary-format = { path = "../move/language/move-binary-format" }
+move-bytecode-source-map = { path = "../move/language/move-ir-compiler/move-bytecode-source-map" }
+move-bytecode-verifier = { path = "../move/language/move-bytecode-verifier" }
+move-cli = { path = "../move/language/tools/move-cli" }
+move-command-line-common = { path = "../move/language/move-command-line-common" }
+move-compiler = { path = "../move/language/move-compiler" }
+move-core-types = { path = "../move/language/move-core/types" }
+move-coverage = { path = "../move/language/tools/move-coverage" }
+move-disassembler = { path = "../move/language/tools/move-disassembler" }
+move-docgen = { path = "../move/language/move-prover/move-docgen" }
+move-errmapgen = { path = "../move/language/move-prover/move-errmapgen" }
+move-ir-compiler = { path = "../move/language/move-ir-compiler" }
+move-ir-types = { path = "../move/language/move-ir/types" }
+move-model = { path = "../move/language/move-model" }
+move-package = { path = "../move/language/tools/move-package" }
+move-prover = { path = "../move/language/move-prover" }
+move-prover-test-utils = { path = "../move/language/move-prover/test-utils" }
+move-resource-viewer = { path = "../move/language/tools/move-resource-viewer" }
+move-stdlib = { path = "../move/language/move-stdlib" }
+move-transactional-test-runner = { path = "../move/language/testing-infra/transactional-test-runner" }
+move-unit-test = { path = "../move/language/tools/move-unit-test", features = ["table-extension"] }
+move-vm-runtime = { path = "../move/language/move-vm/runtime" }
+move-vm-types = { path = "../move/language/move-vm/types" }
+move-table-extension = { path = "../move/language/extensions/move-table-extension" }
+move-vm-test-utils = { path = "../move/language/move-vm/test-utils", features = ["table-extension"] }
 
 names = { version = "0.14.0", default-features = false }
 network-api = { path = "network/api", package = "network-api" }
@@ -535,7 +534,7 @@ unsigned-varint = { version = "0.6.0", features = [
     "futures",
     "asynchronous_codec",
 ] }
-vm = { package = "move-binary-format", git = "https://github.com/starcoinorg/move", rev = "905484b15b2a2218013fdb2c034f1d7898d29a25", features = ["fuzzing"] }
+vm = { path = "../move/language/move-binary-format", package = "move-binary-format", features = ["fuzzing"] }
 vm-status-translator = { path = "vm/vm-status-translator" }
 void = "1.0.2"
 walkdir = "2.3.1"
