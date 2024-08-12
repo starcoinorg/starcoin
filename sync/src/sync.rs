@@ -4,10 +4,13 @@
 use crate::block_connector::BlockConnectorService;
 use crate::store::sync_dag_store::{SyncDagStore, SyncDagStoreConfig};
 use crate::sync_metrics::SyncMetrics;
-use crate::tasks::{full_sync_task, AncestorEvent, BlockCollector, BlockConnectAction, BlockFetcher, BlockIdFetcher, SyncFetcher};
+use crate::tasks::{
+    full_sync_task, AncestorEvent, BlockCollector, BlockConnectAction, BlockFetcher,
+    BlockIdFetcher, SyncFetcher,
+};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
-use anyhow::{bail, format_err, Ok, Result};
-use futures::FutureExt;
+use anyhow::{bail, format_err, Result};
+use futures::{FutureExt, TryFutureExt};
 use futures_timer::Delay;
 use network_api::peer_score::PeerScoreMetrics;
 use network_api::{PeerId, PeerProvider, PeerSelector, PeerStrategy, ReputationChange};
@@ -182,7 +185,8 @@ impl SyncService {
         )))
     }
 
-    pub fn sync_dag_blocks(&mut self,
+    pub fn sync_dag_blocks(
+        &mut self,
         peers: Vec<PeerId>,
         skip_pow_verify: bool,
         peer_strategy: Option<PeerStrategy>,
@@ -213,7 +217,13 @@ impl SyncService {
                 storage.get_block_info(current_block_id)?.ok_or_else(|| {
                     format_err!("Can not find block info by id: {}", current_block_id)
                 })?;
-            let chain = BlockChain::new(time_service, current_block_id, self.storage.clone(), vm_metrics, dag.clone())?;
+            let chain = BlockChain::new(
+                time_service,
+                current_block_id,
+                storage.clone(),
+                vm_metrics,
+                dag.clone(),
+            )?;
             let rpc_client = Self::create_verified_client(
                 network.clone(),
                 config.clone(),
@@ -225,6 +235,7 @@ impl SyncService {
             if let Some(target) =
                 rpc_client.get_best_target(current_block_info.get_total_difficulty())?
             {
+                info!("selected tagert: {:?}", target);
                 let mut block_collector = BlockCollector::new_with_handle(
                     current_block_info,
                     target.clone(),
@@ -232,12 +243,17 @@ impl SyncService {
                     connector_service.clone(),
                     network,
                     skip_pow_verify,
-                    self.storage.clone(),
+                    storage.clone(),
                     rpc_client.clone(),
-                    self.sync_dag_store.clone(),
+                    sync_dag_store.clone(),
                 );
 
-                let (target_block, peer_id) = rpc_client.fetch_blocks(vec![target.block_info.id()]).await?.first().ok_or_else(|| format_err!("Empty target block header."))?.clone();
+                let (target_block, peer_id) = rpc_client
+                    .fetch_blocks(vec![target.block_info.id()])
+                    .await?
+                    .first()
+                    .ok_or_else(|| format_err!("Empty target block header."))?
+                    .clone();
 
                 block_collector.ensure_dag_parent_blocks_exist(target_block.header().clone())?;
 
@@ -248,19 +264,27 @@ impl SyncService {
                     })?;
                     BlockConnectAction::ConnectExecutedBlock
                 } else {
-                    block_collector.apply_block(target_block, peer_id)?;
+                    block_collector.apply_block(target_block.clone(), peer_id)?;
                     BlockConnectAction::ConnectNewBlock
                 };
-                block_collector.notify_connected_block(target_block, target.block_info, action, CollectorState::Enough)?;
+                block_collector.notify_connected_block(
+                    target_block,
+                    target.block_info,
+                    action,
+                    CollectorState::Enough,
+                )?;
             }
 
             Ok(())
         };
-        ctx.spawn(fut);
+        ctx.spawn(fut.then(|result: Result<(), anyhow::Error>| {
+            async move {
+                info!("finish sync with result: {:?}", result);
+            }
+        }));
 
         Ok(())
     }
-
 
     pub fn check_and_start_sync(
         &mut self,
@@ -642,12 +666,10 @@ impl EventHandler<Self, CheckSyncEvent> for SyncService {
         // {
         //     error!("[sync] Check sync error: {:?}", e);
         // };
-        if let Err(e) = self.check_and_start_sync(msg.peers, msg.skip_pow_verify, msg.strategy, ctx)
+        if let Err(e) = self.sync_dag_blocks(msg.peers, msg.skip_pow_verify, msg.strategy, ctx)
         {
             error!("[sync] Check sync error: {:?}", e);
-        };
-
-
+        }
     }
 }
 
