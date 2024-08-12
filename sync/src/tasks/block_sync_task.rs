@@ -273,7 +273,12 @@ where
         self.apply_block(block, None)
     }
 
-    fn notify_connected_block(
+    pub fn connect(&mut self, executed_block: ExecutedBlock) -> Result<()> {
+        let _ = self.chain.connect(executed_block)?;
+        Ok(())
+    }
+
+    pub fn notify_connected_block(
         &mut self,
         block: Block,
         block_info: BlockInfo,
@@ -336,7 +341,7 @@ where
         Ok(state)
     }
 
-    fn apply_block(&mut self, block: Block, peer_id: Option<PeerId>) -> Result<()> {
+    pub fn apply_block(&mut self, block: Block, peer_id: Option<PeerId>) -> Result<()> {
         let apply_result = if self.skip_pow_verify {
             self.chain
                 .apply_with_verifier::<BasicVerifier>(block.clone())
@@ -500,7 +505,7 @@ where
         anyhow::Result::Ok(())
     }
 
-    async fn fetch_blocks(&self, mut block_ids: Vec<HashValue>) -> Result<Vec<BlockHeader>> {
+    pub async fn fetch_blocks(&self, mut block_ids: Vec<HashValue>) -> Result<Vec<BlockHeader>> {
         let mut result = vec![];
         block_ids.retain(|id| {
             match self.local_store.get_dag_sync_block(*id) {
