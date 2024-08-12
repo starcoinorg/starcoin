@@ -39,7 +39,7 @@ use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemS
 use std::result::Result::Ok;
 use std::sync::Arc;
 use std::time::Duration;
-use stream_task::{CollectorState, TaskError, TaskEventCounterHandle, TaskHandle};
+use stream_task::{CollectorState, TaskError, TaskEventCounterHandle, TaskFuture, TaskHandle};
 
 const REPUTATION_THRESHOLD: i32 = -1000;
 
@@ -211,19 +211,22 @@ impl SyncService {
         let fut = async move {
             let startup_info = storage
                 .get_startup_info()?
-                .ok_or_else(|| format_err!("Startup info should exist."))?;
+                .ok_or_else(|| format_err!("Startup info should exist."))
+                .map_err(TaskError::BreakError)?;
             let current_block_id = startup_info.main;
-            let current_block_info =
-                storage.get_block_info(current_block_id)?.ok_or_else(|| {
-                    format_err!("Can not find block info by id: {}", current_block_id)
-                })?;
+            let current_block_info = storage
+                .get_block_info(current_block_id)
+                .map_err(TaskError::BreakError)?
+                .ok_or_else(|| format_err!("Can not find block info by id: {}", current_block_id))
+                .map_err(TaskError::BreakError)?;
             let chain = BlockChain::new(
                 time_service,
                 current_block_id,
                 storage.clone(),
                 vm_metrics,
                 dag.clone(),
-            )?;
+            )
+            .map_err(TaskError::BreakError)?;
             let rpc_client = Self::create_verified_client(
                 network.clone(),
                 config.clone(),
@@ -231,56 +234,86 @@ impl SyncService {
                 peers,
                 peer_score_metrics,
             )
-            .await?;
-            if let Some(target) =
-                rpc_client.get_best_target(current_block_info.get_total_difficulty())?
+            .await
+            .map_err(TaskError::BreakError)?;
+            let task_rpc_client = rpc_client.clone();
+            if let Some(target) = rpc_client
+                .get_best_target(current_block_info.get_total_difficulty())
+                .map_err(TaskError::BreakError)?
             {
                 info!("selected tagert: {:?}", target);
-                let mut block_collector = BlockCollector::new_with_handle(
-                    current_block_info,
-                    target.clone(),
-                    chain,
-                    connector_service.clone(),
-                    network,
-                    skip_pow_verify,
-                    storage.clone(),
-                    rpc_client.clone(),
-                    sync_dag_store.clone(),
-                );
+                let task_target = target.clone();
+                let inner_fut = async move {
+                    let mut block_collector = BlockCollector::new_with_handle(
+                        current_block_info,
+                        target.clone(),
+                        chain,
+                        connector_service.clone(),
+                        network,
+                        skip_pow_verify,
+                        storage.clone(),
+                        rpc_client.clone(),
+                        sync_dag_store.clone(),
+                    );
 
-                let (target_block, peer_id) = rpc_client
-                    .fetch_blocks(vec![target.block_info.id()])
-                    .await?
-                    .first()
-                    .ok_or_else(|| format_err!("Empty target block header."))?
-                    .clone();
+                    let (target_block, peer_id) = rpc_client
+                        .fetch_blocks(vec![target.block_info.block_id().clone()])
+                        .await
+                        .map_err(TaskError::BreakError)?
+                        .first()
+                        .ok_or_else(|| format_err!("Empty target block header."))
+                        .map_err(TaskError::BreakError)?
+                        .clone();
 
-                block_collector.ensure_dag_parent_blocks_exist(target_block.header().clone())?;
+                    block_collector
+                        .ensure_dag_parent_blocks_exist(target_block.header().clone())
+                        .map_err(TaskError::BreakError)?;
 
-                let action = if dag.has_dag_block(target_block.id())? {
-                    block_collector.connect(ExecutedBlock {
-                        block: target_block.clone(),
-                        block_info: target.block_info.clone(),
-                    })?;
-                    BlockConnectAction::ConnectExecutedBlock
-                } else {
-                    block_collector.apply_block(target_block.clone(), peer_id)?;
-                    BlockConnectAction::ConnectNewBlock
+                    let action = if dag
+                        .has_dag_block(target_block.id())
+                        .map_err(TaskError::BreakError)?
+                    {
+                        block_collector
+                            .connect(ExecutedBlock {
+                                block: target_block.clone(),
+                                block_info: target.block_info.clone(),
+                            })
+                            .map_err(TaskError::BreakError)?;
+                        BlockConnectAction::ConnectExecutedBlock
+                    } else {
+                        block_collector
+                            .apply_block(target_block.clone(), peer_id)
+                            .map_err(TaskError::BreakError)?;
+                        BlockConnectAction::ConnectNewBlock
+                    };
+                    block_collector
+                        .notify_connected_block(
+                            target_block,
+                            target.block_info,
+                            action,
+                            CollectorState::Enough,
+                        )
+                        .map_err(TaskError::BreakError)?;
+
+                    Ok(())
                 };
-                block_collector.notify_connected_block(
-                    target_block,
-                    target.block_info,
-                    action,
-                    CollectorState::Enough,
-                )?;
+                let (fut, task_handle) = TaskFuture::new(inner_fut.boxed()).with_handle();
+                let task_event_handle = Arc::new(TaskEventCounterHandle::new());
+                self_ref.notify(SyncBeginEvent {
+                    target: task_target,
+                    task_handle,
+                    task_event_handle,
+                    peer_selector: task_rpc_client.selector().clone(),
+                })?;
+                fut.await
+                    .map_err(|e| format_err!("sync dag blocks error: {:?}", e))
+            } else {
+                bail!("No best peer to request, current is best.");
             }
-
-            Ok(())
         };
-        ctx.spawn(fut.then(|result: Result<(), anyhow::Error>| {
-            async move {
-                info!("finish sync with result: {:?}", result);
-            }
+
+        ctx.spawn(fut.then(|result: Result<(), anyhow::Error>| async move {
+            info!("finish sync with result: {:?}", result);
         }));
 
         Ok(())
@@ -666,8 +699,7 @@ impl EventHandler<Self, CheckSyncEvent> for SyncService {
         // {
         //     error!("[sync] Check sync error: {:?}", e);
         // };
-        if let Err(e) = self.sync_dag_blocks(msg.peers, msg.skip_pow_verify, msg.strategy, ctx)
-        {
+        if let Err(e) = self.sync_dag_blocks(msg.peers, msg.skip_pow_verify, msg.strategy, ctx) {
             error!("[sync] Check sync error: {:?}", e);
         }
     }
