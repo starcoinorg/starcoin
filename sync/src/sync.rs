@@ -5,8 +5,7 @@ use crate::block_connector::BlockConnectorService;
 use crate::store::sync_dag_store::{SyncDagStore, SyncDagStoreConfig};
 use crate::sync_metrics::SyncMetrics;
 use crate::tasks::{
-    full_sync_task, AncestorEvent, BlockCollector, BlockConnectAction, BlockFetcher,
-    BlockIdFetcher, SyncFetcher,
+    full_sync_task, AncestorEvent, BlockCollector, BlockConnectAction, BlockFetcher, BlockIdFetcher, PeerOperator, SyncFetcher
 };
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
 use anyhow::{bail, format_err, Result};
@@ -276,6 +275,7 @@ impl SyncService {
                 .map_err(TaskError::BreakError)?
             {
                 info!("selected tagert: {:?}", target);
+                rpc_client.peer_selector().retain(target.peers.as_slice());
                 let task_target = target.clone();
                 let inner_fut = async move {
                     let mut block_collector = BlockCollector::new_with_handle(
