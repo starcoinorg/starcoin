@@ -30,7 +30,7 @@ spec:
           - -c
         args:
           -
-            rm -rf /sc-data/halley/starcoin.ipc /sc-data/halley/starcoindb/db/starcoindb/LOCK;
+            rm -rf /sc-data/halley/starcoin.ipc /sc-data/halley/starcoindb/db/starcoindb/LOCK /sc-data/halley/genesis_config.json;
             id=$(echo -e $POD_NAME|awk -F'-' '{print $2}') && IFS='; ' read -r -a node_keys <<< $NODE_KEYS &&
             node_key=${node_keys[$id]};
             if [ ! -z $node_key ]; then
