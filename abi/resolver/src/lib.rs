@@ -382,7 +382,8 @@ mod tests {
             }
         }
     }
-    impl StateView for InMemoryStateView {
+    impl TStateView for InMemoryStateView {
+        type Key = StateKey;
         fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
             match state_key {
                 StateKey::AccessPath(access_path) => {

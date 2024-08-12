@@ -21,7 +21,7 @@ use starcoin_types::vm_error::StatusCode;
 use starcoin_vm_types::errors::{Location, PartialVMError, PartialVMResult, VMResult};
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::table::TableHandle as StarcoinTableHandle;
-use starcoin_vm_types::state_view::StateView;
+use starcoin_vm_types::state_view::{StateView, TStateView};
 use starcoin_vm_types::write_set::WriteSet;
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -384,7 +384,9 @@ impl TableResolver for RemoteViewer {
     }
 }
 
-impl StateView for RemoteViewer {
+impl TStateView for RemoteViewer {
+    type Key = StateKey;
+
     fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
         match state_key {
             StateKey::AccessPath(access_path) => match &access_path.path {

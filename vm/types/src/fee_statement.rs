@@ -24,9 +24,7 @@ impl FeeStatement {
         }
     }
 
-    pub fn new(
-        total_charge_gas_units: u64,
-    ) -> Self {
+    pub fn new(total_charge_gas_units: u64) -> Self {
         Self {
             total_charge_gas_units,
         }
@@ -39,4 +37,3 @@ impl FeeStatement {
         self.total_charge_gas_units += other.total_charge_gas_units;
     }
 }
-

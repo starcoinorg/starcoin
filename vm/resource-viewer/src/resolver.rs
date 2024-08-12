@@ -54,10 +54,11 @@ impl<'a> Resolver<'a> {
             return Ok(module);
         }
         let access_path = AccessPath::from(&module_id);
-        let blob = self
+        let binding = self
             .state
-            .get_state_value(&StateKey::AccessPath(access_path))?
+            .get_state_value_bytes(&StateKey::AccessPath(access_path))?
             .ok_or_else(|| anyhow!("Module {:?} can't be found", module_id))?;
+        let blob = binding.as_ref();
         let compiled_module = CompiledModule::deserialize(&blob).map_err(|status| {
             anyhow!(
                 "Module {:?} deserialize with error code {:?}",

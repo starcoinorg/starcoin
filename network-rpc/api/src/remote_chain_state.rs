@@ -15,7 +15,9 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
 use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::state_value::StateValue;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use starcoin_vm_types::state_view::TStateView;
 
 #[derive(Clone)]
 pub struct RemoteChainStateReader {
@@ -136,17 +138,18 @@ impl ChainStateReader for RemoteChainStateReader {
     }
 }
 
-impl StateView for RemoteChainStateReader {
-    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
+impl TStateView for RemoteChainStateReader {
+    type Key = StateKey;
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>> {
         match state_key {
             StateKey::AccessPath(access_path) => {
                 let state_proof = self.get_with_proof(access_path)?;
-                Ok(state_proof.state)
+                Ok(state_proof.state.into())
             }
             StateKey::TableItem(table_item) => {
                 let state_proof =
                     self.get_with_table_item_proof(&table_item.handle, &table_item.key)?;
-                Ok(state_proof.key_proof.0)
+                Ok(state_proof.key_proof.0.into())
             }
         }
     }

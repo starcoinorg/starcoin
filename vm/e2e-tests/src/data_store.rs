@@ -18,6 +18,7 @@ use starcoin_statedb::ChainStateWriter;
 use starcoin_types::state_set::ChainStateSet;
 use std::collections::HashMap;
 use std::sync::{RwLock, RwLockReadGuard};
+use starcoin_vm_types::state_view::TStateView;
 
 /// Dummy genesis ChangeSet for testing
 // TODO(BobOng): e2e-test
@@ -97,7 +98,8 @@ impl FakeDataStore {
 
 // This is used by the `execute_block` API.
 // TODO: only the "sync" get is implemented
-impl StateView for FakeDataStore {
+impl TStateView for FakeDataStore {
+    type Key = StateKey;
     fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
         Ok(self.inner().get(state_key).cloned())
     }

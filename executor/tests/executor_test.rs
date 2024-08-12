@@ -23,7 +23,7 @@ use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::account_config::AccountResource;
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::on_chain_config::{ConsensusConfig, OnChainConfig};
-use starcoin_vm_types::state_view::StateView;
+use starcoin_vm_types::state_view::{StateView, TStateView};
 use starcoin_vm_types::token::stc::{stc_type_tag, STCUnit};
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::{transaction::Package, vm_status::StatusCode};
@@ -49,7 +49,8 @@ use test_helper::txn::create_account_txn_sent_as_association;
 #[derive(Default)]
 pub struct NullStateView;
 
-impl StateView for NullStateView {
+impl TStateView for NullStateView {
+    type Key = StateKey;
     fn get_state_value(&self, _state_key: &StateKey) -> Result<Option<Vec<u8>>> {
         Err(anyhow!("No data"))
     }

@@ -23,8 +23,8 @@ pub fn locate_execution_failure(
             let ap =
                 AccessPath::code_access_path(*module_id.address(), module_id.name().to_owned());
 
-            match state.get_state_value(&StateKey::AccessPath(ap))? {
-                Some(bytes) => CompiledModule::deserialize(&bytes).ok(),
+            match state.get_state_value_bytes(&StateKey::AccessPath(ap))? {
+                Some(bytes) => CompiledModule::deserialize(&bytes.as_ref()).ok(),
                 None => None,
             }
         }

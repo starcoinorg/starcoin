@@ -30,7 +30,7 @@ use starcoin_vm_types::account_config::TABLE_HANDLE_ADDRESS_LIST;
 use starcoin_vm_types::language_storage::StructTag;
 use starcoin_vm_types::state_store::table::TableInfo;
 use starcoin_vm_types::state_store::{state_key::StateKey, table::TableHandle};
-use starcoin_vm_types::state_view::StateView;
+use starcoin_vm_types::state_view::{StateView, TStateView};
 use std::collections::HashSet;
 use std::convert::TryInto;
 use std::sync::Arc;
@@ -406,7 +406,8 @@ impl ChainStateDB {
     }
 }
 
-impl StateView for ChainStateDB {
+impl TStateView for ChainStateDB {
+    type Key = StateKey;
     fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
         match state_key {
             StateKey::AccessPath(access_path) => {

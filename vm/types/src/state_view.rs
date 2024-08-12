@@ -9,6 +9,7 @@
 //! This crate defines [`trait StateView`](StateView).
 
 use crate::state_store::state_key::StateKey;
+use crate::state_store::state_value::StateValue;
 use crate::{
     access_path::AccessPath,
     account_config::{
@@ -25,38 +26,36 @@ use crate::{
     sips::SIP,
 };
 use anyhow::{format_err, Result};
+use bytes::Bytes;
 use move_core_types::{
     account_address::AccountAddress,
     language_storage::{ModuleId, StructTag},
 };
 use serde::de::DeserializeOwned;
-use std::ops::Deref;
 
-/// `StateView` is a trait that defines a read-only snapshot of the global state. It is passed to
+/// `TStateView` is a trait that defines a read-only snapshot of the global state. It is passed to
 /// the VM for transaction execution, during which the VM is guaranteed to read anything at the
 /// given state.
-pub trait StateView: Sync {
+pub trait TStateView {
+    type Key;
+
+    /// Gets the state value bytes for a given state key.
+    fn get_state_value_bytes(&self, state_key: &Self::Key) -> Result<Option<Bytes>> {
+        let val_opt = self.get_state_value(state_key)?;
+        Ok(val_opt.map(|val| val.bytes().clone()))
+    }
+
     /// Gets the state value for a given state key.
-    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>>;
+    fn get_state_value(&self, state_key: &Self::Key) -> Result<Option<StateValue>>;
 
     /// VM needs this method to know whether the current state view is for genesis state creation.
     /// Currently TransactionPayload::WriteSet is only valid for genesis state creation.
     fn is_genesis(&self) -> bool;
 }
 
-impl<R, S> StateView for R
-where
-    R: Deref<Target = S> + Sync,
-    S: StateView,
-{
-    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
-        self.deref().get_state_value(state_key)
-    }
+pub trait StateView: TStateView<Key = StateKey> {}
 
-    fn is_genesis(&self) -> bool {
-        self.deref().is_genesis()
-    }
-}
+impl<T: TStateView<Key = StateKey>> StateView for T {}
 
 impl<T: ?Sized> StateReaderExt for T where T: StateView {}
 
@@ -82,7 +81,7 @@ pub trait StateReaderExt: StateView {
         let r = self
             .get_state_value(&StateKey::AccessPath(access_path))
             .and_then(|state| match state {
-                Some(state) => Ok(Some(bcs_ext::from_bytes::<R>(state.as_slice())?)),
+                Some(state) => Ok(Some(bcs_ext::from_bytes::<R>(state.bytes())?)),
                 None => Ok(None),
             })?;
         Ok(r)
@@ -119,7 +118,7 @@ pub trait StateReaderExt: StateView {
             )))
             .and_then(|bytes| match bytes {
                 Some(bytes) => Ok(Some(bcs_ext::from_bytes::<BalanceResource>(
-                    bytes.as_slice(),
+                    bytes.bytes(),
                 )?)),
                 None => Ok(None),
             })?
@@ -172,8 +171,8 @@ pub trait StateReaderExt: StateView {
         self.get_resource::<BlockMetadataV2>(genesis_address())
     }
 
-    fn get_code(&self, module_id: ModuleId) -> Result<Option<Vec<u8>>> {
-        self.get_state_value(&StateKey::AccessPath(AccessPath::from(&module_id)))
+    fn get_code(&self, module_id: ModuleId) -> Result<Option<Bytes>> {
+        self.get_state_value_bytes(&StateKey::AccessPath(AccessPath::from(&module_id)))
     }
 
     /// Check the sip is activated. if the sip module exist, think it is activated.

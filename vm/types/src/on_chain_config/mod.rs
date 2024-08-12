@@ -12,6 +12,7 @@ use crate::{
     language_storage::{StructTag, TypeTag},
 };
 use anyhow::{format_err, Result};
+use bytes::Bytes;
 use once_cell::sync::Lazy;
 use serde::de::DeserializeOwned;
 use std::{collections::HashMap, sync::Arc};
@@ -114,17 +115,17 @@ impl OnChainConfigPayload {
 
 /// Trait to be implemented by a storage type from which to read on-chain configs
 pub trait ConfigStorage {
-    fn fetch_config(&self, access_path: AccessPath) -> Option<Vec<u8>>;
+    fn fetch_config(&self, access_path: AccessPath) -> Option<Bytes>;
 }
 
 impl<V> ConfigStorage for V
 where
     V: StateView,
 {
-    fn fetch_config(&self, access_path: AccessPath) -> Option<Vec<u8>> {
+    fn fetch_config(&self, access_path: AccessPath) -> Option<Bytes> {
         self.get_state_value(&StateKey::AccessPath(access_path))
-            .ok()
-            .flatten()
+            .ok()?
+            .map(|s| s.bytes().clone())
     }
 }
 

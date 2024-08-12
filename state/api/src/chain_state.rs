@@ -89,6 +89,7 @@ impl StateProof {
     }
 }
 
+// XXX FIXME YSG, If this need to change
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct StateWithProof {
     pub state: Option<Vec<u8>>,

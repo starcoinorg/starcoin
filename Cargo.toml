@@ -70,6 +70,7 @@ members = [
     "rpc/client",
     "rpc/server",
     "vm/types",
+    "vm/vm-runtime-types",
     "vm/vm-runtime",
     "vm/natives",
     "vm/stdlib",
@@ -182,6 +183,7 @@ default-members = [
     "rpc/client",
     "rpc/server",
     "vm/types",
+    "vm/vm-runtime-types",
     "vm/vm-runtime",
     "vm/natives",
     "vm/stdlib",
@@ -269,7 +271,7 @@ indexmap = "1.9.1"
 bincode = { version = "1", default-features = false }
 bs58 = "0.3.1"
 byteorder = "1.3.4"
-bytes = "1"
+bytes = { version = "1.4.0", features = ["serde"] }
 chrono = { version = "0.4.19", default-features = false, features = ["clock"] }
 clap = { version = "3", features = ["derive"] }
 cli-table = "0.3.2"
@@ -498,6 +500,7 @@ starcoin-txpool-mock-service = { path = "txpool/mock-service" }
 starcoin-types = { path = "types" }
 starcoin-uint = { path = "types/uint" }
 starcoin-vm-runtime = { path = "vm/vm-runtime" }
+starcoin-vm-runtime-types = { path = "vm/vm-runtime-types" }
 starcoin-vm-types = { path = "vm/types" }
 stdlib = { path = "vm/stdlib" }
 stest = { path = "commons/stest" }
