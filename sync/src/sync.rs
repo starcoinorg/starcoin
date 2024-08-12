@@ -192,6 +192,40 @@ impl SyncService {
         peer_strategy: Option<PeerStrategy>,
         ctx: &mut ServiceContext<Self>,
     ) -> Result<()> {
+        let sync_task_total = self
+            .metrics
+            .as_ref()
+            .map(|metrics| metrics.sync_task_total.clone());
+
+        if let Some(sync_task_total) = sync_task_total.as_ref() {
+            sync_task_total.with_label_values(&["check"]).inc();
+        }
+        match std::mem::replace(&mut self.stage, SyncStage::Checking) {
+            SyncStage::NotStart | SyncStage::Done => {
+                //continue
+                info!(
+                    "[sync] Start checking sync,skip_pow_verify:{}, special peers: {:?}",
+                    skip_pow_verify, peers
+                );
+            }
+            SyncStage::Checking => {
+                info!("[sync] Sync stage is already in Checking");
+                return Ok(());
+            }
+            SyncStage::Synchronizing(task_handle) => {
+                info!("[sync] Sync stage is already in Synchronizing");
+                if let Some(report) = task_handle.task_event_handle.get_report() {
+                    info!("[sync] report: {}", report);
+                }
+                //restore to Synchronizing
+                self.stage = SyncStage::Synchronizing(task_handle);
+                return Ok(());
+            }
+            SyncStage::Canceling => {
+                info!("[sync] Sync task is in canceling.");
+                return Ok(());
+            }
+        }
         let network = ctx.get_shared::<NetworkServiceRef>()?;
         let storage = self.storage.clone();
         let self_ref = ctx.self_ref();
