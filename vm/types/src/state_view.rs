@@ -117,9 +117,7 @@ pub trait StateReaderExt: StateView {
                 BalanceResource::access_path_for(type_tag),
             )))
             .and_then(|bytes| match bytes {
-                Some(bytes) => Ok(Some(bcs_ext::from_bytes::<BalanceResource>(
-                    bytes.bytes(),
-                )?)),
+                Some(bytes) => Ok(Some(bcs_ext::from_bytes::<BalanceResource>(bytes.bytes())?)),
                 None => Ok(None),
             })?
             .map(|resource| resource.token()))

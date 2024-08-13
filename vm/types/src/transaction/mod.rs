@@ -33,6 +33,7 @@ use std::{convert::TryFrom, fmt};
 use crate::state_store::state_key::StateKey;
 use crate::state_store::table::{TableHandle, TableInfo};
 use crate::write_set::WriteOp;
+pub use change_set::ChangeSet;
 pub use error::CallError;
 pub use error::Error as TransactionError;
 pub use module::Module;
@@ -59,6 +60,8 @@ mod script;
 #[cfg(test)]
 mod tests;
 mod transaction_argument;
+
+mod change_set;
 
 pub type Version = u64; // Height - also used for MVCC in StateDB
 
@@ -650,6 +653,7 @@ impl From<VMStatus> for TransactionStatus {
 /// The output of executing a transaction.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TransactionOutput {
+    // XXX FIXME YSG
     table_infos: BTreeMap<TableHandle, TableInfo>,
 
     write_set: WriteSet,
