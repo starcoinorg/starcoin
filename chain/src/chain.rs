@@ -320,8 +320,10 @@ impl BlockChain {
             }
         } else {
             self.dag().calc_mergeset_and_tips(
+                &previous_header,
                 G_DAG_TEST_CONFIG.pruning_depth,
                 G_DAG_TEST_CONFIG.pruning_finality,
+                0,
             )?
         };
         debug!(

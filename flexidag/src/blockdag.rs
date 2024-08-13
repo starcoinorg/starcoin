@@ -123,6 +123,7 @@ impl BlockDAG {
         self.commit(genesis, origin)?;
         self.save_dag_state(DagState {
             tips: vec![genesis_id],
+            pruning_point: genesis_id,
         })?;
         Ok(origin)
     }
@@ -518,48 +519,18 @@ impl BlockDAG {
             bail!("pruning point is not correct, the local next pruning point is {}, but the block header pruning point is {}", next_pruning_point, block_header.pruning_point());
         }
         anyhow::Ok(())
+=======
+                Err(_) => {
+                    info!("The dag state will be saved as {:?}", dag_state);
+                    self.storage.state_store.write().insert(dag_state)?;
+                }
+            },
+            Err(_) => {
+                warn!("Cannot get the dag state by genesis id. Might be it is a new node. The dag state will be: {:?}", self.storage.state_store.read().get_state()?);
+>>>>>>> e00426dfc (update dag db)
     }
 
     pub fn verify(
-        &self,
-        pruning_depth: u64,
-        pruning_finality: u64,
-        block_header: &BlockHeader,
-        genesis_id: HashValue,
-    ) -> anyhow::Result<()> {
-        self.verify_pruning_point(pruning_depth, pruning_finality, block_header, genesis_id)
-    }
-
-    pub fn check_upgrade(
-        &self,
-        info: AccumulatorInfo,
-        storage: Arc<dyn Store>,
-    ) -> anyhow::Result<()> {
-        let accumulator = MerkleAccumulator::new_with_info(
-            info,
-            storage.get_accumulator_store(AccumulatorStoreType::Block),
-        );
-
-        let read_guard = self.storage.state_store.read();
-
-        let update_dag_state = match read_guard.get_state_by_hash(
-            accumulator
-                .get_leaf(0)?
-                .ok_or_else(|| format_err!("no leaf when upgrading dag db"))?,
-        ) {
-            anyhow::Result::Ok(dag_state) => match read_guard.get_state() {
-                anyhow::Result::Ok(saved_dag_state) => {
-                    info!("The dag state is {:?}", saved_dag_state);
-                    None
-                }
-                Err(_) => Some(dag_state),
-            },
-            Err(_) => {
-                warn!("Cannot get the dag state by genesis id. Might be it is a new node. The dag state will be: {:?}", read_guard.get_state()?);
-                None
-            }
-        };
-
         drop(read_guard);
 
         if let Some(dag_state) = update_dag_state {

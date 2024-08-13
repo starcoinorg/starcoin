@@ -188,7 +188,7 @@ where
             next_difficulty: difficulty,
             now_milliseconds: mut now_millis,
             pruning_point,
-        } = *block_on(self.block_connector_service.send(MinerRequest {}))??;
+        } = *block_on(self.block_connector_service.send(MinerRequest { version }))??;
 
         let block_gas_limit = self
             .local_block_gas_limit

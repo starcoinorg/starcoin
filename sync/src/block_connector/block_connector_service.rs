@@ -375,7 +375,7 @@ where
 {
     fn handle(
         &mut self,
-        _msg: MinerRequest,
+        msg: MinerRequest,
         ctx: &mut ServiceContext<Self>,
     ) -> <MinerRequest as ServiceRequest>::Response {
         let main = self.chain_service.get_main();
@@ -392,7 +392,12 @@ where
             tips,
             blue_blocks,
             pruning_point,
-        } = dag.calc_mergeset_and_tips(pruning_depth, pruning_finality)?;
+        } = dag.calc_mergeset_and_tips(
+            main.status().head(),
+            pruning_depth,
+            pruning_finality,
+            msg.version,
+        )?;
         if blue_blocks.is_empty() {
             bail!("failed to get the blue blocks from the DAG");
         }
