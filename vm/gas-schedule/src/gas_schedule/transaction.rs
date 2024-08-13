@@ -1,4 +1,4 @@
-// Copyright © Aptos Foundation
+// Copyright (C) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 //! This module defines all the gas parameters for transactions, along with their initial values

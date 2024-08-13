@@ -1,4 +1,4 @@
-// Copyright © Aptos Foundation
+// Copyright (C) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 use starcoin_gas_algebra::{Fee, FeePerGasUnit, Gas, GasExpression, GasScalingFactor, Octa};

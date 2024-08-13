@@ -1,4 +1,4 @@
-// Copyright © Aptos Foundation
+// Copyright (C) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 //! This crate defines all the gas parameters utilized by the Aptos VM & native functions.

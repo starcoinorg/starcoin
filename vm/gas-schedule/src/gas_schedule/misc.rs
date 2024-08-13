@@ -1,4 +1,4 @@
-// Copyright © Aptos Foundation
+// Copyright (C) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 //! This module defines the miscellaneous gas parameters, currently only including the
