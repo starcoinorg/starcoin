@@ -13,9 +13,9 @@ use starcoin_gas_algebra::{
 };
 
 crate::gas_schedule::macros::define_gas_parameters!(
-    AptosFrameworkGasParameters,
-    "aptos_framework",
-    NativeGasParameters => .aptos_framework,
+    StarcoinFrameworkGasParameters,
+    "starcoin_framework",
+    NativeGasParameters => .starcoin_framework,
     [
         [account_create_address_base: InternalGas, "account.create_address.base", 1102],
         [account_create_signer_base: InternalGas, "account.create_signer.base", 1102],
