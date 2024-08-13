@@ -16,9 +16,9 @@ use starcoin_vm_types::{
 use starcoin_crypto::HashValue;
 use starcoin_statedb::ChainStateWriter;
 use starcoin_types::state_set::ChainStateSet;
+use starcoin_vm_types::state_view::TStateView;
 use std::collections::HashMap;
 use std::sync::{RwLock, RwLockReadGuard};
-use starcoin_vm_types::state_view::TStateView;
 
 /// Dummy genesis ChangeSet for testing
 // TODO(BobOng): e2e-test

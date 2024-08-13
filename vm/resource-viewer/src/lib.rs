@@ -12,6 +12,7 @@ use anyhow::{anyhow, Result};
 use move_core_types::u256;
 use starcoin_vm_types::language_storage::TypeTag;
 use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::state_value::StateValue;
 use starcoin_vm_types::state_view::{StateView, TStateView};
 use starcoin_vm_types::value::MoveTypeLayout;
 use starcoin_vm_types::{
@@ -28,7 +29,6 @@ use std::{
     convert::TryInto,
     fmt::{Display, Formatter},
 };
-use starcoin_vm_types::state_store::state_value::StateValue;
 
 mod fat_type;
 pub mod module_cache;

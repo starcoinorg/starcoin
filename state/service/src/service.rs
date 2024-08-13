@@ -24,8 +24,8 @@ use starcoin_types::{
 };
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
-use std::sync::Arc;
 use starcoin_vm_types::state_view::TStateView;
+use std::sync::Arc;
 
 pub struct ChainStateService {
     service: Inner,
