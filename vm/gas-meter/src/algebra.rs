@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::traits::GasAlgebra;
-use starcoin_gas_algebra::{Fee, FeePerGasUnit, Gas, GasExpression, NumBytes, NumModules, Octa};
+use starcoin_gas_algebra::{Fee, FeePerGasUnit, Gas, GasExpression, NumBytes, NumModules, NanoSTC};
 use starcoin_gas_schedule::{gas_feature_versions, VMGasParameters};
 // use starcoin_logger::error;
 // use starcoin_vm_types::storage::{
@@ -208,7 +208,7 @@ impl GasAlgebra for StandardGasAlgebra {
 
     fn charge_storage_fee(
         &mut self,
-        abstract_amount: impl GasExpression<VMGasParameters, Unit = Octa>,
+        abstract_amount: impl GasExpression<VMGasParameters, Unit =NanoSTC>,
         gas_unit_price: FeePerGasUnit,
     ) -> PartialVMResult<()> {
         let amount = abstract_amount.evaluate(self.feature_version, &self.vm_gas_params);

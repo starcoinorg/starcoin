@@ -1,7 +1,7 @@
 // Copyright (C) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use starcoin_gas_algebra::{Fee, FeePerGasUnit, Gas, GasExpression, GasScalingFactor, Octa};
+use starcoin_gas_algebra::{Fee, FeePerGasUnit, Gas, GasExpression, GasScalingFactor, NanoSTC};
 use starcoin_gas_schedule::VMGasParameters;
 
 // use starcoin_types::{
@@ -67,7 +67,7 @@ pub trait GasAlgebra {
     /// gas parameters.
     fn charge_storage_fee(
         &mut self,
-        abstract_amount: impl GasExpression<VMGasParameters, Unit = Octa>,
+        abstract_amount: impl GasExpression<VMGasParameters, Unit =NanoSTC>,
         gas_unit_price: FeePerGasUnit,
     ) -> PartialVMResult<()>;
 

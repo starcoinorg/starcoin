@@ -19,28 +19,28 @@ pub type AbstractValueSizePerArg = GasQuantity<UnitDiv<AbstractValueUnit, Arg>>;
 /// Unit of (external) gas.
 pub enum GasUnit {}
 
-/// Unit of the Aptos network's native coin.
-pub enum APT {}
+/// Unit of the Starcoin network's native coin.
+pub enum STC {}
 
 /// Alternative unit of the Aptos network's native coin. 1 Octa = 10^-8 Aptos coins.
-pub enum Octa {}
+pub enum NanoSTC {}
 
 pub type Gas = GasQuantity<GasUnit>;
 
 pub type GasScalingFactor = GasQuantity<UnitDiv<InternalGasUnit, GasUnit>>;
 
-pub type Fee = GasQuantity<Octa>;
+pub type Fee = GasQuantity<NanoSTC>;
 
-pub type FeePerGasUnit = GasQuantity<UnitDiv<Octa, GasUnit>>;
+pub type FeePerGasUnit = GasQuantity<UnitDiv<NanoSTC, GasUnit>>;
 
 /// Unit of storage slot
 pub enum Slot {}
 
 pub type NumSlots = GasQuantity<Slot>;
 
-pub type FeePerSlot = GasQuantity<UnitDiv<Octa, Slot>>;
+pub type FeePerSlot = GasQuantity<UnitDiv<NanoSTC, Slot>>;
 
-pub type FeePerByte = GasQuantity<UnitDiv<Octa, Byte>>;
+pub type FeePerByte = GasQuantity<UnitDiv<NanoSTC, Byte>>;
 
 /// Unit of module
 pub enum Module {}
@@ -51,6 +51,6 @@ pub type NumModules = GasQuantity<Module>;
  * Unit Conversion
  *
  **************************************************************************************************/
-impl ToUnit<Octa> for APT {
+impl ToUnit<NanoSTC> for STC {
     const MULTIPLIER: u64 = 1_0000_0000;
 }
