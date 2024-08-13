@@ -4,7 +4,9 @@
 
 use crate::create_access_path;
 use anyhow::Error;
+use move_core_types::metadata::Metadata;
 use move_core_types::resolver::{ModuleResolver, ResourceResolver};
+use move_core_types::value::MoveTypeLayout;
 use move_table_extension::{TableHandle, TableResolver};
 use starcoin_logger::prelude::*;
 use starcoin_types::account_address::AccountAddress;
@@ -19,6 +21,8 @@ use starcoin_vm_types::{
 };
 use std::collections::btree_map::BTreeMap;
 use std::ops::{Deref, DerefMut};
+use starcoin_vm_types::state_store::state_value::StateValue;
+use starcoin_vm_types::state_view::TStateView;
 
 /// A local cache for a given a `StateView`. The cache is private to the Diem layer
 /// but can be used as a one shot cache for systems that need a simple `RemoteCache`
@@ -66,11 +70,13 @@ impl<'a, S: StateView> StateViewCache<'a, S> {
     }
 }
 
-impl<'block, S: StateView> StateView for StateViewCache<'block, S> {
+impl<'block, S: TStateView> TStateView for StateViewCache<'block, S> {
+    type Key = StateKey;
+
     // Get some data either through the cache or the `StateView` on a cache miss.
-    fn get_state_value(&self, state_key: &StateKey) -> anyhow::Result<Option<Vec<u8>>> {
+    fn get_state_value(&self, state_key: &StateKey) -> anyhow::Result<Option<StateValue>> {
         match self.data_map.get(state_key) {
-            Some(opt_data) => Ok(opt_data.clone()),
+            Some(opt_data) => Ok(opt_data.clone().map(|v| StateValue::from(v))),
             None => match self.data_view.get_state_value(state_key) {
                 Ok(remote_data) => Ok(remote_data),
                 // TODO: should we forward some error info?
@@ -90,6 +96,10 @@ impl<'block, S: StateView> StateView for StateViewCache<'block, S> {
 impl<'block, S: StateView> ModuleResolver for StateViewCache<'block, S> {
     type Error = VMError;
 
+    fn get_module_metadata(&self, module_id: &ModuleId) -> Vec<Metadata> {
+        todo!()
+    }
+
     fn get_module(&self, module_id: &ModuleId) -> VMResult<Option<Vec<u8>>> {
         RemoteStorage::new(self).get_module(module_id)
     }
@@ -98,6 +108,16 @@ impl<'block, S: StateView> ResourceResolver for StateViewCache<'block, S> {
     type Error = VMError;
     fn get_resource(&self, address: &AccountAddress, tag: &StructTag) -> VMResult<Option<Vec<u8>>> {
         RemoteStorage::new(self).get_resource(address, tag)
+    }
+
+    fn get_resource_bytes_with_metadata_and_layout(
+        &self,
+        address: &AccountAddress,
+        struct_tag: &StructTag,
+        metadata: &[Metadata],
+        layout: Option<&MoveTypeLayout>,
+    ) -> Result<(Option<bytes::bytes::Bytes>, usize), Self::Error> {
+        todo!()
     }
 }
 
@@ -118,6 +138,11 @@ impl<'a, S: StateView> RemoteStorage<'a, S> {
 
 impl<'a, S: StateView> ModuleResolver for RemoteStorage<'a, S> {
     type Error = VMError;
+
+    fn get_module_metadata(&self, module_id: &ModuleId) -> Vec<Metadata> {
+        todo!()
+    }
+
     fn get_module(&self, module_id: &ModuleId) -> VMResult<Option<Vec<u8>>> {
         // REVIEW: cache this?
         let ap = AccessPath::from(module_id);
@@ -133,6 +158,16 @@ impl<'a, S: StateView> ResourceResolver for RemoteStorage<'a, S> {
     ) -> VMResult<Option<Vec<u8>>> {
         let ap = create_access_path(*address, struct_tag.clone());
         self.get(&ap).map_err(|e| e.finish(Location::Undefined))
+    }
+
+    fn get_resource_bytes_with_metadata_and_layout(
+        &self,
+        address: &AccountAddress,
+        struct_tag: &StructTag,
+        metadata: &[Metadata],
+        layout: Option<&MoveTypeLayout>,
+    ) -> Result<(Option<bytes::bytes::Bytes>, usize), Self::Error> {
+        todo!()
     }
 }
 
@@ -159,6 +194,15 @@ impl<'a, S: StateView> TableResolver for RemoteStorage<'a, S> {
     ) -> Result<Option<Vec<u8>>, Error> {
         self.0
             .get_state_value(&StateKey::table_item((*handle).into(), key.to_vec()))
+    }
+
+    fn resolve_table_entry_bytes_with_layout(
+        &self,
+        handle: &TableHandle,
+        key: &[u8],
+        maybe_layout: Option<&MoveTypeLayout>,
+    ) -> Result<Option<bytes::bytes::Bytes>, PartialVMError> {
+        todo!()
     }
 }
 
@@ -193,6 +237,10 @@ impl<S> DerefMut for RemoteStorageOwned<S> {
 impl<S: StateView> ModuleResolver for RemoteStorageOwned<S> {
     type Error = VMError;
 
+    fn get_module_metadata(&self, module_id: &ModuleId) -> Vec<Metadata> {
+        todo!()
+    }
+
     fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Self::Error> {
         self.as_move_resolver().get_module(module_id)
     }
@@ -208,6 +256,16 @@ impl<S: StateView> ResourceResolver for RemoteStorageOwned<S> {
     ) -> Result<Option<Vec<u8>>, Self::Error> {
         self.as_move_resolver().get_resource(address, struct_tag)
     }
+
+    fn get_resource_bytes_with_metadata_and_layout(
+        &self,
+        address: &AccountAddress,
+        struct_tag: &StructTag,
+        metadata: &[Metadata],
+        layout: Option<&MoveTypeLayout>,
+    ) -> Result<(Option<bytes::bytes::Bytes>, usize), Self::Error> {
+        todo!()
+    }
 }
 
 impl<S: StateView> TableResolver for RemoteStorageOwned<S> {
@@ -217,6 +275,15 @@ impl<S: StateView> TableResolver for RemoteStorageOwned<S> {
         key: &[u8],
     ) -> Result<Option<Vec<u8>>, Error> {
         self.as_move_resolver().resolve_table_entry(handle, key)
+    }
+
+    fn resolve_table_entry_bytes_with_layout(
+        &self,
+        handle: &TableHandle,
+        key: &[u8],
+        maybe_layout: Option<&MoveTypeLayout>,
+    ) -> Result<Option<bytes::bytes::Bytes>, PartialVMError> {
+        todo!()
     }
 }
 

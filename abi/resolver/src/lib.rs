@@ -369,6 +369,7 @@ mod tests {
     use starcoin_vm_types::normalized::Module;
     use starcoin_vm_types::parser::parse_struct_tag;
     use starcoin_vm_types::state_store::state_key::StateKey;
+    use starcoin_vm_types::state_store::state_value::StateValue;
     use starcoin_vm_types::state_view::StateView;
     use std::collections::BTreeMap;
 
@@ -384,18 +385,22 @@ mod tests {
     }
     impl TStateView for InMemoryStateView {
         type Key = StateKey;
-        fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
+        fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>> {
             match state_key {
                 StateKey::AccessPath(access_path) => {
                     let module_id = match &access_path.path {
                         DataPath::Code(name) => ModuleId::new(access_path.address, name.clone()),
                         _ => anyhow::bail!("no data"),
                     };
-                    Ok(self.modules.get(&module_id).map(|m| {
-                        let mut data = vec![];
-                        m.serialize(&mut data).unwrap();
-                        data
-                    }))
+                    Ok(self
+                        .modules
+                        .get(&module_id)
+                        .map(|m| {
+                            let mut data = vec![];
+                            m.serialize(&mut data).unwrap();
+                            data
+                        })
+                        .map(|v| StateView::from(v)))
                 }
                 StateKey::TableItem(_table_item) => {
                     anyhow::bail!("no need table_item")

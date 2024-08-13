@@ -28,9 +28,10 @@ use starcoin_vm_types::access_path::{DataPath, ModuleName};
 use starcoin_vm_types::account_config::TABLE_ADDRESS_LIST_LEN;
 use starcoin_vm_types::account_config::TABLE_HANDLE_ADDRESS_LIST;
 use starcoin_vm_types::language_storage::StructTag;
+use starcoin_vm_types::state_store::state_value::StateValue;
 use starcoin_vm_types::state_store::table::TableInfo;
 use starcoin_vm_types::state_store::{state_key::StateKey, table::TableHandle};
-use starcoin_vm_types::state_view::{StateView, TStateView};
+use starcoin_vm_types::state_view::TStateView;
 use std::collections::HashSet;
 use std::convert::TryInto;
 use std::sync::Arc;
@@ -408,7 +409,7 @@ impl ChainStateDB {
 
 impl TStateView for ChainStateDB {
     type Key = StateKey;
-    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>> {
         match state_key {
             StateKey::AccessPath(access_path) => {
                 let account_address = &access_path.address;
@@ -418,11 +419,14 @@ impl TStateView for ChainStateDB {
                         Some(account_state) => account_state.get(data_path),
                         None => Ok(None),
                     })
+                    .map(|v| v.map(|v| StateValue::from(v)))
             }
             StateKey::TableItem(table_item) => {
                 let table_handle_state_object =
                     self.get_table_handle_state_object(&table_item.handle)?;
-                table_handle_state_object.get(&table_item.key)
+                table_handle_state_object
+                    .get(&table_item.key)
+                    .map(|v| v.map(|v| StateValue::from(v)))
             }
         }
     }

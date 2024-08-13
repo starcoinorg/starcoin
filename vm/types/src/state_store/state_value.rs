@@ -6,6 +6,8 @@
 use crate::on_chain_config::CurrentTimeMicroseconds;
 use bytes::Bytes;
 use once_cell::sync::OnceCell;
+#[cfg(any(test, feature = "fuzzing"))]
+use proptest::prelude::*;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::hash::{CryptoHash, CryptoHasher};
 use starcoin_crypto::HashValue;

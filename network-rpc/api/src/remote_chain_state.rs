@@ -8,7 +8,7 @@ use crate::{
 use anyhow::{anyhow, Result};
 use network_p2p_types::peer_id::PeerId;
 use starcoin_crypto::HashValue;
-use starcoin_state_api::{ChainStateReader, StateView, StateWithProof, StateWithTableItemProof};
+use starcoin_state_api::{ChainStateReader, StateWithProof, StateWithTableItemProof};
 use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
@@ -144,12 +144,12 @@ impl TStateView for RemoteChainStateReader {
         match state_key {
             StateKey::AccessPath(access_path) => {
                 let state_proof = self.get_with_proof(access_path)?;
-                Ok(state_proof.state.into())
+                Ok(state_proof.state.map(|v| StateValue::from(v)))
             }
             StateKey::TableItem(table_item) => {
                 let state_proof =
                     self.get_with_table_item_proof(&table_item.handle, &table_item.key)?;
-                Ok(state_proof.key_proof.0.into())
+                Ok(state_proof.key_proof.0.map(|v| StateValue::from(v)))
             }
         }
     }

@@ -1,8 +1,6 @@
 use crate::access_path_cache::AccessPathCache;
 use move_core_types::account_address::AccountAddress;
-use move_core_types::effects::{
-    ChangeSet as MoveChangeSet, Event as MoveEvent, Op as MoveStorageOp,
-};
+use move_core_types::effects::{ChangeSet as MoveChangeSet, Op as MoveStorageOp};
 use move_core_types::language_storage::ModuleId;
 use move_core_types::vm_status::{StatusCode, VMStatus};
 use move_table_extension::TableChangeSet;

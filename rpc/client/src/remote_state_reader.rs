@@ -12,7 +12,9 @@ use starcoin_types::account_state::AccountState;
 use starcoin_types::block::BlockNumber;
 use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
 use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::state_value::StateValue;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use starcoin_vm_types::state_view::TStateView;
 use std::str::FromStr;
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -111,14 +113,17 @@ impl<'a> ChainStateReader for RemoteStateReader<'a> {
     }
 }
 
-impl<'a> StateView for RemoteStateReader<'a> {
-    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
+impl<'a> TStateView for RemoteStateReader<'a> {
+    type Key = StateKey;
+
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>> {
         match state_key {
             StateKey::AccessPath(access_path) => Ok(self
                 .client
                 .state_get_with_proof_by_root(access_path.clone(), self.state_root())?
                 .state
-                .map(|v| v.0)),
+                .map(|v| v.0))
+            .map(|v| v.map(|v| StateValue::from(v))),
             StateKey::TableItem(table_item) => Ok(self
                 .client
                 .state_get_with_table_item_proof_by_root(
@@ -128,7 +133,8 @@ impl<'a> StateView for RemoteStateReader<'a> {
                 )?
                 .key_proof
                 .0
-                .map(|v| v.0)),
+                .map(|v| v.0)
+                .map(|v| StateValue::from(v))),
         }
     }
 

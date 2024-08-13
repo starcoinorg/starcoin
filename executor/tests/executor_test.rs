@@ -44,6 +44,7 @@ use starcoin_types::account_config::G_STC_TOKEN_CODE;
 use starcoin_vm_runtime::starcoin_vm::{chunk_block_transactions, StarcoinVM};
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::state_value::StateValue;
 use test_helper::txn::create_account_txn_sent_as_association;
 
 #[derive(Default)]
@@ -51,7 +52,7 @@ pub struct NullStateView;
 
 impl TStateView for NullStateView {
     type Key = StateKey;
-    fn get_state_value(&self, _state_key: &StateKey) -> Result<Option<Vec<u8>>> {
+    fn get_state_value(&self, _state_key: &StateKey) -> Result<Option<StateValue>> {
         Err(anyhow!("No data"))
     }
 

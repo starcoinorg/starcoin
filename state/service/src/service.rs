@@ -23,6 +23,7 @@ use starcoin_types::{
     state_set::ChainStateSet,
 };
 use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::state_value::StateValue;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_view::TStateView;
 use std::sync::Arc;
@@ -254,7 +255,7 @@ impl ChainStateReader for Inner {
 
 impl TStateView for Inner {
     type Key = StateKey;
-    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>> {
         self.state_db.get_state_value(state_key)
     }
 

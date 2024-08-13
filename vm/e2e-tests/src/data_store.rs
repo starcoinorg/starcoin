@@ -16,6 +16,7 @@ use starcoin_vm_types::{
 use starcoin_crypto::HashValue;
 use starcoin_statedb::ChainStateWriter;
 use starcoin_types::state_set::ChainStateSet;
+use starcoin_vm_types::state_store::state_value::StateValue;
 use starcoin_vm_types::state_view::TStateView;
 use std::collections::HashMap;
 use std::sync::{RwLock, RwLockReadGuard};
@@ -100,8 +101,12 @@ impl FakeDataStore {
 // TODO: only the "sync" get is implemented
 impl TStateView for FakeDataStore {
     type Key = StateKey;
-    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
-        Ok(self.inner().get(state_key).cloned())
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>> {
+        Ok(self
+            .inner()
+            .get(state_key)
+            .cloned()
+            .map(|v| StateValue::new(v)))
     }
 
     fn is_genesis(&self) -> bool {
