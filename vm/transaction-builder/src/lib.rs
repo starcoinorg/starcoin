@@ -985,14 +985,14 @@ pub fn build_module_upgrade_queue(
             address: genesis_address(),
             module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
             name: Identifier::new("UpgradeModuleV2").unwrap(),
-            type_params: vec![],
+            type_args: vec![],
         }))
     } else {
         TypeTag::Struct(Box::new(StructTag {
             address: genesis_address(),
             module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
             name: Identifier::new("UpgradeModule").unwrap(),
-            type_params: vec![],
+            type_args: vec![],
         }))
     };
 

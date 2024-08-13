@@ -8,6 +8,12 @@ use crate::algebra::{FeePerGasUnit, Gas, GasScalingFactor, GasUnit};
 use move_core_types::gas_algebra::{
     InternalGas, InternalGasPerByte, InternalGasUnit, NumBytes, ToUnitWithParams,
 };
+
+#[cfg(any(test, feature = "testing"))]
+pub const GAS_UNIT_PRICE: u64 = 0;
+#[cfg(not(any(test, feature = "testing")))]
+pub const GAS_UNIT_PRICE: u64 = 100;
+
 // see starcoin/config/src/genesis_config.rs G_GAS_CONSTANTS_V2
 // convert from https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#GasConstants
 // modify should with impl From<VMConfig> for GasSchedule

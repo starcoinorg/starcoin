@@ -82,6 +82,9 @@ members = [
     "vm/move-coverage",
     "vm/resource-viewer",
     "vm/starcoin-gas",
+    "vm/gas-algebra",
+    "vm/gas-meter",
+    "vm/gas-schedule",
     "vm/dev",
     "vm/gas-algebra-ext",
     "vm/move-explain",
@@ -194,6 +197,9 @@ default-members = [
     "vm/move-coverage",
     "vm/resource-viewer",
     "vm/starcoin-gas",
+    "vm/gas-algebra",
+    "vm/gas-meter",
+    "vm/gas-schedule",
     "vm/dev",
     "vm/gas-algebra-ext",
     "vm/move-explain",
@@ -385,6 +391,7 @@ once_cell = "1.13.0"
 ordinal = "0.3.1"
 parity-tokio-ipc = "0.9"
 parking_lot = "0.12.1"
+paste = "1.0.7"
 pbkdf2 = "0.11"
 petgraph = "0.5.1"
 pin-project = "0.4.27"
@@ -465,6 +472,9 @@ starcoin-move-compiler = { path = "vm/compiler" }
 starcoin-move-explain = { path = "vm/move-explain" }
 starcoin-gas-algebra-ext = { path = "vm/gas-algebra-ext" }
 starcoin-gas = { path = "vm/starcoin-gas" }
+starcoin-gas-algebra = { path = "vm/gas-algebra" }
+starcoin-gas-meter = { path = "vm/gas-meter" }
+starcoin-gas-schedule = { path = "vm/gas-schedule" }
 starcoin-natives = { path = "vm/natives" }
 starcoin-network = { path = "network" }
 starcoin-network-rpc = { path = "network-rpc" }

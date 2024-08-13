@@ -9943,6 +9943,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-gas-algebra"
+version = "2.0.1"
+dependencies = [
+ "either",
+ "move-core-types",
+]
+
+[[package]]
 name = "starcoin-gas-algebra-ext"
 version = "2.0.1"
 dependencies = [
@@ -9954,6 +9962,32 @@ dependencies = [
  "move-vm-types",
  "serde",
  "starcoin-natives",
+]
+
+[[package]]
+name = "starcoin-gas-meter"
+version = "2.0.1"
+dependencies = [
+ "move-binary-format",
+ "move-core-types",
+ "move-vm-types",
+ "starcoin-gas-algebra",
+ "starcoin-gas-schedule",
+ "starcoin-logger",
+ "starcoin-types",
+ "starcoin-vm-types",
+]
+
+[[package]]
+name = "starcoin-gas-schedule"
+version = "2.0.1"
+dependencies = [
+ "move-core-types",
+ "move-vm-types",
+ "paste",
+ "rand 0.8.5",
+ "starcoin-gas-algebra",
+ "starcoin-transaction-builder",
 ]
 
 [[package]]
@@ -11307,6 +11341,7 @@ dependencies = [
  "anyhow",
  "bcs-ext",
  "bech32",
+ "bytes 1.6.1",
  "chrono",
  "forkable-jellyfish-merkle",
  "hex",
