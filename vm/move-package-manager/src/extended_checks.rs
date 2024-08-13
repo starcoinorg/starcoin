@@ -1,9 +1,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::module_metadata::RuntimeModuleMetadataV1;
+use move_binary_format::file_format::Visibility;
+use move_core_types::errmap::{ErrorDescription, ErrorMapping};
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
 };
+use move_model::ast::Value;
+use move_model::model::{NamedConstantEnv, Parameter};
 use move_model::ty::ReferenceKind;
 use move_model::{
     ast::Attribute,
@@ -11,15 +16,22 @@ use move_model::{
     symbol::Symbol,
     ty::{PrimitiveType, Type},
 };
+use std::collections::BTreeMap;
 use std::rc::Rc;
 
+const INIT_MODULE_FUN: &str = "init_module";
+const LEGACY_ENTRY_FUN_ATTRIBUTE: &str = "legacy_entry_fun";
+const ERROR_PREFIX: &str = "E";
+
 pub(crate) fn run_extended_checks(env: &GlobalEnv) {
-    let checker = ExtendedChecker::new(env);
+    let mut checker = ExtendedChecker::new(env);
     checker.run();
 }
 
 struct ExtendedChecker<'a> {
     env: &'a GlobalEnv,
+    /// Computed runtime metadata
+    output: BTreeMap<ModuleId, RuntimeModuleMetadataV1>,
     /// The id of the module defining error categories
     #[allow(unused)]
     error_category_module: ModuleId,
@@ -29,6 +41,7 @@ impl<'a> ExtendedChecker<'a> {
     fn new(env: &'a GlobalEnv) -> Self {
         Self {
             env,
+            output: Default::default(),
             error_category_module: ModuleId::new(
                 AccountAddress::ONE,
                 Identifier::new("error").unwrap(),
@@ -38,7 +51,7 @@ impl<'a> ExtendedChecker<'a> {
 
     // see implementation in `aptos-core`
     // https://github.com/aptos-labs/aptos-core/blob/3af88bc872221c4958e6163660c60bc07bf53d38/aptos-move/framework/src/extended_checks.rs#L123
-    fn run(&self) {
+    fn run(&mut self) {
         for ref module in self.env.get_modules() {
             if module.is_target() {
                 self.check_entry_functions(module);
@@ -89,8 +102,37 @@ impl<'a> ExtendedChecker<'a> {
 // Module Initialization
 
 impl<'a> ExtendedChecker<'a> {
-    fn check_init_module(&self, _module: &ModuleEnv) {
-        // TODO(simon): implement me.
+    fn check_init_module(&self, module: &ModuleEnv) {
+        // TODO: also enable init_module by attribute, perhaps deprecate by name
+        let init_module_sym = self.env.symbol_pool().make(INIT_MODULE_FUN);
+        if let Some(ref fun) = module.find_function(init_module_sym) {
+            if fun.visibility() != Visibility::Private {
+                self.env.error(
+                    &fun.get_id_loc(),
+                    &format!("`{}` function must be private", INIT_MODULE_FUN),
+                )
+            }
+            for Parameter(_, ty) in fun.get_parameters() {
+                let ok = match ty {
+                    Type::Primitive(PrimitiveType::Signer) => true,
+                    Type::Reference(_, ty) => matches!(*ty, Type::Primitive(PrimitiveType::Signer)),
+                    _ => false,
+                };
+                if !ok {
+                    self.env.error(
+                        &fun.get_id_loc(),
+                        &format!("`{}` function can only take values of type `signer` or `&signer` as parameters",
+                                 INIT_MODULE_FUN),
+                    );
+                }
+            }
+            if fun.get_return_count() > 0 {
+                self.env.error(
+                    &fun.get_id_loc(),
+                    &format!("`{}` function cannot return values", INIT_MODULE_FUN),
+                )
+            }
+        }
     }
 }
 
@@ -104,7 +146,7 @@ impl<'a> ExtendedChecker<'a> {
                 continue;
             }
 
-            if self.has_attribute(fun, "legacy_entry_function") {
+            if self.has_attribute(fun, LEGACY_ENTRY_FUN_ATTRIBUTE) {
                 continue;
             }
 
@@ -171,7 +213,41 @@ impl<'a> ExtendedChecker<'a> {
 // Build errors map
 
 impl<'a> ExtendedChecker<'a> {
-    fn build_error_map(&self, _module: &ModuleEnv) {
-        // TODO(simon): implement me.
+    fn build_error_map(&mut self, module: &ModuleEnv) {
+        // Compute the error map, we are using the `ErrorMapping` type from Move which
+        // is more general as we need as it works for multiple modules.
+        let module_id = self.get_runtime_module_id(module);
+        if module_id == self.error_category_module {
+            return;
+        }
+        let mut error_map = ErrorMapping::default();
+        for named_constant in module.get_named_constants() {
+            let name = self.name_string(named_constant.get_name());
+            if name.starts_with(ERROR_PREFIX) {
+                if let Some(abort_code) = self.get_abort_code(&named_constant) {
+                    // If an error is returned (because of duplicate entry) ignore it.
+                    let _ = error_map.add_module_error(
+                        module_id.clone(),
+                        abort_code,
+                        ErrorDescription {
+                            code_name: name.trim().to_string(),
+                            code_description: named_constant.get_doc().trim().to_string(),
+                        },
+                    );
+                }
+            }
+        }
+        // Inject it into runtime info
+        self.output.entry(module_id).or_default().error_map = error_map
+            .module_error_maps
+            .remove(&module_id)
+            .unwrap_or_default();
+    }
+
+    fn get_abort_code(&self, constant: &NamedConstantEnv<'_>) -> Option<u64> {
+        match constant.get_value() {
+            Value::Number(big_int) => u64::try_from(big_int).ok(),
+            _ => None,
+        }
     }
 }

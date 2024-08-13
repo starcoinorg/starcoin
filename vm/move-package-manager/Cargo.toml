@@ -59,6 +59,7 @@ move-vm-test-utils = { workspace = true }
 
 # extra dependences
 codespan-reporting = "0.11.1"
+serde = { workspace = true }
 
 
 [dev-dependencies]
