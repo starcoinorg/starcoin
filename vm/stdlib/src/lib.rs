@@ -7,6 +7,7 @@ use anyhow::{bail, ensure, format_err, Result};
 use include_dir::{include_dir, Dir};
 use log::{debug, info, LevelFilter};
 use move_bytecode_verifier::{dependencies, verify_module};
+use move_compiler::Flags;
 use once_cell::sync::Lazy;
 use sha2::{Digest, Sha256};
 use starcoin_crypto::hash::PlainCryptoHash;
@@ -170,9 +171,11 @@ pub fn build_stdlib(targets: &[String]) -> BTreeMap<String, CompiledModule> {
             targets.to_vec(),
             vec![],
             starcoin_framework_named_addresses(),
+            Flags::empty(),
+            &std::collections::BTreeSet::new(),
         )
-        .build()
-        .unwrap();
+            .build()
+            .unwrap();
         let (units, warnings) = unwrap_or_report_diagnostics(&files, units_res);
         println!(
             "{}",
