@@ -172,10 +172,6 @@ pub mod loaded_data {
     }
 }
 
-pub mod data_store {
-    pub use move_vm_types::data_store::DataStore;
-}
-
 pub mod file_format {
     pub use vm::file_format::*;
 }
