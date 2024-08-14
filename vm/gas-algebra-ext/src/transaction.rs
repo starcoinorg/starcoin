@@ -4,8 +4,10 @@
 //! This module defines all the gas parameters for transactions, along with their initial values
 //! in the genesis and a mapping between the Rust representation and the on-chain gas schedule.
 
-use crate::algebra::{FeePerGasUnit, Gas, GasScalingFactor};
-use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
+use crate::algebra::{FeePerGasUnit, Gas, GasScalingFactor, GasUnit};
+use move_core_types::gas_algebra::{
+    InternalGas, InternalGasPerByte, InternalGasUnit, NumBytes, ToUnitWithParams,
+};
 // see starcoin/config/src/genesis_config.rs G_GAS_CONSTANTS_V2
 // convert from https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#GasConstants
 // modify should with impl From<VMConfig> for GasSchedule
@@ -81,6 +83,15 @@ crate::params::define_gas_parameters!(
 );
 
 impl TransactionGasParameters {
+    // TODO(Gas): Right now we are relying on this to avoid div by zero errors when using the all-zero
+    //            gas parameters. See if there's a better way we can handle this.
+    fn scaling_factor(&self) -> GasScalingFactor {
+        match u64::from(self.gas_unit_scaling_factor) {
+            0 => 1.into(),
+            x => x.into(),
+        }
+    }
+
     /// Calculate the intrinsic gas for the transaction based upon its size in bytes.
     pub fn calculate_intrinsic_gas(&self, transaction_size: NumBytes) -> InternalGas {
         let min_transaction_fee = self.min_transaction_gas_units;
@@ -99,3 +110,15 @@ impl TransactionGasParameters {
         self.global_memory_per_byte_write_cost * self.default_account_size
     }
 }
+
+impl ToUnitWithParams<TransactionGasParameters, InternalGasUnit> for GasUnit {
+    fn multiplier(params: &TransactionGasParameters) -> u64 {
+        params.scaling_factor().into()
+    }
+}
+
+//impl ToUnitFractionalWithParams<TransactionGasParameters, GasUnit> for InternalGasUnit {
+//    fn ratio(params: &TransactionGasParameters) -> (u64, u64) {
+//        (1, params.scaling_factor().into())
+//    }
+//}

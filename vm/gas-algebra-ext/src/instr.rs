@@ -6,11 +6,11 @@
 //! gas schedule.
 
 use crate::gas_meter::EXECUTION_GAS_MULTIPLIER as MUL;
-// use move_binary_format::errors::PartialVMResult;
+use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::{
     InternalGas, InternalGasPerAbstractMemoryUnit, InternalGasPerArg, InternalGasPerByte,
 };
-// use move_vm_types::gas::SimpleInstruction;
+use move_vm_types::gas::SimpleInstruction;
 
 // see starcoin/vm/types/src/on_chain_config/genesis_gas_schedule.rs
 // same order as https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#instruction_schedule
@@ -195,7 +195,6 @@ crate::params::define_gas_parameters!(
     ]
 );
 
-/*
 impl InstructionGasParameters {
     pub fn simple_instr_cost(&self, instr: SimpleInstruction) -> PartialVMResult<InternalGas> {
         Ok(match instr {
@@ -203,10 +202,6 @@ impl InstructionGasParameters {
 
             SimpleInstruction::Abort => self.abort,
             SimpleInstruction::Ret => self.ret,
-
-            SimpleInstruction::BrTrue => self.br_true,
-            SimpleInstruction::BrFalse => self.br_false,
-            SimpleInstruction::Branch => self.branch,
 
             SimpleInstruction::LdU8 => self.ld_u8,
             SimpleInstruction::LdU64 => self.ld_u64,
@@ -254,7 +249,9 @@ impl InstructionGasParameters {
             SimpleInstruction::CastU16 => self.cast_u16,
             SimpleInstruction::CastU32 => self.cast_u32,
             SimpleInstruction::CastU256 => self.cast_u256,
+            _ => {
+                panic!("unsupported instr: {:?}", instr)
+            }
         })
     }
 }
-*/
