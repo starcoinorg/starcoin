@@ -129,9 +129,11 @@ impl fmt::Debug for VmStatusExplainView {
             } => fmt::Debug::fmt(
                 &VMStatus::ExecutionFailure {
                     status_code: StatusCode::try_from(*status).unwrap(),
+                    sub_status: None,
                     location: location.clone(),
                     function: *function,
                     code_offset: *code_offset,
+                    message: None,
                 },
                 f,
             ),
@@ -145,7 +147,11 @@ pub fn explain_vm_status(
 ) -> Result<VmStatusExplainView> {
     let vm_status_explain = match &vm_status {
         VMStatus::Executed => VmStatusExplainView::Executed,
-        VMStatus::Error(c) => VmStatusExplainView::Error(format!("{:?}", c)),
+        VMStatus::Error {
+            status_code: c,
+            sub_status: _,
+            message: _,
+        } => VmStatusExplainView::Error(format!("{:?}", c)),
         VMStatus::MoveAbort(location, abort_code) => VmStatusExplainView::MoveAbort {
             location: location.clone(),
             abort_code: *abort_code,
@@ -153,9 +159,11 @@ pub fn explain_vm_status(
         },
         VMStatus::ExecutionFailure {
             status_code,
+            sub_status: _,
             location,
             function,
             code_offset,
+            message: _,
         } => VmStatusExplainView::ExecutionFailure {
             status_code: format!("{:?}", status_code),
             status: (*status_code).into(),

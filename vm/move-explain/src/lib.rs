@@ -11,5 +11,5 @@ use move_core_types::{
 pub fn get_explanation(module_id: &ModuleId, abort_code: u64) -> Option<ErrorDescription> {
     let error_descriptions: ErrorMapping =
         bcs_ext::from_bytes(stdlib::ERROR_DESCRIPTIONS).expect("Decode err map failed");
-    error_descriptions.get_explanation(module_id, abort_code)
+    error_descriptions.get_explanation(module_id.name().as_str(), abort_code)
 }
