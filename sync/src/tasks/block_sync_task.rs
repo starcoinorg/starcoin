@@ -107,6 +107,11 @@ impl TaskState for BlockSyncTask {
             if block_ids.is_empty() {
                 return Ok(vec![]);
             }
+            info!(
+                "[sync] fetch block ids from accumulator, start_number: {}, ids: {}",
+                self.start_number,
+                block_ids.len()
+            );
             if self.check_local_store {
                 let block_with_info = self.local_store.get_block_with_info(block_ids.clone())?;
                 let (no_exist_block_ids, result_map) =

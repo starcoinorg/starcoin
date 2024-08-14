@@ -57,7 +57,7 @@ impl TaskState for BlockAccumulatorSyncTask {
             if max_size > self.batch_size {
                 max_size = self.batch_size;
             }
-            debug!(
+            info!(
                 "Accumulator sync task: start_number: {}, target_number: {}",
                 start, target
             );

@@ -5,6 +5,7 @@ use starcoin_chain::BlockChain;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::{error, info};
+use starcoin_network_rpc_api::{MAX_BLOCK_IDS_REQUEST_SIZE, MAX_BLOCK_REQUEST_SIZE};
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
 use starcoin_time_service::TimeService;
@@ -105,7 +106,7 @@ where
             self.ancestor.number.saturating_add(1),
             self.target.block_info.block_accumulator_info.clone(),
             self.fetcher.clone(),
-            100,
+            MAX_BLOCK_IDS_REQUEST_SIZE,
         )
         .map_err(TaskError::BreakError)?;
         let acc_buffer_size = min(
@@ -140,7 +141,7 @@ where
                 self.fetcher.clone(),
                 check_local_store,
                 self.storage.clone(),
-                1,
+                MAX_BLOCK_REQUEST_SIZE,
             );
             let chain = BlockChain::new(
                 self.time_service.clone(),

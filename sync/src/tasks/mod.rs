@@ -19,6 +19,7 @@ use starcoin_chain_api::ChainType;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_logger::prelude::*;
+use starcoin_network_rpc_api::MAX_BLOCK_IDS_REQUEST_SIZE;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceRef};
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
@@ -663,7 +664,7 @@ where
         FindAncestorTask::new(
             current_block_number,
             target_block_number,
-            10,
+            MAX_BLOCK_IDS_REQUEST_SIZE,
             fetcher.clone(),
         ),
         2,
