@@ -162,7 +162,11 @@ impl<'a> MoveValueAnnotator<'a> {
             .map_err(|e| e.finish(Location::Undefined).into_vm_status())?;
         let field_names = self.cache.get_field_names(ty)?;
         let mut annotated_fields = vec![];
-        for (ty, v) in ty.layout.iter().zip(move_struct.fields().iter()) {
+        for (ty, v) in ty
+            .layout
+            .iter()
+            .zip(move_struct.optional_variant_and_fields().1.iter())
+        {
             annotated_fields.push(self.annotate_value(v, ty)?);
         }
         Ok(AnnotatedMoveStruct {

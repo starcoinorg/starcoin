@@ -89,7 +89,7 @@ impl<'a> Resolver<'a> {
         let struct_def =
             find_struct_def_in_module(module.as_ref(), struct_tag.name.as_ident_str())?;
         let ty_args = struct_tag
-            .type_params
+            .type_args
             .iter()
             .map(|ty| self.resolve_type(ty))
             .collect::<Result<Vec<_>>>()?;
@@ -110,6 +110,9 @@ impl<'a> Resolver<'a> {
                 .iter()
                 .map(|field_def| module.identifier_at(field_def.name).to_owned())
                 .collect()),
+            StructFieldInformation::DeclaredVariants(_) => {
+                todo!()
+            }
         }
     }
 
@@ -200,6 +203,9 @@ impl<'a> Resolver<'a> {
                     .map(|field_def| self.resolve_signature(module, &field_def.signature.0))
                     .collect::<Result<_>>()?,
             }),
+            StructFieldInformation::DeclaredVariants(_) => {
+                todo!()
+            }
         }
     }
 }

@@ -102,7 +102,7 @@ impl FatStructType {
             address: self.address,
             module: self.module.clone(),
             name: self.name.clone(),
-            type_params: ty_args,
+            type_args: ty_args,
         })
     }
 }
