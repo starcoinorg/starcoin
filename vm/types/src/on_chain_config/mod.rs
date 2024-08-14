@@ -69,7 +69,7 @@ impl ConfigID {
             address: AccountAddress::from_hex_literal(self.0).expect("failed to get address"),
             module: Identifier::new(self.1).expect("failed to get Identifier"),
             name: Identifier::new(self.2).expect("failed to get Identifier"),
-            type_params: self.3,
+            type_args: self.3,
         }
     }
 }
@@ -193,11 +193,11 @@ pub fn access_path_for_config(
             address: CORE_CODE_ADDRESS,
             module: Identifier::new("Config").unwrap(),
             name: Identifier::new("Config").unwrap(),
-            type_params: vec![TypeTag::Struct(Box::new(StructTag {
+            type_args: vec![TypeTag::Struct(Box::new(StructTag {
                 address: CORE_CODE_ADDRESS,
                 module: module_name,
                 name: config_name,
-                type_params: params,
+                type_args: params,
             }))],
         },
     )

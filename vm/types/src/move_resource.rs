@@ -32,7 +32,7 @@ pub trait MoveResource {
             address: crate::language_storage::CORE_CODE_ADDRESS,
             name: Self::struct_identifier(),
             module: Self::module_identifier(),
-            type_params: Self::type_params(),
+            type_args: Self::type_params(),
         }
     }
 

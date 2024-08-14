@@ -25,7 +25,7 @@ impl FlexiDagConfig {
             address: CORE_CODE_ADDRESS,
             module: Identifier::new(MV_FLEXI_DAG_CONFIG_MODULE_NAME).unwrap(),
             name: Identifier::new(MV_FLEXI_DAG_CONFIG_STRUCT_NAME).unwrap(),
-            type_params: vec![],
+            type_args: vec![],
         }))
     }
 }

@@ -30,6 +30,6 @@ pub fn account_struct_tag() -> StructTag {
         address: CORE_CODE_ADDRESS,
         module: G_ACCOUNT_MODULE_IDENTIFIER.clone(),
         name: G_ACCOUNT_STRUCT_NAME.to_owned(),
-        type_params: vec![],
+        type_args: vec![],
     }
 }

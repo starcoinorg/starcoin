@@ -42,6 +42,6 @@ pub fn version_config_type_tag() -> TypeTag {
         address: CORE_CODE_ADDRESS,
         module: G_VERSION_CONFIG_IDENTIFIER.clone(),
         name: G_VERSION_CONFIG_IDENTIFIER.clone(),
-        type_params: vec![],
+        type_args: vec![],
     }))
 }

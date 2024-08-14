@@ -102,7 +102,7 @@ impl AccessPath {
             address: AccountAddress::random(),
             module: random_identity(),
             name: random_identity(),
-            type_params: vec![],
+            type_args: vec![],
         };
         Self::new(AccountAddress::random(), DataPath::Resource(struct_tag))
     }
@@ -264,12 +264,12 @@ impl Arbitrary for DataPath {
                 any::<Identifier>(),
                 vec(any::<move_core_types::language_storage::TypeTag>(), 0..4),
             )
-                .prop_map(|(address, module, name, type_params)| Self::Resource(
+                .prop_map(|(address, module, name, type_args)| Self::Resource(
                     StructTag {
                         address,
                         module,
                         name,
-                        type_params,
+                        type_args,
                     }
                 )),
         ]

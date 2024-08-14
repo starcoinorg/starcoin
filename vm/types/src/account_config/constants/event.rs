@@ -37,6 +37,6 @@ pub fn event_handle_generator_struct_tag() -> StructTag {
         address: CORE_CODE_ADDRESS,
         module: event_module_name().to_owned(),
         name: event_handle_generator_struct_name().to_owned(),
-        type_params: vec![],
+        type_args: vec![],
     }
 }
