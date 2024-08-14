@@ -280,6 +280,7 @@ where
         action: BlockConnectAction,
         state: CollectorState,
     ) -> Result<CollectorState> {
+        info!("sync processs complete a block execution: number: {}, hash value {}", block.header().number(), block.header().id());
         let total_difficulty = block_info.get_total_difficulty();
 
         // if the new block's total difficulty is smaller than the current,
