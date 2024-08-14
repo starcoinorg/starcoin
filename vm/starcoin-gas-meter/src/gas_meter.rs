@@ -266,7 +266,7 @@ impl GasMeter for StarcoinGasMeter {
         &mut self,
         _module_id: &ModuleId,
         _func_name: &str,
-        args: impl ExactSizeIterator<Item=impl ValueView>,
+        args: impl ExactSizeIterator<Item = impl ValueView>,
         _num_locals: NumArgs,
     ) -> PartialVMResult<()> {
         let params = &self.gas_params.instr;
@@ -285,8 +285,8 @@ impl GasMeter for StarcoinGasMeter {
         &mut self,
         _module_id: &ModuleId,
         _func_name: &str,
-        ty_args: impl ExactSizeIterator<Item=impl TypeView>,
-        args: impl ExactSizeIterator<Item=impl ValueView>,
+        ty_args: impl ExactSizeIterator<Item = impl TypeView>,
+        args: impl ExactSizeIterator<Item = impl ValueView>,
         _num_locals: NumArgs,
     ) -> PartialVMResult<()> {
         let params = &self.gas_params.instr;
@@ -366,7 +366,7 @@ impl GasMeter for StarcoinGasMeter {
     fn charge_pack(
         &mut self,
         is_generic: bool,
-        args: impl ExactSizeIterator<Item=impl ValueView>,
+        args: impl ExactSizeIterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
         let field_count = AbstractMemorySize::new(args.len() as u64);
         let params = &self.gas_params.instr;
@@ -395,7 +395,7 @@ impl GasMeter for StarcoinGasMeter {
     fn charge_unpack(
         &mut self,
         is_generic: bool,
-        args: impl ExactSizeIterator<Item=impl ValueView>,
+        args: impl ExactSizeIterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
         #[cfg(testing)]
         let opcode = {
@@ -606,7 +606,7 @@ impl GasMeter for StarcoinGasMeter {
     fn charge_vec_pack<'a>(
         &mut self,
         _ty: impl TypeView + 'a,
-        args: impl ExactSizeIterator<Item=impl ValueView>,
+        args: impl ExactSizeIterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
         let num_args = NumArgs::new(args.len() as u64);
         let params = &self.gas_params.instr;
@@ -691,7 +691,7 @@ impl GasMeter for StarcoinGasMeter {
         &mut self,
         _ty: impl TypeView,
         expect_num_elements: NumArgs,
-        _elems: impl ExactSizeIterator<Item=impl ValueView>,
+        _elems: impl ExactSizeIterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
         let cost = cal_instr_with_arg(
             self.gas_params.instr.vec_unpack_per_expected_elem,
@@ -724,7 +724,7 @@ impl GasMeter for StarcoinGasMeter {
     fn charge_native_function(
         &mut self,
         amount: InternalGas,
-        _ret_vals: Option<impl ExactSizeIterator<Item=impl ValueView>>,
+        _ret_vals: Option<impl ExactSizeIterator<Item = impl ValueView>>,
     ) -> PartialVMResult<()> {
         #[cfg(testing)]
         info!(
@@ -736,15 +736,15 @@ impl GasMeter for StarcoinGasMeter {
 
     fn charge_native_function_before_execution(
         &mut self,
-        _ty_args: impl ExactSizeIterator<Item=impl TypeView>,
-        _args: impl ExactSizeIterator<Item=impl ValueView>,
+        _ty_args: impl ExactSizeIterator<Item = impl TypeView>,
+        _args: impl ExactSizeIterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
         Ok(())
     }
 
     fn charge_drop_frame(
         &mut self,
-        _locals: impl Iterator<Item=impl ValueView>,
+        _locals: impl Iterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
         Ok(())
     }
