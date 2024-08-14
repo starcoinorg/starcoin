@@ -18,7 +18,6 @@ use regex::{Captures, Regex};
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::compatibility::Compatibility;
 use starcoin_vm_types::file_format::CompiledModule;
-use starcoin_vm_types::normalized::Module;
 use starcoin_vm_types::{errors::Location, errors::VMResult};
 use std::collections::{BTreeMap, HashMap};
 use std::fs::OpenOptions;
@@ -192,24 +191,19 @@ pub fn compile_source_string_no_report(
         targets,
         deps.to_vec(),
         starcoin_framework_named_addresses(),
-    )
-    .set_flags(Flags::empty().set_sources_shadow_deps(true));
+        Flags::empty().set_sources_shadow_deps(true),
+        &std::collections::BTreeSet::new(),
+    );
     compiler.build()
 }
 
 /// check module compatibility
 pub fn check_module_compat(pre_code: &[u8], new_code: &[u8]) -> VMResult<bool> {
-    let pre_module =
-        CompiledModule::deserialize(pre_code).map_err(|e| e.finish(Location::Undefined))?;
-    let new_module =
-        CompiledModule::deserialize(new_code).map_err(|e| e.finish(Location::Undefined))?;
+    let old = CompiledModule::deserialize(pre_code).map_err(|e| e.finish(Location::Undefined))?;
+    let new = CompiledModule::deserialize(new_code).map_err(|e| e.finish(Location::Undefined))?;
 
-    let old = Module::new(&pre_module);
-    let new = Module::new(&new_module);
-    if Compatibility::new(true, true, false)
-        .check(&old, &new)
-        .is_err()
-    {
+    // the first argument check_struct_and_pub_function_linking is always true now
+    if Compatibility::new(true, false).check(&old, &new).is_err() {
         Ok(false)
     } else {
         Ok(true)
@@ -218,13 +212,10 @@ pub fn check_module_compat(pre_code: &[u8], new_code: &[u8]) -> VMResult<bool> {
 
 /// check module compatibility
 pub fn check_compiled_module_compat(
-    pre: &CompiledModule,
+    old: &CompiledModule,
     new: &CompiledModule,
 ) -> PartialVMResult<()> {
-    let old = Module::new(pre);
-    let new = Module::new(new);
-
-    Compatibility::new(true, true, false).check(&old, &new)
+    Compatibility::new(true, false).check(&old, &new)
 }
 
 /// Load bytecode file, return the bytecode bytes, and whether it's script.
