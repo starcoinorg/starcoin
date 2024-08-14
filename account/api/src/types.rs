@@ -38,7 +38,7 @@ impl AccountInfo {
             is_default,
             is_readonly,
             is_locked,
-            receipt_identifier: address.to_bech32(),
+            receipt_identifier: address.to_standard_string(),
         }
     }
 
@@ -61,7 +61,7 @@ impl AccountInfo {
             is_readonly: false,
             is_locked: false,
             public_key: account_public_key,
-            receipt_identifier: address.to_bech32(),
+            receipt_identifier: address.to_standard_string(),
         }
     }
 }
