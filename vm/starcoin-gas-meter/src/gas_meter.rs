@@ -5,10 +5,13 @@
 //! parameters and traits to help manipulate them.
 
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
+use move_binary_format::file_format::CodeOffset;
+use move_core_types::account_address::AccountAddress;
 use move_core_types::gas_algebra::{
     AbstractMemorySize, InternalGasPerAbstractMemoryUnit, InternalGasPerArg, InternalGasPerByte,
-    NumArgs,
+    NumArgs, NumTypeNodes,
 };
+use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::ModuleId;
 use move_core_types::{
     gas_algebra::{InternalGas, NumBytes},
@@ -17,17 +20,12 @@ use move_core_types::{
 use move_vm_types::gas::{GasMeter, SimpleInstruction};
 use move_vm_types::views::{TypeView, ValueView};
 use starcoin_gas_algebra_ext::{
-    FromOnChainGasSchedule, Gas, InitialGasSchedule, ToOnChainGasSchedule,
+    FromOnChainGasSchedule, Gas, InitialGasSchedule, InstructionGasParameters,
+    ToOnChainGasSchedule, TransactionGasParameters,
 };
 #[cfg(testing)]
 use starcoin_logger::prelude::*;
 use std::collections::BTreeMap;
-
-use move_binary_format::file_format_common::Opcodes;
-use move_core_types::account_address::AccountAddress;
-use move_core_types::identifier::IdentStr;
-use starcoin_gas_algebra_ext::InstructionGasParameters;
-use starcoin_gas_algebra_ext::TransactionGasParameters;
 
 /// The size in bytes for a reference on the stack
 const REFERENCE_SIZE: AbstractMemorySize = AbstractMemorySize::new(8);
@@ -36,7 +34,7 @@ const REFERENCE_SIZE: AbstractMemorySize = AbstractMemorySize::new(8);
 const MIN_EXISTS_DATA_SIZE: AbstractMemorySize = AbstractMemorySize::new(100);
 
 /// Gas parameters for all native functions.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct NativeGasParameters {
     pub move_stdlib: move_stdlib::natives::GasParameters,
     pub nursery: move_stdlib::natives::NurseryGasParameters,
@@ -222,68 +220,6 @@ fn cal_instr_with_byte(per_arg: InternalGasPerByte, size: NumBytes) -> InternalG
     per_arg * size
 }
 
-#[allow(dead_code)]
-#[inline]
-fn simple_instr_to_opcode(instr: SimpleInstruction) -> Opcodes {
-    match instr {
-        SimpleInstruction::Nop => Opcodes::NOP,
-        SimpleInstruction::Ret => Opcodes::RET,
-
-        SimpleInstruction::BrTrue => Opcodes::BR_TRUE,
-        SimpleInstruction::BrFalse => Opcodes::BR_FALSE,
-        SimpleInstruction::Branch => Opcodes::BRANCH,
-
-        SimpleInstruction::LdU8 => Opcodes::LD_U8,
-        SimpleInstruction::LdU64 => Opcodes::LD_U64,
-        SimpleInstruction::LdU128 => Opcodes::LD_U128,
-        SimpleInstruction::LdTrue => Opcodes::LD_TRUE,
-        SimpleInstruction::LdFalse => Opcodes::LD_FALSE,
-
-        SimpleInstruction::FreezeRef => Opcodes::FREEZE_REF,
-        SimpleInstruction::MutBorrowLoc => Opcodes::MUT_BORROW_LOC,
-        SimpleInstruction::ImmBorrowLoc => Opcodes::IMM_BORROW_LOC,
-        SimpleInstruction::ImmBorrowField => Opcodes::IMM_BORROW_FIELD,
-        SimpleInstruction::MutBorrowField => Opcodes::MUT_BORROW_FIELD,
-        SimpleInstruction::ImmBorrowFieldGeneric => Opcodes::IMM_BORROW_FIELD_GENERIC,
-        SimpleInstruction::MutBorrowFieldGeneric => Opcodes::MUT_BORROW_FIELD_GENERIC,
-
-        SimpleInstruction::CastU8 => Opcodes::CAST_U8,
-        SimpleInstruction::CastU64 => Opcodes::CAST_U64,
-        SimpleInstruction::CastU128 => Opcodes::CAST_U128,
-
-        SimpleInstruction::Add => Opcodes::ADD,
-        SimpleInstruction::Sub => Opcodes::SUB,
-        SimpleInstruction::Mul => Opcodes::MUL,
-        SimpleInstruction::Mod => Opcodes::MOD,
-        SimpleInstruction::Div => Opcodes::DIV,
-
-        SimpleInstruction::BitOr => Opcodes::BIT_OR,
-        SimpleInstruction::BitAnd => Opcodes::BIT_AND,
-        SimpleInstruction::Xor => Opcodes::XOR,
-        SimpleInstruction::Shl => Opcodes::SHL,
-        SimpleInstruction::Shr => Opcodes::SHR,
-
-        SimpleInstruction::Or => Opcodes::OR,
-        SimpleInstruction::And => Opcodes::AND,
-        SimpleInstruction::Not => Opcodes::NOT,
-
-        SimpleInstruction::Lt => Opcodes::LT,
-        SimpleInstruction::Gt => Opcodes::GT,
-        SimpleInstruction::Le => Opcodes::LE,
-        SimpleInstruction::Ge => Opcodes::GE,
-
-        SimpleInstruction::Abort => Opcodes::ABORT,
-
-        SimpleInstruction::LdU16 => Opcodes::LD_U16,
-        SimpleInstruction::LdU32 => Opcodes::LD_U32,
-        SimpleInstruction::LdU256 => Opcodes::LD_U256,
-
-        SimpleInstruction::CastU16 => Opcodes::CAST_U16,
-        SimpleInstruction::CastU32 => Opcodes::CAST_U32,
-        SimpleInstruction::CastU256 => Opcodes::CAST_U256,
-    }
-}
-
 impl GasMeter for StarcoinGasMeter {
     fn balance_internal(&self) -> InternalGas {
         self.balance
@@ -302,6 +238,18 @@ impl GasMeter for StarcoinGasMeter {
         self.deduct_gas(cost)
     }
 
+    fn charge_br_true(&mut self, _target_offset: Option<CodeOffset>) -> PartialVMResult<()> {
+        Ok(())
+    }
+
+    fn charge_br_false(&mut self, _target_offset: Option<CodeOffset>) -> PartialVMResult<()> {
+        Ok(())
+    }
+
+    fn charge_branch(&mut self, _target_offset: CodeOffset) -> PartialVMResult<()> {
+        Ok(())
+    }
+
     fn charge_pop(&mut self, _popped_val: impl ValueView) -> PartialVMResult<()> {
         let params = &self.gas_params.instr;
         let cost = params.pop;
@@ -318,7 +266,7 @@ impl GasMeter for StarcoinGasMeter {
         &mut self,
         _module_id: &ModuleId,
         _func_name: &str,
-        args: impl ExactSizeIterator<Item = impl ValueView>,
+        args: impl ExactSizeIterator<Item=impl ValueView>,
         _num_locals: NumArgs,
     ) -> PartialVMResult<()> {
         let params = &self.gas_params.instr;
@@ -337,8 +285,8 @@ impl GasMeter for StarcoinGasMeter {
         &mut self,
         _module_id: &ModuleId,
         _func_name: &str,
-        ty_args: impl ExactSizeIterator<Item = impl TypeView>,
-        args: impl ExactSizeIterator<Item = impl ValueView>,
+        ty_args: impl ExactSizeIterator<Item=impl TypeView>,
+        args: impl ExactSizeIterator<Item=impl ValueView>,
         _num_locals: NumArgs,
     ) -> PartialVMResult<()> {
         let params = &self.gas_params.instr;
@@ -418,7 +366,7 @@ impl GasMeter for StarcoinGasMeter {
     fn charge_pack(
         &mut self,
         is_generic: bool,
-        args: impl ExactSizeIterator<Item = impl ValueView>,
+        args: impl ExactSizeIterator<Item=impl ValueView>,
     ) -> PartialVMResult<()> {
         let field_count = AbstractMemorySize::new(args.len() as u64);
         let params = &self.gas_params.instr;
@@ -447,7 +395,7 @@ impl GasMeter for StarcoinGasMeter {
     fn charge_unpack(
         &mut self,
         is_generic: bool,
-        args: impl ExactSizeIterator<Item = impl ValueView>,
+        args: impl ExactSizeIterator<Item=impl ValueView>,
     ) -> PartialVMResult<()> {
         #[cfg(testing)]
         let opcode = {
@@ -658,7 +606,7 @@ impl GasMeter for StarcoinGasMeter {
     fn charge_vec_pack<'a>(
         &mut self,
         _ty: impl TypeView + 'a,
-        args: impl ExactSizeIterator<Item = impl ValueView>,
+        args: impl ExactSizeIterator<Item=impl ValueView>,
     ) -> PartialVMResult<()> {
         let num_args = NumArgs::new(args.len() as u64);
         let params = &self.gas_params.instr;
@@ -743,7 +691,7 @@ impl GasMeter for StarcoinGasMeter {
         &mut self,
         _ty: impl TypeView,
         expect_num_elements: NumArgs,
-        _elems: impl ExactSizeIterator<Item = impl ValueView>,
+        _elems: impl ExactSizeIterator<Item=impl ValueView>,
     ) -> PartialVMResult<()> {
         let cost = cal_instr_with_arg(
             self.gas_params.instr.vec_unpack_per_expected_elem,
@@ -762,10 +710,12 @@ impl GasMeter for StarcoinGasMeter {
         self.deduct_gas(cost)
     }
 
-    #[inline]
     fn charge_load_resource(
         &mut self,
-        _loaded: Option<(NumBytes, impl ValueView)>,
+        _addr: AccountAddress,
+        _ty: impl TypeView,
+        _val: Option<impl ValueView>,
+        _bytes_loaded: NumBytes,
     ) -> PartialVMResult<()> {
         Ok(())
     }
@@ -774,7 +724,7 @@ impl GasMeter for StarcoinGasMeter {
     fn charge_native_function(
         &mut self,
         amount: InternalGas,
-        _ret_vals: Option<impl ExactSizeIterator<Item = impl ValueView>>,
+        _ret_vals: Option<impl ExactSizeIterator<Item=impl ValueView>>,
     ) -> PartialVMResult<()> {
         #[cfg(testing)]
         info!(
@@ -786,16 +736,20 @@ impl GasMeter for StarcoinGasMeter {
 
     fn charge_native_function_before_execution(
         &mut self,
-        _ty_args: impl ExactSizeIterator<Item = impl TypeView>,
-        _args: impl ExactSizeIterator<Item = impl ValueView>,
+        _ty_args: impl ExactSizeIterator<Item=impl TypeView>,
+        _args: impl ExactSizeIterator<Item=impl ValueView>,
     ) -> PartialVMResult<()> {
         Ok(())
     }
 
     fn charge_drop_frame(
         &mut self,
-        _locals: impl Iterator<Item = impl ValueView>,
+        _locals: impl Iterator<Item=impl ValueView>,
     ) -> PartialVMResult<()> {
+        Ok(())
+    }
+
+    fn charge_create_ty(&mut self, _num_nodes: NumTypeNodes) -> PartialVMResult<()> {
         Ok(())
     }
 
