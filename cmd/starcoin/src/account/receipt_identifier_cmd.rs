@@ -34,7 +34,7 @@ impl CommandAction for ReceiptIdentifierCommand {
 
         Ok(ReceiptIdentifierData {
             address: opt.address_or_receipt.to_hex(),
-            receipt_identifier: opt.address_or_receipt.to_bech32(),
+            receipt_identifier: opt.address_or_receipt.to_standard_string(),
         })
     }
 }

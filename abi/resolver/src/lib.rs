@@ -12,7 +12,8 @@ use starcoin_resource_viewer::module_cache::ModuleCache;
 use starcoin_resource_viewer::resolver::Resolver;
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::file_format::{
-    CompiledModule, CompiledScript, FunctionDefinitionIndex, StructDefinitionIndex, Visibility,
+    self_module_name, CompiledModule, CompiledScript, FunctionDefinitionIndex,
+    StructDefinitionIndex, Visibility,
 };
 use starcoin_vm_types::identifier::{IdentStr, Identifier};
 use starcoin_vm_types::language_storage::{ModuleId, StructTag, TypeTag};
@@ -53,7 +54,7 @@ impl<'a> ABIResolver<'a> {
     }
 
     fn resolve_compiled_module(&self, module: &CompiledModule) -> Result<ModuleABI> {
-        let m = Module::new(module);
+        let m = Module::new(module)?;
         let module_id = m.module_id();
         let structs = m
             .structs
@@ -72,9 +73,9 @@ impl<'a> ABIResolver<'a> {
 
     pub fn resolve_script(&self, script_code: Vec<u8>) -> Result<TransactionScriptABI> {
         let script = CompiledScript::deserialize(&script_code)?;
-        let script_mod = script_into_module(script);
+        let script_mod = script_into_module(script, self_module_name().as_str());
 
-        let m = Module::new(&script_mod);
+        let m = Module::new(&script_mod)?;
         anyhow::ensure!(
             m.exposed_functions.len() == 1,
             "script should only contain one function"
@@ -98,7 +99,7 @@ impl<'a> ABIResolver<'a> {
         let struct_abi =
             self.resolve_struct(&struct_tag.module_id(), struct_tag.name.as_ident_str())?;
         let ty_args = struct_tag
-            .type_params
+            .type_args
             .iter()
             .map(|ty| self.resolve_type_tag(ty))
             .collect::<Result<Vec<_>>>()?;
@@ -132,7 +133,7 @@ impl<'a> ABIResolver<'a> {
             .resolver
             .get_module(module_id.address(), module_id.name())?;
         let struct_def = find_struct_def_in_module(module.as_ref(), name)?;
-        let (name, s) = Struct::new(&module, module.struct_def_at(struct_def));
+        let (name, s) = Struct::new(&module, module.struct_def_at(struct_def))?;
         self.struct_to_abi(module_id, &name, &s)
     }
     pub fn resolve_type(&self, ty: &Type) -> Result<TypeInstantiation> {
@@ -422,7 +423,7 @@ mod tests {
             let st = parse_struct_tag(
                 "0x1::Dao::Proposal<0x1::STC::STC, 0x1::MintDaoProposal::MintToken>",
             )
-            .unwrap();
+                .unwrap();
             r.resolve_struct_tag(&st).unwrap();
         }
         // test struct def
