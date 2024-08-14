@@ -505,7 +505,7 @@ impl StructInstantiation {
             address: *self.module_name.address(),
             module: self.module_name.name().to_owned(),
             name: Identifier::new(self.name.as_str())?,
-            type_params: self
+            type_args: self
                 .ty_args
                 .iter()
                 .map(|t| t.ty.type_tag())
