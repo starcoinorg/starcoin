@@ -591,12 +591,7 @@ where
         }
 
         if self.main.check_chain_type()? == ChainType::Dag
-            && !block
-                .header()
-                .parents_hash()
-                .ok_or_else(|| format_err!("Dag block's parents hash is none, id: {:?}", block_id))?
-                .iter()
-                .all(|parent_hash| self.main.dag().has_dag_block(*parent_hash).unwrap_or(false))
+            && self.main.has_dag_block(block.header().parent_hash())?
         {
             debug!(
                 "block: {:?} is a future dag block, trigger sync to pull other dag blocks",
