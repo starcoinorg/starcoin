@@ -6,11 +6,11 @@
 //! gas schedule.
 
 use crate::gas_meter::EXECUTION_GAS_MULTIPLIER as MUL;
-use move_binary_format::errors::PartialVMResult;
+// use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::{
     InternalGas, InternalGasPerAbstractMemoryUnit, InternalGasPerArg, InternalGasPerByte,
 };
-use move_vm_types::gas::SimpleInstruction;
+// use move_vm_types::gas::SimpleInstruction;
 
 // see starcoin/vm/types/src/on_chain_config/genesis_gas_schedule.rs
 // same order as https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#instruction_schedule
@@ -195,6 +195,7 @@ crate::params::define_gas_parameters!(
     ]
 );
 
+/*
 impl InstructionGasParameters {
     pub fn simple_instr_cost(&self, instr: SimpleInstruction) -> PartialVMResult<InternalGas> {
         Ok(match instr {
@@ -256,3 +257,4 @@ impl InstructionGasParameters {
         })
     }
 }
+*/
