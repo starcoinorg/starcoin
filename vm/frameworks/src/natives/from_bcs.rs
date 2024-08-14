@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::natives::util::make_native_from_func;
-use move_binary_format::errors::{PartialVMError, PartialVMResult};
+use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
-use move_core_types::vm_status::StatusCode;
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::loaded_data::runtime_types::Type;
 use move_vm_types::natives::function::NativeResult;
@@ -39,12 +38,7 @@ fn native_from_bytes(
     let mut cost = gas_params.base;
 
     // TODO(Gas): charge for getting the layout
-    let layout = context.type_to_type_layout(&ty_args[0])?.ok_or_else(|| {
-        PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR).with_message(format!(
-            "Failed to get layout of type {:?} -- this should not happen",
-            ty_args[0]
-        ))
-    })?;
+    let layout = context.type_to_type_layout(&ty_args[0])?;
 
     let bytes = pop_arg!(args, Vec<u8>);
     //context.charge(gas_params.base + gas_params.per_byte * NumBytes::new(bytes.len() as u64))?;

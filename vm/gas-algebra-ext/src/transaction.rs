@@ -112,18 +112,14 @@ impl TransactionGasParameters {
     }
 }
 
-impl ToUnitWithParams<InternalGasUnit> for GasUnit {
-    type Params = TransactionGasParameters;
-
-    fn multiplier(params: &Self::Params) -> u64 {
+impl ToUnitWithParams<GasUnit, InternalGasUnit> for GasUnit {
+    fn multiplier(params: &Self) -> u64 {
         params.scaling_factor().into()
     }
 }
 
-impl ToUnitFractionalWithParams<GasUnit> for InternalGasUnit {
-    type Params = TransactionGasParameters;
-
-    fn ratio(params: &Self::Params) -> (u64, u64) {
+impl ToUnitFractionalWithParams<InternalGasUnit, GasUnit> for InternalGasUnit {
+    fn ratio(params: &Self) -> (u64, u64) {
         (1, params.scaling_factor().into())
     }
 }

@@ -4,7 +4,6 @@
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::InternalGas;
 use move_core_types::language_storage::TypeTag;
-use move_core_types::vm_status::sub_status::NFE_TOKEN_INVALID_TYPE_ARG_FAILURE;
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
     loaded_data::runtime_types::Type, natives::function::NativeResult, values::Value,
@@ -12,6 +11,9 @@ use move_vm_types::{
 use smallvec::smallvec;
 use std::collections::VecDeque;
 use std::sync::Arc;
+
+// Failure in Token native functions.
+pub const NFE_TOKEN_INVALID_TYPE_ARG_FAILURE: u64 = 0x200;
 
 /***************************************************************************************************
  * native fun token_name_of
@@ -38,7 +40,7 @@ pub fn native_token_name_of(
     if let TypeTag::Struct(struct_tag) = type_tag {
         let mut name = struct_tag.name.as_bytes().to_vec();
         let type_args_info =
-            format_type_params(&struct_tag.type_params).expect("format should never fail");
+            format_type_params(&struct_tag.type_args).expect("format should never fail");
         name.append(&mut type_args_info.into_bytes());
         Ok(NativeResult::ok(
             cost,
