@@ -20,7 +20,7 @@ impl MoveVmExt {
     // XXX FIXME YSG need add treat_friend_as_private?
     pub fn new(native_gas_params: NativeGasParameters) -> VMResult<Self> {
         Ok(Self {
-            inner: MoveVM::new(natives::starcoin_natives(native_gas_params))?,
+            inner: MoveVM::new(natives::starcoin_natives(native_gas_params)),
         })
     }
 
@@ -28,7 +28,7 @@ impl MoveVmExt {
         &self,
         remote: &'r S,
         session_id: SessionId,
-    ) -> Session<'r, '_, S> {
+    ) -> Session<'r, '_> {
         let mut extensions = NativeContextExtensions::default();
         extensions.add(NativeTableContext::new(*session_id.as_uuid(), remote));
         self.inner.new_session_with_extensions(remote, extensions)

@@ -44,10 +44,6 @@ pub fn starcoin_natives(gas_params: NativeGasParameters) -> NativeFunctionTable 
         starcoin_frameworks::natives::signature::make_all(gas_params.starcoin_natives.signature)
     );
     add_natives_from_module!(
-        "Vector",
-        move_stdlib::natives::vector::make_all(gas_params.move_stdlib.vector)
-    );
-    add_natives_from_module!(
         "Event",
         move_stdlib::natives::event::make_all(gas_params.nursery.clone().event)
     );

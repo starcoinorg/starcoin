@@ -7,7 +7,7 @@ AccountAddress:
   NEWTYPESTRUCT:
     TUPLEARRAY:
       CONTENT: U8
-      SIZE: 16
+      SIZE: 32
 AccountResource:
   STRUCT:
     - authentication_key:
@@ -275,6 +275,9 @@ TransactionArgument:
           TUPLEARRAY:
             CONTENT: U8
             SIZE: 32
+    9:
+      Serialized:
+        NEWTYPE: BYTES
 TransactionAuthenticator:
   ENUM:
     0:

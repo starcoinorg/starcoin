@@ -65,13 +65,8 @@ impl TransactionMetadata {
             sequence_number: txn.sequence_number(),
             max_gas_amount: txn.max_gas_amount().into(),
             gas_unit_price: txn.gas_unit_price().into(),
-            gas_token_code: TokenCode::from_str(txn.gas_token_code().as_str()).map_err(|_e| {
-                VMStatus::Error {
-                    status_code: StatusCode::UNKNOWN_VALIDATION_STATUS,
-                    sub_status: None,
-                    message: None,
-                }
-            })?,
+            gas_token_code: TokenCode::from_str(txn.gas_token_code().as_str())
+                .map_err(|_e| VMStatus::error(StatusCode::UNKNOWN_VALIDATION_STATUS, None))?,
             transaction_size: (txn.txn_size() as u64).into(),
             expiration_timestamp_secs: txn.expiration_timestamp_secs(),
             chain_id: txn.chain_id(),

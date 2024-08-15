@@ -3,7 +3,7 @@
 
 use move_binary_format::errors::*;
 use move_binary_format::{
-    access::ModuleAccess, compatibility::Compatibility, normalized, CompiledModule, IndexKind,
+    access::ModuleAccess, compatibility::Compatibility, CompiledModule, IndexKind,
 };
 use move_core_types::value::MoveValue;
 use move_core_types::vm_status::StatusCode;
@@ -11,15 +11,14 @@ use move_core_types::{
     account_address::AccountAddress,
     identifier::IdentStr,
     language_storage::{ModuleId, TypeTag},
-    resolver::*,
 };
-use move_vm_runtime::loader::Function;
-use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
+use move_vm_runtime::{session::Session, LoadedFunction};
 use move_vm_types::gas::GasMeter;
 use move_vm_types::loaded_data::runtime_types::Type;
+use move_vm_types::resolver::MoveResolver;
 use std::borrow::Borrow;
 use std::collections::BTreeSet;
-use std::sync::Arc;
+use std::marker::PhantomData;
 use tracing::warn;
 
 /// Publish module bundle options
@@ -33,30 +32,34 @@ pub struct PublishModuleBundleOption {
 
 /// An adapter for wrap MoveVM Session
 pub struct SessionAdapter<'r, 'l, R> {
-    pub(crate) inner: Session<'r, 'l, R>,
+    pub(crate) inner: Session<'r, 'l>,
+    _phantom_data: PhantomData<R>,
 }
 
-impl<'r, 'l, R> From<Session<'r, 'l, R>> for SessionAdapter<'r, 'l, R> {
-    fn from(s: Session<'r, 'l, R>) -> Self {
-        Self { inner: s }
+impl<'r, 'l, R> From<Session<'r, 'l>> for SessionAdapter<'r, 'l, R> {
+    fn from(s: Session<'r, 'l>) -> Self {
+        Self {
+            inner: s,
+            _phantom_data: PhantomData,
+        }
     }
 }
 
 #[allow(clippy::from_over_into)]
-impl<'r, 'l, R> Into<Session<'r, 'l, R>> for SessionAdapter<'r, 'l, R> {
-    fn into(self) -> Session<'r, 'l, R> {
+impl<'r, 'l, R> Into<Session<'r, 'l>> for SessionAdapter<'r, 'l, R> {
+    fn into(self) -> Session<'r, 'l> {
         self.inner
     }
 }
 
-impl<'r, 'l, R> AsRef<Session<'r, 'l, R>> for SessionAdapter<'r, 'l, R> {
-    fn as_ref(&self) -> &Session<'r, 'l, R> {
+impl<'r, 'l, R> AsRef<Session<'r, 'l>> for SessionAdapter<'r, 'l, R> {
+    fn as_ref(&self) -> &Session<'r, 'l> {
         &self.inner
     }
 }
 
-impl<'r, 'l, R> AsMut<Session<'r, 'l, R>> for SessionAdapter<'r, 'l, R> {
-    fn as_mut(&mut self) -> &mut Session<'r, 'l, R> {
+impl<'r, 'l, R> AsMut<Session<'r, 'l>> for SessionAdapter<'r, 'l, R> {
+    fn as_mut(&mut self) -> &mut Session<'r, 'l> {
         &mut self.inner
     }
 }
@@ -102,12 +105,12 @@ impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
     //}
 
     pub(crate) fn check_and_rearrange_args_by_signer_position(
-        func: Arc<Function>,
+        func: &LoadedFunction,
         args: Vec<Vec<u8>>,
         sender: AccountAddress,
     ) -> VMResult<Vec<Vec<u8>>> {
         let has_signer = func
-            .parameter_types()
+            .param_tys()
             .iter()
             .position(|i| matches!(i, &Type::Signer))
             .map(|pos| {
@@ -229,11 +232,10 @@ impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
                 }
 
                 let old_module_ref = self.inner.load_module(&module_id)?;
-                let old_module = old_module_ref.module();
-                let old_m = normalized::Module::new(old_module);
-                let new_m = normalized::Module::new(module);
-                if Compatibility::new(true, true, false)
-                    .check(&old_m, &new_m)
+                let old_module =
+                    CompiledModule::deserialize(old_module_ref.as_ref()).map_err(|e| Err(e))?;
+                if Compatibility::new(true, false)
+                    .check(&old_module, module)
                     .is_err()
                     && !option.force_publish
                 {
@@ -263,18 +265,13 @@ impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
         sender: AccountAddress,
     ) -> VMResult<()> {
         //load the script, perform verification
-        let (
-            main,
-            LoadedFunctionInstantiation {
-                type_arguments: _,
-                parameters,
-                return_,
-            },
-        ) = self.inner.load_script(script.borrow(), ty_args)?;
+        let function = self
+            .inner
+            .load_script(script.borrow(), ty_args.as_slice())?;
 
-        Self::check_script_return(return_)?;
+        Self::check_script_return(ty_args.as_slice())?;
 
-        self.check_script_signer_and_build_args(main, parameters, args, sender)?;
+        self.check_script_signer_and_build_args(&function, ty_args, args, sender)?;
 
         Ok(())
     }
@@ -287,25 +284,18 @@ impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
         args: Vec<Vec<u8>>,
         sender: AccountAddress,
     ) -> VMResult<()> {
-        let (
-            _module,
-            func,
-            LoadedFunctionInstantiation {
-                type_arguments: _,
-                parameters,
-                return_,
-            },
-        ) = self.inner.load_function(module, function_name, &ty_args)?;
+        let func = self.inner.load_function(module, function_name, &ty_args)?;
 
-        Self::check_script_return(return_)?;
+        Self::check_script_return(func.ty_args())?;
 
-        self.check_script_signer_and_build_args(func, parameters, args, sender)?;
+        self.check_script_signer_and_build_args(&func, ty_args, args, sender)?;
 
         Ok(())
     }
 
+    // TODO(simon): what's the difference between Type and TypeTag?
     //ensure the script function not return value
-    pub(crate) fn check_script_return(return_: Vec<Type>) -> VMResult<()> {
+    pub(crate) fn check_script_return<T: std::fmt::Debug>(return_: &[T]) -> VMResult<()> {
         if !return_.is_empty() {
             Err(PartialVMError::new(StatusCode::RET_TYPE_MISMATCH_ERROR)
                 .with_message(format!(
@@ -320,8 +310,8 @@ impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
 
     fn check_script_signer_and_build_args(
         &self,
-        func: Arc<Function>,
-        arg_tys: Vec<Type>,
+        func: &LoadedFunction,
+        arg_tys: Vec<TypeTag>,
         args: Vec<Vec<u8>>,
         sender: AccountAddress,
     ) -> VMResult<()> {
@@ -333,8 +323,8 @@ impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
 
     /// Clear vm runtimer loader's cache to reload new modules from state cache
     fn empty_loader_cache(&self) -> VMResult<()> {
-        self.inner.mark_loader_cache_as_invaliddated();
-        self.inner.flush_loader_cache_if_invalidated();
+        self.inner.get_move_vm().mark_loader_cache_as_invalid();
+        self.inner.get_move_vm().flush_loader_cache_if_invalidated();
         Ok(())
     }
 }

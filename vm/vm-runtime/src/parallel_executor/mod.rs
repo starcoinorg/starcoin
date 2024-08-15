@@ -103,8 +103,9 @@ impl ParallelStarcoinVM {
                     Some(err),
                 ))
             }
-            Err(Error::InvariantViolation) => Err(VMStatus::Error(
+            Err(Error::InvariantViolation) => Err(VMStatus::error(
                 StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR,
+                None,
             )),
             Err(Error::UserError(err)) => Err(err),
         }

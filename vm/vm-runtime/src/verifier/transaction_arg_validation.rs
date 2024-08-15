@@ -13,7 +13,8 @@ use move_core_types::vm_status::StatusCode;
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::Identifier, language_storage::ModuleId,
 };
-use move_vm_runtime::session::LoadedFunctionInstantiation;
+use move_vm_runtime::module_traversal::{TraversalContext, TraversalStorage};
+use move_vm_runtime::LoadedFunction;
 use move_vm_types::gas::{GasMeter, UnmeteredGasMeter};
 use move_vm_types::loaded_data::runtime_types::Type;
 use once_cell::sync::Lazy;
@@ -70,9 +71,9 @@ static ALLOWED_STRUCTS: ConstructorMap = Lazy::new(|| {
             },
         ),
     ]
-    .into_iter()
-    .map(|(s, validator)| (s.to_string(), validator))
-    .collect()
+        .into_iter()
+        .map(|(s, validator)| (s.to_string(), validator))
+        .collect()
 });
 
 fn get_allowed_structs() -> &'static ConstructorMap {
@@ -89,13 +90,13 @@ pub(crate) fn validate_combine_singer_and_args<S: MoveResolverExt>(
     session: &mut SessionAdapter<S>,
     senders: Vec<AccountAddress>,
     args: &[impl Borrow<[u8]>],
-    func: &LoadedFunctionInstantiation,
+    func: &LoadedFunction,
 ) -> VMResult<()> {
-    SessionAdapter::<S>::check_script_return(func.return_.clone())?;
+    SessionAdapter::<S>::check_script_return(func.return_tys())?;
 
     let mut signer_param_cnt = 0;
     // find all signer params at the beginning
-    for ty in func.parameters.iter() {
+    for ty in func.param_tys() {
         match ty {
             Type::Signer => signer_param_cnt += 1,
             Type::Reference(inner_type) => {
@@ -109,10 +110,10 @@ pub(crate) fn validate_combine_singer_and_args<S: MoveResolverExt>(
 
     let allowed_structs = get_allowed_structs();
     // Need to keep this here to ensure we return the historic correct error code for replay
-    for ty in func.parameters[signer_param_cnt..].iter() {
+    for ty in func.param_tys()[signer_param_cnt..].iter() {
         let valid = is_valid_txn_arg(
             session,
-            &ty.subst(&func.type_arguments).unwrap(),
+            &ty.subst(&func.ty_args()).unwrap(),
             allowed_structs,
         );
         if !valid {
@@ -126,13 +127,13 @@ pub(crate) fn validate_combine_singer_and_args<S: MoveResolverExt>(
         }
     }
 
-    if (signer_param_cnt + args.len()) != func.parameters.len() {
+    if (signer_param_cnt + args.len()) != func.param_tys().len() {
         return Err(
             PartialVMError::new(StatusCode::NUMBER_OF_ARGUMENTS_MISMATCH)
                 .with_message(format!(
                     "signer params {signer_param_cnt}, args {}, func parameters {}",
                     args.len(),
-                    func.parameters.len()
+                    func.param_tys().len()
                 ))
                 .finish(Location::Script),
         );
@@ -154,9 +155,9 @@ pub(crate) fn validate_combine_singer_and_args<S: MoveResolverExt>(
     // FAILED_TO_DESERIALIZE_ARGUMENT error.
     let _ = construct_args(
         session,
-        &func.parameters[signer_param_cnt..],
+        &func.param_tys()[signer_param_cnt..],
         args,
-        &func.type_arguments,
+        &func.ty_args(),
         allowed_structs,
         false,
     )?;
@@ -175,7 +176,7 @@ pub(crate) fn is_valid_txn_arg<S: MoveResolverExt>(
     match typ {
         Bool | U8 | U16 | U32 | U64 | U128 | U256 | Address => true,
         Vector(inner) => is_valid_txn_arg(session, inner, allowed_structs),
-        Struct(idx) | StructInstantiation(idx, _) => session
+        Struct { idx, .. } | StructInstantiation { idx, .. } => session
             .inner
             .get_struct_type(*idx)
             .map(|st| {
@@ -306,7 +307,7 @@ pub(crate) fn recursively_construct_arg<S: MoveResolverExt>(
                 len -= 1;
             }
         }
-        Struct(idx) | StructInstantiation(idx, _) => {
+        Struct { idx, .. } | StructInstantiation { idx, .. } => {
             let st = session
                 .inner
                 .get_struct_type(*idx)
@@ -409,17 +410,22 @@ fn validate_and_construct<S: MoveResolverExt>(
         *max_invocations -= 1;
     }
 
-    let (module, function, instantiation) = session.inner.load_function_with_type_arg_inference(
+    let function = session.inner.load_function_with_type_arg_inference(
         &constructor.module,
         constructor.function.as_ref(),
         expected_type,
     )?;
     let mut args = vec![];
-    for param_type in &instantiation.parameters {
+    let ty_builder = session.get_ty_builder();
+    for param_ty in function.param_tys() {
         let mut arg = vec![];
+        let arg_ty = ty_builder
+            .create_ty_with_subst(param_ty, function.ty_args())
+            .unwrap();
+
         recursively_construct_arg(
             session,
-            &param_type.subst(&instantiation.type_arguments).unwrap(),
+            &arg_ty,
             allowed_structs,
             cursor,
             initial_cursor_len,
@@ -429,12 +435,12 @@ fn validate_and_construct<S: MoveResolverExt>(
         )?;
         args.push(arg);
     }
-    let serialized_result = session.inner.execute_instantiated_function(
-        module,
+    let storage = TraversalStorage::new();
+    let serialized_result = session.execute_loaded_function(
         function,
-        instantiation,
         args,
         gas_meter,
+        &mut TraversalContext::new(&storage),
     )?;
     let mut ret_vals = serialized_result.return_values;
     // We know ret_vals.len() == 1
