@@ -393,6 +393,9 @@ where
             return Ok(());
         }
         for parent in parents {
+            if parent != block_header.parent_hash() {
+                continue;
+            }
             if !self.chain.has_dag_block(parent)? {
                 if absent_blocks.contains(&parent) {
                     continue;
