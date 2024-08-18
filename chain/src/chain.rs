@@ -1285,7 +1285,22 @@ impl ChainReader for BlockChain {
     }
 
     fn execute(&mut self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
-        self.execute_dag_block(verified_block)
+        let header = verified_block.0.header().clone();
+        if self.check_chain_type()? == ChainType::Single {
+            Self::execute_block_and_save(
+                self.storage.as_ref(),
+                self.statedb.fork(),
+                self.txn_accumulator.fork(None),
+                self.block_accumulator.fork(None),
+                &self.epoch,
+                Some(self.status.status.clone()),
+                verified_block.0,
+                &header.chain_id(),
+                self.vm_metrics.clone(),
+            )
+        } else {
+            self.execute_dag_block(verified_block)
+        }
     }
 
     fn execute_without_save(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {

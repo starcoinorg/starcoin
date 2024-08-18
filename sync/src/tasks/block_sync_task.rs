@@ -429,6 +429,14 @@ where
     }
 
     pub fn ensure_dag_parent_blocks_exist(&mut self, block_header: BlockHeader) -> Result<()> {
+        if self.chain.check_chain_type()? == ChainType::Single {
+            info!(
+                "the block is not a dag block, skipping, its id: {:?}, its number {:?}",
+                block_header.id(),
+                block_header.number()
+            );
+            return Ok(());
+        }
         if self.chain.has_dag_block(block_header.id())? {
             info!(
                 "the dag block exists, skipping, its id: {:?}, its number {:?}",
