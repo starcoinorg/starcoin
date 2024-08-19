@@ -4,7 +4,6 @@
 // see implementation in `aptos-core`
 // https://github.com/aptos-labs/aptos-core/blob/3af88bc872221c4958e6163660c60bc07bf53d38/aptos-move/aptos-vm/src/verifier/transaction_arg_validation.rs#L1
 
-use crate::move_vm_ext::MoveResolverExt;
 use crate::vm_adapter::SessionAdapter;
 use move_binary_format::errors::{Location, PartialVMError, VMError, VMResult};
 use move_binary_format::file_format::FunctionDefinitionIndex;
@@ -86,13 +85,13 @@ fn get_allowed_structs() -> &'static ConstructorMap {
 /// 2. number of signers is same as the number of senders
 /// 3. check arg types are allowed after signers
 ///
-pub(crate) fn validate_combine_singer_and_args<S: MoveResolverExt>(
-    session: &mut SessionAdapter<S>,
+pub(crate) fn validate_combine_singer_and_args(
+    session: &mut SessionAdapter,
     senders: Vec<AccountAddress>,
     args: &[impl Borrow<[u8]>],
     func: &LoadedFunction,
 ) -> VMResult<()> {
-    SessionAdapter::<S>::check_script_return(func.return_tys())?;
+    SessionAdapter::check_script_return(func.return_tys())?;
 
     let mut signer_param_cnt = 0;
     // find all signer params at the beginning
@@ -166,8 +165,8 @@ pub(crate) fn validate_combine_singer_and_args<S: MoveResolverExt>(
 }
 
 // Return whether the argument is valid/allowed and whether it needs construction.
-pub(crate) fn is_valid_txn_arg<S: MoveResolverExt>(
-    session: &SessionAdapter<S>,
+pub(crate) fn is_valid_txn_arg(
+    session: &SessionAdapter,
     typ: &Type,
     allowed_structs: &ConstructorMap,
 ) -> bool {
@@ -191,8 +190,8 @@ pub(crate) fn is_valid_txn_arg<S: MoveResolverExt>(
 // Construct arguments. Walk through the arguments and according to the signature
 // construct arguments that require so.
 // TODO: This needs a more solid story and a tighter integration with the VM.
-pub(crate) fn construct_args<S: MoveResolverExt>(
-    session: &mut SessionAdapter<S>,
+pub(crate) fn construct_args(
+    session: &mut SessionAdapter,
     types: &[Type],
     args: &[impl Borrow<[u8]>],
     ty_args: &[Type],
@@ -223,8 +222,8 @@ fn invalid_signature() -> VMError {
     PartialVMError::new(StatusCode::INVALID_MAIN_FUNCTION_SIGNATURE).finish(Location::Script)
 }
 
-fn construct_arg<S: MoveResolverExt>(
-    session: &mut SessionAdapter<S>,
+fn construct_arg(
+    session: &mut SessionAdapter,
     ty: &Type,
     allowed_structs: &ConstructorMap,
     arg: Vec<u8>,
@@ -276,8 +275,8 @@ fn construct_arg<S: MoveResolverExt>(
 // A Cursor is used to recursively walk the serialized arg manually and correctly. In effect we
 // are parsing the BCS serialized implicit constructor invocation tree, while serializing the
 // constructed types into the output parameter arg.
-pub(crate) fn recursively_construct_arg<S: MoveResolverExt>(
-    session: &mut SessionAdapter<S>,
+pub(crate) fn recursively_construct_arg(
+    session: &mut SessionAdapter,
     ty: &Type,
     allowed_structs: &ConstructorMap,
     cursor: &mut Cursor<&[u8]>,
@@ -346,8 +345,8 @@ pub(crate) fn recursively_construct_arg<S: MoveResolverExt>(
 // constructed value. This is the correct data to pass as the argument to a function taking
 // said struct as a parameter. In this function we execute the constructor constructing the
 // value and returning the BCS serialized representation.
-fn validate_and_construct<S: MoveResolverExt>(
-    session: &mut SessionAdapter<S>,
+fn validate_and_construct(
+    session: &mut SessionAdapter,
     expected_type: &Type,
     constructor: &FunctionId,
     allowed_structs: &ConstructorMap,

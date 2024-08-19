@@ -15,10 +15,8 @@ use move_core_types::{
 use move_vm_runtime::{session::Session, LoadedFunction};
 use move_vm_types::gas::GasMeter;
 use move_vm_types::loaded_data::runtime_types::Type;
-use move_vm_types::resolver::MoveResolver;
 use std::borrow::Borrow;
 use std::collections::BTreeSet;
-use std::marker::PhantomData;
 use tracing::warn;
 
 /// Publish module bundle options
@@ -31,40 +29,36 @@ pub struct PublishModuleBundleOption {
 }
 
 /// An adapter for wrap MoveVM Session
-pub struct SessionAdapter<'r, 'l, R> {
+pub struct SessionAdapter<'r, 'l> {
     pub(crate) inner: Session<'r, 'l>,
-    _phantom_data: PhantomData<R>,
 }
 
-impl<'r, 'l, R> From<Session<'r, 'l>> for SessionAdapter<'r, 'l, R> {
+impl<'r, 'l> From<Session<'r, 'l>> for SessionAdapter<'r, 'l> {
     fn from(s: Session<'r, 'l>) -> Self {
-        Self {
-            inner: s,
-            _phantom_data: PhantomData,
-        }
+        Self { inner: s }
     }
 }
 
 #[allow(clippy::from_over_into)]
-impl<'r, 'l, R> Into<Session<'r, 'l>> for SessionAdapter<'r, 'l, R> {
+impl<'r, 'l> Into<Session<'r, 'l>> for SessionAdapter<'r, 'l> {
     fn into(self) -> Session<'r, 'l> {
         self.inner
     }
 }
 
-impl<'r, 'l, R> AsRef<Session<'r, 'l>> for SessionAdapter<'r, 'l, R> {
+impl<'r, 'l> AsRef<Session<'r, 'l>> for SessionAdapter<'r, 'l> {
     fn as_ref(&self) -> &Session<'r, 'l> {
         &self.inner
     }
 }
 
-impl<'r, 'l, R> AsMut<Session<'r, 'l>> for SessionAdapter<'r, 'l, R> {
+impl<'r, 'l> AsMut<Session<'r, 'l>> for SessionAdapter<'r, 'l> {
     fn as_mut(&mut self) -> &mut Session<'r, 'l> {
         &mut self.inner
     }
 }
 
-impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
+impl<'r, 'l> SessionAdapter<'r, 'l> {
     ///// wrapper of Session, push signer as the first argument of function.
     //pub fn execute_entry_function(
     //    &mut self,
@@ -206,7 +200,7 @@ impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
                     IndexKind::AddressIdentifier,
                     module.self_handle_idx().0,
                 )
-                    .finish(Location::Undefined));
+                .finish(Location::Undefined));
             }
         }
 
@@ -242,7 +236,7 @@ impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
                     return Err(PartialVMError::new(
                         StatusCode::BACKWARD_INCOMPATIBLE_MODULE_UPDATE,
                     )
-                        .finish(Location::Undefined));
+                    .finish(Location::Undefined));
                 }
             }
             if !bundle_unverified.insert(module_id) {

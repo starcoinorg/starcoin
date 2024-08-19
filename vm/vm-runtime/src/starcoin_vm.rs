@@ -430,7 +430,7 @@ impl StarcoinVM {
     ) -> Result<(), VMStatus> {
         let txn_data = TransactionMetadata::new(transaction)?;
         let data_cache = remote_cache.as_move_resolver();
-        let mut session: SessionAdapter<_> = self
+        let mut session: SessionAdapter = self
             .move_vm
             .new_session(&data_cache, SessionId::txn(transaction))
             .into();
@@ -585,7 +585,7 @@ impl StarcoinVM {
 
     fn execute_package<S: MoveResolverExt + StateView>(
         &self,
-        mut session: SessionAdapter<S>,
+        mut session: SessionAdapter,
         gas_meter: &mut StarcoinGasMeter,
         txn_data: &TransactionMetadata,
         package: &Package,
@@ -694,9 +694,9 @@ impl StarcoinVM {
         }
     }
 
-    fn execute_script_or_script_function<S: MoveResolverExt>(
+    fn execute_script_or_script_function(
         &self,
-        mut session: SessionAdapter<S>,
+        mut session: SessionAdapter,
         gas_meter: &mut StarcoinGasMeter,
         txn_data: &TransactionMetadata,
         payload: &TransactionPayload,
@@ -758,8 +758,8 @@ impl StarcoinVM {
         }
     }
 
-    fn validate_execute_entry_function<S: MoveResolverExt>(
-        session: &mut SessionAdapter<S>,
+    fn validate_execute_entry_function(
+        session: &mut SessionAdapter,
         module: &ModuleId,
         function_name: &IdentStr,
         ty_args: Vec<TypeTag>,
@@ -778,7 +778,7 @@ impl StarcoinVM {
             &loaded_func,
         )?;
 
-        let _final_args = SessionAdapter::<S>::check_and_rearrange_args_by_signer_position(
+        let _final_args = SessionAdapter::check_and_rearrange_args_by_signer_position(
             loaded_func.borrow(),
             args.iter().map(|b| b.borrow().to_vec()).collect(),
             sender,
@@ -793,8 +793,8 @@ impl StarcoinVM {
         )
     }
 
-    fn validate_execute_script<S: MoveResolverExt>(
-        session: &mut SessionAdapter<S>,
+    fn validate_execute_script(
+        session: &mut SessionAdapter,
         script: impl Borrow<[u8]>,
         ty_args: Vec<TypeTag>,
         args: Vec<impl Borrow<[u8]>>,
@@ -812,7 +812,7 @@ impl StarcoinVM {
             &loaded_func,
         )?;
 
-        let _final_args = SessionAdapter::<S>::check_and_rearrange_args_by_signer_position(
+        let _final_args = SessionAdapter::check_and_rearrange_args_by_signer_position(
             loaded_func.borrow(),
             args.iter().map(|b| b.borrow().to_vec()).collect(),
             sender,
@@ -830,9 +830,9 @@ impl StarcoinVM {
 
     /// Run the prologue of a transaction by calling into `PROLOGUE_NAME` function stored
     /// in the `ACCOUNT_MODULE` on chain.
-    fn run_prologue<R: MoveResolverExt>(
+    fn run_prologue(
         &self,
-        session: &mut SessionAdapter<R>,
+        session: &mut SessionAdapter,
         gas_meter: &mut StarcoinGasMeter,
         txn_data: &TransactionMetadata,
     ) -> Result<(), VMStatus> {
@@ -891,9 +891,9 @@ impl StarcoinVM {
 
     /// Run the epilogue of a transaction by calling into `EPILOGUE_NAME` function stored
     /// in the `ACCOUNT_MODULE` on chain.
-    fn run_epilogue<R: MoveResolverExt>(
+    fn run_epilogue(
         &self,
-        session: &mut SessionAdapter<R>,
+        session: &mut SessionAdapter,
         gas_meter: &mut StarcoinGasMeter,
         txn_data: &TransactionMetadata,
         success: bool,
@@ -1025,7 +1025,7 @@ impl StarcoinVM {
             }
         }
         let args = serialize_values(&args_vec);
-        let mut session: SessionAdapter<_> = self.move_vm.new_session(storage, session_id).into();
+        let mut session: SessionAdapter = self.move_vm.new_session(storage, session_id).into();
         let traverse_storage = TraversalStorage::new();
         session
             .as_mut()
@@ -1072,7 +1072,7 @@ impl StarcoinVM {
             }
         };
 
-        let session: SessionAdapter<_> = self
+        let session: SessionAdapter = self
             .move_vm
             .new_session(storage, SessionId::txn_meta(&txn_data))
             .into();
@@ -1417,9 +1417,9 @@ impl StarcoinVM {
         Ok(result)
     }
 
-    fn success_transaction_cleanup<R: MoveResolverExt>(
+    fn success_transaction_cleanup(
         &self,
-        mut session: SessionAdapter<R>,
+        mut session: SessionAdapter,
         gas_meter: &mut StarcoinGasMeter,
         txn_data: &TransactionMetadata,
     ) -> Result<(VMStatus, TransactionOutput), VMStatus> {
@@ -1446,7 +1446,7 @@ impl StarcoinVM {
         storage: &S,
     ) -> (VMStatus, TransactionOutput) {
         gas_meter.set_metering(false);
-        let mut session: SessionAdapter<_> = self
+        let mut session: SessionAdapter = self
             .move_vm
             .new_session(storage, SessionId::txn_meta(txn_data))
             .into();
@@ -1599,9 +1599,9 @@ pub fn chunk_block_transactions(txns: Vec<Transaction>) -> Vec<TransactionBlock>
     blocks
 }
 
-pub(crate) fn charge_global_write_gas_usage<R: MoveResolverExt>(
+pub(crate) fn charge_global_write_gas_usage(
     gas_meter: &mut StarcoinGasMeter,
-    session: &SessionAdapter<R>,
+    session: &SessionAdapter,
     sender: &AccountAddress,
 ) -> Result<(), VMStatus> {
     let write_set_gas = u64::from(gas_meter.cal_write_set_gas());
@@ -1618,9 +1618,9 @@ pub(crate) fn charge_global_write_gas_usage<R: MoveResolverExt>(
         .map_err(|p_err| p_err.finish(Location::Undefined).into_vm_status())
 }
 
-pub(crate) fn get_transaction_output<A: AccessPathCache, R: MoveResolverExt>(
+pub(crate) fn get_transaction_output<A: AccessPathCache>(
     ap_cache: &mut A,
-    session: SessionAdapter<R>,
+    session: SessionAdapter,
     gas_left: Gas,
     max_gas_amount: Gas,
     status: KeptVMStatus,
