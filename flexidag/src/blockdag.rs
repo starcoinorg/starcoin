@@ -160,7 +160,7 @@ impl BlockDAG {
                     })
             })
             .collect::<Vec<_>>();
-        if parents.is_empty() {
+        if parents.is_empty() && !header.is_genesis() {
             bail!("no parent found for block: {:?}", header.id());
         }
         debug!(
