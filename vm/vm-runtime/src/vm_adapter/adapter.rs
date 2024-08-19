@@ -206,7 +206,7 @@ impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
                     IndexKind::AddressIdentifier,
                     module.self_handle_idx().0,
                 )
-                .finish(Location::Undefined));
+                    .finish(Location::Undefined));
             }
         }
 
@@ -232,8 +232,8 @@ impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
                 }
 
                 let old_module_ref = self.inner.load_module(&module_id)?;
-                let old_module =
-                    CompiledModule::deserialize(old_module_ref.as_ref()).map_err(|e| Err(e))?;
+                let old_module = CompiledModule::deserialize(old_module_ref.as_ref())
+                    .map_err(|e| e.finish(Location::Undefined))?;
                 if Compatibility::new(true, false)
                     .check(&old_module, module)
                     .is_err()
@@ -242,7 +242,7 @@ impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
                     return Err(PartialVMError::new(
                         StatusCode::BACKWARD_INCOMPATIBLE_MODULE_UPDATE,
                     )
-                    .finish(Location::Undefined));
+                        .finish(Location::Undefined));
                 }
             }
             if !bundle_unverified.insert(module_id) {

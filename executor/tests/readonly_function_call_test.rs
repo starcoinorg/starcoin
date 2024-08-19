@@ -131,12 +131,12 @@ fn test_readonly_function_call() -> Result<()> {
         vec![TransactionArgument::Address(*account1.address())],
         None,
     )
-        .map_err(|err| {
-            assert_eq!(
-                err.downcast::<VMStatus>().unwrap(),
-                VMStatus::error(StatusCode::REJECTED_WRITE_SET, None)
-            );
-        });
+    .map_err(|err| {
+        assert_eq!(
+            err.downcast::<VMStatus>().unwrap(),
+            VMStatus::error(StatusCode::REJECTED_WRITE_SET, None)
+        );
+    });
 
     Ok(())
 }
