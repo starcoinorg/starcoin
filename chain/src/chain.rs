@@ -3,7 +3,6 @@
 
 use crate::verifier::{BlockVerifier, DagVerifier, FullVerifier};
 use anyhow::{bail, ensure, format_err, Ok, Result};
-use once_cell::sync::Lazy;
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_accumulator::inmemory::InMemoryAccumulator;
 use starcoin_accumulator::{
@@ -51,10 +50,7 @@ use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::{
-    collections::{BTreeMap, HashMap},
-    sync::Arc,
-};
+use std::{collections::HashMap, sync::Arc};
 
 static OUTPUT_BLOCK: AtomicBool = AtomicBool::new(false);
 
