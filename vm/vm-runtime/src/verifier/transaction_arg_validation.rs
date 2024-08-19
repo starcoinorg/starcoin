@@ -108,13 +108,13 @@ pub(crate) fn validate_combine_singer_and_args(
     }
 
     let allowed_structs = get_allowed_structs();
+    let ty_builder = session.inner.get_ty_builder();
+
     // Need to keep this here to ensure we return the historic correct error code for replay
     for ty in func.param_tys()[signer_param_cnt..].iter() {
-        let valid = is_valid_txn_arg(
-            session,
-            &ty.subst(&func.ty_args()).unwrap(),
-            allowed_structs,
-        );
+        let subst_res = ty_builder.create_ty_with_subst(ty, func.ty_args());
+        let typ = subst_res.map_err(|e| e.finish(Location::Undefined))?;
+        let valid = is_valid_txn_arg(session, &typ, allowed_structs);
         if !valid {
             return Err(
                 PartialVMError::new(StatusCode::INVALID_MAIN_FUNCTION_SIGNATURE)
@@ -204,10 +204,13 @@ pub(crate) fn construct_args(
     if types.len() != args.len() {
         return Err(invalid_signature());
     }
+    let ty_builder = session.inner.get_ty_builder();
     for (ty, arg) in types.iter().zip(args) {
+        let subst_res = ty_builder.create_ty_with_subst(ty, ty_args);
+        let ty = subst_res.map_err(|e| e.finish(Location::Undefined))?;
         let arg = construct_arg(
             session,
-            &ty.subst(ty_args).unwrap(),
+            &ty,
             allowed_structs,
             arg.borrow().to_vec(),
             &mut gas_meter,
@@ -415,7 +418,7 @@ fn validate_and_construct(
         expected_type,
     )?;
     let mut args = vec![];
-    let ty_builder = session.get_ty_builder();
+    let ty_builder = session.inner.get_ty_builder();
     for param_ty in function.param_tys() {
         let mut arg = vec![];
         let arg_ty = ty_builder
@@ -435,7 +438,7 @@ fn validate_and_construct(
         args.push(arg);
     }
     let storage = TraversalStorage::new();
-    let serialized_result = session.execute_loaded_function(
+    let serialized_result = session.inner.execute_loaded_function(
         function,
         args,
         gas_meter,
