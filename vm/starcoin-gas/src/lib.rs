@@ -25,4 +25,5 @@ pub use move_core_types::gas_algebra::{
     Arg, Byte, GasQuantity, InternalGas, InternalGasPerArg, InternalGasPerByte, InternalGasUnit,
     NumArgs, NumBytes, UnitDiv,
 };
+pub const LATEST_GAS_FEATURE_VERSION: u64 = 13;
 pub use starcoin_gas_algebra_ext::InstructionGasParameters;
