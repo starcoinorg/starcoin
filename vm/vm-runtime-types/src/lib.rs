@@ -5,5 +5,7 @@ pub mod check_change_set;
 pub mod output;
 pub mod resolver;
 
+pub mod storage;
+
 //#[cfg(test)]
 //mod tests;
