@@ -14,7 +14,7 @@ starcoin-vm-types = { workspace = true }
 starcoin-gas = { workspace = true }
 move-core-types = { workspace = true }
 anyhow = { workspace = true }
-bytes = "1.6.1"
+bytes = { workspace = true }
 
 
 [dev-dependencies]
