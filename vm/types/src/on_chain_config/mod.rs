@@ -47,6 +47,7 @@ pub use self::{
     timestamp::CurrentTimeMicroseconds,
     version::{version_config_type_tag, Version, G_VERSION_CONFIG_IDENTIFIER},
     vm_config::*,
+    starcoin_features::*,
 };
 pub use crate::on_chain_resource::GlobalTimeOnChain;
 use crate::state_store::state_key::StateKey;
