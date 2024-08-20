@@ -20,6 +20,7 @@ mod move_stdlib;
 mod nursery;
 mod table;
 mod transaction;
+mod abstract_algebra;
 
 pub use algebra::{FeePerGasUnit, Gas};
 pub use gas_meter::{FromOnChainGasSchedule, InitialGasSchedule, ToOnChainGasSchedule};
