@@ -19,6 +19,8 @@ use std::{collections::HashMap, sync::Arc};
 
 mod consensus_config;
 mod dao_config;
+mod starcoin_features;
+
 mod flexi_dag_config;
 mod gas_schedule;
 mod genesis_gas_schedule;
