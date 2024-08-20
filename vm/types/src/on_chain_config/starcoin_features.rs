@@ -47,6 +47,7 @@ impl Features {
         self.features[byte_index] |= bit_mask;
     }
 
+    #[allow(dead_code)]
     pub fn is_enabled(&self, flag: FeatureFlag) -> bool {
         let val = flag as u64;
         let byte_index = (val / 8) as usize;
