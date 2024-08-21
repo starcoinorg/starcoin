@@ -17,9 +17,7 @@ use move_core_types::{
 };
 use move_vm_types::gas::{GasMeter, SimpleInstruction};
 use move_vm_types::views::{TypeView, ValueView};
-use starcoin_gas_algebra_ext::{
-    FromOnChainGasSchedule, Gas, InitialGasSchedule, ToOnChainGasSchedule,
-};
+use starcoin_gas_algebra_ext::{FromOnChainGasSchedule, Gas, InitialGasSchedule, NativeGasParameters, ToOnChainGasSchedule, VMGasParameters};
 #[cfg(testing)]
 use starcoin_logger::prelude::*;
 use std::collections::BTreeMap;
@@ -27,8 +25,6 @@ use std::collections::BTreeMap;
 use move_binary_format::file_format_common::Opcodes;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::IdentStr;
-use starcoin_gas_algebra_ext::InstructionGasParameters;
-use starcoin_gas_algebra_ext::TransactionGasParameters;
 
 /// The size in bytes for a reference on the stack
 const REFERENCE_SIZE: AbstractMemorySize = AbstractMemorySize::new(8);
@@ -36,82 +32,27 @@ const REFERENCE_SIZE: AbstractMemorySize = AbstractMemorySize::new(8);
 /// For exists checks on data that doesn't exists this is the multiplier that is used.
 const MIN_EXISTS_DATA_SIZE: AbstractMemorySize = AbstractMemorySize::new(100);
 
-/// Gas parameters for all native functions.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct NativeGasParameters {
-    pub move_stdlib: move_stdlib::natives::GasParameters,
-    pub nursery: move_stdlib::natives::NurseryGasParameters,
-    pub starcoin_natives: starcoin_natives::GasParameters,
-    pub table: move_table_extension::GasParameters,
-}
-
-impl FromOnChainGasSchedule for NativeGasParameters {
-    fn from_on_chain_gas_schedule(gas_schedule: &BTreeMap<String, u64>) -> Option<Self> {
-        Some(Self {
-            move_stdlib: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)?,
-            nursery: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)?,
-            starcoin_natives: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)?,
-            table: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)?,
-        })
-    }
-}
-
-impl ToOnChainGasSchedule for NativeGasParameters {
-    fn to_on_chain_gas_schedule(&self) -> Vec<(String, u64)> {
-        let mut entries = self.move_stdlib.to_on_chain_gas_schedule();
-        entries.extend(self.nursery.to_on_chain_gas_schedule());
-        entries.extend(self.starcoin_natives.to_on_chain_gas_schedule());
-        entries.extend(self.table.to_on_chain_gas_schedule());
-        entries
-    }
-}
-
-impl NativeGasParameters {
-    pub fn zeros() -> Self {
-        Self {
-            move_stdlib: move_stdlib::natives::GasParameters::zeros(),
-            nursery: move_stdlib::natives::NurseryGasParameters::zeros(),
-            starcoin_natives: starcoin_natives::GasParameters::zeros(),
-            table: move_table_extension::GasParameters::zeros(),
-        }
-    }
-}
-
-impl InitialGasSchedule for NativeGasParameters {
-    fn initial() -> Self {
-        Self {
-            move_stdlib: InitialGasSchedule::initial(),
-            nursery: InitialGasSchedule::initial(),
-            starcoin_natives: InitialGasSchedule::initial(),
-            table: InitialGasSchedule::initial(),
-        }
-    }
-}
-
 /// Gas parameters for everything that is needed to run the Starcoin blockchain, including
 /// instructions, transactions and native functions from various packages.
 #[derive(Debug, Clone)]
 pub struct StarcoinGasParameters {
-    pub instr: InstructionGasParameters,
-    pub txn: TransactionGasParameters,
+    pub vm: VMGasParameters,
     pub natives: NativeGasParameters,
 }
 
 impl FromOnChainGasSchedule for StarcoinGasParameters {
-    fn from_on_chain_gas_schedule(gas_schedule: &BTreeMap<String, u64>) -> Option<Self> {
-        Some(Self {
-            natives: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)?,
-            instr: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)?,
-            txn: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)?,
+    fn from_on_chain_gas_schedule(gas_schedule: &BTreeMap<String, u64>, feature_version: u64,) -> Result<Self, String> {
+        Ok(Self {
+           vm: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule, feature_version)?,
+            natives: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule, feature_version)?,
         })
     }
 }
 
 impl ToOnChainGasSchedule for StarcoinGasParameters {
-    fn to_on_chain_gas_schedule(&self) -> Vec<(String, u64)> {
-        let mut entries = self.instr.to_on_chain_gas_schedule();
-        entries.extend(self.txn.to_on_chain_gas_schedule());
-        entries.extend(self.natives.to_on_chain_gas_schedule());
+    fn to_on_chain_gas_schedule(&self, feature_version: u64) -> Vec<(String, u64)> {
+        let mut entries = self.vm.to_on_chain_gas_schedule(feature_version);
+        entries.extend(self.natives.to_on_chain_gas_schedule(feature_version));
         entries
     }
 }
@@ -121,8 +62,7 @@ impl StarcoinGasParameters {
     // don't have a genesis storage state.
     pub fn zeros() -> Self {
         Self {
-            instr: InstructionGasParameters::zeros(),
-            txn: TransactionGasParameters::zeros(),
+            vm: VMGasParameters::zeros(),
             natives: NativeGasParameters::zeros(),
         }
     }
@@ -131,8 +71,7 @@ impl StarcoinGasParameters {
 impl InitialGasSchedule for StarcoinGasParameters {
     fn initial() -> Self {
         Self {
-            instr: InitialGasSchedule::initial(),
-            txn: InitialGasSchedule::initial(),
+           vm: InitialGasSchedule::initial(),
             natives: InitialGasSchedule::initial(),
         }
     }
@@ -149,7 +88,7 @@ pub struct StarcoinGasMeter {
 
 impl StarcoinGasMeter {
     pub fn new(gas_params: StarcoinGasParameters, balance: impl Into<Gas>) -> Self {
-        let balance = balance.into().to_unit_with_params(&gas_params.txn);
+        let balance = balance.into().to_unit_with_params(&gas_params.vm.txn);
         Self {
             gas_params,
             balance,
@@ -159,7 +98,7 @@ impl StarcoinGasMeter {
 
     pub fn balance(&self) -> Gas {
         self.balance
-            .to_unit_round_down_with_params(&self.gas_params.txn)
+            .to_unit_round_down_with_params(&self.gas_params.vm.txn)
     }
 
     pub fn deduct_gas(&mut self, amount: InternalGas) -> PartialVMResult<()> {
@@ -187,7 +126,7 @@ impl StarcoinGasMeter {
     }
 
     pub fn charge_intrinsic_gas_for_transaction(&mut self, txn_size: NumBytes) -> VMResult<()> {
-        let cost = self.gas_params.txn.calculate_intrinsic_gas(txn_size);
+        let cost = self.gas_params.vm.txn.calculate_intrinsic_gas(txn_size);
         #[cfg(testing)]
         info!(
             "charge_intrinsic_gas cost InternalGasUnits({}) {}",
@@ -198,7 +137,7 @@ impl StarcoinGasMeter {
     }
 
     pub fn cal_write_set_gas(&self) -> InternalGas {
-        self.gas_params.txn.cal_write_set_gas()
+        self.gas_params.vm.txn.cal_write_set_gas()
     }
 }
 
@@ -305,7 +244,7 @@ impl GasMeter for StarcoinGasMeter {
     }
 
     fn charge_pop(&mut self, _popped_val: impl ValueView) -> PartialVMResult<()> {
-        let params = &self.gas_params.instr;
+        let params = &self.gas_params.vm.instr;
         let cost = params.pop;
         #[cfg(testing)]
         info!(
@@ -323,7 +262,7 @@ impl GasMeter for StarcoinGasMeter {
         args: impl ExactSizeIterator<Item = impl ValueView>,
         _num_locals: NumArgs,
     ) -> PartialVMResult<()> {
-        let params = &self.gas_params.instr;
+        let params = &self.gas_params.vm.instr;
         // Note args.len() may be zero, can't use args.len() + 1 directly
         let cost1 = cal_instr_with_arg(params.call_per_arg, NumArgs::new(1));
         #[cfg(testing)]
@@ -343,7 +282,7 @@ impl GasMeter for StarcoinGasMeter {
         args: impl ExactSizeIterator<Item = impl ValueView>,
         _num_locals: NumArgs,
     ) -> PartialVMResult<()> {
-        let params = &self.gas_params.instr;
+        let params = &self.gas_params.vm.instr;
         // Note args.len() may be zero, can't use ty_args.len() + args.len() + 1 directly
         let cost1 = cal_instr_with_arg(
             params.call_generic_per_arg,
@@ -366,7 +305,7 @@ impl GasMeter for StarcoinGasMeter {
 
     #[inline]
     fn charge_ld_const(&mut self, size: NumBytes) -> PartialVMResult<()> {
-        let instr = &self.gas_params.instr;
+        let instr = &self.gas_params.vm.instr;
         let cost = cal_instr_with_byte(instr.ld_const_per_byte, size);
         #[cfg(testing)]
         info!("LD_CONST cost InternalGasUnits({}) {}", cost, self.charge);
@@ -382,7 +321,7 @@ impl GasMeter for StarcoinGasMeter {
 
     #[inline]
     fn charge_copy_loc(&mut self, val: impl ValueView) -> PartialVMResult<()> {
-        let instr_params = &self.gas_params.instr;
+        let instr_params = &self.gas_params.vm.instr;
         let cost = cal_instr_with_size(
             instr_params.copy_loc_per_abs_mem_unit,
             val.legacy_abstract_memory_size(),
@@ -394,7 +333,7 @@ impl GasMeter for StarcoinGasMeter {
 
     #[inline]
     fn charge_move_loc(&mut self, val: impl ValueView) -> PartialVMResult<()> {
-        let instr_params = &self.gas_params.instr;
+        let instr_params = &self.gas_params.vm.instr;
         let cost = cal_instr_with_size(
             instr_params.move_loc_per_abs_mem_unit,
             val.legacy_abstract_memory_size(),
@@ -406,7 +345,7 @@ impl GasMeter for StarcoinGasMeter {
 
     #[inline]
     fn charge_store_loc(&mut self, val: impl ValueView) -> PartialVMResult<()> {
-        let instr_params = &self.gas_params.instr;
+        let instr_params = &self.gas_params.vm.instr;
         let cost = cal_instr_with_size(
             instr_params.st_loc_per_abs_mem_unit,
             val.legacy_abstract_memory_size(),
@@ -423,7 +362,7 @@ impl GasMeter for StarcoinGasMeter {
         args: impl ExactSizeIterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
         let field_count = AbstractMemorySize::new(args.len() as u64);
-        let params = &self.gas_params.instr;
+        let params = &self.gas_params.vm.instr;
         let size = args.fold(field_count, |acc, val| {
             acc + val.legacy_abstract_memory_size()
         });
@@ -459,7 +398,7 @@ impl GasMeter for StarcoinGasMeter {
                 Opcodes::UNPACK
             }
         };
-        let params = &self.gas_params.instr;
+        let params = &self.gas_params.vm.instr;
         let param = if is_generic {
             params.unpack_generic_per_abs_mem_unit
         } else {
@@ -487,7 +426,7 @@ impl GasMeter for StarcoinGasMeter {
     #[inline]
     fn charge_read_ref(&mut self, val: impl ValueView) -> PartialVMResult<()> {
         let cost = cal_instr_with_size(
-            self.gas_params.instr.read_ref_per_abs_mem_unit,
+            self.gas_params.vm.instr.read_ref_per_abs_mem_unit,
             val.legacy_abstract_memory_size(),
         );
         #[cfg(testing)]
@@ -502,7 +441,7 @@ impl GasMeter for StarcoinGasMeter {
         _old_val: impl ValueView,
     ) -> PartialVMResult<()> {
         let cost = cal_instr_with_size(
-            self.gas_params.instr.write_ref_per_abs_mem_unit,
+            self.gas_params.vm.instr.write_ref_per_abs_mem_unit,
             val.legacy_abstract_memory_size(),
         );
         #[cfg(testing)]
@@ -512,7 +451,7 @@ impl GasMeter for StarcoinGasMeter {
 
     #[inline]
     fn charge_eq(&mut self, lhs: impl ValueView, rhs: impl ValueView) -> PartialVMResult<()> {
-        let instr_params = &self.gas_params.instr;
+        let instr_params = &self.gas_params.vm.instr;
         let cost = cal_instr_with_size(
             instr_params.eq_per_abs_mem_unit,
             lhs.legacy_abstract_memory_size() + rhs.legacy_abstract_memory_size(),
@@ -524,7 +463,7 @@ impl GasMeter for StarcoinGasMeter {
 
     #[inline]
     fn charge_neq(&mut self, lhs: impl ValueView, rhs: impl ValueView) -> PartialVMResult<()> {
-        let instr_params = &self.gas_params.instr;
+        let instr_params = &self.gas_params.vm.instr;
         let cost = cal_instr_with_size(
             instr_params.eq_per_abs_mem_unit,
             lhs.legacy_abstract_memory_size() + rhs.legacy_abstract_memory_size(),
@@ -545,7 +484,7 @@ impl GasMeter for StarcoinGasMeter {
         let cost = if !is_success {
             0.into()
         } else {
-            let params = &self.gas_params.instr;
+            let params = &self.gas_params.vm.instr;
             // NOTE only use mut see https://github.com/starcoinorg/move/blob/starcoin-main/language/move-vm/runtime/src/interpreter.rs#L1018-L1030
             let param = match is_generic {
                 false => params.mut_borrow_global_per_abs_mem_unit,
@@ -573,7 +512,7 @@ impl GasMeter for StarcoinGasMeter {
         _ty: impl TypeView,
         exists: bool,
     ) -> PartialVMResult<()> {
-        let params = &self.gas_params.instr;
+        let params = &self.gas_params.vm.instr;
         let param = match is_generic {
             false => params.exists_per_abs_mem_unit,
             true => params.exists_generic_per_abs_mem_unit,
@@ -604,7 +543,7 @@ impl GasMeter for StarcoinGasMeter {
         val: Option<impl ValueView>,
     ) -> PartialVMResult<()> {
         if let Some(val) = val {
-            let params = &self.gas_params.instr;
+            let params = &self.gas_params.vm.instr;
             let param = match is_generic {
                 false => params.move_from_per_abs_mem_unit,
                 true => params.move_from_generic_per_abs_mem_unit,
@@ -636,7 +575,7 @@ impl GasMeter for StarcoinGasMeter {
         let cost = if !is_success {
             0.into()
         } else {
-            let params = &self.gas_params.instr;
+            let params = &self.gas_params.vm.instr;
             let param = match is_generic {
                 false => params.move_to_per_abs_mem_unit,
                 true => params.move_to_generic_per_abs_mem_unit,
@@ -663,7 +602,7 @@ impl GasMeter for StarcoinGasMeter {
         args: impl ExactSizeIterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
         let num_args = NumArgs::new(args.len() as u64);
-        let params = &self.gas_params.instr;
+        let params = &self.gas_params.vm.instr;
         let cost = cal_instr_with_arg(params.vec_pack_per_elem, num_args);
         #[cfg(testing)]
         info!("VEC_PACK cost InternalGasUnits({}) {}", cost, self.charge);
@@ -672,7 +611,7 @@ impl GasMeter for StarcoinGasMeter {
 
     #[inline]
     fn charge_vec_len(&mut self, _ty: impl TypeView) -> PartialVMResult<()> {
-        let cost = self.gas_params.instr.vec_len_base;
+        let cost = self.gas_params.vm.instr.vec_len_base;
         #[cfg(testing)]
         info!("VEC_LEN cost InternalGasUnits({}) {}", cost, self.charge);
         self.deduct_gas(cost)
@@ -688,7 +627,7 @@ impl GasMeter for StarcoinGasMeter {
         let cost = if !is_success {
             0.into()
         } else {
-            let params = &self.gas_params.instr;
+            let params = &self.gas_params.vm.instr;
             match is_mut {
                 false => params.vec_imm_borrow_base,
                 true => params.vec_mut_borrow_base,
@@ -714,7 +653,7 @@ impl GasMeter for StarcoinGasMeter {
         val: impl ValueView,
     ) -> PartialVMResult<()> {
         let cost = cal_instr_with_size(
-            self.gas_params.instr.vec_push_back_per_abs_mem_unit,
+            self.gas_params.vm.instr.vec_push_back_per_abs_mem_unit,
             val.legacy_abstract_memory_size(),
         );
         #[cfg(testing)]
@@ -731,7 +670,7 @@ impl GasMeter for StarcoinGasMeter {
         _ty: impl TypeView,
         _val: Option<impl ValueView>,
     ) -> PartialVMResult<()> {
-        let cost = self.gas_params.instr.vec_pop_back_base;
+        let cost = self.gas_params.vm.instr.vec_pop_back_base;
         #[cfg(testing)]
         info!(
             "VEC_POP_BACK cost InternalGasUnits({}) {}",
@@ -748,7 +687,7 @@ impl GasMeter for StarcoinGasMeter {
         _elems: impl ExactSizeIterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
         let cost = cal_instr_with_arg(
-            self.gas_params.instr.vec_unpack_per_expected_elem,
+            self.gas_params.vm.instr.vec_unpack_per_expected_elem,
             expect_num_elements,
         );
         #[cfg(testing)]
@@ -758,7 +697,7 @@ impl GasMeter for StarcoinGasMeter {
 
     #[inline]
     fn charge_vec_swap(&mut self, _ty: impl TypeView) -> PartialVMResult<()> {
-        let cost = self.gas_params.instr.vec_swap_base;
+        let cost = self.gas_params.vm.instr.vec_swap_base;
         #[cfg(testing)]
         info!("VEC_SWAP cost InternalGasUnits({}) {}", cost, self.charge);
         self.deduct_gas(cost)

@@ -20,7 +20,7 @@
 
 mod gas_meter;
 
-pub use gas_meter::{NativeGasParameters, StarcoinGasMeter, StarcoinGasParameters};
+pub use gas_meter::{StarcoinGasMeter, StarcoinGasParameters};
 pub use move_core_types::gas_algebra::{
     Arg, Byte, GasQuantity, InternalGas, InternalGasPerArg, InternalGasPerByte, InternalGasUnit,
     NumArgs, NumBytes, UnitDiv,
