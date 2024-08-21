@@ -594,6 +594,7 @@ mod find_ancestor_task;
 mod inner_sync_task;
 #[cfg(test)]
 pub(crate) mod mock;
+mod sync_blue_block_task;
 #[cfg(test)]
 mod test_tools;
 #[cfg(test)]

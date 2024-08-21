@@ -26,7 +26,8 @@ use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::{
     PeerScoreRequest, PeerScoreResponse, SyncCancelRequest, SyncProgressReport,
-    SyncProgressRequest, SyncServiceHandler, SyncStartRequest, SyncStatusRequest, SyncTarget,
+    SyncProgressRequest, SyncPullBlueBlocks, SyncServiceHandler, SyncStartRequest,
+    SyncStatusRequest, SyncTarget,
 };
 use starcoin_txpool::TxPoolService;
 use starcoin_types::block::{Block, BlockIdAndNumber};
@@ -706,6 +707,12 @@ impl ServiceHandler<Self, SyncStartRequest> for SyncService {
             msg.skip_pow_verify,
             msg.strategy,
         ));
+        Ok(())
+    }
+}
+
+impl ServiceHandler<Self, SyncPullBlueBlocks> for SyncService {
+    fn handle(&mut self, msg: SyncPullBlueBlocks, ctx: &mut ServiceContext<Self>) -> Result<()> {
         Ok(())
     }
 }

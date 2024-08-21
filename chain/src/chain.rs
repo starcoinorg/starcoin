@@ -458,6 +458,38 @@ impl BlockChain {
     }
 
     fn execute_dag_block(&mut self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
+        let executed_block = self.execute_block_without_dag_commit(verified_block)?;
+
+        let genesis_header = self
+            .storage
+            .get_block_header_by_hash(self.genesis_hash)?
+            .ok_or_else(|| format_err!("failed to get genesis because it is none"))?;
+
+        let result = self.dag.commit(
+            executed_block.header().clone(),
+            genesis_header.parent_hash(),
+        );
+        match result {
+            anyhow::Result::Ok(_) => info!(
+                "finish to commit dag block: {:?}",
+                executed_block.header().id()
+            ),
+            Err(e) => {
+                if let Some(StoreError::KeyAlreadyExists(_)) = e.downcast_ref::<StoreError>() {
+                    info!("dag block already exist, ignore");
+                } else {
+                    return Err(e);
+                }
+            }
+        }
+        watch(CHAIN_WATCH_NAME, "n27");
+        Ok(executed_block)
+    }
+
+    pub fn execute_block_without_dag_commit(
+        &mut self,
+        verified_block: VerifiedBlock,
+    ) -> Result<ExecutedBlock> {
         info!("execute dag block:{:?}", verified_block.0);
         let block = verified_block.0;
         let selected_parent = block.parent_hash();
@@ -641,23 +673,7 @@ impl BlockChain {
         self.storage.save_block_info(block_info.clone())?;
 
         self.storage.save_table_infos(txn_table_infos)?;
-        let genesis_header = self
-            .storage
-            .get_block_header_by_hash(self.genesis_hash)?
-            .ok_or_else(|| format_err!("failed to get genesis because it is none"))?;
-        let result = self
-            .dag
-            .commit(header.to_owned(), genesis_header.parent_hash());
-        match result {
-            anyhow::Result::Ok(_) => info!("finish to commit dag block: {:?}", block_id),
-            Err(e) => {
-                if let Some(StoreError::KeyAlreadyExists(_)) = e.downcast_ref::<StoreError>() {
-                    info!("dag block already exist, ignore");
-                } else {
-                    return Err(e);
-                }
-            }
-        }
+
         watch(CHAIN_WATCH_NAME, "n26");
         Ok(ExecutedBlock { block, block_info })
     }

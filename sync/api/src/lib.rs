@@ -98,6 +98,13 @@ impl ServiceRequest for SyncStartRequest {
 }
 
 #[derive(Debug, Clone)]
+pub struct SyncPullBlueBlocks;
+
+impl ServiceRequest for SyncPullBlueBlocks {
+    type Response = Result<()>;
+}
+
+#[derive(Debug, Clone)]
 pub struct PeerScoreRequest;
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]

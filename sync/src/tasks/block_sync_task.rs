@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::store::sync_absent_ancestor::DagSyncBlock;
 use crate::store::sync_dag_store::SyncDagStore;
 use crate::tasks::continue_execute_absent_block::ContinueExecuteAbsentBlock;
 use crate::tasks::{BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
@@ -16,7 +15,6 @@ use starcoin_chain::{verifier::BasicVerifier, BlockChain};
 use starcoin_chain_api::{ChainReader, ChainType, ChainWriter, ConnectBlockError, ExecutedBlock};
 use starcoin_config::G_CRATE_VERSION;
 use starcoin_crypto::HashValue;
-use starcoin_dag::consensusdb::schema::ValueCodec;
 use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::MAX_BLOCK_REQUEST_SIZE;
 use starcoin_storage::db_storage::SchemaIterator;
@@ -499,24 +497,18 @@ where
         iter: &mut SchemaIterator<Vec<u8>, Vec<u8>>,
         absent_ancestor: &mut Vec<Block>,
     ) -> anyhow::Result<()> {
-        let results = iter
-            .take(720)
-            .map(|result_block| match result_block {
-                anyhow::Result::Ok((_, data_raw)) => {
-                    let dag_sync_block = DagSyncBlock::decode_value(&data_raw)?;
-                    Ok(dag_sync_block.block.ok_or_else(|| {
-                        format_err!("block in sync dag block should not be none!")
-                    })?)
-                }
-                Err(e) => Err(e),
-            })
-            .collect::<Vec<_>>();
-        for result_block in results {
-            match result_block {
-                anyhow::Result::Ok(block) => absent_ancestor.push(block),
-                Err(e) => return Err(e),
-            }
-        }
+        let mut result_sync_dag_block = vec![];
+        self.sync_dag_store
+            .read_by_iter(iter, &mut result_sync_dag_block, 720)?;
+        absent_ancestor.extend(
+            result_sync_dag_block
+                .into_iter()
+                .map(|data| {
+                    data.block
+                        .ok_or_else(|| format_err!("faild to get the block in sync dag block"))
+                })
+                .collect::<Result<Vec<_>>>()?,
+        );
         anyhow::Result::Ok(())
     }
 

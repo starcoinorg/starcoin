@@ -1,9 +1,10 @@
 use std::{path::Path, sync::Arc};
 
-use anyhow::format_err;
+use anyhow::{bail, format_err};
 use starcoin_config::{temp_dir, RocksdbConfig, StorageConfig};
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::prelude::StoreError;
+use starcoin_dag::consensusdb::schema::ValueCodec;
 use starcoin_logger::prelude::error;
 use starcoin_storage::db_storage::{DBStorage, SchemaIterator};
 use starcoin_types::block::{Block, BlockNumber};
@@ -124,6 +125,27 @@ impl SyncDagStore {
 
     pub fn iter_at_first(&self) -> anyhow::Result<SchemaIterator<Vec<u8>, Vec<u8>>> {
         self.absent_dag_store.iter_at_first()
+    }
+
+    pub fn read_by_iter(
+        &self,
+        iter: &mut SchemaIterator<Vec<u8>, Vec<u8>>,
+        dag_sync_blocks: &mut Vec<DagSyncBlock>,
+        read_size: usize,
+    ) -> anyhow::Result<()> {
+        dag_sync_blocks.extend(iter
+            .take(read_size)
+            .map(|result_block| match result_block {
+                anyhow::Result::Ok((_, data_raw)) => {
+                    anyhow::Ok(DagSyncBlock::decode_value(&data_raw)?)
+                }
+                Err(e) => {
+                    error!("in sync dag store, read by iter failed to decode the value for reason: {:?}", e);
+                    bail!("in sync dag store, read by iter failed to decode the value for reason: {:?}", e)
+                }
+            })
+            .collect::<anyhow::Result<Vec<_>>>()?);
+        anyhow::Result::Ok(())
     }
 
     pub fn delete_dag_sync_block(
