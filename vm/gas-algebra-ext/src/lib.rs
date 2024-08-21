@@ -4,7 +4,7 @@
 // ref aptos-move/aptos-gas-algebra/src/lib.rs
 
 use std::collections::BTreeMap;
-use crate::{move_stdlib::MoveStdlibGasParameters, nursery::NurseryGasParameters, table::TableGasParameters};
+pub use crate::{move_stdlib::MoveStdlibGasParameters, nursery::NurseryGasParameters, table::TableGasParameters, misc::MiscGasParameters};
 use move_core_types::gas_algebra::{Arg};
 pub use move_vm_test_utils::gas_schedule::GasCost;
 use serde::{Deserialize, Serialize};
@@ -22,6 +22,7 @@ mod nursery;
 mod table;
 mod transaction;
 mod abstract_algebra;
+mod misc;
 
 pub use algebra::{FeePerGasUnit, Gas};
 pub use traits::{FromOnChainGasSchedule, InitialGasSchedule, ToOnChainGasSchedule};
@@ -89,6 +90,7 @@ pub struct CostTable {
 
 #[derive(Debug, Clone)]
 pub struct VMGasParameters {
+    pub misc : MiscGasParameters,
     pub instr: InstructionGasParameters,
     pub txn: TransactionGasParameters,
 }
@@ -99,6 +101,7 @@ impl FromOnChainGasSchedule for VMGasParameters {
         feature_version: u64,
     ) -> Result<Self, String> {
         Ok(Self {
+            misc: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule, feature_version)?,
             instr: FromOnChainGasSchedule::from_on_chain_gas_schedule(
                 gas_schedule,
                 feature_version,
@@ -112,6 +115,7 @@ impl ToOnChainGasSchedule for VMGasParameters {
     fn to_on_chain_gas_schedule(&self, feature_version: u64) -> Vec<(String, u64)> {
         let mut entries = self.instr.to_on_chain_gas_schedule(feature_version);
         entries.extend(self.txn.to_on_chain_gas_schedule(feature_version));
+        entries.extend(self.misc.to_on_chain_gas_schedule(feature_version));
         entries
     }
 }
@@ -121,6 +125,7 @@ impl VMGasParameters {
         Self {
             instr: InstructionGasParameters::zeros(),
             txn: TransactionGasParameters::zeros(),
+            misc: MiscGasParameters::zeros(),
         }
     }
 }
@@ -130,6 +135,7 @@ impl InitialGasSchedule for VMGasParameters {
         Self {
             instr: InitialGasSchedule::initial(),
             txn: InitialGasSchedule::initial(),
+            misc: InitialGasSchedule::initial(),
         }
     }
 }
