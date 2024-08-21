@@ -1,7 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use move_core_types::gas_algebra::{GasQuantity, InternalGasUnit, UnitDiv};
+// ref aptos-move/aptos-gas-algebra/src/algebra.rs
+
+pub use move_core_types::gas_algebra::{GasQuantity, InternalGasUnit, UnitDiv};
 
 /// Unit of (external) gas.
 pub enum GasUnit {}

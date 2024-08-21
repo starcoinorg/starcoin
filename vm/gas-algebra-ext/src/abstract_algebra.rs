@@ -1,6 +1,8 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+// ref aptos-move/aptos-gas-algebra/src/abstract_algebra.rs
+
 use either::Either;
 use move_core_types::gas_algebra::{GasQuantity, UnitDiv};
 use std::{

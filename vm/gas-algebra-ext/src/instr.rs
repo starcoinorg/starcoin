@@ -5,7 +5,7 @@
 //! initial values in the genesis and a mapping between the Rust representation and the on-chain
 //! gas schedule.
 
-use crate::gas_meter::EXECUTION_GAS_MULTIPLIER as MUL;
+use crate::traits::EXECUTION_GAS_MULTIPLIER as MUL;
 use move_core_types::gas_algebra::{
     InternalGas, InternalGasPerAbstractMemoryUnit, InternalGasPerArg, InternalGasPerByte,
 };
@@ -13,9 +13,10 @@ use move_core_types::gas_algebra::{
 // see starcoin/vm/types/src/on_chain_config/genesis_gas_schedule.rs
 // same order as https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#instruction_schedule
 // modify should with impl From<VMConfig> for GasSchedule
-crate::params::define_gas_parameters!(
+crate::macros::define_gas_parameters!(
     InstructionGasParameters,
     "instr",
+    VMGasParameters => .instr,
     [
         [pop: InternalGas, "pop", (1 + 1)* MUL],
         [ret: InternalGas, "ret", (638 + 1) * MUL],
@@ -153,36 +154,36 @@ crate::params::define_gas_parameters!(
         ],
         [
             vec_pack_per_elem: InternalGasPerArg,
-            optional "vec_pack.per_elem",
+             "vec_pack.per_elem",
             (84 + 1) * MUL
         ],
-        [vec_len_base: InternalGas, optional "vec_len.base", (98 + 1) * MUL],
+        [vec_len_base: InternalGas,  "vec_len.base", (98 + 1) * MUL],
         [
             vec_imm_borrow_base: InternalGas,
-            optional "vec_imm_borrow.base",
+             "vec_imm_borrow.base",
             (1334 + 1) * MUL
         ],
         [
             vec_mut_borrow_base: InternalGas,
-            optional "vec_mut_borrow.base",
+             "vec_mut_borrow.base",
             (1902 + 1) * MUL
         ],
         [
             vec_push_back_per_abs_mem_unit: InternalGasPerAbstractMemoryUnit,
-            optional "vec_push_back.per_abs_mem_unit",
+             "vec_push_back.per_abs_mem_unit",
             (52 + 1) * MUL
         ],
         [
             vec_pop_back_base: InternalGas,
-            optional "vec_pop_back.base",
+             "vec_pop_back.base",
             (227 + 1) * MUL
         ],
          [
             vec_unpack_per_expected_elem: InternalGasPerArg,
-            optional "vec_unpack.per_expected_elem",
+             "vec_unpack.per_expected_elem",
             (572 + 1) * MUL
         ],
-        [vec_swap_base: InternalGas, optional "vec_swap.base", (1436 + 1) * MUL],
+        [vec_swap_base: InternalGas,  "vec_swap.base", (1436 + 1) * MUL],
         // XXX FIXME YSG, check v6 bytecode cost
         [cast_u16: InternalGas,  "cast_u16", (2 + 1) * MUL],
         [cast_u32: InternalGas,  "cast_u32", (1 + 1)* MUL],
