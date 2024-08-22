@@ -303,14 +303,24 @@ impl<'r, 'l> SessionAdapter<'r, 'l> {
     }
 
     fn check_script_signer_and_build_args(
-        &self,
+        &mut self,
         func: &LoadedFunction,
         arg_tys: Vec<TypeTag>,
         args: Vec<Vec<u8>>,
         sender: AccountAddress,
     ) -> VMResult<()> {
         let final_args = Self::check_and_rearrange_args_by_signer_position(func, args, sender)?;
-        let (_, _) = self.inner.deserialize_args(arg_tys, final_args)?;
+        let arg_tys = arg_tys
+            .into_iter()
+            .map(|tt| self.inner.load_type(&tt))
+            .try_fold(vec![], |mut acc, ty| {
+                acc.push(ty?);
+                Ok(acc)
+            })?;
+        let (_, _) = self
+            .inner
+            .deserialize_args(arg_tys, final_args)
+            .map_err(|e| e.finish(Location::Undefined))?;
 
         Ok(())
     }
