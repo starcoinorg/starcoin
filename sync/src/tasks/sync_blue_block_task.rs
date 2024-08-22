@@ -4,47 +4,66 @@ use anyhow::Context;
 use futures::FutureExt;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_chain::{verifier::DagVerifier, BlockChain};
+use starcoin_config::TimeService;
 use starcoin_crypto::HashValue;
-use starcoin_logger::prelude::error;
+use starcoin_dag::{blockdag::BlockDAG, consensusdb::schema::ValueCodec};
+use starcoin_logger::prelude::{error, info};
 use starcoin_network_rpc_api::MAX_BLOCK_REQUEST_SIZE;
-use starcoin_storage::Store;
+use starcoin_storage::{storage, Store};
 use starcoin_types::block::{AccumulatorInfo, Block, BlockHeader};
 
 use stream_task::{TaskResultCollector, TaskState};
 
-use crate::store::sync_dag_store::SyncDagStore;
+use crate::store::{sync_absent_ancestor::DagSyncBlock, sync_dag_store::SyncDagStore};
 
 use super::BlockFetcher;
 
 #[derive(Clone)]
 struct PrepareTheBlueBlockHash {
-    storage: Arc<dyn Store>,
-    block_accumulator_info: AccumulatorInfo,
-    start_number: u64,
-    step_size: u64,
+    sync_dag_store: SyncDagStore,
+    read_size: usize,
+}
+
+impl PrepareTheBlueBlockHash {
+    pub fn new(sync_dag_store: SyncDagStore, read_size: usize) -> anyhow::Result<Self> {
+        Ok(Self {
+            sync_dag_store,
+            read_size,
+        })
+    }
 }
 
 impl TaskState for PrepareTheBlueBlockHash {
-    type Item = HashValue;
+    type Item = Block;
 
     fn new_sub_task(self) -> futures::future::BoxFuture<'static, anyhow::Result<Vec<Self::Item>>> {
         async move {
-            let block_accumulator = MerkleAccumulator::new_with_info(
-                self.block_accumulator_info,
-                self.storage
-                    .get_accumulator_store(AccumulatorStoreType::Block),
-            );
-            block_accumulator.get_leaves(self.start_number, false, self.step_size)
+            let mut iter = self.sync_dag_store.iter_at_first()?;
+            let mut sync_dag_blocks = vec![];
+            self.sync_dag_store
+                .read_by_iter(&mut iter, &mut sync_dag_blocks, self.read_size)?;
+            anyhow::Ok(
+                sync_dag_blocks
+                    .into_iter()
+                    .map(|sync_block| {
+                        anyhow::Ok(
+                            sync_block
+                                .block
+                                .ok_or_else(|| anyhow::format_err!("sync block is none"))?,
+                        )
+                    })
+                    .collect::<anyhow::Result<Vec<_>>>()?,
+            )
         }
         .boxed()
     }
 
     fn next(&self) -> Option<Self> {
-        Some(Self {
-            storage: self.storage.clone(),
-            block_accumulator_info: self.block_accumulator_info.clone(),
-            start_number: self.start_number.saturating_add(self.step_size),
-            step_size: self.step_size,
+        Some({
+            Self {
+                sync_dag_store: self.sync_dag_store.clone(),
+                read_size: self.read_size,
+            }
         })
     }
 }
@@ -52,17 +71,37 @@ impl TaskState for PrepareTheBlueBlockHash {
 struct ExecuteDagBlock {
     storage: Arc<dyn Store>,
     fetcher: Arc<dyn BlockFetcher>,
-    headers: Vec<BlockHeader>,
-    blocks: Vec<Block>,
-    target_id: HashValue,
-    batch_size: usize,
     sync_dag_store: SyncDagStore,
-    chain: BlockChain,
+    time_service: Arc<dyn TimeService>,
+    dag: BlockDAG,
 }
 
 impl ExecuteDagBlock {
-    fn fetch_blocks(&mut self, mut parents: Vec<HashValue>) -> anyhow::Result<Vec<BlockHeader>> {
-        async_std::task::block_on(async move {
+    async fn fetch_and_execute_absent_blocks(
+        &mut self,
+        block: Block,
+        chain: &mut BlockChain,
+    ) -> anyhow::Result<()> {
+        // fetch the absent blocks
+        let mut count = self.fetch_blocks(block.header().parents_hash()).await?;
+
+        // go through the blocks and execute one by one until all are executed
+        let sync_dag_store = self.sync_dag_store.clone();
+        while count > 0 {
+            let mut iter = sync_dag_store.iter_at_first()?;
+            for result in iter.by_ref() {
+                let (_, value) = result?;
+                let sync_dag_block = DagSyncBlock::decode_value(&value)?;
+                self.execute_block(sync_dag_block, chain)?;
+                count = count.saturating_sub(1);
+            }
+        }
+        anyhow::Ok(())
+    }
+
+    async fn fetch_blocks(&self, mut parents: Vec<HashValue>) -> anyhow::Result<usize> {
+        let mut count = 0usize;
+        loop {
             parents.retain(|header_id| match self.storage.get_block_info(*header_id) {
                 Ok(op_block_info) => op_block_info.is_none(),
                 Err(e) => {
@@ -74,7 +113,7 @@ impl ExecuteDagBlock {
                 }
             });
             if parents.is_empty() {
-                return Ok(vec![]);
+                break;
             }
             let mut blocks = vec![];
             for request_ids in parents.chunks(usize::try_from(MAX_BLOCK_REQUEST_SIZE)?) {
@@ -87,115 +126,85 @@ impl ExecuteDagBlock {
                 );
             }
 
+            count = count.saturating_add(blocks.len());
+
             blocks
                 .iter()
                 .try_for_each(|block| self.sync_dag_store.save_block(block.clone()))?;
 
-            anyhow::Ok(
-                blocks
-                    .into_iter()
-                    .map(|block| block.header().clone())
-                    .collect(),
-            )
-        })
+            parents = blocks
+                .into_iter()
+                .flat_map(|block| block.header().parents_hash())
+                .collect();
+        }
+        anyhow::Ok(count)
     }
 
-    fn fetch_and_save_absent_blocks(&mut self) -> anyhow::Result<()> {
-        let headers = std::mem::take(&mut self.headers);
-        let mut parents = headers
-            .into_iter()
-            .flat_map(|header| header.parents_hash())
-            .collect::<HashSet<_>>()
-            .into_iter()
-            .collect::<Vec<_>>();
-        loop {
-            let headers = self.fetch_blocks(parents.clone())?;
-            if headers.is_empty() {
-                break;
+    fn execute_block(
+        &mut self,
+        sync_blocks: DagSyncBlock,
+        chain: &mut BlockChain,
+    ) -> anyhow::Result<()> {
+        let block = sync_blocks
+            .block
+            .ok_or_else(|| anyhow::format_err!("failed to unwrap the sync dag block"))?;
+
+        if block.header().parents_hash().into_iter().any(|parent_id| {
+            match self.storage.get_block_info(parent_id) {
+                Ok(op_block_info) => {
+                    if op_block_info.is_none() {
+                        info!(
+                            "block: {:?} 's parent_id: {:?} is not executed, waiting",
+                            block.header(),
+                            parent_id
+                        );
+                        true
+                    } else {
+                        false
+                    }
+                }
+                Err(e) => {
+                    error!(
+                        "failed to get the block info by id: {:?}, error: {:?}",
+                        parent_id, e
+                    );
+                    true
+                }
             }
-            parents = std::mem::take(
-                &mut headers
-                    .into_iter()
-                    .flat_map(|header| header.parents_hash())
-                    .collect::<HashSet<_>>(),
-            )
-            .into_iter()
-            .collect::<Vec<_>>();
+        }) {
+            info!(
+                "waiting the parent block executed, header: {:?}",
+                block.header()
+            );
+            return anyhow::Ok(());
         }
+
+        let verified_block = chain.verify_with_verifier::<DagVerifier>(block)?;
+
+        let executed_block = chain.execute_block_without_dag_commit(verified_block)?;
+
+        self.sync_dag_store.delete_dag_sync_block(
+            executed_block.block.header().number(),
+            executed_block.block.id(),
+        )?;
 
         anyhow::Ok(())
     }
-
-    fn execute_block(&mut self) -> anyhow::Result<()> {
-        let sync_dag_store = self.sync_dag_store.clone();
-        let mut absent_block_iter = sync_dag_store
-            .iter_at_first()
-            .context("Failed to create iterator for sync_dag_store")?;
-        let mut local_absent_block = vec![];
-        loop {
-            sync_dag_store.read_by_iter(&mut absent_block_iter, &mut local_absent_block, 720)?;
-            local_absent_block.iter().try_for_each(|block| {
-                let block = block
-                    .block
-                    .as_ref()
-                    .ok_or_else(|| anyhow::format_err!("failed to unwrap the sync dag block"))?
-                    .clone();
-                self.sync_dag_store
-                    .delete_dag_sync_block(block.header().number(), block.id())?;
-
-                let verified_block = self.chain.verify_with_verifier::<DagVerifier>(block)?;
-                self.chain
-                    .execute_block_without_dag_commit(verified_block)?;
-
-                anyhow::Ok(())
-            })?;
-            local_absent_block.retain(|dag_sync_block| {
-                if dag_sync_block.block.is_none() {
-                    return false;
-                }
-                match self.storage.get_block_info(
-                    dag_sync_block
-                        .block
-                        .as_ref()
-                        .expect("dag block is not none")
-                        .header()
-                        .id(),
-                ) {
-                    Ok(op_block_info) => op_block_info.is_none(),
-                    Err(e) => {
-                        error!("failed to unwrap the sync dag block by error: {:?}", e);
-                        true
-                    }
-                }
-            });
-            if local_absent_block.is_empty() {
-                break;
-            }
-        }
-        Ok(())
-    }
 }
 
-impl TaskResultCollector<HashValue> for ExecuteDagBlock {
+impl TaskResultCollector<Block> for ExecuteDagBlock {
     type Output = ();
 
-    fn collect(&mut self, block_id: HashValue) -> anyhow::Result<stream_task::CollectorState> {
-        self.headers.push(
-            self.storage
-                .get_block_header_by_hash(block_id)?
-                .ok_or_else(|| anyhow::format_err!("block header not found by id: {}", block_id))?,
-        );
-
-        if block_id == self.target_id {
-            self.fetch_and_save_absent_blocks()?;
-            self.execute_block()?;
-            anyhow::Ok(stream_task::CollectorState::Enough)
-        } else {
-            if self.batch_size <= self.headers.len() {
-                self.fetch_and_save_absent_blocks()?;
-            }
-            anyhow::Ok(stream_task::CollectorState::Need)
-        }
+    fn collect(&mut self, block: Block) -> anyhow::Result<stream_task::CollectorState> {
+        let mut chain = BlockChain::new(
+            self.time_service.clone(),
+            block.id(),
+            self.storage.clone(),
+            None,
+            self.dag.clone(),
+        )?;
+        async_std::task::block_on(self.fetch_and_execute_absent_blocks(block, &mut chain))?;
+        anyhow::Ok(stream_task::CollectorState::Need)
     }
 
     fn finish(self) -> anyhow::Result<Self::Output> {
