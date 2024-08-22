@@ -491,7 +491,7 @@ impl From<BlockHeaderView> for BlockHeader {
 }
 
 impl FromIterator<BlockHeaderView> for Vec<BlockHeader> {
-    fn from_iter<T: IntoIterator<Item = BlockHeaderView>>(views: T) -> Self {
+    fn from_iter<T: IntoIterator<Item=BlockHeaderView>>(views: T) -> Self {
         let mut blocks = vec![];
         for view in views {
             blocks.push(view.into())
@@ -1045,6 +1045,7 @@ impl From<KeptVMStatus> for TransactionStatusView {
                 location,
                 function,
                 code_offset,
+                message: _,
             } => Self::ExecutionFailure {
                 location,
                 function,
@@ -1084,6 +1085,7 @@ impl From<TransactionStatusView> for TransactionStatus {
                 location,
                 function,
                 code_offset,
+                message: None,
             }),
             TransactionStatusView::Discard {
                 status_code,
@@ -1570,7 +1572,7 @@ impl<T> JsonSchema for StrView<T> {
             instance_type: Some(InstanceType::String.into()),
             ..Default::default()
         }
-        .into()
+            .into()
     }
 }
 
@@ -1693,7 +1695,7 @@ impl FromStr for StructTagView {
 
 impl std::fmt::Display for StrView<TransactionArgument> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", &self.0)
+        write!(f, "{:?}", &self.0)
     }
 }
 

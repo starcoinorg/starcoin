@@ -685,7 +685,7 @@ impl StarcoinVM {
                     gas_meter,
                     sender,
                 )
-                    .map_err(|e| e.into_vm_status())?;
+                .map_err(|e| e.into_vm_status())?;
             }
             charge_global_write_gas_usage(gas_meter, &session, &txn_data.sender())?;
 
@@ -1409,7 +1409,7 @@ impl StarcoinVM {
             change_set,
             table_change_set,
         }
-            .into_change_set(&mut ())?;
+        .into_change_set(&mut ())?;
         if !write_set.is_empty() {
             warn!("Readonly function {} changes state", function_name);
             return Err(VMStatus::error(StatusCode::REJECTED_WRITE_SET, None));
@@ -1468,7 +1468,7 @@ impl StarcoinVM {
                     txn_data.max_gas_amount,
                     status,
                 )
-                    .unwrap_or_else(|e| discard_error_vm_status(e).1);
+                .unwrap_or_else(|e| discard_error_vm_status(e).1);
                 (error_code, txn_output)
             }
             TransactionStatus::Discard(status) => {
@@ -1638,7 +1638,7 @@ pub(crate) fn get_transaction_output<A: AccessPathCache>(
         change_set,
         table_change_set,
     }
-        .into_change_set(ap_cache)?;
+    .into_change_set(ap_cache)?;
     Ok(TransactionOutput::new(
         table_infos,
         write_set,

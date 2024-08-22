@@ -206,7 +206,7 @@ pub fn call_contract<S: StateView>(
                     if (ref_type.as_ref() == &TypeInstantiation::Address)
                         || (ref_type.as_ref() == &TypeInstantiation::Signer) => {}
                 (abi, value) => anyhow::bail!(
-                    "arg type at position {} mismatch, expect {:?}, actual {}",
+                    "arg type at position {} mismatch, expect {:?}, actual {:#?}",
                     i,
                     abi,
                     value
