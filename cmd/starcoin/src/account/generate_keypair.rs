@@ -12,6 +12,7 @@ use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::ValidCryptoMaterialStringExt;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
+use starcoin_vm_types::account_address::Bech32AccountAddress;
 use starcoin_vm_types::transaction::authenticator::{AccountPrivateKey, AccountPublicKey};
 use std::convert::TryInto;
 

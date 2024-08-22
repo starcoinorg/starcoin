@@ -9286,6 +9286,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-service-registry",
  "starcoin-types",
+ "starcoin-vm-types",
  "thiserror",
 ]
 

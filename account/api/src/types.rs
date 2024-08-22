@@ -5,12 +5,12 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_types::account::Account;
-use starcoin_types::account_address::AccountAddress;
 pub use starcoin_types::transaction::authenticator::{AccountPrivateKey, AccountPublicKey};
 use starcoin_types::{
     account_address::{self},
     transaction::authenticator::AuthenticationKey,
 };
+use starcoin_vm_types::account_address::{AccountAddress, Bech32AccountAddress};
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct AccountInfo {
@@ -38,7 +38,7 @@ impl AccountInfo {
             is_default,
             is_readonly,
             is_locked,
-            receipt_identifier: address.to_standard_string(),
+            receipt_identifier: address.to_bech32(),
         }
     }
 
@@ -61,7 +61,7 @@ impl AccountInfo {
             is_readonly: false,
             is_locked: false,
             public_key: account_public_key,
-            receipt_identifier: address.to_standard_string(),
+            receipt_identifier: address.to_bech32(),
         }
     }
 }

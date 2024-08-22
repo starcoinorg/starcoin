@@ -7,6 +7,7 @@
 use crate::transaction::authenticator::AuthenticationKey;
 use starcoin_crypto::ed25519::Ed25519PublicKey;
 
+//TODO(simon): make me private
 pub use starcoin_vm_types::account_address::AccountAddress;
 
 pub fn from_public_key(public_key: &Ed25519PublicKey) -> AccountAddress {
