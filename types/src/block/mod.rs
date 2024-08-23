@@ -510,9 +510,9 @@ impl BlockHeader {
         if number == 0 {
             false
         } else if chain_id.is_vega() {
-            number >= 3000000
+            number >= 3200000
         } else if chain_id.is_halley() {
-            number >= 2800000
+            number >= 3000000
         } else if chain_id.is_proxima() {
             number >= 200
         } else {
