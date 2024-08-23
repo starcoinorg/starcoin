@@ -19,17 +19,17 @@ use crate::store::{sync_absent_ancestor::DagSyncBlock, sync_dag_store::SyncDagSt
 use super::BlockFetcher;
 
 #[derive(Clone)]
-struct PrepareTheBlueBlockHash {
+pub struct PrepareTheBlueBlockHash {
     sync_dag_store: SyncDagStore,
     read_size: usize,
 }
 
 impl PrepareTheBlueBlockHash {
-    pub fn new(sync_dag_store: SyncDagStore, read_size: usize) -> anyhow::Result<Self> {
-        Ok(Self {
+    pub fn new(sync_dag_store: SyncDagStore, read_size: usize) -> Self {
+        Self {
             sync_dag_store,
             read_size,
-        })
+        }
     }
 }
 
@@ -68,7 +68,7 @@ impl TaskState for PrepareTheBlueBlockHash {
     }
 }
 
-struct ExecuteDagBlock {
+pub struct ExecuteDagBlock {
     storage: Arc<dyn Store>,
     fetcher: Arc<dyn BlockFetcher>,
     sync_dag_store: SyncDagStore,
@@ -77,6 +77,15 @@ struct ExecuteDagBlock {
 }
 
 impl ExecuteDagBlock {
+    pub fn new(storage: Arc<dyn Store>, fetcher: Arc<dyn BlockFetcher>, sync_dag_store: SyncDagStore, time_service: Arc<dyn TimeService>, dag: BlockDAG) -> Self {
+        Self {
+            storage,
+            fetcher,
+            sync_dag_store,
+            time_service,
+            dag,
+        }
+    }
     async fn fetch_and_execute_absent_blocks(
         &mut self,
         block: Block,

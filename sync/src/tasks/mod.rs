@@ -20,7 +20,7 @@ use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::MAX_BLOCK_IDS_REQUEST_SIZE;
-use starcoin_service_registry::{ActorService, EventHandler, ServiceRef};
+use starcoin_service_registry::{ActorService, EventHandler, ServiceRef, ServiceRequest};
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
 use starcoin_time_service::TimeService;
@@ -594,7 +594,7 @@ mod find_ancestor_task;
 mod inner_sync_task;
 #[cfg(test)]
 pub(crate) mod mock;
-mod sync_blue_block_task;
+pub(crate) mod sync_blue_block_task;
 #[cfg(test)]
 mod test_tools;
 #[cfg(test)]
@@ -814,4 +814,15 @@ fn max_better_peers(target_block_number: u64, latest_block_number: u64) -> u64 {
     } else {
         MAX_BETTER_PEER_SIZE
     }
+}
+
+
+#[derive(Debug, Clone)]
+pub struct SyncPullBlueBlocks {
+    pub block: Block,
+    pub fetcher: Arc<dyn BlockFetcher>,
+}
+
+impl ServiceRequest for SyncPullBlueBlocks {
+    type Response = Result<()>;
 }

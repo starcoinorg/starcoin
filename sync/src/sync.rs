@@ -4,9 +4,11 @@
 use crate::block_connector::BlockConnectorService;
 use crate::store::sync_dag_store::{SyncDagStore, SyncDagStoreConfig};
 use crate::sync_metrics::SyncMetrics;
+use crate::tasks::sync_blue_block_task::{ExecuteDagBlock, PrepareTheBlueBlockHash};
 use crate::tasks::{full_sync_task, AncestorEvent, SyncFetcher};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
 use anyhow::{format_err, Result};
+use async_std::path::PathBuf;
 use futures::FutureExt;
 use futures_timer::Delay;
 use network_api::peer_score::PeerScoreMetrics;
@@ -37,7 +39,7 @@ use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemS
 use std::result::Result::Ok;
 use std::sync::Arc;
 use std::time::Duration;
-use stream_task::{TaskError, TaskEventCounterHandle, TaskHandle};
+use stream_task::{Generator, TaskError, TaskEventCounterHandle, TaskGenerator, TaskHandle};
 
 const REPUTATION_THRESHOLD: i32 = -1000;
 
@@ -61,6 +63,7 @@ pub enum SyncStage {
 pub struct SyncService {
     sync_status: SyncStatus,
     stage: SyncStage,
+    dag_stage: SyncStage,
     config: Arc<NodeConfig>,
     storage: Arc<Storage>,
     sync_dag_store: SyncDagStore,
@@ -104,6 +107,7 @@ impl SyncService {
         Ok(Self {
             sync_status: SyncStatus::new(ChainStatus::new(head_block.header, head_block_info)),
             stage: SyncStage::NotStart,
+            dag_stage: SyncStage::NotStart,
             config,
             storage,
             sync_dag_store,
@@ -713,6 +717,39 @@ impl ServiceHandler<Self, SyncStartRequest> for SyncService {
 
 impl ServiceHandler<Self, SyncPullBlueBlocks> for SyncService {
     fn handle(&mut self, msg: SyncPullBlueBlocks, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        let mut queue_path = PathBuf::from(self.config.storage.sync_dir());
+        queue_path.push("sync_queue");
+
+        let mut exe_path = PathBuf::from(self.config.storage.sync_dir());
+        queue_path.push("sync_exe");
+
+        let sync_dag_store_for_queue = SyncDagStore::create_from_path(
+            queue_path,
+            SyncDagStoreConfig::create_with_params(
+                self.config.storage.cache_size(),
+                RocksdbConfig::default(),
+            ),
+        )?;
+        let sync_dag_store_for_exe = SyncDagStore::create_from_path(
+            exe_path,
+            SyncDagStoreConfig::create_with_params(
+                self.config.storage.cache_size(),
+                RocksdbConfig::default(),
+            ),
+        )?;
+
+        sync_dag_store_for_queue.save_block(msg.block)?;
+
+        let (fut, task_header) = TaskGenerator::new(
+            PrepareTheBlueBlockHash::new(sync_dag_store_for_queue, 10),
+                720,
+                self.config.sync.max_retry_times(),
+                100,
+                ExecuteDagBlock::new(sync_dag_store_for_exe),
+                event_handle,
+                self.custom_error_handle.clone(),
+            ).generate().with_handle();
+        ctx.spawn(fut);
         Ok(())
     }
 }

@@ -1,6 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use std::sync::Arc;
+
 use anyhow::Result;
 use network_api::PeerId;
 use network_api::PeerStrategy;
@@ -97,12 +99,7 @@ impl ServiceRequest for SyncStartRequest {
     type Response = Result<()>;
 }
 
-#[derive(Debug, Clone)]
-pub struct SyncPullBlueBlocks;
 
-impl ServiceRequest for SyncPullBlueBlocks {
-    type Response = Result<()>;
-}
 
 #[derive(Debug, Clone)]
 pub struct PeerScoreRequest;
