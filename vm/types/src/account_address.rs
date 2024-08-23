@@ -7,7 +7,6 @@
 use crate::transaction::authenticator::AuthenticationKey;
 use bech32::ToBase32;
 pub use move_core_types::account_address::AccountAddress;
-use move_core_types::account_address::AccountAddressParseError;
 use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::hash::{CryptoHasher, HashValue};
 
@@ -39,7 +38,7 @@ impl HashAccountAddress for AccountAddress {
 
 pub trait Bech32AccountAddress {
     fn to_bech32(&self) -> String;
-    fn from_bech32(s: impl AsRef<str>) -> Result<Self, AccountAddressParseError>
+    fn from_bech32(s: impl AsRef<str>) -> anyhow::Result<Self>
     where
         Self: Sized;
 }
@@ -75,12 +74,8 @@ impl Bech32AccountAddress for AccountAddress {
         bech32::encode("stc", data, bech32::Variant::Bech32).expect("bech32 encode should success")
     }
 
-    // TODO(simon): Handle parse error properly.
-    fn from_bech32(s: impl AsRef<str>) -> Result<Self, AccountAddressParseError> {
-        Self::from_bytes(
-            parse_bench32(s)
-                .map_err(|e| AccountAddressParseError::InvalidHexChars(e.to_string()))?,
-        )
+    fn from_bech32(s: impl AsRef<str>) -> anyhow::Result<Self> {
+        Self::from_bytes(parse_bench32(s)?).map_err(Into::into)
     }
 }
 
