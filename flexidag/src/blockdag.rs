@@ -149,20 +149,8 @@ impl BlockDAG {
             header.number()
         );
         // Generate ghostdag data
-        let parents = header
-            .parents()
-            .into_iter()
-            .filter(|block_id| {
-                *block_id == header.parent_hash()
-                    || self.has_dag_block(*block_id).unwrap_or_else(|e| {
-                        info!("failed to check block exist by has_dag_block, e: {:?}", e);
-                        false
-                    })
-            })
-            .collect::<Vec<_>>();
-        if parents.is_empty() && !header.is_genesis() {
-            bail!("no parent found for block: {:?}", header.id());
-        }
+        let parents = header.parents();
+
         debug!(
             "start to get the ghost data from block: {:?}, number: {:?}",
             header.id(),

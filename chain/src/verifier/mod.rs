@@ -357,13 +357,25 @@ impl BlockVerifier for DagVerifier {
             parents_hash,
             new_block_header.parent_hash()
         );
-
-        verify_block!(
-            VerifyBlockField::Header,
-            current_chain.has_dag_block(new_block_header.parent_hash())?,
-            "Invalid block: parent {} might not exist.",
-            new_block_header.parent_hash()
-        );
+        parents_hash.iter().try_for_each(|parent_hash| {
+            verify_block!(
+                VerifyBlockField::Header,
+                current_chain.has_dag_block(*parent_hash).map_err(|e| {
+                    ConnectBlockError::VerifyBlockFailed(
+                        VerifyBlockField::Header,
+                        anyhow::anyhow!(
+                            "failed to get the block: {:?} 's parent: {:?} from db, error: {:?}",
+                            new_block_header.id(),
+                            parent_hash,
+                            e
+                        ),
+                    )
+                })?,
+                "Invalid block: parent {} might not exist.",
+                parent_hash
+            );
+            Ok::<(), ConnectBlockError>(())
+        })?;
 
         ConsensusVerifier::verify_header(current_chain, new_block_header)
     }

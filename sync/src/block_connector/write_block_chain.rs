@@ -592,7 +592,11 @@ where
         }
 
         if self.main.check_chain_type()? == ChainType::Dag
-            && !self.main.has_dag_block(block.header().parent_hash())?
+            && !block
+                .header()
+                .parents_hash()
+                .iter()
+                .all(|parent_hash| self.main.dag().has_dag_block(*parent_hash).unwrap_or(false))
         {
             debug!(
                 "block: {:?} is a future dag block, trigger sync to pull other dag blocks",
