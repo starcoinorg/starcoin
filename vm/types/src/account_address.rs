@@ -60,7 +60,7 @@ fn parse_bench32(s: impl AsRef<str>) -> anyhow::Result<Vec<u8>> {
         // for address + auth key format, just ignore auth key
         Ok(data[0..AccountAddress::LENGTH].to_vec())
     } else {
-        anyhow::bail!("Invalid address's length");
+        anyhow::bail!("Invalid address's length {}", data.len());
     }
 }
 
@@ -83,6 +83,7 @@ impl Bech32AccountAddress for AccountAddress {
 mod test {
     use super::*;
     use hex::FromHex;
+    use std::str::FromStr;
 
     #[test]
     fn address_hash() {
@@ -96,5 +97,22 @@ mod test {
         hash.copy_from_slice(&hash_vec[..32]);
 
         assert_eq!(address.hash(), HashValue::new(hash));
+    }
+
+    #[test]
+    fn test_bech32() {
+        let hex = "0xca843279e3427144cead5e4d5999a3d0";
+        let json_hex = "\"0xca843279e3427144cead5e4d5999a3d0\"";
+        let bech32 = "stc1pe2zry70rgfc5fn4dtex4nxdr6qyyuevr";
+        //let json_bech32 = "\"stc1pe2zry70rgfc5fn4dtex4nxdr6qyyuevr\"";
+
+        let address = AccountAddress::from_str(hex).unwrap();
+        let bech32_address = AccountAddress::from_bech32(bech32).unwrap();
+        let json_address: AccountAddress = serde_json::from_str(json_hex).unwrap();
+        //let json_bech32_address: AccountAddress = serde_json::from_str(json_bech32).unwrap();
+
+        assert_eq!(address, bech32_address);
+        assert_eq!(address, json_address);
+        //assert_eq!(address, json_bech32_address);
     }
 }
