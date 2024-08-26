@@ -5,6 +5,7 @@
 use crate::create_access_path;
 use bytes::Bytes;
 use move_binary_format::CompiledModule;
+use move_bytecode_utils::compiled_module_viewer::CompiledModuleView;
 use move_core_types::metadata::Metadata;
 use move_core_types::value::MoveTypeLayout;
 use move_table_extension::{TableHandle, TableResolver};
@@ -193,6 +194,18 @@ impl<'a, S: StateView> TableResolver for RemoteStorage<'a, S> {
             .map_err(|e| {
                 PartialVMError::new(StatusCode::STORAGE_ERROR).with_message(format!("{:?}", e))
             })
+    }
+}
+impl<'a, S: StateView> CompiledModuleView for RemoteStorage<'a, S> {
+    type Item = CompiledModule;
+
+    fn view_compiled_module(&self, id: &ModuleId) -> anyhow::Result<Option<Self::Item>> {
+        let module = match self.get_module(id) {
+            Ok(Some(module)) => module,
+            _ => return Ok(None),
+        };
+
+        Ok(Some(CompiledModule::deserialize(&module)?))
     }
 }
 

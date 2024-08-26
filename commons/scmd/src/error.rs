@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use clap::ErrorKind;
+use clap::error::ErrorKind;
 use thiserror::Error;
 
 #[derive(Error, Debug)]

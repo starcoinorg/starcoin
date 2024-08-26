@@ -4,7 +4,7 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, ensure, format_err, Result};
-use clap::Parser;
+use clap::{value_parser, Parser};
 use scmd::{CommandAction, ExecContext};
 use starcoin_move_compiler::move_command_line_common::files::{
     MOVE_COMPILED_EXTENSION, MOVE_EXTENSION,
@@ -40,7 +40,12 @@ pub struct CompileOpt {
     )]
     deps: Option<Vec<String>>,
 
-    #[clap(short = 'o', name = "out_dir", help = "out dir", parse(from_os_str))]
+    #[arg(
+        short = 'o',
+        name = "out_dir",
+        help = "out dir",
+        value_parser = value_parser!(std::ffi::OsString)
+    )]
     out_dir: Option<PathBuf>,
 
     #[clap(name = "source_file_or_dir", help = "source file path")]

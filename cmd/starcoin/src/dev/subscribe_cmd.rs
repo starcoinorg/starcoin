@@ -23,18 +23,17 @@ pub struct SubscribeEventOpt {
     from_block: Option<u64>,
     #[clap(short = 't', long = "to", name = "to_block", help = "to block number")]
     to_block: Option<u64>,
-    #[clap(
+    #[arg(
         short = 'k',
         long = "event-key",
         name = "event_key",
-        help = "event key",
-        multiple_occurrences = true
+        help = "event key"
     )]
     event_key: Option<Vec<EventKey>>,
-    #[clap(long = "address", name = "address", multiple_occurrences = true)]
+    #[arg(long = "address", name = "address")]
     /// events of which addresses to subscribe
     addresses: Option<Vec<AccountAddress>>,
-    #[clap(long = "type_tag", name = "type-tag", multiple_occurrences = true)]
+    #[arg(long = "type_tag", name = "type-tag")]
     /// type tags of the events to subscribe
     type_tags: Option<Vec<TypeTagView>>,
     #[clap(short = 'l', long = "limit", name = "limit")]

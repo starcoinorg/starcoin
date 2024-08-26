@@ -26,7 +26,7 @@ pub struct ImportMultisigOpt {
     /// if account_address is absent, generate address by public_key.
     account_address: Option<AccountAddress>,
 
-    #[clap(long = "pubkey", max_values=32, parse(try_from_str=Ed25519PublicKey::from_encoded_string))]
+    #[arg(long = "pubkey", num_args(1..=32), value_parser = Ed25519PublicKey::from_encoded_string)]
     /// public keys of other participants in this multisig account.
     public_keys: Vec<Ed25519PublicKey>,
 
@@ -34,11 +34,12 @@ pub struct ImportMultisigOpt {
     /// In multi-sig case, a threshold is needed.
     threshold: u8,
 
-    #[clap(long = "prikey", max_values = 32, parse(try_from_str=Ed25519PrivateKey::from_encoded_string))]
+    #[arg(long = "prikey", num_args(1..=32), value_parser = Ed25519PrivateKey::from_encoded_string
+    )]
     /// hex encoded private key, if you control multi private keys, provide multi args.
     private_keys: Vec<Ed25519PrivateKey>,
 
-    #[clap(long = "prikey-file", max_values = 32)]
+    #[arg(long = "prikey-file", num_args(1..=32))]
     /// private key file contain the hex-encoded private key, if you control multi private keys, provide multi args.
     private_key_files: Vec<PathBuf>,
 }

@@ -271,7 +271,7 @@ bs58 = "0.3.1"
 byteorder = "1.3.4"
 bytes = "1"
 chrono = { version = "0.4.19", default-features = false, features = ["clock"] }
-clap = { version = "3", features = ["derive"] }
+clap = { version = "4.5", features = ["derive"] }
 cli-table = "0.3.2"
 coarsetime = "0.1.22"
 codespan = { version = "0.8.0", features = ["serialization"] }
@@ -348,6 +348,7 @@ mirai-annotations = "1.10.1"
 move-binary-format = { path = "../aptos-core/third_party/move/move-binary-format" }
 move-bytecode-source-map = { path = "../aptos-core/third_party/move/move-ir-compiler/move-bytecode-source-map" }
 move-bytecode-verifier = { path = "../aptos-core/third_party/move/move-bytecode-verifier" }
+move-bytecode-utils = { path = "../aptos-core/third_party/move/tools/move-bytecode-utils" }
 move-cli = { path = "../aptos-core/third_party/move/tools/move-cli" }
 move-command-line-common = { path = "../aptos-core/third_party/move/move-command-line-common" }
 move-compiler = { path = "../aptos-core/third_party/move/move-compiler" }

@@ -30,22 +30,22 @@ const DEFAULT_TXN_INFO_QUEYR_MAX_RANGE: u64 = 32;
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Parser)]
 pub struct HttpConfiguration {
     #[serde(skip)]
-    #[clap(name = "disable-http-rpc", long)]
+    #[arg(name = "disable-http-rpc", long)]
     ///disable http jsonrpc endpoint
     pub disable: bool,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(name = "http-apis", long)]
+    #[arg(name = "http-apis", long)]
     ///rpc apiset to serve
     pub apis: Option<ApiSet>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(name = "http-port", long)]
+    #[arg(name = "http-port", long)]
     /// Default http port is 9850
     pub port: Option<u16>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(
+    #[arg(
         name = "http-max-request-body",
         long,
         help = "max request body in bytes"
@@ -54,17 +54,17 @@ pub struct HttpConfiguration {
     pub max_request_body_size: Option<usize>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(name = "http-threads", long)]
+    #[arg(name = "http-threads", long)]
     /// How many thread to use for http service.
     pub threads: Option<usize>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(name = "http-ip-headers", long, use_value_delimiter = true)]
+    #[arg(name = "http-ip-headers", long, use_value_delimiter = true)]
     /// list of http header which identify a ip, Default: X-Real-IP,X-Forwarded-For
     pub ip_headers: Option<Vec<String>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(name = "unsupported-rpc-protocols", long, use_value_delimiter = true)]
+    #[arg(name = "unsupported-rpc-protocols", long, use_value_delimiter = true)]
     unsupported_rpc_protocols: Option<Vec<String>>,
 }
 
@@ -137,15 +137,15 @@ impl HttpConfiguration {
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Parser)]
 pub struct TcpConfiguration {
     #[serde(skip)]
-    #[clap(name = "disable-tcp-rpc", long, help = "disable tcp jsonrpc endpoint")]
+    #[arg(name = "disable-tcp-rpc", long, help = "disable tcp jsonrpc endpoint")]
     pub disable: bool,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(name = "tcp-apis", long, help = "rpc apiset to serve")]
+    #[arg(name = "tcp-apis", long, help = "rpc apiset to serve")]
     pub apis: Option<ApiSet>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(name = "tcp-port", long)]
+    #[arg(name = "tcp-port", long)]
     /// Default tcp port is 9860
     pub port: Option<u16>,
 }
@@ -172,7 +172,7 @@ impl TcpConfiguration {
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Parser)]
 pub struct WsConfiguration {
     #[serde(skip)]
-    #[clap(
+    #[arg(
         name = "disable-websocket-rpc",
         long,
         help = "disable websocket jsonrpc endpoint"
@@ -180,16 +180,16 @@ pub struct WsConfiguration {
     pub disable: bool,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(name = "websocket-apis", long, help = "rpc apiset to serve")]
+    #[arg(name = "websocket-apis", long, help = "rpc apiset to serve")]
     pub apis: Option<ApiSet>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(name = "websocket-port", long)]
+    #[arg(name = "websocket-port", long)]
     /// Default websocket port is 9870
     pub port: Option<u16>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(name = "websocket-max-request-body", long)]
+    #[arg(name = "websocket-max-request-body", long)]
     /// Max request body in bytes, Default is 10M
     pub max_request_body_size: Option<usize>,
 }
@@ -222,11 +222,11 @@ impl WsConfiguration {
 #[derive(Default, Debug, Clone, PartialEq, Deserialize, Serialize, Parser)]
 pub struct IpcConfiguration {
     #[serde(skip)]
-    #[clap(name = "disable-ipc-rpc", long, help = "disable ipc jsonrpc endpoint")]
+    #[arg(name = "disable-ipc-rpc", long, help = "disable ipc jsonrpc endpoint")]
     pub disable: bool,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(name = "ipc-apis", long, help = "rpc apiset to serve")]
+    #[arg(name = "ipc-apis", long, help = "rpc apiset to serve")]
     pub apis: Option<ApiSet>,
 }
 
@@ -248,7 +248,7 @@ impl IpcConfiguration {
 #[derive(Debug, Default, Clone, PartialEq, Eq, Deserialize, Serialize, Parser)]
 pub struct ApiQuotaConfiguration {
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(
+    #[arg(
         name = "jsonrpc-default-global-api-quota",
         long,
         help = "default api quota, eg: 1000/s"
@@ -256,19 +256,19 @@ pub struct ApiQuotaConfiguration {
     pub default_global_api_quota: Option<ApiQuotaConfig>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(
-    name = "jsonrpc-custom-global-api-quota",
-    long,
-    help = "customize api quota, eg: node.info=100/s",
-    number_of_values = 1,
-    parse(try_from_str = parse_key_val)
+    #[arg(
+        name = "jsonrpc-custom-global-api-quota",
+        long,
+        help = "customize api quota, eg: node.info=100/s",
+        number_of_values = 1,
+        value_parser = parse_key_val::<String, ApiQuotaConfig>
     )]
     /// number_of_values = 1 forces the user to repeat the -D option for each key-value pair:
     /// my_program -D a=1 -D b=2
     pub custom_global_api_quota: Option<Vec<(String, ApiQuotaConfig)>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(
+    #[arg(
         name = "jsonrpc-default-user-api-quota",
         long,
         help = "default api quota of user, eg: 1000/s"
@@ -276,12 +276,12 @@ pub struct ApiQuotaConfiguration {
     pub default_user_api_quota: Option<ApiQuotaConfig>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(
-    name = "jsonrpc-custom-user-api-quota",
-    long,
-    help = "customize api quota of user, eg: node.info=100/s",
-    number_of_values = 1,
-    parse(try_from_str = parse_key_val)
+    #[arg(
+        name = "jsonrpc-custom-user-api-quota",
+        long,
+        help = "customize api quota of user, eg: node.info=100/s",
+        number_of_values = 1,
+        value_parser = parse_key_val::<String, ApiQuotaConfig>
     )]
     pub custom_user_api_quota: Option<Vec<(String, ApiQuotaConfig)>>,
 }
@@ -339,52 +339,52 @@ impl ApiQuotaConfiguration {
 #[serde(deny_unknown_fields)]
 pub struct RpcConfig {
     #[serde(default)]
-    #[clap(flatten)]
+    #[command(flatten)]
     pub http: HttpConfiguration,
 
     #[serde(default)]
-    #[clap(flatten)]
+    #[command(flatten)]
     pub tcp: TcpConfiguration,
 
     #[serde(default)]
-    #[clap(flatten)]
+    #[command(flatten)]
     pub ws: WsConfiguration,
 
     #[serde(default)]
-    #[clap(flatten)]
+    #[command(flatten)]
     pub ipc: IpcConfiguration,
 
     #[serde(default)]
-    #[clap(flatten)]
+    #[command(flatten)]
     pub api_quotas: ApiQuotaConfiguration,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long = "rpc-address")]
+    #[arg(long = "rpc-address")]
     /// Rpc address, default is 0.0.0.0
     pub rpc_address: Option<IpAddr>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long = "event-query-max-block-range")]
+    #[arg(long = "event-query-max-block-range")]
     pub block_query_max_range: Option<u64>,
 
     #[serde(skip)]
-    #[clap(skip)]
+    #[arg(skip)]
     http_address: Option<ListenAddress>,
 
     #[serde(skip)]
-    #[clap(skip)]
+    #[arg(skip)]
     tcp_address: Option<ListenAddress>,
 
     #[serde(skip)]
-    #[clap(skip)]
+    #[arg(skip)]
     ws_address: Option<ListenAddress>,
 
     #[serde(skip)]
-    #[clap(skip)]
+    #[arg(skip)]
     base: Option<Arc<BaseConfig>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long = "query-max-txn-info-range")]
+    #[arg(long = "query-max-txn-info-range")]
     pub txn_info_query_max_range: Option<u64>,
 }
 

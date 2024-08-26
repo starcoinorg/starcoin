@@ -7,7 +7,7 @@ use crate::{
     ConfigModule, QuotaDuration, StarcoinOpt,
 };
 use anyhow::Result;
-use clap::Parser;
+use clap::{value_parser, Parser};
 use network_api::messages::{NotificationMessage, BLOCK_PROTOCOL_NAME};
 use network_p2p_types::peer_id::PeerId;
 use network_p2p_types::{
@@ -35,7 +35,7 @@ static G_NETWORK_KEY_FILE: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("network_k
 #[derive(Debug, Default, Clone, PartialEq, Eq, Deserialize, Serialize, Parser)]
 pub struct NetworkRpcQuotaConfiguration {
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(
+    #[arg(
         name = "p2prpc-default-global-api-quota",
         long,
         help = "default global p2p rpc quota, eg: 1000/s"
@@ -43,11 +43,11 @@ pub struct NetworkRpcQuotaConfiguration {
     pub default_global_api_quota: Option<ApiQuotaConfig>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(
+    #[arg(
         name = "p2prpc-custom-global-api-quota",
         long,
         number_of_values = 1,
-        parse(try_from_str = parse_key_val)
+        value_parser = parse_key_val::<String, ApiQuotaConfig>
     )]
     /// customize global p2p rpc quota, eg: get_block=100/s
     /// number_of_values = 1 forces the user to repeat the -D option for each key-value pair:
@@ -63,11 +63,11 @@ pub struct NetworkRpcQuotaConfiguration {
     pub default_user_api_quota: Option<ApiQuotaConfig>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(
+    #[arg(
         name = "p2prpc-custom-user-api-quota",
         long,
         help = "customize p2p rpc quota of a peer, eg: get_block=10/s",
-        parse(try_from_str = parse_key_val),
+        value_parser = parse_key_val::<String, ApiQuotaConfig>,
         number_of_values = 1
     )]
     pub custom_user_api_quota: Option<Vec<(String, ApiQuotaConfig)>>,
@@ -169,31 +169,35 @@ impl From<Vec<MultiaddrWithPeerId>> for Seeds {
 #[serde(deny_unknown_fields)]
 pub struct NetworkConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long = "node-name")]
+    #[arg(long = "node-name")]
     /// Node network name, just for display, if absent will generate a random name.
     pub node_name: Option<String>,
 
     #[serde(skip)]
-    #[clap(long = "node-key")]
+    #[arg(long = "node-key")]
     /// Node network private key string.
     /// This option is skip for config file, only support cli option, after init will write the key to node_key_file
     pub node_key: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long = "node-key-file", parse(from_os_str), conflicts_with("node-key"))]
+    #[arg(
+        long = "node-key-file",
+        value_parser = value_parser!(std::ffi::OsString),
+        conflicts_with("node-key")
+    )]
     /// Node network private key file, default is network_key under the data dir.
     pub node_key_file: Option<PathBuf>,
 
     #[serde(skip_serializing_if = "Seeds::is_empty")]
     #[serde(default)]
-    #[clap(long = "seed", default_value = "")]
+    #[arg(long = "seed", default_value = "")]
     /// P2P network seed, multi seed should use ',' as delimiter.
     pub seeds: Seeds,
 
     /// Enable peer discovery on local networks.
     /// By default this option is `false`. only support cli option.
     #[serde(skip)]
-    #[clap(long = "discover-local")]
+    #[arg(long = "discover-local")]
     pub discover_local: Option<bool>,
 
     #[serde(skip)]
@@ -206,45 +210,45 @@ pub struct NetworkConfig {
     pub network_rpc_quotas: NetworkRpcQuotaConfiguration,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long)]
+    #[arg(long)]
     /// min peers to propagate new block and new transactions. Default 8.
     min_peers_to_propagate: Option<u32>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long)]
+    #[arg(long)]
     ///max peers to propagate new block and new transactions. Default 128.
     max_peers_to_propagate: Option<u32>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long)]
+    #[arg(long)]
     ///max count for incoming peers. Default 25.
     max_incoming_peers: Option<u32>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long)]
+    #[arg(long)]
     ///max count for outgoing connected peers. Default 75.
     /// max peers = max_incoming_peers + max_outgoing_peers
     max_outgoing_peers: Option<u32>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long)]
+    #[arg(long)]
     /// p2p network listen address, Default is /ip4/0.0.0.0/tcp/9840
     listen: Option<Multiaddr>,
 
     #[serde(skip)]
-    #[clap(skip)]
+    #[arg(skip)]
     base: Option<Arc<BaseConfig>>,
 
     #[serde(skip)]
-    #[clap(skip)]
+    #[arg(skip)]
     network_keypair: Option<(Ed25519PrivateKey, Ed25519PublicKey)>,
 
     #[serde(skip)]
-    #[clap(skip)]
+    #[arg(skip)]
     generate_listen: Option<Multiaddr>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(name = "unsupported-protocols", long, use_value_delimiter = true)]
+    #[arg(name = "unsupported-protocols", long, use_value_delimiter = true)]
     pub unsupported_protocols: Option<Vec<String>>,
 }
 

@@ -19,8 +19,8 @@ use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
 #[derive(Debug, Parser)]
 #[clap(name = "derive-address")]
 pub struct DeriveAddressOpt {
-    #[clap(short = 'p', long = "pubkey", required = true, min_values = 1, max_values = 32, parse(try_from_str=Ed25519PublicKey::from_encoded_string
-    ))]
+    #[arg(short = 'p', long = "pubkey", required = true, num_args(1..=32), value_parser = Ed25519PublicKey::from_encoded_string
+    )]
     /// public key used to derive address.If multi public keys is provided, a multi-sig account address is derived.
     public_key: Vec<Ed25519PublicKey>,
 

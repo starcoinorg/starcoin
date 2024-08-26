@@ -8,7 +8,7 @@ use move_command_line_common::testing::UPDATE_BASELINE;
 use move_compiler::command_line::compiler::construct_pre_compiled_lib_from_compiler;
 use move_compiler::diagnostics::report_diagnostics;
 use move_compiler::shared::unique_map::UniqueMap;
-use move_compiler::shared::NamedAddressMaps;
+use move_compiler::shared::{NamedAddressMaps, PackagePaths};
 use move_compiler::{
     cfgir, expansion, hlir, naming, parser, typing, Compiler, FullyCompiledProgram,
 };
@@ -120,7 +120,7 @@ pub struct IntegrationTestCommand {
     current_as_stdlib: bool,
 }
 
-static G_PRE_COMPILED_LIB: Lazy<Mutex<Option<FullyCompiledProgram>>> =
+static G_PRE_COMPILED_LIB: Lazy<Mutex<Option<(FullyCompiledProgram, Vec<PackagePaths>)>>> =
     Lazy::new(|| Mutex::new(None));
 pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Result<()> {
     if cmd.task_help {
@@ -250,7 +250,8 @@ pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Resu
 
     {
         // update the global
-        *G_PRE_COMPILED_LIB.lock().unwrap() = Some(pre_compiled_lib);
+        // TODO(simon): update the global with the compiled package.
+        *G_PRE_COMPILED_LIB.lock().unwrap() = Some((pre_compiled_lib, vec![]));
     }
 
     let spectests_dir = rerooted_path.join("spectests");

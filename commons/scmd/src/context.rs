@@ -9,8 +9,8 @@ use crate::{
     OutputFormat,
 };
 use anyhow::Result;
+use clap::{error::ErrorKind, Parser};
 use clap::{Arg, Command};
-use clap::{ErrorKind, Parser};
 use rustyline::{error::ReadlineError, Config as ConsoleConfig, Editor};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -29,7 +29,7 @@ where
     State: 'static,
     GlobalOpt: Parser + 'static,
 {
-    app: Command<'static>,
+    app: Command,
     commands: HashMap<String, Box<dyn CommandExec<State, GlobalOpt>>>,
     default_action: Box<dyn FnOnce(Command, GlobalOpt, State)>,
     state_initializer: Box<dyn FnOnce(&GlobalOpt) -> Result<State>>,
@@ -93,7 +93,7 @@ where
                 Arg::new(G_OUTPUT_FORMAT_ARG)
                     .short('o')
                     .help("set output-format, support [json|table]")
-                    .takes_value(true)
+                    .num_args(1..)
                     .default_value("json"),
             );
         Self {
@@ -199,7 +199,7 @@ where
         };
 
         let output_format = matches
-            .value_of(G_OUTPUT_FORMAT_ARG)
+            .get_one::<String>(G_OUTPUT_FORMAT_ARG)
             .expect("output-format arg must exist")
             .parse()
             .expect("parse output-format must success.");
@@ -267,8 +267,10 @@ where
                 Command::new("output")
                     .arg(
                         Arg::new("format")
-                            .takes_value(true)
-                            .possible_values(["json", "table"])
+                            .num_args(1..)
+                            .value_parser(clap::builder::PossibleValuesParser::new(vec![
+                                "json", "table",
+                            ]))
                             .ignore_case(true)
                             .default_value("json")
                             .help("Output format should be json or table."),

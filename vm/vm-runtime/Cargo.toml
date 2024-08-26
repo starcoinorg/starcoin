@@ -18,6 +18,7 @@ move-core-types = { workspace = true }
 once_cell = { workspace = true }
 tracing = { workspace = true }
 move-vm-runtime = { workspace = true }
+move-bytecode-utils = { workspace = true }
 num_enum = { workspace = true }
 rand = { workspace = true }
 rand_core = { default-features = false, workspace = true }

@@ -4,7 +4,7 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
-use clap::Parser;
+use clap::{value_parser, Parser};
 use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::ValidCryptoMaterialStringExt;
@@ -21,7 +21,7 @@ pub struct ExportOpt {
     account_address: AccountAddress,
     #[clap(short = 'p', default_value = "")]
     password: String,
-    #[clap(short = 'o', parse(from_os_str))]
+    #[arg(short = 'o', value_parser = value_parser!(std::ffi::OsString))]
     output_file: Option<PathBuf>,
 }
 

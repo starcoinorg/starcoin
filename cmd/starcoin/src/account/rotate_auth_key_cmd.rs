@@ -4,7 +4,7 @@
 use std::path::PathBuf;
 
 use anyhow::{bail, Result};
-use clap::Parser;
+use clap::{value_parser, Parser};
 use starcoin_crypto::{ValidCryptoMaterial, ValidCryptoMaterialStringExt};
 
 use scmd::{CommandAction, ExecContext};
@@ -35,7 +35,7 @@ pub struct RotateAuthKeyOpt {
     )]
     account_address: AccountAddress,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     transaction_opts: TransactionOptions,
 
     #[clap(
@@ -44,10 +44,10 @@ pub struct RotateAuthKeyOpt {
         help = "input of private key for rotating"
     )]
     from_input: Option<String>,
-    #[clap(
+    #[arg(
         short = 'f',
         help = "file path of private key",
-        parse(from_os_str),
+        value_parser = value_parser!(std::ffi::OsString),
         conflicts_with("input")
     )]
     from_file: Option<PathBuf>,
