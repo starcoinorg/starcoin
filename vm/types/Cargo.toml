@@ -27,6 +27,8 @@ starcoin-accumulator = { workspace = true }
 starcoin-crypto = { workspace = true }
 vm = { workspace = true }
 bytes = { workspace = true }
+strum = { workspace = true }
+strum_macros = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }
