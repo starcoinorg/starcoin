@@ -1,9 +1,20 @@
-use std::{ops::{Deref, DerefMut}, ptr::read, sync::Arc, u64};
+use std::{
+    ops::{Deref, DerefMut},
+    sync::Arc,
+    u64,
+};
 
 use anyhow::Ok;
 use parking_lot::RwLock;
 use starcoin_crypto::HashValue;
-use starcoin_dag::{consensusdb::{schema::{KeyCodec, ValueCodec}, schemadb::{MemoryReachabilityStore, ReachabilityStore}}, reachability::inquirer, types::interval::Interval};
+use starcoin_dag::{
+    consensusdb::{
+        schema::{KeyCodec, ValueCodec},
+        schemadb::MemoryReachabilityStore,
+    },
+    reachability::inquirer,
+    types::interval::Interval,
+};
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockBody, BlockHeader, BlockHeaderBuilder, BlockHeaderExtra, BlockNumber},

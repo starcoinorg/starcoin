@@ -4,7 +4,10 @@ use anyhow::format_err;
 use parking_lot::RwLock;
 use starcoin_config::{temp_dir, RocksdbConfig, StorageConfig};
 use starcoin_crypto::HashValue;
-use starcoin_dag::consensusdb::{prelude::StoreError, schemadb::{DbReachabilityStore, MemoryReachabilityStore, REACHABILITY_DATA_CF}};
+use starcoin_dag::consensusdb::{
+    prelude::StoreError,
+    schemadb::{DbReachabilityStore, MemoryReachabilityStore, REACHABILITY_DATA_CF},
+};
 use starcoin_logger::prelude::error;
 use starcoin_storage::db_storage::{DBStorage, SchemaIterator};
 use starcoin_types::block::{Block, BlockNumber};
@@ -17,7 +20,7 @@ use super::sync_absent_ancestor::{
 #[derive(Clone)]
 pub struct SyncDagStore {
     pub absent_dag_store: SyncAbsentBlockStore,
-    pub reachability_store: Arc<RwLock<MemoryReachabilityStore>>
+    pub reachability_store: Arc<RwLock<MemoryReachabilityStore>>,
 }
 
 #[derive(Clone)]
