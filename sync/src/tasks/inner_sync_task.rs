@@ -5,10 +5,11 @@ use starcoin_chain::BlockChain;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::{error, info};
+use starcoin_network_rpc_api::{MAX_BLOCK_IDS_REQUEST_SIZE, MAX_BLOCK_REQUEST_SIZE};
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
 use starcoin_time_service::TimeService;
-use starcoin_types::block::{BlockIdAndNumber, BlockInfo, BlockNumber};
+use starcoin_types::block::{BlockIdAndNumber, BlockInfo};
 use std::cmp::min;
 use std::sync::Arc;
 use stream_task::{
@@ -38,7 +39,6 @@ where
     peer_provider: N,
     custom_error_handle: Arc<dyn CustomErrorHandle>,
     dag: BlockDAG,
-    dag_fork_heigh: Option<BlockNumber>,
     sync_dag_store: SyncDagStore,
 }
 
@@ -58,7 +58,6 @@ where
         time_service: Arc<dyn TimeService>,
         peer_provider: N,
         custom_error_handle: Arc<dyn CustomErrorHandle>,
-        dag_fork_heigh: Option<BlockNumber>,
         dag: BlockDAG,
         sync_dag_store: SyncDagStore,
     ) -> Self {
@@ -73,7 +72,6 @@ where
             peer_provider,
             custom_error_handle,
             dag,
-            dag_fork_heigh,
             sync_dag_store,
         }
     }
@@ -105,7 +103,7 @@ where
             self.ancestor.number.saturating_add(1),
             self.target.block_info.block_accumulator_info.clone(),
             self.fetcher.clone(),
-            100,
+            MAX_BLOCK_IDS_REQUEST_SIZE,
         )
         .map_err(TaskError::BreakError)?;
         let acc_buffer_size = min(
@@ -125,7 +123,6 @@ where
                 self.ancestor,
                 ancestor_block_info.clone().block_accumulator_info,
                 self.target.block_info.block_accumulator_info.clone(),
-                self.dag_fork_heigh,
             ),
             self.event_handle.clone(),
             self.custom_error_handle.clone(),
@@ -140,7 +137,7 @@ where
                 self.fetcher.clone(),
                 check_local_store,
                 self.storage.clone(),
-                1,
+                MAX_BLOCK_REQUEST_SIZE,
             );
             let chain = BlockChain::new(
                 self.time_service.clone(),

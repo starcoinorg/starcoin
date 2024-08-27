@@ -206,10 +206,6 @@ impl DBUpgrade {
                 Self::db_upgrade_v1_v2(instance)?;
                 Self::db_upgrade_v2_v3(instance)?;
             }
-
-            (StorageVersion::V2, StorageVersion::V3) => {
-                Self::db_upgrade_v2_v3(instance)?;
-            }
             (StorageVersion::V1, StorageVersion::V4) => {
                 Self::db_upgrade_v1_v2(instance)?;
                 Self::db_upgrade_v2_v3(instance)?;
@@ -220,6 +216,9 @@ impl DBUpgrade {
                 Self::db_upgrade_v2_v3(instance)?;
                 Self::db_upgrade_v3_v4(instance)?;
                 Self::db_upgrade_v4_v5(instance)?;
+            }
+            (StorageVersion::V2, StorageVersion::V3) => {
+                Self::db_upgrade_v2_v3(instance)?;
             }
             (StorageVersion::V2, StorageVersion::V4) => {
                 Self::db_upgrade_v2_v3(instance)?;
@@ -241,7 +240,7 @@ impl DBUpgrade {
                 Self::db_upgrade_v4_v5(instance)?;
             }
             _ => bail!(
-                "Can not upgrade db from {:?} to {:?}",
+                "Cannot upgrade db from {:?} to {:?}",
                 version_in_db,
                 version_in_code
             ),

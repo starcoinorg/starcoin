@@ -5,20 +5,24 @@ mod legacy;
 #[cfg(test)]
 mod tests;
 
+mod block_header_data;
+pub mod raw_block_header;
+
 use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
 use crate::genesis_config::{ChainId, ConsensusStrategy};
 use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::transaction::SignedUserTransaction;
 use crate::U256;
-use anyhow::format_err;
 use bcs_ext::Sample;
+use block_header_data::{BlockHeaderDataInVega, BlockHeaderDataLatest};
 use lazy_static::lazy_static;
 pub use legacy::{
     Block as LegacyBlock, BlockBody as LegacyBlockBody, BlockHeader as LegacyBlockHeader,
 };
+use raw_block_header::RawBlockHeader;
 use schemars::{self, JsonSchema};
-use serde::de::Error;
+use serde::de::{self, Error, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 pub use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_crypto::hash::{ACCUMULATOR_PLACEHOLDER_HASH, SPARSE_MERKLE_PLACEHOLDER_HASH};
@@ -28,14 +32,18 @@ use starcoin_crypto::{
 };
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
-use std::fmt::Formatter;
+use std::fmt::{self, Formatter};
 use std::hash::Hash;
 use std::sync::Mutex;
 
 /// Type for block number.
 pub type BlockNumber = u64;
 
-pub type ParentsHash = Option<Vec<HashValue>>;
+pub type ParentsHash = Vec<HashValue>;
+
+pub type Version = u32;
+
+pub const BLOCK_HEADER_VERSION_1: BlockNumber = 1024;
 
 lazy_static! {
     static ref TEST_FLEXIDAG_FORK_HEIGHT: Mutex<BlockNumber> = Mutex::new(10000);
@@ -155,7 +163,7 @@ impl From<BlockHeader> for BlockIdAndNumber {
 /// block timestamp allowed future times
 pub const ALLOWED_FUTURE_BLOCKTIME: u64 = 30000; // 30 second;
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, CryptoHasher, CryptoHash, JsonSchema)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, CryptoHasher, CryptoHash, JsonSchema)]
 pub struct BlockHeader {
     #[serde(skip)]
     id: Option<HashValue>,
@@ -191,6 +199,10 @@ pub struct BlockHeader {
     extra: BlockHeaderExtra,
     /// Parents hash.
     parents_hash: ParentsHash,
+    /// Header version
+    version: Version,
+    /// pruning point
+    pruning_point: HashValue,
 }
 
 impl BlockHeader {
@@ -209,6 +221,8 @@ impl BlockHeader {
         nonce: u32,
         extra: BlockHeaderExtra,
         parents_hash: ParentsHash,
+        version: Version,
+        pruning_point: HashValue,
     ) -> Self {
         Self::new_with_auth_key(
             parent_hash,
@@ -226,6 +240,8 @@ impl BlockHeader {
             nonce,
             extra,
             parents_hash,
+            version,
+            pruning_point,
         )
     }
 
@@ -246,9 +262,10 @@ impl BlockHeader {
         nonce: u32,
         extra: BlockHeaderExtra,
         parents_hash: ParentsHash,
+        version: Version,
+        pruning_point: HashValue,
     ) -> Self {
-        let mut header = Self {
-            id: None,
+        let header = BlockHeaderDataLatest {
             parent_hash,
             block_accumulator_root,
             number,
@@ -263,20 +280,42 @@ impl BlockHeader {
             body_hash,
             chain_id,
             extra,
-            parents_hash,
+            parents_hash: Some(parents_hash),
+            version,
+            pruning_point,
         };
-        header.id = Some(if header.parents_hash.is_none() {
-            LegacyBlockHeader::from(header.clone()).crypto_hash()
-        } else {
-            header.crypto_hash()
-        });
-        header
+        let mut result = Self {
+            id: None,
+            parent_hash: header.parent_hash,
+            timestamp: header.timestamp,
+            number: header.number,
+            author: header.author,
+            author_auth_key: header.author_auth_key,
+            txn_accumulator_root: header.txn_accumulator_root,
+            block_accumulator_root: header.block_accumulator_root,
+            state_root: header.state_root,
+            gas_used: header.gas_used,
+            difficulty: header.difficulty,
+            body_hash: header.body_hash,
+            chain_id: header.chain_id,
+            nonce: header.nonce,
+            extra: header.extra,
+            parents_hash: header
+                .parents_hash
+                .clone()
+                .expect("parents hash should not be none, use [] instead if it is"),
+            version: header.version,
+            pruning_point: header.pruning_point,
+        };
+        let id = Some(header.into_hash());
+        result.id = id;
+        result
     }
 
     pub fn as_pow_header_blob(&self) -> Vec<u8> {
         let mut blob = Vec::new();
         let raw_header: RawBlockHeader = self.to_owned().into();
-        let raw_header_hash = raw_header.crypto_hash();
+        let raw_header_hash = raw_header.calc_hash();
         let mut diff = [0u8; 32];
         raw_header.difficulty.to_big_endian(&mut diff);
         let extend_and_nonce = [0u8; 12];
@@ -297,6 +336,15 @@ impl BlockHeader {
     pub fn parents_hash(&self) -> ParentsHash {
         self.parents_hash.clone()
     }
+
+    pub fn version(&self) -> Version {
+        self.version
+    }
+
+    pub fn pruning_point(&self) -> HashValue {
+        self.pruning_point
+    }
+
     pub fn timestamp(&self) -> u64 {
         self.timestamp
     }
@@ -353,13 +401,6 @@ impl BlockHeader {
         self.number == 0
     }
 
-    pub fn is_single(&self) -> bool {
-        self.parents_hash
-            .as_ref()
-            .map(|h| h.is_empty())
-            .unwrap_or(true)
-    }
-
     pub fn genesis_block_header(
         parent_hash: HashValue,
         timestamp: u64,
@@ -383,15 +424,18 @@ impl BlockHeader {
             chain_id,
             0,
             BlockHeaderExtra::default(),
-            None,
+            vec![], // in fact, it is better to put the [origin] into this field but here [] is done for the adaptability.
+            0,
+            HashValue::zero(),
         )
     }
 
     //for test
     pub fn dag_genesis_random(dag_genesis_number: BlockNumber) -> Self {
         let mut header = Self::random();
-        header.parents_hash = None;
+        header.parents_hash = vec![];
         header.number = dag_genesis_number;
+        header.id = Some(header.calc_hash());
         header
     }
 
@@ -401,47 +445,17 @@ impl BlockHeader {
         anyhow::Result::Ok(
             header_builder
                 .with_parent_hash(parent.id())
-                .with_parents_hash(None)
-                .with_number(parent.number().checked_add(1).ok_or_else(|| {
-                    format_err!("overflow in calulation of the dag genesis number")
-                })?)
+                .with_parents_hash(vec![parent.id()])
+                .with_number(0)
                 .build(),
         )
     }
 
-    // Create a random compatible block header whose
-    //      number <= fork_height
-    //      parents_hash == None
     pub fn random() -> Self {
-        Self::random_with_opt(0)
-    }
-
-    // header_type:
-    //      0 - legacy compatible header
-    //      1 - upgraded but non-dag header
-    //      2 - dag block header
-    pub fn random_with_opt(header_type: u8) -> Self {
-        let base = get_test_flexidag_fork_height().checked_add(1).unwrap();
-        let (number, parents_hash) = if header_type == 0 {
-            (rand::random::<u64>().checked_rem(base).unwrap(), None)
-        } else if header_type == 1 {
-            (
-                rand::random::<u64>().checked_rem(base).unwrap(),
-                Some(vec![]),
-            )
-        } else if header_type == 2 {
-            (
-                rand::random::<u64>().checked_add(base).unwrap_or(base),
-                Some(vec![HashValue::random()]),
-            )
-        } else {
-            panic!("Invalid header_type {header_type}")
-        };
-
         Self::new(
             HashValue::random(),
             rand::random(),
-            number,
+            rand::random::<u64>(),
             AccountAddress::random(),
             HashValue::random(),
             HashValue::random(),
@@ -452,12 +466,74 @@ impl BlockHeader {
             ChainId::test(),
             0,
             BlockHeaderExtra([0u8; 4]),
-            parents_hash,
+            vec![HashValue::random(), HashValue::random()],
+            rand::random::<Version>(),
+            HashValue::random(),
         )
+    }
+
+    pub fn rational_random(body_hash: HashValue) -> Self {
+        Self::new(
+            HashValue::random(),
+            rand::random(),
+            rand::random::<u64>(),
+            AccountAddress::random(),
+            HashValue::random(),
+            HashValue::random(),
+            HashValue::random(),
+            rand::random(),
+            rand::random::<u64>().into(),
+            body_hash,
+            ChainId::test(),
+            0,
+            BlockHeaderExtra([0u8; 4]),
+            vec![HashValue::random(), HashValue::random()],
+            rand::random::<Version>(),
+            HashValue::random(),
+        )
+    }
+
+    pub fn calc_hash(&self) -> HashValue {
+        let latest_data: BlockHeaderDataLatest = self.clone().into();
+        latest_data.into_hash()
     }
 
     pub fn as_builder(&self) -> BlockHeaderBuilder {
         BlockHeaderBuilder::new_with(self.clone())
+    }
+
+    fn upgrade(&self) -> bool {
+        Self::check_upgrade(self.number(), self.chain_id())
+    }
+
+    pub fn check_upgrade(number: BlockNumber, chain_id: ChainId) -> bool {
+        if number == 0 {
+            false
+        } else if chain_id.is_vega() {
+            number >= 3300000
+        } else if chain_id.is_halley() {
+            number >= 3100000
+        } else if chain_id.is_proxima() {
+            number >= 200
+        } else {
+            true
+        }
+    }
+}
+
+impl Serialize for BlockHeader {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        if !self.upgrade() {
+            // for vega no pruning point
+            let header_data: BlockHeaderDataInVega = self.clone().into();
+            header_data.serialize(serializer)
+        } else {
+            let header_data: BlockHeaderDataLatest = self.clone().into();
+            header_data.serialize(serializer)
+        }
     }
 }
 
@@ -466,45 +542,123 @@ impl<'de> Deserialize<'de> for BlockHeader {
     where
         D: Deserializer<'de>,
     {
-        #[derive(Deserialize)]
-        #[serde(rename = "BlockHeader")]
-        struct BlockHeaderData {
-            parent_hash: HashValue,
-            timestamp: u64,
-            number: BlockNumber,
-            author: AccountAddress,
-            author_auth_key: Option<AuthenticationKey>,
-            txn_accumulator_root: HashValue,
-            block_accumulator_root: HashValue,
-            state_root: HashValue,
-            gas_used: u64,
-            difficulty: U256,
-            body_hash: HashValue,
-            chain_id: ChainId,
-            nonce: u32,
-            extra: BlockHeaderExtra,
-            parents_hash: ParentsHash,
+        struct BlockHeaderVisitor;
+
+        impl<'de> Visitor<'de> for BlockHeaderVisitor {
+            type Value = BlockHeader;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("struct BlockHeader")
+            }
+
+            fn visit_seq<V>(self, mut seq: V) -> Result<BlockHeader, V::Error>
+            where
+                V: SeqAccess<'de>,
+            {
+                let parent_hash: HashValue = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                let timestamp: u64 = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                let number: BlockNumber = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                let author: AccountAddress = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                let author_auth_key: Option<AuthenticationKey> = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                let txn_accumulator_root: HashValue = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                let block_accumulator_root: HashValue = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                let state_root: HashValue = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                let gas_used: u64 = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                let difficulty: U256 = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                let body_hash: HashValue = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                let chain_id: ChainId = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                let nonce: u32 = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                let extra: BlockHeaderExtra = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                let parents_hash: Option<ParentsHash> =
+                    seq.next_element().map_or(Some(vec![]), |value| {
+                        value.map_or(Some(vec![]), |value| value)
+                    });
+
+                let (version, pruning_point) = if !BlockHeader::check_upgrade(number, chain_id) {
+                    (0, HashValue::zero())
+                } else {
+                    let version: Version = seq
+                        .next_element()?
+                        .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                    let pruning_point: HashValue =
+                        seq.next_element().map_or(HashValue::zero(), |value| {
+                            value.map_or(HashValue::zero(), |value| value)
+                        });
+                    (version, pruning_point)
+                };
+
+                let header = BlockHeader::new_with_auth_key(
+                    parent_hash,
+                    timestamp,
+                    number,
+                    author,
+                    author_auth_key,
+                    txn_accumulator_root,
+                    block_accumulator_root,
+                    state_root,
+                    gas_used,
+                    difficulty,
+                    body_hash,
+                    chain_id,
+                    nonce,
+                    extra,
+                    parents_hash.map_or(vec![], |value| value),
+                    version,
+                    pruning_point,
+                );
+                Ok(header)
+            }
         }
 
-        let header_data = BlockHeaderData::deserialize(deserializer)?;
-        let block_header = Self::new_with_auth_key(
-            header_data.parent_hash,
-            header_data.timestamp,
-            header_data.number,
-            header_data.author,
-            header_data.author_auth_key,
-            header_data.txn_accumulator_root,
-            header_data.block_accumulator_root,
-            header_data.state_root,
-            header_data.gas_used,
-            header_data.difficulty,
-            header_data.body_hash,
-            header_data.chain_id,
-            header_data.nonce,
-            header_data.extra,
-            header_data.parents_hash,
-        );
-        Ok(block_header)
+        const BLOCK_HEADER_FIELDS: &[&str] = &[
+            "parent_hash",
+            "timestamp",
+            "number",
+            "author",
+            "author_auth_key",
+            "txn_accumulator_root",
+            "block_accumulator_root",
+            "state_root",
+            "gas_used",
+            "difficulty",
+            "body_hash",
+            "chain_id",
+            "nonce",
+            "extra",
+            "parents_hash",
+            "version",
+            "pruning_point",
+        ];
+
+        deserializer.deserialize_struct("BlockHeader", BLOCK_HEADER_FIELDS, BlockHeaderVisitor)
     }
 }
 
@@ -524,7 +678,9 @@ impl Default for BlockHeader {
             ChainId::test(),
             0,
             BlockHeaderExtra([0u8; 4]),
-            None,
+            vec![],
+            0,
+            HashValue::zero(),
         )
     }
 }
@@ -545,7 +701,9 @@ impl Sample for BlockHeader {
             ChainId::test(),
             0,
             BlockHeaderExtra([0u8; 4]),
-            None,
+            vec![],
+            0,
+            HashValue::zero(),
         )
     }
 }
@@ -566,37 +724,11 @@ impl Into<RawBlockHeader> for BlockHeader {
             difficulty: self.difficulty,
             body_hash: self.body_hash,
             chain_id: self.chain_id,
+            parents_hash: self.parents_hash,
+            version: self.version,
+            pruning_point: self.pruning_point,
         }
     }
-}
-
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
-pub struct RawBlockHeader {
-    /// Parent hash.
-    pub parent_hash: HashValue,
-    /// Block timestamp.
-    pub timestamp: u64,
-    /// Block number.
-    pub number: BlockNumber,
-    /// Block author.
-    pub author: AccountAddress,
-    /// Block author auth key.
-    /// this field is deprecated
-    pub author_auth_key: Option<AuthenticationKey>,
-    /// The transaction accumulator root hash after executing this block.
-    pub accumulator_root: HashValue,
-    /// The parent block accumulator root hash.
-    pub parent_block_accumulator_root: HashValue,
-    /// The last transaction state_root of this block after execute.
-    pub state_root: HashValue,
-    /// Gas used for contracts execution.
-    pub gas_used: u64,
-    /// Block difficulty
-    pub difficulty: U256,
-    /// hash for block body
-    pub body_hash: HashValue,
-    /// The chain id
-    pub chain_id: ChainId,
 }
 
 #[derive(Default)]
@@ -620,6 +752,11 @@ impl BlockHeaderBuilder {
     }
     pub fn with_parents_hash(mut self, parent_hash: ParentsHash) -> Self {
         self.buffer.parents_hash = parent_hash;
+        self
+    }
+
+    pub fn with_pruning_point(mut self, pruning_point: HashValue) -> Self {
+        self.buffer.pruning_point = pruning_point;
         self
     }
 
@@ -696,20 +833,86 @@ impl BlockHeaderBuilder {
         self
     }
 
-    pub fn build(mut self) -> BlockHeader {
-        self.buffer.id = Some(self.buffer.crypto_hash());
-        self.buffer
+    pub fn with_version(mut self, version: Version) -> Self {
+        self.buffer.version = version;
+        self
+    }
+
+    pub fn build(self) -> BlockHeader {
+        let crypto_data: BlockHeaderDataLatest = self.into();
+        let mut header = BlockHeader {
+            id: None,
+            parent_hash: crypto_data.parent_hash,
+            timestamp: crypto_data.timestamp,
+            number: crypto_data.number,
+            author: crypto_data.author,
+            author_auth_key: crypto_data.author_auth_key,
+            txn_accumulator_root: crypto_data.txn_accumulator_root,
+            block_accumulator_root: crypto_data.block_accumulator_root,
+            state_root: crypto_data.state_root,
+            gas_used: crypto_data.gas_used,
+            difficulty: crypto_data.difficulty,
+            body_hash: crypto_data.body_hash,
+            chain_id: crypto_data.chain_id,
+            nonce: crypto_data.nonce,
+            extra: crypto_data.extra,
+            parents_hash: crypto_data
+                .parents_hash
+                .clone()
+                .expect("parents hash should not be none, use [] instead if it is"),
+            version: crypto_data.version,
+            pruning_point: crypto_data.pruning_point,
+        };
+        let id = Some(crypto_data.into_hash());
+        header.id = id;
+        header
     }
 }
 
-#[derive(
-    Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash,
-)]
+#[derive(Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, CryptoHasher, CryptoHash)]
 pub struct BlockBody {
     /// The transactions in this block.
     pub transactions: Vec<SignedUserTransaction>,
     /// uncles block header
     pub uncles: Option<Vec<BlockHeader>>,
+}
+
+impl<'de> Deserialize<'de> for BlockBody {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct BlockBodyVisitor;
+
+        impl<'de> Visitor<'de> for BlockBodyVisitor {
+            type Value = BlockBody;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("struct BlockBody")
+            }
+
+            fn visit_seq<V>(self, mut seq: V) -> Result<Self::Value, V::Error>
+            where
+                V: SeqAccess<'de>,
+            {
+                let transactions: Vec<SignedUserTransaction> = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                let uncles: Option<Vec<BlockHeader>> = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+
+                Ok(BlockBody {
+                    transactions,
+                    uncles,
+                })
+            }
+        }
+
+        const BLOCK_BODY_FIELDS: &[&str] = &["transactions", "uncles"];
+
+        deserializer.deserialize_struct("BlockBody", BLOCK_BODY_FIELDS, BlockBodyVisitor)
+    }
 }
 
 impl BlockBody {
@@ -763,7 +966,7 @@ impl Sample for BlockBody {
 }
 
 /// A block, encoded as it is on the block chain.
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, CryptoHasher, CryptoHash)]
 pub struct Block {
     /// The header of this block.
     pub header: BlockHeader,
@@ -855,18 +1058,101 @@ impl Block {
             self.header.number,
             self.header.chain_id,
             parent_gas_used,
-            self.header
-                .parents_hash
-                .clone()
-                .expect("Parents must exist"),
+            self.header.parents_hash.clone(),
         )
     }
 
     pub fn random() -> Self {
         let body = BlockBody::sample();
         let header = BlockHeader::random();
+        Self { header, body }
+    }
+
+    pub fn rational_random() -> Self {
+        let uncle1 = crate::block::BlockHeaderBuilder::new()
+            .with_chain_id(ChainId::vega())
+            .with_number(512)
+            .with_parent_hash(HashValue::random())
+            .with_parents_hash(vec![
+                HashValue::random(),
+                HashValue::random(),
+                HashValue::random(),
+            ])
+            .build();
+
+        let uncle2 = crate::block::BlockHeaderBuilder::new()
+            .with_number(128)
+            .with_chain_id(ChainId::vega())
+            .with_parent_hash(HashValue::random())
+            .with_parents_hash(vec![
+                HashValue::random(),
+                HashValue::random(),
+                HashValue::random(),
+            ])
+            .build();
+        let body = crate::block::BlockBody {
+            transactions: vec![
+                SignedUserTransaction::sample(),
+                SignedUserTransaction::sample(),
+                SignedUserTransaction::sample(),
+            ],
+            uncles: Some(vec![uncle1, uncle2]),
+        };
+
+        let header = crate::block::BlockHeaderBuilder::new()
+            .with_number(1024)
+            .with_chain_id(ChainId::vega())
+            .with_parent_hash(HashValue::random())
+            .with_parents_hash(vec![
+                HashValue::random(),
+                HashValue::random(),
+                HashValue::random(),
+            ])
+            .with_body_hash(body.hash())
+            .build();
 
         Self { header, body }
+    }
+}
+
+impl<'de> Deserialize<'de> for Block {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct BlockVisitor;
+
+        impl<'de> Visitor<'de> for BlockVisitor {
+            type Value = Block;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("struct Block")
+            }
+
+            fn visit_seq<V>(self, mut seq: V) -> Result<Self::Value, V::Error>
+            where
+                V: SeqAccess<'de>,
+            {
+                let header: BlockHeader = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                let body: BlockBody = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+
+                if body.hash() != header.body_hash {
+                    return std::result::Result::Err(serde::de::Error::custom(
+                        "Block body hash does not match header body hash",
+                    ));
+                }
+
+                Ok(Block { header, body })
+            }
+        }
+
+        const BLOCK_FIELDS: &[&str] = &["header", "body"];
+
+        deserializer.deserialize_struct("Block", BLOCK_FIELDS, BlockVisitor)
     }
 }
 
@@ -996,7 +1282,11 @@ pub struct BlockTemplate {
     /// Block consensus strategy
     pub strategy: ConsensusStrategy,
     /// parents
-    parents_hash: ParentsHash,
+    pub parents_hash: ParentsHash,
+    /// version
+    pub version: Version,
+    /// pruning point
+    pub pruning_point: HashValue,
 }
 
 impl BlockTemplate {
@@ -1010,6 +1300,8 @@ impl BlockTemplate {
         difficulty: U256,
         strategy: ConsensusStrategy,
         block_metadata: BlockMetadata,
+        version: Version,
+        pruning_point: HashValue,
     ) -> Self {
         let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _, parents_hash) =
             block_metadata.into_inner();
@@ -1028,7 +1320,9 @@ impl BlockTemplate {
             difficulty,
             strategy,
             // for an upgraded binary, parents_hash should never be None.
-            parents_hash: parents_hash.or_else(|| Some(vec![])),
+            parents_hash,
+            version,
+            pruning_point,
         }
     }
 
@@ -1048,6 +1342,8 @@ impl BlockTemplate {
             nonce,
             extra,
             self.parents_hash,
+            self.version,
+            self.pruning_point,
         );
 
         Block {
@@ -1070,13 +1366,16 @@ impl BlockTemplate {
             body_hash: self.body_hash,
             difficulty: self.difficulty,
             chain_id: self.chain_id,
+            parents_hash: self.parents_hash.clone(),
+            version: self.version,
+            pruning_point: self.pruning_point,
         }
     }
 
     pub fn as_pow_header_blob(&self) -> Vec<u8> {
         let mut blob = Vec::new();
-        let raw_header = self.as_raw_block_header();
-        let raw_header_hash = raw_header.crypto_hash();
+        let raw_header: RawBlockHeader = self.as_raw_block_header();
+        let raw_header_hash = raw_header.calc_hash();
         let mut dh = [0u8; 32];
         raw_header.difficulty.to_big_endian(&mut dh);
         let extend_and_nonce = [0u8; 12];

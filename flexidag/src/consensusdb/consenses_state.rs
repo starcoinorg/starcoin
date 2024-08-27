@@ -34,12 +34,13 @@ impl ValueCodec<DagStateData> for DagState {
 }
 
 pub trait DagStateReader {
-    fn get_state(&self, dag_genesis: Hash) -> Result<DagState, StoreError>;
+    fn get_state(&self) -> Result<DagState, StoreError>;
+    fn get_state_by_hash(&self, hash: Hash) -> Result<DagState, StoreError>;
 }
 
 pub trait DagStateStore: DagStateReader {
     // This is append only
-    fn insert(&self, dag_genesis: Hash, state: DagState) -> Result<(), StoreError>;
+    fn insert(&self, state: DagState) -> Result<(), StoreError>;
 }
 
 /// A DB + cache implementation of `HeaderStore` trait, with concurrency support.
@@ -59,24 +60,29 @@ impl DbDagStateStore {
 }
 
 impl DagStateReader for DbDagStateStore {
-    fn get_state(&self, dag_genesis: Hash) -> Result<DagState, StoreError> {
-        let result = self.dag_state_access.read(dag_genesis)?;
+    fn get_state(&self) -> Result<DagState, StoreError> {
+        let result = self.dag_state_access.read(0.into())?;
+        Ok(result)
+    }
+
+    fn get_state_by_hash(&self, hash: Hash) -> Result<DagState, StoreError> {
+        let result = self.dag_state_access.read(hash)?;
         Ok(result)
     }
 }
 
 impl DagStateStore for DbDagStateStore {
-    fn insert(&self, dag_genesis: Hash, state: DagState) -> Result<(), StoreError> {
+    fn insert(&self, state: DagState) -> Result<(), StoreError> {
         self.dag_state_access
-            .write(DirectDbWriter::new(&self.db), dag_genesis, state)?;
+            .write(DirectDbWriter::new(&self.db), 0.into(), state)?;
         Ok(())
     }
 }
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 pub struct DagStateView {
-    pub dag_genesis: Hash,
     pub tips: Vec<Hash>,
+    pub pruning_point: Hash,
 }
 
 impl DagStateView {

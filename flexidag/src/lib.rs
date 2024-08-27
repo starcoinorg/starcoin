@@ -3,6 +3,7 @@ use consensusdb::prelude::StoreError;
 pub mod blockdag;
 pub mod consensusdb;
 pub mod ghostdag;
+pub mod prune;
 pub mod reachability;
 pub mod types;
 

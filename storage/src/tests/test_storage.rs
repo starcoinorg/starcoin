@@ -334,12 +334,10 @@ fn generate_old_db(path: &Path) -> Result<(Vec<HashValue>, Vec<HashValue>, Vec<H
     let old_transaction_info_storage = OldTransactionInfoStorage::new(instance.clone());
     let old_transaction_storage = LegacyTransactionStorage::new(instance.clone());
 
-    let block_header = BlockHeader::random();
     let txn = SignedUserTransaction::mock();
-    let block = Block::new(
-        block_header.clone(),
-        BlockBody::new(vec![txn.clone()], None),
-    );
+    let body = BlockBody::new(vec![txn.clone()], None);
+    let block_header = BlockHeader::rational_random(body.hash());
+    let block = Block::new(block_header.clone(), body);
     let mut txn_inf_ids = vec![];
     let mut txn_ids = vec![];
     let block_metadata: LegacyBlockMetadata = block.to_metadata(0).into();

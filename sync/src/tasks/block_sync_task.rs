@@ -107,6 +107,11 @@ impl TaskState for BlockSyncTask {
             if block_ids.is_empty() {
                 return Ok(vec![]);
             }
+            info!(
+                "[sync] fetch block ids from accumulator, start_number: {}, ids: {}",
+                self.start_number,
+                block_ids.len()
+            );
             if self.check_local_store {
                 let block_with_info = self.local_store.get_block_with_info(block_ids.clone())?;
                 let (no_exist_block_ids, result_map) =
@@ -280,6 +285,8 @@ where
         action: BlockConnectAction,
         state: CollectorState,
     ) -> Result<CollectorState> {
+        info!("sync processs complete a block execution: number: {}, hash value {}, current main: number: {}, header hash value: {}", 
+        block.header().number(), block.header().id(), self.chain.current_header().number(), self.chain.current_header().id());
         let total_difficulty = block_info.get_total_difficulty();
 
         // if the new block's total difficulty is smaller than the current,
@@ -381,7 +388,7 @@ where
         block_header: BlockHeader,
         absent_blocks: &mut Vec<HashValue>,
     ) -> Result<()> {
-        let parents = block_header.parents_hash().unwrap_or_default();
+        let parents = block_header.parents_hash();
         if parents.is_empty() {
             return Ok(());
         }
@@ -419,14 +426,6 @@ where
     }
 
     pub fn ensure_dag_parent_blocks_exist(&mut self, block_header: BlockHeader) -> Result<()> {
-        if self.chain.check_chain_type()? == ChainType::Single {
-            info!(
-                "the block is not a dag block, skipping, its id: {:?}, its number {:?}",
-                block_header.id(),
-                block_header.number()
-            );
-            return Ok(());
-        }
         if self.chain.has_dag_block(block_header.id())? {
             info!(
                 "the dag block exists, skipping, its id: {:?}, its number {:?}",

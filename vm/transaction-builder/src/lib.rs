@@ -858,7 +858,7 @@ pub fn build_init_script_v3(net: &ChainNetwork) -> ScriptFunction {
             //transaction timeout config
             bcs_ext::to_bytes(&genesis_config.transaction_timeout).unwrap(),
             // flexidag effective height
-            bcs_ext::to_bytes(&genesis_config.dag_effective_height).unwrap(),
+            bcs_ext::to_bytes(&0u64).unwrap(),
         ],
     )
 }

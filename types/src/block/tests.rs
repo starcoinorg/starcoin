@@ -4,7 +4,7 @@ use crate::{
     account_config::CORE_CODE_ADDRESS,
     block::{BlockBody as DagBlockBody, BlockHeaderExtra},
 };
-use bcs_ext::Sample;
+use bcs_ext::{BCSCodec, Sample};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::{ed25519::genesis_key_pair, HashValue};
 use starcoin_uint::U256;
@@ -156,4 +156,184 @@ fn verify_body_and_legacybody_hash() {
     };
     let body = crate::block::BlockBody::from(legacy_body.clone());
     assert_ne!(legacy_body.crypto_hash(), body.crypto_hash());
+}
+
+#[test]
+fn test_header_without_dag_and_pruning_adaptable() -> anyhow::Result<()> {
+    let header = crate::block::BlockHeaderBuilder::new()
+        .with_number(1024)
+        .with_parent_hash(HashValue::random())
+        .with_chain_id(ChainId::vega())
+        .build();
+
+    // test encoding and decoding
+    assert_eq!(
+        header,
+        crate::block::BlockHeader::decode(&header.encode()?)?
+    );
+
+    // test conversion between legacy header and new header
+    let legacy_header: crate::block::legacy::BlockHeader = header.clone().into();
+    let back_from_legacy_header: crate::block::BlockHeader = legacy_header.clone().into();
+    assert_eq!(header, back_from_legacy_header);
+
+    // test deserialize the header by legacy binary codes.
+    let legacy_header_encoding_data = legacy_header.encode()?;
+    let header_decoded_from_legacy =
+        crate::block::BlockHeader::decode(&legacy_header_encoding_data)?;
+    assert_eq!(header, header_decoded_from_legacy);
+
+    // test the legacy header deserialize from legacy binary codes.
+    let legacy_header_decoded =
+        crate::block::legacy::BlockHeader::decode(&legacy_header_encoding_data)?;
+    assert_eq!(legacy_header_decoded, legacy_header);
+
+    let real_legacy_header = crate::block::legacy::BlockHeader::new_with_auth_key(
+        header.parent_hash,
+        header.timestamp,
+        header.number,
+        header.author,
+        header.author_auth_key(),
+        header.txn_accumulator_root,
+        header.block_accumulator_root,
+        header.state_root,
+        header.gas_used,
+        header.difficulty,
+        header.body_hash,
+        header.chain_id,
+        header.nonce,
+        header.extra,
+    );
+    assert_eq!(legacy_header, real_legacy_header);
+    let real_legacy_header_data = real_legacy_header.encode()?;
+    let from_real_legacy_header = crate::block::BlockHeader::decode(&real_legacy_header_data)?;
+    assert_eq!(header, from_real_legacy_header);
+
+    anyhow::Ok(())
+}
+
+#[test]
+fn test_header_with_dag_but_pruning_adaptable() -> anyhow::Result<()> {
+    let header = crate::block::BlockHeaderBuilder::new()
+        .with_chain_id(ChainId::vega())
+        .with_number(1024)
+        .with_parent_hash(HashValue::random())
+        .with_parents_hash(vec![
+            HashValue::random(),
+            HashValue::random(),
+            HashValue::random(),
+        ])
+        .build();
+
+    // test encoding and decoding
+    assert_eq!(
+        header,
+        crate::block::BlockHeader::decode(&header.encode()?)?
+    );
+
+    let header_in_vega = crate::block::BlockHeaderDataInVega {
+        parent_hash: header.parent_hash,
+        timestamp: header.timestamp,
+        number: header.number,
+        author: header.author,
+        author_auth_key: header.author_auth_key(),
+        txn_accumulator_root: header.txn_accumulator_root,
+        block_accumulator_root: header.block_accumulator_root,
+        state_root: header.state_root,
+        gas_used: header.gas_used,
+        difficulty: header.difficulty,
+        body_hash: header.body_hash,
+        chain_id: header.chain_id,
+        nonce: header.nonce,
+        extra: header.extra,
+        parents_hash: Some(header.parents_hash.clone()),
+    };
+    let vega_data = header_in_vega.encode()?;
+    let read_from_vega_header = crate::block::BlockHeader::decode(&vega_data)?;
+
+    assert_eq!(header, read_from_vega_header);
+
+    anyhow::Ok(())
+}
+
+#[test]
+fn test_block_compatible_for_vega() -> anyhow::Result<()> {
+    let latest_block = crate::block::Block::rational_random();
+
+    let deserilized_block = crate::block::Block::decode(&latest_block.encode()?)?;
+
+    assert_eq!(latest_block, deserilized_block);
+
+    anyhow::Ok(())
+}
+
+// #[ignore = "The upgrade strategy is still in progress"]
+#[test]
+fn test_block_compatible_for_main() -> anyhow::Result<()> {
+    let uncle_body = crate::block::BlockBody {
+        transactions: vec![
+            SignedUserTransaction::sample(),
+            SignedUserTransaction::sample(),
+            SignedUserTransaction::sample(),
+        ],
+        uncles: Some(vec![]),
+    };
+
+    let uncle1 = crate::block::BlockHeaderBuilder::new()
+        .with_number(2048)
+        .with_chain_id(ChainId::dag_test())
+        .with_parent_hash(HashValue::random())
+        .with_parents_hash(vec![
+            HashValue::random(),
+            HashValue::random(),
+            HashValue::random(),
+        ])
+        .with_pruning_point(HashValue::random())
+        .with_body_hash(uncle_body.hash())
+        .build();
+
+    let uncle2 = crate::block::BlockHeaderBuilder::new()
+        .with_number(2049)
+        .with_chain_id(ChainId::dag_test())
+        .with_parent_hash(HashValue::random())
+        .with_parents_hash(vec![
+            HashValue::random(),
+            HashValue::random(),
+            HashValue::random(),
+        ])
+        .with_pruning_point(HashValue::random())
+        .with_body_hash(uncle_body.hash())
+        .build();
+    let body = crate::block::BlockBody {
+        transactions: vec![
+            SignedUserTransaction::sample(),
+            SignedUserTransaction::sample(),
+            SignedUserTransaction::sample(),
+        ],
+        uncles: Some(vec![uncle1, uncle2]),
+    };
+
+    let header = crate::block::BlockHeaderBuilder::new()
+        .with_number(2050)
+        .with_chain_id(ChainId::dag_test())
+        .with_parent_hash(HashValue::random())
+        .with_parents_hash(vec![
+            HashValue::random(),
+            HashValue::random(),
+            HashValue::random(),
+        ])
+        .with_pruning_point(HashValue::random())
+        .with_body_hash(body.hash())
+        .build();
+
+    let latest_block = crate::block::Block {
+        header: header.clone(),
+        body,
+    };
+
+    let deserilized_block = crate::block::Block::decode(&latest_block.encode()?)?;
+
+    assert_eq!(latest_block, deserilized_block);
+
+    anyhow::Ok(())
 }

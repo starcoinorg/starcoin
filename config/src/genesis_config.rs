@@ -494,6 +494,13 @@ impl ChainNetwork {
         &self.genesis_config
     }
 
+    pub fn pruning_config(&self) -> (u64, u64) {
+        (
+            self.genesis_config.pruning_depth,
+            self.genesis_config.pruning_finality,
+        )
+    }
+
     pub fn time_service(&self) -> Arc<dyn TimeService> {
         self.time_service.clone()
     }
@@ -648,8 +655,14 @@ pub struct GenesisConfig {
     /// transaction timeout
     pub transaction_timeout: u64,
 
-    /// Flexidag effective height
-    pub dag_effective_height: u64,
+    /// pruning depth
+    pub pruning_depth: u64,
+
+    /// pruning finality
+    pub pruning_finality: u64,
+
+    /// block header version
+    pub block_header_version: starcoin_types::block::Version,
 }
 
 impl GenesisConfig {
@@ -794,7 +807,9 @@ pub static G_DAG_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
-        dag_effective_height: 0,
+        pruning_depth: 17280,
+        pruning_finality: 8640,
+        block_header_version: 1,
     }
 });
 
@@ -845,7 +860,9 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
-        dag_effective_height: u64::MAX,
+        pruning_depth: 17280,
+        pruning_finality: 8640,
+        block_header_version: 1,
     }
 });
 
@@ -899,7 +916,9 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
-        dag_effective_height: 0,
+        pruning_depth: 17280,
+        pruning_finality: 8640,
+        block_header_version: 1,
     }
 });
 
@@ -958,7 +977,9 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
-        dag_effective_height: 0,
+        pruning_depth: 17280,
+        pruning_finality: 8640,
+        block_header_version: 1,
     }
 });
 
@@ -1018,7 +1039,9 @@ pub static G_PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         transaction_timeout: ONE_DAY,
         // todo: rollback it to zero and initialize BlockDag properly
-        dag_effective_height: 0u64,
+        pruning_depth: 17280,
+        pruning_finality: 8640,
+        block_header_version: 1,
     }
 });
 
@@ -1076,7 +1099,9 @@ pub static G_BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 24 * 1000, // 1d
         },
         transaction_timeout: ONE_DAY,
-        dag_effective_height: u64::MAX,
+        pruning_depth: 17280,
+        pruning_finality: 8640,
+        block_header_version: 1,
     }
 });
 
@@ -1148,7 +1173,9 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 24 * 1000, // 1d
         },
         transaction_timeout: ONE_DAY,
-        dag_effective_height: u64::MAX,
+        pruning_depth: 17280,
+        pruning_finality: 8640,
+        block_header_version: 1,
     }
 });
 
@@ -1204,7 +1231,9 @@ pub static G_VEGA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 24 * 1000, // 1d
         },
         transaction_timeout: ONE_DAY,
-        dag_effective_height: 0,
+        pruning_depth: 17280,
+        pruning_finality: 8640,
+        block_header_version: 1,
     }
 });
 

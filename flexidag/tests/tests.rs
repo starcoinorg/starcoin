@@ -4,7 +4,7 @@
 use anyhow::{bail, format_err, Ok, Result};
 use starcoin_crypto::HashValue as Hash;
 use starcoin_dag::{
-    blockdag::BlockDAG,
+    blockdag::{BlockDAG, MineNewDagBlockInfo},
     consensusdb::{
         consenses_state::{DagState, DagStateReader, DagStateStore},
         schemadb::{
@@ -21,6 +21,7 @@ use starcoin_types::block::{BlockHeader, BlockHeaderBuilder, BlockNumber};
 use std::{
     ops::{Deref, DerefMut},
     sync::Arc,
+    time::Instant,
     vec,
 };
 
@@ -38,7 +39,7 @@ fn test_dag_commit() -> Result<()> {
     for _ in 0..10 {
         let header_builder = BlockHeaderBuilder::random();
         let header = header_builder
-            .with_parents_hash(Some(parents_hash.clone()))
+            .with_parents_hash(parents_hash.clone())
             .build();
         parents_hash = vec![header.id()];
         dag.commit(header.to_owned(), origin)?;
@@ -57,31 +58,31 @@ fn test_dag_1() -> Result<()> {
         .build();
     let block1 = BlockHeaderBuilder::random()
         .with_difficulty(1.into())
-        .with_parents_hash(Some(vec![genesis.id()]))
+        .with_parents_hash(vec![genesis.id()])
         .build();
     let block2 = BlockHeaderBuilder::random()
         .with_difficulty(2.into())
-        .with_parents_hash(Some(vec![genesis.id()]))
+        .with_parents_hash(vec![genesis.id()])
         .build();
     let block3_1 = BlockHeaderBuilder::random()
         .with_difficulty(1.into())
-        .with_parents_hash(Some(vec![genesis.id()]))
+        .with_parents_hash(vec![genesis.id()])
         .build();
     let block3 = BlockHeaderBuilder::random()
         .with_difficulty(3.into())
-        .with_parents_hash(Some(vec![block3_1.id()]))
+        .with_parents_hash(vec![block3_1.id()])
         .build();
     let block4 = BlockHeaderBuilder::random()
         .with_difficulty(4.into())
-        .with_parents_hash(Some(vec![block1.id(), block2.id()]))
+        .with_parents_hash(vec![block1.id(), block2.id()])
         .build();
     let block5 = BlockHeaderBuilder::random()
         .with_difficulty(4.into())
-        .with_parents_hash(Some(vec![block2.id(), block3.id()]))
+        .with_parents_hash(vec![block2.id(), block3.id()])
         .build();
     let block6 = BlockHeaderBuilder::random()
         .with_difficulty(5.into())
-        .with_parents_hash(Some(vec![block4.id(), block5.id()]))
+        .with_parents_hash(vec![block4.id(), block5.id()])
         .build();
     let mut latest_id = block6.id();
     let genesis_id = genesis.id();
@@ -118,11 +119,11 @@ async fn test_with_spawn() {
         .build();
     let block1 = BlockHeaderBuilder::random()
         .with_difficulty(1.into())
-        .with_parents_hash(Some(vec![genesis.id()]))
+        .with_parents_hash(vec![genesis.id()])
         .build();
     let block2 = BlockHeaderBuilder::random()
         .with_difficulty(2.into())
-        .with_parents_hash(Some(vec![genesis.id()]))
+        .with_parents_hash(vec![genesis.id()])
         .build();
     let mut dag = BlockDAG::create_for_testing().unwrap();
     let real_origin = dag.init_with_genesis(genesis.clone()).unwrap();
@@ -130,7 +131,7 @@ async fn test_with_spawn() {
     dag.commit(block2.clone(), real_origin).unwrap();
     let block3 = BlockHeaderBuilder::random()
         .with_difficulty(3.into())
-        .with_parents_hash(Some(vec![block1.id(), block2.id()]))
+        .with_parents_hash(vec![block1.id(), block2.id()])
         .build();
     let mut handles = vec![];
     for i in 1..100 {
@@ -181,13 +182,13 @@ fn test_write_asynchronization() -> anyhow::Result<()> {
     let one = BlockHeaderBuilder::random()
         .with_difficulty(0.into())
         .with_parent_hash(parent.id())
-        .with_parents_hash(Some(vec![parent.id()]))
+        .with_parents_hash(vec![parent.id()])
         .build();
 
     let two = BlockHeaderBuilder::random()
         .with_difficulty(0.into())
         .with_parent_hash(parent.id())
-        .with_parents_hash(Some(vec![parent.id()]))
+        .with_parents_hash(vec![parent.id()])
         .build();
 
     dag.storage
@@ -253,7 +254,7 @@ fn test_dag_genesis_fork() {
     for _ in 0..10 {
         let header_builder = BlockHeaderBuilder::random();
         let header = header_builder
-            .with_parents_hash(Some(parents_hash.clone()))
+            .with_parents_hash(parents_hash.clone())
             .build();
         parents_hash = vec![header.id()];
         dag.commit(header.to_owned(), genesis.parent_hash())
@@ -277,7 +278,7 @@ fn test_dag_genesis_fork() {
     for _ in 0..10 {
         let header_builder = BlockHeaderBuilder::random();
         let header = header_builder
-            .with_parents_hash(Some(old_parents_hash.clone()))
+            .with_parents_hash(old_parents_hash.clone())
             .build();
         old_parents_hash = vec![header.id()];
         dag.commit(header.to_owned(), genesis.parent_hash())
@@ -290,7 +291,7 @@ fn test_dag_genesis_fork() {
     for _ in 0..10 {
         let header_builder = BlockHeaderBuilder::random();
         let header = header_builder
-            .with_parents_hash(Some(parents_hash.clone()))
+            .with_parents_hash(parents_hash.clone())
             .build();
         parents_hash = vec![header.id()];
         dag.commit(header.to_owned(), genesis.parent_hash())
@@ -301,7 +302,7 @@ fn test_dag_genesis_fork() {
 
     let header_builder = BlockHeaderBuilder::random();
     parents_hash.append(&mut old_parents_hash);
-    let header = header_builder.with_parents_hash(Some(parents_hash)).build();
+    let header = header_builder.with_parents_hash(parents_hash).build();
     // parents_hash = vec![header.id()];
     dag.commit(header.to_owned(), genesis.parent_hash())
         .unwrap();
@@ -313,41 +314,22 @@ fn test_dag_genesis_fork() {
 fn test_dag_tips_store() {
     let dag = BlockDAG::create_for_testing().unwrap();
 
-    let state1 = DagState {
+    let state = DagState {
         tips: vec![Hash::random()],
     };
-    let dag_genesis1 = Hash::random();
     dag.storage
         .state_store
         .write()
-        .insert(dag_genesis1, state1.clone())
-        .expect("failed to store the dag state");
-
-    let state2 = DagState {
-        tips: vec![Hash::random()],
-    };
-    let dag_genesis2 = Hash::random();
-    dag.storage
-        .state_store
-        .write()
-        .insert(dag_genesis2, state2.clone())
+        .insert(state.clone())
         .expect("failed to store the dag state");
 
     assert_eq!(
         dag.storage
             .state_store
             .read()
-            .get_state(dag_genesis1)
+            .get_state()
             .expect("failed to get the dag state"),
-        state1
-    );
-    assert_eq!(
-        dag.storage
-            .state_store
-            .read()
-            .get_state(dag_genesis2)
-            .expect("failed to get the dag state"),
-        state2
+        state
     );
 }
 
@@ -368,7 +350,7 @@ fn test_dag_multiple_commits() -> anyhow::Result<()> {
         let header_builder = BlockHeaderBuilder::random();
         let header = header_builder
             .with_parent_hash(parent_hash)
-            .with_parents_hash(Some(parents_hash.clone()))
+            .with_parents_hash(parents_hash.clone())
             .with_number(i)
             .build();
         parents_hash = vec![header.id()];
@@ -730,15 +712,23 @@ fn add_and_print(
     let header_builder = BlockHeaderBuilder::random();
     let header = header_builder
         .with_parent_hash(parent)
-        .with_parents_hash(Some(parents))
+        .with_parents_hash(parents)
         .with_number(number)
         .build();
+    let start = Instant::now();
     dag.commit(header.to_owned(), origin)?;
-    let ghostdata = dag.ghostdata(&[header.id()])?;
+    let duration = start.elapsed();
     println!(
-        "add a header: {:?}, blue set: {:?}, red set: {:?}, blue anticone size: {:?}",
-        header, ghostdata.mergeset_blues, ghostdata.mergeset_reds, ghostdata.blues_anticone_sizes
+        "commit header: {:?}, number: {:?}, duration: {:?}",
+        header.id(),
+        header.number(),
+        duration
     );
+    let _ghostdata = dag.ghostdata(&[header.id()])?;
+    // println!(
+    //     "add a header: {:?}, blue set: {:?}, red set: {:?}, blue anticone size: {:?}",
+    //     header, ghostdata.mergeset_blues, ghostdata.mergeset_reds, ghostdata.blues_anticone_sizes
+    // );
     Ok(header)
 }
 
@@ -792,4 +782,170 @@ fn test_dag_mergeset() -> anyhow::Result<()> {
     );
 
     Ok(())
+}
+
+#[test]
+fn test_big_data_commit() -> anyhow::Result<()> {
+    // initialzie the dag firstly
+    let mut dag = BlockDAG::create_for_testing().unwrap();
+
+    let origin = BlockHeaderBuilder::random().with_number(0).build();
+    let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;
+
+    dag.init_with_genesis(genesis.clone()).unwrap();
+
+    let count = 20000;
+
+    // one
+    let mut parent = genesis.clone();
+    for i in 0..count {
+        let new = add_and_print(
+            i + 1,
+            parent.id(),
+            vec![parent.id()],
+            genesis.parent_hash(),
+            &mut dag,
+        )?;
+        parent = new;
+    }
+    let last_one = parent;
+
+    // two
+    let mut parent = genesis.clone();
+    for i in 0..count {
+        let new = add_and_print(
+            i + 1,
+            parent.id(),
+            vec![parent.id()],
+            genesis.parent_hash(),
+            &mut dag,
+        )?;
+        parent = new;
+    }
+    let last_two = parent;
+
+    let _new = add_and_print(
+        count + 1,
+        last_one.id(),
+        vec![last_one.id(), last_two.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+
+    anyhow::Result::Ok(())
+}
+
+#[ignore = "pruning will be tested in next release"]
+#[test]
+fn test_prune() -> anyhow::Result<()> {
+    // initialzie the dag firstly
+    let k = 3;
+    let pruning_depth = 4;
+    let pruning_finality = 3;
+
+    let mut dag = BlockDAG::create_for_testing_with_parameters(k).unwrap();
+
+    let origin = BlockHeaderBuilder::random().with_number(0).build();
+    let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;
+
+    dag.init_with_genesis(genesis.clone()).unwrap();
+
+    let block1 = add_and_print(
+        1,
+        genesis.id(),
+        vec![genesis.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+
+    let block_main_2 = add_and_print(
+        2,
+        block1.id(),
+        vec![block1.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+    let block_main_3 = add_and_print(
+        3,
+        block_main_2.id(),
+        vec![block_main_2.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+    let block_main_3_1 = add_and_print(
+        3,
+        block_main_2.id(),
+        vec![block_main_2.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+    let block_main_4 = add_and_print(
+        4,
+        block_main_3.id(),
+        vec![block_main_3.id(), block_main_3_1.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+    let block_main_5 = add_and_print(
+        5,
+        block_main_4.id(),
+        vec![block_main_4.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+
+    let block_red_2 = add_and_print(
+        2,
+        block1.id(),
+        vec![block1.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+    let block_red_2_1 = add_and_print(
+        2,
+        block1.id(),
+        vec![block1.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+    let block_red_3 = add_and_print(
+        3,
+        block_red_2.id(),
+        vec![block_red_2.id(), block_red_2_1.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+
+    // let's obser the blue scores which show how blue the tips are
+    let observer1 = dag.ghostdata(&[block_red_3.id()])?;
+    println!("observer 1 data: {:?}, ", observer1);
+
+    let observer2 = dag.ghostdata(&[block_red_3.id(), block_main_5.id()])?;
+    println!("observer 2 dag data: {:?}, ", observer2);
+
+    let observer3 = dag.ghostdata(&[block_main_5.id()])?;
+    println!("observer 3 dag data: {:?}, ", observer3);
+
+    assert!(observer1.blue_score < observer2.blue_score);
+    assert!(observer1.selected_parent != observer2.selected_parent);
+
+    assert_eq!(observer3.blue_score, observer2.blue_score);
+    assert_eq!(observer3.selected_parent, observer2.selected_parent);
+
+    // prunning process begins
+    dag.save_dag_state(DagState {
+        tips: vec![block_red_3.id(), block_main_5.id()],
+    })?;
+
+    let MineNewDagBlockInfo {
+        tips,
+        blue_blocks: _,
+        pruning_point,
+    } = dag.calc_mergeset_and_tips(pruning_depth, pruning_finality)?;
+
+    assert_eq!(pruning_point, block_main_2.id());
+    assert_eq!(tips.len(), 1);
+    assert_eq!(*tips.last().unwrap(), block_main_5.id());
+
+    anyhow::Result::Ok(())
 }

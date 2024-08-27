@@ -9,6 +9,7 @@ use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_config::{temp_dir, ChainNetwork, DataDirPath, RocksdbConfig};
 use starcoin_consensus::Consensus;
+use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
@@ -73,7 +74,15 @@ impl ChainBencher {
             let (block_template, _) = self
                 .chain
                 .read()
-                .create_block_template(*self.account.address(), None, vec![], vec![], None, None)
+                .create_block_template(
+                    *self.account.address(),
+                    None,
+                    vec![],
+                    vec![],
+                    None,
+                    vec![],
+                    HashValue::zero(),
+                )
                 .unwrap();
             let block = ConsensusStrategy::Dummy
                 .create_block(block_template, self.net.time_service().as_ref())

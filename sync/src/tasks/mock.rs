@@ -20,7 +20,7 @@ use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::MockChain;
-use starcoin_config::{BuiltinNetworkID, ChainNetwork};
+use starcoin_config::ChainNetwork;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_network_rpc_api::G_RPC_INFO;
@@ -291,12 +291,6 @@ impl SyncNodeMocker {
         self.chain_mocker.head()
     }
 
-    pub fn dag_fork_number(&self) -> Result<BlockNumber> {
-        let header = self.chain_mocker.head().current_header();
-        let net: BuiltinNetworkID = header.chain_id().try_into()?;
-        Ok(net.genesis_config().dag_effective_height)
-    }
-
     pub fn get_storage(&self) -> Arc<Storage> {
         self.chain_mocker.get_storage()
     }
@@ -369,14 +363,10 @@ impl BlockFetcher for SyncNodeMocker {
             .map(|block_id| {
                 if let Some(block) = self.chain().get_block(block_id)? {
                     Ok((block, Some(PeerId::random())))
-                } else if !self.chain().head_block().block().header().is_single() {
-                    if let Some(block) = self.chain().get_storage().get_block(block_id)? {
-                        Ok((block, Some(PeerId::random())))
-                    } else {
-                        Err(format_err!("Cannot find block by id: {}", block_id))
-                    }
+                } else if let Some(block) = self.chain().get_storage().get_block(block_id)? {
+                    Ok((block, Some(PeerId::random())))
                 } else {
-                    Err(format_err!("Can not find block by id: {}", block_id))
+                    Err(format_err!("Cannot find block by id: {}", block_id))
                 }
             })
             .collect();

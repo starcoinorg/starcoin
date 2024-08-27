@@ -11,12 +11,16 @@ use crate::consensusdb::{
     },
 };
 use crate::ghostdag::protocol::GhostdagManager;
+use crate::prune::pruning_point_manager::PruningPointManagerT;
 use crate::{process_key_already_error, reachability};
-use anyhow::{bail, Ok};
+use anyhow::{bail, format_err, Ok};
+use starcoin_accumulator::node::AccumulatorStoreType;
+use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_config::temp_dir;
 use starcoin_crypto::{HashValue as Hash, HashValue};
-use starcoin_logger::prelude::{debug, info};
-use starcoin_types::block::BlockHeader;
+use starcoin_logger::prelude::{debug, info, warn};
+use starcoin_storage::Store;
+use starcoin_types::block::{AccumulatorInfo, BlockHeader};
 use starcoin_types::{
     blockhash::{BlockHashes, KType},
     consensus_header::ConsensusHeader,
@@ -25,6 +29,8 @@ use std::ops::DerefMut;
 use std::sync::Arc;
 
 pub const DEFAULT_GHOSTDAG_K: KType = 8u16;
+pub const DEFAULT_PRUNING_DEPTH: u64 = 185798;
+pub const DEFAULT_FINALITY_DEPTH: u64 = 86400;
 
 pub type DbGhostdagManager = GhostdagManager<
     DbGhostdagStore,
@@ -33,10 +39,19 @@ pub type DbGhostdagManager = GhostdagManager<
     DbHeadersStore,
 >;
 
+pub type PruningPointManager = PruningPointManagerT<DbReachabilityStore>;
+
+pub struct MineNewDagBlockInfo {
+    pub tips: Vec<HashValue>,
+    pub blue_blocks: Vec<HashValue>,
+    pub pruning_point: HashValue,
+}
+
 #[derive(Clone)]
 pub struct BlockDAG {
     pub storage: FlexiDagStorage,
     ghostdag_manager: DbGhostdagManager,
+    pruning_point_manager: PruningPointManager,
 }
 
 impl BlockDAG {
@@ -48,17 +63,20 @@ impl BlockDAG {
         let reachability_service = MTReachabilityService::new(reachability_store);
         let ghostdag_manager = DbGhostdagManager::new(
             k,
-            ghostdag_store,
+            ghostdag_store.clone(),
             relations_store,
             header_store,
-            reachability_service,
+            reachability_service.clone(),
         );
+        let pruning_point_manager = PruningPointManager::new(reachability_service, ghostdag_store);
 
         Self {
             ghostdag_manager,
             storage: db,
+            pruning_point_manager,
         }
     }
+
     pub fn create_for_testing() -> anyhow::Result<Self> {
         let config = FlexiDagStorageConfig {
             cache_size: 1024,
@@ -66,6 +84,12 @@ impl BlockDAG {
         };
         let dag_storage = FlexiDagStorage::create_from_path(temp_dir(), config)?;
         Ok(Self::new(DEFAULT_GHOSTDAG_K, dag_storage))
+    }
+
+    pub fn create_for_testing_with_parameters(k: KType) -> anyhow::Result<Self> {
+        let dag_storage =
+            FlexiDagStorage::create_from_path(temp_dir(), FlexiDagStorageConfig::default())?;
+        Ok(Self::new(k, dag_storage))
     }
 
     pub fn has_dag_block(&self, hash: Hash) -> anyhow::Result<bool> {
@@ -89,12 +113,9 @@ impl BlockDAG {
             .insert(origin, BlockHashes::new(vec![]))?;
 
         self.commit(genesis, origin)?;
-        self.save_dag_state(
-            genesis_id,
-            DagState {
-                tips: vec![genesis_id],
-            },
-        )?;
+        self.save_dag_state(DagState {
+            tips: vec![genesis_id],
+        })?;
         Ok(origin)
     }
     pub fn ghostdata(&self, parents: &[HashValue]) -> anyhow::Result<GhostdagData> {
@@ -107,6 +128,10 @@ impl BlockDAG {
             Err(StoreError::KeyNotFound(_)) => Ok(None),
             Err(e) => Err(e.into()),
         }
+    }
+
+    pub fn pruning_point_manager(&self) -> PruningPointManager {
+        self.pruning_point_manager.clone()
     }
 
     pub fn set_reindex_root(&mut self, hash: HashValue) -> anyhow::Result<()> {
@@ -125,6 +150,7 @@ impl BlockDAG {
         );
         // Generate ghostdag data
         let parents = header.parents();
+
         debug!(
             "start to get the ghost data from block: {:?}, number: {:?}",
             header.id(),
@@ -133,7 +159,7 @@ impl BlockDAG {
         let ghostdata = match self.ghostdata_by_hash(header.id())? {
             None => {
                 // It must be the dag genesis if header is a format for a single chain
-                if header.is_single() {
+                if header.is_genesis() {
                     Arc::new(self.ghostdag_manager.genesis_ghostdag_data(&header))
                 } else {
                     let ghostdata = self.ghostdag_manager.ghostdag(&parents)?;
@@ -156,6 +182,7 @@ impl BlockDAG {
             header.number()
         );
         let reachability_store = self.storage.reachability_store.clone();
+
         let mut merge_set = ghostdata
             .unordered_mergeset_without_selected_parent()
             .filter(|hash| self.storage.reachability_store.read().has(*hash).unwrap())
@@ -214,23 +241,12 @@ impl BlockDAG {
             }
         }
 
-        // store relations
-        // It must be the dag genesis if header is a format for a single chain
-        if header.is_single() {
-            process_key_already_error(
-                self.storage
-                    .relations_store
-                    .write()
-                    .insert(header.id(), BlockHashes::new(vec![origin])),
-            )?;
-        } else {
-            process_key_already_error(
-                self.storage
-                    .relations_store
-                    .write()
-                    .insert(header.id(), BlockHashes::new(parents)),
-            )?;
-        }
+        process_key_already_error(
+            self.storage
+                .relations_store
+                .write()
+                .insert(header.id(), BlockHashes::new(parents)),
+        )?;
         // Store header store
         process_key_already_error(self.storage.header_store.insert(
             header.id(),
@@ -258,12 +274,146 @@ impl BlockDAG {
         }
     }
 
-    pub fn get_dag_state(&self, hash: Hash) -> anyhow::Result<DagState> {
-        Ok(self.storage.state_store.read().get_state(hash)?)
+    pub fn get_dag_state(&self) -> anyhow::Result<DagState> {
+        Ok(self.storage.state_store.read().get_state()?)
     }
 
-    pub fn save_dag_state(&self, hash: Hash, state: DagState) -> anyhow::Result<()> {
-        self.storage.state_store.write().insert(hash, state)?;
+    pub fn save_dag_state(&self, state: DagState) -> anyhow::Result<()> {
+        self.storage.state_store.write().insert(state)?;
         Ok(())
+    }
+
+    pub fn ghost_dag_manager(&self) -> DbGhostdagManager {
+        self.ghostdag_manager.clone()
+    }
+
+    pub fn calc_mergeset_and_tips(
+        &self,
+        _pruning_depth: u64,
+        _pruning_finality: u64,
+    ) -> anyhow::Result<MineNewDagBlockInfo> {
+        let dag_state = self.get_dag_state()?;
+        let ghostdata = self.ghost_dag_manager().ghostdag(&dag_state.tips)?;
+
+        anyhow::Ok(MineNewDagBlockInfo {
+            tips: dag_state.tips,
+            blue_blocks: (*ghostdata.mergeset_blues).clone(),
+            pruning_point: HashValue::zero(),
+        })
+
+        // let next_pruning_point = self.pruning_point_manager().next_pruning_point(
+        //     &dag_state,
+        //     &ghostdata,
+        //     pruning_depth,
+        //     pruning_finality,
+        // )?;
+        // if next_pruning_point == dag_state.pruning_point {
+        //     anyhow::Ok(MineNewDagBlockInfo {
+        //         tips: dag_state.tips,
+        //         blue_blocks: (*ghostdata.mergeset_blues).clone(),
+        //         pruning_point: next_pruning_point,
+        //     })
+        // } else {
+        //     let pruned_tips = self
+        //         .pruning_point_manager()
+        //         .prune(&dag_state, next_pruning_point)?;
+        //     let mergeset_blues = (*self
+        //         .ghost_dag_manager()
+        //         .ghostdag(&pruned_tips)?
+        //         .mergeset_blues)
+        //         .clone();
+        //     anyhow::Ok(MineNewDagBlockInfo {
+        //         tips: pruned_tips,
+        //         blue_blocks: mergeset_blues,
+        //         pruning_point: next_pruning_point,
+        //     })
+        // }
+    }
+
+    fn verify_pruning_point(
+        &self,
+        pruning_depth: u64,
+        pruning_finality: u64,
+        block_header: &BlockHeader,
+        genesis_id: HashValue,
+    ) -> anyhow::Result<()> {
+        let ghostdata = self.ghost_dag_manager().ghostdag(&block_header.parents())?;
+        let next_pruning_point = self.pruning_point_manager().next_pruning_point(
+            block_header.pruning_point(),
+            &ghostdata,
+            pruning_depth,
+            pruning_finality,
+        )?;
+
+        if (block_header.chain_id().is_vega()
+            || block_header.chain_id().is_proxima()
+            || block_header.chain_id().is_halley())
+            && block_header.pruning_point() == HashValue::zero()
+        {
+            if next_pruning_point == genesis_id {
+                return anyhow::Ok(());
+            } else {
+                bail!(
+                    "pruning point is not correct, it should update the next pruning point: {}",
+                    next_pruning_point
+                );
+            }
+        }
+        if next_pruning_point != block_header.pruning_point() {
+            bail!("pruning point is not correct, the local next pruning point is {}, but the block header pruning point is {}", next_pruning_point, block_header.pruning_point());
+        }
+        anyhow::Ok(())
+    }
+
+    pub fn verify(
+        &self,
+        pruning_depth: u64,
+        pruning_finality: u64,
+        block_header: &BlockHeader,
+        genesis_id: HashValue,
+    ) -> anyhow::Result<()> {
+        self.verify_pruning_point(pruning_depth, pruning_finality, block_header, genesis_id)
+    }
+
+    pub fn check_upgrade(
+        &self,
+        info: AccumulatorInfo,
+        storage: Arc<dyn Store>,
+    ) -> anyhow::Result<()> {
+        let accumulator = MerkleAccumulator::new_with_info(
+            info,
+            storage.get_accumulator_store(AccumulatorStoreType::Block),
+        );
+
+        let read_guard = self.storage.state_store.read();
+
+        let update_dag_state = match read_guard.get_state_by_hash(
+            accumulator
+                .get_leaf(0)?
+                .ok_or_else(|| format_err!("no leaf when upgrading dag db"))?,
+        ) {
+            anyhow::Result::Ok(dag_state) => match read_guard.get_state() {
+                anyhow::Result::Ok(saved_dag_state) => {
+                    info!("The dag state is {:?}", saved_dag_state);
+                    None
+                }
+                Err(_) => Some(dag_state),
+            },
+            Err(_) => {
+                warn!("Cannot get the dag state by genesis id. Might be it is a new node. The dag state will be: {:?}", read_guard.get_state()?);
+                None
+            }
+        };
+
+        drop(read_guard);
+
+        if let Some(dag_state) = update_dag_state {
+            let write_guard = self.storage.state_store.write();
+            info!("The dag state will be saved as {:?}", dag_state);
+            write_guard.insert(dag_state)?;
+            drop(write_guard);
+        }
+
+        anyhow::Ok(())
     }
 }

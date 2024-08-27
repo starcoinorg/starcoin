@@ -290,11 +290,6 @@ impl StarcoinVM {
         Ok(())
     }
 
-    pub fn get_flexidag_config(&self) -> Result<FlexiDagConfig, VMStatus> {
-        self.flexi_dag_config
-            .ok_or(VMStatus::Error(StatusCode::VM_STARTUP_FAILURE))
-    }
-
     pub fn get_gas_schedule(&self) -> Result<&CostTable, VMStatus> {
         self.vm_config
             .as_ref()
@@ -971,7 +966,7 @@ impl StarcoinVM {
         if let Some(version) = stdlib_version {
             if version >= StdlibVersion::Version(FLEXI_DAG_UPGRADE_VERSION_MARK) {
                 args_vec.push(MoveValue::vector_u8(
-                    bcs_ext::to_bytes(&parents_hash.unwrap_or_default())
+                    bcs_ext::to_bytes(&parents_hash)
                         .or(Err(VMStatus::Error(VALUE_SERIALIZATION_ERROR)))?,
                 ));
                 function_name = &account_config::G_BLOCK_PROLOGUE_V2_NAME;

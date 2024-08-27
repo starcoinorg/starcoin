@@ -3,6 +3,8 @@
 
 extern crate chrono;
 
+use std::vec;
+
 use anyhow::Ok;
 use bcs_ext::BCSCodec;
 use chrono::prelude::*;
@@ -30,6 +32,7 @@ fn test_block() {
     .unwrap();
     let dt = Local::now();
 
+    let block_body1 = BlockBody::new(vec![SignedUserTransaction::mock()], None);
     let block_header1 = BlockHeader::new(
         HashValue::random(),
         dt.timestamp_nanos() as u64,
@@ -40,11 +43,13 @@ fn test_block() {
         HashValue::zero(),
         0,
         U256::zero(),
-        HashValue::random(),
+        block_body1.hash(),
         ChainId::test(),
         0,
         BlockHeaderExtra::new([0u8; 4]),
-        None,
+        vec![],
+        rand::random(),
+        HashValue::random(),
     );
     storage
         .block_storage
@@ -59,7 +64,6 @@ fn test_block() {
             .unwrap()
             .unwrap()
     );
-    let block_body1 = BlockBody::new(vec![SignedUserTransaction::mock()], None);
     storage
         .block_storage
         .save_body(block_id, block_body1.clone())
@@ -90,21 +94,24 @@ fn test_block_number() {
     .unwrap();
     let dt = Local::now();
 
+    let block_body1 = BlockBody::new(vec![SignedUserTransaction::mock()], None);
     let block_header1 = BlockHeader::new(
         HashValue::random(),
         dt.timestamp_nanos() as u64,
-        0,
+        rand::random(),
         AccountAddress::random(),
         HashValue::zero(),
         HashValue::random(),
         HashValue::zero(),
         0,
         U256::zero(),
-        HashValue::random(),
+        block_body1.hash(),
         ChainId::test(),
         0,
         BlockHeaderExtra::new([0u8; 4]),
-        None,
+        vec![],
+        rand::random(),
+        HashValue::random(),
     );
     storage
         .block_storage
@@ -119,7 +126,6 @@ fn test_block_number() {
             .unwrap(),
         block_header1
     );
-    let block_body1 = BlockBody::new(vec![SignedUserTransaction::mock()], None);
     storage
         .block_storage
         .save_body(block_id, block_body1.clone())
@@ -138,6 +144,7 @@ fn test_block_number() {
 #[test]
 fn test_old_failed_block_decode() {
     let dt = Local::now();
+    let block_body = BlockBody::new(vec![SignedUserTransaction::mock()], None);
     let block_header = BlockHeader::new(
         HashValue::random(),
         dt.timestamp_nanos() as u64,
@@ -148,13 +155,14 @@ fn test_old_failed_block_decode() {
         HashValue::zero(),
         0,
         U256::zero(),
-        HashValue::random(),
+        block_body.hash(),
         ChainId::test(),
         0,
         BlockHeaderExtra::new([0u8; 4]),
-        None,
+        vec![],
+        rand::random(),
+        HashValue::random(),
     );
-    let block_body = BlockBody::new(vec![SignedUserTransaction::mock()], None);
 
     let block = Block::new(block_header, block_body);
 
@@ -175,6 +183,8 @@ fn test_save_failed_block() {
     .unwrap();
     let dt = Local::now();
 
+    let block_body = BlockBody::new(vec![SignedUserTransaction::mock()], None);
+
     let block_header = BlockHeader::new(
         HashValue::random(),
         dt.timestamp_nanos() as u64,
@@ -185,14 +195,14 @@ fn test_save_failed_block() {
         HashValue::zero(),
         0,
         U256::zero(),
-        HashValue::random(),
+        block_body.hash(),
         ChainId::test(),
         0,
         BlockHeaderExtra::new([0u8; 4]),
-        None,
+        vec![],
+        rand::random(),
+        HashValue::random(),
     );
-
-    let block_body = BlockBody::new(vec![SignedUserTransaction::mock()], None);
 
     let block = Block::new(block_header, block_body);
 
@@ -236,6 +246,7 @@ fn test_save_failed_block() {
 
 fn new_dag_sync_block(children: Vec<HashValue>) -> anyhow::Result<DagSyncBlock> {
     let dt = Local::now();
+    let block_body = BlockBody::new(vec![SignedUserTransaction::mock()], None);
     let block_header = BlockHeader::new(
         HashValue::random(),
         dt.timestamp_nanos() as u64,
@@ -246,14 +257,14 @@ fn new_dag_sync_block(children: Vec<HashValue>) -> anyhow::Result<DagSyncBlock> 
         HashValue::zero(),
         0,
         U256::zero(),
-        HashValue::random(),
+        block_body.hash(),
         ChainId::test(),
         0,
         BlockHeaderExtra::new([0u8; 4]),
-        None,
+        vec![],
+        rand::random(),
+        HashValue::random(),
     );
-
-    let block_body = BlockBody::new(vec![SignedUserTransaction::mock()], None);
 
     let block = Block::new(block_header, block_body);
 

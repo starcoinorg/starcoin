@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Ok, Result};
-use rand::{thread_rng, Rng};
 use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::Accumulator;
 use starcoin_chain::BlockChain;
@@ -11,6 +10,7 @@ use starcoin_chain_mock::MockChain;
 use starcoin_config::NodeConfig;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_consensus::Consensus;
+use starcoin_crypto::HashValue;
 use starcoin_crypto::{ed25519::Ed25519PrivateKey, Genesis, PrivateKey};
 use starcoin_transaction_builder::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::account_address;
@@ -20,11 +20,8 @@ use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::TypeTag;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::language_storage::StructTag;
-use starcoin_vm_types::on_chain_config::FlexiDagConfig;
-use starcoin_vm_types::state_view::StateReaderExt;
 use std::str::FromStr;
 use std::sync::Arc;
-use test_helper::gen_blockchain_for_dag_test;
 
 #[stest::test(timeout = 120)]
 fn test_chain_filter_events() {
@@ -178,13 +175,19 @@ fn test_find_ancestor_genesis() -> Result<()> {
 fn test_find_ancestor_fork() -> Result<()> {
     let mut mock_chain = MockChain::new(ChainNetwork::new_builtin(BuiltinNetworkID::DagTest))?;
     mock_chain.produce_and_apply_times(3)?;
+    let header = mock_chain.head().current_header().clone();
+
     let mut mock_chain2 = mock_chain.fork(None)?;
-    mock_chain.produce_and_apply_times(2)?;
-    let header = mock_chain.head().current_header().parent_hash();
-    mock_chain2.produce_and_apply_times(3)?;
-    let ancestor = mock_chain.head().find_ancestor(mock_chain2.head())?;
+    let last2 = mock_chain2.produce_and_apply_times_for_fork(header.clone(), 3)?;
+
+    let last = mock_chain.produce_and_apply_times_for_fork(header.clone(), 2)?;
+
+    let compare_chain = mock_chain.fork(Some(last.id()))?;
+    let compare_chain2 = mock_chain2.fork(Some(last2.id()))?;
+
+    let ancestor = compare_chain.head().find_ancestor(compare_chain2.head())?;
     assert!(ancestor.is_some());
-    assert_eq!(ancestor.unwrap().id, header);
+    assert_eq!(ancestor.unwrap().id, header.id());
     Ok(())
 }
 
@@ -208,15 +211,33 @@ fn gen_uncle() -> (MockChain, BlockChain, BlockHeader) {
     (mock_chain, fork_block_chain, uncle_block_header)
 }
 
-fn product_a_block(branch: &BlockChain, miner: &AccountInfo, uncles: Vec<BlockHeader>) -> Block {
+fn product_a_block_by_tips(
+    branch: &BlockChain,
+    miner: &AccountInfo,
+    uncles: Vec<BlockHeader>,
+    parent_hash: Option<HashValue>,
+    tips: Vec<HashValue>,
+) -> Block {
     let (block_template, _) = branch
-        .create_block_template(*miner.address(), None, Vec::new(), uncles, None, None)
+        .create_block_template(
+            *miner.address(),
+            parent_hash,
+            Vec::new(),
+            uncles,
+            None,
+            tips,
+            HashValue::zero(),
+        )
         .unwrap();
 
     branch
         .consensus()
         .create_block(block_template, branch.time_service().as_ref())
         .unwrap()
+}
+
+fn product_a_block(branch: &BlockChain, miner: &AccountInfo, uncles: Vec<BlockHeader>) -> Block {
+    product_a_block_by_tips(branch, miner, uncles, None, vec![])
 }
 
 #[ignore = "dag cannot pass it"]
@@ -380,7 +401,8 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         vec![],
         vec![],
         None,
-        None,
+        vec![],
+        HashValue::zero(),
     )?;
 
     let block_b1 = block_chain
@@ -411,7 +433,8 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         vec![signed_txn_t2.clone()],
         vec![],
         None,
-        None,
+        vec![],
+        HashValue::zero(),
     )?;
     assert!(excluded.discarded_txns.is_empty(), "txn is discarded.");
     let block_b2 = block_chain
@@ -425,7 +448,8 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         vec![signed_txn_t2],
         vec![],
         None,
-        None,
+        vec![],
+        HashValue::zero(),
     )?;
     assert!(excluded.discarded_txns.is_empty(), "txn is discarded.");
     let block_b3 = block_chain2
@@ -543,29 +567,18 @@ fn test_block_chain_for_dag_fork() -> Result<()> {
 
     // create the dag chain at the fork chain
     let mut fork_block_chain = mock_chain.fork_new_branch(Some(fork_id)).unwrap();
+    let mut other_tips = vec![fork_id];
     for _ in 0..15 {
-        let block = product_a_block(&fork_block_chain, mock_chain.miner(), Vec::new());
+        let block = product_a_block_by_tips(
+            &fork_block_chain,
+            mock_chain.miner(),
+            Vec::new(),
+            other_tips.first().cloned(),
+            other_tips.clone(),
+        );
+        other_tips = vec![block.id()];
         fork_block_chain.apply(block)?;
     }
-
-    Ok(())
-}
-
-#[stest::test]
-fn test_gen_dag_chain() -> Result<()> {
-    let fork_number = 11u64;
-    let mut chain = gen_blockchain_for_dag_test(&ChainNetwork::new_test(), fork_number).unwrap();
-
-    let effective_height = chain
-        .chain_state()
-        .get_on_chain_config::<FlexiDagConfig>()?
-        .map(|c| c.effective_height);
-
-    assert_eq!(effective_height, Some(fork_number));
-    assert_eq!(chain.current_header().number(), 9);
-
-    let fork_number = thread_rng().gen_range(0..=9);
-    assert!(gen_blockchain_for_dag_test(&ChainNetwork::new_test(), fork_number).is_err());
 
     Ok(())
 }

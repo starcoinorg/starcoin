@@ -34,7 +34,6 @@ async fn sync_block_process(
         let block_chain_service = async_std::task::block_on(
             registry.service_ref::<BlockConnectorService<MockTxPoolService>>(),
         )?;
-        let dag_fork_height = local_node.dag_fork_number()?;
 
         let (sync_task, _task_handle, task_event_counter) = full_sync_task(
             current_block_id,
@@ -49,7 +48,6 @@ async fn sync_block_process(
             15,
             None,
             None,
-            Some(dag_fork_height),
             local_node.chain().dag().clone(),
             local_node.sync_dag_store.clone(),
         )?;
@@ -93,8 +91,16 @@ async fn test_sync_dag_blocks() -> Result<()> {
         .unwrap()
         .produce_block(count)
         .expect("failed to produce block");
-    let target_dag_genesis_header_id = target_node.chain().get_block_dag_genesis()?;
-    let local_dag_genesis_header_id = local_node.chain().get_block_dag_genesis()?;
+    let target_dag_genesis_header_id = target_node
+        .chain()
+        .get_storage()
+        .get_genesis()?
+        .ok_or_else(|| format_err!("failed to get the target node genesis hash."))?;
+    let local_dag_genesis_header_id = local_node
+        .chain()
+        .get_storage()
+        .get_genesis()?
+        .ok_or_else(|| format_err!("failed to get the target node genesis hash."))?;
 
     assert_eq!(target_dag_genesis_header_id, local_dag_genesis_header_id);
 
@@ -139,8 +145,16 @@ async fn test_continue_sync_dag_blocks() -> Result<()> {
         .produce_fork_chain(one_fork_count, two_fork_count)?;
 
     /////
-    let target_dag_genesis_header_id = target_node.chain().get_block_dag_genesis()?;
-    let local_dag_genesis_header_id = local_node.chain().get_block_dag_genesis()?;
+    let target_dag_genesis_header_id = target_node
+        .chain()
+        .get_storage()
+        .get_genesis()?
+        .ok_or_else(|| format_err!("faield to get the target's genesis id"))?;
+    let local_dag_genesis_header_id = local_node
+        .chain()
+        .get_storage()
+        .get_genesis()?
+        .ok_or_else(|| format_err!("faield to get the local's genesis id"))?;
 
     assert_eq!(target_dag_genesis_header_id, local_dag_genesis_header_id);
 

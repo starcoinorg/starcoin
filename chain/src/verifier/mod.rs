@@ -4,7 +4,7 @@
 use anyhow::{format_err, Result};
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_chain_api::{
-    verify_block, ChainReader, ChainType, ConnectBlockError, VerifiedBlock, VerifyBlockField,
+    verify_block, ChainReader, ConnectBlockError, VerifiedBlock, VerifyBlockField,
 };
 use starcoin_consensus::{Consensus, ConsensusVerifyError};
 use starcoin_logger::prelude::debug;
@@ -265,17 +265,6 @@ impl BlockVerifier for BasicVerifier {
             new_block_header.block_accumulator_root(),
         );
 
-        verify_block!(
-            VerifyBlockField::Header,
-            current_chain.check_chain_type()? == ChainType::Single
-                && new_block_header
-                    .parents_hash()
-                    .unwrap_or_default()
-                    .is_empty(),
-            "Single chain block is invalid: number {} parents_hash len {:?}",
-            new_block_header.number(),
-            new_block_header.parents_hash().map(|p| p.len())
-        );
         Ok(())
     }
 }
@@ -351,30 +340,24 @@ impl BlockVerifier for DagVerifier {
     where
         R: ChainReader,
     {
-        let parents_hash = new_block_header.parents_hash().unwrap_or_default();
-        let mut parents_hash_to_check = parents_hash.clone();
-        parents_hash_to_check.sort();
-        parents_hash_to_check.dedup();
+        let parents_hash = new_block_header.parents_hash();
 
         verify_block!(
             VerifyBlockField::Header,
-            !parents_hash_to_check.is_empty() && parents_hash.len() == parents_hash_to_check.len(),
-            "Invalid parents_hash in dag verifier {:?} for a dag block {}",
-            new_block_header.parents_hash(),
-            new_block_header.number(),
+            parents_hash.len() == parents_hash.iter().collect::<HashSet<_>>().len(),
+            "The dag block contains repeated hash values, block header: {:?}",
+            new_block_header,
         );
 
         verify_block!(
             VerifyBlockField::Header,
-            parents_hash_to_check.contains(&new_block_header.parent_hash())
-                && current_chain
-                    .get_block_info(Some(new_block_header.parent_hash()))?
-                    .is_some(),
-            "Invalid block: parent {} might not exist.",
+            parents_hash.contains(&new_block_header.parent_hash()),
+            "header: {:?}, tips {:?} do not contain the selected parent {:?}",
+            new_block_header,
+            parents_hash,
             new_block_header.parent_hash()
         );
-
-        parents_hash_to_check.iter().try_for_each(|parent_hash| {
+        parents_hash.iter().try_for_each(|parent_hash| {
             verify_block!(
                 VerifyBlockField::Header,
                 current_chain.has_dag_block(*parent_hash).map_err(|e| {

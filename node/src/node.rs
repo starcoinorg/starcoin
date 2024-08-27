@@ -323,14 +323,23 @@ impl NodeService {
             dag_storage.clone(),
         );
         registry.put_shared(dag.clone()).await?;
-        let (chain_info, genesis) =
-            Genesis::init_and_check_storage(config.net(), storage.clone(), dag, config.data_dir())?;
+        let (chain_info, genesis) = Genesis::init_and_check_storage(
+            config.net(),
+            storage.clone(),
+            dag.clone(),
+            config.data_dir(),
+        )?;
         info!(
             "Start node with chain info: {}, number {}, dragon fork disabled, upgrade_time cost {} secs, ",
             chain_info,
             chain_info.status().head().number(),
             upgrade_time.as_secs()
         );
+
+        dag.check_upgrade(
+            chain_info.status().info().block_accumulator_info.clone(),
+            storage.clone(),
+        )?;
 
         registry.put_shared(genesis).await?;
 

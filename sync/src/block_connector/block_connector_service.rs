@@ -12,13 +12,14 @@ use crate::block_connector::{
 };
 use crate::sync::{CheckSyncEvent, SyncService};
 use crate::tasks::{BlockConnectedEvent, BlockConnectedFinishEvent, BlockDiskCheckEvent};
-use anyhow::{anyhow, bail, format_err, Ok, Result};
+use anyhow::{bail, format_err, Ok, Result};
 use network_api::PeerProvider;
-use starcoin_chain_api::{ChainReader, ChainType, ConnectBlockError, WriteableChainService};
+use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
+use starcoin_dag::blockdag::MineNewDagBlockInfo;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
@@ -31,7 +32,7 @@ use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 #[cfg(test)]
 use starcoin_txpool_mock_service::MockTxPoolService;
-use starcoin_types::block::{BlockHeader, ExecutedBlock};
+use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown};
 use std::sync::Arc;
@@ -118,33 +119,6 @@ where
         }
 
         None
-    }
-
-    fn get_dag_previous_header(
-        &self,
-        previous_header: BlockHeader,
-        selected_parent: HashValue,
-    ) -> Result<BlockHeader> {
-        if previous_header.id() == selected_parent {
-            return std::prelude::rust_2015::Ok(previous_header);
-        }
-
-        if self
-            .chain_service
-            .get_dag()
-            .check_ancestor_of(previous_header.id(), vec![selected_parent])?
-        {
-            return self
-                .chain_service
-                .get_main()
-                .get_storage()
-                .get_block_header_by_hash(selected_parent)?
-                .ok_or_else(|| {
-                    format_err!("BlockHeader should exist by hash: {}", selected_parent)
-                });
-        }
-
-        Ok(previous_header)
     }
 }
 
@@ -402,45 +376,43 @@ where
     fn handle(
         &mut self,
         _msg: MinerRequest,
-        _ctx: &mut ServiceContext<Self>,
+        ctx: &mut ServiceContext<Self>,
     ) -> <MinerRequest as ServiceRequest>::Response {
         let main = self.chain_service.get_main();
         let dag = self.chain_service.get_dag();
         let epoch = main.epoch().clone();
         let strategy = epoch.strategy();
         let on_chain_block_gas_limit = epoch.block_gas_limit();
-        let mut previous_header = main.status().head().clone();
-        let (tips_hash, blues_hash) = match main.check_chain_type()? {
-            ChainType::Single => (None, vec![]),
-            ChainType::Dag => {
-                let (_dag_genesis, tips_hash) = main.current_tips_hash()?.ok_or_else(|| {
-                    anyhow!(
-                        "the number of the block is larger than the dag fork number but no dag state!"
-                    )
-                })?;
-                let blues_hash = dag.ghostdata(tips_hash.as_ref())?.mergeset_blues.to_vec();
-                if blues_hash.is_empty() {
-                    bail!("The count of ghostdata returns mergeset blues is empty");
-                }
-                let selected_parent = blues_hash.first().unwrap();
-                previous_header =
-                    self.get_dag_previous_header(previous_header, *selected_parent)?;
-
-                (Some(tips_hash), blues_hash)
-            }
-        };
-
+        let (pruning_depth, pruning_finality) = ctx
+            .get_shared::<Arc<NodeConfig>>()?
+            .base()
+            .net()
+            .pruning_config();
+        let MineNewDagBlockInfo {
+            tips,
+            blue_blocks,
+            pruning_point,
+        } = dag.calc_mergeset_and_tips(pruning_depth, pruning_finality)?;
+        if blue_blocks.is_empty() {
+            bail!("failed to get the blue blocks from the DAG");
+        }
+        let selected_parent = blue_blocks.first().expect("the blue block must exist");
+        let previous_header = main
+            .get_storage()
+            .get_block_header_by_hash(*selected_parent)?
+            .ok_or_else(|| format_err!("BlockHeader should exist by hash: {}", selected_parent))?;
         let next_difficulty = epoch.strategy().calculate_next_difficulty(main)?;
         let now_milliseconds = main.time_service().now_millis();
 
         Ok(Box::new(MinerResponse {
             previous_header,
             on_chain_block_gas_limit,
-            tips_hash,
-            blues_hash,
+            tips_hash: tips,
+            blues_hash: blue_blocks[1..].to_vec(),
             strategy,
             next_difficulty,
             now_milliseconds,
+            pruning_point,
         }))
     }
 }

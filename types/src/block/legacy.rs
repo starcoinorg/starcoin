@@ -1,4 +1,7 @@
-use super::{AccountAddress, BlockHeaderExtra, BlockNumber, ChainId, SignedUserTransaction, U256};
+use super::{
+    block_header_data::BlockHeaderDataInVega, AccountAddress, BlockHeaderExtra, BlockNumber,
+    ChainId, SignedUserTransaction, U256,
+};
 use schemars::{self, JsonSchema};
 use serde::{Deserialize, Deserializer, Serialize};
 use starcoin_crypto::{
@@ -133,34 +136,61 @@ impl From<BlockHeader> for crate::block::BlockHeader {
             chain_id: v.chain_id,
             nonce: v.nonce,
             extra: v.extra,
-            parents_hash: None,
+            parents_hash: vec![],
+            version: 0,
+            pruning_point: HashValue::zero(),
         }
     }
 }
+
+impl From<BlockHeaderDataInVega> for BlockHeader {
+    fn from(val: BlockHeaderDataInVega) -> Self {
+        let mut header = Self {
+            id: None,
+            parent_hash: val.parent_hash,
+            timestamp: val.timestamp,
+            number: val.number,
+            author: val.author,
+            author_auth_key: val.author_auth_key,
+            txn_accumulator_root: val.txn_accumulator_root,
+            block_accumulator_root: val.block_accumulator_root,
+            state_root: val.state_root,
+            gas_used: val.gas_used,
+            difficulty: val.difficulty,
+            body_hash: val.body_hash,
+            chain_id: val.chain_id,
+            nonce: val.nonce,
+            extra: val.extra,
+        };
+        header.id = Some(header.crypto_hash());
+        header
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename = "BlockHeader")]
+pub(crate) struct BlockHeaderData {
+    pub parent_hash: HashValue,
+    pub timestamp: u64,
+    pub number: BlockNumber,
+    pub author: AccountAddress,
+    pub author_auth_key: Option<AuthenticationKey>,
+    pub txn_accumulator_root: HashValue,
+    pub block_accumulator_root: HashValue,
+    pub state_root: HashValue,
+    pub gas_used: u64,
+    pub difficulty: U256,
+    pub body_hash: HashValue,
+    pub chain_id: ChainId,
+    pub nonce: u32,
+    pub extra: BlockHeaderExtra,
+}
+
 impl<'de> Deserialize<'de> for BlockHeader {
     fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
     where
         D: Deserializer<'de>,
     {
-        #[derive(Deserialize)]
-        #[serde(rename = "BlockHeader")]
-        struct BlockHeaderData {
-            parent_hash: HashValue,
-            timestamp: u64,
-            number: BlockNumber,
-            author: AccountAddress,
-            author_auth_key: Option<AuthenticationKey>,
-            txn_accumulator_root: HashValue,
-            block_accumulator_root: HashValue,
-            state_root: HashValue,
-            gas_used: u64,
-            difficulty: U256,
-            body_hash: HashValue,
-            chain_id: ChainId,
-            nonce: u32,
-            extra: BlockHeaderExtra,
-        }
-
         let header_data = BlockHeaderData::deserialize(deserializer)?;
         let block_header = Self::new_with_auth_key(
             header_data.parent_hash,

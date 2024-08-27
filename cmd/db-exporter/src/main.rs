@@ -831,40 +831,36 @@ pub fn export_block_range(
     let mut visit: HashSet<HashValue> = block_list.iter().map(|block| block.id()).collect();
     for block in block_list {
         let parents = block.header().parents_hash();
-        if let Some(parents) = parents {
-            let mut queue = vec![];
-            let mut block_ids = vec![];
-            for parent in parents {
-                if !visit.contains(&parent) {
-                    visit.insert(parent);
-                    let block_parent = storage.clone().get_block(parent)?.unwrap();
-                    block_ids.push(parent);
-                    queue.push(block_parent);
-                }
+        let mut queue = vec![];
+        let mut block_ids = vec![];
+        for parent in parents {
+            if !visit.contains(&parent) {
+                visit.insert(parent);
+                let block_parent = storage.clone().get_block(parent)?.unwrap();
+                block_ids.push(parent);
+                queue.push(block_parent);
             }
-            while !queue.is_empty() {
-                let mut queue2 = vec![];
-                for block2 in queue {
-                    let parents2 = block2.header().parents_hash();
-                    if let Some(parents2) = parents2 {
-                        for parent in parents2 {
-                            if !visit.contains(&parent) {
-                                visit.insert(parent);
-                                let block_parent = storage.clone().get_block(parent)?.unwrap();
-                                block_ids.push(parent);
-                                queue2.push(block_parent);
-                            }
-                        }
+        }
+        while !queue.is_empty() {
+            let mut queue2 = vec![];
+            for block2 in queue {
+                let parents2 = block2.header().parents_hash();
+                for parent in parents2 {
+                    if !visit.contains(&parent) {
+                        visit.insert(parent);
+                        let block_parent = storage.clone().get_block(parent)?.unwrap();
+                        block_ids.push(parent);
+                        queue2.push(block_parent);
                     }
                 }
-                queue = queue2;
             }
-            block_ids.reverse();
-            for parent in block_ids {
-                let block2 = storage.clone().get_block(parent)?.unwrap();
-                writeln!(file, "{}", serde_json::to_string(&block2)?)?;
-                bar.set_message(format!("write parent block {}", block2.header().number()));
-            }
+            queue = queue2;
+        }
+        block_ids.reverse();
+        for parent in block_ids {
+            let block2 = storage.clone().get_block(parent)?.unwrap();
+            writeln!(file, "{}", serde_json::to_string(&block2)?)?;
+            bar.set_message(format!("write parent block {}", block2.header().number()));
         }
         writeln!(file, "{}", serde_json::to_string(&block)?)?;
         bar.set_message(format!("write block {}", block.header().number()));
@@ -1144,8 +1140,15 @@ pub fn execute_transaction_with_create_account(
             txns.push(txn1.as_signed_user_txn()?.clone());
         }
 
-        let (block_template, _) =
-            chain.create_block_template(*miner_info.address(), None, txns, vec![], None, None)?;
+        let (block_template, _) = chain.create_block_template(
+            *miner_info.address(),
+            None,
+            txns,
+            vec![],
+            None,
+            vec![],
+            HashValue::zero(),
+        )?;
         let block =
             ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
         if block.transactions().len() as u64 <= trans_num {
@@ -1170,8 +1173,15 @@ pub fn execute_transaction_with_miner_create_account(
     let miner_account = Account::new();
     let miner_info = AccountInfo::from(&miner_account);
     let mut send_sequence = 0u64;
-    let (block_template, _) =
-        chain.create_block_template(*miner_info.address(), None, vec![], vec![], None, None)?;
+    let (block_template, _) = chain.create_block_template(
+        *miner_info.address(),
+        None,
+        vec![],
+        vec![],
+        None,
+        vec![],
+        HashValue::zero(),
+    )?;
     let block =
         ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
     let block_hash = block.header.id();
@@ -1195,8 +1205,15 @@ pub fn execute_transaction_with_miner_create_account(
             sequence += 1;
         }
 
-        let (block_template, _) =
-            chain.create_block_template(*miner_info.address(), None, txns, vec![], None, None)?;
+        let (block_template, _) = chain.create_block_template(
+            *miner_info.address(),
+            None,
+            txns,
+            vec![],
+            None,
+            vec![],
+            HashValue::zero(),
+        )?;
         let block =
             ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
         if block.transactions().len() as u64 <= trans_num {
@@ -1222,8 +1239,15 @@ pub fn execute_empty_transaction_with_miner(
     let miner_account = Account::new();
     let miner_info = AccountInfo::from(&miner_account);
     let mut send_sequence = 0u64;
-    let (block_template, _) =
-        chain.create_block_template(*miner_info.address(), None, vec![], vec![], None, None)?;
+    let (block_template, _) = chain.create_block_template(
+        *miner_info.address(),
+        None,
+        vec![],
+        vec![],
+        None,
+        vec![],
+        HashValue::zero(),
+    )?;
     let block =
         ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
     let block_hash = block.header.id();
@@ -1245,8 +1269,15 @@ pub fn execute_empty_transaction_with_miner(
             sequence += 1;
         }
 
-        let (block_template, _) =
-            chain.create_block_template(*miner_info.address(), None, txns, vec![], None, None)?;
+        let (block_template, _) = chain.create_block_template(
+            *miner_info.address(),
+            None,
+            txns,
+            vec![],
+            None,
+            vec![],
+            HashValue::zero(),
+        )?;
         let block =
             ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
         if block.transactions().len() as u64 <= trans_num {
@@ -1273,8 +1304,15 @@ pub fn execute_transaction_with_fixed_account(
     let miner_info = AccountInfo::from(&miner_account);
     let mut send_sequence = 0u64;
     let receiver = Account::new();
-    let (block_template, _) =
-        chain.create_block_template(*miner_info.address(), None, vec![], vec![], None, None)?;
+    let (block_template, _) = chain.create_block_template(
+        *miner_info.address(),
+        None,
+        vec![],
+        vec![],
+        None,
+        vec![],
+        HashValue::zero(),
+    )?;
     let block =
         ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
     let block_hash = block.header.id();
@@ -1297,8 +1335,15 @@ pub fn execute_transaction_with_fixed_account(
             sequence += 1;
         }
 
-        let (block_template, _) =
-            chain.create_block_template(*miner_info.address(), None, txns, vec![], None, None)?;
+        let (block_template, _) = chain.create_block_template(
+            *miner_info.address(),
+            None,
+            txns,
+            vec![],
+            None,
+            vec![],
+            HashValue::zero(),
+        )?;
         let block =
             ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
         if block.transactions().len() as u64 <= trans_num {
@@ -1356,8 +1401,15 @@ pub fn execute_turbo_stm_transaction_with_fixed_account(
             txns.push(txn2.as_signed_user_txn()?.clone());
         }
 
-        let (block_template, _) =
-            chain.create_block_template(*miner_info.address(), None, txns, vec![], None, None)?;
+        let (block_template, _) = chain.create_block_template(
+            *miner_info.address(),
+            None,
+            txns,
+            vec![],
+            None,
+            vec![],
+            HashValue::zero(),
+        )?;
         let block =
             ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
         println!("create account trans {}", block.transactions().len());
@@ -1383,8 +1435,15 @@ pub fn execute_turbo_stm_transaction_with_fixed_account(
             txns.push(txn1.as_signed_user_txn()?.clone());
         }
         sequence += 1;
-        let (block_template, _) =
-            chain.create_block_template(*miner_info.address(), None, txns, vec![], None, None)?;
+        let (block_template, _) = chain.create_block_template(
+            *miner_info.address(),
+            None,
+            txns,
+            vec![],
+            None,
+            vec![],
+            HashValue::zero(),
+        )?;
         let block =
             ConsensusStrategy::Dummy.create_block(block_template, net.time_service().as_ref())?;
         println!("p2p trans {}", block.transactions().len());
