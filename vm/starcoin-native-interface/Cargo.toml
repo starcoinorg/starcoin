@@ -1,0 +1,24 @@
+[package]
+name = "starcoin-native-interface"
+version = "2.0.1"
+
+# Workspace inherited keys
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+
+[dependencies]
+starcoin-gas-algebra-ext = { workspace = true }
+starcoin-vm-types = { workspace = true }
+bcs = { workspace = true }
+bytes = { workspace = true }
+move-binary-format = { workspace = true }
+move-core-types = { workspace = true }
+move-vm-runtime = { workspace = true }
+move-vm-types = { workspace = true }
+smallvec = { workspace = true }
