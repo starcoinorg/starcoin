@@ -15,9 +15,11 @@ use tokio::{
 
 #[derive(Debug)]
 pub enum ExecuteState {
-    Waiting(BlockHeader),
-    Executing(BlockHeader),
+    Ready(HashValue),
+    Executing(HashValue),
+    Executed(BlockHeader),
     Error(BlockHeader),
+    Closed,
 }
 
 pub struct DagBlockExecutor {
@@ -67,7 +69,7 @@ impl DagBlockExecutor {
 
                         match self
                             .sender
-                            .send(ExecuteState::Executing(header.clone()))
+                            .send(ExecuteState::Executing(header.id()))
                             .await
                         {
                             Ok(_) => (),
@@ -128,7 +130,7 @@ impl DagBlockExecutor {
                                 );
                                 match self
                                     .sender
-                                    .send(ExecuteState::Waiting(header.clone()))
+                                    .send(ExecuteState::Executed(header.clone()))
                                     .await
                                 {
                                     Ok(_) => (),

@@ -1,13 +1,10 @@
-use std::{path::Path, sync::Arc};
+use std::{ops::DerefMut, path::Path, sync::Arc};
 
 use anyhow::format_err;
 use parking_lot::RwLock;
 use starcoin_config::{temp_dir, RocksdbConfig, StorageConfig};
 use starcoin_crypto::HashValue;
-use starcoin_dag::consensusdb::{
-    prelude::StoreError,
-    schemadb::{DbReachabilityStore, MemoryReachabilityStore, REACHABILITY_DATA_CF},
-};
+use starcoin_dag::{consensusdb::{prelude::StoreError, schemadb::{DbReachabilityStore, MemoryReachabilityStore, REACHABILITY_DATA_CF}}, reachability::inquirer};
 use starcoin_logger::prelude::error;
 use starcoin_storage::db_storage::{DBStorage, SchemaIterator};
 use starcoin_types::block::{Block, BlockNumber};
@@ -20,7 +17,7 @@ use super::sync_absent_ancestor::{
 #[derive(Clone)]
 pub struct SyncDagStore {
     pub absent_dag_store: SyncAbsentBlockStore,
-    pub reachability_store: Arc<RwLock<MemoryReachabilityStore>>,
+    pub reachability_store: Arc<RwLock<MemoryReachabilityStore>>
 }
 
 #[derive(Clone)]
@@ -117,6 +114,12 @@ impl SyncDagStore {
                             block: Some(block.clone()),
                         }])
                         .map_err(|e| format_err!("Failed to save absent block: {:?}", e))?;
+                    
+                    {
+                        let mut writer = self.reachability_store.write();
+                        inquirer::add_block(writer.deref_mut(), block.id(), block.header().parent_hash(), &mut [block.header().parents_hash()].into_iter().flatten())?;
+                        drop(writer);
+                    }
                     Ok(())
                 }
                 _ => Err(format_err!(

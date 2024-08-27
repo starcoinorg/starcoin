@@ -1,2 +1,2 @@
 mod executor;
-mod sender;
+pub mod sender;

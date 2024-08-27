@@ -1,16 +1,16 @@
-#![feature(linked_list_cursors)] 
-use std::{collections::LinkedList, ops::Deref, sync::Arc};
+use std::{ops::Deref, sync::Arc, vec};
 
 use starcoin_config::TimeService;
 use starcoin_crypto::HashValue;
 use starcoin_dag::{blockdag::BlockDAG, consensusdb::schema::ValueCodec, reachability::inquirer};
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::error;
+use starcoin_network::worker;
 use starcoin_storage::Store;
 use starcoin_types::block::{Block, BlockHeader};
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
-use crate::store::{sync_absent_ancestor::DagSyncBlock, sync_dag_store::SyncDagStore};
+use crate::store::{sync_absent_ancestor::DagSyncBlock, sync_dag_store::{self, SyncDagStore}};
 
 use super::executor::{DagBlockExecutor, ExecuteState};
 
@@ -20,9 +20,9 @@ struct DagBlockWorker {
     pub state: ExecuteState,
 }
 
-struct DagBlockSender {
+pub struct DagBlockSender {
     sync_dag_store: SyncDagStore,
-    executors: LinkedList<DagBlockWorker>,
+    executors: Vec<DagBlockWorker>,
     queue_size: usize,
     time_service: Arc<dyn TimeService>,
     storage: Arc<dyn Store>,
@@ -41,7 +41,7 @@ impl DagBlockSender {
     ) -> Self {
         Self {
             sync_dag_store,
-            executors: LinkedList::new(),
+            executors: vec![],
             queue_size,
             time_service,
             storage,
@@ -50,58 +50,31 @@ impl DagBlockSender {
         }
     }
 
-    async fn dispatch_to_executing_ancestor_worker(&self, block: &Block) -> anyhow::Result<bool> {
-        for executor in &self.executors {
+    async fn dispatch_to_worker(&mut self, block: &Block) -> anyhow::Result<bool> {
+        for executor in &mut self.executors {
             match &executor.state {
-                ExecuteState::Executing(executing_header_block) => {
+                ExecuteState::Executed(executing_header_block) => {
                     if inquirer::is_dag_ancestor_of(
                         self.sync_dag_store.reachability_store.read().deref(),
                         executing_header_block.id(),
+                        block.id(),
+                    )? {
+                        executor.state = ExecuteState::Executing(block.id());
+                        executor.sender_to_executor.send(block.clone()).await?;
+                        return anyhow::Ok(true);
+                    }
+                }
+                ExecuteState::Executing(header_id) => {
+                    if inquirer::is_dag_ancestor_of(
+                        self.sync_dag_store.reachability_store.read().deref(),
+                        *header_id,
                         block.id(),
                     )? {
                         executor.sender_to_executor.send(block.clone()).await?;
                         return anyhow::Ok(true);
                     }
                 }
-                &ExecuteState::Waiting(_) | ExecuteState::Error(_) => {
-                    continue;
-                }
-            }
-        }
-
-        anyhow::Ok(false)
-    }
-
-    async fn dispatch_to_waiting_ancestor_worker(&self, block: &Block) -> anyhow::Result<bool> {
-        for executor in &self.executors {
-            match &executor.state {
-                ExecuteState::Waiting(executing_header_block) => {
-                    if inquirer::is_dag_ancestor_of(
-                        self.sync_dag_store.reachability_store.read().deref(),
-                        executing_header_block.id(),
-                        block.id(),
-                    )? {
-                        executor.sender_to_executor.send(block.clone()).await?;
-                        return anyhow::Ok(true);
-                    }
-                }
-                &ExecuteState::Executing(_) | ExecuteState::Error(_) => {
-                    continue;
-                }
-            }
-        }
-
-        anyhow::Ok(false)
-    }
-
-    async fn dispatch_to_waiting_worker(&self, block: &Block) -> anyhow::Result<bool> {
-        for executor in &self.executors {
-            match &executor.state {
-                ExecuteState::Waiting(_) => {
-                    executor.sender_to_executor.send(block.clone()).await?;
-                    return anyhow::Ok(true);
-                }
-                &ExecuteState::Executing(_) | ExecuteState::Error(_) => {
+                ExecuteState::Ready(_) | ExecuteState::Error(_) | ExecuteState::Closed => {
                     continue;
                 }
             }
@@ -111,7 +84,8 @@ impl DagBlockSender {
     }
 
     pub async fn process_absent_blocks(&mut self) -> anyhow::Result<()> {
-        let iter = self.sync_dag_store.iter_at_first()?;
+        let sync_dag_store = self.sync_dag_store.clone();
+        let iter = sync_dag_store.iter_at_first()?;
         for result_value in iter {
             let (_, value) = result_value?;
             let block = DagSyncBlock::decode_value(&value)?.block.ok_or_else(|| {
@@ -119,17 +93,7 @@ impl DagBlockSender {
             })?;
 
             // Finding the executing state is the priority
-            if self.dispatch_to_executing_ancestor_worker(&block).await? {
-                continue;
-            }
-
-            // Finding the waiting state is the secondary
-            if self.dispatch_to_waiting_ancestor_worker(&block).await? {
-                continue;
-            }
-
-            // Finding the waiting state is the third
-            if self.dispatch_to_waiting_worker(&block).await? {
+            if self.dispatch_to_worker(&block).await? {
                 continue;
             }
 
@@ -154,10 +118,10 @@ impl DagBlockSender {
                 self.dag.clone(),
             )?;
 
-            self.executors.push_back(DagBlockWorker {
+            self.executors.push(DagBlockWorker {
                 sender_to_executor: sender_to_worker.clone(),
                 receiver_from_executor: receiver,
-                state: ExecuteState::Waiting(chain_header),
+                state: ExecuteState::Ready(block.id()),
             });
 
             executor.start_to_execute()?;
@@ -169,20 +133,24 @@ impl DagBlockSender {
     }
     
     async fn flush_executor_state(&mut self) -> anyhow::Result<()> {
-        let mut cursor = self.executors.cursor_front_mut();
-
-        while let Some(&mut worker) = cursor.current() {
+        for worker in &mut self.executors {
             match worker.receiver_from_executor.recv().await {
                 Some(state) => {
                     worker.state = state;
-                    cursor.move_next();
                 }
                 None => {
-                    let _ = cursor.remove_current();
+                    worker.state = ExecuteState::Closed;
                 },
             }
         }
 
+        self.executors.retain(|worker| {
+            if let ExecuteState::Closed = worker.state {
+                false
+            } else {
+                true
+            }
+        });
         anyhow::Ok(())
     }
 }
