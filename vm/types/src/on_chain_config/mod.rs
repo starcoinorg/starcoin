@@ -29,6 +29,8 @@ mod timestamp;
 mod version;
 mod vm_config;
 
+mod timed_features;
+
 pub use self::{
     consensus_config::{consensus_config_type_tag, ConsensusConfig, G_CONSENSUS_CONFIG_IDENTIFIER},
     dao_config::DaoConfig,
@@ -48,6 +50,7 @@ pub use self::{
     version::{version_config_type_tag, Version, G_VERSION_CONFIG_IDENTIFIER},
     vm_config::*,
     starcoin_features::*,
+    timed_features::*,
 };
 pub use crate::on_chain_resource::GlobalTimeOnChain;
 use crate::state_store::state_key::StateKey;
