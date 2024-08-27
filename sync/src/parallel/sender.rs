@@ -1,4 +1,5 @@
-use std::{ops::Deref, sync::Arc};
+#![feature(linked_list_cursors)] 
+use std::{collections::LinkedList, ops::Deref, sync::Arc};
 
 use starcoin_config::TimeService;
 use starcoin_crypto::HashValue;
@@ -21,7 +22,7 @@ struct DagBlockWorker {
 
 struct DagBlockSender {
     sync_dag_store: SyncDagStore,
-    executors: Vec<DagBlockWorker>,
+    executors: LinkedList<DagBlockWorker>,
     queue_size: usize,
     time_service: Arc<dyn TimeService>,
     storage: Arc<dyn Store>,
@@ -40,7 +41,7 @@ impl DagBlockSender {
     ) -> Self {
         Self {
             sync_dag_store,
-            executors: vec![],
+            executors: LinkedList::new(),
             queue_size,
             time_service,
             storage,
@@ -153,15 +154,35 @@ impl DagBlockSender {
                 self.dag.clone(),
             )?;
 
-            executor.start_to_execute()?;
-            sender_to_worker.send(block).await?;
-
-            self.executors.push(DagBlockWorker {
-                sender_to_executor: sender_to_worker,
+            self.executors.push_back(DagBlockWorker {
+                sender_to_executor: sender_to_worker.clone(),
                 receiver_from_executor: receiver,
                 state: ExecuteState::Waiting(chain_header),
             });
+
+            executor.start_to_execute()?;
+            sender_to_worker.send(block).await?;
+
+            self.flush_executor_state().await?;
         }
         Ok(())
+    }
+    
+    async fn flush_executor_state(&mut self) -> anyhow::Result<()> {
+        let mut cursor = self.executors.cursor_front_mut();
+
+        while let Some(&mut worker) = cursor.current() {
+            match worker.receiver_from_executor.recv().await {
+                Some(state) => {
+                    worker.state = state;
+                    cursor.move_next();
+                }
+                None => {
+                    let _ = cursor.remove_current();
+                },
+            }
+        }
+
+        anyhow::Ok(())
     }
 }

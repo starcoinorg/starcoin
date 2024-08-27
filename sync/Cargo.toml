@@ -49,6 +49,7 @@ starcoin-dag = { workspace = true }
 serde = { workspace = true }
 byteorder = { workspace = true }
 tokio = { features = ["full"], workspace = true }
+std = { version = "*", features = ["linked_list_cursors"] }
 
 [dev-dependencies]
 hex = { workspace = true }
