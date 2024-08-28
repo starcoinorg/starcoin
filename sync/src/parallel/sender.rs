@@ -54,21 +54,21 @@ impl DagBlockSender {
     async fn dispatch_to_worker(&mut self, block: &Block) -> anyhow::Result<bool> {
         for executor in &mut self.executors {
             match &executor.state {
-                ExecuteState::Executed(executing_header_block) => {
-                    if executing_header_block.id() == block.header().parent_hash() {
-                        executor.state = ExecuteState::Executing(block.id());
-                        executor.sender_to_executor.send(block.clone()).await?;
-                        return anyhow::Ok(true);
-                    }
-                }
+                // ExecuteState::Executed(executing_header_block) => {
+                //     if executing_header_block.id() == block.header().parent_hash() {
+                //         executor.state = ExecuteState::Executing(block.id());
+                //         executor.sender_to_executor.send(block.clone()).await?;
+                //         return anyhow::Ok(true);
+                //     }
+                // }
                 ExecuteState::Executing(header_id) => {
-                    if *header_id == block.header().parent_hash() {
+                    if *header_id == block.header().parent_hash() || block.header.parents_hash().contains(header_id) {
                         executor.state = ExecuteState::Executing(block.id());
                         executor.sender_to_executor.send(block.clone()).await?;
                         return anyhow::Ok(true);
                     }
                 }
-                ExecuteState::Ready(_) | ExecuteState::Error(_) | ExecuteState::Closed => {
+                ExecuteState::Executed(_) | ExecuteState::Ready(_) | ExecuteState::Error(_) | ExecuteState::Closed => {
                     continue;
                 }
             }
@@ -106,7 +106,7 @@ impl DagBlockSender {
             self.executors.push(DagBlockWorker {
                 sender_to_executor: sender_to_worker.clone(),
                 receiver_from_executor,
-                state: ExecuteState::Ready(block.id()),
+                state: ExecuteState::Executing(block.id()),
                 handle: executor.start_to_execute()?,
             });
 
@@ -124,10 +124,10 @@ impl DagBlockSender {
     
     async fn flush_executor_state(&mut self) -> anyhow::Result<()> {
         for worker in &mut self.executors {
-            match worker.receiver_from_executor.try_recv() {
-                Ok(state) => worker.state = state,
-                Err(_) => (),
-            }
+            // match worker.receiver_from_executor.try_recv() {
+            //     Ok(state) => worker.state = state,
+            //     Err(_) => (),
+            // }
 
             if worker.handle.is_finished() {
                 worker.state = ExecuteState::Closed;
