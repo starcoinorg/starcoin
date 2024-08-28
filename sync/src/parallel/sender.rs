@@ -54,22 +54,15 @@ impl DagBlockSender {
         for executor in &mut self.executors {
             match &executor.state {
                 ExecuteState::Executed(executing_header_block) => {
-                    if inquirer::is_dag_ancestor_of(
-                        self.sync_dag_store.reachability_store.read().deref(),
-                        executing_header_block.id(),
-                        block.id(),
-                    )? {
+                    if executing_header_block.id() == block.header().parent_hash() {
                         executor.state = ExecuteState::Executing(block.id());
                         executor.sender_to_executor.send(block.clone()).await?;
                         return anyhow::Ok(true);
                     }
                 }
                 ExecuteState::Executing(header_id) => {
-                    if inquirer::is_dag_ancestor_of(
-                        self.sync_dag_store.reachability_store.read().deref(),
-                        *header_id,
-                        block.id(),
-                    )? {
+                    if *header_id == block.header().id() {
+                        executor.state = ExecuteState::Executing(block.id());
                         executor.sender_to_executor.send(block.clone()).await?;
                         return anyhow::Ok(true);
                     }
@@ -94,6 +87,7 @@ impl DagBlockSender {
 
             // Finding the executing state is the priority
             if self.dispatch_to_worker(&block).await? {
+                self.flush_executor_state().await?;
                 continue;
             }
 
@@ -129,6 +123,10 @@ impl DagBlockSender {
 
             self.flush_executor_state().await?;
         }
+
+        self.sync_dag_store.delete_all_dag_sync_block()?;
+
+        self.wait_for_finish().await?;
         Ok(())
     }
     
@@ -152,6 +150,37 @@ impl DagBlockSender {
                 true
             }
         });
+        anyhow::Ok(())
+    }
+
+    async fn wait_for_finish(&mut self) -> anyhow::Result<()> {
+        loop {
+            for worker in &mut self.executors {
+                match worker.receiver_from_executor.try_recv() {
+                    Ok(state) => worker.state = state,
+                    Err(e) => {
+                        match e {
+                            mpsc::error::TryRecvError::Empty => continue,
+                            mpsc::error::TryRecvError::Disconnected => worker.state = ExecuteState::Closed,
+                        }
+                    }
+                }
+            }
+
+            self.executors.retain(|worker| {
+                if let ExecuteState::Closed = worker.state {
+                    false
+                } else {
+                    true
+                }
+            });           
+
+            if self.executors.is_empty() {
+                break;
+            }
+            tokio::task::yield_now().await;
+        }
+
         anyhow::Ok(())
     }
 }

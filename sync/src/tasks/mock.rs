@@ -155,8 +155,7 @@ impl SyncNodeMocker {
             None,
         );
         let peer_selector = PeerSelector::new(vec![peer_info], PeerStrategy::default(), None);
-        let sync_dag_store = SyncDagStore::create_for_testing()
-            .context("Failed to create SyncDagStore for testing")?;
+        let sync_dag_store = SyncDagStore::create_for_testing().context("Failed to create SyncDagStore for testing")?;
         Ok(Self::new_inner(
             peer_id,
             chain,
