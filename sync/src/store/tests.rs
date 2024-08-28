@@ -1,6 +1,20 @@
+use std::{
+    ops::{Deref, DerefMut},
+    sync::Arc,
+    u64,
+};
+
 use anyhow::Ok;
+use parking_lot::RwLock;
 use starcoin_crypto::HashValue;
-use starcoin_dag::consensusdb::schema::{KeyCodec, ValueCodec};
+use starcoin_dag::{
+    consensusdb::{
+        schema::{KeyCodec, ValueCodec},
+        schemadb::MemoryReachabilityStore,
+    },
+    reachability::inquirer,
+    types::interval::Interval,
+};
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockBody, BlockHeader, BlockHeaderBuilder, BlockHeaderExtra, BlockNumber},
@@ -65,6 +79,61 @@ fn build_version_0_block(number: BlockNumber) -> Block {
     let header = build_version_0_block_header(body.hash(), number);
 
     Block::new(header, body)
+}
+
+#[test]
+fn test_add_reachability_data() -> anyhow::Result<()> {
+    let mut sync_dag_store = SyncDagStore::create_for_testing()?;
+    let reachability_store = sync_dag_store.reachability_store.clone();
+
+    let mut writer = reachability_store.write();
+
+    let x = HashValue::random();
+    let a = HashValue::random();
+    let b = HashValue::random();
+    let c = HashValue::random();
+    let d = HashValue::random();
+    let e = HashValue::random();
+
+    inquirer::init_with_params(writer.deref_mut(), x, Interval::maximal())?;
+
+    inquirer::add_block(writer.deref_mut(), a, x, &mut [x].into_iter())?;
+    inquirer::add_block(writer.deref_mut(), b, a, &mut [a].into_iter())?;
+    inquirer::add_block(writer.deref_mut(), c, a, &mut [a].into_iter())?;
+    inquirer::add_block(writer.deref_mut(), d, a, &mut [a].into_iter())?;
+    inquirer::add_block(writer.deref_mut(), e, b, &mut [c, d].into_iter())?;
+
+    drop(writer);
+
+    let reader = reachability_store.read();
+
+    assert!(inquirer::is_dag_ancestor_of(reader.deref(), a, b)?);
+    assert!(inquirer::is_dag_ancestor_of(reader.deref(), a, c)?);
+    assert!(inquirer::is_dag_ancestor_of(reader.deref(), a, d)?);
+    assert!(inquirer::is_dag_ancestor_of(reader.deref(), a, e)?);
+    assert!(inquirer::is_dag_ancestor_of(reader.deref(), b, e)?);
+    assert!(inquirer::is_dag_ancestor_of(reader.deref(), c, e)?);
+    assert!(inquirer::is_dag_ancestor_of(reader.deref(), d, e)?);
+
+    drop(reader);
+
+    sync_dag_store.reachability_store = Arc::new(RwLock::new(MemoryReachabilityStore::new()));
+    let mut writer = sync_dag_store.reachability_store.write();
+
+    inquirer::init_with_params(writer.deref_mut(), 1.into(), Interval::maximal())?;
+    inquirer::add_block(writer.deref_mut(), e, 1.into(), &mut [1.into()].into_iter())?;
+    inquirer::add_block(writer.deref_mut(), a, e, &mut [e].into_iter())?;
+
+    drop(writer);
+
+    let reader = sync_dag_store.reachability_store.read();
+
+    assert!(inquirer::is_dag_ancestor_of(reader.deref(), e, a)?);
+    assert!(inquirer::is_dag_ancestor_of(reader.deref(), b, e).is_err());
+
+    drop(reader);
+
+    anyhow::Ok(())
 }
 
 #[test]
