@@ -2,16 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::extended_checks;
-use clap::Parser;
+use clap::{value_parser, Parser};
 use codespan_reporting::diagnostic::Severity;
 use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use move_binary_format::file_format_common::VERSION_4;
 use move_binary_format::CompiledModule;
-use move_cli::sandbox::utils::PackageContext;
 use move_cli::Move;
 use move_compiler::compiled_unit::{CompiledUnit, NamedCompiledModule};
 use move_core_types::language_storage::TypeTag;
 use move_core_types::transaction_argument::{convert_txn_args, TransactionArgument};
+use move_model::metadata::{CompilerVersion, LanguageVersion};
 use move_package::ModelConfig;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_move_compiler::bytecode_transpose::ModuleBytecodeDowngrader;
@@ -25,12 +25,14 @@ pub const DEFAULT_RELEASE_DIR: &str = "release";
 
 #[derive(Parser)]
 pub struct Release {
-    #[clap(name = "move-version", long = "move-version", default_value="6", possible_values=&["5", "6"])]
+    #[arg(name = "move-version", long = "move-version", default_value="6", value_parser = clap::builder::PossibleValuesParser::new(["5", "6"])
+    )]
     /// specify the move lang version for the release.
     /// currently, only v6 are supported.
     language_version: u8,
 
-    #[clap(name="release-dir", long, parse(from_os_str), default_value=DEFAULT_RELEASE_DIR)]
+    #[arg(name="release-dir", long, value_parser = value_parser!(std::ffi::OsString), default_value=DEFAULT_RELEASE_DIR
+    )]
     /// dir to store released blob
     release_dir: PathBuf,
 
@@ -38,16 +40,20 @@ pub struct Release {
     /// init script function to execute, example: 0x123::MyScripts::init_script
     init_script: Option<FunctionId>,
 
-    #[clap(
-    short = 't',
-    long = "type_tag",
-    name = "type-tag",
-    parse(try_from_str = parse_type_tag)
+    #[arg(
+        short = 't',
+        long = "type_tag",
+        name = "type-tag",
+        value_parser = parse_type_tag
     )]
     /// type tags for the init script function
     type_tags: Option<Vec<TypeTag>>,
 
-    #[clap(long = "arg", name = "transaction-args", parse(try_from_str = parse_transaction_argument))]
+    #[arg(
+        long = "arg",
+        name = "transaction-args",
+        value_parser = parse_transaction_argument
+    )]
     /// args for the init script function
     args: Option<Vec<TransactionArgument>>,
 }
@@ -67,13 +73,11 @@ pub fn handle_release(
         Some(_) => move_args.package_path.clone(),
         None => Some(std::env::current_dir()?),
     };
-    let pkg_ctx = PackageContext::new(&package_path, &move_args.build_config)?;
-    let pkg = pkg_ctx.package();
-    let resolved_graph = move_args
+
+    let (compiled_package, pkg_info) = move_args
         .build_config
         .clone()
-        .resolution_graph_for_package(package_path.as_ref().unwrap(), &mut std::io::stdout())
-        .unwrap();
+        .compile_package_with_pkg_info(package_path.as_ref().unwrap(), &mut std::io::stdout())?;
 
     let model = move_args
         .build_config
@@ -83,6 +87,8 @@ pub fn handle_release(
             ModelConfig {
                 all_files_as_targets: false,
                 target_filter: None,
+                compiler_version: CompilerVersion::V1,
+                language_version: LanguageVersion::V1,
             },
         )
         .unwrap();
@@ -95,10 +101,10 @@ pub fn handle_release(
         }
     }
 
-    let pkg_version = resolved_graph.root_package.package.version;
-    let pkg_name = pkg.compiled_package_info.package_name.as_str();
+    let pkg_version = pkg_info.version;
+    let pkg_name = pkg_info.name.as_str();
     println!("Packaging Modules:");
-    for m in pkg.root_compiled_units.as_slice() {
+    for m in compiled_package.root_compiled_units.as_slice() {
         let m = module(&m.unit)?;
         println!("\t {}", m.self_id());
         let code = if language_version as u32 == VERSION_4 {

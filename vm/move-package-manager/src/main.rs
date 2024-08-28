@@ -4,7 +4,7 @@
 use anyhow::Result;
 use clap::Parser;
 // use move_cli::package::cli::handle_package_commands;
-use move_cli::{experimental, sandbox, Move, DEFAULT_STORAGE_DIR};
+use move_cli::Move;
 use move_core_types::errmap::ErrorMapping;
 use move_package_manager::compatibility_check_cmd::{
     handle_compatibility_check, CompatibilityCheckCommand,
@@ -17,7 +17,6 @@ use move_vm_test_utils::gas_schedule::CostTable;
 use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
 use starcoin_vm_runtime::natives::starcoin_natives;
 use starcoin_vm_types::on_chain_config::G_LATEST_INSTRUCTION_TABLE;
-use std::path::PathBuf;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -41,26 +40,7 @@ pub enum Commands {
     /// Release the package.
     #[clap(name = "release")]
     Release(Release),
-    /// Execute a sandbox command.
-    #[clap(name = "sandbox")]
-    Sandbox {
-        /// Directory storing Move resources, events, and module bytecodes produced by module publishing
-        /// and script execution.
-        #[clap(long, default_value = DEFAULT_STORAGE_DIR, parse(from_os_str))]
-        storage_dir: PathBuf,
-        #[clap(subcommand)]
-        cmd: sandbox::cli::SandboxCommand,
-    },
-    /// (Experimental) Run static analyses on Move source or bytecode.
-    #[clap(name = "experimental")]
-    Experimental {
-        /// Directory storing Move resources, events, and module bytecodes produced by module publishing
-        /// and script execution.
-        #[clap(long, default_value = DEFAULT_STORAGE_DIR, parse(from_os_str))]
-        storage_dir: PathBuf,
-        #[clap(subcommand)]
-        cmd: experimental::cli::ExperimentalCommand,
-    },
+    /// TODO(simon) add subcommand to run static analyses on Move source or bytecode.
     /// Run integration tests in tests dir.
     #[clap(name = "integration-test", alias = "spectest")]
     IntegrationTest(IntegrationTestCommand),
@@ -75,27 +55,19 @@ pub enum Commands {
 }
 
 fn main() -> Result<()> {
-    let error_descriptions: ErrorMapping =
+    let _error_descriptions: ErrorMapping =
         bcs_ext::from_bytes(stdlib::ERROR_DESCRIPTIONS).expect("Decode err map failed");
     let args: CliOptions = CliOptions::parse();
 
     let move_args = &args.move_args;
     let gas_params = G_LATEST_GAS_PARAMS.clone();
     let natives = starcoin_natives(gas_params.natives);
-    let cost_table = CostTable {
+    let _cost_table = CostTable {
         instruction_table: G_LATEST_INSTRUCTION_TABLE.clone(),
     };
     match args.cmd {
         Commands::IntegrationTest(cmd) => run_integration_test(args.move_args, cmd),
         Commands::Package { cmd } => handle_package_commands(natives, args.move_args, cmd),
-        Commands::Sandbox { storage_dir, cmd } => cmd.handle_command(
-            natives,
-            &cost_table,
-            &error_descriptions,
-            move_args,
-            &storage_dir,
-        ),
-        Commands::Experimental { storage_dir, cmd } => cmd.handle_command(move_args, &storage_dir),
         Commands::Release(release) => handle_release(move_args, release),
         Commands::CompatibilityCheck(cmd) => handle_compatibility_check(move_args, cmd),
         Commands::Deploy(cmd) => handle_deployment(move_args, cmd),

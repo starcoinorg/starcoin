@@ -5578,6 +5578,7 @@ dependencies = [
  "move-unit-test",
  "move-vm-runtime",
  "move-vm-test-utils",
+ "move-vm-types",
  "once_cell",
  "starcoin-account-provider",
  "starcoin-cmd",

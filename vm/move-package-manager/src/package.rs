@@ -1,7 +1,7 @@
 use clap::Parser;
 use move_cli::base::{
-    build::Build, coverage::Coverage, disassemble::Disassemble, errmap::Errmap, info::Info,
-    new::New, prove::Prove, test::Test,
+    build::Build, coverage::Coverage, disassemble::Disassemble, errmap::Errmap, new::New,
+    prove::Prove, test::Test,
 };
 use move_cli::Move;
 use move_vm_runtime::native_functions::NativeFunctionTable;
@@ -22,9 +22,6 @@ pub enum PackageCommand {
     /// Build the package at `path`. If no path is provided defaults to current directory.
     #[clap(name = "build")]
     Build(Build),
-    /// Print address information.
-    #[clap(name = "info")]
-    Info(Info),
     /// Generate error map for the package and its dependencies at `path` for use by the Move
     /// explanation tool.
     #[clap(name = "errmap")]
@@ -45,7 +42,7 @@ pub enum PackageCommand {
     Disassemble(Disassemble),
 }
 pub fn handle_package_commands(
-    natives: NativeFunctionTable,
+    _natives: NativeFunctionTable,
     move_args: Move,
     cmd: PackageCommand,
 ) -> anyhow::Result<()> {
@@ -58,16 +55,19 @@ pub fn handle_package_commands(
             "",
         ),
         PackageCommand::Build(c) => c.execute(move_args.package_path, move_args.build_config),
-        PackageCommand::Info(c) => c.execute(move_args.package_path, move_args.build_config),
         PackageCommand::Errmap(c) => c.execute(move_args.package_path, move_args.build_config),
         PackageCommand::Prove(c) => c.execute(move_args.package_path, move_args.build_config),
         PackageCommand::Coverage(c) => c.execute(move_args.package_path, move_args.build_config),
-        PackageCommand::Test(c) => c.execute(
-            move_args.package_path,
-            move_args.build_config,
-            natives,
-            None,
-        ),
+        PackageCommand::Test(_c) => {
+            //TODO(simon): fix this
+            //c.execute(
+            //    move_args.package_path,
+            //    move_args.build_config,
+            //    natives,
+            //    None,
+            //)
+            anyhow::bail!("The 'test' command is not available in this build.")
+        }
         PackageCommand::Disassemble(c) => c.execute(move_args.package_path, move_args.build_config),
     }
 }

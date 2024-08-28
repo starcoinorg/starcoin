@@ -5,11 +5,11 @@ use crate::release::module;
 use anyhow::{ensure, Ok};
 use clap::Parser;
 use itertools::Itertools;
+use move_binary_format::errors::Location;
 use move_binary_format::CompiledModule;
-use move_cli::sandbox::utils::PackageContext;
 use move_cli::Move;
-use move_core_types::resolver::ModuleResolver;
 use move_package::compilation::compiled_package::CompiledUnitWithSource;
+use move_vm_types::resolver::ModuleResolver;
 use starcoin_cmd::dev::dev_helper::{self};
 use starcoin_config::BuiltinNetworkID;
 use starcoin_move_compiler::check_compiled_module_compat;
@@ -39,8 +39,10 @@ pub fn handle_compatibility_check(
     move_args: &Move,
     cmd: CompatibilityCheckCommand,
 ) -> anyhow::Result<()> {
-    let pkg_ctx = PackageContext::new(&move_args.package_path, &move_args.build_config)?;
-    let pkg = pkg_ctx.package();
+    let (compiled_package, pkg_info) = move_args
+        .build_config
+        .clone()
+        .compile_package_with_pkg_info(&move_args.package_path.clone().unwrap(), &mut Vec::new())?;
 
     let rpc = cmd.rpc.unwrap_or_else(|| {
         format!(
@@ -55,11 +57,11 @@ pub fn handle_compatibility_check(
     let remote_view = RemoteViewer::from_url(&rpc, cmd.block_number)?;
 
     let mut incompatible_module_ids = vec![];
-    for m in pkg.root_compiled_units.as_slice() {
+    for m in compiled_package.root_compiled_units.as_slice() {
         let m = module(&m.unit)?;
         let old_module = remote_view
             .get_module(&m.self_id())
-            .map_err(|e| e.into_vm_status())?;
+            .map_err(|e| e.finish(Location::Undefined))?;
         if let Some(old) = old_module {
             let old_module = CompiledModule::deserialize(&old)?;
             let compatibility = check_compiled_module_compat(&old_module, m);
@@ -82,7 +84,7 @@ pub fn handle_compatibility_check(
     } else {
         eprintln!(
             "All modules in {} is full compatible with remote chain: {}!",
-            pkg.compiled_package_info.package_name, &rpc
+            pkg_info.name, &rpc
         );
     }
 
@@ -92,7 +94,7 @@ pub fn handle_compatibility_check(
 
     handle_pre_version_compatibility_check(
         cmd.pre_modules.unwrap(),
-        pkg.all_modules().collect_vec(),
+        compiled_package.all_modules().collect_vec(),
     )?;
     Ok(())
 }
@@ -154,7 +156,7 @@ fn handle_pre_version_compatibility_check(
         );
         std::process::exit(1);
     } else {
-        eprintln!("All previous modules is full compatible with current modules!",);
+        eprintln!("All previous modules is full compatible with current modules!", );
     }
 
     Ok(())

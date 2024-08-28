@@ -2,24 +2,27 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use clap::{Args, Parser};
+use clap::Parser;
 use move_cli::Move;
-use move_command_line_common::testing::UPDATE_BASELINE;
-use move_compiler::command_line::compiler::construct_pre_compiled_lib_from_compiler;
-use move_compiler::diagnostics::report_diagnostics;
-use move_compiler::shared::unique_map::UniqueMap;
-use move_compiler::shared::{NamedAddressMaps, PackagePaths};
-use move_compiler::{
-    cfgir, expansion, hlir, naming, parser, typing, Compiler, FullyCompiledProgram,
-};
-use move_package::compilation::build_plan::BuildPlan;
-use move_package::source_package::layout::SourcePackageLayout;
-use once_cell::sync::Lazy;
 use std::fmt::Display;
 use std::num::NonZeroUsize;
-use std::path::PathBuf;
 use std::str::FromStr;
-use std::sync::Mutex;
+#[cfg(feature = "integration-test")]
+use {
+    move_command_line_common::testing::UPDATE_BASELINE,
+    move_compiler::command_line::compiler::construct_pre_compiled_lib_from_compiler,
+    move_compiler::diagnostics::report_diagnostics,
+    move_compiler::shared::unique_map::UniqueMap,
+    move_compiler::shared::{NamedAddressMaps, PackagePaths},
+    move_compiler::{
+        cfgir, expansion, hlir, naming, parser, typing, Compiler, FullyCompiledProgram,
+    },
+    move_package::compilation::build_plan::BuildPlan,
+    move_package::source_package::layout::SourcePackageLayout,
+    once_cell::sync::Lazy,
+    std::path::PathBuf,
+    std::sync::Mutex,
+};
 
 pub mod compatibility_check_cmd;
 pub mod deployment;
@@ -30,10 +33,12 @@ pub mod release;
 // use `integration-tests` rather than `tests`, for avoid conflict with `mpm package test`
 pub const INTEGRATION_TESTS_DIR: &str = "integration-tests";
 
-#[derive(Debug, Args)]
+#[derive(Debug, Parser)]
 pub struct TestOpts {
     /// The FILTER string is tested against the name of all tests, and only those tests whose names
     /// contain the filter are run.
+    #[arg(skip)]
+    #[allow(dead_code)]
     filter: Option<String>,
 
     #[clap(long = "exact")]
@@ -57,11 +62,12 @@ pub struct TestOpts {
     ///   pretty = Print verbose output;
     ///   terse = Display one character per test;
     ///   (json is unsupported, exists for compatibility with the default test harness)
-    #[clap(possible_values = Format::variants(), default_value_t, ignore_case = true)]
+    #[arg(value_parser = clap::builder::PossibleValuesParser::new(Format::variants()), default_value_t, ignore_case = true
+    )]
     format: Format,
 }
 
-#[derive(Debug, Eq, PartialEq, Default)]
+#[derive(Clone, Debug, Eq, PartialEq, Default)]
 enum Format {
     #[default]
     Pretty,
@@ -98,9 +104,9 @@ impl FromStr for Format {
     }
 }
 
-#[derive(Args, Debug)]
+#[derive(Parser, Debug)]
 pub struct IntegrationTestCommand {
-    #[clap(flatten)]
+    #[command(flatten)]
     test_opts: TestOpts,
     #[clap(long = "ub")]
     /// update test baseline.
@@ -120,8 +126,15 @@ pub struct IntegrationTestCommand {
     current_as_stdlib: bool,
 }
 
+#[cfg(not(feature = "integration-test"))]
+pub fn run_integration_test(_move_arg: Move, _cmd: IntegrationTestCommand) -> Result<()> {
+    eprintln!("Please enable the feature `integration-test` to run integration tests.");
+    Ok(())
+}
+#[cfg(feature = "integration-test")]
 static G_PRE_COMPILED_LIB: Lazy<Mutex<Option<(FullyCompiledProgram, Vec<PackagePaths>)>>> =
     Lazy::new(|| Mutex::new(None));
+#[cfg(feature = "integration-test")]
 pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Result<()> {
     if cmd.task_help {
         return starcoin_transactional_test_harness::print_help(cmd.task_name);
