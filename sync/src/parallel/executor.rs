@@ -72,21 +72,6 @@ impl DagBlockExecutor {
                     Ok(Some(block)) => {
                         let header = block.header().clone();
 
-                        match self
-                            .sender
-                            .send(ExecuteState::Executing(header.id()))
-                            .await
-                        {
-                            Ok(_) => (),
-                            Err(e) => {
-                                error!(
-                                    "failed to send executing state: {:?}, for reason: {:?}",
-                                    header, e
-                                );
-                                return;
-                            }
-                        }
-
                         loop {
                             match Self::waiting_for_parents(
                                 &self.dag,
