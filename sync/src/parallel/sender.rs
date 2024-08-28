@@ -140,7 +140,6 @@ impl<'a> DagBlockSender<'a> {
 
         self.wait_for_finish().await?;
         sync_dag_store.delete_all_dag_sync_block()?;
-
         Ok(())
     }
 

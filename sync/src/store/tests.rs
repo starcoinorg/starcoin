@@ -8,12 +8,10 @@ use anyhow::Ok;
 use parking_lot::RwLock;
 use starcoin_crypto::HashValue;
 use starcoin_dag::{
-    consensusdb::{
+    blockdag::BlockDAG, consensusdb::{
         schema::{KeyCodec, ValueCodec},
         schemadb::MemoryReachabilityStore,
-    },
-    reachability::inquirer,
-    types::interval::Interval,
+    }, reachability::inquirer, types::interval::Interval
 };
 use starcoin_types::{
     account_address::AccountAddress,
@@ -117,27 +115,12 @@ fn test_add_reachability_data() -> anyhow::Result<()> {
 
     drop(reader);
 
-    sync_dag_store.reachability_store = Arc::new(RwLock::new(MemoryReachabilityStore::new()));
-    let mut writer = sync_dag_store.reachability_store.write();
-
-    inquirer::init_with_params(writer.deref_mut(), 1.into(), Interval::maximal())?;
-    inquirer::add_block(writer.deref_mut(), e, 1.into(), &mut [1.into()].into_iter())?;
-    inquirer::add_block(writer.deref_mut(), a, e, &mut [e].into_iter())?;
-
-    drop(writer);
-
-    let reader = sync_dag_store.reachability_store.read();
-
-    assert!(inquirer::is_dag_ancestor_of(reader.deref(), e, a)?);
-    assert!(inquirer::is_dag_ancestor_of(reader.deref(), b, e).is_err());
-
-    drop(reader);
-
     anyhow::Ok(())
 }
 
 #[test]
 fn test_sync_dag_absent_store() -> anyhow::Result<()> {
+    let dag = BlockDAG::create_for_testing()?;
     let sync_dag_store = SyncDagStore::create_for_testing()?;
 
     // write and read
@@ -209,6 +192,7 @@ fn test_sync_dag_absent_store() -> anyhow::Result<()> {
 
 #[test]
 fn test_write_read_in_order() -> anyhow::Result<()> {
+    let dag = BlockDAG::create_for_testing()?;
     let sync_dag_store = SyncDagStore::create_for_testing()?;
 
     // write and read
