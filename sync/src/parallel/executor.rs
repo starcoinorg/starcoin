@@ -9,8 +9,7 @@ use starcoin_logger::prelude::{error, info};
 use starcoin_storage::Store;
 use starcoin_types::block::{Block, BlockHeader};
 use tokio::{
-    sync::mpsc::{self, Receiver, Sender},
-    time::{timeout, Duration},
+    sync::mpsc::{self, Receiver, Sender}, task::JoinHandle, time::{timeout, Duration}
 };
 
 #[derive(Debug)]
@@ -25,7 +24,10 @@ pub enum ExecuteState {
 pub struct DagBlockExecutor {
     sender: Sender<ExecuteState>,
     receiver: Receiver<Block>,
-    chain: BlockChain,
+    time_service: Arc<dyn TimeService>,
+    storage: Arc<dyn Store>,
+    vm_metrics: Option<VMMetrics>,
+    dag: BlockDAG
 }
 
 impl DagBlockExecutor {
@@ -39,29 +41,32 @@ impl DagBlockExecutor {
         dag: BlockDAG,
     ) -> anyhow::Result<(Sender<Block>, Self)> {
         let (sender_for_main, receiver) = mpsc::channel::<Block>(buffer_size);
-        let chain = BlockChain::new(time_service, head_block_hash, storage, vm_metrics, dag)?;
         let executor = Self {
             sender: sender_to_main,
             receiver,
-            chain,
+            time_service,
+            storage,
+            vm_metrics,
+            dag,
         };
         anyhow::Ok((sender_for_main, executor))
     }
 
     pub fn waiting_for_parents(
-        chain: &BlockChain,
+        chain: &BlockDAG,
         parents_hash: Vec<HashValue>,
     ) -> anyhow::Result<bool> {
         for parent_id in parents_hash {
-            if !chain.dag().has_dag_block(parent_id)? {
+            if !chain.has_dag_block(parent_id)? {
                 return Ok(false);
             }
         }
         Ok(true)
     }
 
-    pub fn start_to_execute(mut self) -> anyhow::Result<()> {
-        tokio::spawn(async move {
+    pub fn start_to_execute(mut self) -> anyhow::Result<JoinHandle<()>> {
+        let handle = tokio::spawn(async move {
+            let mut chain = None;
             loop {
                 match timeout(Duration::from_secs(1), self.receiver.recv()).await {
                     Ok(Some(block)) => {
@@ -84,7 +89,7 @@ impl DagBlockExecutor {
 
                         loop {
                             match Self::waiting_for_parents(
-                                &self.chain,
+                                &self.dag,
                                 block.header().parents_hash(),
                             ) {
                                 Ok(true) => break,
@@ -110,17 +115,33 @@ impl DagBlockExecutor {
                             }
                         }
 
-                        if self.chain.status().head().id() != block.header().parent_hash() {
-                            self.chain = match self.chain.fork(block.header().parent_hash()) {
-                                Ok(chain) => chain,
-                                Err(e) => {
-                                    error!("failed to fork in parallel for: {:?}", e);
-                                    return;
+                        match chain {
+                            None => {
+                                chain = match BlockChain::new(self.time_service.clone(), block.header().parent_hash(), self.storage.clone(), self.vm_metrics.clone(), self.dag.clone()) {
+                                    Ok(new_chain) => Some(new_chain),
+                                    Err(e) => {
+                                        error!("failed to create chain for block: {:?} for {:?}", block.header().id(), e);
+                                        return;
+                                    }
+                                }
+                            }
+                            Some(old_chain) => {
+                                if old_chain.status().head().id() != block.header().parent_hash(){
+                                    chain = match old_chain.fork(block.header().parent_hash()) {
+                                        Ok(new_chain) => Some(new_chain),
+                                        Err(e) => {
+                                            error!("failed to fork in parallel for: {:?}", e);
+                                            return;
+                                        }
+                                    }
+                                } else {
+                                    chain = Some(old_chain);
                                 }
                             }
                         }
 
-                        match self.chain.apply_with_verifier::<DagVerifier>(block) {
+                       info!("sync parallel worker {:p} will execute block: {:?}", &self, block.header().id());
+                        match chain.as_mut().expect("it cannot be none!").apply_with_verifier::<DagVerifier>(block) {
                             Ok(executed_block) => {
                                 let header = executed_block.header();
                                 info!(
@@ -167,13 +188,12 @@ impl DagBlockExecutor {
                         return;
                     }
                     Err(e) => {
-                        info!("timeout occurs: {:?}", e);
                         return;
                     }
                 }
             }
         });
 
-        anyhow::Ok(())
+        anyhow::Ok(handle)
     }
 }
