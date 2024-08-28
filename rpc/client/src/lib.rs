@@ -38,7 +38,7 @@ use starcoin_rpc_api::types::{
     DryRunTransactionRequest, FactoryAction, FunctionIdView, ListCodeView, ListResourceView,
     MintedBlockView, ModuleIdView, PeerInfoView, ResourceView, SignedMessageView,
     SignedUserTransactionView, StateWithProofView, StateWithTableItemProofView, StrView,
-    StructTagView, TableInfoView, TransactionEventResponse, TransactionInfoView,
+    StructTagView, SyncStatusView, TableInfoView, TransactionEventResponse, TransactionInfoView,
     TransactionInfoWithProofView, TransactionRequest, TransactionView,
 };
 use starcoin_rpc_api::{
@@ -55,7 +55,6 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::block::BlockNumber;
 use starcoin_types::sign_message::SigningMessage;
-use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
@@ -1042,7 +1041,7 @@ impl RpcClient {
         result
     }
 
-    pub fn sync_status(&self) -> anyhow::Result<SyncStatus> {
+    pub fn sync_status(&self) -> anyhow::Result<SyncStatusView> {
         self.call_rpc_blocking(|inner| inner.sync_client.status())
             .map_err(map_err)
     }
