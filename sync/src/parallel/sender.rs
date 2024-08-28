@@ -134,7 +134,6 @@ impl<'a> DagBlockSender<'a> {
             });
 
             sender_to_worker.send(Some(block)).await?;
-
             self.flush_executor_state().await?;
         }
 
@@ -211,7 +210,5 @@ impl<'a> DagBlockSender<'a> {
         for worker in self.executors {
             worker.handle.await?;
         }
-
-        anyhow::Ok(())
     }
 }
