@@ -4,11 +4,11 @@ use starcoin_config::TimeService;
 use starcoin_crypto::HashValue;
 use starcoin_dag::{blockdag::BlockDAG, consensusdb::schema::ValueCodec, reachability::inquirer};
 use starcoin_executor::VMMetrics;
-use starcoin_logger::prelude::error;
+use starcoin_logger::prelude::{error, info};
 use starcoin_network::worker;
 use starcoin_storage::Store;
 use starcoin_types::block::{Block, BlockHeader};
-use tokio::sync::mpsc::{self, Receiver, Sender};
+use tokio::{sync::mpsc::{self, Receiver, Sender}, task::JoinHandle};
 
 use crate::store::{sync_absent_ancestor::DagSyncBlock, sync_dag_store::{self, SyncDagStore}};
 
@@ -18,6 +18,7 @@ struct DagBlockWorker {
     pub sender_to_executor: Sender<Block>,
     pub receiver_from_executor: Receiver<ExecuteState>,
     pub state: ExecuteState,
+    pub handle: JoinHandle<()>,
 }
 
 pub struct DagBlockSender {
@@ -92,21 +93,12 @@ impl DagBlockSender {
             }
 
             // no suitable worker found, create a new worker
-            let chain_header = self
-                .storage
-                .get_block_header_by_hash(block.header().parent_hash())?
-                .ok_or_else(|| {
-                    anyhow::format_err!(
-                        "in parallel sync, failed to get the block header by hash: {:?}",
-                        block.header().parent_hash()
-                    )
-                })?;
             let (sender_to_main, receiver_from_executor) = mpsc::channel::<ExecuteState>(self.queue_size);
             let (sender_to_worker, executor) = DagBlockExecutor::new(
                 sender_to_main,
                 self.queue_size,
                 self.time_service.clone(),
-                chain_header.id(),
+                block.header().parent_hash(),
                 self.storage.clone(),
                 self.vm_metrics.clone(),
                 self.dag.clone(),
@@ -116,17 +108,18 @@ impl DagBlockSender {
                 sender_to_executor: sender_to_worker.clone(),
                 receiver_from_executor,
                 state: ExecuteState::Ready(block.id()),
+                handle: executor.start_to_execute()?,
             });
 
-            executor.start_to_execute()?;
             sender_to_worker.send(block).await?;
 
             self.flush_executor_state().await?;
         }
 
+        self.wait_for_finish().await?;
+
         self.sync_dag_store.delete_all_dag_sync_block()?;
 
-        self.wait_for_finish().await?;
         Ok(())
     }
     
@@ -134,12 +127,11 @@ impl DagBlockSender {
         for worker in &mut self.executors {
             match worker.receiver_from_executor.try_recv() {
                 Ok(state) => worker.state = state,
-                Err(e) => {
-                    match e {
-                        mpsc::error::TryRecvError::Empty => continue,
-                        mpsc::error::TryRecvError::Disconnected => worker.state = ExecuteState::Closed,
-                    }
-                }
+                Err(_) => (),
+            }
+
+            if worker.handle.is_finished() {
+                worker.state = ExecuteState::Closed;
             }
         }
 
@@ -150,20 +142,15 @@ impl DagBlockSender {
                 true
             }
         });
+        info!("sync workers count: {:?}", self.executors.len());
         anyhow::Ok(())
     }
 
     async fn wait_for_finish(&mut self) -> anyhow::Result<()> {
         loop {
             for worker in &mut self.executors {
-                match worker.receiver_from_executor.try_recv() {
-                    Ok(state) => worker.state = state,
-                    Err(e) => {
-                        match e {
-                            mpsc::error::TryRecvError::Empty => continue,
-                            mpsc::error::TryRecvError::Disconnected => worker.state = ExecuteState::Closed,
-                        }
-                    }
+                if worker.handle.is_finished() {
+                    worker.state = ExecuteState::Closed;
                 }
             }
 
@@ -173,14 +160,12 @@ impl DagBlockSender {
                 } else {
                     true
                 }
-            });           
-
+            });
             if self.executors.is_empty() {
-                break;
-            }
+                info!("executor is empty, end the parallel execution");
+                return anyhow::Ok(());
+            }           
             tokio::task::yield_now().await;
         }
-
-        anyhow::Ok(())
     }
 }
