@@ -31,7 +31,8 @@ use starcoin_types::event::EventKey;
 use starcoin_types::genesis_config;
 use starcoin_types::language_storage::TypeTag;
 use starcoin_types::proof::SparseMerkleProof;
-use starcoin_types::startup_info::ChainInfo;
+use starcoin_types::startup_info::{ChainInfo, ChainStatus};
+use starcoin_types::sync_status::{SyncState, SyncStatus};
 use starcoin_types::transaction::authenticator::{AuthenticationKey, TransactionAuthenticator};
 use starcoin_types::transaction::{RawUserTransaction, ScriptFunction, TransactionArgument};
 use starcoin_types::vm_error::AbortLocation;
@@ -1971,6 +1972,53 @@ impl From<TableInfoView> for TableInfo {
         Self {
             key_type: value.key_type.0,
             value_type: value.value_type.0,
+        }
+    }
+}
+
+#[derive(Eq, PartialEq, Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct ChainStatusView {
+    /// Chain head block's header.
+    pub head: BlockHeaderView,
+    /// Chain block info
+    pub info: BlockInfo,
+}
+
+impl From<ChainStatusView> for ChainStatus {
+    fn from(value: ChainStatusView) -> Self {
+        Self {
+            head: value.head.into(),
+            info: value.info,
+        }
+    }
+}
+
+impl From<ChainStatus> for ChainStatusView {
+    fn from(value: ChainStatus) -> Self {
+        Self {
+            head: value.head.into(),
+            info: value.info,
+        }
+    }
+}
+
+#[derive(Eq, PartialEq, Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct SyncStatusView {
+    pub chain_status: ChainStatusView,
+    pub state: SyncState,
+}
+
+impl From<SyncStatusView> for SyncStatus {
+    fn from(value: SyncStatusView) -> Self {
+        Self::new_with_state(value.chain_status.into(), value.state)
+    }
+}
+
+impl From<SyncStatus> for SyncStatusView {
+    fn from(value: SyncStatus) -> Self {
+        Self {
+            chain_status: value.chain_status().clone().into(),
+            state: value.sync_status().clone(),
         }
     }
 }

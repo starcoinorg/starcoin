@@ -14,6 +14,7 @@ use starcoin_tx_factory::txn_generator::MockTxnGenerator;
 use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::association_address;
+use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::transaction::RawUserTransaction;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -537,7 +538,7 @@ impl TxnMocker {
 
     fn stress_test(&self, accounts: Vec<AccountInfo>, round_num: u32) -> Result<()> {
         //check node status
-        let sync_status = self.client.sync_status()?;
+        let sync_status: SyncStatus = self.client.sync_status()?.into();
         if sync_status.is_syncing() {
             info!("node syncing, pause stress");
             return Ok(());
