@@ -9,10 +9,10 @@
       "name": "sync.status",
       "params": [],
       "result": {
-        "name": "SyncStatus",
+        "name": "SyncStatusView",
         "schema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
-          "title": "SyncStatus",
+          "title": "SyncStatusView",
           "type": "object",
           "required": [
             "chain_status",
@@ -20,7 +20,6 @@
           ],
           "properties": {
             "chain_status": {
-              "description": "The latest status of a chain.",
               "type": "object",
               "required": [
                 "head",
@@ -33,6 +32,7 @@
                   "required": [
                     "author",
                     "block_accumulator_root",
+                    "block_hash",
                     "body_hash",
                     "chain_id",
                     "difficulty",
@@ -55,14 +55,18 @@
                       "format": "AccountAddress"
                     },
                     "author_auth_key": {
-                      "description": "Block author auth key. this field is deprecated",
+                      "description": "Block author auth key.",
                       "type": [
                         "string",
                         "null"
                       ]
                     },
                     "block_accumulator_root": {
-                      "description": "The parent block info's block accumulator root hash.",
+                      "description": "The block accumulator root hash.",
+                      "type": "string",
+                      "format": "HashValue"
+                    },
+                    "block_hash": {
                       "type": "string",
                       "format": "HashValue"
                     },
@@ -73,17 +77,9 @@
                     },
                     "chain_id": {
                       "description": "The chain id",
-                      "type": "object",
-                      "required": [
-                        "id"
-                      ],
-                      "properties": {
-                        "id": {
-                          "type": "integer",
-                          "format": "uint8",
-                          "minimum": 0.0
-                        }
-                      }
+                      "type": "integer",
+                      "format": "uint8",
+                      "minimum": 0.0
                     },
                     "difficulty": {
                       "description": "Block difficulty",
@@ -95,9 +91,7 @@
                     },
                     "gas_used": {
                       "description": "Gas used for contracts execution.",
-                      "type": "integer",
-                      "format": "uint64",
-                      "minimum": 0.0
+                      "type": "string"
                     },
                     "nonce": {
                       "description": "Consensus nonce field.",
@@ -107,9 +101,7 @@
                     },
                     "number": {
                       "description": "Block number.",
-                      "type": "integer",
-                      "format": "uint64",
-                      "minimum": 0.0
+                      "type": "string"
                     },
                     "parent_hash": {
                       "description": "Parent hash.",
@@ -117,7 +109,7 @@
                       "format": "HashValue"
                     },
                     "parents_hash": {
-                      "description": "Parents hash.",
+                      "description": "block parents",
                       "type": "array",
                       "items": {
                         "type": "string",
@@ -136,9 +128,7 @@
                     },
                     "timestamp": {
                       "description": "Block timestamp.",
-                      "type": "integer",
-                      "format": "uint64",
-                      "minimum": 0.0
+                      "type": "string"
                     },
                     "txn_accumulator_root": {
                       "description": "The transaction accumulator root hash after executing this block.",
@@ -146,7 +136,7 @@
                       "format": "HashValue"
                     },
                     "version": {
-                      "description": "Header version",
+                      "description": "version",
                       "type": "integer",
                       "format": "uint32",
                       "minimum": 0.0
