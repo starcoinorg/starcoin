@@ -107,9 +107,9 @@ impl DagBlockSender {
                         block.header().parent_hash()
                     )
                 })?;
-            let (sender_for_main, receiver) = mpsc::channel::<ExecuteState>(self.queue_size);
+            let (sender_to_main, receiver_from_executor) = mpsc::channel::<ExecuteState>(self.queue_size);
             let (sender_to_worker, executor) = DagBlockExecutor::new(
-                sender_for_main,
+                sender_to_main,
                 self.queue_size,
                 self.time_service.clone(),
                 chain_header.id(),
@@ -120,7 +120,7 @@ impl DagBlockSender {
 
             self.executors.push(DagBlockWorker {
                 sender_to_executor: sender_to_worker.clone(),
-                receiver_from_executor: receiver,
+                receiver_from_executor,
                 state: ExecuteState::Ready(block.id()),
             });
 
@@ -134,13 +134,14 @@ impl DagBlockSender {
     
     async fn flush_executor_state(&mut self) -> anyhow::Result<()> {
         for worker in &mut self.executors {
-            match worker.receiver_from_executor.recv().await {
-                Some(state) => {
-                    worker.state = state;
+            match worker.receiver_from_executor.try_recv() {
+                Ok(state) => worker.state = state,
+                Err(e) => {
+                    match e {
+                        mpsc::error::TryRecvError::Empty => continue,
+                        mpsc::error::TryRecvError::Disconnected => worker.state = ExecuteState::Closed,
+                    }
                 }
-                None => {
-                    worker.state = ExecuteState::Closed;
-                },
             }
         }
 
