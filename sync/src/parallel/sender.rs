@@ -62,7 +62,7 @@ impl DagBlockSender {
                     }
                 }
                 ExecuteState::Executing(header_id) => {
-                    if *header_id == block.header().id() {
+                    if *header_id == block.header().parent_hash() {
                         executor.state = ExecuteState::Executing(block.id());
                         executor.sender_to_executor.send(block.clone()).await?;
                         return anyhow::Ok(true);
@@ -88,7 +88,6 @@ impl DagBlockSender {
 
             // Finding the executing state is the priority
             if self.dispatch_to_worker(&block).await? {
-                self.flush_executor_state().await?;
                 continue;
             }
 
