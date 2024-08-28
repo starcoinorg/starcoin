@@ -48,6 +48,7 @@ timeout-join-handler = { workspace = true }
 starcoin-dag = { workspace = true }
 serde = { workspace = true }
 byteorder = { workspace = true }
+tokio = { features = ["full"], workspace = true }
 
 [dev-dependencies]
 hex = { workspace = true }
