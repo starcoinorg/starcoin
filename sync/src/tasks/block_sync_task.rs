@@ -447,7 +447,7 @@ where
 
             let mut parallel_execute = DagBlockSender::new(
                 self.sync_dag_store.clone(), 
-                usize::try_from(u64::MAX)?, 
+                100,
                 self.chain.time_service(), 
                 self.local_store.clone(), 
                 None, self.chain.dag());

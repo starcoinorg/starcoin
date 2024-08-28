@@ -18,7 +18,7 @@ pub fn init_for_test(
     init_with_params(store, origin, capacity)
 }
 
-pub(super) fn init_with_params(
+pub fn init_with_params(
     store: &mut (impl ReachabilityStore + ?Sized),
     origin: Hash,
     capacity: Interval,

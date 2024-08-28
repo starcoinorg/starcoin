@@ -63,7 +63,7 @@ impl DagBlockExecutor {
     pub fn start_to_execute(mut self) -> anyhow::Result<()> {
         tokio::spawn(async move {
             loop {
-                match timeout(Duration::from_secs(10), self.receiver.recv()).await {
+                match timeout(Duration::from_secs(1), self.receiver.recv()).await {
                     Ok(Some(block)) => {
                         let header = block.header().clone();
 

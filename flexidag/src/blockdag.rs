@@ -416,4 +416,8 @@ impl BlockDAG {
 
         anyhow::Ok(())
     }
+    
+    pub fn reachability_store(&self) -> Arc<parking_lot::lock_api::RwLock<parking_lot::RawRwLock, DbReachabilityStore>> {
+        self.storage.reachability_store.clone()
+    }
 }
