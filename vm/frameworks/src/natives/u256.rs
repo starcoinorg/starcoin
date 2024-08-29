@@ -1,4 +1,4 @@
-use crate::util::make_native_from_func;
+use crate::natives::util::make_native_from_func;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_core_types::vm_status::StatusCode;
@@ -215,5 +215,5 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
         ),
     ];
 
-    crate::helpers::make_module_natives(natives)
+    crate::natives::helpers::make_module_natives(natives)
 }

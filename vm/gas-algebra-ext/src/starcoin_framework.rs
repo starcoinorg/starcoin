@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::gas_meter::EXECUTION_GAS_MULTIPLIER as MUL;
-use starcoin_frameworks::GasParameters;
+use starcoin_frameworks::natives::GasParameters;
 
 // see starcoin/vm/types/src/on_chain_config/genesis_gas_schedule.rs
 // same order as from https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#native_schedule
