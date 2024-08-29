@@ -399,8 +399,11 @@ where
             return Ok(());
         }
         for parent in parents {
-            if !self.chain.has_dag_block(parent)? {
+            if self.local_store.get_dag_sync_block(parent)?.is_none() {
                 if absent_blocks.contains(&parent) {
+                    continue;
+                }
+                if self.chain.has_dag_block(parent)? {
                     continue;
                 }
                 absent_blocks.push(parent)
