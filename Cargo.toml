@@ -345,32 +345,32 @@ merkletree = { version = "0.22.1" }
 mirai-annotations = "1.10.1"
 
 # Move dependencies
-move-binary-format = { path = "../aptos-core/third_party/move/move-binary-format" }
-move-bytecode-source-map = { path = "../aptos-core/third_party/move/move-ir-compiler/move-bytecode-source-map" }
-move-bytecode-verifier = { path = "../aptos-core/third_party/move/move-bytecode-verifier" }
-move-bytecode-utils = { path = "../aptos-core/third_party/move/tools/move-bytecode-utils" }
-move-cli = { path = "../aptos-core/third_party/move/tools/move-cli" }
-move-command-line-common = { path = "../aptos-core/third_party/move/move-command-line-common" }
-move-compiler = { path = "../aptos-core/third_party/move/move-compiler" }
-move-core-types = { path = "../aptos-core/third_party/move/move-core/types", features = ["address16"] }
-move-coverage = { path = "../aptos-core/third_party/move/tools/move-coverage" }
-move-disassembler = { path = "../aptos-core/third_party/move/tools/move-disassembler" }
-move-docgen = { path = "../aptos-core/third_party/move/move-prover/move-docgen" }
-move-errmapgen = { path = "../aptos-core/third_party/move/move-prover/move-errmapgen" }
-move-ir-compiler = { path = "../aptos-core/third_party/move/move-ir-compiler" }
-move-ir-types = { path = "../aptos-core/third_party/move/move-ir/types" }
-move-model = { path = "../aptos-core/third_party/move/move-model" }
-move-package = { path = "../aptos-core/third_party/move/tools/move-package" }
-move-prover = { path = "../aptos-core/third_party/move/move-prover" }
-move-prover-test-utils = { path = "../aptos-core/third_party/move/move-prover/test-utils" }
-move-resource-viewer = { path = "../aptos-core/third_party/move/tools/move-resource-viewer" }
-move-stdlib = { path = "../aptos-core/third_party/move/move-stdlib" }
-move-transactional-test-runner = { path = "../aptos-core/third_party/move/testing-infra/transactional-test-runner" }
-move-unit-test = { path = "../aptos-core/third_party/move/tools/move-unit-test", features = ["table-extension"] }
-move-vm-runtime = { path = "../aptos-core/third_party/move/move-vm/runtime" }
-move-vm-types = { path = "../aptos-core/third_party/move/move-vm/types" }
-move-table-extension = { path = "../aptos-core/third_party/move/extensions/move-table-extension" }
-move-vm-test-utils = { path = "../aptos-core/third_party/move/move-vm/test-utils", features = ["table-extension"] }
+move-binary-format = { git = "https://github.com/starcoinorg/aptos-core", rev = "1d3c4ae8225b465ce16650089b831f1df876759f"}
+move-bytecode-source-map = { git = "https://github.com/starcoinorg/aptos-core", rev = "1d3c4ae8225b465ce16650089b831f1df876759f"}
+move-bytecode-verifier = { git = "https://github.com/starcoinorg/aptos-core", rev = "1d3c4ae8225b465ce16650089b831f1df876759f"}
+move-bytecode-utils = { git = "https://github.com/starcoinorg/aptos-core", rev = "1d3c4ae8225b465ce16650089b831f1df876759f"}
+move-cli = { git = "https://github.com/starcoinorg/aptos-core", rev = "1d3c4ae8225b465ce16650089b831f1df876759f"}
+move-command-line-common = { git = "https://github.com/starcoinorg/aptos-core", rev = "1d3c4ae8225b465ce16650089b831f1df876759f"}
+move-compiler = { git = "https://github.com/starcoinorg/aptos-core", rev = "1d3c4ae8225b465ce16650089b831f1df876759f"}
+move-core-types = { git = "https://github.com/starcoinorg/aptos-core", rev = "1d3c4ae8225b465ce16650089b831f1df876759f", features = ["address16"] }
+move-coverage = { git = "https://github.com/starcoinorg/aptos-core", rev = "1d3c4ae8225b465ce16650089b831f1df876759f"}
+move-disassembler = { git = "https://github.com/starcoinorg/aptos-core", rev = "1d3c4ae8225b465ce16650089b831f1df876759f"}
+move-docgen = { git = "https://github.com/starcoinorg/aptos-core", rev = "1d3c4ae8225b465ce16650089b831f1df876759f"}
+move-errmapgen = { git = "https://github.com/starcoinorg/aptos-core", rev = "1d3c4ae8225b465ce16650089b831f1df876759f"}
+move-ir-compiler = { git = "https://github.com/starcoinorg/aptos-core", rev = "1d3c4ae8225b465ce16650089b831f1df876759f"}
+move-ir-types = { git = "https://github.com/starcoinorg/aptos-core", rev = "1d3c4ae8225b465ce16650089b831f1df876759f"}
+move-model = { git = "https://github.com/starcoinorg/aptos-core", rev = "1d3c4ae8225b465ce16650089b831f1df876759f"}
+move-package = { git = "https://github.com/starcoinorg/aptos-core", rev = "1d3c4ae8225b465ce16650089b831f1df876759f"}
+move-prover = { git = "https://github.com/starcoinorg/aptos-core", rev = "1d3c4ae8225b465ce16650089b831f1df876759f"}
+move-prover-test-utils = { git = "https://github.com/starcoinorg/aptos-core", rev = "1d3c4ae8225b465ce16650089b831f1df876759f"}
+move-resource-viewer = { git = "https://github.com/starcoinorg/aptos-core", rev = "1d3c4ae8225b465ce16650089b831f1df876759f"}
+move-stdlib = { git = "https://github.com/starcoinorg/aptos-core", rev = "1d3c4ae8225b465ce16650089b831f1df876759f"}
+move-transactional-test-runner = { git = "https://github.com/starcoinorg/aptos-core", rev = "1d3c4ae8225b465ce16650089b831f1df876759f"}
+move-unit-test = { git = "https://github.com/starcoinorg/aptos-core", rev = "1d3c4ae8225b465ce16650089b831f1df876759f", features = ["table-extension"] }
+move-vm-runtime = { git = "https://github.com/starcoinorg/aptos-core", rev = "1d3c4ae8225b465ce16650089b831f1df876759f"}
+move-vm-types = { git = "https://github.com/starcoinorg/aptos-core", rev = "1d3c4ae8225b465ce16650089b831f1df876759f"}
+move-table-extension = { git = "https://github.com/starcoinorg/aptos-core", rev = "1d3c4ae8225b465ce16650089b831f1df876759f"}
+move-vm-test-utils = { git = "https://github.com/starcoinorg/aptos-core", rev = "1d3c4ae8225b465ce16650089b831f1df876759f", features = ["table-extension"] }
 
 names = { version = "0.14.0", default-features = false }
 network-api = { path = "network/api", package = "network-api" }
@@ -457,7 +457,7 @@ starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev 
 starcoin-decrypt = { path = "commons/decrypt" }
 starcoin-dev = { path = "vm/dev" }
 starcoin-executor = { path = "executor" }
-starcoin-framework = { git = "https://github.com/starcoinorg/starcoin-framework", rev = "94bcd77e80232b169cf95754ef4e87775645afcd" }
+starcoin-framework = { git = "https://github.com/starcoinorg/starcoin-framework", rev = "e804cfaead592b5318a5b75fc1239c192926b7fa" }
 starcoin-genesis = { path = "genesis" }
 starcoin-logger = { path = "commons/logger" }
 starcoin-metrics = { path = "commons/metrics" }
@@ -538,7 +538,7 @@ unsigned-varint = { version = "0.6.0", features = [
     "futures",
     "asynchronous_codec",
 ] }
-vm = { path = "../aptos-core/third_party/move/move-binary-format", package = "move-binary-format", features = ["fuzzing"] }
+vm = { git = "https://github.com/starcoinorg/aptos-core", rev = "1d3c4ae8225b465ce16650089b831f1df876759f", package = "move-binary-format", features = ["fuzzing"] }
 vm-status-translator = { path = "vm/vm-status-translator" }
 void = "1.0.2"
 walkdir = "2.3.1"

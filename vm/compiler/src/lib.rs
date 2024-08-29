@@ -51,6 +51,7 @@ pub fn starcoin_framework_named_addresses() -> BTreeMap<String, NumericalAddress
     let mapping = [
         ("VMReserved", "0x0"),
         ("Genesis", "0x1"),
+        ("std", "0x1"),
         ("StarcoinFramework", "0x1"),
         ("StarcoinAssociation", "0xA550C18"),
     ];
