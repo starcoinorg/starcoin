@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::util::make_native_from_func;
+use crate::natives::util::make_native_from_func;
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
@@ -38,7 +38,7 @@ pub fn native_keccak_256(
 
     let cost = gas_params.base + gas_params.per_byte * NumBytes::new(input_arg.len() as u64);
 
-    let output = crate::ecrecover::keccak(input_arg.as_slice());
+    let output = crate::natives::ecrecover::keccak(input_arg.as_slice());
 
     Ok(NativeResult::ok(cost, smallvec![Value::vector_u8(output)]))
 }
@@ -100,7 +100,7 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
         ),
     ];
 
-    crate::helpers::make_module_natives(natives)
+    crate::natives::helpers::make_module_natives(natives)
 }
 
 #[cfg(test)]
@@ -111,7 +111,7 @@ mod test {
     #[test]
     fn test_keccak() {
         let input: Vec<u8> = FromHex::from_hex("616263").unwrap();
-        let output = crate::ecrecover::keccak(input.as_slice());
+        let output = crate::natives::ecrecover::keccak(input.as_slice());
         let expect_output: Vec<u8> =
             FromHex::from_hex("4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45")
                 .unwrap();

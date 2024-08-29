@@ -6,7 +6,6 @@ move-stdlib = { workspace = true }
 move-table-extension = { workspace = true }
 move-vm-types = { workspace = true }
 move-vm-test-utils = { workspace = true }
-starcoin-natives = { workspace = true }
 serde = { workspace = true }
 
 

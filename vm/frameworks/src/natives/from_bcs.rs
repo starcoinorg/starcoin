@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::util::make_native_from_func;
+use crate::natives::util::make_native_from_func;
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
@@ -76,5 +76,5 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
         "from_bytes",
         make_native_from_func(gas_params, native_from_bytes),
     )];
-    crate::helpers::make_module_natives(natives)
+    crate::natives::helpers::make_module_natives(natives)
 }

@@ -8,7 +8,7 @@
  *
  **************************************************************************************************/
 
-use crate::util::make_native_from_func;
+use crate::natives::util::make_native_from_func;
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerArg, NumArgs};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
@@ -102,5 +102,5 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
         make_native_from_func(gas_params, native_ecdsa_recover),
     )];
 
-    crate::helpers::make_module_natives(natives)
+    crate::natives::helpers::make_module_natives(natives)
 }

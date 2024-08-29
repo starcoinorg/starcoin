@@ -72,7 +72,7 @@ members = [
     "vm/types",
     "vm/vm-runtime-types",
     "vm/vm-runtime",
-    "vm/natives",
+    "vm/frameworks",
     "vm/starcoin-native-interface",
     "vm/stdlib",
     "vm/compiler",
@@ -186,7 +186,7 @@ default-members = [
     "vm/types",
     "vm/vm-runtime-types",
     "vm/vm-runtime",
-    "vm/natives",
+    "vm/frameworks",
     "vm/starcoin-native-interface",
     "vm/stdlib",
     "vm/compiler",
@@ -471,7 +471,7 @@ starcoin-move-compiler = { path = "vm/compiler" }
 starcoin-move-explain = { path = "vm/move-explain" }
 starcoin-gas-algebra-ext = { path = "vm/gas-algebra-ext" }
 starcoin-gas-meter = { path = "vm/starcoin-gas-meter" }
-starcoin-natives = { path = "vm/natives" }
+starcoin-frameworks = { path = "vm/frameworks" }
 starcoin-native-interface = { path = "vm/starcoin-native-interface" }
 starcoin-network = { path = "network" }
 starcoin-network-rpc = { path = "network-rpc" }
