@@ -68,10 +68,11 @@ impl DagBlockExecutor {
         let handle = tokio::spawn(async move {
             let mut chain = None;
             loop {
-                match timeout(Duration::from_secs(1), self.receiver.recv()).await {
-                    Ok(Some(block)) => {
+                match self.receiver.recv().await {
+                    Some(block) => {
                         let header = block.header().clone();
 
+                        info!("worker will process header {:?}", header);
                         loop {
                             match Self::waiting_for_parents(
                                 &self.dag,
@@ -168,11 +169,9 @@ impl DagBlockExecutor {
                             }
                         }
                     }
-                    Ok(None) => {
+                    None => {
                         info!("sync worker channel closed");
-                        return;
-                    }
-                    Err(e) => {
+                        drop(self.sender);
                         return;
                     }
                 }

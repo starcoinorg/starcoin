@@ -74,10 +74,24 @@ impl DagBlockSender {
             }
         }
 
+        for executor in &mut self.executors {
+            match &executor.state {
+                ExecuteState::Executed(_) => {
+                    executor.state = ExecuteState::Executing(block.id());
+                    executor.sender_to_executor.send(block.clone()).await?;
+                    return anyhow::Ok(true);
+                }
+
+                ExecuteState::Executing(_) | ExecuteState::Ready(_) | ExecuteState::Error(_) | ExecuteState::Closed => {
+                    continue;
+                }
+            }
+        }
+
         anyhow::Ok(false)
     }
 
-    pub async fn process_absent_blocks(&mut self) -> anyhow::Result<()> {
+    pub async fn process_absent_blocks(mut self) -> anyhow::Result<()> {
         let sync_dag_store = self.sync_dag_store.clone();
         let iter = sync_dag_store.iter_at_first()?;
         for result_value in iter {
@@ -115,22 +129,30 @@ impl DagBlockSender {
             self.flush_executor_state().await?;
         }
 
-        self.wait_for_finish().await?;
-
         self.sync_dag_store.delete_all_dag_sync_block()?;
+
+        self.wait_for_finish().await?;
 
         Ok(())
     }
     
     async fn flush_executor_state(&mut self) -> anyhow::Result<()> {
         for worker in &mut self.executors {
-            // match worker.receiver_from_executor.try_recv() {
-            //     Ok(state) => worker.state = state,
-            //     Err(_) => (),
-            // }
-
-            if worker.handle.is_finished() {
-                worker.state = ExecuteState::Closed;
+            match worker.receiver_from_executor.try_recv() {
+                Ok(state) => {
+                    match state {
+                        ExecuteState::Executed(header_id) => {
+                            worker.state = ExecuteState::Executed(header_id);
+                        }
+                        _ => ()
+                    }
+                }
+                Err(e) => {
+                    match e {
+                        mpsc::error::TryRecvError::Empty => (),
+                        mpsc::error::TryRecvError::Disconnected => worker.state = ExecuteState::Closed,
+                    }
+                }
             }
         }
 
@@ -145,26 +167,15 @@ impl DagBlockSender {
         anyhow::Ok(())
     }
 
-    async fn wait_for_finish(&mut self) -> anyhow::Result<()> {
-        loop {
-            for worker in &mut self.executors {
-                if worker.handle.is_finished() {
-                    worker.state = ExecuteState::Closed;
-                }
+    async fn wait_for_finish(self) -> anyhow::Result<()> {
+        for mut worker in self.executors {
+            drop(worker.sender_to_executor);
+            while let Some(_) = worker.receiver_from_executor.recv().await {
+                ()
             }
-
-            self.executors.retain(|worker| {
-                if let ExecuteState::Closed = worker.state {
-                    false
-                } else {
-                    true
-                }
-            });
-            if self.executors.is_empty() {
-                info!("executor is empty, end the parallel execution");
-                return anyhow::Ok(());
-            }           
-            tokio::task::yield_now().await;
+            worker.handle.await?;
         }
+
+        anyhow::Ok(())
     }
 }
