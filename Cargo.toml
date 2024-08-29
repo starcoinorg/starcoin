@@ -83,7 +83,7 @@ members = [
     "vm/transaction-builder-generator",
     "vm/move-coverage",
     "vm/resource-viewer",
-    "vm/starcoin-gas",
+    "vm/starcoin-gas-meter",
     "vm/dev",
     "vm/gas-algebra-ext",
     "vm/move-explain",
@@ -197,7 +197,7 @@ default-members = [
     "vm/transaction-builder-generator",
     "vm/move-coverage",
     "vm/resource-viewer",
-    "vm/starcoin-gas",
+    "vm/starcoin-gas-meter",
     "vm/dev",
     "vm/gas-algebra-ext",
     "vm/move-explain",
@@ -470,7 +470,7 @@ starcoin-miner-client-api = { path = "cmd/miner_client/api" }
 starcoin-move-compiler = { path = "vm/compiler" }
 starcoin-move-explain = { path = "vm/move-explain" }
 starcoin-gas-algebra-ext = { path = "vm/gas-algebra-ext" }
-starcoin-gas = { path = "vm/starcoin-gas" }
+starcoin-gas-meter = { path = "vm/starcoin-gas-meter" }
 starcoin-natives = { path = "vm/natives" }
 starcoin-native-interface = { path = "vm/starcoin-native-interface" }
 starcoin-network = { path = "network" }

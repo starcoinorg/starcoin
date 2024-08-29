@@ -14,8 +14,8 @@ use starcoin_crypto::{
     multi_ed25519::{genesis_multi_key_pair, MultiEd25519PublicKey},
     HashValue, ValidCryptoMaterialStringExt,
 };
-use starcoin_gas::StarcoinGasParameters;
 use starcoin_gas_algebra_ext::{CostTable, FromOnChainGasSchedule};
+use starcoin_gas_meter::StarcoinGasParameters;
 use starcoin_time_service::{TimeService, TimeServiceType};
 use starcoin_uint::U256;
 use starcoin_vm_types::account_config::genesis_address;
@@ -1210,8 +1210,8 @@ pub static G_VEGA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
 
 #[cfg(test)]
 mod tests {
-    use starcoin_gas::StarcoinGasParameters;
     use starcoin_gas_algebra_ext::{CostTable, FromOnChainGasSchedule};
+    use starcoin_gas_meter::StarcoinGasParameters;
     use starcoin_vm_types::gas_schedule::{
         latest_cost_table, G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_LATEST_GAS_COST_TABLE,
         G_TEST_GAS_CONSTANTS,

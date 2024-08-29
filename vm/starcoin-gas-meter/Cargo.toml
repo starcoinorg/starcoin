@@ -11,10 +11,10 @@ starcoin-logger = { workspace = true }
 
 [package]
 authors = { workspace = true }
-description = "starcoin Move VM starcoin-gas"
+description = "starcoin Move VM starcoin-gas-meter"
 edition = { workspace = true }
 license = { workspace = true }
-name = "starcoin-gas"
+name = "starcoin-gas-meter"
 publish = { workspace = true }
 version = "2.0.1"
 homepage = { workspace = true }
