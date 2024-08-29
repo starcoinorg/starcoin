@@ -34,7 +34,7 @@ starcoin-transaction-builder = { workspace = true }
 starcoin-parallel-executor = { workspace = true }
 test-helper = { workspace = true }
 stdlib = { workspace = true }
-starcoin-gas = { workspace = true }
+starcoin-gas-meter = { workspace = true }
 move-table-extension = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-state-tree = { workspace = true }

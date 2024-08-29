@@ -6,7 +6,7 @@ use move_vm_runtime::native_functions;
 use move_vm_runtime::native_functions::{
     make_table_from_iter, NativeFunction, NativeFunctionTable,
 };
-use starcoin_gas::NativeGasParameters;
+use starcoin_gas_meter::NativeGasParameters;
 
 /// The function returns all native functions supported by Starcoin.
 /// NOTICE:

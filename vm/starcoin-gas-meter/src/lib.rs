@@ -18,6 +18,8 @@
 //!   - The on-chain gas schedule needs to be extensible and unordered so we can upgrate it easily
 //!     in the future.
 
+// ref aptos-move/aptos-gas-meter
+
 mod gas_meter;
 
 pub use gas_meter::{NativeGasParameters, StarcoinGasMeter, StarcoinGasParameters};

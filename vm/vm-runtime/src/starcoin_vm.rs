@@ -21,10 +21,10 @@ use num_cpus;
 use once_cell::sync::OnceCell;
 use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
 use starcoin_crypto::HashValue;
-use starcoin_gas::{NativeGasParameters, StarcoinGasMeter, StarcoinGasParameters};
 use starcoin_gas_algebra_ext::{
     CostTable, FromOnChainGasSchedule, Gas, GasConstants, GasCost, InitialGasSchedule,
 };
+use starcoin_gas_meter::{NativeGasParameters, StarcoinGasMeter, StarcoinGasParameters};
 use starcoin_logger::prelude::*;
 use starcoin_types::account_config::config_change::ConfigChangeEvent;
 use starcoin_types::account_config::{

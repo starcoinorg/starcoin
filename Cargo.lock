@@ -9604,8 +9604,8 @@ dependencies = [
  "serde_json",
  "starcoin-account-api",
  "starcoin-crypto",
- "starcoin-gas",
  "starcoin-gas-algebra-ext",
+ "starcoin-gas-meter",
  "starcoin-logger",
  "starcoin-metrics",
  "starcoin-system",
@@ -9888,21 +9888,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "starcoin-gas"
-version = "2.0.1"
-dependencies = [
- "clap 3.2.23",
- "move-binary-format",
- "move-core-types",
- "move-stdlib",
- "move-table-extension",
- "move-vm-types",
- "starcoin-gas-algebra-ext",
- "starcoin-logger",
- "starcoin-natives",
-]
-
-[[package]]
 name = "starcoin-gas-algebra-ext"
 version = "2.0.1"
 dependencies = [
@@ -9913,6 +9898,21 @@ dependencies = [
  "move-vm-test-utils",
  "move-vm-types",
  "serde 1.0.205",
+ "starcoin-natives",
+]
+
+[[package]]
+name = "starcoin-gas-meter"
+version = "2.0.1"
+dependencies = [
+ "clap 3.2.23",
+ "move-binary-format",
+ "move-core-types",
+ "move-stdlib",
+ "move-table-extension",
+ "move-vm-types",
+ "starcoin-gas-algebra-ext",
+ "starcoin-logger",
  "starcoin-natives",
 ]
 
@@ -10015,8 +10015,8 @@ dependencies = [
  "serde 1.0.205",
  "starcoin-config",
  "starcoin-crypto",
- "starcoin-gas",
  "starcoin-gas-algebra-ext",
+ "starcoin-gas-meter",
  "starcoin-parallel-executor",
  "starcoin-proptest-helpers",
  "starcoin-state-tree",
@@ -11251,8 +11251,8 @@ dependencies = [
  "serde 1.0.205",
  "starcoin-config",
  "starcoin-crypto",
- "starcoin-gas",
  "starcoin-gas-algebra-ext",
+ "starcoin-gas-meter",
  "starcoin-logger",
  "starcoin-metrics",
  "starcoin-natives",

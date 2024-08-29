@@ -5,6 +5,8 @@ use move_core_types::gas_algebra::{Arg, GasQuantity, UnitDiv};
 pub use move_vm_test_utils::gas_schedule::GasCost;
 use serde::{Deserialize, Serialize};
 
+// some code need to refactor starcoin-gas-schedule
+
 #[macro_use]
 pub mod natives;
 
