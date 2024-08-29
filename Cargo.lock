@@ -9888,6 +9888,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-frameworks"
+version = "2.0.1"
+dependencies = [
+ "arrayref",
+ "hex",
+ "libsecp256k1",
+ "log 0.4.17",
+ "move-binary-format",
+ "move-command-line-common",
+ "move-core-types",
+ "move-docgen",
+ "move-errmapgen",
+ "move-prover",
+ "move-stdlib",
+ "move-vm-runtime",
+ "move-vm-types",
+ "num_enum",
+ "rand 0.8.5",
+ "ripemd160",
+ "smallvec 1.10.0",
+ "starcoin-crypto",
+ "starcoin-uint",
+ "tiny-keccak",
+ "walkdir",
+]
+
+[[package]]
 name = "starcoin-gas-algebra-ext"
 version = "2.0.1"
 dependencies = [
@@ -9898,7 +9925,7 @@ dependencies = [
  "move-vm-test-utils",
  "move-vm-types",
  "serde 1.0.205",
- "starcoin-natives",
+ "starcoin-frameworks",
 ]
 
 [[package]]
@@ -9911,9 +9938,9 @@ dependencies = [
  "move-stdlib",
  "move-table-extension",
  "move-vm-types",
+ "starcoin-frameworks",
  "starcoin-gas-algebra-ext",
  "starcoin-logger",
- "starcoin-natives",
 ]
 
 [[package]]
@@ -10231,33 +10258,6 @@ dependencies = [
  "proptest",
  "proptest-derive",
  "rayon",
-]
-
-[[package]]
-name = "starcoin-natives"
-version = "2.0.1"
-dependencies = [
- "arrayref",
- "hex",
- "libsecp256k1",
- "log 0.4.17",
- "move-binary-format",
- "move-command-line-common",
- "move-core-types",
- "move-docgen",
- "move-errmapgen",
- "move-prover",
- "move-stdlib",
- "move-vm-runtime",
- "move-vm-types",
- "num_enum",
- "rand 0.8.5",
- "ripemd160",
- "smallvec 1.10.0",
- "starcoin-crypto",
- "starcoin-uint",
- "tiny-keccak",
- "walkdir",
 ]
 
 [[package]]
@@ -11251,11 +11251,11 @@ dependencies = [
  "serde 1.0.205",
  "starcoin-config",
  "starcoin-crypto",
+ "starcoin-frameworks",
  "starcoin-gas-algebra-ext",
  "starcoin-gas-meter",
  "starcoin-logger",
  "starcoin-metrics",
- "starcoin-natives",
  "starcoin-parallel-executor",
  "starcoin-types",
  "starcoin-vm-types",

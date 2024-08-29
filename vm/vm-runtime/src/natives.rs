@@ -29,7 +29,7 @@ pub fn starcoin_natives(gas_params: NativeGasParameters) -> NativeFunctionTable 
     );
     add_natives_from_module!(
         "Hash",
-        starcoin_natives::hash::make_all(gas_params.starcoin_natives.hash)
+        starcoin_frameworks::hash::make_all(gas_params.starcoin_natives.hash)
     );
     add_natives_from_module!(
         "BCS",
@@ -37,11 +37,11 @@ pub fn starcoin_natives(gas_params: NativeGasParameters) -> NativeFunctionTable 
     );
     add_natives_from_module!(
         "FromBCS",
-        starcoin_natives::from_bcs::make_all(gas_params.starcoin_natives.from_bcs)
+        starcoin_frameworks::from_bcs::make_all(gas_params.starcoin_natives.from_bcs)
     );
     add_natives_from_module!(
         "Signature",
-        starcoin_natives::signature::make_all(gas_params.starcoin_natives.signature)
+        starcoin_frameworks::signature::make_all(gas_params.starcoin_natives.signature)
     );
     add_natives_from_module!(
         "Vector",
@@ -53,7 +53,7 @@ pub fn starcoin_natives(gas_params: NativeGasParameters) -> NativeFunctionTable 
     );
     add_natives_from_module!(
         "Account",
-        starcoin_natives::account::make_all(gas_params.starcoin_natives.account)
+        starcoin_frameworks::account::make_all(gas_params.starcoin_natives.account)
     );
     add_natives_from_module!(
         "Signer",
@@ -61,11 +61,11 @@ pub fn starcoin_natives(gas_params: NativeGasParameters) -> NativeFunctionTable 
     );
     add_natives_from_module!(
         "Token",
-        starcoin_natives::token::make_all(gas_params.starcoin_natives.token)
+        starcoin_frameworks::token::make_all(gas_params.starcoin_natives.token)
     );
     add_natives_from_module!(
         "U256",
-        starcoin_natives::u256::make_all(gas_params.starcoin_natives.u256)
+        starcoin_frameworks::u256::make_all(gas_params.starcoin_natives.u256)
     );
     #[cfg(feature = "testing")]
     add_natives_from_module!(
@@ -82,7 +82,7 @@ pub fn starcoin_natives(gas_params: NativeGasParameters) -> NativeFunctionTable 
     );
     add_natives_from_module!(
         "Secp256k1",
-        starcoin_natives::secp256k1::make_all(gas_params.starcoin_natives.secp256k1)
+        starcoin_frameworks::secp256k1::make_all(gas_params.starcoin_natives.secp256k1)
     );
 
     let natives = make_table_from_iter(CORE_CODE_ADDRESS, natives);
