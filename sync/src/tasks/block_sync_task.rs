@@ -32,6 +32,11 @@ use stream_task::{CollectorState, TaskError, TaskResultCollector, TaskState};
 use super::continue_execute_absent_block::ContinueChainOperator;
 use super::{BlockConnectAction, BlockConnectedFinishEvent};
 
+enum ParallelSign {
+    NeedMoreBlocks,
+    Executed,
+}
+
 #[derive(Clone, Debug)]
 pub struct SyncBlockData {
     pub(crate) block: Block,
@@ -426,14 +431,15 @@ where
         }
     }
 
-    pub fn ensure_dag_parent_blocks_exist(&mut self, block_header: BlockHeader) -> Result<()> {
+    fn ensure_dag_parent_blocks_exist(&mut self, block: Block) -> Result<ParallelSign> {
+        let block_header = &block.header().clone();
         if self.chain.has_dag_block(block_header.id())? {
             info!(
                 "the dag block exists, skipping, its id: {:?}, its number {:?}",
                 block_header.id(),
                 block_header.number()
             );
-            return Ok(());
+            return Ok(ParallelSign::NeedMoreBlocks);
         }
         info!(
             "the block is a dag block, its id: {:?}, number: {:?}, its parents: {:?}",
@@ -445,13 +451,19 @@ where
             self.find_absent_ancestor(vec![block_header.clone()])
                 .await?;
 
-            let mut parallel_execute = DagBlockSender::new(
-                self.sync_dag_store.clone(), 
-                100,
-                self.chain.time_service(), 
-                self.local_store.clone(), 
-                None, self.chain.dag());
-            parallel_execute.process_absent_blocks().await?;
+            if block_header.number() % 10000 == 0 || block_header.number() >= self.target.target_id.number() {
+                let parallel_execute = DagBlockSender::new(
+                    self.sync_dag_store.clone(), 
+                    100000,
+                    self.chain.time_service(), 
+                    self.local_store.clone(), 
+                    None, self.chain.dag());
+                parallel_execute.process_absent_blocks().await?;
+                anyhow::Ok(ParallelSign::Executed)
+            } else {
+                self.sync_dag_store.save_block(block)?;
+                anyhow::Ok(ParallelSign::NeedMoreBlocks)
+            }
 
             // let sync_dag_store = self.sync_dag_store.clone();
             // let mut absent_block_iter = sync_dag_store
@@ -476,8 +488,6 @@ where
             //         }
             //     }
             // }
-
-            Ok(())
         };
         async_std::task::block_on(fut)
     }
@@ -606,7 +616,10 @@ where
         // if it is a dag block, we must ensure that its dag parent blocks exist.
         // if it is not, we must pull the dag parent blocks from the peer.
         info!("now sync dag block -- ensure_dag_parent_blocks_exist");
-        self.ensure_dag_parent_blocks_exist(block.header().clone())?;
+        match self.ensure_dag_parent_blocks_exist(block.clone())? {
+            ParallelSign::NeedMoreBlocks => return Ok(CollectorState::Need),
+            ParallelSign::Executed => (),
+        }
         let state = self.check_enough();
         if let anyhow::Result::Ok(CollectorState::Enough) = &state {
             if self.chain.has_dag_block(block.header().id())? {
