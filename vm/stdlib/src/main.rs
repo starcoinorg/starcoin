@@ -171,14 +171,14 @@ fn main() {
         .arg(
             Arg::new("debug")
                 .long("debug")
-                .takes_value(false)
+                .num_args(0)
                 .help("print debug log")
         )
         .arg(
             Arg::new("version")
                 .short('v')
                 .long("version")
-                .takes_value(true)
+                .num_args(1)
                 .value_name("VERSION")
                 .help("version number for compiled stdlib, for example 1. don't forget to record the release note"),
         )
@@ -186,7 +186,7 @@ fn main() {
             Arg::new("pre-version")
                 .short('p')
                 .long("pre-version")
-                .takes_value(true)
+                .num_args(1)
                 .value_name("PRE_VERSION")
                 .help("pre version of stdlib to generate diff and check compatibility with"))
         .arg(
@@ -199,36 +199,34 @@ fn main() {
         Arg::new("init-script-module")
             .short('m')
             .long("init-script-module")
-            .takes_value(true)
+            .num_args(1)
             .value_name("MODULE")
             .help("module name of init script function"),
         ).arg(
         Arg::new("init-script-function")
             .short('f')
             .long("init-script-function")
-            .takes_value(true)
+            .num_args(1)
             .value_name("FUNC")
             .help("function name of init script function"),
         ).arg(
         Arg::new("init-script-type-args")
             .short('t')
             .long("init-script-type-args")
-            .multiple_occurrences(true)
-            .takes_value(true)
+            .num_args(1..)
             .value_name("TYPE_ARGS")
             .help("type args of init script function"),
         ).arg(
         Arg::new("init-script-args")
             .short('a')
             .long("init-script-args")
-            .multiple_occurrences(true)
-            .takes_value(true)
+            .num_args(1..)
             .value_name("ARGS")
             .help("args of init script function"),
         );
 
     let matches = cli.get_matches();
-    let log_level = if matches.is_present("debug") {
+    let log_level = if matches.contains_id("debug") {
         LevelFilter::Debug
     } else {
         LevelFilter::Info
@@ -237,18 +235,14 @@ fn main() {
 
     let mut generate_new_version = false;
     let mut version_number: u64 = 0;
-    if matches.is_present("version") {
+    if matches.contains_id("version") {
         generate_new_version = true;
-        version_number = matches.value_of("version").unwrap().parse::<u64>().unwrap();
+        version_number = *matches.get_one("version").unwrap();
     }
 
     let pre_version = if version_number > 0 {
-        Some(if matches.is_present("pre-version") {
-            matches
-                .value_of("pre-version")
-                .unwrap()
-                .parse::<u64>()
-                .unwrap()
+        Some(if matches.contains_id("pre-version") {
+            *matches.get_one("pre-version").unwrap()
         } else {
             version_number - 1
         })
@@ -256,16 +250,17 @@ fn main() {
         None
     };
 
-    let no_check_compatibility = matches.is_present("no-check-compatibility");
+    let no_check_compatibility = matches.contains_id("no-check-compatibility");
     let has_init_script =
-        matches.is_present("init-script-module") && matches.is_present("init-script-function");
+        matches.contains_id("init-script-module") && matches.contains_id("init-script-function");
     let init_script = if has_init_script {
-        let module_name = matches.value_of("init-script-module").unwrap();
-        let function_name = matches.value_of("init-script-function").unwrap();
-        let type_args = if matches.is_present("init-script-type-args") {
+        let module_name: &str = *matches.get_one("init-script-module").unwrap();
+        let function_name: &str = *matches.get_one("init-script-function").unwrap();
+        let type_args = if matches.contains_id("init-script-type-args") {
             let type_args_str: Vec<&str> = matches
-                .values_of("init-script-type-args")
+                .get_many("init-script-type-args")
                 .unwrap()
+                .copied()
                 .collect();
             let type_args: Vec<TypeTag> = type_args_str
                 .iter()
@@ -275,8 +270,12 @@ fn main() {
         } else {
             vec![]
         };
-        let args = if matches.is_present("init-script-args") {
-            let args_strings: Vec<&str> = matches.values_of("init-script-args").unwrap().collect();
+        let args = if matches.contains_id("init-script-args") {
+            let args_strings: Vec<&str> = matches
+                .get_many("init-script-args")
+                .unwrap()
+                .copied()
+                .collect();
             let args: Vec<TransactionArgument> = args_strings
                 .iter()
                 .map(|s| parse_transaction_argument(s).unwrap())

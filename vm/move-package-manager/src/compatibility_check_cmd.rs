@@ -156,7 +156,7 @@ fn handle_pre_version_compatibility_check(
         );
         std::process::exit(1);
     } else {
-        eprintln!("All previous modules is full compatible with current modules!", );
+        eprintln!("All previous modules is full compatible with current modules!");
     }
 
     Ok(())
