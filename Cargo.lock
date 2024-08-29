@@ -8695,7 +8695,7 @@ dependencies = [
 [[package]]
 name = "serde-generate"
 version = "0.19.1"
-source = "git+https://github.com/starcoinorg/serde-reflection?rev=694048797338ff7385006d968e786b6d9dbdeb8b#694048797338ff7385006d968e786b6d9dbdeb8b"
+source = "git+https://github.com/starcoinorg/serde-reflection?rev=eb95fd4e3b67e08d71432b522c53833a0b855d80#eb95fd4e3b67e08d71432b522c53833a0b855d80"
 dependencies = [
  "bcs 0.1.5",
  "bincode",
@@ -8744,7 +8744,7 @@ dependencies = [
 [[package]]
 name = "serde-reflection"
 version = "0.3.2"
-source = "git+https://github.com/starcoinorg/serde-reflection?rev=694048797338ff7385006d968e786b6d9dbdeb8b#694048797338ff7385006d968e786b6d9dbdeb8b"
+source = "git+https://github.com/starcoinorg/serde-reflection?rev=eb95fd4e3b67e08d71432b522c53833a0b855d80#eb95fd4e3b67e08d71432b522c53833a0b855d80"
 dependencies = [
  "serde",
  "thiserror",
@@ -9946,6 +9946,7 @@ dependencies = [
 name = "starcoin-gas-algebra-ext"
 version = "2.0.1"
 dependencies = [
+ "either",
  "move-binary-format",
  "move-core-types",
  "move-stdlib",
@@ -10271,6 +10272,21 @@ dependencies = [
  "proptest",
  "proptest-derive 0.3.0",
  "rayon",
+]
+
+[[package]]
+name = "starcoin-native-interface"
+version = "2.0.1"
+dependencies = [
+ "bcs 0.1.5",
+ "bytes 1.6.1",
+ "move-binary-format",
+ "move-core-types",
+ "move-vm-runtime",
+ "move-vm-types",
+ "smallvec 1.10.0",
+ "starcoin-gas-algebra-ext",
+ "starcoin-vm-types",
 ]
 
 [[package]]
@@ -11301,6 +11317,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-vm-runtime-types"
+version = "2.0.1"
+dependencies = [
+ "anyhow",
+ "bytes 1.6.1",
+ "move-core-types",
+ "starcoin-gas",
+ "starcoin-vm-types",
+ "stdlib",
+]
+
+[[package]]
 name = "starcoin-vm-types"
 version = "2.0.1"
 dependencies = [
@@ -11332,6 +11360,8 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-gas-algebra-ext",
  "starcoin-time-service",
+ "strum",
+ "strum_macros",
 ]
 
 [[package]]
@@ -11479,6 +11509,25 @@ dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.36",
  "syn 1.0.107",
+]
+
+[[package]]
+name = "strum"
+version = "0.26.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8fec0f0aef304996cf250b31b5a10dee7980c85da9d759361292b8bca5a18f06"
+
+[[package]]
+name = "strum_macros"
+version = "0.26.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4c6bee85a5a24955dc440386795aa378cd9cf82acd5f764469152d2270e581be"
+dependencies = [
+ "heck 0.5.0",
+ "proc-macro2 1.0.86",
+ "quote 1.0.36",
+ "rustversion",
+ "syn 2.0.72",
 ]
 
 [[package]]
@@ -12745,17 +12794,6 @@ name = "version_check"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
-
-[[package]]
-name = "vm-runtime-types"
-version = "2.0.1"
-dependencies = [
- "anyhow",
- "bytes 1.6.1",
- "move-core-types",
- "starcoin-vm-types",
- "stdlib",
-]
 
 [[package]]
 name = "vm-status-translator"

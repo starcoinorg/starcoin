@@ -73,6 +73,7 @@ members = [
     "vm/vm-runtime-types",
     "vm/vm-runtime",
     "vm/natives",
+    "vm/starcoin-native-interface",
     "vm/stdlib",
     "vm/compiler",
     "vm/move-prover",
@@ -186,6 +187,7 @@ default-members = [
     "vm/vm-runtime-types",
     "vm/vm-runtime",
     "vm/natives",
+    "vm/starcoin-native-interface",
     "vm/stdlib",
     "vm/compiler",
     "vm/move-prover",
@@ -416,9 +418,9 @@ sc-peerset = { path = "network-p2p/peerset" }
 schemars = { git = "https://github.com/starcoinorg/schemars", rev = "9b3705780b8fe9c8676ff82919869ba7405b1062" }
 scmd = { path = "commons/scmd" }
 serde = "1.0.130"
-serde-generate = { git = "https://github.com/starcoinorg/serde-reflection", rev = "694048797338ff7385006d968e786b6d9dbdeb8b" }
+serde-generate = { git = "https://github.com/starcoinorg/serde-reflection", rev = "eb95fd4e3b67e08d71432b522c53833a0b855d80" }
 serde-helpers = { path = "commons/serde-helpers" }
-serde-reflection = { git = "https://github.com/starcoinorg/serde-reflection", rev = "694048797338ff7385006d968e786b6d9dbdeb8b" }
+serde-reflection = { git = "https://github.com/starcoinorg/serde-reflection", rev = "eb95fd4e3b67e08d71432b522c53833a0b855d80" }
 serde_bytes = "0.11"
 serde_derive = "1.0"
 serde_json = "~1"
@@ -433,6 +435,8 @@ slog-async = "2.7.0"
 slog-term = "2.9.0"
 smallvec = "1.10.0"
 sp-utils = { path = "commons/utils" }
+strum = "0.26.3"
+strum_macros = "0.26.3"
 starcoin-abi-decoder = { path = "abi/decoder" }
 starcoin-abi-resolver = { path = "abi/resolver" }
 starcoin-abi-types = { path = "abi/types" }
@@ -468,6 +472,7 @@ starcoin-move-explain = { path = "vm/move-explain" }
 starcoin-gas-algebra-ext = { path = "vm/gas-algebra-ext" }
 starcoin-gas = { path = "vm/starcoin-gas" }
 starcoin-natives = { path = "vm/natives" }
+starcoin-native-interface = { path = "vm/starcoin-native-interface" }
 starcoin-network = { path = "network" }
 starcoin-network-rpc = { path = "network-rpc" }
 starcoin-network-rpc-api = { path = "network-rpc/api" }
