@@ -1,7 +1,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::ecrecover::{make_native_ecrecover, EcrecoverGasParameters};
+use crate::natives::ecrecover::{make_native_ecrecover, EcrecoverGasParameters};
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
@@ -131,5 +131,5 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
         ),
     ];
 
-    crate::helpers::make_module_natives(natives)
+    crate::natives::helpers::make_module_natives(natives)
 }

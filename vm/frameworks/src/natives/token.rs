@@ -87,7 +87,7 @@ pub struct GasParameters {
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
     let natives = [("name_of", make_native_token_name_of(gas_params.name_of))];
 
-    crate::helpers::make_module_natives(natives)
+    crate::natives::helpers::make_module_natives(natives)
 }
 
 #[test]
