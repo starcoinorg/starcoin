@@ -13,7 +13,7 @@ use crate::store::sync_dag_store::SyncDagStore;
 pub trait ContinueChainOperator {
     fn has_dag_block(&self, block_id: HashValue) -> anyhow::Result<bool>;
     fn apply(&mut self, block: Block) -> anyhow::Result<ExecutedBlock>;
-    fn notify(&mut self, executed_block: ExecutedBlock) -> anyhow::Result<CollectorState>;
+    fn notify(&mut self, executed_block: &ExecutedBlock) -> anyhow::Result<CollectorState>;
 }
 
 pub struct ContinueExecuteAbsentBlock<'a> {
@@ -82,7 +82,7 @@ impl<'a> ContinueExecuteAbsentBlock<'a> {
                             executed_block.block.id(),
                             executed_block.block.header().number()
                         );
-                        self.operator.notify(executed_block)?;
+                        self.operator.notify(&executed_block)?;
                         next_parent_blocks.push(*child);
                     }
                 }
@@ -165,7 +165,7 @@ impl<'a> ContinueExecuteAbsentBlock<'a> {
                     .delete_dag_sync_block(executed_block.block.id())?;
 
                 debug!("notify the collector after the block was executed: {:?}, number: {:?}", block_id, block_number);
-                self.operator.notify(executed_block)?;
+                self.operator.notify(&executed_block)?;
 
                 debug!("finish to process the block: {:?}, number: {:?}", block_id, block_number);
             }

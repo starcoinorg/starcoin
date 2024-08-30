@@ -118,7 +118,7 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                     match target.as_ref() {
                         None => {
                             let maybe_target_number = std::cmp::min(
-                                begin_number.saturating_add(1000),
+                                begin_number.saturating_add(100000),
                                 better_peer.block_number(),
                             );
                             if maybe_target_number == better_peer.block_number()
@@ -589,7 +589,7 @@ where
 
 mod accumulator_sync_task;
 mod block_sync_task;
-mod continue_execute_absent_block;
+pub mod continue_execute_absent_block;
 mod find_ancestor_task;
 mod inner_sync_task;
 #[cfg(test)]

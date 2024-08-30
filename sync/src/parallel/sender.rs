@@ -10,7 +10,7 @@ use starcoin_storage::Store;
 use starcoin_types::block::{Block, BlockHeader};
 use tokio::{sync::mpsc::{self, Receiver, Sender}, task::JoinHandle};
 
-use crate::store::{sync_absent_ancestor::DagSyncBlock, sync_dag_store::{self, SyncDagStore}};
+use crate::{store::{sync_absent_ancestor::DagSyncBlock, sync_dag_store::{self, SyncDagStore}}, tasks::continue_execute_absent_block::ContinueChainOperator};
 
 use super::executor::{DagBlockExecutor, ExecuteState};
 
@@ -91,7 +91,7 @@ impl DagBlockSender {
         anyhow::Ok(false)
     }
 
-    pub async fn process_absent_blocks(mut self) -> anyhow::Result<()> {
+    pub async fn process_absent_blocks<'a>(mut self, notify: &'a mut dyn ContinueChainOperator) -> anyhow::Result<()> {
         let sync_dag_store = self.sync_dag_store.clone();
         let iter = sync_dag_store.iter_at_first()?;
         for result_value in iter {
@@ -126,7 +126,7 @@ impl DagBlockSender {
 
             sender_to_worker.send(block).await?;
 
-            self.flush_executor_state().await?;
+            self.flush_executor_state(notify).await?;
         }
 
         self.sync_dag_store.delete_all_dag_sync_block()?;
@@ -136,13 +136,14 @@ impl DagBlockSender {
         Ok(())
     }
     
-    async fn flush_executor_state(&mut self) -> anyhow::Result<()> {
+    async fn flush_executor_state<'a>(&mut self, notify: &'a mut dyn ContinueChainOperator) -> anyhow::Result<()> {
         for worker in &mut self.executors {
             match worker.receiver_from_executor.try_recv() {
                 Ok(state) => {
                     match state {
-                        ExecuteState::Executed(header_id) => {
-                            worker.state = ExecuteState::Executed(header_id);
+                        ExecuteState::Executed(executed_block) => {
+                            notify.notify(&executed_block)?;
+                            worker.state = ExecuteState::Executed(executed_block);
                         }
                         _ => ()
                     }
