@@ -64,25 +64,19 @@ impl DagBlockSender {
                 ExecuteState::Executing(header_id) => {
                     if *header_id == block.header().parent_hash() || block.header.parents_hash().contains(header_id) {
                         executor.state = ExecuteState::Executing(block.id());
-                        executor.sender_to_executor.send(block.clone()).await?;
+                        match executor.sender_to_executor.try_send(block.clone()) {
+                            Ok(_) => (),
+                            Err(e) => {
+                                match e {
+                                    mpsc::error::TrySendError::Full(_) => return anyhow::Ok(false),
+                                    mpsc::error::TrySendError::Closed(_) => return anyhow::Ok(false),
+                                }
+                            }
+                        };
                         return anyhow::Ok(true);
                     }
                 }
                 ExecuteState::Executed(_) | ExecuteState::Ready(_) | ExecuteState::Error(_) | ExecuteState::Closed => {
-                    continue;
-                }
-            }
-        }
-
-        for executor in &mut self.executors {
-            match &executor.state {
-                ExecuteState::Executed(_) => {
-                    executor.state = ExecuteState::Executing(block.id());
-                    executor.sender_to_executor.send(block.clone()).await?;
-                    return anyhow::Ok(true);
-                }
-
-                ExecuteState::Executing(_) | ExecuteState::Ready(_) | ExecuteState::Error(_) | ExecuteState::Closed => {
                     continue;
                 }
             }
