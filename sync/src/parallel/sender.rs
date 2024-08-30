@@ -143,7 +143,7 @@ impl DagBlockSender {
                     match state {
                         ExecuteState::Executed(executed_block) => {
                             notify.notify(&executed_block)?;
-                            worker.state = ExecuteState::Executed(executed_block);
+                            worker.state = ExecuteState::Closed;
                         }
                         _ => ()
                     }
