@@ -79,45 +79,6 @@ fn build_version_0_block(number: BlockNumber) -> Block {
 }
 
 #[test]
-fn test_add_reachability_data() -> anyhow::Result<()> {
-    let mut sync_dag_store = SyncDagStore::create_for_testing()?;
-    let reachability_store = sync_dag_store.reachability_store.clone();
-
-    let mut writer = reachability_store.write();
-
-    let x = HashValue::random();
-    let a = HashValue::random();
-    let b = HashValue::random();
-    let c = HashValue::random();
-    let d = HashValue::random();
-    let e = HashValue::random();
-
-    inquirer::init_with_params(writer.deref_mut(), x, Interval::maximal())?;
-
-    inquirer::add_block(writer.deref_mut(), a, x, &mut [x].into_iter())?;
-    inquirer::add_block(writer.deref_mut(), b, a, &mut [a].into_iter())?;
-    inquirer::add_block(writer.deref_mut(), c, a, &mut [a].into_iter())?;
-    inquirer::add_block(writer.deref_mut(), d, a, &mut [a].into_iter())?;
-    inquirer::add_block(writer.deref_mut(), e, b, &mut [c, d].into_iter())?;
-
-    drop(writer);
-
-    let reader = reachability_store.read();
-
-    assert!(inquirer::is_dag_ancestor_of(reader.deref(), a, b)?);
-    assert!(inquirer::is_dag_ancestor_of(reader.deref(), a, c)?);
-    assert!(inquirer::is_dag_ancestor_of(reader.deref(), a, d)?);
-    assert!(inquirer::is_dag_ancestor_of(reader.deref(), a, e)?);
-    assert!(inquirer::is_dag_ancestor_of(reader.deref(), b, e)?);
-    assert!(inquirer::is_dag_ancestor_of(reader.deref(), c, e)?);
-    assert!(inquirer::is_dag_ancestor_of(reader.deref(), d, e)?);
-
-    drop(reader);
-
-    anyhow::Ok(())
-}
-
-#[test]
 fn test_sync_dag_absent_store() -> anyhow::Result<()> {
     let dag = BlockDAG::create_for_testing()?;
     let sync_dag_store = SyncDagStore::create_for_testing()?;

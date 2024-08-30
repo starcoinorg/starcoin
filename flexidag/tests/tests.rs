@@ -949,3 +949,110 @@ fn test_prune() -> anyhow::Result<()> {
 
     anyhow::Result::Ok(())
 }
+
+#[test]
+fn test_verification_blue_block() -> anyhow::Result<()> {
+    // initialzie the dag firstly
+    let k = 5;
+
+    let mut dag = BlockDAG::create_for_testing_with_parameters(k).unwrap();
+
+    let origin = BlockHeaderBuilder::random().with_number(0).build();
+    let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;
+
+    dag.init_with_genesis(genesis.clone()).unwrap();
+
+    let block1 = add_and_print(
+        1,
+        genesis.id(),
+        vec![genesis.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+
+    let block_main_2 = add_and_print(
+        2,
+        block1.id(),
+        vec![block1.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+    let block_main_3 = add_and_print(
+        3,
+        block_main_2.id(),
+        vec![block_main_2.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+    let block_main_3_1 = add_and_print(
+        3,
+        block_main_2.id(),
+        vec![block_main_2.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+    let block_main_4 = add_and_print(
+        4,
+        block_main_3.id(),
+        vec![block_main_3.id(), block_main_3_1.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+    let block_main_5 = add_and_print(
+        5,
+        block_main_4.id(),
+        vec![block_main_4.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+
+    let block_red_2 = add_and_print(
+        2,
+        block1.id(),
+        vec![block1.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+    let block_red_2_1 = add_and_print(
+        2,
+        block1.id(),
+        vec![block1.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+    let block_red_3 = add_and_print(
+        3,
+        block_red_2.id(),
+        vec![block_red_2.id(), block_red_2_1.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+    // let block_red_4 = add_and_print(
+    //     4,
+    //     block_red_3.id(),
+    //     vec![block_red_3.id()],
+    //     genesis.parent_hash(),
+    //     &mut dag,
+    // )?;
+
+    // let's obser the blue scores which show how blue the tips are
+    let observer1 = dag.ghostdata(&[block_red_3.id()])?;
+    println!("observer 1 data: {:?}, ", observer1);
+
+    let observer2 = dag.ghostdata(&[block_red_3.id(), block_main_5.id()])?;
+    println!("observer 2 dag data: {:?}, ", observer2);
+
+    let observer3 = dag.ghostdata(&[block_main_5.id()])?;
+    println!("observer 3 dag data: {:?}, ", observer3);
+
+    // assert!(observer1.blue_score < observer2.blue_score);
+    // assert!(observer1.selected_parent != observer2.selected_parent);
+
+    // assert_eq!(observer3.blue_score, observer2.blue_score);
+    // assert_eq!(observer3.selected_parent, observer2.selected_parent);
+
+    // prunning process begins
+
+
+    anyhow::Result::Ok(())
+}
