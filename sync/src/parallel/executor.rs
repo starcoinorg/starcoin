@@ -6,7 +6,7 @@ use starcoin_config::TimeService;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
-use starcoin_logger::prelude::{error, info};
+use starcoin_logger::prelude::{error, info, warn};
 use starcoin_storage::Store;
 use starcoin_types::block::{Block, BlockHeader};
 use tokio::{
@@ -88,8 +88,7 @@ impl DagBlockExecutor {
                                     );
                                     match self
                                         .sender
-                                        .send(ExecuteState::Error(header.clone()))
-                                        .await
+                                        .try_send(ExecuteState::Error(header.clone()))
                                     {
                                         Ok(_) => (),
                                         Err(e) => {
@@ -137,16 +136,14 @@ impl DagBlockExecutor {
                                 );
                                 match self
                                     .sender
-                                    .send(ExecuteState::Executed(executed_block))
-                                    .await
+                                    .try_send(ExecuteState::Executed(executed_block))
                                 {
                                     Ok(_) => (),
                                     Err(e) => {
-                                        error!(
+                                        warn!(
                                             "failed to send waiting state: {:?}, for reason: {:?}",
                                             header, e
                                         );
-                                        return;
                                     }
                                 }
                             }
@@ -155,7 +152,7 @@ impl DagBlockExecutor {
                                     "failed to execute block: {:?}, for reason: {:?}",
                                     header, e
                                 );
-                                match self.sender.send(ExecuteState::Error(header.clone())).await {
+                                match self.sender.try_send(ExecuteState::Error(header.clone())) {
                                     Ok(_) => (),
                                     Err(e) => {
                                         error!(
