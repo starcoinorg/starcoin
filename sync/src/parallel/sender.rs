@@ -129,7 +129,9 @@ impl DagBlockSender {
                 handle: executor.start_to_execute()?,
             };
 
+            info!("now create a new worker for block: {:?}", block.id());
             sender_to_worker.send(block).await?;
+            info!("now finish to create a new worker for block: {:?}", block.id());
             self.executors.push(executor);
 
             self.flush_executor_state(notify).await?;
