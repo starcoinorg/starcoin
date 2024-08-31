@@ -10,7 +10,9 @@ use starcoin_logger::prelude::{error, info, warn};
 use starcoin_storage::Store;
 use starcoin_types::block::{Block, BlockHeader};
 use tokio::{
-    sync::mpsc::{self, Receiver, Sender}, task::JoinHandle, time::{timeout, Duration}
+    sync::mpsc::{self, Receiver, Sender},
+    task::JoinHandle,
+    time::{timeout, Duration},
 };
 
 #[derive(Debug)]
@@ -28,7 +30,7 @@ pub struct DagBlockExecutor {
     time_service: Arc<dyn TimeService>,
     storage: Arc<dyn Store>,
     vm_metrics: Option<VMMetrics>,
-    dag: BlockDAG
+    dag: BlockDAG,
 }
 
 impl DagBlockExecutor {
@@ -70,97 +72,30 @@ impl DagBlockExecutor {
             let mut chain = None;
             loop {
                 match timeout(Duration::from_secs(1), self.receiver.recv()).await {
-                    Ok(result) => {
-                        match result {
-                            Some(block) => {
-                                let header = block.header().clone();
+                    Ok(result) => match result {
+                        Some(block) => {
+                            let header = block.header().clone();
 
-                                info!("worker will process header {:?}", header);
-                                loop {
-                                    match Self::waiting_for_parents(
-                                        &self.dag,
-                                        block.header().parents_hash(),
-                                    ) {
-                                        Ok(true) => break,
-                                        Ok(false) => tokio::task::yield_now().await,
-                                        Err(e) => {
-                                            error!(
-                                                "failed to check parents: {:?}, for reason: {:?}",
-                                                header, e
-                                            );
-                                            match self
-                                                .sender
-                                                .try_send(ExecuteState::Error(header.clone()))
-                                            {
-                                                Ok(_) => (),
-                                                Err(e) => {
-                                                    error!("failed to send error state: {:?}, for reason: {:?}", header, e);
-                                                    return;
-                                                }
-                                            }
-                                            return;
-                                        }
-                                    }
-                                }
-
-                                match chain {
-                                    None => {
-                                        chain = match BlockChain::new(self.time_service.clone(), block.header().parent_hash(), self.storage.clone(), self.vm_metrics.clone(), self.dag.clone()) {
-                                            Ok(new_chain) => Some(new_chain),
-                                            Err(e) => {
-                                                error!("failed to create chain for block: {:?} for {:?}", block.header().id(), e);
-                                                return;
-                                            }
-                                        }
-                                    }
-                                    Some(old_chain) => {
-                                        if old_chain.status().head().id() != block.header().parent_hash(){
-                                            chain = match old_chain.fork(block.header().parent_hash()) {
-                                                Ok(new_chain) => Some(new_chain),
-                                                Err(e) => {
-                                                    error!("failed to fork in parallel for: {:?}", e);
-                                                    return;
-                                                }
-                                            }
-                                        } else {
-                                            chain = Some(old_chain);
-                                        }
-                                    }
-                                }
-
-                                info!("sync parallel worker {:p} will execute block: {:?}", &self, block.header().id());
-                                match chain.as_mut().expect("it cannot be none!").apply_with_verifier::<DagVerifier>(block) {
-                                    Ok(executed_block) => {
-                                        info!(
-                                            "succeed to execute block: number: {:?}, id: {:?}",
-                                            executed_block.header().number(),
-                                            executed_block.header().id()
+                            info!("worker will process header {:?}", header);
+                            loop {
+                                match Self::waiting_for_parents(
+                                    &self.dag,
+                                    block.header().parents_hash(),
+                                ) {
+                                    Ok(true) => break,
+                                    Ok(false) => tokio::task::yield_now().await,
+                                    Err(e) => {
+                                        error!(
+                                            "failed to check parents: {:?}, for reason: {:?}",
+                                            header, e
                                         );
                                         match self
                                             .sender
-                                            .try_send(ExecuteState::Executed(executed_block))
+                                            .try_send(ExecuteState::Error(header.clone()))
                                         {
                                             Ok(_) => (),
                                             Err(e) => {
-                                                warn!(
-                                                    "failed to send waiting state: {:?}, for reason: {:?}",
-                                                    header, e
-                                                );
-                                            }
-                                        }
-                                    }
-                                    Err(e) => {
-                                        error!(
-                                            "failed to execute block: {:?}, for reason: {:?}",
-                                            header, e
-                                        );
-                                        match self.sender.try_send(ExecuteState::Error(header.clone())) {
-                                            Ok(_) => (),
-                                            Err(e) => {
-                                                error!(
-                                                    "failed to send error state: {:?}, for reason: {:?}",
-                                                    header, e
-                                                );
+                                                error!("failed to send error state: {:?}, for reason: {:?}", header, e);
                                                 return;
                                             }
                                         }
@@ -168,13 +103,99 @@ impl DagBlockExecutor {
                                     }
                                 }
                             }
-                            None => {
-                                info!("sync worker channel closed");
-                                drop(self.sender);
-                                return;
+
+                            match chain {
+                                None => {
+                                    chain = match BlockChain::new(
+                                        self.time_service.clone(),
+                                        block.header().parent_hash(),
+                                        self.storage.clone(),
+                                        self.vm_metrics.clone(),
+                                        self.dag.clone(),
+                                    ) {
+                                        Ok(new_chain) => Some(new_chain),
+                                        Err(e) => {
+                                            error!(
+                                                "failed to create chain for block: {:?} for {:?}",
+                                                block.header().id(),
+                                                e
+                                            );
+                                            return;
+                                        }
+                                    }
+                                }
+                                Some(old_chain) => {
+                                    if old_chain.status().head().id()
+                                        != block.header().parent_hash()
+                                    {
+                                        chain = match old_chain.fork(block.header().parent_hash()) {
+                                            Ok(new_chain) => Some(new_chain),
+                                            Err(e) => {
+                                                error!("failed to fork in parallel for: {:?}", e);
+                                                return;
+                                            }
+                                        }
+                                    } else {
+                                        chain = Some(old_chain);
+                                    }
+                                }
+                            }
+
+                            info!(
+                                "sync parallel worker {:p} will execute block: {:?}",
+                                &self,
+                                block.header().id()
+                            );
+                            match chain
+                                .as_mut()
+                                .expect("it cannot be none!")
+                                .apply_with_verifier::<DagVerifier>(block)
+                            {
+                                Ok(executed_block) => {
+                                    info!(
+                                        "succeed to execute block: number: {:?}, id: {:?}",
+                                        executed_block.header().number(),
+                                        executed_block.header().id()
+                                    );
+                                    match self
+                                        .sender
+                                        .try_send(ExecuteState::Executed(executed_block))
+                                    {
+                                        Ok(_) => (),
+                                        Err(e) => {
+                                            warn!(
+                                                    "failed to send waiting state: {:?}, for reason: {:?}",
+                                                    header, e
+                                                );
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    error!(
+                                        "failed to execute block: {:?}, for reason: {:?}",
+                                        header, e
+                                    );
+                                    match self.sender.try_send(ExecuteState::Error(header.clone()))
+                                    {
+                                        Ok(_) => (),
+                                        Err(e) => {
+                                            error!(
+                                                    "failed to send error state: {:?}, for reason: {:?}",
+                                                    header, e
+                                                );
+                                            return;
+                                        }
+                                    }
+                                    return;
+                                }
                             }
                         }
-                    }
+                        None => {
+                            info!("sync worker channel closed");
+                            drop(self.sender);
+                            return;
+                        }
+                    },
                     Err(e) => {
                         info!("sync worker channel closed: {:?}", e);
                         return;

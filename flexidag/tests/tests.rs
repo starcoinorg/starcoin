@@ -1053,6 +1053,5 @@ fn test_verification_blue_block() -> anyhow::Result<()> {
 
     // prunning process begins
 
-
     anyhow::Result::Ok(())
 }

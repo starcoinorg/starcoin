@@ -4,7 +4,15 @@ use anyhow::format_err;
 use parking_lot::RwLock;
 use starcoin_config::{temp_dir, RocksdbConfig, StorageConfig};
 use starcoin_crypto::HashValue;
-use starcoin_dag::{consensusdb::{prelude::StoreError, schemadb::{DbReachabilityStore, MemoryReachabilityStore, ReachabilityStore, REACHABILITY_DATA_CF}}, reachability::inquirer};
+use starcoin_dag::{
+    consensusdb::{
+        prelude::StoreError,
+        schemadb::{
+            DbReachabilityStore, MemoryReachabilityStore, ReachabilityStore, REACHABILITY_DATA_CF,
+        },
+    },
+    reachability::inquirer,
+};
 use starcoin_logger::prelude::error;
 use starcoin_storage::db_storage::{DBStorage, SchemaIterator};
 use starcoin_types::block::{Block, BlockNumber};
@@ -112,7 +120,7 @@ impl SyncDagStore {
                             block: Some(block.clone()),
                         }])
                         .map_err(|e| format_err!("Failed to save absent block: {:?}", e))?;
-                    
+
                     Ok(())
                 }
                 _ => Err(format_err!(

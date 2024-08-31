@@ -8,6 +8,7 @@ use crate::tasks::continue_execute_absent_block::ContinueExecuteAbsentBlock;
 use crate::tasks::{BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
 use crate::verified_rpc_client::RpcVerifyError;
 use anyhow::{format_err, Context, Result};
+use futures::executor::block_on;
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use network_api::PeerId;
@@ -399,15 +400,25 @@ where
             return Ok(());
         }
         for parent in parents {
-            if self.local_store.get_dag_sync_block(parent)?.is_none() {
-                if absent_blocks.contains(&parent) {
-                    continue;
-                }
-                if self.chain.has_dag_block(parent)? {
-                    continue;
-                }
-                absent_blocks.push(parent)
+            if self.chain.has_dag_block(parent)? {
+                continue;
             }
+            match self.local_store.get_dag_sync_block(parent)? {
+                Some(block) => {
+                    match self.sync_dag_store.get_dag_sync_block(block.block.header().number(), block.block.header().id()) {
+                        Ok(_) => (),
+                        Err(_) => {
+                            self.sync_dag_store.save_block(block.block)?;
+                        }
+                    }
+                }
+                None => {
+                    if absent_blocks.contains(&parent) {
+                        continue;
+                    }
+                    absent_blocks.push(parent);
+                }
+            } 
         }
         Ok(())
     }
@@ -454,21 +465,26 @@ where
             self.find_absent_ancestor(vec![block_header.clone()])
                 .await?;
 
-            if block_header.number() % 100000 == 0 || block_header.number() >= self.target.target_id.number() {
+            if block_header.number() % 100000 == 0
+                || block_header.number() >= self.target.target_id.number()
+            {
                 let parallel_execute = DagBlockSender::new(
-                    self.sync_dag_store.clone(), 
+                    self.sync_dag_store.clone(),
                     100000,
-                    self.chain.time_service(), 
-                    self.local_store.clone(), 
-                    None, self.chain.dag());
+                    self.chain.time_service(),
+                    self.local_store.clone(),
+                    None,
+                    self.chain.dag(),
+                );
                 parallel_execute.process_absent_blocks(self).await?;
                 anyhow::Ok(ParallelSign::Executed)
             } else {
                 info!("now save the dag block in order");
-                self.local_store.save_dag_sync_block(starcoin_storage::block::DagSyncBlock {
-                    block: block.clone(),
-                    children: vec![],
-                })?;
+                self.local_store
+                    .save_dag_sync_block(starcoin_storage::block::DagSyncBlock {
+                        block: block.clone(),
+                        children: vec![],
+                    })?;
                 self.sync_dag_store.save_block(block)?;
                 info!("finish saving");
                 anyhow::Ok(ParallelSign::NeedMoreBlocks)

@@ -8,9 +8,18 @@ use starcoin_logger::prelude::{error, info};
 use starcoin_network::worker;
 use starcoin_storage::Store;
 use starcoin_types::block::{Block, BlockHeader};
-use tokio::{sync::mpsc::{self, Receiver, Sender}, task::JoinHandle};
+use tokio::{
+    sync::mpsc::{self, Receiver, Sender},
+    task::JoinHandle,
+};
 
-use crate::{store::{sync_absent_ancestor::DagSyncBlock, sync_dag_store::{self, SyncDagStore}}, tasks::continue_execute_absent_block::ContinueChainOperator};
+use crate::{
+    store::{
+        sync_absent_ancestor::DagSyncBlock,
+        sync_dag_store::{self, SyncDagStore},
+    },
+    tasks::continue_execute_absent_block::ContinueChainOperator,
+};
 
 use super::executor::{DagBlockExecutor, ExecuteState};
 
@@ -55,23 +64,30 @@ impl DagBlockSender {
         for executor in &mut self.executors {
             match &executor.state {
                 ExecuteState::Executing(header_id) => {
-                    if *header_id == block.header().parent_hash() || block.header.parents_hash().contains(header_id) {
+                    if *header_id == block.header().parent_hash()
+                        || block.header.parents_hash().contains(header_id)
+                    {
                         executor.state = ExecuteState::Executing(block.id());
-                        info!("send the block {:?} to the executor: {:p}", block.id(), &executor);
+                        info!(
+                            "send the block {:?} to the executor: {:p}",
+                            block.id(),
+                            &executor
+                        );
                         match executor.sender_to_executor.try_send(block.clone()) {
                             Ok(_) => (),
-                            Err(e) => {
-                                match e {
-                                    mpsc::error::TrySendError::Full(_) => return anyhow::Ok(false),
-                                    mpsc::error::TrySendError::Closed(_) => return anyhow::Ok(false),
-                                }
-                            }
+                            Err(e) => match e {
+                                mpsc::error::TrySendError::Full(_) => return anyhow::Ok(false),
+                                mpsc::error::TrySendError::Closed(_) => return anyhow::Ok(false),
+                            },
                         };
                         return anyhow::Ok(true);
                     }
                 }
- 
-                ExecuteState::Executed(_) | ExecuteState::Ready(_) | ExecuteState::Error(_) | ExecuteState::Closed => {
+
+                ExecuteState::Executed(_)
+                | ExecuteState::Ready(_)
+                | ExecuteState::Error(_)
+                | ExecuteState::Closed => {
                     continue;
                 }
             }
@@ -80,7 +96,10 @@ impl DagBlockSender {
         anyhow::Ok(false)
     }
 
-    pub async fn process_absent_blocks<'a>(mut self, notify: &'a mut dyn ContinueChainOperator) -> anyhow::Result<()> {
+    pub async fn process_absent_blocks<'a>(
+        mut self,
+        notify: &'a mut dyn ContinueChainOperator,
+    ) -> anyhow::Result<()> {
         let sync_dag_store = self.sync_dag_store.clone();
         let iter = sync_dag_store.iter_at_first()?;
         for result_value in iter {
@@ -96,7 +115,8 @@ impl DagBlockSender {
             }
 
             // no suitable worker found, create a new worker
-            let (sender_to_main, receiver_from_executor) = mpsc::channel::<ExecuteState>(self.queue_size);
+            let (sender_to_main, receiver_from_executor) =
+                mpsc::channel::<ExecuteState>(self.queue_size);
             let (sender_to_worker, executor) = DagBlockExecutor::new(
                 sender_to_main,
                 self.queue_size,
@@ -114,37 +134,42 @@ impl DagBlockSender {
                 handle: executor.start_to_execute()?,
             };
 
-            info!("send the block {:?} to the executor: {:p}", block.id(), &executor);
+            info!(
+                "send the block {:?} to the executor: {:p}",
+                block.id(),
+                &executor
+            );
             sender_to_worker.send(block).await?;
             self.executors.push(executor);
 
             self.flush_executor_state(notify).await?;
         }
 
-        self.sync_dag_store.delete_all_dag_sync_block()?;
-
         self.wait_for_finish().await?;
 
         Ok(())
     }
-    
-    async fn flush_executor_state<'a>(&mut self, notify: &'a mut dyn ContinueChainOperator) -> anyhow::Result<()> {
+
+    async fn flush_executor_state<'a>(
+        &mut self,
+        notify: &'a mut dyn ContinueChainOperator,
+    ) -> anyhow::Result<()> {
         for worker in &mut self.executors {
             match worker.receiver_from_executor.try_recv() {
-                Ok(state) => {
-                    match state {
-                        ExecuteState::Executed(executed_block) => {
-                            notify.notify(&executed_block)?;
-                        }
-                        _ => ()
+                Ok(state) => match state {
+                    ExecuteState::Executed(executed_block) => {
+                        self.sync_dag_store.delete_dag_sync_block(
+                            executed_block.block().header().number(),
+                            executed_block.block().header().id(),
+                        )?;
+                        notify.notify(&executed_block)?;
                     }
-                }
-                Err(e) => {
-                    match e {
-                        mpsc::error::TryRecvError::Empty => (),
-                        mpsc::error::TryRecvError::Disconnected => worker.state = ExecuteState::Closed,
-                    }
-                }
+                    _ => (),
+                },
+                Err(e) => match e {
+                    mpsc::error::TryRecvError::Empty => (),
+                    mpsc::error::TryRecvError::Disconnected => worker.state = ExecuteState::Closed,
+                },
             }
         }
 

@@ -8,10 +8,13 @@ use anyhow::Ok;
 use parking_lot::RwLock;
 use starcoin_crypto::HashValue;
 use starcoin_dag::{
-    blockdag::BlockDAG, consensusdb::{
+    blockdag::BlockDAG,
+    consensusdb::{
         schema::{KeyCodec, ValueCodec},
         schemadb::MemoryReachabilityStore,
-    }, reachability::inquirer, types::interval::Interval
+    },
+    reachability::inquirer,
+    types::interval::Interval,
 };
 use starcoin_types::{
     account_address::AccountAddress,
