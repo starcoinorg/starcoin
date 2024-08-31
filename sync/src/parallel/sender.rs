@@ -103,6 +103,8 @@ impl DagBlockSender {
                 anyhow::format_err!("failed to decode for the block in parallel!")
             })?;
 
+            info!("worker now process block: id: {:?}", block.id());
+
             // Finding the executing state is the priority
             if self.dispatch_to_worker(&block).await? {
                 self.flush_executor_state(notify).await?;
@@ -129,9 +131,10 @@ impl DagBlockSender {
                 handle: executor.start_to_execute()?,
             };
 
+            let id = block.id();
             info!("now create a new worker for block: {:?}", block.id());
             sender_to_worker.send(block).await?;
-            info!("now finish to create a new worker for block: {:?}", block.id());
+            info!("now finish to create a new worker for block: {:?}", id);
             self.executors.push(executor);
 
             self.flush_executor_state(notify).await?;
