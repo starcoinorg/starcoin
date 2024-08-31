@@ -67,13 +67,14 @@ impl DagBlockSender {
                     if *header_id == block.header().parent_hash()
                         || block.header.parents_hash().contains(header_id)
                     {
+                        info!("send the block: {:?} to the worker: {:p} to process", block.header().id(), &executor);
                         executor.state = ExecuteState::Executing(block.id());
-                        match executor.sender_to_executor.try_send(block.clone()) {
+                        match executor.sender_to_executor.send(block.clone()).await {
                             Ok(_) => (),
-                            Err(e) => match e {
-                                mpsc::error::TrySendError::Full(_) => return anyhow::Ok(false),
-                                mpsc::error::TrySendError::Closed(_) => return anyhow::Ok(false),
-                            },
+                            Err(e) => {
+                                error!("failed to send block to executor: {:?} for processing the block: {:?}", e, block.id());
+                                continue;   
+                            }
                         };
                         return anyhow::Ok(true);
                     }
