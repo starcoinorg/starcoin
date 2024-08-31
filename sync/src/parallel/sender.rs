@@ -153,7 +153,7 @@ impl DagBlockSender {
 
         self.executors.retain(|worker| {
             if let ExecuteState::Closed = worker.state {
-                false
+                worker.handle.is_finished()
             } else {
                 true
             }
