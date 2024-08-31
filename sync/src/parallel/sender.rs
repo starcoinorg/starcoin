@@ -68,11 +68,6 @@ impl DagBlockSender {
                         || block.header.parents_hash().contains(header_id)
                     {
                         executor.state = ExecuteState::Executing(block.id());
-                        info!(
-                            "send the block {:?} to the executor: {:p}",
-                            block.id(),
-                            &executor
-                        );
                         match executor.sender_to_executor.try_send(block.clone()) {
                             Ok(_) => (),
                             Err(e) => match e {
@@ -134,11 +129,6 @@ impl DagBlockSender {
                 handle: executor.start_to_execute()?,
             };
 
-            info!(
-                "send the block {:?} to the executor: {:p}",
-                block.id(),
-                &executor
-            );
             sender_to_worker.send(block).await?;
             self.executors.push(executor);
 
@@ -180,7 +170,6 @@ impl DagBlockSender {
                 true
             }
         });
-        info!("sync workers count: {:?}", self.executors.len());
         anyhow::Ok(())
     }
 

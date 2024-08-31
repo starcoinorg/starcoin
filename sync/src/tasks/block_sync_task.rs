@@ -395,24 +395,31 @@ where
         block_header: BlockHeader,
         absent_blocks: &mut Vec<HashValue>,
     ) -> Result<()> {
+        info!("check the parents{:?} exists", block_header.id());
         let parents = block_header.parents_hash();
         if parents.is_empty() {
             return Ok(());
         }
         for parent in parents {
             if self.chain.has_dag_block(parent)? {
+                info!("parent {:?} exists", parent);
                 continue;
             }
             match self.local_store.get_dag_sync_block(parent)? {
                 Some(block) => {
+                    info!("parent {:?} in local, save in sync dag store", parent);
                     match self.sync_dag_store.get_dag_sync_block(block.block.header().number(), block.block.header().id()) {
-                        Ok(_) => (),
+                        Ok(_) => {
+                            info!("parent {:?} already in local, save in sync dag store", parent);
+                        }
                         Err(_) => {
+                            info!("parent {:?} goes to be saved in local, save in sync dag store", parent);
                             self.sync_dag_store.save_block(block.block)?;
                         }
                     }
                 }
                 None => {
+                    info!("parent {:?} not in local, fetch from remote", parent);
                     if absent_blocks.contains(&parent) {
                         continue;
                     }
