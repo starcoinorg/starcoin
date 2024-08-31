@@ -57,6 +57,7 @@ impl DagBlockSender {
                 ExecuteState::Executing(header_id) => {
                     if *header_id == block.header().parent_hash() || block.header.parents_hash().contains(header_id) {
                         executor.state = ExecuteState::Executing(block.id());
+                        info!("send the block {:?} to the executor: {:p}", block.id(), &executor);
                         match executor.sender_to_executor.try_send(block.clone()) {
                             Ok(_) => (),
                             Err(e) => {
@@ -106,14 +107,16 @@ impl DagBlockSender {
                 self.dag.clone(),
             )?;
 
-            self.executors.push(DagBlockWorker {
+            let executor = DagBlockWorker {
                 sender_to_executor: sender_to_worker.clone(),
                 receiver_from_executor,
                 state: ExecuteState::Executing(block.id()),
                 handle: executor.start_to_execute()?,
-            });
+            };
 
+            info!("send the block {:?} to the executor: {:p}", block.id(), &executor);
             sender_to_worker.send(block).await?;
+            self.executors.push(executor);
 
             self.flush_executor_state(notify).await?;
         }
