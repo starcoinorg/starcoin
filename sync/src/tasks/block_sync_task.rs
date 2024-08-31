@@ -475,6 +475,9 @@ where
             if block_header.number() % 100000 == 0
                 || block_header.number() >= self.target.target_id.number()
             {
+                if self.sync_dag_store.get_dag_sync_block(block_header.number(), block_header.id()).is_err() {
+                    self.sync_dag_store.save_block(block.clone())?;
+                }
                 let parallel_execute = DagBlockSender::new(
                     self.sync_dag_store.clone(),
                     100000,
