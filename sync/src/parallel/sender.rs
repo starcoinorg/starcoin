@@ -54,13 +54,6 @@ impl DagBlockSender {
     async fn dispatch_to_worker(&mut self, block: &Block) -> anyhow::Result<bool> {
         for executor in &mut self.executors {
             match &executor.state {
-                // ExecuteState::Executed(executing_header_block) => {
-                //     if executing_header_block.id() == block.header().parent_hash() {
-                //         executor.state = ExecuteState::Executing(block.id());
-                //         executor.sender_to_executor.send(block.clone()).await?;
-                //         return anyhow::Ok(true);
-                //     }
-                // }
                 ExecuteState::Executing(header_id) => {
                     if *header_id == block.header().parent_hash() || block.header.parents_hash().contains(header_id) {
                         executor.state = ExecuteState::Executing(block.id());
@@ -76,6 +69,7 @@ impl DagBlockSender {
                         return anyhow::Ok(true);
                     }
                 }
+ 
                 ExecuteState::Executed(_) | ExecuteState::Ready(_) | ExecuteState::Error(_) | ExecuteState::Closed => {
                     continue;
                 }
@@ -137,7 +131,6 @@ impl DagBlockSender {
                     match state {
                         ExecuteState::Executed(executed_block) => {
                             notify.notify(&executed_block)?;
-                            worker.state = ExecuteState::Closed;
                         }
                         _ => ()
                     }
@@ -153,7 +146,7 @@ impl DagBlockSender {
 
         self.executors.retain(|worker| {
             if let ExecuteState::Closed = worker.state {
-                !worker.handle.is_finished()
+                false
             } else {
                 true
             }
