@@ -118,7 +118,7 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                     match target.as_ref() {
                         None => {
                             let maybe_target_number = std::cmp::min(
-                                begin_number.saturating_add(100000),
+                                begin_number.saturating_add(10000),
                                 better_peer.block_number(),
                             );
                             if maybe_target_number == better_peer.block_number()

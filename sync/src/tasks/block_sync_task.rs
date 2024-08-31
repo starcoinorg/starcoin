@@ -472,7 +472,7 @@ where
             self.find_absent_ancestor(vec![block_header.clone()])
                 .await?;
 
-            if block_header.number() % 100000 == 0
+            if block_header.number() % 10000 == 0
                 || block_header.number() >= self.target.target_id.number()
             {
                 if self.sync_dag_store.get_dag_sync_block(block_header.number(), block_header.id()).is_err() {
@@ -480,7 +480,7 @@ where
                 }
                 let parallel_execute = DagBlockSender::new(
                     self.sync_dag_store.clone(),
-                    100000,
+                    10000,
                     self.chain.time_service(),
                     self.local_store.clone(),
                     None,
