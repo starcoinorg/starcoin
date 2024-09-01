@@ -472,7 +472,7 @@ where
             self.find_absent_ancestor(vec![block_header.clone()])
                 .await?;
 
-            if block_header.number() % 10000 == 0
+            if block_header.number() % 1000 == 0
                 || block_header.number() >= self.target.target_id.number()
             {
                 if self.sync_dag_store.get_dag_sync_block(block_header.number(), block_header.id()).is_err() {
