@@ -5,7 +5,7 @@ use crate::storage::{
     change_set_configs::ChangeSetConfigs,
 
 };
-use starcoin_gas::{StarcoinGasParameters, LATEST_GAS_FEATURE_VERSION};
+use starcoin_gas_meter::{StarcoinGasParameters, LATEST_GAS_FEATURE_VERSION};
 use starcoin_vm_types::on_chain_config::ConfigStorage;
 use move_core_types::gas_algebra::NumBytes;
 use std::fmt::Debug;

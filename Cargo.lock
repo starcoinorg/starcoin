@@ -9931,13 +9931,14 @@ dependencies = [
 name = "starcoin-gas-algebra-ext"
 version = "2.0.1"
 dependencies = [
+ "either",
  "move-binary-format",
  "move-core-types",
  "move-stdlib",
  "move-table-extension",
  "move-vm-test-utils",
  "move-vm-types",
- "serde 1.0.205",
+ "serde",
  "starcoin-natives",
 ]
 
@@ -9945,14 +9946,12 @@ dependencies = [
 name = "starcoin-gas-meter"
 version = "2.0.1"
 dependencies = [
- "either",
  "clap 3.2.23",
  "move-binary-format",
  "move-core-types",
  "move-stdlib",
  "move-table-extension",
  "move-vm-types",
- "serde",
  "starcoin-gas-algebra-ext",
  "starcoin-logger",
  "starcoin-natives",
@@ -11324,7 +11323,7 @@ dependencies = [
  "anyhow",
  "bytes 1.6.1",
  "move-core-types",
- "starcoin-gas",
+ "starcoin-gas-meter",
  "starcoin-vm-types",
  "stdlib",
 ]
