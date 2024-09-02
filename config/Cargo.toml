@@ -27,7 +27,7 @@ starcoin-time-service = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-uint = { workspace = true }
 starcoin-vm-types = { workspace = true }
-starcoin-gas-algebra-ext = { workspace = true }
+starcoin-gas-algebra = { workspace = true }
 starcoin-gas-meter = { workspace = true }
 stdlib = { workspace = true }
 tempfile = { workspace = true }
