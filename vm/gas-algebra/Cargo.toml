@@ -12,10 +12,10 @@ paste = { workspace = true }
 
 [package]
 authors = { workspace = true }
-description = "starcoin Move VM gas algebra ext"
+description = "starcoin gas algebra"
 edition = { workspace = true }
 license = { workspace = true }
-name = "starcoin-gas-algebra-ext"
+name = "starcoin-gas-algebra"
 publish = { workspace = true }
 version = "2.0.1"
 homepage = { workspace = true }
