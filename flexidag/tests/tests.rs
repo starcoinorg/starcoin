@@ -4,13 +4,13 @@
 use anyhow::{bail, format_err, Ok, Result};
 use starcoin_crypto::HashValue as Hash;
 use starcoin_dag::{
-    blockdag::{BlockDAG, MineNewDagBlockInfo},
-    consensusdb::{
+    blockdag::{BlockDAG, MineNewDagBlockInfo}, consensusdb::{
         consenses_state::{DagState, DagStateReader, DagStateStore},
         schemadb::{
             DbReachabilityStore, GhostdagStoreReader, ReachabilityStore, ReachabilityStoreReader,
             RelationsStore, RelationsStoreReader,
         },
+<<<<<<< HEAD
     },
     reachability::{inquirer, ReachabilityError},
     types::{ghostdata::GhostdagData, interval::Interval},
@@ -20,6 +20,12 @@ use starcoin_types::{
     block::{BlockHeader, BlockHeaderBuilder, BlockNumber},
     blockhash::{BlockHashMap, HashKTypeMap, KType},
 };
+=======
+    }, ghostdag, reachability::{inquirer, ReachabilityError}, types::{ghostdata::GhostdagData, interval::Interval}
+};
+use starcoin_logger::prelude::debug;
+use starcoin_types::{block::{BlockHeader, BlockHeaderBuilder, BlockNumber}, blockhash::{BlockHashMap, HashKTypeMap, KType}};
+>>>>>>> cb4abfed3 (add some test)
 
 use std::{
     ops::{Deref, DerefMut},
@@ -1061,6 +1067,10 @@ fn test_verification_blue_block() -> anyhow::Result<()> {
         genesis.parent_hash(),
         &mut dag,
     )?;
+<<<<<<< HEAD
+=======
+
+>>>>>>> cb4abfed3 (add some test)
 
     // let's obser the blue scores which show how blue the tips are
     let observer1 = dag.ghostdata(&[block_red_3.id()])?;
