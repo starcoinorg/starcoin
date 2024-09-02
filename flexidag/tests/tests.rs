@@ -7,8 +7,7 @@ use starcoin_dag::{
     blockdag::{BlockDAG, MineNewDagBlockInfo}, consensusdb::{
         consenses_state::{DagState, DagStateReader, DagStateStore},
         schemadb::{
-            DbReachabilityStore, ReachabilityStore, ReachabilityStoreReader, RelationsStore,
-            RelationsStoreReader,
+            DbReachabilityStore, GhostdagStoreReader, ReachabilityStore, ReachabilityStoreReader, RelationsStore, RelationsStoreReader
         },
     }, ghostdag, reachability::{inquirer, ReachabilityError}, types::{ghostdata::GhostdagData, interval::Interval}
 };
@@ -1060,6 +1059,7 @@ fn test_verification_blue_block() -> anyhow::Result<()> {
 
     let observer2 = dag.ghostdata(&[block_red_3.id(), block_main_5.id()])?;
     println!("observer 2 dag data: {:?}, ", observer2);
+    assert!(dag.ghost_dag_manager().check_ghostdata_blue_block(&observer2).is_ok());
 
     let mut false_observer2 = observer2.clone();
     let red_block_id = false_observer2.mergeset_reds.first().expect("the k is wrong, modify it to create a red block!").clone();
@@ -1074,7 +1074,10 @@ fn test_verification_blue_block() -> anyhow::Result<()> {
         })).collect());
         false_observer2.mergeset_reds = Arc::new(vec![block_red_2.id()]);
     }
-    assert!(dag.ghost_dag_manager().check_ghostdata_blue_block(&false_observer2).is_err());
+
+    let check_error = dag.ghost_dag_manager().check_ghostdata_blue_block(&false_observer2);
+    println!("check error: {:?} after the blue block turns red and the red turns blue maliciously", check_error);
+    assert!(check_error.is_err());
 
     let observer3 = dag.ghostdata(&[block_main_5.id()])?;
     println!("observer 3 dag data: {:?}, ", observer3);
@@ -1102,6 +1105,12 @@ fn test_verification_blue_block() -> anyhow::Result<()> {
     println!("makeup: {:?}", ghostdag_data_from_makeup);
 
     dag.ghost_dag_manager().check_ghostdata_blue_block(&ghostdag_data_from_makeup)?;
+
+
+    let together_mine = dag.ghostdata(&[block_from_normal.id(), block_from_makeup.id()])?;
+    let mine_together = add_and_print(8, together_mine.selected_parent, vec![block_from_normal.id(), block_from_makeup.id()], genesis.parent_hash(), &mut dag)?;
+    let together_ghost_data = dag.storage.ghost_dag_store.get_data(mine_together.id())?;
+    dag.ghost_dag_manager().check_ghostdata_blue_block(&together_ghost_data)?;
 
     anyhow::Result::Ok(())
 }
