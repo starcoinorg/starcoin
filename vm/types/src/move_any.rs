@@ -34,8 +34,8 @@ pub trait AsMoveAny: Serialize {
     const MOVE_TYPE_NAME: &'static str;
 
     fn as_move_any(&self) -> Any
-        where
-            Self: Sized,
+    where
+        Self: Sized,
     {
         Any::pack(Self::MOVE_TYPE_NAME, self)
     }
