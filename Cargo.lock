@@ -9644,7 +9644,7 @@ dependencies = [
  "serde_json",
  "starcoin-account-api",
  "starcoin-crypto",
- "starcoin-gas-algebra-ext",
+ "starcoin-gas-algebra",
  "starcoin-gas-meter",
  "starcoin-logger",
  "starcoin-metrics",
@@ -9931,7 +9931,10 @@ dependencies = [
 name = "starcoin-frameworks"
 version = "2.0.1"
 dependencies = [
+ "anyhow",
  "arrayref",
+ "better_any",
+ "flate2",
  "hex",
  "libsecp256k1",
  "log 0.4.17",
@@ -9947,15 +9950,21 @@ dependencies = [
  "num_enum",
  "rand 0.8.5",
  "ripemd160",
+ "serde",
+ "serde_bytes",
  "smallvec 1.10.0",
  "starcoin-crypto",
+ "starcoin-gas-algebra",
+ "starcoin-gas-schedule",
+ "starcoin-native-interface",
  "starcoin-uint",
+ "starcoin-vm-types",
  "tiny-keccak",
  "walkdir",
 ]
 
 [[package]]
-name = "starcoin-gas-algebra-ext"
+name = "starcoin-gas-algebra"
 version = "2.0.1"
 dependencies = [
  "either",
@@ -9965,6 +9974,7 @@ dependencies = [
  "move-table-extension",
  "move-vm-test-utils",
  "move-vm-types",
+ "paste",
  "serde",
 ]
 
@@ -9979,8 +9989,24 @@ dependencies = [
  "move-table-extension",
  "move-vm-types",
  "starcoin-frameworks",
- "starcoin-gas-algebra-ext",
+ "starcoin-gas-algebra",
+ "starcoin-gas-schedule",
  "starcoin-logger",
+]
+
+[[package]]
+name = "starcoin-gas-schedule"
+version = "2.0.1"
+dependencies = [
+ "either",
+ "move-binary-format",
+ "move-core-types",
+ "move-table-extension",
+ "move-vm-test-utils",
+ "move-vm-types",
+ "paste",
+ "serde",
+ "starcoin-gas-algebra",
 ]
 
 [[package]]
@@ -10082,7 +10108,7 @@ dependencies = [
  "serde",
  "starcoin-config",
  "starcoin-crypto",
- "starcoin-gas-algebra-ext",
+ "starcoin-gas-algebra",
  "starcoin-gas-meter",
  "starcoin-parallel-executor",
  "starcoin-proptest-helpers",
@@ -10311,7 +10337,8 @@ dependencies = [
  "move-vm-runtime",
  "move-vm-types",
  "smallvec 1.10.0",
- "starcoin-gas-algebra-ext",
+ "starcoin-gas-algebra",
+ "starcoin-gas-schedule",
  "starcoin-vm-types",
 ]
 
@@ -11287,6 +11314,7 @@ version = "2.0.1"
 dependencies = [
  "anyhow",
  "bcs-ext",
+ "bytes 1.6.1",
  "hex",
  "move-binary-format",
  "move-core-types",
@@ -11301,15 +11329,18 @@ dependencies = [
  "rand_core 0.6.4",
  "rayon",
  "serde",
+ "serde_bytes",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-frameworks",
- "starcoin-gas-algebra-ext",
+ "starcoin-gas-algebra",
  "starcoin-gas-meter",
  "starcoin-logger",
  "starcoin-metrics",
+ "starcoin-native-interface",
  "starcoin-parallel-executor",
  "starcoin-types",
+ "starcoin-vm-runtime-types",
  "starcoin-vm-types",
  "stdlib",
  "tracing",
@@ -11332,6 +11363,7 @@ name = "starcoin-vm-types"
 version = "2.0.1"
 dependencies = [
  "anyhow",
+ "bcs 0.1.5",
  "bcs-ext",
  "bech32",
  "bytes 1.6.1",
@@ -11357,7 +11389,7 @@ dependencies = [
  "serde_json",
  "starcoin-accumulator",
  "starcoin-crypto",
- "starcoin-gas-algebra-ext",
+ "starcoin-gas-algebra",
  "starcoin-time-service",
  "strum",
  "strum_macros",
