@@ -16,10 +16,7 @@ use starcoin_logger::prelude::debug;
 use starcoin_types::{block::{BlockHeader, BlockHeaderBuilder, BlockNumber}, blockhash::{BlockHashMap, HashKTypeMap, KType}};
 
 use std::{
-    ops::{Deref, DerefMut},
-    sync::Arc,
-    time::Instant,
-    vec,
+    io::Read, ops::{Deref, DerefMut}, sync::Arc, time::Instant, vec
 };
 
 #[test]
@@ -1063,6 +1060,21 @@ fn test_verification_blue_block() -> anyhow::Result<()> {
 
     let observer2 = dag.ghostdata(&[block_red_3.id(), block_main_5.id()])?;
     println!("observer 2 dag data: {:?}, ", observer2);
+
+    let mut false_observer2 = observer2.clone();
+    let red_block_id = false_observer2.mergeset_reds.first().expect("the k is wrong, modify it to create a red block!").clone();
+    if red_block_id == block_red_2.id() {
+        false_observer2.mergeset_blues = Arc::new(vec![red_block_id].into_iter().chain(false_observer2.mergeset_blues.iter().cloned().filter(|id| {
+            *id != block_red_2_1.id()
+        })).collect());
+        false_observer2.mergeset_reds = Arc::new(vec![block_red_2_1.id()]);
+    } else {
+        false_observer2.mergeset_blues = Arc::new(vec![red_block_id].into_iter().chain(false_observer2.mergeset_blues.iter().cloned().filter(|id| {
+            *id != block_red_2.id()
+        })).collect());
+        false_observer2.mergeset_reds = Arc::new(vec![block_red_2.id()]);
+    }
+    assert!(dag.ghost_dag_manager().check_ghostdata_blue_block(&false_observer2).is_err());
 
     let observer3 = dag.ghostdata(&[block_main_5.id()])?;
     println!("observer 3 dag data: {:?}, ", observer3);
