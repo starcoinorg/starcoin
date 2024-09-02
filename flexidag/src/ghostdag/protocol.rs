@@ -8,6 +8,7 @@ use starcoin_crypto::HashValue as Hash;
 use starcoin_logger::prelude::*;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::blockhash::{BlockHashMap, BlockHashes, BlueWorkType, HashKTypeMap, KType};
+use std::collections::HashSet;
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -168,6 +169,27 @@ impl<
         new_block_data.finalize_score_and_work(blue_score, blue_work);
 
         Ok(new_block_data)
+    }
+
+    pub fn check_ghostdata_blue_block(&self, ghostdata: &GhostdagData) -> Result<()> {
+        let mut new_block_data = GhostdagData::new_with_selected_parent(ghostdata.selected_parent, self.k);
+        for blue_candidate in ghostdata.mergeset_blues.iter().skip(1).cloned() {
+            let coloring = self.check_blue_candidate(&new_block_data, blue_candidate)?;
+            if let ColoringOutput::Blue(blue_anticone_size, blues_anticone_sizes) = coloring {
+                new_block_data.add_blue(blue_candidate, blue_anticone_size, &blues_anticone_sizes);
+            } else {
+                new_block_data.add_red(blue_candidate);
+            }
+        }
+        println!("jacktest: new_block_data: {:?}", new_block_data);
+        println!("jacktest: ghostdata: {:?}", ghostdata);
+        if ghostdata.mergeset_blues.len() != new_block_data.mergeset_blues.len() {
+            return Err(anyhow::anyhow!("The len of blue set is not equal, for {}, {}", ghostdata.mergeset_blues.len(), new_block_data.mergeset_blues.len()));
+        }
+        if ghostdata.mergeset_blues.iter().cloned().collect::<HashSet<_>>() != new_block_data.mergeset_blues.iter().cloned().collect::<HashSet<_>>() {
+            return Err(anyhow::anyhow!("The blue set is not equal"));
+        }
+        Ok(())
     }
 
     fn check_blue_candidate_with_chain_block(

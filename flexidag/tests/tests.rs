@@ -4,19 +4,16 @@
 use anyhow::{bail, format_err, Ok, Result};
 use starcoin_crypto::HashValue as Hash;
 use starcoin_dag::{
-    blockdag::{BlockDAG, MineNewDagBlockInfo},
-    consensusdb::{
+    blockdag::{BlockDAG, MineNewDagBlockInfo}, consensusdb::{
         consenses_state::{DagState, DagStateReader, DagStateStore},
         schemadb::{
             DbReachabilityStore, ReachabilityStore, ReachabilityStoreReader, RelationsStore,
             RelationsStoreReader,
         },
-    },
-    reachability::{inquirer, ReachabilityError},
-    types::interval::Interval,
+    }, ghostdag, reachability::{inquirer, ReachabilityError}, types::{ghostdata::GhostdagData, interval::Interval}
 };
 use starcoin_logger::prelude::debug;
-use starcoin_types::block::{BlockHeader, BlockHeaderBuilder, BlockNumber};
+use starcoin_types::{block::{BlockHeader, BlockHeaderBuilder, BlockNumber}, blockhash::{BlockHashMap, HashKTypeMap, KType}};
 
 use std::{
     ops::{Deref, DerefMut},
@@ -702,6 +699,37 @@ fn test_reachability_algorithm() -> anyhow::Result<()> {
     Ok(())
 }
 
+fn add_and_print_with_ghostdata(
+    number: BlockNumber,
+    parent: Hash,
+    parents: Vec<Hash>,
+    origin: Hash,
+    dag: &mut BlockDAG,
+    ghostdata: GhostdagData,
+) -> anyhow::Result<BlockHeader> {
+    let header_builder = BlockHeaderBuilder::random();
+    let header = header_builder
+        .with_parent_hash(parent)
+        .with_parents_hash(parents)
+        .with_number(number)
+        .build();
+    let start = Instant::now();
+    dag.commit_trusted_block(header.to_owned(), origin, Arc::new(ghostdata))?;
+    let duration = start.elapsed();
+    println!(
+        "commit header: {:?}, number: {:?}, duration: {:?}",
+        header.id(),
+        header.number(),
+        duration
+    );
+    let _ghostdata = dag.ghostdata(&[header.id()])?;
+    // println!(
+    //     "add a header: {:?}, blue set: {:?}, red set: {:?}, blue anticone size: {:?}",
+    //     header, ghostdata.mergeset_blues, ghostdata.mergeset_reds, ghostdata.blues_anticone_sizes
+    // );
+    Ok(header)
+}
+
 fn add_and_print(
     number: BlockNumber,
     parent: Hash,
@@ -1027,13 +1055,7 @@ fn test_verification_blue_block() -> anyhow::Result<()> {
         genesis.parent_hash(),
         &mut dag,
     )?;
-    // let block_red_4 = add_and_print(
-    //     4,
-    //     block_red_3.id(),
-    //     vec![block_red_3.id()],
-    //     genesis.parent_hash(),
-    //     &mut dag,
-    // )?;
+
 
     // let's obser the blue scores which show how blue the tips are
     let observer1 = dag.ghostdata(&[block_red_3.id()])?;
@@ -1051,8 +1073,23 @@ fn test_verification_blue_block() -> anyhow::Result<()> {
     // assert_eq!(observer3.blue_score, observer2.blue_score);
     // assert_eq!(observer3.selected_parent, observer2.selected_parent);
 
-    
+    let normal_block = add_and_print(6, block_main_5.id(), vec![block_main_5.id(), block_red_3.id()], genesis.parent_hash(), &mut dag)?;
+    assert_eq!(observer2, dag.ghostdata_by_hash(normal_block.id())?.expect("the data cannot be none").as_ref().clone());
 
+    let makeup_ghostdata = GhostdagData::new(observer2.blue_score, observer2.blue_work, observer2.selected_parent, observer2.mergeset_blues.clone(), Arc::new(vec![]), HashKTypeMap::new(BlockHashMap::<KType>::new()));
+    dag.ghost_dag_manager().check_ghostdata_blue_block(&makeup_ghostdata)?;
+    let makeup_block = add_and_print_with_ghostdata(6, block_main_5.id(), vec![block_main_5.id(), block_red_3.id()], genesis.parent_hash(), &mut dag, makeup_ghostdata.clone())?;
+
+    let block_from_normal = add_and_print(7, normal_block.id(), vec![normal_block.id()], genesis.parent_hash(), &mut dag)?;
+    let block_from_makeup = add_and_print(7, makeup_block.id(), vec![makeup_block.id()], genesis.parent_hash(), &mut dag)?;
+
+    let ghostdag_data_from_normal = dag.ghostdata_by_hash(block_from_normal.id())?.expect("the data cannot be none").as_ref().clone();
+    let ghostdag_data_from_makeup = dag.ghostdata_by_hash(block_from_makeup.id())?.expect("the data cannot be none").as_ref().clone();
+
+    println!("normal: {:?}", ghostdag_data_from_normal);
+    println!("makeup: {:?}", ghostdag_data_from_makeup);
+
+    dag.ghost_dag_manager().check_ghostdata_blue_block(&ghostdag_data_from_makeup)?;
 
     anyhow::Result::Ok(())
 }
