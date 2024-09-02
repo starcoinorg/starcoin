@@ -27,7 +27,7 @@ starcoin-types = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-proptest-helpers = { workspace = true }
-starcoin-gas-algebra-ext = { workspace = true }
+starcoin-gas-algebra = { workspace = true }
 move-core-types = { workspace = true }
 move-ir-compiler = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
