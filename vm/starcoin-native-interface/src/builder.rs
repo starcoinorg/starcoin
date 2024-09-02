@@ -5,15 +5,15 @@ use crate::{
     context::SafeNativeContext,
     errors::{SafeNativeError, SafeNativeResult},
 };
-use starcoin_gas_algebra_ext::DynamicExpression;
-use starcoin_gas_algebra_ext::{MiscGasParameters, NativeGasParameters, ToOnChainGasSchedule};
-use starcoin_vm_types::on_chain_config::{Features, TimedFeatures};
 use bytes::Bytes;
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
     loaded_data::runtime_types::Type, natives::function::NativeResult, values::Value,
 };
 use smallvec::SmallVec;
+use starcoin_gas_algebra::DynamicExpression;
+use starcoin_gas_schedule::{MiscGasParameters, NativeGasParameters, ToOnChainGasSchedule};
+use starcoin_vm_types::on_chain_config::{Features, TimedFeatures};
 use std::{collections::VecDeque, sync::Arc};
 
 /// Data shared by all native functions, mostly on-chain configurations.
@@ -60,8 +60,8 @@ impl SafeNativeBuilder {
     }
 
     pub fn set_gas_hook<F>(&mut self, action: F)
-        where
-            F: Fn(DynamicExpression) + Send + Sync + 'static,
+    where
+        F: Fn(DynamicExpression) + Send + Sync + 'static,
     {
         self.gas_hook = Some(Arc::new(action));
     }
@@ -81,8 +81,8 @@ impl SafeNativeBuilder {
     /// This can be useful if you want to configure the default for natives from a particular group
     /// without affecting the others.
     pub fn with_incremental_gas_charging<F, R>(&mut self, enable: bool, action: F) -> R
-        where
-            F: FnOnce(&mut Self) -> R,
+    where
+        F: FnOnce(&mut Self) -> R,
     {
         let old = self.enable_incremental_gas_charging;
         self.enable_incremental_gas_charging = enable;
@@ -96,8 +96,8 @@ impl SafeNativeBuilder {
     /// The closure will have access to the common Aptos configurations (features, gas params etc.),
     /// allowing the client to use [`SafeNativeContext`] instead of Move VM's [`NativeContext`].
     pub fn make_native<F>(&self, native: F) -> NativeFunction
-        where
-            F: Fn(
+    where
+        F: Fn(
                 &mut SafeNativeContext,
                 Vec<Type>,
                 VecDeque<Value>,
@@ -154,9 +154,9 @@ impl SafeNativeBuilder {
         &'a self,
         natives: I,
     ) -> impl Iterator<Item = (String, NativeFunction)> + 'a
-        where
-            'b: 'a,
-            F: Fn(
+    where
+        'b: 'a,
+        F: Fn(
                 &mut SafeNativeContext,
                 Vec<Type>,
                 VecDeque<Value>,
@@ -164,8 +164,8 @@ impl SafeNativeBuilder {
             + Send
             + Sync
             + 'static,
-            S: Into<String>,
-            I: IntoIterator<Item = (S, F)> + 'b,
+        S: Into<String>,
+        I: IntoIterator<Item = (S, F)> + 'b,
     {
         natives
             .into_iter()
@@ -194,7 +194,7 @@ impl SafeNativeBuilder {
             timed_features,
             features,
         ))
-            .expect("bcs::to_bytes() failed.")
-            .into()
+        .expect("bcs::to_bytes() failed.")
+        .into()
     }
 }

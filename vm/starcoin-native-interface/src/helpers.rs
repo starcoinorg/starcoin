@@ -17,7 +17,7 @@ macro_rules! safely_pop_arg {
                 return Err($crate::SafeNativeError::InvariantViolation(
                     PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR),
                 ))
-            },
+            }
         }
     }};
 }
@@ -35,7 +35,7 @@ macro_rules! safely_assert_eq {
                         PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR),
                     ));
                 }
-            },
+            }
         }
     }};
 }
@@ -55,7 +55,7 @@ macro_rules! safely_pop_type_arg {
                 return Err($crate::SafeNativeError::InvariantViolation(
                     PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR),
                 ))
-            },
+            }
         }
     }};
 }
