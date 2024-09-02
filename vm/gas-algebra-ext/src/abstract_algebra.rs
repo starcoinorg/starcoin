@@ -59,8 +59,8 @@ pub trait GasExpression<Env> {
     ///
     /// This is sometimes required if you want to multiply this expression by a certain count.
     fn per<U>(self) -> GasPerUnit<Self, U>
-        where
-            Self: Sized,
+    where
+        Self: Sized,
     {
         GasPerUnit {
             inner: self,
@@ -183,8 +183,8 @@ pub struct GasPerUnit<T, U> {
 // ---------
 // E | &T: U
 impl<E, T> GasExpression<E> for &T
-    where
-        T: GasExpression<E>,
+where
+    T: GasExpression<E>,
 {
     type Unit = T::Unit;
 
@@ -219,9 +219,9 @@ impl<E, U> GasExpression<E> for GasQuantity<U> {
 // -------------------
 //    E | L + R: U
 impl<E, L, R, U> GasExpression<E> for GasAdd<L, R>
-    where
-        L: GasExpression<E, Unit = U>,
-        R: GasExpression<E, Unit = U>,
+where
+    L: GasExpression<E, Unit = U>,
+    R: GasExpression<E, Unit = U>,
 {
     type Unit = U;
 
@@ -242,10 +242,10 @@ impl<E, L, R, U> GasExpression<E> for GasAdd<L, R>
 // -----------------------------------
 //           E | L * R: O
 impl<E, L, R, UL, UR, O> GasExpression<E> for GasMul<L, R>
-    where
-        L: GasExpression<E, Unit = UL>,
-        R: GasExpression<E, Unit = UR>,
-        GasQuantity<UL>: Mul<GasQuantity<UR>, Output = GasQuantity<O>>,
+where
+    L: GasExpression<E, Unit = UL>,
+    R: GasExpression<E, Unit = UR>,
+    GasQuantity<UL>: Mul<GasQuantity<UR>, Output = GasQuantity<O>>,
 {
     type Unit = O;
 
@@ -266,9 +266,9 @@ impl<E, L, R, UL, UR, O> GasExpression<E> for GasMul<L, R>
 // -------------------
 // E | Either<L, R>: U
 impl<E, L, R, U> GasExpression<E> for Either<L, R>
-    where
-        L: GasExpression<E, Unit = U>,
-        R: GasExpression<E, Unit = U>,
+where
+    L: GasExpression<E, Unit = U>,
+    R: GasExpression<E, Unit = U>,
 {
     type Unit = U;
 
@@ -293,8 +293,8 @@ impl<E, L, R, U> GasExpression<E> for Either<L, R>
 // ----------------------
 // E | T.per<U2>(): U1/U2
 impl<E, T, U1, U2> GasExpression<E> for GasPerUnit<T, U2>
-    where
-        T: GasExpression<E, Unit = U1>,
+where
+    T: GasExpression<E, Unit = U1>,
 {
     type Unit = UnitDiv<U1, U2>;
 

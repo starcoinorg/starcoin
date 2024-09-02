@@ -7,11 +7,14 @@
 //! This module defines the miscellaneous gas parameters, currently only including the
 //! ones related to definition of abstract value size.
 
+use crate::{
+    AbstractValueSize, AbstractValueSizePerArg, FromOnChainGasSchedule, InitialGasSchedule,
+    ToOnChainGasSchedule,
+};
 use move_core_types::{account_address::AccountAddress, gas_algebra::NumArgs, u256::U256};
+use move_vm_types::delayed_values::delayed_field_id::DelayedFieldID;
 use move_vm_types::views::{ValueView, ValueVisitor};
 use std::collections::BTreeMap;
-use move_vm_types::delayed_values::delayed_field_id::DelayedFieldID;
-use crate::{AbstractValueSize, AbstractValueSizePerArg, FromOnChainGasSchedule, InitialGasSchedule, ToOnChainGasSchedule};
 
 crate::macros::define_gas_parameters!(
     AbstractValueSizeGasParameters,
@@ -59,8 +62,8 @@ struct DerefVisitor<V> {
 }
 
 impl<V> DerefVisitor<V>
-    where
-        V: ValueVisitor,
+where
+    V: ValueVisitor,
 {
     pub fn new(visitor: V) -> Self {
         Self {
@@ -86,8 +89,8 @@ macro_rules! deref_visitor_delegate_simple {
 }
 
 impl<V> ValueVisitor for DerefVisitor<V>
-    where
-        V: ValueVisitor,
+where
+    V: ValueVisitor,
 {
     deref_visitor_delegate_simple!(
         [visit_u8, u8],

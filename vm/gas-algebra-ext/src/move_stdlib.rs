@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::traits::EXECUTION_GAS_MULTIPLIER as MUL;
-use move_core_types::gas_algebra::{InternalGasPerByte, InternalGas};
+use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte};
 
 #[cfg(all(test, not(feature = "testing")))]
 const UNIT_TEST_ENTRIES: usize = 0;

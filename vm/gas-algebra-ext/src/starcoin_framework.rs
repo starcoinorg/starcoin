@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::traits::EXECUTION_GAS_MULTIPLIER as MUL;
-use move_core_types::gas_algebra::{InternalGasPerByte, InternalGas};
+use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte};
 // see starcoin/vm/types/src/on_chain_config/genesis_gas_schedule.rs
 // same order as from https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#native_schedule
 // modify should with impl From<VMConfig> for GasSchedule
@@ -36,7 +36,10 @@ crate::macros::define_gas_parameters!(StarcoinFrameworkGasParameters, "starcoin_
     [u256_rem_base: InternalGas,   "u256.rem.base",  (4 + 1) * MUL],
     [u256_pow_base: InternalGas,   "u256.pow.base",  (8 + 1) * MUL],
         // XXX FIXME YSG, need to remove?
-        
+
     [from_bcs_base: InternalGas,  "frombcs.base", (4 + 1)  * MUL],
     [secp256k1_base: InternalGas,  "secp256k1.base", (4 + 1)  * MUL],
+
+        [code_request_publish_base: InternalGas, "code.request_publish.base", 1838],
+        [code_request_publish_per_byte: InternalGasPerByte, "code.request_publish.per_byte", 7],
 ]);

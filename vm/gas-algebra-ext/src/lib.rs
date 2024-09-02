@@ -3,11 +3,14 @@
 
 // ref aptos-move/aptos-gas-algebra/src/lib.rs
 
-use std::collections::BTreeMap;
-pub use crate::{move_stdlib::MoveStdlibGasParameters, nursery::NurseryGasParameters, table::TableGasParameters, misc::MiscGasParameters};
-use move_core_types::gas_algebra::{Arg};
+pub use crate::{
+    misc::MiscGasParameters, move_stdlib::MoveStdlibGasParameters, nursery::NurseryGasParameters,
+    table::TableGasParameters,
+};
+use move_core_types::gas_algebra::Arg;
 pub use move_vm_test_utils::gas_schedule::GasCost;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 // some code need to refactor starcoin-gas-schedule
 
@@ -15,23 +18,23 @@ use serde::{Deserialize, Serialize};
 pub mod macros;
 
 mod algebra;
-mod traits;
 mod starcoin_framework;
+mod traits;
 //pub mod gen;
+mod abstract_algebra;
 mod instr;
+mod misc;
 mod move_stdlib;
 mod nursery;
 mod table;
 mod transaction;
-mod abstract_algebra;
-mod misc;
 
-pub use algebra::{FeePerGasUnit, Gas};
-pub use traits::{FromOnChainGasSchedule, InitialGasSchedule, ToOnChainGasSchedule};
-pub use instr::InstructionGasParameters;
-pub use transaction::TransactionGasParameters;
 pub use abstract_algebra::*;
 pub use algebra::*;
+pub use algebra::{FeePerGasUnit, Gas};
+pub use instr::InstructionGasParameters;
+pub use traits::{FromOnChainGasSchedule, InitialGasSchedule, ToOnChainGasSchedule};
+pub use transaction::TransactionGasParameters;
 
 /// Unit of abstract value size -- a conceptual measurement of the memory space a Move value occupies.
 pub enum AbstractValueUnit {}
@@ -89,10 +92,9 @@ pub struct CostTable {
     pub gas_constants: GasConstants,
 }
 
-
 #[derive(Debug, Clone)]
 pub struct VMGasParameters {
-    pub misc : MiscGasParameters,
+    pub misc: MiscGasParameters,
     pub instr: InstructionGasParameters,
     pub txn: TransactionGasParameters,
 }
@@ -103,7 +105,10 @@ impl FromOnChainGasSchedule for VMGasParameters {
         feature_version: u64,
     ) -> Result<Self, String> {
         Ok(Self {
-            misc: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule, feature_version)?,
+            misc: FromOnChainGasSchedule::from_on_chain_gas_schedule(
+                gas_schedule,
+                feature_version,
+            )?,
             instr: FromOnChainGasSchedule::from_on_chain_gas_schedule(
                 gas_schedule,
                 feature_version,

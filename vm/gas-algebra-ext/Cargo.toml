@@ -7,6 +7,7 @@ move-table-extension = { workspace = true }
 move-vm-types = { workspace = true }
 move-vm-test-utils = { workspace = true }
 serde = { workspace = true }
+paste = { workspace = true }
 
 
 [package]

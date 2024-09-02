@@ -3,7 +3,7 @@
 
 use crate::traits::EXECUTION_GAS_MULTIPLIER as MUL;
 
-use move_core_types::gas_algebra::{InternalGasPerByte, InternalGas};
+use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte};
 
 // same order as from https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#native_schedule
 // modify should with impl From<VMConfig> for GasSchedule
