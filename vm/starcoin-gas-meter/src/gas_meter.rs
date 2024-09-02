@@ -17,74 +17,20 @@ use move_core_types::{
 };
 use move_vm_types::gas::{GasMeter, SimpleInstruction};
 use move_vm_types::views::{TypeView, ValueView};
-use starcoin_gas_algebra_ext::{
-    FromOnChainGasSchedule, Gas, InitialGasSchedule, NativeGasParameters, ToOnChainGasSchedule,
-    VMGasParameters,
-};
+use starcoin_gas_algebra::Gas;
 #[cfg(testing)]
 use starcoin_logger::prelude::*;
-use std::collections::BTreeMap;
 
 use move_binary_format::file_format_common::Opcodes;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::IdentStr;
+use starcoin_gas_schedule::StarcoinGasParameters;
 
 /// The size in bytes for a reference on the stack
 const REFERENCE_SIZE: AbstractMemorySize = AbstractMemorySize::new(8);
 
 /// For exists checks on data that doesn't exists this is the multiplier that is used.
 const MIN_EXISTS_DATA_SIZE: AbstractMemorySize = AbstractMemorySize::new(100);
-
-/// Gas parameters for everything that is needed to run the Starcoin blockchain, including
-/// instructions, transactions and native functions from various packages.
-#[derive(Debug, Clone)]
-pub struct StarcoinGasParameters {
-    pub vm: VMGasParameters,
-    pub natives: NativeGasParameters,
-}
-
-impl FromOnChainGasSchedule for StarcoinGasParameters {
-    fn from_on_chain_gas_schedule(
-        gas_schedule: &BTreeMap<String, u64>,
-        feature_version: u64,
-    ) -> Result<Self, String> {
-        Ok(Self {
-            vm: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule, feature_version)?,
-            natives: FromOnChainGasSchedule::from_on_chain_gas_schedule(
-                gas_schedule,
-                feature_version,
-            )?,
-        })
-    }
-}
-
-impl ToOnChainGasSchedule for StarcoinGasParameters {
-    fn to_on_chain_gas_schedule(&self, feature_version: u64) -> Vec<(String, u64)> {
-        let mut entries = self.vm.to_on_chain_gas_schedule(feature_version);
-        entries.extend(self.natives.to_on_chain_gas_schedule(feature_version));
-        entries
-    }
-}
-
-impl StarcoinGasParameters {
-    // Only used for genesis and for tests where we need a cost table and
-    // don't have a genesis storage state.
-    pub fn zeros() -> Self {
-        Self {
-            vm: VMGasParameters::zeros(),
-            natives: NativeGasParameters::zeros(),
-        }
-    }
-}
-
-impl InitialGasSchedule for StarcoinGasParameters {
-    fn initial() -> Self {
-        Self {
-            vm: InitialGasSchedule::initial(),
-            natives: InitialGasSchedule::initial(),
-        }
-    }
-}
 
 /// The official gas meter used inside the Starcoin VM.
 /// It maintains an internal gas counter, measured in internal gas units, and carries an environment
