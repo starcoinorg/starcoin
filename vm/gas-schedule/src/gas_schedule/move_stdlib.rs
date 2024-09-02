@@ -1,9 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::gas_schedule::NativeGasParameters;
 use crate::traits::EXECUTION_GAS_MULTIPLIER as MUL;
 use starcoin_gas_algebra::{InternalGas, InternalGasPerByte};
-use crate::gas_schedule::NativeGasParameters;
 
 #[cfg(all(test, not(feature = "testing")))]
 const UNIT_TEST_ENTRIES: usize = 0;

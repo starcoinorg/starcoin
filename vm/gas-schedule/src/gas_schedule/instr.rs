@@ -5,11 +5,11 @@
 //! initial values in the genesis and a mapping between the Rust representation and the on-chain
 //! gas schedule.
 
+use crate::gas_schedule::VMGasParameters;
 use crate::traits::EXECUTION_GAS_MULTIPLIER as MUL;
 use move_core_types::gas_algebra::{
     InternalGas, InternalGasPerAbstractMemoryUnit, InternalGasPerArg, InternalGasPerByte,
 };
-use crate::gas_schedule::VMGasParameters;
 
 // see starcoin/vm/types/src/on_chain_config/genesis_gas_schedule.rs
 // same order as https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#instruction_schedule

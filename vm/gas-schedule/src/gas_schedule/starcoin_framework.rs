@@ -1,9 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::gas_schedule::NativeGasParameters;
 use crate::traits::EXECUTION_GAS_MULTIPLIER as MUL;
 use starcoin_gas_algebra::{InternalGas, InternalGasPerByte};
-use crate::gas_schedule::NativeGasParameters;
 
 // see starcoin/vm/types/src/on_chain_config/genesis_gas_schedule.rs
 // same order as from https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#native_schedule

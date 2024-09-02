@@ -1,16 +1,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-
 // ref aptos-move/aptos-gas-schedule/src/gas_schedule/misc.rs
 
 //! This module defines the miscellaneous gas parameters, currently only including the
 //! ones related to definition of abstract value size.
 
 use crate::{
-    gas_schedule::VMGasParameters,
-    AbstractValueSize, AbstractValueSizePerArg, FromOnChainGasSchedule, InitialGasSchedule,
-    ToOnChainGasSchedule,
+    gas_schedule::VMGasParameters, AbstractValueSize, AbstractValueSizePerArg,
+    FromOnChainGasSchedule, InitialGasSchedule, ToOnChainGasSchedule,
 };
 use move_core_types::{account_address::AccountAddress, gas_algebra::NumArgs, u256::U256};
 use move_vm_types::delayed_values::delayed_field_id::DelayedFieldID;
