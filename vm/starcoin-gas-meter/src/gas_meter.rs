@@ -17,7 +17,10 @@ use move_core_types::{
 };
 use move_vm_types::gas::{GasMeter, SimpleInstruction};
 use move_vm_types::views::{TypeView, ValueView};
-use starcoin_gas_algebra_ext::{FromOnChainGasSchedule, Gas, InitialGasSchedule, NativeGasParameters, ToOnChainGasSchedule, VMGasParameters};
+use starcoin_gas_algebra_ext::{
+    FromOnChainGasSchedule, Gas, InitialGasSchedule, NativeGasParameters, ToOnChainGasSchedule,
+    VMGasParameters,
+};
 #[cfg(testing)]
 use starcoin_logger::prelude::*;
 use std::collections::BTreeMap;
@@ -41,10 +44,16 @@ pub struct StarcoinGasParameters {
 }
 
 impl FromOnChainGasSchedule for StarcoinGasParameters {
-    fn from_on_chain_gas_schedule(gas_schedule: &BTreeMap<String, u64>, feature_version: u64,) -> Result<Self, String> {
+    fn from_on_chain_gas_schedule(
+        gas_schedule: &BTreeMap<String, u64>,
+        feature_version: u64,
+    ) -> Result<Self, String> {
         Ok(Self {
-           vm: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule, feature_version)?,
-            natives: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule, feature_version)?,
+            vm: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule, feature_version)?,
+            natives: FromOnChainGasSchedule::from_on_chain_gas_schedule(
+                gas_schedule,
+                feature_version,
+            )?,
         })
     }
 }
@@ -71,7 +80,7 @@ impl StarcoinGasParameters {
 impl InitialGasSchedule for StarcoinGasParameters {
     fn initial() -> Self {
         Self {
-           vm: InitialGasSchedule::initial(),
+            vm: InitialGasSchedule::initial(),
             natives: InitialGasSchedule::initial(),
         }
     }
