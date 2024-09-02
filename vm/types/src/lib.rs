@@ -207,6 +207,8 @@ pub mod transaction;
 
 pub mod contract_event;
 
+pub use account_address::AccountAddress as PeerId;
+
 pub mod vm_status {
     pub use move_core_types::vm_status::*;
     pub mod sub_status {

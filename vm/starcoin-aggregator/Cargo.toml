@@ -15,6 +15,7 @@ rust-version = { workspace = true }
 [dependencies]
 starcoin-logger = { workspace = true }
 starcoin-types = { workspace = true }
+starcoin-vm-types = { workspace = true }
 bcs = { workspace = true }
 claims = { workspace = true }
 move-binary-format = { workspace = true }

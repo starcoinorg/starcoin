@@ -10,7 +10,7 @@ use crate::{
         DeltaApplicationFailureReason, PanicOr,
     },
 };
-use aptos_types::{
+use starcoin_vm_types::{
     delayed_fields::PanicError,
     state_store::{
         state_key::StateKey,
