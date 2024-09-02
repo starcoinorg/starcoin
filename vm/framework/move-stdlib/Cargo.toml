@@ -1,0 +1,32 @@
+[package]
+name = "starcoin-move-stdlib"
+version = "0.1.1"
+edition = "2021"
+authors = ["Starcoin Association <opensource@starcoinorg.com>"]
+description = "Starcoin stdlib"
+repository = "https://github.com/starcoinorg/starcoin"
+homepage = "https://starcoin.org"
+license = "Apache-2.0"
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+starcoin-gas-algebra-ext = { workspace = true }
+starcoin-native-interface = { workspace = true }
+move-core-types = { workspace = true }
+move-vm-runtime = { workspace = true }
+move-vm-types = { workspace = true }
+sha2 = "0.9.3"
+sha3 = "0.9.1"
+smallvec = "1.6.1"
+
+[dev-dependencies]
+dir-diff = "0.3.2"
+file_diff = "1.0.0"
+# move-cli = { path = "../../../third_party/move/tools/move-cli" }
+# move-package = { path = "../../../third_party/move/tools/move-package" }
+#move-unit-test = { path = "../../../third_party/move/tools/move-unit-test" }
+tempfile = "3.2.0"
+
+[features]
+testing = []

@@ -928,7 +928,7 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_period: 3600 * 24 * 31,
         vm_config: VMConfig {
             gas_schedule: latest_cost_table(gas_constant),
-        },
+        },fr
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
             uncle_rate_target: G_UNCLE_RATE_TARGET,
