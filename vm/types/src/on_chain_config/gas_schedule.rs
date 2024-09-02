@@ -10,7 +10,7 @@ use log::info;
 use move_core_types::identifier::Identifier;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use starcoin_gas_algebra_ext::CostTable;
+use starcoin_gas_algebra::CostTable;
 use std::collections::BTreeMap;
 
 const GAS_SCHEDULE_MODULE_NAME: &str = "GasSchedule";

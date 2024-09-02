@@ -20,7 +20,7 @@ proptest = { features = ["std"], optional = true, workspace = true }
 proptest-derive = { optional = true, workspace = true }
 starcoin-time-service = { optional = true, workspace = true }
 bcs-ext = { workspace = true }
-starcoin-gas-algebra-ext = { workspace = true }
+starcoin-gas-algebra = { workspace = true }
 forkable-jellyfish-merkle = { workspace = true }
 schemars = { workspace = true }
 starcoin-accumulator = { workspace = true }
@@ -36,7 +36,7 @@ proptest = { workspace = true }
 proptest-derive = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-time-service = { workspace = true }
-starcoin-gas-algebra-ext = { workspace = true, features = ["testing"] }
+starcoin-gas-algebra = { workspace = true, features = ["testing"] }
 
 [features]
 default = []

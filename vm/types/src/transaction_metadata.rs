@@ -15,7 +15,7 @@ use anyhow::Result;
 use move_core_types::gas_algebra::NumBytes;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
-use starcoin_gas_algebra_ext::{FeePerGasUnit, Gas};
+use starcoin_gas_algebra::{FeePerGasUnit, Gas};
 use std::str::FromStr;
 
 pub enum TransactionPayloadMetadata {
