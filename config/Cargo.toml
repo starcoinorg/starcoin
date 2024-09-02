@@ -33,6 +33,7 @@ stdlib = { workspace = true }
 tempfile = { workspace = true }
 thiserror = { workspace = true }
 toml = { features = ["default"], workspace = true }
+starcoin-gas-schedule = { workspace = true }
 
 [package]
 authors = { workspace = true }

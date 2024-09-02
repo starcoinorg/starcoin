@@ -14,7 +14,8 @@ use starcoin_crypto::{
     multi_ed25519::{genesis_multi_key_pair, MultiEd25519PublicKey},
     HashValue, ValidCryptoMaterialStringExt,
 };
-use starcoin_gas_algebra::{CostTable, FromOnChainGasSchedule};
+use starcoin_gas_algebra::{CostTable};
+use starcoin_gas_schedule::FromOnChainGasSchedule;
 use starcoin_gas_meter::StarcoinGasParameters;
 use starcoin_time_service::{TimeService, TimeServiceType};
 use starcoin_uint::U256;
