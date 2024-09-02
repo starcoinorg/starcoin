@@ -28,7 +28,7 @@ impl ChangeSetConfigs {
     }
 
     pub fn new(feature_version: u64, gas_params: &StarcoinGasParameters) -> Self {
-     if feature_version >= 3 {
+        if feature_version >= 3 {
             Self::for_feature_version_3()
         } else {
             Self::unlimited_at_gas_feature_version(feature_version)
