@@ -1,12 +1,16 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+// ref aptos-move/framework/natives/src/lib.rs
+// XXX FIXME YSG, refactor
+
 pub mod account;
 pub mod hash;
 pub mod signature;
 pub mod token;
 pub mod u256;
 // for support evm compat and cross chain.
+pub mod code;
 pub mod ecrecover;
 pub mod from_bcs;
 pub mod secp256k1;

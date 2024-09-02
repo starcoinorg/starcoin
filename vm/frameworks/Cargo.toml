@@ -1,5 +1,6 @@
 [dependencies]
 arrayref = { workspace = true }
+better_any = { workspace = true }
 libsecp256k1 = { workspace = true }
 log = { workspace = true }
 move-binary-format = { workspace = true }
@@ -18,6 +19,15 @@ starcoin-crypto = { workspace = true }
 starcoin-uint = { workspace = true }
 tiny-keccak = { features = ["keccak"], workspace = true }
 walkdir = { workspace = true }
+serde = { version = "1.0.204", features = ["derive"] }
+serde_bytes = { workspace = true }
+anyhow = { workspace = true }
+flate2 = { workspace = true }
+starcoin-native-interface = { workspace = true }
+starcoin-vm-types = { workspace = true }
+starcoin-gas-algebra = { workspace = true }
+starcoin-gas-schedule = { workspace = true }
+
 
 [dev-dependencies]
 hex = { workspace = true }
