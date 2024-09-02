@@ -5,11 +5,10 @@ mod algebra;
 //pub mod gen;
 mod abstract_algebra;
 
-use move_vm_test_utils::gas_schedule::GasCost;
-use serde::{Deserialize, Serialize};
 pub use abstract_algebra::*;
 pub use algebra::*;
-
+pub use move_vm_test_utils::gas_schedule::GasCost;
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, PartialEq, Eq, Deserialize)]
 pub struct GasConstants {
@@ -49,7 +48,6 @@ pub struct GasConstants {
     pub gas_unit_scaling_factor: u64,
     pub default_account_size: u64,
 }
-
 
 /// The cost tables, keyed by the serialized form of the bytecode instruction.  We use the
 /// serialized form as opposed to the instruction enum itself as the key since this will be the
