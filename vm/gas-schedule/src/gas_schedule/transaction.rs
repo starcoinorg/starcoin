@@ -4,14 +4,16 @@
 //! This module defines all the gas parameters for transactions, along with their initial values
 //! in the genesis and a mapping between the Rust representation and the on-chain gas schedule.
 
-use crate::algebra::{FeePerGasUnit, Gas, GasScalingFactor, GasUnit};
+use starcoin_gas_algebra::{FeePerGasUnit, Gas, GasScalingFactor, GasUnit};
 use move_core_types::gas_algebra::{
     InternalGas, InternalGasPerByte, InternalGasUnit, NumBytes, ToUnitWithParams,
 };
+use crate::gas_schedule::VMGasParameters;
+
 // see starcoin/config/src/genesis_config.rs G_GAS_CONSTANTS_V2
 // convert from https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#GasConstants
 // modify should with impl From<VMConfig> for GasSchedule
-crate::macros::define_gas_parameters!(
+crate::gas_schedule::macros::define_gas_parameters!(
     TransactionGasParameters,
     "txn",
     VMGasParameters => .txn,

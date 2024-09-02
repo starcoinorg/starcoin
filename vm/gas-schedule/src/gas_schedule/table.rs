@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::gas_schedule::NativeGasParameters;
 use crate::traits::EXECUTION_GAS_MULTIPLIER as MUL;
 
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte};
@@ -8,7 +9,7 @@ use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte};
 // same order as from https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#native_schedule
 // modify should with impl From<VMConfig> for GasSchedule
 // XXX FIXME YSG, need to modified
-crate::macros::define_gas_parameters!(TableGasParameters, "table",     NativeGasParameters => .table,
+crate::gas_schedule::macros::define_gas_parameters!(TableGasParameters, "table",     NativeGasParameters => .table,
     [
     [new_table_handle_base: InternalGas,  "new_table_handle.base", (4 + 1) * MUL],
 
