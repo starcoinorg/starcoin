@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use starcoin_chain::{verifier::DagVerifier, BlockChain, ChainReader};
+use starcoin_chain_api::ExecutedBlock;
 use starcoin_config::TimeService;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
@@ -16,7 +17,7 @@ use tokio::{
 pub enum ExecuteState {
     Ready(HashValue),
     Executing(HashValue),
-    Executed(BlockHeader),
+    Executed(ExecutedBlock),
     Error(BlockHeader),
     Closed,
 }
@@ -129,15 +130,14 @@ impl DagBlockExecutor {
                        info!("sync parallel worker {:p} will execute block: {:?}", &self, block.header().id());
                         match chain.as_mut().expect("it cannot be none!").apply_with_verifier::<DagVerifier>(block) {
                             Ok(executed_block) => {
-                                let header = executed_block.header();
                                 info!(
                                     "succeed to execute block: number: {:?}, id: {:?}",
-                                    header.number(),
-                                    header.id()
+                                    executed_block.header().number(),
+                                    executed_block.header().id()
                                 );
                                 match self
                                     .sender
-                                    .send(ExecuteState::Executed(header.clone()))
+                                    .send(ExecuteState::Executed(executed_block))
                                     .await
                                 {
                                     Ok(_) => (),
