@@ -9648,6 +9648,7 @@ dependencies = [
  "once_cell",
  "starcoin-logger",
  "starcoin-types",
+ "starcoin-vm-types",
  "test-case",
 ]
 
@@ -9678,21 +9679,6 @@ dependencies = [
  "starcoin-types",
  "stest",
  "tokio",
-]
-
-[[package]]
-name = "starcoin-cached-packages"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bcs 0.1.5",
- "move-core-types",
- "once_cell",
- "proptest",
- "proptest-derive 0.3.0",
- "starcoin-framework",
- "starcoin-package-builder",
- "starcoin-types",
 ]
 
 [[package]]
@@ -10059,7 +10045,7 @@ dependencies = [
  "pbkdf2",
  "rand 0.8.5",
  "rand_core 0.6.4",
- "sha2 0.10.6",
+ "sha2 0.9.9",
 ]
 
 [[package]]
@@ -10247,6 +10233,7 @@ dependencies = [
  "serde",
  "serde_bytes",
  "sha2 0.10.6",
+ "sha2 0.9.9",
  "sha3",
  "siphasher",
  "smallvec 1.10.0",
@@ -11768,7 +11755,7 @@ dependencies = [
  "move-prover",
  "once_cell",
  "serde",
- "sha2 0.10.6",
+ "sha2 0.9.9",
  "simplelog",
  "starcoin-crypto",
  "starcoin-framework",

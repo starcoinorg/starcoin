@@ -7,7 +7,7 @@ use crate::{
     resolver::AggregatorV1Resolver,
     types::{expect_ok, DelayedFieldsSpeculativeError, DeltaApplicationFailureReason},
 };
-use aptos_types::{
+use starcoin_vm_types::{
     state_store::{state_key::StateKey, table::TableHandle},
     PeerId,
 };

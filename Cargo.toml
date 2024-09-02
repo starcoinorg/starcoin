@@ -93,7 +93,6 @@ members = [
     "vm/vm-status-translator",
     "vm/starcoin-transactional-test-harness",
     "vm/framework",
-    "vm/framework/cached-packages",
     "vm/framework/table-natives",
     "vm/transaction-benchmarks",
     "vm/e2e-tests",
@@ -211,7 +210,6 @@ default-members = [
     "vm/vm-status-translator",
     "vm/starcoin-transactional-test-harness",
     "vm/framework",
-    "vm/framework/cached-packages",
     "vm/framework/table-natives",
     "abi/types",
     "abi/decoder",
@@ -455,7 +453,9 @@ serde_bytes = "0.11"
 serde_derive = "1.0"
 serde_json = "~1"
 serde_yaml = "0.8.26"
-sha2 = "0.10.2"
+sha-1 = "0.10.0"
+sha2 = "0.9.3"
+sha256 = "1.4.0"
 sha2_0_10_6 = { package = "sha2", version = "0.10.6" }
 sha3 = "0.9.1"
 shell-words = "1.0.0"
