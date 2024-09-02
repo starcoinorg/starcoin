@@ -54,13 +54,6 @@ impl DagBlockSender {
     async fn dispatch_to_worker(&mut self, block: &Block) -> anyhow::Result<bool> {
         for executor in &mut self.executors {
             match &executor.state {
-                // ExecuteState::Executed(executing_header_block) => {
-                //     if executing_header_block.id() == block.header().parent_hash() {
-                //         executor.state = ExecuteState::Executing(block.id());
-                //         executor.sender_to_executor.send(block.clone()).await?;
-                //         return anyhow::Ok(true);
-                //     }
-                // }
                 ExecuteState::Executing(header_id) => {
                     if *header_id == block.header().parent_hash() || block.header.parents_hash().contains(header_id) {
                         executor.state = ExecuteState::Executing(block.id());
@@ -129,8 +122,6 @@ impl DagBlockSender {
             self.flush_executor_state().await?;
         }
 
-        self.sync_dag_store.delete_all_dag_sync_block()?;
-
         self.wait_for_finish().await?;
 
         Ok(())
@@ -141,8 +132,9 @@ impl DagBlockSender {
             match worker.receiver_from_executor.try_recv() {
                 Ok(state) => {
                     match state {
-                        ExecuteState::Executed(header_id) => {
-                            worker.state = ExecuteState::Executed(header_id);
+                        ExecuteState::Executed(executed_block) => {
+                            self.sync_dag_store.delete_dag_sync_block(executed_block.block().header().number(), executed_block.header().id())?;
+                            worker.state = ExecuteState::Executed(executed_block);
                         }
                         _ => ()
                     }
