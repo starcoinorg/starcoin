@@ -261,7 +261,6 @@ impl<
             header.id(),
             new_block_data
         );
-
         Ok(new_block_data)
     }
 

@@ -385,6 +385,23 @@ impl BasicDagVerifier {
 
         ConsensusVerifier::verify_header(current_chain, new_block_header)
     }
+    
+    fn verify_blue_blocks<R>(current_chain: &R, uncles: &[BlockHeader], header: &BlockHeader) -> Result<GhostdagData> where R: ChainReader {
+        current_chain.verify_and_ghostdata(uncles, header)
+    }
+
+
+   
+}
+//TODO: Implement it.
+pub struct DagVerifier;
+impl BlockVerifier for DagVerifier {
+    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
+    where
+        R: ChainReader,
+    {
+        BasicDagVerifier::verify_header(current_chain, new_block_header)
+    }
 
     fn verify_blue_blocks<R>(
         current_chain: &R,
