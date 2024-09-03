@@ -4,9 +4,9 @@
 
 #![forbid(unsafe_code)]
 
-mod aptos;
+mod starcoin;
 
-pub use aptos::*;
+pub use starcoin::*;
 use std::io::{Read, Write};
 
 mod built_package;

@@ -17,7 +17,7 @@ anyhow = { workspace = true }
 starcoin-aggregator = { workspace = true }
 starcoin-crypto = { workspace = true }
 # starcoin-gas-algebra-ext = { workspace = true }
-# starcoin-gas-schedule = { workspace = true }
+starcoin-gas-schedule = { workspace = true }
 starcoin-move-stdlib = { workspace = true }
 starcoin-native-interface = { workspace = true }
 # starcoin-sdk-builder = { workspace = true }

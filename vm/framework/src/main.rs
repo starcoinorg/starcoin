@@ -4,8 +4,8 @@
 
 #![forbid(unsafe_code)]
 
-use starcoin_framework::{ReleaseOptions, ReleaseTarget};
 use clap::Parser;
+use starcoin_framework::{ReleaseOptions, ReleaseTarget};
 
 #[derive(Parser)]
 #[clap(name = "starcoin-framework", author, version, propagate_version = true)]

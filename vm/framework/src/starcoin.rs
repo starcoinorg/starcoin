@@ -61,7 +61,7 @@ impl ReleaseTarget {
             ("aptos-stdlib", None),
             (
                 "aptos-framework",
-                Some("cached-packages/src/aptos_framework_sdk_builder.rs"),
+                Some("cached-packages/src/starcoin_framework_sdk_builder.rs"),
             ),
             (
                 "aptos-token",
@@ -175,7 +175,7 @@ static NAMED_ADDRESSES: Lazy<BTreeMap<String, NumericalAddress>> = Lazy::new(|| 
     let resources = NumericalAddress::parse_str("0xA550C18").unwrap();
     result.insert("std".to_owned(), one);
     result.insert("aptos_std".to_owned(), one);
-    result.insert("aptos_framework".to_owned(), one);
+    result.insert("starcoin_framework".to_owned(), one);
     result.insert("aptos_token".to_owned(), three);
     result.insert("aptos_token_objects".to_owned(), four);
     result.insert("aptos_fungible_asset".to_owned(), ten);

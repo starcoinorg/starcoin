@@ -160,7 +160,7 @@ impl ProverOptions {
         };
         options.backend.custom_natives =
             Some(move_prover_boogie_backend::options::CustomNativeOptions {
-                template_bytes: include_bytes!("aptos-natives.bpl").to_vec(),
+                template_bytes: include_bytes!("starcoin-natives.bpl").to_vec(),
                 module_instance_names: vec![(
                     "0x1::object".to_string(),
                     "object_instances".to_string(),

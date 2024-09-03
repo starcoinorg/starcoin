@@ -9,7 +9,7 @@ use crate::{
     },
     store_element, structure_from_ty_arg,
 };
-use starcoin_gas_schedule::gas_params::natives::{aptos_framework::*, move_stdlib::*};
+use starcoin_gas_schedule::gas_params::natives::{starcoin_framework::*, move_stdlib::*};
 use starcoin_native_interface::{
     safely_pop_arg, SafeNativeContext, SafeNativeError, SafeNativeResult,
 };

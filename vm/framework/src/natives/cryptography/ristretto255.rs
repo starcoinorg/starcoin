@@ -3,7 +3,7 @@
 
 use crate::natives::cryptography::{ristretto255_point, ristretto255_scalar};
 use aptos_gas_algebra::GasExpression;
-use starcoin_gas_schedule::{gas_params::natives::aptos_framework::*, NativeGasParameters};
+use starcoin_gas_schedule::{gas_params::natives::starcoin_framework::*, NativeGasParameters};
 use starcoin_native_interface::{
     safely_assert_eq, safely_pop_arg, RawSafeNative, SafeNativeBuilder, SafeNativeError,
     SafeNativeResult,

@@ -2,11 +2,7 @@
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use aptos_framework::{extended_checks, path_in_crate};
-use starcoin_gas_schedule::{MiscGasParameters, NativeGasParameters, LATEST_GAS_FEATURE_VERSION};
-use starcoin_types::on_chain_config::{
-    aptos_test_feature_flags_genesis, Features, TimedFeaturesBuilder,
-};
+use starcoin_framework::{extended_checks, path_in_crate};
 use aptos_vm::natives;
 use move_cli::base::test::{run_move_unit_tests, UnitTestResult};
 use move_command_line_common::env::get_move_compiler_v2_from_env;
@@ -14,6 +10,10 @@ use move_model::metadata::CompilerVersion;
 use move_package::CompilerConfig;
 use move_unit_test::UnitTestingConfig;
 use move_vm_runtime::native_functions::NativeFunctionTable;
+use starcoin_gas_schedule::{MiscGasParameters, NativeGasParameters, LATEST_GAS_FEATURE_VERSION};
+use starcoin_types::on_chain_config::{
+    aptos_test_feature_flags_genesis, Features, TimedFeaturesBuilder,
+};
 use tempfile::tempdir;
 
 fn run_tests_for_pkg(path_to_pkg: impl Into<String>) {

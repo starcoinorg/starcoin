@@ -10336,6 +10336,7 @@ dependencies = [
  "smallvec 1.10.0",
  "starcoin-aggregator",
  "starcoin-crypto",
+ "starcoin-gas-schedule",
  "starcoin-move-stdlib",
  "starcoin-native-interface",
  "starcoin-types",
