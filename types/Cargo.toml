@@ -19,6 +19,19 @@ starcoin-uint = { workspace = true }
 starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
 lazy_static = { workspace = true }
+move-binary-format = { workspace = true }
+move-bytecode-verifier = { workspace = true }
+move-core-types = { workspace = true }
+move-table-extension = { workspace = true }
+move-vm-runtime = { workspace = true }
+move-vm-types = { workspace = true }
+once_cell = { workspace = true }
+serde_bytes = { workspace = true }
+serde_with = { workspace = true }
+serde_yaml = { workspace = true }
+strum = { workspace = true }
+strum_macros = { workspace = true }
+
 
 [features]
 default = []
