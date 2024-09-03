@@ -4,7 +4,7 @@
 use crate::{
     parallel_executor::{storage_wrapper::VersionedView, StarcoinTransactionOutput},
     starcoin_vm::StarcoinVM,
-    vm_adapter::{PreprocessedTransaction, VMAdapter},
+    vm_adapter::PreprocessedTransaction,
 };
 
 use starcoin_parallel_executor::{

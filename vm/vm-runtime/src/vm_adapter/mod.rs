@@ -2,12 +2,25 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod adapter;
-mod adapter_common;
 
-pub(crate) use {
-    adapter::{PublishModuleBundleOption, SessionAdapter},
-    adapter_common::{
-        discard_error_output, discard_error_vm_status, preprocess_transaction,
-        PreprocessedTransaction, VMAdapter,
-    },
-};
+pub(crate) use adapter::{PublishModuleBundleOption, SessionAdapter};
+use starcoin_vm_types::block_metadata::BlockMetadata;
+use starcoin_vm_types::transaction::{SignedUserTransaction, Transaction};
+
+#[derive(Debug)]
+pub enum PreprocessedTransaction {
+    UserTransaction(Box<SignedUserTransaction>),
+    BlockMetadata(BlockMetadata),
+}
+
+#[inline]
+pub fn preprocess_transaction(txn: Transaction) -> crate::vm_adapter::PreprocessedTransaction {
+    match txn {
+        Transaction::BlockMetadata(b) => {
+            crate::vm_adapter::PreprocessedTransaction::BlockMetadata(b)
+        }
+        Transaction::UserTransaction(txn) => {
+            crate::vm_adapter::PreprocessedTransaction::UserTransaction(Box::new(txn))
+        }
+    }
+}
