@@ -2,7 +2,7 @@ use super::util::Refs;
 use crate::consensusdb::schemadb::{GhostdagStoreReader, HeaderStoreReader, RelationsStoreReader};
 use crate::reachability::reachability_service::ReachabilityService;
 use crate::types::{ghostdata::GhostdagData, ordering::*};
-use anyhow::{Context, Result};
+use anyhow::{ensure, Context, Result};
 use parking_lot::RwLock;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_logger::prelude::*;
@@ -172,23 +172,52 @@ impl<
     }
 
     pub fn check_ghostdata_blue_block(&self, ghostdata: &GhostdagData) -> Result<()> {
-        let mut new_block_data = GhostdagData::new_with_selected_parent(ghostdata.selected_parent, self.k);
+        let mut check_ghostdata = GhostdagData::new_with_selected_parent(ghostdata.selected_parent, self.k);
         for blue_candidate in ghostdata.mergeset_blues.iter().skip(1).cloned() {
-            let coloring = self.check_blue_candidate(&new_block_data, blue_candidate)?;
+            let coloring = self.check_blue_candidate(&check_ghostdata, blue_candidate)?;
             if let ColoringOutput::Blue(blue_anticone_size, blues_anticone_sizes) = coloring {
-                new_block_data.add_blue(blue_candidate, blue_anticone_size, &blues_anticone_sizes);
+                check_ghostdata.add_blue(blue_candidate, blue_anticone_size, &blues_anticone_sizes);
             } else {
-                new_block_data.add_red(blue_candidate);
+                check_ghostdata.add_red(blue_candidate);
             }
         }
-        println!("jacktest: new_block_data: {:?}", new_block_data);
-        println!("jacktest: ghostdata: {:?}", ghostdata);
-        if ghostdata.mergeset_blues.len() != new_block_data.mergeset_blues.len() {
-            return Err(anyhow::anyhow!("The len of blue set is not equal, for {}, {}", ghostdata.mergeset_blues.len(), new_block_data.mergeset_blues.len()));
+        if ghostdata.mergeset_blues.len() != check_ghostdata.mergeset_blues.len() {
+            return Err(anyhow::anyhow!("The len of blue set is not equal, for {}, checking data: {}", ghostdata.mergeset_blues.len(), check_ghostdata.mergeset_blues.len()));
         }
-        if ghostdata.mergeset_blues.iter().cloned().collect::<HashSet<_>>() != new_block_data.mergeset_blues.iter().cloned().collect::<HashSet<_>>() {
+        if ghostdata.mergeset_blues.iter().cloned().collect::<HashSet<_>>() != check_ghostdata.mergeset_blues.iter().cloned().collect::<HashSet<_>>() {
             return Err(anyhow::anyhow!("The blue set is not equal"));
         }
+
+        let blue_score = self
+            .ghostdag_store
+            .get_blue_score(ghostdata.selected_parent)?
+            .checked_add(check_ghostdata.mergeset_blues.len() as u64)
+            .expect("blue score size should less than u64");
+
+        let added_blue_work: BlueWorkType = check_ghostdata
+            .mergeset_blues
+            .iter()
+            .cloned()
+            .map(|hash| {
+                self.headers_store
+                    .get_difficulty(hash)
+                    .unwrap_or_else(|err| {
+                        error!("Failed to get difficulty of block: {}, {}", hash, err);
+                        0.into()
+                    })
+            })
+            .sum();
+
+        let blue_work = self
+            .ghostdag_store
+            .get_blue_work(ghostdata.selected_parent)?
+            .checked_add(added_blue_work)
+            .expect("blue work should less than u256");
+
+            check_ghostdata.finalize_score_and_work(blue_score, blue_work);
+
+        ensure!(check_ghostdata.to_compact() == ghostdata.to_compact(), "check_ghostdata: {:?} is not the same as ghostdata: {:?}", check_ghostdata.to_compact(), ghostdata.to_compact());
+
         Ok(())
     }
 

@@ -1103,9 +1103,10 @@ fn test_verification_blue_block() -> anyhow::Result<()> {
 
     println!("normal: {:?}", ghostdag_data_from_normal);
     println!("makeup: {:?}", ghostdag_data_from_makeup);
+    assert_eq!(ghostdag_data_from_makeup.blue_score, ghostdag_data_from_normal.blue_score);
 
+    dag.ghost_dag_manager().check_ghostdata_blue_block(&ghostdag_data_from_normal)?;
     dag.ghost_dag_manager().check_ghostdata_blue_block(&ghostdag_data_from_makeup)?;
-
 
     let together_mine = dag.ghostdata(&[block_from_normal.id(), block_from_makeup.id()])?;
     let mine_together = add_and_print(8, together_mine.selected_parent, vec![block_from_normal.id(), block_from_makeup.id()], genesis.parent_hash(), &mut dag)?;
