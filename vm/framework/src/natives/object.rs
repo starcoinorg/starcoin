@@ -1,12 +1,12 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
-use aptos_gas_schedule::gas_params::natives::aptos_framework::*;
+use starcoin_gas_schedule::gas_params::natives::starcoin_framework::*;
 use starcoin_native_interface::{
     safely_assert_eq, safely_pop_arg, RawSafeNative, SafeNativeBuilder, SafeNativeContext,
     SafeNativeResult,
 };
-use aptos_types::transaction::authenticator::AuthenticationKey;
+use starcoin_types::transaction::authenticator::AuthenticationKey;
 use better_any::{Tid, TidAble};
 use move_core_types::{
     account_address::AccountAddress,

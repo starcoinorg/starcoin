@@ -9,7 +9,7 @@ use aptos_aggregator::{
     delta_change_set::DeltaOp,
     resolver::{AggregatorV1Resolver, DelayedFieldResolver},
 };
-use aptos_types::state_store::{state_key::StateKey, state_value::StateValueMetadata};
+use starcoin_types::state_store::{state_key::StateKey, state_value::StateValueMetadata};
 use better_any::{Tid, TidAble};
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::value::MoveTypeLayout;
@@ -161,7 +161,7 @@ mod test {
         delta_math::DeltaHistory, tests::types::FAKE_AGGREGATOR_VIEW_GEN_ID_START,
         types::DelayedFieldValue, FakeAggregatorView,
     };
-    use aptos_types::delayed_fields::{
+    use starcoin_types::delayed_fields::{
         calculate_width_for_integer_embedded_string, SnapshotToStringFormula,
     };
     use claims::{assert_matches, assert_ok, assert_ok_eq, assert_some_eq};

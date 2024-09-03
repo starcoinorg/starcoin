@@ -1,11 +1,11 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
-use aptos_gas_schedule::gas_params::natives::aptos_framework::*;
+use starcoin_gas_schedule::gas_params::natives::starcoin_framework::*;
 use starcoin_native_interface::{
     RawSafeNative, SafeNativeBuilder, SafeNativeContext, SafeNativeError, SafeNativeResult,
 };
-use aptos_types::{
+use starcoin_types::{
     error,
     transaction::{
         authenticator::AuthenticationKey,

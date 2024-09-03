@@ -3,7 +3,7 @@
 
 use crate::{built_package::BuiltPackage, natives::code::PackageMetadata, path_in_crate};
 use anyhow::Context;
-use aptos_types::account_address::AccountAddress;
+use starcoin_types::account_address::AccountAddress;
 use move_binary_format::{access::ModuleAccess, errors::PartialVMError, CompiledModule};
 use move_command_line_common::files::{extension_equals, find_filenames, MOVE_EXTENSION};
 use move_core_types::language_storage::ModuleId;

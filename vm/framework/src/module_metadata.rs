@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::extended_checks::ResourceGroupScope;
-use aptos_types::{
+use starcoin_types::{
     on_chain_config::{FeatureFlag, Features, TimedFeatureFlag, TimedFeatures},
     transaction::AbortInfo,
 };

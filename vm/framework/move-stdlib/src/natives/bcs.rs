@@ -5,7 +5,7 @@
 // Copyright (c) The Move Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use aptos_gas_schedule::gas_params::natives::move_stdlib::*;
+//use starcoin_gas_schedule::gas_params::natives::move_stdlib::*;
 use starcoin_native_interface::{
     safely_pop_arg, RawSafeNative, SafeNativeBuilder, SafeNativeContext, SafeNativeError,
     SafeNativeResult,
@@ -17,7 +17,7 @@ use move_vm_runtime::native_functions::NativeFunction;
 use move_vm_types::{
     loaded_data::runtime_types::Type,
     natives::function::PartialVMResult,
-    value_serde::serialized_size_allowing_delayed_values,
+    value_serde::serialize_and_allow_delayed_values,
     values::{values_impl::Reference, Value},
 };
 use smallvec::{smallvec, SmallVec};
@@ -123,7 +123,7 @@ fn serialized_size_impl(
     //               implement it in a more efficient way.
     let value = reference.read_ref()?;
     let ty_layout = context.type_to_type_layout(ty)?;
-    serialized_size_allowing_delayed_values(&value, &ty_layout)
+    serialize_and_allow_delayed_values(&value, &ty_layout)
 }
 
 /***************************************************************************************************

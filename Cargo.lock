@@ -10742,6 +10742,7 @@ dependencies = [
  "sha2 0.9.9",
  "sha3",
  "smallvec 1.10.0",
+ "starcoin-gas-schedule",
  "starcoin-native-interface",
  "tempfile",
 ]

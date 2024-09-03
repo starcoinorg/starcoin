@@ -2,23 +2,31 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    aggregator_v1_extension::{addition_v1_error, subtraction_v1_error},
+    //aggregator_v1_extension::{addition_v1_error, subtraction_v1_error},
     bounded_math::SignedU128,
-    delta_change_set::{serialize, DeltaOp},
+    delta_change_set::{
+        // serialize,
+        DeltaOp
+    },
     types::{
-        code_invariant_error, DelayedFieldValue, DelayedFieldsSpeculativeError,
-        DeltaApplicationFailureReason, PanicOr,
+        // code_invariant_error,
+        DelayedFieldValue,
+        DelayedFieldsSpeculativeError,
+        // DeltaApplicationFailureReason,
+        PanicOr,
     },
 };
-use starcoin_vm_types::{
-    delayed_fields::PanicError,
+
+use starcoin_types::delayed_fields::PanicError;
+use starcoin_vm_types:: {
     state_store::{
         state_key::StateKey,
         state_value::{StateValue, StateValueMetadata},
-        StateView,
     },
+    state_view::StateView,
     write_set::WriteOp,
 };
+
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::{language_storage::StructTag, value::MoveTypeLayout, vm_status::StatusCode};
 use move_vm_types::delayed_values::delayed_field_id::DelayedFieldID;
@@ -82,31 +90,32 @@ pub trait TAggregatorV1View {
     /// write op is produced.
     fn try_convert_aggregator_v1_delta_into_write_op(
         &self,
-        id: &Self::Identifier,
-        delta_op: &DeltaOp,
+        _id: &Self::Identifier,
+        _delta_op: &DeltaOp,
     ) -> PartialVMResult<WriteOp> {
-        let base = self.get_aggregator_v1_value(id)?.ok_or_else(|| {
-            PartialVMError::new(StatusCode::SPECULATIVE_EXECUTION_ABORT_ERROR)
-                .with_message("Cannot convert delta for deleted aggregator".to_string())
-        })?;
-
-        delta_op
-            .apply_to(base)
-            .map_err(|e| match &e {
-                PanicOr::Or(DelayedFieldsSpeculativeError::DeltaApplication {
-                    reason: DeltaApplicationFailureReason::Overflow,
-                    ..
-                }) => addition_v1_error(e),
-                PanicOr::Or(DelayedFieldsSpeculativeError::DeltaApplication {
-                    reason: DeltaApplicationFailureReason::Underflow,
-                    ..
-                }) => subtraction_v1_error(e),
-                // Because aggregator V1 never underflows or overflows, all other
-                // application errors are bugs.
-                _ => code_invariant_error(format!("Unexpected delta application error: {:?}", e))
-                    .into(),
-            })
-            .map(|result| WriteOp::legacy_modification(serialize(&result).into()))
+        // let base = self.get_aggregator_v1_value(id)?.ok_or_else(|| {
+        //     PartialVMError::new(StatusCode::SPECULATIVE_EXECUTION_ABORT_ERROR)
+        //         .with_message("Cannot convert delta for deleted aggregator".to_string())
+        // })?;
+        //
+        // delta_op
+        //     .apply_to(base)
+        //     .map_err(|e| match &e {
+        //         PanicOr::Or(DelayedFieldsSpeculativeError::DeltaApplication {
+        //             reason: DeltaApplicationFailureReason::Overflow,
+        //             ..
+        //         }) => addition_v1_error(e),
+        //         PanicOr::Or(DelayedFieldsSpeculativeError::DeltaApplication {
+        //             reason: DeltaApplicationFailureReason::Underflow,
+        //             ..
+        //         }) => subtraction_v1_error(e),
+        //         // Because aggregator V1 never underflows or overflows, all other
+        //         // application errors are bugs.
+        //         _ => code_invariant_error(format!("Unexpected delta application error: {:?}", e))
+        //             .into(),
+        //     })
+        //     .map(|result| WriteOp::legacy_modification(serialize(&result).into()))
+        unimplemented!()
     }
 }
 

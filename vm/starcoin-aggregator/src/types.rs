@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::bounded_math::SignedU128;
-use aptos_logger::error;
-use aptos_types::delayed_fields::PanicError;
+use starcoin_logger::prelude::error;
+use starcoin_types::delayed_fields::PanicError;
 use move_binary_format::errors::PartialVMError;
 use move_core_types::{
     value::{IdentifierMappingKind, MoveTypeLayout},

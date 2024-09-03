@@ -4,7 +4,7 @@
 use starcoin_native_interface::{
     safely_pop_arg, RawSafeNative, SafeNativeBuilder, SafeNativeContext, SafeNativeResult,
 };
-use aptos_types::on_chain_config::OnChainConsensusConfig;
+use starcoin_types::on_chain_config::OnChainConsensusConfig;
 use move_vm_runtime::native_functions::NativeFunction;
 use move_vm_types::{loaded_data::runtime_types::Type, values::Value};
 use smallvec::{smallvec, SmallVec};

@@ -3,12 +3,12 @@
 
 use crate::natives::cryptography::{ristretto255_point, ristretto255_scalar};
 use aptos_gas_algebra::GasExpression;
-use aptos_gas_schedule::{gas_params::natives::aptos_framework::*, NativeGasParameters};
+use starcoin_gas_schedule::{gas_params::natives::aptos_framework::*, NativeGasParameters};
 use starcoin_native_interface::{
     safely_assert_eq, safely_pop_arg, RawSafeNative, SafeNativeBuilder, SafeNativeError,
     SafeNativeResult,
 };
-use aptos_types::vm_status::StatusCode;
+use starcoin_types::vm_status::StatusCode;
 use curve25519_dalek::scalar::Scalar;
 use move_binary_format::errors::PartialVMError;
 use move_core_types::gas_algebra::{InternalGasUnit, NumArgs};

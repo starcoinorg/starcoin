@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use aptos_gas_algebra::NumBytes;
-use aptos_gas_schedule::gas_params::natives::aptos_framework::*;
+use starcoin_gas_schedule::gas_params::natives::starcoin_framework::*;
 use starcoin_native_interface::{
     safely_pop_arg, RawSafeNative, SafeNativeBuilder, SafeNativeContext, SafeNativeError,
     SafeNativeResult,
 };
-use aptos_types::on_chain_config::FeatureFlag;
+use starcoin_types::on_chain_config::FeatureFlag;
 use ark_std::iterable::Iterable;
 use move_core_types::{
     account_address::AccountAddress,

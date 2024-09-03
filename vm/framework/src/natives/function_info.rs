@@ -1,6 +1,6 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
-use aptos_gas_schedule::gas_params::natives::aptos_framework::*;
+use starcoin_gas_schedule::gas_params::natives::starcoin_framework::*;
 use starcoin_native_interface::{
     safely_pop_arg, RawSafeNative, SafeNativeBuilder, SafeNativeContext, SafeNativeError,
     SafeNativeResult,
@@ -118,7 +118,7 @@ fn native_check_dispatch_type_compatibility_impl(
             && !rhs.is_friend_or_private()
             && (!context
                 .get_feature_flags()
-                .is_enabled(aptos_types::on_chain_config::FeatureFlag::DISALLOW_USER_NATIVES)
+                .is_enabled(starcoin_types::on_chain_config::FeatureFlag::DISALLOW_USER_NATIVES)
                 || !rhs.is_native())
             && lhs_id != rhs_id
     )])

@@ -10,7 +10,7 @@ use crate::natives::cryptography::{
         pop_64_byte_slice, pop_scalar_from_bytes, scalar_from_struct, COMPRESSED_POINT_NUM_BYTES,
     },
 };
-use aptos_gas_schedule::gas_params::natives::aptos_framework::*;
+use starcoin_gas_schedule::gas_params::natives::starcoin_framework::*;
 use starcoin_native_interface::{
     safely_assert_eq, safely_pop_arg, safely_pop_type_arg, SafeNativeContext, SafeNativeError,
     SafeNativeResult,

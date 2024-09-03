@@ -10,7 +10,7 @@ use crate::{
     },
     safe_borrow_element, store_element, structure_from_ty_arg,
 };
-use aptos_gas_schedule::gas_params::natives::aptos_framework::*;
+use starcoin_gas_schedule::gas_params::natives::starcoin_framework::*;
 use starcoin_native_interface::{SafeNativeContext, SafeNativeError, SafeNativeResult};
 use ark_ec::Group;
 use ark_ff::Field;

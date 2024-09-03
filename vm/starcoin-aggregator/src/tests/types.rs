@@ -10,7 +10,7 @@ use crate::{
         code_invariant_error, expect_ok, DelayedFieldValue, DelayedFieldsSpeculativeError, PanicOr,
     },
 };
-use aptos_types::{
+use starcoin_types::{
     delayed_fields::PanicError,
     state_store::{
         state_key::StateKey,

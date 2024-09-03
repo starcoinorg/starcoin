@@ -10,13 +10,13 @@ use crate::{
     },
     safe_borrow_element, store_element, structure_from_ty_arg,
 };
-use aptos_gas_schedule::{
+use starcoin_gas_schedule::{
     gas_feature_versions::RELEASE_V1_16, gas_params::natives::aptos_framework::*,
 };
 use starcoin_native_interface::{
     safely_pop_arg, SafeNativeContext, SafeNativeError, SafeNativeResult,
 };
-use aptos_types::on_chain_config::FeatureFlag;
+use starcoin_types::on_chain_config::FeatureFlag;
 use ark_ec::CurveGroup;
 use ark_ff::Field;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};

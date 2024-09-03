@@ -1,5 +1,5 @@
 use super::function_info::extract_function_info;
-use aptos_gas_schedule::gas_params::natives::aptos_framework::DISPATCHABLE_FUNGIBLE_ASSET_DISPATCH_BASE;
+use starcoin_gas_schedule::gas_params::natives::starcoin_framework::DISPATCHABLE_FUNGIBLE_ASSET_DISPATCH_BASE;
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 use starcoin_native_interface::{

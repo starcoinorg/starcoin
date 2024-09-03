@@ -17,7 +17,7 @@ use crate::natives::cryptography::algebra::{
     serialization::{deserialize_internal, serialize_internal},
 };
 use starcoin_native_interface::{RawSafeNative, SafeNativeBuilder};
-use aptos_types::on_chain_config::FeatureFlag;
+use starcoin_types::on_chain_config::FeatureFlag;
 use arithmetics::{
     div::div_internal,
     inv::inv_internal,

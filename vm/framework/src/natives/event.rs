@@ -1,16 +1,16 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
-use aptos_gas_schedule::gas_params::natives::aptos_framework::*;
+use starcoin_gas_schedule::gas_params::natives::starcoin_framework::*;
 use starcoin_native_interface::{
     safely_pop_arg, RawSafeNative, SafeNativeBuilder, SafeNativeContext, SafeNativeError,
     SafeNativeResult,
 };
 #[cfg(feature = "testing")]
-use aptos_types::account_address::AccountAddress;
-use aptos_types::contract_event::ContractEvent;
+use starcoin_types::account_address::AccountAddress;
+use starcoin_types::contract_event::ContractEvent;
 #[cfg(feature = "testing")]
-use aptos_types::event::EventKey;
+use starcoin_types::event::EventKey;
 use better_any::{Tid, TidAble};
 use move_binary_format::errors::PartialVMError;
 use move_core_types::{language_storage::TypeTag, value::MoveTypeLayout, vm_status::StatusCode};

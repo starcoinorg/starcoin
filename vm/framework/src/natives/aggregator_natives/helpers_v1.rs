@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use aptos_aggregator::aggregator_v1_extension::{extension_error, AggregatorID};
-use aptos_types::{account_address::AccountAddress, state_store::table::TableHandle};
+use starcoin_types::{account_address::AccountAddress, state_store::table::TableHandle};
 use move_binary_format::errors::PartialVMResult;
 use move_vm_types::values::{Reference, Struct, StructRef, Value};
 

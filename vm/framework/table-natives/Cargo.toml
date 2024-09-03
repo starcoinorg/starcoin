@@ -12,7 +12,7 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 
 [dependencies]
-starcoin-gas-algebra-ext = { workspace = true }
+# starcoin-gas-algebra-ext = { workspace = true }
 starcoin-native-interface = { workspace = true }
 better_any = { workspace = true }
 bytes = { workspace = true }

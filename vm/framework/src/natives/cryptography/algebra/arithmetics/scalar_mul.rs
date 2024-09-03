@@ -14,11 +14,11 @@ use crate::{
     safe_borrow_element, store_element, structure_from_ty_arg,
 };
 use aptos_gas_algebra::{Arg, GasExpression};
-use aptos_gas_schedule::gas_params::natives::aptos_framework::*;
+use starcoin_gas_schedule::gas_params::natives::starcoin_framework::*;
 use starcoin_native_interface::{
     safely_pop_arg, SafeNativeContext, SafeNativeError, SafeNativeResult,
 };
-use aptos_types::on_chain_config::FeatureFlag;
+use starcoin_types::on_chain_config::FeatureFlag;
 use ark_ec::{CurveGroup, Group};
 use ark_ff::Field;
 use move_core_types::gas_algebra::NumArgs;

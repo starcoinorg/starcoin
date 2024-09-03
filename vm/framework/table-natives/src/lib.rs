@@ -10,7 +10,7 @@
 //! See [`Table.move`](../sources/Table.move) for language use.
 //! See [`README.md`](../README.md) for integration into an adapter.
 
-use aptos_gas_schedule::gas_params::natives::table::*;
+use starcoin_gas_schedule::gas_params::natives::table::*;
 use starcoin_native_interface::{
     safely_pop_arg, RawSafeNative, SafeNativeBuilder, SafeNativeContext, SafeNativeError,
     SafeNativeResult,

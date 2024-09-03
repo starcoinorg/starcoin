@@ -7,7 +7,7 @@ use crate::natives::cryptography::ristretto255_point::{
     get_point_handle, NativeRistrettoPointContext,
 };
 use aptos_crypto::bulletproofs::MAX_RANGE_BITS;
-use aptos_gas_schedule::gas_params::natives::aptos_framework::*;
+use starcoin_gas_schedule::gas_params::natives::starcoin_framework::*;
 use starcoin_native_interface::{
     safely_pop_arg, RawSafeNative, SafeNativeBuilder, SafeNativeContext, SafeNativeError,
     SafeNativeResult,

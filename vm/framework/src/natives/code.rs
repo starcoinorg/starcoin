@@ -3,12 +3,12 @@
 
 use crate::unzip_metadata_str;
 use anyhow::bail;
-use aptos_gas_schedule::gas_params::natives::aptos_framework::*;
+use starcoin_gas_schedule::gas_params::natives::starcoin_framework::*;
 use starcoin_native_interface::{
     safely_pop_arg, RawSafeNative, SafeNativeBuilder, SafeNativeContext, SafeNativeError,
     SafeNativeResult,
 };
-use aptos_types::{
+use starcoin_types::{
     move_any::Any, on_chain_config::OnChainConfig, transaction::ModuleBundle, vm_status::StatusCode,
 };
 use better_any::{Tid, TidAble};

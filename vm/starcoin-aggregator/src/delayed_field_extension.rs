@@ -11,7 +11,7 @@ use crate::{
         ReadPosition,
     },
 };
-use aptos_types::delayed_fields::{
+use starcoin_types::delayed_fields::{
     calculate_width_for_constant_string, calculate_width_for_integer_embedded_string,
     SnapshotToStringFormula,
 };

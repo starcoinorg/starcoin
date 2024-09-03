@@ -9,7 +9,7 @@ use crate::{
     APTOS_METADATA_KEY_V1, METADATA_V1_MIN_FILE_FORMAT_VERSION,
 };
 use anyhow::bail;
-use aptos_types::{account_address::AccountAddress, transaction::EntryABI};
+use starcoin_types::{account_address::AccountAddress, transaction::EntryABI};
 use clap::Parser;
 use codespan_reporting::{
     diagnostic::Severity,

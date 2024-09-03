@@ -1,11 +1,11 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
-use aptos_gas_schedule::gas_params::natives::aptos_framework::*;
+use starcoin_gas_schedule::gas_params::natives::starcoin_framework::*;
 use starcoin_native_interface::{
     RawSafeNative, SafeNativeBuilder, SafeNativeContext, SafeNativeResult,
 };
-use aptos_types::vm_status::StatusCode;
+use starcoin_types::vm_status::StatusCode;
 use aptos_vm_types::resolver::StateStorageView;
 use better_any::{Tid, TidAble};
 use move_binary_format::errors::PartialVMError;
