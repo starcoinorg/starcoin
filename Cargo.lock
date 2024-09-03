@@ -530,7 +530,7 @@ dependencies = [
  "num-traits",
  "rusticata-macros",
  "thiserror",
- "time 0.3.19",
+ "time 0.3.36",
 ]
 
 [[package]]
@@ -546,7 +546,7 @@ dependencies = [
  "num-traits",
  "rusticata-macros",
  "thiserror",
- "time 0.3.19",
+ "time 0.3.36",
 ]
 
 [[package]]
@@ -855,6 +855,12 @@ name = "base64"
 version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4a4ddaa51a5bc52a6948f74c06d20aaaddb71924eab79b8c97a8c556e942d6a"
+
+[[package]]
+name = "base64"
+version = "0.22.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
 name = "base64ct"
@@ -1382,6 +1388,7 @@ dependencies = [
  "js-sys",
  "num-integer",
  "num-traits",
+ "serde",
  "time 0.1.43",
  "wasm-bindgen",
  "winapi 0.3.9",
@@ -2235,6 +2242,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "darling"
+version = "0.20.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6f63b86c8a8826a49b8c21f08a2d07338eec8d900540f8630dc76284be802989"
+dependencies = [
+ "darling_core 0.20.10",
+ "darling_macro 0.20.10",
+]
+
+[[package]]
 name = "darling_core"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2291,6 +2308,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "darling_core"
+version = "0.20.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "95133861a8032aaea082871032f5815eb9e98cef03fa916ab4500513994df9e5"
+dependencies = [
+ "fnv",
+ "ident_case",
+ "proc-macro2 1.0.86",
+ "quote 1.0.36",
+ "strsim 0.11.1",
+ "syn 2.0.72",
+]
+
+[[package]]
 name = "darling_macro"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2332,6 +2363,17 @@ dependencies = [
  "darling_core 0.14.3",
  "quote 1.0.36",
  "syn 1.0.107",
+]
+
+[[package]]
+name = "darling_macro"
+version = "0.20.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d336a2a514f6ccccaa3e09b02d41d35330c07ddf03a62165fcec10bb561c7806"
+dependencies = [
+ "darling_core 0.20.10",
+ "quote 1.0.36",
+ "syn 2.0.72",
 ]
 
 [[package]]
@@ -2505,6 +2547,16 @@ dependencies = [
  "num-bigint 0.4.3",
  "num-traits",
  "rusticata-macros",
+]
+
+[[package]]
+name = "deranged"
+version = "0.3.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b42b6fa04a440b495c8b04d0e71b707c585f83cb9cb28cf8cd0d976c315e31b4"
+dependencies = [
+ "powerfmt",
+ "serde",
 ]
 
 [[package]]
@@ -2815,7 +2867,7 @@ dependencies = [
  "rustc_version 0.2.3",
  "serde",
  "serde_json",
- "serde_with",
+ "serde_with 1.14.0",
  "url 2.3.1",
  "void",
 ]
@@ -4079,6 +4131,7 @@ checksum = "bd070e393353796e801d209ad339e89596eb4c8d430d18ede6a1cced8fafbd99"
 dependencies = [
  "autocfg 1.1.0",
  "hashbrown 0.12.3",
+ "serde",
 ]
 
 [[package]]
@@ -4089,6 +4142,7 @@ checksum = "de3fc2e30ba82dd1b3911c8de1ffc143c74a914a14e99514d7637e3099df5ea0"
 dependencies = [
  "equivalent",
  "hashbrown 0.14.5",
+ "serde",
 ]
 
 [[package]]
@@ -6685,6 +6739,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "num-conv"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "51d515d32fb182ee37cda2ccdcb92950d6a3c2893aa280e540671c2cd0f3b1d9"
+
+[[package]]
 name = "num-derive"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7520,6 +7580,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "powerfmt"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "439ee305def115ba05938db6eb1644ff94165c5ab5e9420d1c1bcedbba909391"
+
+[[package]]
 name = "pprof"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8207,7 +8273,7 @@ checksum = "6413f3de1edee53342e6138e75b56d32e7bc6e332b3bd62d497b1929d4cfbcdd"
 dependencies = [
  "pem",
  "ring",
- "time 0.3.19",
+ "time 0.3.36",
  "x509-parser 0.13.2",
  "yasna",
 ]
@@ -8220,7 +8286,7 @@ checksum = "ffbe84efe2f38dea12e9bfc1f65377fdf03e53a18cb3b995faedf7934c7e785b"
 dependencies = [
  "pem",
  "ring",
- "time 0.3.19",
+ "time 0.3.36",
  "yasna",
 ]
 
@@ -9102,7 +9168,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "678b5a069e50bf00ecd22d0cd8ddf7c236f68581b03db652061ed5eb13a312ff"
 dependencies = [
  "serde",
- "serde_with_macros",
+ "serde_with_macros 1.5.2",
+]
+
+[[package]]
+name = "serde_with"
+version = "3.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "69cecfa94848272156ea67b2b1a53f20fc7bc638c4a46d2f8abde08f05f4b857"
+dependencies = [
+ "base64 0.22.1",
+ "chrono",
+ "hex",
+ "indexmap 1.9.3",
+ "indexmap 2.3.0",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "serde_with_macros 3.9.0",
+ "time 0.3.36",
 ]
 
 [[package]]
@@ -9115,6 +9199,18 @@ dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.36",
  "syn 1.0.107",
+]
+
+[[package]]
+name = "serde_with_macros"
+version = "3.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8fee4991ef4f274617a51ad4af30519438dacb2f56ac773b08a1922ff743350"
+dependencies = [
+ "darling 0.20.10",
+ "proc-macro2 1.0.86",
+ "quote 1.0.36",
+ "syn 2.0.72",
 ]
 
 [[package]]
@@ -9360,7 +9456,7 @@ dependencies = [
  "slog",
  "term",
  "thread_local",
- "time 0.3.19",
+ "time 0.3.36",
 ]
 
 [[package]]
@@ -9913,6 +10009,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-gas-algebra",
  "starcoin-gas-meter",
+ "starcoin-gas-schedule",
  "starcoin-logger",
  "starcoin-metrics",
  "starcoin-system",
@@ -10239,7 +10336,6 @@ dependencies = [
  "smallvec 1.10.0",
  "starcoin-aggregator",
  "starcoin-crypto",
- "starcoin-gas-algebra-ext",
  "starcoin-move-stdlib",
  "starcoin-native-interface",
  "starcoin-types",
@@ -10646,7 +10742,6 @@ dependencies = [
  "sha2 0.9.9",
  "sha3",
  "smallvec 1.10.0",
- "starcoin-gas-algebra-ext",
  "starcoin-native-interface",
  "tempfile",
 ]
@@ -11447,7 +11542,6 @@ dependencies = [
  "move-vm-types",
  "sha3",
  "smallvec 1.10.0",
- "starcoin-gas-algebra-ext",
  "starcoin-native-interface",
 ]
 
@@ -11648,18 +11742,30 @@ dependencies = [
  "forkable-jellyfish-merkle",
  "hex",
  "lazy_static",
+ "move-binary-format",
+ "move-bytecode-verifier",
+ "move-core-types",
+ "move-table-extension",
+ "move-vm-runtime",
+ "move-vm-types",
  "num_enum",
+ "once_cell",
  "proptest",
  "proptest-derive 0.3.0",
  "rand 0.8.5",
  "rand_core 0.6.4",
  "schemars",
  "serde",
+ "serde_bytes",
  "serde_json",
+ "serde_with 3.9.0",
+ "serde_yaml",
  "starcoin-accumulator",
  "starcoin-crypto",
  "starcoin-uint",
  "starcoin-vm-types",
+ "strum",
+ "strum_macros",
  "thiserror",
 ]
 
@@ -11682,7 +11788,6 @@ version = "2.0.1"
 dependencies = [
  "anyhow",
  "bcs-ext",
- "bytes 1.6.1",
  "hex",
  "move-binary-format",
  "move-core-types",
@@ -11697,18 +11802,14 @@ dependencies = [
  "rand_core 0.6.4",
  "rayon",
  "serde",
- "serde_bytes",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-frameworks",
- "starcoin-gas-algebra",
  "starcoin-gas-meter",
  "starcoin-logger",
  "starcoin-metrics",
- "starcoin-native-interface",
  "starcoin-parallel-executor",
  "starcoin-types",
- "starcoin-vm-runtime-types",
  "starcoin-vm-types",
  "stdlib",
  "tracing",
@@ -12413,13 +12514,16 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.19"
+version = "0.3.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "53250a3b3fed8ff8fd988587d8925d26a83ac3845d9e03b220b37f34c2b8d6c2"
+checksum = "5dfd88e563464686c916c7e46e623e520ddc6d79fa6641390f2e3fa86e83e885"
 dependencies = [
+ "deranged",
  "itoa",
  "libc",
+ "num-conv",
  "num_threads",
+ "powerfmt",
  "serde",
  "time-core",
  "time-macros",
@@ -12427,16 +12531,17 @@ dependencies = [
 
 [[package]]
 name = "time-core"
-version = "0.1.0"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2e153e1f1acaef8acc537e68b44906d2db6436e2b35ac2c6b42640fff91f00fd"
+checksum = "ef927ca75afb808a4d64dd374f00a2adf8d0fcff8e7b184af886c3c87ec4a3f3"
 
 [[package]]
 name = "time-macros"
-version = "0.2.7"
+version = "0.2.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a460aeb8de6dcb0f381e1ee05f1cd56fcf5a5f6eb8187ff3d8f0b11078d38b7c"
+checksum = "3f252a68540fde3a3877aeea552b832b40ab9a69e318efd078774a01ddee1ccf"
 dependencies = [
+ "num-conv",
  "time-core",
 ]
 
@@ -13464,7 +13569,7 @@ dependencies = [
  "sha2 0.10.6",
  "stun",
  "thiserror",
- "time 0.3.19",
+ "time 0.3.36",
  "tokio",
  "turn",
  "url 2.3.1",
@@ -14117,7 +14222,7 @@ dependencies = [
  "ring",
  "rusticata-macros",
  "thiserror",
- "time 0.3.19",
+ "time 0.3.36",
 ]
 
 [[package]]
@@ -14135,7 +14240,7 @@ dependencies = [
  "oid-registry 0.6.1",
  "rusticata-macros",
  "thiserror",
- "time 0.3.19",
+ "time 0.3.36",
 ]
 
 [[package]]
@@ -14167,7 +14272,7 @@ version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aed2e7a52e3744ab4d0c05c20aa065258e84c49fd4226f5191b2ed29712710b4"
 dependencies = [
- "time 0.3.19",
+ "time 0.3.36",
 ]
 
 [[package]]

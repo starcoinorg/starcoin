@@ -84,7 +84,6 @@ members = [
     "vm/transaction-builder-generator",
     "vm/move-coverage",
     "vm/resource-viewer",
-    "vm/starcoin-gas",
     "vm/starcoin-aggregator",
     "vm/starcoin-gas-meter",
     "vm/dev",
@@ -458,6 +457,7 @@ serde-reflection = { git = "https://github.com/starcoinorg/serde-reflection", re
 serde_bytes = "0.11"
 serde_derive = "1.0"
 serde_json = "~1"
+serde_with = "3.4.0"
 serde_yaml = "0.8.26"
 sha-1 = "0.10.0"
 sha2 = "0.9.3"
