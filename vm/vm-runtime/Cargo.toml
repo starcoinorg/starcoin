@@ -22,7 +22,7 @@ num_enum = { workspace = true }
 rand = { workspace = true }
 rand_core = { default-features = false, workspace = true }
 starcoin-logger = { workspace = true }
-starcoin-natives = { workspace = true }
+starcoin-frameworks = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 move-stdlib = { workspace = true }
@@ -30,7 +30,7 @@ move-table-extension = { workspace = true }
 move-vm-types = { workspace = true }
 move-binary-format = { workspace = true }
 starcoin-metrics = { optional = true, workspace = true }
-starcoin-gas = { workspace = true }
+starcoin-gas-meter = { workspace = true }
 starcoin-gas-algebra-ext = { workspace = true }
 serde = { features = ["derive"], workspace = true }
 starcoin-parallel-executor = { workspace = true }
@@ -44,5 +44,5 @@ stdlib = { workspace = true }
 [features]
 default = ["metrics"]
 metrics = ["starcoin-metrics"]
-testing = ["move-stdlib/testing", "starcoin-natives/testing"]
+testing = ["move-stdlib/testing", "starcoin-frameworks/testing"]
 force-deploy = []

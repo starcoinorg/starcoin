@@ -1,0 +1,23 @@
+[dependencies]
+starcoin-gas-schedule = { workspace = true }
+clap = { version = "3", features = ["derive"] }
+move-binary-format = { workspace = true }
+move-core-types = { workspace = true }
+move-stdlib = { workspace = true }
+move-table-extension = { workspace = true }
+move-vm-types = { workspace = true }
+starcoin-frameworks = { workspace = true }
+starcoin-logger = { workspace = true }
+starcoin-gas-algebra = { workspace = true }
+
+[package]
+authors = { workspace = true }
+description = "starcoin Move VM starcoin-gas-meter"
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-gas-meter"
+publish = { workspace = true }
+version = "2.0.1"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

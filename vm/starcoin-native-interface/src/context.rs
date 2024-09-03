@@ -2,14 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::errors::{SafeNativeError, SafeNativeResult};
-use starcoin_gas_algebra_ext::{
-    AbstractValueSize, DynamicExpression, GasExpression, GasQuantity, InternalGasUnit,
-};
-use starcoin_gas_algebra_ext::{MiscGasParameters, NativeGasParameters};
-use starcoin_vm_types::on_chain_config::{Features, TimedFeatureFlag, TimedFeatures};
 use move_core_types::gas_algebra::InternalGas;
 use move_vm_runtime::native_functions::NativeContext;
 use move_vm_types::values::Value;
+use starcoin_gas_algebra::{DynamicExpression, GasExpression, GasQuantity, InternalGasUnit};
+use starcoin_gas_schedule::{AbstractValueSize, MiscGasParameters, NativeGasParameters};
+use starcoin_vm_types::on_chain_config::{Features, TimedFeatureFlag, TimedFeatures};
 use std::ops::{Deref, DerefMut};
 
 /// A proxy between the VM and the native functions, allowing the latter to query VM configurations
@@ -81,8 +79,8 @@ impl<'a, 'b, 'c, 'd> SafeNativeContext<'a, 'b, 'c, 'd> {
     ///
     /// This can be useful if you have branch conditions depending on gas parameters.
     pub fn eval_gas<E>(&self, abstract_amount: E) -> GasQuantity<E::Unit>
-        where
-            E: GasExpression<NativeGasParameters>,
+    where
+        E: GasExpression<NativeGasParameters>,
     {
         abstract_amount.evaluate(self.gas_feature_version, self.native_gas_params)
     }
@@ -118,5 +116,4 @@ impl<'a, 'b, 'c, 'd> SafeNativeContext<'a, 'b, 'c, 'd> {
     pub fn set_incremental_gas_charging(&mut self, enable: bool) {
         self.enable_incremental_gas_charging = enable;
     }
-
 }

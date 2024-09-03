@@ -11,7 +11,7 @@ rust-version = { workspace = true }
 
 [dependencies]
 starcoin-vm-types = { workspace = true }
-starcoin-gas = { workspace = true }
+starcoin-gas-meter = { workspace = true }
 move-core-types = { workspace = true }
 anyhow = { workspace = true }
 bytes = { workspace = true }

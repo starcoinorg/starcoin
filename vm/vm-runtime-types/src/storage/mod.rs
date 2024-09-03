@@ -1,13 +1,10 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::storage::{
-    change_set_configs::ChangeSetConfigs,
-
-};
-use starcoin_gas::{StarcoinGasParameters, LATEST_GAS_FEATURE_VERSION};
-use starcoin_vm_types::on_chain_config::ConfigStorage;
+use crate::storage::change_set_configs::ChangeSetConfigs;
 use move_core_types::gas_algebra::NumBytes;
+use starcoin_gas_meter::{StarcoinGasParameters, LATEST_GAS_FEATURE_VERSION};
+use starcoin_vm_types::on_chain_config::ConfigStorage;
 use std::fmt::Debug;
 
 pub mod change_set_configs;
@@ -25,9 +22,7 @@ impl StorageGasParameters {
     ) -> Self {
         let change_set_configs = ChangeSetConfigs::new(feature_version, gas_params);
 
-        Self {
-            change_set_configs,
-        }
+        Self { change_set_configs }
     }
 
     pub fn unlimited(free_write_bytes_quota: NumBytes) -> Self {

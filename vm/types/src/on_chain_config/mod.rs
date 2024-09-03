@@ -46,11 +46,11 @@ pub use self::{
         v4_native_table, G_LATEST_INSTRUCTION_TABLE, G_LATEST_NATIVE_TABLE,
     },
     move_lang_version::MoveLanguageVersion,
+    starcoin_features::*,
+    timed_features::*,
     timestamp::CurrentTimeMicroseconds,
     version::{version_config_type_tag, Version, G_VERSION_CONFIG_IDENTIFIER},
     vm_config::*,
-    starcoin_features::*,
-    timed_features::*,
 };
 pub use crate::on_chain_resource::GlobalTimeOnChain;
 use crate::state_store::state_key::StateKey;

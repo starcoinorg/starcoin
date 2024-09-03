@@ -36,7 +36,7 @@ use crate::write_set::WriteOp;
 pub use change_set::ChangeSet;
 pub use error::CallError;
 pub use error::Error as TransactionError;
-pub use module::Module;
+pub use module::{Module, ModuleBundle};
 pub use package::Package;
 pub use pending_transaction::{Condition, PendingTransaction};
 use schemars::{self, JsonSchema};

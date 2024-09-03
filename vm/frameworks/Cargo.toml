@@ -1,0 +1,48 @@
+[dependencies]
+arrayref = { workspace = true }
+better_any = { workspace = true }
+libsecp256k1 = { workspace = true }
+log = { workspace = true }
+move-binary-format = { workspace = true }
+move-command-line-common = { workspace = true }
+move-core-types = { workspace = true }
+move-docgen = { workspace = true }
+move-errmapgen = { workspace = true }
+move-prover = { workspace = true }
+move-stdlib = { workspace = true }
+move-vm-runtime = { workspace = true }
+move-vm-types = { workspace = true }
+num_enum = { workspace = true }
+ripemd160 = { workspace = true }
+smallvec = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-uint = { workspace = true }
+tiny-keccak = { features = ["keccak"], workspace = true }
+walkdir = { workspace = true }
+serde = { version = "1.0.204", features = ["derive"] }
+serde_bytes = { workspace = true }
+anyhow = { workspace = true }
+flate2 = { workspace = true }
+starcoin-native-interface = { workspace = true }
+starcoin-vm-types = { workspace = true }
+starcoin-gas-algebra = { workspace = true }
+starcoin-gas-schedule = { workspace = true }
+
+
+[dev-dependencies]
+hex = { workspace = true }
+rand = { workspace = true }
+
+[features]
+testing = ["move-stdlib/testing"]
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+name = "starcoin-frameworks"
+version = "2.0.1"
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }

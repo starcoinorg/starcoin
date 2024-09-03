@@ -72,7 +72,7 @@ members = [
     "vm/types",
     "vm/vm-runtime-types",
     "vm/vm-runtime",
-    "vm/natives",
+    "vm/frameworks",
     "vm/starcoin-native-interface",
     "vm/stdlib",
     "vm/compiler",
@@ -86,8 +86,10 @@ members = [
     "vm/resource-viewer",
     "vm/starcoin-gas",
     "vm/starcoin-aggregator",
+    "vm/starcoin-gas-meter",
     "vm/dev",
-    "vm/gas-algebra-ext",
+    "vm/gas-algebra",
+    "vm/gas-schedule",
     "vm/move-explain",
     "vm/move-package-manager",
     "vm/vm-status-translator",
@@ -97,6 +99,7 @@ members = [
     "vm/transaction-benchmarks",
     "vm/e2e-tests",
     "vm/proptest-helpers",
+    "vm/starcoin-native-interface",
     "abi/types",
     "abi/decoder",
     "abi/resolver",
@@ -189,7 +192,7 @@ default-members = [
     "vm/types",
     "vm/vm-runtime-types",
     "vm/vm-runtime",
-    "vm/natives",
+    "vm/frameworks",
     "vm/starcoin-native-interface",
     "vm/stdlib",
     "vm/compiler",
@@ -203,14 +206,17 @@ default-members = [
     "vm/resource-viewer",
     "vm/starcoin-gas",
     "vm/starcoin-aggregator",
+    "vm/starcoin-gas-meter",
     "vm/dev",
-    "vm/gas-algebra-ext",
+    "vm/gas-algebra",
+    "vm/gas-schedule",
     "vm/move-explain",
     "vm/move-package-manager",
     "vm/vm-status-translator",
     "vm/starcoin-transactional-test-harness",
     "vm/framework",
     "vm/framework/table-natives",
+    "vm/starcoin-native-interface",
     "abi/types",
     "abi/decoder",
     "abi/resolver",
@@ -503,9 +509,10 @@ starcoin-miner-client = { path = "cmd/miner_client" }
 starcoin-miner-client-api = { path = "cmd/miner_client/api" }
 starcoin-move-compiler = { path = "vm/compiler" }
 starcoin-move-explain = { path = "vm/move-explain" }
-starcoin-gas-algebra-ext = { path = "vm/gas-algebra-ext" }
-starcoin-gas = { path = "vm/starcoin-gas" }
-starcoin-natives = { path = "vm/natives" }
+starcoin-gas-algebra = { path = "vm/gas-algebra" }
+starcoin-gas-schedule = { path = "vm/gas-schedule" }
+starcoin-gas-meter = { path = "vm/starcoin-gas-meter" }
+starcoin-frameworks = { path = "vm/frameworks" }
 starcoin-native-interface = { path = "vm/starcoin-native-interface" }
 starcoin-network = { path = "network" }
 starcoin-network-rpc = { path = "network-rpc" }
@@ -589,6 +596,7 @@ walkdir = "2.3.1"
 wasm-timer = "0.2"
 which = "4.1.0"
 zeroize = "1.3.0"
+paste = "1.0.7"
 
 [profile.release.package]
 starcoin-service-registry.debug = 1
