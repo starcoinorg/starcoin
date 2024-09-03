@@ -1224,7 +1224,6 @@ fn test_verification_blue_block() -> anyhow::Result<()> {
     dag.ghost_dag_manager()
         .check_ghostdata_blue_block(&together_ghost_data)?;
 
-
     let together_mine = dag.ghostdata(&[block_from_normal.id(), block_from_makeup.id()])?;
     let mine_together = add_and_print(8, together_mine.selected_parent, vec![block_from_normal.id(), block_from_makeup.id()], genesis.parent_hash(), &mut dag)?;
     let together_ghost_data = dag.storage.ghost_dag_store.get_data(mine_together.id())?;

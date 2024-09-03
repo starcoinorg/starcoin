@@ -206,7 +206,7 @@ impl<
                 // No k-cluster violation found, we can now set the candidate block as blue
                 new_block_data.add_blue(blue_candidate, blue_anticone_size, &blues_anticone_sizes);
             } else {
-                new_block_data.add_red(blue_candidate);
+                check_ghostdata.add_red(blue_candidate);
             }
         }
 
