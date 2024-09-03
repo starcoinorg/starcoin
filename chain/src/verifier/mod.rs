@@ -7,6 +7,7 @@ use starcoin_chain_api::{
     verify_block, ChainReader, ConnectBlockError, VerifiedBlock, VerifyBlockField,
 };
 use starcoin_consensus::{Consensus, ConsensusVerifyError};
+use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_logger::prelude::debug;
 use starcoin_open_block::AddressFilter;
 use starcoin_types::block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME};
@@ -76,13 +77,16 @@ pub trait BlockVerifier {
         StaticVerifier::verify_body_hash(&new_block)?;
         watch(CHAIN_WATCH_NAME, "n13");
         //verify uncles
-        Self::verify_uncles(
+        let ghostdata = Self::verify_uncles(
             current_chain,
             new_block.uncles().unwrap_or_default(),
             new_block_header,
         )?;
         watch(CHAIN_WATCH_NAME, "n14");
-        Ok(VerifiedBlock(new_block))
+        Ok(VerifiedBlock{
+            block: new_block,
+            ghostdata: None,
+        })
     }
 
     fn verify_blacklisted_txns(new_block: &Block) -> Result<()> {
@@ -101,7 +105,7 @@ pub trait BlockVerifier {
         current_chain: &R,
         uncles: &[BlockHeader],
         header: &BlockHeader,
-    ) -> Result<()>
+    ) -> Result<Option<GhostdagData>>
     where
         R: ChainReader,
     {
@@ -118,7 +122,7 @@ pub trait BlockVerifier {
         }
 
         if uncles.is_empty() {
-            return Ok(());
+            return Ok(None);
         }
         verify_block!(
             VerifyBlockField::Uncle,
@@ -163,7 +167,7 @@ pub trait BlockVerifier {
             Self::verify_header(&uncle_branch, uncle)?;
             uncle_ids.insert(uncle_id);
         }
-        Ok(())
+        Ok(None)
     }
 
     fn can_be_uncle<R>(current_chain: &R, block_header: &BlockHeader) -> Result<bool>
@@ -318,25 +322,28 @@ impl BlockVerifier for NoneVerifier {
     where
         R: ChainReader,
     {
-        Ok(VerifiedBlock(new_block))
+        Ok(VerifiedBlock{
+            block: new_block,
+            ghostdata: None,
+        })    
     }
 
     fn verify_uncles<R>(
         _current_chain: &R,
         _uncles: &[BlockHeader],
         _header: &BlockHeader,
-    ) -> Result<()>
+    ) -> Result<Option<GhostdagData>>
     where
         R: ChainReader,
     {
-        Ok(())
+        Ok(None)
     }
 }
 
-//TODO: Implement it.
-pub struct DagVerifier;
-impl BlockVerifier for DagVerifier {
-    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
+
+struct BasicDagVerifier;
+impl BasicDagVerifier {
+    pub fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
     where
         R: ChainReader,
     {
@@ -379,51 +386,54 @@ impl BlockVerifier for DagVerifier {
 
         ConsensusVerifier::verify_header(current_chain, new_block_header)
     }
+    
+    fn verify_blue_blocks<R>(current_chain: &R, uncles: &[BlockHeader], header: &BlockHeader) -> Result<GhostdagData> where R: ChainReader {
+        current_chain.verify_and_ghostdata(uncles, header)
+    }
+
+
+   
+}
+//TODO: Implement it.
+pub struct DagVerifier;
+impl BlockVerifier for DagVerifier {
+    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
+    where
+        R: ChainReader,
+    {
+        BasicDagVerifier::verify_header(current_chain, new_block_header)
+    }
 
     fn verify_uncles<R>(
         _current_chain: &R,
         _uncles: &[BlockHeader],
         _header: &BlockHeader,
-    ) -> Result<()>
+    ) -> Result<Option<GhostdagData>>
     where
         R: ChainReader,
     {
-        // let mut uncle_ids = HashSet::new();
-        // for uncle in uncles {
-        //     let uncle_id = uncle.id();
-        //     verify_block!(
-        //         VerifyBlockField::Uncle,
-        //         !uncle_ids.contains(&uncle.id()),
-        //         "repeat uncle {:?} in current block {:?}",
-        //         uncle_id,
-        //         header.id()
-        //     );
+        Ok(None)
+    }
+}
 
-        //     if !header.is_dag() {
-        //         verify_block!(
-        //             VerifyBlockField::Uncle,
-        //             uncle.number() < header.number() ,
-        //         "uncle block number bigger than or equal to current block ,uncle block number is {} , current block number is {}", uncle.number(), header.number()
-        //         );
-        //     }
 
-        //     verify_block!(
-        //         VerifyBlockField::Uncle,
-        //         current_chain.get_block_info(Some(uncle_id))?.is_some(),
-        //         "Invalid block: uncle {} does not exist",
-        //         uncle_id
-        //     );
+pub struct DagVerifierWithGhostData;
+impl BlockVerifier for DagVerifierWithGhostData {
+    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
+    where
+        R: ChainReader,
+    {
+        BasicDagVerifier::verify_header(current_chain, new_block_header)
+    }
 
-        //     debug!(
-        //         "verify_uncle header number {} hash {:?} uncle number {} hash {:?}",
-        //         header.number(),
-        //         header.id(),
-        //         uncle.number(),
-        //         uncle.id()
-        //     );
-        //     uncle_ids.insert(uncle_id);
-        // }
-
-        Ok(())
+    fn verify_uncles<R>(
+        current_chain: &R,
+        uncles: &[BlockHeader],
+        header: &BlockHeader,
+    ) -> Result<Option<GhostdagData>>
+    where
+        R: ChainReader,
+    {
+        Ok(Some(BasicDagVerifier::verify_blue_blocks(current_chain, uncles, header)?))
     }
 }

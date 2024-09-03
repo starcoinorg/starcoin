@@ -458,8 +458,8 @@ impl BlockChain {
     }
 
     fn execute_dag_block(&mut self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
-        info!("execute dag block:{:?}", verified_block.0);
-        let block = verified_block.0;
+        info!("execute dag block:{:?}", verified_block.block);
+        let block = verified_block.block;
         let selected_parent = block.parent_hash();
         let block_info_past = self
             .storage
@@ -1210,8 +1210,7 @@ impl ChainReader for BlockChain {
     }
 
     fn verify(&self, block: Block) -> Result<VerifiedBlock> {
-        DagVerifier::verify_header(self, block.header())?;
-        Ok(VerifiedBlock(block))
+        DagVerifier::verify_block(self, block)
     }
 
     fn execute(&mut self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
@@ -1225,7 +1224,7 @@ impl ChainReader for BlockChain {
             self.block_accumulator.fork(None),
             &self.epoch,
             Some(self.status.status.clone()),
-            verified_block.0,
+            verified_block.block,
             self.vm_metrics.clone(),
         )
     }
@@ -1347,6 +1346,10 @@ impl ChainReader for BlockChain {
 
     fn check_chain_type(&self) -> Result<ChainType> {
         Ok(ChainType::Dag)
+    }
+    
+    fn verify_and_ghostdata(&self, uncles: &[BlockHeader], header: &BlockHeader) -> Result<starcoin_dag::types::ghostdata::GhostdagData> {
+        self.dag().verify_and_ghostdata(uncles, header)
     }
 }
 

@@ -171,6 +171,61 @@ impl<
         Ok(new_block_data)
     }
 
+    pub(crate) fn verify_and_ghostdata(&self, blue_blocks: &[BlockHeader], header: &BlockHeader) -> std::result::Result<GhostdagData, anyhow::Error> {
+        let mut new_block_data = GhostdagData::new_with_selected_parent(header.parent_hash(), self.k);
+        for blue_candidate in blue_blocks {
+            let coloring = self.check_blue_candidate(&new_block_data, blue_candidate.id())?;
+            if let ColoringOutput::Blue(blue_anticone_size, blues_anticone_sizes) = coloring {
+                new_block_data.add_blue(blue_candidate.id(), blue_anticone_size, &blues_anticone_sizes);
+            } else {
+                new_block_data.add_red(blue_candidate.id());
+            }
+        }
+
+        if blue_blocks.len() != new_block_data.mergeset_blues.len() {
+            return Err(anyhow::anyhow!("The len of blue set is not equal, for {}, checking data: {}", blue_blocks.len(), new_block_data.mergeset_blues.len()));
+        }
+        if blue_blocks.iter().map(|block_header| block_header.id()).collect::<HashSet<_>>() != new_block_data.mergeset_blues.iter().cloned().collect::<HashSet<_>>() {
+            return Err(anyhow::anyhow!("The blue set is not equal"));
+        }
+
+        if !new_block_data.mergeset_reds.is_empty() {
+            return Err(anyhow::anyhow!("The red set is not empty when checking the block for ghost data: {:?}", header.id()));
+        }
+
+        BlockHashes::make_mut(&mut new_block_data.mergeset_blues).push(new_block_data.selected_parent);
+
+        let blue_score = self
+            .ghostdag_store
+            .get_blue_score(header.parent_hash())?
+            .checked_add(new_block_data.mergeset_blues.len() as u64)
+            .expect("blue score size should less than u64");
+
+        let added_blue_work: BlueWorkType = new_block_data 
+            .mergeset_blues
+            .iter()
+            .cloned()
+            .map(|hash| {
+                self.headers_store
+                    .get_difficulty(hash)
+                    .unwrap_or_else(|err| {
+                        error!("Failed to get difficulty of block: {}, {}", hash, err);
+                        0.into()
+                    })
+            })
+            .sum();
+
+        let blue_work = self
+            .ghostdag_store
+            .get_blue_work(new_block_data.selected_parent)?
+            .checked_add(added_blue_work)
+            .expect("blue work should less than u256");
+
+        new_block_data.finalize_score_and_work(blue_score, blue_work);
+
+        Ok(new_block_data)
+    }
+
     pub fn check_ghostdata_blue_block(&self, ghostdata: &GhostdagData) -> Result<()> {
         let mut check_ghostdata = GhostdagData::new_with_selected_parent(ghostdata.selected_parent, self.k);
         for blue_candidate in ghostdata.mergeset_blues.iter().skip(1).cloned() {
@@ -381,6 +436,8 @@ impl<
         });
         Ok(sorted_blocks)
     }
+    
+
 }
 
 /// Chain block with attached ghostdag data
