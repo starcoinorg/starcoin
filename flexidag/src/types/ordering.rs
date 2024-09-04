@@ -34,3 +34,35 @@ impl Ord for SortableBlock {
             .then_with(|| self.hash.cmp(&other.hash))
     }
 }
+
+#[derive(Eq, Clone, Debug, Serialize, Deserialize)]
+pub struct SortableBlockWithWorkType {
+    pub hash: Hash,
+    pub blue_work: BlueWorkType,
+}
+
+impl SortableBlockWithWorkType {
+    pub fn new(hash: Hash, blue_work: BlueWorkType) -> Self {
+        Self { hash, blue_work }
+    }
+}
+
+impl PartialEq for SortableBlockWithWorkType {
+    fn eq(&self, other: &Self) -> bool {
+        self.hash == other.hash
+    }
+}
+
+impl PartialOrd for SortableBlockWithWorkType {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for SortableBlockWithWorkType {
+    fn cmp(&self, other: &Self) -> Ordering {
+        other.blue_work
+            .cmp(&self.blue_work)
+            .then_with(|| self.hash.cmp(&other.hash))
+    }
+}

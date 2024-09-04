@@ -196,7 +196,7 @@ impl<
             }
         }
 
-        *BlockHashes::make_mut(&mut new_block_data.mergeset_blues) = self.sort_blocks(new_block_data.mergeset_blues.iter().cloned())?;
+        *BlockHashes::make_mut(&mut new_block_data.mergeset_blues) = self.sort_blocks_for_work_type(new_block_data.mergeset_blues.iter().cloned())?;
 
         if new_block_data.mergeset_blues.iter().skip(1).cloned().collect::<HashSet<_>>() != blue_blocks.into_iter().map(|header| header.id()).collect::<HashSet<_>>() {
             if  header.number() < 10000000 {
@@ -517,7 +517,24 @@ impl<
         Ok(sorted_blocks)
     }
     
+    pub fn sort_blocks_for_work_type(&self, blocks: impl IntoIterator<Item = Hash>) -> Result<Vec<Hash>> {
+        let mut sorted_blocks: Vec<Hash> = blocks.into_iter().collect();
 
+        sorted_blocks.sort_by_cached_key(|block| {
+            let blue_work = self
+                .ghostdag_store
+                .get_blue_work(*block)
+                .unwrap_or_else(|err| {
+                    error!("Failed to get blue work of block: {}, {}", *block, err);
+                    0.into()
+                });
+            SortableBlockWithWorkType {
+                hash: *block,
+                blue_work,
+            }
+        });
+        Ok(sorted_blocks)
+    }
 }
 
 /// Chain block with attached ghostdag data

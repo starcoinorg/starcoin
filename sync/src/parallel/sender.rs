@@ -127,6 +127,7 @@ impl<'a> DagBlockSender<'a> {
         }
 
         self.wait_for_finish().await?;
+        sync_dag_store.delete_all_dag_sync_block()?;
 
         Ok(())
     }
@@ -137,7 +138,6 @@ impl<'a> DagBlockSender<'a> {
                 Ok(state) => {
                     match state {
                         ExecuteState::Executed(executed_block) => {
-                            self.sync_dag_store.delete_dag_sync_block(executed_block.block().header().number(), executed_block.header().id())?;
                             info!("finish to execute block {:?}", executed_block.header());
                             self.notifier.notify(executed_block.clone())?;
                             worker.state = ExecuteState::Executed(executed_block);
