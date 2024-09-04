@@ -177,15 +177,9 @@ impl<
             !parents.is_empty(),
             "genesis must be added via a call to init"
         );
-        // Run the GHOSTDAG parent selection algorithm
         let selected_parent = header.parent_hash();
         // Initialize new GHOSTDAG block data with the selected parent
         let mut new_block_data = GhostdagData::new_with_selected_parent(selected_parent, self.k);
-        // Get the mergeset in consensus-agreed topological order (topological here means forward in time from blocks to children)
-        // let ordered_mergeset =
-        //     self.ordered_mergeset_without_selected_parent(selected_parent, &parents)?;
-
-        // let last_blue_block = self.sort_blocks(blue_blocks.into_iter().map(|header| header.id()))?.last().cloned();
         let ordered_mergeset = self.sort_blocks(header.parents_hash().into_iter().filter(|header_id| {
             *header_id != header.parent_hash()
         }).chain(blue_blocks.into_iter().filter(|header| {
@@ -202,14 +196,14 @@ impl<
             }
         }
 
+        *BlockHashes::make_mut(&mut new_block_data.mergeset_blues) = self.sort_blocks(new_block_data.mergeset_blues.iter().cloned())?;
 
         if new_block_data.mergeset_blues.iter().skip(1).cloned().collect::<HashSet<_>>() != blue_blocks.into_iter().map(|header| header.id()).collect::<HashSet<_>>() {
-
-            // if blue_blocks.len() == 1 && blue_blocks.first().expect("it should not be none").id() == new_block_data.selected_parent {
-            //     *BlockHashes::make_mut(&mut new_block_data.mergeset_blues) = blue_blocks.into_iter().map(|header| header.id()).collect();
-            // } else {
+            if  header.number() < 10000000 {
+                warn!("The data of blue set is not equal, for {:?}, checking data: {:?}", blue_blocks, new_block_data.mergeset_blues);
+            } else {
                 bail!("The data of blue set is not equal, for {:?}, checking data: {:?}", blue_blocks, new_block_data.mergeset_blues);
-            // }
+            }
         }
 
         let blue_score = self
@@ -385,7 +379,6 @@ impl<
                 .reachability_service
                 .is_dag_ancestor_of(hash, blue_candidate)
             {
-                info!("jacktest: because {:?} is_dag_ancestor_of {:?}, return blue", hash, blue_candidate);
                 return Ok(ColoringState::Blue);
             }
         }
