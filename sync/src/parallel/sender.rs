@@ -124,6 +124,7 @@ impl<'a> DagBlockSender<'a> {
 
             // Finding the executing state is the priority
             if self.dispatch_to_worker(&block).await? {
+                self.flush_executor_state().await?;
                 continue;
             }
 

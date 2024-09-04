@@ -473,7 +473,6 @@ where
                         children: vec![],
                     })?;
                 self.sync_dag_store.save_block(block)?;
-                info!("finish saving");
                 anyhow::Ok(ParallelSign::NeedMoreBlocks)
             }
         };

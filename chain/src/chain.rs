@@ -1545,7 +1545,6 @@ impl ChainWriter for BlockChain {
     fn chain_state(&mut self) -> &ChainStateDB {
         &self.statedb
     }
-
     fn apply_for_sync(&mut self, block: Block) -> Result<ExecutedBlock> {
         self.apply_with_verifier::<DagVerifierWithGhostData>(block)
     }

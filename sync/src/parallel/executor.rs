@@ -80,7 +80,6 @@ impl DagBlockExecutor {
                         };
                         let header = block.header().clone();
 
-                        info!("worker will process header {:?}", header);
                         loop {
                             match Self::waiting_for_parents(
                                 &self.dag,
