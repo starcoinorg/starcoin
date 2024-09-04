@@ -354,7 +354,7 @@ where
             self.chain
                 .apply_with_verifier::<BasicVerifier>(block.clone())
         } else {
-            self.chain.apply(block.clone())
+            self.chain.apply_for_sync(block.clone())
         };
         if let Err(err) = apply_result {
             let error_msg = err.to_string();
@@ -460,17 +460,15 @@ where
                     100000,
                     self.chain.time_service(), 
                     self.local_store.clone(), 
-                    None, self.chain.dag());
+                    None, self.chain.dag(), self);
                 parallel_execute.process_absent_blocks().await?;
                 anyhow::Ok(ParallelSign::Executed)
             } else {
-                info!("now save the dag block in order");
                 self.local_store.save_dag_sync_block(starcoin_storage::block::DagSyncBlock {
                     block: block.clone(),
                     children: vec![],
                 })?;
                 self.sync_dag_store.save_block(block)?;
-                info!("finish saving");
                 anyhow::Ok(ParallelSign::NeedMoreBlocks)
             }
 
@@ -652,15 +650,12 @@ where
 
         let timestamp = block.header().timestamp();
 
-        let block_info = if self.chain.check_chain_type()? == ChainType::Dag {
+        let block_info = 
             if self.chain.has_dag_block(block.header().id())? {
                 block_info
             } else {
                 None
-            }
-        } else {
-            block_info
-        };
+            };
 
         let (block_info, action) = match block_info {
             Some(block_info) => {

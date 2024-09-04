@@ -2,7 +2,7 @@ use super::util::Refs;
 use crate::consensusdb::schemadb::{GhostdagStoreReader, HeaderStoreReader, RelationsStoreReader};
 use crate::reachability::reachability_service::ReachabilityService;
 use crate::types::{ghostdata::GhostdagData, ordering::*};
-use anyhow::{ensure, Context, Result};
+use anyhow::{bail, ensure, Context, Result};
 use parking_lot::RwLock;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_logger::prelude::*;
@@ -172,36 +172,53 @@ impl<
     }
 
     pub(crate) fn verify_and_ghostdata(&self, blue_blocks: &[BlockHeader], header: &BlockHeader) -> std::result::Result<GhostdagData, anyhow::Error> {
-        let mut new_block_data = GhostdagData::new_with_selected_parent(header.parent_hash(), self.k);
-        for blue_candidate in blue_blocks {
-            let coloring = self.check_blue_candidate(&new_block_data, blue_candidate.id())?;
+        let parents = header.parents_hash();
+        assert!(
+            !parents.is_empty(),
+            "genesis must be added via a call to init"
+        );
+        // Run the GHOSTDAG parent selection algorithm
+        let selected_parent = header.parent_hash();
+        // Initialize new GHOSTDAG block data with the selected parent
+        let mut new_block_data = GhostdagData::new_with_selected_parent(selected_parent, self.k);
+        // Get the mergeset in consensus-agreed topological order (topological here means forward in time from blocks to children)
+        // let ordered_mergeset =
+        //     self.ordered_mergeset_without_selected_parent(selected_parent, &parents)?;
+
+        // let last_blue_block = self.sort_blocks(blue_blocks.into_iter().map(|header| header.id()))?.last().cloned();
+        let ordered_mergeset = self.sort_blocks(header.parents_hash().into_iter().filter(|header_id| {
+            *header_id != header.parent_hash()
+        }).chain(blue_blocks.into_iter().filter(|header| {
+            header.id() != new_block_data.selected_parent
+        }).map(|header| header.id())).collect::<HashSet<_>>().into_iter().collect::<Vec<_>>())?;
+
+        for blue_candidate in ordered_mergeset.iter().cloned() {
+            let coloring = self.check_blue_candidate(&new_block_data, blue_candidate)?;
             if let ColoringOutput::Blue(blue_anticone_size, blues_anticone_sizes) = coloring {
-                new_block_data.add_blue(blue_candidate.id(), blue_anticone_size, &blues_anticone_sizes);
+                // No k-cluster violation found, we can now set the candidate block as blue
+                new_block_data.add_blue(blue_candidate, blue_anticone_size, &blues_anticone_sizes);
             } else {
-                new_block_data.add_red(blue_candidate.id());
+                new_block_data.add_red(blue_candidate);
             }
         }
 
-        if blue_blocks.len() != new_block_data.mergeset_blues.len() {
-            return Err(anyhow::anyhow!("The len of blue set is not equal, for {}, checking data: {}", blue_blocks.len(), new_block_data.mergeset_blues.len()));
-        }
-        if blue_blocks.iter().map(|block_header| block_header.id()).collect::<HashSet<_>>() != new_block_data.mergeset_blues.iter().cloned().collect::<HashSet<_>>() {
-            return Err(anyhow::anyhow!("The blue set is not equal"));
-        }
 
-        if !new_block_data.mergeset_reds.is_empty() {
-            return Err(anyhow::anyhow!("The red set is not empty when checking the block for ghost data: {:?}", header.id()));
-        }
+        if new_block_data.mergeset_blues.iter().skip(1).cloned().collect::<HashSet<_>>() != blue_blocks.into_iter().map(|header| header.id()).collect::<HashSet<_>>() {
 
-        BlockHashes::make_mut(&mut new_block_data.mergeset_blues).push(new_block_data.selected_parent);
+            // if blue_blocks.len() == 1 && blue_blocks.first().expect("it should not be none").id() == new_block_data.selected_parent {
+            //     *BlockHashes::make_mut(&mut new_block_data.mergeset_blues) = blue_blocks.into_iter().map(|header| header.id()).collect();
+            // } else {
+                bail!("The data of blue set is not equal, for {:?}, checking data: {:?}", blue_blocks, new_block_data.mergeset_blues);
+            // }
+        }
 
         let blue_score = self
             .ghostdag_store
-            .get_blue_score(header.parent_hash())?
+            .get_blue_score(selected_parent)?
             .checked_add(new_block_data.mergeset_blues.len() as u64)
             .expect("blue score size should less than u64");
 
-        let added_blue_work: BlueWorkType = new_block_data 
+        let added_blue_work: BlueWorkType = new_block_data
             .mergeset_blues
             .iter()
             .cloned()
@@ -217,13 +234,82 @@ impl<
 
         let blue_work = self
             .ghostdag_store
-            .get_blue_work(new_block_data.selected_parent)?
+            .get_blue_work(selected_parent)?
             .checked_add(added_blue_work)
             .expect("blue work should less than u256");
 
         new_block_data.finalize_score_and_work(blue_score, blue_work);
 
         Ok(new_block_data)
+
+        // let mut new_block_data = GhostdagData::new_with_selected_parent(header.parent_hash(), self.k);
+        // let mut mergetset = header.parents_hash().into_iter().filter(|header_id| {
+        //     *header_id != header.parent_hash()
+        // }).chain(blue_blocks.into_iter().filter(|header| {
+        //     header.id() != new_block_data.selected_parent
+        // }).map(|header| header.id())).collect::<HashSet<_>>().into_iter().collect::<Vec<_>>();
+        // info!("jacktest: merget set = {:?}", mergetset);
+        // mergetset = self.sort_blocks(mergetset.into_iter())?;
+        // let ordered_mergeset =
+        //     self.ordered_mergeset_without_selected_parent(new_block_data.selected_parent, &vec![new_block_data.selected_parent])?;
+
+
+        // for blue_candidate in ordered_mergeset {
+        //     let coloring = self.check_blue_candidate(&new_block_data, blue_candidate)?;
+        //     if let ColoringOutput::Blue(blue_anticone_size, blues_anticone_sizes) = coloring {
+        //         new_block_data.add_blue(blue_candidate, blue_anticone_size, &blues_anticone_sizes);
+        //     } else {
+        //         new_block_data.add_red(blue_candidate);
+        //     }
+        // }
+        // let mut valid_mergeset_blues = vec![new_block_data.selected_parent];
+        // valid_mergeset_blues.append(&mut new_block_data.mergeset_blues.iter().cloned().collect::<HashSet<_>>().into_iter().filter(|header_id| {
+        //     *header_id != new_block_data.selected_parent
+        // }).collect());
+        // *BlockHashes::make_mut(&mut new_block_data.mergeset_blues) = valid_mergeset_blues;
+        // *BlockHashes::make_mut(&mut new_block_data.mergeset_reds) = new_block_data.mergeset_reds.iter().cloned().collect::<HashSet<_>>().into_iter().collect::<Vec<_>>();
+        // let selectd_ghostdata = self.ghostdag(&vec![header.parent_hash()])?;
+        // if blue_blocks.len() != new_block_data.mergeset_blues.len().saturating_sub(1) {
+        //     return Err(anyhow::anyhow!("The len of blue set is not equal, for {:?}, checking data: {:?}", blue_blocks.iter().map(|header| header.id()).collect::<Vec<_>>(), new_block_data.mergeset_blues));
+        // }
+
+        // let mut expected_blue_blocks = blue_blocks.iter().map(|header| header.id()).collect::<HashSet<_>>();
+        // expected_blue_blocks.insert(new_block_data.selected_parent);
+        // if expected_blue_blocks != new_block_data.mergeset_blues.iter().cloned().collect::<HashSet<_>>() {
+        //     // return Err(anyhow::anyhow!("The data of blue set is not equal, for {:?}, checking data: {:?}", blue_blocks.iter().map(|header| header.id()).collect::<Vec<_>>(), new_block_data.mergeset_blues));
+        //     info!("The data of blue set is not equal, for {:?}, checking data: {:?}, run ghost protocol to get the valid data", blue_blocks, new_block_data.mergeset_blues);
+        //     return Ok(self.ghostdag(&header.parents_hash())?);
+        // }
+
+        // let blue_score = self
+        //     .ghostdag_store
+        //     .get_blue_score(header.parent_hash())?
+        //     .checked_add(new_block_data.mergeset_blues.len() as u64)
+        //     .expect("blue score size should less than u64");
+
+        // let added_blue_work: BlueWorkType = new_block_data 
+        //     .mergeset_blues
+        //     .iter()
+        //     .cloned()
+        //     .map(|hash| {
+        //         self.headers_store
+        //             .get_difficulty(hash)
+        //             .unwrap_or_else(|err| {
+        //                 error!("Failed to get difficulty of block: {}, {}", hash, err);
+        //                 0.into()
+        //             })
+        //     })
+        //     .sum();
+
+        // let blue_work = self
+        //     .ghostdag_store
+        //     .get_blue_work(new_block_data.selected_parent)?
+        //     .checked_add(added_blue_work)
+        //     .expect("blue work should less than u256");
+
+        // new_block_data.finalize_score_and_work(blue_score, blue_work);
+
+        // Ok(new_block_data)
     }
 
     pub fn check_ghostdata_blue_block(&self, ghostdata: &GhostdagData) -> Result<()> {
@@ -299,6 +385,7 @@ impl<
                 .reachability_service
                 .is_dag_ancestor_of(hash, blue_candidate)
             {
+                info!("jacktest: because {:?} is_dag_ancestor_of {:?}, return blue", hash, blue_candidate);
                 return Ok(ColoringState::Blue);
             }
         }

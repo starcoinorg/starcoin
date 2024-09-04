@@ -85,7 +85,7 @@ pub trait BlockVerifier {
         watch(CHAIN_WATCH_NAME, "n14");
         Ok(VerifiedBlock{
             block: new_block,
-            ghostdata: None,
+            ghostdata,
         })
     }
 

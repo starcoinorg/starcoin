@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::verifier::{BlockVerifier, DagVerifier, FullVerifier};
+use crate::verifier::{BlockVerifier, DagVerifier, DagVerifierWithGhostData, FullVerifier};
 use anyhow::{bail, ensure, format_err, Ok, Result};
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_accumulator::inmemory::InMemoryAccumulator;
@@ -645,9 +645,14 @@ impl BlockChain {
             .storage
             .get_block_header_by_hash(self.genesis_hash)?
             .ok_or_else(|| format_err!("failed to get genesis because it is none"))?;
-        let result = self
-            .dag
-            .commit(header.to_owned(), genesis_header.parent_hash());
+        let result = match verified_block.ghostdata {
+            Some(trusted_ghostdata) => {
+                self.dag.commit_trusted_block(header.to_owned(), genesis_header.parent_hash(), Arc::new(trusted_ghostdata))
+            }
+            None => {
+                self.dag.commit(header.to_owned(), genesis_header.parent_hash())
+            }
+        };
         match result {
             anyhow::Result::Ok(_) => info!("finish to commit dag block: {:?}", block_id),
             Err(e) => {
@@ -1534,6 +1539,10 @@ impl ChainWriter for BlockChain {
 
     fn chain_state(&mut self) -> &ChainStateDB {
         &self.statedb
+    }
+    
+    fn apply_for_sync(&mut self, block: Block) -> Result<ExecutedBlock> {
+        self.apply_with_verifier::<DagVerifierWithGhostData>(block)
     }
 }
 

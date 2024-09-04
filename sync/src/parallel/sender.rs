@@ -10,7 +10,7 @@ use starcoin_storage::Store;
 use starcoin_types::block::{Block, BlockHeader};
 use tokio::{sync::mpsc::{self, Receiver, Sender}, task::JoinHandle};
 
-use crate::store::{sync_absent_ancestor::DagSyncBlock, sync_dag_store::{self, SyncDagStore}};
+use crate::{store::{sync_absent_ancestor::DagSyncBlock, sync_dag_store::{self, SyncDagStore}}, tasks::continue_execute_absent_block::ContinueChainOperator};
 
 use super::executor::{DagBlockExecutor, ExecuteState};
 
@@ -21,7 +21,7 @@ struct DagBlockWorker {
     pub handle: JoinHandle<()>,
 }
 
-pub struct DagBlockSender {
+pub struct DagBlockSender<'a> {
     sync_dag_store: SyncDagStore,
     executors: Vec<DagBlockWorker>,
     queue_size: usize,
@@ -29,9 +29,10 @@ pub struct DagBlockSender {
     storage: Arc<dyn Store>,
     vm_metrics: Option<VMMetrics>,
     dag: BlockDAG,
+    notifier: &'a mut dyn ContinueChainOperator,
 }
 
-impl DagBlockSender {
+impl<'a> DagBlockSender<'a> {
     pub fn new(
         sync_dag_store: SyncDagStore,
         queue_size: usize,
@@ -39,6 +40,7 @@ impl DagBlockSender {
         storage: Arc<dyn Store>,
         vm_metrics: Option<VMMetrics>,
         dag: BlockDAG,
+        notifier: &'a mut dyn ContinueChainOperator,
     ) -> Self {
         Self {
             sync_dag_store,
@@ -48,6 +50,7 @@ impl DagBlockSender {
             storage,
             vm_metrics,
             dag,
+            notifier,
         }
     }
 
@@ -95,6 +98,7 @@ impl DagBlockSender {
 
             // Finding the executing state is the priority
             if self.dispatch_to_worker(&block).await? {
+                self.flush_executor_state().await?;
                 continue;
             }
 
@@ -134,6 +138,8 @@ impl DagBlockSender {
                     match state {
                         ExecuteState::Executed(executed_block) => {
                             self.sync_dag_store.delete_dag_sync_block(executed_block.block().header().number(), executed_block.header().id())?;
+                            info!("finish to execute block {:?}", executed_block.header());
+                            self.notifier.notify(executed_block.clone())?;
                             worker.state = ExecuteState::Executed(executed_block);
                         }
                         _ => ()
@@ -148,6 +154,7 @@ impl DagBlockSender {
             }
         }
 
+        let len = self.executors.len();
         self.executors.retain(|worker| {
             if let ExecuteState::Closed = worker.state {
                 false
@@ -155,7 +162,11 @@ impl DagBlockSender {
                 true
             }
         });
-        info!("sync workers count: {:?}", self.executors.len());
+
+        if len != self.executors.len() {
+            info!("sync workers count: {:?}", self.executors.len());
+        }
+
         anyhow::Ok(())
     }
 

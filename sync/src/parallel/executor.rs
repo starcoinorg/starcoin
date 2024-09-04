@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use starcoin_chain::{verifier::DagVerifier, BlockChain, ChainReader};
+use starcoin_chain::{verifier::{DagVerifier, DagVerifierWithGhostData}, BlockChain, ChainReader};
 use starcoin_chain_api::ExecutedBlock;
 use starcoin_config::TimeService;
 use starcoin_crypto::HashValue;
@@ -73,7 +73,6 @@ impl DagBlockExecutor {
                     Some(block) => {
                         let header = block.header().clone();
 
-                        info!("worker will process header {:?}", header);
                         loop {
                             match Self::waiting_for_parents(
                                 &self.dag,
@@ -128,7 +127,7 @@ impl DagBlockExecutor {
                         }
 
                        info!("sync parallel worker {:p} will execute block: {:?}", &self, block.header().id());
-                        match chain.as_mut().expect("it cannot be none!").apply_with_verifier::<DagVerifier>(block) {
+                        match chain.as_mut().expect("it cannot be none!").apply_with_verifier::<DagVerifierWithGhostData>(block) {
                             Ok(executed_block) => {
                                 info!(
                                     "succeed to execute block: number: {:?}, id: {:?}",
