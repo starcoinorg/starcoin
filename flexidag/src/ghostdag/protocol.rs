@@ -426,7 +426,6 @@ impl<
                 .reachability_service
                 .is_dag_ancestor_of(hash, blue_candidate)
             {
-                info!("jacktest: because {:?} is_dag_ancestor_of {:?}, return blue", hash, blue_candidate);
                 return Ok(ColoringState::Blue);
             }
         }
