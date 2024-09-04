@@ -64,7 +64,7 @@ impl<'a> DagBlockSender<'a> {
                         return anyhow::Ok(true);
                     }
                 }
-                ExecuteState::Executed(_) | ExecuteState::Ready(_) | ExecuteState::Error(_) | ExecuteState::Closed => {
+                ExecuteState::Executed(_) | ExecuteState::Error(_) | ExecuteState::Closed => {
                     continue;
                 }
             }
@@ -78,7 +78,7 @@ impl<'a> DagBlockSender<'a> {
                     return anyhow::Ok(true);
                 }
 
-                ExecuteState::Executing(_) | ExecuteState::Ready(_) | ExecuteState::Error(_) | ExecuteState::Closed => {
+                ExecuteState::Executing(_) | ExecuteState::Error(_) | ExecuteState::Closed => {
                     continue;
                 }
             }
@@ -108,7 +108,6 @@ impl<'a> DagBlockSender<'a> {
                 sender_to_main,
                 self.queue_size,
                 self.time_service.clone(),
-                block.header().parent_hash(),
                 self.storage.clone(),
                 self.vm_metrics.clone(),
                 self.dag.clone(),
@@ -170,11 +169,17 @@ impl<'a> DagBlockSender<'a> {
         anyhow::Ok(())
     }
 
-    async fn wait_for_finish(self) -> anyhow::Result<()> {
+    async fn wait_for_finish(mut self) -> anyhow::Result<()> {
         for mut worker in self.executors {
             drop(worker.sender_to_executor);
-            while let Some(_) = worker.receiver_from_executor.recv().await {
-                ()
+            while let Some(state) = worker.receiver_from_executor.recv().await {
+                match state {
+                    ExecuteState::Executed(executed_block) => {
+                        info!("finish to execute block {:?}", executed_block.header());
+                        self.notifier.notify(executed_block.clone())?;
+                    }
+                    ExecuteState::Executing(_) | ExecuteState::Error(_) | ExecuteState::Closed => (),
+                }
             }
             worker.handle.await?;
         }

@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use parking_lot::RwLock;
 use starcoin_chain::{verifier::{DagVerifier, DagVerifierWithGhostData}, BlockChain, ChainReader};
 use starcoin_chain_api::ExecutedBlock;
 use starcoin_config::TimeService;
@@ -13,9 +14,10 @@ use tokio::{
     sync::mpsc::{self, Receiver, Sender}, task::JoinHandle, time::{timeout, Duration}
 };
 
+use crate::tasks::continue_execute_absent_block::ContinueChainOperator;
+
 #[derive(Debug)]
 pub enum ExecuteState {
-    Ready(HashValue),
     Executing(HashValue),
     Executed(ExecutedBlock),
     Error(BlockHeader),
@@ -28,7 +30,7 @@ pub struct DagBlockExecutor {
     time_service: Arc<dyn TimeService>,
     storage: Arc<dyn Store>,
     vm_metrics: Option<VMMetrics>,
-    dag: BlockDAG
+    dag: BlockDAG,
 }
 
 impl DagBlockExecutor {
@@ -36,7 +38,6 @@ impl DagBlockExecutor {
         sender_to_main: Sender<ExecuteState>,
         buffer_size: usize,
         time_service: Arc<dyn TimeService>,
-        head_block_hash: HashValue,
         storage: Arc<dyn Store>,
         vm_metrics: Option<VMMetrics>,
         dag: BlockDAG,
@@ -139,7 +140,7 @@ impl DagBlockExecutor {
                                     .send(ExecuteState::Executed(executed_block))
                                     .await
                                 {
-                                    Ok(_) => (),
+                                    Ok(_) => tokio::task::yield_now().await,
                                     Err(e) => {
                                         error!(
                                             "failed to send waiting state: {:?}, for reason: {:?}",
