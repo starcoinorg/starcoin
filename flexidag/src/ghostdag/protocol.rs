@@ -177,11 +177,11 @@ impl<
             !parents.is_empty(),
             "genesis must be added via a call to init"
         );
-        let selected_parent = header.parent_hash();
+        let selected_parent = self.find_selected_parent(header.parents_hash().into_iter())?;
         // Initialize new GHOSTDAG block data with the selected parent
         let mut new_block_data = GhostdagData::new_with_selected_parent(selected_parent, self.k);
         let ordered_mergeset = self.sort_blocks(header.parents_hash().into_iter().filter(|header_id| {
-            *header_id != header.parent_hash()
+            *header_id != new_block_data.selected_parent
         }).chain(blue_blocks.into_iter().filter(|header| {
             header.id() != new_block_data.selected_parent
         }).map(|header| header.id())).collect::<HashSet<_>>().into_iter().collect::<Vec<_>>())?;
@@ -196,13 +196,11 @@ impl<
             }
         }
 
-        *BlockHashes::make_mut(&mut new_block_data.mergeset_blues) = self.sort_blocks_for_work_type(new_block_data.mergeset_blues.iter().cloned())?;
-
         if new_block_data.mergeset_blues.iter().skip(1).cloned().collect::<HashSet<_>>() != blue_blocks.into_iter().map(|header| header.id()).collect::<HashSet<_>>() {
             if  header.number() < 10000000 {
-                warn!("The data of blue set is not equal, for {:?}, checking data: {:?}", blue_blocks, new_block_data.mergeset_blues);
+                warn!("The data of blue set is not equal when executing the block: {:?}, for {:?}, checking data: {:?}", header.id(), blue_blocks.into_iter().map(|header| header.id()).collect::<Vec<_>>(), new_block_data.mergeset_blues);
             } else {
-                bail!("The data of blue set is not equal, for {:?}, checking data: {:?}", blue_blocks, new_block_data.mergeset_blues);
+                bail!("The data of blue set is not equal when executing the block: {:?}, for {:?}, checking data: {:?}", header.id(), blue_blocks.into_iter().map(|header| header.id()).collect::<Vec<_>>(), new_block_data.mergeset_blues);
             }
         }
 
@@ -233,6 +231,8 @@ impl<
             .expect("blue work should less than u256");
 
         new_block_data.finalize_score_and_work(blue_score, blue_work);
+
+        info!("verified the block: {:?}, its ghost data: {:?}", header.id(), new_block_data);
 
         Ok(new_block_data)
 

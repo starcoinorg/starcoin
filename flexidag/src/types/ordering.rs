@@ -63,6 +63,6 @@ impl Ord for SortableBlockWithWorkType {
     fn cmp(&self, other: &Self) -> Ordering {
         other.blue_work
             .cmp(&self.blue_work)
-            .then_with(|| self.hash.cmp(&other.hash))
+            .then_with(|| other.hash.cmp(&self.hash))
     }
 }
