@@ -210,12 +210,6 @@ impl<
             }
         }
 
-        if new_block_data
-            .mergeset_blues
-            .iter()
-            .skip(1)
-            .cloned()
-            .collect::<HashSet<_>>()
             != blue_blocks
                 .iter()
                 .map(|header| header.id())
@@ -569,7 +563,6 @@ impl<
         blocks: impl IntoIterator<Item = Hash>,
     ) -> Result<Vec<Hash>> {
         let mut sorted_blocks: Vec<Hash> = blocks.into_iter().collect();
-
         sorted_blocks.sort_by_cached_key(|block| {
             let blue_work = self
                 .ghostdag_store
