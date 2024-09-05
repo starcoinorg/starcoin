@@ -34,7 +34,7 @@ use super::{BlockConnectAction, BlockConnectedFinishEvent};
 
 enum ParallelSign {
     NeedMoreBlocks,
-    Executed,
+    Continue,
 }
 
 #[derive(Clone, Debug)]
@@ -442,7 +442,7 @@ where
                 block_header.id(),
                 block_header.number()
             );
-            return Ok(ParallelSign::NeedMoreBlocks);
+            return Ok(ParallelSign::Continue);
         }
         info!(
             "the block is a dag block, its id: {:?}, number: {:?}, its parents: {:?}",
@@ -467,7 +467,7 @@ where
                     self,
                 );
                 parallel_execute.process_absent_blocks().await?;
-                anyhow::Ok(ParallelSign::Executed)
+                anyhow::Ok(ParallelSign::Continue)
             } else {
                 self.local_store
                     .save_dag_sync_block(starcoin_storage::block::DagSyncBlock {
@@ -607,7 +607,7 @@ where
         info!("now sync dag block -- ensure_dag_parent_blocks_exist");
         match self.ensure_dag_parent_blocks_exist(block.clone())? {
             ParallelSign::NeedMoreBlocks => return Ok(CollectorState::Need),
-            ParallelSign::Executed => (),
+            ParallelSign::Continue => (),
         }
         let state = self.check_enough();
         if let anyhow::Result::Ok(CollectorState::Enough) = &state {

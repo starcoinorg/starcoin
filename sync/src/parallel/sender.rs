@@ -19,7 +19,7 @@ use crate::{
 use super::executor::{DagBlockExecutor, ExecuteState};
 
 struct DagBlockWorker {
-    pub sender_to_executor: Sender<Block>,
+    pub sender_to_executor: Sender<Option<Block>>,
     pub receiver_from_executor: Receiver<ExecuteState>,
     pub state: ExecuteState,
     pub handle: JoinHandle<()>,
@@ -66,7 +66,10 @@ impl<'a> DagBlockSender<'a> {
                         || block.header.parents_hash().contains(header_id)
                     {
                         executor.state = ExecuteState::Executing(block.id());
-                        executor.sender_to_executor.send(block.clone()).await?;
+                        executor
+                            .sender_to_executor
+                            .send(Some(block.clone()))
+                            .await?;
                         return anyhow::Ok(true);
                     }
                 }
@@ -80,7 +83,10 @@ impl<'a> DagBlockSender<'a> {
             match &executor.state {
                 ExecuteState::Executed(_) => {
                     executor.state = ExecuteState::Executing(block.id());
-                    executor.sender_to_executor.send(block.clone()).await?;
+                    executor
+                        .sender_to_executor
+                        .send(Some(block.clone()))
+                        .await?;
                     return anyhow::Ok(true);
                 }
 
@@ -127,7 +133,7 @@ impl<'a> DagBlockSender<'a> {
                 handle: executor.start_to_execute()?,
             });
 
-            sender_to_worker.send(block).await?;
+            sender_to_worker.send(Some(block)).await?;
 
             self.flush_executor_state().await?;
         }
@@ -166,15 +172,32 @@ impl<'a> DagBlockSender<'a> {
         anyhow::Ok(())
     }
 
-    async fn wait_for_finish(self) -> anyhow::Result<()> {
-        for mut worker in self.executors {
-            drop(worker.sender_to_executor);
-            while let Some(state) = worker.receiver_from_executor.recv().await {
-                if let ExecuteState::Executed(executed_block) = state {
-                    info!("finish to execute block {:?}", executed_block.header());
-                    self.notifier.notify(*executed_block)?;
-                }
+    async fn wait_for_finish(mut self) -> anyhow::Result<()> {
+        // tell the workers to exit
+        for worker in &self.executors {
+            worker.sender_to_executor.send(None).await?;
+        }
+
+        for worker in &mut self.executors {
+            if let ExecuteState::Closed = worker.state {
+                continue;
             }
+
+            match worker.receiver_from_executor.try_recv() {
+                Ok(state) => {
+                    if let ExecuteState::Executed(executed_block) = state {
+                        info!("finish to execute block {:?}", executed_block.header());
+                        self.notifier.notify(*executed_block)?;
+                    }
+                }
+                Err(e) => match e {
+                    mpsc::error::TryRecvError::Empty => (),
+                    mpsc::error::TryRecvError::Disconnected => worker.state = ExecuteState::Closed,
+                },
+            }
+        }
+
+        for worker in self.executors {
             worker.handle.await?;
         }
 

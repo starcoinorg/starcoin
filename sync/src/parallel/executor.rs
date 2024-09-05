@@ -24,7 +24,7 @@ pub enum ExecuteState {
 
 pub struct DagBlockExecutor {
     sender: Sender<ExecuteState>,
-    receiver: Receiver<Block>,
+    receiver: Receiver<Option<Block>>,
     time_service: Arc<dyn TimeService>,
     storage: Arc<dyn Store>,
     vm_metrics: Option<VMMetrics>,
@@ -39,8 +39,8 @@ impl DagBlockExecutor {
         storage: Arc<dyn Store>,
         vm_metrics: Option<VMMetrics>,
         dag: BlockDAG,
-    ) -> anyhow::Result<(Sender<Block>, Self)> {
-        let (sender_for_main, receiver) = mpsc::channel::<Block>(buffer_size);
+    ) -> anyhow::Result<(Sender<Option<Block>>, Self)> {
+        let (sender_for_main, receiver) = mpsc::channel::<Option<Block>>(buffer_size);
         let executor = Self {
             sender: sender_to_main,
             receiver,
@@ -69,7 +69,15 @@ impl DagBlockExecutor {
             let mut chain = None;
             loop {
                 match self.receiver.recv().await {
-                    Some(block) => {
+                    Some(op_block) => {
+                        let block = match op_block {
+                            Some(block) => block,
+                            None => {
+                                info!("sync worker channel closed");
+                                drop(self.sender);
+                                return;
+                            }
+                        };
                         let header = block.header().clone();
 
                         loop {
