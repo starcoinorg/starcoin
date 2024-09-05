@@ -289,7 +289,7 @@ difference = "2.0.0"
 dirs-next = "2.0.0"
 dyn-clone = "1.0.8"
 either = "~1"
-elasticsearch = "8.5.0-alpha.1"
+elasticsearch = "8.15.0-alpha.1"
 ethereum-types = "0.9"
 starcoin-executor-benchmark = { path = "executor/benchmark" }
 fnv = "1.0.6"
@@ -367,6 +367,9 @@ move-vm-runtime = { path = "third_party/move/move-vm/runtime" }
 move-vm-types = { path = "third_party/move/move-vm/types" }
 move-table-extension = { path = "third_party/move/extensions/move-table-extension" }
 move-vm-test-utils = { path = "third_party/move/move-vm/test-utils", features = ["table-extension"] }
+
+# Aptos VM dependencies
+aptos-vm = { git = "https://github.com/starcoinorg/aptos-core", rev = "561a0f9f93680b59abc5c5f900fb30d5294b6ad6" }
 
 names = { version = "0.14.0", default-features = false }
 network-api = { path = "network/api", package = "network-api" }
@@ -563,3 +566,8 @@ debug = false
 
 #[profile.release.package.cryptonight-rs]
 #opt-level = 2
+
+[patch.crates-io]
+x25519-dalek = { git = "https://github.com/aptos-labs/x25519-dalek", branch = "zeroize_v1" }
+libp2p = { git = "https://github.com/starcoinorg/rust-libp2p", rev = "892a10116633ad6dd0c2550ce512fba98a525dc7" }
+merlin = { git = "https://github.com/aptos-labs/merlin" }
