@@ -206,10 +206,16 @@ impl<
                 // No k-cluster violation found, we can now set the candidate block as blue
                 new_block_data.add_blue(blue_candidate, blue_anticone_size, &blues_anticone_sizes);
             } else {
-                check_ghostdata.add_red(blue_candidate);
+                new_block_data.add_red(blue_candidate);
             }
         }
 
+        if new_block_data
+            .mergeset_blues
+            .iter()
+            .skip(1)
+            .cloned()
+            .collect::<HashSet<_>>()
             != blue_blocks
                 .iter()
                 .map(|header| header.id())
@@ -268,7 +274,6 @@ impl<
         // let ordered_mergeset =
         //     self.ordered_mergeset_without_selected_parent(new_block_data.selected_parent, &vec![new_block_data.selected_parent])?;
 
-
         // for blue_candidate in ordered_mergeset {
         //     let coloring = self.check_blue_candidate(&new_block_data, blue_candidate)?;
         //     if let ColoringOutput::Blue(blue_anticone_size, blues_anticone_sizes) = coloring {
@@ -302,7 +307,7 @@ impl<
         //     .checked_add(new_block_data.mergeset_blues.len() as u64)
         //     .expect("blue score size should less than u64");
 
-        // let added_blue_work: BlueWorkType = new_block_data 
+        // let added_blue_work: BlueWorkType = new_block_data
         //     .mergeset_blues
         //     .iter()
         //     .cloned()

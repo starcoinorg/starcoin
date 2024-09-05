@@ -14,8 +14,6 @@ use tokio::{
     task::JoinHandle,
 };
 
-use crate::tasks::continue_execute_absent_block::ContinueChainOperator;
-
 #[derive(Debug)]
 pub enum ExecuteState {
     Executing(HashValue),

@@ -1,18 +1,6 @@
-use std::{
-    ops::{Deref, DerefMut},
-    sync::Arc,
-    u64,
-};
-
 use anyhow::Ok;
-use parking_lot::RwLock;
 use starcoin_crypto::HashValue;
-use starcoin_dag::{
-    blockdag::BlockDAG, consensusdb::{
-        schema::{KeyCodec, ValueCodec},
-        schemadb::MemoryReachabilityStore,
-    }, reachability::inquirer, types::interval::Interval
-};
+use starcoin_dag::consensusdb::schema::{KeyCodec, ValueCodec};
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockBody, BlockHeader, BlockHeaderBuilder, BlockHeaderExtra, BlockNumber},
@@ -81,7 +69,6 @@ fn build_version_0_block(number: BlockNumber) -> Block {
 
 #[test]
 fn test_sync_dag_absent_store() -> anyhow::Result<()> {
-    let dag = BlockDAG::create_for_testing()?;
     let sync_dag_store = SyncDagStore::create_for_testing()?;
 
     // write and read
@@ -153,7 +140,6 @@ fn test_sync_dag_absent_store() -> anyhow::Result<()> {
 
 #[test]
 fn test_write_read_in_order() -> anyhow::Result<()> {
-    let dag = BlockDAG::create_for_testing()?;
     let sync_dag_store = SyncDagStore::create_for_testing()?;
 
     // write and read

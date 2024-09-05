@@ -12,4 +12,3 @@ pub mod txn_sync;
 
 pub mod parallel;
 pub mod verified_rpc_client;
-pub mod parallel;

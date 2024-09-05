@@ -1,7 +1,6 @@
-use std::{ops::DerefMut, path::Path, sync::Arc};
+use std::{path::Path, sync::Arc};
 
 use anyhow::format_err;
-use parking_lot::RwLock;
 use starcoin_config::{temp_dir, RocksdbConfig, StorageConfig};
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::{prelude::StoreError, schemadb::REACHABILITY_DATA_CF};

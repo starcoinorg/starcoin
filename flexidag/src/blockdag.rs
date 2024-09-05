@@ -12,7 +12,6 @@ use crate::consensusdb::{
 };
 use crate::ghostdag::protocol::GhostdagManager;
 use crate::prune::pruning_point_manager::PruningPointManagerT;
-use crate::types::ghostdata::CompactGhostdagData;
 use crate::{process_key_already_error, reachability};
 use anyhow::{bail, ensure, format_err, Ok};
 use starcoin_accumulator::node::AccumulatorStoreType;

@@ -4,7 +4,8 @@
 use anyhow::{bail, format_err, Ok, Result};
 use starcoin_crypto::HashValue as Hash;
 use starcoin_dag::{
-    blockdag::{BlockDAG, MineNewDagBlockInfo}, consensusdb::{
+    blockdag::{BlockDAG, MineNewDagBlockInfo},
+    consensusdb::{
         consenses_state::{DagState, DagStateReader, DagStateStore},
         schemadb::{
             DbReachabilityStore, GhostdagStoreReader, ReachabilityStore, ReachabilityStoreReader,
@@ -21,7 +22,10 @@ use starcoin_types::{
 };
 
 use std::{
-    io::Read, ops::{Deref, DerefMut}, sync::Arc, time::Instant, vec
+    ops::{Deref, DerefMut},
+    sync::Arc,
+    time::Instant,
+    vec,
 };
 
 #[test]
@@ -1114,21 +1118,47 @@ fn test_verification_blue_block() -> anyhow::Result<()> {
     assert!(check_error.is_err());
 
     let mut false_observer2 = observer2.clone();
-    let red_block_id = false_observer2.mergeset_reds.first().expect("the k is wrong, modify it to create a red block!").clone();
+    let red_block_id = *false_observer2
+        .mergeset_reds
+        .first()
+        .expect("the k is wrong, modify it to create a red block!");
     if red_block_id == block_red_2.id() {
-        false_observer2.mergeset_blues = Arc::new(vec![red_block_id].into_iter().chain(false_observer2.mergeset_blues.iter().cloned().filter(|id| {
-            *id != block_red_2_1.id()
-        })).collect());
+        false_observer2.mergeset_blues = Arc::new(
+            vec![red_block_id]
+                .into_iter()
+                .chain(
+                    false_observer2
+                        .mergeset_blues
+                        .iter()
+                        .cloned()
+                        .filter(|id| *id != block_red_2_1.id()),
+                )
+                .collect(),
+        );
         false_observer2.mergeset_reds = Arc::new(vec![block_red_2_1.id()]);
     } else {
-        false_observer2.mergeset_blues = Arc::new(vec![red_block_id].into_iter().chain(false_observer2.mergeset_blues.iter().cloned().filter(|id| {
-            *id != block_red_2.id()
-        })).collect());
+        false_observer2.mergeset_blues = Arc::new(
+            vec![red_block_id]
+                .into_iter()
+                .chain(
+                    false_observer2
+                        .mergeset_blues
+                        .iter()
+                        .cloned()
+                        .filter(|id| *id != block_red_2.id()),
+                )
+                .collect(),
+        );
         false_observer2.mergeset_reds = Arc::new(vec![block_red_2.id()]);
     }
 
-    let check_error = dag.ghost_dag_manager().check_ghostdata_blue_block(&false_observer2);
-    println!("check error: {:?} after the blue block turns red and the red turns blue maliciously", check_error);
+    let check_error = dag
+        .ghost_dag_manager()
+        .check_ghostdata_blue_block(&false_observer2);
+    println!(
+        "check error: {:?} after the blue block turns red and the red turns blue maliciously",
+        check_error
+    );
     assert!(check_error.is_err());
 
     let observer3 = dag.ghostdata(&[block_main_5.id()])?;
@@ -1225,9 +1255,16 @@ fn test_verification_blue_block() -> anyhow::Result<()> {
         .check_ghostdata_blue_block(&together_ghost_data)?;
 
     let together_mine = dag.ghostdata(&[block_from_normal.id(), block_from_makeup.id()])?;
-    let mine_together = add_and_print(8, together_mine.selected_parent, vec![block_from_normal.id(), block_from_makeup.id()], genesis.parent_hash(), &mut dag)?;
+    let mine_together = add_and_print(
+        8,
+        together_mine.selected_parent,
+        vec![block_from_normal.id(), block_from_makeup.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
     let together_ghost_data = dag.storage.ghost_dag_store.get_data(mine_together.id())?;
-    dag.ghost_dag_manager().check_ghostdata_blue_block(&together_ghost_data)?;
+    dag.ghost_dag_manager()
+        .check_ghostdata_blue_block(&together_ghost_data)?;
 
     anyhow::Result::Ok(())
 }
