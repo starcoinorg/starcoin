@@ -44,8 +44,11 @@ pub use script::{
     ArgumentABI, Script, ScriptABI, ScriptFunction, ScriptFunctionABI, TransactionScriptABI,
     TypeArgumentABI,
 };
+#[cfg(any(test, feature = "fuzzing"))]
+use proptest_derive::Arbitrary;
 use starcoin_crypto::hash::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use std::str::FromStr;
+
 pub use transaction_argument::{
     parse_transaction_argument, parse_transaction_arguments, TransactionArgument,
 };
@@ -142,6 +145,7 @@ impl RawUserTransaction {
             chain_id,
         }
     }
+
 
     /// Create a new `RawUserTransaction` with a script.
     ///
@@ -606,6 +610,14 @@ impl Sample for SignedUserTransaction {
         let signature = private_key.sign(&raw_txn);
         Self::ed25519(raw_txn, public_key, signature)
     }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
+#[cfg_attr(any(test, feature = "fuzzing"), proptest(no_params))]
+pub struct AbortInfo {
+    pub reason_name: String,
+    pub description: String,
 }
 
 /// The status of executing a transaction. The VM decides whether or not we should `Keep` the

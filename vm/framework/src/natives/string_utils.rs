@@ -7,7 +7,7 @@ use starcoin_native_interface::{
     safely_pop_arg, RawSafeNative, SafeNativeBuilder, SafeNativeContext, SafeNativeError,
     SafeNativeResult,
 };
-use starcoin_types::on_chain_config::FeatureFlag;
+use starcoin_vm_types::on_chain_config::FeatureFlag;
 use ark_std::iterable::Iterable;
 use move_core_types::{
     account_address::AccountAddress,

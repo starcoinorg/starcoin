@@ -11,7 +11,7 @@ use starcoin_native_interface::{
     safely_pop_arg, RawSafeNative, SafeNativeBuilder, SafeNativeContext, SafeNativeError,
     SafeNativeResult,
 };
-use starcoin_types::on_chain_config::FeatureFlag;
+use starcoin_vm_types::on_chain_config::FeatureFlag;
 use curve25519_dalek::edwards::CompressedEdwardsY;
 use move_core_types::gas_algebra::{
     InternalGas, InternalGasPerArg, InternalGasPerByte, NumArgs, NumBytes,

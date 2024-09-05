@@ -17,8 +17,28 @@ macro_rules! safely_pop_arg {
                 return Err($crate::SafeNativeError::InvariantViolation(
                     PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR),
                 ))
-            }
+            },
         }
+    }};
+}
+
+/// Returns a field value of the specified type from a struct at a given index.
+/// If the field access is out of bounds, or type is incorrect, a
+/// `SafeNativeError::InvariantViolation` is returned.
+#[macro_export]
+macro_rules! safely_get_struct_field_as {
+    ($value:expr, $idx:expr, $t:ty) => {{
+        // Note: we remap errors to safe errors in order to avoid implicit
+        //       conversions via `Into`.
+        $value
+            .borrow_field($idx)
+            .map_err($crate::SafeNativeError::InvariantViolation)?
+            .value_as::<Reference>()
+            .map_err($crate::SafeNativeError::InvariantViolation)?
+            .read_ref()
+            .map_err($crate::SafeNativeError::InvariantViolation)?
+            .value_as::<$t>()
+            .map_err($crate::SafeNativeError::InvariantViolation)?
     }};
 }
 
@@ -35,7 +55,7 @@ macro_rules! safely_assert_eq {
                         PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR),
                     ));
                 }
-            }
+            },
         }
     }};
 }
@@ -55,7 +75,7 @@ macro_rules! safely_pop_type_arg {
                 return Err($crate::SafeNativeError::InvariantViolation(
                     PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR),
                 ))
-            }
+            },
         }
     }};
 }

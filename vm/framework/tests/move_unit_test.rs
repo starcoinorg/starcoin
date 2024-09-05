@@ -11,7 +11,7 @@ use move_package::CompilerConfig;
 use move_unit_test::UnitTestingConfig;
 use move_vm_runtime::native_functions::NativeFunctionTable;
 use starcoin_gas_schedule::{MiscGasParameters, NativeGasParameters, LATEST_GAS_FEATURE_VERSION};
-use starcoin_types::on_chain_config::{
+use starcoin_vm_types::on_chain_config::{
     aptos_test_feature_flags_genesis, Features, TimedFeaturesBuilder,
 };
 use tempfile::tempdir;

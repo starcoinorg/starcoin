@@ -1,4 +1,4 @@
-// Copyright © Aptos Foundation
+// Copyright © Starcoin Foundation
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
@@ -10,13 +10,11 @@ use crate::{
     },
     safe_borrow_element, store_element, structure_from_ty_arg,
 };
-use starcoin_gas_schedule::{
-    gas_feature_versions::RELEASE_V1_16, gas_params::natives::starcoin_framework::*,
-};
+use starcoin_gas_schedule::gas_params::natives::starcoin_framework::*;
 use starcoin_native_interface::{
     safely_pop_arg, SafeNativeContext, SafeNativeError, SafeNativeResult,
 };
-use starcoin_types::on_chain_config::FeatureFlag;
+use starcoin_vm_types::on_chain_config::FeatureFlag;
 use ark_ec::CurveGroup;
 use ark_ff::Field;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
@@ -75,7 +73,7 @@ macro_rules! serialize_element {
         $structure_to_match:expr,
         $format_to_match:expr,
         [$(($field_structure:pat, $field_format:pat, $field_ty:ty, $field_serialization_func:ident,$reverse:expr, $field_serialization_gas:expr)),* $(,)?],
-        [$(($curve_structure:pat,$curve_format:pat, $curve_ty:ty, $curve_serialization_func:ident, $curve_serialization_gas:expr, $into_affine_gas:expr)),* $(,)?]
+        [$(($curve_structure:pat,$curve_format:pat, $curve_ty:ty, $curve_serialization_func:ident, $curve_serialization_gas:expr)),* $(,)?]
     ) => {
         match ($structure_to_match, $format_to_match) {
         $(
@@ -103,9 +101,6 @@ macro_rules! serialize_element {
                 element_ptr,
                 element
             );
-            if $context.gas_feature_version() >= RELEASE_V1_16 {
-                $context.charge($into_affine_gas)?;
-            }
             let element_affine = element.into_affine();
             let mut buf = Vec::new();
             $context.charge($curve_serialization_gas)?;
@@ -225,64 +220,56 @@ pub fn serialize_internal(
                     SerializationFormat::BLS12381G1Uncompressed,
                     ark_bls12_381::G1Projective,
                     serialize_uncompressed,
-                    ALGEBRA_ARK_BLS12_381_G1_AFFINE_SERIALIZE_UNCOMP,
-                    ALGEBRA_ARK_BLS12_381_G1_PROJ_TO_AFFINE
+                    ALGEBRA_ARK_BLS12_381_G1_AFFINE_SERIALIZE_UNCOMP
                 ),
                 (
                     Structure::BLS12381G1,
                     SerializationFormat::BLS12381G1Compressed,
                     ark_bls12_381::G1Projective,
                     serialize_compressed,
-                    ALGEBRA_ARK_BLS12_381_G1_AFFINE_SERIALIZE_COMP,
-                    ALGEBRA_ARK_BLS12_381_G1_PROJ_TO_AFFINE
+                    ALGEBRA_ARK_BLS12_381_G1_AFFINE_SERIALIZE_COMP
                 ),
                 (
                     Structure::BLS12381G2,
                     SerializationFormat::BLS12381G2Uncompressed,
                     ark_bls12_381::G2Projective,
                     serialize_uncompressed,
-                    ALGEBRA_ARK_BLS12_381_G2_AFFINE_SERIALIZE_UNCOMP,
-                    ALGEBRA_ARK_BLS12_381_G2_PROJ_TO_AFFINE
+                    ALGEBRA_ARK_BLS12_381_G2_AFFINE_SERIALIZE_UNCOMP
                 ),
                 (
                     Structure::BLS12381G2,
                     SerializationFormat::BLS12381G2Compressed,
                     ark_bls12_381::G2Projective,
                     serialize_compressed,
-                    ALGEBRA_ARK_BLS12_381_G2_AFFINE_SERIALIZE_COMP,
-                    ALGEBRA_ARK_BLS12_381_G2_PROJ_TO_AFFINE
+                    ALGEBRA_ARK_BLS12_381_G2_AFFINE_SERIALIZE_COMP
                 ),
                 (
                     Structure::BN254G1,
                     SerializationFormat::BN254G1Uncompressed,
                     ark_bn254::G1Projective,
                     serialize_uncompressed,
-                    ALGEBRA_ARK_BN254_G1_AFFINE_SERIALIZE_UNCOMP,
-                    ALGEBRA_ARK_BN254_G1_PROJ_TO_AFFINE
+                    ALGEBRA_ARK_BN254_G1_AFFINE_SERIALIZE_UNCOMP
                 ),
                 (
                     Structure::BN254G1,
                     SerializationFormat::BN254G1Compressed,
                     ark_bn254::G1Projective,
                     serialize_compressed,
-                    ALGEBRA_ARK_BN254_G1_AFFINE_SERIALIZE_COMP,
-                    ALGEBRA_ARK_BN254_G1_PROJ_TO_AFFINE
+                    ALGEBRA_ARK_BN254_G1_AFFINE_SERIALIZE_COMP
                 ),
                 (
                     Structure::BN254G2,
                     SerializationFormat::BN254G2Uncompressed,
                     ark_bn254::G2Projective,
                     serialize_uncompressed,
-                    ALGEBRA_ARK_BN254_G2_AFFINE_SERIALIZE_UNCOMP,
-                    ALGEBRA_ARK_BN254_G2_PROJ_TO_AFFINE
+                    ALGEBRA_ARK_BN254_G2_AFFINE_SERIALIZE_UNCOMP
                 ),
                 (
                     Structure::BN254G2,
                     SerializationFormat::BN254G2Compressed,
                     ark_bn254::G2Projective,
                     serialize_compressed,
-                    ALGEBRA_ARK_BN254_G2_AFFINE_SERIALIZE_COMP,
-                    ALGEBRA_ARK_BN254_G2_PROJ_TO_AFFINE
+                    ALGEBRA_ARK_BN254_G2_AFFINE_SERIALIZE_COMP
                 ),
             ]
         )

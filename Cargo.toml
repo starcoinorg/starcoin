@@ -191,6 +191,7 @@ default-members = [
     "vm/types",
     "vm/vm-runtime-types",
     "vm/vm-runtime",
+    "vm/framework",
     "vm/frameworks",
     "vm/starcoin-native-interface",
     "vm/stdlib",

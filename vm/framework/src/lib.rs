@@ -9,8 +9,8 @@ mod starcoin;
 pub use starcoin::*;
 use std::io::{Read, Write};
 
-mod built_package;
-pub use built_package::*;
+// mod built_package;
+// pub use built_package::*;
 
 mod module_metadata;
 pub use module_metadata::*;

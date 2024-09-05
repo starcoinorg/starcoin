@@ -13,7 +13,7 @@ use starcoin_gas_schedule::gas_params::natives::{starcoin_framework::*, move_std
 use starcoin_native_interface::{
     safely_pop_arg, SafeNativeContext, SafeNativeError, SafeNativeResult,
 };
-use starcoin_types::on_chain_config::FeatureFlag;
+use starcoin_vm_types::on_chain_config::FeatureFlag;
 use ark_ec::hashing::HashToCurve;
 use either::Either;
 use move_core_types::gas_algebra::{InternalGas, NumBytes};

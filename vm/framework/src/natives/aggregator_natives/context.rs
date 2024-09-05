@@ -9,7 +9,7 @@ use aptos_aggregator::{
     delta_change_set::DeltaOp,
     resolver::{AggregatorV1Resolver, DelayedFieldResolver},
 };
-use starcoin_types::state_store::{state_key::StateKey, state_value::StateValueMetadata};
+use starcoin_vm_types::state_store::{state_key::StateKey, state_value::StateValueMetadata};
 use better_any::{Tid, TidAble};
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::value::MoveTypeLayout;
