@@ -12,7 +12,6 @@ use crate::consensusdb::{
 };
 use crate::ghostdag::protocol::GhostdagManager;
 use crate::prune::pruning_point_manager::PruningPointManagerT;
-use crate::types::ghostdata::CompactGhostdagData;
 use crate::{process_key_already_error, reachability};
 use anyhow::{bail, ensure, format_err, Ok};
 use starcoin_accumulator::node::AccumulatorStoreType;
@@ -26,7 +25,6 @@ use starcoin_types::{
     blockhash::{BlockHashes, KType},
     consensus_header::ConsensusHeader,
 };
-use std::char::EscapeUnicode;
 use std::collections::HashSet;
 use std::ops::DerefMut;
 use std::sync::Arc;
@@ -145,7 +143,12 @@ impl BlockDAG {
         Ok(())
     }
 
-    pub fn commit_trusted_block(&mut self, header: BlockHeader, origin: HashValue, trusted_ghostdata: Arc<GhostdagData>) -> anyhow::Result<()> {
+    pub fn commit_trusted_block(
+        &mut self,
+        header: BlockHeader,
+        origin: HashValue,
+        trusted_ghostdata: Arc<GhostdagData>,
+    ) -> anyhow::Result<()> {
         info!(
             "start to commit header: {:?}, number: {:?}",
             header.id(),
@@ -165,16 +168,39 @@ impl BlockDAG {
                 if header.is_genesis() {
                     Arc::new(self.ghostdag_manager.genesis_ghostdag_data(&header))
                 } else {
-                    self.storage.ghost_dag_store.insert(header.id(), trusted_ghostdata.clone())?;
+                    self.storage
+                        .ghost_dag_store
+                        .insert(header.id(), trusted_ghostdata.clone())?;
                     trusted_ghostdata
                 }
             }
             Some(ghostdata) => {
-                ensure!(ghostdata.blue_score == trusted_ghostdata.blue_score, "blue score is not same");
-                ensure!(ghostdata.blue_work == trusted_ghostdata.blue_work, "blue work is not same");
-                ensure!(ghostdata.mergeset_blues.len() == trusted_ghostdata.mergeset_blues.len(), "blue len is not same");
-                ensure!(ghostdata.mergeset_blues.iter().cloned().collect::<HashSet<_>>() == trusted_ghostdata.mergeset_blues.iter().cloned().collect::<HashSet<_>>(), "blue values are not same");
-               trusted_ghostdata 
+                ensure!(
+                    ghostdata.blue_score == trusted_ghostdata.blue_score,
+                    "blue score is not same"
+                );
+                ensure!(
+                    ghostdata.blue_work == trusted_ghostdata.blue_work,
+                    "blue work is not same"
+                );
+                ensure!(
+                    ghostdata.mergeset_blues.len() == trusted_ghostdata.mergeset_blues.len(),
+                    "blue len is not same"
+                );
+                ensure!(
+                    ghostdata
+                        .mergeset_blues
+                        .iter()
+                        .cloned()
+                        .collect::<HashSet<_>>()
+                        == trusted_ghostdata
+                            .mergeset_blues
+                            .iter()
+                            .cloned()
+                            .collect::<HashSet<_>>(),
+                    "blue values are not same"
+                );
+                trusted_ghostdata
             }
         };
         // Store ghostdata
@@ -264,8 +290,6 @@ impl BlockDAG {
         ))?;
         Ok(())
     }
-
-
 
     pub fn commit(&mut self, header: BlockHeader, origin: HashValue) -> anyhow::Result<()> {
         info!(
@@ -541,12 +565,19 @@ impl BlockDAG {
 
         anyhow::Ok(())
     }
-    
-    pub fn reachability_store(&self) -> Arc<parking_lot::lock_api::RwLock<parking_lot::RawRwLock, DbReachabilityStore>> {
+
+    pub fn reachability_store(
+        &self,
+    ) -> Arc<parking_lot::lock_api::RwLock<parking_lot::RawRwLock, DbReachabilityStore>> {
         self.storage.reachability_store.clone()
     }
-    
-    pub fn verify_and_ghostdata(&self, blue_blocks: &[BlockHeader], header: &BlockHeader) -> Result<GhostdagData, anyhow::Error> {
-        self.ghost_dag_manager().verify_and_ghostdata(blue_blocks, header)
+
+    pub fn verify_and_ghostdata(
+        &self,
+        blue_blocks: &[BlockHeader],
+        header: &BlockHeader,
+    ) -> Result<GhostdagData, anyhow::Error> {
+        self.ghost_dag_manager()
+            .verify_and_ghostdata(blue_blocks, header)
     }
 }

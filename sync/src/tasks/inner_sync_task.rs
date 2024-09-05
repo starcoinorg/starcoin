@@ -4,7 +4,6 @@ use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_chain::BlockChain;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
-use starcoin_logger::prelude::{error, info};
 use starcoin_network_rpc_api::{MAX_BLOCK_IDS_REQUEST_SIZE, MAX_BLOCK_REQUEST_SIZE};
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
@@ -146,7 +145,7 @@ where
                 vm_metrics,
                 self.dag.clone(),
             )?;
-            let mut block_collector = BlockCollector::new_with_handle(
+            let block_collector = BlockCollector::new_with_handle(
                 current_block_info.clone(),
                 self.target.clone(),
                 chain,

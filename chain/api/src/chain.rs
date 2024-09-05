@@ -109,7 +109,11 @@ pub trait ChainReader {
     fn current_tips_hash(&self) -> Result<Vec<HashValue>>;
     fn has_dag_block(&self, header_id: HashValue) -> Result<bool>;
     fn check_chain_type(&self) -> Result<ChainType>;
-    fn verify_and_ghostdata(&self, uncles: &[BlockHeader], header: &BlockHeader) -> Result<GhostdagData>;
+    fn verify_and_ghostdata(
+        &self,
+        uncles: &[BlockHeader],
+        header: &BlockHeader,
+    ) -> Result<GhostdagData>;
 }
 
 pub trait ChainWriter {

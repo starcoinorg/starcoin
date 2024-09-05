@@ -1,16 +1,20 @@
-use std::{ops::Deref, sync::Arc, vec};
+use std::{sync::Arc, vec};
 
 use starcoin_config::TimeService;
-use starcoin_crypto::HashValue;
-use starcoin_dag::{blockdag::BlockDAG, consensusdb::schema::ValueCodec, reachability::inquirer};
+use starcoin_dag::{blockdag::BlockDAG, consensusdb::schema::ValueCodec};
 use starcoin_executor::VMMetrics;
-use starcoin_logger::prelude::{error, info};
-use starcoin_network::worker;
+use starcoin_logger::prelude::info;
 use starcoin_storage::Store;
-use starcoin_types::block::{Block, BlockHeader};
-use tokio::{sync::mpsc::{self, Receiver, Sender}, task::JoinHandle};
+use starcoin_types::block::Block;
+use tokio::{
+    sync::mpsc::{self, Receiver, Sender},
+    task::JoinHandle,
+};
 
-use crate::{store::{sync_absent_ancestor::DagSyncBlock, sync_dag_store::{self, SyncDagStore}}, tasks::continue_execute_absent_block::ContinueChainOperator};
+use crate::{
+    store::{sync_absent_ancestor::DagSyncBlock, sync_dag_store::SyncDagStore},
+    tasks::continue_execute_absent_block::ContinueChainOperator,
+};
 
 use super::executor::{DagBlockExecutor, ExecuteState};
 
@@ -58,7 +62,9 @@ impl<'a> DagBlockSender<'a> {
         for executor in &mut self.executors {
             match &executor.state {
                 ExecuteState::Executing(header_id) => {
-                    if *header_id == block.header().parent_hash() || block.header.parents_hash().contains(header_id) {
+                    if *header_id == block.header().parent_hash()
+                        || block.header.parents_hash().contains(header_id)
+                    {
                         executor.state = ExecuteState::Executing(block.id());
                         executor.sender_to_executor.send(block.clone()).await?;
                         return anyhow::Ok(true);
@@ -103,7 +109,8 @@ impl<'a> DagBlockSender<'a> {
             }
 
             // no suitable worker found, create a new worker
-            let (sender_to_main, receiver_from_executor) = mpsc::channel::<ExecuteState>(self.queue_size);
+            let (sender_to_main, receiver_from_executor) =
+                mpsc::channel::<ExecuteState>(self.queue_size);
             let (sender_to_worker, executor) = DagBlockExecutor::new(
                 sender_to_main,
                 self.queue_size,
@@ -130,37 +137,27 @@ impl<'a> DagBlockSender<'a> {
 
         Ok(())
     }
-    
+
     async fn flush_executor_state(&mut self) -> anyhow::Result<()> {
         for worker in &mut self.executors {
             match worker.receiver_from_executor.try_recv() {
                 Ok(state) => {
-                    match state {
-                        ExecuteState::Executed(executed_block) => {
-                            info!("finish to execute block {:?}", executed_block.header());
-                            self.notifier.notify(executed_block.clone())?;
-                            worker.state = ExecuteState::Executed(executed_block);
-                        }
-                        _ => ()
+                    if let ExecuteState::Executed(executed_block) = state {
+                        info!("finish to execute block {:?}", executed_block.header());
+                        self.notifier.notify((*executed_block).clone())?;
+                        worker.state = ExecuteState::Executed(executed_block);
                     }
                 }
-                Err(e) => {
-                    match e {
-                        mpsc::error::TryRecvError::Empty => (),
-                        mpsc::error::TryRecvError::Disconnected => worker.state = ExecuteState::Closed,
-                    }
-                }
+                Err(e) => match e {
+                    mpsc::error::TryRecvError::Empty => (),
+                    mpsc::error::TryRecvError::Disconnected => worker.state = ExecuteState::Closed,
+                },
             }
         }
 
         let len = self.executors.len();
-        self.executors.retain(|worker| {
-            if let ExecuteState::Closed = worker.state {
-                false
-            } else {
-                true
-            }
-        });
+        self.executors
+            .retain(|worker| !matches!(worker.state, ExecuteState::Closed));
 
         if len != self.executors.len() {
             info!("sync workers count: {:?}", self.executors.len());
@@ -169,16 +166,13 @@ impl<'a> DagBlockSender<'a> {
         anyhow::Ok(())
     }
 
-    async fn wait_for_finish(mut self) -> anyhow::Result<()> {
+    async fn wait_for_finish(self) -> anyhow::Result<()> {
         for mut worker in self.executors {
             drop(worker.sender_to_executor);
             while let Some(state) = worker.receiver_from_executor.recv().await {
-                match state {
-                    ExecuteState::Executed(executed_block) => {
-                        info!("finish to execute block {:?}", executed_block.header());
-                        self.notifier.notify(executed_block.clone())?;
-                    }
-                    ExecuteState::Executing(_) | ExecuteState::Error(_) | ExecuteState::Closed => (),
+                if let ExecuteState::Executed(executed_block) = state {
+                    info!("finish to execute block {:?}", executed_block.header());
+                    self.notifier.notify(*executed_block)?;
                 }
             }
             worker.handle.await?;

@@ -29,7 +29,7 @@ use starcoin_sync_api::{
     SyncProgressRequest, SyncServiceHandler, SyncStartRequest, SyncStatusRequest, SyncTarget,
 };
 use starcoin_txpool::TxPoolService;
-use starcoin_types::block::{Block, BlockIdAndNumber};
+use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};

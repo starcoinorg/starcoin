@@ -171,7 +171,11 @@ impl<
         Ok(new_block_data)
     }
 
-    pub(crate) fn verify_and_ghostdata(&self, blue_blocks: &[BlockHeader], header: &BlockHeader) -> std::result::Result<GhostdagData, anyhow::Error> {
+    pub(crate) fn verify_and_ghostdata(
+        &self,
+        blue_blocks: &[BlockHeader],
+        header: &BlockHeader,
+    ) -> std::result::Result<GhostdagData, anyhow::Error> {
         let parents = header.parents_hash();
         assert!(
             !parents.is_empty(),
@@ -180,11 +184,21 @@ impl<
         let selected_parent = self.find_selected_parent(header.parents_hash().into_iter())?;
         // Initialize new GHOSTDAG block data with the selected parent
         let mut new_block_data = GhostdagData::new_with_selected_parent(selected_parent, self.k);
-        let ordered_mergeset = self.sort_blocks(header.parents_hash().into_iter().filter(|header_id| {
-            *header_id != new_block_data.selected_parent
-        }).chain(blue_blocks.into_iter().filter(|header| {
-            header.id() != new_block_data.selected_parent
-        }).map(|header| header.id())).collect::<HashSet<_>>().into_iter().collect::<Vec<_>>())?;
+        let ordered_mergeset = self.sort_blocks(
+            header
+                .parents_hash()
+                .into_iter()
+                .filter(|header_id| *header_id != new_block_data.selected_parent)
+                .chain(
+                    blue_blocks
+                        .iter()
+                        .filter(|header| header.id() != new_block_data.selected_parent)
+                        .map(|header| header.id()),
+                )
+                .collect::<HashSet<_>>()
+                .into_iter()
+                .collect::<Vec<_>>(),
+        )?;
 
         for blue_candidate in ordered_mergeset.iter().cloned() {
             let coloring = self.check_blue_candidate(&new_block_data, blue_candidate)?;
@@ -196,11 +210,21 @@ impl<
             }
         }
 
-        if new_block_data.mergeset_blues.iter().skip(1).cloned().collect::<HashSet<_>>() != blue_blocks.into_iter().map(|header| header.id()).collect::<HashSet<_>>() {
-            if  header.number() < 10000000 {
-                warn!("The data of blue set is not equal when executing the block: {:?}, for {:?}, checking data: {:?}", header.id(), blue_blocks.into_iter().map(|header| header.id()).collect::<Vec<_>>(), new_block_data.mergeset_blues);
+        if new_block_data
+            .mergeset_blues
+            .iter()
+            .skip(1)
+            .cloned()
+            .collect::<HashSet<_>>()
+            != blue_blocks
+                .iter()
+                .map(|header| header.id())
+                .collect::<HashSet<_>>()
+        {
+            if header.number() < 10000000 {
+                warn!("The data of blue set is not equal when executing the block: {:?}, for {:?}, checking data: {:?}", header.id(), blue_blocks.iter().map(|header| header.id()).collect::<Vec<_>>(), new_block_data.mergeset_blues);
             } else {
-                bail!("The data of blue set is not equal when executing the block: {:?}, for {:?}, checking data: {:?}", header.id(), blue_blocks.into_iter().map(|header| header.id()).collect::<Vec<_>>(), new_block_data.mergeset_blues);
+                bail!("The data of blue set is not equal when executing the block: {:?}, for {:?}, checking data: {:?}", header.id(), blue_blocks.iter().map(|header| header.id()).collect::<Vec<_>>(), new_block_data.mergeset_blues);
             }
         }
 
@@ -232,7 +256,11 @@ impl<
 
         new_block_data.finalize_score_and_work(blue_score, blue_work);
 
-        info!("verified the block: {:?}, its ghost data: {:?}", header.id(), new_block_data);
+        info!(
+            "verified the block: {:?}, its ghost data: {:?}",
+            header.id(),
+            new_block_data
+        );
 
         Ok(new_block_data)
 
@@ -246,7 +274,6 @@ impl<
         // mergetset = self.sort_blocks(mergetset.into_iter())?;
         // let ordered_mergeset =
         //     self.ordered_mergeset_without_selected_parent(new_block_data.selected_parent, &vec![new_block_data.selected_parent])?;
-
 
         // for blue_candidate in ordered_mergeset {
         //     let coloring = self.check_blue_candidate(&new_block_data, blue_candidate)?;
@@ -281,7 +308,7 @@ impl<
         //     .checked_add(new_block_data.mergeset_blues.len() as u64)
         //     .expect("blue score size should less than u64");
 
-        // let added_blue_work: BlueWorkType = new_block_data 
+        // let added_blue_work: BlueWorkType = new_block_data
         //     .mergeset_blues
         //     .iter()
         //     .cloned()
@@ -307,7 +334,8 @@ impl<
     }
 
     pub fn check_ghostdata_blue_block(&self, ghostdata: &GhostdagData) -> Result<()> {
-        let mut check_ghostdata = GhostdagData::new_with_selected_parent(ghostdata.selected_parent, self.k);
+        let mut check_ghostdata =
+            GhostdagData::new_with_selected_parent(ghostdata.selected_parent, self.k);
         for blue_candidate in ghostdata.mergeset_blues.iter().skip(1).cloned() {
             let coloring = self.check_blue_candidate(&check_ghostdata, blue_candidate)?;
             if let ColoringOutput::Blue(blue_anticone_size, blues_anticone_sizes) = coloring {
@@ -317,9 +345,23 @@ impl<
             }
         }
         if ghostdata.mergeset_blues.len() != check_ghostdata.mergeset_blues.len() {
-            return Err(anyhow::anyhow!("The len of blue set is not equal, for {}, checking data: {}", ghostdata.mergeset_blues.len(), check_ghostdata.mergeset_blues.len()));
+            return Err(anyhow::anyhow!(
+                "The len of blue set is not equal, for {}, checking data: {}",
+                ghostdata.mergeset_blues.len(),
+                check_ghostdata.mergeset_blues.len()
+            ));
         }
-        if ghostdata.mergeset_blues.iter().cloned().collect::<HashSet<_>>() != check_ghostdata.mergeset_blues.iter().cloned().collect::<HashSet<_>>() {
+        if ghostdata
+            .mergeset_blues
+            .iter()
+            .cloned()
+            .collect::<HashSet<_>>()
+            != check_ghostdata
+                .mergeset_blues
+                .iter()
+                .cloned()
+                .collect::<HashSet<_>>()
+        {
             return Err(anyhow::anyhow!("The blue set is not equal"));
         }
 
@@ -349,9 +391,14 @@ impl<
             .checked_add(added_blue_work)
             .expect("blue work should less than u256");
 
-            check_ghostdata.finalize_score_and_work(blue_score, blue_work);
+        check_ghostdata.finalize_score_and_work(blue_score, blue_work);
 
-        ensure!(check_ghostdata.to_compact() == ghostdata.to_compact(), "check_ghostdata: {:?} is not the same as ghostdata: {:?}", check_ghostdata.to_compact(), ghostdata.to_compact());
+        ensure!(
+            check_ghostdata.to_compact() == ghostdata.to_compact(),
+            "check_ghostdata: {:?} is not the same as ghostdata: {:?}",
+            check_ghostdata.to_compact(),
+            ghostdata.to_compact()
+        );
 
         Ok(())
     }
@@ -516,8 +563,11 @@ impl<
         });
         Ok(sorted_blocks)
     }
-    
-    pub fn sort_blocks_for_work_type(&self, blocks: impl IntoIterator<Item = Hash>) -> Result<Vec<Hash>> {
+
+    pub fn sort_blocks_for_work_type(
+        &self,
+        blocks: impl IntoIterator<Item = Hash>,
+    ) -> Result<Vec<Hash>> {
         let mut sorted_blocks: Vec<Hash> = blocks.into_iter().collect();
 
         sorted_blocks.sort_by_cached_key(|block| {

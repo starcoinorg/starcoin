@@ -61,7 +61,8 @@ impl PartialOrd for SortableBlockWithWorkType {
 
 impl Ord for SortableBlockWithWorkType {
     fn cmp(&self, other: &Self) -> Ordering {
-        other.blue_work
+        other
+            .blue_work
             .cmp(&self.blue_work)
             .then_with(|| other.hash.cmp(&self.hash))
     }

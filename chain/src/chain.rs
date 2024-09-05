@@ -646,12 +646,14 @@ impl BlockChain {
             .get_block_header_by_hash(self.genesis_hash)?
             .ok_or_else(|| format_err!("failed to get genesis because it is none"))?;
         let result = match verified_block.ghostdata {
-            Some(trusted_ghostdata) => {
-                self.dag.commit_trusted_block(header.to_owned(), genesis_header.parent_hash(), Arc::new(trusted_ghostdata))
-            }
-            None => {
-                self.dag.commit(header.to_owned(), genesis_header.parent_hash())
-            }
+            Some(trusted_ghostdata) => self.dag.commit_trusted_block(
+                header.to_owned(),
+                genesis_header.parent_hash(),
+                Arc::new(trusted_ghostdata),
+            ),
+            None => self
+                .dag
+                .commit(header.to_owned(), genesis_header.parent_hash()),
         };
         match result {
             anyhow::Result::Ok(_) => info!("finish to commit dag block: {:?}", block_id),
@@ -1352,8 +1354,12 @@ impl ChainReader for BlockChain {
     fn check_chain_type(&self) -> Result<ChainType> {
         Ok(ChainType::Dag)
     }
-    
-    fn verify_and_ghostdata(&self, uncles: &[BlockHeader], header: &BlockHeader) -> Result<starcoin_dag::types::ghostdata::GhostdagData> {
+
+    fn verify_and_ghostdata(
+        &self,
+        uncles: &[BlockHeader],
+        header: &BlockHeader,
+    ) -> Result<starcoin_dag::types::ghostdata::GhostdagData> {
         self.dag().verify_and_ghostdata(uncles, header)
     }
 }
@@ -1540,7 +1546,7 @@ impl ChainWriter for BlockChain {
     fn chain_state(&mut self) -> &ChainStateDB {
         &self.statedb
     }
-    
+
     fn apply_for_sync(&mut self, block: Block) -> Result<ExecutedBlock> {
         self.apply_with_verifier::<DagVerifierWithGhostData>(block)
     }

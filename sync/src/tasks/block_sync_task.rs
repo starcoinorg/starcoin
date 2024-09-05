@@ -454,20 +454,26 @@ where
             self.find_absent_ancestor(vec![block_header.clone()])
                 .await?;
 
-            if block_header.number() % 10000 == 0 || block_header.number() >= self.target.target_id.number() {
+            if block_header.number() % 10000 == 0
+                || block_header.number() >= self.target.target_id.number()
+            {
                 let parallel_execute = DagBlockSender::new(
-                    self.sync_dag_store.clone(), 
+                    self.sync_dag_store.clone(),
                     100000,
-                    self.chain.time_service(), 
-                    self.local_store.clone(), 
-                    None, self.chain.dag(), self);
+                    self.chain.time_service(),
+                    self.local_store.clone(),
+                    None,
+                    self.chain.dag(),
+                    self,
+                );
                 parallel_execute.process_absent_blocks().await?;
                 anyhow::Ok(ParallelSign::Executed)
             } else {
-                self.local_store.save_dag_sync_block(starcoin_storage::block::DagSyncBlock {
-                    block: block.clone(),
-                    children: vec![],
-                })?;
+                self.local_store
+                    .save_dag_sync_block(starcoin_storage::block::DagSyncBlock {
+                        block: block.clone(),
+                        children: vec![],
+                    })?;
                 self.sync_dag_store.save_block(block)?;
                 anyhow::Ok(ParallelSign::NeedMoreBlocks)
             }
@@ -650,12 +656,11 @@ where
 
         let timestamp = block.header().timestamp();
 
-        let block_info = 
-            if self.chain.has_dag_block(block.header().id())? {
-                block_info
-            } else {
-                None
-            };
+        let block_info = if self.chain.has_dag_block(block.header().id())? {
+            block_info
+        } else {
+            None
+        };
 
         let (block_info, action) = match block_info {
             Some(block_info) => {

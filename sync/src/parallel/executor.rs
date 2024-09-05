@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
-use parking_lot::RwLock;
-use starcoin_chain::{verifier::{DagVerifier, DagVerifierWithGhostData}, BlockChain, ChainReader};
+use starcoin_chain::{verifier::DagVerifierWithGhostData, BlockChain, ChainReader};
 use starcoin_chain_api::ExecutedBlock;
 use starcoin_config::TimeService;
 use starcoin_crypto::HashValue;
@@ -11,16 +10,15 @@ use starcoin_logger::prelude::{error, info};
 use starcoin_storage::Store;
 use starcoin_types::block::{Block, BlockHeader};
 use tokio::{
-    sync::mpsc::{self, Receiver, Sender}, task::JoinHandle, time::{timeout, Duration}
+    sync::mpsc::{self, Receiver, Sender},
+    task::JoinHandle,
 };
-
-use crate::tasks::continue_execute_absent_block::ContinueChainOperator;
 
 #[derive(Debug)]
 pub enum ExecuteState {
     Executing(HashValue),
-    Executed(ExecutedBlock),
-    Error(BlockHeader),
+    Executed(Box<ExecutedBlock>),
+    Error(Box<BlockHeader>),
     Closed,
 }
 
@@ -88,7 +86,7 @@ impl DagBlockExecutor {
                                     );
                                     match self
                                         .sender
-                                        .send(ExecuteState::Error(header.clone()))
+                                        .send(ExecuteState::Error(Box::new(header.clone())))
                                         .await
                                     {
                                         Ok(_) => (),
@@ -104,16 +102,26 @@ impl DagBlockExecutor {
 
                         match chain {
                             None => {
-                                chain = match BlockChain::new(self.time_service.clone(), block.header().parent_hash(), self.storage.clone(), self.vm_metrics.clone(), self.dag.clone()) {
+                                chain = match BlockChain::new(
+                                    self.time_service.clone(),
+                                    block.header().parent_hash(),
+                                    self.storage.clone(),
+                                    self.vm_metrics.clone(),
+                                    self.dag.clone(),
+                                ) {
                                     Ok(new_chain) => Some(new_chain),
                                     Err(e) => {
-                                        error!("failed to create chain for block: {:?} for {:?}", block.header().id(), e);
+                                        error!(
+                                            "failed to create chain for block: {:?} for {:?}",
+                                            block.header().id(),
+                                            e
+                                        );
                                         return;
                                     }
                                 }
                             }
                             Some(old_chain) => {
-                                if old_chain.status().head().id() != block.header().parent_hash(){
+                                if old_chain.status().head().id() != block.header().parent_hash() {
                                     chain = match old_chain.fork(block.header().parent_hash()) {
                                         Ok(new_chain) => Some(new_chain),
                                         Err(e) => {
@@ -127,8 +135,16 @@ impl DagBlockExecutor {
                             }
                         }
 
-                       info!("sync parallel worker {:p} will execute block: {:?}", &self, block.header().id());
-                        match chain.as_mut().expect("it cannot be none!").apply_with_verifier::<DagVerifierWithGhostData>(block) {
+                        info!(
+                            "sync parallel worker {:p} will execute block: {:?}",
+                            &self,
+                            block.header().id()
+                        );
+                        match chain
+                            .as_mut()
+                            .expect("it cannot be none!")
+                            .apply_with_verifier::<DagVerifierWithGhostData>(block)
+                        {
                             Ok(executed_block) => {
                                 info!(
                                     "succeed to execute block: number: {:?}, id: {:?}",
@@ -137,7 +153,7 @@ impl DagBlockExecutor {
                                 );
                                 match self
                                     .sender
-                                    .send(ExecuteState::Executed(executed_block))
+                                    .send(ExecuteState::Executed(Box::new(executed_block)))
                                     .await
                                 {
                                     Ok(_) => tokio::task::yield_now().await,
@@ -155,7 +171,11 @@ impl DagBlockExecutor {
                                     "failed to execute block: {:?}, for reason: {:?}",
                                     header, e
                                 );
-                                match self.sender.send(ExecuteState::Error(header.clone())).await {
+                                match self
+                                    .sender
+                                    .send(ExecuteState::Error(Box::new(header.clone())))
+                                    .await
+                                {
                                     Ok(_) => (),
                                     Err(e) => {
                                         error!(

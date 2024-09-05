@@ -83,7 +83,7 @@ pub trait BlockVerifier {
             new_block_header,
         )?;
         watch(CHAIN_WATCH_NAME, "n14");
-        Ok(VerifiedBlock{
+        Ok(VerifiedBlock {
             block: new_block,
             ghostdata,
         })
@@ -322,10 +322,10 @@ impl BlockVerifier for NoneVerifier {
     where
         R: ChainReader,
     {
-        Ok(VerifiedBlock{
+        Ok(VerifiedBlock {
             block: new_block,
             ghostdata: None,
-        })    
+        })
     }
 
     fn verify_uncles<R>(
@@ -339,7 +339,6 @@ impl BlockVerifier for NoneVerifier {
         Ok(None)
     }
 }
-
 
 struct BasicDagVerifier;
 impl BasicDagVerifier {
@@ -386,13 +385,17 @@ impl BasicDagVerifier {
 
         ConsensusVerifier::verify_header(current_chain, new_block_header)
     }
-    
-    fn verify_blue_blocks<R>(current_chain: &R, uncles: &[BlockHeader], header: &BlockHeader) -> Result<GhostdagData> where R: ChainReader {
+
+    fn verify_blue_blocks<R>(
+        current_chain: &R,
+        uncles: &[BlockHeader],
+        header: &BlockHeader,
+    ) -> Result<GhostdagData>
+    where
+        R: ChainReader,
+    {
         current_chain.verify_and_ghostdata(uncles, header)
     }
-
-
-   
 }
 //TODO: Implement it.
 pub struct DagVerifier;
@@ -416,7 +419,6 @@ impl BlockVerifier for DagVerifier {
     }
 }
 
-
 pub struct DagVerifierWithGhostData;
 impl BlockVerifier for DagVerifierWithGhostData {
     fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
@@ -434,6 +436,10 @@ impl BlockVerifier for DagVerifierWithGhostData {
     where
         R: ChainReader,
     {
-        Ok(Some(BasicDagVerifier::verify_blue_blocks(current_chain, uncles, header)?))
+        Ok(Some(BasicDagVerifier::verify_blue_blocks(
+            current_chain,
+            uncles,
+            header,
+        )?))
     }
 }
