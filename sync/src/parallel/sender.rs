@@ -178,22 +178,34 @@ impl<'a> DagBlockSender<'a> {
             worker.sender_to_executor.send(None).await?;
         }
 
-        for worker in &mut self.executors {
-            if let ExecuteState::Closed = worker.state {
-                continue;
+        loop {
+            for worker in &mut self.executors {
+                if let ExecuteState::Closed = worker.state {
+                    continue;
+                }
+
+                match worker.receiver_from_executor.try_recv() {
+                    Ok(state) => {
+                        if let ExecuteState::Executed(executed_block) = state {
+                            info!("finish to execute block {:?}", executed_block.header());
+                            self.notifier.notify(*executed_block)?;
+                        }
+                    }
+                    Err(e) => match e {
+                        mpsc::error::TryRecvError::Empty => (),
+                        mpsc::error::TryRecvError::Disconnected => {
+                            worker.state = ExecuteState::Closed
+                        }
+                    },
+                }
             }
 
-            match worker.receiver_from_executor.try_recv() {
-                Ok(state) => {
-                    if let ExecuteState::Executed(executed_block) = state {
-                        info!("finish to execute block {:?}", executed_block.header());
-                        self.notifier.notify(*executed_block)?;
-                    }
-                }
-                Err(e) => match e {
-                    mpsc::error::TryRecvError::Empty => (),
-                    mpsc::error::TryRecvError::Disconnected => worker.state = ExecuteState::Closed,
-                },
+            if self
+                .executors
+                .iter()
+                .all(|worker| matches!(worker.state, ExecuteState::Closed))
+            {
+                break;
             }
         }
 
