@@ -477,30 +477,6 @@ where
                 self.sync_dag_store.save_block(block)?;
                 anyhow::Ok(ParallelSign::NeedMoreBlocks)
             }
-
-            // let sync_dag_store = self.sync_dag_store.clone();
-            // let mut absent_block_iter = sync_dag_store
-            //     .iter_at_first()
-            //     .context("Failed to create iterator for sync_dag_store")?;
-            // loop {
-            //     debug!("start to read local absent block and try to execute the dag if its parents are ready.");
-            //     let mut local_absent_block = vec![];
-            //     match self.read_local_absent_block(&mut absent_block_iter, &mut local_absent_block)
-            //     {
-            //         anyhow::Result::Ok(_) => {
-            //             if local_absent_block.is_empty() {
-            //                 info!("absent block is empty, continue to sync");
-            //                 break;
-            //             }
-            //             self.execute_absent_block(&mut local_absent_block)
-            //                 .context("Failed to execute absent block")?;
-            //         }
-            //         Err(e) => {
-            //             error!("failed to read local absent block, error: {:?}", e);
-            //             return Err(e);
-            //         }
-            //     }
-            // }
         };
         async_std::task::block_on(fut)
     }

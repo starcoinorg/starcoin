@@ -618,20 +618,6 @@ impl EventHandler<Self, NewHeadBlock> for SyncService {
     }
 }
 
-// #[derive(Debug, Clone)]
-// pub struct SaveSyncBlock {
-//     pub block: Block,
-// }
-
-// impl EventHandler<Self, SaveSyncBlock> for SyncService {
-//     fn handle_event(&mut self, msg: SaveSyncBlock, _ctx: &mut ServiceContext<Self>) {
-//         let block = msg.block;
-//         if let Err(e) = self.sync_dag_store.save_block(block) {
-//             error!("[sync] Save absent block error: {:?}", e);
-//         }
-//     }
-// }
-
 impl ServiceHandler<Self, SyncStatusRequest> for SyncService {
     fn handle(&mut self, _msg: SyncStatusRequest, _ctx: &mut ServiceContext<Self>) -> SyncStatus {
         self.sync_status.clone()
