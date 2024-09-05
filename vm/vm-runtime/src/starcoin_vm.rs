@@ -7,10 +7,7 @@ use crate::errors::{
     convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
 };
 use crate::move_vm_ext::{MoveResolverExt, MoveVmExt, SessionId, SessionOutput};
-use crate::vm_adapter::{
-    discard_error_output, discard_error_vm_status, PreprocessedTransaction,
-    PublishModuleBundleOption, SessionAdapter, VMAdapter,
-};
+use crate::vm_adapter::{PreprocessedTransaction, PublishModuleBundleOption, SessionAdapter};
 use anyhow::{bail, format_err, Error, Result};
 use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
 use move_core_types::vm_status::StatusCode::VALUE_SERIALIZATION_ERROR;
@@ -61,6 +58,7 @@ use starcoin_vm_types::transaction::{DryRunTransaction, Package, TransactionPayl
 use starcoin_vm_types::transaction_metadata::TransactionPayloadMetadata;
 use starcoin_vm_types::value::{serialize_values, MoveValue};
 use starcoin_vm_types::vm_status::KeptVMStatus;
+use starcoin_vm_types::write_set::WriteSet;
 use starcoin_vm_types::{
     errors::Location,
     language_storage::TypeTag,
@@ -71,6 +69,7 @@ use starcoin_vm_types::{
 };
 use std::borrow::Borrow;
 use std::cmp::min;
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 static EXECUTION_CONCURRENCY_LEVEL: OnceCell<usize> = OnceCell::new();
@@ -78,6 +77,29 @@ static EXECUTION_CONCURRENCY_LEVEL: OnceCell<usize> = OnceCell::new();
 #[cfg(feature = "metrics")]
 use crate::metrics::VMMetrics;
 use crate::{verifier, VMExecutor};
+
+pub(crate) fn discard_error_vm_status(err: VMStatus) -> (VMStatus, TransactionOutput) {
+    let vm_status = err.clone();
+    let error_code = match err.keep_or_discard() {
+        Ok(_) => {
+            debug_assert!(false, "discarding non-discardable error: {:?}", vm_status);
+            vm_status.status_code()
+        }
+        Err(code) => code,
+    };
+    (vm_status, discard_error_output(error_code))
+}
+
+pub(crate) fn discard_error_output(err: StatusCode) -> TransactionOutput {
+    // Since this transaction will be discarded, no writeset will be included.
+    TransactionOutput::new(
+        BTreeMap::new(),
+        WriteSet::default(),
+        vec![],
+        0,
+        TransactionStatus::Discard(err),
+    )
+}
 
 #[derive(Clone)]
 #[allow(clippy::upper_case_acronyms)]
@@ -1465,6 +1487,43 @@ impl StarcoinVM {
     ) -> VMResult<Arc<CompiledModule>> {
         self.move_vm.load_module(module_id, remote)
     }
+
+    pub(crate) fn execute_single_transaction<S: MoveResolverExt + StateView>(
+        &self,
+        txn: &PreprocessedTransaction,
+        data_cache: &S,
+    ) -> Result<(VMStatus, TransactionOutput, Option<String>), VMStatus> {
+        Ok(match txn {
+            PreprocessedTransaction::UserTransaction(txn) => {
+                let sender = txn.sender().to_string();
+                let (vm_status, output) = self.execute_user_transaction(data_cache, *txn.clone());
+                // XXX FIXME YSG
+                // let gas_unit_price = transaction.gas_unit_price(); think about gas_used OutOfGas
+                (vm_status, output, Some(sender))
+            }
+            PreprocessedTransaction::BlockMetadata(block_meta) => {
+                let (vm_status, output) =
+                    match self.process_block_metadata(data_cache, block_meta.clone()) {
+                        Ok(output) => (VMStatus::Executed, output),
+                        Err(vm_status) => discard_error_vm_status(vm_status),
+                    };
+                (vm_status, output, Some("block_meta".to_string()))
+            }
+        })
+    }
+
+    pub(crate) fn should_restart_execution(output: &TransactionOutput) -> bool {
+        // XXX FIXME YSG if GasSchedule.move UpgradeEvent
+        for event in output.events() {
+            if event.key().get_creator_address() == genesis_address()
+                && (event.is::<UpgradeEvent>() || event.is::<ConfigChangeEvent<Version>>())
+            {
+                info!("should_restart_execution happen");
+                return true;
+            }
+        }
+        false
+    }
 }
 
 #[allow(clippy::large_enum_variant)]
@@ -1629,44 +1688,5 @@ impl VMExecutor for StarcoinVM {
                 .map(|(_vm_status, txn_output)| txn_output)
                 .collect())
         }
-    }
-}
-
-impl VMAdapter for StarcoinVM {
-    fn should_restart_execution(output: &TransactionOutput) -> bool {
-        // XXX FIXME YSG if GasSchedule.move UpgradeEvent
-        for event in output.events() {
-            if event.key().get_creator_address() == genesis_address()
-                && (event.is::<UpgradeEvent>() || event.is::<ConfigChangeEvent<Version>>())
-            {
-                info!("should_restart_execution happen");
-                return true;
-            }
-        }
-        false
-    }
-
-    fn execute_single_transaction<S: MoveResolverExt + StateView>(
-        &self,
-        txn: &PreprocessedTransaction,
-        data_cache: &S,
-    ) -> Result<(VMStatus, TransactionOutput, Option<String>), VMStatus> {
-        Ok(match txn {
-            PreprocessedTransaction::UserTransaction(txn) => {
-                let sender = txn.sender().to_string();
-                let (vm_status, output) = self.execute_user_transaction(data_cache, *txn.clone());
-                // XXX FIXME YSG
-                // let gas_unit_price = transaction.gas_unit_price(); think about gas_used OutOfGas
-                (vm_status, output, Some(sender))
-            }
-            PreprocessedTransaction::BlockMetadata(block_meta) => {
-                let (vm_status, output) =
-                    match self.process_block_metadata(data_cache, block_meta.clone()) {
-                        Ok(output) => (VMStatus::Executed, output),
-                        Err(vm_status) => discard_error_vm_status(vm_status),
-                    };
-                (vm_status, output, Some("block_meta".to_string()))
-            }
-        })
     }
 }
