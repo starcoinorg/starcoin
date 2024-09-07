@@ -1482,8 +1482,8 @@ impl BlockChain {
         // Caculate the ghostdata of the virutal node created by all tips.
         // And the ghostdata.selected of the tips will be the latest head.
         let block_hash = {
-            let ghost_of_tips = dag.ghostdata(tips.as_slice())?;
-            ghost_of_tips.selected_parent
+            // let ghost_of_tips = dag.ghostdata(tips.as_slice())?;
+            dag.ghost_dag_manager().find_selected_parent(tips.iter().copied())?
         };
         let (block, block_info) = {
             let block = self
