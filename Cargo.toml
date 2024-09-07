@@ -204,7 +204,6 @@ default-members = [
     "vm/transaction-builder-generator",
     "vm/move-coverage",
     "vm/resource-viewer",
-    "vm/starcoin-gas",
     "vm/starcoin-aggregator",
     "vm/starcoin-gas-meter",
     "vm/dev",

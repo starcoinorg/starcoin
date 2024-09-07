@@ -4,7 +4,7 @@
 use crate::natives::aggregator_natives::aggregator_v2::{
     EUNSUPPORTED_AGGREGATOR_SNAPSHOT_TYPE, EUNSUPPORTED_AGGREGATOR_TYPE,
 };
-use aptos_aggregator::resolver::DelayedFieldResolver;
+use starcoin_aggregator::resolver::DelayedFieldResolver;
 use starcoin_native_interface::{safely_get_struct_field_as, SafeNativeError, SafeNativeResult};
 use move_binary_format::errors::PartialVMError;
 use move_vm_types::{

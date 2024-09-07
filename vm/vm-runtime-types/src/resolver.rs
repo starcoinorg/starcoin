@@ -132,6 +132,26 @@ where
     }
 }
 
+/// Allows to query modules from the state.
+pub trait StateStorageView {
+    fn id(&self) -> StateViewId;
+
+    fn get_usage(&self) -> Result<StateStorageUsage, StateviewError>;
+}
+
+impl<S> StateStorageView for S
+    where
+        S: StateView,
+{
+    fn id(&self) -> StateViewId {
+        self.id()
+    }
+
+    fn get_usage(&self) -> Result<StateStorageUsage, StateviewError> {
+        self.get_usage().map_err(Into::into)
+    }
+}
+
 /// Allows to query storage metadata in the VM session. Needed for storage refunds.
 /// - Result being Err means storage error or some incostistency (e.g. during speculation,
 /// needing to abort/halt the transaction with an error status).

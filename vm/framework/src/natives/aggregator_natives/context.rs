@@ -1,7 +1,7 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
-use aptos_aggregator::{
+use starcoin_aggregator::{
     aggregator_v1_extension::{AggregatorData, AggregatorState},
     bounded_math::SignedU128,
     delayed_change::DelayedChange,
@@ -155,7 +155,7 @@ impl<'a> NativeAggregatorContext<'a> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use aptos_aggregator::{
+    use starcoin_aggregator::{
         aggregator_v1_id_for_test, aggregator_v1_state_key_for_test, bounded_math::SignedU128,
         delayed_change::DelayedApplyChange, delta_change_set::DeltaWithMax,
         delta_math::DeltaHistory, tests::types::FAKE_AGGREGATOR_VIEW_GEN_ID_START,

@@ -1,9 +1,9 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
-use aptos_crypto::{bls12381, traits};
+use starcoin_crypto::{bls12381, traits};
 #[cfg(feature = "testing")]
-use aptos_crypto::{
+use starcoin_crypto::{
     bls12381::{PrivateKey, ProofOfPossession, PublicKey},
     test_utils::KeyPair,
     SigningKey, Uniform,

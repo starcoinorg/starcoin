@@ -2,16 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #[cfg(feature = "testing")]
-use aptos_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
+use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 #[cfg(feature = "testing")]
-use aptos_crypto::test_utils::KeyPair;
-use aptos_crypto::{
+use starcoin_crypto::test_utils::KeyPair;
+use starcoin_crypto::{
     ed25519,
     ed25519::{ED25519_PUBLIC_KEY_LENGTH, ED25519_SIGNATURE_LENGTH},
     multi_ed25519,
     traits::*,
 };
-use aptos_gas_algebra::{Arg, GasExpression};
+use starcoin_gas_algebra::{Arg, GasExpression};
 use starcoin_gas_schedule::gas_params::natives::starcoin_framework::*;
 use starcoin_native_interface::{
     safely_assert_eq, safely_pop_arg, RawSafeNative, SafeNativeBuilder, SafeNativeContext,

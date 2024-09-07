@@ -21,7 +21,7 @@ use num_cpus;
 use once_cell::sync::OnceCell;
 use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
 use starcoin_crypto::HashValue;
-use starcoin_gas_algebra_ext::{
+use starcoin_gas_algebraext::{
     CostTable, FromOnChainGasSchedule, Gas, GasConstants, GasCost, InitialGasSchedule,
 };
 use starcoin_gas_meter::{NativeGasParameters, StarcoinGasMeter, StarcoinGasParameters};

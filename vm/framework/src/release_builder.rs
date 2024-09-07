@@ -8,7 +8,7 @@ use crate::{
 };
 use anyhow::{anyhow, Context};
 use aptos_sdk_builder::rust;
-use starcoin_types::transaction::EntryABI;
+use starcoin_vm_types::transaction::EntryABI;
 use clap::Parser;
 use std::path::{Path, PathBuf};
 
