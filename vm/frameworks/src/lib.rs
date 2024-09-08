@@ -14,6 +14,7 @@ where
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(relative.into())
 }
 
+#[allow(dead_code)]
 pub(crate) fn path_relative_to_crate(path: PathBuf) -> PathBuf {
     let crate_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     path.strip_prefix(crate_path).unwrap_or(&path).to_path_buf()
