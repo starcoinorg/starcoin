@@ -37,11 +37,11 @@ pub use op_counters::{DurationHistogram, OpMetrics};
 // Re-export counter types from prometheus crate
 use prometheus::proto::LabelPair;
 pub use prometheus::{
-    default_registry, histogram_opts, labels, opts, register_counter, register_counter_vec,
-    register_gauge, register_gauge_vec, register_histogram, register_histogram_vec,
-    register_int_counter, register_int_counter_vec, register_int_gauge, register_int_gauge_vec,
-    Error as PrometheusError, Histogram, HistogramOpts, HistogramTimer, HistogramVec, IntCounter,
-    IntCounterVec, IntGauge, IntGaugeVec, Opts, Registry,
+    default_registry, exponential_buckets, gather, histogram_opts, labels, opts, register_counter,
+    register_counter_vec, register_gauge, register_gauge_vec, register_histogram,
+    register_histogram_vec, register_int_counter, register_int_counter_vec, register_int_gauge,
+    register_int_gauge_vec, Error as PrometheusError, Histogram, HistogramOpts, HistogramTimer,
+    HistogramVec, IntCounter, IntCounterVec, IntGauge, IntGaugeVec, Opts, Registry,
 };
 
 pub mod proto {
