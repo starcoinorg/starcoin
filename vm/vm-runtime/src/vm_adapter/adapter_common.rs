@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::move_vm_ext::MoveResolverExt;
 use anyhow::Result;
 use move_core_types::vm_status::{StatusCode, VMStatus};
 use starcoin_vm_types::state_view::StateView;

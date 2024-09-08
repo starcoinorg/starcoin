@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use move_binary_format::errors::*;
+use move_binary_format::normalized::Function;
 use move_binary_format::{
     access::ModuleAccess, compatibility::Compatibility, normalized, CompiledModule, IndexKind,
 };
@@ -13,8 +14,7 @@ use move_core_types::{
     language_storage::{ModuleId, TypeTag},
     resolver::*,
 };
-use move_vm_runtime::loader::Function;
-use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
+use move_vm_runtime::session::Session;
 use move_vm_types::gas::GasMeter;
 use move_vm_types::loaded_data::runtime_types::Type;
 use std::borrow::Borrow;
@@ -32,36 +32,36 @@ pub struct PublishModuleBundleOption {
 }
 
 /// An adapter for wrap MoveVM Session
-pub struct SessionAdapter<'r, 'l, R> {
-    pub(crate) inner: Session<'r, 'l, R>,
+pub struct SessionAdapter<'r, 'l> {
+    pub(crate) inner: Session<'r, 'l>,
 }
 
-impl<'r, 'l, R> From<Session<'r, 'l, R>> for SessionAdapter<'r, 'l, R> {
-    fn from(s: Session<'r, 'l, R>) -> Self {
+impl<'r, 'l> From<Session<'r, 'l>> for SessionAdapter<'r, 'l> {
+    fn from(s: Session<'r, 'l>) -> Self {
         Self { inner: s }
     }
 }
 
 #[allow(clippy::from_over_into)]
-impl<'r, 'l, R> Into<Session<'r, 'l, R>> for SessionAdapter<'r, 'l, R> {
-    fn into(self) -> Session<'r, 'l, R> {
+impl<'r, 'l> Into<Session<'r, 'l>> for SessionAdapter<'r, 'l> {
+    fn into(self) -> Session<'r, 'l> {
         self.inner
     }
 }
 
-impl<'r, 'l, R> AsRef<Session<'r, 'l, R>> for SessionAdapter<'r, 'l, R> {
-    fn as_ref(&self) -> &Session<'r, 'l, R> {
+impl<'r, 'l> AsRef<Session<'r, 'l>> for SessionAdapter<'r, 'l> {
+    fn as_ref(&self) -> &Session<'r, 'l> {
         &self.inner
     }
 }
 
-impl<'r, 'l, R> AsMut<Session<'r, 'l, R>> for SessionAdapter<'r, 'l, R> {
-    fn as_mut(&mut self) -> &mut Session<'r, 'l, R> {
+impl<'r, 'l> AsMut<Session<'r, 'l>> for SessionAdapter<'r, 'l> {
+    fn as_mut(&mut self) -> &mut Session<'r, 'l> {
         &mut self.inner
     }
 }
 
-impl<'r, 'l, R: MoveResolver> SessionAdapter<'r, 'l, R> {
+impl<'r, 'l> SessionAdapter<'r, 'l> {
     ///// wrapper of Session, push signer as the first argument of function.
     //pub fn execute_entry_function(
     //    &mut self,

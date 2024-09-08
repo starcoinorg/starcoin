@@ -7,6 +7,9 @@ pub mod metrics;
 pub mod natives;
 pub mod starcoin_vm;
 
+#[macro_use]
+pub mod counters;
+
 use move_core_types::vm_status::VMStatus;
 pub use move_vm_runtime::{move_vm, session};
 mod access_path_cache;

@@ -7,6 +7,13 @@ mod resolver;
 mod session;
 mod vm;
 
+mod warm_vm_cache;
+
+pub(crate) mod write_op_converter;
+
 pub use crate::move_vm_ext::{
-    resolver::MoveResolverExt, session::SessionId, session::SessionOutput, vm::MoveVmExt,
+    resolver::{AsExecutorView, StarcoinMoveResolver},
+    session::SessionExt,
+    session::SessionId,
+    vm::MoveVmExt,
 };

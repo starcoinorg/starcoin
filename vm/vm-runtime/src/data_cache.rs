@@ -11,6 +11,8 @@ use move_table_extension::{TableHandle, TableResolver};
 use starcoin_logger::prelude::*;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::state_value::StateValue;
+use starcoin_vm_types::state_view::TStateView;
 use starcoin_vm_types::{
     access_path::AccessPath,
     errors::*,
@@ -21,8 +23,6 @@ use starcoin_vm_types::{
 };
 use std::collections::btree_map::BTreeMap;
 use std::ops::{Deref, DerefMut};
-use starcoin_vm_types::state_store::state_value::StateValue;
-use starcoin_vm_types::state_view::TStateView;
 
 /// A local cache for a given a `StateView`. The cache is private to the Diem layer
 /// but can be used as a one shot cache for systems that need a simple `RemoteCache`
@@ -116,7 +116,7 @@ impl<'block, S: StateView> ResourceResolver for StateViewCache<'block, S> {
         struct_tag: &StructTag,
         metadata: &[Metadata],
         layout: Option<&MoveTypeLayout>,
-    ) -> Result<(Option<bytes::bytes::Bytes>, usize), Self::Error> {
+    ) -> Result<(Option<bytes::Bytes>, usize), Self::Error> {
         todo!()
     }
 }
@@ -166,7 +166,7 @@ impl<'a, S: StateView> ResourceResolver for RemoteStorage<'a, S> {
         struct_tag: &StructTag,
         metadata: &[Metadata],
         layout: Option<&MoveTypeLayout>,
-    ) -> Result<(Option<bytes::bytes::Bytes>, usize), Self::Error> {
+    ) -> Result<(Option<bytes::Bytes>, usize), Self::Error> {
         todo!()
     }
 }
