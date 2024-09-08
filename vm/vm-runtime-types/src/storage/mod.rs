@@ -25,7 +25,7 @@ impl StorageGasParameters {
         Self { change_set_configs }
     }
 
-    pub fn unlimited(free_write_bytes_quota: NumBytes) -> Self {
+    pub fn unlimited(_free_write_bytes_quota: NumBytes) -> Self {
         Self {
             change_set_configs: ChangeSetConfigs::unlimited_at_gas_feature_version(
                 LATEST_GAS_FEATURE_VERSION,
