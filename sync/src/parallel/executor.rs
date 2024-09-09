@@ -1,10 +1,10 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use starcoin_chain::{verifier::DagVerifierWithGhostData, BlockChain, ChainReader};
 use starcoin_chain_api::ExecutedBlock;
 use starcoin_config::TimeService;
 use starcoin_crypto::HashValue;
-use starcoin_dag::blockdag::BlockDAG;
+use starcoin_dag::{blockdag::BlockDAG, types::perf::DEFAULT_REINDEX_SLACK};
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::{error, info};
 use starcoin_storage::Store;
@@ -67,6 +67,7 @@ impl DagBlockExecutor {
     pub fn start_to_execute(mut self) -> anyhow::Result<JoinHandle<()>> {
         let handle = tokio::spawn(async move {
             let mut chain = None;
+            let mut slack = DEFAULT_REINDEX_SLACK;
             loop {
                 match self.receiver.recv().await {
                     Some(op_block) => {
@@ -151,14 +152,19 @@ impl DagBlockExecutor {
                         match chain
                             .as_mut()
                             .expect("it cannot be none!")
-                            .apply_with_verifier::<DagVerifierWithGhostData>(block)
+                            .apply_with_verifier_for_sync::<DagVerifierWithGhostData>(block, slack)
                         {
-                            Ok(executed_block) => {
+                            Ok((executed_block, duration)) => {
                                 info!(
-                                    "succeed to execute block: number: {:?}, id: {:?}",
+                                    "succeed to execute block: number: {:?}, id: {:?}, duration: {:?}",
                                     executed_block.header().number(),
-                                    executed_block.header().id()
+                                    executed_block.header().id(),
+                                    duration,
                                 );
+                                if duration > Duration::from_millis(300) && slack < 2000000 {
+                                    slack <<= 1;
+                                    info!("Update the dag reachability slack to {:?}", slack);
+                                }
                                 match self
                                     .sender
                                     .send(ExecuteState::Executed(Box::new(executed_block)))
