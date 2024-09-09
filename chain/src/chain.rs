@@ -50,6 +50,7 @@ use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
 use std::{collections::HashMap, sync::Arc};
 
 static OUTPUT_BLOCK: AtomicBool = AtomicBool::new(false);
@@ -439,6 +440,21 @@ impl BlockChain {
         self.connect(executed_block)
     }
 
+    pub fn apply_with_verifier_for_sync<V>(
+        &mut self,
+        block: Block,
+        slack: u64,
+    ) -> Result<(ExecutedBlock, Duration)>
+    where
+        V: BlockVerifier,
+    {
+        let verified_block = self.verify_with_verifier::<V>(block)?;
+        watch(CHAIN_WATCH_NAME, "n1");
+        let (executed_block, duration) = self.execute_dag_block_for_sync(verified_block, slack)?;
+        watch(CHAIN_WATCH_NAME, "n2");
+        Ok((self.connect(executed_block)?, duration))
+    }
+
     pub fn verify_without_save<V>(&mut self, block: Block) -> Result<ExecutedBlock>
     where
         V: BlockVerifier,
@@ -457,7 +473,10 @@ impl BlockChain {
         self.connect(ExecutedBlock { block, block_info })
     }
 
-    fn execute_dag_block(&mut self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
+    fn execute_dag_block_for_transaction(
+        &mut self,
+        verified_block: VerifiedBlock,
+    ) -> Result<ExecutedBlock> {
         info!("execute dag block:{:?}", verified_block.block);
         let block = verified_block.block;
         let selected_parent = block.parent_hash();
@@ -641,22 +660,71 @@ impl BlockChain {
         self.storage.save_block_info(block_info.clone())?;
 
         self.storage.save_table_infos(txn_table_infos)?;
+
+        Ok(ExecutedBlock { block, block_info })
+    }
+
+    fn execute_dag_block_for_sync(
+        &mut self,
+        verified_block: VerifiedBlock,
+        slack: u64,
+    ) -> Result<(ExecutedBlock, Duration)> {
+        let trusted_ghostdata = match &verified_block.ghostdata {
+            Some(ghostdata) => ghostdata.clone(),
+            None => bail!("execute_dag_block_for_sync is only for sync"),
+        };
+        let executed_block = self.execute_dag_block_for_transaction(verified_block)?;
         let genesis_header = self
             .storage
             .get_block_header_by_hash(self.genesis_hash)?
             .ok_or_else(|| format_err!("failed to get genesis because it is none"))?;
-        let result = match verified_block.ghostdata {
-            Some(trusted_ghostdata) => self.dag.commit_trusted_block(
-                header.to_owned(),
-                genesis_header.parent_hash(),
-                Arc::new(trusted_ghostdata),
-            ),
-            None => self
-                .dag
-                .commit(header.to_owned(), genesis_header.parent_hash()),
+
+        let result = self.dag.commit_trusted_block(
+            executed_block.header().clone(),
+            genesis_header.parent_hash(),
+            Arc::new(trusted_ghostdata),
+            slack,
+        );
+        let duration = match result {
+            anyhow::Result::Ok(duration) => {
+                info!(
+                    "finish to commit dag block: {:?}",
+                    executed_block.header().id()
+                );
+                duration
+            }
+            Err(e) => {
+                if let Some(StoreError::KeyAlreadyExists(_)) = e.downcast_ref::<StoreError>() {
+                    info!("dag block already exist, ignore");
+                    Duration::from_millis(0) // ignore this call
+                } else {
+                    return Err(e);
+                }
+            }
         };
+        watch(CHAIN_WATCH_NAME, "n26");
+        Ok((executed_block, duration))
+    }
+
+    fn execute_dag_block(&mut self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
+        if verified_block.ghostdata.is_some() {
+            bail!("execute_dag_block is only for minig execution");
+        }
+        let executed_block = self.execute_dag_block_for_transaction(verified_block)?;
+        let genesis_header = self
+            .storage
+            .get_block_header_by_hash(self.genesis_hash)?
+            .ok_or_else(|| format_err!("failed to get genesis because it is none"))?;
+
+        let result = self.dag.commit(
+            executed_block.block().header().clone(),
+            genesis_header.parent_hash(),
+        );
         match result {
-            anyhow::Result::Ok(_) => info!("finish to commit dag block: {:?}", block_id),
+            anyhow::Result::Ok(_) => info!(
+                "finish to commit dag block: {:?}",
+                executed_block.block().id()
+            ),
             Err(e) => {
                 if let Some(StoreError::KeyAlreadyExists(_)) = e.downcast_ref::<StoreError>() {
                     info!("dag block already exist, ignore");
@@ -666,7 +734,7 @@ impl BlockChain {
             }
         }
         watch(CHAIN_WATCH_NAME, "n26");
-        Ok(ExecutedBlock { block, block_info })
+        Ok(executed_block)
     }
 
     //TODO consider move this logic to BlockExecutor
@@ -1546,8 +1614,8 @@ impl ChainWriter for BlockChain {
         &self.statedb
     }
 
-    fn apply_for_sync(&mut self, block: Block) -> Result<ExecutedBlock> {
-        self.apply_with_verifier::<DagVerifierWithGhostData>(block)
+    fn apply_for_sync(&mut self, block: Block, slack: u64) -> Result<(ExecutedBlock, Duration)> {
+        self.apply_with_verifier_for_sync::<DagVerifierWithGhostData>(block, slack)
     }
 }
 

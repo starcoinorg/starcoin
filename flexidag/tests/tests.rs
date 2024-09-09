@@ -720,7 +720,7 @@ fn add_and_print_with_ghostdata(
         .with_number(number)
         .build();
     let start = Instant::now();
-    dag.commit_trusted_block(header.to_owned(), origin, Arc::new(ghostdata))?;
+    dag.commit_trusted_block(header.to_owned(), origin, Arc::new(ghostdata), 4096)?;
     let duration = start.elapsed();
     println!(
         "commit header: {:?}, number: {:?}, duration: {:?}",

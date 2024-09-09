@@ -28,6 +28,7 @@ use starcoin_types::{
 use std::collections::HashSet;
 use std::ops::DerefMut;
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 pub const DEFAULT_GHOSTDAG_K: KType = 8u16;
 pub const DEFAULT_PRUNING_DEPTH: u64 = 185798;
@@ -148,7 +149,8 @@ impl BlockDAG {
         header: BlockHeader,
         origin: HashValue,
         trusted_ghostdata: Arc<GhostdagData>,
-    ) -> anyhow::Result<()> {
+        slack: u64,
+    ) -> anyhow::Result<Duration> {
         info!(
             "start to commit header: {:?}, number: {:?}",
             header.id(),
@@ -223,15 +225,19 @@ impl BlockDAG {
             .filter(|hash| self.storage.reachability_store.read().has(*hash).unwrap())
             .collect::<Vec<_>>()
             .into_iter();
+        let start = Instant::now();
         let add_block_result = {
             let mut reachability_writer = reachability_store.write();
-            inquirer::add_block(
+            inquirer::add_block_with_params(
                 reachability_writer.deref_mut(),
                 header.id(),
                 ghostdata.selected_parent,
                 &mut merge_set,
+                None,
+                Some(slack),
             )
         };
+        let duration = start.elapsed();
         match add_block_result {
             Result::Ok(_) => (),
             Err(reachability::ReachabilityError::DataInconsistency) => {
@@ -288,7 +294,7 @@ impl BlockDAG {
             Arc::new(header),
             1,
         ))?;
-        Ok(())
+        Ok(duration)
     }
 
     pub fn commit(&mut self, header: BlockHeader, origin: HashValue) -> anyhow::Result<()> {

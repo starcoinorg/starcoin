@@ -18,6 +18,7 @@ use starcoin_chain_api::{ChainReader, ChainType, ChainWriter, ConnectBlockError,
 use starcoin_config::G_CRATE_VERSION;
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::schema::ValueCodec;
+use starcoin_dag::types::perf::DEFAULT_REINDEX_SLACK;
 use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::MAX_BLOCK_REQUEST_SIZE;
 use starcoin_storage::db_storage::SchemaIterator;
@@ -213,6 +214,7 @@ pub struct BlockCollector<N, H> {
     fetcher: Arc<dyn BlockFetcher>,
     latest_block_id: HashValue,
     sync_dag_store: SyncDagStore,
+    dag_reachability_slack: u64,
 }
 
 impl<N, H> ContinueChainOperator for BlockCollector<N, H>
@@ -276,6 +278,7 @@ where
             fetcher,
             latest_block_id,
             sync_dag_store,
+            dag_reachability_slack: DEFAULT_REINDEX_SLACK,
         }
     }
 
@@ -354,7 +357,21 @@ where
             self.chain
                 .apply_with_verifier::<BasicVerifier>(block.clone())
         } else {
-            self.chain.apply_for_sync(block.clone())
+            let (executed_block, duration) = self
+                .chain
+                .apply_for_sync(block.clone(), self.dag_reachability_slack)?;
+            info!(
+                "The dag commit duration is {:?} and the current slack is {:?}",
+                duration, self.dag_reachability_slack
+            );
+            if duration > Duration::from_millis(300) && self.dag_reachability_slack <= 2000000 {
+                self.dag_reachability_slack <<= 1;
+                info!(
+                    "Update the dag reachability slack to {:?}",
+                    self.dag_reachability_slack
+                );
+            }
+            Ok(executed_block)
         };
         if let Err(err) = apply_result {
             let error_msg = err.to_string();

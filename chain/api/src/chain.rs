@@ -17,6 +17,7 @@ use starcoin_types::{
 };
 use starcoin_vm_types::on_chain_resource::Epoch;
 use std::collections::HashMap;
+use std::time::Duration;
 
 use crate::{ChainType, TransactionInfoWithProof};
 pub use starcoin_types::block::ExecutedBlock;
@@ -125,7 +126,7 @@ pub trait ChainWriter {
     fn apply(&mut self, block: Block) -> Result<ExecutedBlock>;
 
     /// Verify, Execute and Connect block to current chain.
-    fn apply_for_sync(&mut self, block: Block) -> Result<ExecutedBlock>;
+    fn apply_for_sync(&mut self, block: Block, slack: u64) -> Result<(ExecutedBlock, Duration)>;
 
     fn chain_state(&mut self) -> &ChainStateDB;
 }

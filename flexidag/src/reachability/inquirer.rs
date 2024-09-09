@@ -49,7 +49,7 @@ pub fn add_block(
     )
 }
 
-fn add_block_with_params(
+pub fn add_block_with_params(
     store: &mut (impl ReachabilityStore + ?Sized),
     new_block: Hash,
     selected_parent: Hash,
