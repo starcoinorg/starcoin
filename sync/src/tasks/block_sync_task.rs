@@ -364,7 +364,7 @@ where
                 "The dag commit duration is {:?} and the current slack is {:?}",
                 duration, self.dag_reachability_slack
             );
-            if duration > Duration::from_millis(300) && self.dag_reachability_slack <= 2000000 {
+            if duration > Duration::from_millis(300) && self.dag_reachability_slack < 1 << 63 {
                 self.dag_reachability_slack <<= 1;
                 info!(
                     "Update the dag reachability slack to {:?}",

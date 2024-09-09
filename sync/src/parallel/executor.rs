@@ -156,12 +156,12 @@ impl DagBlockExecutor {
                         {
                             Ok((executed_block, duration)) => {
                                 info!(
-                                    "succeed to execute block: number: {:?}, id: {:?}, duration: {:?}",
+                                    "succeed to execute block: number: {:?}, id: {:?}, duration for slack: {:?}",
                                     executed_block.header().number(),
                                     executed_block.header().id(),
                                     duration,
                                 );
-                                if duration > Duration::from_millis(300) && slack < 2000000 {
+                                if duration > Duration::from_millis(300) && slack < 1 << 63 {
                                     slack <<= 1;
                                     info!("Update the dag reachability slack to {:?}", slack);
                                 }
