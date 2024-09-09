@@ -16,13 +16,14 @@ rust-version = { workspace = true }
 anyhow = { workspace = true }
 starcoin-aggregator = { workspace = true }
 starcoin-crypto = { workspace = true }
-# starcoin-gas-algebra-ext = { workspace = true }
+starcoin-gas-algebra = { workspace = true }
 starcoin-gas-schedule = { workspace = true }
 starcoin-move-stdlib = { workspace = true }
 starcoin-native-interface = { workspace = true }
 # starcoin-sdk-builder = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
+starcoin-vm-runtime-types = { workspace = true }
 ark-bls12-381 = { workspace = true }
 ark-bn254 = { workspace = true }
 ark-ec = { workspace = true }

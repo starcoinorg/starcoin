@@ -22,11 +22,12 @@ use starcoin_types::language_storage::TypeTag;
 use starcoin_types::sign_message::{SignedMessage, SigningMessage};
 use starcoin_types::transaction::authenticator::{AuthenticationKey, TransactionAuthenticator};
 use starcoin_types::transaction::{
-    Module, Package, Script, ScriptABI, SignedUserTransaction, Transaction, TransactionArgument,
+    Module, Package, Script,  SignedUserTransaction, Transaction, TransactionArgument,
     TransactionPayload,
 };
 use starcoin_types::write_set::{WriteOp, WriteSet};
 use starcoin_vm_types::state_store::state_key::StateKey;
+use move_core_types::abi::ScriptABI;
 
 fn main() {
     generate().unwrap();

@@ -4,7 +4,9 @@
 use bytes::Bytes;
 use move_core_types::value::MoveTypeLayout;
 use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::state_storage_usage::StateStorageUsage;
 use starcoin_vm_types::state_store::state_value::{StateValue, StateValueMetadata};
+use starcoin_vm_types::state_store::StateViewId;
 use starcoin_vm_types::state_view::StateView;
 
 /// Allows to query resources from the state.

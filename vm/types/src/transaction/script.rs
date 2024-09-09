@@ -9,7 +9,7 @@ use move_core_types::language_storage::{ModuleId, TypeTag};
 use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use move_core_types::abi::{ArgumentABI, ScriptFunctionABI as EntryFunctionABI, TransactionScriptABI, TypeArgumentABI};
+pub use move_core_types::abi::{ArgumentABI, ScriptFunctionABI as EntryFunctionABI, TransactionScriptABI, TypeArgumentABI};
 
 /// How to call a particular Move script (aka. an "ABI"). This is a clone of
 /// move_core_types::abi::ScriptABI but with a tweak on EntryFunction -> EntryFunction

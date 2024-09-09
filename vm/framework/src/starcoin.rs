@@ -174,11 +174,11 @@ static NAMED_ADDRESSES: Lazy<BTreeMap<String, NumericalAddress>> = Lazy::new(|| 
     let ten = NumericalAddress::parse_str("0xA").unwrap();
     let resources = NumericalAddress::parse_str("0xA550C18").unwrap();
     result.insert("std".to_owned(), one);
-    result.insert("aptos_std".to_owned(), one);
+    result.insert("starcoin_std".to_owned(), one);
     result.insert("starcoin_framework".to_owned(), one);
-    result.insert("aptos_token".to_owned(), three);
-    result.insert("aptos_token_objects".to_owned(), four);
-    result.insert("aptos_fungible_asset".to_owned(), ten);
+    result.insert("starcoin_token".to_owned(), three);
+    result.insert("starcoin_token_objects".to_owned(), four);
+    result.insert("starcoin_fungible_asset".to_owned(), ten);
     result.insert("core_resources".to_owned(), resources);
     result.insert("vm".to_owned(), zero);
     result.insert("vm_reserved".to_owned(), zero);

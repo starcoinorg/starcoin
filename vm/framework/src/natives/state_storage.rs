@@ -1,14 +1,16 @@
-// Copyright © Aptos Foundation
+// Copyright © Starcoin Foundation
 // SPDX-License-Identifier: Apache-2.0
 //
 use starcoin_gas_schedule::gas_params::natives::starcoin_framework::*;
 use starcoin_native_interface::{
     RawSafeNative, SafeNativeBuilder, SafeNativeContext, SafeNativeResult,
 };
+
+use starcoin_vm_types::vm_status::StatusCode;
 use starcoin_vm_runtime_types::{
-    vm_status::StatusCode,
     resolver::StateStorageView
 };
+
 use better_any::{Tid, TidAble};
 use move_binary_format::errors::PartialVMError;
 use move_vm_runtime::native_functions::NativeFunction;

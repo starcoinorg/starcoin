@@ -66,11 +66,10 @@ mod transaction_argument;
 mod change_set;
 pub mod user_transaction_context;
 
-// pub use script::{
-//     ArgumentABI, EntryABI, EntryFunction, EntryFunctionABI, TransactionScriptABI,
-//     TypeArgumentABI,
-// };
-
+pub use script::{
+    ArgumentABI, EntryABI, EntryFunction, EntryFunctionABI, TransactionScriptABI,
+    TypeArgumentABI,
+};
 
 pub type Version = u64; // Height - also used for MVCC in StateDB
 

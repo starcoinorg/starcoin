@@ -494,7 +494,7 @@ starcoin-cmd = { path = "cmd/starcoin" }
 starcoin-config = { path = "config" }
 starcoin-consensus = { path = "consensus" }
 #starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "a742ddc0674022800341182cbb4c3681807b2f00" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "8d41c280a227594ca0a2b6ecba580643518274ea" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "a7e074026506be6101aa99817c657a46f7fca1ca" }
 
 starcoin-decrypt = { path = "commons/decrypt" }
 starcoin-dev = { path = "vm/dev" }
@@ -619,3 +619,6 @@ debug = false
 
 #[profile.release.package.cryptonight-rs]
 #opt-level = 2
+
+[patch.crates-io]
+x25519-dalek = { git = "https://github.com/aptos-labs/x25519-dalek", branch = "zeroize_v1" }
