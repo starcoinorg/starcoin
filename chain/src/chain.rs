@@ -133,10 +133,10 @@ impl BlockChain {
             vm_metrics,
             dag: dag.clone(),
         };
-        let genesis_header = storage
-            .get_block_header_by_hash(genesis)?
-            .ok_or_else(|| format_err!("failed to get genesis because it is none"))?;
-        dag.set_reindex_root(genesis_header.parent_hash())?;
+        // let genesis_header = storage
+        //     .get_block_header_by_hash(genesis)?
+        //     .ok_or_else(|| format_err!("failed to get genesis because it is none"))?;
+        // dag.set_reindex_root(genesis_header.parent_hash())?;
         watch(CHAIN_WATCH_NAME, "n1251");
         match uncles {
             Some(data) => chain.uncles = data,
