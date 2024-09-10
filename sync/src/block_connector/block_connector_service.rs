@@ -392,12 +392,7 @@ where
             tips,
             blue_blocks,
             pruning_point,
-        } = dag.calc_mergeset_and_tips(
-            main.status().head(),
-            pruning_depth,
-            pruning_finality,
-            msg.version,
-        )?;
+        } = dag.calc_mergeset_and_tips(main.status().head(), pruning_depth, pruning_finality)?;
         if blue_blocks.is_empty() {
             bail!("failed to get the blue blocks from the DAG");
         }

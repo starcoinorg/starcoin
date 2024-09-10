@@ -76,9 +76,7 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
             min_required_blue_score_for_next_pruning_point
         );
 
-        let mut latest_pruning_ghost_data = self
-            .ghost_dag_store
-            .get_compact_data(dag_state.pruning_point)?;
+        let mut latest_pruning_ghost_data = self.ghost_dag_store.get_compact_data(pruning_point)?;
         if min_required_blue_score_for_next_pruning_point + pruning_depth <= ghostdata.blue_score {
             for child in self.reachability_service().forward_chain_iterator(
                 pruning_point,

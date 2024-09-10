@@ -93,13 +93,6 @@ impl BlockDAG {
         Ok(Self::new(k, dag_storage))
     }
 
-    pub fn new_by_config(db_path: &Path) -> anyhow::Result<Self> {
-        let config = FlexiDagStorageConfig::create_with_params(1, RocksdbConfig::default());
-        let db = FlexiDagStorage::create_from_path(db_path, config)?;
-        let dag = Self::new(DEFAULT_GHOSTDAG_K, db);
-        Ok(dag)
-    }
-
     pub fn has_dag_block(&self, hash: Hash) -> anyhow::Result<bool> {
         Ok(self.storage.header_store.has(hash)?)
     }
@@ -123,7 +116,6 @@ impl BlockDAG {
         self.commit(genesis, origin)?;
         self.save_dag_state(DagState {
             tips: vec![genesis_id],
-            pruning_point: genesis_id,
         })?;
         Ok(origin)
     }
@@ -446,44 +438,42 @@ impl BlockDAG {
 
     pub fn calc_mergeset_and_tips(
         &self,
-        _pruning_depth: u64,
-        _pruning_finality: u64,
+        block_header: &BlockHeader,
+        pruning_depth: u64,
+        pruning_finality: u64,
     ) -> anyhow::Result<MineNewDagBlockInfo> {
         let dag_state = self.get_dag_state()?;
-        let ghostdata = self.ghost_dag_manager().ghostdag(&dag_state.tips)?;
-        anyhow::Ok(MineNewDagBlockInfo {
-            tips: dag_state.tips,
-            blue_blocks: (*ghostdata.mergeset_blues).clone(),
-            pruning_point: HashValue::zero(),
-        })
+        let ghostdata = self.storage.ghost_dag_store.get_data(block_header.id())?;
 
-        // let next_pruning_point = self.pruning_point_manager().next_pruning_point(
-        //     &dag_state,
-        //     &ghostdata,
-        //     pruning_depth,
-        //     pruning_finality,
-        // )?;
-        // if next_pruning_point == dag_state.pruning_point {
-        //     anyhow::Ok(MineNewDagBlockInfo {
-        //         tips: dag_state.tips,
-        //         blue_blocks: (*ghostdata.mergeset_blues).clone(),
-        //         pruning_point: next_pruning_point,
-        //     })
-        // } else {
-        //     let pruned_tips = self
-        //         .pruning_point_manager()
-        //         .prune(&dag_state, next_pruning_point)?;
-        //     let mergeset_blues = (*self
-        //         .ghost_dag_manager()
-        //         .ghostdag(&pruned_tips)?
-        //         .mergeset_blues)
-        //         .clone();
-        //     anyhow::Ok(MineNewDagBlockInfo {
-        //         tips: pruned_tips,
-        //         blue_blocks: mergeset_blues,
-        //         pruning_point: next_pruning_point,
-        //     })
-        // }
+        let next_pruning_point = self.pruning_point_manager().next_pruning_point(
+            block_header.pruning_point(),
+            ghostdata.as_ref(),
+            pruning_depth,
+            pruning_finality,
+        )?;
+        if next_pruning_point == block_header.pruning_point() {
+            anyhow::Ok(MineNewDagBlockInfo {
+                tips: dag_state.tips,
+                blue_blocks: (*ghostdata.mergeset_blues).clone(),
+                pruning_point: next_pruning_point,
+            })
+        } else {
+            let pruned_tips = self.pruning_point_manager().prune(
+                &dag_state,
+                block_header.pruning_point(),
+                next_pruning_point,
+            )?;
+            let mergeset_blues = (*self
+                .ghost_dag_manager()
+                .ghostdag(&pruned_tips)?
+                .mergeset_blues)
+                .clone();
+            anyhow::Ok(MineNewDagBlockInfo {
+                tips: pruned_tips,
+                blue_blocks: mergeset_blues,
+                pruning_point: next_pruning_point,
+            })
+        }
     }
 
     fn verify_pruning_point(
@@ -521,7 +511,50 @@ impl BlockDAG {
         anyhow::Ok(())
     }
 
-    pub fn verify(
+    pub fn reachability_store(
+        &self,
+    ) -> Arc<parking_lot::lock_api::RwLock<parking_lot::RawRwLock, DbReachabilityStore>> {
+        self.storage.reachability_store.clone()
+    }
+
+    pub fn verify_and_ghostdata(
+        &self,
+        blue_blocks: &[BlockHeader],
+        header: &BlockHeader,
+    ) -> Result<GhostdagData, anyhow::Error> {
+        self.ghost_dag_manager()
+            .verify_and_ghostdata(blue_blocks, header)
+    }
+    pub fn check_upgrade(
+        &self,
+        info: AccumulatorInfo,
+        storage: Arc<dyn Store>,
+    ) -> anyhow::Result<()> {
+        let accumulator = MerkleAccumulator::new_with_info(
+            info,
+            storage.get_accumulator_store(AccumulatorStoreType::Block),
+        );
+
+        let read_guard = self.storage.state_store.read();
+
+        let update_dag_state = match read_guard.get_state_by_hash(
+            accumulator
+                .get_leaf(0)?
+                .ok_or_else(|| format_err!("no leaf when upgrading dag db"))?,
+        ) {
+            anyhow::Result::Ok(dag_state) => match read_guard.get_state() {
+                anyhow::Result::Ok(saved_dag_state) => {
+                    info!("The dag state is {:?}", saved_dag_state);
+                    None
+                }
+                Err(_) => Some(dag_state),
+            },
+            Err(_) => {
+                warn!("Cannot get the dag state by genesis id. Might be it is a new node. The dag state will be: {:?}", read_guard.get_state()?);
+                None
+            }
+        };
+
         drop(read_guard);
 
         if let Some(dag_state) = update_dag_state {
@@ -533,11 +566,4 @@ impl BlockDAG {
 
         anyhow::Ok(())
     }
-
-    pub fn reachability_store(
-        &self,
-    ) -> Arc<parking_lot::lock_api::RwLock<parking_lot::RawRwLock, DbReachabilityStore>> {
-        self.storage.reachability_store.clone()
-    }
-
 }

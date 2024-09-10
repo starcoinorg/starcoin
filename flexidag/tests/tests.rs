@@ -975,7 +975,7 @@ fn test_prune() -> anyhow::Result<()> {
         tips,
         blue_blocks: _,
         pruning_point,
-    } = dag.calc_mergeset_and_tips(&block_main_5, pruning_depth, pruning_finality, 2)?;
+    } = dag.calc_mergeset_and_tips(&block_main_5, pruning_depth, pruning_finality)?;
 
     assert_eq!(pruning_point, block_main_2.id());
     assert_eq!(tips.len(), 1);
