@@ -7,5 +7,7 @@ pub mod resolver;
 
 pub mod storage;
 
+//pub mod resource_group_adapter;
+
 //#[cfg(test)]
 //mod tests;

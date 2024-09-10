@@ -5,7 +5,7 @@ use crate::resolver::{
     size_u32_as_uleb128, ResourceGroupSize, ResourceGroupView, TResourceGroupView, TResourceView,
 };
 use anyhow::Error;
-use aptos_types::state_store::state_key::StateKey;
+use crate::state_store::state_key::StateKey;
 use bytes::Bytes;
 use move_core_types::{language_storage::StructTag, value::MoveTypeLayout};
 use serde::Serialize;
