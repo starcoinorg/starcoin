@@ -1272,6 +1272,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "claims"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b6995bbe186456c36307f8ea36be3eefe42f49d106896414e18efc4fb2f846b5"
+dependencies = [
+ "autocfg 1.1.0",
+]
+
+[[package]]
 name = "clang-sys"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9386,6 +9395,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-aggregator"
+version = "2.0.1"
+dependencies = [
+ "anyhow",
+ "bcs 0.1.5",
+ "claims",
+ "move-binary-format",
+ "move-core-types",
+ "move-vm-types",
+ "once_cell",
+ "starcoin-logger",
+ "starcoin-vm-types",
+ "test-case",
+]
+
+[[package]]
 name = "starcoin-block-relayer"
 version = "2.0.1"
 dependencies = [
@@ -11354,8 +11379,11 @@ name = "starcoin-vm-runtime-types"
 version = "2.0.1"
 dependencies = [
  "anyhow",
+ "bcs 0.1.5",
  "bytes 1.6.1",
  "move-core-types",
+ "serde",
+ "starcoin-aggregator",
  "starcoin-gas-meter",
  "starcoin-vm-types",
  "stdlib",
@@ -11812,6 +11840,39 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bab24d30b911b2376f3a13cc2cd443142f0c81dda04c118693e35b3835757755"
 dependencies = [
  "winapi-util",
+]
+
+[[package]]
+name = "test-case"
+version = "3.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eb2550dd13afcd286853192af8601920d959b14c401fcece38071d53bf0768a8"
+dependencies = [
+ "test-case-macros",
+]
+
+[[package]]
+name = "test-case-core"
+version = "3.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "adcb7fd841cd518e279be3d5a3eb0636409487998a4aff22f3de87b81e88384f"
+dependencies = [
+ "cfg-if 1.0.0",
+ "proc-macro2 1.0.86",
+ "quote 1.0.36",
+ "syn 2.0.72",
+]
+
+[[package]]
+name = "test-case-macros"
+version = "3.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c89e72a01ed4c579669add59014b9a524d609c0c88c6a585ce37485879f6ffb"
+dependencies = [
+ "proc-macro2 1.0.86",
+ "quote 1.0.36",
+ "syn 2.0.72",
+ "test-case-core",
 ]
 
 [[package]]

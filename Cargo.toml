@@ -91,6 +91,7 @@ members = [
     "vm/move-package-manager",
     "vm/vm-status-translator",
     "vm/starcoin-transactional-test-harness",
+    "vm/starcoin-aggregator",
     "vm/parallel-executor",
     "vm/transaction-benchmarks",
     "vm/e2e-tests",
@@ -189,7 +190,6 @@ default-members = [
     "vm/vm-runtime-types",
     "vm/vm-runtime",
     "vm/frameworks",
-    "vm/starcoin-native-interface",
     "vm/stdlib",
     "vm/compiler",
     "vm/move-prover",
@@ -208,6 +208,7 @@ default-members = [
     "vm/vm-status-translator",
     "vm/starcoin-transactional-test-harness",
     "vm/starcoin-native-interface",
+    "vm/starcoin-aggregator",
     "abi/types",
     "abi/decoder",
     "abi/resolver",
@@ -281,6 +282,8 @@ bytes = { version = "1.4.0", features = ["serde"] }
 chrono = { version = "0.4.19", default-features = false, features = ["clock"] }
 clap = { version = "3", features = ["derive"] }
 cli-table = "0.3.2"
+claims = "0.7"
+test-case = "3.1.0"
 coarsetime = "0.1.22"
 codespan = { version = "0.8.0", features = ["serialization"] }
 codespan-reporting = "0.11"
@@ -478,6 +481,7 @@ starcoin-gas-schedule = { path = "vm/gas-schedule" }
 starcoin-gas-meter = { path = "vm/starcoin-gas-meter" }
 starcoin-frameworks = { path = "vm/frameworks" }
 starcoin-native-interface = { path = "vm/starcoin-native-interface" }
+starcoin-aggregator = { path = "vm/starcoin-aggregator" }
 starcoin-network = { path = "network" }
 starcoin-network-rpc = { path = "network-rpc" }
 starcoin-network-rpc-api = { path = "network-rpc/api" }
