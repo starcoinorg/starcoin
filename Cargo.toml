@@ -73,6 +73,7 @@ members = [
     "vm/vm-runtime-types",
     "vm/vm-runtime",
     "vm/frameworks",
+    "vm/framework/cached-packages",
     "vm/starcoin-native-interface",
     "vm/stdlib",
     "vm/compiler",
@@ -99,6 +100,7 @@ members = [
     "vm/e2e-tests",
     "vm/proptest-helpers",
     "vm/starcoin-native-interface",
+    "vm/starcoin-sdk-builder",
     "abi/types",
     "abi/decoder",
     "abi/resolver",
@@ -192,7 +194,9 @@ default-members = [
     "vm/vm-runtime-types",
     "vm/vm-runtime",
     "vm/framework",
+    "vm/framework/cached-packages",
     "vm/frameworks",
+    "vm/starcoin-sdk-builder",
     "vm/starcoin-native-interface",
     "vm/stdlib",
     "vm/compiler",
@@ -526,6 +530,7 @@ starcoin-rpc-api = { path = "rpc/api" }
 starcoin-rpc-client = { path = "rpc/client" }
 starcoin-rpc-middleware = { path = "rpc/middleware" }
 starcoin-rpc-server = { path = "rpc/server" }
+starcoin-sdk-builder = {path = "vm/starcoin-sdk-builder"}
 starcoin-service-registry = { path = "commons/service-registry" }
 starcoin-state-api = { path = "state/api" }
 starcoin-state-service = { path = "state/service" }
@@ -562,6 +567,8 @@ starcoin-proptest-helpers = { path = "vm/proptest-helpers" }
 starcoin-dag = { path = "flexidag" }
 starcoin-move-stdlib = { path = "vm/framework/move-stdlib"}
 starcoin-table-natives = { path = "vm/framework/table-natives" }
+starcoin-cached-packages = { path = "vm/framework/cached-packages" }
+
 
 syn = { version = "1.0.107", features = [
     "full",

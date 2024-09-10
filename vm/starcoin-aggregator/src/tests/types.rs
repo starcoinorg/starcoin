@@ -10,13 +10,18 @@ use crate::{
         code_invariant_error, expect_ok, DelayedFieldValue, DelayedFieldsSpeculativeError, PanicOr,
     },
 };
+
 use starcoin_types::{
     delayed_fields::PanicError,
+};
+
+use starcoin_vm_types::{
     state_store::{
         state_key::StateKey,
         state_value::{StateValue, StateValueMetadata},
     },
 };
+
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::{language_storage::StructTag, value::MoveTypeLayout};
 use move_vm_types::delayed_values::delayed_field_id::{DelayedFieldID, ExtractUniqueIndex};

@@ -240,6 +240,7 @@ pub mod sips;
 pub mod state_store;
 pub mod time;
 pub mod token;
+pub mod utility_coin;
 #[cfg(test)]
 mod unit_tests;
 

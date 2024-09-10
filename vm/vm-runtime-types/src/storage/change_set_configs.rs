@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{change_set::VMChangeSet, check_change_set::CheckChangeSet};
-use move_core_types::vm_status::{err_msg, StatusCode, VMStatus};
+use move_core_types::vm_status::VMStatus;
 use starcoin_gas_meter::StarcoinGasParameters;
 
 #[derive(Clone, Debug)]
