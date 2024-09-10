@@ -3,3 +3,5 @@
 pub mod state_key;
 pub mod state_value;
 pub mod table;
+
+pub mod state_storage_usage;

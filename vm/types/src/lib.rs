@@ -240,3 +240,5 @@ pub mod time;
 pub mod token;
 #[cfg(test)]
 mod unit_tests;
+
+pub mod aggregator;

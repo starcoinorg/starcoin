@@ -32,6 +32,7 @@ use move_core_types::{
     language_storage::{ModuleId, StructTag},
 };
 use serde::de::DeserializeOwned;
+use starcoin_crypto::HashValue;
 
 /// `TStateView` is a trait that defines a read-only snapshot of the global state. It is passed to
 /// the VM for transaction execution, during which the VM is guaranteed to read anything at the
@@ -39,6 +40,10 @@ use serde::de::DeserializeOwned;
 pub trait TStateView {
     type Key;
 
+    /// For logging and debugging purpose, identifies what this view is for.
+    fn id(&self) -> StateViewId {
+        StateViewId::Miscellaneous
+    }
     /// Gets the state value bytes for a given state key.
     fn get_state_value_bytes(&self, state_key: &Self::Key) -> Result<Option<Bytes>> {
         let val_opt = self.get_state_value(state_key)?;
@@ -51,6 +56,14 @@ pub trait TStateView {
     /// VM needs this method to know whether the current state view is for genesis state creation.
     /// Currently TransactionPayload::WriteSet is only valid for genesis state creation.
     fn is_genesis(&self) -> bool;
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum StateViewId {
+    /// LEC applying a block.
+    BlockExecution { block_id: HashValue },
+    /// For test, db-bootstrapper, etc. Usually not aimed to pass to VM.
+    Miscellaneous,
 }
 
 pub trait StateView: TStateView<Key = StateKey> {}
