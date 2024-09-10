@@ -519,15 +519,6 @@ impl BlockDAG {
             bail!("pruning point is not correct, the local next pruning point is {}, but the block header pruning point is {}", next_pruning_point, block_header.pruning_point());
         }
         anyhow::Ok(())
-=======
-                Err(_) => {
-                    info!("The dag state will be saved as {:?}", dag_state);
-                    self.storage.state_store.write().insert(dag_state)?;
-                }
-            },
-            Err(_) => {
-                warn!("Cannot get the dag state by genesis id. Might be it is a new node. The dag state will be: {:?}", self.storage.state_store.read().get_state()?);
->>>>>>> e00426dfc (update dag db)
     }
 
     pub fn verify(
