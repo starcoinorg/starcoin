@@ -15,6 +15,10 @@ starcoin-gas-meter = { workspace = true }
 move-core-types = { workspace = true }
 anyhow = { workspace = true }
 bytes = { workspace = true }
+bcs = { workspace = true }
+serde = { workspace = true }
+starcoin-aggregator = { workspace = true }
+
 
 
 [dev-dependencies]

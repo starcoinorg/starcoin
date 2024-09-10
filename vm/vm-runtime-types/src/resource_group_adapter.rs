@@ -5,10 +5,10 @@ use crate::resolver::{
     size_u32_as_uleb128, ResourceGroupSize, ResourceGroupView, TResourceGroupView, TResourceView,
 };
 use anyhow::Error;
-use crate::state_store::state_key::StateKey;
 use bytes::Bytes;
 use move_core_types::{language_storage::StructTag, value::MoveTypeLayout};
 use serde::Serialize;
+use starcoin_vm_types::state_store::state_key::StateKey;
 use std::{
     cell::RefCell,
     collections::{BTreeMap, HashMap},
@@ -138,7 +138,7 @@ impl<'r> ResourceGroupAdapter<'r> {
             //     but gas is not relevant for those contexts.
             resource_group_charge_as_size_sum_enabled
                 && maybe_resource_group_view
-                .map_or(false, |v| v.is_resource_group_split_in_change_set_capable()),
+                    .map_or(false, |v| v.is_resource_group_split_in_change_set_capable()),
         );
 
         Self {
@@ -177,7 +177,7 @@ impl<'r> ResourceGroupAdapter<'r> {
             GroupSizeKind::AsBlob => ResourceGroupSize::Concrete(blob_len),
             GroupSizeKind::AsSum => {
                 group_size_as_sum(group_data.iter().map(|(t, v)| (t, v.len())))?
-            },
+            }
         };
         self.group_cache
             .borrow_mut()
