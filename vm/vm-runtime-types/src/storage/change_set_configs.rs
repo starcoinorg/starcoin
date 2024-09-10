@@ -5,6 +5,7 @@ use crate::{change_set::VMChangeSet, check_change_set::CheckChangeSet};
 use move_core_types::vm_status::VMStatus;
 use starcoin_gas_meter::StarcoinGasParameters;
 
+#[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct ChangeSetConfigs {
     gas_feature_version: u64,
@@ -27,7 +28,7 @@ impl ChangeSetConfigs {
         )
     }
 
-    pub fn new(feature_version: u64, gas_params: &StarcoinGasParameters) -> Self {
+    pub fn new(feature_version: u64, _gas_params: &StarcoinGasParameters) -> Self {
         if feature_version >= 3 {
             Self::for_feature_version_3()
         } else {
@@ -83,7 +84,7 @@ impl ChangeSetConfigs {
 }
 
 impl CheckChangeSet for ChangeSetConfigs {
-    fn check_change_set(&self, change_set: &VMChangeSet) -> Result<(), VMStatus> {
+    fn check_change_set(&self, _change_set: &VMChangeSet) -> Result<(), VMStatus> {
         /* XXX FIXME YSG
         const ERR: StatusCode = StatusCode::STORAGE_WRITE_LIMIT_REACHED;
 

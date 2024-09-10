@@ -3,10 +3,9 @@
 
 use crate::gas_schedule::NativeGasParameters;
 use crate::traits::EXECUTION_GAS_MULTIPLIER as MUL;
-use starcoin_gas_algebra::{
-    InternalGas, InternalGasPerAbstractValueUnit, InternalGasPerArg, InternalGasPerByte,
-};
 use crate::ver::gas_feature_versions::*;
+use move_core_types::gas_algebra::InternalGasPerArg;
+use starcoin_gas_algebra::{InternalGas, InternalGasPerAbstractValueUnit, InternalGasPerByte};
 
 // see starcoin/vm/types/src/on_chain_config/genesis_gas_schedule.rs
 // same order as from https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#native_schedule
@@ -26,11 +25,11 @@ crate::gas_schedule::macros::define_gas_parameters!(
 
         [token_name_of_base: InternalGas,  "token.name_of.base", (2002 + 1) * MUL],
 
-         // [.hash.keccak256.base, optional "hash.keccak256.base",  0 * MUL],
-        //[hash_keccak256_per_byte: InternalGasPerByte, "hash.keccak256.per_byte",  (64 + 1) *MUL],
-        //  [hash_ripemd160_base:InternalGasPerByte ,   "hash.ripemd160.base", 0 * MUL],
-        //[hash_ripemd160_per_byte: InternalGasPerByte,  "hash.ripemd160.per_byte", (64 + 1) * MUL],
-         // [signature_ec_recover_base: InternalGasPerByte,   "signature.ec_recover.base",  0 * MUL],
+        // [.hash.keccak256.base, optional "hash.keccak256.base",  0 * MUL],
+        // [hash_keccak256_per_byte: InternalGasPerByte, "hash.keccak256.per_byte",  (64 + 1) *MUL],
+        // [hash_ripemd160_base:InternalGasPerByte ,   "hash.ripemd160.base", 0 * MUL],
+        // [hash_ripemd160_per_byte: InternalGasPerByte,  "hash.ripemd160.per_byte", (64 + 1) * MUL],
+        // [signature_ec_recover_base: InternalGasPerByte,   "signature.ec_recover.base",  0 * MUL],
         [signature_ec_recover_per_byte: InternalGasPerByte,   "signature.ec_recover.per_byte", (128 + 1) * MUL],
 
            // XXX FIXME YSG, need to remove?
@@ -42,8 +41,8 @@ crate::gas_schedule::macros::define_gas_parameters!(
         [u256_div_base: InternalGas,   "u256.div.base",  (10 + 1) * MUL],
         [u256_rem_base: InternalGas,   "u256.rem.base",  (4 + 1) * MUL],
         [u256_pow_base: InternalGas,   "u256.pow.base",  (8 + 1) * MUL],
-            // XXX FIXME YSG, need to remove?
 
+        // XXX FIXME YSG, need to remove?
         [from_bcs_base: InternalGas,  "frombcs.base", (4 + 1)  * MUL],
         //[secp256k1_base: InternalGas,  "secp256k1.base", (4 + 1)  * MUL],
 
@@ -318,6 +317,7 @@ crate::gas_schedule::macros::define_gas_parameters!(
         [transaction_context_entry_function_payload_per_byte_in_str: InternalGasPerByte, {RELEASE_V1_12.. => "transaction_context.entry_function_payload.per_abstract_memory_unit"}, 18],
         [transaction_context_multisig_payload_base: InternalGas, {RELEASE_V1_12.. => "transaction_context.multisig_payload.base"}, 735],
         [transaction_context_multisig_payload_per_byte_in_str: InternalGasPerByte, {RELEASE_V1_12.. => "transaction_context.multisig_payload.per_abstract_memory_unit"}, 18],
+
 
         [code_request_publish_base: InternalGas, "code.request_publish.base", 1838],
         [code_request_publish_per_byte: InternalGasPerByte, "code.request_publish.per_byte", 7],

@@ -6,7 +6,7 @@ use crate::data_cache::{AsMoveResolver, RemoteStorage, StateViewCache};
 use crate::errors::{
     convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
 };
-use crate::move_vm_ext::{MoveResolverExt, MoveVmExt, SessionId, SessionOutput};
+use crate::move_vm_ext::{MoveVmExt, SessionId};
 use crate::vm_adapter::{
     discard_error_output, discard_error_vm_status, PreprocessedTransaction,
     PublishModuleBundleOption, SessionAdapter, VMAdapter,
@@ -21,10 +21,12 @@ use num_cpus;
 use once_cell::sync::OnceCell;
 use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
 use starcoin_crypto::HashValue;
-use starcoin_gas_algebraext::{
-    CostTable, FromOnChainGasSchedule, Gas, GasConstants, GasCost, InitialGasSchedule,
+
+use starcoin_gas_algebra::{CostTable, Gas, GasConstants, GasCost};
+use starcoin_gas_meter::StarcoinGasMeter;
+use starcoin_gas_schedule::{
+    FromOnChainGasSchedule, InitialGasSchedule, NativeGasParameters, StarcoinGasParameters,
 };
-use starcoin_gas_meter::{NativeGasParameters, StarcoinGasMeter, StarcoinGasParameters};
 use starcoin_logger::prelude::*;
 use starcoin_types::account_config::config_change::ConfigChangeEvent;
 use starcoin_types::account_config::{

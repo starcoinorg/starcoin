@@ -33,6 +33,7 @@ impl<T> Default for MoveOption<T> {
     }
 }
 
+#[allow(dead_code)]
 impl<T> MoveOption<T> {
     pub fn none() -> Self {
         Self { value: vec![] }

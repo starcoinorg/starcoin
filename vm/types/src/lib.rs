@@ -244,7 +244,6 @@ pub mod utility_coin;
 #[cfg(test)]
 mod unit_tests;
 
-
 pub mod sub_status {
     // Native Function Error sub-codes
     pub const NFE_VECTOR_ERROR_BASE: u64 = 0;
@@ -264,3 +263,5 @@ pub mod sub_status {
         pub const EUSER_TYPE_LOADING_FAILURE: u64 = 0x1;
     }
 }
+mod resource_group_adapter;
+

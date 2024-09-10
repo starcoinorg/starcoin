@@ -30,13 +30,21 @@ move-table-extension = { workspace = true }
 move-vm-types = { workspace = true }
 move-binary-format = { workspace = true }
 starcoin-metrics = { optional = true, workspace = true }
+starcoin-gas-schedule = { workspace = true }
+starcoin-gas-algebra = { workspace = true }
 starcoin-gas-meter = { workspace = true }
 # starcoin-gas-algebra-ext = { workspace = true }
-serde = { features = ["derive"], workspace = true }
 starcoin-parallel-executor = { workspace = true }
+starcoin-vm-runtime-types = { workspace = true }
+starcoin-native-interface = { workspace = true }
+serde = { features = ["derive"], workspace = true }
+serde_bytes = { workspace = true }
 rayon = { workspace = true }
 num_cpus = { workspace = true }
 hex = "0.4.3"
+bytes = {  workspace = true }
+move-bytecode-verifier = { workspace = true }
+
 
 [dev-dependencies]
 stdlib = { workspace = true }

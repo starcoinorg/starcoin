@@ -4,85 +4,49 @@
 // ref aptos-move/framework/natives/src/lib.rs
 // XXX FIXME YSG, refactor
 
-pub mod account;
-pub mod hash;
-pub mod signature;
-pub mod token;
-pub mod u256;
+use move_core_types::account_address::AccountAddress;
+use move_vm_runtime::native_functions::{make_table_from_iter, NativeFunctionTable};
+use starcoin_native_interface::SafeNativeBuilder;
+
+mod account;
+mod hash;
+mod signature;
+mod token;
 // for support evm compat and cross chain.
-pub mod code;
-pub mod ecrecover;
-pub mod from_bcs;
-pub mod secp256k1;
+mod code;
+mod ecrecover;
+mod from_bcs;
+mod secp256k1;
 
-mod helpers;
-pub mod util;
+// mod u256;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct GasParameters {
-    pub account: account::GasParameters,
-    pub hash: hash::GasParameters,
-    pub signature: signature::GasParameters,
-    pub token: token::GasParameters,
-    pub u256: u256::GasParameters,
-    pub secp256k1: secp256k1::GasParameters,
-    pub from_bcs: from_bcs::GasParameters,
+pub mod status {
+    // Failure in parsing a struct type tag
+    pub const NFE_EXPECTED_STRUCT_TYPE_TAG: u64 = 0x1;
+    // Failure in address parsing (likely no correct length)
+    pub const NFE_UNABLE_TO_PARSE_ADDRESS: u64 = 0x2;
 }
 
-impl GasParameters {
-    pub fn zeros() -> Self {
-        Self {
-            account: account::GasParameters {
-                create_signer: account::CreateSignerGasParameters { base: 0.into() },
-                destroy_signer: account::DestroySignerGasParameters { base: 0.into() },
-            },
-            hash: hash::GasParameters {
-                keccak256: hash::Keccak256HashGasParameters {
-                    base: 0.into(),
-                    per_byte: 0.into(),
-                },
-                ripemd160: hash::Ripemd160HashGasParameters {
-                    base: 0.into(),
-                    per_byte: 0.into(),
-                },
-            },
-            signature: signature::GasParameters {
-                ed25519_validate_key: signature::Ed25519ValidateKeyGasParameters {
-                    base: 0.into(),
-                    per_byte: 0.into(),
-                },
-                ed25519_verify: signature::Ed25519VerifyGasParameters {
-                    base: 0.into(),
-                    per_byte: 0.into(),
-                },
-                ec_recover: ecrecover::EcrecoverGasParameters {
-                    base: 0.into(),
-                    per_byte: 0.into(),
-                },
-            },
-            token: token::GasParameters {
-                name_of: token::NameOfGasParameters { base: 0.into() },
-            },
-            u256: u256::GasParameters {
-                add: u256::U256AddGasParameters { base: 0.into() },
-                sub: u256::U256SubGasParameters { base: 0.into() },
-                mul: u256::U256MulGasParameters { base: 0.into() },
-                div: u256::U256DivGasParameters { base: 0.into() },
-                rem: u256::U256RemGasParameters { base: 0.into() },
-                pow: u256::U256PowGasParameters { base: 0.into() },
-                from_bytes: u256::U256FromBytesGasParameters {
-                    base: 0.into(),
-                    per_byte: 0.into(),
-                },
-            },
-            secp256k1: secp256k1::GasParameters {
-                base: 0.into(),
-                ecdsa_recover: 0.into(),
-            },
-            from_bcs: from_bcs::GasParameters {
-                base: 0.into(),
-                per_byte: 0.into(),
-            },
-        }
+pub fn all_natives(
+    framework_addr: AccountAddress,
+    builder: &SafeNativeBuilder,
+) -> NativeFunctionTable {
+    let mut natives = vec![];
+
+    macro_rules! add_natives_from_module {
+        ($module_name:expr, $natives:expr) => {
+            natives.extend(
+                $natives.map(|(func_name, func)| ($module_name.to_string(), func_name, func)),
+            );
+        };
     }
+    add_natives_from_module!("account", account::make_all(builder));
+    add_natives_from_module!("secp256k1", secp256k1::make_all(builder));
+    add_natives_from_module!("hash", hash::make_all(builder));
+    add_natives_from_module!("signature", signature::make_all(builder));
+    add_natives_from_module!("token", token::make_all(builder));
+    add_natives_from_module!("code", code::make_all(builder));
+    add_natives_from_module!("from_bcs", from_bcs::make_all(builder));
+    //   add_natives_from_module!("u256", u256::make_all(builder));
+    make_table_from_iter(framework_addr, natives)
 }
