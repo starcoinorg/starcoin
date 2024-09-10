@@ -1,160 +1,18 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-
-/*
-/// The function returns all native functions supported by Starcoin.
-/// NOTICE:
-/// - mostly re-use natives defined in move-stdlib.
-/// - be careful with the native cost table index used in the implementation
-pub fn starcoin_natives(gas_params: NativeGasParameters) -> NativeFunctionTable {
-    let mut natives = vec![];
-
-    macro_rules! add_natives_from_module {
-        ($module_name: expr, $natives: expr) => {
-            natives.extend(
-                $natives.map(|(func_name, func)| ($module_name.to_string(), func_name, func)),
-            );
-        };
-    }
-
-    add_natives_from_module!(
-        "Hash",
-        move_stdlib::natives::hash::make_all(gas_params.move_stdlib.hash)
-    );
-    add_natives_from_module!(
-        "Hash",
-        starcoin_frameworks::natives::hash::make_all(gas_params.starcoin_natives.hash)
-    );
-    add_natives_from_module!(
-        "BCS",
-        move_stdlib::natives::bcs::make_all(gas_params.move_stdlib.bcs)
-    );
-    add_natives_from_module!(
-        "FromBCS",
-        starcoin_frameworks::natives::from_bcs::make_all(gas_params.starcoin_natives.from_bcs)
-    );
-    add_natives_from_module!(
-        "Signature",
-        starcoin_frameworks::natives::signature::make_all(gas_params.starcoin_natives.signature)
-    );
-    add_natives_from_module!(
-        "Event",
-        move_stdlib::natives::event::make_all(gas_params.nursery.clone().event)
-    );
-    add_natives_from_module!(
-        "Account",
-        starcoin_frameworks::natives::account::make_all(gas_params.starcoin_natives.account)
-    );
-    add_natives_from_module!(
-        "Signer",
-        move_stdlib::natives::signer::make_all(gas_params.move_stdlib.signer)
-    );
-    add_natives_from_module!(
-        "Token",
-        starcoin_frameworks::natives::token::make_all(gas_params.starcoin_natives.token)
-    );
-    add_natives_from_module!(
-        "U256",
-        starcoin_frameworks::natives::u256::make_all(gas_params.starcoin_natives.u256)
-    );
-    #[cfg(feature = "testing")]
-    add_natives_from_module!(
-        "unit_test",
-        move_stdlib::natives::unit_test::make_all(gas_params.move_stdlib.unit_test)
-    );
-    add_natives_from_module!(
-        "String",
-        move_stdlib::natives::string::make_all(gas_params.move_stdlib.string)
-    );
-    add_natives_from_module!(
-        "Debug",
-        move_stdlib::natives::debug::make_all(gas_params.nursery.debug, CORE_CODE_ADDRESS)
-    );
-    add_natives_from_module!(
-        "Secp256k1",
-        starcoin_frameworks::natives::secp256k1::make_all(gas_params.starcoin_natives.secp256k1)
-    );
-
-    let natives = make_table_from_iter(CORE_CODE_ADDRESS, natives);
-    natives
-        .into_iter()
-        .chain(table_natives(CORE_CODE_ADDRESS, gas_params.table))
-        .collect()
-}
-
-fn table_natives(
-    table_addr: AccountAddress,
-    gas_params: move_table_extension::GasParameters,
-) -> NativeFunctionTable {
-    let natives: [(&str, &str, NativeFunction); 8] = [
-        (
-            "Table",
-            "new_table_handle",
-            move_table_extension::make_native_new_table_handle(gas_params.new_table_handle),
-        ),
-        (
-            "Table",
-            "add_box",
-            move_table_extension::make_native_add_box(
-                gas_params.common.clone(),
-                gas_params.add_box,
-            ),
-        ),
-        (
-            "Table",
-            "borrow_box",
-            move_table_extension::make_native_borrow_box(
-                gas_params.common.clone(),
-                gas_params.borrow_box.clone(),
-            ),
-        ),
-        (
-            "Table",
-            "borrow_box_mut",
-            move_table_extension::make_native_borrow_box(
-                gas_params.common.clone(),
-                gas_params.borrow_box,
-            ),
-        ),
-        (
-            "Table",
-            "remove_box",
-            move_table_extension::make_native_remove_box(
-                gas_params.common.clone(),
-                gas_params.remove_box,
-            ),
-        ),
-        (
-            "Table",
-            "contains_box",
-            move_table_extension::make_native_contains_box(
-                gas_params.common,
-                gas_params.contains_box,
-            ),
-        ),
-        (
-            "Table",
-            "destroy_empty_box",
-            move_table_extension::make_native_destroy_empty_box(gas_params.destroy_empty_box),
-        ),
-        (
-            "Table",
-            "drop_unchecked_box",
-            move_table_extension::make_native_drop_unchecked_box(gas_params.drop_unchecked_box),
-        ),
-    ];
-
-    native_functions::make_table_from_iter(table_addr, natives)
-} */
-
-
-
-
-use starcoin_gas_schedule::{MiscGasParameters, NativeGasParameters, LATEST_GAS_FEATURE_VERSION};
-use starcoin_native_interface::SafeNativeBuilder;
+#[cfg(feature = "testing")]
+use bytes::Bytes;
+#[cfg(feature = "testing")]
+use move_binary_format::errors::PartialVMError;
+#[cfg(feature = "testing")]
+use move_core_types::value::MoveTypeLayout;
+use move_table_extension::NativeTableContext;
 #[cfg(feature = "testing")]
 use move_table_extension::{TableHandle, TableResolver};
+use move_vm_runtime::native_functions::NativeFunctionTable;
+use starcoin_gas_schedule::{MiscGasParameters, NativeGasParameters, LATEST_GAS_FEATURE_VERSION};
+use starcoin_native_interface::SafeNativeBuilder;
 use starcoin_vm_types::{
     account_config::CORE_CODE_ADDRESS,
     on_chain_config::{Features, TimedFeatures, TimedFeaturesBuilder},
@@ -165,28 +23,12 @@ use starcoin_vm_types::{
     write_set::WriteOp,
 };
 #[cfg(feature = "testing")]
-use bytes::Bytes;
-#[cfg(feature = "testing")]
-use move_binary_format::errors::PartialVMError;
-#[cfg(feature = "testing")]
-use move_core_types::{language_storage::StructTag, value::MoveTypeLayout};
-use move_vm_runtime::native_functions::NativeFunctionTable;
-#[cfg(feature = "testing")]
 use std::{
     collections::{BTreeMap, HashSet},
     sync::Arc,
 };
-use move_table_extension::NativeTableContext;
 #[cfg(feature = "testing")]
-use {
-    starcoin_frameworks::natives::{
-        aggregator_natives::NativeAggregatorContext, code::NativeCodeContext,
-        cryptography::ristretto255_point::NativeRistrettoPointContext,
-        transaction_context::NativeTransactionContext,
-    },
-    move_vm_runtime::native_extensions::NativeContextExtensions,
-    once_cell::sync::Lazy,
-};
+use { move_vm_runtime::native_extensions::NativeContextExtensions, once_cell::sync::Lazy};
 
 #[cfg(feature = "testing")]
 struct StarcoinBlankStorage;
@@ -328,24 +170,24 @@ pub fn assert_no_test_natives(err_msg: &str) {
             TimedFeaturesBuilder::enable_all().build(),
             Features::default()
         )
-            .into_iter()
-            .all(|(_, module_name, func_name, _)| {
-                !(module_name.as_str() == "unit_test"
-                    && func_name.as_str() == "create_signers_for_testing"
-                    || module_name.as_str() == "ed25519"
+        .into_iter()
+        .all(|(_, module_name, func_name, _)| {
+            !(module_name.as_str() == "unit_test"
+                && func_name.as_str() == "create_signers_for_testing"
+                || module_name.as_str() == "ed25519"
                     && func_name.as_str() == "generate_keys_internal"
-                    || module_name.as_str() == "ed25519" && func_name.as_str() == "sign_internal"
-                    || module_name.as_str() == "multi_ed25519"
+                || module_name.as_str() == "ed25519" && func_name.as_str() == "sign_internal"
+                || module_name.as_str() == "multi_ed25519"
                     && func_name.as_str() == "generate_keys_internal"
-                    || module_name.as_str() == "multi_ed25519" && func_name.as_str() == "sign_internal"
-                    || module_name.as_str() == "bls12381"
+                || module_name.as_str() == "multi_ed25519" && func_name.as_str() == "sign_internal"
+                || module_name.as_str() == "bls12381"
                     && func_name.as_str() == "generate_keys_internal"
-                    || module_name.as_str() == "bls12381" && func_name.as_str() == "sign_internal"
-                    || module_name.as_str() == "bls12381"
+                || module_name.as_str() == "bls12381" && func_name.as_str() == "sign_internal"
+                || module_name.as_str() == "bls12381"
                     && func_name.as_str() == "generate_proof_of_possession_internal"
-                    || module_name.as_str() == "event"
+                || module_name.as_str() == "event"
                     && func_name.as_str() == "emitted_events_internal")
-            }),
+        }),
         "{}",
         err_msg
     )
@@ -358,7 +200,7 @@ pub fn configure_for_unit_test() {
 
 #[cfg(feature = "testing")]
 fn unit_test_extensions_hook(exts: &mut NativeContextExtensions) {
-    use aptos_table_natives::NativeTableContext;
+    use starcoin_table_natives::NativeTableContext;
 
     exts.add(NativeTableContext::new([0u8; 32], &*DUMMY_RESOLVER));
     exts.add(NativeCodeContext::default());

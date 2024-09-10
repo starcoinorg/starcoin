@@ -240,3 +240,4 @@ pub mod time;
 pub mod token;
 #[cfg(test)]
 mod unit_tests;
+mod resource_group_adapter;
