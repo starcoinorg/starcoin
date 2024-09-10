@@ -12743,6 +12743,7 @@ dependencies = [
  "move-ir-types",
  "move-table-extension",
  "move-vm-types",
+ "num-traits",
  "num_enum",
  "once_cell",
  "proptest",
