@@ -23,9 +23,12 @@ use crate::{
 };
 use anyhow::Result;
 use starcoin_crypto::{
-    hash::{CryptoHash, DummyHasher},
+    hash::CryptoHash,
     HashValue,
+    hash::DummyHasher,
+    CryptoHasher,
 };
+
 use bytes::Bytes;
 use inner::StateKeyInner;
 use move_core_types::{
@@ -60,7 +63,7 @@ impl StateKey {
 
     /// Recovers from serialized bytes in physical storage.
     pub fn decode(val: &[u8]) -> Result<StateKey, StateKeyDecodeErr> {
-        use access_path::Path;
+        use access_path::DataPath;
 
         if val.is_empty() {
             return Err(StateKeyDecodeErr::EmptyInput);
@@ -71,11 +74,11 @@ impl StateKey {
         let myself = match state_key_tag {
             StateKeyTag::AccessPath => {
                 let AccessPath { address, path } = bcs::from_bytes(&val[1..])?;
-                let path: Path = bcs::from_bytes(&path)?;
+                let path: DataPath = bcs::from_bytes(&path)?;
                 match path {
-                    Path::Code(ModuleId { address, name }) => Self::module(&address, &name),
-                    Path::Resource(struct_tag) => Self::resource(&address, &struct_tag)?,
-                    Path::ResourceGroup(struct_tag) => Self::resource_group(&address, &struct_tag),
+                    DataPath::Code(ModuleId { address, name }) => Self::module(&address, &name),
+                    DataPath::Resource(struct_tag) => Self::resource(&address, &struct_tag)?,
+                    DataPath::ResourceGroup(struct_tag) => Self::resource_group(&address, &struct_tag),
                 }
             },
             StateKeyTag::TableItem => {
@@ -108,11 +111,11 @@ impl StateKey {
 
     /// This is `pub` only for benchmarking, don't use in production. Use `::resource()`, etc. instead.
     pub fn from_deserialized(deserialized: StateKeyInner) -> Result<Self> {
-        use access_path::Path;
+        use access_path::DataPath;
 
         let myself = match deserialized {
             StateKeyInner::AccessPath(AccessPath { address, path }) => {
-                match bcs::from_bytes::<Path>(&path) {
+                match bcs::from_bytes::<DataPath>(&path) {
                     Err(err) => {
                         if cfg!(feature = "fuzzing") {
                             // note: to make analyze-serde-formats test happy, do not error out
@@ -122,9 +125,9 @@ impl StateKey {
                             return Err(err.into());
                         }
                     },
-                    Ok(Path::Code(module_id)) => Self::module_id(&module_id),
-                    Ok(Path::Resource(struct_tag)) => Self::resource(&address, &struct_tag)?,
-                    Ok(Path::ResourceGroup(struct_tag)) => {
+                    Ok(DataPath::Code(module_id)) => Self::module_id(&module_id),
+                    Ok(DataPath::Resource(struct_tag)) => Self::resource(&address, &struct_tag)?,
+                    Ok(DataPath::ResourceGroup(struct_tag)) => {
                         Self::resource_group(&address, &struct_tag)
                     },
                 }

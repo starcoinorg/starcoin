@@ -57,7 +57,9 @@ use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::hash::HashValue;
 use std::fmt;
+use std::fmt::Formatter;
 use std::str::FromStr;
+
 #[derive(Clone, Eq, PartialEq, Hash, Ord, PartialOrd, JsonSchema)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 #[schemars(with = "String")]
@@ -204,6 +206,7 @@ impl From<&ModuleId> for AccessPath {
 pub enum DataType {
     CODE,
     RESOURCE,
+    RESOURCE_GROUP,
 }
 
 impl DataType {
@@ -250,6 +253,7 @@ pub type ModuleName = Identifier;
 pub enum DataPath {
     Code(#[schemars(with = "String")] ModuleName),
     Resource(#[schemars(with = "String")] StructTag),
+    ResourceGroup(#[schemars(with = "String")] StructTag),
 }
 
 #[cfg(any(test, feature = "fuzzing"))]
@@ -273,7 +277,7 @@ impl Arbitrary for DataPath {
                     }
                 )),
         ]
-        .boxed()
+            .boxed()
     }
 
     type Strategy = BoxedStrategy<Self>;
@@ -296,26 +300,30 @@ impl DataPath {
         match self {
             Self::Code(_) => DataType::CODE,
             Self::Resource(_) => DataType::RESOURCE,
+            Self::ResourceGroup(_) => DataType::RESOURCE_GROUP,
         }
     }
 
     pub fn key_hash(&self) -> HashValue {
         match self {
-            Self::Resource(struct_tag) => struct_tag.key_hash(),
             Self::Code(module_name) => module_name.key_hash(),
+            Self::Resource(struct_tag) => struct_tag.key_hash(),
+            Self::ResourceGroup(gorup_name) => gorup_name.key_hash(),
         }
     }
 }
 
 impl fmt::Display for DataPath {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let storage_index = self.data_type().storage_index();
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Resource(struct_tag) => {
-                write!(f, "{}/{}", storage_index, struct_tag)
+            DataPath::Code(module_id) => {
+                write!(f, "Code({})", module_id)
             }
-            Self::Code(module_name) => {
-                write!(f, "{}/{}", storage_index, module_name)
+            DataPath::Resource(struct_tag) => {
+                write!(f, "Resource({})", struct_tag)
+            }
+            DataPath::ResourceGroup(struct_tag) => {
+                write!(f, "ResourceGroup({})", struct_tag)
             }
         }
     }
@@ -334,7 +342,25 @@ impl FromStr for AccessPath {
         let data_path = match data_type {
             DataType::CODE => Self::code_data_path(Identifier::new(parts[2])?),
             DataType::RESOURCE => Self::resource_data_path(parse_struct_tag(parts[2])?),
+            DataType::RESOURCE_GROUP => Self::resource_data_path(parse_struct_tag(parts[2])?),
         };
         Ok(Self::new(address, data_path))
+    }
+}
+
+
+impl TryFrom<&[u8]> for DataPath {
+    type Error = bcs::Error;
+
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        bcs::from_bytes::<DataPath>(bytes)
+    }
+}
+
+impl TryFrom<&Vec<u8>> for DataPath {
+    type Error = bcs::Error;
+
+    fn try_from(bytes: &Vec<u8>) -> Result<Self, Self::Error> {
+        bcs::from_bytes::<DataPath>(bytes)
     }
 }

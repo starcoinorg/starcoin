@@ -188,6 +188,54 @@ pub fn size_u32_as_uleb128(mut value: usize) -> usize {
     len
 }
 
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ResourceGroupSize {
+    Concrete(u64),
+    /// Combined represents what would the size be if we know individual
+    /// parts that contribute to it. This is useful when individual parts
+    /// are changing, and we want to know what the size of the group would be.
+    ///
+    /// Formula is based on how bcs serializes the BTreeMap:
+    ///   varint encoding len(num_tagged_resources) + all_tagged_resources_size
+    /// Also, if num_tagged_resources is 0, then the size is 0, because we will not store
+    /// empty resource group in storage.
+    Combined {
+        num_tagged_resources: usize,
+        all_tagged_resources_size: u64,
+    },
+}
+
+impl ResourceGroupSize {
+    pub fn zero_combined() -> Self {
+        Self::Combined {
+            num_tagged_resources: 0,
+            all_tagged_resources_size: 0,
+        }
+    }
+
+    pub fn zero_concrete() -> Self {
+        Self::Concrete(0)
+    }
+
+    pub fn get(&self) -> u64 {
+        match self {
+            Self::Concrete(size) => *size,
+            Self::Combined {
+                num_tagged_resources,
+                all_tagged_resources_size,
+            } => {
+                if *num_tagged_resources == 0 {
+                    0
+                } else {
+                    size_u32_as_uleb128(*num_tagged_resources) as u64 + *all_tagged_resources_size
+                }
+            },
+        }
+    }
+}
+
+
 #[test]
 fn test_size_u32_as_uleb128() {
     assert_eq!(size_u32_as_uleb128(0), 1);
@@ -196,3 +244,4 @@ fn test_size_u32_as_uleb128() {
     assert_eq!(size_u32_as_uleb128(128 * 128 - 1), 2);
     assert_eq!(size_u32_as_uleb128(128 * 128), 3);
 }
+

@@ -263,5 +263,5 @@ pub mod sub_status {
         pub const EUSER_TYPE_LOADING_FAILURE: u64 = 0x1;
     }
 }
-mod resource_group_adapter;
+
 

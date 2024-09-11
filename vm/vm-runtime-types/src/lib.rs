@@ -9,3 +9,4 @@ pub mod storage;
 
 //#[cfg(test)]
 //mod tests;
+mod resource_group_adapter;

@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{access_path::AccessPath, state_store::table::TableHandle};
-use starcoin_crypto::CryptoHasher;
+use starcoin_crypto::compiler_v2::CryptoHasher;
+use starcoin_crypto::compiler_v2 as aptos_crypto;
 use bytes::{BufMut, Bytes, BytesMut};
 use num_derive::{FromPrimitive, ToPrimitive};
 use serde::{Deserialize, Serialize};

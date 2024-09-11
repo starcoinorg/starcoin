@@ -9,8 +9,9 @@ use crate::{
     },
 };
 use anyhow::Result;
-use aptos_crypto::{hash::CryptoHasher, HashValue};
-use aptos_infallible::RwLock;
+use starcoin_crypto::HashValue;
+use starcoin_infallible::RwLock;
+use fxhash;
 use bytes::Bytes;
 use hashbrown::HashMap;
 use move_core_types::{
@@ -46,16 +47,16 @@ impl Drop for Entry {
     fn drop(&mut self) {
         match &self.deserialized {
             StateKeyInner::AccessPath(AccessPath { address, path }) => {
-                use crate::access_path::Path;
+                use crate::access_path::DataPath;
 
-                match &bcs::from_bytes::<Path>(path).expect("Failed to deserialize Path.") {
-                    Path::Code(module_id) => REGISTRY
+                match &bcs::from_bytes::<DataPath>(path).expect("Failed to deserialize Path.") {
+                    DataPath::Code(module_id) => REGISTRY
                         .module(address, &module_id.name)
                         .maybe_remove(&module_id.address, &module_id.name),
-                    Path::Resource(struct_tag) => REGISTRY
+                    DataPath::Resource(struct_tag) => REGISTRY
                         .resource(struct_tag, address)
                         .maybe_remove(struct_tag, address),
-                    Path::ResourceGroup(struct_tag) => REGISTRY
+                    DataPath::ResourceGroup(struct_tag) => REGISTRY
                         .resource_group(struct_tag, address)
                         .maybe_remove(struct_tag, address),
                 }
