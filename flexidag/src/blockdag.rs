@@ -13,14 +13,11 @@ use crate::consensusdb::{
 use crate::ghostdag::protocol::GhostdagManager;
 use crate::prune::pruning_point_manager::PruningPointManagerT;
 use crate::{process_key_already_error, reachability};
-use anyhow::{bail, ensure, format_err, Ok};
-use starcoin_accumulator::node::AccumulatorStoreType;
-use starcoin_accumulator::{Accumulator, MerkleAccumulator};
+use anyhow::{bail, ensure, Ok};
 use starcoin_config::temp_dir;
 use starcoin_crypto::{HashValue as Hash, HashValue};
-use starcoin_logger::prelude::{debug, info, warn};
-use starcoin_storage::Store;
-use starcoin_types::block::{AccumulatorInfo, BlockHeader};
+use starcoin_logger::prelude::{debug, info};
+use starcoin_types::block::BlockHeader;
 use starcoin_types::{
     blockhash::{BlockHashes, KType},
     consensus_header::ConsensusHeader,
@@ -113,10 +110,14 @@ impl BlockDAG {
             .write()
             .insert(origin, BlockHashes::new(vec![]))?;
 
+        let pruning_point = genesis.pruning_point();
         self.commit(genesis, origin)?;
-        self.save_dag_state(DagState {
-            tips: vec![genesis_id],
-        })?;
+        self.save_dag_state(
+            pruning_point,
+            DagState {
+                tips: vec![genesis_id],
+            },
+        )?;
         Ok(origin)
     }
     pub fn ghostdata(&self, parents: &[HashValue]) -> anyhow::Result<GhostdagData> {
@@ -423,12 +424,12 @@ impl BlockDAG {
         }
     }
 
-    pub fn get_dag_state(&self) -> anyhow::Result<DagState> {
-        Ok(self.storage.state_store.read().get_state()?)
+    pub fn get_dag_state(&self, hash: Hash) -> anyhow::Result<DagState> {
+        Ok(self.storage.state_store.read().get_state_by_hash(hash)?)
     }
 
-    pub fn save_dag_state(&self, state: DagState) -> anyhow::Result<()> {
-        self.storage.state_store.write().insert(state)?;
+    pub fn save_dag_state(&self, hash: Hash, state: DagState) -> anyhow::Result<()> {
+        self.storage.state_store.write().insert(hash, state)?;
         Ok(())
     }
 
@@ -442,12 +443,12 @@ impl BlockDAG {
         pruning_depth: u64,
         pruning_finality: u64,
     ) -> anyhow::Result<MineNewDagBlockInfo> {
-        let dag_state = self.get_dag_state()?;
-        let ghostdata = self.storage.ghost_dag_store.get_data(block_header.id())?;
+        let dag_state = self.get_dag_state(block_header.id())?;
+        let ghostdata = self.ghostdata(&dag_state.tips)?;
 
         let next_pruning_point = self.pruning_point_manager().next_pruning_point(
             block_header.pruning_point(),
-            ghostdata.as_ref(),
+            &ghostdata,
             pruning_depth,
             pruning_finality,
         )?;
@@ -525,43 +526,54 @@ impl BlockDAG {
         self.ghost_dag_manager()
             .verify_and_ghostdata(blue_blocks, header)
     }
-    pub fn check_upgrade(
-        &self,
-        info: AccumulatorInfo,
-        storage: Arc<dyn Store>,
-    ) -> anyhow::Result<()> {
-        let accumulator = MerkleAccumulator::new_with_info(
-            info,
-            storage.get_accumulator_store(AccumulatorStoreType::Block),
-        );
-
-        let read_guard = self.storage.state_store.read();
-
-        let update_dag_state = match read_guard.get_state_by_hash(
-            accumulator
-                .get_leaf(0)?
-                .ok_or_else(|| format_err!("no leaf when upgrading dag db"))?,
-        ) {
-            anyhow::Result::Ok(dag_state) => match read_guard.get_state() {
-                anyhow::Result::Ok(saved_dag_state) => {
-                    info!("The dag state is {:?}", saved_dag_state);
-                    None
+    pub fn check_upgrade(&self, main: &BlockHeader) -> anyhow::Result<()> {
+        // set the state with key 0
+        if main.version() == 0 {
+            let result_dag_state = self
+                .storage
+                .state_store
+                .read()
+                .get_state_by_hash(main.pruning_point());
+            match result_dag_state {
+                anyhow::Result::Ok(_dag_state) => (),
+                Err(_) => {
+                    let result_dag_state =
+                        self.storage.state_store.read().get_state_by_hash(0.into());
+                    match result_dag_state {
+                        anyhow::Result::Ok(dag_state) => self
+                            .storage
+                            .state_store
+                            .write()
+                            .insert(main.pruning_point(), dag_state)?,
+                        Err(_) => {
+                            let dag_state = self
+                                .storage
+                                .state_store
+                                .read()
+                                .get_state_by_hash(main.id())?;
+                            self.storage
+                                .state_store
+                                .write()
+                                .insert(0.into(), dag_state.clone())?;
+                            self.storage
+                                .state_store
+                                .write()
+                                .insert(HashValue::zero(), dag_state)?;
+                        }
+                    }
                 }
-                Err(_) => Some(dag_state),
-            },
-            Err(_) => {
-                warn!("Cannot get the dag state by genesis id. Might be it is a new node. The dag state will be: {:?}", read_guard.get_state()?);
-                None
             }
-        };
-
-        drop(read_guard);
-
-        if let Some(dag_state) = update_dag_state {
-            let write_guard = self.storage.state_store.write();
-            info!("The dag state will be saved as {:?}", dag_state);
-            write_guard.insert(dag_state)?;
-            drop(write_guard);
+            return Ok(());
+        } else if main.version() == 1 {
+            let dag_state = self
+                .storage
+                .state_store
+                .read()
+                .get_state_by_hash(0.into())?;
+            self.storage
+                .state_store
+                .write()
+                .insert(HashValue::zero(), dag_state)?;
         }
 
         anyhow::Ok(())

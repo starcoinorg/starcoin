@@ -375,7 +375,7 @@ where
 {
     fn handle(
         &mut self,
-        msg: MinerRequest,
+        _msg: MinerRequest,
         ctx: &mut ServiceContext<Self>,
     ) -> <MinerRequest as ServiceRequest>::Response {
         let main = self.chain_service.get_main();

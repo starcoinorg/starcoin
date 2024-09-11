@@ -323,14 +323,14 @@ fn test_dag_tips_store() {
     dag.storage
         .state_store
         .write()
-        .insert(state.clone())
+        .insert(Hash::zero(), state.clone())
         .expect("failed to store the dag state");
 
     assert_eq!(
         dag.storage
             .state_store
             .read()
-            .get_state()
+            .get_state_by_hash(Hash::zero())
             .expect("failed to get the dag state"),
         state
     );
@@ -967,9 +967,12 @@ fn test_prune() -> anyhow::Result<()> {
     assert_eq!(observer3.selected_parent, observer2.selected_parent);
 
     // prunning process begins
-    dag.save_dag_state(DagState {
-        tips: vec![block_red_3.id(), block_main_5.id()],
-    })?;
+    dag.save_dag_state(
+        Hash::zero(),
+        DagState {
+            tips: vec![block_red_3.id(), block_main_5.id()],
+        },
+    )?;
 
     let MineNewDagBlockInfo {
         tips,

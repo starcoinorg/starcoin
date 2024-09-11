@@ -178,7 +178,7 @@ impl BlockChain {
     }
 
     fn init_dag(mut dag: BlockDAG, genesis_header: BlockHeader) -> Result<BlockDAG> {
-        match dag.get_dag_state() {
+        match dag.get_dag_state(genesis_header.pruning_point()) {
             anyhow::Result::Ok(_dag_state) => (),
             Err(e) => match e.downcast::<StoreError>()? {
                 StoreError::KeyNotFound(_) => {
@@ -984,7 +984,7 @@ impl BlockChain {
     }
 
     pub fn get_dag_state(&self) -> Result<DagState> {
-        self.dag.get_dag_state()
+        self.dag.get_dag_state(self.status().head().pruning_point())
     }
 }
 
@@ -1336,7 +1336,9 @@ impl ChainReader for BlockChain {
     }
 
     fn current_tips_hash(&self) -> Result<Vec<HashValue>> {
-        self.dag.get_dag_state().map(|state| state.tips)
+        self.dag
+            .get_dag_state(self.status().head().id())
+            .map(|state| state.tips)
     }
 
     fn has_dag_block(&self, header_id: HashValue) -> Result<bool> {
@@ -1520,7 +1522,10 @@ impl BlockChain {
         if self.epoch.end_block_number() == block.header().number() {
             self.epoch = get_epoch_from_statedb(&self.statedb)?;
         }
-        self.dag.save_dag_state(DagState { tips })?;
+        self.dag.save_dag_state(
+            executed_block.block().header().pruning_point(),
+            DagState { tips },
+        )?;
         Ok(executed_block)
     }
 }
