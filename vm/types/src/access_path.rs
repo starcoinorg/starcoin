@@ -82,7 +82,11 @@ impl AccessPath {
     }
 
     pub fn resource_data_path(tag: StructTag) -> DataPath {
-        DataPath::Resource(tag)
+        DataPath::ResourceGroup(tag)
+    }
+
+    pub fn resource_group_data_path(module_name: ModuleName) -> DataPath {
+        DataPath::Code(module_name)
     }
 
     pub fn code_data_path(module_name: ModuleName) -> DataPath {
@@ -218,6 +222,9 @@ impl DataType {
     pub fn is_resource(self) -> bool {
         matches!(self, Self::RESOURCE)
     }
+    pub fn is_resource_group(self) -> bool {
+        matches!(self, Self::RESOURCE_GROUP)
+    }
 
     #[inline]
     pub fn type_index(self) -> u8 {
@@ -239,7 +246,7 @@ impl DataType {
 impl Arbitrary for DataType {
     type Parameters = ();
     fn arbitrary_with(_args: ()) -> Self::Strategy {
-        prop_oneof![Just(Self::CODE), Just(Self::RESOURCE),].boxed()
+        prop_oneof![Just(Self::CODE), Just(Self::RESOURCE), Just(Self::RESOURCE_GROUP)].boxed()
     }
 
     type Strategy = BoxedStrategy<Self>;

@@ -23,10 +23,8 @@ use crate::{
 };
 use anyhow::Result;
 use starcoin_crypto::{
-    hash::CryptoHash,
+    hash::{CryptoHash, DummyHasher},
     HashValue,
-    hash::DummyHasher,
-    CryptoHasher,
 };
 
 use bytes::Bytes;
@@ -74,7 +72,7 @@ impl StateKey {
         let myself = match state_key_tag {
             StateKeyTag::AccessPath => {
                 let AccessPath { address, path } = bcs::from_bytes(&val[1..])?;
-                let path: DataPath = bcs::from_bytes(&path)?;
+                //let path: DataPath = bcs::from_bytes(&path)?;
                 match path {
                     DataPath::Code(ModuleId { address, name }) => Self::module(&address, &name),
                     DataPath::Resource(struct_tag) => Self::resource(&address, &struct_tag)?,
@@ -115,7 +113,7 @@ impl StateKey {
 
         let myself = match deserialized {
             StateKeyInner::AccessPath(AccessPath { address, path }) => {
-                match bcs::from_bytes::<DataPath>(&path) {
+                match path {//bcs::from_bytes::<DataPath>(&path) {
                     Err(err) => {
                         if cfg!(feature = "fuzzing") {
                             // note: to make analyze-serde-formats test happy, do not error out
@@ -179,7 +177,9 @@ impl StateKey {
                 .module(address, name)
                 .get_or_add(address, name, || {
                     Ok(StateKeyInner::AccessPath(AccessPath::code_access_path(
-                        ModuleId::new(*address, name.to_owned()),
+                        address.clone(),
+                        name.to_owned(),
+                        //ModuleId::new(*address, name.to_owned()),
                     )))
                 })
                 .expect("only possible error is resource path serialization"),
