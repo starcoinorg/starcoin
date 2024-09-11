@@ -1335,9 +1335,9 @@ impl ChainReader for BlockChain {
         }))
     }
 
-    fn current_tips_hash(&self) -> Result<Vec<HashValue>> {
+    fn current_tips_hash(&self, pruning_point: HashValue) -> Result<Vec<HashValue>> {
         self.dag
-            .get_dag_state(self.status().head().id())
+            .get_dag_state(pruning_point)
             .map(|state| state.tips)
     }
 
@@ -1472,16 +1472,26 @@ impl BlockChain {
     fn connect_dag(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
         let dag = self.dag.clone();
         let (new_tip_block, _) = (executed_block.block(), executed_block.block_info());
-        let mut tips = self.current_tips_hash()?;
-        let parents = executed_block.block.header.parents_hash();
-        if !tips.contains(&new_tip_block.id()) {
-            for hash in parents {
-                tips.retain(|x| *x != hash);
-            }
-            if !dag.check_ancestor_of(new_tip_block.id(), tips.clone())? {
-                tips.push(new_tip_block.id());
+        let parent_header = self
+            .storage
+            .get_block_header_by_hash(new_tip_block.header().parent_hash())?
+            .ok_or_else(|| {
+                format_err!(
+                    "Dag block should exist, block id: {:?}",
+                    new_tip_block.header().parent_hash()
+                )
+            })?;
+        let mut tips = self.current_tips_hash(parent_header.pruning_point())?;
+
+        let mut new_tips = vec![];
+        for hash in tips {
+            if !dag.check_ancestor_of(hash, vec![new_tip_block.id()])? {
+                new_tips.push(hash);
             }
         }
+        tips = new_tips;
+        tips.push(new_tip_block.id());
+
         // Caculate the ghostdata of the virutal node created by all tips.
         // And the ghostdata.selected of the tips will be the latest head.
         let block_hash = dag
@@ -1522,10 +1532,20 @@ impl BlockChain {
         if self.epoch.end_block_number() == block.header().number() {
             self.epoch = get_epoch_from_statedb(&self.statedb)?;
         }
-        self.dag.save_dag_state(
-            executed_block.block().header().pruning_point(),
-            DagState { tips },
-        )?;
+
+        if new_tip_block.header().pruning_point() == block.header().pruning_point() {
+            self.dag
+                .save_dag_state(block.header().pruning_point(), DagState { tips })?;
+        } else {
+            let new_tips = dag.pruning_point_manager().prune(
+                &DagState { tips },
+                block.header().pruning_point(),
+                new_tip_block.header().pruning_point(),
+            )?;
+            self.dag
+                .save_dag_state(block.header().pruning_point(), DagState { tips: new_tips })?;
+        }
+
         Ok(executed_block)
     }
 }

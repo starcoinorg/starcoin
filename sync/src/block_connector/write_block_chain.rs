@@ -591,12 +591,11 @@ where
             return Ok(ConnectOk::Duplicate);
         }
 
-        if self.main.check_chain_type()? == ChainType::Dag
-            && !block
-                .header()
-                .parents_hash()
-                .iter()
-                .all(|parent_hash| self.main.dag().has_dag_block(*parent_hash).unwrap_or(false))
+        if !block
+            .header()
+            .parents_hash()
+            .iter()
+            .all(|parent_hash| self.main.dag().has_dag_block(*parent_hash).unwrap_or(false))
         {
             debug!(
                 "block: {:?} is a future dag block, trigger sync to pull other dag blocks",

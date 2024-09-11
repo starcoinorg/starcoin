@@ -106,7 +106,7 @@ pub trait ChainReader {
         access_path: Option<AccessPath>,
     ) -> Result<Option<TransactionInfoWithProof>>;
 
-    fn current_tips_hash(&self) -> Result<Vec<HashValue>>;
+    fn current_tips_hash(&self, pruning_point: HashValue) -> Result<Vec<HashValue>>;
     fn has_dag_block(&self, header_id: HashValue) -> Result<bool>;
     fn check_chain_type(&self) -> Result<ChainType>;
     fn verify_and_ghostdata(

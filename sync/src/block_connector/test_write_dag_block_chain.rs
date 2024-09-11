@@ -50,7 +50,9 @@ pub fn new_dag_block(
     let miner_address = *miner.address();
 
     let block_chain = writeable_block_chain_service.get_main();
-    let tips = block_chain.current_tips_hash().expect("failed to get tips");
+    let tips = block_chain
+        .current_tips_hash(block_chain.status().head().pruning_point())
+        .expect("failed to get tips");
     let (block_template, _) = block_chain
         .create_block_template(
             miner_address,

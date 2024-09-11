@@ -14,6 +14,7 @@ use crate::sync::{CheckSyncEvent, SyncService};
 use crate::tasks::{BlockConnectedEvent, BlockConnectedFinishEvent, BlockDiskCheckEvent};
 use anyhow::{bail, format_err, Ok, Result};
 use network_api::PeerProvider;
+use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
 use starcoin_consensus::Consensus;
@@ -378,30 +379,41 @@ where
         _msg: MinerRequest,
         ctx: &mut ServiceContext<Self>,
     ) -> <MinerRequest as ServiceRequest>::Response {
-        let main = self.chain_service.get_main();
+        let main_header = self.chain_service.get_main().status().head().clone();
         let dag = self.chain_service.get_dag();
-        let epoch = main.epoch().clone();
-        let strategy = epoch.strategy();
-        let on_chain_block_gas_limit = epoch.block_gas_limit();
+
         let (pruning_depth, pruning_finality) = ctx
             .get_shared::<Arc<NodeConfig>>()?
             .base()
             .net()
             .pruning_config();
+
         let MineNewDagBlockInfo {
             tips,
             blue_blocks,
             pruning_point,
-        } = dag.calc_mergeset_and_tips(main.status().head(), pruning_depth, pruning_finality)?;
+        } = dag.calc_mergeset_and_tips(&main_header, pruning_depth, pruning_finality)?;
+
         if blue_blocks.is_empty() {
             bail!("failed to get the blue blocks from the DAG");
         }
-        let selected_parent = blue_blocks.first().expect("the blue block must exist");
+        let selected_parent = *blue_blocks
+            .first()
+            .ok_or_else(|| format_err!("the blue blocks must be not be 0!"))?;
+
+        let time_service = self.config.net().time_service();
+        let storage = ctx.get_shared::<Arc<Storage>>()?;
+        let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
+        let main = BlockChain::new(time_service, selected_parent, storage, vm_metrics, dag)?;
+
+        let epoch = main.epoch().clone();
+        let strategy = epoch.strategy();
+        let on_chain_block_gas_limit = epoch.block_gas_limit();
         let previous_header = main
             .get_storage()
-            .get_block_header_by_hash(*selected_parent)?
+            .get_block_header_by_hash(selected_parent)?
             .ok_or_else(|| format_err!("BlockHeader should exist by hash: {}", selected_parent))?;
-        let next_difficulty = epoch.strategy().calculate_next_difficulty(main)?;
+        let next_difficulty = epoch.strategy().calculate_next_difficulty(&main)?;
         let now_milliseconds = main.time_service().now_millis();
 
         Ok(Box::new(MinerResponse {

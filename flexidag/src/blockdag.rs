@@ -443,7 +443,7 @@ impl BlockDAG {
         pruning_depth: u64,
         pruning_finality: u64,
     ) -> anyhow::Result<MineNewDagBlockInfo> {
-        let dag_state = self.get_dag_state(block_header.id())?;
+        let dag_state = self.get_dag_state(block_header.pruning_point())?;
         let ghostdata = self.ghostdata(&dag_state.tips)?;
 
         let next_pruning_point = self.pruning_point_manager().next_pruning_point(
