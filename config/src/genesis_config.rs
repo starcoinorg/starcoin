@@ -754,6 +754,9 @@ static G_DEFAULT_BASE_REWARD_PER_BLOCK: Lazy<TokenValue<STCUnit>> =
 
 pub static G_BASE_BLOCK_GAS_LIMIT: u64 = 50_000_000; //must big than maximum_number_of_gas_units
 
+pub static G_PRUNING_DEPTH: u64 = 17280;
+pub static G_PRUNING_FINALITY: u64 = 8640;
+
 static G_EMPTY_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(Vec::new);
 const ONE_DAY: u64 = 86400;
 
@@ -804,8 +807,8 @@ pub static G_DAG_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
-        pruning_depth: 17280,
-        pruning_finality: 8640,
+        pruning_depth: G_PRUNING_DEPTH,
+        pruning_finality: G_PRUNING_FINALITY,
         block_header_version: 1,
     }
 });
@@ -857,8 +860,8 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
-        pruning_depth: 17280,
-        pruning_finality: 8640,
+        pruning_depth: G_PRUNING_DEPTH,
+        pruning_finality: G_PRUNING_FINALITY,
         block_header_version: 1,
     }
 });
@@ -913,8 +916,8 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
-        pruning_depth: 17280,
-        pruning_finality: 8640,
+        pruning_depth: G_PRUNING_DEPTH,
+        pruning_finality: G_PRUNING_FINALITY,
         block_header_version: 1,
     }
 });
@@ -974,8 +977,8 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
-        pruning_depth: 17280,
-        pruning_finality: 8640,
+        pruning_depth: G_PRUNING_DEPTH,
+        pruning_finality: G_PRUNING_FINALITY,
         block_header_version: 1,
     }
 });
@@ -1036,8 +1039,8 @@ pub static G_PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         transaction_timeout: ONE_DAY,
         // todo: rollback it to zero and initialize BlockDag properly
-        pruning_depth: 17280,
-        pruning_finality: 8640,
+        pruning_depth: G_PRUNING_DEPTH,
+        pruning_finality: G_PRUNING_FINALITY,
         block_header_version: 1,
     }
 });
@@ -1096,8 +1099,8 @@ pub static G_BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 24 * 1000, // 1d
         },
         transaction_timeout: ONE_DAY,
-        pruning_depth: 17280,
-        pruning_finality: 8640,
+        pruning_depth: G_PRUNING_DEPTH,
+        pruning_finality: G_PRUNING_FINALITY,
         block_header_version: 1,
     }
 });
@@ -1170,8 +1173,8 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 24 * 1000, // 1d
         },
         transaction_timeout: ONE_DAY,
-        pruning_depth: 17280,
-        pruning_finality: 8640,
+        pruning_depth: G_PRUNING_DEPTH,
+        pruning_finality: G_PRUNING_FINALITY,
         block_header_version: 1,
     }
 });
@@ -1228,8 +1231,8 @@ pub static G_VEGA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 60 * 24 * 1000, // 1d
         },
         transaction_timeout: ONE_DAY,
-        pruning_depth: 17280,
-        pruning_finality: 8640,
+        pruning_depth: G_PRUNING_DEPTH,
+        pruning_finality: G_PRUNING_FINALITY,
         block_header_version: 1,
     }
 });

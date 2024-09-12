@@ -14,6 +14,7 @@ use crate::ghostdag::protocol::GhostdagManager;
 use crate::prune::pruning_point_manager::PruningPointManagerT;
 use crate::{process_key_already_error, reachability};
 use anyhow::{bail, ensure, Ok};
+use starcoin_config::genesis_config::{G_PRUNING_DEPTH, G_PRUNING_FINALITY};
 use starcoin_config::temp_dir;
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_logger::prelude::{debug, info};
@@ -204,6 +205,7 @@ impl BlockDAG {
                 trusted_ghostdata
             }
         };
+
         // Store ghostdata
         process_key_already_error(
             self.storage
@@ -318,6 +320,7 @@ impl BlockDAG {
             }
             Some(ghostdata) => ghostdata,
         };
+
         // Store ghostdata
         process_key_already_error(
             self.storage
@@ -439,20 +442,20 @@ impl BlockDAG {
 
     pub fn calc_mergeset_and_tips(
         &self,
-        block_header: &BlockHeader,
+        previous_header: &BlockHeader,
         pruning_depth: u64,
         pruning_finality: u64,
     ) -> anyhow::Result<MineNewDagBlockInfo> {
-        let dag_state = self.get_dag_state(block_header.pruning_point())?;
+        let dag_state = self.get_dag_state(previous_header.pruning_point())?;
         let ghostdata = self.ghostdata(&dag_state.tips)?;
 
         let next_pruning_point = self.pruning_point_manager().next_pruning_point(
-            block_header.pruning_point(),
+            previous_header.pruning_point(),
             &ghostdata,
             pruning_depth,
             pruning_finality,
         )?;
-        if next_pruning_point == block_header.pruning_point() {
+        if next_pruning_point == previous_header.pruning_point() {
             anyhow::Ok(MineNewDagBlockInfo {
                 tips: dag_state.tips,
                 blue_blocks: (*ghostdata.mergeset_blues).clone(),
@@ -461,7 +464,7 @@ impl BlockDAG {
         } else {
             let pruned_tips = self.pruning_point_manager().prune(
                 &dag_state,
-                block_header.pruning_point(),
+                previous_header.pruning_point(),
                 next_pruning_point,
             )?;
             let mergeset_blues = (*self
@@ -477,37 +480,35 @@ impl BlockDAG {
         }
     }
 
-    fn verify_pruning_point(
+    pub fn verify_pruning_point(
         &self,
-        pruning_depth: u64,
-        pruning_finality: u64,
-        block_header: &BlockHeader,
-        genesis_id: HashValue,
+        previous_pruning_point: HashValue,
+        next_pruning_point: HashValue,
+        ghostdata: &GhostdagData,
     ) -> anyhow::Result<()> {
-        let ghostdata = self.ghost_dag_manager().ghostdag(&block_header.parents())?;
-        let next_pruning_point = self.pruning_point_manager().next_pruning_point(
-            block_header.pruning_point(),
-            &ghostdata,
-            pruning_depth,
-            pruning_finality,
+        let inside_next_pruning_point = self.pruning_point_manager().next_pruning_point(
+            previous_pruning_point,
+            ghostdata,
+            G_PRUNING_DEPTH,
+            G_PRUNING_FINALITY,
         )?;
 
-        if (block_header.chain_id().is_vega()
-            || block_header.chain_id().is_proxima()
-            || block_header.chain_id().is_halley())
-            && block_header.pruning_point() == HashValue::zero()
-        {
-            if next_pruning_point == genesis_id {
-                return anyhow::Ok(());
-            } else {
-                bail!(
-                    "pruning point is not correct, it should update the next pruning point: {}",
-                    next_pruning_point
-                );
-            }
-        }
-        if next_pruning_point != block_header.pruning_point() {
-            bail!("pruning point is not correct, the local next pruning point is {}, but the block header pruning point is {}", next_pruning_point, block_header.pruning_point());
+        // if (block_header.chain_id().is_vega()
+        //     || block_header.chain_id().is_proxima()
+        //     || block_header.chain_id().is_halley())
+        //     && block_header.pruning_point() == HashValue::zero()
+        // {
+        //     if next_pruning_point == genesis_id {
+        //         return anyhow::Ok(());
+        //     } else {
+        //         bail!(
+        //             "pruning point is not correct, it should update the next pruning point: {}",
+        //             next_pruning_point
+        //         );
+        //     }
+        // }
+        if next_pruning_point != inside_next_pruning_point {
+            bail!("pruning point is not correct, the local next pruning point is {}, but the block header pruning point is {}", next_pruning_point, inside_next_pruning_point);
         }
         anyhow::Ok(())
     }
@@ -522,9 +523,13 @@ impl BlockDAG {
         &self,
         blue_blocks: &[BlockHeader],
         header: &BlockHeader,
+        previous_pruning_point: HashValue,
     ) -> Result<GhostdagData, anyhow::Error> {
-        self.ghost_dag_manager()
-            .verify_and_ghostdata(blue_blocks, header)
+        let ghostdata = self
+            .ghost_dag_manager()
+            .verify_and_ghostdata(blue_blocks, header)?;
+        self.verify_pruning_point(previous_pruning_point, header.pruning_point(), &ghostdata)?;
+        Ok(ghostdata)
     }
     pub fn check_upgrade(&self, main: &BlockHeader) -> anyhow::Result<()> {
         // set the state with key 0

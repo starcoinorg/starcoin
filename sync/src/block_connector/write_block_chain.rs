@@ -580,12 +580,6 @@ where
 
     fn connect_inner(&mut self, block: Block) -> Result<ConnectOk> {
         let block_id = block.id();
-        if block_id == *starcoin_storage::BARNARD_HARD_FORK_HASH
-            && block.header().number() == starcoin_storage::BARNARD_HARD_FORK_HEIGHT
-        {
-            debug!("barnard hard fork {}", block_id);
-            return Err(ConnectBlockError::BarnardHardFork(Box::new(block)).into());
-        }
         if self.main.current_header().id() == block_id {
             debug!("Repeat connect, current header is {} already.", block_id);
             return Ok(ConnectOk::Duplicate);
@@ -614,7 +608,7 @@ where
         }
         let (block_info, fork) = self.find_or_fork(block.header())?;
         match (block_info, fork) {
-            //block has been processed in some branch, so just trigger a head selection.
+            // block has been processed in some branch, so just trigger a head selection.
             (Some(_block_info), Some(branch)) => {
                 debug!(
                     "Block {} has been processed, trigger head selection, total_difficulty: {}",
@@ -624,7 +618,7 @@ where
                 self.select_head(branch)?;
                 Ok(ConnectOk::Duplicate)
             }
-            //block has been processed, and its parent is main chain, so just connect it to main chain.
+            // block has been processed, and its parent is main chain, so just connect it to main chain.
             (Some(block_info), None) => {
                 let executed_block = self.main.connect(ExecutedBlock {
                     block: block.clone(),
@@ -637,6 +631,7 @@ where
                 self.do_new_head(executed_block, 1, vec![block], 0, vec![])?;
                 Ok(ConnectOk::Connect)
             }
+            // the block is not processed but its parent branch exists
             (None, Some(mut branch)) => {
                 let _executed_block = branch.apply(block)?;
                 self.select_head(branch)?;

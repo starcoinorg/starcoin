@@ -13,7 +13,6 @@ use starcoin_chain_api::{
     ExcludedTxns, ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock,
     VerifyBlockField,
 };
-use starcoin_config::genesis_config::G_DAG_TEST_CONFIG;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
@@ -319,11 +318,14 @@ impl BlockChain {
                 pruning_point, // TODO: new test cases will need pass this field if they have some special requirements.
             }
         } else {
-            self.dag().calc_mergeset_and_tips(
-                &previous_header,
-                G_DAG_TEST_CONFIG.pruning_depth,
-                G_DAG_TEST_CONFIG.pruning_finality,
-            )?
+            let dag_state = self.get_dag_state()?;
+            let ghostdata = self.dag().ghost_dag_manager().ghostdag(&dag_state.tips)?;
+
+            MineNewDagBlockInfo {
+                tips: dag_state.tips,
+                blue_blocks: (*ghostdata.mergeset_blues).clone(),
+                pruning_point: HashValue::zero(),
+            }
         };
         debug!(
             "Blue blocks:{:?} in chain/create_block_template_by_header",
@@ -1363,7 +1365,20 @@ impl ChainReader for BlockChain {
         uncles: &[BlockHeader],
         header: &BlockHeader,
     ) -> Result<starcoin_dag::types::ghostdata::GhostdagData> {
-        self.dag().verify_and_ghostdata(uncles, header)
+        let previous_header = self
+            .storage
+            .get_block_header_by_hash(header.parent_hash())?
+            .ok_or_else(|| format_err!("cannot find parent block header"))?;
+        self.dag()
+            .verify_and_ghostdata(uncles, header, previous_header.pruning_point())
+    }
+
+    fn is_dag_ancestor_of(&self, ancestor: HashValue, descendants: Vec<HashValue>) -> Result<bool> {
+        self.dag().check_ancestor_of(ancestor, descendants)
+    }
+
+    fn get_pruning_height(&self) -> BlockNumber {
+        self.get_pruning_height()
     }
 }
 
@@ -1533,20 +1548,37 @@ impl BlockChain {
             self.epoch = get_epoch_from_statedb(&self.statedb)?;
         }
 
-        if new_tip_block.header().pruning_point() == block.header().pruning_point() {
+        if parent_header.pruning_point() == block.header().pruning_point() {
             self.dag
                 .save_dag_state(block.header().pruning_point(), DagState { tips })?;
         } else {
             let new_tips = dag.pruning_point_manager().prune(
                 &DagState { tips },
+                parent_header.pruning_point(),
                 block.header().pruning_point(),
-                new_tip_block.header().pruning_point(),
             )?;
             self.dag
                 .save_dag_state(block.header().pruning_point(), DagState { tips: new_tips })?;
         }
 
         Ok(executed_block)
+    }
+
+    pub fn get_pruning_height(&self) -> BlockNumber {
+        let chain_id = self.status().head().chain_id();
+        if chain_id.is_vega() {
+            4000000
+        } else if chain_id.is_proxima() {
+            700000
+        } else if chain_id.is_halley() {
+            4200000
+        } else if chain_id.is_main() {
+            0
+        } else if chain_id.is_dag_test() || chain_id.is_test() {
+            BlockNumber::MAX
+        } else {
+            0
+        }
     }
 }
 

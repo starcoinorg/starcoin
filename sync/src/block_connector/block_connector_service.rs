@@ -388,11 +388,22 @@ where
             .net()
             .pruning_config();
 
+        // which height to prune the DAG
+
         let MineNewDagBlockInfo {
             tips,
             blue_blocks,
             pruning_point,
-        } = dag.calc_mergeset_and_tips(&main_header, pruning_depth, pruning_finality)?;
+        } = if main_header.number() >= self.chain_service.get_main().get_pruning_height() {
+            dag.calc_mergeset_and_tips(&main_header, pruning_depth, pruning_finality)?
+        } else {
+            let tips = dag.get_dag_state(HashValue::zero())?.tips;
+            MineNewDagBlockInfo {
+                tips: tips.clone(),
+                blue_blocks: dag.ghostdata(&tips)?.mergeset_blues.as_ref().clone(),
+                pruning_point: HashValue::zero(),
+            }
+        };
 
         if blue_blocks.is_empty() {
             bail!("failed to get the blue blocks from the DAG");
