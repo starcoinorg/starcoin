@@ -561,7 +561,7 @@ impl AccountData {
             .unwrap();
         write_set.push((
             StateKey::AccessPath(self.make_account_access_path()),
-            WriteOp::Value(account),
+            WriteOp::legacy_creation(account.into()),
         ));
         for (code, balance_blob) in balance_blobs.into_iter() {
             let balance = balance_blob
@@ -571,7 +571,7 @@ impl AccountData {
                 .unwrap();
             write_set.push((
                 StateKey::AccessPath(self.make_balance_access_path(code.as_str())),
-                WriteOp::Value(balance),
+                WriteOp::legacy_creation(balance.into()),
             ));
         }
 
@@ -582,7 +582,7 @@ impl AccountData {
             .unwrap();
         write_set.push((
             StateKey::AccessPath(self.make_event_generator_access_path()),
-            WriteOp::Value(event_generator),
+            WriteOp::legacy_creation(event_generator.into()),
         ));
         WriteSetMut::new(write_set).freeze().unwrap()
     }

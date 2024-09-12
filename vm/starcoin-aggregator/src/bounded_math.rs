@@ -91,12 +91,12 @@ impl BoundedMath {
         Ok(match (left, right) {
             (SignedU128::Positive(v1), SignedU128::Positive(v2)) => {
                 SignedU128::Positive(self.unsigned_add(*v1, *v2)?)
-            },
+            }
             (SignedU128::Positive(v1), SignedU128::Negative(v2)) => update_different_sign!(v1, v2),
             (SignedU128::Negative(v1), SignedU128::Positive(v2)) => update_different_sign!(v2, v1),
             (SignedU128::Negative(v1), SignedU128::Negative(v2)) => {
                 SignedU128::Negative(negate_error(self.unsigned_add(*v1, *v2))?)
-            },
+            }
         })
     }
 }
@@ -112,10 +112,10 @@ impl PartialEq for SignedU128 {
         match (self, other) {
             (Self::Positive(v1), Self::Positive(v2)) | (Self::Negative(v1), Self::Negative(v2)) => {
                 v1 == v2
-            },
+            }
             (Self::Positive(v1), Self::Negative(v2)) | (Self::Negative(v1), Self::Positive(v2)) => {
                 *v1 == 0 && *v2 == 0
-            },
+            }
         }
     }
 }

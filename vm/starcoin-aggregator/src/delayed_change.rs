@@ -3,11 +3,9 @@
 
 use crate::{
     delta_change_set::{DeltaOp, DeltaWithMax},
-    types::{
-        code_invariant_error, DelayedFieldValue, DelayedFieldsSpeculativeError, PanicOr,
-        SnapshotToStringFormula,
-    },
+    types::{code_invariant_error, DelayedFieldValue, DelayedFieldsSpeculativeError, PanicOr},
 };
+use starcoin_types::delayed_fields::SnapshotToStringFormula;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DelayedApplyChange<I: Clone> {
@@ -74,13 +72,13 @@ impl<I: Copy + Clone> DelayedApplyChange<I> {
         Ok(match self {
             AggregatorDelta { delta } => {
                 DelayedFieldValue::Aggregator(delta.apply_to(base_value.into_aggregator_value()?)?)
-            },
+            }
             SnapshotDelta { delta, .. } => {
                 DelayedFieldValue::Snapshot(delta.apply_to(base_value.into_aggregator_value()?)?)
-            },
+            }
             SnapshotDerived { formula, .. } => {
                 DelayedFieldValue::Derived(formula.apply_to(base_value.into_snapshot_value()?))
-            },
+            }
         })
     }
 }
@@ -102,8 +100,8 @@ impl<I: Copy + Clone> DelayedChange<I> {
         match self {
             // Only SnapshotDelta merging logic depends on current aggregator change
             Apply(SnapshotDelta {
-                      base_aggregator, ..
-                  }) => Some(*base_aggregator),
+                base_aggregator, ..
+            }) => Some(*base_aggregator),
             Create(_) | Apply(AggregatorDelta { .. } | SnapshotDerived { .. }) => None,
         }
     }
@@ -166,18 +164,18 @@ impl<I: Copy + Clone> DelayedChange<I> {
                 DelayedEntry::Apply(DelayedApplyEntry::AggregatorDelta {
                     delta: delta.into_op_no_additional_history(),
                 })
-            },
+            }
             DelayedChange::Apply(DelayedApplyChange::SnapshotDelta {
-                                     delta,
-                                     base_aggregator,
-                                 }) => DelayedEntry::Apply(DelayedApplyEntry::SnapshotDelta {
+                delta,
+                base_aggregator,
+            }) => DelayedEntry::Apply(DelayedApplyEntry::SnapshotDelta {
                 delta: delta.into_op_no_additional_history(),
                 base_aggregator,
             }),
             DelayedChange::Apply(DelayedApplyChange::SnapshotDerived {
-                                     base_snapshot,
-                                     formula,
-                                 }) => DelayedEntry::Apply(DelayedApplyEntry::SnapshotDerived {
+                base_snapshot,
+                formula,
+            }) => DelayedEntry::Apply(DelayedApplyEntry::SnapshotDerived {
                 base_snapshot,
                 formula,
             }),
@@ -239,13 +237,13 @@ impl<I: Copy + Clone> DelayedApplyEntry<I> {
         Ok(match self {
             AggregatorDelta { delta } => {
                 DelayedFieldValue::Aggregator(delta.apply_to(base_value.into_aggregator_value()?)?)
-            },
+            }
             SnapshotDelta { delta, .. } => {
                 DelayedFieldValue::Snapshot(delta.apply_to(base_value.into_aggregator_value()?)?)
-            },
+            }
             SnapshotDerived { formula, .. } => {
                 DelayedFieldValue::Derived(formula.apply_to(base_value.into_snapshot_value()?))
-            },
+            }
         })
     }
 }
@@ -253,8 +251,9 @@ impl<I: Copy + Clone> DelayedApplyEntry<I> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{bounded_math::SignedU128, types::DelayedFieldID};
+    use crate::bounded_math::SignedU128;
     use claims::{assert_err, assert_ok};
+    use move_vm_types::delayed_values::delayed_field_id::DelayedFieldID;
     use DelayedApplyChange::*;
     use DelayedChange::*;
     use DelayedFieldValue::*;
@@ -400,7 +399,7 @@ mod test {
             delta: DeltaWithMax::new(SignedU128::Positive(3), 100),
         });
         let snapshot_change_2 = Apply(SnapshotDelta {
-            base_aggregator: DelayedFieldID::new(1),
+            base_aggregator: DelayedFieldID::new_for_test_for_u64(1),
             delta: DeltaWithMax::new(SignedU128::Positive(2), 100),
         });
 
@@ -411,7 +410,7 @@ mod test {
         assert_eq!(
             result.unwrap(),
             Apply(SnapshotDelta {
-                base_aggregator: DelayedFieldID::new(1),
+                base_aggregator: DelayedFieldID::new_for_test_for_u64(1),
                 delta: DeltaWithMax::new(SignedU128::Positive(5), 100)
             })
         );

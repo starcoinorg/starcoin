@@ -119,10 +119,10 @@ use crate::{
 };
 use anyhow::{bail, ensure, Result};
 //use aptos_crypto_derive::{BCSCryptoHash, CryptoHasher};
-use starcoin_crypto::hash::CryptoHasher;
 use bytes::Bytes;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use starcoin_crypto::hash::CryptoHasher;
 use std::{
     collections::{btree_map, BTreeMap},
     fmt::Debug,
@@ -325,7 +325,7 @@ impl WriteOp {
         match self {
             Creation { metadata, .. } | Modification { metadata, .. } | Deletion { metadata } => {
                 metadata
-            },
+            }
         }
     }
 
@@ -335,7 +335,7 @@ impl WriteOp {
         match self {
             Creation { metadata, .. } | Modification { metadata, .. } | Deletion { metadata } => {
                 metadata
-            },
+            }
         }
     }
 
@@ -343,7 +343,7 @@ impl WriteOp {
         match self {
             Creation { metadata, .. } | Modification { metadata, .. } | Deletion { metadata } => {
                 metadata
-            },
+            }
         }
     }
 
@@ -370,8 +370,8 @@ impl WriteOp {
 
 impl<'de> Deserialize<'de> for WriteOp {
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         PersistedWriteOp::deserialize(deserializer).map(|persisted| persisted.into_in_mem_form())
     }
@@ -379,8 +379,8 @@ impl<'de> Deserialize<'de> for WriteOp {
 
 impl Serialize for WriteOp {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-        where
-            S: Serializer,
+    where
+        S: Serializer,
     {
         self.to_persistable().serialize(serializer)
     }
@@ -412,7 +412,7 @@ impl WriteOpSize {
         match self {
             WriteOpSize::Creation { write_len } | WriteOpSize::Modification { write_len } => {
                 Some(*write_len)
-            },
+            }
             WriteOpSize::Deletion => None,
         }
     }
@@ -471,8 +471,8 @@ pub trait TransactionWrite: Debug {
     /// transaction, to a modification write, in which we can then exchange DelayedField
     /// identifiers into their final values, to produce a write operation.
     fn convert_read_to_modification(&self) -> Option<Self>
-        where
-            Self: Sized;
+    where
+        Self: Sized;
 }
 
 impl TransactionWrite for WriteOp {
@@ -497,7 +497,7 @@ impl TransactionWrite for WriteOp {
             Some(state_value) => {
                 let (metadata, data) = state_value.unpack();
                 Self::Creation { data, metadata }
-            },
+            }
         }
     }
 
@@ -525,7 +525,7 @@ impl TransactionWrite for WriteOp {
         match self.clone() {
             Creation { data, metadata } | Modification { data, metadata } => {
                 Some(Modification { data, metadata })
-            },
+            }
             // Deletion don't have data to become modification.
             Deletion { .. } => None,
         }
@@ -554,7 +554,7 @@ impl std::fmt::Debug for WriteOp {
             ),
             Deletion { metadata } => {
                 write!(f, "Deletion(metadata:{:?})", metadata,)
-            },
+            }
         }
     }
 }
@@ -602,7 +602,15 @@ impl DerefMut for WriteSet {
 /// where `Value(val)` means that serialized representation should be updated to `val`, and
 /// `Deletion` means that we are going to delete this access path.
 #[derive(
-/*BCSCryptoHash, */ Clone, CryptoHasher, Debug, Default, Eq, Hash, PartialEq, Serialize, Deserialize,
+    /*BCSCryptoHash, */ Clone,
+    CryptoHasher,
+    Debug,
+    Default,
+    Eq,
+    Hash,
+    PartialEq,
+    Serialize,
+    Deserialize,
 )]
 pub struct WriteSetV0(WriteSetMut);
 
@@ -701,10 +709,10 @@ impl WriteSetMut {
                     if !WriteOp::squash(entry.get_mut(), op)? {
                         entry.remove();
                     }
-                },
+                }
                 Vacant(entry) => {
                     entry.insert(op);
-                },
+                }
             }
         }
 

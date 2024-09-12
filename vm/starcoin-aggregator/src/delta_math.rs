@@ -57,15 +57,15 @@ pub struct DeltaHistory {
     pub max_achieved_positive_delta: u128,
     pub min_achieved_negative_delta: u128,
     // `min_overflow_positive_delta` is None in two possible cases:
-    // 1. No overflow occured in the try_add/try_sub functions throughout the
+    // 1. No overflow occurred in the try_add/try_sub functions throughout the
     // transaction execution.
-    // 2. The only overflows that occured in the try_add/try_sub functions in
+    // 2. The only overflows that occurred in the try_add/try_sub functions in
     // this transaction execution are with delta that exceeds limit.
     pub min_overflow_positive_delta: Option<u128>,
     // `max_underflow_negative_delta` is None in two possible cases:
-    // 1. No underflow occured in the try_add/try_sub functions throughout the
+    // 1. No underflow occurred in the try_add/try_sub functions throughout the
     // transaction execution.
-    // 2. The only underflows that occured in the try_add/try_sub functions in
+    // 2. The only underflows that occurred in the try_add/try_sub functions in
     // this transaction execution are with delta that drops below -limit.
     pub max_underflow_negative_delta: Option<u128>,
 }
@@ -112,11 +112,11 @@ impl DeltaHistory {
             SignedU128::Positive(value) => {
                 self.max_achieved_positive_delta =
                     u128::max(self.max_achieved_positive_delta, value)
-            },
+            }
             SignedU128::Negative(value) => {
                 self.min_achieved_negative_delta =
                     u128::max(self.min_achieved_negative_delta, value)
-            },
+            }
         }
     }
 
@@ -212,7 +212,7 @@ impl DeltaHistory {
                         delta: *prev_delta,
                         max_value: math.get_max_value(),
                         reason:
-                        DeltaHistoryMergeOffsetFailureReason::FailureNotExceedingBoundsAnyMore,
+                            DeltaHistoryMergeOffsetFailureReason::FailureNotExceedingBoundsAnyMore,
                     }
                 })
             },
@@ -315,13 +315,13 @@ impl DeltaHistory {
         self.max_achieved_positive_delta >= other.max_achieved_positive_delta
             && self.min_achieved_negative_delta >= other.min_achieved_negative_delta
             && other.min_overflow_positive_delta.map_or(true, |other_v| {
-            self.min_overflow_positive_delta
-                .map_or(false, |self_v| self_v <= other_v)
-        })
+                self.min_overflow_positive_delta
+                    .map_or(false, |self_v| self_v <= other_v)
+            })
             && other.max_underflow_negative_delta.map_or(true, |other_v| {
-            self.max_underflow_negative_delta
-                .map_or(false, |self_v| self_v <= other_v)
-        })
+                self.max_underflow_negative_delta
+                    .map_or(false, |self_v| self_v <= other_v)
+            })
     }
 }
 

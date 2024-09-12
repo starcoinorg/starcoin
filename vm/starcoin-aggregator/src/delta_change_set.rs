@@ -172,14 +172,14 @@ impl std::fmt::Debug for DeltaOp {
                     "+{} ensures 0 <= result <= {}, {:?}",
                     value, self.max_value, self.history
                 )
-            },
+            }
             SignedU128::Negative(value) => {
                 write!(
                     f,
                     "-{} ensures 0 <= result <= {}, {:?}",
                     value, self.max_value, self.history
                 )
-            },
+            }
         }
     }
 }
@@ -191,22 +191,30 @@ pub fn serialize(value: &u128) -> Vec<u8> {
 
 #[cfg(any(test, feature = "testing"))]
 pub fn delta_sub(v: u128, max_value: u128) -> DeltaOp {
-    DeltaOp::new(SignedU128::Negative(v), max_value, DeltaHistory {
-        max_achieved_positive_delta: 0,
-        min_achieved_negative_delta: v,
-        min_overflow_positive_delta: None,
-        max_underflow_negative_delta: None,
-    })
+    DeltaOp::new(
+        SignedU128::Negative(v),
+        max_value,
+        DeltaHistory {
+            max_achieved_positive_delta: 0,
+            min_achieved_negative_delta: v,
+            min_overflow_positive_delta: None,
+            max_underflow_negative_delta: None,
+        },
+    )
 }
 
 #[cfg(any(test, feature = "testing"))]
 pub fn delta_add(v: u128, max_value: u128) -> DeltaOp {
-    DeltaOp::new(SignedU128::Positive(v), max_value, DeltaHistory {
-        max_achieved_positive_delta: v,
-        min_achieved_negative_delta: 0,
-        min_overflow_positive_delta: None,
-        max_underflow_negative_delta: None,
-    })
+    DeltaOp::new(
+        SignedU128::Positive(v),
+        max_value,
+        DeltaHistory {
+            max_achieved_positive_delta: v,
+            min_achieved_negative_delta: 0,
+            min_overflow_positive_delta: None,
+            max_underflow_negative_delta: None,
+        },
+    )
 }
 
 #[cfg(test)]
@@ -219,16 +227,18 @@ mod test {
         FakeAggregatorView,
     };
     use aptos_types::{
-        aggregator::PanicError,
-        state_store::{state_key::StateKey, state_value::StateValue},
+        delayed_fields::PanicError,
+        state_store::{
+            state_key::StateKey,
+            state_value::{StateValue, StateValueMetadata},
+        },
         write_set::WriteOp,
     };
-    use claims::{assert_err, assert_matches, assert_ok, assert_ok_eq};
-    use move_core_types::{
-        value::MoveTypeLayout,
-        vm_status::{StatusCode, VMStatus},
-    };
+    use claims::{assert_err, assert_none, assert_ok, assert_ok_eq, assert_some_eq};
+    use move_binary_format::errors::{PartialVMError, PartialVMResult};
+    use move_core_types::{value::MoveTypeLayout, vm_status::StatusCode};
     use once_cell::sync::Lazy;
+    use starcoin_vm_types::write_set::WriteOp;
     use std::{
         collections::{BTreeMap, HashSet},
         sync::Arc,
@@ -475,20 +485,20 @@ mod test {
         assert_eq!(b.update, Negative(1));
     }
 
-    static KEY: Lazy<StateKey> = Lazy::new(|| StateKey::raw(String::from("test-key").into_bytes()));
+    static KEY: Lazy<StateKey> = Lazy::new(|| StateKey::raw(b"test-key"));
 
     #[test]
     fn test_failed_write_op_conversion_because_of_empty_storage() {
         let state_view = FakeAggregatorView::default();
         let delta_op = delta_add(10, 1000);
-        assert_matches!(
-            state_view.try_convert_aggregator_v1_delta_into_write_op(&KEY, &delta_op,),
-            Err(VMStatus::Error {
-                status_code: StatusCode::SPECULATIVE_EXECUTION_ABORT_ERROR,
-                message: Some(_),
-                sub_status: None
-            })
+
+        let err =
+            assert_err!(state_view.try_convert_aggregator_v1_delta_into_write_op(&KEY, &delta_op));
+        assert_eq!(
+            err.major_status(),
+            StatusCode::SPECULATIVE_EXECUTION_ABORT_ERROR
         );
+        assert_none!(err.sub_status());
     }
 
     struct BadStorage;
@@ -499,11 +509,11 @@ mod test {
         fn get_aggregator_v1_state_value(
             &self,
             _id: &Self::Identifier,
-        ) -> anyhow::Result<Option<StateValue>> {
-            Err(anyhow::Error::new(VMStatus::error(
-                StatusCode::SPECULATIVE_EXECUTION_ABORT_ERROR,
-                Some("Error message from BadStorage.".to_string()),
-            )))
+        ) -> PartialVMResult<Option<StateValue>> {
+            Err(
+                PartialVMError::new(StatusCode::SPECULATIVE_EXECUTION_ABORT_ERROR)
+                    .with_message("Error message from BadStorage.".to_string()),
+            )
         }
     }
 
@@ -511,7 +521,6 @@ mod test {
         type Identifier = ();
         type ResourceGroupTag = ();
         type ResourceKey = ();
-        type ResourceValue = ();
 
         fn is_delayed_field_optimization_capable(&self) -> bool {
             unimplemented!("Irrelevant for the test")
@@ -534,14 +543,11 @@ mod test {
             Err(code_invariant_error("Error message from BadStorage.").into())
         }
 
-        fn generate_delayed_field_id(&self) -> Self::Identifier {
+        fn generate_delayed_field_id(&self, _width: u32) -> Self::Identifier {
             unimplemented!("Irrelevant for the test")
         }
 
-        fn validate_and_convert_delayed_field_id(
-            &self,
-            _id: u64,
-        ) -> Result<Self::Identifier, PanicError> {
+        fn validate_delayed_field_id(&self, _id: &Self::Identifier) -> Result<(), PanicError> {
             unimplemented!("Irrelevant for the test")
         }
 
@@ -550,7 +556,7 @@ mod test {
             _delayed_write_set_keys: &HashSet<Self::Identifier>,
             _skip: &HashSet<Self::ResourceKey>,
         ) -> Result<
-            BTreeMap<Self::ResourceKey, (Self::ResourceValue, Arc<MoveTypeLayout>)>,
+            BTreeMap<Self::ResourceKey, (StateValueMetadata, u64, Arc<MoveTypeLayout>)>,
             PanicError,
         > {
             unimplemented!("Irrelevant for the test")
@@ -560,7 +566,7 @@ mod test {
             &self,
             _delayed_write_set_keys: &HashSet<Self::Identifier>,
             _skip: &HashSet<Self::ResourceKey>,
-        ) -> Result<BTreeMap<Self::ResourceKey, (Self::ResourceValue, u64)>, PanicError> {
+        ) -> PartialVMResult<BTreeMap<Self::ResourceKey, (StateValueMetadata, u64)>> {
             unimplemented!("Irrelevant for the test")
         }
     }
@@ -569,14 +575,14 @@ mod test {
     fn test_failed_write_op_conversion_because_of_speculative_error() {
         let state_view = BadStorage;
         let delta_op = delta_add(10, 1000);
-        assert_matches!(
-            state_view.try_convert_aggregator_v1_delta_into_write_op(&KEY, &delta_op,),
-            Err(VMStatus::Error {
-                status_code: StatusCode::SPECULATIVE_EXECUTION_ABORT_ERROR,
-                message: Some(_),
-                sub_status: None
-            })
+
+        let err =
+            assert_err!(state_view.try_convert_aggregator_v1_delta_into_write_op(&KEY, &delta_op));
+        assert_eq!(
+            err.major_status(),
+            StatusCode::SPECULATIVE_EXECUTION_ABORT_ERROR
         );
+        assert_none!(err.sub_status());
     }
 
     #[test]
@@ -610,13 +616,14 @@ mod test {
         let add_op = delta_add(15, 100);
         let sub_op = delta_sub(101, 1000);
 
-        assert_matches!(
-            state_view.try_convert_aggregator_v1_delta_into_write_op(&KEY, &add_op,),
-            Err(VMStatus::MoveAbort(_, EADD_OVERFLOW))
-        );
-        assert_matches!(
-            state_view.try_convert_aggregator_v1_delta_into_write_op(&KEY, &sub_op,),
-            Err(VMStatus::MoveAbort(_, ESUB_UNDERFLOW))
-        );
+        let err =
+            assert_err!(state_view.try_convert_aggregator_v1_delta_into_write_op(&KEY, &add_op));
+        assert_eq!(err.major_status(), StatusCode::ABORTED);
+        assert_some_eq!(err.sub_status(), EADD_OVERFLOW);
+
+        let err =
+            assert_err!(state_view.try_convert_aggregator_v1_delta_into_write_op(&KEY, &sub_op));
+        assert_eq!(err.major_status(), StatusCode::ABORTED);
+        assert_some_eq!(err.sub_status(), ESUB_UNDERFLOW);
     }
 }

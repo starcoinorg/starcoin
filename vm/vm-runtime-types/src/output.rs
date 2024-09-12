@@ -3,15 +3,15 @@
 
 use crate::change_set::VMChangeSet;
 use move_core_types::vm_status::{StatusCode, VMStatus};
-use starcoin_vm_types::transaction::TransactionOutput;
-use starcoin_vm_types::{fee_statement::FeeStatement, transaction::TransactionStatus};
-use std::collections::BTreeMap;
 use starcoin_aggregator::resolver::AggregatorV1Resolver;
 use starcoin_aggregator::types::code_invariant_error;
-use starcoin_vm_types::aggregator::PanicError;
+use starcoin_types::delayed_fields::PanicError;
 use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::transaction::TransactionOutput;
 use starcoin_vm_types::write_set::WriteOp;
+use starcoin_vm_types::{fee_statement::FeeStatement, transaction::TransactionStatus};
+use std::collections::BTreeMap;
 
 /// Output produced by the VM after executing a transaction.
 ///
@@ -89,7 +89,7 @@ impl VMOutput {
         // deltas and can return immediately.
         if self.status().is_discarded()
             || (self.change_set().aggregator_v1_delta_set().is_empty()
-            && self.change_set().delayed_field_change_set().is_empty())
+                && self.change_set().delayed_field_change_set().is_empty())
         {
             return Ok(());
         }
@@ -131,7 +131,13 @@ impl VMOutput {
     ) -> Result<TransactionOutput, PanicError> {
         let (vm_change_set, gas_used, status) = materialized_output.unpack();
         let (write_set, events) = vm_change_set.try_into_storage_change_set()?.into_inner();
-        Ok(TransactionOutput::new(BTreeMap::default(),write_set, events, gas_used, status))
+        Ok(TransactionOutput::new(
+            BTreeMap::default(),
+            write_set,
+            events,
+            gas_used,
+            status,
+        ))
     }
 
     /// Updates the VMChangeSet based on the input aggregator v1 deltas, patched resource write set,

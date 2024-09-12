@@ -2,28 +2,35 @@
 
 use std::collections::btree_map::Entry::{Occupied, Vacant};
 // this is a ref in aptos-move/aptos-vm-types/src/change_set.rs
-use crate::abstract_write_op::{AbstractResourceWriteOp, GroupWrite, InPlaceDelayedFieldChangeOp, ResourceGroupInPlaceDelayedFieldChangeOp, WriteWithDelayedFieldsOp};
+use crate::abstract_write_op::{
+    AbstractResourceWriteOp, GroupWrite, InPlaceDelayedFieldChangeOp,
+    ResourceGroupInPlaceDelayedFieldChangeOp, WriteWithDelayedFieldsOp,
+};
 use crate::check_change_set::CheckChangeSet;
+use move_core_types::account_address::AccountAddress;
+use move_core_types::ident_str;
+use move_core_types::identifier::IdentStr;
+use move_core_types::language_storage::{ModuleId, CORE_CODE_ADDRESS};
 use move_core_types::vm_status::{err_msg, StatusCode, VMStatus};
+use move_vm_types::delayed_values::delayed_field_id::DelayedFieldID;
+use starcoin_aggregator::delta_change_set::serialize;
+use starcoin_aggregator::resolver::AggregatorV1Resolver;
+use starcoin_aggregator::types::code_invariant_error;
+use starcoin_aggregator::{delayed_change::DelayedChange, delta_change_set::DeltaOp};
+use starcoin_types::delayed_fields::PanicError;
+use starcoin_vm_types::errors::{Location, PartialVMError, VMResult};
+use starcoin_vm_types::state_store::state_value::StateValueMetadata;
+use starcoin_vm_types::write_set::{TransactionWrite, WriteOpSize};
 use starcoin_vm_types::{
     contract_event::ContractEvent,
     state_store::state_key::StateKey,
     transaction::ChangeSet as StorageChangeSet,
     value::MoveTypeLayout,
     write_set::{WriteOp, WriteSetMut},
-    aggregator::DelayedFieldID,
 };
 use std::collections::BTreeMap;
 use std::hash::Hash;
 use std::sync::Arc;
-use starcoin_aggregator::{delayed_change::DelayedChange, delta_change_set::DeltaOp};
-use starcoin_aggregator::delta_change_set::serialize;
-use starcoin_aggregator::resolver::{AggregatorV1Resolver, TAggregatorV1View};
-use starcoin_aggregator::types::code_invariant_error;
-use starcoin_vm_types::aggregator::PanicError;
-use starcoin_vm_types::errors::{Location, PartialVMError};
-use starcoin_vm_types::state_store::state_value::StateValueMetadata;
-use starcoin_vm_types::write_set::{TransactionWrite, WriteOpSize};
 
 /// A change set produced by the VM.
 ///
@@ -206,13 +213,14 @@ impl VMChangeSet {
         // There should be no aggregator writes if we have a change set from
         // storage.
         let mut resource_write_set = BTreeMap::new();
-        let mut module_write_set = BTreeMap::new();
+        let module_write_set = BTreeMap::new();
 
         for (state_key, write_op) in write_set {
             /* XXX FIXME YSG, need use StateKeyInner
             if matches!(state_key.inner(), AccessPath(ap) if ap.is_code()) {
                 module_write_set.insert(state_key, write_op);
-            } else */ {
+            } else */
+            {
                 // TODO[agg_v1](fix) While everything else must be a resource, first
                 // version of aggregators is implemented as a table item. Revisit when
                 // we split MVHashMap into data and aggregators.
@@ -434,11 +442,22 @@ impl VMChangeSet {
         resolver: &impl AggregatorV1Resolver,
     ) -> anyhow::Result<(), VMStatus> {
         let into_write =
-            |(state_key, delta): (StateKey, DeltaOp)| -> anyhow::Result<(StateKey, WriteOp), VMStatus> {
+            |(state_key, delta): (StateKey, DeltaOp)| -> VMResult<(StateKey, WriteOp)> {
                 // Materialization is needed when committing a transaction, so
                 // we need precise mode to compute the true value of an
                 // aggregator.
-                let write = resolver.try_convert_aggregator_v1_delta_into_write_op(&state_key, &delta)?;
+                let write = resolver
+                    .try_convert_aggregator_v1_delta_into_write_op(&state_key, &delta)
+                    .map_err(|e| {
+                        // We need to set abort location for Aggregator V1 to ensure correct VMStatus can
+                        // be constructed.
+                        const AGGREGATOR_V1_ADDRESS: AccountAddress = CORE_CODE_ADDRESS;
+                        const AGGREGATOR_V1_MODULE_NAME: &IdentStr = ident_str!("aggregator");
+                        e.finish(Location::Module(ModuleId::new(
+                            AGGREGATOR_V1_ADDRESS,
+                            AGGREGATOR_V1_MODULE_NAME.into(),
+                        )))
+                    })?;
                 Ok((state_key, write))
             };
 
@@ -446,7 +465,7 @@ impl VMChangeSet {
         let materialized_aggregator_delta_set = aggregator_v1_delta_set
             .into_iter()
             .map(into_write)
-            .collect::<anyhow::Result<BTreeMap<StateKey, WriteOp>, VMStatus>>()?;
+            .collect::<VMResult<BTreeMap<StateKey, WriteOp>>>()?;
         self.aggregator_v1_write_set
             .extend(materialized_aggregator_delta_set);
         Ok(())
@@ -476,7 +495,7 @@ impl VMChangeSet {
                             .map_err(PartialVMError::from)
                             .map_err(|e| e.finish(Location::Undefined).into_vm_status())?;
                         *data = serialize(&value).into();
-                    },
+                    }
                     Deletion { .. } => {
                         // This case (applying a delta to deleted item) should
                         // never happen. Let's still return an error instead of
@@ -485,7 +504,7 @@ impl VMChangeSet {
                             StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR,
                             err_msg("Cannot squash delta which was already deleted."),
                         ));
-                    },
+                    }
                 }
             } else {
                 // Otherwise, this is a either a new delta or an additional delta
@@ -499,12 +518,12 @@ impl VMChangeSet {
                             .merge_with_next_delta(additional_delta_op)
                             .map_err(PartialVMError::from)
                             .map_err(|e| e.finish(Location::Undefined).into_vm_status())?;
-                    },
+                    }
                     Vacant(entry) => {
                         // We see this delta for the first time, so simply add it
                         // to the set.
                         entry.insert(additional_delta_op);
-                    },
+                    }
                 }
             }
         }
@@ -514,7 +533,7 @@ impl VMChangeSet {
             match aggregator_v1_write_set.entry(state_key) {
                 Occupied(mut entry) => {
                     squash_writes_pair!(entry, additional_write_op);
-                },
+                }
                 Vacant(entry) => {
                     // This is a new write op. It can overwrite a delta so we
                     // have to make sure we remove such a delta from the set in
@@ -530,7 +549,7 @@ impl VMChangeSet {
                     }
 
                     entry.insert(additional_write_op);
-                },
+                }
             }
         }
 
@@ -550,10 +569,10 @@ impl VMChangeSet {
                             return (
                                 id,
                                 Err(code_invariant_error(format!(
-                                    "Aggregator change set contains both {:?} and its dependent {:?}",
-                                    id, dependent_id
-                                ))
-                                    .into()),
+                                "Aggregator change set contains both {:?} and its dependent {:?}",
+                                id, dependent_id
+                            ))
+                                .into()),
                             );
                         }
                         change_set.get(&dependent_id)
@@ -586,10 +605,10 @@ impl VMChangeSet {
             match write_set.entry(key) {
                 Occupied(mut entry) => {
                     squash_writes_pair!(entry, additional_write_op);
-                },
+                }
                 Vacant(entry) => {
                     entry.insert(additional_write_op);
-                },
+                }
             }
         }
         Ok(())
@@ -620,10 +639,10 @@ impl VMChangeSet {
                     if noop {
                         entry.remove();
                     }
-                },
+                }
                 Vacant(entry) => {
                     entry.insert(additional_entry);
-                },
+                }
             }
         }
         Ok(())
@@ -639,7 +658,7 @@ impl VMChangeSet {
             match write_set.entry(key.clone()) {
                 Vacant(entry) => {
                     entry.insert(additional_entry);
-                },
+                }
                 Occupied(mut entry) => {
                     let (to_delete, to_overwite) = match (entry.get_mut(), &additional_entry) {
                         (Write(write_op), Write(additional_write_op)) => {
@@ -651,18 +670,18 @@ impl VMChangeSet {
                                     ))
                                 })?;
                             (to_delete, false)
-                        },
+                        }
                         (
                             WriteWithDelayedFields(WriteWithDelayedFieldsOp {
-                                                       write_op,
-                                                       layout,
-                                                       materialized_size,
-                                                   }),
+                                write_op,
+                                layout,
+                                materialized_size,
+                            }),
                             WriteWithDelayedFields(WriteWithDelayedFieldsOp {
-                                                       write_op: additional_write_op,
-                                                       layout: additional_layout,
-                                                       materialized_size: additional_materialized_size,
-                                                   }),
+                                write_op: additional_write_op,
+                                layout: additional_layout,
+                                materialized_size: additional_materialized_size,
+                            }),
                         ) => {
                             if layout != additional_layout {
                                 return Err(code_invariant_error(format!(
@@ -680,14 +699,14 @@ impl VMChangeSet {
                                 })?;
                             *materialized_size = *additional_materialized_size;
                             (to_delete, false)
-                        },
+                        }
                         (
                             WriteResourceGroup(group),
                             WriteResourceGroup(GroupWrite {
-                                                   metadata_op: additional_metadata_op,
-                                                   inner_ops: additional_inner_ops,
-                                                   maybe_group_op_size: additional_maybe_group_op_size,
-                                               }),
+                                metadata_op: additional_metadata_op,
+                                inner_ops: additional_inner_ops,
+                                maybe_group_op_size: additional_maybe_group_op_size,
+                            }),
                         ) => {
                             // Squashing creation and deletion is a no-op. In that case, we have to
                             // remove the old GroupWrite from the group write set.
@@ -695,12 +714,12 @@ impl VMChangeSet {
                                 &mut group.metadata_op,
                                 additional_metadata_op.clone(),
                             )
-                                .map_err(|e| {
-                                    code_invariant_error(format!(
-                                        "Error while squashing two group write metadata ops: {}.",
-                                        e
-                                    ))
-                                })?;
+                            .map_err(|e| {
+                                code_invariant_error(format!(
+                                    "Error while squashing two group write metadata ops: {}.",
+                                    e
+                                ))
+                            })?;
                             if to_delete {
                                 (true, false)
                             } else {
@@ -712,22 +731,22 @@ impl VMChangeSet {
                                 group.maybe_group_op_size = *additional_maybe_group_op_size;
                                 (false, false)
                             }
-                        },
+                        }
                         (
                             WriteWithDelayedFields(WriteWithDelayedFieldsOp {
-                                                       materialized_size,
-                                                       ..
-                                                   }),
+                                materialized_size,
+                                ..
+                            }),
                             InPlaceDelayedFieldChange(InPlaceDelayedFieldChangeOp {
-                                                          materialized_size: additional_materialized_size,
-                                                          ..
-                                                      }),
+                                materialized_size: additional_materialized_size,
+                                ..
+                            }),
                         )
                         | (
                             WriteResourceGroup(GroupWrite {
-                                                   maybe_group_op_size: materialized_size,
-                                                   ..
-                                               }),
+                                maybe_group_op_size: materialized_size,
+                                ..
+                            }),
                             ResourceGroupInPlaceDelayedFieldChange(
                                 ResourceGroupInPlaceDelayedFieldChangeOp {
                                     materialized_size: additional_materialized_size,
@@ -739,7 +758,7 @@ impl VMChangeSet {
                             // but could have additional delayed field writes, that change the size.
                             *materialized_size = Some(*additional_materialized_size);
                             (false, false)
-                        },
+                        }
                         // If previous value is a read, newer value overwrites it
                         (
                             InPlaceDelayedFieldChange(_),
@@ -782,7 +801,7 @@ impl VMChangeSet {
                                 entry.get(),
                                 additional_entry
                             )));
-                        },
+                        }
                     };
 
                     if to_overwite {
@@ -790,7 +809,7 @@ impl VMChangeSet {
                     } else if to_delete {
                         entry.remove();
                     }
-                },
+                }
             }
         }
         Ok(())
@@ -820,12 +839,12 @@ impl VMChangeSet {
             &mut self.resource_write_set,
             additional_resource_write_set,
         )
-            .map_err(|e| {
-                VMStatus::error(
-                    StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR,
-                    err_msg(format!("Error while squashing two write ops: {:?}.", e)),
-                )
-            })?;
+        .map_err(|e| {
+            VMStatus::error(
+                StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR,
+                err_msg(format!("Error while squashing two write ops: {:?}.", e)),
+            )
+        })?;
         Self::squash_additional_module_writes(
             &mut self.module_write_set,
             additional_module_write_set,
@@ -846,4 +865,3 @@ impl VMChangeSet {
 }
 
 // Tests are in test_change_set.rs.
-

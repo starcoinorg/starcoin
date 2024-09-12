@@ -28,7 +28,7 @@ use std::{
     sync::Arc,
 };
 #[cfg(feature = "testing")]
-use { move_vm_runtime::native_extensions::NativeContextExtensions, once_cell::sync::Lazy};
+use {move_vm_runtime::native_extensions::NativeContextExtensions, once_cell::sync::Lazy};
 
 #[cfg(feature = "testing")]
 struct StarcoinBlankStorage;

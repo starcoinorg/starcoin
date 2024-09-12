@@ -3,19 +3,19 @@
 
 use bytes::Bytes;
 use move_core_types::value::MoveTypeLayout;
+use move_vm_types::delayed_values::delayed_field_id::DelayedFieldID;
+use starcoin_aggregator::resolver::{TAggregatorV1View, TDelayedFieldView};
+use starcoin_vm_types::write_set::WriteOp;
 use starcoin_vm_types::{
     language_storage::StructTag,
     state_store::{
         state_key::StateKey,
+        state_storage_usage::StateStorageUsage,
         state_value::{StateValue, StateValueMetadata},
-        state_storage_usage::StateStorageUsage
     },
     state_view::{StateView, StateViewId},
 };
 use std::collections::{BTreeMap, HashMap};
-use starcoin_aggregator::resolver::{TAggregatorV1View, TDelayedFieldView};
-use starcoin_vm_types::aggregator::DelayedFieldID;
-use starcoin_vm_types::write_set::WriteOp;
 
 /// Allows to query resources from the state.
 pub trait TResourceView {
@@ -189,7 +189,7 @@ pub trait TExecutorView<K, T, L, I, V>:
     TResourceView<Key = K, Layout = L>
     + TModuleView<Key = K>
     + TAggregatorV1View<Identifier = K>
-    + TDelayedFieldView<Identifier = I, ResourceKey = K, ResourceGroupTag = T, ResourceValue = V>
+    + TDelayedFieldView<Identifier = I, ResourceKey = K, ResourceGroupTag = T>
     + StateStorageView
 {
 }
@@ -198,7 +198,7 @@ impl<A, K, T, L, I, V> TExecutorView<K, T, L, I, V> for A where
     A: TResourceView<Key = K, Layout = L>
         + TModuleView<Key = K>
         + TAggregatorV1View<Identifier = K>
-        + TDelayedFieldView<Identifier = I, ResourceKey = K, ResourceGroupTag = T, ResourceValue = V>
+        + TDelayedFieldView<Identifier = I, ResourceKey = K, ResourceGroupTag = T>
         + StateStorageView
 {
 }

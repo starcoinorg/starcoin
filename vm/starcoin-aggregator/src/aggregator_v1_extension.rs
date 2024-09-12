@@ -7,13 +7,11 @@ use crate::{
     resolver::AggregatorV1Resolver,
     types::{expect_ok, DelayedFieldsSpeculativeError, DeltaApplicationFailureReason},
 };
-use starcoin_vm_types::{
-    state_store::{state_key::StateKey, table::TableHandle},
-};
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
-use move_core_types::vm_status::StatusCode;
-use std::collections::{BTreeMap, BTreeSet};
 use move_core_types::account_address::AccountAddress;
+use move_core_types::vm_status::StatusCode;
+use starcoin_vm_types::state_store::{state_key::StateKey, table::TableHandle};
+use std::collections::{BTreeMap, BTreeSet};
 
 /// When `Addition` operation overflows the `limit`.
 pub(crate) const EADD_OVERFLOW: u64 = 0x02_0001;
@@ -76,13 +74,13 @@ impl Aggregator {
             match self.state {
                 AggregatorState::PositiveDelta => {
                     history.record_success(SignedU128::Positive(self.value))
-                },
+                }
                 AggregatorState::NegativeDelta => {
                     history.record_success(SignedU128::Negative(self.value))
-                },
+                }
                 AggregatorState::Data => {
                     unreachable!("history is not tracked when aggregator knows its value")
-                },
+                }
             }
         }
     }
@@ -109,13 +107,13 @@ impl Aggregator {
                     ..
                 } => {
                     return Err(abort_error("overflow", EADD_OVERFLOW));
-                },
+                }
                 DelayedFieldsSpeculativeError::DeltaApplication {
                     reason: DeltaApplicationFailureReason::Underflow,
                     ..
                 } => {
                     return Err(abort_error("underflow", ESUB_UNDERFLOW));
-                },
+                }
                 _ => Err(e)?,
             }
         }
@@ -133,13 +131,13 @@ impl Aggregator {
                     .unsigned_add(self.value, value)
                     .map_err(addition_v1_error)?;
                 return Ok(());
-            },
+            }
             AggregatorState::PositiveDelta => {
                 // If positive delta, add directly but also record the state.
                 self.value = math
                     .unsigned_add(self.value, value)
                     .map_err(addition_v1_error)?;
-            },
+            }
             AggregatorState::NegativeDelta => {
                 // Negative delta is a special case, since the state might
                 // change depending on how big the `value` is. Suppose
@@ -153,7 +151,7 @@ impl Aggregator {
                 } else {
                     self.value = expect_ok(math.unsigned_subtract(self.value, value))?;
                 }
-            },
+            }
         }
 
         // Record side-effects of addition in history.
@@ -173,7 +171,7 @@ impl Aggregator {
                     .unsigned_subtract(self.value, value)
                     .map_err(subtraction_v1_error)?;
                 return Ok(());
-            },
+            }
             AggregatorState::PositiveDelta => {
                 // Positive delta is a special case because the state can
                 // change depending on how big the `value` is. Suppose
@@ -197,7 +195,7 @@ impl Aggregator {
                         .map_err(subtraction_v1_error)?;
                     self.state = AggregatorState::NegativeDelta;
                 }
-            },
+            }
             AggregatorState::NegativeDelta => {
                 // Since we operate on unsigned integers, we have to add
                 // when subtracting from negative delta. Note that if max_value
@@ -206,7 +204,7 @@ impl Aggregator {
                 self.value = math
                     .unsigned_add(self.value, value)
                     .map_err(subtraction_v1_error)?;
-            },
+            }
         }
 
         // Record side-effects of addition in history.
@@ -251,15 +249,15 @@ impl Aggregator {
                 self.value = math
                     .unsigned_add(value_from_storage, self.value)
                     .expect("Validated delta cannot overflow");
-            },
+            }
             AggregatorState::NegativeDelta => {
                 self.value = math
                     .unsigned_subtract(value_from_storage, self.value)
                     .expect("Validated delta cannot underflow");
-            },
+            }
             AggregatorState::Data => {
                 unreachable!("Materialization only happens in Delta state")
-            },
+            }
         }
 
         // Change the state and return the new value. Also, make

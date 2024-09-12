@@ -10,6 +10,7 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 
 [dependencies]
+starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-gas-meter = { workspace = true }
 move-core-types = { workspace = true }
@@ -18,6 +19,7 @@ bytes = { workspace = true }
 bcs = { workspace = true }
 serde = { workspace = true }
 starcoin-aggregator = { workspace = true }
+move-vm-types = { workspace = true }
 
 
 

@@ -4,8 +4,11 @@
 
 use crate::create_access_path;
 use anyhow::Error;
+use bytes::Bytes;
+use move_binary_format::deserializer::DeserializerConfig;
+use move_binary_format::CompiledModule;
 use move_core_types::metadata::Metadata;
-use move_core_types::resolver::{ModuleResolver, resource_size, ResourceResolver};
+use move_core_types::resolver::{resource_size, ModuleResolver, ResourceResolver};
 use move_core_types::value::MoveTypeLayout;
 use move_table_extension::{TableHandle, TableResolver};
 use starcoin_logger::prelude::*;
@@ -23,9 +26,6 @@ use starcoin_vm_types::{
 };
 use std::collections::btree_map::BTreeMap;
 use std::ops::{Deref, DerefMut};
-use bytes::Bytes;
-use move_binary_format::CompiledModule;
-use move_binary_format::deserializer::DeserializerConfig;
 
 pub(crate) fn get_resource_group_from_metadata(
     struct_tag: &StructTag,
@@ -50,8 +50,6 @@ pub struct StorageAdapter<'e, E> {
     resource_group_view: ResourceGroupAdapter<'e>,
     accessed_groups: RefCell<HashSet<StateKey>>,
 }
-
-
 
 /// A local cache for a given a `StateView`. The cache is private to the Diem layer
 /// but can be used as a one shot cache for systems that need a simple `RemoteCache`
@@ -290,7 +288,6 @@ impl<S: StateView> ResourceResolver for RemoteStorageOwned<S> {
 }
 
 impl<S: StateView> TableResolver for RemoteStorageOwned<S> {
-
     fn resolve_table_entry_bytes_with_layout(
         &self,
         handle: &TableHandle,

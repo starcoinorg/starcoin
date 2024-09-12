@@ -2,12 +2,12 @@
 
 // This is a ref in aptos-move/aptos-vm-types/src/abstract_write_op.rs
 
-use std::collections::BTreeMap;
-use std::sync::Arc;
 use move_core_types::language_storage::StructTag;
 use move_core_types::value::MoveTypeLayout;
 use starcoin_vm_types::state_store::state_value::StateValueMetadata;
 use starcoin_vm_types::write_set::{TransactionWrite, WriteOp, WriteOpSize};
+use std::collections::BTreeMap;
+use std::sync::Arc;
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum AbstractResourceWriteOp {
@@ -44,15 +44,15 @@ impl AbstractResourceWriteOp {
         match self {
             Write(write) => write.into(),
             WriteWithDelayedFields(WriteWithDelayedFieldsOp {
-                                       write_op,
-                                       materialized_size,
-                                       ..
-                                   })
+                write_op,
+                materialized_size,
+                ..
+            })
             | WriteResourceGroup(GroupWrite {
-                                     metadata_op: write_op,
-                                     maybe_group_op_size: materialized_size,
-                                     ..
-                                 }) => {
+                metadata_op: write_op,
+                maybe_group_op_size: materialized_size,
+                ..
+            }) => {
                 use WriteOp::*;
                 match write_op {
                     Creation { .. } => WriteOpSize::Creation {
@@ -63,14 +63,14 @@ impl AbstractResourceWriteOp {
                     },
                     Deletion { .. } => WriteOpSize::Deletion,
                 }
-            },
+            }
             InPlaceDelayedFieldChange(InPlaceDelayedFieldChangeOp {
-                                          materialized_size, ..
-                                      })
+                materialized_size, ..
+            })
             | ResourceGroupInPlaceDelayedFieldChange(ResourceGroupInPlaceDelayedFieldChangeOp {
-                                                         materialized_size,
-                                                         ..
-                                                     }) => WriteOpSize::Modification {
+                materialized_size,
+                ..
+            }) => WriteOpSize::Modification {
                 write_len: *materialized_size,
             },
         }
@@ -84,13 +84,13 @@ impl AbstractResourceWriteOp {
             Write(write_op)
             | WriteWithDelayedFields(WriteWithDelayedFieldsOp { write_op, .. })
             | WriteResourceGroup(GroupWrite {
-                                     metadata_op: write_op,
-                                     ..
-                                 })
+                metadata_op: write_op,
+                ..
+            })
             | ResourceGroupInPlaceDelayedFieldChange(ResourceGroupInPlaceDelayedFieldChangeOp {
-                                                         metadata_op: write_op,
-                                                         ..
-                                                     }) => write_op.get_metadata_mut(),
+                metadata_op: write_op,
+                ..
+            }) => write_op.get_metadata_mut(),
             InPlaceDelayedFieldChange(InPlaceDelayedFieldChangeOp { metadata, .. }) => metadata,
         }
     }
