@@ -1369,8 +1369,17 @@ impl ChainReader for BlockChain {
             .storage
             .get_block_header_by_hash(header.parent_hash())?
             .ok_or_else(|| format_err!("cannot find parent block header"))?;
-        self.dag()
-            .verify_and_ghostdata(uncles, header, previous_header.pruning_point())
+        let ghostdata = self.dag().verify_and_ghostdata(uncles, header)?;
+
+        if self.get_pruning_height() <= self.status().head().number() {
+            self.dag().verify_pruning_point(
+                previous_header.pruning_point(),
+                header.pruning_point(),
+                &ghostdata,
+            )?;
+        }
+
+        Ok(ghostdata)
     }
 
     fn is_dag_ancestor_of(&self, ancestor: HashValue, descendants: Vec<HashValue>) -> Result<bool> {

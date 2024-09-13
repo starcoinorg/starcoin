@@ -523,13 +523,9 @@ impl BlockDAG {
         &self,
         blue_blocks: &[BlockHeader],
         header: &BlockHeader,
-        previous_pruning_point: HashValue,
     ) -> Result<GhostdagData, anyhow::Error> {
-        let ghostdata = self
-            .ghost_dag_manager()
-            .verify_and_ghostdata(blue_blocks, header)?;
-        self.verify_pruning_point(previous_pruning_point, header.pruning_point(), &ghostdata)?;
-        Ok(ghostdata)
+        self.ghost_dag_manager()
+            .verify_and_ghostdata(blue_blocks, header)
     }
     pub fn check_upgrade(&self, main: &BlockHeader) -> anyhow::Result<()> {
         // set the state with key 0
