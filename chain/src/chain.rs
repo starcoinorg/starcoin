@@ -1578,7 +1578,7 @@ impl BlockChain {
         if chain_id.is_vega() {
             4000000
         } else if chain_id.is_proxima() {
-            700000
+            500
         } else if chain_id.is_halley() {
             4200000
         } else if chain_id.is_main() {

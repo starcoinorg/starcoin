@@ -1,6 +1,8 @@
 use super::reachability::{inquirer, reachability_service::MTReachabilityService};
 use super::types::ghostdata::GhostdagData;
-use crate::consensusdb::consenses_state::{DagState, DagStateReader, DagStateStore};
+use crate::consensusdb::consenses_state::{
+    DagState, DagStateReader, DagStateStore, ReachabilityView,
+};
 use crate::consensusdb::prelude::{FlexiDagStorageConfig, StoreError};
 use crate::consensusdb::schemadb::{GhostdagStoreReader, ReachabilityStore, REINDEX_ROOT_KEY};
 use crate::consensusdb::{
@@ -578,5 +580,23 @@ impl BlockDAG {
         }
 
         anyhow::Ok(())
+    }
+
+    pub fn is_ancestor_of(
+        &self,
+        ancestor: Hash,
+        descendants: Vec<Hash>,
+    ) -> anyhow::Result<ReachabilityView> {
+        let de = descendants
+            .into_iter()
+            .filter(|descendant| {
+                self.check_ancestor_of(ancestor, vec![*descendant])
+                    .unwrap_or(false)
+            })
+            .collect::<Vec<_>>();
+        anyhow::Ok(ReachabilityView {
+            ancestor,
+            descendants: de,
+        })
     }
 }

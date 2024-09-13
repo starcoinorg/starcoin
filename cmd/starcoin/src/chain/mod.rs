@@ -12,6 +12,7 @@ mod get_txn_info_list_cmd;
 mod get_txn_infos_cmd;
 pub mod get_txn_proof_cmd;
 mod info_cmd;
+mod is_ancestor_of_cmd;
 mod list_block_cmd;
 
 pub use epoch_info::*;
@@ -24,4 +25,5 @@ pub use get_txn_info_cmd::*;
 pub use get_txn_info_list_cmd::*;
 pub use get_txn_infos_cmd::*;
 pub use info_cmd::*;
+pub use is_ancestor_of_cmd::*;
 pub use list_block_cmd::*;

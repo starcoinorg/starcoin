@@ -84,3 +84,9 @@ impl DagStateView {
         DagState { tips: self.tips }
     }
 }
+
+#[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct ReachabilityView {
+    pub ancestor: Hash,
+    pub descendants: Vec<Hash>,
+}

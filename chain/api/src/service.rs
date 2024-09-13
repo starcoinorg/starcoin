@@ -5,7 +5,7 @@ use crate::message::{ChainRequest, ChainResponse};
 use crate::{ChainType, TransactionInfoWithProof};
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
-use starcoin_dag::consensusdb::consenses_state::DagStateView;
+use starcoin_dag::consensusdb::consenses_state::{DagStateView, ReachabilityView};
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
@@ -149,6 +149,11 @@ pub trait ChainAsyncService:
     async fn get_dag_state(&self) -> Result<DagStateView>;
     async fn check_chain_type(&self) -> Result<ChainType>;
     async fn get_ghostdagdata(&self, id: HashValue) -> Result<Option<GhostdagData>>;
+    async fn is_ancestor_of(
+        &self,
+        ancestor: HashValue,
+        descendants: Vec<HashValue>,
+    ) -> Result<starcoin_dag::consensusdb::consenses_state::ReachabilityView>;
 }
 
 #[async_trait::async_trait]
@@ -482,6 +487,23 @@ where
             .await??;
         if let ChainResponse::GhostdagDataOption(ghostdag_data) = response {
             Ok(*ghostdag_data)
+        } else {
+            bail!("failed to get ghostdag data")
+        }
+    }
+    async fn is_ancestor_of(
+        &self,
+        ancestor: HashValue,
+        descendants: Vec<HashValue>,
+    ) -> Result<ReachabilityView> {
+        let response = self
+            .send(ChainRequest::IsAncestorOfCommand {
+                ancestor,
+                descendants,
+            })
+            .await??;
+        if let ChainResponse::IsAncestorOfCommand { reachability_view } = response {
+            Ok(reachability_view)
         } else {
             bail!("failed to get ghostdag data")
         }

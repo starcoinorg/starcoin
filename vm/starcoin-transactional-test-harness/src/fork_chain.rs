@@ -505,6 +505,14 @@ impl ChainApi for MockChainApi {
     fn get_ghostdagdata(&self, _block_hash: HashValue) -> FutureResult<Option<GhostdagData>> {
         unimplemented!()
     }
+
+    fn is_ancestor_of(
+        &self,
+        _ancestor: HashValue,
+        _descendants: Vec<HashValue>,
+    ) -> FutureResult<starcoin_dag::consensusdb::consenses_state::ReachabilityView> {
+        unimplemented!()
+    }
 }
 
 fn try_decode_block_txns(state: &dyn StateView, block: &mut BlockView) -> anyhow::Result<()> {
