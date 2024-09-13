@@ -83,6 +83,10 @@ impl AccessPath {
         DataPath::Resource(tag)
     }
 
+    pub fn resource_group_data_path(tag: StructTag) -> DataPath {
+        DataPath::ResourceGroup(tag)
+    }
+
     pub fn code_data_path(module_name: ModuleName) -> DataPath {
         DataPath::Code(module_name)
     }
@@ -204,6 +208,7 @@ impl From<&ModuleId> for AccessPath {
 pub enum DataType {
     CODE,
     RESOURCE,
+    ResourceGroup,
 }
 
 impl DataType {
@@ -214,6 +219,9 @@ impl DataType {
     }
     pub fn is_resource(self) -> bool {
         matches!(self, Self::RESOURCE)
+    }
+    pub fn is_resource_group(self) -> bool {
+        matches!(self, Self::ResourceGroup)
     }
 
     #[inline]
@@ -236,7 +244,12 @@ impl DataType {
 impl Arbitrary for DataType {
     type Parameters = ();
     fn arbitrary_with(_args: ()) -> Self::Strategy {
-        prop_oneof![Just(Self::CODE), Just(Self::RESOURCE),].boxed()
+        prop_oneof![
+            Just(Self::CODE),
+            Just(Self::RESOURCE),
+            Just(Self::ResourceGroup)
+        ]
+        .boxed()
     }
 
     type Strategy = BoxedStrategy<Self>;
@@ -250,6 +263,7 @@ pub type ModuleName = Identifier;
 pub enum DataPath {
     Code(#[schemars(with = "String")] ModuleName),
     Resource(#[schemars(with = "String")] StructTag),
+    ResourceGroup(#[schemars(with = "String")] StructTag),
 }
 
 #[cfg(any(test, feature = "fuzzing"))]
@@ -296,6 +310,7 @@ impl DataPath {
         match self {
             Self::Code(_) => DataType::CODE,
             Self::Resource(_) => DataType::RESOURCE,
+            Self::ResourceGroup(_) => DataType::ResourceGroup,
         }
     }
 
@@ -303,6 +318,7 @@ impl DataPath {
         match self {
             Self::Resource(struct_tag) => struct_tag.key_hash(),
             Self::Code(module_name) => module_name.key_hash(),
+            Self::ResourceGroup(struct_tag) => struct_tag.key_hash(),
         }
     }
 }
@@ -316,6 +332,9 @@ impl fmt::Display for DataPath {
             }
             Self::Code(module_name) => {
                 write!(f, "{}/{}", storage_index, module_name)
+            }
+            DataPath::ResourceGroup(struct_tag) => {
+                write!(f, "ResourceGroup({})", struct_tag)
             }
         }
     }
@@ -334,6 +353,7 @@ impl FromStr for AccessPath {
         let data_path = match data_type {
             DataType::CODE => Self::code_data_path(Identifier::new(parts[2])?),
             DataType::RESOURCE => Self::resource_data_path(parse_struct_tag(parts[2])?),
+            DataType::ResourceGroup => Self::resource_data_path(parse_struct_tag(parts[2])?),
         };
         Ok(Self::new(address, data_path))
     }

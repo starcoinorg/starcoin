@@ -7,6 +7,7 @@ use starcoin_crypto::{
     HashValue, PrivateKey, SigningKey, Uniform,
 };
 // use starcoin_rpc_api::types::pubsub::Kind;
+use move_core_types::abi::ScriptABI;
 use starcoin_types::access_path::{AccessPath, DataPath, DataType};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::accept_token_payment::AcceptTokenEvent;
@@ -22,7 +23,7 @@ use starcoin_types::language_storage::TypeTag;
 use starcoin_types::sign_message::{SignedMessage, SigningMessage};
 use starcoin_types::transaction::authenticator::{AuthenticationKey, TransactionAuthenticator};
 use starcoin_types::transaction::{
-    Module, Package, Script, ScriptABI, SignedUserTransaction, Transaction, TransactionArgument,
+    Module, Package, Script, SignedUserTransaction, Transaction, TransactionArgument,
     TransactionPayload,
 };
 use starcoin_types::write_set::{WriteOp, WriteSet};

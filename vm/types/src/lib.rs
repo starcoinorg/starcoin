@@ -209,6 +209,7 @@ pub mod transaction;
 
 pub mod contract_event;
 
+pub use account_address::AccountAddress as PeerId;
 pub mod vm_status {
     pub use move_core_types::vm_status::*;
     pub mod sub_status {
@@ -240,3 +241,24 @@ pub mod time;
 pub mod token;
 #[cfg(test)]
 mod unit_tests;
+pub mod utility_coin;
+
+pub mod sub_status {
+    // Native Function Error sub-codes
+    pub const NFE_VECTOR_ERROR_BASE: u64 = 0;
+    // Failure in BCS deserialization
+    pub const NFE_BCS_SERIALIZATION_FAILURE: u64 = 0x1C5;
+
+    pub mod unknown_invariant_violation {
+        // Paranoid Type checking returns an error
+        pub const EPARANOID_FAILURE: u64 = 0x1;
+
+        // Reference safety checks failure
+        pub const EREFERENCE_COUNTING_FAILURE: u64 = 0x2;
+    }
+
+    pub mod type_resolution_failure {
+        // User provided typetag failed to load.
+        pub const EUSER_TYPE_LOADING_FAILURE: u64 = 0x1;
+    }
+}

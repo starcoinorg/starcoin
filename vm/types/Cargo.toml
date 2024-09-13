@@ -21,6 +21,7 @@ proptest-derive = { optional = true, workspace = true }
 starcoin-time-service = { optional = true, workspace = true }
 bcs-ext = { workspace = true }
 starcoin-gas-algebra = { workspace = true }
+fxhash = { workspace = true }
 forkable-jellyfish-merkle = { workspace = true }
 schemars = { workspace = true }
 starcoin-accumulator = { workspace = true }
@@ -30,6 +31,13 @@ bytes = { workspace = true }
 strum = { workspace = true }
 strum_macros = { workspace = true }
 bcs = { workspace = true }
+thiserror = { workspace = true }
+num-traits = { workspace = true }
+num-derive = { workspace = true }
+hashbrown = { workspace = true }
+arr_macro = { workspace = true}
+rayon = { workspace = true }
+starcoin-infallible = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

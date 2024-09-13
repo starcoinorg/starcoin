@@ -40,10 +40,10 @@ pub use module::{Module, ModuleBundle};
 pub use package::Package;
 pub use pending_transaction::{Condition, PendingTransaction};
 use schemars::{self, JsonSchema};
-pub use script::{
-    ArgumentABI, Script, ScriptABI, ScriptFunction, ScriptFunctionABI, TransactionScriptABI,
-    TypeArgumentABI,
-};
+pub use script::{Script, ScriptFunction};
+
+#[cfg(any(test, feature = "fuzzing"))]
+use proptest_derive::Arbitrary;
 use starcoin_crypto::hash::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use std::str::FromStr;
 pub use transaction_argument::{
@@ -62,6 +62,11 @@ mod tests;
 mod transaction_argument;
 
 mod change_set;
+pub mod user_transaction_context;
+
+pub use script::{
+    ArgumentABI, EntryABI, EntryFunction, EntryFunctionABI, TransactionScriptABI, TypeArgumentABI,
+};
 
 pub type Version = u64; // Height - also used for MVCC in StateDB
 
@@ -608,6 +613,13 @@ impl Sample for SignedUserTransaction {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
+#[cfg_attr(any(test, feature = "fuzzing"), proptest(no_params))]
+pub struct AbortInfo {
+    pub reason_name: String,
+    pub description: String,
+}
 /// The status of executing a transaction. The VM decides whether or not we should `Keep` the
 /// transaction output or `Discard` it based upon the execution of the transaction. We wrap these
 /// decisions around a `VMStatus` that provides more detail on the final execution state of the VM.

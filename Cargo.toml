@@ -73,6 +73,7 @@ members = [
     "vm/vm-runtime-types",
     "vm/vm-runtime",
     "vm/frameworks",
+    "vm/framework/cached-packages",
     "vm/starcoin-native-interface",
     "vm/stdlib",
     "vm/compiler",
@@ -82,6 +83,7 @@ members = [
     "vm/transaction-builder",
     "vm/transaction-builder-generator",
     "vm/move-coverage",
+    "vm/package-builder",
     "vm/resource-viewer",
     "vm/starcoin-gas-meter",
     "vm/dev",
@@ -90,6 +92,9 @@ members = [
     "vm/move-explain",
     "vm/move-package-manager",
     "vm/vm-status-translator",
+    "vm/framework",
+    "vm/framework/table-natives",
+    "vm/starcoin-sdk-builder",
     "vm/starcoin-transactional-test-harness",
     "vm/starcoin-aggregator",
     "vm/parallel-executor",
@@ -189,6 +194,11 @@ default-members = [
     "vm/types",
     "vm/vm-runtime-types",
     "vm/vm-runtime",
+    "vm/framework",
+    "vm/framework/cached-packages",
+    "vm/framework/table-natives",
+    "vm/starcoin-sdk-builder",
+    "vm/package-builder",
     "vm/frameworks",
     "vm/stdlib",
     "vm/compiler",
@@ -256,10 +266,19 @@ rust-version = "1.64"
 [workspace.dependencies]
 actix = "0.13"
 actix-rt = "2.6"
+
 aes-gcm = "0.9"
 anyhow = "~1"
 api-limiter = { path = "commons/api-limiter" }
+arr_macro = "0.2.1"
 arc-swap = "1.5.1"
+ark-bn254 = "0.4.0"
+ark-bls12-381 = "0.4.0"
+ark-ec = "0.4.0"
+ark-ff = "0.4.0"
+ark-groth16 = "0.4.0"
+ark-serialize = "0.4.0"
+ark-std = { version = "0.4.0", features = ["getrandom"] }
 arrayref = "0.3"
 ascii = "1.0.0"
 async-std = { version = "1.12", features = ["attributes", "tokio1"] }
@@ -268,6 +287,9 @@ asynchronous-codec = "0.5"
 atomic-counter = "1.0.1"
 atty = "0.2.14"
 backtrace = "0.3"
+blake2 = "0.10.4"
+blake2-rfc = "0.2.18"
+bulletproofs = { version = "4.0.0" }
 bcs = "0.1"
 bcs-ext = { path = "commons/bcs_ext" }
 bech32 = "0.9"
@@ -295,6 +317,10 @@ cryptonight-rs = { path = "consensus/cryptonight-rs" }
 csv = "~1"
 ctrlc = { version = "3.2.2", features = ["termination"] }
 cucumber = { package = "cucumber_rust", version = "^0.6.0" }
+flate2 = "1.0.24"
+fxhash = "0.2.1"
+hashbrown = "0.14.3"
+
 darling = "0.10.2"
 dashmap = "~5"
 datatest-stable = "0.1.3"
@@ -352,6 +378,12 @@ linked_hash_set = "0.1.3"
 log = { version = "0.4.16" }
 log4rs = { version = "1.2.0", features = ["background_rotation", "gzip"] }
 lru = "0.7.8"
+merlin = "3"
+ripemd = "0.1.1"
+sha-1 = "0.10.0"
+sha256 = "1.4.0"
+sha2_0_10_6 = { package = "sha2", version = "0.10.6" }
+siphasher = "0.3.10"
 merkletree = { version = "0.22.1" }
 mirai-annotations = "1.10.1"
 move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "6e3ac2d90bebf567540f2d1ac3ace51dc3ebeff2" }
@@ -360,6 +392,7 @@ move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "6
 move-cli = { git = "https://github.com/starcoinorg/move", rev = "6e3ac2d90bebf567540f2d1ac3ace51dc3ebeff2" }
 move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "6e3ac2d90bebf567540f2d1ac3ace51dc3ebeff2" }
 move-compiler = { git = "https://github.com/starcoinorg/move", rev = "6e3ac2d90bebf567540f2d1ac3ace51dc3ebeff2" }
+move-compiler-v2 = { git = "https://github.com/starcoinorg/move", rev = "6e3ac2d90bebf567540f2d1ac3ace51dc3ebeff2" }
 move-core-types = { git = "https://github.com/starcoinorg/move", rev = "6e3ac2d90bebf567540f2d1ac3ace51dc3ebeff2" }
 move-coverage = { git = "https://github.com/starcoinorg/move", rev = "6e3ac2d90bebf567540f2d1ac3ace51dc3ebeff2" }
 move-disassembler = { git = "https://github.com/starcoinorg/move", rev = "6e3ac2d90bebf567540f2d1ac3ace51dc3ebeff2" }
@@ -370,6 +403,9 @@ move-ir-types = { git = "https://github.com/starcoinorg/move", rev = "6e3ac2d90b
 move-model = { git = "https://github.com/starcoinorg/move", rev = "6e3ac2d90bebf567540f2d1ac3ace51dc3ebeff2" }
 move-package = { git = "https://github.com/starcoinorg/move", rev = "6e3ac2d90bebf567540f2d1ac3ace51dc3ebeff2" }
 move-prover = { git = "https://github.com/starcoinorg/move", rev = "6e3ac2d90bebf567540f2d1ac3ace51dc3ebeff2" }
+move-prover-boogie-backend = { git = "https://github.com/starcoinorg/move", rev = "6e3ac2d90bebf567540f2d1ac3ace51dc3ebeff2" }
+move-prover-bytecode-pipeline = { git = "https://github.com/starcoinorg/move", rev = "6e3ac2d90bebf567540f2d1ac3ace51dc3ebeff2" }
+move-stackless-bytecode = { git = "https://github.com/starcoinorg/move", rev = "6e3ac2d90bebf567540f2d1ac3ace51dc3ebeff2" }
 move-prover-test-utils = { git = "https://github.com/starcoinorg/move", rev = "6e3ac2d90bebf567540f2d1ac3ace51dc3ebeff2" }
 move-resource-viewer = { git = "https://github.com/starcoinorg/move", rev = "6e3ac2d90bebf567540f2d1ac3ace51dc3ebeff2" }
 move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "6e3ac2d90bebf567540f2d1ac3ace51dc3ebeff2" }
@@ -433,7 +469,7 @@ serde_derive = "1.0"
 serde_json = "~1"
 serde_yaml = "0.8.26"
 serde_with = "3.4.0"
-sha2 = "0.10.2"
+sha2 = "0.9.3"
 sha3 = "0.9.1"
 shell-words = "1.0.0"
 simple-stopwatch = "0.1.4"
@@ -462,13 +498,14 @@ starcoin-chain-service = { path = "chain/service" }
 starcoin-cmd = { path = "cmd/starcoin" }
 starcoin-config = { path = "config" }
 starcoin-consensus = { path = "consensus" }
-#starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "a742ddc0674022800341182cbb4c3681807b2f00" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "8d41c280a227594ca0a2b6ecba580643518274ea" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "d3c51001cc34fcabf5f693d97c936fb7fe50e6a7" }
 
 starcoin-decrypt = { path = "commons/decrypt" }
 starcoin-dev = { path = "vm/dev" }
 starcoin-executor = { path = "executor" }
-starcoin-framework = { git = "https://github.com/starcoinorg/starcoin-framework", rev = "94bcd77e80232b169cf95754ef4e87775645afcd" }
+#starcoin-framework = { git = "https://github.com/starcoinorg/starcoin-framework", rev = "94bcd77e80232b169cf95754ef4e87775645afcd" }
+starcoin-framework = { path = "vm/framework" }
+starcoin-sdk-builder = {path = "vm/starcoin-sdk-builder"}
 starcoin-genesis = { path = "genesis" }
 starcoin-logger = { path = "commons/logger" }
 starcoin-metrics = { path = "commons/metrics" }
@@ -491,6 +528,10 @@ starcoin-node-api = { path = "node/api" }
 starcoin-open-block = { path = "chain/open-block" }
 starcoin-force-upgrade = { path = "chain/force-upgrade" }
 starcoin-resource-viewer = { path = "vm/resource-viewer" }
+starcoin-package-builder = { path = "vm/package-builder" }
+starcoin-move-stdlib = { path = "vm/framework/move-stdlib" }
+starcoin-table-natives = { path = "vm/framework/table-natives" }
+starcoin-cached-packages = { path = "vm/framework/cached-packages" }
 starcoin-rpc-api = { path = "rpc/api" }
 starcoin-rpc-client = { path = "rpc/client" }
 starcoin-rpc-middleware = { path = "rpc/middleware" }
@@ -560,7 +601,6 @@ walkdir = "2.3.1"
 wasm-timer = "0.2"
 which = "4.1.0"
 zeroize = "1.3.0"
-flate2 = "1.0.24"
 better_any = "0.1.1"
 paste = "1.0.7"
 
@@ -585,3 +625,6 @@ debug = false
 
 #[profile.release.package.cryptonight-rs]
 #opt-level = 2
+
+[patch.crates-io]
+x25519-dalek = { git = "https://github.com/aptos-labs/x25519-dalek", branch = "zeroize_v1" }
