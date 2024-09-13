@@ -111,6 +111,7 @@ members = [
     "cmd/db-exporter",
     "cmd/genesis-nft-miner",
     "flexidag",
+    "multivm/aptos-vm-ext",
 ]
 
 default-members = [
@@ -218,6 +219,7 @@ default-members = [
     "cmd/miner_client/api",
     "cmd/db-exporter",
     "flexidag",
+    "multivm/aptos-vm-ext",
 ]
 
 [workspace.lints.clippy]
@@ -367,9 +369,6 @@ move-vm-runtime = { path = "third_party/move/move-vm/runtime" }
 move-vm-types = { path = "third_party/move/move-vm/types" }
 move-table-extension = { path = "third_party/move/extensions/move-table-extension" }
 move-vm-test-utils = { path = "third_party/move/move-vm/test-utils", features = ["table-extension"] }
-
-# Aptos VM dependencies
-aptos-vm = { git = "https://github.com/starcoinorg/aptos-core", rev = "561a0f9f93680b59abc5c5f900fb30d5294b6ad6" }
 
 names = { version = "0.14.0", default-features = false }
 network-api = { path = "network/api", package = "network-api" }
@@ -544,6 +543,12 @@ walkdir = "2.3.1"
 wasm-timer = "0.2"
 which = "4.1.0"
 zeroize = "1.3.0"
+
+# Aptos VM dependencies
+aptos-vm-ext = { path = "multivm/aptos-vm-ext" }
+aptos-vm = { git = "https://github.com/starcoinorg/aptos-core", rev = "561a0f9f93680b59abc5c5f900fb30d5294b6ad6" }
+aptos-storage-interface = { git = "https://github.com/starcoinorg/aptos-core", rev = "561a0f9f93680b59abc5c5f900fb30d5294b6ad6" }
+aptos-db = { git = "https://github.com/starcoinorg/aptos-core", rev = "561a0f9f93680b59abc5c5f900fb30d5294b6ad6" }
 
 [profile.release.package]
 starcoin-service-registry.debug = 1

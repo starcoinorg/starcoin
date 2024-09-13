@@ -983,6 +983,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "aptos-vm-ext"
+version = "0.1.0"
+dependencies = [
+ "aptos-vm",
+]
+
+[[package]]
 name = "aptos-vm-logging"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/aptos-core?rev=561a0f9f93680b59abc5c5f900fb30d5294b6ad6#561a0f9f93680b59abc5c5f900fb30d5294b6ad6"
@@ -2939,7 +2946,7 @@ dependencies = [
  "bitflags 1.3.2",
  "crossterm_winapi 0.9.0",
  "libc",
- "mio 0.8.6",
+ "mio 0.8.11",
  "parking_lot 0.12.1",
  "signal-hook",
  "signal-hook-mio",
@@ -2955,7 +2962,7 @@ dependencies = [
  "bitflags 1.3.2",
  "crossterm_winapi 0.9.0",
  "libc",
- "mio 0.8.6",
+ "mio 0.8.11",
  "parking_lot 0.12.1",
  "signal-hook",
  "signal-hook-mio",
@@ -6828,14 +6835,14 @@ dependencies = [
 
 [[package]]
 name = "mio"
-version = "0.8.6"
+version = "0.8.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b9d9a46eff5b4ff64b45a9e316a6d1e0bc719ef429cbec4dc630684212bfdf9"
+checksum = "a4a650543ca06a924e8b371db273b2756685faae30f8487da1b56505a8f78b0c"
 dependencies = [
  "libc",
  "log 0.4.22",
  "wasi 0.11.0+wasi-snapshot-preview1",
- "windows-sys 0.45.0",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -11998,7 +12005,7 @@ checksum = "29ad2e15f37ec9a6cc544097b78a1ec90001e9f71b81338ca39f430adaca99af"
 dependencies = [
  "libc",
  "mio 0.7.14",
- "mio 0.8.6",
+ "mio 0.8.11",
  "signal-hook",
 ]
 
@@ -12861,7 +12868,6 @@ name = "starcoin-executor"
 version = "2.0.1"
 dependencies = [
  "anyhow",
- "aptos-vm",
  "bcs-ext",
  "hex",
  "log 0.4.22",
