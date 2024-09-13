@@ -1371,7 +1371,7 @@ impl ChainReader for BlockChain {
             .ok_or_else(|| format_err!("cannot find parent block header"))?;
         let ghostdata = self.dag().verify_and_ghostdata(uncles, header)?;
 
-        if self.get_pruning_height() <= self.status().head().number() {
+        if self.status().head().pruning_point() != HashValue::zero() {
             self.dag().verify_pruning_point(
                 previous_header.pruning_point(),
                 header.pruning_point(),
@@ -1583,7 +1583,7 @@ impl BlockChain {
             4200000
         } else if chain_id.is_main() {
             0
-        } else if chain_id.is_dag_test() || chain_id.is_test() {
+        } else if chain_id.is_dag_test() || chain_id.is_test() || chain_id.is_dev() {
             BlockNumber::MAX
         } else {
             0
