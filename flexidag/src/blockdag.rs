@@ -450,13 +450,21 @@ impl BlockDAG {
     ) -> anyhow::Result<MineNewDagBlockInfo> {
         let dag_state = self.get_dag_state(previous_header.pruning_point())?;
         let ghostdata = self.ghostdata(&dag_state.tips)?;
-
+        info!(
+            "start to calculate the mergeset and tips for tips: {:?}, and last pruning point: {:?} and ghostdata: {:?}",
+            dag_state.tips, previous_header.pruning_point(), ghostdata,
+        );
         let next_pruning_point = self.pruning_point_manager().next_pruning_point(
             previous_header.pruning_point(),
             &ghostdata,
             pruning_depth,
             pruning_finality,
         )?;
+        info!(
+            "the next pruning point is: {:?}, and the previous pruning point is: {:?}",
+            next_pruning_point,
+            previous_header.pruning_point()
+        );
         if next_pruning_point == previous_header.pruning_point() {
             anyhow::Ok(MineNewDagBlockInfo {
                 tips: dag_state.tips,
@@ -474,6 +482,11 @@ impl BlockDAG {
                 .ghostdag(&pruned_tips)?
                 .mergeset_blues)
                 .clone();
+            info!(
+                "previous tips are: {:?}, the pruned tips are: {:?}, the mergeset blues are: {:?}, the next pruning point is: {:?}",
+                dag_state.tips,
+                pruned_tips, mergeset_blues, next_pruning_point
+            );
             anyhow::Ok(MineNewDagBlockInfo {
                 tips: pruned_tips,
                 blue_blocks: mergeset_blues,

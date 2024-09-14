@@ -1558,14 +1558,17 @@ impl BlockChain {
         }
 
         if parent_header.pruning_point() == block.header().pruning_point() {
+            info!("pruning point not changed, save dag state without prune. tips are {:?}, pruning point is {:?}", tips, block.header().pruning_point());
             self.dag
                 .save_dag_state(block.header().pruning_point(), DagState { tips })?;
         } else {
             let new_tips = dag.pruning_point_manager().prune(
-                &DagState { tips },
+                &DagState { tips: tips.clone() },
                 parent_header.pruning_point(),
                 block.header().pruning_point(),
             )?;
+            info!("pruning point changed, previous tips are: {:?}, save dag state with prune. tips are {:?}, previous  pruning point is  {:?}, current pruning point is {:?}", 
+            tips, new_tips, parent_header.pruning_point(), block.header().pruning_point());
             self.dag
                 .save_dag_state(block.header().pruning_point(), DagState { tips: new_tips })?;
         }

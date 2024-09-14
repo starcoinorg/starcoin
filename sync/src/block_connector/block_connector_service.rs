@@ -395,6 +395,7 @@ where
             blue_blocks,
             pruning_point,
         } = if main_header.number() >= self.chain_service.get_main().get_pruning_height() {
+            info!("now calculate the next pruning point");
             dag.calc_mergeset_and_tips(&main_header, pruning_depth, pruning_finality)?
         } else {
             let tips = dag.get_dag_state(HashValue::zero())?.tips;

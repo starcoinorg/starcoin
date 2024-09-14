@@ -80,6 +80,12 @@ impl DagBlockExecutor {
                         };
                         let header = block.header().clone();
 
+                        info!(
+                            "sync parallel worker {:p} received block: {:?}",
+                            &self,
+                            block.header().id()
+                        );
+
                         loop {
                             match Self::waiting_for_parents(
                                 &self.dag,
