@@ -102,7 +102,10 @@ impl<'a> DagBlockSender<'a> {
             match &executor.state {
                 ExecuteState::Executed(_) => {
                     executor.state = ExecuteState::Executing(block.id());
-                    executor.sender_to_executor.send(Some(block.clone())).await?;
+                    executor
+                        .sender_to_executor
+                        .send(Some(block.clone()))
+                        .await?;
                     return anyhow::Ok(true);
                 }
 
