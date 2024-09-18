@@ -19,6 +19,7 @@ use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::{BlockDAG, MineNewDagBlockInfo};
 use starcoin_dag::consensusdb::consenses_state::DagState;
 use starcoin_dag::consensusdb::prelude::StoreError;
+use starcoin_dag::consensusdb::schemadb::GhostdagStoreReader;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
@@ -1369,17 +1370,30 @@ impl ChainReader for BlockChain {
             .storage
             .get_block_header_by_hash(header.parent_hash())?
             .ok_or_else(|| format_err!("cannot find parent block header"))?;
-        let ghostdata = self.dag().verify_and_ghostdata(uncles, header)?;
+        let next_ghostdata = self.dag().verify_and_ghostdata(uncles, header)?;
 
         if self.status().head().pruning_point() != HashValue::zero() {
+            let previous_ghostdata = if previous_header.pruning_point() == HashValue::zero() {
+                let genesis = self
+                    .storage
+                    .get_genesis()?
+                    .ok_or_else(|| format_err!("the genesis id is none!"))?;
+                self.dag().storage.ghost_dag_store.get_data(genesis)?
+            } else {
+                self.dag()
+                    .storage
+                    .ghost_dag_store
+                    .get_data(previous_header.pruning_point())?
+            };
             self.dag().verify_pruning_point(
                 previous_header.pruning_point(),
+                previous_ghostdata.as_ref(),
                 header.pruning_point(),
-                &ghostdata,
+                &next_ghostdata,
             )?;
         }
 
-        Ok(ghostdata)
+        Ok(next_ghostdata)
     }
 
     fn is_dag_ancestor_of(&self, ancestor: HashValue, descendants: Vec<HashValue>) -> Result<bool> {

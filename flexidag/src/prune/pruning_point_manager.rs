@@ -61,14 +61,14 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
 
     pub(crate) fn next_pruning_point(
         &self,
-        pruning_point: HashValue,
-        ghostdata: &GhostdagData,
+        previous_pruning_point: HashValue,
+        previous_ghostdata: &GhostdagData,
+        next_ghostdata: &GhostdagData,
         pruning_depth: u64,
         pruning_finality: u64,
     ) -> anyhow::Result<HashValue> {
-        let pruning_ghostdata = self.ghost_dag_store.get_data(pruning_point)?;
         let min_required_blue_score_for_next_pruning_point =
-            (self.finality_score(pruning_ghostdata.blue_score, pruning_finality) + 1)
+            (self.finality_score(previous_ghostdata.blue_score, pruning_finality) + 1)
                 * pruning_finality;
 
         debug!(
@@ -76,19 +76,27 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
             min_required_blue_score_for_next_pruning_point
         );
 
-        let mut latest_pruning_ghost_data = self.ghost_dag_store.get_compact_data(pruning_point)?;
-        if min_required_blue_score_for_next_pruning_point + pruning_depth <= ghostdata.blue_score {
+        let mut latest_pruning_ghost_data = previous_ghostdata.to_compact();
+        if min_required_blue_score_for_next_pruning_point + pruning_depth
+            <= next_ghostdata.blue_score
+        {
+            let ancestor = if previous_pruning_point == HashValue::zero() {
+                HashValue::new(ORIGIN)
+            } else {
+                previous_pruning_point
+            };
+
             for child in self.reachability_service().forward_chain_iterator(
-                pruning_point,
-                ghostdata.selected_parent,
+                ancestor,
+                next_ghostdata.selected_parent,
                 true,
             ) {
                 let next_pruning_ghostdata = self.ghost_dag_store.get_data(child)?;
                 debug!(
                     "child: {:?}, observer2.blue_score: {:?}, next_pruning_ghostdata.blue_score: {:?}",
-                    child, ghostdata.blue_score, next_pruning_ghostdata.blue_score
+                    child, next_ghostdata.blue_score, next_pruning_ghostdata.blue_score
                 );
-                if ghostdata.blue_score - next_pruning_ghostdata.blue_score < pruning_depth {
+                if next_ghostdata.blue_score - next_pruning_ghostdata.blue_score < pruning_depth {
                     break;
                 }
                 if self.finality_score(next_pruning_ghostdata.blue_score, pruning_finality)
@@ -106,7 +114,7 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
         }
 
         if latest_pruning_ghost_data.selected_parent == HashValue::new(ORIGIN) {
-            anyhow::Ok(pruning_point) // still genesis
+            anyhow::Ok(HashValue::zero()) // still genesis
         } else {
             anyhow::Ok(latest_pruning_ghost_data.selected_parent)
         }

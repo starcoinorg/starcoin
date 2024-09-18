@@ -22,6 +22,7 @@ use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_dag::blockdag::MineNewDagBlockInfo;
 use starcoin_executor::VMMetrics;
+use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
 use starcoin_service_registry::{
@@ -396,7 +397,24 @@ where
             pruning_point,
         } = if main_header.number() >= self.chain_service.get_main().get_pruning_height() {
             info!("now calculate the next pruning point");
-            dag.calc_mergeset_and_tips(&main_header, pruning_depth, pruning_finality)?
+            let previous_ghostdata = if main_header.pruning_point() == HashValue::zero() {
+                let genesis = ctx.get_shared::<Genesis>()?;
+                self.chain_service
+                    .get_dag()
+                    .ghostdata_by_hash(genesis.block().id())?
+                    .ok_or_else(|| format_err!("Genesis block header should exist."))?
+            } else {
+                self.chain_service
+                    .get_dag()
+                    .ghostdata_by_hash(main_header.pruning_point())?
+                    .ok_or_else(|| format_err!("Genesis block header should exist."))?
+            };
+            dag.calc_mergeset_and_tips(
+                main_header.pruning_point(),
+                previous_ghostdata.as_ref(),
+                pruning_depth,
+                pruning_finality,
+            )?
         } else {
             let tips = dag.get_dag_state(HashValue::zero())?.tips;
             MineNewDagBlockInfo {

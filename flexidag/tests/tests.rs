@@ -978,7 +978,19 @@ fn test_prune() -> anyhow::Result<()> {
         tips,
         blue_blocks: _,
         pruning_point,
-    } = dag.calc_mergeset_and_tips(&block_main_5, pruning_depth, pruning_finality)?;
+    } = dag.calc_mergeset_and_tips(
+        block_main_5.pruning_point(),
+        dag.ghostdata_by_hash(block_main_5.pruning_point())?
+            .ok_or_else(|| {
+                format_err!(
+                    "failed to get the ghostdata by {:?}",
+                    block_main_5.pruning_point()
+                )
+            })?
+            .as_ref(),
+        pruning_depth,
+        pruning_finality,
+    )?;
 
     assert_eq!(pruning_point, block_main_2.id());
     assert_eq!(tips.len(), 1);
