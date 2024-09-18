@@ -1524,7 +1524,11 @@ impl BlockChain {
                     new_tip_block.header().parent_hash()
                 )
             })?;
-        let mut tips = self.current_tips_hash(parent_header.pruning_point())?;
+        let mut tips = if parent_header.pruning_point() == HashValue::zero() {
+            self.current_tips_hash(self.genesis_hash)?
+        } else {
+            self.current_tips_hash(parent_header.pruning_point())?
+        };
 
         let mut new_tips = vec![];
         for hash in tips {
