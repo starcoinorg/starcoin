@@ -80,14 +80,8 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
         if min_required_blue_score_for_next_pruning_point + pruning_depth
             <= next_ghostdata.blue_score
         {
-            let ancestor = if previous_pruning_point == HashValue::zero() {
-                HashValue::new(ORIGIN)
-            } else {
-                previous_pruning_point
-            };
-
             for child in self.reachability_service().forward_chain_iterator(
-                ancestor,
+                previous_pruning_point,
                 next_ghostdata.selected_parent,
                 true,
             ) {

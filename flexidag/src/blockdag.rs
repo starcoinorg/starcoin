@@ -113,10 +113,9 @@ impl BlockDAG {
             .write()
             .insert(origin, BlockHashes::new(vec![]))?;
 
-        let pruning_point = genesis.pruning_point();
         self.commit(genesis, origin)?;
         self.save_dag_state(
-            pruning_point,
+            genesis_id,
             DagState {
                 tips: vec![genesis_id],
             },
@@ -545,25 +544,30 @@ impl BlockDAG {
         self.ghost_dag_manager()
             .verify_and_ghostdata(blue_blocks, header)
     }
-    pub fn check_upgrade(&self, main: &BlockHeader) -> anyhow::Result<()> {
+    pub fn check_upgrade(&self, main: &BlockHeader, genesis_id: HashValue) -> anyhow::Result<()> {
         // set the state with key 0
-        if main.version() == 0 {
+        if main.version() == 0 || main.version() == 1 {
             let result_dag_state = self
                 .storage
                 .state_store
                 .read()
-                .get_state_by_hash(main.pruning_point());
+                .get_state_by_hash(genesis_id);
             match result_dag_state {
                 anyhow::Result::Ok(_dag_state) => (),
                 Err(_) => {
-                    let result_dag_state =
-                        self.storage.state_store.read().get_state_by_hash(0.into());
+                    let result_dag_state = self
+                        .storage
+                        .state_store
+                        .read()
+                        .get_state_by_hash(HashValue::zero());
+
                     match result_dag_state {
-                        anyhow::Result::Ok(dag_state) => self
-                            .storage
-                            .state_store
-                            .write()
-                            .insert(main.pruning_point(), dag_state)?,
+                        anyhow::Result::Ok(dag_state) => {
+                            self.storage
+                                .state_store
+                                .write()
+                                .insert(genesis_id, dag_state)?;
+                        }
                         Err(_) => {
                             let dag_state = self
                                 .storage
@@ -573,26 +577,15 @@ impl BlockDAG {
                             self.storage
                                 .state_store
                                 .write()
-                                .insert(0.into(), dag_state.clone())?;
+                                .insert(HashValue::zero(), dag_state.clone())?;
                             self.storage
                                 .state_store
                                 .write()
-                                .insert(HashValue::zero(), dag_state)?;
+                                .insert(genesis_id, dag_state)?;
                         }
                     }
                 }
             }
-            return Ok(());
-        } else if main.version() == 1 {
-            let dag_state = self
-                .storage
-                .state_store
-                .read()
-                .get_state_by_hash(0.into())?;
-            self.storage
-                .state_store
-                .write()
-                .insert(HashValue::zero(), dag_state)?;
         }
 
         anyhow::Ok(())

@@ -178,7 +178,7 @@ impl BlockChain {
     }
 
     fn init_dag(mut dag: BlockDAG, genesis_header: BlockHeader) -> Result<BlockDAG> {
-        match dag.get_dag_state(genesis_header.pruning_point()) {
+        match dag.get_dag_state(genesis_header.id()) {
             anyhow::Result::Ok(_dag_state) => (),
             Err(e) => match e.downcast::<StoreError>()? {
                 StoreError::KeyNotFound(_) => {
@@ -987,7 +987,12 @@ impl BlockChain {
     }
 
     pub fn get_dag_state(&self) -> Result<DagState> {
-        self.dag.get_dag_state(self.status().head().pruning_point())
+        let current_pruning_point = self.status().head().pruning_point();
+        if current_pruning_point == HashValue::zero() {
+            self.dag.get_dag_state(self.genesis_hash)
+        } else {
+            self.dag.get_dag_state(current_pruning_point)
+        }
     }
 }
 
@@ -1573,8 +1578,13 @@ impl BlockChain {
 
         if parent_header.pruning_point() == block.header().pruning_point() {
             info!("pruning point not changed, save dag state without prune. tips are {:?}, pruning point is {:?}", tips, block.header().pruning_point());
-            self.dag
-                .save_dag_state(block.header().pruning_point(), DagState { tips })?;
+            if block.header().pruning_point() == HashValue::zero() {
+                self.dag
+                    .save_dag_state(self.genesis_hash, DagState { tips })?;
+            } else {
+                self.dag
+                    .save_dag_state(block.header().pruning_point(), DagState { tips })?;
+            }
         } else {
             let new_tips = dag.pruning_point_manager().prune(
                 &DagState { tips: tips.clone() },

@@ -748,6 +748,7 @@ fn add_and_print(
         .with_parent_hash(parent)
         .with_parents_hash(parents)
         .with_number(number)
+        .with_pruning_point(Hash::zero())
         .build();
     let start = Instant::now();
     dag.commit(header.to_owned(), origin)?;
@@ -869,7 +870,6 @@ fn test_big_data_commit() -> anyhow::Result<()> {
     anyhow::Result::Ok(())
 }
 
-#[ignore = "pruning will be tested in next release"]
 #[test]
 fn test_prune() -> anyhow::Result<()> {
     // initialzie the dag firstly
@@ -968,26 +968,40 @@ fn test_prune() -> anyhow::Result<()> {
 
     // prunning process begins
     dag.save_dag_state(
-        Hash::zero(),
+        genesis.id(),
         DagState {
             tips: vec![block_red_3.id(), block_main_5.id()],
         },
     )?;
+
+    let (previous_ghostdata, previous_pruning_point) =
+        if block_main_5.pruning_point() == Hash::zero() {
+            (
+                dag.ghostdata_by_hash(genesis.id())?.ok_or_else(|| {
+                    format_err!("failed to get the ghostdata by genesis: {:?}", genesis.id())
+                })?,
+                genesis.id(),
+            )
+        } else {
+            (
+                dag.ghostdata_by_hash(block_main_5.pruning_point())?
+                    .ok_or_else(|| {
+                        format_err!(
+                            "failed to get the ghostdata by pruning point: {:?}",
+                            block_main_5.pruning_point()
+                        )
+                    })?,
+                block_main_5.pruning_point(),
+            )
+        };
 
     let MineNewDagBlockInfo {
         tips,
         blue_blocks: _,
         pruning_point,
     } = dag.calc_mergeset_and_tips(
-        block_main_5.pruning_point(),
-        dag.ghostdata_by_hash(block_main_5.pruning_point())?
-            .ok_or_else(|| {
-                format_err!(
-                    "failed to get the ghostdata by {:?}",
-                    block_main_5.pruning_point()
-                )
-            })?
-            .as_ref(),
+        previous_pruning_point,
+        previous_ghostdata.as_ref(),
         pruning_depth,
         pruning_finality,
     )?;
