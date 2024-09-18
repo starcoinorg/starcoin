@@ -3,6 +3,7 @@
 
 use anyhow::Result;
 use starcoin_crypto::HashValue;
+use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_state_api::ChainStateReader;
 use starcoin_statedb::ChainStateDB;
 use starcoin_time_service::TimeService;
@@ -22,7 +23,10 @@ pub use starcoin_types::block::ExecutedBlock;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::contract_event::ContractEvent;
 
-pub struct VerifiedBlock(pub Block);
+pub struct VerifiedBlock {
+    pub block: Block,
+    pub ghostdata: Option<GhostdagData>,
+}
 pub type MintedUncleNumber = u64;
 
 pub trait ChainReader {
@@ -105,6 +109,11 @@ pub trait ChainReader {
     fn current_tips_hash(&self) -> Result<Vec<HashValue>>;
     fn has_dag_block(&self, header_id: HashValue) -> Result<bool>;
     fn check_chain_type(&self) -> Result<ChainType>;
+    fn verify_and_ghostdata(
+        &self,
+        uncles: &[BlockHeader],
+        header: &BlockHeader,
+    ) -> Result<GhostdagData>;
 }
 
 pub trait ChainWriter {
@@ -114,6 +123,9 @@ pub trait ChainWriter {
 
     /// Verify, Execute and Connect block to current chain.
     fn apply(&mut self, block: Block) -> Result<ExecutedBlock>;
+
+    /// Verify, Execute and Connect block to current chain.
+    fn apply_for_sync(&mut self, block: Block) -> Result<ExecutedBlock>;
 
     fn chain_state(&mut self) -> &ChainStateDB;
 }

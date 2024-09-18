@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::verifier::{BlockVerifier, DagVerifier, FullVerifier};
+use crate::verifier::{BlockVerifier, DagVerifier, DagVerifierWithGhostData, FullVerifier};
 use anyhow::{bail, ensure, format_err, Ok, Result};
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_accumulator::inmemory::InMemoryAccumulator;
@@ -458,8 +458,8 @@ impl BlockChain {
     }
 
     fn execute_dag_block(&mut self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
-        info!("execute dag block:{:?}", verified_block.0);
-        let block = verified_block.0;
+        info!("execute dag block:{:?}", verified_block.block);
+        let block = verified_block.block;
         let selected_parent = block.parent_hash();
         let block_info_past = self
             .storage
@@ -645,9 +645,16 @@ impl BlockChain {
             .storage
             .get_block_header_by_hash(self.genesis_hash)?
             .ok_or_else(|| format_err!("failed to get genesis because it is none"))?;
-        let result = self
-            .dag
-            .commit(header.to_owned(), genesis_header.parent_hash());
+        let result = match verified_block.ghostdata {
+            Some(trusted_ghostdata) => self.dag.commit_trusted_block(
+                header.to_owned(),
+                genesis_header.parent_hash(),
+                Arc::new(trusted_ghostdata),
+            ),
+            None => self
+                .dag
+                .commit(header.to_owned(), genesis_header.parent_hash()),
+        };
         match result {
             anyhow::Result::Ok(_) => info!("finish to commit dag block: {:?}", block_id),
             Err(e) => {
@@ -1210,8 +1217,7 @@ impl ChainReader for BlockChain {
     }
 
     fn verify(&self, block: Block) -> Result<VerifiedBlock> {
-        DagVerifier::verify_header(self, block.header())?;
-        Ok(VerifiedBlock(block))
+        DagVerifier::verify_block(self, block)
     }
 
     fn execute(&mut self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
@@ -1225,7 +1231,7 @@ impl ChainReader for BlockChain {
             self.block_accumulator.fork(None),
             &self.epoch,
             Some(self.status.status.clone()),
-            verified_block.0,
+            verified_block.block,
             self.vm_metrics.clone(),
         )
     }
@@ -1348,6 +1354,14 @@ impl ChainReader for BlockChain {
     fn check_chain_type(&self) -> Result<ChainType> {
         Ok(ChainType::Dag)
     }
+
+    fn verify_and_ghostdata(
+        &self,
+        uncles: &[BlockHeader],
+        header: &BlockHeader,
+    ) -> Result<starcoin_dag::types::ghostdata::GhostdagData> {
+        self.dag().verify_and_ghostdata(uncles, header)
+    }
 }
 
 impl BlockChain {
@@ -1467,10 +1481,9 @@ impl BlockChain {
         }
         // Caculate the ghostdata of the virutal node created by all tips.
         // And the ghostdata.selected of the tips will be the latest head.
-        let block_hash = {
-            let ghost_of_tips = dag.ghostdata(tips.as_slice())?;
-            ghost_of_tips.selected_parent
-        };
+        let block_hash = dag
+            .ghost_dag_manager()
+            .find_selected_parent(tips.iter().copied())?;
         let (block, block_info) = {
             let block = self
                 .storage
@@ -1531,6 +1544,10 @@ impl ChainWriter for BlockChain {
 
     fn chain_state(&mut self) -> &ChainStateDB {
         &self.statedb
+    }
+
+    fn apply_for_sync(&mut self, block: Block) -> Result<ExecutedBlock> {
+        self.apply_with_verifier::<DagVerifierWithGhostData>(block)
     }
 }
 

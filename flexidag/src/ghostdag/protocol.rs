@@ -2,12 +2,13 @@ use super::util::Refs;
 use crate::consensusdb::schemadb::{GhostdagStoreReader, HeaderStoreReader, RelationsStoreReader};
 use crate::reachability::reachability_service::ReachabilityService;
 use crate::types::{ghostdata::GhostdagData, ordering::*};
-use anyhow::{Context, Result};
+use anyhow::{bail, ensure, Context, Result};
 use parking_lot::RwLock;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_logger::prelude::*;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::blockhash::{BlockHashMap, BlockHashes, BlueWorkType, HashKTypeMap, KType};
+use std::collections::HashSet;
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -170,6 +171,170 @@ impl<
         Ok(new_block_data)
     }
 
+    pub(crate) fn verify_and_ghostdata(
+        &self,
+        blue_blocks: &[BlockHeader],
+        header: &BlockHeader,
+    ) -> std::result::Result<GhostdagData, anyhow::Error> {
+        let parents = header.parents_hash();
+        assert!(
+            !parents.is_empty(),
+            "genesis must be added via a call to init"
+        );
+        let selected_parent = self.find_selected_parent(header.parents_hash().into_iter())?;
+        // Initialize new GHOSTDAG block data with the selected parent
+        let mut new_block_data = GhostdagData::new_with_selected_parent(selected_parent, self.k);
+        let ordered_mergeset = self.sort_blocks(
+            header
+                .parents_hash()
+                .into_iter()
+                .filter(|header_id| *header_id != new_block_data.selected_parent)
+                .chain(
+                    blue_blocks
+                        .iter()
+                        .filter(|header| header.id() != new_block_data.selected_parent)
+                        .map(|header| header.id()),
+                )
+                .collect::<HashSet<_>>()
+                .into_iter()
+                .collect::<Vec<_>>(),
+        )?;
+
+        for blue_candidate in ordered_mergeset.iter().cloned() {
+            let coloring = self.check_blue_candidate(&new_block_data, blue_candidate)?;
+            if let ColoringOutput::Blue(blue_anticone_size, blues_anticone_sizes) = coloring {
+                // No k-cluster violation found, we can now set the candidate block as blue
+                new_block_data.add_blue(blue_candidate, blue_anticone_size, &blues_anticone_sizes);
+            } else {
+                new_block_data.add_red(blue_candidate);
+            }
+        }
+
+        if new_block_data
+            .mergeset_blues
+            .iter()
+            .skip(1)
+            .cloned()
+            .collect::<HashSet<_>>()
+            != blue_blocks
+                .iter()
+                .map(|header| header.id())
+                .collect::<HashSet<_>>()
+        {
+            if header.number() < 10000000 {
+                warn!("The data of blue set is not equal when executing the block: {:?}, for {:?}, checking data: {:?}", header.id(), blue_blocks.iter().map(|header| header.id()).collect::<Vec<_>>(), new_block_data.mergeset_blues);
+            } else {
+                bail!("The data of blue set is not equal when executing the block: {:?}, for {:?}, checking data: {:?}", header.id(), blue_blocks.iter().map(|header| header.id()).collect::<Vec<_>>(), new_block_data.mergeset_blues);
+            }
+        }
+
+        let blue_score = self
+            .ghostdag_store
+            .get_blue_score(selected_parent)?
+            .checked_add(new_block_data.mergeset_blues.len() as u64)
+            .expect("blue score size should less than u64");
+
+        let added_blue_work: BlueWorkType = new_block_data
+            .mergeset_blues
+            .iter()
+            .cloned()
+            .map(|hash| {
+                self.headers_store
+                    .get_difficulty(hash)
+                    .unwrap_or_else(|err| {
+                        error!("Failed to get difficulty of block: {}, {}", hash, err);
+                        0.into()
+                    })
+            })
+            .sum();
+
+        let blue_work = self
+            .ghostdag_store
+            .get_blue_work(selected_parent)?
+            .checked_add(added_blue_work)
+            .expect("blue work should less than u256");
+
+        new_block_data.finalize_score_and_work(blue_score, blue_work);
+
+        info!(
+            "verified the block: {:?}, its ghost data: {:?}",
+            header.id(),
+            new_block_data
+        );
+
+        Ok(new_block_data)
+    }
+
+    pub fn check_ghostdata_blue_block(&self, ghostdata: &GhostdagData) -> Result<()> {
+        let mut check_ghostdata =
+            GhostdagData::new_with_selected_parent(ghostdata.selected_parent, self.k);
+        for blue_candidate in ghostdata.mergeset_blues.iter().skip(1).cloned() {
+            let coloring = self.check_blue_candidate(&check_ghostdata, blue_candidate)?;
+            if let ColoringOutput::Blue(blue_anticone_size, blues_anticone_sizes) = coloring {
+                check_ghostdata.add_blue(blue_candidate, blue_anticone_size, &blues_anticone_sizes);
+            } else {
+                check_ghostdata.add_red(blue_candidate);
+            }
+        }
+        if ghostdata.mergeset_blues.len() != check_ghostdata.mergeset_blues.len() {
+            return Err(anyhow::anyhow!(
+                "The len of blue set is not equal, for {}, checking data: {}",
+                ghostdata.mergeset_blues.len(),
+                check_ghostdata.mergeset_blues.len()
+            ));
+        }
+        if ghostdata
+            .mergeset_blues
+            .iter()
+            .cloned()
+            .collect::<HashSet<_>>()
+            != check_ghostdata
+                .mergeset_blues
+                .iter()
+                .cloned()
+                .collect::<HashSet<_>>()
+        {
+            return Err(anyhow::anyhow!("The blue set is not equal"));
+        }
+
+        let blue_score = self
+            .ghostdag_store
+            .get_blue_score(ghostdata.selected_parent)?
+            .checked_add(check_ghostdata.mergeset_blues.len() as u64)
+            .expect("blue score size should less than u64");
+
+        let added_blue_work: BlueWorkType = check_ghostdata
+            .mergeset_blues
+            .iter()
+            .cloned()
+            .map(|hash| {
+                self.headers_store
+                    .get_difficulty(hash)
+                    .unwrap_or_else(|err| {
+                        error!("Failed to get difficulty of block: {}, {}", hash, err);
+                        0.into()
+                    })
+            })
+            .sum();
+
+        let blue_work = self
+            .ghostdag_store
+            .get_blue_work(ghostdata.selected_parent)?
+            .checked_add(added_blue_work)
+            .expect("blue work should less than u256");
+
+        check_ghostdata.finalize_score_and_work(blue_score, blue_work);
+
+        ensure!(
+            check_ghostdata.to_compact() == ghostdata.to_compact(),
+            "check_ghostdata: {:?} is not the same as ghostdata: {:?}",
+            check_ghostdata.to_compact(),
+            ghostdata.to_compact()
+        );
+
+        Ok(())
+    }
+
     fn check_blue_candidate_with_chain_block(
         &self,
         new_block_data: &GhostdagData,
@@ -324,6 +489,28 @@ impl<
                     0.into()
                 });
             SortableBlock {
+                hash: *block,
+                blue_work,
+            }
+        });
+        Ok(sorted_blocks)
+    }
+
+    pub fn sort_blocks_for_work_type(
+        &self,
+        blocks: impl IntoIterator<Item = Hash>,
+    ) -> Result<Vec<Hash>> {
+        let mut sorted_blocks: Vec<Hash> = blocks.into_iter().collect();
+
+        sorted_blocks.sort_by_cached_key(|block| {
+            let blue_work = self
+                .ghostdag_store
+                .get_blue_work(*block)
+                .unwrap_or_else(|err| {
+                    error!("Failed to get blue work of block: {}, {}", *block, err);
+                    0.into()
+                });
+            SortableBlockWithWorkType {
                 hash: *block,
                 blue_work,
             }

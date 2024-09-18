@@ -8,15 +8,18 @@ use starcoin_dag::{
     consensusdb::{
         consenses_state::{DagState, DagStateReader, DagStateStore},
         schemadb::{
-            DbReachabilityStore, ReachabilityStore, ReachabilityStoreReader, RelationsStore,
-            RelationsStoreReader,
+            DbReachabilityStore, GhostdagStoreReader, ReachabilityStore, ReachabilityStoreReader,
+            RelationsStore, RelationsStoreReader,
         },
     },
     reachability::{inquirer, ReachabilityError},
-    types::interval::Interval,
+    types::{ghostdata::GhostdagData, interval::Interval},
 };
 use starcoin_logger::prelude::debug;
-use starcoin_types::block::{BlockHeader, BlockHeaderBuilder, BlockNumber};
+use starcoin_types::{
+    block::{BlockHeader, BlockHeaderBuilder, BlockNumber},
+    blockhash::{BlockHashMap, HashKTypeMap, KType},
+};
 
 use std::{
     ops::{Deref, DerefMut},
@@ -702,6 +705,37 @@ fn test_reachability_algorithm() -> anyhow::Result<()> {
     Ok(())
 }
 
+fn add_and_print_with_ghostdata(
+    number: BlockNumber,
+    parent: Hash,
+    parents: Vec<Hash>,
+    origin: Hash,
+    dag: &mut BlockDAG,
+    ghostdata: GhostdagData,
+) -> anyhow::Result<BlockHeader> {
+    let header_builder = BlockHeaderBuilder::random();
+    let header = header_builder
+        .with_parent_hash(parent)
+        .with_parents_hash(parents)
+        .with_number(number)
+        .build();
+    let start = Instant::now();
+    dag.commit_trusted_block(header.to_owned(), origin, Arc::new(ghostdata))?;
+    let duration = start.elapsed();
+    println!(
+        "commit header: {:?}, number: {:?}, duration: {:?}",
+        header.id(),
+        header.number(),
+        duration
+    );
+    let _ghostdata = dag.ghostdata(&[header.id()])?;
+    // println!(
+    //     "add a header: {:?}, blue set: {:?}, red set: {:?}, blue anticone size: {:?}",
+    //     header, ghostdata.mergeset_blues, ghostdata.mergeset_reds, ghostdata.blues_anticone_sizes
+    // );
+    Ok(header)
+}
+
 fn add_and_print(
     number: BlockNumber,
     parent: Hash,
@@ -946,6 +980,235 @@ fn test_prune() -> anyhow::Result<()> {
     assert_eq!(pruning_point, block_main_2.id());
     assert_eq!(tips.len(), 1);
     assert_eq!(*tips.last().unwrap(), block_main_5.id());
+
+    anyhow::Result::Ok(())
+}
+
+#[test]
+fn test_verification_blue_block() -> anyhow::Result<()> {
+    // initialzie the dag firstly
+    let k = 5;
+
+    let mut dag = BlockDAG::create_for_testing_with_parameters(k).unwrap();
+
+    let origin = BlockHeaderBuilder::random().with_number(0).build();
+    let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;
+
+    dag.init_with_genesis(genesis.clone()).unwrap();
+
+    let block1 = add_and_print(
+        1,
+        genesis.id(),
+        vec![genesis.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+
+    let block_main_2 = add_and_print(
+        2,
+        block1.id(),
+        vec![block1.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+    let block_main_3 = add_and_print(
+        3,
+        block_main_2.id(),
+        vec![block_main_2.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+    let block_main_3_1 = add_and_print(
+        3,
+        block_main_2.id(),
+        vec![block_main_2.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+    let block_main_4 = add_and_print(
+        4,
+        block_main_3.id(),
+        vec![block_main_3.id(), block_main_3_1.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+    let block_main_5 = add_and_print(
+        5,
+        block_main_4.id(),
+        vec![block_main_4.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+
+    let block_red_2 = add_and_print(
+        2,
+        block1.id(),
+        vec![block1.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+    let block_red_2_1 = add_and_print(
+        2,
+        block1.id(),
+        vec![block1.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+    let block_red_3 = add_and_print(
+        3,
+        block_red_2.id(),
+        vec![block_red_2.id(), block_red_2_1.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+
+    // let's obser the blue scores which show how blue the tips are
+    let observer1 = dag.ghostdata(&[block_red_3.id()])?;
+    println!("observer 1 data: {:?}, ", observer1);
+
+    let observer2 = dag.ghostdata(&[block_red_3.id(), block_main_5.id()])?;
+    println!("observer 2 dag data: {:?}, ", observer2);
+    assert!(dag
+        .ghost_dag_manager()
+        .check_ghostdata_blue_block(&observer2)
+        .is_ok());
+
+    let mut false_observer2 = observer2.clone();
+    let red_block_id = *false_observer2
+        .mergeset_reds
+        .first()
+        .expect("the k is wrong, modify it to create a red block!");
+    if red_block_id == block_red_2.id() {
+        false_observer2.mergeset_blues = Arc::new(
+            vec![red_block_id]
+                .into_iter()
+                .chain(
+                    false_observer2
+                        .mergeset_blues
+                        .iter()
+                        .cloned()
+                        .filter(|id| *id != block_red_2_1.id()),
+                )
+                .collect(),
+        );
+        false_observer2.mergeset_reds = Arc::new(vec![block_red_2_1.id()]);
+    } else {
+        false_observer2.mergeset_blues = Arc::new(
+            vec![red_block_id]
+                .into_iter()
+                .chain(
+                    false_observer2
+                        .mergeset_blues
+                        .iter()
+                        .cloned()
+                        .filter(|id| *id != block_red_2.id()),
+                )
+                .collect(),
+        );
+        false_observer2.mergeset_reds = Arc::new(vec![block_red_2.id()]);
+    }
+
+    let check_error = dag
+        .ghost_dag_manager()
+        .check_ghostdata_blue_block(&false_observer2);
+    println!(
+        "check error: {:?} after the blue block turns red and the red turns blue maliciously",
+        check_error
+    );
+    assert!(check_error.is_err());
+
+    let observer3 = dag.ghostdata(&[block_main_5.id()])?;
+    println!("observer 3 dag data: {:?}, ", observer3);
+
+    // assert!(observer1.blue_score < observer2.blue_score);
+    // assert!(observer1.selected_parent != observer2.selected_parent);
+
+    // assert_eq!(observer3.blue_score, observer2.blue_score);
+    // assert_eq!(observer3.selected_parent, observer2.selected_parent);
+
+    let normal_block = add_and_print(
+        6,
+        block_main_5.id(),
+        vec![block_main_5.id(), block_red_3.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+    assert_eq!(
+        observer2,
+        dag.ghostdata_by_hash(normal_block.id())?
+            .expect("the data cannot be none")
+            .as_ref()
+            .clone()
+    );
+
+    let makeup_ghostdata = GhostdagData::new(
+        observer2.blue_score,
+        observer2.blue_work,
+        observer2.selected_parent,
+        observer2.mergeset_blues.clone(),
+        Arc::new(vec![]),
+        HashKTypeMap::new(BlockHashMap::<KType>::new()),
+    );
+    dag.ghost_dag_manager()
+        .check_ghostdata_blue_block(&makeup_ghostdata)?;
+    let makeup_block = add_and_print_with_ghostdata(
+        6,
+        block_main_5.id(),
+        vec![block_main_5.id(), block_red_3.id()],
+        genesis.parent_hash(),
+        &mut dag,
+        makeup_ghostdata.clone(),
+    )?;
+
+    let block_from_normal = add_and_print(
+        7,
+        normal_block.id(),
+        vec![normal_block.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+    let block_from_makeup = add_and_print(
+        7,
+        makeup_block.id(),
+        vec![makeup_block.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+
+    let ghostdag_data_from_normal = dag
+        .ghostdata_by_hash(block_from_normal.id())?
+        .expect("the data cannot be none")
+        .as_ref()
+        .clone();
+    let ghostdag_data_from_makeup = dag
+        .ghostdata_by_hash(block_from_makeup.id())?
+        .expect("the data cannot be none")
+        .as_ref()
+        .clone();
+
+    println!("normal: {:?}", ghostdag_data_from_normal);
+    println!("makeup: {:?}", ghostdag_data_from_makeup);
+    assert_eq!(
+        ghostdag_data_from_makeup.blue_score,
+        ghostdag_data_from_normal.blue_score
+    );
+
+    dag.ghost_dag_manager()
+        .check_ghostdata_blue_block(&ghostdag_data_from_normal)?;
+    dag.ghost_dag_manager()
+        .check_ghostdata_blue_block(&ghostdag_data_from_makeup)?;
+
+    let together_mine = dag.ghostdata(&[block_from_normal.id(), block_from_makeup.id()])?;
+    let mine_together = add_and_print(
+        8,
+        together_mine.selected_parent,
+        vec![block_from_normal.id(), block_from_makeup.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+    let together_ghost_data = dag.storage.ghost_dag_store.get_data(mine_together.id())?;
+    dag.ghost_dag_manager()
+        .check_ghostdata_blue_block(&together_ghost_data)?;
 
     anyhow::Result::Ok(())
 }

@@ -4,7 +4,6 @@ use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_chain::BlockChain;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
-use starcoin_logger::prelude::{error, info};
 use starcoin_network_rpc_api::{MAX_BLOCK_IDS_REQUEST_SIZE, MAX_BLOCK_REQUEST_SIZE};
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
@@ -146,7 +145,7 @@ where
                 vm_metrics,
                 self.dag.clone(),
             )?;
-            let mut block_collector = BlockCollector::new_with_handle(
+            let block_collector = BlockCollector::new_with_handle(
                 current_block_info.clone(),
                 self.target.clone(),
                 chain,
@@ -157,34 +156,6 @@ where
                 self.fetcher.clone(),
                 self.sync_dag_store.clone(),
             );
-
-            let mut absent_block_iter = self.sync_dag_store.iter_at_first()?;
-            loop {
-                let mut local_absent_block = vec![];
-                match block_collector
-                    .read_local_absent_block(&mut absent_block_iter, &mut local_absent_block)
-                {
-                    anyhow::Result::Ok(_) => {
-                        if local_absent_block.is_empty() {
-                            info!("absent block is empty, continue to sync");
-                            break;
-                        }
-                        match block_collector.execute_absent_block(&mut local_absent_block) {
-                            anyhow::Result::Ok(_) => (),
-                            Err(e) => {
-                                error!("failed to execute absent block, error: {:?}, break from the continuing block execution", e);
-                                break;
-                            }
-                        }
-                    }
-                    Err(e) => {
-                        error!("failed to read local absent block, error: {:?}, break from the continuing block execution", e);
-                        break;
-                    }
-                }
-            }
-            // clear the dag sync if fork happened
-            self.sync_dag_store.delete_all_dag_sync_block()?;
 
             Ok(TaskGenerator::new(
                 block_sync_task,

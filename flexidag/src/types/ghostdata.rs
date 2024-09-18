@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue as Hash;
 use starcoin_types::blockhash::{BlockHashMap, BlockHashes, BlueWorkType, HashKTypeMap, KType};
 
-#[derive(Clone, Serialize, Deserialize, Default, Debug, JsonSchema)]
+#[derive(Clone, Serialize, Deserialize, Default, Debug, JsonSchema, PartialEq, Eq)]
 pub struct GhostdagData {
     pub blue_score: u64,
     #[schemars(with = "String")]
@@ -14,7 +14,7 @@ pub struct GhostdagData {
     pub blues_anticone_sizes: HashKTypeMap,
 }
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize, Copy)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, Copy, PartialEq, Eq)]
 pub struct CompactGhostdagData {
     pub blue_score: u64,
     pub blue_work: BlueWorkType,

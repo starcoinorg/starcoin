@@ -29,7 +29,7 @@ use starcoin_sync_api::{
     SyncProgressRequest, SyncServiceHandler, SyncStartRequest, SyncStatusRequest, SyncTarget,
 };
 use starcoin_txpool::TxPoolService;
-use starcoin_types::block::{Block, BlockIdAndNumber};
+use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
@@ -62,7 +62,6 @@ pub struct SyncService {
     stage: SyncStage,
     config: Arc<NodeConfig>,
     storage: Arc<Storage>,
-    sync_dag_store: SyncDagStore,
     metrics: Option<SyncMetrics>,
     peer_score_metrics: Option<PeerScoreMetrics>,
     vm_metrics: Option<VMMetrics>,
@@ -84,13 +83,6 @@ impl SyncService {
         let head_block_info = storage
             .get_block_info(head_block_hash)?
             .ok_or_else(|| format_err!("can't get block info by hash {}", head_block_hash))?;
-        let sync_dag_store = SyncDagStore::create_from_path(
-            config.storage.sync_dir(),
-            SyncDagStoreConfig::create_with_params(
-                config.storage.cache_size(),
-                RocksdbConfig::default(),
-            ),
-        )?;
         //TODO bail PrometheusError after use custom metrics registry.
         let metrics = config
             .metrics
@@ -105,7 +97,6 @@ impl SyncService {
             stage: SyncStage::NotStart,
             config,
             storage,
-            sync_dag_store,
             metrics,
             peer_score_metrics,
             vm_metrics,
@@ -235,7 +226,13 @@ impl SyncService {
         let sync_metrics = self.metrics.clone();
         let vm_metrics = self.vm_metrics.clone();
         let dag = ctx.get_shared::<BlockDAG>()?;
-        let sync_dag_store = self.sync_dag_store.clone();
+        let sync_dag_store = SyncDagStore::create_from_path(
+            config.storage.sync_dir(),
+            SyncDagStoreConfig::create_with_params(
+                config.storage.cache_size(),
+                RocksdbConfig::default(),
+            ),
+        )?;
         let fut = async move {
             let startup_info = storage
                 .get_startup_info()?
@@ -617,20 +614,6 @@ impl EventHandler<Self, NewHeadBlock> for SyncService {
             msg.executed_block.block_info.clone(),
         )) {
             ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct SaveSyncBlock {
-    pub block: Block,
-}
-
-impl EventHandler<Self, SaveSyncBlock> for SyncService {
-    fn handle_event(&mut self, msg: SaveSyncBlock, _ctx: &mut ServiceContext<Self>) {
-        let block = msg.block;
-        if let Err(e) = self.sync_dag_store.save_block(block) {
-            error!("[sync] Save absent block error: {:?}", e);
         }
     }
 }

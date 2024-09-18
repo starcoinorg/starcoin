@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::parallel::sender::DagBlockSender;
 use crate::store::sync_absent_ancestor::DagSyncBlock;
 use crate::store::sync_dag_store::SyncDagStore;
 use crate::tasks::continue_execute_absent_block::ContinueExecuteAbsentBlock;
@@ -30,6 +31,11 @@ use stream_task::{CollectorState, TaskError, TaskResultCollector, TaskState};
 
 use super::continue_execute_absent_block::ContinueChainOperator;
 use super::{BlockConnectAction, BlockConnectedFinishEvent};
+
+enum ParallelSign {
+    NeedMoreBlocks,
+    Continue,
+}
 
 #[derive(Clone, Debug)]
 pub struct SyncBlockData {
@@ -348,7 +354,7 @@ where
             self.chain
                 .apply_with_verifier::<BasicVerifier>(block.clone())
         } else {
-            self.chain.apply(block.clone())
+            self.chain.apply_for_sync(block.clone())
         };
         if let Err(err) = apply_result {
             let error_msg = err.to_string();
@@ -393,8 +399,11 @@ where
             return Ok(());
         }
         for parent in parents {
-            if !self.chain.has_dag_block(parent)? {
+            if self.local_store.get_dag_sync_block(parent)?.is_none() {
                 if absent_blocks.contains(&parent) {
+                    continue;
+                }
+                if self.chain.has_dag_block(parent)? {
                     continue;
                 }
                 absent_blocks.push(parent)
@@ -425,14 +434,15 @@ where
         }
     }
 
-    pub fn ensure_dag_parent_blocks_exist(&mut self, block_header: BlockHeader) -> Result<()> {
+    fn ensure_dag_parent_blocks_exist(&mut self, block: Block) -> Result<ParallelSign> {
+        let block_header = &block.header().clone();
         if self.chain.has_dag_block(block_header.id())? {
             info!(
                 "the dag block exists, skipping, its id: {:?}, its number {:?}",
                 block_header.id(),
                 block_header.number()
             );
-            return Ok(());
+            return Ok(ParallelSign::Continue);
         }
         info!(
             "the block is a dag block, its id: {:?}, number: {:?}, its parents: {:?}",
@@ -444,31 +454,29 @@ where
             self.find_absent_ancestor(vec![block_header.clone()])
                 .await?;
 
-            let sync_dag_store = self.sync_dag_store.clone();
-            let mut absent_block_iter = sync_dag_store
-                .iter_at_first()
-                .context("Failed to create iterator for sync_dag_store")?;
-            loop {
-                debug!("start to read local absent block and try to execute the dag if its parents are ready.");
-                let mut local_absent_block = vec![];
-                match self.read_local_absent_block(&mut absent_block_iter, &mut local_absent_block)
-                {
-                    anyhow::Result::Ok(_) => {
-                        if local_absent_block.is_empty() {
-                            info!("absent block is empty, continue to sync");
-                            break;
-                        }
-                        self.execute_absent_block(&mut local_absent_block)
-                            .context("Failed to execute absent block")?;
-                    }
-                    Err(e) => {
-                        error!("failed to read local absent block, error: {:?}", e);
-                        return Err(e);
-                    }
-                }
+            if block_header.number() % 10000 == 0
+                || block_header.number() >= self.target.target_id.number()
+            {
+                let parallel_execute = DagBlockSender::new(
+                    self.sync_dag_store.clone(),
+                    100000,
+                    self.chain.time_service(),
+                    self.local_store.clone(),
+                    None,
+                    self.chain.dag(),
+                    self,
+                );
+                parallel_execute.process_absent_blocks().await?;
+                anyhow::Ok(ParallelSign::Continue)
+            } else {
+                self.local_store
+                    .save_dag_sync_block(starcoin_storage::block::DagSyncBlock {
+                        block: block.clone(),
+                        children: vec![],
+                    })?;
+                self.sync_dag_store.save_block(block)?;
+                anyhow::Ok(ParallelSign::NeedMoreBlocks)
             }
-
-            Ok(())
         };
         async_std::task::block_on(fut)
     }
@@ -597,7 +605,10 @@ where
         // if it is a dag block, we must ensure that its dag parent blocks exist.
         // if it is not, we must pull the dag parent blocks from the peer.
         info!("now sync dag block -- ensure_dag_parent_blocks_exist");
-        self.ensure_dag_parent_blocks_exist(block.header().clone())?;
+        match self.ensure_dag_parent_blocks_exist(block.clone())? {
+            ParallelSign::NeedMoreBlocks => return Ok(CollectorState::Need),
+            ParallelSign::Continue => (),
+        }
         let state = self.check_enough();
         if let anyhow::Result::Ok(CollectorState::Enough) = &state {
             if self.chain.has_dag_block(block.header().id())? {
@@ -621,14 +632,10 @@ where
 
         let timestamp = block.header().timestamp();
 
-        let block_info = if self.chain.check_chain_type()? == ChainType::Dag {
-            if self.chain.has_dag_block(block.header().id())? {
-                block_info
-            } else {
-                None
-            }
-        } else {
+        let block_info = if self.chain.has_dag_block(block.header().id())? {
             block_info
+        } else {
+            None
         };
 
         let (block_info, action) = match block_info {

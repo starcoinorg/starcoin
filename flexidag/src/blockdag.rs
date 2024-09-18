@@ -13,7 +13,7 @@ use crate::consensusdb::{
 use crate::ghostdag::protocol::GhostdagManager;
 use crate::prune::pruning_point_manager::PruningPointManagerT;
 use crate::{process_key_already_error, reachability};
-use anyhow::{bail, format_err, Ok};
+use anyhow::{bail, ensure, format_err, Ok};
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_config::temp_dir;
@@ -25,6 +25,7 @@ use starcoin_types::{
     blockhash::{BlockHashes, KType},
     consensus_header::ConsensusHeader,
 };
+use std::collections::HashSet;
 use std::ops::DerefMut;
 use std::sync::Arc;
 
@@ -139,6 +140,154 @@ impl BlockDAG {
             .reachability_store
             .write()
             .set_reindex_root(hash)?;
+        Ok(())
+    }
+
+    pub fn commit_trusted_block(
+        &mut self,
+        header: BlockHeader,
+        origin: HashValue,
+        trusted_ghostdata: Arc<GhostdagData>,
+    ) -> anyhow::Result<()> {
+        info!(
+            "start to commit header: {:?}, number: {:?}",
+            header.id(),
+            header.number()
+        );
+        // Generate ghostdag data
+        let parents = header.parents();
+
+        debug!(
+            "start to get the ghost data from block: {:?}, number: {:?}",
+            header.id(),
+            header.number()
+        );
+        let ghostdata = match self.ghostdata_by_hash(header.id())? {
+            None => {
+                // It must be the dag genesis if header is a format for a single chain
+                if header.is_genesis() {
+                    Arc::new(self.ghostdag_manager.genesis_ghostdag_data(&header))
+                } else {
+                    self.storage
+                        .ghost_dag_store
+                        .insert(header.id(), trusted_ghostdata.clone())?;
+                    trusted_ghostdata
+                }
+            }
+            Some(ghostdata) => {
+                ensure!(
+                    ghostdata.blue_score == trusted_ghostdata.blue_score,
+                    "blue score is not same"
+                );
+                ensure!(
+                    ghostdata.blue_work == trusted_ghostdata.blue_work,
+                    "blue work is not same"
+                );
+                ensure!(
+                    ghostdata.mergeset_blues.len() == trusted_ghostdata.mergeset_blues.len(),
+                    "blue len is not same"
+                );
+                ensure!(
+                    ghostdata
+                        .mergeset_blues
+                        .iter()
+                        .cloned()
+                        .collect::<HashSet<_>>()
+                        == trusted_ghostdata
+                            .mergeset_blues
+                            .iter()
+                            .cloned()
+                            .collect::<HashSet<_>>(),
+                    "blue values are not same"
+                );
+                trusted_ghostdata
+            }
+        };
+        // Store ghostdata
+        process_key_already_error(
+            self.storage
+                .ghost_dag_store
+                .insert(header.id(), ghostdata.clone()),
+        )?;
+
+        // Update reachability store
+        debug!(
+            "start to update reachability data for block: {:?}, number: {:?}",
+            header.id(),
+            header.number()
+        );
+        let reachability_store = self.storage.reachability_store.clone();
+
+        let mut merge_set = ghostdata
+            .unordered_mergeset_without_selected_parent()
+            .filter(|hash| self.storage.reachability_store.read().has(*hash).unwrap())
+            .collect::<Vec<_>>()
+            .into_iter();
+        let add_block_result = {
+            let mut reachability_writer = reachability_store.write();
+            inquirer::add_block(
+                reachability_writer.deref_mut(),
+                header.id(),
+                ghostdata.selected_parent,
+                &mut merge_set,
+            )
+        };
+        match add_block_result {
+            Result::Ok(_) => (),
+            Err(reachability::ReachabilityError::DataInconsistency) => {
+                let _future_covering_set = reachability_store
+                    .read()
+                    .get_future_covering_set(header.id())?;
+                info!(
+                    "the key {:?} was already processed, original error message: {:?}",
+                    header.id(),
+                    reachability::ReachabilityError::DataInconsistency
+                );
+            }
+            Err(reachability::ReachabilityError::StoreError(StoreError::KeyNotFound(msg))) => {
+                if msg == *REINDEX_ROOT_KEY.to_string() {
+                    info!(
+                        "the key {:?} was already processed, original error message: {:?}",
+                        header.id(),
+                        reachability::ReachabilityError::StoreError(StoreError::KeyNotFound(
+                            REINDEX_ROOT_KEY.to_string()
+                        ))
+                    );
+                    info!("now set the reindex key to origin: {:?}", origin);
+                    // self.storage.reachability_store.set_reindex_root(origin)?;
+                    self.set_reindex_root(origin)?;
+                    bail!(
+                        "failed to add a block when committing, e: {:?}",
+                        reachability::ReachabilityError::StoreError(StoreError::KeyNotFound(msg))
+                    );
+                } else {
+                    bail!(
+                        "failed to add a block when committing, e: {:?}",
+                        reachability::ReachabilityError::StoreError(StoreError::KeyNotFound(msg))
+                    );
+                }
+            }
+            Err(reachability::ReachabilityError::StoreError(StoreError::InvalidInterval(_, _))) => {
+                self.set_reindex_root(origin)?;
+                bail!("failed to add a block when committing for invalid interval",);
+            }
+            Err(e) => {
+                bail!("failed to add a block when committing, e: {:?}", e);
+            }
+        }
+
+        process_key_already_error(
+            self.storage
+                .relations_store
+                .write()
+                .insert(header.id(), BlockHashes::new(parents)),
+        )?;
+        // Store header store
+        process_key_already_error(self.storage.header_store.insert(
+            header.id(),
+            Arc::new(header),
+            1,
+        ))?;
         Ok(())
     }
 
@@ -415,5 +564,20 @@ impl BlockDAG {
         }
 
         anyhow::Ok(())
+    }
+
+    pub fn reachability_store(
+        &self,
+    ) -> Arc<parking_lot::lock_api::RwLock<parking_lot::RawRwLock, DbReachabilityStore>> {
+        self.storage.reachability_store.clone()
+    }
+
+    pub fn verify_and_ghostdata(
+        &self,
+        blue_blocks: &[BlockHeader],
+        header: &BlockHeader,
+    ) -> Result<GhostdagData, anyhow::Error> {
+        self.ghost_dag_manager()
+            .verify_and_ghostdata(blue_blocks, header)
     }
 }

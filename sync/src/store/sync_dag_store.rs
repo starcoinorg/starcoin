@@ -3,7 +3,7 @@ use std::{path::Path, sync::Arc};
 use anyhow::format_err;
 use starcoin_config::{temp_dir, RocksdbConfig, StorageConfig};
 use starcoin_crypto::HashValue;
-use starcoin_dag::consensusdb::prelude::StoreError;
+use starcoin_dag::consensusdb::{prelude::StoreError, schemadb::REACHABILITY_DATA_CF};
 use starcoin_logger::prelude::error;
 use starcoin_storage::db_storage::{DBStorage, SchemaIterator};
 use starcoin_types::block::{Block, BlockNumber};
@@ -64,7 +64,7 @@ impl SyncDagStore {
         let db = Arc::new(
             DBStorage::open_with_cfs(
                 db_path,
-                vec![SYNC_ABSENT_BLOCK_CF],
+                vec![SYNC_ABSENT_BLOCK_CF, REACHABILITY_DATA_CF],
                 false,
                 config.rocksdb_config,
                 None,
@@ -73,7 +73,7 @@ impl SyncDagStore {
         );
 
         Ok(Self {
-            absent_dag_store: SyncAbsentBlockStore::new(db, config.cache_size),
+            absent_dag_store: SyncAbsentBlockStore::new(db.clone(), config.cache_size),
         })
     }
 
@@ -111,6 +111,7 @@ impl SyncDagStore {
                             block: Some(block.clone()),
                         }])
                         .map_err(|e| format_err!("Failed to save absent block: {:?}", e))?;
+
                     Ok(())
                 }
                 _ => Err(format_err!(

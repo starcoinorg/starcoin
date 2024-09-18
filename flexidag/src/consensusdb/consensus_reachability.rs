@@ -50,7 +50,7 @@ pub trait ReachabilityStore: ReachabilityStoreReader {
 }
 
 pub const REINDEX_ROOT_KEY: &str = "reachability-reindex-root";
-pub(crate) const REACHABILITY_DATA_CF: &str = "reachability-data";
+pub const REACHABILITY_DATA_CF: &str = "reachability-data";
 // TODO: explore perf to see if using fixed-length constants for store prefixes is preferable
 
 define_schema!(
