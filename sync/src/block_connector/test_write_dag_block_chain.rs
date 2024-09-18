@@ -3,7 +3,7 @@
 #![allow(clippy::arithmetic_side_effects)]
 use crate::block_connector::test_write_block_chain::create_writeable_dag_block_chain;
 use crate::block_connector::WriteBlockChainService;
-use anyhow::{bail, Ok};
+use anyhow::{bail, format_err, Ok};
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_chain_service::WriteableChainService;
@@ -50,9 +50,19 @@ pub fn new_dag_block(
     let miner_address = *miner.address();
 
     let block_chain = writeable_block_chain_service.get_main();
-    let tips = block_chain
-        .current_tips_hash(block_chain.status().head().pruning_point())
-        .expect("failed to get tips");
+    let tips = if block_chain.status().head().pruning_point() == HashValue::zero() {
+        let genesis_id = block_chain
+            .get_storage()
+            .get_genesis()?
+            .ok_or_else(|| format_err!("Genesis block is none"))?;
+        block_chain
+            .current_tips_hash(genesis_id)
+            .expect("failed to get tips")
+    } else {
+        block_chain
+            .current_tips_hash(block_chain.status().head().pruning_point())
+            .expect("failed to get tips")
+    };
     let (block_template, _) = block_chain
         .create_block_template(
             miner_address,
