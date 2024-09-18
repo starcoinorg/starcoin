@@ -155,7 +155,7 @@ impl CliState {
         R: MoveResource + DeserializeOwned,
     {
         let chain_state_reader = self.client.state_reader(StateRootOption::Latest)?;
-        chain_state_reader.get_resource::<R>(address)
+        chain_state_reader.get_resource_type::<R>(address)
     }
 
     pub fn get_account_resource(&self, address: AccountAddress) -> Result<Option<AccountResource>> {

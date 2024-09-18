@@ -31,7 +31,7 @@ impl Version {
 
 impl OnChainConfig for Version {
     const MODULE_IDENTIFIER: &'static str = VERSION_CONFIG_MODULE_NAME;
-    const CONF_IDENTIFIER: &'static str = VERSION_CONFIG_MODULE_NAME;
+    const TYPE_IDENTIFIER: &'static str = VERSION_CONFIG_MODULE_NAME;
 }
 impl MoveResource for Version {
     const MODULE_NAME: &'static str = VERSION_CONFIG_MODULE_NAME;

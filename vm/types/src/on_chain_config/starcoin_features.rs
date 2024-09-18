@@ -85,7 +85,7 @@ impl Default for Features {
 
 impl OnChainConfig for Features {
     const MODULE_IDENTIFIER: &'static str = "features";
-    const CONF_IDENTIFIER: &'static str = "Features";
+    const TYPE_IDENTIFIER: &'static str = "Features";
 }
 
 impl Features {

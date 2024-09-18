@@ -16,7 +16,7 @@ pub struct FlexiDagConfig {
 
 impl OnChainConfig for FlexiDagConfig {
     const MODULE_IDENTIFIER: &'static str = MV_FLEXI_DAG_CONFIG_MODULE_NAME;
-    const CONF_IDENTIFIER: &'static str = MV_FLEXI_DAG_CONFIG_STRUCT_NAME;
+    const TYPE_IDENTIFIER: &'static str = MV_FLEXI_DAG_CONFIG_STRUCT_NAME;
 }
 
 impl FlexiDagConfig {

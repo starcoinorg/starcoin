@@ -15,7 +15,7 @@ use anyhow::{format_err, Result};
 use bytes::Bytes;
 use once_cell::sync::Lazy;
 use serde::de::DeserializeOwned;
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, fmt, fmt::Debug, sync::Arc};
 
 mod consensus_config;
 mod dao_config;
@@ -64,22 +64,37 @@ use crate::state_store::state_key::StateKey;
 pub struct ConfigID(&'static str, &'static str, &'static str, Vec<TypeTag>);
 
 impl ConfigID {
-    pub fn access_path(self) -> AccessPath {
-        access_path_for_config(
-            AccountAddress::from_hex_literal(self.0).expect("failed to get address"),
-            Identifier::new(self.1).expect("failed to get Identifier"),
-            Identifier::new(self.2).expect("failed to get Identifier"),
-            self.3,
+    pub fn name(&self) -> String {
+        self.2.to_string()
+    }
+}
+
+impl fmt::Display for ConfigID {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "OnChain config ID [address: {}, identifier: {}]",
+            self.0, self.1
         )
     }
+}
 
-    pub fn struct_tag(self) -> StructTag {
-        StructTag {
-            address: AccountAddress::from_hex_literal(self.0).expect("failed to get address"),
-            module: Identifier::new(self.1).expect("failed to get Identifier"),
-            name: Identifier::new(self.2).expect("failed to get Identifier"),
-            type_args: self.3,
-        }
+pub trait OnChainConfigProvider: Debug + Clone + Send + Sync + 'static {
+    fn get<T: OnChainConfig>(&self) -> Result<T>;
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct InMemoryOnChainConfig {
+    configs: HashMap<ConfigID, Vec<u8>>,
+}
+
+impl OnChainConfigProvider for InMemoryOnChainConfig {
+    fn get<T: OnChainConfig>(&self) -> Result<T> {
+        let bytes = self
+            .configs
+            .get(&T::config_id())
+            .ok_or_else(|| format_err!("[on-chain cfg] config not in payload"))?;
+        T::deserialize_into_config(bytes)
     }
 }
 
@@ -92,14 +107,17 @@ pub static G_ON_CHAIN_CONFIG_REGISTRY: Lazy<Vec<ConfigID>> = Lazy::new(|| {
 });
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct OnChainConfigPayload {
+pub struct OnChainConfigPayload<P: OnChainConfigProvider> {
     epoch: u64,
-    configs: Arc<HashMap<ConfigID, Vec<u8>>>,
+    provider: Arc<P>,
 }
 
-impl OnChainConfigPayload {
-    pub fn new(epoch: u64, configs: Arc<HashMap<ConfigID, Vec<u8>>>) -> Self {
-        Self { epoch, configs }
+impl<P: OnChainConfigProvider> OnChainConfigPayload<P> {
+    pub fn new(epoch: u64, provider: P) -> Self {
+        Self {
+            epoch,
+            provider: Arc::new(provider),
+        }
     }
 
     pub fn epoch(&self) -> u64 {
@@ -107,32 +125,13 @@ impl OnChainConfigPayload {
     }
 
     pub fn get<T: OnChainConfig>(&self) -> Result<T> {
-        let bytes = self
-            .configs
-            .get(&T::config_id())
-            .ok_or_else(|| format_err!("[on-chain cfg] config not in payload"))?;
-        T::deserialize_into_config(bytes)
-    }
-
-    pub fn configs(&self) -> &HashMap<ConfigID, Vec<u8>> {
-        &self.configs
+        self.provider.get()
     }
 }
 
 /// Trait to be implemented by a storage type from which to read on-chain configs
 pub trait ConfigStorage {
-    fn fetch_config(&self, access_path: AccessPath) -> Option<Bytes>;
-}
-
-impl<V> ConfigStorage for V
-where
-    V: StateView,
-{
-    fn fetch_config(&self, access_path: AccessPath) -> Option<Bytes> {
-        self.get_state_value(&StateKey::AccessPath(access_path))
-            .ok()?
-            .map(|s| s.bytes().clone())
-    }
+    fn fetch_config_bytes(&self, state_key: &StateKey) -> Option<Bytes>;
 }
 
 /// Trait to be implemented by a Rust struct representation of an on-chain config
@@ -140,7 +139,16 @@ where
 pub trait OnChainConfig: Send + Sync + DeserializeOwned {
     const ADDRESS: &'static str = "0x1";
     const MODULE_IDENTIFIER: &'static str;
-    const CONF_IDENTIFIER: &'static str;
+    const TYPE_IDENTIFIER: &'static str;
+
+    fn config_id() -> ConfigID {
+        ConfigID(
+            Self::ADDRESS,
+            Self::MODULE_IDENTIFIER,
+            Self::TYPE_IDENTIFIER,
+            Self::type_params(),
+        )
+    }
 
     // Single-round LCS deserialization from bytes to `Self`
     // This is the expected deserialization pattern for most Rust representations,
@@ -162,52 +170,54 @@ pub trait OnChainConfig: Send + Sync + DeserializeOwned {
         Self::deserialize_default_impl(bytes)
     }
 
-    fn fetch_config<T>(storage: &T) -> Result<Option<Self>>
+    fn fetch_config<T>(storage: &T) -> Option<Self>
     where
-        T: ConfigStorage,
+        T: ConfigStorage + ?Sized,
     {
-        storage
-            .fetch_config(Self::config_id().access_path())
-            .map(|bytes| Self::deserialize_into_config(&bytes))
-            .transpose()
+        let state_key = StateKey::on_chain_config::<Self>().ok()?;
+        let bytes = storage.fetch_config_bytes(&state_key)?;
+        Self::deserialize_into_config(&bytes).ok()
     }
 
     fn type_params() -> Vec<TypeTag> {
         vec![]
     }
 
-    fn config_id() -> ConfigID {
-        ConfigID(
-            Self::ADDRESS,
-            Self::MODULE_IDENTIFIER,
-            Self::CONF_IDENTIFIER,
-            Self::type_params(),
-        )
+    fn address() -> &'static AccountAddress {
+        &CORE_CODE_ADDRESS
+    }
+
+    fn struct_tag() -> StructTag {
+        Self::config_id().struct_tag()
+    }
+}
+
+impl<S: StateView> ConfigStorage for S {
+    fn fetch_config_bytes(&self, state_key: &StateKey) -> Option<Bytes> {
+        self.get_state_value(&state_key)
+            .ok()?
+            .map(|s| s.bytes().clone())
     }
 }
 
 pub fn new_epoch_event_key() -> EventKey {
+    // XXX FIXME YSG
     EventKey::new_from_address(&genesis_address(), 0)
 }
 
-pub fn access_path_for_config(
-    address: AccountAddress,
-    module_name: Identifier,
-    config_name: Identifier,
-    params: Vec<TypeTag>,
-) -> AccessPath {
-    AccessPath::resource_access_path(
-        address,
-        StructTag {
-            address: CORE_CODE_ADDRESS,
-            module: Identifier::new("Config").unwrap(),
-            name: Identifier::new("Config").unwrap(),
-            type_args: vec![TypeTag::Struct(Box::new(StructTag {
-                address: CORE_CODE_ADDRESS,
-                module: module_name,
-                name: config_name,
-                type_args: params,
-            }))],
-        },
-    )
+pub fn access_path_for_config(config_id: ConfigID) -> Result<AccessPath> {
+    let struct_tag = struct_tag_for_config(config_id);
+    Ok(AccessPath::new(
+        CORE_CODE_ADDRESS,
+        AccessPath::resource_path_vec(struct_tag)?,
+    ))
+}
+
+pub fn struct_tag_for_config(config_id: ConfigID) -> StructTag {
+    StructTag {
+        address: CORE_CODE_ADDRESS,
+        module: Identifier::new(config_id.1).expect("fail to make identifier"),
+        name: Identifier::new(config_id.2).expect("fail to make identifier"),
+        type_args: config_id.3,
+    }
 }

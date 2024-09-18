@@ -1,11 +1,11 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
+use crate::account_address::AccountAddress;
 use crate::state_store::{
     errors::StateviewError, in_memory_state_view::InMemoryStateView, state_key::StateKey,
     state_storage_usage::StateStorageUsage, state_value::StateValue,
 };
 use crate::transaction::Version;
-use crate::account_address::AccountAddress;
 use arr_macro::arr;
 use bytes::Bytes;
 use move_core_types::move_resource::MoveResource;

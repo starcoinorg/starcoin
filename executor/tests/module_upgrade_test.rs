@@ -665,7 +665,7 @@ where
     R: ChainStateReader,
 {
     Ok(state_reader
-        .get_resource::<TwoPhaseUpgradeV2Resource>(genesis_address())?
+        .get_resource_type::<TwoPhaseUpgradeV2Resource>(genesis_address())?
         .map(|tpu| tpu.enforced())
         .unwrap_or(false))
 }

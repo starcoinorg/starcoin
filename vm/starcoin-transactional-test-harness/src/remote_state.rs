@@ -59,8 +59,8 @@ where
         tag: &StructTag,
     ) -> Result<Option<Vec<u8>>, Self::Error> {
         match self {
-            Self::A(v) => v.get_resource(address, tag),
-            Self::B(v) => v.get_resource(address, tag),
+            Self::A(v) => v.get_resource_type(address, tag),
+            Self::B(v) => v.get_resource_type(address, tag),
         }
     }
 }
@@ -152,9 +152,9 @@ where
         address: &AccountAddress,
         tag: &StructTag,
     ) -> Result<Option<Vec<u8>>, Self::Error> {
-        match self.a.get_resource(address, tag)? {
+        match self.a.get_resource_type(address, tag)? {
             Some(d) => Ok(Some(d)),
-            None => self.b.get_resource(address, tag),
+            None => self.b.get_resource_type(address, tag),
         }
     }
 }

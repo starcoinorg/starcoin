@@ -820,7 +820,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         let last_blockmeta = self
             .context
             .storage
-            .get_resource::<on_chain_resource::BlockMetadataV2>(genesis_address())?;
+            .get_resource_type::<on_chain_resource::BlockMetadataV2>(genesis_address())?;
 
         let height = number
             .or_else(|| last_blockmeta.as_ref().map(|b| b.number + 1))

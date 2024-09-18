@@ -16,7 +16,7 @@ pub struct MoveLanguageVersion {
 
 impl OnChainConfig for MoveLanguageVersion {
     const MODULE_IDENTIFIER: &'static str = MV_LANG_VERSION_MODULE_NAME;
-    const CONF_IDENTIFIER: &'static str = MV_LANG_VERSION_STRUCT_NAME;
+    const TYPE_IDENTIFIER: &'static str = MV_LANG_VERSION_STRUCT_NAME;
 }
 impl MoveResource for MoveLanguageVersion {
     const MODULE_NAME: &'static str = MV_LANG_VERSION_MODULE_NAME;

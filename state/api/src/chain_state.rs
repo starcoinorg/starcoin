@@ -183,7 +183,7 @@ where
     where
         R: MoveResource + DeserializeOwned,
     {
-        self.reader.get_resource(address)
+        self.reader.get_resource_type(address)
     }
 
     pub fn get_sequence_number(&self, address: AccountAddress) -> Result<u64> {

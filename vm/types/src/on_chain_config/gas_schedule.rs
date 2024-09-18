@@ -511,7 +511,7 @@ pub fn txn_gas_schedule_test() -> Vec<(String, u64)> {
 
 impl OnChainConfig for GasSchedule {
     const MODULE_IDENTIFIER: &'static str = GAS_SCHEDULE_MODULE_NAME;
-    const CONF_IDENTIFIER: &'static str = GAS_SCHEDULE_MODULE_NAME;
+    const TYPE_IDENTIFIER: &'static str = GAS_SCHEDULE_MODULE_NAME;
 
     fn deserialize_into_config(bytes: &[u8]) -> Result<Self> {
         let raw_gas_schedule = bcs_ext::from_bytes::<Self>(bytes).map_err(|e| {

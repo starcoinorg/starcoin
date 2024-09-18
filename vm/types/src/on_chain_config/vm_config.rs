@@ -66,7 +66,7 @@ impl TransactionPublishOption {
 
 impl OnChainConfig for TransactionPublishOption {
     const MODULE_IDENTIFIER: &'static str = "TransactionPublishOption";
-    const CONF_IDENTIFIER: &'static str = "TransactionPublishOption";
+    const TYPE_IDENTIFIER: &'static str = "TransactionPublishOption";
 
     fn deserialize_into_config(bytes: &[u8]) -> Result<Self> {
         let vm_publishing_option = bcs_ext::from_bytes::<Self>(bytes).map_err(|e| {
@@ -113,7 +113,7 @@ impl CostTableInner {
 
 impl OnChainConfig for VMConfig {
     const MODULE_IDENTIFIER: &'static str = VM_CONFIG_MODULE_NAME;
-    const CONF_IDENTIFIER: &'static str = VM_CONFIG_MODULE_NAME;
+    const TYPE_IDENTIFIER: &'static str = VM_CONFIG_MODULE_NAME;
 
     fn deserialize_into_config(bytes: &[u8]) -> Result<Self> {
         let raw_vm_config = bcs_ext::from_bytes::<VMConfigInner>(bytes).map_err(|e| {

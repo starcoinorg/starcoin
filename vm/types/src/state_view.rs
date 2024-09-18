@@ -9,8 +9,8 @@
 //! This crate defines [`trait StateView`](StateView).
 
 use crate::state_store::state_key::StateKey;
+use crate::state_store::StateView;
 use crate::{
-    access_path::AccessPath,
     account_config::{
         genesis_address, token_code::TokenCode, AccountResource, BalanceResource, TokenInfo,
         G_STC_TOKEN_CODE,
@@ -31,37 +31,46 @@ use move_core_types::{
     language_storage::{ModuleId, StructTag},
 };
 use serde::de::DeserializeOwned;
-use crate::state_store::StateView;
-
 
 impl<T: ?Sized> StateReaderExt for T where T: StateView {}
 
 pub trait StateReaderExt: StateView {
     /// Get AccountResource by address
-    fn get_account_resource(&self, address: AccountAddress) -> Result<Option<AccountResource>> {
-        self.get_resource::<AccountResource>(address)
+    fn get_account_resource(&self, address: AccountAddress) -> Result<AccountResource> {
+        self.get_resource_type::<AccountResource>(address)
+    }
+
+    /// Get Resource by StructTag
+    fn get_resource(&self, address: AccountAddress, struct_tag: &StructTag) -> Result<Bytes> {
+        let rsrc_bytes = self
+            .get_state_value_bytes(&StateKey::resource(&address, struct_tag)?)?
+            .ok_or_else(|| {
+                format_err!(
+                    "Resource {:?} not exists at address:{}",
+                    struct_tag,
+                    address
+                )
+            })?;
+        Ok(rsrc_bytes)
     }
 
     /// Get Resource by type R
-    fn get_resource<R>(&self, address: AccountAddress) -> Result<Option<R>>
+    fn get_resource_type<R>(&self, address: AccountAddress) -> Result<R>
     where
         R: MoveResource + DeserializeOwned,
     {
-        let access_path = AccessPath::new(address, R::resource_path());
-        self.get_resource_by_access_path(access_path)
-    }
-
-    fn get_resource_by_access_path<R>(&self, access_path: AccessPath) -> Result<Option<R>>
-    where
-        R: MoveResource + DeserializeOwned,
-    {
-        let r = self
-            .get_state_value(&StateKey::AccessPath(access_path))
-            .and_then(|state| match state {
-                Some(state) => Ok(Some(bcs_ext::from_bytes::<R>(state.bytes())?)),
-                None => Ok(None),
+        let rsrc_bytes = self
+            .get_state_value_bytes(&StateKey::resource_typed::<R>(&address)?)?
+            .ok_or_else(|| {
+                format_err!(
+                    "Resource {:?} {:?} not exists at address:{}",
+                    R::module_identifier(),
+                    R::struct_identifier(),
+                    address
+                )
             })?;
-        Ok(r)
+        let rsrc = bcs_ext::from_bytes::<R>(&rsrc_bytes)?;
+        Ok(rsrc)
     }
 
     fn get_sequence_number(&self, address: AccountAddress) -> Result<u64> {
@@ -70,84 +79,79 @@ pub trait StateReaderExt: StateView {
             .ok_or_else(|| format_err!("Can not find account by address:{}", address))
     }
 
-    fn get_on_chain_config<C>(&self) -> Result<Option<C>>
+    fn get_on_chain_config<T>(&self) -> Option<T>
     where
-        C: OnChainConfig,
+        T: OnChainConfig,
         Self: Sized,
     {
-        C::fetch_config(self)
+        T::fetch_config(self)
     }
 
-    fn get_balance(&self, address: AccountAddress) -> Result<Option<u128>> {
+    fn get_balance(&self, address: AccountAddress) -> Result<u128> {
         self.get_balance_by_token_code(address, G_STC_TOKEN_CODE.clone())
     }
 
     /// Get balance by address and coin type
-    fn get_balance_by_type(
-        &self,
-        address: AccountAddress,
-        type_tag: StructTag,
-    ) -> Result<Option<u128>> {
-        Ok(self
-            .get_state_value(&StateKey::AccessPath(AccessPath::new(
-                address,
-                BalanceResource::access_path_for(type_tag),
-            )))
-            .and_then(|bytes| match bytes {
-                Some(bytes) => Ok(Some(bcs_ext::from_bytes::<BalanceResource>(bytes.bytes())?)),
-                None => Ok(None),
-            })?
-            .map(|resource| resource.token()))
+    fn get_balance_by_type(&self, address: AccountAddress, type_tag: StructTag) -> Result<u128> {
+        let rsrc_bytes = self
+            .get_state_value_bytes(&StateKey::resource(
+                &address,
+                &BalanceResource::struct_tag_for_token(type_tag),
+            )?)?
+            .ok_or_else(|| {
+                format_err!(
+                    "BalanceResource not exists at address:{} for type tag:{}",
+                    address,
+                    type_tag
+                )
+            })?;
+        let rsrc = bcs_ext::from_bytes::<BalanceResource>(&rsrc_bytes)?;
+        Ok(rsrc.token())
     }
 
     fn get_balance_by_token_code(
         &self,
         address: AccountAddress,
         token_code: TokenCode,
-    ) -> Result<Option<u128>> {
+    ) -> Result<u128> {
         self.get_balance_by_type(address, token_code.try_into()?)
     }
 
     fn get_epoch(&self) -> Result<Epoch> {
-        self.get_resource::<Epoch>(genesis_address())?
+        self.get_resource_type::<Epoch>(genesis_address())?
             .ok_or_else(|| format_err!("Epoch is none."))
     }
 
     fn get_epoch_info(&self) -> Result<EpochInfo> {
-        let epoch = self
-            .get_resource::<Epoch>(genesis_address())?
-            .ok_or_else(|| format_err!("Epoch is none."))?;
+        let epoch = self.get_resource_type::<Epoch>(genesis_address())?;
 
-        let epoch_data = self
-            .get_resource::<EpochData>(genesis_address())?
-            .ok_or_else(|| format_err!("Epoch is none."))?;
+        let epoch_data = self.get_resource_type::<EpochData>(genesis_address())?;
 
         Ok(EpochInfo::new(epoch, epoch_data))
     }
 
     fn get_timestamp(&self) -> Result<GlobalTimeOnChain> {
-        self.get_resource(genesis_address())?
+        self.get_resource_type(genesis_address())?
             .ok_or_else(|| format_err!("Timestamp resource should exist."))
     }
 
     fn get_chain_id(&self) -> Result<ChainId> {
-        self.get_resource::<ChainId>(genesis_address())?
-            .ok_or_else(|| format_err!("ChainId resource should exist at genesis address. "))
+        self.get_resource_type::<ChainId>(genesis_address())
     }
 
     // Get BlockMetadata on chain (stdlib version <= 11)
     fn get_block_metadata(&self) -> Result<BlockMetadata> {
-        self.get_resource::<BlockMetadata>(genesis_address())?
-            .ok_or_else(|| format_err!("BlockMetadata resource should exist at genesis address. "))
+        self.get_resource_type::<BlockMetadata>(genesis_address())
     }
 
     // Get latest BlockMetadataV2 on chain, since stdlib version(12)
-    fn get_block_metadata_v2(&self) -> Result<Option<BlockMetadataV2>> {
-        self.get_resource::<BlockMetadataV2>(genesis_address())
+    fn get_block_metadata_v2(&self) -> Result<BlockMetadataV2> {
+        self.get_resource_type::<BlockMetadataV2>(genesis_address())
     }
 
-    fn get_code(&self, module_id: ModuleId) -> Result<Option<Bytes>> {
-        self.get_state_value_bytes(&StateKey::AccessPath(AccessPath::from(&module_id)))
+    fn get_code(&self, module_id: ModuleId) -> Result<Bytes> {
+        self.get_state_value_bytes(&StateKey::module_id(&module_id)?)?
+            .ok_or_else(|| format_err!("Can not find code by module_id:{}", module_id))
     }
 
     /// Check the sip is activated. if the sip module exist, think it is activated.
@@ -155,35 +159,49 @@ pub trait StateReaderExt: StateView {
         self.get_code(sip.module_id()).map(|code| code.is_some())
     }
 
-    fn get_token_info(&self, token_code: TokenCode) -> Result<Option<TokenInfo>> {
-        let type_tag = token_code.try_into()?;
-        let access_path = TokenInfo::resource_path_for(type_tag);
-        self.get_resource_by_access_path(access_path)
+    fn get_token_info(&self, token_code: TokenCode) -> Result<TokenInfo> {
+        let type_tag: StructTag = token_code.try_into()?;
+        let rsrc_bytes = self.get_resource(
+            token_code.address.clone(),
+            &TokenInfo::struct_tag_for_token(type_tag),
+        )?;
+        let rsrc = bcs_ext::from_bytes::<TokenInfo>(&rsrc_bytes)?;
+        Ok(rsrc)
     }
 
-    fn get_stc_info(&self) -> Result<Option<TokenInfo>> {
+    fn get_stc_info(&self) -> Result<TokenInfo> {
         self.get_token_info(G_STC_TOKEN_CODE.clone())
     }
 
-    fn get_treasury(&self, token_code: TokenCode) -> Result<Option<Treasury>> {
-        let access_path = Treasury::resource_path_for(token_code.try_into()?);
-        self.get_resource_by_access_path(access_path)
+    fn get_treasury(&self, token_code: TokenCode) -> Result<Treasury> {
+        let type_tag: StructTag = token_code.try_into()?;
+        let rsrc_bytes = self.get_resource(
+            token_code.address.clone(),
+            &Treasury::struct_tag_for_token(type_tag),
+        )?;
+        let rsrc = bcs_ext::from_bytes::<Treasury>(&rsrc_bytes)?;
+        Ok(rsrc)
     }
 
-    fn get_stc_treasury(&self) -> Result<Option<Treasury>> {
+    fn get_stc_treasury(&self) -> Result<Treasury> {
         self.get_treasury(G_STC_TOKEN_CODE.clone())
     }
 
-    //TOODO update to new DAOSpace proposal
-    fn get_proposal<A>(&self, token_code: TokenCode) -> Result<Option<Proposal<A>>>
+    //TODO update to new DAOSpace proposal
+    fn get_proposal<A>(&self, token_code: TokenCode) -> Result<Proposal<A>>
     where
         A: ProposalAction + DeserializeOwned,
     {
-        let access_path = Proposal::<A>::resource_path_for(token_code.try_into()?);
-        self.get_resource_by_access_path(access_path)
+        let type_tag: StructTag = token_code.try_into()?;
+        let rsrc_bytes = self.get_resource(
+            token_code.address.clone(),
+            &Proposal::<A>::struct_tag_for_token(type_tag),
+        )?;
+        let rsrc = bcs_ext::from_bytes::<Proposal<A>>(&rsrc_bytes)?;
+        Ok(rsrc)
     }
 
-    fn get_stc_proposal<A>(&self) -> Result<Option<Proposal<A>>>
+    fn get_stc_proposal<A>(&self) -> Result<Proposal<A>>
     where
         A: ProposalAction + DeserializeOwned,
     {

@@ -61,7 +61,7 @@ pub struct PackageRegistry {
 
 impl OnChainConfig for PackageRegistry {
     const MODULE_IDENTIFIER: &'static str = "code";
-    const CONF_IDENTIFIER: &'static str = "PackageRegistry";
+    const TYPE_IDENTIFIER: &'static str = "PackageRegistry";
 }
 
 /// The PackageMetadata type. This must be kept in sync with `code.move`. Documentation is

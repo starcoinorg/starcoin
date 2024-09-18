@@ -11,5 +11,5 @@ pub struct CurrentTimeMicroseconds {
 
 impl OnChainConfig for CurrentTimeMicroseconds {
     const MODULE_IDENTIFIER: &'static str = "timestamp";
-    const CONF_IDENTIFIER: &'static str = "CurrentTimeMicroseconds";
+    const TYPE_IDENTIFIER: &'static str = "CurrentTimeMicroseconds";
 }
