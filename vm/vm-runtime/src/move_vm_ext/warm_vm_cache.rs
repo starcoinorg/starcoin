@@ -129,7 +129,7 @@ impl WarmVmId {
     fn core_packages_id_bytes(resolver: &impl StarcoinMoveResolver) -> VMResult<Option<Bytes>> {
         let bytes = {
             let _timer = TIMER.timer_with(&["fetch_pkgreg"]);
-            resolver.fetch_config(PackageRegistry::access_path().expect("Get AP failed."))
+            resolver.fetch_config_bytes(PackageRegistry::access_path().expect("Get AP failed."))
         };
 
         let core_package_registry = {

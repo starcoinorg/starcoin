@@ -80,7 +80,7 @@ impl From<Vec<u8>> for ResourceView {
 }
 
 impl ResourceView {
-    pub fn decode<R: MoveResource + DeserializeOwned>(&self) -> anyhow::Result<R> {
+    pub fn decode<R: MoveResource>(&self) -> anyhow::Result<R> {
         bcs_ext::from_bytes(self.raw.0.as_slice())
     }
 }

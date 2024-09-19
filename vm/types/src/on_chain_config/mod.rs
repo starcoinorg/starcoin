@@ -67,6 +67,14 @@ impl ConfigID {
     pub fn name(&self) -> String {
         self.2.to_string()
     }
+    pub fn struct_tag(self) -> StructTag {
+        StructTag {
+            address: AccountAddress::from_hex_literal(self.0).expect("failed to get address"),
+            module: Identifier::new(self.1).expect("failed to get Identifier"),
+            name: Identifier::new(self.2).expect("failed to get Identifier"),
+            type_args: self.3,
+        }
+    }
 }
 
 impl fmt::Display for ConfigID {

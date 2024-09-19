@@ -6,9 +6,11 @@ use crate::token::token_code::TokenCode;
 use crate::{
     access_path::AccessPath,
     account_config::constants::{stc_type_tag, ACCOUNT_MODULE_NAME, CORE_CODE_ADDRESS},
-    move_resource::MoveResource,
 };
+use move_core_types::ident_str;
+use move_core_types::identifier::{IdentStr, Identifier};
 use move_core_types::language_storage::{StructTag, TypeTag};
+use move_core_types::move_resource::MoveStructType;
 use serde::{Deserialize, Serialize};
 
 /// The balance resource held under an account.
@@ -44,8 +46,8 @@ impl BalanceResource {
     /// Get token code from Balance StructTag, return None if struct tag is not a valid Balance StructTag
     pub fn token_code(struct_tag: &StructTag) -> Option<TokenCode> {
         if struct_tag.address == CORE_CODE_ADDRESS
-            && struct_tag.module.as_str() == Self::MODULE_NAME
-            && struct_tag.name.as_str() == Self::STRUCT_NAME
+            && struct_tag.module == Identifier::from(Self::MODULE_NAME)
+            && struct_tag.name == Identifier::from(Self::STRUCT_NAME)
         {
             if let Some(TypeTag::Struct(token_tag)) = struct_tag.type_args.first() {
                 Some((*(token_tag.clone())).into())
@@ -58,11 +60,10 @@ impl BalanceResource {
     }
 }
 
-impl MoveResource for BalanceResource {
-    const MODULE_NAME: &'static str = ACCOUNT_MODULE_NAME;
-    const STRUCT_NAME: &'static str = "Balance";
-
-    fn type_params() -> Vec<TypeTag> {
+impl MoveStructType for BalanceResource {
+    const STRUCT_NAME: &'static IdentStr = ident_str!("Balance");
+    fn type_args() -> Vec<TypeTag> {
         vec![stc_type_tag()]
     }
+    const MODULE_NAME: &'static IdentStr = ident_str!(ACCOUNT_MODULE_NAME);
 }

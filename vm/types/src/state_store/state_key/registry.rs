@@ -18,6 +18,7 @@ use move_core_types::{
     language_storage::StructTag,
 };
 use once_cell::sync::Lazy;
+use starcoin_crypto::hash::CryptoHasher;
 use starcoin_crypto::HashValue;
 use starcoin_infallible::RwLock;
 use std::{

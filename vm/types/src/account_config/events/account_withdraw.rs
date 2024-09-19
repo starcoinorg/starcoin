@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account_config::constants::ACCOUNT_MODULE_NAME;
-use crate::move_resource::MoveResource;
 use crate::token::token_code::TokenCode;
 use anyhow::Result;
+use move_core_types::ident_str;
+use move_core_types::identifier::IdentStr;
+use move_core_types::move_resource::MoveStructType;
 use serde::{Deserialize, Serialize};
 
 /// Struct that represents a SentPaymentEvent.
@@ -44,7 +46,7 @@ impl WithdrawEvent {
     }
 }
 
-impl MoveResource for WithdrawEvent {
-    const MODULE_NAME: &'static str = ACCOUNT_MODULE_NAME;
-    const STRUCT_NAME: &'static str = "WithdrawEvent";
+impl MoveStructType for WithdrawEvent {
+    const STRUCT_NAME: &'static IdentStr = ident_str!("WithdrawEvent");
+    const MODULE_NAME: &'static IdentStr = ident_str!(ACCOUNT_MODULE_NAME);
 }

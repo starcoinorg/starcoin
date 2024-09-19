@@ -1,8 +1,10 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::move_resource::MoveResource;
 use crate::{account_address::AccountAddress, account_config::constants::ACCOUNT_MODULE_NAME};
+use move_core_types::ident_str;
+use move_core_types::identifier::IdentStr;
+use move_core_types::move_resource::MoveStructType;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -16,7 +18,7 @@ impl WithdrawCapabilityResource {
     }
 }
 
-impl MoveResource for WithdrawCapabilityResource {
-    const MODULE_NAME: &'static str = ACCOUNT_MODULE_NAME;
-    const STRUCT_NAME: &'static str = "WithdrawCapability";
+impl MoveStructType for WithdrawCapabilityResource {
+    const STRUCT_NAME: &'static IdentStr = ident_str!("WithdrawCapability");
+    const MODULE_NAME: &'static IdentStr = ident_str!(ACCOUNT_MODULE_NAME);
 }

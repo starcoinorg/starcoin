@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account_address::AccountAddress;
-use crate::move_resource::MoveResource;
+use move_core_types::ident_str;
+use move_core_types::identifier::IdentStr;
+use move_core_types::move_resource::MoveStructType;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 
@@ -18,7 +20,7 @@ impl UpgradeEvent {
     }
 }
 
-impl MoveResource for UpgradeEvent {
-    const MODULE_NAME: &'static str = "PackageTxnManager";
-    const STRUCT_NAME: &'static str = "UpgradeEvent";
+impl MoveStructType for UpgradeEvent {
+    const STRUCT_NAME: &'static IdentStr = ident_str!("UpgradeEvent");
+    const MODULE_NAME: &'static IdentStr = ident_str!("PackageTxnManager");
 }

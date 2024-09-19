@@ -7,6 +7,9 @@ use crate::account_config::CORE_CODE_ADDRESS;
 use crate::event::EventHandle;
 use crate::language_storage::{StructTag, TypeTag};
 use crate::move_resource::MoveResource;
+use move_core_types::ident_str;
+use move_core_types::identifier::IdentStr;
+use move_core_types::move_resource::MoveStructType;
 use serde::{Deserialize, Serialize};
 
 mod actions;
@@ -22,10 +25,12 @@ pub struct DaoGlobalInfo {
     pub vote_changed_event: EventHandle,
 }
 
-impl MoveResource for DaoGlobalInfo {
-    const MODULE_NAME: &'static str = "Dao";
-    const STRUCT_NAME: &'static str = "DaoGlobalInfo";
+impl MoveStructType for DaoGlobalInfo {
+    const STRUCT_NAME: &'static IdentStr = ident_str!("DaoGlobalInfo");
+    const MODULE_NAME: &'static IdentStr = ident_str!("Dao");
 }
+
+impl MoveResource for DaoGlobalInfo {}
 
 impl DaoGlobalInfo {
     pub fn struct_tag_for(token_type_tag: StructTag) -> StructTag {
@@ -69,15 +74,16 @@ pub struct Proposal<A: ProposalAction> {
     /// how many votes to reach to make the proposal pass.
     pub quorum_votes: u128,
     /// proposal action.
+    #[serde(deserialize_with = "A::deserialize")]
     pub action: Option<A>,
 }
 
-impl<A> MoveResource for Proposal<A>
+impl<A> MoveStructType for Proposal<A>
 where
     A: ProposalAction,
 {
-    const MODULE_NAME: &'static str = "Dao";
-    const STRUCT_NAME: &'static str = "Proposal";
+    const MODULE_NAME: &'static IdentStr = ident_str!("Dao");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("Proposal");
 }
 
 impl<A> Proposal<A>
@@ -114,7 +120,9 @@ pub struct Vote {
     pub agree: bool,
 }
 
-impl MoveResource for Vote {
-    const MODULE_NAME: &'static str = "Dao";
-    const STRUCT_NAME: &'static str = "Vote";
+impl MoveStructType for Vote {
+    const STRUCT_NAME: &'static IdentStr = ident_str!("Vote");
+    const MODULE_NAME: &'static IdentStr = ident_str!("Dao");
 }
+
+impl MoveResource for Vote {}

@@ -1,9 +1,11 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::move_resource::MoveResource;
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
+use move_core_types::ident_str;
+use move_core_types::identifier::IdentStr;
+use move_core_types::move_resource::MoveStructType;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Serialize, Deserialize)]
@@ -16,9 +18,9 @@ impl ProposalCreatedEvent {
         bcs_ext::from_bytes(bytes).map_err(Into::into)
     }
 }
-impl MoveResource for ProposalCreatedEvent {
-    const MODULE_NAME: &'static str = "Dao";
-    const STRUCT_NAME: &'static str = "ProposalCreatedEvent";
+impl MoveStructType for ProposalCreatedEvent {
+    const STRUCT_NAME: &'static IdentStr = ident_str!("ProposalCreatedEvent");
+    const MODULE_NAME: &'static IdentStr = ident_str!("Dao");
 }
 
 /// emitted when user vote/revoke_vote.
@@ -32,9 +34,9 @@ pub struct VoteChangedEvent {
     pub vote: u128,
 }
 
-impl MoveResource for VoteChangedEvent {
-    const MODULE_NAME: &'static str = "Dao";
-    const STRUCT_NAME: &'static str = "VoteChangedEvent";
+impl MoveStructType for VoteChangedEvent {
+    const STRUCT_NAME: &'static IdentStr = ident_str!("VoteChangedEvent");
+    const MODULE_NAME: &'static IdentStr = ident_str!("Dao");
 }
 
 impl VoteChangedEvent {

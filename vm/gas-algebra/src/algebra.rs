@@ -18,8 +18,6 @@ pub type InternalGasPerAbstractValueUnit = GasQuantity<UnitDiv<InternalGasUnit, 
 
 pub type AbstractValueSizePerArg = GasQuantity<UnitDiv<AbstractValueUnit, Arg>>;
 
-pub use move_core_types::gas_algebra::*;
-
 /// Unit of (external) gas.
 pub enum GasUnit {}
 

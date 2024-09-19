@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account_address::AccountAddress;
-use crate::move_resource::MoveResource;
 use crate::on_chain_config::OnChainConfig;
 use crate::on_chain_resource::dao::ProposalAction;
+use move_core_types::ident_str;
+use move_core_types::identifier::IdentStr;
+use move_core_types::move_resource::{MoveResource, MoveStructType};
 use serde::{Deserialize, Deserializer, Serialize};
 use starcoin_crypto::HashValue;
 
@@ -16,10 +18,12 @@ pub struct UpgradeModule {
     pub version: u64,
 }
 
-impl MoveResource for UpgradeModule {
-    const MODULE_NAME: &'static str = "UpgradeModuleDaoProposal";
-    const STRUCT_NAME: &'static str = "UpgradeModule";
+impl MoveStructType for UpgradeModule {
+    const MODULE_NAME: &'static IdentStr = ident_str!("UpgradeModuleDaoProposal");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("UpgradeModule");
 }
+
+impl MoveResource for UpgradeModule {}
 
 impl ProposalAction for UpgradeModule {}
 
@@ -31,10 +35,12 @@ pub struct UpgradeModuleV2 {
     pub enforced: bool,
 }
 
-impl MoveResource for UpgradeModuleV2 {
-    const MODULE_NAME: &'static str = "UpgradeModuleDaoProposal";
-    const STRUCT_NAME: &'static str = "UpgradeModuleV2";
+impl MoveStructType for UpgradeModuleV2 {
+    const MODULE_NAME: &'static IdentStr = ident_str!("UpgradeModuleDaoProposal");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("UpgradeModuleV2");
 }
+
+impl MoveResource for UpgradeModuleV2 {}
 
 impl ProposalAction for UpgradeModuleV2 {}
 
@@ -51,10 +57,12 @@ pub struct DaoConfigUpdate {
     pub min_action_delay: u64,
 }
 
-impl MoveResource for DaoConfigUpdate {
-    const MODULE_NAME: &'static str = "ModifyDaoConfigProposal";
-    const STRUCT_NAME: &'static str = "DaoConfigUpdate";
+impl MoveStructType for DaoConfigUpdate {
+    const MODULE_NAME: &'static IdentStr = ident_str!("ModifyDaoConfigProposal");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("DaoConfigUpdate");
 }
+
+impl MoveResource for DaoConfigUpdate {}
 
 impl ProposalAction for DaoConfigUpdate {}
 
@@ -77,12 +85,12 @@ where
     }
 }
 
-impl<C> MoveResource for OnChainConfigUpdate<C>
+impl<C> MoveStructType for OnChainConfigUpdate<C>
 where
     C: OnChainConfig,
 {
-    const MODULE_NAME: &'static str = "OnChainConfigDao";
-    const STRUCT_NAME: &'static str = "OnChainConfigUpdate";
+    const STRUCT_NAME: &'static IdentStr = ident_str!("OnChainConfigUpdate");
+    const MODULE_NAME: &'static IdentStr = ident_str!("OnChainConfigDao");
 }
 
 //TODO fixme
@@ -99,9 +107,11 @@ pub struct WithdrawToken {
     pub period: u64,
 }
 
-impl MoveResource for WithdrawToken {
-    const MODULE_NAME: &'static str = "TreasuryWithdrawDaoProposal";
-    const STRUCT_NAME: &'static str = "WithdrawToken";
+impl MoveStructType for WithdrawToken {
+    const MODULE_NAME: &'static IdentStr = ident_str!("TreasuryWithdrawDaoProposal");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("WithdrawToken");
 }
+
+impl MoveResource for WithdrawToken {}
 
 impl ProposalAction for WithdrawToken {}

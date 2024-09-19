@@ -2,18 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::language_storage::TypeTag;
-use crate::move_resource::MoveResource;
 use crate::parser::parse_type_tag;
 use crate::token::TOKEN_MODULE_NAME;
 use anyhow::{bail, Result};
 use move_core_types::account_address::AccountAddress;
+use move_core_types::ident_str;
+use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::StructTag;
+use move_core_types::move_resource::{MoveResource, MoveStructType};
 use schemars::{self, JsonSchema};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::{TryFrom, TryInto};
 use std::fmt;
 use std::str::FromStr;
+
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Clone, JsonSchema)]
 pub struct TokenCode {
     ///Token module's address
@@ -25,10 +28,11 @@ pub struct TokenCode {
     pub name: String,
 }
 
-impl MoveResource for TokenCode {
-    const MODULE_NAME: &'static str = TOKEN_MODULE_NAME;
-    const STRUCT_NAME: &'static str = "TokenCode";
+impl MoveStructType for TokenCode {
+    const MODULE_NAME: &'static IdentStr = ident_str!(TOKEN_MODULE_NAME);
+    const STRUCT_NAME: &'static IdentStr = ident_str!("TokenCode");
 }
+impl MoveResource for TokenCode {}
 
 impl TokenCode {
     pub fn new(address: AccountAddress, module: String, name: String) -> Self {

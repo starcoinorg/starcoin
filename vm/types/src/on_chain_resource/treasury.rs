@@ -6,7 +6,9 @@ use crate::account_address::AccountAddress;
 use crate::account_config::CORE_CODE_ADDRESS;
 use crate::event::EventHandle;
 use crate::language_storage::{StructTag, TypeTag};
-use crate::move_resource::MoveResource;
+use move_core_types::ident_str;
+use move_core_types::identifier::IdentStr;
+use move_core_types::move_resource::{MoveResource, MoveStructType};
 use serde::{Deserialize, Serialize};
 
 /// A Rust representation of a Treasury resource.
@@ -19,10 +21,12 @@ pub struct Treasury {
     pub deposit_events: EventHandle,
 }
 
-impl MoveResource for Treasury {
-    const MODULE_NAME: &'static str = "Treasury";
-    const STRUCT_NAME: &'static str = "Treasury";
+impl MoveStructType for Treasury {
+    const STRUCT_NAME: &'static IdentStr = ident_str!("Treasury");
+    const MODULE_NAME: &'static IdentStr = ident_str!("Treasury");
 }
+
+impl MoveResource for Treasury {}
 
 impl Treasury {
     pub fn struct_tag_for(token_type_tag: StructTag) -> StructTag {
@@ -50,10 +54,12 @@ pub struct LinearWithdrawCapability {
     pub period: u64,
 }
 
-impl MoveResource for LinearWithdrawCapability {
-    const MODULE_NAME: &'static str = "Treasury";
-    const STRUCT_NAME: &'static str = "LinearWithdrawCapability";
+impl MoveStructType for LinearWithdrawCapability {
+    const STRUCT_NAME: &'static IdentStr = ident_str!("LinearWithdrawCapability");
+    const MODULE_NAME: &'static IdentStr = ident_str!("Treasury");
 }
+
+impl MoveResource for LinearWithdrawCapability {}
 
 impl LinearWithdrawCapability {
     pub fn struct_tag_for(token_type_tag: StructTag) -> StructTag {

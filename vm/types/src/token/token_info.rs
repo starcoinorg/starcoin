@@ -2,12 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::access_path::DataPath;
+use crate::language_storage::StructTag;
 use crate::language_storage::TypeTag;
 use crate::{
     access_path::AccessPath, account_config::constants::CORE_CODE_ADDRESS, event::EventHandle,
 };
-use crate::{language_storage::StructTag, move_resource::MoveResource};
 use anyhow::Result;
+use move_core_types::ident_str;
+use move_core_types::identifier::IdentStr;
+use move_core_types::move_resource::{MoveResource, MoveStructType};
 use serde::{Deserialize, Serialize};
 
 /// Struct that represents a TokenInfo resource
@@ -19,10 +22,12 @@ pub struct TokenInfo {
     pub burn_events: EventHandle,
 }
 
-impl MoveResource for TokenInfo {
-    const MODULE_NAME: &'static str = "Token";
-    const STRUCT_NAME: &'static str = "TokenInfo";
+impl MoveStructType for TokenInfo {
+    const STRUCT_NAME: &'static IdentStr = ident_str!("TokenInfo");
+    const MODULE_NAME: &'static IdentStr = ident_str!("Token");
 }
+
+impl MoveResource for TokenInfo {}
 
 impl TokenInfo {
     pub fn total_value(&self) -> u128 {

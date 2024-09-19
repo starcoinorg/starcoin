@@ -48,7 +48,7 @@ pub trait ChainStateAsyncService: Clone + std::marker::Unpin + Send + Sync {
 
     async fn get_resource<R>(self, address: AccountAddress) -> Result<Option<R>>
     where
-        R: MoveResource + DeserializeOwned,
+        R: MoveResource,
     {
         let access_path = AccessPath::new(address, R::resource_path());
         let r = self.get(access_path).await.and_then(|state| match state {

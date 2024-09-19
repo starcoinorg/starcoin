@@ -3,11 +3,14 @@
 use crate::access_path::{AccessPath, DataPath};
 use crate::event::EventHandle;
 use crate::genesis_config::ConsensusStrategy;
-use crate::move_resource::MoveResource;
+use move_core_types::ident_str;
+use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::{StructTag, CORE_CODE_ADDRESS};
+use move_core_types::move_resource::{MoveResource, MoveStructType};
 use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
+
 /// The Epoch resource held under an account.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct Epoch {
@@ -118,10 +121,12 @@ impl Epoch {
     }
 }
 
-impl MoveResource for Epoch {
-    const MODULE_NAME: &'static str = "Epoch";
-    const STRUCT_NAME: &'static str = "Epoch";
+impl MoveStructType for Epoch {
+    const STRUCT_NAME: &'static IdentStr = ident_str!("Epoch");
+    const MODULE_NAME: &'static IdentStr = ident_str!("Epoch");
 }
+
+impl MoveResource for Epoch {}
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct EpochInfo {
@@ -179,7 +184,6 @@ impl EpochInfo {
         self.epoch.number()
     }
 }
-
 /// The Epoch data resource held under an account.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct EpochData {
@@ -188,10 +192,12 @@ pub struct EpochData {
     total_gas: u128,
 }
 
-impl MoveResource for EpochData {
-    const MODULE_NAME: &'static str = "Epoch";
-    const STRUCT_NAME: &'static str = "EpochData";
+impl MoveStructType for EpochData {
+    const STRUCT_NAME: &'static IdentStr = ident_str!("EpochData");
+    const MODULE_NAME: &'static IdentStr = ident_str!("Epoch");
 }
+
+impl MoveResource for EpochData {}
 
 impl EpochData {
     pub fn new(uncles: u64, total_reward: u128, total_gas: u128) -> Self {

@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account_config::TOKEN_MODULE_NAME;
-use crate::move_resource::MoveResource;
 use crate::token::token_code::TokenCode;
 use anyhow::Result;
+use move_core_types::ident_str;
+use move_core_types::identifier::IdentStr;
+use move_core_types::move_resource::MoveStructType;
 use serde::{Deserialize, Serialize};
 
 /// Struct that represents a MintEvent.
@@ -30,7 +32,7 @@ impl MintEvent {
     }
 }
 
-impl MoveResource for MintEvent {
-    const MODULE_NAME: &'static str = TOKEN_MODULE_NAME;
-    const STRUCT_NAME: &'static str = "MintEvent";
+impl MoveStructType for MintEvent {
+    const STRUCT_NAME: &'static IdentStr = ident_str!("MintEvent");
+    const MODULE_NAME: &'static IdentStr = ident_str!(TOKEN_MODULE_NAME);
 }

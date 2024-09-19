@@ -30,7 +30,6 @@ use move_core_types::{
     account_address::AccountAddress,
     language_storage::{ModuleId, StructTag},
 };
-use serde::de::DeserializeOwned;
 
 impl<T: ?Sized> StateReaderExt for T where T: StateView {}
 
@@ -57,7 +56,7 @@ pub trait StateReaderExt: StateView {
     /// Get Resource by type R
     fn get_resource_type<R>(&self, address: AccountAddress) -> Result<R>
     where
-        R: MoveResource + DeserializeOwned,
+        R: MoveResource,
     {
         let rsrc_bytes = self
             .get_state_value_bytes(&StateKey::resource_typed::<R>(&address)?)?
@@ -74,9 +73,7 @@ pub trait StateReaderExt: StateView {
     }
 
     fn get_sequence_number(&self, address: AccountAddress) -> Result<u64> {
-        self.get_account_resource(address)?
-            .map(|resource| resource.sequence_number())
-            .ok_or_else(|| format_err!("Can not find account by address:{}", address))
+        Ok(self.get_account_resource(address)?.sequence_number())
     }
 
     fn get_on_chain_config<T>(&self) -> Option<T>
@@ -96,7 +93,7 @@ pub trait StateReaderExt: StateView {
         let rsrc_bytes = self
             .get_state_value_bytes(&StateKey::resource(
                 &address,
-                &BalanceResource::struct_tag_for_token(type_tag),
+                &BalanceResource::struct_tag_for_token(type_tag.clone()),
             )?)?
             .ok_or_else(|| {
                 format_err!(
@@ -118,8 +115,7 @@ pub trait StateReaderExt: StateView {
     }
 
     fn get_epoch(&self) -> Result<Epoch> {
-        self.get_resource_type::<Epoch>(genesis_address())?
-            .ok_or_else(|| format_err!("Epoch is none."))
+        self.get_resource_type::<Epoch>(genesis_address())
     }
 
     fn get_epoch_info(&self) -> Result<EpochInfo> {
@@ -131,8 +127,7 @@ pub trait StateReaderExt: StateView {
     }
 
     fn get_timestamp(&self) -> Result<GlobalTimeOnChain> {
-        self.get_resource_type(genesis_address())?
-            .ok_or_else(|| format_err!("Timestamp resource should exist."))
+        self.get_resource_type::<GlobalTimeOnChain>(genesis_address())
     }
 
     fn get_chain_id(&self) -> Result<ChainId> {
@@ -150,20 +145,20 @@ pub trait StateReaderExt: StateView {
     }
 
     fn get_code(&self, module_id: ModuleId) -> Result<Bytes> {
-        self.get_state_value_bytes(&StateKey::module_id(&module_id)?)?
+        self.get_state_value_bytes(&StateKey::module_id(&module_id))?
             .ok_or_else(|| format_err!("Can not find code by module_id:{}", module_id))
     }
 
     /// Check the sip is activated. if the sip module exist, think it is activated.
     fn is_activated(&self, sip: SIP) -> Result<bool> {
-        self.get_code(sip.module_id()).map(|code| code.is_some())
+        self.get_code(sip.module_id()).map(|code| !code.is_empty())
     }
 
     fn get_token_info(&self, token_code: TokenCode) -> Result<TokenInfo> {
-        let type_tag: StructTag = token_code.try_into()?;
+        let type_tag: StructTag = token_code.clone().try_into()?;
         let rsrc_bytes = self.get_resource(
             token_code.address.clone(),
-            &TokenInfo::struct_tag_for_token(type_tag),
+            &TokenInfo::struct_tag_for(type_tag),
         )?;
         let rsrc = bcs_ext::from_bytes::<TokenInfo>(&rsrc_bytes)?;
         Ok(rsrc)
@@ -174,10 +169,10 @@ pub trait StateReaderExt: StateView {
     }
 
     fn get_treasury(&self, token_code: TokenCode) -> Result<Treasury> {
-        let type_tag: StructTag = token_code.try_into()?;
+        let type_tag: StructTag = token_code.clone().try_into()?;
         let rsrc_bytes = self.get_resource(
             token_code.address.clone(),
-            &Treasury::struct_tag_for_token(type_tag),
+            &Treasury::struct_tag_for(type_tag),
         )?;
         let rsrc = bcs_ext::from_bytes::<Treasury>(&rsrc_bytes)?;
         Ok(rsrc)
@@ -190,12 +185,12 @@ pub trait StateReaderExt: StateView {
     //TODO update to new DAOSpace proposal
     fn get_proposal<A>(&self, token_code: TokenCode) -> Result<Proposal<A>>
     where
-        A: ProposalAction + DeserializeOwned,
+        A: ProposalAction,
     {
-        let type_tag: StructTag = token_code.try_into()?;
+        let type_tag: StructTag = token_code.clone().try_into()?;
         let rsrc_bytes = self.get_resource(
             token_code.address.clone(),
-            &Proposal::<A>::struct_tag_for_token(type_tag),
+            &Proposal::<A>::struct_tag_for(type_tag),
         )?;
         let rsrc = bcs_ext::from_bytes::<Proposal<A>>(&rsrc_bytes)?;
         Ok(rsrc)
@@ -203,7 +198,7 @@ pub trait StateReaderExt: StateView {
 
     fn get_stc_proposal<A>(&self) -> Result<Proposal<A>>
     where
-        A: ProposalAction + DeserializeOwned,
+        A: ProposalAction,
     {
         self.get_proposal(G_STC_TOKEN_CODE.clone())
     }

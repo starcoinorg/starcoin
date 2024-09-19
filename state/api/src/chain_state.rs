@@ -181,7 +181,7 @@ where
     /// Get Resource by type
     pub fn get_resource<R>(&self, address: AccountAddress) -> Result<Option<R>>
     where
-        R: MoveResource + DeserializeOwned,
+        R: MoveResource,
     {
         self.reader.get_resource_type(address)
     }

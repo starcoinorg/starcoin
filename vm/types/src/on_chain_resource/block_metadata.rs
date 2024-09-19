@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::event::EventHandle;
-use crate::move_resource::MoveResource;
 use move_core_types::account_address::AccountAddress;
+use move_core_types::ident_str;
+use move_core_types::identifier::IdentStr;
+use move_core_types::move_resource::{MoveResource, MoveStructType};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 
@@ -21,10 +23,12 @@ pub struct BlockMetadata {
     pub new_block_events: EventHandle,
 }
 
-impl MoveResource for BlockMetadata {
-    const MODULE_NAME: &'static str = "Block";
-    const STRUCT_NAME: &'static str = "BlockMetadata";
+impl MoveStructType for BlockMetadata {
+    const STRUCT_NAME: &'static IdentStr = ident_str!("BlockMetadata");
+    const MODULE_NAME: &'static IdentStr = ident_str!("Block");
 }
+
+impl MoveResource for BlockMetadata {}
 
 /// On chain resource BlockMetadata mapping for FlexiDag block
 #[derive(Debug, Serialize, Deserialize)]
@@ -47,7 +51,9 @@ impl BlockMetadataV2 {
     }
 }
 
-impl MoveResource for BlockMetadataV2 {
-    const MODULE_NAME: &'static str = "Block";
-    const STRUCT_NAME: &'static str = "BlockMetadataV2";
+impl MoveStructType for BlockMetadataV2 {
+    const STRUCT_NAME: &'static IdentStr = ident_str!("BlockMetadataV2");
+    const MODULE_NAME: &'static IdentStr = ident_str!("Block");
 }
+
+impl MoveResource for BlockMetadataV2 {}

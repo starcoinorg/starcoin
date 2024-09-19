@@ -1,9 +1,11 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::move_resource::MoveResource;
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
+use move_core_types::ident_str;
+use move_core_types::identifier::IdentStr;
+use move_core_types::move_resource::MoveStructType;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -20,7 +22,7 @@ impl BlockRewardEvent {
     }
 }
 
-impl MoveResource for BlockRewardEvent {
-    const MODULE_NAME: &'static str = "BlockReward";
-    const STRUCT_NAME: &'static str = "BlockRewardEvent";
+impl MoveStructType for BlockRewardEvent {
+    const STRUCT_NAME: &'static IdentStr = ident_str!("BlockRewardEvent");
+    const MODULE_NAME: &'static IdentStr = ident_str!("BlockReward");
 }

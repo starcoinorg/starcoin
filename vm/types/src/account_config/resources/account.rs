@@ -1,13 +1,15 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::move_resource::MoveResource;
 use crate::{
     account_config::{
         constants::ACCOUNT_MODULE_NAME, KeyRotationCapabilityResource, WithdrawCapabilityResource,
     },
     event::EventHandle,
 };
+use move_core_types::ident_str;
+use move_core_types::identifier::IdentStr;
+use move_core_types::move_resource::{MoveResource, MoveStructType};
 use serde::{Deserialize, Serialize};
 
 /// A Rust representation of an Account resource.
@@ -87,7 +89,9 @@ impl AccountResource {
     }
 }
 
-impl MoveResource for AccountResource {
-    const MODULE_NAME: &'static str = ACCOUNT_MODULE_NAME;
-    const STRUCT_NAME: &'static str = "Account";
+impl MoveStructType for AccountResource {
+    const STRUCT_NAME: &'static IdentStr = ident_str!("Account");
+    const MODULE_NAME: &'static IdentStr = ident_str!(ACCOUNT_MODULE_NAME);
 }
+
+impl MoveResource for AccountResource {}

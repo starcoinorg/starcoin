@@ -8,6 +8,8 @@ pub mod account_address;
 pub mod gas_schedule;
 
 pub mod move_any;
+
+pub mod move_utils;
 pub mod location {
     pub use move_ir_types::location::Loc;
 }

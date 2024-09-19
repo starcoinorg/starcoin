@@ -227,7 +227,7 @@ impl StateKey {
     pub fn is_aptos_code(&self) -> bool {
         match self.inner() {
             StateKeyInner::AccessPath(access_path) => {
-                access_path.is_code()
+                access_path.path.is_code()
                     && (access_path.address == AccountAddress::ONE
                         || access_path.address == AccountAddress::THREE
                         || access_path.address == AccountAddress::FOUR)

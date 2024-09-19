@@ -1,8 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::move_resource::MoveResource;
 use anyhow::{format_err, Result};
+use move_core_types::ident_str;
+use move_core_types::identifier::IdentStr;
+use move_core_types::move_resource::{MoveResource, MoveStructType};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
@@ -10,6 +12,7 @@ use std::cmp::Ordering;
 use std::fmt::{self, Formatter};
 use std::fmt::{Debug, Display};
 use std::str::FromStr;
+
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize, Default)]
 pub enum StdlibVersion {
     #[default]
@@ -229,7 +232,9 @@ impl Into<u8> for ChainId {
     }
 }
 
-impl MoveResource for ChainId {
-    const MODULE_NAME: &'static str = "ChainId";
-    const STRUCT_NAME: &'static str = "ChainId";
+impl MoveStructType for ChainId {
+    const STRUCT_NAME: &'static IdentStr = ident_str!("ChainId");
+    const MODULE_NAME: &'static IdentStr = ident_str!("ChainId");
 }
+
+impl MoveResource for ChainId {}

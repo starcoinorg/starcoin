@@ -7,7 +7,6 @@
 use crate::event::EventKey;
 use crate::{language_storage::TypeTag, move_resource::MoveResource};
 use anyhow::Result;
-use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::{CryptoHash, CryptoHasher};
 use std::ops::Deref;
@@ -93,7 +92,7 @@ impl ContractEventV0 {
         &self.event_data
     }
 
-    pub fn decode_event<EventType: MoveResource + DeserializeOwned>(&self) -> Result<EventType> {
+    pub fn decode_event<EventType: MoveResource>(&self) -> Result<EventType> {
         bcs_ext::from_bytes(self.event_data.as_slice()).map_err(Into::into)
     }
 

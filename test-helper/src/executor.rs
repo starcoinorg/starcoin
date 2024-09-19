@@ -25,6 +25,7 @@ use starcoin_types::{
 };
 use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::move_resource::MoveResource;
+use starcoin_vm_types::state_store::StateView;
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use stdlib::stdlib_files;
 
@@ -302,9 +303,7 @@ pub fn expect_event<Event: MoveResource>(output: &TransactionOutput) -> Contract
         .unwrap_or_else(|| panic!("Expect event: {}", Event::struct_tag()))
 }
 
-pub fn expect_decode_event<Event: MoveResource + DeserializeOwned>(
-    output: &TransactionOutput,
-) -> Event {
+pub fn expect_decode_event<Event: MoveResource>(output: &TransactionOutput) -> Event {
     output
         .events()
         .iter()

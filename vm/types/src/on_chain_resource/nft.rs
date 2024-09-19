@@ -4,9 +4,11 @@
 use crate::account_address::AccountAddress;
 use crate::account_config::CORE_CODE_ADDRESS;
 use crate::language_storage::{StructTag, TypeTag};
-use crate::move_resource::MoveResource;
 use crate::parser::parse_type_tag;
 use anyhow::{ensure, format_err, Result};
+use move_core_types::ident_str;
+use move_core_types::identifier::{IdentStr, Identifier};
+use move_core_types::move_resource::{MoveResource, MoveStructType};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{Display, Formatter};
@@ -274,9 +276,9 @@ impl NFT {
     }
 }
 
-impl MoveResource for NFT {
-    const MODULE_NAME: &'static str = "NFT";
-    const STRUCT_NAME: &'static str = "NFT";
+impl MoveStructType for NFT {
+    const MODULE_NAME: &'static IdentStr = ident_str!("NFT");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("NFT");
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
@@ -289,8 +291,8 @@ impl NFTGallery {
     /// Get nft type from NFTGallery, return None if struct tag is not a valid NFTGallery StructTag
     pub fn nft_type(struct_tag: &StructTag) -> Option<NFTType> {
         if struct_tag.address == CORE_CODE_ADDRESS
-            && struct_tag.module.as_str() == Self::MODULE_NAME
-            && struct_tag.name.as_str() == Self::STRUCT_NAME
+            && struct_tag.module == Identifier::from(Self::MODULE_NAME)
+            && struct_tag.name == Identifier::from(Self::STRUCT_NAME)
         {
             if struct_tag.type_args.len() == 2 {
                 let (meta_type, body_type) = (
@@ -325,9 +327,9 @@ impl NFTGallery {
     }
 }
 
-impl MoveResource for NFTGallery {
-    const MODULE_NAME: &'static str = "NFTGallery";
-    const STRUCT_NAME: &'static str = "NFTGallery";
+impl MoveStructType for NFTGallery {
+    const STRUCT_NAME: &'static IdentStr = ident_str!("NFTGallery");
+    const MODULE_NAME: &'static IdentStr = ident_str!("NFTGallery");
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
@@ -341,8 +343,8 @@ impl IdentifierNFT {
     /// Get nft type from IdentifierNFT, return None if struct tag is not a valid IdentifierNFT StructTag
     pub fn nft_type(struct_tag: &StructTag) -> Option<NFTType> {
         if struct_tag.address == CORE_CODE_ADDRESS
-            && struct_tag.module.as_str() == Self::MODULE_NAME
-            && struct_tag.name.as_str() == Self::STRUCT_NAME
+            && struct_tag.module == Self::MODULE_NAME.into()
+            && struct_tag.name == Self::STRUCT_NAME.into()
         {
             if struct_tag.type_args.len() == 2 {
                 let (meta_type, body_type) = (
@@ -389,10 +391,12 @@ impl IdentifierNFT {
     }
 }
 
-impl MoveResource for IdentifierNFT {
-    const MODULE_NAME: &'static str = "IdentifierNFT";
-    const STRUCT_NAME: &'static str = "IdentifierNFT";
+impl MoveStructType for IdentifierNFT {
+    const STRUCT_NAME: &'static IdentStr = ident_str!("IdentifierNFT");
+    const MODULE_NAME: &'static IdentStr = ident_str!("IdentifierNFT");
 }
+
+impl MoveResource for IdentifierNFT {}
 
 #[cfg(test)]
 mod tests {
