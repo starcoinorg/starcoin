@@ -466,7 +466,7 @@ impl BlockDAG {
             "the next pruning point is: {:?}, and the previous pruning point is: {:?}",
             next_pruning_point, previous_pruning_point
         );
-        if next_pruning_point == Hash::zero() {
+        if next_pruning_point == Hash::zero() || next_pruning_point == previous_pruning_point {
             anyhow::Ok(MineNewDagBlockInfo {
                 tips: dag_state.tips,
                 blue_blocks: (*next_ghostdata.mergeset_blues).clone(),

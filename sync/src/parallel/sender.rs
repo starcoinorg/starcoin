@@ -66,7 +66,6 @@ impl<'a> DagBlockSender<'a> {
                         || block.header.parents_hash().contains(header_id)
                     {
                         executor.state = ExecuteState::Executing(block.id());
-                        info!("send block {:?} to executor {:p}", block.id(), &executor);
                         executor
                             .sender_to_executor
                             .send(Some(block.clone()))
@@ -84,7 +83,6 @@ impl<'a> DagBlockSender<'a> {
             match &executor.state {
                 ExecuteState::Executed(_) => {
                     executor.state = ExecuteState::Executing(block.id());
-                    info!("send block {:?} to executor {:p}", block.id(), &executor);
                     executor
                         .sender_to_executor
                         .send(Some(block.clone()))

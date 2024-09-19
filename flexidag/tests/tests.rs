@@ -1010,6 +1010,40 @@ fn test_prune() -> anyhow::Result<()> {
     assert_eq!(tips.len(), 1);
     assert_eq!(*tips.last().unwrap(), block_main_5.id());
 
+        // prunning process begins
+        dag.save_dag_state(
+            pruning_point,
+            DagState {
+                tips: tips.clone(),
+            },
+        )?;
+
+    let block_main_6 = add_and_print(
+        6,
+        block_main_5.id(),
+        tips,
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+
+    let MineNewDagBlockInfo {
+        tips,
+        blue_blocks: _,
+        pruning_point,
+    } = dag.calc_mergeset_and_tips(
+        pruning_point,
+        dag.ghostdata_by_hash(pruning_point)?.ok_or_else(|| format_err!("failed to get the ghostdata for main 5 block"))?.as_ref(),
+        pruning_depth,
+        pruning_finality,
+    )?;
+
+    let mut new_tips = vec![];
+    tips.into_iter().filter(|id| dag.ghost_dag_manager().check_ancestor_of(*id, vec![block_main_6.id()]).unwrap()).for_each(|id| new_tips.push(id));
+
+    assert_eq!(pruning_point, block_main_2.id());
+    assert_eq!(new_tips.len(), 1);
+    assert_eq!(*new_tips.last().unwrap(), block_main_6.id());
+
     anyhow::Result::Ok(())
 }
 
