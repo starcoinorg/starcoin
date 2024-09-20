@@ -74,7 +74,7 @@ impl KeyPairHolder {
     pub fn sign_txn(&self, txn: RawUserTransaction) -> Result<SignedUserTransaction> {
         Ok(match self {
             Self::Ed25519(private_key, public_key) => {
-                let signature = private_key.sign(&txn);
+                let signature = private_key.sign(&txn)?;
                 SignedUserTransaction::ed25519(txn, public_key.clone(), signature)
             }
             Self::MultiEd25519(private_key, public_key) => {

@@ -478,7 +478,8 @@ impl<'a> StarcoinTestAdapter<'a> {
     fn sign(&self, raw_txn: RawUserTransaction) -> SignedUserTransaction {
         let keypair = genesis_key_pair();
         let account_private_key: AccountPrivateKey = keypair.0.into();
-        let auth = account_private_key.sign(&raw_txn);
+        // It's ok to unwrap here because this is only used in tests
+        let auth = account_private_key.sign(&raw_txn).unwrap();
         SignedUserTransaction::new(raw_txn, auth)
     }
 

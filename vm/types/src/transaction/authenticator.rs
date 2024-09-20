@@ -461,18 +461,18 @@ impl AccountPrivateKey {
         }
     }
 
-    pub fn sign<T: CryptoHash + Serialize>(&self, message: &T) -> TransactionAuthenticator {
-        match self {
+    pub fn sign<T: CryptoHash + Serialize>(&self, message: &T) -> Result<TransactionAuthenticator> {
+        Ok(match self {
             Self::Single(key) => {
-                TransactionAuthenticator::ed25519(key.public_key(), key.sign(message))
+                TransactionAuthenticator::ed25519(key.public_key(), key.sign(message)?)
             }
             Self::Multi(key) => {
                 TransactionAuthenticator::multi_ed25519(key.public_key(), key.sign(message).into())
             }
-        }
+        })
     }
 
-    pub fn sign_message(&self, message: &SigningMessage) -> TransactionAuthenticator {
+    pub fn sign_message(&self, message: &SigningMessage) -> Result<TransactionAuthenticator> {
         self.sign(message)
     }
 }

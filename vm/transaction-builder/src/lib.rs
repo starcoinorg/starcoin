@@ -302,26 +302,29 @@ pub fn peer_to_peer_v2(
     amount: u128,
     net: &ChainNetwork,
 ) -> SignedUserTransaction {
-    sender.sign_txn(RawUserTransaction::new_with_default_gas_token(
-        *sender.address(),
-        seq_num,
-        TransactionPayload::ScriptFunction(ScriptFunction::new(
-            ModuleId::new(
-                core_code_address(),
-                Identifier::new("TransferScripts").unwrap(),
-            ),
-            Identifier::new("peer_to_peer_v2").unwrap(),
-            vec![stc_type_tag()],
-            vec![
-                bcs_ext::to_bytes(&recipient).unwrap(),
-                bcs_ext::to_bytes(&amount).unwrap(),
-            ],
-        )),
-        10000000,
-        1,
-        1000 + 60 * 60,
-        net.chain_id(),
-    ))
+    // It's ok to unwrap here, because we know the script exists in the stdlib.
+    sender
+        .sign_txn(RawUserTransaction::new_with_default_gas_token(
+            *sender.address(),
+            seq_num,
+            TransactionPayload::ScriptFunction(ScriptFunction::new(
+                ModuleId::new(
+                    core_code_address(),
+                    Identifier::new("TransferScripts").unwrap(),
+                ),
+                Identifier::new("peer_to_peer_v2").unwrap(),
+                vec![stc_type_tag()],
+                vec![
+                    bcs_ext::to_bytes(&recipient).unwrap(),
+                    bcs_ext::to_bytes(&amount).unwrap(),
+                ],
+            )),
+            10000000,
+            1,
+            1000 + 60 * 60,
+            net.chain_id(),
+        ))
+        .unwrap()
 }
 
 //this only work for DEV or TEST
@@ -1076,6 +1079,7 @@ pub fn build_signed_empty_txn(
         expiration_timestamp_secs,
         chain_id,
     );
-    let signature = prikey.sign(&txn);
+    // It's ok to unwrap here, signing an empty txn should never fail.
+    let signature = prikey.sign(&txn).unwrap();
     SignedUserTransaction::new(txn, signature)
 }

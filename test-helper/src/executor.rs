@@ -250,7 +250,8 @@ fn build_signed_txn(
     payload: TransactionPayload,
 ) -> SignedUserTransaction {
     let txn = build_raw_txn(user_address, state, payload, None);
-    let signature = prikey.sign(&txn);
+    // It's ok to unwrap here, we just build the txn, and this function is only used for testing purpose.
+    let signature = prikey.sign(&txn).unwrap();
     SignedUserTransaction::new(txn, signature)
 }
 
