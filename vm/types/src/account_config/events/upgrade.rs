@@ -4,7 +4,7 @@
 use crate::account_address::AccountAddress;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
-use move_core_types::move_resource::MoveStructType;
+use move_core_types::move_resource::{MoveResource, MoveStructType};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 
@@ -21,6 +21,8 @@ impl UpgradeEvent {
 }
 
 impl MoveStructType for UpgradeEvent {
-    const STRUCT_NAME: &'static IdentStr = ident_str!("UpgradeEvent");
     const MODULE_NAME: &'static IdentStr = ident_str!("PackageTxnManager");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("UpgradeEvent");
 }
+
+impl MoveResource for UpgradeEvent {}

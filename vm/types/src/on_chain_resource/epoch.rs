@@ -122,8 +122,8 @@ impl Epoch {
 }
 
 impl MoveStructType for Epoch {
-    const STRUCT_NAME: &'static IdentStr = ident_str!("Epoch");
     const MODULE_NAME: &'static IdentStr = ident_str!("Epoch");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("Epoch");
 }
 
 impl MoveResource for Epoch {}
@@ -193,8 +193,8 @@ pub struct EpochData {
 }
 
 impl MoveStructType for EpochData {
-    const STRUCT_NAME: &'static IdentStr = ident_str!("EpochData");
     const MODULE_NAME: &'static IdentStr = ident_str!("Epoch");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("EpochData");
 }
 
 impl MoveResource for EpochData {}

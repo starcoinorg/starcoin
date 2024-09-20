@@ -24,8 +24,8 @@ pub struct BlockMetadata {
 }
 
 impl MoveStructType for BlockMetadata {
-    const STRUCT_NAME: &'static IdentStr = ident_str!("BlockMetadata");
     const MODULE_NAME: &'static IdentStr = ident_str!("Block");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("BlockMetadata");
 }
 
 impl MoveResource for BlockMetadata {}
@@ -52,8 +52,8 @@ impl BlockMetadataV2 {
 }
 
 impl MoveStructType for BlockMetadataV2 {
-    const STRUCT_NAME: &'static IdentStr = ident_str!("BlockMetadataV2");
     const MODULE_NAME: &'static IdentStr = ident_str!("Block");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("BlockMetadataV2");
 }
 
 impl MoveResource for BlockMetadataV2 {}

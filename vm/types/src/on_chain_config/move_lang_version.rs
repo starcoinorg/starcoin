@@ -4,7 +4,7 @@
 use crate::on_chain_config::OnChainConfig;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
-use move_core_types::move_resource::MoveStructType;
+use move_core_types::move_resource::{MoveResource, MoveStructType};
 use serde::{Deserialize, Serialize};
 
 const MV_LANG_VERSION_MODULE_NAME: &str = "LanguageVersion";
@@ -21,6 +21,8 @@ impl OnChainConfig for MoveLanguageVersion {
     const TYPE_IDENTIFIER: &'static str = MV_LANG_VERSION_STRUCT_NAME;
 }
 impl MoveStructType for MoveLanguageVersion {
-    const STRUCT_NAME: &'static IdentStr = ident_str!(MV_LANG_VERSION_STRUCT_NAME);
     const MODULE_NAME: &'static IdentStr = ident_str!(MV_LANG_VERSION_MODULE_NAME);
+    const STRUCT_NAME: &'static IdentStr = ident_str!(MV_LANG_VERSION_STRUCT_NAME);
 }
+
+impl MoveResource for MoveLanguageVersion {}

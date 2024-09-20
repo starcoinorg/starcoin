@@ -5,7 +5,7 @@ use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
-use move_core_types::move_resource::MoveStructType;
+use move_core_types::move_resource::{MoveResource, MoveStructType};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Serialize, Deserialize)]
@@ -19,9 +19,11 @@ impl ProposalCreatedEvent {
     }
 }
 impl MoveStructType for ProposalCreatedEvent {
-    const STRUCT_NAME: &'static IdentStr = ident_str!("ProposalCreatedEvent");
     const MODULE_NAME: &'static IdentStr = ident_str!("Dao");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("ProposalCreatedEvent");
 }
+
+impl MoveResource for ProposalCreatedEvent {}
 
 /// emitted when user vote/revoke_vote.
 #[derive(Clone, Copy, Serialize, Deserialize)]
@@ -35,9 +37,11 @@ pub struct VoteChangedEvent {
 }
 
 impl MoveStructType for VoteChangedEvent {
-    const STRUCT_NAME: &'static IdentStr = ident_str!("VoteChangedEvent");
     const MODULE_NAME: &'static IdentStr = ident_str!("Dao");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("VoteChangedEvent");
 }
+
+impl MoveResource for VoteChangedEvent {}
 
 impl VoteChangedEvent {
     pub fn try_from_bytes(bytes: &[u8]) -> Result<Self> {

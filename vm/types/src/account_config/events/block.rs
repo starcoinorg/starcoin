@@ -4,7 +4,7 @@
 use crate::account_address::AccountAddress;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
-use move_core_types::move_resource::MoveStructType;
+use move_core_types::move_resource::{MoveResource, MoveStructType};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone)]
@@ -21,6 +21,8 @@ impl NewBlockEvent {
 }
 
 impl MoveStructType for NewBlockEvent {
-    const STRUCT_NAME: &'static IdentStr = ident_str!("NewBlockEvent");
     const MODULE_NAME: &'static IdentStr = ident_str!("Block");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("NewBlockEvent");
 }
+
+impl MoveResource for NewBlockEvent {}

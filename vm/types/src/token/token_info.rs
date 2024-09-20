@@ -23,8 +23,8 @@ pub struct TokenInfo {
 }
 
 impl MoveStructType for TokenInfo {
-    const STRUCT_NAME: &'static IdentStr = ident_str!("TokenInfo");
     const MODULE_NAME: &'static IdentStr = ident_str!("Token");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("TokenInfo");
 }
 
 impl MoveResource for TokenInfo {}

@@ -6,7 +6,7 @@ use crate::on_chain_config::OnChainConfig;
 use move_core_types::ident_str;
 use move_core_types::identifier::{IdentStr, Identifier};
 use move_core_types::language_storage::{StructTag, TypeTag, CORE_CODE_ADDRESS};
-use move_core_types::move_resource::MoveStructType;
+use move_core_types::move_resource::{MoveResource, MoveStructType};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
@@ -35,9 +35,11 @@ impl OnChainConfig for Version {
     const TYPE_IDENTIFIER: &'static str = VERSION_CONFIG_MODULE_NAME;
 }
 impl MoveStructType for Version {
-    const STRUCT_NAME: &'static IdentStr = ident_str!("Version");
     const MODULE_NAME: &'static IdentStr = ident_str!(VERSION_CONFIG_MODULE_NAME);
+    const STRUCT_NAME: &'static IdentStr = ident_str!("Version");
 }
+
+impl MoveResource for Version {}
 pub fn version_config_type_tag() -> TypeTag {
     TypeTag::Struct(Box::new(StructTag {
         address: CORE_CODE_ADDRESS,

@@ -90,8 +90,8 @@ impl AccountResource {
 }
 
 impl MoveStructType for AccountResource {
-    const STRUCT_NAME: &'static IdentStr = ident_str!("Account");
     const MODULE_NAME: &'static IdentStr = ident_str!(ACCOUNT_MODULE_NAME);
+    const STRUCT_NAME: &'static IdentStr = ident_str!("Account");
 }
 
 impl MoveResource for AccountResource {}

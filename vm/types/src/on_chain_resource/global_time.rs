@@ -28,8 +28,8 @@ impl GlobalTimeOnChain {
 }
 
 impl MoveStructType for GlobalTimeOnChain {
-    const STRUCT_NAME: &'static IdentStr = ident_str!("CurrentTimeMilliseconds");
     const MODULE_NAME: &'static IdentStr = ident_str!(TIMESTAMP_MODULE_NAME);
+    const STRUCT_NAME: &'static IdentStr = ident_str!("CurrentTimeMilliseconds");
 }
 
 impl MoveResource for GlobalTimeOnChain {}

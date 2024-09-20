@@ -281,6 +281,8 @@ impl MoveStructType for NFT {
     const STRUCT_NAME: &'static IdentStr = ident_str!("NFT");
 }
 
+impl MoveResource for NFT {}
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct NFTGallery {
@@ -328,9 +330,11 @@ impl NFTGallery {
 }
 
 impl MoveStructType for NFTGallery {
-    const STRUCT_NAME: &'static IdentStr = ident_str!("NFTGallery");
     const MODULE_NAME: &'static IdentStr = ident_str!("NFTGallery");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("NFTGallery");
 }
+
+impl MoveResource for NFTGallery {}
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 #[allow(clippy::upper_case_acronyms)]
@@ -392,8 +396,8 @@ impl IdentifierNFT {
 }
 
 impl MoveStructType for IdentifierNFT {
-    const STRUCT_NAME: &'static IdentStr = ident_str!("IdentifierNFT");
     const MODULE_NAME: &'static IdentStr = ident_str!("IdentifierNFT");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("IdentifierNFT");
 }
 
 impl MoveResource for IdentifierNFT {}

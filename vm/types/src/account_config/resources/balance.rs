@@ -10,7 +10,7 @@ use crate::{
 use move_core_types::ident_str;
 use move_core_types::identifier::{IdentStr, Identifier};
 use move_core_types::language_storage::{StructTag, TypeTag};
-use move_core_types::move_resource::MoveStructType;
+use move_core_types::move_resource::{MoveResource, MoveStructType};
 use serde::{Deserialize, Serialize};
 
 /// The balance resource held under an account.
@@ -61,9 +61,11 @@ impl BalanceResource {
 }
 
 impl MoveStructType for BalanceResource {
+    const MODULE_NAME: &'static IdentStr = ident_str!(ACCOUNT_MODULE_NAME);
     const STRUCT_NAME: &'static IdentStr = ident_str!("Balance");
     fn type_args() -> Vec<TypeTag> {
         vec![stc_type_tag()]
     }
-    const MODULE_NAME: &'static IdentStr = ident_str!(ACCOUNT_MODULE_NAME);
 }
+
+impl MoveResource for BalanceResource {}

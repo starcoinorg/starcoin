@@ -6,7 +6,7 @@ use crate::token::token_code::TokenCode;
 use move_core_types::ident_str;
 use move_core_types::identifier::{IdentStr, Identifier};
 use move_core_types::language_storage::{StructTag, TypeTag};
-use move_core_types::move_resource::MoveStructType;
+use move_core_types::move_resource::{MoveResource, MoveStructType};
 use serde::{Deserialize, Serialize};
 
 /// The AutoAcceptToken resource held under an account.
@@ -38,6 +38,8 @@ impl AutoAcceptToken {
 }
 
 impl MoveStructType for AutoAcceptToken {
-    const STRUCT_NAME: &'static IdentStr = ident_str!("AutoAcceptToken");
     const MODULE_NAME: &'static IdentStr = ident_str!(ACCOUNT_MODULE_NAME);
+    const STRUCT_NAME: &'static IdentStr = ident_str!("AutoAcceptToken");
 }
+
+impl MoveResource for AutoAcceptToken {}

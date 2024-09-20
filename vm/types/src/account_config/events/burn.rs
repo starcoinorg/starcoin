@@ -6,7 +6,7 @@ use crate::token::token_code::TokenCode;
 use anyhow::Result;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
-use move_core_types::move_resource::MoveStructType;
+use move_core_types::move_resource::{MoveResource, MoveStructType};
 use serde::{Deserialize, Serialize};
 
 /// Struct that represents a BurnEvent.
@@ -33,6 +33,8 @@ impl BurnEvent {
 }
 
 impl MoveStructType for BurnEvent {
-    const STRUCT_NAME: &'static IdentStr = ident_str!("BurnEvent");
     const MODULE_NAME: &'static IdentStr = ident_str!(TOKEN_MODULE_NAME);
+    const STRUCT_NAME: &'static IdentStr = ident_str!("BurnEvent");
 }
+
+impl MoveResource for BurnEvent {}

@@ -6,7 +6,7 @@ use crate::account_address::AccountAddress;
 use crate::event::EventHandle;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
-use move_core_types::move_resource::MoveStructType;
+use move_core_types::move_resource::{MoveResource, MoveStructType};
 use serde::{Deserialize, Serialize};
 
 pub const _STRATEGY_ARBITRARY: u8 = 0;
@@ -30,9 +30,11 @@ impl ModuleUpgradeStrategy {
 }
 
 impl MoveStructType for ModuleUpgradeStrategy {
-    const STRUCT_NAME: &'static IdentStr = ident_str!("ModuleUpgradeStrategy");
     const MODULE_NAME: &'static IdentStr = ident_str!("PackageTxnManager");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("ModuleUpgradeStrategy");
 }
+
+impl MoveResource for ModuleUpgradeStrategy {}
 
 pub fn access_path_for_module_upgrade_strategy(address: AccountAddress) -> AccessPath {
     AccessPath::resource_access_path(address, ModuleUpgradeStrategy::struct_tag())
@@ -54,9 +56,11 @@ impl TwoPhaseUpgradeV2Resource {
     }
 }
 impl MoveStructType for TwoPhaseUpgradeV2Resource {
-    const STRUCT_NAME: &'static IdentStr = ident_str!("TwoPhaseUpgradeV2");
     const MODULE_NAME: &'static IdentStr = ident_str!("PackageTxnManager");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("TwoPhaseUpgradeV2");
 }
+
+impl MoveResource for TwoPhaseUpgradeV2Resource {}
 
 pub fn access_path_for_two_phase_upgrade_v2(address: AccountAddress) -> AccessPath {
     AccessPath::resource_access_path(address, TwoPhaseUpgradeV2Resource::struct_tag())
@@ -67,9 +71,11 @@ pub struct TwoPhaseUpgradeConfigResource {
     min_time_limit: u64,
 }
 impl MoveStructType for TwoPhaseUpgradeConfigResource {
-    const STRUCT_NAME: &'static IdentStr = ident_str!("TwoPhaseUpgradeConfig");
     const MODULE_NAME: &'static IdentStr = ident_str!("PackageTxnManager");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("TwoPhaseUpgradeConfig");
 }
+
+impl MoveResource for TwoPhaseUpgradeConfigResource {}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UpgradePlanV2Resource {
@@ -83,6 +89,8 @@ impl MoveStructType for UpgradePlanV2Resource {
     const STRUCT_NAME: &'static IdentStr = ident_str!("UpgradePlanV2");
 }
 
+impl MoveResource for UpgradePlanV2Resource {}
+
 #[derive(Debug, Serialize, Deserialize)]
 struct ModifyConfigCapabilityResource {
     account_address: AccountAddress,
@@ -92,3 +100,5 @@ impl MoveStructType for ModifyConfigCapabilityResource {
     const MODULE_NAME: &'static IdentStr = ident_str!("PackageTxnManager");
     const STRUCT_NAME: &'static IdentStr = ident_str!("ModifyConfigCapability");
 }
+
+impl MoveResource for ModifyConfigCapabilityResource {}

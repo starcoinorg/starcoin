@@ -7,7 +7,7 @@ use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
 use move_core_types::move_resource::MoveStructType;
-use serde::Serialize;
+use serde::{Deserializer, Serialize};
 
 //TODO support deserialize
 #[derive(Debug, Serialize)]
@@ -19,9 +19,9 @@ pub struct ConfigChangeEvent<V: OnChainConfig> {
 impl<V> ConfigChangeEvent<V> where V: OnChainConfig {}
 
 impl<V: OnChainConfig> MoveStructType for ConfigChangeEvent<V> {
+    const MODULE_NAME: &'static IdentStr = ident_str!("Config");
     const STRUCT_NAME: &'static IdentStr = ident_str!("ConfigChangeEvent");
     fn type_args() -> Vec<TypeTag> {
         vec![TypeTag::Struct(Box::new(V::config_id().struct_tag()))]
     }
-    const MODULE_NAME: &'static IdentStr = ident_str!("Config");
 }

@@ -89,8 +89,8 @@ impl<C> MoveStructType for OnChainConfigUpdate<C>
 where
     C: OnChainConfig,
 {
-    const STRUCT_NAME: &'static IdentStr = ident_str!("OnChainConfigUpdate");
     const MODULE_NAME: &'static IdentStr = ident_str!("OnChainConfigDao");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("OnChainConfigUpdate");
 }
 
 //TODO fixme
