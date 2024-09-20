@@ -56,7 +56,7 @@ pub struct BlockDAG {
 }
 
 impl BlockDAG {
-    pub fn new(k: KType, db: FlexiDagStorage) -> Self {
+    pub fn new(k: KType, db: FlexiDagStorage, pruning_depth: u64, pruning_finality: u64) -> Self {
         let ghostdag_store = db.ghost_dag_store.clone();
         let header_store = db.header_store.clone();
         let relations_store = db.relations_store.clone();
@@ -69,7 +69,12 @@ impl BlockDAG {
             header_store,
             reachability_service.clone(),
         );
-        let pruning_point_manager = PruningPointManager::new(reachability_service, ghostdag_store);
+        let pruning_point_manager = PruningPointManager::new(
+            reachability_service,
+            ghostdag_store,
+            pruning_depth,
+            pruning_finality,
+        );
 
         Self {
             ghostdag_manager,
@@ -84,13 +89,22 @@ impl BlockDAG {
             ..Default::default()
         };
         let dag_storage = FlexiDagStorage::create_from_path(temp_dir(), config)?;
-        Ok(Self::new(DEFAULT_GHOSTDAG_K, dag_storage))
+        Ok(Self::new(
+            DEFAULT_GHOSTDAG_K,
+            dag_storage,
+            G_PRUNING_DEPTH,
+            G_PRUNING_FINALITY,
+        ))
     }
 
-    pub fn create_for_testing_with_parameters(k: KType) -> anyhow::Result<Self> {
+    pub fn create_for_testing_with_parameters(
+        k: KType,
+        pruning_depth: u64,
+        pruning_finality: u64,
+    ) -> anyhow::Result<Self> {
         let dag_storage =
             FlexiDagStorage::create_from_path(temp_dir(), FlexiDagStorageConfig::default())?;
-        Ok(Self::new(k, dag_storage))
+        Ok(Self::new(k, dag_storage, pruning_depth, pruning_finality))
     }
 
     pub fn has_dag_block(&self, hash: Hash) -> anyhow::Result<bool> {
@@ -445,8 +459,6 @@ impl BlockDAG {
         &self,
         previous_pruning_point: HashValue,
         previous_ghostdata: &GhostdagData,
-        pruning_depth: u64,
-        pruning_finality: u64,
     ) -> anyhow::Result<MineNewDagBlockInfo> {
         info!("start to calculate the mergeset and tips, previous pruning point: {:?}, previous ghostdata: {:?}", previous_pruning_point, previous_ghostdata);
         let dag_state = self.get_dag_state(previous_pruning_point)?;
@@ -459,8 +471,6 @@ impl BlockDAG {
             previous_pruning_point,
             previous_ghostdata,
             &next_ghostdata,
-            pruning_depth,
-            pruning_finality,
         )?;
         info!(
             "the next pruning point is: {:?}, and the previous pruning point is: {:?}",
@@ -507,24 +517,8 @@ impl BlockDAG {
             previous_pruning_point,
             previous_ghostdata,
             next_ghostdata,
-            G_PRUNING_DEPTH,
-            G_PRUNING_FINALITY,
         )?;
 
-        // if (block_header.chain_id().is_vega()
-        //     || block_header.chain_id().is_proxima()
-        //     || block_header.chain_id().is_halley())
-        //     && block_header.pruning_point() == HashValue::zero()
-        // {
-        //     if next_pruning_point == genesis_id {
-        //         return anyhow::Ok(());
-        //     } else {
-        //         bail!(
-        //             "pruning point is not correct, it should update the next pruning point: {}",
-        //             next_pruning_point
-        //         );
-        //     }
-        // }
         if next_pruning_point != inside_next_pruning_point {
             bail!("pruning point is not correct, the local next pruning point is {}, but the block header pruning point is {}", next_pruning_point, inside_next_pruning_point);
         }

@@ -12,6 +12,7 @@ use pin_utils::core_reexport::time::Duration;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain_api::ChainReader;
 use starcoin_chain_service::ChainReaderService;
+use starcoin_config::genesis_config::{G_PRUNING_DEPTH, G_PRUNING_FINALITY};
 use starcoin_config::{BuiltinNetworkID, ChainNetwork, NodeConfig, RocksdbConfig};
 use starcoin_dag::blockdag::DEFAULT_GHOSTDAG_K;
 use starcoin_dag::consensusdb::prelude::FlexiDagStorageConfig;
@@ -59,7 +60,12 @@ impl SyncTestSystem {
             FlexiDagStorageConfig::new(),
         )
         .expect("init dag storage fail.");
-        let dag = starcoin_dag::blockdag::BlockDAG::new(DEFAULT_GHOSTDAG_K, dag_storage); // local dag
+        let dag = starcoin_dag::blockdag::BlockDAG::new(
+            DEFAULT_GHOSTDAG_K,
+            dag_storage,
+            G_PRUNING_DEPTH,
+            G_PRUNING_FINALITY,
+        ); // local dag
 
         let chain_info =
             genesis.execute_genesis_block(config.net(), storage.clone(), dag.clone())?;

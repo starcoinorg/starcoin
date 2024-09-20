@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, format_err, Ok, Result};
+use starcoin_config::genesis_config::{G_PRUNING_DEPTH, G_PRUNING_FINALITY};
 use starcoin_crypto::HashValue as Hash;
 use starcoin_dag::{
     blockdag::{BlockDAG, MineNewDagBlockInfo},
@@ -877,7 +878,8 @@ fn test_prune() -> anyhow::Result<()> {
     let pruning_depth = 4;
     let pruning_finality = 3;
 
-    let mut dag = BlockDAG::create_for_testing_with_parameters(k).unwrap();
+    let mut dag =
+        BlockDAG::create_for_testing_with_parameters(k, pruning_depth, pruning_finality).unwrap();
 
     let origin = BlockHeaderBuilder::random().with_number(0).build();
     let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;
@@ -999,32 +1001,16 @@ fn test_prune() -> anyhow::Result<()> {
         tips,
         blue_blocks: _,
         pruning_point,
-    } = dag.calc_mergeset_and_tips(
-        previous_pruning_point,
-        previous_ghostdata.as_ref(),
-        pruning_depth,
-        pruning_finality,
-    )?;
+    } = dag.calc_mergeset_and_tips(previous_pruning_point, previous_ghostdata.as_ref())?;
 
     assert_eq!(pruning_point, block_main_2.id());
     assert_eq!(tips.len(), 1);
     assert_eq!(*tips.last().unwrap(), block_main_5.id());
 
-        // prunning process begins
-        dag.save_dag_state(
-            pruning_point,
-            DagState {
-                tips: tips.clone(),
-            },
-        )?;
+    // prunning process begins
+    dag.save_dag_state(pruning_point, DagState { tips: tips.clone() })?;
 
-    let block_main_6 = add_and_print(
-        6,
-        block_main_5.id(),
-        tips,
-        genesis.parent_hash(),
-        &mut dag,
-    )?;
+    let block_main_6 = add_and_print(6, block_main_5.id(), tips, genesis.parent_hash(), &mut dag)?;
 
     let MineNewDagBlockInfo {
         tips,
@@ -1032,13 +1018,19 @@ fn test_prune() -> anyhow::Result<()> {
         pruning_point,
     } = dag.calc_mergeset_and_tips(
         pruning_point,
-        dag.ghostdata_by_hash(pruning_point)?.ok_or_else(|| format_err!("failed to get the ghostdata for main 5 block"))?.as_ref(),
-        pruning_depth,
-        pruning_finality,
+        dag.ghostdata_by_hash(pruning_point)?
+            .ok_or_else(|| format_err!("failed to get the ghostdata for main 5 block"))?
+            .as_ref(),
     )?;
 
     let mut new_tips = vec![];
-    tips.into_iter().filter(|id| dag.ghost_dag_manager().check_ancestor_of(*id, vec![block_main_6.id()]).unwrap()).for_each(|id| new_tips.push(id));
+    tips.into_iter()
+        .filter(|id| {
+            dag.ghost_dag_manager()
+                .check_ancestor_of(*id, vec![block_main_6.id()])
+                .unwrap()
+        })
+        .for_each(|id| new_tips.push(id));
 
     assert_eq!(pruning_point, block_main_2.id());
     assert_eq!(new_tips.len(), 1);
@@ -1052,7 +1044,9 @@ fn test_verification_blue_block() -> anyhow::Result<()> {
     // initialzie the dag firstly
     let k = 5;
 
-    let mut dag = BlockDAG::create_for_testing_with_parameters(k).unwrap();
+    let mut dag =
+        BlockDAG::create_for_testing_with_parameters(k, G_PRUNING_DEPTH, G_PRUNING_FINALITY)
+            .unwrap();
 
     let origin = BlockHeaderBuilder::random().with_number(0).build();
     let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;

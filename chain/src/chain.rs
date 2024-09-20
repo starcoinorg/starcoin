@@ -1390,6 +1390,7 @@ impl ChainReader for BlockChain {
                     .ghost_dag_store
                     .get_data(previous_header.pruning_point())?
             };
+
             self.dag().verify_pruning_point(
                 previous_header.pruning_point(),
                 previous_ghostdata.as_ref(),
@@ -1613,11 +1614,11 @@ impl BlockChain {
         } else if chain_id.is_halley() {
             4200000
         } else if chain_id.is_main() {
-            0
+            1
         } else if chain_id.is_dag_test() || chain_id.is_test() || chain_id.is_dev() {
             BlockNumber::MAX
         } else {
-            0
+            1
         }
     }
 }

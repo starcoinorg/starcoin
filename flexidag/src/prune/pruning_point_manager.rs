@@ -1,6 +1,5 @@
 use starcoin_crypto::HashValue;
-use starcoin_logger::prelude::debug;
-use starcoin_types::blockhash::ORIGIN;
+use starcoin_logger::prelude::{debug, info};
 
 use crate::reachability::reachability_service::ReachabilityService;
 use crate::{
@@ -16,16 +15,22 @@ use crate::{
 pub struct PruningPointManagerT<T: ReachabilityStoreReader + Clone> {
     reachability_service: MTReachabilityService<T>,
     ghost_dag_store: DbGhostdagStore,
+    pruning_depth: u64,
+    pruning_finality: u64,
 }
 
 impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
     pub fn new(
         reachability_service: MTReachabilityService<T>,
         ghost_dag_store: DbGhostdagStore,
+        pruning_depth: u64,
+        pruning_finality: u64,
     ) -> Self {
         Self {
             reachability_service,
             ghost_dag_store,
+            pruning_depth,
+            pruning_finality,
         }
     }
 
@@ -33,8 +38,8 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
         self.reachability_service.clone()
     }
 
-    pub fn finality_score(&self, blue_score: u64, pruning_finality: u64) -> u64 {
-        blue_score / pruning_finality
+    pub fn finality_score(&self, blue_score: u64) -> u64 {
+        blue_score / self.pruning_finality
     }
 
     pub fn prune(
@@ -64,12 +69,9 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
         previous_pruning_point: HashValue,
         previous_ghostdata: &GhostdagData,
         next_ghostdata: &GhostdagData,
-        pruning_depth: u64,
-        pruning_finality: u64,
     ) -> anyhow::Result<HashValue> {
         let min_required_blue_score_for_next_pruning_point =
-            (self.finality_score(previous_ghostdata.blue_score, pruning_finality) + 1)
-                * pruning_finality;
+            (self.finality_score(previous_ghostdata.blue_score) + 1) * self.pruning_finality;
 
         debug!(
             "min_required_blue_score_for_next_pruning_point: {:?}",
@@ -77,7 +79,7 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
         );
 
         let mut latest_pruning_ghost_data = previous_ghostdata.to_compact();
-        if min_required_blue_score_for_next_pruning_point + pruning_depth
+        if min_required_blue_score_for_next_pruning_point + self.pruning_depth
             <= next_ghostdata.blue_score
         {
             for child in self.reachability_service().forward_chain_iterator(
@@ -90,11 +92,13 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
                     "child: {:?}, observer2.blue_score: {:?}, next_pruning_ghostdata.blue_score: {:?}",
                     child, next_ghostdata.blue_score, next_pruning_ghostdata.blue_score
                 );
-                if next_ghostdata.blue_score - next_pruning_ghostdata.blue_score < pruning_depth {
+                if next_ghostdata.blue_score - next_pruning_ghostdata.blue_score
+                    < self.pruning_depth
+                {
                     break;
                 }
-                if self.finality_score(next_pruning_ghostdata.blue_score, pruning_finality)
-                    > self.finality_score(latest_pruning_ghost_data.blue_score, pruning_finality)
+                if self.finality_score(next_pruning_ghostdata.blue_score)
+                    > self.finality_score(latest_pruning_ghost_data.blue_score)
                 {
                     latest_pruning_ghost_data = CompactGhostdagData {
                         blue_score: next_pruning_ghostdata.blue_score,
@@ -104,10 +108,12 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
                 }
             }
 
-            println!("prune point: {:?}", latest_pruning_ghost_data);
+            info!("prune point: {:?}", latest_pruning_ghost_data);
         }
 
-        if latest_pruning_ghost_data.selected_parent == HashValue::new(ORIGIN) {
+        if latest_pruning_ghost_data.selected_parent
+            == previous_ghostdata.to_compact().selected_parent
+        {
             anyhow::Ok(HashValue::zero()) // still genesis
         } else {
             anyhow::Ok(latest_pruning_ghost_data.selected_parent)

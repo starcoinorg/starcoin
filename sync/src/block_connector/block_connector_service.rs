@@ -383,45 +383,32 @@ where
         let main_header = self.chain_service.get_main().status().head().clone();
         let dag = self.chain_service.get_dag();
 
-        let (pruning_depth, pruning_finality) = ctx
-            .get_shared::<Arc<NodeConfig>>()?
-            .base()
-            .net()
-            .pruning_config();
-
-        // which height to prune the DAG
-
         let MineNewDagBlockInfo {
             tips,
             blue_blocks,
             pruning_point,
         } = if main_header.number() >= self.chain_service.get_main().get_pruning_height() {
-            info!("now calculate the next pruning point");
-            let (previous_ghostdata, pruning_point) =
-                if main_header.pruning_point() == HashValue::zero() {
-                    let genesis = ctx.get_shared::<Genesis>()?;
-                    (
+            let (previous_ghostdata, pruning_point) = if main_header.pruning_point()
+                == HashValue::zero()
+            {
+                let genesis = ctx.get_shared::<Genesis>()?;
+                (
                         self.chain_service
                             .get_dag()
                             .ghostdata_by_hash(genesis.block().id())?
-                            .ok_or_else(|| format_err!("Genesis block header should exist."))?,
+                            .ok_or_else(|| format_err!("The ghostdata of Genesis block header dose not exist., genesis id: {:?}", genesis.block().id()))?,
                         genesis.block().id(),
                     )
-                } else {
-                    (
+            } else {
+                (
                         self.chain_service
                             .get_dag()
                             .ghostdata_by_hash(main_header.pruning_point())?
-                            .ok_or_else(|| format_err!("Genesis block header should exist."))?,
+                            .ok_or_else(|| format_err!("The ghostdata of the pruning point does not exist. pruning point id: {:?}", main_header.pruning_point()))?,
                         main_header.pruning_point(),
                     )
-                };
-            dag.calc_mergeset_and_tips(
-                pruning_point,
-                previous_ghostdata.as_ref(),
-                pruning_depth,
-                pruning_finality,
-            )?
+            };
+            dag.calc_mergeset_and_tips(pruning_point, previous_ghostdata.as_ref())?
         } else {
             let genesis = ctx.get_shared::<Genesis>()?;
             let tips = dag.get_dag_state(genesis.block().id())?.tips;

@@ -9,6 +9,7 @@ use anyhow::format_err;
 use clap::Parser;
 use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
 use starcoin_cmd::dev::dev_helper;
+use starcoin_config::genesis_config::{G_PRUNING_DEPTH, G_PRUNING_FINALITY};
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_dag::blockdag::{BlockDAG, DEFAULT_GHOSTDAG_K};
 use starcoin_dag::consensusdb::prelude::FlexiDagStorageConfig;
@@ -83,6 +84,8 @@ pub fn force_deploy_output(
             network_path.join("dag/db/starcoindb"),
             FlexiDagStorageConfig::new(),
         )?,
+        G_PRUNING_DEPTH,
+        G_PRUNING_FINALITY,
     );
     let (chain_info, _) =
         Genesis::init_and_check_storage(&net, storage.clone(), dag.clone(), network_path.as_ref())?;
