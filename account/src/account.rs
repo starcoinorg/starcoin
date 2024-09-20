@@ -125,11 +125,10 @@ impl Account {
         message: SigningMessage,
         chain_id: ChainId,
     ) -> Result<SignedMessage> {
-        let authenticator = self
-            .private_key
-            .as_ref()
-            .map(|private_key| private_key.sign_message(&message))
-            .ok_or_else(|| format_err!("Readonly account can not sign message."))?;
+        let authenticator = match self.private_key.as_ref() {
+            Some(private_key) => private_key.sign_message(&message)?,
+            None => return Err(format_err!("Readonly account can not sign message.")),
+        };
         Ok(SignedMessage::new(
             self.addr,
             message,
@@ -139,11 +138,10 @@ impl Account {
     }
 
     pub fn sign_txn(&self, raw_txn: RawUserTransaction) -> Result<SignedUserTransaction> {
-        let signature = self
-            .private_key
-            .as_ref()
-            .map(|private_key| private_key.sign(&raw_txn))
-            .ok_or_else(|| format_err!("Readonly account can not sign txn"))?;
+        let signature = match self.private_key.as_ref() {
+            Some(private_key) => private_key.sign(&raw_txn)?,
+            None => return Err(format_err!("Readonly account can not sign txn.")),
+        };
         Ok(SignedUserTransaction::new(raw_txn, signature))
     }
 

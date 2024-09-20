@@ -251,7 +251,7 @@ impl RawUserTransaction {
         private_key: &Ed25519PrivateKey,
         public_key: Ed25519PublicKey,
     ) -> Result<SignatureCheckedTransaction> {
-        let signature = private_key.sign(&self);
+        let signature = private_key.sign(&self)?;
         Ok(SignatureCheckedTransaction(SignedUserTransaction::ed25519(
             self, public_key, signature,
         )))
@@ -608,7 +608,8 @@ impl Sample for SignedUserTransaction {
     fn sample() -> Self {
         let raw_txn = RawUserTransaction::sample();
         let (private_key, public_key) = genesis_key_pair();
-        let signature = private_key.sign(&raw_txn);
+        // It's ok to unwrap for a sample.
+        let signature = private_key.sign(&raw_txn).unwrap();
         Self::ed25519(raw_txn, public_key, signature)
     }
 }

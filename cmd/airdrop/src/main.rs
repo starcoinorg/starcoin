@@ -265,7 +265,7 @@ async fn main() -> Result<()> {
             now + 60 * 60 * 12,
             ChainId::new(chain_id),
         );
-        let signature = private_key.sign(&txn);
+        let signature = private_key.sign(&txn)?;
         let signed_txn = SignedUserTransaction::new(txn, signature);
 
         let signed_txn_hex = hex::encode(signed_txn.encode()?);

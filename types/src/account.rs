@@ -200,7 +200,8 @@ impl Account {
             expiration_timestamp_secs,
             chain_id,
         );
-        let signature = self.private_key.sign(&raw_txn);
+        // It's ok to unwrap here, because this function is only used `db-exporter` and tests
+        let signature = self.private_key.sign(&raw_txn).unwrap();
         SignedUserTransaction::new(raw_txn, signature)
     }
 
@@ -225,9 +226,9 @@ impl Account {
         )
     }
 
-    pub fn sign_txn(&self, raw_txn: RawUserTransaction) -> SignedUserTransaction {
-        let signature = self.private_key.sign(&raw_txn);
-        SignedUserTransaction::new(raw_txn, signature)
+    pub fn sign_txn(&self, raw_txn: RawUserTransaction) -> anyhow::Result<SignedUserTransaction> {
+        let signature = self.private_key.sign(&raw_txn)?;
+        Ok(SignedUserTransaction::new(raw_txn, signature))
     }
 }
 

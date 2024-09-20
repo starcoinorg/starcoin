@@ -159,7 +159,7 @@ fn deploy_package(
         now_time_by_sec + DEFAULT_EXPIRATION_TIME,
         chain_id,
         STC_TOKEN_CODE_STR.to_string(),
-    ));
+    ))?;
     let ret = starcoin_executor::execute_transactions(
         statedb,
         vec![Transaction::UserTransaction(signed_transaction)],

@@ -52,7 +52,7 @@ fn generate() -> Result<(), Error> {
         let pri_key = Ed25519PrivateKey::generate_for_testing();
         tracer.trace_value(&mut samples, &pri_key)?;
         tracer.trace_value(&mut samples, &pri_key.public_key())?;
-        tracer.trace_value(&mut samples, &pri_key.sign(&DummyObj::default()))?;
+        tracer.trace_value(&mut samples, &pri_key.sign(&DummyObj::default())?)?;
 
         tracer.trace_value::<AuthenticationKey>(
             &mut samples,
@@ -63,7 +63,7 @@ fn generate() -> Result<(), Error> {
         let pri_key = MultiEd25519PrivateKey::generate_for_testing();
         tracer.trace_value(&mut samples, &pri_key)?;
         tracer.trace_value(&mut samples, &pri_key.public_key())?;
-        tracer.trace_value(&mut samples, &pri_key.sign(&DummyObj::default()))?;
+        tracer.trace_value(&mut samples, &pri_key.sign(&DummyObj::default())?)?;
     }
 
     tracer.trace_type::<BlockMetadata>(&samples)?;

@@ -49,7 +49,7 @@ impl ForceUpgrade {
 
         assert_eq!(package.init_script().unwrap(), &init_script);
 
-        Ok(account.sign_txn(RawUserTransaction::new(
+        account.sign_txn(RawUserTransaction::new(
             *account.address(),
             sequence_number,
             TransactionPayload::Package(package),
@@ -58,6 +58,6 @@ impl ForceUpgrade {
             block_timestamp_in_secs + DEFAULT_EXPIRATION_TIME,
             *chain_id,
             STC_TOKEN_CODE_STR.to_string(),
-        )))
+        ))
     }
 }
