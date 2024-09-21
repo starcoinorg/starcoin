@@ -13,6 +13,7 @@ use crate::{
     },
     write_set::{WriteOp, WriteSet, WriteSetMut},
 };
+use move_core_types::move_resource::MoveStructType;
 use starcoin_crypto::ed25519::*;
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::multi_ed25519::genesis_multi_key_pair;
@@ -27,7 +28,6 @@ use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
 use starcoin_vm_types::{
     account_config::{self, AccountResource, BalanceResource},
     language_storage::StructTag,
-    move_resource::MoveResource,
     transaction::authenticator::{AccountPrivateKey, AccountPublicKey},
     values::{Struct, Value},
 };
@@ -538,8 +538,13 @@ impl AccountData {
     /// Returns the AccessPath that describes the Account balance resource instance.
     ///
     /// Use this to retrieve or publish the Account blob.
-    pub fn make_balance_access_path(&self, token_code: &str) -> AccessPath {
-        self.account.make_balance_access_path(token_code)
+    fn balance_resource_tag(token_code: &str) -> StructTag {
+        let token_code =
+            TokenCode::from_str(token_code).expect("token code str should been valid.");
+        let token_type_tag = token_code
+            .try_into()
+            .expect("token code to type tag should be ok");
+        BalanceResource::struct_tag_for_token(token_type_tag)
     }
 
     /// Returns the AccessPath that describes the EventHandleGenerator resource instance.
@@ -561,7 +566,8 @@ impl AccountData {
             .simple_serialize(&Self::layout())
             .unwrap();
         write_set.push((
-            StateKey::AccessPath(self.make_account_access_path()),
+            // Relax, this unwrap is safe and only for tests
+            StateKey::resource(self.address(), &AccountResource::struct_tag()).unwrap(),
             WriteOp::legacy_creation(account.into()),
         ));
         for (code, balance_blob) in balance_blobs.into_iter() {
@@ -571,7 +577,9 @@ impl AccountData {
                 .simple_serialize(&Balance::layout())
                 .unwrap();
             write_set.push((
-                StateKey::AccessPath(self.make_balance_access_path(code.as_str())),
+                // Relax, this unwrap is safe and only for tests
+                StateKey::resource(self.address(), &Self::balance_resource_tag(code.as_str()))
+                    .unwrap(),
                 WriteOp::legacy_creation(balance.into()),
             ));
         }
@@ -582,7 +590,12 @@ impl AccountData {
             .simple_serialize(&EventHandleGenerator::layout())
             .unwrap();
         write_set.push((
-            StateKey::AccessPath(self.make_event_generator_access_path()),
+            // Relax, this unwrap is safe and only for tests
+            StateKey::resource(
+                self.address(),
+                &account_config::event_handle_generator_struct_tag(),
+            )
+            .unwrap(),
             WriteOp::legacy_creation(event_generator.into()),
         ));
         WriteSetMut::new(write_set).freeze().unwrap()
