@@ -64,6 +64,7 @@ mod transaction_argument;
 mod change_set;
 pub mod user_transaction_context;
 
+use crate::state_store::state_key::inner::StateKeyInner;
 pub use script::{
     ArgumentABI, EntryABI, EntryFunction, EntryFunctionABI, TransactionScriptABI, TypeArgumentABI,
 };
@@ -739,8 +740,8 @@ impl TransactionOutput {
     pub fn table_items(&self) -> Vec<(StateKey, WriteOp)> {
         let mut table_items = vec![];
         for (state_key, op) in &self.write_set {
-            if let StateKey::TableItem(table_item) = state_key {
-                table_items.push((StateKey::TableItem(table_item.clone()), op.clone()));
+            if let StateKeyInner::TableItem { handle: _, key: _ } = state_key.inner() {
+                table_items.push((state_key.clone(), op.clone()));
             }
         }
         table_items

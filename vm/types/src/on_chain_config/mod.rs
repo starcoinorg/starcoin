@@ -213,12 +213,9 @@ pub fn new_epoch_event_key() -> EventKey {
     EventKey::new_from_address(&genesis_address(), 0)
 }
 
-pub fn access_path_for_config(config_id: ConfigID) -> Result<AccessPath> {
+pub fn access_path_for_config(config_id: ConfigID) -> AccessPath {
     let struct_tag = struct_tag_for_config(config_id);
-    Ok(AccessPath::new(
-        CORE_CODE_ADDRESS,
-        AccessPath::resource_path_vec(struct_tag)?,
-    ))
+    AccessPath::resource_access_path(CORE_CODE_ADDRESS, struct_tag)
 }
 
 pub fn struct_tag_for_config(config_id: ConfigID) -> StructTag {

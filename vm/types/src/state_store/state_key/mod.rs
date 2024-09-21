@@ -72,9 +72,8 @@ impl StateKey {
         let myself = match state_key_tag {
             StateKeyTag::AccessPath => {
                 let AccessPath { address, path } = bcs::from_bytes(&val[1..])?;
-                //let path: DataPath = bcs::from_bytes(&path)?;
                 match path {
-                    DataPath::Code(ModuleId { address, name }) => Self::module(&address, &name),
+                    DataPath::Code(module_name) => Self::module(&address, &module_name),
                     DataPath::Resource(struct_tag) => Self::resource(&address, &struct_tag)?,
                     DataPath::ResourceGroup(struct_tag) => {
                         Self::resource_group(&address, &struct_tag)
@@ -114,25 +113,11 @@ impl StateKey {
         use access_path::DataPath;
 
         let myself = match deserialized {
-            StateKeyInner::AccessPath(AccessPath { address, path }) => {
-                match path {
-                    //bcs::from_bytes::<DataPath>(&path) {
-                    Err(err) => {
-                        if cfg!(feature = "fuzzing") {
-                            // note: to make analyze-serde-formats test happy, do not error out
-                            //       alternative is to wrap `AccessPath::path: Vec<u8>` in an enum
-                            Self::raw(&bcs::to_bytes(&(address, path)).unwrap())
-                        } else {
-                            return Err(err.into());
-                        }
-                    }
-                    Ok(DataPath::Code(module_id)) => Self::module_id(&module_id),
-                    Ok(DataPath::Resource(struct_tag)) => Self::resource(&address, &struct_tag)?,
-                    Ok(DataPath::ResourceGroup(struct_tag)) => {
-                        Self::resource_group(&address, &struct_tag)
-                    }
-                }
-            }
+            StateKeyInner::AccessPath(AccessPath { address, path }) => match path {
+                DataPath::Code(module_name) => Self::module(&address, &module_name),
+                DataPath::Resource(struct_tag) => Self::resource(&address, &struct_tag)?,
+                DataPath::ResourceGroup(struct_tag) => Self::resource_group(&address, &struct_tag),
+            },
             StateKeyInner::TableItem { handle, key } => Self::table_item(&handle, &key),
             StateKeyInner::Raw(bytes) => Self::raw(&bytes),
         };
@@ -148,7 +133,7 @@ impl StateKey {
                 Ok(StateKeyInner::AccessPath(AccessPath::resource_access_path(
                     *address,
                     struct_tag.clone(),
-                )?))
+                )))
             },
         )?))
     }
@@ -166,9 +151,10 @@ impl StateKey {
             REGISTRY
                 .resource_group(struct_tag, address)
                 .get_or_add(struct_tag, address, || {
-                    Ok(StateKeyInner::AccessPath(
-                        AccessPath::resource_group_access_path(*address, struct_tag.clone()),
-                    ))
+                    Ok(StateKeyInner::AccessPath(AccessPath::resource_access_path(
+                        *address,
+                        struct_tag.clone(),
+                    )))
                 })
                 .expect("only possible error is resource path serialization"),
         )
