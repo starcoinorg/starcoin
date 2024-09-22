@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account_config::genesis_address;
-use crate::state_store::StateView;
+use crate::state_view::StateView;
 use crate::{
     access_path::AccessPath,
     account_address::AccountAddress,
