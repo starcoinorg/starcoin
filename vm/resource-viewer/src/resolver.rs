@@ -12,7 +12,6 @@ use anyhow::{anyhow, Result};
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::{
     access::ModuleAccess,
-    access_path::AccessPath,
     account_address::AccountAddress,
     errors::PartialVMError,
     file_format::{
@@ -53,10 +52,9 @@ impl<'a> Resolver<'a> {
         if let Some(module) = self.cache.get(&module_id) {
             return Ok(module);
         }
-        let access_path = AccessPath::from(&module_id);
         let binding = self
             .state
-            .get_state_value_bytes(&StateKey::AccessPath(access_path))?
+            .get_state_value_bytes(&StateKey::module_id(&module_id))?
             .ok_or_else(|| anyhow!("Module {:?} can't be found", module_id))?;
         let blob = binding.as_ref();
         let compiled_module = CompiledModule::deserialize(&blob).map_err(|status| {
