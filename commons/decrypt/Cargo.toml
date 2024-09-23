@@ -6,7 +6,7 @@ hmac = { workspace = true }
 pbkdf2 = { workspace = true }
 rand = { workspace = true }
 rand_core = { default-features = false, workspace = true }
-sha2 = { workspace = true }
+sha2_0_10_6 = { workspace = true }
 
 [package]
 authors = { workspace = true }

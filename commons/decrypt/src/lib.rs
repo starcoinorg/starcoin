@@ -2,6 +2,7 @@ use aes_gcm::aead::{generic_array::GenericArray, Aead, NewAead};
 use anyhow::{bail, format_err, Result};
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use rand::RngCore;
+use sha2_0_10_6 as sha2;
 use std::io::{Cursor, Read, Write};
 
 pub const PBKDF2_DEFAULT_ITERATIONS: usize = 1000;
