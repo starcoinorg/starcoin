@@ -9,7 +9,6 @@ use crate::{
     module_cache::ModuleCache,
 };
 use anyhow::{anyhow, Result};
-use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::{
     access::ModuleAccess,
     account_address::AccountAddress,
@@ -20,7 +19,7 @@ use starcoin_vm_types::{
     },
     identifier::{IdentStr, Identifier},
     language_storage::{ModuleId, StructTag, TypeTag},
-    state_view::StateView,
+    state_store::{state_key::StateKey, StateView},
 };
 use std::rc::Rc;
 
