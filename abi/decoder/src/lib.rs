@@ -12,7 +12,7 @@ use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::{ModuleId, TypeTag};
-use starcoin_vm_types::state_view::StateView;
+use starcoin_vm_types::state_store::StateView;
 use starcoin_vm_types::transaction::{Module, Package, Script, ScriptFunction, TransactionPayload};
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DecodedTransactionPayload {

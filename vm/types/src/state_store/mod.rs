@@ -5,7 +5,6 @@ use crate::state_store::{
     errors::StateviewError, in_memory_state_view::InMemoryStateView, state_key::StateKey,
     state_storage_usage::StateStorageUsage, state_value::StateValue,
 };
-use crate::state_view::StateView;
 use crate::transaction::Version;
 use arr_macro::arr;
 use bytes::Bytes;
@@ -49,6 +48,10 @@ pub trait TStateView {
         unreachable!("in-memory state view conversion not supported yet")
     }
 }
+
+pub trait StateView: TStateView<Key = StateKey> {}
+
+impl<T: TStateView<Key = StateKey>> StateView for T {}
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum StateViewId {

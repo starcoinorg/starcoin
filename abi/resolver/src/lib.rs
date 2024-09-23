@@ -17,7 +17,7 @@ use starcoin_vm_types::file_format::{
 use starcoin_vm_types::identifier::{IdentStr, Identifier};
 use starcoin_vm_types::language_storage::{ModuleId, StructTag, TypeTag};
 use starcoin_vm_types::normalized::{Function, Module, Struct, Type};
-use starcoin_vm_types::state_view::StateView;
+use starcoin_vm_types::state_store::StateView;
 
 #[allow(clippy::upper_case_acronyms)]
 pub struct ABIResolver<'a> {

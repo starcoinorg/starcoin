@@ -19,8 +19,8 @@ use starcoin_vm_types::{
     state_store::{
         state_key::StateKey,
         state_value::{StateValue, StateValueMetadata},
+        StateView,
     },
-    state_view::StateView,
     write_set::WriteOp,
 };
 use std::fmt::Debug;

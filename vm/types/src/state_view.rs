@@ -9,7 +9,7 @@
 //! This crate defines [`trait StateView`](StateView).
 
 use crate::state_store::state_key::StateKey;
-use crate::state_store::TStateView;
+use crate::state_store::StateView;
 use crate::{
     account_config::{
         genesis_address, token_code::TokenCode, AccountResource, BalanceResource, TokenInfo,
@@ -30,10 +30,6 @@ use move_core_types::{
     account_address::AccountAddress,
     language_storage::{ModuleId, StructTag},
 };
-
-pub trait StateView: TStateView<Key = StateKey> {}
-
-impl<T: TStateView<Key = StateKey>> StateView for T {}
 
 impl<T: ?Sized> StateReaderExt for T where T: StateView {}
 
