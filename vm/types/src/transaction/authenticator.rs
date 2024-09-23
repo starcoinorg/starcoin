@@ -42,7 +42,12 @@ use std::{convert::TryFrom, fmt, str::FromStr};
 pub enum Scheme {
     Ed25519 = 0,
     MultiEd25519 = 1,
-    // ... add more schemes here
+    /// Scheme identifier used to derive addresses (not the authentication key) of objects and
+    /// resources accounts. This application serves to domain separate hashes. Without such
+    /// separation, an adversary could create (and get a signer for) a these accounts
+    /// when a their address matches matches an existing address of a MultiEd25519 wallet.
+    /// Add new derived schemes below.
+    DeriveAuid = 251,
 }
 
 impl fmt::Display for Scheme {
@@ -50,6 +55,7 @@ impl fmt::Display for Scheme {
         let display = match self {
             Self::Ed25519 => "Ed25519",
             Self::MultiEd25519 => "MultiEd25519",
+            Self::DeriveAuid => "DeriveAuid",
         };
         write!(f, "Scheme::{}", display)
     }
@@ -196,6 +202,12 @@ impl AuthenticationKey {
         Self::new(*HashValue::sha3_256_of(&preimage.0).as_ref())
     }
 
+    /// Construct a preimage from a transaction-derived AUID as (txn_hash || auid_scheme_id)
+    pub fn auid(mut txn_hash: Vec<u8>, auid_counter: u64) -> Self {
+        txn_hash.extend(auid_counter.to_le_bytes().to_vec());
+        Self::from_preimage(&AuthenticationKeyPreimage::auid(txn_hash))
+    }
+
     /// Create an authentication key from an Ed25519 public key
     pub fn ed25519(public_key: &Ed25519PublicKey) -> Self {
         Self::from_preimage(&AuthenticationKeyPreimage::ed25519(public_key))
@@ -254,6 +266,11 @@ impl AuthenticationKeyPreimage {
     fn new(mut public_key_bytes: Vec<u8>, scheme: Scheme) -> Self {
         public_key_bytes.push(scheme as u8);
         Self(public_key_bytes)
+    }
+
+    /// Construct a preimage from a transaction-derived AUID as (txn_hash || auid_scheme_id)
+    pub fn auid(public_key_bytes: Vec<u8>) -> Self {
+        Self::new(public_key_bytes, Scheme::DeriveAuid)
     }
 
     /// Construct a preimage from an Ed25519 public key

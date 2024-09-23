@@ -102,11 +102,13 @@ fn native_generate_unique_address(
         .get_mut::<NativeTransactionContext>();
     transaction_context.auid_counter += 1;
 
+    // Fixme: currently we only use the last 16-bytes of AuthenticationKey as the AccountAddress.
+    // see derived_address
     let auid = AuthenticationKey::auid(
         transaction_context.txn_hash.clone(),
         transaction_context.auid_counter,
     )
-    .account_address();
+    .derived_address();
     Ok(smallvec![Value::address(auid)])
 }
 
