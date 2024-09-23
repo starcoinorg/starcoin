@@ -7,7 +7,7 @@ use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
 use move_core_types::move_resource::MoveStructType;
-use serde::{Deserializer, Serialize};
+use serde::Serialize;
 
 //TODO support deserialize
 #[derive(Debug, Serialize)]

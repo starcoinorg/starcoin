@@ -117,6 +117,10 @@ impl AccessPath {
             _ => None,
         }
     }
+
+    pub fn size(&self) -> usize {
+        std::mem::size_of_val(&self.address) + std::mem::size_of_val(&self.path)
+    }
 }
 
 impl Serialize for AccessPath {

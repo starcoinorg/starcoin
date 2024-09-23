@@ -74,8 +74,16 @@ pub struct Proposal<A: ProposalAction> {
     /// how many votes to reach to make the proposal pass.
     pub quorum_votes: u128,
     /// proposal action.
-    #[serde(deserialize_with = "A::deserialize")]
+    #[serde(deserialize_with = "deserialize_proposal_action")]
     pub action: Option<A>,
+}
+
+fn deserialize_proposal_action<'de, D, A>(deserializer: D) -> Result<Option<A>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    A: ProposalAction,
+{
+    Ok(Some(A::deserialize(deserializer)?))
 }
 
 impl<A> MoveStructType for Proposal<A>
@@ -97,7 +105,11 @@ where
             address: CORE_CODE_ADDRESS,
             module: Self::module_identifier(),
             name: Self::struct_identifier(),
-            type_args: vec![TypeTag::Struct(Box::new(token_type_tag)), A::type_tag()],
+            type_args: {
+                let mut args = A::type_args();
+                args.push(TypeTag::Struct(Box::new(token_type_tag)));
+                args
+            },
         }
     }
 

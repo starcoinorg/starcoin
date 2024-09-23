@@ -24,7 +24,7 @@ pub struct AggregatorID(pub StateKey);
 
 impl AggregatorID {
     pub fn new(handle: TableHandle, key: AccountAddress) -> Self {
-        let state_key = StateKey::table_item(handle, key.to_vec());
+        let state_key = StateKey::table_item(&handle, key.as_slice());
         AggregatorID(state_key)
     }
 

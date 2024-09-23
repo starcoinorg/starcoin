@@ -50,10 +50,10 @@ impl Drop for Entry {
             StateKeyInner::AccessPath(AccessPath { address, path }) => {
                 use crate::access_path::DataPath;
 
-                match &bcs::from_bytes::<DataPath>(path).expect("Failed to deserialize Path.") {
-                    DataPath::Code(module_id) => REGISTRY
-                        .module(address, &module_id.name)
-                        .maybe_remove(&module_id.address, &module_id.name),
+                match path {
+                    DataPath::Code(module_name) => REGISTRY
+                        .module(address, module_name)
+                        .maybe_remove(&address, module_name),
                     DataPath::Resource(struct_tag) => REGISTRY
                         .resource(struct_tag, address)
                         .maybe_remove(struct_tag, address),
