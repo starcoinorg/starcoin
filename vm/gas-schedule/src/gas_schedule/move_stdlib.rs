@@ -40,6 +40,7 @@ crate::gas_schedule::macros::define_gas_parameters!(MoveStdlibGasParameters, "mo
     [string_sub_string_base:InternalGas,  "string.sub_string.base", 0 * MUL],
     [string_sub_string_per_byte:InternalGasPerByte,  "string.sub_string.per_byte", (4 + 1) *  MUL],
     [string_index_of_base:InternalGas,  "string.index_of.base", 0 * MUL],
+    [string_index_of_per_byte_pattern: InternalGasPerByte, "string.index_of.per_byte_pattern", 73],
     [string_index_of_per_byte_searched:InternalGasPerByte,  "string.index_of.per_byte_searched", (4 + 1)  * MUL],
     [vector_spawn_from_base:InternalGas,  "vector.spawn_from.base", 0  * MUL],
 ]);

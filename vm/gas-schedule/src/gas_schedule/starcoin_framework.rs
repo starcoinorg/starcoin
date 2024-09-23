@@ -18,7 +18,7 @@ crate::gas_schedule::macros::define_gas_parameters!(StarcoinFrameworkGasParamete
      [signature_ed25519_verify_base : InternalGas,  "signature.ed25519.verify.base", 0 * MUL],
     [signature_ed25519_verify_per_byte: InternalGasPerByte,  "signature.ed25519.verify.per_byte",(26 + 1) * MUL],
 
-   // [account_create_signer_base: InternalGas, "account.create_signer.base", (24 + 1) * MUL],
+    [account_create_signer_base: InternalGas, "account.create_signer.base", (24 + 1) * MUL],
     [account_destroy_signer_base: InternalGas, "account.destroy_signer.base", (212 + 1)* MUL],
 
     [token_name_of_base: InternalGas,  "token.name_of.base", (2002 + 1) * MUL],
@@ -27,7 +27,7 @@ crate::gas_schedule::macros::define_gas_parameters!(StarcoinFrameworkGasParamete
     //[hash_keccak256_per_byte: InternalGasPerByte, "hash.keccak256.per_byte",  (64 + 1) *MUL],
     //[hash_ripemd160_base:InternalGas ,   "hash.ripemd160.base", 0 * MUL],
     //[hash_ripemd160_per_byte: InternalGasPerByte,  "hash.ripemd160.per_byte", (64 + 1) * MUL],
-    // [signature_ec_recover_base: InternalGas,   "signature.ec_recover.base",  0 * MUL],
+    [signature_ec_recover_base: InternalGas,   "signature.ec_recover.base",  0 * MUL],
     [signature_ec_recover_per_byte: InternalGasPerByte,   "signature.ec_recover.per_byte", (128 + 1) * MUL],
 
        // XXX FIXME YSG, need to remove?
