@@ -628,3 +628,4 @@ debug = false
 
 [patch.crates-io]
 x25519-dalek = { git = "https://github.com/aptos-labs/x25519-dalek", branch = "zeroize_v1" }
+merlin = { git = "https://github.com/aptos-labs/merlin" }
