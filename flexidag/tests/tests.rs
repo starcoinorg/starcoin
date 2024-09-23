@@ -23,6 +23,7 @@ use starcoin_types::{
 };
 
 use std::{
+    collections::HashSet,
     ops::{Deref, DerefMut},
     sync::Arc,
     time::Instant,
@@ -737,11 +738,12 @@ fn add_and_print_with_ghostdata(
     Ok(header)
 }
 
-fn add_and_print(
+fn add_and_print_with_pruning_point(
     number: BlockNumber,
     parent: Hash,
     parents: Vec<Hash>,
     origin: Hash,
+    pruning_point: Hash,
     dag: &mut BlockDAG,
 ) -> anyhow::Result<BlockHeader> {
     let header_builder = BlockHeaderBuilder::random();
@@ -749,7 +751,7 @@ fn add_and_print(
         .with_parent_hash(parent)
         .with_parents_hash(parents)
         .with_number(number)
-        .with_pruning_point(Hash::zero())
+        .with_pruning_point(pruning_point)
         .build();
     let start = Instant::now();
     dag.commit(header.to_owned(), origin)?;
@@ -766,6 +768,16 @@ fn add_and_print(
     //     header, ghostdata.mergeset_blues, ghostdata.mergeset_reds, ghostdata.blues_anticone_sizes
     // );
     Ok(header)
+}
+
+fn add_and_print(
+    number: BlockNumber,
+    parent: Hash,
+    parents: Vec<Hash>,
+    origin: Hash,
+    dag: &mut BlockDAG,
+) -> anyhow::Result<BlockHeader> {
+    add_and_print_with_pruning_point(number, parent, parents, origin, Hash::zero(), dag)
 }
 
 #[test]
@@ -968,7 +980,6 @@ fn test_prune() -> anyhow::Result<()> {
     assert_eq!(observer3.blue_score, observer2.blue_score);
     assert_eq!(observer3.selected_parent, observer2.selected_parent);
 
-    // prunning process begins
     dag.save_dag_state(
         genesis.id(),
         DagState {
@@ -976,6 +987,7 @@ fn test_prune() -> anyhow::Result<()> {
         },
     )?;
 
+    // prunning process begins
     let (previous_ghostdata, previous_pruning_point) =
         if block_main_5.pruning_point() == Hash::zero() {
             (
@@ -997,6 +1009,7 @@ fn test_prune() -> anyhow::Result<()> {
             )
         };
 
+    // test the pruning point calculation
     let MineNewDagBlockInfo {
         tips,
         blue_blocks: _,
@@ -1007,34 +1020,44 @@ fn test_prune() -> anyhow::Result<()> {
     assert_eq!(tips.len(), 1);
     assert_eq!(*tips.last().unwrap(), block_main_5.id());
 
-    // prunning process begins
-    dag.save_dag_state(pruning_point, DagState { tips: tips.clone() })?;
+    // test the pruning logic
 
-    let block_main_6 = add_and_print(6, block_main_5.id(), tips, genesis.parent_hash(), &mut dag)?;
+    let block_main_6 = add_and_print(
+        6,
+        block_main_5.id(),
+        tips.clone(),
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+    let block_main_6_1 =
+        add_and_print(6, block_main_5.id(), tips, genesis.parent_hash(), &mut dag)?;
+    let block_fork = add_and_print(
+        4,
+        block_red_3.id(),
+        vec![block_red_3.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+
+    dag.save_dag_state(
+        genesis.id(),
+        DagState {
+            tips: vec![block_main_6.id(), block_main_6_1.id(), block_fork.id()],
+        },
+    )?;
 
     let MineNewDagBlockInfo {
         tips,
         blue_blocks: _,
         pruning_point,
-    } = dag.calc_mergeset_and_tips(
-        pruning_point,
-        dag.ghostdata_by_hash(pruning_point)?
-            .ok_or_else(|| format_err!("failed to get the ghostdata for main 5 block"))?
-            .as_ref(),
-    )?;
-
-    let mut new_tips = vec![];
-    tips.into_iter()
-        .filter(|id| {
-            dag.ghost_dag_manager()
-                .check_ancestor_of(*id, vec![block_main_6.id()])
-                .unwrap()
-        })
-        .for_each(|id| new_tips.push(id));
+    } = dag.calc_mergeset_and_tips(previous_pruning_point, previous_ghostdata.as_ref())?;
 
     assert_eq!(pruning_point, block_main_2.id());
-    assert_eq!(new_tips.len(), 1);
-    assert_eq!(*new_tips.last().unwrap(), block_main_6.id());
+    assert_eq!(tips.len(), 2);
+    assert_eq!(
+        tips.into_iter().collect::<HashSet<_>>(),
+        HashSet::from_iter(vec![block_main_6.id(), block_main_6_1.id()])
+    );
 
     anyhow::Result::Ok(())
 }
