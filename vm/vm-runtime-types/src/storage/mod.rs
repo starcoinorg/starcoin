@@ -18,7 +18,7 @@ impl StorageGasParameters {
     pub fn new(
         feature_version: u64,
         gas_params: &StarcoinGasParameters,
-        config_storage: &impl ConfigStorage,
+        _config_storage: &impl ConfigStorage,
     ) -> Self {
         let change_set_configs = ChangeSetConfigs::new(feature_version, gas_params);
 

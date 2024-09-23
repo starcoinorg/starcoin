@@ -12,8 +12,8 @@ use starcoin_vm_types::{
         state_key::StateKey,
         state_storage_usage::StateStorageUsage,
         state_value::{StateValue, StateValueMetadata},
+        StateView, StateViewId,
     },
-    state_view::{StateView, StateViewId},
 };
 use std::collections::{BTreeMap, HashMap};
 
@@ -235,7 +235,7 @@ where
         state_key: &Self::Key,
         _maybe_layout: Option<&Self::Layout>,
     ) -> anyhow::Result<Option<StateValue>> {
-        self.get_state_value(state_key)
+        self.get_state_value(state_key).map_err(Into::into)
     }
 }
 
@@ -246,7 +246,7 @@ where
     type Key = StateKey;
 
     fn get_module_state_value(&self, state_key: &Self::Key) -> anyhow::Result<Option<StateValue>> {
-        self.get_state_value(state_key)
+        self.get_state_value(state_key).map_err(Into::into)
     }
 }
 
