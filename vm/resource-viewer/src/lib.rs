@@ -13,7 +13,8 @@ use move_core_types::u256;
 use starcoin_vm_types::language_storage::TypeTag;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::state_value::StateValue;
-use starcoin_vm_types::state_view::{StateView, TStateView};
+use starcoin_vm_types::state_store::TStateView;
+use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::value::MoveTypeLayout;
 use starcoin_vm_types::{
     account_address::AccountAddress,
@@ -29,6 +30,7 @@ use std::{
     convert::TryInto,
     fmt::{Display, Formatter},
 };
+use starcoin_vm_types::state_store::state_storage_usage::StateStorageUsage;
 
 mod fat_type;
 pub mod module_cache;
@@ -316,11 +318,11 @@ pub struct NullStateView;
 impl TStateView for NullStateView {
     type Key = StateKey;
 
-    fn get_state_value(&self, _state_key: &StateKey) -> Result<Option<StateValue>> {
+    fn get_state_value(&self, _state_key: &StateKey) -> starcoin_vm_types::state_store::Result<Option<StateValue>> {
         Ok(None)
     }
 
-    fn is_genesis(&self) -> bool {
-        false
+    fn get_usage(&self) -> starcoin_vm_types::state_store::Result<StateStorageUsage> {
+        unimplemented!()
     }
 }
