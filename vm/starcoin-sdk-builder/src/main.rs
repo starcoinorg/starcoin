@@ -60,7 +60,7 @@ struct Options {
 
 fn main() {
     let options = Options::parse();
-    let abis = aptos_sdk_builder::read_abis(&options.abi_directories)
+    let abis = starcoin_sdk_builder::read_abis(&options.abi_directories)
         .expect("Failed to read ABI in directory");
 
     let install_dir = match options.target_source_dir {
@@ -70,11 +70,11 @@ fn main() {
             let mut out = stdout.lock();
             match options.language {
                 Language::Rust => {
-                    aptos_sdk_builder::rust::output(&mut out, &abis, /* local types */ true)
+                    starcoin_sdk_builder::rust::output(&mut out, &abis, /* local types */ true)
                         .unwrap()
                 }
                 Language::Go => {
-                    aptos_sdk_builder::golang::output(
+                    starcoin_sdk_builder::golang::output(
                         &mut out,
                         options.serde_package_name.clone(),
                         options.package_name.clone(),
@@ -105,7 +105,7 @@ fn main() {
         let mut registry = serde_yaml::from_str::<Registry>(content.as_str()).unwrap();
         // update the registry to prevent language keyword being used
         if let Language::Rust = options.language {
-            aptos_sdk_builder::rust::replace_keywords(&mut registry)
+            starcoin_sdk_builder::rust::replace_keywords(&mut registry)
         }
 
         let (package_name, _package_path) = match options.language {
@@ -127,13 +127,13 @@ fn main() {
     }
 
     // Transaction builders
-    let installer: Box<dyn aptos_sdk_builder::SourceInstaller<Error = Box<dyn std::error::Error>>> =
+    let installer: Box<dyn starcoin_sdk_builder::SourceInstaller<Error = Box<dyn std::error::Error>>> =
         match options.language {
-            Language::Rust => Box::new(aptos_sdk_builder::rust::Installer::new(
+            Language::Rust => Box::new(starcoin_sdk_builder::rust::Installer::new(
                 install_dir,
                 options.aptos_version_number,
             )),
-            Language::Go => Box::new(aptos_sdk_builder::golang::Installer::new(
+            Language::Go => Box::new(starcoin_sdk_builder::golang::Installer::new(
                 install_dir,
                 options.serde_package_name,
                 options.package_name,

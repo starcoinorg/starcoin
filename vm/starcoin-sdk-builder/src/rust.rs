@@ -3,9 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::common;
-use aptos_types::transaction::{
-    ArgumentABI, EntryABI, EntryFunctionABI, TransactionScriptABI, TypeArgumentABI,
-};
 use heck::{ToShoutySnakeCase, ToSnakeCase, ToUpperCamelCase};
 use move_core_types::{
     account_address::AccountAddress,
@@ -17,6 +14,9 @@ use serde_generate::{
     rust, CodeGeneratorConfig,
 };
 use serde_reflection::ContainerFormat;
+use starcoin_vm_types::transaction::{
+    ArgumentABI, EntryABI, EntryFunctionABI, TransactionScriptABI, TypeArgumentABI,
+};
 use std::{
     collections::BTreeMap,
     io::{Result, Write},
