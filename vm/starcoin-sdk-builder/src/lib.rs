@@ -2,7 +2,7 @@
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use aptos_types::transaction::EntryABI;
+use starcoin_vm_types::transaction::EntryABI;
 use std::{ffi::OsStr, fs, io::Read, path::Path};
 
 pub mod golang;

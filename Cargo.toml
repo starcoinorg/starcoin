@@ -343,7 +343,7 @@ futures-timer = "3.0"
 futures-util = "~0.3"
 git-version = "0.3.5"
 governor = { version = "0.4.2", features = ["dashmap"] }
-heck = "0.3.3"
+heck = "0.5.0"
 hex = "0.4"
 hmac = "0.12.1"
 hyper = { version = "0.14.12", features = ["full"] }
@@ -505,7 +505,7 @@ starcoin-dev = { path = "vm/dev" }
 starcoin-executor = { path = "executor" }
 #starcoin-framework = { git = "https://github.com/starcoinorg/starcoin-framework", rev = "94bcd77e80232b169cf95754ef4e87775645afcd" }
 starcoin-framework = { path = "vm/framework" }
-starcoin-sdk-builder = {path = "vm/starcoin-sdk-builder"}
+starcoin-sdk-builder = { path = "vm/starcoin-sdk-builder" }
 starcoin-genesis = { path = "genesis" }
 starcoin-logger = { path = "commons/logger" }
 starcoin-metrics = { path = "commons/metrics" }

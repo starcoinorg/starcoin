@@ -14,7 +14,7 @@ use serde_generate::{
     indent::{IndentConfig, IndentedWriter},
     CodeGeneratorConfig,
 };
-use starcoin_types::transaction::{
+use starcoin_vm_types::transaction::{
     ArgumentABI, EntryABI, EntryFunctionABI, TransactionScriptABI, TypeArgumentABI,
 };
 use std::{
