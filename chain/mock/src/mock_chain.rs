@@ -12,6 +12,7 @@ use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_storage::Storage;
 use starcoin_types::block::{Block, BlockHeader};
+use starcoin_types::blockhash::KType;
 use starcoin_types::startup_info::ChainInfo;
 use std::sync::Arc;
 use std::vec;
@@ -27,6 +28,24 @@ impl MockChain {
     pub fn new(net: ChainNetwork) -> Result<Self> {
         let (storage, chain_info, _, dag) =
             Genesis::init_storage_for_test(&net).expect("init storage by genesis fail.");
+
+        let chain = BlockChain::new(
+            net.time_service(),
+            chain_info.head().id(),
+            storage.clone(),
+            None,
+            dag,
+        )?;
+        let miner = AccountInfo::random();
+        Ok(Self::new_inner(net, chain, miner, storage))
+    }
+
+    pub fn new_with_params(net: ChainNetwork,         
+        k: KType,
+        pruning_depth: u64,
+        pruning_finality: u64,) -> Result<Self> {
+        let (storage, chain_info, _, dag) =
+            Genesis::init_storage_for_test_with_param(&net, k, pruning_depth, pruning_finality).expect("init storage by genesis fail.");
 
         let chain = BlockChain::new(
             net.time_service(),

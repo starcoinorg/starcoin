@@ -19,13 +19,14 @@ use anyhow::{bail, ensure, Ok};
 use starcoin_config::genesis_config::{G_PRUNING_DEPTH, G_PRUNING_FINALITY};
 use starcoin_config::temp_dir;
 use starcoin_crypto::{HashValue as Hash, HashValue};
-use starcoin_logger::prelude::{debug, info};
+use starcoin_logger::prelude::{debug, info, warn};
 use starcoin_types::block::BlockHeader;
 use starcoin_types::{
     blockhash::{BlockHashes, KType},
     consensus_header::ConsensusHeader,
 };
 use std::collections::HashSet;
+use std::fmt::write;
 use std::ops::DerefMut;
 use std::sync::Arc;
 
@@ -293,7 +294,6 @@ impl BlockDAG {
                 bail!("failed to add a block when committing, e: {:?}", e);
             }
         }
-
         process_key_already_error(
             self.storage
                 .relations_store
@@ -448,16 +448,29 @@ impl BlockDAG {
 
     pub fn save_dag_state(&self, hash: Hash, state: DagState) -> anyhow::Result<()> {
         let writer = self.storage.state_store.write();
-        let merged_tips = writer
-            .get_state_by_hash(hash)?
-            .tips
-            .into_iter()
-            .chain(state.tips)
-            .collect::<HashSet<_>>()
-            .into_iter()
-            .collect::<Vec<_>>();
-        writer.insert(hash, DagState { tips: merged_tips })?;
+        match writer.get_state_by_hash(hash) {
+            anyhow::Result::Ok(dag_state) => {
+                // remove the ancestor tips
+                let left_tips = dag_state.tips.into_iter().filter(|tip| {
+                    !state.tips.iter().any(|new_tip| {
+                        self.ghost_dag_manager().check_ancestor_of(*tip, vec![*new_tip]).unwrap_or_else(|e| {
+                            warn!("failed to check ancestor of tip: {:?}, new_tip: {:?}, error: {:?}", tip, new_tip, e);
+                            false
+                        })
+                    })
+                });
+                let merged_tips = left_tips.chain(state.tips.clone()).collect::<HashSet<_>>().into_iter().collect::<Vec<_>>();
+                writer.insert(hash, DagState {
+                    tips: merged_tips,
+                })?;
+            }
+            Err(_) => {
+                writer.insert(hash, state)?;
+            }
+        }
+
         drop(writer);
+
         Ok(())
     }
 

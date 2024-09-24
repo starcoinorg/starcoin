@@ -307,27 +307,27 @@ impl BlockChain {
             .unwrap_or(on_chain_block_gas_limit);
         let strategy = epoch.strategy();
         let difficulty = strategy.calculate_next_difficulty(self)?;
+
+        let (ghostdata, tips) = if tips.is_empty() {
+            let tips = self.get_dag_state()?.tips;
+            (self.dag().ghostdata(&tips)?, tips)
+        } else {
+            (self.dag().ghostdata(&tips)?, tips)
+        };
+
         let MineNewDagBlockInfo {
             tips,
             blue_blocks,
             pruning_point: _,
-        } = if !tips.is_empty() {
-            let blue_blocks = (*self.dag().ghostdata(&tips)?.mergeset_blues).clone()[1..].to_vec();
+        } = {
+            let blue_blocks = ghostdata.mergeset_blues.clone()[1..].to_vec();
             MineNewDagBlockInfo {
                 tips,
                 blue_blocks,
                 pruning_point, // TODO: new test cases will need pass this field if they have some special requirements.
             }
-        } else {
-            let dag_state = self.get_dag_state()?;
-            let ghostdata = self.dag().ghost_dag_manager().ghostdag(&dag_state.tips)?;
-
-            MineNewDagBlockInfo {
-                tips: dag_state.tips,
-                blue_blocks: (*ghostdata.mergeset_blues).clone(),
-                pruning_point: HashValue::zero(),
-            }
         };
+
         debug!(
             "Blue blocks:{:?} in chain/create_block_template_by_header",
             blue_blocks
@@ -349,9 +349,15 @@ impl BlockChain {
             uncles
         };
 
+        let parent_header = if ghostdata.selected_parent != previous_header.id() {
+            self.storage.get_block_header_by_hash(ghostdata.selected_parent)?.ok_or_else(|| format_err!("Cannot find block header by {:?}", ghostdata.selected_parent))?
+        } else {
+            previous_header
+        };
+
         let mut opened_block = OpenedBlock::new(
             self.storage.clone(),
-            previous_header,
+            parent_header,
             final_block_gas_limit,
             author,
             self.time_service.now_millis(),
