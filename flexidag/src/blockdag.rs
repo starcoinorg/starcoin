@@ -447,7 +447,17 @@ impl BlockDAG {
     }
 
     pub fn save_dag_state(&self, hash: Hash, state: DagState) -> anyhow::Result<()> {
-        self.storage.state_store.write().insert(hash, state)?;
+        let writer = self.storage.state_store.write();
+        let merged_tips = writer
+            .get_state_by_hash(hash)?
+            .tips
+            .into_iter()
+            .chain(state.tips)
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect::<Vec<_>>();
+        writer.insert(hash, DagState { tips: merged_tips })?;
+        drop(writer);
         Ok(())
     }
 
