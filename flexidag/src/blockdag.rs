@@ -26,7 +26,6 @@ use starcoin_types::{
     consensus_header::ConsensusHeader,
 };
 use std::collections::HashSet;
-use std::fmt::write;
 use std::ops::DerefMut;
 use std::sync::Arc;
 
@@ -459,10 +458,12 @@ impl BlockDAG {
                         })
                     })
                 });
-                let merged_tips = left_tips.chain(state.tips.clone()).collect::<HashSet<_>>().into_iter().collect::<Vec<_>>();
-                writer.insert(hash, DagState {
-                    tips: merged_tips,
-                })?;
+                let merged_tips = left_tips
+                    .chain(state.tips.clone())
+                    .collect::<HashSet<_>>()
+                    .into_iter()
+                    .collect::<Vec<_>>();
+                writer.insert(hash, DagState { tips: merged_tips })?;
             }
             Err(_) => {
                 writer.insert(hash, state)?;

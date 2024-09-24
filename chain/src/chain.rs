@@ -350,7 +350,14 @@ impl BlockChain {
         };
 
         let parent_header = if ghostdata.selected_parent != previous_header.id() {
-            self.storage.get_block_header_by_hash(ghostdata.selected_parent)?.ok_or_else(|| format_err!("Cannot find block header by {:?}", ghostdata.selected_parent))?
+            self.storage
+                .get_block_header_by_hash(ghostdata.selected_parent)?
+                .ok_or_else(|| {
+                    format_err!(
+                        "Cannot find block header by {:?}",
+                        ghostdata.selected_parent
+                    )
+                })?
         } else {
             previous_header
         };
@@ -368,7 +375,7 @@ impl BlockChain {
             tips,
             blue_blocks,
             0,
-            HashValue::zero(), // TODO: this field must be returned by dag
+            pruning_point,
         )?;
         let excluded_txns = opened_block.push_txns(user_txns)?;
         let template = opened_block.finalize()?;
