@@ -55,6 +55,7 @@ pub enum FeatureFlag {
     WEBAUTHN_SIGNATURE = 44,
     RECONFIGURE_WITH_DKG = 45,
     REJECT_UNSTABLE_BYTECODE = 46,
+    DISALLOW_USER_NATIVES = 71,
 }
 
 /// Representation of features on chain as a bitset.

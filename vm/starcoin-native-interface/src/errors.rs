@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use move_binary_format::errors::PartialVMError;
+use move_core_types::language_storage::ModuleId;
 
 /// Saner representation of a native function error.
 #[allow(unused)]
@@ -23,6 +24,12 @@ pub enum SafeNativeError {
     /// Indicating that the native function ran into some internal errors that shall not normally
     /// be triggerable by user inputs.
     InvariantViolation(PartialVMError),
+
+    /// Load up a module and charge the module accordingly.
+    ///
+    /// It is critical to invoke this function before calling FunctionDispatch to make sure the module loading
+    /// is charged properly, otherwise it would be a potential gas issue.
+    LoadModule { module_name: ModuleId },
 }
 
 // Allows us to keep using the `?` operator on function calls that return `PartialVMResult` inside safe natives.
