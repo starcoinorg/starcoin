@@ -48,6 +48,7 @@ pub enum Scheme {
     /// when a their address matches matches an existing address of a MultiEd25519 wallet.
     /// Add new derived schemes below.
     DeriveAuid = 251,
+    DeriveObjectAddressFromObject = 252,
 }
 
 impl fmt::Display for Scheme {
@@ -56,6 +57,7 @@ impl fmt::Display for Scheme {
             Self::Ed25519 => "Ed25519",
             Self::MultiEd25519 => "MultiEd25519",
             Self::DeriveAuid => "DeriveAuid",
+            Self::DeriveObjectAddressFromObject => "DeriveObjectAddressFromObject",
         };
         write!(f, "Scheme::{}", display)
     }
@@ -208,6 +210,17 @@ impl AuthenticationKey {
         Self::from_preimage(&AuthenticationKeyPreimage::auid(txn_hash))
     }
 
+    pub fn object_address_from_object(
+        source: &AccountAddress,
+        derive_from: &AccountAddress,
+    ) -> AuthenticationKey {
+        let mut bytes = source.to_vec();
+        bytes.append(&mut derive_from.to_vec());
+        Self::from_preimage(&AuthenticationKeyPreimage::object_address_from_object(
+            bytes,
+        ))
+    }
+
     /// Create an authentication key from an Ed25519 public key
     pub fn ed25519(public_key: &Ed25519PublicKey) -> Self {
         Self::from_preimage(&AuthenticationKeyPreimage::ed25519(public_key))
@@ -271,6 +284,10 @@ impl AuthenticationKeyPreimage {
     /// Construct a preimage from a transaction-derived AUID as (txn_hash || auid_scheme_id)
     pub fn auid(public_key_bytes: Vec<u8>) -> Self {
         Self::new(public_key_bytes, Scheme::DeriveAuid)
+    }
+
+    pub fn object_address_from_object(public_key_bytes: Vec<u8>) -> Self {
+        Self::new(public_key_bytes, Scheme::DeriveObjectAddressFromObject)
     }
 
     /// Construct a preimage from an Ed25519 public key
