@@ -144,6 +144,19 @@ impl SafeNativeBuilder {
                     // TODO(Gas): Check if err is indeed an invariant violation.
                     InvariantViolation(err) => Err(err),
                     LoadModule { module_name } => Ok(NativeResult::LoadModule { module_name }),
+                    FunctionDispatch {
+                        cost,
+                        module_name,
+                        func_name,
+                        ty_args,
+                        args,
+                    } => Ok(NativeResult::CallFunction {
+                        cost,
+                        module_name,
+                        func_name,
+                        ty_args,
+                        args,
+                    }),
                 },
             }
         };

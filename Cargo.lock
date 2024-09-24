@@ -10958,6 +10958,7 @@ dependencies = [
  "starcoin-gas-schedule",
  "starcoin-move-stdlib",
  "starcoin-native-interface",
+ "starcoin-sdk-builder",
  "starcoin-types",
  "starcoin-vm-runtime-types",
  "starcoin-vm-types",
