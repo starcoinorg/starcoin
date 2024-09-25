@@ -8,7 +8,7 @@ use crate::{
     zip_metadata, zip_metadata_str, RuntimeModuleMetadataV1, APTOS_METADATA_KEY,
     APTOS_METADATA_KEY_V1, METADATA_V1_MIN_FILE_FORMAT_VERSION,
 };
-use anyhow::bail;
+use anyhow::{anyhow, bail};
 use clap::Parser;
 use codespan_reporting::{
     diagnostic::Severity,
@@ -77,7 +77,7 @@ pub struct BuildOptions {
     #[clap(skip)] // TODO: have a parser for this; there is one in the CLI buts its  downstream
     pub named_addresses: BTreeMap<String, AccountAddress>,
     /// Whether to override the standard library with the given version.
-    #[clap(long, value_parser)]
+    #[clap(long, value_parser(parse_stdlib_version))]
     pub override_std: Option<StdVersion>,
     #[clap(skip)]
     pub docgen_options: Option<DocgenOptions>,
@@ -95,6 +95,15 @@ pub struct BuildOptions {
     pub check_test_code: bool,
     #[clap(skip)]
     pub known_attributes: BTreeSet<String>,
+}
+
+fn parse_stdlib_version(s: &str) -> anyhow::Result<StdVersion> {
+    match s.to_lowercase().as_str() {
+        "mainnet" => Ok(StdVersion::Mainnet),
+        "testnet" => Ok(StdVersion::Testnet),
+        "devnet" => Ok(StdVersion::Devnet),
+        _ => Err(anyhow!("unknown stdlib version")),
+    }
 }
 
 // Because named_addresses has no parser, we can't use clap's default impl. This must be aligned

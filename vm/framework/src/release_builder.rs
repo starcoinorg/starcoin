@@ -21,7 +21,7 @@ pub struct ReleaseOptions {
     #[clap(flatten)]
     pub build_options: BuildOptions,
     /// The path to the Move packages for which to create a release.
-    #[clap(long, value_parser, num_args(1..))]
+    #[clap(long, value_parser, min_values = 1)]
     pub packages: Vec<PathBuf>,
     /// The path where to place generated Rust bindings for this module, in order for
     /// each package. If the value is empty (`""`) for a particular package, no bindings are

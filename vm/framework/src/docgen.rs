@@ -51,8 +51,16 @@ pub struct DocgenOptions {
     pub references_file: Option<String>,
 
     /// Choose the output format
-    #[clap(long)]
+    #[clap(long, value_parser(parse_output_format))]
     pub output_format: Option<OutputFormat>,
+}
+
+fn parse_output_format(s: &str) -> anyhow::Result<OutputFormat> {
+    match s.to_uppercase().as_str() {
+        "MD" => Ok(OutputFormat::MD),
+        "MDX" => Ok(OutputFormat::MDX),
+        _ => Err(anyhow!("unknown output format")),
+    }
 }
 
 impl DocgenOptions {
