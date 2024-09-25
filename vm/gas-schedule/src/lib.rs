@@ -9,13 +9,6 @@ mod ver;
 
 pub use gas_schedule::*;
 pub use move_vm_test_utils::gas_schedule::GasCost;
-use starcoin_gas_algebra::{Arg, GasQuantity, UnitDiv};
+use starcoin_gas_algebra::{AbstractValueSize, AbstractValueSizePerArg};
 pub use traits::{FromOnChainGasSchedule, InitialGasSchedule, ToOnChainGasSchedule};
 pub use ver::{gas_feature_versions, LATEST_GAS_FEATURE_VERSION};
-
-/// Unit of abstract value size -- a conceptual measurement of the memory space a Move value occupies.
-pub enum AbstractValueUnit {}
-
-pub type AbstractValueSize = GasQuantity<AbstractValueUnit>;
-
-pub type AbstractValueSizePerArg = GasQuantity<UnitDiv<AbstractValueUnit, Arg>>;
