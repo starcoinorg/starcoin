@@ -1,34 +1,18 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use starcoin_crypto::HashValue;
-use starcoin_vm_types::vm_status::DiscardedVMStatus;
-use std::error::Error;
-use thiserror::Error;
+mod block_executor;
 
-pub type ExecutorResult<T> = anyhow::Result<T, BlockExecutorError>;
+pub use block_executor::*;
 
-#[derive(Error, Debug)]
-pub enum BlockExecutorError {
-    #[error("block transaction execute discard, status:{0:?}, transaction_id: {1}")]
-    BlockTransactionDiscard(DiscardedVMStatus, HashValue),
-    #[error("block transaction accumulator append error")]
-    BlockAccumulatorAppendErr,
-    #[error("block accumulator get proof error")]
-    BlockAccumulatorGetProofErr,
-    #[error("block accumulator proof verify error")]
-    BlockAccumulatorVerifyErr(HashValue, u64),
-    #[error("block chain state read or write error：{0:?}")]
-    BlockChainStateErr(anyhow::Error),
-    #[error("block accumulator flush error")]
-    BlockAccumulatorFlushErr,
-    #[error("block transaction execute error, {0:?}")]
-    BlockTransactionExecuteErr(anyhow::Error),
-    // service error
-    #[error("account error, {0:?}")]
-    AccountError(anyhow::Error),
-    #[error("other error: {0:?}")]
-    OtherError(Box<dyn Error + Send + Sync + 'static>),
-    #[error("block transaction execute Retry error")]
-    BlockExecuteRetryErr,
+/// The system is not in a state where the operation can be performed (http: 400)
+pub const INVALID_STATE: u64 = 0x3;
+
+/// Construct a canonical error code from a category and a reason.
+pub fn canonical(category: u64, reason: u64) -> u64 {
+    (category << 16) + reason
+}
+
+pub fn invalid_state(r: u64) -> u64 {
+    canonical(INVALID_STATE, r)
 }

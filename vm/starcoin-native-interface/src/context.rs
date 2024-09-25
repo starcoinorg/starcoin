@@ -5,8 +5,10 @@ use crate::errors::{SafeNativeError, SafeNativeResult};
 use move_core_types::gas_algebra::InternalGas;
 use move_vm_runtime::native_functions::NativeContext;
 use move_vm_types::values::Value;
-use starcoin_gas_algebra::{DynamicExpression, GasExpression, GasQuantity, InternalGasUnit};
-use starcoin_gas_schedule::{AbstractValueSize, MiscGasParameters, NativeGasParameters};
+use starcoin_gas_algebra::{
+    AbstractValueSize, DynamicExpression, GasExpression, GasQuantity, InternalGasUnit,
+};
+use starcoin_gas_schedule::{MiscGasParameters, NativeGasParameters};
 use starcoin_vm_types::on_chain_config::{Features, TimedFeatureFlag, TimedFeatures};
 use std::ops::{Deref, DerefMut};
 

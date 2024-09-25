@@ -308,6 +308,8 @@ fn native_format_impl(
             )?;
             out.push('}');
         }
+        // TODO: update move-core-types to support these layouts
+        /*
         MoveTypeLayout::Struct(MoveStructLayout::RuntimeVariants(variants)) => {
             let struct_value = val.value_as::<Struct>()?;
             let (tag, elems) = struct_value.unpack_with_tag()?;
@@ -347,7 +349,7 @@ fn native_format_impl(
             )?;
             out.push('}');
         }
-
+         */
         // This is unreachable because we check layout at the start. Still, return
         // an error to be safe.
         MoveTypeLayout::Native(..) => {

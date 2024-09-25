@@ -5,7 +5,6 @@
 pub mod account;
 pub mod aggregator_natives;
 pub mod code;
-pub mod consensus_config;
 pub mod create_signer;
 pub mod cryptography;
 pub mod debug;
@@ -85,7 +84,6 @@ pub fn all_natives(
     add_natives_from_module!("object", object::make_all(builder));
     add_natives_from_module!("debug", debug::make_all(builder));
     add_natives_from_module!("string_utils", string_utils::make_all(builder));
-    add_natives_from_module!("consensus_config", consensus_config::make_all(builder));
     add_natives_from_module!("function_info", function_info::make_all(builder));
     add_natives_from_module!(
         "dispatchable_fungible_asset",

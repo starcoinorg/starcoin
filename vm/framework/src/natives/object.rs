@@ -101,7 +101,8 @@ fn native_create_user_derived_object_address_impl(
         .borrow_mut()
         .entry((derive_from, source))
         .or_insert_with(|| {
-            AuthenticationKey::object_address_from_object(&source, &derive_from).account_address()
+            // Fixme: currently we only use the last 16-bytes of AuthenticationKey as the AccountAddress.
+            AuthenticationKey::object_address_from_object(&source, &derive_from).derived_address()
         });
 
     Ok(smallvec![Value::address(derived_address)])

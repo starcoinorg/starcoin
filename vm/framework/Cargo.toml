@@ -20,7 +20,7 @@ starcoin-gas-algebra = { workspace = true }
 starcoin-gas-schedule = { workspace = true }
 starcoin-move-stdlib = { workspace = true }
 starcoin-native-interface = { workspace = true }
-# starcoin-sdk-builder = { workspace = true }
+starcoin-sdk-builder = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-vm-runtime-types = { workspace = true }
