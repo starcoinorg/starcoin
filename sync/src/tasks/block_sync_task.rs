@@ -421,13 +421,15 @@ where
         Ok(())
     }
 
-    async fn find_absent_ancestor(&self, mut block_headers: Vec<BlockHeader>) -> Result<()> {
+    async fn find_absent_ancestor(&self, mut block_headers: Vec<BlockHeader>) -> Result<u64> {
+        let mut count: u64 = 0;
         loop {
             let mut absent_blocks = vec![];
             self.find_absent_parent_dag_blocks_for_blocks(block_headers, &mut absent_blocks)?;
             if absent_blocks.is_empty() {
-                return Ok(());
+                return Ok(count);
             }
+            count = count.saturating_add(absent_blocks.len() as u64);
             block_headers = self.fetch_blocks(absent_blocks).await?;
         }
     }
@@ -449,10 +451,12 @@ where
             block_header.parents_hash()
         );
         let fut = async {
-            self.find_absent_ancestor(vec![block_header.clone()])
+            let count = self
+                .find_absent_ancestor(vec![block_header.clone()])
                 .await?;
 
-            if block_header.number() % 1000 == 0
+            if count == 0
+                || block_header.number() % 1000 == 0
                 || block_header.number() >= self.target.target_id.number()
             {
                 let parallel_execute = DagBlockSender::new(
