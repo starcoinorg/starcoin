@@ -234,9 +234,9 @@ fn native_write_module_event_to_store(
             )));
         }
     }
-    let (layout, has_identifier_mappings) =
+    let (layout, _has_identifier_mappings) =
         context.type_to_type_layout_with_identifier_mappings(&ty)?;
-    let blob = serialize_and_allow_delayed_values(&msg, &layout)?.ok_or_else(|| {
+    let _blob = serialize_and_allow_delayed_values(&msg, &layout)?.ok_or_else(|| {
         SafeNativeError::InvariantViolation(
             PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
                 .with_message("Event serialization failure".to_string()),
