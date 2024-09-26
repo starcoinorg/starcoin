@@ -5,7 +5,6 @@ use crate::StateReaderExt;
 use crate::TABLE_PATH_LIST;
 use anyhow::{ensure, Result};
 use forkable_jellyfish_merkle::{blob::Blob, proof::SparseMerkleProof, RawKey};
-use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_state_tree::AccountStateSetIterator;
@@ -20,10 +19,9 @@ use starcoin_vm_types::account_config::TABLE_HANDLE_ADDRESS_LIST;
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::on_chain_resource::{Epoch, EpochInfo, GlobalTimeOnChain};
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use starcoin_vm_types::state_store::StateView;
 use starcoin_vm_types::token::token_code::TokenCode;
-use starcoin_vm_types::{
-    move_resource::MoveResource, on_chain_config::OnChainConfig, state_view::StateView,
-};
+use starcoin_vm_types::{move_resource::MoveResource, on_chain_config::OnChainConfig};
 use std::convert::TryFrom;
 
 #[derive(Debug, Default, Eq, PartialEq, Clone, Serialize, Deserialize)]
@@ -174,30 +172,30 @@ where
     pub fn get_account_resource(
         &self,
         address: &AccountAddress,
-    ) -> Result<Option<AccountResource>> {
+    ) -> Result<AccountResource> {
         self.reader.get_account_resource(*address)
     }
 
     /// Get Resource by type
-    pub fn get_resource<R>(&self, address: AccountAddress) -> Result<Option<R>>
+    pub fn get_resource<R>(&self, address: AccountAddress) -> Result<R>
     where
         R: MoveResource,
     {
-        self.reader.get_resource_type(address)
+        self.reader.get_resource_type::<R>(address)
     }
 
     pub fn get_sequence_number(&self, address: AccountAddress) -> Result<u64> {
         self.reader.get_sequence_number(address)
     }
 
-    pub fn get_on_chain_config<C>(&self) -> Result<Option<C>>
+    pub fn get_on_chain_config<C>(&self) -> Option<C>
     where
         C: OnChainConfig,
     {
         self.reader.get_on_chain_config()
     }
 
-    pub fn get_balance(&self, address: &AccountAddress) -> Result<Option<u128>> {
+    pub fn get_balance(&self, address: &AccountAddress) -> Result<u128> {
         self.reader.get_balance(*address)
     }
 
@@ -206,7 +204,7 @@ where
         &self,
         address: &AccountAddress,
         type_tag: StructTag,
-    ) -> Result<Option<u128>> {
+    ) -> Result<u128> {
         self.reader.get_balance_by_type(*address, type_tag)
     }
 
@@ -214,7 +212,7 @@ where
         &self,
         address: &AccountAddress,
         token_code: TokenCode,
-    ) -> Result<Option<u128>> {
+    ) -> Result<u128> {
         self.reader.get_balance_by_token_code(*address, token_code)
     }
 

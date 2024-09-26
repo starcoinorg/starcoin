@@ -3,19 +3,19 @@
 
 use crate::{StateWithProof, StateWithTableItemProof};
 use anyhow::Result;
+use bytes::Bytes;
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::state_set::AccountStateSet;
-use starcoin_types::{
-    access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
-};
+use starcoin_types::{account_address::AccountAddress, account_state::AccountState};
+use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 
 #[derive(Debug, Clone)]
 pub enum StateRequest {
-    Get(AccessPath),
-    GetWithProof(AccessPath),
-    GetWithProofByRoot(AccessPath, HashValue),
+    Get(StateKey),
+    GetWithProof(StateKey),
+    GetWithProofByRoot(StateKey, HashValue),
     GetAccountState(AccountAddress),
     GetAccountStateSet {
         address: AccountAddress,
@@ -34,7 +34,7 @@ impl ServiceRequest for StateRequest {
 
 #[derive(Debug, Clone)]
 pub enum StateResponse {
-    State(Option<Vec<u8>>),
+    State(Option<Bytes>),
     StateWithProof(Box<StateWithProof>),
     StateRoot(HashValue),
     AccountState(Option<AccountState>),
