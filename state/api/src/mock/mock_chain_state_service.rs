@@ -3,11 +3,12 @@
 
 use crate::{ChainStateAsyncService, StateWithProof, StateWithTableItemProof};
 use anyhow::Result;
+use bytes::Bytes;
 use starcoin_crypto::HashValue;
-use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::state_set::AccountStateSet;
+use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 
 //TODO implement Mock service
@@ -23,15 +24,15 @@ impl MockChainStateService {
 #[allow(clippy::diverging_sub_expression)]
 #[async_trait::async_trait]
 impl ChainStateAsyncService for MockChainStateService {
-    async fn get(self, _access_path: AccessPath) -> Result<Option<Vec<u8>>> {
+    async fn get(self, _state_key: &StateKey) -> Result<Option<Bytes>> {
         unimplemented!()
     }
 
-    async fn get_with_proof(self, _access_path: AccessPath) -> Result<StateWithProof> {
+    async fn get_with_proof(self, _state_key: &StateKey) -> Result<StateWithProof> {
         unimplemented!()
     }
 
-    async fn get_account_state(self, _address: AccountAddress) -> Result<Option<AccountState>> {
+    async fn get_account_state(self, _address: AccountAddress) -> Result<AccountState> {
         unimplemented!()
     }
 
@@ -39,7 +40,7 @@ impl ChainStateAsyncService for MockChainStateService {
         self,
         _address: AccountAddress,
         _state_root: Option<HashValue>,
-    ) -> Result<Option<AccountStateSet>> {
+    ) -> Result<AccountStateSet> {
         unimplemented!()
     }
 
@@ -49,7 +50,7 @@ impl ChainStateAsyncService for MockChainStateService {
 
     async fn get_with_proof_by_root(
         self,
-        _access_path: AccessPath,
+        _state_key: StateKey,
         _state_root: HashValue,
     ) -> Result<StateWithProof> {
         unimplemented!()
@@ -59,7 +60,7 @@ impl ChainStateAsyncService for MockChainStateService {
         self,
         _address: AccountAddress,
         _state_root: HashValue,
-    ) -> Result<Option<AccountState>> {
+    ) -> Result<AccountState> {
         unimplemented!()
     }
 
@@ -80,7 +81,7 @@ impl ChainStateAsyncService for MockChainStateService {
         unimplemented!()
     }
 
-    async fn get_table_info(self, _address: AccountAddress) -> Result<Option<TableInfo>> {
-        Ok(None)
+    async fn get_table_info(self, _address: AccountAddress) -> Result<TableInfo> {
+        unimplemented!()
     }
 }

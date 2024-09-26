@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::message::{StateRequest, StateResponse};
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use once_cell::sync::Lazy;
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
@@ -15,18 +15,19 @@ pub use chain_state::{
     AccountStateReader, ChainStateReader, ChainStateWriter, StateProof, StateWithProof,
     StateWithTableItemProof,
 };
-use serde::de::DeserializeOwned;
 pub use starcoin_state_tree::StateNodeStore;
 use starcoin_types::state_set::AccountStateSet;
 use starcoin_vm_types::access_path::DataPath;
 use starcoin_vm_types::account_config::TABLE_HANDLE_ADDRESS_LIST;
 use starcoin_vm_types::move_resource::MoveResource;
+use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
-pub use starcoin_vm_types::state_view::{StateReaderExt, StateView};
+pub use starcoin_vm_types::state_view::StateReaderExt;
 
 mod chain_state;
 pub mod message;
 pub mod mock;
+use bytes::Bytes;
 
 pub static TABLE_PATH_LIST: Lazy<Vec<DataPath>> = Lazy::new(|| {
     let mut path_list = vec![];
@@ -42,36 +43,41 @@ pub static TABLE_PATH_LIST: Lazy<Vec<DataPath>> = Lazy::new(|| {
 
 #[async_trait::async_trait]
 pub trait ChainStateAsyncService: Clone + std::marker::Unpin + Send + Sync {
-    async fn get(self, access_path: AccessPath) -> Result<Option<Vec<u8>>>;
+    async fn get(self, state_key: &StateKey) -> Result<Option<Bytes>>;
 
-    async fn get_with_proof(self, access_path: AccessPath) -> Result<StateWithProof>;
+    async fn get_with_proof(self, state_key: &StateKey) -> Result<StateWithProof>;
 
-    async fn get_resource<R>(self, address: AccountAddress) -> Result<Option<R>>
+    async fn get_resource<R>(self, address: AccountAddress) -> Result<R>
     where
         R: MoveResource,
     {
-        let access_path = AccessPath::new(address, R::resource_path());
-        let r = self.get(access_path).await.and_then(|state| match state {
-            Some(state) => Ok(Some(bcs_ext::from_bytes::<R>(state.as_slice())?)),
-            None => Ok(None),
-        })?;
-        Ok(r)
+        let rsrc_bytes = self.get(&StateKey::resource_typed::<R>(&address)?).await?.ok_or_else(
+            || {
+                format_err!(
+                    "Resource {:?} not exists at address:{}",
+                    R::module_identifier(),
+                    address
+                )
+            },
+        )?;
+        let rsrc = bcs_ext::from_bytes::<R>(&rsrc_bytes)?;
+        Ok(rsrc)
     }
 
-    async fn get_account_state(self, address: AccountAddress) -> Result<Option<AccountState>>;
+    async fn get_account_state(self, address: AccountAddress) -> Result<AccountState>;
 
     /// get account stateset on state_root(if empty, use current state root).
     async fn get_account_state_set(
         self,
         address: AccountAddress,
         state_root: Option<HashValue>,
-    ) -> Result<Option<AccountStateSet>>;
+    ) -> Result<AccountStateSet>;
 
     async fn state_root(self) -> Result<HashValue>;
 
     async fn get_with_proof_by_root(
         self,
-        access_path: AccessPath,
+        state_key: StateKey,
         state_root: HashValue,
     ) -> Result<StateWithProof>;
 
@@ -79,7 +85,7 @@ pub trait ChainStateAsyncService: Clone + std::marker::Unpin + Send + Sync {
         self,
         address: AccountAddress,
         state_root: HashValue,
-    ) -> Result<Option<AccountState>>;
+    ) -> Result<AccountState>;
 
     async fn get_with_table_item_proof(
         self,
@@ -93,7 +99,7 @@ pub trait ChainStateAsyncService: Clone + std::marker::Unpin + Send + Sync {
         state_root: HashValue,
     ) -> Result<StateWithTableItemProof>;
 
-    async fn get_table_info(self, address: AccountAddress) -> Result<Option<TableInfo>>;
+    async fn get_table_info(self, address: AccountAddress) -> Result<TableInfo>;
 }
 
 #[async_trait::async_trait]
@@ -101,8 +107,8 @@ impl<S> ChainStateAsyncService for ServiceRef<S>
 where
     S: ActorService + ServiceHandler<S, StateRequest>,
 {
-    async fn get(self, access_path: AccessPath) -> Result<Option<Vec<u8>>> {
-        let response = self.send(StateRequest::Get(access_path)).await??;
+    async fn get(self, state_key: &StateKey) -> Result<Option<Bytes>> {
+        let response = self.send(StateRequest::Get(state_key.clone())).await??;
         if let StateResponse::State(state) = response {
             Ok(state)
         } else {
@@ -110,8 +116,8 @@ where
         }
     }
 
-    async fn get_with_proof(self, access_path: AccessPath) -> Result<StateWithProof> {
-        let response = self.send(StateRequest::GetWithProof(access_path)).await??;
+    async fn get_with_proof(self, state_key: &StateKey) -> Result<StateWithProof> {
+        let response = self.send(StateRequest::GetWithProof(state_key.clone())).await??;
         if let StateResponse::StateWithProof(state) = response {
             Ok(*state)
         } else {
@@ -119,10 +125,12 @@ where
         }
     }
 
-    async fn get_account_state(self, address: AccountAddress) -> Result<Option<AccountState>> {
+    async fn get_account_state(self, address: AccountAddress) -> Result<AccountState> {
         let response = self.send(StateRequest::GetAccountState(address)).await??;
         if let StateResponse::AccountState(state) = response {
-            Ok(state)
+            Ok(state.ok_or_else(|| {
+                format_err!("AccountState not exists for address: {}", address)
+            })?)
         } else {
             panic!("Unexpect response type.")
         }
@@ -131,7 +139,7 @@ where
         self,
         address: AccountAddress,
         state_root: Option<HashValue>,
-    ) -> Result<Option<AccountStateSet>> {
+    ) -> Result<AccountStateSet> {
         let response = self
             .send(StateRequest::GetAccountStateSet {
                 address,
@@ -139,7 +147,9 @@ where
             })
             .await??;
         if let StateResponse::AccountStateSet(state) = response {
-            Ok(state)
+            Ok(state.ok_or_else(|| {
+                format_err!("AccountStateSet not exists for address: {}", address)
+            })?)
         } else {
             panic!("Unexpected response type.")
         }
@@ -155,11 +165,11 @@ where
 
     async fn get_with_proof_by_root(
         self,
-        access_path: AccessPath,
+        state_key: StateKey,
         state_root: HashValue,
     ) -> Result<StateWithProof> {
         let response = self
-            .send(StateRequest::GetWithProofByRoot(access_path, state_root))
+            .send(StateRequest::GetWithProofByRoot(state_key, state_root))
             .await??;
         if let StateResponse::StateWithProof(state) = response {
             Ok(*state)
@@ -172,7 +182,7 @@ where
         self,
         account_address: AccountAddress,
         state_root: HashValue,
-    ) -> Result<Option<AccountState>> {
+    ) -> Result<AccountState> {
         let response = self
             .send(StateRequest::GetAccountStateByRoot(
                 account_address,
@@ -180,7 +190,9 @@ where
             ))
             .await??;
         if let StateResponse::AccountState(state) = response {
-            Ok(state)
+            Ok(state.ok_or_else(|| {
+                format_err!("AccountState not exists for address: {}", account_address)
+            })?)
         } else {
             panic!("Unexpect response type.")
         }
@@ -219,10 +231,12 @@ where
         }
     }
 
-    async fn get_table_info(self, address: AccountAddress) -> Result<Option<TableInfo>> {
+    async fn get_table_info(self, address: AccountAddress) -> Result<TableInfo> {
         let response = self.send(StateRequest::GetTableInfo(address)).await??;
         if let StateResponse::TableInfo(state) = response {
-            Ok(state)
+            Ok(state.ok_or_else(|| {
+                format_err!("TableInfo not exists for address: {}", address)
+            })?)
         } else {
             panic!("Unexpect response type.")
         }

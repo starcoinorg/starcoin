@@ -11947,6 +11947,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bcs-ext",
+ "bytes 1.6.1",
  "forkable-jellyfish-merkle",
  "once_cell",
  "serde",

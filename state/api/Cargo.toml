@@ -10,6 +10,7 @@ starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 forkable-jellyfish-merkle = { workspace = true }
 once_cell = { workspace = true }
+bytes = { workspace = true }
 
 [dev-dependencies]
 
