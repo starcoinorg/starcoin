@@ -1,4 +1,4 @@
-spec aptos_framework::delegation_pool {
+spec starcoin_framework::delegation_pool {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: Every DelegationPool has only one corresponding StakePool stored at the same address.

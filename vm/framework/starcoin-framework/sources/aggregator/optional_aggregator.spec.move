@@ -1,4 +1,4 @@
-spec aptos_framework::optional_aggregator {
+spec starcoin_framework::optional_aggregator {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: When creating a new integer instance, it guarantees that the limit assigned is a value passed into the
@@ -109,7 +109,7 @@ spec aptos_framework::optional_aggregator {
         let vec_ref = optional_aggregator.integer.vec;
         aborts_if is_parallelizable(optional_aggregator) && len(vec_ref) != 0;
         aborts_if !is_parallelizable(optional_aggregator) && len(vec_ref) == 0;
-        aborts_if !is_parallelizable(optional_aggregator) && !exists<aggregator_factory::AggregatorFactory>(@aptos_framework);
+        aborts_if !is_parallelizable(optional_aggregator) && !exists<aggregator_factory::AggregatorFactory>(@starcoin_framework);
         ensures optional_aggregator_value(optional_aggregator) == optional_aggregator_value(old(optional_aggregator));
     }
 
@@ -119,7 +119,7 @@ spec aptos_framework::optional_aggregator {
     }
 
     spec new(limit: u128, parallelizable: bool): OptionalAggregator {
-        aborts_if parallelizable && !exists<aggregator_factory::AggregatorFactory>(@aptos_framework);
+        aborts_if parallelizable && !exists<aggregator_factory::AggregatorFactory>(@starcoin_framework);
         ensures parallelizable ==> is_parallelizable(result);
         ensures !parallelizable ==> !is_parallelizable(result);
         ensures optional_aggregator_value(result) == 0;
@@ -128,12 +128,12 @@ spec aptos_framework::optional_aggregator {
 
     /// Option<Integer> does not exist When Option<Aggregator> exists.
     /// Option<Integer> exists when Option<Aggregator> does not exist.
-    /// The AggregatorFactory is under the @aptos_framework when Option<Aggregator> does not exist.
+    /// The AggregatorFactory is under the @starcoin_framework when Option<Aggregator> does not exist.
     spec switch_and_zero_out(optional_aggregator: &mut OptionalAggregator) {
         let vec_ref = optional_aggregator.integer.vec;
         aborts_if is_parallelizable(optional_aggregator) && len(vec_ref) != 0;
         aborts_if !is_parallelizable(optional_aggregator) && len(vec_ref) == 0;
-        aborts_if !is_parallelizable(optional_aggregator) && !exists<aggregator_factory::AggregatorFactory>(@aptos_framework);
+        aborts_if !is_parallelizable(optional_aggregator) && !exists<aggregator_factory::AggregatorFactory>(@starcoin_framework);
         /// [high-level-req-3]
         ensures is_parallelizable(old(optional_aggregator)) ==> !is_parallelizable(optional_aggregator);
         ensures !is_parallelizable(old(optional_aggregator)) ==> is_parallelizable(optional_aggregator);
@@ -153,13 +153,13 @@ spec aptos_framework::optional_aggregator {
     }
 
     /// The integer exists and the aggregator does not exist when Switches from non-parallelizable to parallelizable implementation.
-    /// The AggregatorFactory is under the @aptos_framework.
+    /// The AggregatorFactory is under the @starcoin_framework.
     spec switch_to_aggregator_and_zero_out(
         optional_aggregator: &mut OptionalAggregator
     ): u128 {
         let limit = option::borrow(optional_aggregator.integer).limit;
         aborts_if len(optional_aggregator.integer.vec) == 0;
-        aborts_if !exists<aggregator_factory::AggregatorFactory>(@aptos_framework);
+        aborts_if !exists<aggregator_factory::AggregatorFactory>(@starcoin_framework);
         aborts_if len(optional_aggregator.aggregator.vec) != 0;
         ensures is_parallelizable(optional_aggregator);
         ensures aggregator::spec_get_limit(option::borrow(optional_aggregator.aggregator)) == limit;

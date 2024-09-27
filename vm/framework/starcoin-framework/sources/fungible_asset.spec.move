@@ -1,4 +1,4 @@
-spec aptos_framework::fungible_asset {
+spec starcoin_framework::fungible_asset {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: The metadata associated with the fungible asset is subject to precise size constraints.

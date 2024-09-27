@@ -1,23 +1,23 @@
 /// Reconfiguration with DKG helper functions.
-module aptos_framework::reconfiguration_with_dkg {
+module starcoin_framework::reconfiguration_with_dkg {
     use std::features;
     use std::option;
-    use aptos_framework::consensus_config;
-    use aptos_framework::dkg;
-    use aptos_framework::execution_config;
-    use aptos_framework::gas_schedule;
-    use aptos_framework::jwk_consensus_config;
-    use aptos_framework::jwks;
-    use aptos_framework::keyless_account;
-    use aptos_framework::randomness_api_v0_config;
-    use aptos_framework::randomness_config;
-    use aptos_framework::randomness_config_seqnum;
-    use aptos_framework::reconfiguration;
-    use aptos_framework::reconfiguration_state;
-    use aptos_framework::stake;
-    use aptos_framework::system_addresses;
-    friend aptos_framework::block;
-    friend aptos_framework::aptos_governance;
+    use starcoin_framework::consensus_config;
+    use starcoin_framework::dkg;
+    use starcoin_framework::execution_config;
+    use starcoin_framework::gas_schedule;
+    use starcoin_framework::jwk_consensus_config;
+    use starcoin_framework::jwks;
+    use starcoin_framework::keyless_account;
+    use starcoin_framework::randomness_api_v0_config;
+    use starcoin_framework::randomness_config;
+    use starcoin_framework::randomness_config_seqnum;
+    use starcoin_framework::reconfiguration;
+    use starcoin_framework::reconfiguration_state;
+    use starcoin_framework::stake;
+    use starcoin_framework::system_addresses;
+    friend starcoin_framework::block;
+    friend starcoin_framework::aptos_governance;
 
     /// Trigger a reconfiguration with DKG.
     /// Do nothing if one is already in progress.

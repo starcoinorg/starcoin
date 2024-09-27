@@ -1,16 +1,16 @@
 /// This module defines a minimal and generic Coin and Balance.
 /// modified from https://github.com/move-language/move/tree/main/language/documentation/tutorial
-module aptos_framework::aptos_coin {
+module starcoin_framework::aptos_coin {
     use std::error;
     use std::signer;
     use std::string;
     use std::vector;
     use std::option::{Self, Option};
 
-    use aptos_framework::coin::{Self, BurnCapability, MintCapability};
-    use aptos_framework::system_addresses;
+    use starcoin_framework::coin::{Self, BurnCapability, MintCapability};
+    use starcoin_framework::system_addresses;
 
-    friend aptos_framework::genesis;
+    friend starcoin_framework::genesis;
 
     /// Account does not have mint capability
     const ENO_CAPABILITIES: u64 = 1;
@@ -36,11 +36,11 @@ module aptos_framework::aptos_coin {
     }
 
     /// Can only called during genesis to initialize the Aptos coin.
-    public(friend) fun initialize(aptos_framework: &signer): (BurnCapability<AptosCoin>, MintCapability<AptosCoin>) {
-        system_addresses::assert_aptos_framework(aptos_framework);
+    public(friend) fun initialize(starcoin_framework: &signer): (BurnCapability<AptosCoin>, MintCapability<AptosCoin>) {
+        system_addresses::assert_aptos_framework(starcoin_framework);
 
         let (burn_cap, freeze_cap, mint_cap) = coin::initialize_with_parallelizable_supply<AptosCoin>(
-            aptos_framework,
+            starcoin_framework,
             string::utf8(b"Aptos Coin"),
             string::utf8(b"APT"),
             8, // decimals
@@ -49,7 +49,7 @@ module aptos_framework::aptos_coin {
 
         // Aptos framework needs mint cap to mint coins to initial validators. This will be revoked once the validators
         // have been initialized.
-        move_to(aptos_framework, MintCapStore { mint_cap });
+        move_to(starcoin_framework, MintCapStore { mint_cap });
 
         coin::destroy_freeze_cap(freeze_cap);
         (burn_cap, mint_cap)
@@ -61,9 +61,9 @@ module aptos_framework::aptos_coin {
 
     /// Only called during genesis to destroy the aptos framework account's mint capability once all initial validators
     /// and accounts have been initialized during genesis.
-    public(friend) fun destroy_mint_cap(aptos_framework: &signer) acquires MintCapStore {
-        system_addresses::assert_aptos_framework(aptos_framework);
-        let MintCapStore { mint_cap } = move_from<MintCapStore>(@aptos_framework);
+    public(friend) fun destroy_mint_cap(starcoin_framework: &signer) acquires MintCapStore {
+        system_addresses::assert_aptos_framework(starcoin_framework);
+        let MintCapStore { mint_cap } = move_from<MintCapStore>(@starcoin_framework);
         coin::destroy_mint_cap(mint_cap);
     }
 
@@ -71,11 +71,11 @@ module aptos_framework::aptos_coin {
     /// accounts.
     /// Expects account and APT store to be registered before calling.
     public(friend) fun configure_accounts_for_test(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         core_resources: &signer,
         mint_cap: MintCapability<AptosCoin>,
     ) {
-        system_addresses::assert_aptos_framework(aptos_framework);
+        system_addresses::assert_aptos_framework(starcoin_framework);
 
         // Mint the core resource account AptosCoin for gas so it can execute system transactions.
         let coins = coin::mint<AptosCoin>(
@@ -150,11 +150,11 @@ module aptos_framework::aptos_coin {
     }
 
     #[test_only]
-    use aptos_framework::account;
+    use starcoin_framework::account;
     #[test_only]
-    use aptos_framework::aggregator_factory;
+    use starcoin_framework::aggregator_factory;
     #[test_only]
-    use aptos_framework::fungible_asset::FungibleAsset;
+    use starcoin_framework::fungible_asset::FungibleAsset;
 
     #[test_only]
     public fun mint_apt_fa_for_test(amount: u64): FungibleAsset acquires MintCapStore {
@@ -162,43 +162,43 @@ module aptos_framework::aptos_coin {
         coin::coin_to_fungible_asset(
             coin::mint(
                 amount,
-                &borrow_global<MintCapStore>(@aptos_framework).mint_cap
+                &borrow_global<MintCapStore>(@starcoin_framework).mint_cap
             )
         )
     }
 
     #[test_only]
     public fun ensure_initialized_with_apt_fa_metadata_for_test() {
-        let aptos_framework = account::create_signer_for_test(@aptos_framework);
-        if (!exists<MintCapStore>(@aptos_framework)) {
+        let starcoin_framework = account::create_signer_for_test(@starcoin_framework);
+        if (!exists<MintCapStore>(@starcoin_framework)) {
             if (!aggregator_factory::aggregator_factory_exists_for_testing()) {
-                aggregator_factory::initialize_aggregator_factory_for_test(&aptos_framework);
+                aggregator_factory::initialize_aggregator_factory_for_test(&starcoin_framework);
             };
-            let (burn_cap, mint_cap) = initialize(&aptos_framework);
+            let (burn_cap, mint_cap) = initialize(&starcoin_framework);
             coin::destroy_burn_cap(burn_cap);
             coin::destroy_mint_cap(mint_cap);
         };
-        coin::create_coin_conversion_map(&aptos_framework);
-        coin::create_pairing<AptosCoin>(&aptos_framework);
+        coin::create_coin_conversion_map(&starcoin_framework);
+        coin::create_pairing<AptosCoin>(&starcoin_framework);
     }
 
     #[test_only]
-    public fun initialize_for_test(aptos_framework: &signer): (BurnCapability<AptosCoin>, MintCapability<AptosCoin>) {
-        aggregator_factory::initialize_aggregator_factory_for_test(aptos_framework);
-        let (burn_cap, mint_cap) = initialize(aptos_framework);
-        coin::create_coin_conversion_map(aptos_framework);
-        coin::create_pairing<AptosCoin>(aptos_framework);
+    public fun initialize_for_test(starcoin_framework: &signer): (BurnCapability<AptosCoin>, MintCapability<AptosCoin>) {
+        aggregator_factory::initialize_aggregator_factory_for_test(starcoin_framework);
+        let (burn_cap, mint_cap) = initialize(starcoin_framework);
+        coin::create_coin_conversion_map(starcoin_framework);
+        coin::create_pairing<AptosCoin>(starcoin_framework);
         (burn_cap, mint_cap)
     }
 
     // This is particularly useful if the aggregator_factory is already initialized via another call path.
     #[test_only]
     public fun initialize_for_test_without_aggregator_factory(
-        aptos_framework: &signer
+        starcoin_framework: &signer
     ): (BurnCapability<AptosCoin>, MintCapability<AptosCoin>) {
-        let (burn_cap, mint_cap) = initialize(aptos_framework);
-        coin::create_coin_conversion_map(aptos_framework);
-        coin::create_pairing<AptosCoin>(aptos_framework);
+        let (burn_cap, mint_cap) = initialize(starcoin_framework);
+        coin::create_coin_conversion_map(starcoin_framework);
+        coin::create_pairing<AptosCoin>(starcoin_framework);
         (burn_cap, mint_cap)
     }
 }

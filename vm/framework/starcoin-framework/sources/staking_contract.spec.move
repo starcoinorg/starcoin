@@ -1,4 +1,4 @@
-spec aptos_framework::staking_contract {
+spec starcoin_framework::staking_contract {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: The Store structure for the staker exists after the staking contract is created.
@@ -187,7 +187,7 @@ spec aptos_framework::staking_contract {
     /// Staking_contract exists the stacker/operator pair.
     spec add_stake(staker: &signer, operator: address, amount: u64) {
         // TODO(fa_migration)
-        use aptos_framework::reconfiguration_state;
+        use starcoin_framework::reconfiguration_state;
         pragma verify_duration_estimate = 600;
         // TODO: this function times out
         include stake::ResourceRequirement;
@@ -509,7 +509,7 @@ spec aptos_framework::staking_contract {
     }
 
     spec schema IncreaseLockupWithCapAbortsIf {
-        use aptos_framework::timestamp;
+        use starcoin_framework::timestamp;
         staker: address;
         operator: address;
 
@@ -519,18 +519,18 @@ spec aptos_framework::staking_contract {
 
         // property 5: Only the owner of the stake pool has the permission to reset the lockup period of the pool.
         aborts_if !stake::stake_pool_exists(pool_address);
-        aborts_if !exists<staking_config::StakingConfig>(@aptos_framework);
+        aborts_if !exists<staking_config::StakingConfig>(@starcoin_framework);
 
-        let config = global<staking_config::StakingConfig>(@aptos_framework);
+        let config = global<staking_config::StakingConfig>(@starcoin_framework);
         let stake_pool = global<stake::StakePool>(pool_address);
         let old_locked_until_secs = stake_pool.locked_until_secs;
         let seconds = global<timestamp::CurrentTimeMicroseconds>(
-            @aptos_framework
+            @starcoin_framework
         ).microseconds / timestamp::MICRO_CONVERSION_FACTOR;
         let new_locked_until_secs = seconds + config.recurring_lockup_duration_secs;
         aborts_if seconds + config.recurring_lockup_duration_secs > MAX_U64;
         aborts_if old_locked_until_secs > new_locked_until_secs || old_locked_until_secs == new_locked_until_secs;
-        aborts_if !exists<timestamp::CurrentTimeMicroseconds>(@aptos_framework);
+        aborts_if !exists<timestamp::CurrentTimeMicroseconds>(@starcoin_framework);
 
         let post post_store = global<Store>(staker);
         let post post_staking_contract = simple_map::spec_get(post_store.staking_contracts, operator);
@@ -547,8 +547,8 @@ spec aptos_framework::staking_contract {
         contract_creation_seed: vector<u8>;
 
         aborts_if commission_percentage > 100;
-        aborts_if !exists<staking_config::StakingConfig>(@aptos_framework);
-        let config = global<staking_config::StakingConfig>(@aptos_framework);
+        aborts_if !exists<staking_config::StakingConfig>(@starcoin_framework);
+        let config = global<staking_config::StakingConfig>(@starcoin_framework);
         let min_stake_required = config.minimum_stake;
         aborts_if amount < min_stake_required;
 
@@ -583,14 +583,14 @@ spec aptos_framework::staking_contract {
     }
 
     spec schema PreconditionsInCreateContract {
-        requires exists<stake::ValidatorPerformance>(@aptos_framework);
-        requires exists<stake::ValidatorSet>(@aptos_framework);
+        requires exists<stake::ValidatorPerformance>(@starcoin_framework);
+        requires exists<stake::ValidatorSet>(@starcoin_framework);
         requires exists<staking_config::StakingRewardsConfig>(
-            @aptos_framework
+            @starcoin_framework
         ) || !std::features::spec_periodical_reward_rate_decrease_enabled();
-        requires exists<stake::ValidatorFees>(@aptos_framework);
-        requires exists<aptos_framework::timestamp::CurrentTimeMicroseconds>(@aptos_framework);
-        requires exists<stake::AptosCoinCapabilities>(@aptos_framework);
+        requires exists<stake::ValidatorFees>(@starcoin_framework);
+        requires exists<starcoin_framework::timestamp::CurrentTimeMicroseconds>(@starcoin_framework);
+        requires exists<stake::AptosCoinCapabilities>(@starcoin_framework);
     }
 
     spec schema CreateStakePoolAbortsIf {
@@ -609,8 +609,8 @@ spec aptos_framework::staking_contract {
 
         // postconditions stake::initialize_stake_owner()
         aborts_if exists<stake::ValidatorConfig>(resource_addr);
-        let allowed = global<stake::AllowedValidators>(@aptos_framework);
-        aborts_if exists<stake::AllowedValidators>(@aptos_framework) && !contains(allowed.accounts, resource_addr);
+        let allowed = global<stake::AllowedValidators>(@starcoin_framework);
+        aborts_if exists<stake::AllowedValidators>(@starcoin_framework) && !contains(allowed.accounts, resource_addr);
         aborts_if exists<stake::StakePool>(resource_addr);
         aborts_if exists<stake::OwnerCapability>(resource_addr);
         // 12 is the times that calls 'events::guids'

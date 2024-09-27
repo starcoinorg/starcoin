@@ -1,24 +1,24 @@
 /// This module defines structs and methods to initialize the gas schedule, which dictates how much
 /// it costs to execute Move on the network.
-module aptos_framework::gas_schedule {
+module starcoin_framework::gas_schedule {
     use std::bcs;
     use std::error;
     use std::string::String;
     use std::vector;
     use aptos_std::aptos_hash;
-    use aptos_framework::chain_status;
-    use aptos_framework::config_buffer;
+    use starcoin_framework::chain_status;
+    use starcoin_framework::config_buffer;
 
-    use aptos_framework::reconfiguration;
-    use aptos_framework::system_addresses;
-    use aptos_framework::util::from_bytes;
-    use aptos_framework::storage_gas::StorageGasConfig;
-    use aptos_framework::storage_gas;
+    use starcoin_framework::reconfiguration;
+    use starcoin_framework::system_addresses;
+    use starcoin_framework::util::from_bytes;
+    use starcoin_framework::storage_gas::StorageGasConfig;
+    use starcoin_framework::storage_gas;
     #[test_only]
     use std::bcs::to_bytes;
 
-    friend aptos_framework::genesis;
-    friend aptos_framework::reconfiguration_with_dkg;
+    friend starcoin_framework::genesis;
+    friend starcoin_framework::reconfiguration_with_dkg;
 
     /// The provided gas schedule bytes are empty or invalid
     const EINVALID_GAS_SCHEDULE: u64 = 1;
@@ -40,13 +40,13 @@ module aptos_framework::gas_schedule {
     }
 
     /// Only called during genesis.
-    public(friend) fun initialize(aptos_framework: &signer, gas_schedule_blob: vector<u8>) {
-        system_addresses::assert_aptos_framework(aptos_framework);
+    public(friend) fun initialize(starcoin_framework: &signer, gas_schedule_blob: vector<u8>) {
+        system_addresses::assert_aptos_framework(starcoin_framework);
         assert!(!vector::is_empty(&gas_schedule_blob), error::invalid_argument(EINVALID_GAS_SCHEDULE));
 
         // TODO(Gas): check if gas schedule is consistent
         let gas_schedule: GasScheduleV2 = from_bytes(gas_schedule_blob);
-        move_to<GasScheduleV2>(aptos_framework, gas_schedule);
+        move_to<GasScheduleV2>(starcoin_framework, gas_schedule);
     }
 
     /// Deprecated by `set_for_next_epoch()`.
@@ -54,13 +54,13 @@ module aptos_framework::gas_schedule {
     /// WARNING: calling this while randomness is enabled will trigger a new epoch without randomness!
     ///
     /// TODO: update all the tests that reference this function, then disable this function.
-    public fun set_gas_schedule(aptos_framework: &signer, gas_schedule_blob: vector<u8>) acquires GasSchedule, GasScheduleV2 {
-        system_addresses::assert_aptos_framework(aptos_framework);
+    public fun set_gas_schedule(starcoin_framework: &signer, gas_schedule_blob: vector<u8>) acquires GasSchedule, GasScheduleV2 {
+        system_addresses::assert_aptos_framework(starcoin_framework);
         assert!(!vector::is_empty(&gas_schedule_blob), error::invalid_argument(EINVALID_GAS_SCHEDULE));
         chain_status::assert_genesis();
 
-        if (exists<GasScheduleV2>(@aptos_framework)) {
-            let gas_schedule = borrow_global_mut<GasScheduleV2>(@aptos_framework);
+        if (exists<GasScheduleV2>(@starcoin_framework)) {
+            let gas_schedule = borrow_global_mut<GasScheduleV2>(@starcoin_framework);
             let new_gas_schedule: GasScheduleV2 = from_bytes(gas_schedule_blob);
             assert!(new_gas_schedule.feature_version >= gas_schedule.feature_version,
                 error::invalid_argument(EINVALID_GAS_FEATURE_VERSION));
@@ -68,12 +68,12 @@ module aptos_framework::gas_schedule {
             *gas_schedule = new_gas_schedule;
         }
         else {
-            if (exists<GasSchedule>(@aptos_framework)) {
-                _ = move_from<GasSchedule>(@aptos_framework);
+            if (exists<GasSchedule>(@starcoin_framework)) {
+                _ = move_from<GasSchedule>(@starcoin_framework);
             };
             let new_gas_schedule: GasScheduleV2 = from_bytes(gas_schedule_blob);
             // TODO(Gas): check if gas schedule is consistent
-            move_to<GasScheduleV2>(aptos_framework, new_gas_schedule);
+            move_to<GasScheduleV2>(starcoin_framework, new_gas_schedule);
         };
 
         // Need to trigger reconfiguration so validator nodes can sync on the updated gas schedule.
@@ -85,15 +85,15 @@ module aptos_framework::gas_schedule {
     ///
     /// Example usage:
     /// ```
-    /// aptos_framework::gas_schedule::set_for_next_epoch(&framework_signer, some_gas_schedule_blob);
-    /// aptos_framework::aptos_governance::reconfigure(&framework_signer);
+    /// starcoin_framework::gas_schedule::set_for_next_epoch(&framework_signer, some_gas_schedule_blob);
+    /// starcoin_framework::aptos_governance::reconfigure(&framework_signer);
     /// ```
-    public fun set_for_next_epoch(aptos_framework: &signer, gas_schedule_blob: vector<u8>) acquires GasScheduleV2 {
-        system_addresses::assert_aptos_framework(aptos_framework);
+    public fun set_for_next_epoch(starcoin_framework: &signer, gas_schedule_blob: vector<u8>) acquires GasScheduleV2 {
+        system_addresses::assert_aptos_framework(starcoin_framework);
         assert!(!vector::is_empty(&gas_schedule_blob), error::invalid_argument(EINVALID_GAS_SCHEDULE));
         let new_gas_schedule: GasScheduleV2 = from_bytes(gas_schedule_blob);
-        if (exists<GasScheduleV2>(@aptos_framework)) {
-            let cur_gas_schedule = borrow_global<GasScheduleV2>(@aptos_framework);
+        if (exists<GasScheduleV2>(@starcoin_framework)) {
+            let cur_gas_schedule = borrow_global<GasScheduleV2>(@starcoin_framework);
             assert!(
                 new_gas_schedule.feature_version >= cur_gas_schedule.feature_version,
                 error::invalid_argument(EINVALID_GAS_FEATURE_VERSION)
@@ -106,16 +106,16 @@ module aptos_framework::gas_schedule {
     /// Abort if the version of the given schedule is lower than the current version.
     /// Require a hash of the old gas schedule to be provided and will abort if the hashes mismatch.
     public fun set_for_next_epoch_check_hash(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         old_gas_schedule_hash: vector<u8>,
         new_gas_schedule_blob: vector<u8>
     ) acquires GasScheduleV2 {
-        system_addresses::assert_aptos_framework(aptos_framework);
+        system_addresses::assert_aptos_framework(starcoin_framework);
         assert!(!vector::is_empty(&new_gas_schedule_blob), error::invalid_argument(EINVALID_GAS_SCHEDULE));
 
         let new_gas_schedule: GasScheduleV2 = from_bytes(new_gas_schedule_blob);
-        if (exists<GasScheduleV2>(@aptos_framework)) {
-            let cur_gas_schedule = borrow_global<GasScheduleV2>(@aptos_framework);
+        if (exists<GasScheduleV2>(@starcoin_framework)) {
+            let cur_gas_schedule = borrow_global<GasScheduleV2>(@starcoin_framework);
             assert!(
                 new_gas_schedule.feature_version >= cur_gas_schedule.feature_version,
                 error::invalid_argument(EINVALID_GAS_FEATURE_VERSION)
@@ -136,23 +136,23 @@ module aptos_framework::gas_schedule {
         system_addresses::assert_aptos_framework(framework);
         if (config_buffer::does_exist<GasScheduleV2>()) {
             let new_gas_schedule = config_buffer::extract<GasScheduleV2>();
-            if (exists<GasScheduleV2>(@aptos_framework)) {
-                *borrow_global_mut<GasScheduleV2>(@aptos_framework) = new_gas_schedule;
+            if (exists<GasScheduleV2>(@starcoin_framework)) {
+                *borrow_global_mut<GasScheduleV2>(@starcoin_framework) = new_gas_schedule;
             } else {
                 move_to(framework, new_gas_schedule);
             }
         }
     }
 
-    public fun set_storage_gas_config(aptos_framework: &signer, config: StorageGasConfig) {
-        storage_gas::set_config(aptos_framework, config);
+    public fun set_storage_gas_config(starcoin_framework: &signer, config: StorageGasConfig) {
+        storage_gas::set_config(starcoin_framework, config);
         // Need to trigger reconfiguration so the VM is guaranteed to load the new gas fee starting from the next
         // transaction.
         reconfiguration::reconfigure();
     }
 
-    public fun set_storage_gas_config_for_next_epoch(aptos_framework: &signer, config: StorageGasConfig) {
-        storage_gas::set_config(aptos_framework, config);
+    public fun set_storage_gas_config_for_next_epoch(starcoin_framework: &signer, config: StorageGasConfig) {
+        storage_gas::set_config(starcoin_framework, config);
     }
 
     #[test(fx = @0x1)]

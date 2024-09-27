@@ -18,7 +18,7 @@
 ///     try_add, add, try_sub, sub, is_at_least
 /// * create read/write conflicts, as if you were using a regular field
 ///     read, read_snapshot, read_derived_string
-module aptos_framework::aggregator_v2 {
+module starcoin_framework::aggregator_v2 {
     use std::error;
     use std::features;
     use std::string::String;

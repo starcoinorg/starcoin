@@ -9,25 +9,25 @@
 ///   This is typically done by implementing `C::set()` to update the config resource directly.
 ///
 /// NOTE: on-chain config `0x1::state::ValidatorSet` implemented its own buffer.
-module aptos_framework::config_buffer {
+module starcoin_framework::config_buffer {
     use std::string::String;
     use aptos_std::any;
     use aptos_std::any::Any;
     use aptos_std::simple_map;
     use aptos_std::simple_map::SimpleMap;
     use aptos_std::type_info;
-    use aptos_framework::system_addresses;
+    use starcoin_framework::system_addresses;
 
-    friend aptos_framework::consensus_config;
-    friend aptos_framework::execution_config;
-    friend aptos_framework::gas_schedule;
-    friend aptos_framework::jwks;
-    friend aptos_framework::jwk_consensus_config;
-    friend aptos_framework::keyless_account;
-    friend aptos_framework::randomness_api_v0_config;
-    friend aptos_framework::randomness_config;
-    friend aptos_framework::randomness_config_seqnum;
-    friend aptos_framework::version;
+    friend starcoin_framework::consensus_config;
+    friend starcoin_framework::execution_config;
+    friend starcoin_framework::gas_schedule;
+    friend starcoin_framework::jwks;
+    friend starcoin_framework::jwk_consensus_config;
+    friend starcoin_framework::keyless_account;
+    friend starcoin_framework::randomness_api_v0_config;
+    friend starcoin_framework::randomness_config;
+    friend starcoin_framework::randomness_config_seqnum;
+    friend starcoin_framework::version;
 
     /// Config buffer operations failed with permission denied.
     const ESTD_SIGNER_NEEDED: u64 = 1;
@@ -36,10 +36,10 @@ module aptos_framework::config_buffer {
         configs: SimpleMap<String, Any>,
     }
 
-    public fun initialize(aptos_framework: &signer) {
-        system_addresses::assert_aptos_framework(aptos_framework);
-        if (!exists<PendingConfigs>(@aptos_framework)) {
-            move_to(aptos_framework, PendingConfigs {
+    public fun initialize(starcoin_framework: &signer) {
+        system_addresses::assert_aptos_framework(starcoin_framework);
+        if (!exists<PendingConfigs>(@starcoin_framework)) {
+            move_to(starcoin_framework, PendingConfigs {
                 configs: simple_map::new(),
             })
         }
@@ -47,8 +47,8 @@ module aptos_framework::config_buffer {
 
     /// Check whether there is a pending config payload for `T`.
     public fun does_exist<T: store>(): bool acquires PendingConfigs {
-        if (exists<PendingConfigs>(@aptos_framework)) {
-            let config = borrow_global<PendingConfigs>(@aptos_framework);
+        if (exists<PendingConfigs>(@starcoin_framework)) {
+            let config = borrow_global<PendingConfigs>(@starcoin_framework);
             simple_map::contains_key(&config.configs, &type_info::type_name<T>())
         } else {
             false
@@ -59,7 +59,7 @@ module aptos_framework::config_buffer {
     ///
     /// Typically used in `X::set_for_next_epoch()` where X is an on-chain config.
     public(friend) fun upsert<T: drop + store>(config: T) acquires PendingConfigs {
-        let configs = borrow_global_mut<PendingConfigs>(@aptos_framework);
+        let configs = borrow_global_mut<PendingConfigs>(@starcoin_framework);
         let key = type_info::type_name<T>();
         let value = any::pack(config);
         simple_map::upsert(&mut configs.configs, key, value);
@@ -70,7 +70,7 @@ module aptos_framework::config_buffer {
     ///
     /// Typically used in `X::on_new_epoch()` where X is an on-chaon config.
     public fun extract<T: store>(): T acquires PendingConfigs {
-        let configs = borrow_global_mut<PendingConfigs>(@aptos_framework);
+        let configs = borrow_global_mut<PendingConfigs>(@starcoin_framework);
         let key = type_info::type_name<T>();
         let (_, value_packed) = simple_map::remove(&mut configs.configs, &key);
         any::unpack(value_packed)

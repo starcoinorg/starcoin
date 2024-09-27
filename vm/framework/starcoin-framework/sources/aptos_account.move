@@ -1,22 +1,22 @@
-module aptos_framework::aptos_account {
-    use aptos_framework::account::{Self, new_event_handle};
-    use aptos_framework::aptos_coin::AptosCoin;
-    use aptos_framework::coin::{Self, Coin};
-    use aptos_framework::create_signer::create_signer;
-    use aptos_framework::event::{EventHandle, emit_event, emit};
-    use aptos_framework::fungible_asset::{Self, Metadata, BurnRef};
-    use aptos_framework::primary_fungible_store;
-    use aptos_framework::object;
+module starcoin_framework::aptos_account {
+    use starcoin_framework::account::{Self, new_event_handle};
+    use starcoin_framework::aptos_coin::AptosCoin;
+    use starcoin_framework::coin::{Self, Coin};
+    use starcoin_framework::create_signer::create_signer;
+    use starcoin_framework::event::{EventHandle, emit_event, emit};
+    use starcoin_framework::fungible_asset::{Self, Metadata, BurnRef};
+    use starcoin_framework::primary_fungible_store;
+    use starcoin_framework::object;
 
     use std::error;
     use std::features;
     use std::signer;
     use std::vector;
 
-    friend aptos_framework::genesis;
-    friend aptos_framework::resource_account;
-    friend aptos_framework::transaction_fee;
-    friend aptos_framework::transaction_validation;
+    friend starcoin_framework::genesis;
+    friend starcoin_framework::resource_account;
+    friend starcoin_framework::transaction_fee;
+    friend starcoin_framework::transaction_validation;
 
     /// Account does not exist.
     const EACCOUNT_NOT_FOUND: u64 = 1;
@@ -254,7 +254,7 @@ module aptos_framework::aptos_account {
     #[test_only]
     use std::string::utf8;
     #[test_only]
-    use aptos_framework::account::create_account_for_test;
+    use starcoin_framework::account::create_account_for_test;
 
     #[test_only]
     struct FakeCoin {}
@@ -264,7 +264,7 @@ module aptos_framework::aptos_account {
         let bob = from_bcs::to_address(x"0000000000000000000000000000000000000000000000000000000000000b0b");
         let carol = from_bcs::to_address(x"00000000000000000000000000000000000000000000000000000000000ca501");
 
-        let (burn_cap, mint_cap) = aptos_framework::aptos_coin::initialize_for_test(core);
+        let (burn_cap, mint_cap) = starcoin_framework::aptos_coin::initialize_for_test(core);
         create_account(signer::address_of(alice));
         coin::deposit(signer::address_of(alice), coin::mint(10000, &mint_cap));
         transfer(alice, bob, 500);
@@ -282,7 +282,7 @@ module aptos_framework::aptos_account {
     public fun test_transfer_to_resource_account(alice: &signer, core: &signer) {
         let (resource_account, _) = account::create_resource_account(alice, vector[]);
         let resource_acc_addr = signer::address_of(&resource_account);
-        let (burn_cap, mint_cap) = aptos_framework::aptos_coin::initialize_for_test(core);
+        let (burn_cap, mint_cap) = starcoin_framework::aptos_coin::initialize_for_test(core);
         assert!(!coin::is_account_registered<AptosCoin>(resource_acc_addr), 0);
 
         create_account(signer::address_of(alice));
@@ -296,7 +296,7 @@ module aptos_framework::aptos_account {
 
     #[test(from = @0x123, core = @0x1, recipient_1 = @0x124, recipient_2 = @0x125)]
     public fun test_batch_transfer(from: &signer, core: &signer, recipient_1: &signer, recipient_2: &signer) {
-        let (burn_cap, mint_cap) = aptos_framework::aptos_coin::initialize_for_test(core);
+        let (burn_cap, mint_cap) = starcoin_framework::aptos_coin::initialize_for_test(core);
         create_account(signer::address_of(from));
         let recipient_1_addr = signer::address_of(recipient_1);
         let recipient_2_addr = signer::address_of(recipient_2);
@@ -428,8 +428,8 @@ module aptos_framework::aptos_account {
     fun test_primary_fungible_store_address(
         user: &signer,
     ) {
-        use aptos_framework::fungible_asset::Metadata;
-        use aptos_framework::aptos_coin;
+        use starcoin_framework::fungible_asset::Metadata;
+        use starcoin_framework::aptos_coin;
 
         aptos_coin::ensure_initialized_with_apt_fa_metadata_for_test();
 

@@ -1,11 +1,11 @@
-spec aptos_framework::chain_id {
+spec starcoin_framework::chain_id {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: During genesis, the ChainId resource should be created and moved under the Aptos framework account
     /// with the specified chain id.
     /// Criticality: Medium
     /// Implementation: The chain_id::initialize function is responsible for generating the ChainId resource and then
-    /// storing it under the aptos_framework account.
+    /// storing it under the starcoin_framework account.
     /// Enforcement: Formally verified via [high-level-req-1](initialize).
     ///
     /// No.: 2
@@ -13,7 +13,7 @@ spec aptos_framework::chain_id {
     /// framework account.
     /// Criticality: Low
     /// Implementation: The chain_id::get function fetches the chain id by borrowing the ChainId
-    /// resource from the aptos_framework account.
+    /// resource from the starcoin_framework account.
     /// Enforcement: Formally verified via [high-level-req-2](get).
     /// </high-level-req>
     ///
@@ -24,9 +24,9 @@ spec aptos_framework::chain_id {
 
     spec initialize {
         use std::signer;
-        let addr = signer::address_of(aptos_framework);
-        aborts_if addr != @aptos_framework;
-        aborts_if exists<ChainId>(@aptos_framework);
+        let addr = signer::address_of(starcoin_framework);
+        aborts_if addr != @starcoin_framework;
+        aborts_if exists<ChainId>(@starcoin_framework);
         /// [high-level-req-1]
         ensures exists<ChainId>(addr);
         ensures global<ChainId>(addr).id == id;
@@ -34,6 +34,6 @@ spec aptos_framework::chain_id {
 
     spec get {
         /// [high-level-req-2]
-        aborts_if !exists<ChainId>(@aptos_framework);
+        aborts_if !exists<ChainId>(@starcoin_framework);
     }
 }

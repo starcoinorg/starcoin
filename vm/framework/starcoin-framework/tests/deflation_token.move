@@ -1,9 +1,9 @@
 #[test_only]
 module 0xcafe::deflation_token {
-    use aptos_framework::fungible_asset::{Self, BurnRef, FungibleAsset, TransferRef};
-    use aptos_framework::dispatchable_fungible_asset;
-    use aptos_framework::object::{ConstructorRef, Object};
-    use aptos_framework::function_info;
+    use starcoin_framework::fungible_asset::{Self, BurnRef, FungibleAsset, TransferRef};
+    use starcoin_framework::dispatchable_fungible_asset;
+    use starcoin_framework::object::{ConstructorRef, Object};
+    use starcoin_framework::function_info;
 
     use std::option;
     use std::signer;
@@ -48,12 +48,12 @@ module 0xcafe::deflation_token {
     }
 
     #[test_only]
-    use aptos_framework::object;
+    use starcoin_framework::object;
     #[test_only]
-    use aptos_framework::fungible_asset::{Metadata, TestToken};
+    use starcoin_framework::fungible_asset::{Metadata, TestToken};
 
     #[test(creator = @0xcafe)]
-    #[expected_failure(major_status=4037, location=aptos_framework::dispatchable_fungible_asset)]
+    #[expected_failure(major_status=4037, location=starcoin_framework::dispatchable_fungible_asset)]
     fun test_self_reentrancy(
         creator: &signer,
     ) {

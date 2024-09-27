@@ -1,11 +1,11 @@
 #[test_only]
-module aptos_framework::simple_token_fa_tests {
-    use aptos_framework::fungible_asset::{
+module starcoin_framework::simple_token_fa_tests {
+    use starcoin_framework::fungible_asset::{
         amount, balance, burn, destroy_zero, extract, create_test_token, init_test_metadata,
         supply, create_store, create_test_store, remove_store, deposit_with_ref, mint, mint_to, merge,
         set_frozen_flag, is_frozen, transfer_with_ref, upgrade_to_concurrent, Metadata, TestToken
     };
-    use aptos_framework::object;
+    use starcoin_framework::object;
     use 0xcafe::simple_token;
     use std::option;
     use std::features;
@@ -64,7 +64,7 @@ module aptos_framework::simple_token_fa_tests {
         burn(&burn_ref, cash);
     }
 
-    #[test(fx = @aptos_framework, creator = @0xcafe)]
+    #[test(fx = @starcoin_framework, creator = @0xcafe)]
     fun test_fungible_asset_upgrade(
         fx: &signer,
         creator: &signer
@@ -96,7 +96,7 @@ module aptos_framework::simple_token_fa_tests {
     }
 
     #[test(creator = @0xcafe)]
-    #[expected_failure(abort_code = 0x50003, location = aptos_framework::fungible_asset)]
+    #[expected_failure(abort_code = 0x50003, location = starcoin_framework::fungible_asset)]
     fun test_mint_to_frozen(
         creator: &signer
     ) {

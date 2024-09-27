@@ -7,11 +7,11 @@
 /// 1. The chain should then be unblocked.
 /// 1. Once the bug is fixed and the binary + framework have been patched,
 ///    a governance proposal is needed to set `RandomnessConfigSeqNum` to be `X+2`.
-module aptos_framework::randomness_config_seqnum {
-    use aptos_framework::config_buffer;
-    use aptos_framework::system_addresses;
+module starcoin_framework::randomness_config_seqnum {
+    use starcoin_framework::config_buffer;
+    use starcoin_framework::system_addresses;
 
-    friend aptos_framework::reconfiguration_with_dkg;
+    friend starcoin_framework::reconfiguration_with_dkg;
 
     /// If this seqnum is smaller than a validator local override, the on-chain `RandomnessConfig` will be ignored.
     /// Useful in a chain recovery from randomness stall.
@@ -29,7 +29,7 @@ module aptos_framework::randomness_config_seqnum {
     /// Initialize the configuration. Used in genesis or governance.
     public fun initialize(framework: &signer) {
         system_addresses::assert_aptos_framework(framework);
-        if (!exists<RandomnessConfigSeqNum>(@aptos_framework)) {
+        if (!exists<RandomnessConfigSeqNum>(@starcoin_framework)) {
             move_to(framework, RandomnessConfigSeqNum { seq_num: 0 })
         }
     }
@@ -39,8 +39,8 @@ module aptos_framework::randomness_config_seqnum {
         system_addresses::assert_aptos_framework(framework);
         if (config_buffer::does_exist<RandomnessConfigSeqNum>()) {
             let new_config = config_buffer::extract<RandomnessConfigSeqNum>();
-            if (exists<RandomnessConfigSeqNum>(@aptos_framework)) {
-                *borrow_global_mut<RandomnessConfigSeqNum>(@aptos_framework) = new_config;
+            if (exists<RandomnessConfigSeqNum>(@starcoin_framework)) {
+                *borrow_global_mut<RandomnessConfigSeqNum>(@starcoin_framework) = new_config;
             } else {
                 move_to(framework, new_config);
             }

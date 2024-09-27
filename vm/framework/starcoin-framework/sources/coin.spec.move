@@ -1,4 +1,4 @@
-spec aptos_framework::coin {
+spec starcoin_framework::coin {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: Only the owner of a coin may mint, burn or freeze coins.
@@ -95,7 +95,7 @@ spec aptos_framework::coin {
     }
 
     spec AggregatableCoin {
-        use aptos_framework::aggregator;
+        use starcoin_framework::aggregator;
         invariant aggregator::spec_get_limit(value) == MAX_U64;
     }
 
@@ -121,21 +121,21 @@ spec aptos_framework::coin {
 
     /// Can only be initialized once.
     /// Can only be published by reserved addresses.
-    spec initialize_supply_config(aptos_framework: &signer) {
-        let aptos_addr = signer::address_of(aptos_framework);
+    spec initialize_supply_config(starcoin_framework: &signer) {
+        let aptos_addr = signer::address_of(starcoin_framework);
         aborts_if !system_addresses::is_aptos_framework_address(aptos_addr);
         aborts_if exists<SupplyConfig>(aptos_addr);
         ensures !global<SupplyConfig>(aptos_addr).allow_upgrades;
         ensures exists<SupplyConfig>(aptos_addr);
     }
 
-    /// Can only be updated by `@aptos_framework`.
-    spec allow_supply_upgrades(aptos_framework: &signer, allowed: bool) {
-        modifies global<SupplyConfig>(@aptos_framework);
-        let aptos_addr = signer::address_of(aptos_framework);
+    /// Can only be updated by `@starcoin_framework`.
+    spec allow_supply_upgrades(starcoin_framework: &signer, allowed: bool) {
+        modifies global<SupplyConfig>(@starcoin_framework);
+        let aptos_addr = signer::address_of(starcoin_framework);
         aborts_if !system_addresses::is_aptos_framework_address(aptos_addr);
         aborts_if !exists<SupplyConfig>(aptos_addr);
-        let post allow_upgrades_post = global<SupplyConfig>(@aptos_framework);
+        let post allow_upgrades_post = global<SupplyConfig>(@starcoin_framework);
         ensures allow_upgrades_post.allow_upgrades == allowed;
     }
 
@@ -161,8 +161,8 @@ spec aptos_framework::coin {
     }
 
     spec fun spec_paired_metadata<CoinType>(): Option<Object<Metadata>> {
-        if (exists<CoinConversionMap>(@aptos_framework)) {
-            let map = global<CoinConversionMap>(@aptos_framework).coin_to_fungible_asset_map;
+        if (exists<CoinConversionMap>(@starcoin_framework)) {
+            let map = global<CoinConversionMap>(@starcoin_framework).coin_to_fungible_asset_map;
             if (table::spec_contains(map, type_info::type_of<CoinType>())) {
                 let metadata = table::spec_get(map, type_info::type_of<CoinType>());
                 option::spec_some(metadata)
@@ -182,7 +182,7 @@ spec aptos_framework::coin {
     }
 
     spec schema CoinSubAbortsIf<CoinType> {
-        use aptos_framework::optional_aggregator;
+        use starcoin_framework::optional_aggregator;
         amount: u64;
         let addr = type_info::type_of<CoinType>().account_address;
         let maybe_supply = global<CoinInfo<CoinType>>(addr).supply;
@@ -192,7 +192,7 @@ spec aptos_framework::coin {
     }
 
     spec schema CoinAddAbortsIf<CoinType> {
-        use aptos_framework::optional_aggregator;
+        use starcoin_framework::optional_aggregator;
         amount: u64;
         let addr = type_info::type_of<CoinType>().account_address;
         let maybe_supply = global<CoinInfo<CoinType>>(addr).supply;
@@ -392,17 +392,17 @@ spec aptos_framework::coin {
         ensures !coin_store.frozen;
     }
 
-    /// The creator of `CoinType` must be `@aptos_framework`.
+    /// The creator of `CoinType` must be `@starcoin_framework`.
     /// `SupplyConfig` allow upgrade.
     spec upgrade_supply<CoinType>(account: &signer) {
         let account_addr = signer::address_of(account);
         let coin_address = type_info::type_of<CoinType>().account_address;
         aborts_if coin_address != account_addr;
-        aborts_if !exists<SupplyConfig>(@aptos_framework);
+        aborts_if !exists<SupplyConfig>(@starcoin_framework);
         /// [high-level-req-1.1]
         aborts_if !exists<CoinInfo<CoinType>>(account_addr);
 
-        let supply_config = global<SupplyConfig>(@aptos_framework);
+        let supply_config = global<SupplyConfig>(@starcoin_framework);
         aborts_if !supply_config.allow_upgrades;
         modifies global<CoinInfo<CoinType>>(account_addr);
 
@@ -417,7 +417,7 @@ spec aptos_framework::coin {
         let supply_no_parallel = option::spec_is_some(maybe_supply) &&
             !optional_aggregator::is_parallelizable(supply);
 
-        aborts_if supply_no_parallel && !exists<aggregator_factory::AggregatorFactory>(@aptos_framework);
+        aborts_if supply_no_parallel && !exists<aggregator_factory::AggregatorFactory>(@starcoin_framework);
         ensures supply_no_parallel ==>
             optional_aggregator::is_parallelizable(post_supply) && post_value == value;
     }
@@ -432,7 +432,7 @@ spec aptos_framework::coin {
         aborts_if string::length(symbol) > MAX_COIN_SYMBOL_LENGTH;
     }
 
-    // `account` must be `@aptos_framework`.
+    // `account` must be `@starcoin_framework`.
     spec initialize_with_parallelizable_supply<CoinType>(
     account: &signer,
     name: string::String,
@@ -440,10 +440,10 @@ spec aptos_framework::coin {
     decimals: u8,
     monitor_supply: bool,
     ): (BurnCapability<CoinType>, FreezeCapability<CoinType>, MintCapability<CoinType>) {
-        use aptos_framework::aggregator_factory;
+        use starcoin_framework::aggregator_factory;
         let addr = signer::address_of(account);
-        aborts_if addr != @aptos_framework;
-        aborts_if monitor_supply && !exists<aggregator_factory::AggregatorFactory>(@aptos_framework);
+        aborts_if addr != @starcoin_framework;
+        aborts_if monitor_supply && !exists<aggregator_factory::AggregatorFactory>(@starcoin_framework);
         include InitializeInternalSchema<CoinType> {
             name: name.bytes,
             symbol: symbol.bytes
@@ -484,7 +484,7 @@ spec aptos_framework::coin {
         let post limit = optional_aggregator::optional_aggregator_limit(supply);
         modifies global<CoinInfo<CoinType>>(account_addr);
         aborts_if monitor_supply && parallelizable
-            && !exists<aggregator_factory::AggregatorFactory>(@aptos_framework);
+            && !exists<aggregator_factory::AggregatorFactory>(@starcoin_framework);
         /// [managed_coin::high-level-req-2]
         ensures exists<CoinInfo<CoinType>>(account_addr)
             && coin_info.name == name
@@ -579,8 +579,8 @@ spec aptos_framework::coin {
         aborts_if balance < amount;
     }
 
-    spec initialize_aggregatable_coin<CoinType>(aptos_framework: &signer): AggregatableCoin<CoinType> {
-        include system_addresses::AbortsIfNotAptosFramework { account: aptos_framework };
+    spec initialize_aggregatable_coin<CoinType>(starcoin_framework: &signer): AggregatableCoin<CoinType> {
+        include system_addresses::AbortsIfNotAptosFramework { account: starcoin_framework };
         include aggregator_factory::CreateAggregatorInternalAbortsIf;
     }
 

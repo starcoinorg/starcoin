@@ -1,20 +1,20 @@
-module aptos_framework::transaction_validation {
+module starcoin_framework::transaction_validation {
     use std::bcs;
     use std::error;
     use std::features;
     use std::signer;
     use std::vector;
 
-    use aptos_framework::account;
-    use aptos_framework::aptos_account;
-    use aptos_framework::aptos_coin::AptosCoin;
-    use aptos_framework::chain_id;
-    use aptos_framework::coin;
-    use aptos_framework::system_addresses;
-    use aptos_framework::timestamp;
-    use aptos_framework::transaction_fee;
+    use starcoin_framework::account;
+    use starcoin_framework::aptos_account;
+    use starcoin_framework::aptos_coin::AptosCoin;
+    use starcoin_framework::chain_id;
+    use starcoin_framework::coin;
+    use starcoin_framework::system_addresses;
+    use starcoin_framework::timestamp;
+    use starcoin_framework::transaction_fee;
 
-    friend aptos_framework::genesis;
+    friend starcoin_framework::genesis;
 
     /// This holds information that will be picked up by the VM to call the
     /// correct chain-specific prologue and epilogue functions
@@ -50,17 +50,17 @@ module aptos_framework::transaction_validation {
 
     /// Only called during genesis to initialize system resources for this module.
     public(friend) fun initialize(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         script_prologue_name: vector<u8>,
         // module_prologue_name is deprecated and not used.
         module_prologue_name: vector<u8>,
         multi_agent_prologue_name: vector<u8>,
         user_epilogue_name: vector<u8>,
     ) {
-        system_addresses::assert_aptos_framework(aptos_framework);
+        system_addresses::assert_aptos_framework(starcoin_framework);
 
-        move_to(aptos_framework, TransactionValidation {
-            module_addr: @aptos_framework,
+        move_to(starcoin_framework, TransactionValidation {
+            module_addr: @starcoin_framework,
             module_name: b"transaction_validation",
             script_prologue_name,
             // module_prologue_name is deprecated and not used.

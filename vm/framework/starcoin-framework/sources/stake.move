@@ -17,7 +17,7 @@
 /// 8. Validator can always rejoin the validator set by going through steps 2-3 again.
 /// 9. An owner can always switch operators by calling stake::set_operator.
 /// 10. An owner can always switch designated voter by calling stake::set_designated_voter.
-module aptos_framework::stake {
+module starcoin_framework::stake {
     use std::error;
     use std::features;
     use std::option::{Self, Option};
@@ -26,20 +26,20 @@ module aptos_framework::stake {
     use aptos_std::bls12381;
     use aptos_std::math64::min;
     use aptos_std::table::{Self, Table};
-    use aptos_framework::aptos_coin::AptosCoin;
-    use aptos_framework::account;
-    use aptos_framework::coin::{Self, Coin, MintCapability};
-    use aptos_framework::event::{Self, EventHandle};
-    use aptos_framework::timestamp;
-    use aptos_framework::system_addresses;
-    use aptos_framework::staking_config::{Self, StakingConfig, StakingRewardsConfig};
-    use aptos_framework::chain_status;
+    use starcoin_framework::aptos_coin::AptosCoin;
+    use starcoin_framework::account;
+    use starcoin_framework::coin::{Self, Coin, MintCapability};
+    use starcoin_framework::event::{Self, EventHandle};
+    use starcoin_framework::timestamp;
+    use starcoin_framework::system_addresses;
+    use starcoin_framework::staking_config::{Self, StakingConfig, StakingRewardsConfig};
+    use starcoin_framework::chain_status;
 
-    friend aptos_framework::block;
-    friend aptos_framework::genesis;
-    friend aptos_framework::reconfiguration;
-    friend aptos_framework::reconfiguration_with_dkg;
-    friend aptos_framework::transaction_fee;
+    friend starcoin_framework::block;
+    friend starcoin_framework::genesis;
+    friend starcoin_framework::reconfiguration;
+    friend starcoin_framework::reconfiguration_with_dkg;
+    friend starcoin_framework::transaction_fee;
 
     /// Validator Config not published.
     const EVALIDATOR_CONFIG: u64 = 1;
@@ -167,7 +167,7 @@ module aptos_framework::stake {
         config: ValidatorConfig,
     }
 
-    /// Full ValidatorSet, stored in @aptos_framework.
+    /// Full ValidatorSet, stored in @starcoin_framework.
     /// 1. join_validator_set adds to pending_active queue.
     /// 2. leave_valdiator_set moves from active to pending_inactive queue.
     /// 3. on_new_epoch processes two pending queues and refresh ValidatorInfo from the owner's address.
@@ -346,18 +346,18 @@ module aptos_framework::stake {
 
     /// Initializes the resource storing information about collected transaction fees per validator.
     /// Used by `transaction_fee.move` to initialize fee collection and distribution.
-    public(friend) fun initialize_validator_fees(aptos_framework: &signer) {
-        system_addresses::assert_aptos_framework(aptos_framework);
+    public(friend) fun initialize_validator_fees(starcoin_framework: &signer) {
+        system_addresses::assert_aptos_framework(starcoin_framework);
         assert!(
-            !exists<ValidatorFees>(@aptos_framework),
+            !exists<ValidatorFees>(@starcoin_framework),
             error::already_exists(EFEES_TABLE_ALREADY_EXISTS)
         );
-        move_to(aptos_framework, ValidatorFees { fees_table: table::new() });
+        move_to(starcoin_framework, ValidatorFees { fees_table: table::new() });
     }
 
     /// Stores the transaction fee collected to the specified validator address.
     public(friend) fun add_transaction_fee(validator_addr: address, fee: Coin<AptosCoin>) acquires ValidatorFees {
-        let fees_table = &mut borrow_global_mut<ValidatorFees>(@aptos_framework).fees_table;
+        let fees_table = &mut borrow_global_mut<ValidatorFees>(@starcoin_framework).fees_table;
         if (table::contains(fees_table, validator_addr)) {
             let collected_fee = table::borrow_mut(fees_table, validator_addr);
             coin::merge(collected_fee, fee);
@@ -404,7 +404,7 @@ module aptos_framework::stake {
     #[view]
     /// Returns the validator's state.
     public fun get_validator_state(pool_address: address): u64 acquires ValidatorSet {
-        let validator_set = borrow_global<ValidatorSet>(@aptos_framework);
+        let validator_set = borrow_global<ValidatorSet>(@starcoin_framework);
         if (option::is_some(&find_validator(&validator_set.pending_active, pool_address))) {
             VALIDATOR_STATUS_PENDING_ACTIVE
         } else if (option::is_some(&find_validator(&validator_set.active_validators, pool_address))) {
@@ -461,7 +461,7 @@ module aptos_framework::stake {
     #[view]
     /// Return the number of successful and failed proposals for the proposal at the given validator index.
     public fun get_current_epoch_proposal_counts(validator_index: u64): (u64, u64) acquires ValidatorPerformance {
-        let validator_performances = &borrow_global<ValidatorPerformance>(@aptos_framework).validators;
+        let validator_performances = &borrow_global<ValidatorPerformance>(@starcoin_framework).validators;
         let validator_performance = vector::borrow(validator_performances, validator_index);
         (validator_performance.successful_proposals, validator_performance.failed_proposals)
     }
@@ -482,10 +482,10 @@ module aptos_framework::stake {
     }
 
     /// Initialize validator set to the core resource account.
-    public(friend) fun initialize(aptos_framework: &signer) {
-        system_addresses::assert_aptos_framework(aptos_framework);
+    public(friend) fun initialize(starcoin_framework: &signer) {
+        system_addresses::assert_aptos_framework(starcoin_framework);
 
-        move_to(aptos_framework, ValidatorSet {
+        move_to(starcoin_framework, ValidatorSet {
             consensus_scheme: 0,
             active_validators: vector::empty(),
             pending_active: vector::empty(),
@@ -494,26 +494,26 @@ module aptos_framework::stake {
             total_joining_power: 0,
         });
 
-        move_to(aptos_framework, ValidatorPerformance {
+        move_to(starcoin_framework, ValidatorPerformance {
             validators: vector::empty(),
         });
     }
 
     /// This is only called during Genesis, which is where MintCapability<AptosCoin> can be created.
     /// Beyond genesis, no one can create AptosCoin mint/burn capabilities.
-    public(friend) fun store_aptos_coin_mint_cap(aptos_framework: &signer, mint_cap: MintCapability<AptosCoin>) {
-        system_addresses::assert_aptos_framework(aptos_framework);
-        move_to(aptos_framework, AptosCoinCapabilities { mint_cap })
+    public(friend) fun store_aptos_coin_mint_cap(starcoin_framework: &signer, mint_cap: MintCapability<AptosCoin>) {
+        system_addresses::assert_aptos_framework(starcoin_framework);
+        move_to(starcoin_framework, AptosCoinCapabilities { mint_cap })
     }
 
     /// Allow on chain governance to remove validators from the validator set.
     public fun remove_validators(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validators: &vector<address>,
     ) acquires ValidatorSet {
         assert_reconfig_not_in_progress();
-        system_addresses::assert_aptos_framework(aptos_framework);
-        let validator_set = borrow_global_mut<ValidatorSet>(@aptos_framework);
+        system_addresses::assert_aptos_framework(starcoin_framework);
+        let validator_set = borrow_global_mut<ValidatorSet>(@starcoin_framework);
         let active_validators = &mut validator_set.active_validators;
         let pending_inactive = &mut validator_set.pending_inactive;
         spec {
@@ -730,7 +730,7 @@ module aptos_framework::stake {
         // Only track and validate voting power increase for active and pending_active validator.
         // Pending_inactive validator will be removed from the validator set in the next epoch.
         // Inactive validator's total stake will be tracked when they join the validator set.
-        let validator_set = borrow_global_mut<ValidatorSet>(@aptos_framework);
+        let validator_set = borrow_global_mut<ValidatorSet>(@starcoin_framework);
         // Search directly rather using get_validator_state to save on unnecessary loops.
         if (option::is_some(&find_validator(&validator_set.active_validators, pool_address)) ||
             option::is_some(&find_validator(&validator_set.pending_active, pool_address))) {
@@ -980,7 +980,7 @@ module aptos_framework::stake {
         assert!(!vector::is_empty(&validator_config.consensus_pubkey), error::invalid_argument(EINVALID_PUBLIC_KEY));
 
         // Validate the current validator set size has not exceeded the limit.
-        let validator_set = borrow_global_mut<ValidatorSet>(@aptos_framework);
+        let validator_set = borrow_global_mut<ValidatorSet>(@starcoin_framework);
         vector::push_back(
             &mut validator_set.pending_active,
             generate_validator_info(pool_address, stake_pool, *validator_config)
@@ -1118,7 +1118,7 @@ module aptos_framework::stake {
         // Account has to be the operator.
         assert!(signer::address_of(operator) == stake_pool.operator_address, error::unauthenticated(ENOT_OPERATOR));
 
-        let validator_set = borrow_global_mut<ValidatorSet>(@aptos_framework);
+        let validator_set = borrow_global_mut<ValidatorSet>(@starcoin_framework);
         // If the validator is still pending_active, directly kick the validator out.
         let maybe_pending_active_index = find_validator(&validator_set.pending_active, pool_address);
         if (option::is_some(&maybe_pending_active_index)) {
@@ -1175,7 +1175,7 @@ module aptos_framework::stake {
     ) acquires ValidatorPerformance {
         // Validator set cannot change until the end of the epoch, so the validator index in arguments should
         // match with those of the validators in ValidatorPerformance resource.
-        let validator_perf = borrow_global_mut<ValidatorPerformance>(@aptos_framework);
+        let validator_perf = borrow_global_mut<ValidatorPerformance>(@starcoin_framework);
         let validator_len = vector::length(&validator_perf.validators);
 
         spec {
@@ -1233,9 +1233,9 @@ module aptos_framework::stake {
     /// power.
     public(friend) fun on_new_epoch(
     ) acquires StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
-        let validator_set = borrow_global_mut<ValidatorSet>(@aptos_framework);
+        let validator_set = borrow_global_mut<ValidatorSet>(@starcoin_framework);
         let config = staking_config::get();
-        let validator_perf = borrow_global_mut<ValidatorPerformance>(@aptos_framework);
+        let validator_perf = borrow_global_mut<ValidatorPerformance>(@starcoin_framework);
 
         // Process pending stake and distribute transaction fees and rewards for each currently active validator.
         vector::for_each_ref(&validator_set.active_validators, |validator| {
@@ -1349,16 +1349,16 @@ module aptos_framework::stake {
 
     /// Return the `ValidatorConsensusInfo` of each current validator, sorted by current validator index.
     public fun cur_validator_consensus_infos(): vector<ValidatorConsensusInfo> acquires ValidatorSet {
-        let validator_set = borrow_global<ValidatorSet>(@aptos_framework);
+        let validator_set = borrow_global<ValidatorSet>(@starcoin_framework);
         validator_consensus_infos_from_validator_set(validator_set)
     }
 
 
     public fun next_validator_consensus_infos(): vector<ValidatorConsensusInfo> acquires ValidatorSet, ValidatorPerformance, StakePool, ValidatorFees, ValidatorConfig {
         // Init.
-        let cur_validator_set = borrow_global<ValidatorSet>(@aptos_framework);
+        let cur_validator_set = borrow_global<ValidatorSet>(@starcoin_framework);
         let staking_config = staking_config::get();
-        let validator_perf = borrow_global<ValidatorPerformance>(@aptos_framework);
+        let validator_perf = borrow_global<ValidatorPerformance>(@starcoin_framework);
         let (minimum_stake, _) = staking_config::get_required_stake(&staking_config);
         let (rewards_rate, rewards_rate_denominator) = staking_config::get_reward_rate(&staking_config);
 
@@ -1411,7 +1411,7 @@ module aptos_framework::stake {
 
             let cur_fee = 0;
             if (features::collect_and_distribute_gas_fees()) {
-                let fees_table = &borrow_global<ValidatorFees>(@aptos_framework).fees_table;
+                let fees_table = &borrow_global<ValidatorFees>(@starcoin_framework).fees_table;
                 if (table::contains(fees_table, candidate.addr)) {
                     let fee_coin = table::borrow(fees_table, candidate.addr);
                     cur_fee = coin::value(fee_coin);
@@ -1581,7 +1581,7 @@ module aptos_framework::stake {
 
         // Additionally, distribute transaction fees.
         if (features::collect_and_distribute_gas_fees()) {
-            let fees_table = &mut borrow_global_mut<ValidatorFees>(@aptos_framework).fees_table;
+            let fees_table = &mut borrow_global_mut<ValidatorFees>(@starcoin_framework).fees_table;
             if (table::contains(fees_table, pool_address)) {
                 let coin = table::remove(fees_table, pool_address);
                 coin::merge(&mut stake_pool.active, coin);
@@ -1665,7 +1665,7 @@ module aptos_framework::stake {
             0
         };
         if (rewards_amount > 0) {
-            let mint_cap = &borrow_global<AptosCoinCapabilities>(@aptos_framework).mint_cap;
+            let mint_cap = &borrow_global<AptosCoinCapabilities>(@starcoin_framework).mint_cap;
             let rewards = coin::mint(rewards_amount, mint_cap);
             coin::merge(stake, rewards);
         };
@@ -1716,7 +1716,7 @@ module aptos_framework::stake {
     }
 
     fun update_voting_power_increase(increase_amount: u64) acquires ValidatorSet {
-        let validator_set = borrow_global_mut<ValidatorSet>(@aptos_framework);
+        let validator_set = borrow_global_mut<ValidatorSet>(@starcoin_framework);
         let voting_power_increase_limit =
             (staking_config::get_voting_power_increase_limit(&staking_config::get()) as u128);
         validator_set.total_joining_power = validator_set.total_joining_power + (increase_amount as u128);
@@ -1742,13 +1742,13 @@ module aptos_framework::stake {
     }
 
     public fun configure_allowed_validators(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         accounts: vector<address>
     ) acquires AllowedValidators {
-        let aptos_framework_address = signer::address_of(aptos_framework);
-        system_addresses::assert_aptos_framework(aptos_framework);
+        let aptos_framework_address = signer::address_of(starcoin_framework);
+        system_addresses::assert_aptos_framework(starcoin_framework);
         if (!exists<AllowedValidators>(aptos_framework_address)) {
-            move_to(aptos_framework, AllowedValidators { accounts });
+            move_to(starcoin_framework, AllowedValidators { accounts });
         } else {
             let allowed = borrow_global_mut<AllowedValidators>(aptos_framework_address);
             allowed.accounts = accounts;
@@ -1756,10 +1756,10 @@ module aptos_framework::stake {
     }
 
     fun is_allowed(account: address): bool acquires AllowedValidators {
-        if (!exists<AllowedValidators>(@aptos_framework)) {
+        if (!exists<AllowedValidators>(@starcoin_framework)) {
             true
         } else {
-            let allowed = borrow_global<AllowedValidators>(@aptos_framework);
+            let allowed = borrow_global<AllowedValidators>(@starcoin_framework);
             vector::contains(&allowed.accounts, &account)
         }
     }
@@ -1773,11 +1773,11 @@ module aptos_framework::stake {
     }
 
     #[test_only]
-    use aptos_framework::aptos_coin;
+    use starcoin_framework::aptos_coin;
     use aptos_std::bls12381::proof_of_possession_from_bytes;
-    use aptos_framework::reconfiguration_state;
-    use aptos_framework::validator_consensus_info;
-    use aptos_framework::validator_consensus_info::ValidatorConsensusInfo;
+    use starcoin_framework::reconfiguration_state;
+    use starcoin_framework::validator_consensus_info;
+    use starcoin_framework::validator_consensus_info::ValidatorConsensusInfo;
     #[test_only]
     use aptos_std::fixed_point64;
 
@@ -1788,9 +1788,9 @@ module aptos_framework::stake {
     const LOCKUP_CYCLE_SECONDS: u64 = 3600;
 
     #[test_only]
-    public fun initialize_for_test(aptos_framework: &signer) {
-        reconfiguration_state::initialize(aptos_framework);
-        initialize_for_test_custom(aptos_framework, 100, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 100, 1000000);
+    public fun initialize_for_test(starcoin_framework: &signer) {
+        reconfiguration_state::initialize(starcoin_framework);
+        initialize_for_test_custom(starcoin_framework, 100, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 100, 1000000);
     }
 
     #[test_only]
@@ -1821,7 +1821,7 @@ module aptos_framework::stake {
     // Convenient function for setting up all required stake initializations.
     #[test_only]
     public fun initialize_for_test_custom(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         minimum_stake: u64,
         maximum_stake: u64,
         recurring_lockup_secs: u64,
@@ -1830,13 +1830,13 @@ module aptos_framework::stake {
         rewards_rate_denominator: u64,
         voting_power_increase_limit: u64,
     ) {
-        timestamp::set_time_has_started_for_testing(aptos_framework);
-        reconfiguration_state::initialize(aptos_framework);
-        if (!exists<ValidatorSet>(@aptos_framework)) {
-            initialize(aptos_framework);
+        timestamp::set_time_has_started_for_testing(starcoin_framework);
+        reconfiguration_state::initialize(starcoin_framework);
+        if (!exists<ValidatorSet>(@starcoin_framework)) {
+            initialize(starcoin_framework);
         };
         staking_config::initialize_for_test(
-            aptos_framework,
+            starcoin_framework,
             minimum_stake,
             maximum_stake,
             recurring_lockup_secs,
@@ -1846,9 +1846,9 @@ module aptos_framework::stake {
             voting_power_increase_limit,
         );
 
-        if (!exists<AptosCoinCapabilities>(@aptos_framework)) {
-            let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
-            store_aptos_coin_mint_cap(aptos_framework, mint_cap);
+        if (!exists<AptosCoinCapabilities>(@starcoin_framework)) {
+            let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(starcoin_framework);
+            store_aptos_coin_mint_cap(starcoin_framework, mint_cap);
             coin::destroy_burn_cap<AptosCoin>(burn_cap);
         };
     }
@@ -1856,7 +1856,7 @@ module aptos_framework::stake {
     // This function assumes the stake module already the capability to mint aptos coins.
     #[test_only]
     public fun mint_coins(amount: u64): Coin<AptosCoin> acquires AptosCoinCapabilities {
-        let mint_cap = &borrow_global<AptosCoinCapabilities>(@aptos_framework).mint_cap;
+        let mint_cap = &borrow_global<AptosCoinCapabilities>(@starcoin_framework).mint_cap;
         coin::mint(amount, mint_cap)
     }
 
@@ -1905,7 +1905,7 @@ module aptos_framework::stake {
 
     #[test_only]
     public fun create_validator_set(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         active_validator_addresses: vector<address>,
         public_keys: vector<bls12381::PublicKey>,
     ) {
@@ -1927,7 +1927,7 @@ module aptos_framework::stake {
             i = i + 1;
         };
 
-        move_to(aptos_framework, ValidatorSet {
+        move_to(starcoin_framework, ValidatorSet {
             consensus_scheme: 0,
             // active validators for the current epoch
             active_validators,
@@ -1972,13 +1972,13 @@ module aptos_framework::stake {
         (sk, unvalidated_pk, pop)
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     #[expected_failure(abort_code = 0x10007, location = Self)]
     public entry fun test_inactive_validator_can_add_stake_if_exceeding_max_allowed(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires AllowedValidators, AptosCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, false, false);
 
@@ -1986,14 +1986,14 @@ module aptos_framework::stake {
         mint_and_add_stake(validator, 9901);
     }
 
-    #[test(aptos_framework = @0x1, validator_1 = @0x123, validator_2 = @0x234)]
+    #[test(starcoin_framework = @0x1, validator_1 = @0x123, validator_2 = @0x234)]
     #[expected_failure(abort_code = 0x10007, location = Self)]
     public entry fun test_pending_active_validator_cannot_add_stake_if_exceeding_max_allowed(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator_1: &signer,
         validator_2: &signer,
     ) acquires AllowedValidators, AptosCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
-        initialize_for_test_custom(aptos_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 10, 100000);
+        initialize_for_test_custom(starcoin_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 10, 100000);
         // Have one validator join the set to ensure the validator set is not empty when main validator joins.
         let (_sk_1, pk_1, pop_1) = generate_identity();
         initialize_test_validator(&pk_1, &pop_1, validator_1, 100, true, true);
@@ -2006,13 +2006,13 @@ module aptos_framework::stake {
         mint_and_add_stake(validator_2, 9901);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     #[expected_failure(abort_code = 0x10007, location = Self)]
     public entry fun test_active_validator_cannot_add_stake_if_exceeding_max_allowed(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires AllowedValidators, AptosCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         // Validator joins validator set and waits for epoch end so it's in the validator set.
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, true, true);
@@ -2021,13 +2021,13 @@ module aptos_framework::stake {
         mint_and_add_stake(validator, 9901);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     #[expected_failure(abort_code = 0x10007, location = Self)]
     public entry fun test_active_validator_with_pending_inactive_stake_cannot_add_stake_if_exceeding_max_allowed(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires AllowedValidators, AptosCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         // Validator joins validator set and waits for epoch end so it's in the validator set.
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, true, true);
@@ -2040,14 +2040,14 @@ module aptos_framework::stake {
         mint_and_add_stake(validator, 9901);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator_1 = @0x123, validator_2 = @0x234)]
+    #[test(starcoin_framework = @starcoin_framework, validator_1 = @0x123, validator_2 = @0x234)]
     #[expected_failure(abort_code = 0x10007, location = Self)]
     public entry fun test_pending_inactive_cannot_add_stake_if_exceeding_max_allowed(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator_1: &signer,
         validator_2: &signer,
     ) acquires AllowedValidators, AptosCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         let (_sk_1, pk_1, pop_1) = generate_identity();
         let (_sk_2, pk_2, pop_2) = generate_identity();
         initialize_test_validator(&pk_1, &pop_1, validator_1, 100, true, false);
@@ -2060,12 +2060,12 @@ module aptos_framework::stake {
         mint_and_add_stake(validator_1, 9901);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     public entry fun test_end_to_end(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, true, true);
 
@@ -2117,12 +2117,12 @@ module aptos_framework::stake {
         assert!(get_remaining_lockup_secs(validator_address) == LOCKUP_CYCLE_SECONDS, 9);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     public entry fun test_inactive_validator_with_existing_lockup_join_validator_set(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, false, false);
 
@@ -2142,33 +2142,33 @@ module aptos_framework::stake {
         assert_validator_state(validator_address, 100, 0, 0, 0, 0);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     #[expected_failure(abort_code = 0x10012, location = Self)]
     public entry fun test_cannot_reduce_lockup(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, false, false);
 
         // Increase lockup.
         increase_lockup(validator);
         // Reduce recurring lockup to 0.
-        staking_config::update_recurring_lockup_duration_secs(aptos_framework, 1);
+        staking_config::update_recurring_lockup_duration_secs(starcoin_framework, 1);
         // INcrease lockup should now fail because the new lockup < old lockup.
         increase_lockup(validator);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator_1 = @0x123, validator_2 = @0x234)]
+    #[test(starcoin_framework = @starcoin_framework, validator_1 = @0x123, validator_2 = @0x234)]
     #[expected_failure(abort_code = 0x1000D, location = Self)]
     public entry fun test_inactive_validator_cannot_join_if_exceed_increase_limit(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator_1: &signer,
         validator_2: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         // Only 50% voting power increase is allowed in each epoch.
-        initialize_for_test_custom(aptos_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 10, 50);
+        initialize_for_test_custom(starcoin_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 10, 50);
         let (_sk_1, pk_1, pop_1) = generate_identity();
         let (_sk_2, pk_2, pop_2) = generate_identity();
         initialize_test_validator(&pk_1, &pop_1, validator_1, 100, false, false);
@@ -2183,13 +2183,13 @@ module aptos_framework::stake {
         join_validator_set(validator_2, signer::address_of(validator_2));
     }
 
-    #[test(aptos_framework = @aptos_framework, validator_1 = @0x123, validator_2 = @0x234)]
+    #[test(starcoin_framework = @starcoin_framework, validator_1 = @0x123, validator_2 = @0x234)]
     public entry fun test_pending_active_validator_can_add_more_stake(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator_1: &signer,
         validator_2: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
-        initialize_for_test_custom(aptos_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 10, 10000);
+        initialize_for_test_custom(starcoin_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 10, 10000);
         // Need 1 validator to be in the active validator set so joining limit works.
         let (_sk_1, pk_1, pop_1) = generate_identity();
         let (_sk_2, pk_2, pop_2) = generate_identity();
@@ -2204,15 +2204,15 @@ module aptos_framework::stake {
         assert_validator_state(validator_2_address, 200, 0, 0, 0, 0);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator_1 = @0x123, validator_2 = @0x234)]
+    #[test(starcoin_framework = @starcoin_framework, validator_1 = @0x123, validator_2 = @0x234)]
     #[expected_failure(abort_code = 0x1000D, location = Self)]
     public entry fun test_pending_active_validator_cannot_add_more_stake_than_limit(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator_1: &signer,
         validator_2: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         // 100% voting power increase is allowed in each epoch.
-        initialize_for_test_custom(aptos_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 10, 100);
+        initialize_for_test_custom(starcoin_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 10, 100);
         // Need 1 validator to be in the active validator set so joining limit works.
         let (_sk_1, pk_1, pop_1) = generate_identity();
         initialize_test_validator(&pk_1, &pop_1, validator_1, 100, true, true);
@@ -2226,12 +2226,12 @@ module aptos_framework::stake {
         mint_and_add_stake(validator_2, 1);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     public entry fun test_pending_active_validator_leaves_validator_set(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         // Validator joins but epoch hasn't ended, so the validator is still pending_active.
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, true, false);
@@ -2239,24 +2239,24 @@ module aptos_framework::stake {
         assert!(get_validator_state(validator_address) == VALIDATOR_STATUS_PENDING_ACTIVE, 0);
 
         // Check that voting power increase is tracked.
-        assert!(borrow_global<ValidatorSet>(@aptos_framework).total_joining_power == 100, 0);
+        assert!(borrow_global<ValidatorSet>(@starcoin_framework).total_joining_power == 100, 0);
 
         // Leave the validator set immediately.
         leave_validator_set(validator, validator_address);
         assert!(get_validator_state(validator_address) == VALIDATOR_STATUS_INACTIVE, 1);
 
         // Check that voting power increase has been decreased when the pending active validator leaves.
-        assert!(borrow_global<ValidatorSet>(@aptos_framework).total_joining_power == 0, 1);
+        assert!(borrow_global<ValidatorSet>(@starcoin_framework).total_joining_power == 0, 1);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     #[expected_failure(abort_code = 0x1000D, location = Self)]
     public entry fun test_active_validator_cannot_add_more_stake_than_limit_in_multiple_epochs(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         // Only 50% voting power increase is allowed in each epoch.
-        initialize_for_test_custom(aptos_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 10, 50);
+        initialize_for_test_custom(starcoin_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 10, 50);
         // Add initial stake and join the validator set.
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, true, true);
@@ -2271,14 +2271,14 @@ module aptos_framework::stake {
         mint_and_add_stake(validator, 99);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     #[expected_failure(abort_code = 0x1000D, location = Self)]
     public entry fun test_active_validator_cannot_add_more_stake_than_limit(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         // Only 50% voting power increase is allowed in each epoch.
-        initialize_for_test_custom(aptos_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 10, 50);
+        initialize_for_test_custom(starcoin_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 10, 50);
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, true, true);
 
@@ -2286,13 +2286,13 @@ module aptos_framework::stake {
         mint_and_add_stake(validator, 51);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     public entry fun test_active_validator_unlock_partial_stake(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         // Reward rate = 10%.
-        initialize_for_test_custom(aptos_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 10, 100);
+        initialize_for_test_custom(starcoin_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 10, 100);
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, true, true);
 
@@ -2312,12 +2312,12 @@ module aptos_framework::stake {
         assert!(get_remaining_lockup_secs(validator_address) == LOCKUP_CYCLE_SECONDS, 3);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     public entry fun test_active_validator_can_withdraw_all_stake_and_rewards_at_once(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, true, true);
         let validator_address = signer::address_of(validator);
@@ -2349,12 +2349,12 @@ module aptos_framework::stake {
         assert!(get_validator_state(validator_address) == VALIDATOR_STATUS_INACTIVE, 4);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     public entry fun test_active_validator_unlocking_more_than_available_stake_should_cap(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, false, false);
 
@@ -2363,12 +2363,12 @@ module aptos_framework::stake {
         assert_validator_state(signer::address_of(validator), 0, 0, 0, 100, 0);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     public entry fun test_active_validator_withdraw_should_cap_by_inactive_stake(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         // Initial balance = 900 (idle) + 100 (staked) = 1000.
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, true, true);
@@ -2388,12 +2388,12 @@ module aptos_framework::stake {
         assert_validator_state(validator_address, 0, 0, 0, 0, 0);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     public entry fun test_active_validator_can_reactivate_pending_inactive_stake(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, true, true);
 
@@ -2407,12 +2407,12 @@ module aptos_framework::stake {
         assert_validator_state(validator_address, 100, 0, 0, 0, 0);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     public entry fun test_active_validator_reactivate_more_than_available_pending_inactive_stake_should_cap(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, true, true);
 
@@ -2424,12 +2424,12 @@ module aptos_framework::stake {
         assert_validator_state(validator_address, 100, 0, 0, 0, 0);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     public entry fun test_active_validator_having_insufficient_remaining_stake_after_withdrawal_gets_kicked(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, true, true);
 
@@ -2451,13 +2451,13 @@ module aptos_framework::stake {
         assert!(get_remaining_lockup_secs(validator_address) == 0, 3);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, validator_2 = @0x234)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, validator_2 = @0x234)]
     public entry fun test_active_validator_leaves_staking_but_still_has_a_lockup(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         validator_2: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         let (_sk_1, pk_1, pop_1) = generate_identity();
         let (_sk_2, pk_2, pop_2) = generate_identity();
         initialize_test_validator(&pk_1, &pop_1, validator, 100, true, false);
@@ -2495,13 +2495,13 @@ module aptos_framework::stake {
         assert_validator_state(validator_address, 51, 0, 0, 0, 1);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, validator_2 = @0x234)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, validator_2 = @0x234)]
     public entry fun test_active_validator_leaves_staking_and_rejoins_with_expired_lockup_should_be_renewed(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         validator_2: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         let (_sk_1, pk_1, pop_1) = generate_identity();
         let (_sk_2, pk_2, pop_2) = generate_identity();
         initialize_test_validator(&pk_1, &pop_1, validator, 100, true, false);
@@ -2526,14 +2526,14 @@ module aptos_framework::stake {
         assert!(get_remaining_lockup_secs(validator_address) == LOCKUP_CYCLE_SECONDS, 2);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator_1 = @0x123, validator_2 = @0x234)]
+    #[test(starcoin_framework = @starcoin_framework, validator_1 = @0x123, validator_2 = @0x234)]
     public entry fun test_pending_inactive_validator_does_not_count_in_increase_limit(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator_1: &signer,
         validator_2: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         // Only 50% voting power increase is allowed in each epoch.
-        initialize_for_test_custom(aptos_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 10, 50);
+        initialize_for_test_custom(starcoin_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 10, 50);
         let (_sk_1, pk_1, pop_1) = generate_identity();
         let (_sk_2, pk_2, pop_2) = generate_identity();
         initialize_test_validator(&pk_1, &pop_1, validator_1, 100, true, false);
@@ -2546,9 +2546,9 @@ module aptos_framework::stake {
         mint_and_add_stake(validator_1, 51);
     }
 
-    #[test(aptos_framework = @0x1, validator_1 = @0x123, validator_2 = @0x234, validator_3 = @0x345)]
+    #[test(starcoin_framework = @0x1, validator_1 = @0x123, validator_2 = @0x234, validator_3 = @0x345)]
     public entry fun test_multiple_validators_join_and_leave(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator_1: &signer,
         validator_2: &signer,
         validator_3: &signer
@@ -2557,7 +2557,7 @@ module aptos_framework::stake {
         let validator_2_address = signer::address_of(validator_2);
         let validator_3_address = signer::address_of(validator_3);
 
-        initialize_for_test_custom(aptos_framework, 100, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 100, 100);
+        initialize_for_test_custom(starcoin_framework, 100, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 100, 100);
         let (_sk_1, pk_1, pop_1) = generate_identity();
         let pk_1_bytes = bls12381::public_key_to_bytes(&pk_1);
         let (_sk_2, pk_2, pop_2) = generate_identity();
@@ -2576,7 +2576,7 @@ module aptos_framework::stake {
         // Validator indices is the reverse order of the joining order.
         assert_validator_state(validator_1_address, 100, 0, 0, 0, 0);
         assert_validator_state(validator_2_address, 100, 0, 0, 0, 1);
-        let validator_set = borrow_global<ValidatorSet>(@aptos_framework);
+        let validator_set = borrow_global<ValidatorSet>(@starcoin_framework);
         let validator_config_1 = vector::borrow(&validator_set.active_validators, 0);
         assert!(validator_config_1.addr == validator_1_address, 2);
         assert!(validator_config_1.config.validator_index == 0, 3);
@@ -2595,7 +2595,7 @@ module aptos_framework::stake {
         assert!(get_validator_state(validator_2_address) == VALIDATOR_STATUS_PENDING_INACTIVE, 6);
         assert!(
             vector::borrow(
-                &borrow_global<ValidatorSet>(@aptos_framework).pending_inactive,
+                &borrow_global<ValidatorSet>(@starcoin_framework).pending_inactive,
                 0
             ).addr == validator_2_address,
             0
@@ -2604,14 +2604,14 @@ module aptos_framework::stake {
         assert!(get_validator_state(validator_3_address) == VALIDATOR_STATUS_PENDING_ACTIVE, 7);
         assert!(
             vector::borrow(
-                &borrow_global<ValidatorSet>(@aptos_framework).pending_active,
+                &borrow_global<ValidatorSet>(@starcoin_framework).pending_active,
                 0
             ).addr == validator_3_address,
             0
         );
         assert!(
             vector::borrow(
-                &borrow_global<ValidatorSet>(@aptos_framework).active_validators,
+                &borrow_global<ValidatorSet>(@starcoin_framework).active_validators,
                 0
             ).config.consensus_pubkey == pk_1_bytes,
             0
@@ -2629,7 +2629,7 @@ module aptos_framework::stake {
         assert_validator_state(validator_3_address, 100, 0, 0, 0, 1);
         assert!(
             vector::borrow(
-                &borrow_global<ValidatorSet>(@aptos_framework).active_validators,
+                &borrow_global<ValidatorSet>(@starcoin_framework).active_validators,
                 0
             ).config.consensus_pubkey == pk_1b_bytes,
             0
@@ -2642,12 +2642,12 @@ module aptos_framework::stake {
         assert!(get_validator_state(validator_1_address) == VALIDATOR_STATUS_INACTIVE, 11);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     public entry fun test_delegated_staking_with_owner_cap(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
-        initialize_for_test_custom(aptos_framework, 100, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 100, 100);
+        initialize_for_test_custom(starcoin_framework, 100, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 100, 100);
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 0, false, false);
         let owner_cap = extract_owner_cap(validator);
@@ -2694,38 +2694,38 @@ module aptos_framework::stake {
         deposit_owner_cap(validator, owner_cap);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     #[expected_failure(abort_code = 0x1000A, location = Self)]
     public entry fun test_validator_cannot_join_post_genesis(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires AllowedValidators, AptosCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
-        initialize_for_test_custom(aptos_framework, 100, 10000, LOCKUP_CYCLE_SECONDS, false, 1, 100, 100);
+        initialize_for_test_custom(starcoin_framework, 100, 10000, LOCKUP_CYCLE_SECONDS, false, 1, 100, 100);
 
         // Joining the validator set should fail as post genesis validator set change is not allowed.
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, true, true);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     #[expected_failure(abort_code = 0x1000E, location = Self)]
     public entry fun test_invalid_pool_address(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires AllowedValidators, AptosCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, true, true);
         join_validator_set(validator, @0x234);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     #[expected_failure(abort_code = 0x1000A, location = Self)]
     public entry fun test_validator_cannot_leave_post_genesis(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
-        initialize_for_test_custom(aptos_framework, 100, 10000, LOCKUP_CYCLE_SECONDS, false, 1, 100, 100);
+        initialize_for_test_custom(starcoin_framework, 100, 10000, LOCKUP_CYCLE_SECONDS, false, 1, 100, 100);
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, false, false);
 
@@ -2739,15 +2739,15 @@ module aptos_framework::stake {
     }
 
     #[test(
-        aptos_framework = @aptos_framework,
-        validator_1 = @aptos_framework,
+        starcoin_framework = @starcoin_framework,
+        validator_1 = @starcoin_framework,
         validator_2 = @0x2,
         validator_3 = @0x3,
         validator_4 = @0x4,
         validator_5 = @0x5
     )]
     fun test_validator_consensus_infos_from_validator_set(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator_1: &signer,
         validator_2: &signer,
         validator_3: &signer,
@@ -2760,7 +2760,7 @@ module aptos_framework::stake {
         let v4_addr = signer::address_of(validator_4);
         let v5_addr = signer::address_of(validator_5);
 
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
 
         let (_sk_1, pk_1, pop_1) = generate_identity();
         let (_sk_2, pk_2, pop_2) = generate_identity();
@@ -2781,7 +2781,7 @@ module aptos_framework::stake {
         join_validator_set(validator_1, v1_addr);
         join_validator_set(validator_5, v5_addr);
         end_epoch();
-        let vci_vec_0 = validator_consensus_infos_from_validator_set(borrow_global<ValidatorSet>(@aptos_framework));
+        let vci_vec_0 = validator_consensus_infos_from_validator_set(borrow_global<ValidatorSet>(@starcoin_framework));
         let vci_addrs = vector::map_ref(&vci_vec_0, |obj|{
             let vci: &ValidatorConsensusInfo = obj;
             validator_consensus_info::get_addr(vci)
@@ -2794,33 +2794,33 @@ module aptos_framework::stake {
             let vci: &ValidatorConsensusInfo = obj;
             validator_consensus_info::get_voting_power(vci)
         });
-        assert!(vector[@0x5, @aptos_framework, @0x3] == vci_addrs, 1);
+        assert!(vector[@0x5, @starcoin_framework, @0x3] == vci_addrs, 1);
         assert!(vector[pk_5_bytes, pk_1_bytes, pk_3_bytes] == vci_pks, 2);
         assert!(vector[105, 101, 103] == vci_voting_powers, 3);
         leave_validator_set(validator_3, v3_addr);
-        let vci_vec_1 = validator_consensus_infos_from_validator_set(borrow_global<ValidatorSet>(@aptos_framework));
+        let vci_vec_1 = validator_consensus_infos_from_validator_set(borrow_global<ValidatorSet>(@starcoin_framework));
         assert!(vci_vec_0 == vci_vec_1, 11);
         join_validator_set(validator_2, v2_addr);
-        let vci_vec_2 = validator_consensus_infos_from_validator_set(borrow_global<ValidatorSet>(@aptos_framework));
+        let vci_vec_2 = validator_consensus_infos_from_validator_set(borrow_global<ValidatorSet>(@starcoin_framework));
         assert!(vci_vec_0 == vci_vec_2, 12);
         leave_validator_set(validator_1, v1_addr);
-        let vci_vec_3 = validator_consensus_infos_from_validator_set(borrow_global<ValidatorSet>(@aptos_framework));
+        let vci_vec_3 = validator_consensus_infos_from_validator_set(borrow_global<ValidatorSet>(@starcoin_framework));
         assert!(vci_vec_0 == vci_vec_3, 13);
         join_validator_set(validator_4, v4_addr);
-        let vci_vec_4 = validator_consensus_infos_from_validator_set(borrow_global<ValidatorSet>(@aptos_framework));
+        let vci_vec_4 = validator_consensus_infos_from_validator_set(borrow_global<ValidatorSet>(@starcoin_framework));
         assert!(vci_vec_0 == vci_vec_4, 14);
     }
 
     #[test(
-        aptos_framework = @aptos_framework,
-        validator_1 = @aptos_framework,
+        starcoin_framework = @starcoin_framework,
+        validator_1 = @starcoin_framework,
         validator_2 = @0x2,
         validator_3 = @0x3,
         validator_4 = @0x4,
         validator_5 = @0x5
     )]
     public entry fun test_staking_validator_index(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator_1: &signer,
         validator_2: &signer,
         validator_3: &signer,
@@ -2833,7 +2833,7 @@ module aptos_framework::stake {
         let v4_addr = signer::address_of(validator_4);
         let v5_addr = signer::address_of(validator_5);
 
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
 
         let (_sk_1, pk_1, pop_1) = generate_identity();
         let (_sk_2, pk_2, pop_2) = generate_identity();
@@ -2884,13 +2884,13 @@ module aptos_framework::stake {
         assert!(get_validator_index(v2_addr) == 2, 17);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator_1 = @0x123, validator_2 = @0x234)]
+    #[test(starcoin_framework = @starcoin_framework, validator_1 = @0x123, validator_2 = @0x234)]
     public entry fun test_validator_rewards_are_performance_based(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator_1: &signer,
         validator_2: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
 
         let validator_1_address = signer::address_of(validator_1);
         let validator_2_address = signer::address_of(validator_2);
@@ -2932,13 +2932,13 @@ module aptos_framework::stake {
         assert_validator_state(validator_2_address, 0, 100, 0, 0, 0);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator_1 = @0x123, validator_2 = @0x234)]
+    #[test(starcoin_framework = @starcoin_framework, validator_1 = @0x123, validator_2 = @0x234)]
     public entry fun test_validator_rewards_rate_decrease_over_time(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator_1: &signer,
         validator_2: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
 
         let genesis_time_in_secs = timestamp::now_seconds();
 
@@ -2959,14 +2959,14 @@ module aptos_framework::stake {
         // Enable rewards rate decrease. Initially rewards rate is still 1% every epoch. Rewards rate halves every year.
         let one_year_in_secs: u64 = 31536000;
         staking_config::initialize_rewards(
-            aptos_framework,
+            starcoin_framework,
             fixed_point64::create_from_rational(1, 100),
             fixed_point64::create_from_rational(3, 1000),
             one_year_in_secs,
             genesis_time_in_secs,
             fixed_point64::create_from_rational(50, 100),
         );
-        features::change_feature_flags_for_testing(aptos_framework, vector[features::get_periodical_reward_rate_decrease_feature()], vector[]);
+        features::change_feature_flags_for_testing(starcoin_framework, vector[features::get_periodical_reward_rate_decrease_feature()], vector[]);
 
         // For some reason, this epoch is very long. It has been 1 year since genesis when the epoch ends.
         timestamp::fast_forward_seconds(one_year_in_secs - EPOCH_DURATION * 3);
@@ -2989,12 +2989,12 @@ module aptos_framework::stake {
         assert_validator_state(validator_2_address, 10280, 0, 0, 0, 0);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     public entry fun test_update_performance_statistics_should_not_fail_due_to_out_of_bounds(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
 
         let validator_address = signer::address_of(validator);
         let (_sk, pk, pop) = generate_identity();
@@ -3019,13 +3019,13 @@ module aptos_framework::stake {
         end_epoch();
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     #[expected_failure(abort_code = 0x1000B, location = Self)]
     public entry fun test_invalid_config(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires AllowedValidators, AptosCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorSet {
-        initialize_for_test_custom(aptos_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 100, 100);
+        initialize_for_test_custom(starcoin_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 100, 100);
 
         // Call initialize_stake_owner, which only initializes the stake pool but not validator config.
         let validator_address = signer::address_of(validator);
@@ -3038,12 +3038,12 @@ module aptos_framework::stake {
         join_validator_set(validator, validator_address);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     public entry fun test_valid_config(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires AllowedValidators, AptosCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorSet {
-        initialize_for_test_custom(aptos_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 100, 100);
+        initialize_for_test_custom(starcoin_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 100, 100);
 
         // Call initialize_stake_owner, which only initializes the stake pool but not validator config.
         let validator_address = signer::address_of(validator);
@@ -3102,7 +3102,7 @@ module aptos_framework::stake {
 
     #[test_only]
     public fun set_validator_perf_at_least_one_block() acquires ValidatorPerformance {
-        let validator_perf = borrow_global_mut<ValidatorPerformance>(@aptos_framework);
+        let validator_perf = borrow_global_mut<ValidatorPerformance>(@starcoin_framework);
         vector::for_each_mut(&mut validator_perf.validators, |validator|{
             let validator: &mut IndividualValidatorPerformance = validator;
             if (validator.successful_proposals + validator.failed_proposals < 1) {
@@ -3111,23 +3111,23 @@ module aptos_framework::stake {
         });
     }
 
-    #[test(aptos_framework = @0x1, validator_1 = @0x123, validator_2 = @0x234)]
+    #[test(starcoin_framework = @0x1, validator_1 = @0x123, validator_2 = @0x234)]
     public entry fun test_removing_validator_from_active_set(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator_1: &signer,
         validator_2: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         let (_sk_1, pk_1, pop_1) = generate_identity();
         let (_sk_2, pk_2, pop_2) = generate_identity();
         initialize_test_validator(&pk_1, &pop_1, validator_1, 100, true, false);
         initialize_test_validator(&pk_2, &pop_2, validator_2, 100, true, true);
-        assert!(vector::length(&borrow_global<ValidatorSet>(@aptos_framework).active_validators) == 2, 0);
+        assert!(vector::length(&borrow_global<ValidatorSet>(@starcoin_framework).active_validators) == 2, 0);
 
         // Remove validator 1 from the active validator set. Only validator 2 remains.
         let validator_to_remove = signer::address_of(validator_1);
-        remove_validators(aptos_framework, &vector[validator_to_remove]);
-        assert!(vector::length(&borrow_global<ValidatorSet>(@aptos_framework).active_validators) == 1, 0);
+        remove_validators(starcoin_framework, &vector[validator_to_remove]);
+        assert!(vector::length(&borrow_global<ValidatorSet>(@starcoin_framework).active_validators) == 1, 0);
         assert!(get_validator_state(validator_to_remove) == VALIDATOR_STATUS_PENDING_INACTIVE, 1);
     }
 
@@ -3175,14 +3175,14 @@ module aptos_framework::stake {
         assert!(validator_config.validator_index == validator_index, validator_config.validator_index);
     }
 
-    #[test(aptos_framework = @0x1, validator = @0x123)]
+    #[test(starcoin_framework = @0x1, validator = @0x123)]
     public entry fun test_allowed_validators(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, ValidatorSet {
         let addr = signer::address_of(validator);
-        let (burn, mint) = aptos_coin::initialize_for_test(aptos_framework);
-        configure_allowed_validators(aptos_framework, vector[addr]);
+        let (burn, mint) = aptos_coin::initialize_for_test(starcoin_framework);
+        configure_allowed_validators(starcoin_framework, vector[addr]);
 
         account::create_account_for_test(addr);
         coin::register<AptosCoin>(validator);
@@ -3191,14 +3191,14 @@ module aptos_framework::stake {
         coin::destroy_mint_cap(mint);
     }
 
-    #[test(aptos_framework = @0x1, validator = @0x123)]
+    #[test(starcoin_framework = @0x1, validator = @0x123)]
     #[expected_failure(abort_code = 0x60011, location = Self)]
     public entry fun test_not_allowed_validators(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, ValidatorSet {
-        configure_allowed_validators(aptos_framework, vector[]);
-        let (burn, mint) = aptos_coin::initialize_for_test(aptos_framework);
+        configure_allowed_validators(starcoin_framework, vector[]);
+        let (burn, mint) = aptos_coin::initialize_for_test(starcoin_framework);
 
         let addr = signer::address_of(validator);
         account::create_account_for_test(addr);
@@ -3216,34 +3216,34 @@ module aptos_framework::stake {
 
     #[test_only]
     public fun get_validator_fee(validator_addr: address): u64 acquires ValidatorFees {
-        let fees_table = &borrow_global<ValidatorFees>(@aptos_framework).fees_table;
+        let fees_table = &borrow_global<ValidatorFees>(@starcoin_framework).fees_table;
         let coin = table::borrow(fees_table, validator_addr);
         coin::value(coin)
     }
 
     #[test_only]
     public fun assert_no_fees_for_validator(validator_addr: address) acquires ValidatorFees {
-        let fees_table = &borrow_global<ValidatorFees>(@aptos_framework).fees_table;
+        let fees_table = &borrow_global<ValidatorFees>(@starcoin_framework).fees_table;
         assert!(!table::contains(fees_table, validator_addr), 0);
     }
 
     #[test_only]
     const COLLECT_AND_DISTRIBUTE_GAS_FEES: u64 = 6;
 
-    #[test(aptos_framework = @0x1, validator_1 = @0x123, validator_2 = @0x234, validator_3 = @0x345)]
+    #[test(starcoin_framework = @0x1, validator_1 = @0x123, validator_2 = @0x234, validator_3 = @0x345)]
     fun test_distribute_validator_fees(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator_1: &signer,
         validator_2: &signer,
         validator_3: &signer,
     ) acquires AllowedValidators, AptosCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         // Make sure that fees collection and distribution is enabled.
-        features::change_feature_flags_for_testing(aptos_framework, vector[COLLECT_AND_DISTRIBUTE_GAS_FEES], vector[]);
+        features::change_feature_flags_for_testing(starcoin_framework, vector[COLLECT_AND_DISTRIBUTE_GAS_FEES], vector[]);
         assert!(features::collect_and_distribute_gas_fees(), 0);
 
         // Initialize staking and validator fees table.
-        initialize_for_test(aptos_framework);
-        initialize_validator_fees(aptos_framework);
+        initialize_for_test(starcoin_framework);
+        initialize_validator_fees(starcoin_framework);
 
         let validator_1_address = signer::address_of(validator_1);
         let validator_2_address = signer::address_of(validator_2);

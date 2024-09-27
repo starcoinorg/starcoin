@@ -1,13 +1,13 @@
 #[test_only]
-module aptos_framework::simple_token_pfs_tests {
-    use aptos_framework::fungible_asset::{create_test_token};
-    use aptos_framework::primary_fungible_store::{
+module starcoin_framework::simple_token_pfs_tests {
+    use starcoin_framework::fungible_asset::{create_test_token};
+    use starcoin_framework::primary_fungible_store::{
         balance, burn, deposit, mint, primary_store, transfer, transfer_assert_minimum_deposit,
         withdraw, init_test_metadata_with_primary_store_enabled, is_frozen, set_frozen_flag,
         transfer_with_ref, deposit_with_ref, withdraw_with_ref, primary_store_exists,
         ensure_primary_store_exists
     };
-    use aptos_framework::object;
+    use starcoin_framework::object;
     use 0xcafe::simple_token;
     use std::signer;
 

@@ -1,5 +1,5 @@
 /// Common type: `ValidatorConsensusInfo`.
-module aptos_framework::validator_consensus_info {
+module starcoin_framework::validator_consensus_info {
     /// Information about a validator that participates consensus.
     struct ValidatorConsensusInfo has copy, drop, store {
         addr: address,

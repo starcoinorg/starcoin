@@ -1,5 +1,5 @@
-spec aptos_framework::aggregator_factory {
-    use aptos_framework::aggregator;
+spec starcoin_framework::aggregator_factory {
+    use starcoin_framework::aggregator;
     /// <high-level-req>
     /// No.: 1
     /// Requirement: During the module's initialization, it guarantees that the Aptos framework is the caller and that the
@@ -43,12 +43,12 @@ spec aptos_framework::aggregator_factory {
         ensures aggregator::spec_get_limit(result) == limit;
     }
 
-    /// Make sure the caller is @aptos_framework.
+    /// Make sure the caller is @starcoin_framework.
     /// AggregatorFactory is not under the caller before creating the resource.
-    spec initialize_aggregator_factory(aptos_framework: &signer) {
+    spec initialize_aggregator_factory(starcoin_framework: &signer) {
         use std::signer;
-        let addr = signer::address_of(aptos_framework);
-        aborts_if addr != @aptos_framework;
+        let addr = signer::address_of(starcoin_framework);
+        aborts_if addr != @starcoin_framework;
         aborts_if exists<AggregatorFactory>(addr);
         /// [high-level-req-1]
         ensures exists<AggregatorFactory>(addr);
@@ -61,17 +61,17 @@ spec aptos_framework::aggregator_factory {
         ensures aggregator::spec_aggregator_get_val(result) == 0;
     }
     spec schema CreateAggregatorInternalAbortsIf {
-        aborts_if !exists<AggregatorFactory>(@aptos_framework);
+        aborts_if !exists<AggregatorFactory>(@starcoin_framework);
     }
 
-    /// Make sure the caller is @aptos_framework.
-    /// AggregatorFactory existed under the @aptos_framework when Creating a new aggregator.
+    /// Make sure the caller is @starcoin_framework.
+    /// AggregatorFactory existed under the @starcoin_framework when Creating a new aggregator.
     spec create_aggregator(account: &signer, limit: u128): Aggregator {
         use std::signer;
         let addr = signer::address_of(account);
         /// [high-level-req-3]
-        aborts_if addr != @aptos_framework;
-        aborts_if !exists<AggregatorFactory>(@aptos_framework);
+        aborts_if addr != @starcoin_framework;
+        aborts_if !exists<AggregatorFactory>(@starcoin_framework);
     }
 
     spec native fun spec_new_aggregator(limit: u128): Aggregator;

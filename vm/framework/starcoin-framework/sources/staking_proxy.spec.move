@@ -1,4 +1,4 @@
-spec aptos_framework::staking_proxy {
+spec starcoin_framework::staking_proxy {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: When updating the Vesting operator, it should be updated throughout all depending units.
@@ -76,8 +76,8 @@ spec aptos_framework::staking_proxy {
 
     spec schema SetStakingContractOperator {
         use aptos_std::simple_map;
-        use aptos_framework::staking_contract::{Store};
-        use aptos_framework::coin;
+        use starcoin_framework::staking_contract::{Store};
+        use starcoin_framework::coin;
 
         owner: signer;
         old_operator: address;
@@ -143,7 +143,7 @@ spec aptos_framework::staking_proxy {
     /// Then abort if the resource is not exist
     spec schema SetStakingContractVoter {
         use aptos_std::simple_map;
-        use aptos_framework::staking_contract::{Store};
+        use starcoin_framework::staking_contract::{Store};
 
         owner: &signer;
         operator: address;

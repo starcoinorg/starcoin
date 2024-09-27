@@ -1,18 +1,18 @@
 /// This module supports functionality related to code management.
-module aptos_framework::code {
+module starcoin_framework::code {
     use std::string::String;
     use std::error;
     use std::signer;
     use std::vector;
     use std::features;
 
-    use aptos_framework::util;
-    use aptos_framework::system_addresses;
+    use starcoin_framework::util;
+    use starcoin_framework::system_addresses;
     use aptos_std::copyable_any::Any;
     use std::option::Option;
     use std::string;
-    use aptos_framework::event;
-    use aptos_framework::object::{Self, Object};
+    use starcoin_framework::event;
+    use starcoin_framework::object::{Self, Object};
 
     // ----------------------------------------------------------------------
     // Code Publishing
@@ -131,9 +131,9 @@ module aptos_framework::code {
     }
 
     /// Initialize package metadata for Genesis.
-    fun initialize(aptos_framework: &signer, package_owner: &signer, metadata: PackageMetadata)
+    fun initialize(starcoin_framework: &signer, package_owner: &signer, metadata: PackageMetadata)
     acquires PackageRegistry {
-        system_addresses::assert_aptos_framework(aptos_framework);
+        system_addresses::assert_aptos_framework(starcoin_framework);
         let addr = signer::address_of(package_owner);
         if (!exists<PackageRegistry>(addr)) {
             move_to(package_owner, PackageRegistry { packages: vector[metadata] })

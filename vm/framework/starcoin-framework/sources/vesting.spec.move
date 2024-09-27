@@ -1,4 +1,4 @@
-spec aptos_framework::vesting {
+spec starcoin_framework::vesting {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: In order to retrieve the address of the underlying stake pool, the vesting start timestamp of the
@@ -244,7 +244,7 @@ spec aptos_framework::vesting {
         /// [high-level-req-6]
         aborts_if !(len(schedule) > 0);
         aborts_if !(period_duration > 0);
-        aborts_if !exists<timestamp::CurrentTimeMicroseconds>(@aptos_framework);
+        aborts_if !exists<timestamp::CurrentTimeMicroseconds>(@starcoin_framework);
         aborts_if !(start_timestamp_secs >= timestamp::now_seconds());
     }
 
@@ -252,7 +252,7 @@ spec aptos_framework::vesting {
         // TODO: Data invariant does not hold.
         pragma verify = false;
         /// [high-level-req-10]
-        aborts_if withdrawal_address == @aptos_framework || withdrawal_address == @vm_reserved;
+        aborts_if withdrawal_address == @starcoin_framework || withdrawal_address == @vm_reserved;
         aborts_if !exists<account::Account>(withdrawal_address);
         aborts_if !exists<coin::CoinStore<AptosCoin>>(withdrawal_address);
         aborts_if len(shareholders) == 0;
@@ -614,8 +614,8 @@ spec aptos_framework::vesting {
         let pool_address_1 = staking_contract.owner_cap.pool_address;
         aborts_if !exists<stake::StakePool>(pool_address_1);
         let stake_pool_1 = global<stake::StakePool>(pool_address_1);
-        aborts_if !exists<stake::ValidatorSet>(@aptos_framework);
-        let validator_set = global<stake::ValidatorSet>(@aptos_framework);
+        aborts_if !exists<stake::ValidatorSet>(@starcoin_framework);
+        let validator_set = global<stake::ValidatorSet>(@starcoin_framework);
         let inactive_state = !stake::spec_contains(validator_set.pending_active, pool_address_1)
             && !stake::spec_contains(validator_set.active_validators, pool_address_1)
             && !stake::spec_contains(validator_set.pending_inactive, pool_address_1);

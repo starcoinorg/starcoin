@@ -2,11 +2,11 @@
 /// It interacts with the other modules in the following ways:
 /// * genesis: to initialize the timestamp
 /// * block: to reach consensus on the global wall clock time
-module aptos_framework::timestamp {
-    use aptos_framework::system_addresses;
+module starcoin_framework::timestamp {
+    use starcoin_framework::system_addresses;
     use std::error;
 
-    friend aptos_framework::genesis;
+    friend starcoin_framework::genesis;
 
     /// A singleton resource holding the current Unix time in microseconds
     struct CurrentTimeMicroseconds has key {
@@ -22,10 +22,10 @@ module aptos_framework::timestamp {
     const EINVALID_TIMESTAMP: u64 = 2;
 
     /// Marks that time has started. This can only be called from genesis and with the aptos framework account.
-    public(friend) fun set_time_has_started(aptos_framework: &signer) {
-        system_addresses::assert_aptos_framework(aptos_framework);
+    public(friend) fun set_time_has_started(starcoin_framework: &signer) {
+        system_addresses::assert_aptos_framework(starcoin_framework);
         let timer = CurrentTimeMicroseconds { microseconds: 0 };
-        move_to(aptos_framework, timer);
+        move_to(starcoin_framework, timer);
     }
 
     /// Updates the wall clock time by consensus. Requires VM privilege and will be invoked during block prologue.
@@ -37,7 +37,7 @@ module aptos_framework::timestamp {
         // Can only be invoked by AptosVM signer.
         system_addresses::assert_vm(account);
 
-        let global_timer = borrow_global_mut<CurrentTimeMicroseconds>(@aptos_framework);
+        let global_timer = borrow_global_mut<CurrentTimeMicroseconds>(@starcoin_framework);
         let now = global_timer.microseconds;
         if (proposer == @vm_reserved) {
             // NIL block with null address as proposer. Timestamp must be equal.
@@ -51,7 +51,7 @@ module aptos_framework::timestamp {
 
     #[test_only]
     public fun set_time_has_started_for_testing(account: &signer) {
-        if (!exists<CurrentTimeMicroseconds>(@aptos_framework)) {
+        if (!exists<CurrentTimeMicroseconds>(@starcoin_framework)) {
             set_time_has_started(account);
         };
     }
@@ -59,7 +59,7 @@ module aptos_framework::timestamp {
     #[view]
     /// Gets the current time in microseconds.
     public fun now_microseconds(): u64 acquires CurrentTimeMicroseconds {
-        borrow_global<CurrentTimeMicroseconds>(@aptos_framework).microseconds
+        borrow_global<CurrentTimeMicroseconds>(@starcoin_framework).microseconds
     }
 
     #[view]
@@ -70,7 +70,7 @@ module aptos_framework::timestamp {
 
     #[test_only]
     public fun update_global_time_for_test(timestamp_microsecs: u64) acquires CurrentTimeMicroseconds {
-        let global_timer = borrow_global_mut<CurrentTimeMicroseconds>(@aptos_framework);
+        let global_timer = borrow_global_mut<CurrentTimeMicroseconds>(@starcoin_framework);
         let now = global_timer.microseconds;
         assert!(now < timestamp_microsecs, error::invalid_argument(EINVALID_TIMESTAMP));
         global_timer.microseconds = timestamp_microsecs;

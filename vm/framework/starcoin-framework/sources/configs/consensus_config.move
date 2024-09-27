@@ -1,16 +1,16 @@
 /// Maintains the consensus config for the blockchain. The config is stored in a
 /// Reconfiguration, and may be updated by root.
-module aptos_framework::consensus_config {
+module starcoin_framework::consensus_config {
     use std::error;
     use std::vector;
-    use aptos_framework::chain_status;
-    use aptos_framework::config_buffer;
+    use starcoin_framework::chain_status;
+    use starcoin_framework::config_buffer;
 
-    use aptos_framework::reconfiguration;
-    use aptos_framework::system_addresses;
+    use starcoin_framework::reconfiguration;
+    use starcoin_framework::system_addresses;
 
-    friend aptos_framework::genesis;
-    friend aptos_framework::reconfiguration_with_dkg;
+    friend starcoin_framework::genesis;
+    friend starcoin_framework::reconfiguration_with_dkg;
 
     struct ConsensusConfig has drop, key, store {
         config: vector<u8>,
@@ -20,10 +20,10 @@ module aptos_framework::consensus_config {
     const EINVALID_CONFIG: u64 = 1;
 
     /// Publishes the ConsensusConfig config.
-    public(friend) fun initialize(aptos_framework: &signer, config: vector<u8>) {
-        system_addresses::assert_aptos_framework(aptos_framework);
+    public(friend) fun initialize(starcoin_framework: &signer, config: vector<u8>) {
+        system_addresses::assert_aptos_framework(starcoin_framework);
         assert!(vector::length(&config) > 0, error::invalid_argument(EINVALID_CONFIG));
-        move_to(aptos_framework, ConsensusConfig { config });
+        move_to(starcoin_framework, ConsensusConfig { config });
     }
 
     /// Deprecated by `set_for_next_epoch()`.
@@ -36,7 +36,7 @@ module aptos_framework::consensus_config {
         chain_status::assert_genesis();
         assert!(vector::length(&config) > 0, error::invalid_argument(EINVALID_CONFIG));
 
-        let config_ref = &mut borrow_global_mut<ConsensusConfig>(@aptos_framework).config;
+        let config_ref = &mut borrow_global_mut<ConsensusConfig>(@starcoin_framework).config;
         *config_ref = config;
 
         // Need to trigger reconfiguration so validator nodes can sync on the updated configs.
@@ -46,8 +46,8 @@ module aptos_framework::consensus_config {
     /// This can be called by on-chain governance to update on-chain consensus configs for the next epoch.
     /// Example usage:
     /// ```
-    /// aptos_framework::consensus_config::set_for_next_epoch(&framework_signer, some_config_bytes);
-    /// aptos_framework::aptos_governance::reconfigure(&framework_signer);
+    /// starcoin_framework::consensus_config::set_for_next_epoch(&framework_signer, some_config_bytes);
+    /// starcoin_framework::aptos_governance::reconfigure(&framework_signer);
     /// ```
     public fun set_for_next_epoch(account: &signer, config: vector<u8>) {
         system_addresses::assert_aptos_framework(account);
@@ -60,8 +60,8 @@ module aptos_framework::consensus_config {
         system_addresses::assert_aptos_framework(framework);
         if (config_buffer::does_exist<ConsensusConfig>()) {
             let new_config = config_buffer::extract<ConsensusConfig>();
-            if (exists<ConsensusConfig>(@aptos_framework)) {
-                *borrow_global_mut<ConsensusConfig>(@aptos_framework) = new_config;
+            if (exists<ConsensusConfig>(@starcoin_framework)) {
+                *borrow_global_mut<ConsensusConfig>(@starcoin_framework) = new_config;
             } else {
                 move_to(framework, new_config);
             };
@@ -69,7 +69,7 @@ module aptos_framework::consensus_config {
     }
 
     public fun validator_txn_enabled(): bool acquires ConsensusConfig {
-        let config_bytes = borrow_global<ConsensusConfig>(@aptos_framework).config;
+        let config_bytes = borrow_global<ConsensusConfig>(@starcoin_framework).config;
         validator_txn_enabled_internal(config_bytes)
     }
 

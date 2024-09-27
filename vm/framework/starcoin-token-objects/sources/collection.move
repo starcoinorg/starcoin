@@ -22,9 +22,9 @@ module aptos_token_objects::collection {
     use std::option::{Self, Option};
     use std::signer;
     use std::string::{Self, String};
-    use aptos_framework::aggregator_v2::{Self, Aggregator, AggregatorSnapshot};
-    use aptos_framework::event;
-    use aptos_framework::object::{Self, ConstructorRef, ExtendRef, Object};
+    use starcoin_framework::aggregator_v2::{Self, Aggregator, AggregatorSnapshot};
+    use starcoin_framework::event;
+    use starcoin_framework::object::{Self, ConstructorRef, ExtendRef, Object};
 
     use aptos_token_objects::royalty::{Self, Royalty};
 
@@ -59,7 +59,7 @@ module aptos_token_objects::collection {
 
     const MAX_U64: u64 = 18446744073709551615;
 
-    #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
+    #[resource_group_member(group = starcoin_framework::object::ObjectGroup)]
     /// Represents the common fields for a collection.
     struct Collection has key {
         /// The creator of this collection.
@@ -96,7 +96,7 @@ module aptos_token_objects::collection {
         new_value: String,
     }
 
-    #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
+    #[resource_group_member(group = starcoin_framework::object::ObjectGroup)]
     /// Fixed supply tracker, this is useful for ensuring that a limited number of tokens are minted.
     /// and adding events and supply tracking to a collection.
     struct FixedSupply has key {
@@ -110,7 +110,7 @@ module aptos_token_objects::collection {
         mint_events: event::EventHandle<MintEvent>,
     }
 
-    #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
+    #[resource_group_member(group = starcoin_framework::object::ObjectGroup)]
     /// Unlimited supply tracker, this is useful for adding events and supply tracking to a collection.
     struct UnlimitedSupply has key {
         current_supply: u64,
@@ -121,7 +121,7 @@ module aptos_token_objects::collection {
         mint_events: event::EventHandle<MintEvent>,
     }
 
-    #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
+    #[resource_group_member(group = starcoin_framework::object::ObjectGroup)]
     /// Supply tracker, useful for tracking amount of issued tokens.
     /// If max_value is not set to U64_MAX, this ensures that a limited number of tokens are minted.
     struct ConcurrentSupply has key {
@@ -806,7 +806,7 @@ module aptos_token_objects::collection {
     }
 
     #[test(creator = @0x123, trader = @0x456)]
-    #[expected_failure(abort_code = 0x50003, location = aptos_framework::object)]
+    #[expected_failure(abort_code = 0x50003, location = starcoin_framework::object)]
     entry fun test_create_and_transfer(creator: &signer, trader: &signer) {
         let creator_address = signer::address_of(creator);
         let trader_address = signer::address_of(trader);
@@ -820,9 +820,9 @@ module aptos_token_objects::collection {
         object::transfer(creator, collection, trader_address);
     }
 
-    #[test(creator = @0x123, trader = @0x456, aptos_framework = @aptos_framework)]
-    entry fun test_create_and_transfer_as_owner(creator: &signer, trader: &signer, aptos_framework: &signer) {
-        features::change_feature_flags_for_testing(aptos_framework, vector[features::get_collection_owner_feature()], vector[]);
+    #[test(creator = @0x123, trader = @0x456, starcoin_framework = @starcoin_framework)]
+    entry fun test_create_and_transfer_as_owner(creator: &signer, trader: &signer, starcoin_framework: &signer) {
+        features::change_feature_flags_for_testing(starcoin_framework, vector[features::get_collection_owner_feature()], vector[]);
         let creator_address = signer::address_of(creator);
         let trader_address = signer::address_of(trader);
         let collection_name = string::utf8(b"collection name");
@@ -838,7 +838,7 @@ module aptos_token_objects::collection {
     }
 
     #[test(creator = @0x123)]
-    #[expected_failure(abort_code = 0x80001, location = aptos_framework::object)]
+    #[expected_failure(abort_code = 0x80001, location = starcoin_framework::object)]
     entry fun test_duplicate_collection(creator: &signer) {
         let collection_name = string::utf8(b"collection name");
         create_collection_helper(creator, collection_name);

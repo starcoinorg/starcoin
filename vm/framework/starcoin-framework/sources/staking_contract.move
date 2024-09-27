@@ -24,7 +24,7 @@
 /// pool.
 /// 7. Some time passes and the 55 coins become fully withdrawable from the stake pool. Due to accumulated rewards, the
 /// 55 coins become 70 coins. Calling distribute() distributes 6 coins to the operator and 64 coins to the validator.
-module aptos_framework::staking_contract {
+module starcoin_framework::staking_contract {
     use std::bcs;
     use std::error;
     use std::features;
@@ -34,15 +34,15 @@ module aptos_framework::staking_contract {
     use aptos_std::pool_u64::{Self, Pool};
     use aptos_std::simple_map::{Self, SimpleMap};
 
-    use aptos_framework::account::{Self, SignerCapability};
-    use aptos_framework::aptos_account;
-    use aptos_framework::aptos_coin::AptosCoin;
-    use aptos_framework::coin::{Self, Coin};
-    use aptos_framework::event::{EventHandle, emit, emit_event};
-    use aptos_framework::stake::{Self, OwnerCapability};
-    use aptos_framework::staking_config;
+    use starcoin_framework::account::{Self, SignerCapability};
+    use starcoin_framework::aptos_account;
+    use starcoin_framework::aptos_coin::AptosCoin;
+    use starcoin_framework::coin::{Self, Coin};
+    use starcoin_framework::event::{EventHandle, emit, emit_event};
+    use starcoin_framework::stake::{Self, OwnerCapability};
+    use starcoin_framework::staking_config;
 
-    const SALT: vector<u8> = b"aptos_framework::staking_contract";
+    const SALT: vector<u8> = b"starcoin_framework::staking_contract";
 
     /// Store amount must be at least the min stake required for a stake pool to join the validator set.
     const EINSUFFICIENT_STAKE_AMOUNT: u64 = 1;
@@ -117,7 +117,7 @@ module aptos_framework::staking_contract {
         new_commission_percentage: u64,
     }
 
-    #[resource_group_member(group = aptos_framework::staking_contract::StakingGroupContainer)]
+    #[resource_group_member(group = starcoin_framework::staking_contract::StakingGroupContainer)]
     struct StakingGroupUpdateCommissionEvent has key {
         update_commission_events: EventHandle<UpdateCommissionEvent>,
     }
@@ -953,7 +953,7 @@ module aptos_framework::staking_contract {
     const VALIDATOR_STATUS_INACTIVE: u64 = 4;
 
     #[test_only]
-    use aptos_framework::stake::with_rewards;
+    use starcoin_framework::stake::with_rewards;
 
     #[test_only]
     const INITIAL_BALANCE: u64 = 100000000000000; // 1M APT coins with 8 decimals.
@@ -968,10 +968,10 @@ module aptos_framework::staking_contract {
     const OPERATOR_BENEFICIARY_CHANGE: u64 = 39;
 
     #[test_only]
-    public fun setup(aptos_framework: &signer, staker: &signer, operator: &signer, initial_balance: u64) {
+    public fun setup(starcoin_framework: &signer, staker: &signer, operator: &signer, initial_balance: u64) {
         // Reward rate of 0.1% per epoch.
         stake::initialize_for_test_custom(
-            aptos_framework,
+            starcoin_framework,
             INITIAL_BALANCE,
             MAXIMUM_STAKE,
             3600,
@@ -995,27 +995,27 @@ module aptos_framework::staking_contract {
 
     #[test_only]
     public fun setup_staking_contract(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         staker: &signer,
         operator: &signer,
         amount: u64,
         commission: u64,
     ) acquires Store {
-        setup(aptos_framework, staker, operator, amount);
+        setup(starcoin_framework, staker, operator, amount);
         let operator_address = signer::address_of(operator);
 
         // Voter is initially set to operator but then updated to be staker.
         create_staking_contract(staker, operator_address, operator_address, amount, commission, vector::empty<u8>());
-        std::features::change_feature_flags_for_testing(aptos_framework, vector[MODULE_EVENT, OPERATOR_BENEFICIARY_CHANGE], vector[]);
+        std::features::change_feature_flags_for_testing(starcoin_framework, vector[MODULE_EVENT, OPERATOR_BENEFICIARY_CHANGE], vector[]);
     }
 
-    #[test(aptos_framework = @0x1, staker = @0x123, operator = @0x234)]
+    #[test(starcoin_framework = @0x1, staker = @0x123, operator = @0x234)]
     public entry fun test_end_to_end(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         staker: &signer,
         operator: &signer
     ) acquires Store, BeneficiaryForOperator {
-        setup_staking_contract(aptos_framework, staker, operator, INITIAL_BALANCE, 10);
+        setup_staking_contract(starcoin_framework, staker, operator, INITIAL_BALANCE, 10);
         let staker_address = signer::address_of(staker);
         let operator_address = signer::address_of(operator);
         assert_staking_contract_exists(staker_address, operator_address);
@@ -1115,10 +1115,10 @@ module aptos_framework::staking_contract {
         assert_no_pending_distributions(staker_address, operator_address);
     }
 
-    #[test(aptos_framework = @0x1, staker = @0x123, operator = @0x234)]
+    #[test(starcoin_framework = @0x1, staker = @0x123, operator = @0x234)]
     public entry fun test_operator_cannot_request_same_commission_multiple_times(
-        aptos_framework: &signer, staker: &signer, operator: &signer) acquires Store, BeneficiaryForOperator {
-        setup_staking_contract(aptos_framework, staker, operator, INITIAL_BALANCE, 10);
+        starcoin_framework: &signer, staker: &signer, operator: &signer) acquires Store, BeneficiaryForOperator {
+        setup_staking_contract(starcoin_framework, staker, operator, INITIAL_BALANCE, 10);
         let staker_address = signer::address_of(staker);
         let operator_address = signer::address_of(operator);
         let pool_address = stake_pool_address(staker_address, operator_address);
@@ -1143,10 +1143,10 @@ module aptos_framework::staking_contract {
         assert_distribution(staker_address, operator_address, operator_address, expected_commission);
     }
 
-    #[test(aptos_framework = @0x1, staker = @0x123, operator = @0x234)]
+    #[test(starcoin_framework = @0x1, staker = @0x123, operator = @0x234)]
     public entry fun test_unlock_rewards(
-        aptos_framework: &signer, staker: &signer, operator: &signer) acquires Store, BeneficiaryForOperator {
-        setup_staking_contract(aptos_framework, staker, operator, INITIAL_BALANCE, 10);
+        starcoin_framework: &signer, staker: &signer, operator: &signer) acquires Store, BeneficiaryForOperator {
+        setup_staking_contract(starcoin_framework, staker, operator, INITIAL_BALANCE, 10);
         let staker_address = signer::address_of(staker);
         let operator_address = signer::address_of(operator);
         let pool_address = stake_pool_address(staker_address, operator_address);
@@ -1170,46 +1170,46 @@ module aptos_framework::staking_contract {
         assert_distribution(staker_address, operator_address, operator_address, expected_commission);
     }
 
-    #[test(aptos_framework = @0x1, staker = @0x123, operator = @0x234)]
+    #[test(starcoin_framework = @0x1, staker = @0x123, operator = @0x234)]
     #[expected_failure(abort_code = 0x80006, location = Self)]
     public entry fun test_staker_cannot_create_same_staking_contract_multiple_times(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         staker: &signer,
         operator: &signer,
     ) acquires Store {
-        setup_staking_contract(aptos_framework, staker, operator, INITIAL_BALANCE, 10);
+        setup_staking_contract(starcoin_framework, staker, operator, INITIAL_BALANCE, 10);
         let operator_address = signer::address_of(operator);
         stake::mint(staker, INITIAL_BALANCE);
         create_staking_contract(staker, operator_address, operator_address, INITIAL_BALANCE, 10, vector::empty<u8>());
     }
 
-    #[test(aptos_framework = @0x1, staker = @0x123, operator = @0x234)]
+    #[test(starcoin_framework = @0x1, staker = @0x123, operator = @0x234)]
     #[expected_failure(abort_code = 0x10002, location = Self)]
     public entry fun test_staker_cannot_create_staking_contract_with_invalid_commission(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         staker: &signer,
         operator: &signer,
     ) acquires Store {
-        setup_staking_contract(aptos_framework, staker, operator, INITIAL_BALANCE, 101);
+        setup_staking_contract(starcoin_framework, staker, operator, INITIAL_BALANCE, 101);
     }
 
-    #[test(aptos_framework = @0x1, staker = @0x123, operator = @0x234)]
+    #[test(starcoin_framework = @0x1, staker = @0x123, operator = @0x234)]
     #[expected_failure(abort_code = 0x10001, location = Self)]
     public entry fun test_staker_cannot_create_staking_contract_with_less_than_min_stake_required(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         staker: &signer,
         operator: &signer,
     ) acquires Store {
-        setup_staking_contract(aptos_framework, staker, operator, 50, 100);
+        setup_staking_contract(starcoin_framework, staker, operator, 50, 100);
     }
 
-    #[test(aptos_framework = @0x1, staker = @0x123, operator = @0x234)]
+    #[test(starcoin_framework = @0x1, staker = @0x123, operator = @0x234)]
     public entry fun test_update_voter(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         staker: &signer,
         operator: &signer,
     ) acquires Store {
-        setup_staking_contract(aptos_framework, staker, operator, INITIAL_BALANCE, 10);
+        setup_staking_contract(starcoin_framework, staker, operator, INITIAL_BALANCE, 10);
         let staker_address = signer::address_of(staker);
         let operator_address = signer::address_of(operator);
 
@@ -1220,13 +1220,13 @@ module aptos_framework::staking_contract {
         assert!(stake::get_delegated_voter(pool_address) == staker_address, 1);
     }
 
-    #[test(aptos_framework = @0x1, staker = @0x123, operator = @0x234)]
+    #[test(starcoin_framework = @0x1, staker = @0x123, operator = @0x234)]
     public entry fun test_reset_lockup(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         staker: &signer,
         operator: &signer,
     ) acquires Store {
-        setup_staking_contract(aptos_framework, staker, operator, INITIAL_BALANCE, 10);
+        setup_staking_contract(starcoin_framework, staker, operator, INITIAL_BALANCE, 10);
         let staker_address = signer::address_of(staker);
         let operator_address = signer::address_of(operator);
         let pool_address = stake_pool_address(staker_address, operator_address);
@@ -1236,14 +1236,14 @@ module aptos_framework::staking_contract {
         assert!(origin_lockup_expiration < stake::get_lockup_secs(pool_address), 0);
     }
 
-    #[test(aptos_framework = @0x1, staker = @0x123, operator_1 = @0x234, operator_2 = @0x345)]
+    #[test(starcoin_framework = @0x1, staker = @0x123, operator_1 = @0x234, operator_2 = @0x345)]
     public entry fun test_staker_can_switch_operator(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         staker: &signer,
         operator_1: &signer,
         operator_2: &signer,
     ) acquires Store, BeneficiaryForOperator {
-        setup_staking_contract(aptos_framework, staker, operator_1, INITIAL_BALANCE, 10);
+        setup_staking_contract(starcoin_framework, staker, operator_1, INITIAL_BALANCE, 10);
         account::create_account_for_test(signer::address_of(operator_2));
         stake::mint(operator_2, INITIAL_BALANCE);
         let staker_address = signer::address_of(staker);
@@ -1313,14 +1313,14 @@ module aptos_framework::staking_contract {
         );
     }
 
-    #[test(aptos_framework = @0x1, staker = @0x123, operator_1 = @0x234, operator_2 = @0x345)]
+    #[test(starcoin_framework = @0x1, staker = @0x123, operator_1 = @0x234, operator_2 = @0x345)]
     public entry fun test_staker_can_switch_operator_with_same_commission(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         staker: &signer,
         operator_1: &signer,
         operator_2: &signer,
     ) acquires Store, BeneficiaryForOperator {
-        setup_staking_contract(aptos_framework, staker, operator_1, INITIAL_BALANCE, 10);
+        setup_staking_contract(starcoin_framework, staker, operator_1, INITIAL_BALANCE, 10);
         let staker_address = signer::address_of(staker);
         let operator_1_address = signer::address_of(operator_1);
         let operator_2_address = signer::address_of(operator_2);
@@ -1333,22 +1333,22 @@ module aptos_framework::staking_contract {
         assert!(commission_percentage(staker_address, operator_2_address) == 10, 2);
     }
 
-    #[test(aptos_framework = @0x1, staker = @0x123, operator1 = @0x234, beneficiary = @0x345, operator2 = @0x456)]
+    #[test(starcoin_framework = @0x1, staker = @0x123, operator1 = @0x234, beneficiary = @0x345, operator2 = @0x456)]
     public entry fun test_operator_can_set_beneficiary(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         staker: &signer,
         operator1: &signer,
         beneficiary: &signer,
         operator2: &signer,
     ) acquires Store, BeneficiaryForOperator {
-        setup_staking_contract(aptos_framework, staker, operator1, INITIAL_BALANCE, 10);
+        setup_staking_contract(starcoin_framework, staker, operator1, INITIAL_BALANCE, 10);
         let staker_address = signer::address_of(staker);
         let operator1_address = signer::address_of(operator1);
         let operator2_address = signer::address_of(operator2);
         let beneficiary_address = signer::address_of(beneficiary);
 
         // account::create_account_for_test(beneficiary_address);
-        aptos_framework::aptos_account::create_account(beneficiary_address);
+        starcoin_framework::aptos_account::create_account(beneficiary_address);
         assert_staking_contract_exists(staker_address, operator1_address);
         assert_staking_contract(staker_address, operator1_address, INITIAL_BALANCE, 10);
 
@@ -1419,11 +1419,11 @@ module aptos_framework::staking_contract {
         assert!(coin::balance<AptosCoin>(beneficiary_address) == old_beneficiay_balance, 1);
     }
 
-    #[test(aptos_framework = @0x1, staker = @0x123, operator = @0x234)]
+    #[test(starcoin_framework = @0x1, staker = @0x123, operator = @0x234)]
     public entry fun test_staker_can_withdraw_partial_stake(
-        aptos_framework: &signer, staker: &signer, operator: &signer) acquires Store, BeneficiaryForOperator {
+        starcoin_framework: &signer, staker: &signer, operator: &signer) acquires Store, BeneficiaryForOperator {
         let initial_balance = INITIAL_BALANCE * 2;
-        setup_staking_contract(aptos_framework, staker, operator, initial_balance, 10);
+        setup_staking_contract(starcoin_framework, staker, operator, initial_balance, 10);
         let staker_address = signer::address_of(staker);
         let operator_address = signer::address_of(operator);
         let pool_address = stake_pool_address(staker_address, operator_address);
@@ -1469,11 +1469,11 @@ module aptos_framework::staking_contract {
         assert!(staker_balance == withdrawn_stake, staker_balance);
     }
 
-    #[test(aptos_framework = @0x1, staker = @0x123, operator = @0x234)]
+    #[test(starcoin_framework = @0x1, staker = @0x123, operator = @0x234)]
     public entry fun test_staker_can_withdraw_partial_stake_if_operator_never_joined_validator_set(
-        aptos_framework: &signer, staker: &signer, operator: &signer) acquires Store, BeneficiaryForOperator {
+        starcoin_framework: &signer, staker: &signer, operator: &signer) acquires Store, BeneficiaryForOperator {
         let initial_balance = INITIAL_BALANCE * 2;
-        setup_staking_contract(aptos_framework, staker, operator, initial_balance, 10);
+        setup_staking_contract(starcoin_framework, staker, operator, initial_balance, 10);
         let staker_address = signer::address_of(staker);
         let operator_address = signer::address_of(operator);
         let pool_address = stake_pool_address(staker_address, operator_address);
@@ -1502,11 +1502,11 @@ module aptos_framework::staking_contract {
         assert!(staker_balance == withdrawn_stake, staker_balance);
     }
 
-    #[test(aptos_framework = @0x1, staker = @0x123, operator = @0x234)]
+    #[test(starcoin_framework = @0x1, staker = @0x123, operator = @0x234)]
     public entry fun test_multiple_distributions_added_before_distribute(
-        aptos_framework: &signer, staker: &signer, operator: &signer) acquires Store, BeneficiaryForOperator {
+        starcoin_framework: &signer, staker: &signer, operator: &signer) acquires Store, BeneficiaryForOperator {
         let initial_balance = INITIAL_BALANCE * 2;
-        setup_staking_contract(aptos_framework, staker, operator, initial_balance, 10);
+        setup_staking_contract(starcoin_framework, staker, operator, initial_balance, 10);
         let staker_address = signer::address_of(staker);
         let operator_address = signer::address_of(operator);
         let pool_address = stake_pool_address(staker_address, operator_address);
@@ -1549,14 +1549,14 @@ module aptos_framework::staking_contract {
         assert!(last_recorded_principal(staker_address, operator_address) == new_balance, 0);
     }
 
-    #[test(aptos_framework = @0x1, staker = @0x123, operator = @0x234)]
+    #[test(starcoin_framework = @0x1, staker = @0x123, operator = @0x234)]
     public entry fun test_update_commission(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         staker: &signer,
         operator: &signer
     ) acquires Store, BeneficiaryForOperator, StakingGroupUpdateCommissionEvent {
         let initial_balance = INITIAL_BALANCE * 2;
-        setup_staking_contract(aptos_framework, staker, operator, initial_balance, 10);
+        setup_staking_contract(starcoin_framework, staker, operator, initial_balance, 10);
         let staker_address = signer::address_of(staker);
         let operator_address = signer::address_of(operator);
         let pool_address = stake_pool_address(staker_address, operator_address);

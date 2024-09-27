@@ -1,14 +1,14 @@
 /// This module provides an interface to aggregate integers either via
 /// aggregator (parallelizable) or via normal integers.
-module aptos_framework::optional_aggregator {
+module starcoin_framework::optional_aggregator {
     use std::error;
     use std::option::{Self, Option};
 
-    use aptos_framework::aggregator_factory;
-    use aptos_framework::aggregator::{Self, Aggregator};
+    use starcoin_framework::aggregator_factory;
+    use starcoin_framework::aggregator::{Self, Aggregator};
 
-    friend aptos_framework::coin;
-    friend aptos_framework::fungible_asset;
+    friend starcoin_framework::coin;
+    friend starcoin_framework::fungible_asset;
 
     /// The value of aggregator underflows (goes below zero). Raised by native code.
     const EAGGREGATOR_OVERFLOW: u64 = 1;
@@ -191,7 +191,7 @@ module aptos_framework::optional_aggregator {
         option::is_some(&optional_aggregator.aggregator)
     }
 
-    #[test(account = @aptos_framework)]
+    #[test(account = @starcoin_framework)]
     fun optional_aggregator_test(account: signer) {
         aggregator_factory::initialize_aggregator_factory(&account);
 
@@ -225,7 +225,7 @@ module aptos_framework::optional_aggregator {
         destroy(aggregator);
     }
 
-    #[test(account = @aptos_framework)]
+    #[test(account = @starcoin_framework)]
     fun optional_aggregator_destroy_test(account: signer) {
         aggregator_factory::initialize_aggregator_factory(&account);
 
@@ -242,7 +242,7 @@ module aptos_framework::optional_aggregator {
         assert!(destroy_optional_aggregator(aggregator) == 21, 0);
     }
 
-    #[test(account = @aptos_framework)]
+    #[test(account = @starcoin_framework)]
     #[expected_failure(abort_code = 0x020001, location = Self)]
     fun non_parallelizable_aggregator_overflow_test(account: signer) {
         aggregator_factory::initialize_aggregator_factory(&account);
@@ -254,7 +254,7 @@ module aptos_framework::optional_aggregator {
         destroy(aggregator);
     }
 
-    #[test(account = @aptos_framework)]
+    #[test(account = @starcoin_framework)]
     #[expected_failure(abort_code = 0x020002, location = Self)]
     fun non_parallelizable_aggregator_underflow_test(account: signer) {
         aggregator_factory::initialize_aggregator_factory(&account);
@@ -267,8 +267,8 @@ module aptos_framework::optional_aggregator {
         destroy(aggregator);
     }
 
-    #[test(account = @aptos_framework)]
-    #[expected_failure(abort_code = 0x020001, location = aptos_framework::aggregator)]
+    #[test(account = @starcoin_framework)]
+    #[expected_failure(abort_code = 0x020001, location = starcoin_framework::aggregator)]
     fun parallelizable_aggregator_overflow_test(account: signer) {
         aggregator_factory::initialize_aggregator_factory(&account);
         let aggregator = new(15, true);
@@ -279,8 +279,8 @@ module aptos_framework::optional_aggregator {
         destroy(aggregator);
     }
 
-    #[test(account = @aptos_framework)]
-    #[expected_failure(abort_code = 0x020002, location = aptos_framework::aggregator)]
+    #[test(account = @starcoin_framework)]
+    #[expected_failure(abort_code = 0x020002, location = starcoin_framework::aggregator)]
     fun parallelizable_aggregator_underflow_test(account: signer) {
         aggregator_factory::initialize_aggregator_factory(&account);
         let aggregator = new(100, true);

@@ -1,4 +1,4 @@
-spec aptos_framework::guid {
+spec starcoin_framework::guid {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: The creation of GUID constructs a unique GUID by combining an address with an incremented creation

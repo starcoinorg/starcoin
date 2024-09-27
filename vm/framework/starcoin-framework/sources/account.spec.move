@@ -1,11 +1,11 @@
-spec aptos_framework::account {
+spec starcoin_framework::account {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: The initialization of the account module should result in the proper system initialization with valid
     /// and consistent resources.
     /// Criticality: High
     /// Implementation: Initialization of the account module creates a valid address_map table and moves the resources
-    /// to the OriginatingAddress under the aptos_framework account.
+    /// to the OriginatingAddress under the starcoin_framework account.
     /// Enforcement: Audited that the address_map table is created and populated correctly with the expected initial
     /// values.
     ///
@@ -109,10 +109,10 @@ spec aptos_framework::account {
         pragma aborts_if_is_strict;
     }
 
-    /// Only the address `@aptos_framework` can call.
-    /// OriginatingAddress does not exist under `@aptos_framework` before the call.
-    spec initialize(aptos_framework: &signer) {
-        let aptos_addr = signer::address_of(aptos_framework);
+    /// Only the address `@starcoin_framework` can call.
+    /// OriginatingAddress does not exist under `@starcoin_framework` before the call.
+    spec initialize(starcoin_framework: &signer) {
+        let aptos_addr = signer::address_of(starcoin_framework);
         aborts_if !system_addresses::is_aptos_framework_address(aptos_addr);
         aborts_if exists<OriginatingAddress>(aptos_addr);
         ensures exists<OriginatingAddress>(aptos_addr);
@@ -124,7 +124,7 @@ spec aptos_framework::account {
 
         aborts_if !exists<Account>(account_address) && (
             account_address == @vm_reserved
-            || account_address == @aptos_framework
+            || account_address == @starcoin_framework
             || account_address == @aptos_token
             || !(len(authentication_key) == 32)
         );
@@ -134,10 +134,10 @@ spec aptos_framework::account {
 
     /// Check if the bytes of the new address is 32.
     /// The Account does not exist under the new address before creating the account.
-    /// Limit the new account address is not @vm_reserved / @aptos_framework / @aptos_toke.
+    /// Limit the new account address is not @vm_reserved / @starcoin_framework / @aptos_toke.
     spec create_account(new_address: address): signer {
         include CreateAccountAbortsIf {addr: new_address};
-        aborts_if new_address == @vm_reserved || new_address == @aptos_framework || new_address == @aptos_token;
+        aborts_if new_address == @vm_reserved || new_address == @starcoin_framework || new_address == @aptos_token;
         ensures signer::address_of(result) == new_address;
         /// [high-level-req-2]
         ensures exists<Account>(new_address);
@@ -303,10 +303,10 @@ spec aptos_framework::account {
         let originating_addr = addr;
         let new_auth_key_vector = spec_assert_valid_rotation_proof_signature_and_get_auth_key(to_scheme, to_public_key_bytes, cap_update_table, challenge);
 
-        let address_map = global<OriginatingAddress>(@aptos_framework).address_map;
+        let address_map = global<OriginatingAddress>(@starcoin_framework).address_map;
         let new_auth_key = from_bcs::deserialize<address>(new_auth_key_vector);
 
-        aborts_if !exists<OriginatingAddress>(@aptos_framework);
+        aborts_if !exists<OriginatingAddress>(@starcoin_framework);
         aborts_if !from_bcs::deserializable<address>(account_resource.authentication_key);
         aborts_if table::spec_contains(address_map, curr_auth_key) &&
             table::spec_get(address_map, curr_auth_key) != originating_addr;
@@ -354,10 +354,10 @@ spec aptos_framework::account {
         };
 
         let new_auth_key_vector = spec_assert_valid_rotation_proof_signature_and_get_auth_key(new_scheme, new_public_key_bytes, cap_update_table, challenge);
-        let address_map = global<OriginatingAddress>(@aptos_framework).address_map;
+        let address_map = global<OriginatingAddress>(@starcoin_framework).address_map;
 
         // Verify all properties in update_auth_key_and_originating_address_table
-        aborts_if !exists<OriginatingAddress>(@aptos_framework);
+        aborts_if !exists<OriginatingAddress>(@starcoin_framework);
         aborts_if !from_bcs::deserializable<address>(offerer_account_resource.authentication_key);
         aborts_if table::spec_contains(address_map, curr_auth_key) &&
             table::spec_get(address_map, curr_auth_key) != rotation_cap_offerer_address;
@@ -385,13 +385,13 @@ spec aptos_framework::account {
         let source_address = signer::address_of(account);
         let account_resource = global<Account>(source_address);
         let proof_challenge = RotationCapabilityOfferProofChallengeV2 {
-            chain_id: global<chain_id::ChainId>(@aptos_framework).id,
+            chain_id: global<chain_id::ChainId>(@starcoin_framework).id,
             sequence_number: account_resource.sequence_number,
             source_address,
             recipient_address,
         };
 
-        aborts_if !exists<chain_id::ChainId>(@aptos_framework);
+        aborts_if !exists<chain_id::ChainId>(@starcoin_framework);
         aborts_if !exists<Account>(recipient_address);
         aborts_if !exists<Account>(source_address);
 
@@ -665,24 +665,24 @@ spec aptos_framework::account {
         account_resource: &mut Account,
         new_auth_key_vector: vector<u8>,
     ) {
-        modifies global<OriginatingAddress>(@aptos_framework);
+        modifies global<OriginatingAddress>(@starcoin_framework);
         include UpdateAuthKeyAndOriginatingAddressTableAbortsIf;
     }
     spec schema UpdateAuthKeyAndOriginatingAddressTableAbortsIf {
         originating_addr: address;
         account_resource: Account;
         new_auth_key_vector: vector<u8>;
-        let address_map = global<OriginatingAddress>(@aptos_framework).address_map;
+        let address_map = global<OriginatingAddress>(@starcoin_framework).address_map;
         let curr_auth_key = from_bcs::deserialize<address>(account_resource.authentication_key);
         let new_auth_key = from_bcs::deserialize<address>(new_auth_key_vector);
-        aborts_if !exists<OriginatingAddress>(@aptos_framework);
+        aborts_if !exists<OriginatingAddress>(@starcoin_framework);
         aborts_if !from_bcs::deserializable<address>(account_resource.authentication_key);
         aborts_if table::spec_contains(address_map, curr_auth_key) &&
             table::spec_get(address_map, curr_auth_key) != originating_addr;
         aborts_if !from_bcs::deserializable<address>(new_auth_key_vector);
         aborts_if curr_auth_key != new_auth_key && table::spec_contains(address_map, new_auth_key);
 
-        ensures table::spec_contains(global<OriginatingAddress>(@aptos_framework).address_map, from_bcs::deserialize<address>(new_auth_key_vector));
+        ensures table::spec_contains(global<OriginatingAddress>(@starcoin_framework).address_map, from_bcs::deserialize<address>(new_auth_key_vector));
     }
 
     spec verify_signed_message<T: drop>(

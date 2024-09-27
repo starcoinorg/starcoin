@@ -1,27 +1,27 @@
-module aptos_framework::account {
+module starcoin_framework::account {
     use std::bcs;
     use std::error;
     use std::hash;
     use std::option::{Self, Option};
     use std::signer;
     use std::vector;
-    use aptos_framework::chain_id;
-    use aptos_framework::create_signer::create_signer;
-    use aptos_framework::event::{Self, EventHandle};
-    use aptos_framework::guid;
-    use aptos_framework::system_addresses;
+    use starcoin_framework::chain_id;
+    use starcoin_framework::create_signer::create_signer;
+    use starcoin_framework::event::{Self, EventHandle};
+    use starcoin_framework::guid;
+    use starcoin_framework::system_addresses;
     use aptos_std::ed25519;
     use aptos_std::from_bcs;
     use aptos_std::multi_ed25519;
     use aptos_std::table::{Self, Table};
     use aptos_std::type_info::{Self, TypeInfo};
 
-    friend aptos_framework::aptos_account;
-    friend aptos_framework::coin;
-    friend aptos_framework::genesis;
-    friend aptos_framework::multisig_account;
-    friend aptos_framework::resource_account;
-    friend aptos_framework::transaction_validation;
+    friend starcoin_framework::aptos_account;
+    friend starcoin_framework::coin;
+    friend starcoin_framework::genesis;
+    friend starcoin_framework::multisig_account;
+    friend starcoin_framework::resource_account;
+    friend starcoin_framework::transaction_validation;
 
     #[event]
     struct KeyRotation has drop, store {
@@ -178,9 +178,9 @@ module aptos_framework::account {
     public fun create_signer_for_test(addr: address): signer { create_signer(addr) }
 
     /// Only called during genesis to initialize system resources for this module.
-    public(friend) fun initialize(aptos_framework: &signer) {
-        system_addresses::assert_aptos_framework(aptos_framework);
-        move_to(aptos_framework, OriginatingAddress {
+    public(friend) fun initialize(starcoin_framework: &signer) {
+        system_addresses::assert_aptos_framework(starcoin_framework);
+        move_to(starcoin_framework, OriginatingAddress {
             address_map: table::new(),
         });
     }
@@ -200,7 +200,7 @@ module aptos_framework::account {
 
         // NOTE: @core_resources gets created via a `create_account` call, so we do not include it below.
         assert!(
-            new_address != @vm_reserved && new_address != @aptos_framework && new_address != @aptos_token,
+            new_address != @vm_reserved && new_address != @starcoin_framework && new_address != @aptos_token,
             error::invalid_argument(ECANNOT_RESERVED_ADDRESS)
         );
 
@@ -654,7 +654,7 @@ module aptos_framework::account {
         account_resource: &mut Account,
         new_auth_key_vector: vector<u8>,
     ) acquires OriginatingAddress {
-        let address_map = &mut borrow_global_mut<OriginatingAddress>(@aptos_framework).address_map;
+        let address_map = &mut borrow_global_mut<OriginatingAddress>(@starcoin_framework).address_map;
         let curr_auth_key = from_bcs::to_address(account_resource.authentication_key);
 
         // Checks `OriginatingAddress[curr_auth_key]` is either unmapped, or mapped to `originating_address`.
@@ -888,7 +888,7 @@ module aptos_framework::account {
     #[test]
     /// Assert correct signer creation.
     fun test_create_signer_for_test() {
-        assert!(signer::address_of(&create_signer_for_test(@aptos_framework)) == @0x1, 0);
+        assert!(signer::address_of(&create_signer_for_test(@starcoin_framework)) == @0x1, 0);
         assert!(signer::address_of(&create_signer_for_test(@0x123)) == @0x123, 0);
     }
 
@@ -1042,7 +1042,7 @@ module aptos_framework::account {
     ///////////////////////////////////////////////////////////////////////////
 
     #[test(alice = @0xa11ce)]
-    #[expected_failure(abort_code = 65537, location = aptos_framework::ed25519)]
+    #[expected_failure(abort_code = 65537, location = starcoin_framework::ed25519)]
     public entry fun test_empty_public_key(alice: signer) acquires Account, OriginatingAddress {
         create_account(signer::address_of(&alice));
         let pk = vector::empty<u8>();
@@ -1260,7 +1260,7 @@ module aptos_framework::account {
     //
     // Tests for offering rotation capabilities
     //
-    #[test(bob = @0x345, framework = @aptos_framework)]
+    #[test(bob = @0x345, framework = @starcoin_framework)]
     public entry fun test_valid_offer_rotation_capability(bob: signer, framework: signer) acquires Account {
         chain_id::initialize_for_test(&framework, 4);
         let (alice_sk, alice_pk) = ed25519::generate_keys();
@@ -1292,7 +1292,7 @@ module aptos_framework::account {
         assert!(option::contains(&alice_resource.rotation_capability_offer.for, &bob_addr), 0);
     }
 
-    #[test(bob = @0x345, framework = @aptos_framework)]
+    #[test(bob = @0x345, framework = @starcoin_framework)]
     #[expected_failure(abort_code = 65544, location = Self)]
     public entry fun test_invalid_offer_rotation_capability(bob: signer, framework: signer) acquires Account {
         chain_id::initialize_for_test(&framework, 4);
@@ -1323,7 +1323,7 @@ module aptos_framework::account {
         );
     }
 
-    #[test(bob = @0x345, framework = @aptos_framework)]
+    #[test(bob = @0x345, framework = @starcoin_framework)]
     public entry fun test_valid_revoke_rotation_capability(bob: signer, framework: signer) acquires Account {
         chain_id::initialize_for_test(&framework, 4);
         let (alice_sk, alice_pk) = ed25519::generate_keys();
@@ -1353,7 +1353,7 @@ module aptos_framework::account {
         revoke_rotation_capability(&alice, signer::address_of(&bob));
     }
 
-    #[test(bob = @0x345, charlie = @0x567, framework = @aptos_framework)]
+    #[test(bob = @0x345, charlie = @0x567, framework = @starcoin_framework)]
     #[expected_failure(abort_code = 393234, location = Self)]
     public entry fun test_invalid_revoke_rotation_capability(
         bob: signer,
@@ -1393,7 +1393,7 @@ module aptos_framework::account {
     // Tests for key rotation
     //
 
-    #[test(account = @aptos_framework)]
+    #[test(account = @starcoin_framework)]
     public entry fun test_valid_rotate_authentication_key_multi_ed25519_to_multi_ed25519(
         account: signer
     ) acquires Account, OriginatingAddress {
@@ -1428,13 +1428,13 @@ module aptos_framework::account {
             multi_ed25519::signature_to_bytes(&from_sig),
             multi_ed25519::signature_to_bytes(&to_sig),
         );
-        let address_map = &mut borrow_global_mut<OriginatingAddress>(@aptos_framework).address_map;
+        let address_map = &mut borrow_global_mut<OriginatingAddress>(@starcoin_framework).address_map;
         let expected_originating_address = table::borrow(address_map, new_address);
         assert!(*expected_originating_address == alice_addr, 0);
         assert!(borrow_global<Account>(alice_addr).authentication_key == new_auth_key, 0);
     }
 
-    #[test(account = @aptos_framework)]
+    #[test(account = @starcoin_framework)]
     public entry fun test_valid_rotate_authentication_key_multi_ed25519_to_ed25519(
         account: signer
     ) acquires Account, OriginatingAddress {
@@ -1473,14 +1473,14 @@ module aptos_framework::account {
             ed25519::signature_to_bytes(&to_sig),
         );
 
-        let address_map = &mut borrow_global_mut<OriginatingAddress>(@aptos_framework).address_map;
+        let address_map = &mut borrow_global_mut<OriginatingAddress>(@starcoin_framework).address_map;
         let expected_originating_address = table::borrow(address_map, new_addr);
         assert!(*expected_originating_address == alice_addr, 0);
         assert!(borrow_global<Account>(alice_addr).authentication_key == new_auth_key, 0);
     }
 
 
-    #[test(account = @aptos_framework)]
+    #[test(account = @starcoin_framework)]
     public entry fun test_simple_rotation(account: &signer) acquires Account {
         initialize(account);
 
@@ -1497,7 +1497,7 @@ module aptos_framework::account {
     }
 
 
-    #[test(account = @aptos_framework)]
+    #[test(account = @starcoin_framework)]
     #[expected_failure(abort_code = 0x20014, location = Self)]
     public entry fun test_max_guid(account: &signer) acquires Account {
         let addr = signer::address_of(account);

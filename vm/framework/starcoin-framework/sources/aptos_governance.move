@@ -9,7 +9,7 @@
 /// track proposal creation and proposal ids.
 /// 2. Voters can vote on a proposal. Their voting power is derived from the backing stake pool. A stake pool can vote
 /// on a proposal multiple times as long as the total voting power of these votes doesn't exceed its total voting power.
-module aptos_framework::aptos_governance {
+module starcoin_framework::aptos_governance {
     use std::error;
     use std::option;
     use std::signer;
@@ -22,19 +22,19 @@ module aptos_framework::aptos_governance {
     use aptos_std::smart_table::{Self, SmartTable};
     use aptos_std::table::{Self, Table};
 
-    use aptos_framework::account::{Self, SignerCapability, create_signer_with_capability};
-    use aptos_framework::coin;
-    use aptos_framework::event::{Self, EventHandle};
-    use aptos_framework::governance_proposal::{Self, GovernanceProposal};
-    use aptos_framework::stake;
-    use aptos_framework::staking_config;
-    use aptos_framework::system_addresses;
-    use aptos_framework::aptos_coin::{Self, AptosCoin};
-    use aptos_framework::consensus_config;
-    use aptos_framework::randomness_config;
-    use aptos_framework::reconfiguration_with_dkg;
-    use aptos_framework::timestamp;
-    use aptos_framework::voting;
+    use starcoin_framework::account::{Self, SignerCapability, create_signer_with_capability};
+    use starcoin_framework::coin;
+    use starcoin_framework::event::{Self, EventHandle};
+    use starcoin_framework::governance_proposal::{Self, GovernanceProposal};
+    use starcoin_framework::stake;
+    use starcoin_framework::staking_config;
+    use starcoin_framework::system_addresses;
+    use starcoin_framework::aptos_coin::{Self, AptosCoin};
+    use starcoin_framework::consensus_config;
+    use starcoin_framework::randomness_config;
+    use starcoin_framework::reconfiguration_with_dkg;
+    use starcoin_framework::timestamp;
+    use starcoin_framework::voting;
 
     /// The specified stake pool does not have sufficient stake to create a proposal
     const EINSUFFICIENT_PROPOSER_STAKE: u64 = 1;
@@ -169,50 +169,50 @@ module aptos_framework::aptos_governance {
     /// Can be called during genesis or by the governance itself.
     /// Stores the signer capability for a given address.
     public fun store_signer_cap(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         signer_address: address,
         signer_cap: SignerCapability,
     ) acquires GovernanceResponsbility {
-        system_addresses::assert_aptos_framework(aptos_framework);
+        system_addresses::assert_aptos_framework(starcoin_framework);
         system_addresses::assert_framework_reserved(signer_address);
 
-        if (!exists<GovernanceResponsbility>(@aptos_framework)) {
+        if (!exists<GovernanceResponsbility>(@starcoin_framework)) {
             move_to(
-                aptos_framework,
+                starcoin_framework,
                 GovernanceResponsbility { signer_caps: simple_map::create<address, SignerCapability>() }
             );
         };
 
-        let signer_caps = &mut borrow_global_mut<GovernanceResponsbility>(@aptos_framework).signer_caps;
+        let signer_caps = &mut borrow_global_mut<GovernanceResponsbility>(@starcoin_framework).signer_caps;
         simple_map::add(signer_caps, signer_address, signer_cap);
     }
 
     /// Initializes the state for Aptos Governance. Can only be called during Genesis with a signer
-    /// for the aptos_framework (0x1) account.
+    /// for the starcoin_framework (0x1) account.
     /// This function is private because it's called directly from the vm.
     fun initialize(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         min_voting_threshold: u128,
         required_proposer_stake: u64,
         voting_duration_secs: u64,
     ) {
-        system_addresses::assert_aptos_framework(aptos_framework);
+        system_addresses::assert_aptos_framework(starcoin_framework);
 
-        voting::register<GovernanceProposal>(aptos_framework);
-        move_to(aptos_framework, GovernanceConfig {
+        voting::register<GovernanceProposal>(starcoin_framework);
+        move_to(starcoin_framework, GovernanceConfig {
             voting_duration_secs,
             min_voting_threshold,
             required_proposer_stake,
         });
-        move_to(aptos_framework, GovernanceEvents {
-            create_proposal_events: account::new_event_handle<CreateProposalEvent>(aptos_framework),
-            update_config_events: account::new_event_handle<UpdateConfigEvent>(aptos_framework),
-            vote_events: account::new_event_handle<VoteEvent>(aptos_framework),
+        move_to(starcoin_framework, GovernanceEvents {
+            create_proposal_events: account::new_event_handle<CreateProposalEvent>(starcoin_framework),
+            update_config_events: account::new_event_handle<UpdateConfigEvent>(starcoin_framework),
+            vote_events: account::new_event_handle<VoteEvent>(starcoin_framework),
         });
-        move_to(aptos_framework, VotingRecords {
+        move_to(starcoin_framework, VotingRecords {
             votes: table::new(),
         });
-        move_to(aptos_framework, ApprovedExecutionHashes {
+        move_to(starcoin_framework, ApprovedExecutionHashes {
             hashes: simple_map::create<u64, vector<u8>>(),
         })
     }
@@ -220,14 +220,14 @@ module aptos_framework::aptos_governance {
     /// Update the governance configurations. This can only be called as part of resolving a proposal in this same
     /// AptosGovernance.
     public fun update_governance_config(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         min_voting_threshold: u128,
         required_proposer_stake: u64,
         voting_duration_secs: u64,
     ) acquires GovernanceConfig, GovernanceEvents {
-        system_addresses::assert_aptos_framework(aptos_framework);
+        system_addresses::assert_aptos_framework(starcoin_framework);
 
-        let governance_config = borrow_global_mut<GovernanceConfig>(@aptos_framework);
+        let governance_config = borrow_global_mut<GovernanceConfig>(@starcoin_framework);
         governance_config.voting_duration_secs = voting_duration_secs;
         governance_config.min_voting_threshold = min_voting_threshold;
         governance_config.required_proposer_stake = required_proposer_stake;
@@ -241,7 +241,7 @@ module aptos_framework::aptos_governance {
                 },
             )
         };
-        let events = borrow_global_mut<GovernanceEvents>(@aptos_framework);
+        let events = borrow_global_mut<GovernanceEvents>(@starcoin_framework);
         event::emit_event<UpdateConfigEvent>(
             &mut events.update_config_events,
             UpdateConfigEvent {
@@ -253,30 +253,30 @@ module aptos_framework::aptos_governance {
     }
 
     /// Initializes the state for Aptos Governance partial voting. Can only be called through Aptos governance
-    /// proposals with a signer for the aptos_framework (0x1) account.
+    /// proposals with a signer for the starcoin_framework (0x1) account.
     public fun initialize_partial_voting(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
     ) {
-        system_addresses::assert_aptos_framework(aptos_framework);
+        system_addresses::assert_aptos_framework(starcoin_framework);
 
-        move_to(aptos_framework, VotingRecordsV2 {
+        move_to(starcoin_framework, VotingRecordsV2 {
             votes: smart_table::new(),
         });
     }
 
     #[view]
     public fun get_voting_duration_secs(): u64 acquires GovernanceConfig {
-        borrow_global<GovernanceConfig>(@aptos_framework).voting_duration_secs
+        borrow_global<GovernanceConfig>(@starcoin_framework).voting_duration_secs
     }
 
     #[view]
     public fun get_min_voting_threshold(): u128 acquires GovernanceConfig {
-        borrow_global<GovernanceConfig>(@aptos_framework).min_voting_threshold
+        borrow_global<GovernanceConfig>(@starcoin_framework).min_voting_threshold
     }
 
     #[view]
     public fun get_required_proposer_stake(): u64 acquires GovernanceConfig {
-        borrow_global<GovernanceConfig>(@aptos_framework).required_proposer_stake
+        borrow_global<GovernanceConfig>(@starcoin_framework).required_proposer_stake
     }
 
     #[view]
@@ -288,7 +288,7 @@ module aptos_framework::aptos_governance {
         };
         // If a stake pool has already voted on a proposal before partial governance voting is enabled,
         // there is a record in VotingRecords.
-        let voting_records = borrow_global<VotingRecords>(@aptos_framework);
+        let voting_records = borrow_global<VotingRecords>(@starcoin_framework);
         table::contains(&voting_records.votes, record_key)
     }
 
@@ -302,7 +302,7 @@ module aptos_framework::aptos_governance {
         assert_voting_initialization();
 
         let proposal_expiration = voting::get_proposal_expiration_secs<GovernanceProposal>(
-            @aptos_framework,
+            @starcoin_framework,
             proposal_id
         );
         let lockup_until = stake::get_lockup_secs(stake_pool);
@@ -323,7 +323,7 @@ module aptos_framework::aptos_governance {
         };
         let used_voting_power = 0u64;
         if (features::partial_governance_voting_enabled()) {
-            let voting_records_v2 = borrow_global<VotingRecordsV2>(@aptos_framework);
+            let voting_records_v2 = borrow_global<VotingRecordsV2>(@starcoin_framework);
             used_voting_power = *smart_table::borrow_with_default(&voting_records_v2.votes, record_key, &0);
         };
         get_voting_power(stake_pool) - used_voting_power
@@ -382,7 +382,7 @@ module aptos_framework::aptos_governance {
         );
 
         // The proposer's stake needs to be at least the required bond amount.
-        let governance_config = borrow_global<GovernanceConfig>(@aptos_framework);
+        let governance_config = borrow_global<GovernanceConfig>(@starcoin_framework);
         let stake_balance = get_voting_power(stake_pool);
         assert!(
             stake_balance >= governance_config.required_proposer_stake,
@@ -414,7 +414,7 @@ module aptos_framework::aptos_governance {
 
         let proposal_id = voting::create_proposal_v2(
             proposer_address,
-            @aptos_framework,
+            @starcoin_framework,
             governance_proposal::create_proposal(),
             execution_hash,
             governance_config.min_voting_threshold,
@@ -435,7 +435,7 @@ module aptos_framework::aptos_governance {
                 },
             );
         };
-        let events = borrow_global_mut<GovernanceEvents>(@aptos_framework);
+        let events = borrow_global_mut<GovernanceEvents>(@starcoin_framework);
         event::emit_event<CreateProposalEvent>(
             &mut events.create_proposal_events,
             CreateProposalEvent {
@@ -511,7 +511,7 @@ module aptos_framework::aptos_governance {
 
         // The voter's stake needs to be locked up at least as long as the proposal's expiration.
         let proposal_expiration = voting::get_proposal_expiration_secs<GovernanceProposal>(
-            @aptos_framework,
+            @starcoin_framework,
             proposal_id
         );
         assert!(
@@ -529,7 +529,7 @@ module aptos_framework::aptos_governance {
 
         voting::vote<GovernanceProposal>(
             &governance_proposal::create_empty_proposal(),
-            @aptos_framework,
+            @starcoin_framework,
             proposal_id,
             voting_power,
             should_pass,
@@ -540,12 +540,12 @@ module aptos_framework::aptos_governance {
             proposal_id,
         };
         if (features::partial_governance_voting_enabled()) {
-            let voting_records_v2 = borrow_global_mut<VotingRecordsV2>(@aptos_framework);
+            let voting_records_v2 = borrow_global_mut<VotingRecordsV2>(@starcoin_framework);
             let used_voting_power = smart_table::borrow_mut_with_default(&mut voting_records_v2.votes, record_key, 0);
             // This calculation should never overflow because the used voting cannot exceed the total voting power of this stake pool.
             *used_voting_power = *used_voting_power + voting_power;
         } else {
-            let voting_records = borrow_global_mut<VotingRecords>(@aptos_framework);
+            let voting_records = borrow_global_mut<VotingRecords>(@starcoin_framework);
             assert!(
                 !table::contains(&voting_records.votes, record_key),
                 error::invalid_argument(EALREADY_VOTED));
@@ -563,7 +563,7 @@ module aptos_framework::aptos_governance {
                 },
             );
         };
-        let events = borrow_global_mut<GovernanceEvents>(@aptos_framework);
+        let events = borrow_global_mut<GovernanceEvents>(@starcoin_framework);
         event::emit_event<VoteEvent>(
             &mut events.vote_events,
             VoteEvent {
@@ -575,7 +575,7 @@ module aptos_framework::aptos_governance {
             },
         );
 
-        let proposal_state = voting::get_proposal_state<GovernanceProposal>(@aptos_framework, proposal_id);
+        let proposal_state = voting::get_proposal_state<GovernanceProposal>(@starcoin_framework, proposal_id);
         if (proposal_state == PROPOSAL_STATE_SUCCEEDED) {
             add_approved_script_hash(proposal_id);
         }
@@ -589,13 +589,13 @@ module aptos_framework::aptos_governance {
     /// This is needed to bypass the mempool transaction size limit for approved governance proposal transactions that
     /// are too large (e.g. module upgrades).
     public fun add_approved_script_hash(proposal_id: u64) acquires ApprovedExecutionHashes {
-        let approved_hashes = borrow_global_mut<ApprovedExecutionHashes>(@aptos_framework);
+        let approved_hashes = borrow_global_mut<ApprovedExecutionHashes>(@starcoin_framework);
 
         // Ensure the proposal can be resolved.
-        let proposal_state = voting::get_proposal_state<GovernanceProposal>(@aptos_framework, proposal_id);
+        let proposal_state = voting::get_proposal_state<GovernanceProposal>(@starcoin_framework, proposal_id);
         assert!(proposal_state == PROPOSAL_STATE_SUCCEEDED, error::invalid_argument(EPROPOSAL_NOT_RESOLVABLE_YET));
 
-        let execution_hash = voting::get_execution_hash<GovernanceProposal>(@aptos_framework, proposal_id);
+        let execution_hash = voting::get_execution_hash<GovernanceProposal>(@starcoin_framework, proposal_id);
 
         // If this is a multi-step proposal, the proposal id will already exist in the ApprovedExecutionHashes map.
         // We will update execution hash in ApprovedExecutionHashes to be the next_execution_hash.
@@ -613,7 +613,7 @@ module aptos_framework::aptos_governance {
         proposal_id: u64,
         signer_address: address
     ): signer acquires ApprovedExecutionHashes, GovernanceResponsbility {
-        voting::resolve<GovernanceProposal>(@aptos_framework, proposal_id);
+        voting::resolve<GovernanceProposal>(@starcoin_framework, proposal_id);
         remove_approved_hash(proposal_id);
         get_signer(signer_address)
     }
@@ -624,7 +624,7 @@ module aptos_framework::aptos_governance {
         signer_address: address,
         next_execution_hash: vector<u8>
     ): signer acquires GovernanceResponsbility, ApprovedExecutionHashes {
-        voting::resolve_proposal_v2<GovernanceProposal>(@aptos_framework, proposal_id, next_execution_hash);
+        voting::resolve_proposal_v2<GovernanceProposal>(@starcoin_framework, proposal_id, next_execution_hash);
         // If the current step is the last step of this multi-step proposal,
         // we will remove the execution hash from the ApprovedExecutionHashes map.
         if (vector::length(&next_execution_hash) == 0) {
@@ -641,11 +641,11 @@ module aptos_framework::aptos_governance {
     /// Remove an approved proposal's execution script hash.
     public fun remove_approved_hash(proposal_id: u64) acquires ApprovedExecutionHashes {
         assert!(
-            voting::is_resolved<GovernanceProposal>(@aptos_framework, proposal_id),
+            voting::is_resolved<GovernanceProposal>(@starcoin_framework, proposal_id),
             error::invalid_argument(EPROPOSAL_NOT_RESOLVED_YET),
         );
 
-        let approved_hashes = &mut borrow_global_mut<ApprovedExecutionHashes>(@aptos_framework).hashes;
+        let approved_hashes = &mut borrow_global_mut<ApprovedExecutionHashes>(@starcoin_framework).hashes;
         if (simple_map::contains_key(approved_hashes, &proposal_id)) {
             simple_map::remove(approved_hashes, &proposal_id);
         };
@@ -660,12 +660,12 @@ module aptos_framework::aptos_governance {
     ///
     /// This behavior affects when an update of an on-chain config (e.g. `ConsensusConfig`, `Features`) takes effect,
     /// since such updates are applied whenever we enter an new epoch.
-    public entry fun reconfigure(aptos_framework: &signer) {
-        system_addresses::assert_aptos_framework(aptos_framework);
+    public entry fun reconfigure(starcoin_framework: &signer) {
+        system_addresses::assert_aptos_framework(starcoin_framework);
         if (consensus_config::validator_txn_enabled() && randomness_config::enabled()) {
             reconfiguration_with_dkg::try_start();
         } else {
-            reconfiguration_with_dkg::finish(aptos_framework);
+            reconfiguration_with_dkg::finish(starcoin_framework);
         }
     }
 
@@ -675,24 +675,24 @@ module aptos_framework::aptos_governance {
     ///
     /// WARNING: currently only used by tests. In most cases you should use `reconfigure()` instead.
     /// TODO: migrate these tests to be aware of async reconfiguration.
-    public entry fun force_end_epoch(aptos_framework: &signer) {
-        system_addresses::assert_aptos_framework(aptos_framework);
-        reconfiguration_with_dkg::finish(aptos_framework);
+    public entry fun force_end_epoch(starcoin_framework: &signer) {
+        system_addresses::assert_aptos_framework(starcoin_framework);
+        reconfiguration_with_dkg::finish(starcoin_framework);
     }
 
     /// `force_end_epoch()` equivalent but only called in testnet,
     /// where the core resources account exists and has been granted power to mint Aptos coins.
-    public entry fun force_end_epoch_test_only(aptos_framework: &signer) acquires GovernanceResponsbility {
-        let core_signer = get_signer_testnet_only(aptos_framework, @0x1);
+    public entry fun force_end_epoch_test_only(starcoin_framework: &signer) acquires GovernanceResponsbility {
+        let core_signer = get_signer_testnet_only(starcoin_framework, @0x1);
         system_addresses::assert_aptos_framework(&core_signer);
         reconfiguration_with_dkg::finish(&core_signer);
     }
 
     /// Update feature flags and also trigger reconfiguration.
-    public fun toggle_features(aptos_framework: &signer, enable: vector<u64>, disable: vector<u64>) {
-        system_addresses::assert_aptos_framework(aptos_framework);
-        features::change_feature_flags_for_next_epoch(aptos_framework, enable, disable);
-        reconfigure(aptos_framework);
+    public fun toggle_features(starcoin_framework: &signer, enable: vector<u64>, disable: vector<u64>) {
+        system_addresses::assert_aptos_framework(starcoin_framework);
+        features::change_feature_flags_for_next_epoch(starcoin_framework, enable, disable);
+        reconfigure(starcoin_framework);
     }
 
     /// Only called in testnet where the core resources account exists and has been granted power to mint Aptos coins.
@@ -721,7 +721,7 @@ module aptos_framework::aptos_governance {
 
     /// Return a signer for making changes to 0x1 as part of on-chain governance proposal process.
     fun get_signer(signer_address: address): signer acquires GovernanceResponsbility {
-        let governance_responsibility = borrow_global<GovernanceResponsbility>(@aptos_framework);
+        let governance_responsibility = borrow_global<GovernanceResponsbility>(@starcoin_framework);
         let signer_cap = simple_map::borrow(&governance_responsibility.signer_caps, &signer_address);
         create_signer_with_capability(signer_cap)
     }
@@ -741,7 +741,7 @@ module aptos_framework::aptos_governance {
 
     fun assert_voting_initialization() {
         if (features::partial_governance_voting_enabled()) {
-            assert!(exists<VotingRecordsV2>(@aptos_framework), error::invalid_state(EPARTIAL_VOTING_NOT_INITIALIZED));
+            assert!(exists<VotingRecordsV2>(@starcoin_framework), error::invalid_state(EPARTIAL_VOTING_NOT_INITIALIZED));
         };
     }
 
@@ -801,14 +801,14 @@ module aptos_framework::aptos_governance {
 
     #[test_only]
     public entry fun test_voting_generic(
-        aptos_framework: signer,
+        starcoin_framework: signer,
         proposer: signer,
         yes_voter: signer,
         no_voter: signer,
         multi_step: bool,
         use_generic_resolve_function: bool,
     ) acquires ApprovedExecutionHashes, GovernanceConfig, GovernanceResponsbility, VotingRecords, VotingRecordsV2, GovernanceEvents {
-        setup_voting(&aptos_framework, &proposer, &yes_voter, &no_voter);
+        setup_voting(&starcoin_framework, &proposer, &yes_voter, &no_voter);
 
         let execution_hash = vector::empty<u8>();
         vector::push_back(&mut execution_hash, 1);
@@ -818,84 +818,84 @@ module aptos_framework::aptos_governance {
         vote(&yes_voter, signer::address_of(&yes_voter), 0, true);
         vote(&no_voter, signer::address_of(&no_voter), 0, false);
 
-        test_resolving_proposal_generic(aptos_framework, use_generic_resolve_function, execution_hash);
+        test_resolving_proposal_generic(starcoin_framework, use_generic_resolve_function, execution_hash);
     }
 
     #[test_only]
     public entry fun test_resolving_proposal_generic(
-        aptos_framework: signer,
+        starcoin_framework: signer,
         use_generic_resolve_function: bool,
         execution_hash: vector<u8>,
     ) acquires ApprovedExecutionHashes, GovernanceResponsbility {
         // Once expiration time has passed, the proposal should be considered resolve now as there are more yes votes
         // than no.
         timestamp::update_global_time_for_test(100001000000);
-        let proposal_state = voting::get_proposal_state<GovernanceProposal>(signer::address_of(&aptos_framework), 0);
+        let proposal_state = voting::get_proposal_state<GovernanceProposal>(signer::address_of(&starcoin_framework), 0);
         assert!(proposal_state == PROPOSAL_STATE_SUCCEEDED, proposal_state);
 
         // Add approved script hash.
         add_approved_script_hash(0);
-        let approved_hashes = borrow_global<ApprovedExecutionHashes>(@aptos_framework).hashes;
+        let approved_hashes = borrow_global<ApprovedExecutionHashes>(@starcoin_framework).hashes;
         assert!(*simple_map::borrow(&approved_hashes, &0) == execution_hash, 0);
 
         // Resolve the proposal.
-        let account = resolve_proposal_for_test(0, @aptos_framework, use_generic_resolve_function, true);
-        assert!(signer::address_of(&account) == @aptos_framework, 1);
-        assert!(voting::is_resolved<GovernanceProposal>(@aptos_framework, 0), 2);
-        let approved_hashes = borrow_global<ApprovedExecutionHashes>(@aptos_framework).hashes;
+        let account = resolve_proposal_for_test(0, @starcoin_framework, use_generic_resolve_function, true);
+        assert!(signer::address_of(&account) == @starcoin_framework, 1);
+        assert!(voting::is_resolved<GovernanceProposal>(@starcoin_framework, 0), 2);
+        let approved_hashes = borrow_global<ApprovedExecutionHashes>(@starcoin_framework).hashes;
         assert!(!simple_map::contains_key(&approved_hashes, &0), 3);
     }
 
-    #[test(aptos_framework = @aptos_framework, proposer = @0x123, yes_voter = @0x234, no_voter = @345)]
+    #[test(starcoin_framework = @starcoin_framework, proposer = @0x123, yes_voter = @0x234, no_voter = @345)]
     public entry fun test_voting(
-        aptos_framework: signer,
+        starcoin_framework: signer,
         proposer: signer,
         yes_voter: signer,
         no_voter: signer,
     ) acquires ApprovedExecutionHashes, GovernanceConfig, GovernanceResponsbility, VotingRecords, VotingRecordsV2, GovernanceEvents {
-        test_voting_generic(aptos_framework, proposer, yes_voter, no_voter, false, false);
+        test_voting_generic(starcoin_framework, proposer, yes_voter, no_voter, false, false);
     }
 
-    #[test(aptos_framework = @aptos_framework, proposer = @0x123, yes_voter = @0x234, no_voter = @345)]
+    #[test(starcoin_framework = @starcoin_framework, proposer = @0x123, yes_voter = @0x234, no_voter = @345)]
     public entry fun test_voting_multi_step(
-        aptos_framework: signer,
+        starcoin_framework: signer,
         proposer: signer,
         yes_voter: signer,
         no_voter: signer,
     ) acquires ApprovedExecutionHashes, GovernanceConfig, GovernanceResponsbility, VotingRecords, VotingRecordsV2, GovernanceEvents {
-        test_voting_generic(aptos_framework, proposer, yes_voter, no_voter, true, true);
+        test_voting_generic(starcoin_framework, proposer, yes_voter, no_voter, true, true);
     }
 
-    #[test(aptos_framework = @aptos_framework, proposer = @0x123, yes_voter = @0x234, no_voter = @345)]
-    #[expected_failure(abort_code = 0x5000a, location = aptos_framework::voting)]
+    #[test(starcoin_framework = @starcoin_framework, proposer = @0x123, yes_voter = @0x234, no_voter = @345)]
+    #[expected_failure(abort_code = 0x5000a, location = starcoin_framework::voting)]
     public entry fun test_voting_multi_step_cannot_use_single_step_resolve(
-        aptos_framework: signer,
+        starcoin_framework: signer,
         proposer: signer,
         yes_voter: signer,
         no_voter: signer,
     ) acquires ApprovedExecutionHashes, GovernanceConfig, GovernanceResponsbility, VotingRecords, VotingRecordsV2, GovernanceEvents {
-        test_voting_generic(aptos_framework, proposer, yes_voter, no_voter, true, false);
+        test_voting_generic(starcoin_framework, proposer, yes_voter, no_voter, true, false);
     }
 
-    #[test(aptos_framework = @aptos_framework, proposer = @0x123, yes_voter = @0x234, no_voter = @345)]
+    #[test(starcoin_framework = @starcoin_framework, proposer = @0x123, yes_voter = @0x234, no_voter = @345)]
     public entry fun test_voting_single_step_can_use_generic_resolve_function(
-        aptos_framework: signer,
+        starcoin_framework: signer,
         proposer: signer,
         yes_voter: signer,
         no_voter: signer,
     ) acquires ApprovedExecutionHashes, GovernanceConfig, GovernanceResponsbility, VotingRecords, VotingRecordsV2, GovernanceEvents {
-        test_voting_generic(aptos_framework, proposer, yes_voter, no_voter, false, true);
+        test_voting_generic(starcoin_framework, proposer, yes_voter, no_voter, false, true);
     }
 
     #[test_only]
     public entry fun test_can_remove_approved_hash_if_executed_directly_via_voting_generic(
-        aptos_framework: signer,
+        starcoin_framework: signer,
         proposer: signer,
         yes_voter: signer,
         no_voter: signer,
         multi_step: bool,
     ) acquires ApprovedExecutionHashes, GovernanceConfig, GovernanceResponsbility, VotingRecords, VotingRecordsV2, GovernanceEvents {
-        setup_voting(&aptos_framework, &proposer, &yes_voter, &no_voter);
+        setup_voting(&starcoin_framework, &proposer, &yes_voter, &no_voter);
 
         create_proposal_for_test(&proposer, multi_step);
         vote(&yes_voter, signer::address_of(&yes_voter), 0, true);
@@ -910,31 +910,31 @@ module aptos_framework::aptos_governance {
             let execution_hash = vector::empty<u8>();
             let next_execution_hash = vector::empty<u8>();
             vector::push_back(&mut execution_hash, 1);
-            voting::resolve_proposal_v2<GovernanceProposal>(@aptos_framework, 0, next_execution_hash);
-            assert!(voting::is_resolved<GovernanceProposal>(@aptos_framework, 0), 0);
+            voting::resolve_proposal_v2<GovernanceProposal>(@starcoin_framework, 0, next_execution_hash);
+            assert!(voting::is_resolved<GovernanceProposal>(@starcoin_framework, 0), 0);
             if (vector::length(&next_execution_hash) == 0) {
                 remove_approved_hash(0);
             } else {
                 add_approved_script_hash(0)
             };
         } else {
-            voting::resolve<GovernanceProposal>(@aptos_framework, 0);
-            assert!(voting::is_resolved<GovernanceProposal>(@aptos_framework, 0), 0);
+            voting::resolve<GovernanceProposal>(@starcoin_framework, 0);
+            assert!(voting::is_resolved<GovernanceProposal>(@starcoin_framework, 0), 0);
             remove_approved_hash(0);
         };
-        let approved_hashes = borrow_global<ApprovedExecutionHashes>(@aptos_framework).hashes;
+        let approved_hashes = borrow_global<ApprovedExecutionHashes>(@starcoin_framework).hashes;
         assert!(!simple_map::contains_key(&approved_hashes, &0), 1);
     }
 
-    #[test(aptos_framework = @aptos_framework, proposer = @0x123, yes_voter = @0x234, no_voter = @345)]
+    #[test(starcoin_framework = @starcoin_framework, proposer = @0x123, yes_voter = @0x234, no_voter = @345)]
     public entry fun test_can_remove_approved_hash_if_executed_directly_via_voting(
-        aptos_framework: signer,
+        starcoin_framework: signer,
         proposer: signer,
         yes_voter: signer,
         no_voter: signer,
     ) acquires ApprovedExecutionHashes, GovernanceConfig, GovernanceResponsbility, VotingRecords, VotingRecordsV2, GovernanceEvents {
         test_can_remove_approved_hash_if_executed_directly_via_voting_generic(
-            aptos_framework,
+            starcoin_framework,
             proposer,
             yes_voter,
             no_voter,
@@ -942,15 +942,15 @@ module aptos_framework::aptos_governance {
         );
     }
 
-    #[test(aptos_framework = @aptos_framework, proposer = @0x123, yes_voter = @0x234, no_voter = @345)]
+    #[test(starcoin_framework = @starcoin_framework, proposer = @0x123, yes_voter = @0x234, no_voter = @345)]
     public entry fun test_can_remove_approved_hash_if_executed_directly_via_voting_multi_step(
-        aptos_framework: signer,
+        starcoin_framework: signer,
         proposer: signer,
         yes_voter: signer,
         no_voter: signer,
     ) acquires ApprovedExecutionHashes, GovernanceConfig, GovernanceResponsbility, VotingRecords, VotingRecordsV2, GovernanceEvents {
         test_can_remove_approved_hash_if_executed_directly_via_voting_generic(
-            aptos_framework,
+            starcoin_framework,
             proposer,
             yes_voter,
             no_voter,
@@ -958,15 +958,15 @@ module aptos_framework::aptos_governance {
         );
     }
 
-    #[test(aptos_framework = @aptos_framework, proposer = @0x123, voter_1 = @0x234, voter_2 = @345)]
-    #[expected_failure(abort_code = 0x10004, location = aptos_framework::voting)]
+    #[test(starcoin_framework = @starcoin_framework, proposer = @0x123, voter_1 = @0x234, voter_2 = @345)]
+    #[expected_failure(abort_code = 0x10004, location = starcoin_framework::voting)]
     public entry fun test_cannot_double_vote(
-        aptos_framework: signer,
+        starcoin_framework: signer,
         proposer: signer,
         voter_1: signer,
         voter_2: signer,
     ) acquires ApprovedExecutionHashes, GovernanceConfig, GovernanceResponsbility, VotingRecords, VotingRecordsV2, GovernanceEvents {
-        setup_voting(&aptos_framework, &proposer, &voter_1, &voter_2);
+        setup_voting(&starcoin_framework, &proposer, &voter_1, &voter_2);
 
         create_proposal(
             &proposer,
@@ -981,15 +981,15 @@ module aptos_framework::aptos_governance {
         vote(&voter_1, signer::address_of(&voter_1), 0, true);
     }
 
-    #[test(aptos_framework = @aptos_framework, proposer = @0x123, voter_1 = @0x234, voter_2 = @345)]
-    #[expected_failure(abort_code = 0x10004, location = aptos_framework::voting)]
+    #[test(starcoin_framework = @starcoin_framework, proposer = @0x123, voter_1 = @0x234, voter_2 = @345)]
+    #[expected_failure(abort_code = 0x10004, location = starcoin_framework::voting)]
     public entry fun test_cannot_double_vote_with_different_voter_addresses(
-        aptos_framework: signer,
+        starcoin_framework: signer,
         proposer: signer,
         voter_1: signer,
         voter_2: signer,
     ) acquires ApprovedExecutionHashes, GovernanceConfig, GovernanceResponsbility, VotingRecords, VotingRecordsV2, GovernanceEvents {
-        setup_voting(&aptos_framework, &proposer, &voter_1, &voter_2);
+        setup_voting(&starcoin_framework, &proposer, &voter_1, &voter_2);
 
         create_proposal(
             &proposer,
@@ -1005,14 +1005,14 @@ module aptos_framework::aptos_governance {
         vote(&voter_2, signer::address_of(&voter_1), 0, true);
     }
 
-    #[test(aptos_framework = @aptos_framework, proposer = @0x123, voter_1 = @0x234, voter_2 = @345)]
+    #[test(starcoin_framework = @starcoin_framework, proposer = @0x123, voter_1 = @0x234, voter_2 = @345)]
     public entry fun test_stake_pool_can_vote_on_partial_voting_proposal_many_times(
-        aptos_framework: signer,
+        starcoin_framework: signer,
         proposer: signer,
         voter_1: signer,
         voter_2: signer,
     ) acquires ApprovedExecutionHashes, GovernanceConfig, GovernanceResponsbility, VotingRecords, VotingRecordsV2, GovernanceEvents {
-        setup_partial_voting(&aptos_framework, &proposer, &voter_1, &voter_2);
+        setup_partial_voting(&starcoin_framework, &proposer, &voter_1, &voter_2);
         let execution_hash = vector::empty<u8>();
         vector::push_back(&mut execution_hash, 1);
         let proposer_addr = signer::address_of(&proposer);
@@ -1029,18 +1029,18 @@ module aptos_framework::aptos_governance {
         assert!(get_remaining_voting_power(voter_1_addr, 0) == 10, 1);
         assert!(get_remaining_voting_power(voter_2_addr, 0) == 10, 2);
 
-        test_resolving_proposal_generic(aptos_framework, true, execution_hash);
+        test_resolving_proposal_generic(starcoin_framework, true, execution_hash);
     }
 
-    #[test(aptos_framework = @aptos_framework, proposer = @0x123, voter_1 = @0x234, voter_2 = @345)]
+    #[test(starcoin_framework = @starcoin_framework, proposer = @0x123, voter_1 = @0x234, voter_2 = @345)]
     #[expected_failure(abort_code = 0x3, location = Self)]
     public entry fun test_stake_pool_can_vote_with_partial_voting_power(
-        aptos_framework: signer,
+        starcoin_framework: signer,
         proposer: signer,
         voter_1: signer,
         voter_2: signer,
     ) acquires ApprovedExecutionHashes, GovernanceConfig, GovernanceResponsbility, VotingRecords, VotingRecordsV2, GovernanceEvents {
-        setup_partial_voting(&aptos_framework, &proposer, &voter_1, &voter_2);
+        setup_partial_voting(&starcoin_framework, &proposer, &voter_1, &voter_2);
         let execution_hash = vector::empty<u8>();
         vector::push_back(&mut execution_hash, 1);
         let proposer_addr = signer::address_of(&proposer);
@@ -1056,18 +1056,18 @@ module aptos_framework::aptos_governance {
         assert!(get_remaining_voting_power(voter_2_addr, 0) == 10, 2);
 
         // No enough Yes. The proposal cannot be resolved.
-        test_resolving_proposal_generic(aptos_framework, true, execution_hash);
+        test_resolving_proposal_generic(starcoin_framework, true, execution_hash);
     }
 
-    #[test(aptos_framework = @aptos_framework, proposer = @0x123, voter_1 = @0x234, voter_2 = @345)]
+    #[test(starcoin_framework = @starcoin_framework, proposer = @0x123, voter_1 = @0x234, voter_2 = @345)]
     public entry fun test_batch_vote(
-        aptos_framework: signer,
+        starcoin_framework: signer,
         proposer: signer,
         voter_1: signer,
         voter_2: signer,
     ) acquires ApprovedExecutionHashes, GovernanceConfig, GovernanceResponsbility, VotingRecords, VotingRecordsV2, GovernanceEvents {
-        features::change_feature_flags_for_testing(&aptos_framework, vector[features::get_coin_to_fungible_asset_migration_feature()], vector[]);
-        setup_partial_voting(&aptos_framework, &proposer, &voter_1, &voter_2);
+        features::change_feature_flags_for_testing(&starcoin_framework, vector[features::get_coin_to_fungible_asset_migration_feature()], vector[]);
+        setup_partial_voting(&starcoin_framework, &proposer, &voter_1, &voter_2);
         let execution_hash = vector::empty<u8>();
         vector::push_back(&mut execution_hash, 1);
         let voter_1_addr = signer::address_of(&voter_1);
@@ -1075,18 +1075,18 @@ module aptos_framework::aptos_governance {
         stake::set_delegated_voter(&voter_2, voter_1_addr);
         create_proposal_for_test(&proposer, true);
         batch_vote(&voter_1, vector[voter_1_addr, voter_2_addr], 0, true);
-        test_resolving_proposal_generic(aptos_framework, true, execution_hash);
+        test_resolving_proposal_generic(starcoin_framework, true, execution_hash);
     }
 
-    #[test(aptos_framework = @aptos_framework, proposer = @0x123, voter_1 = @0x234, voter_2 = @345)]
+    #[test(starcoin_framework = @starcoin_framework, proposer = @0x123, voter_1 = @0x234, voter_2 = @345)]
     public entry fun test_batch_partial_vote(
-        aptos_framework: signer,
+        starcoin_framework: signer,
         proposer: signer,
         voter_1: signer,
         voter_2: signer,
     ) acquires ApprovedExecutionHashes, GovernanceConfig, GovernanceResponsbility, VotingRecords, VotingRecordsV2, GovernanceEvents {
-        features::change_feature_flags_for_testing(&aptos_framework, vector[features::get_coin_to_fungible_asset_migration_feature()], vector[]);
-        setup_partial_voting(&aptos_framework, &proposer, &voter_1, &voter_2);
+        features::change_feature_flags_for_testing(&starcoin_framework, vector[features::get_coin_to_fungible_asset_migration_feature()], vector[]);
+        setup_partial_voting(&starcoin_framework, &proposer, &voter_1, &voter_2);
         let execution_hash = vector::empty<u8>();
         vector::push_back(&mut execution_hash, 1);
         let voter_1_addr = signer::address_of(&voter_1);
@@ -1094,17 +1094,17 @@ module aptos_framework::aptos_governance {
         stake::set_delegated_voter(&voter_2, voter_1_addr);
         create_proposal_for_test(&proposer, true);
         batch_partial_vote(&voter_1, vector[voter_1_addr, voter_2_addr], 0, 9, true);
-        test_resolving_proposal_generic(aptos_framework, true, execution_hash);
+        test_resolving_proposal_generic(starcoin_framework, true, execution_hash);
     }
 
-    #[test(aptos_framework = @aptos_framework, proposer = @0x123, voter_1 = @0x234, voter_2 = @345)]
+    #[test(starcoin_framework = @starcoin_framework, proposer = @0x123, voter_1 = @0x234, voter_2 = @345)]
     public entry fun test_stake_pool_can_vote_only_with_its_own_voting_power(
-        aptos_framework: signer,
+        starcoin_framework: signer,
         proposer: signer,
         voter_1: signer,
         voter_2: signer,
     ) acquires ApprovedExecutionHashes, GovernanceConfig, GovernanceResponsbility, VotingRecords, VotingRecordsV2, GovernanceEvents {
-        setup_partial_voting(&aptos_framework, &proposer, &voter_1, &voter_2);
+        setup_partial_voting(&starcoin_framework, &proposer, &voter_1, &voter_2);
         let execution_hash = vector::empty<u8>();
         vector::push_back(&mut execution_hash, 1);
         let proposer_addr = signer::address_of(&proposer);
@@ -1121,17 +1121,17 @@ module aptos_framework::aptos_governance {
         assert!(get_remaining_voting_power(voter_1_addr, 0) == 0, 1);
         assert!(get_remaining_voting_power(voter_2_addr, 0) == 10, 2);
 
-        test_resolving_proposal_generic(aptos_framework, true, execution_hash);
+        test_resolving_proposal_generic(starcoin_framework, true, execution_hash);
     }
 
-    #[test(aptos_framework = @aptos_framework, proposer = @0x123, voter_1 = @0x234, voter_2 = @345)]
+    #[test(starcoin_framework = @starcoin_framework, proposer = @0x123, voter_1 = @0x234, voter_2 = @345)]
     public entry fun test_stake_pool_can_vote_before_and_after_partial_governance_voting_enabled(
-        aptos_framework: signer,
+        starcoin_framework: signer,
         proposer: signer,
         voter_1: signer,
         voter_2: signer,
     ) acquires ApprovedExecutionHashes, GovernanceConfig, GovernanceResponsbility, VotingRecords, VotingRecordsV2, GovernanceEvents {
-        setup_voting(&aptos_framework, &proposer, &voter_1, &voter_2);
+        setup_voting(&starcoin_framework, &proposer, &voter_1, &voter_2);
         let execution_hash = vector::empty<u8>();
         vector::push_back(&mut execution_hash, 1);
         let proposer_addr = signer::address_of(&proposer);
@@ -1144,8 +1144,8 @@ module aptos_framework::aptos_governance {
         assert!(get_remaining_voting_power(voter_1_addr, 0) == 0, 1);
         assert!(get_remaining_voting_power(voter_2_addr, 0) == 10, 2);
 
-        initialize_partial_voting(&aptos_framework);
-        features::change_feature_flags_for_testing(&aptos_framework, vector[features::get_partial_governance_voting()], vector[]);
+        initialize_partial_voting(&starcoin_framework);
+        features::change_feature_flags_for_testing(&starcoin_framework, vector[features::get_partial_governance_voting()], vector[]);
 
         coin::register<AptosCoin>(&voter_1);
         coin::register<AptosCoin>(&voter_2);
@@ -1158,17 +1158,17 @@ module aptos_framework::aptos_governance {
         assert!(get_remaining_voting_power(voter_1_addr, 0) == 0, 1);
         assert!(get_remaining_voting_power(voter_2_addr, 0) == 15, 2);
 
-        test_resolving_proposal_generic(aptos_framework, true, execution_hash);
+        test_resolving_proposal_generic(starcoin_framework, true, execution_hash);
     }
 
-    #[test(aptos_framework = @aptos_framework, proposer = @0x123, voter_1 = @0x234, voter_2 = @345)]
+    #[test(starcoin_framework = @starcoin_framework, proposer = @0x123, voter_1 = @0x234, voter_2 = @345)]
     public entry fun test_no_remaining_voting_power_about_proposal_expiration_time(
-        aptos_framework: signer,
+        starcoin_framework: signer,
         proposer: signer,
         voter_1: signer,
         voter_2: signer,
     ) acquires GovernanceConfig, GovernanceResponsbility, VotingRecords, VotingRecordsV2, GovernanceEvents {
-        setup_voting_with_initialized_stake(&aptos_framework, &proposer, &voter_1, &voter_2);
+        setup_voting_with_initialized_stake(&starcoin_framework, &proposer, &voter_1, &voter_2);
         let execution_hash = vector::empty<u8>();
         vector::push_back(&mut execution_hash, 1);
         let proposer_addr = signer::address_of(&proposer);
@@ -1197,29 +1197,29 @@ module aptos_framework::aptos_governance {
 
     #[test_only]
     public fun setup_voting(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         proposer: &signer,
         yes_voter: &signer,
         no_voter: &signer,
     ) acquires GovernanceResponsbility {
         use std::vector;
-        use aptos_framework::account;
-        use aptos_framework::coin;
-        use aptos_framework::aptos_coin::{Self, AptosCoin};
+        use starcoin_framework::account;
+        use starcoin_framework::coin;
+        use starcoin_framework::aptos_coin::{Self, AptosCoin};
 
-        timestamp::set_time_has_started_for_testing(aptos_framework);
-        account::create_account_for_test(signer::address_of(aptos_framework));
+        timestamp::set_time_has_started_for_testing(starcoin_framework);
+        account::create_account_for_test(signer::address_of(starcoin_framework));
         account::create_account_for_test(signer::address_of(proposer));
         account::create_account_for_test(signer::address_of(yes_voter));
         account::create_account_for_test(signer::address_of(no_voter));
 
         // Initialize the governance.
-        staking_config::initialize_for_test(aptos_framework, 0, 1000, 2000, true, 0, 1, 100);
-        initialize(aptos_framework, 10, 100, 1000);
+        staking_config::initialize_for_test(starcoin_framework, 0, 1000, 2000, true, 0, 1, 100);
+        initialize(starcoin_framework, 10, 100, 1000);
         store_signer_cap(
-            aptos_framework,
-            @aptos_framework,
-            account::create_test_signer_cap(@aptos_framework),
+            starcoin_framework,
+            @starcoin_framework,
+            account::create_test_signer_cap(@starcoin_framework),
         );
 
         // Initialize the stake pools for proposer and voters.
@@ -1231,9 +1231,9 @@ module aptos_framework::aptos_governance {
         let (_sk_2, pk_2, _pop_2) = stake::generate_identity();
         let (_sk_3, pk_3, _pop_3) = stake::generate_identity();
         let pks = vector[pk_1, pk_2, pk_3];
-        stake::create_validator_set(aptos_framework, active_validators, pks);
+        stake::create_validator_set(starcoin_framework, active_validators, pks);
 
-        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(starcoin_framework);
         // Spread stake among active and pending_inactive because both need to be accounted for when computing voting
         // power.
         coin::register<AptosCoin>(proposer);
@@ -1251,28 +1251,28 @@ module aptos_framework::aptos_governance {
 
     #[test_only]
     public fun setup_voting_with_initialized_stake(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         proposer: &signer,
         yes_voter: &signer,
         no_voter: &signer,
     ) acquires GovernanceResponsbility {
-        use aptos_framework::account;
-        use aptos_framework::coin;
-        use aptos_framework::aptos_coin::AptosCoin;
+        use starcoin_framework::account;
+        use starcoin_framework::coin;
+        use starcoin_framework::aptos_coin::AptosCoin;
 
-        timestamp::set_time_has_started_for_testing(aptos_framework);
-        account::create_account_for_test(signer::address_of(aptos_framework));
+        timestamp::set_time_has_started_for_testing(starcoin_framework);
+        account::create_account_for_test(signer::address_of(starcoin_framework));
         account::create_account_for_test(signer::address_of(proposer));
         account::create_account_for_test(signer::address_of(yes_voter));
         account::create_account_for_test(signer::address_of(no_voter));
 
         // Initialize the governance.
-        stake::initialize_for_test_custom(aptos_framework, 0, 1000, 2000, true, 0, 1, 1000);
-        initialize(aptos_framework, 10, 100, 1000);
+        stake::initialize_for_test_custom(starcoin_framework, 0, 1000, 2000, true, 0, 1, 1000);
+        initialize(starcoin_framework, 10, 100, 1000);
         store_signer_cap(
-            aptos_framework,
-            @aptos_framework,
-            account::create_test_signer_cap(@aptos_framework),
+            starcoin_framework,
+            @starcoin_framework,
+            account::create_test_signer_cap(@starcoin_framework),
         );
 
         // Initialize the stake pools for proposer and voters.
@@ -1298,46 +1298,46 @@ module aptos_framework::aptos_governance {
 
     #[test_only]
     public fun setup_partial_voting(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         proposer: &signer,
         voter_1: &signer,
         voter_2: &signer,
     ) acquires GovernanceResponsbility {
-        initialize_partial_voting(aptos_framework);
-        features::change_feature_flags_for_testing(aptos_framework, vector[features::get_partial_governance_voting()], vector[]);
-        setup_voting(aptos_framework, proposer, voter_1, voter_2);
+        initialize_partial_voting(starcoin_framework);
+        features::change_feature_flags_for_testing(starcoin_framework, vector[features::get_partial_governance_voting()], vector[]);
+        setup_voting(starcoin_framework, proposer, voter_1, voter_2);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
+    #[test(starcoin_framework = @starcoin_framework)]
     public entry fun test_update_governance_config(
-        aptos_framework: signer,
+        starcoin_framework: signer,
     ) acquires GovernanceConfig, GovernanceEvents {
-        account::create_account_for_test(signer::address_of(&aptos_framework));
-        initialize(&aptos_framework, 1, 2, 3);
-        update_governance_config(&aptos_framework, 10, 20, 30);
+        account::create_account_for_test(signer::address_of(&starcoin_framework));
+        initialize(&starcoin_framework, 1, 2, 3);
+        update_governance_config(&starcoin_framework, 10, 20, 30);
 
-        let config = borrow_global<GovernanceConfig>(@aptos_framework);
+        let config = borrow_global<GovernanceConfig>(@starcoin_framework);
         assert!(config.min_voting_threshold == 10, 0);
         assert!(config.required_proposer_stake == 20, 1);
         assert!(config.voting_duration_secs == 30, 3);
     }
 
     #[test(account = @0x123)]
-    #[expected_failure(abort_code = 0x50003, location = aptos_framework::system_addresses)]
+    #[expected_failure(abort_code = 0x50003, location = starcoin_framework::system_addresses)]
     public entry fun test_update_governance_config_unauthorized_should_fail(
         account: signer) acquires GovernanceConfig, GovernanceEvents {
         initialize(&account, 1, 2, 3);
         update_governance_config(&account, 10, 20, 30);
     }
 
-    #[test(aptos_framework = @aptos_framework, proposer = @0x123, yes_voter = @0x234, no_voter = @345)]
+    #[test(starcoin_framework = @starcoin_framework, proposer = @0x123, yes_voter = @0x234, no_voter = @345)]
     public entry fun test_replace_execution_hash(
-        aptos_framework: signer,
+        starcoin_framework: signer,
         proposer: signer,
         yes_voter: signer,
         no_voter: signer,
     ) acquires GovernanceResponsbility, GovernanceConfig, ApprovedExecutionHashes, VotingRecords, VotingRecordsV2, GovernanceEvents {
-        setup_voting(&aptos_framework, &proposer, &yes_voter, &no_voter);
+        setup_voting(&starcoin_framework, &proposer, &yes_voter, &no_voter);
 
         create_proposal_for_test(&proposer, true);
         vote(&yes_voter, signer::address_of(&yes_voter), 0, true);
@@ -1353,7 +1353,7 @@ module aptos_framework::aptos_governance {
         vector::push_back(&mut execution_hash, 1);
         vector::push_back(&mut next_execution_hash, 10);
 
-        voting::resolve_proposal_v2<GovernanceProposal>(@aptos_framework, 0, next_execution_hash);
+        voting::resolve_proposal_v2<GovernanceProposal>(@starcoin_framework, 0, next_execution_hash);
 
         if (vector::length(&next_execution_hash) == 0) {
             remove_approved_hash(0);
@@ -1361,27 +1361,27 @@ module aptos_framework::aptos_governance {
             add_approved_script_hash(0)
         };
 
-        let approved_hashes = borrow_global<ApprovedExecutionHashes>(@aptos_framework).hashes;
+        let approved_hashes = borrow_global<ApprovedExecutionHashes>(@starcoin_framework).hashes;
         assert!(*simple_map::borrow(&approved_hashes, &0) == vector[10u8, ], 1);
     }
 
     #[test_only]
     public fun initialize_for_test(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         min_voting_threshold: u128,
         required_proposer_stake: u64,
         voting_duration_secs: u64,
     ) {
-        initialize(aptos_framework, min_voting_threshold, required_proposer_stake, voting_duration_secs);
+        initialize(starcoin_framework, min_voting_threshold, required_proposer_stake, voting_duration_secs);
     }
 
     #[verify_only]
     public fun initialize_for_verification(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         min_voting_threshold: u128,
         required_proposer_stake: u64,
         voting_duration_secs: u64,
     ) {
-        initialize(aptos_framework, min_voting_threshold, required_proposer_stake, voting_duration_secs);
+        initialize(starcoin_framework, min_voting_threshold, required_proposer_stake, voting_duration_secs);
     }
 }

@@ -1,21 +1,21 @@
 /// This module provides an interface to burn or collect and redistribute transaction fees.
-module aptos_framework::transaction_fee {
-    use aptos_framework::coin::{Self, AggregatableCoin, BurnCapability, Coin, MintCapability};
-    use aptos_framework::aptos_account;
-    use aptos_framework::aptos_coin::AptosCoin;
-    use aptos_framework::stake;
-    use aptos_framework::fungible_asset::BurnRef;
-    use aptos_framework::system_addresses;
+module starcoin_framework::transaction_fee {
+    use starcoin_framework::coin::{Self, AggregatableCoin, BurnCapability, Coin, MintCapability};
+    use starcoin_framework::aptos_account;
+    use starcoin_framework::aptos_coin::AptosCoin;
+    use starcoin_framework::stake;
+    use starcoin_framework::fungible_asset::BurnRef;
+    use starcoin_framework::system_addresses;
     use std::error;
     use std::features;
     use std::option::{Self, Option};
     use std::signer;
-    use aptos_framework::event;
+    use starcoin_framework::event;
 
-    friend aptos_framework::block;
-    friend aptos_framework::genesis;
-    friend aptos_framework::reconfiguration;
-    friend aptos_framework::transaction_validation;
+    friend starcoin_framework::block;
+    friend starcoin_framework::genesis;
+    friend starcoin_framework::reconfiguration;
+    friend starcoin_framework::transaction_validation;
 
     /// Gas fees are already being collected and the struct holding
     /// information about collected amounts is already published.
@@ -87,36 +87,36 @@ module aptos_framework::transaction_fee {
 
     /// Initializes the resource storing information about gas fees collection and
     /// distribution. Should be called by on-chain governance.
-    public fun initialize_fee_collection_and_distribution(aptos_framework: &signer, burn_percentage: u8) {
-        system_addresses::assert_aptos_framework(aptos_framework);
+    public fun initialize_fee_collection_and_distribution(starcoin_framework: &signer, burn_percentage: u8) {
+        system_addresses::assert_aptos_framework(starcoin_framework);
         assert!(
-            !exists<CollectedFeesPerBlock>(@aptos_framework),
+            !exists<CollectedFeesPerBlock>(@starcoin_framework),
             error::already_exists(EALREADY_COLLECTING_FEES)
         );
         assert!(burn_percentage <= 100, error::out_of_range(EINVALID_BURN_PERCENTAGE));
 
         // Make sure stakng module is aware of transaction fees collection.
-        stake::initialize_validator_fees(aptos_framework);
+        stake::initialize_validator_fees(starcoin_framework);
 
         // Initially, no fees are collected and the block proposer is not set.
         let collected_fees = CollectedFeesPerBlock {
-            amount: coin::initialize_aggregatable_coin(aptos_framework),
+            amount: coin::initialize_aggregatable_coin(starcoin_framework),
             proposer: option::none(),
             burn_percentage,
         };
-        move_to(aptos_framework, collected_fees);
+        move_to(starcoin_framework, collected_fees);
     }
 
     fun is_fees_collection_enabled(): bool {
-        exists<CollectedFeesPerBlock>(@aptos_framework)
+        exists<CollectedFeesPerBlock>(@starcoin_framework)
     }
 
     /// Sets the burn percentage for collected fees to a new value. Should be called by on-chain governance.
     public fun upgrade_burn_percentage(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         new_burn_percentage: u8
     ) acquires AptosCoinCapabilities, CollectedFeesPerBlock {
-        system_addresses::assert_aptos_framework(aptos_framework);
+        system_addresses::assert_aptos_framework(starcoin_framework);
         assert!(new_burn_percentage <= 100, error::out_of_range(EINVALID_BURN_PERCENTAGE));
 
         // Prior to upgrading the burn percentage, make sure to process collected
@@ -126,7 +126,7 @@ module aptos_framework::transaction_fee {
 
         if (is_fees_collection_enabled()) {
             // Upgrade has no effect unless fees are being collected.
-            let burn_percentage = &mut borrow_global_mut<CollectedFeesPerBlock>(@aptos_framework).burn_percentage;
+            let burn_percentage = &mut borrow_global_mut<CollectedFeesPerBlock>(@starcoin_framework).burn_percentage;
             *burn_percentage = new_burn_percentage
         }
     }
@@ -135,7 +135,7 @@ module aptos_framework::transaction_fee {
     /// can only be called at the beginning of the block.
     public(friend) fun register_proposer_for_fee_collection(proposer_addr: address) acquires CollectedFeesPerBlock {
         if (is_fees_collection_enabled()) {
-            let collected_fees = borrow_global_mut<CollectedFeesPerBlock>(@aptos_framework);
+            let collected_fees = borrow_global_mut<CollectedFeesPerBlock>(@starcoin_framework);
             let _ = option::swap_or_fill(&mut collected_fees.proposer, proposer_addr);
         }
     }
@@ -154,7 +154,7 @@ module aptos_framework::transaction_fee {
             let coin_to_burn = coin::extract(coin, amount_to_burn);
             coin::burn(
                 coin_to_burn,
-                &borrow_global<AptosCoinCapabilities>(@aptos_framework).burn_cap,
+                &borrow_global<AptosCoinCapabilities>(@starcoin_framework).burn_cap,
             );
         }
     }
@@ -166,7 +166,7 @@ module aptos_framework::transaction_fee {
         if (!is_fees_collection_enabled()) {
             return
         };
-        let collected_fees = borrow_global_mut<CollectedFeesPerBlock>(@aptos_framework);
+        let collected_fees = borrow_global_mut<CollectedFeesPerBlock>(@starcoin_framework);
 
         // If there are no collected fees, only unset the proposer. See the rationale for
         // setting proposer to option::none() below.
@@ -209,11 +209,11 @@ module aptos_framework::transaction_fee {
 
     /// Burn transaction fees in epilogue.
     public(friend) fun burn_fee(account: address, fee: u64) acquires AptosFABurnCapabilities, AptosCoinCapabilities {
-        if (exists<AptosFABurnCapabilities>(@aptos_framework)) {
-            let burn_ref = &borrow_global<AptosFABurnCapabilities>(@aptos_framework).burn_ref;
+        if (exists<AptosFABurnCapabilities>(@starcoin_framework)) {
+            let burn_ref = &borrow_global<AptosFABurnCapabilities>(@starcoin_framework).burn_ref;
             aptos_account::burn_from_fungible_store(burn_ref, account, fee);
         } else {
-            let burn_cap = &borrow_global<AptosCoinCapabilities>(@aptos_framework).burn_cap;
+            let burn_cap = &borrow_global<AptosCoinCapabilities>(@starcoin_framework).burn_cap;
             if (features::operations_default_to_fa_apt_store_enabled()) {
                 let (burn_ref, burn_receipt) = coin::get_paired_burn_ref(burn_cap);
                 aptos_account::burn_from_fungible_store(&burn_ref, account, fee);
@@ -230,14 +230,14 @@ module aptos_framework::transaction_fee {
 
     /// Mint refund in epilogue.
     public(friend) fun mint_and_refund(account: address, refund: u64) acquires AptosCoinMintCapability {
-        let mint_cap = &borrow_global<AptosCoinMintCapability>(@aptos_framework).mint_cap;
+        let mint_cap = &borrow_global<AptosCoinMintCapability>(@starcoin_framework).mint_cap;
         let refund_coin = coin::mint(refund, mint_cap);
         coin::force_deposit(account, refund_coin);
     }
 
     /// Collect transaction fees in epilogue.
     public(friend) fun collect_fee(account: address, fee: u64) acquires CollectedFeesPerBlock {
-        let collected_fees = borrow_global_mut<CollectedFeesPerBlock>(@aptos_framework);
+        let collected_fees = borrow_global_mut<CollectedFeesPerBlock>(@starcoin_framework);
 
         // Here, we are always optimistic and always collect fees. If the proposer is not set,
         // or we cannot redistribute fees later for some reason (e.g. account cannot receive AptoCoin)
@@ -247,31 +247,31 @@ module aptos_framework::transaction_fee {
     }
 
     /// Only called during genesis.
-    public(friend) fun store_aptos_coin_burn_cap(aptos_framework: &signer, burn_cap: BurnCapability<AptosCoin>) {
-        system_addresses::assert_aptos_framework(aptos_framework);
+    public(friend) fun store_aptos_coin_burn_cap(starcoin_framework: &signer, burn_cap: BurnCapability<AptosCoin>) {
+        system_addresses::assert_aptos_framework(starcoin_framework);
 
         if (features::operations_default_to_fa_apt_store_enabled()) {
             let burn_ref = coin::convert_and_take_paired_burn_ref(burn_cap);
-            move_to(aptos_framework, AptosFABurnCapabilities { burn_ref });
+            move_to(starcoin_framework, AptosFABurnCapabilities { burn_ref });
         } else {
-            move_to(aptos_framework, AptosCoinCapabilities { burn_cap })
+            move_to(starcoin_framework, AptosCoinCapabilities { burn_cap })
         }
     }
 
-    public entry fun convert_to_aptos_fa_burn_ref(aptos_framework: &signer) acquires AptosCoinCapabilities {
+    public entry fun convert_to_aptos_fa_burn_ref(starcoin_framework: &signer) acquires AptosCoinCapabilities {
         assert!(features::operations_default_to_fa_apt_store_enabled(), EFA_GAS_CHARGING_NOT_ENABLED);
-        system_addresses::assert_aptos_framework(aptos_framework);
+        system_addresses::assert_aptos_framework(starcoin_framework);
         let AptosCoinCapabilities {
             burn_cap,
-        } = move_from<AptosCoinCapabilities>(signer::address_of(aptos_framework));
+        } = move_from<AptosCoinCapabilities>(signer::address_of(starcoin_framework));
         let burn_ref = coin::convert_and_take_paired_burn_ref(burn_cap);
-        move_to(aptos_framework, AptosFABurnCapabilities { burn_ref });
+        move_to(starcoin_framework, AptosFABurnCapabilities { burn_ref });
     }
 
     /// Only called during genesis.
-    public(friend) fun store_aptos_coin_mint_cap(aptos_framework: &signer, mint_cap: MintCapability<AptosCoin>) {
-        system_addresses::assert_aptos_framework(aptos_framework);
-        move_to(aptos_framework, AptosCoinMintCapability { mint_cap })
+    public(friend) fun store_aptos_coin_mint_cap(starcoin_framework: &signer, mint_cap: MintCapability<AptosCoin>) {
+        system_addresses::assert_aptos_framework(starcoin_framework);
+        move_to(starcoin_framework, AptosCoinMintCapability { mint_cap })
     }
 
     #[deprecated]
@@ -285,30 +285,30 @@ module aptos_framework::transaction_fee {
     }
 
     #[test_only]
-    use aptos_framework::aggregator_factory;
+    use starcoin_framework::aggregator_factory;
     #[test_only]
-    use aptos_framework::object;
+    use starcoin_framework::object;
 
-    #[test(aptos_framework = @aptos_framework)]
-    fun test_initialize_fee_collection_and_distribution(aptos_framework: signer) acquires CollectedFeesPerBlock {
-        aggregator_factory::initialize_aggregator_factory_for_test(&aptos_framework);
-        initialize_fee_collection_and_distribution(&aptos_framework, 25);
+    #[test(starcoin_framework = @starcoin_framework)]
+    fun test_initialize_fee_collection_and_distribution(starcoin_framework: signer) acquires CollectedFeesPerBlock {
+        aggregator_factory::initialize_aggregator_factory_for_test(&starcoin_framework);
+        initialize_fee_collection_and_distribution(&starcoin_framework, 25);
 
         // Check struct has been published.
-        assert!(exists<CollectedFeesPerBlock>(@aptos_framework), 0);
+        assert!(exists<CollectedFeesPerBlock>(@starcoin_framework), 0);
 
         // Check that initial balance is 0 and there is no proposer set.
-        let collected_fees = borrow_global<CollectedFeesPerBlock>(@aptos_framework);
+        let collected_fees = borrow_global<CollectedFeesPerBlock>(@starcoin_framework);
         assert!(coin::is_aggregatable_coin_zero(&collected_fees.amount), 0);
         assert!(option::is_none(&collected_fees.proposer), 0);
         assert!(collected_fees.burn_percentage == 25, 0);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
-    fun test_burn_fraction_calculation(aptos_framework: signer) acquires AptosCoinCapabilities {
-        use aptos_framework::aptos_coin;
-        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(&aptos_framework);
-        store_aptos_coin_burn_cap(&aptos_framework, burn_cap);
+    #[test(starcoin_framework = @starcoin_framework)]
+    fun test_burn_fraction_calculation(starcoin_framework: signer) acquires AptosCoinCapabilities {
+        use starcoin_framework::aptos_coin;
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(&starcoin_framework);
+        store_aptos_coin_burn_cap(&starcoin_framework, burn_cap);
 
         let c1 = coin::mint<AptosCoin>(100, &mint_cap);
         assert!(*option::borrow(&coin::supply<AptosCoin>()) == 100, 0);
@@ -342,21 +342,21 @@ module aptos_framework::transaction_fee {
         coin::destroy_mint_cap(mint_cap);
     }
 
-    #[test(aptos_framework = @aptos_framework, alice = @0xa11ce, bob = @0xb0b, carol = @0xca101)]
+    #[test(starcoin_framework = @starcoin_framework, alice = @0xa11ce, bob = @0xb0b, carol = @0xca101)]
     fun test_fees_distribution(
-        aptos_framework: signer,
+        starcoin_framework: signer,
         alice: signer,
         bob: signer,
         carol: signer,
     ) acquires AptosCoinCapabilities, CollectedFeesPerBlock {
         use std::signer;
-        use aptos_framework::aptos_account;
-        use aptos_framework::aptos_coin;
+        use starcoin_framework::aptos_account;
+        use starcoin_framework::aptos_coin;
 
         // Initialization.
-        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(&aptos_framework);
-        store_aptos_coin_burn_cap(&aptos_framework, burn_cap);
-        initialize_fee_collection_and_distribution(&aptos_framework, 10);
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(&starcoin_framework);
+        store_aptos_coin_burn_cap(&starcoin_framework, burn_cap);
+        initialize_fee_collection_and_distribution(&starcoin_framework, 10);
 
         // Create dummy accounts.
         let alice_addr = signer::address_of(&alice);
@@ -376,7 +376,7 @@ module aptos_framework::transaction_fee {
         register_proposer_for_fee_collection(alice_addr);
 
         // Check that there was no fees distribution in the first block.
-        let collected_fees = borrow_global<CollectedFeesPerBlock>(@aptos_framework);
+        let collected_fees = borrow_global<CollectedFeesPerBlock>(@starcoin_framework);
         assert!(coin::is_aggregatable_coin_zero(&collected_fees.amount), 0);
         assert!(*option::borrow(&collected_fees.proposer) == alice_addr, 0);
         assert!(*option::borrow(&coin::supply<AptosCoin>()) == 30000, 0);
@@ -402,7 +402,7 @@ module aptos_framework::transaction_fee {
         assert!(coin::balance<AptosCoin>(carol_addr) == 10000, 0);
 
         // Also, aggregator coin is drained and total supply is slightly changed (10% of 1000 is burnt).
-        let collected_fees = borrow_global<CollectedFeesPerBlock>(@aptos_framework);
+        let collected_fees = borrow_global<CollectedFeesPerBlock>(@starcoin_framework);
         assert!(coin::is_aggregatable_coin_zero(&collected_fees.amount), 0);
         assert!(*option::borrow(&collected_fees.proposer) == bob_addr, 0);
         assert!(*option::borrow(&coin::supply<AptosCoin>()) == 29900, 0);
@@ -427,7 +427,7 @@ module aptos_framework::transaction_fee {
         assert!(coin::balance<AptosCoin>(carol_addr) == 10000, 0);
 
         // Again, aggregator coin is drained and total supply is changed by 10% of 9000.
-        let collected_fees = borrow_global<CollectedFeesPerBlock>(@aptos_framework);
+        let collected_fees = borrow_global<CollectedFeesPerBlock>(@starcoin_framework);
         assert!(coin::is_aggregatable_coin_zero(&collected_fees.amount), 0);
         assert!(*option::borrow(&collected_fees.proposer) == carol_addr, 0);
         assert!(*option::borrow(&coin::supply<AptosCoin>()) == 29000, 0);
@@ -445,7 +445,7 @@ module aptos_framework::transaction_fee {
         assert!(coin::balance<AptosCoin>(bob_addr) == 0, 0);
 
         // Carol must have some fees assigned now.
-        let collected_fees = borrow_global<CollectedFeesPerBlock>(@aptos_framework);
+        let collected_fees = borrow_global<CollectedFeesPerBlock>(@starcoin_framework);
         assert!(stake::get_validator_fee(carol_addr) == 1800, 0);
         assert!(coin::is_aggregatable_coin_zero(&collected_fees.amount), 0);
         assert!(*option::borrow(&collected_fees.proposer) == alice_addr, 0);

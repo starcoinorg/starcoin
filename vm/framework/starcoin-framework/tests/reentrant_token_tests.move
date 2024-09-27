@@ -1,13 +1,13 @@
 #[test_only]
 module 0xcafe::reentrant_token_tests {
-    use aptos_framework::fungible_asset::{Self, Metadata, TestToken};
-    use aptos_framework::dispatchable_fungible_asset;
+    use starcoin_framework::fungible_asset::{Self, Metadata, TestToken};
+    use starcoin_framework::dispatchable_fungible_asset;
     use 0xcafe::reentrant_token;
-    use aptos_framework::object;
+    use starcoin_framework::object;
     use std::option;
 
     #[test(creator = @0xcafe)]
-    #[expected_failure(major_status=4037, location=aptos_framework::dispatchable_fungible_asset)]
+    #[expected_failure(major_status=4037, location=starcoin_framework::dispatchable_fungible_asset)]
     fun test_reentrant_deposit(
         creator: &signer,
     ) {

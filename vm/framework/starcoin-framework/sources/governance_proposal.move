@@ -1,8 +1,8 @@
 /// Define the GovernanceProposal that will be used as part of on-chain governance by AptosGovernance.
 ///
 /// This is separate from the AptosGovernance module to avoid circular dependency between AptosGovernance and Stake.
-module aptos_framework::governance_proposal {
-    friend aptos_framework::aptos_governance;
+module starcoin_framework::governance_proposal {
+    friend starcoin_framework::aptos_governance;
 
     struct GovernanceProposal has store, drop {}
 

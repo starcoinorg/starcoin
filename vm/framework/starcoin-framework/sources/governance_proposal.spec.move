@@ -1,4 +1,4 @@
-spec aptos_framework::governance_proposal {
+spec starcoin_framework::governance_proposal {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: Creating a proposal should never abort but should always return a governance proposal resource.
@@ -10,7 +10,7 @@ spec aptos_framework::governance_proposal {
     /// Requirement: The governance proposal module should only be accessible to the aptos governance.
     /// Criticality: Medium
     /// Implementation: Both create_proposal and create_empty_proposal functions are only available to the friend module
-    /// aptos_framework::aptos_governance.
+    /// starcoin_framework::aptos_governance.
     /// Enforcement: Enforced via friend module relationship.
     /// </high-level-req>
     ///

@@ -1,13 +1,13 @@
 /// Structs and functions for on-chain randomness configurations.
-module aptos_framework::randomness_config {
+module starcoin_framework::randomness_config {
     use std::string;
     use aptos_std::copyable_any;
     use aptos_std::copyable_any::Any;
     use aptos_std::fixed_point64::FixedPoint64;
-    use aptos_framework::config_buffer;
-    use aptos_framework::system_addresses;
+    use starcoin_framework::config_buffer;
+    use starcoin_framework::system_addresses;
 
-    friend aptos_framework::reconfiguration_with_dkg;
+    friend starcoin_framework::reconfiguration_with_dkg;
 
     const EINVALID_CONFIG_VARIANT: u64 = 1;
 
@@ -44,7 +44,7 @@ module aptos_framework::randomness_config {
     /// Initialize the configuration. Used in genesis or governance.
     public fun initialize(framework: &signer, config: RandomnessConfig) {
         system_addresses::assert_aptos_framework(framework);
-        if (!exists<RandomnessConfig>(@aptos_framework)) {
+        if (!exists<RandomnessConfig>(@starcoin_framework)) {
             move_to(framework, config)
         }
     }
@@ -60,8 +60,8 @@ module aptos_framework::randomness_config {
         system_addresses::assert_aptos_framework(framework);
         if (config_buffer::does_exist<RandomnessConfig>()) {
             let new_config = config_buffer::extract<RandomnessConfig>();
-            if (exists<RandomnessConfig>(@aptos_framework)) {
-                *borrow_global_mut<RandomnessConfig>(@aptos_framework) = new_config;
+            if (exists<RandomnessConfig>(@starcoin_framework)) {
+                *borrow_global_mut<RandomnessConfig>(@starcoin_framework) = new_config;
             } else {
                 move_to(framework, new_config);
             }
@@ -73,8 +73,8 @@ module aptos_framework::randomness_config {
     /// NOTE: this returning true does not mean randomness will run.
     /// The feature works if and only if `consensus_config::validator_txn_enabled() && randomness_config::enabled()`.
     public fun enabled(): bool acquires RandomnessConfig {
-        if (exists<RandomnessConfig>(@aptos_framework)) {
-            let config = borrow_global<RandomnessConfig>(@aptos_framework);
+        if (exists<RandomnessConfig>(@starcoin_framework)) {
+            let config = borrow_global<RandomnessConfig>(@starcoin_framework);
             let variant_type_name = *string::bytes(copyable_any::type_name(&config.variant));
             variant_type_name != b"0x1::randomness_config::ConfigOff"
         } else {
@@ -116,8 +116,8 @@ module aptos_framework::randomness_config {
 
     /// Get the currently effective randomness configuration object.
     public fun current(): RandomnessConfig acquires RandomnessConfig {
-        if (exists<RandomnessConfig>(@aptos_framework)) {
-            *borrow_global<RandomnessConfig>(@aptos_framework)
+        if (exists<RandomnessConfig>(@starcoin_framework)) {
+            *borrow_global<RandomnessConfig>(@starcoin_framework)
         } else {
             new_off()
         }

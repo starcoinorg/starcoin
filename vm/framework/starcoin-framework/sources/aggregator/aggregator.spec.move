@@ -1,4 +1,4 @@
-spec aptos_framework::aggregator {
+spec starcoin_framework::aggregator {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: For a given aggregator, it should always be possible to: Return the limit value of the aggregator.

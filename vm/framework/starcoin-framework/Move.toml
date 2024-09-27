@@ -12,5 +12,5 @@ core_resources = "0xA550C18"
 vm_reserved = "0x0"
 
 [dependencies]
-AptosStdlib = { local = "../aptos-stdlib" }
+StarcoinStdlib = { local = "../starcoin-stdlib" }
 MoveStdlib = { local = "../move-stdlib" }

@@ -1,4 +1,4 @@
-spec aptos_framework::object {
+spec starcoin_framework::object {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: It's not possible to create an object twice on the same address.

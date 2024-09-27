@@ -1,4 +1,4 @@
-spec aptos_framework::event {
+spec starcoin_framework::event {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: Each event handle possesses a distinct and unique GUID.

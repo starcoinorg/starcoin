@@ -1,4 +1,4 @@
-spec aptos_framework::transaction_context {
+spec starcoin_framework::transaction_context {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: Fetching the transaction hash should return a vector with 32 bytes.

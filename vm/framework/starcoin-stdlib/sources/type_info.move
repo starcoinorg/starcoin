@@ -35,9 +35,9 @@ module aptos_std::type_info {
         self.struct_name
     }
 
-    /// Returns the current chain ID, mirroring what `aptos_framework::chain_id::get()` would return, except in `#[test]`
-    /// functions, where this will always return `4u8` as the chain ID, whereas `aptos_framework::chain_id::get()` will
-    /// return whichever ID was passed to `aptos_framework::chain_id::initialize_for_test()`.
+    /// Returns the current chain ID, mirroring what `starcoin_framework::chain_id::get()` would return, except in `#[test]`
+    /// functions, where this will always return `4u8` as the chain ID, whereas `starcoin_framework::chain_id::get()` will
+    /// return whichever ID was passed to `starcoin_framework::chain_id::initialize_for_test()`.
     public fun chain_id(): u8 {
         if (!features::aptos_stdlib_chain_id_enabled()) {
             abort(std::error::invalid_state(E_NATIVE_FUN_NOT_AVAILABLE))

@@ -35,14 +35,14 @@
 /// are, the more expensive voting on transactions will become. If a large number of owners is designed, such as in a
 /// flat governance structure, clients are encouraged to write their own modules on top of this multisig account module
 /// and implement the governance voting logic on top.
-module aptos_framework::multisig_account {
-    use aptos_framework::account::{Self, SignerCapability, new_event_handle, create_resource_address};
-    use aptos_framework::aptos_coin::AptosCoin;
-    use aptos_framework::chain_id;
-    use aptos_framework::create_signer::create_signer;
-    use aptos_framework::coin;
-    use aptos_framework::event::{EventHandle, emit_event, emit};
-    use aptos_framework::timestamp::now_seconds;
+module starcoin_framework::multisig_account {
+    use starcoin_framework::account::{Self, SignerCapability, new_event_handle, create_resource_address};
+    use starcoin_framework::aptos_coin::AptosCoin;
+    use starcoin_framework::chain_id;
+    use starcoin_framework::create_signer::create_signer;
+    use starcoin_framework::coin;
+    use starcoin_framework::event::{EventHandle, emit_event, emit};
+    use starcoin_framework::timestamp::now_seconds;
     use aptos_std::simple_map::{Self, SimpleMap};
     use aptos_std::table::{Self, Table};
     use std::bcs::to_bytes;
@@ -56,7 +56,7 @@ module aptos_framework::multisig_account {
     /// The salt used to create a resource account during multisig account creation.
     /// This is used to avoid conflicts with other modules that also create resource accounts with the same owner
     /// account.
-    const DOMAIN_SEPARATOR: vector<u8> = b"aptos_framework::multisig_account";
+    const DOMAIN_SEPARATOR: vector<u8> = b"starcoin_framework::multisig_account";
 
     // Any error codes > 2000 can be thrown as part of transaction prologue.
     /// Owner list cannot contain the same address more than once.
@@ -1459,9 +1459,9 @@ module aptos_framework::multisig_account {
     ////////////////////////// Tests ///////////////////////////////
 
     #[test_only]
-    use aptos_framework::aptos_account::create_account;
+    use starcoin_framework::aptos_account::create_account;
     #[test_only]
-    use aptos_framework::timestamp;
+    use starcoin_framework::timestamp;
     #[test_only]
     use aptos_std::from_bcs;
     #[test_only]
@@ -1470,9 +1470,9 @@ module aptos_framework::multisig_account {
     use std::string::utf8;
     use std::features;
     #[test_only]
-    use aptos_framework::aptos_coin;
+    use starcoin_framework::aptos_coin;
     #[test_only]
-    use aptos_framework::coin::{destroy_mint_cap, destroy_burn_cap};
+    use starcoin_framework::coin::{destroy_mint_cap, destroy_burn_cap};
 
     #[test_only]
     const PAYLOAD: vector<u8> = vector[1, 2, 3];

@@ -4,7 +4,7 @@
 /// spawn a VM and make a Move function call. Instead, the JWK consensus Rust code will have to directly
 /// write some of the resources in this file. As a result, the structs in this file are declared so as to
 /// have a simple layout which is easily accessible in Rust.
-module aptos_framework::jwks {
+module starcoin_framework::jwks {
     use std::bcs;
     use std::error;
     use std::option;
@@ -16,16 +16,16 @@ module aptos_framework::jwks {
     use aptos_std::comparator::{compare_u8_vector, is_greater_than, is_equal};
     use aptos_std::copyable_any;
     use aptos_std::copyable_any::Any;
-    use aptos_framework::chain_status;
-    use aptos_framework::config_buffer;
-    use aptos_framework::event::emit;
-    use aptos_framework::reconfiguration;
-    use aptos_framework::system_addresses;
+    use starcoin_framework::chain_status;
+    use starcoin_framework::config_buffer;
+    use starcoin_framework::event::emit;
+    use starcoin_framework::reconfiguration;
+    use starcoin_framework::system_addresses;
     #[test_only]
-    use aptos_framework::account::create_account_for_test;
+    use starcoin_framework::account::create_account_for_test;
 
-    friend aptos_framework::genesis;
-    friend aptos_framework::reconfiguration_with_dkg;
+    friend starcoin_framework::genesis;
+    friend starcoin_framework::reconfiguration_with_dkg;
 
     /// We limit the size of a `PatchedJWKs` resource installed by a dapp owner for federated keyless accounts.
     /// Note: If too large, validators waste work reading it for invalid TXN signatures.
@@ -211,7 +211,7 @@ module aptos_framework::jwks {
     /// Get a JWK by issuer and key ID from the `PatchedJWKs`, if it exists.
     /// More convenient to call from Move, since it does not abort.
     public fun try_get_patched_jwk(issuer: vector<u8>, jwk_id: vector<u8>): Option<JWK> acquires PatchedJWKs {
-        let jwks = &borrow_global<PatchedJWKs>(@aptos_framework).jwks;
+        let jwks = &borrow_global<PatchedJWKs>(@starcoin_framework).jwks;
         try_get_jwk_by_issuer(jwks, issuer, jwk_id)
     }
 
@@ -222,7 +222,7 @@ module aptos_framework::jwks {
         system_addresses::assert_aptos_framework(fx);
         chain_status::assert_genesis();
 
-        let provider_set = borrow_global_mut<SupportedOIDCProviders>(@aptos_framework);
+        let provider_set = borrow_global_mut<SupportedOIDCProviders>(@starcoin_framework);
 
         let old_config_url= remove_oidc_provider_internal(provider_set, name);
         vector::push_back(&mut provider_set.providers, OIDCProvider { name, config_url });
@@ -232,12 +232,12 @@ module aptos_framework::jwks {
     /// Used in on-chain governances to update the supported OIDC providers, effective starting next epoch.
     /// Example usage:
     /// ```
-    /// aptos_framework::jwks::upsert_oidc_provider_for_next_epoch(
+    /// starcoin_framework::jwks::upsert_oidc_provider_for_next_epoch(
     ///     &framework_signer,
     ///     b"https://accounts.google.com",
     ///     b"https://accounts.google.com/.well-known/openid-configuration"
     /// );
-    /// aptos_framework::aptos_governance::reconfigure(&framework_signer);
+    /// starcoin_framework::aptos_governance::reconfigure(&framework_signer);
     /// ```
     public fun upsert_oidc_provider_for_next_epoch(fx: &signer, name: vector<u8>, config_url: vector<u8>): Option<vector<u8>> acquires SupportedOIDCProviders {
         system_addresses::assert_aptos_framework(fx);
@@ -245,7 +245,7 @@ module aptos_framework::jwks {
         let provider_set = if (config_buffer::does_exist<SupportedOIDCProviders>()) {
             config_buffer::extract<SupportedOIDCProviders>()
         } else {
-            *borrow_global_mut<SupportedOIDCProviders>(@aptos_framework)
+            *borrow_global_mut<SupportedOIDCProviders>(@starcoin_framework)
         };
 
         let old_config_url = remove_oidc_provider_internal(&mut provider_set, name);
@@ -261,18 +261,18 @@ module aptos_framework::jwks {
         system_addresses::assert_aptos_framework(fx);
         chain_status::assert_genesis();
 
-        let provider_set = borrow_global_mut<SupportedOIDCProviders>(@aptos_framework);
+        let provider_set = borrow_global_mut<SupportedOIDCProviders>(@starcoin_framework);
         remove_oidc_provider_internal(provider_set, name)
     }
 
     /// Used in on-chain governances to update the supported OIDC providers, effective starting next epoch.
     /// Example usage:
     /// ```
-    /// aptos_framework::jwks::remove_oidc_provider_for_next_epoch(
+    /// starcoin_framework::jwks::remove_oidc_provider_for_next_epoch(
     ///     &framework_signer,
     ///     b"https://accounts.google.com",
     /// );
-    /// aptos_framework::aptos_governance::reconfigure(&framework_signer);
+    /// starcoin_framework::aptos_governance::reconfigure(&framework_signer);
     /// ```
     public fun remove_oidc_provider_for_next_epoch(fx: &signer, name: vector<u8>): Option<vector<u8>> acquires SupportedOIDCProviders {
         system_addresses::assert_aptos_framework(fx);
@@ -280,7 +280,7 @@ module aptos_framework::jwks {
         let provider_set = if (config_buffer::does_exist<SupportedOIDCProviders>()) {
             config_buffer::extract<SupportedOIDCProviders>()
         } else {
-            *borrow_global_mut<SupportedOIDCProviders>(@aptos_framework)
+            *borrow_global_mut<SupportedOIDCProviders>(@starcoin_framework)
         };
         let ret = remove_oidc_provider_internal(&mut provider_set, name);
         config_buffer::upsert(provider_set);
@@ -292,8 +292,8 @@ module aptos_framework::jwks {
         system_addresses::assert_aptos_framework(framework);
         if (config_buffer::does_exist<SupportedOIDCProviders>()) {
             let new_config = config_buffer::extract<SupportedOIDCProviders>();
-            if (exists<SupportedOIDCProviders>(@aptos_framework)) {
-                *borrow_global_mut<SupportedOIDCProviders>(@aptos_framework) = new_config;
+            if (exists<SupportedOIDCProviders>(@starcoin_framework)) {
+                *borrow_global_mut<SupportedOIDCProviders>(@starcoin_framework) = new_config;
             } else {
                 move_to(framework, new_config);
             }
@@ -303,7 +303,7 @@ module aptos_framework::jwks {
     /// Set the `Patches`. Only called in governance proposals.
     public fun set_patches(fx: &signer, patches: vector<Patch>) acquires Patches, PatchedJWKs, ObservedJWKs {
         system_addresses::assert_aptos_framework(fx);
-        borrow_global_mut<Patches>(@aptos_framework).patches = patches;
+        borrow_global_mut<Patches>(@starcoin_framework).patches = patches;
         regenerate_patched_jwks();
     }
 
@@ -386,7 +386,7 @@ module aptos_framework::jwks {
     /// and its `version` equals to the on-chain version + 1.
     public fun upsert_into_observed_jwks(fx: &signer, provider_jwks_vec: vector<ProviderJWKs>) acquires ObservedJWKs, PatchedJWKs, Patches {
         system_addresses::assert_aptos_framework(fx);
-        let observed_jwks = borrow_global_mut<ObservedJWKs>(@aptos_framework);
+        let observed_jwks = borrow_global_mut<ObservedJWKs>(@starcoin_framework);
         vector::for_each(provider_jwks_vec, |obj| {
             let provider_jwks: ProviderJWKs = obj;
             upsert_provider_jwks(&mut observed_jwks.jwks, provider_jwks);
@@ -402,7 +402,7 @@ module aptos_framework::jwks {
     /// Return the potentially existing `ProviderJWKs` of the given issuer.
     public fun remove_issuer_from_observed_jwks(fx: &signer, issuer: vector<u8>): Option<ProviderJWKs> acquires ObservedJWKs, PatchedJWKs, Patches {
         system_addresses::assert_aptos_framework(fx);
-        let observed_jwks = borrow_global_mut<ObservedJWKs>(@aptos_framework);
+        let observed_jwks = borrow_global_mut<ObservedJWKs>(@starcoin_framework);
         let old_value = remove_issuer(&mut observed_jwks.jwks, issuer);
 
         let epoch = reconfiguration::current_epoch();
@@ -414,13 +414,13 @@ module aptos_framework::jwks {
 
     /// Regenerate `PatchedJWKs` from `ObservedJWKs` and `Patches` and save the result.
     fun regenerate_patched_jwks() acquires PatchedJWKs, Patches, ObservedJWKs {
-        let jwks = borrow_global<ObservedJWKs>(@aptos_framework).jwks;
-        let patches = borrow_global<Patches>(@aptos_framework);
+        let jwks = borrow_global<ObservedJWKs>(@starcoin_framework).jwks;
+        let patches = borrow_global<Patches>(@starcoin_framework);
         vector::for_each_ref(&patches.patches, |obj|{
             let patch: &Patch = obj;
             apply_patch(&mut jwks, *patch);
         });
-        *borrow_global_mut<PatchedJWKs>(@aptos_framework) = PatchedJWKs { jwks };
+        *borrow_global_mut<PatchedJWKs>(@starcoin_framework) = PatchedJWKs { jwks };
     }
 
     /// Get a JWK by issuer and key ID from an `AllProvidersJWKs`, if it exists.
@@ -608,13 +608,13 @@ module aptos_framework::jwks {
     //
 
     #[test_only]
-    fun initialize_for_test(aptos_framework: &signer) {
-        create_account_for_test(@aptos_framework);
-        reconfiguration::initialize_for_test(aptos_framework);
-        initialize(aptos_framework);
+    fun initialize_for_test(starcoin_framework: &signer) {
+        create_account_for_test(@starcoin_framework);
+        reconfiguration::initialize_for_test(starcoin_framework);
+        initialize(starcoin_framework);
     }
 
-    #[test(fx = @aptos_framework)]
+    #[test(fx = @starcoin_framework)]
     fun test_observed_jwks_operations(fx: &signer) acquires ObservedJWKs, PatchedJWKs, Patches {
         initialize_for_test(fx);
         let jwk_0 = new_unsupported_jwk(b"key_id_0", b"key_payload_0");
@@ -623,7 +623,7 @@ module aptos_framework::jwks {
         let jwk_3 = new_unsupported_jwk(b"key_id_3", b"key_payload_3");
         let jwk_4 = new_unsupported_jwk(b"key_id_4", b"key_payload_4");
         let expected = AllProvidersJWKs { entries: vector[] };
-        assert!(expected == borrow_global<ObservedJWKs>(@aptos_framework).jwks, 1);
+        assert!(expected == borrow_global<ObservedJWKs>(@starcoin_framework).jwks, 1);
 
         let alice_jwks_v1 = ProviderJWKs {
             issuer: b"alice",
@@ -641,7 +641,7 @@ module aptos_framework::jwks {
             alice_jwks_v1,
             bob_jwks_v1,
         ] };
-        assert!(expected == borrow_global<ObservedJWKs>(@aptos_framework).jwks, 2);
+        assert!(expected == borrow_global<ObservedJWKs>(@starcoin_framework).jwks, 2);
 
         let alice_jwks_v2 = ProviderJWKs {
             issuer: b"alice",
@@ -653,11 +653,11 @@ module aptos_framework::jwks {
             alice_jwks_v2,
             bob_jwks_v1,
         ] };
-        assert!(expected == borrow_global<ObservedJWKs>(@aptos_framework).jwks, 3);
+        assert!(expected == borrow_global<ObservedJWKs>(@starcoin_framework).jwks, 3);
 
         remove_issuer_from_observed_jwks(fx, b"alice");
         let expected = AllProvidersJWKs { entries: vector[bob_jwks_v1] };
-        assert!(expected == borrow_global<ObservedJWKs>(@aptos_framework).jwks, 4);
+        assert!(expected == borrow_global<ObservedJWKs>(@starcoin_framework).jwks, 4);
     }
 
     #[test]
@@ -767,9 +767,9 @@ module aptos_framework::jwks {
         assert!(jwks == AllProvidersJWKs { entries: vector[] }, 1);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
-    fun test_patched_jwks(aptos_framework: signer) acquires ObservedJWKs, PatchedJWKs, Patches {
-        initialize_for_test(&aptos_framework);
+    #[test(starcoin_framework = @starcoin_framework)]
+    fun test_patched_jwks(starcoin_framework: signer) acquires ObservedJWKs, PatchedJWKs, Patches {
+        initialize_for_test(&starcoin_framework);
         let jwk_0 = new_unsupported_jwk(b"key_id_0", b"key_payload_0");
         let jwk_1 = new_unsupported_jwk(b"key_id_1", b"key_payload_1");
         let jwk_2 = new_unsupported_jwk(b"key_id_2", b"key_payload_2");
@@ -777,7 +777,7 @@ module aptos_framework::jwks {
         let jwk_3b = new_unsupported_jwk(b"key_id_3", b"key_payload_3b");
 
         // Fake observation from validators.
-        upsert_into_observed_jwks(&aptos_framework, vector [
+        upsert_into_observed_jwks(&starcoin_framework, vector [
             ProviderJWKs {
                 issuer: b"alice",
                 version: 111,
@@ -793,20 +793,20 @@ module aptos_framework::jwks {
         assert!(option::some(jwk_3) == try_get_patched_jwk(b"bob", b"key_id_3"), 1);
 
         // Ignore all Bob's keys.
-        set_patches(&aptos_framework, vector[
+        set_patches(&starcoin_framework, vector[
             new_patch_remove_issuer(b"bob"),
         ]);
         assert!(option::none() == try_get_patched_jwk(b"bob", b"key_id_3"), 1);
 
         // Update one of Bob's key..
-        set_patches(&aptos_framework, vector[
+        set_patches(&starcoin_framework, vector[
             new_patch_upsert_jwk(b"bob", jwk_3b),
         ]);
         assert!(jwk_3b == get_patched_jwk(b"bob", b"key_id_3"), 1);
         assert!(option::some(jwk_3b) == try_get_patched_jwk(b"bob", b"key_id_3"), 1);
 
         // Wipe everything, then add some keys back.
-        set_patches(&aptos_framework, vector[
+        set_patches(&starcoin_framework, vector[
             new_patch_remove_all(),
             new_patch_upsert_jwk(b"alice", jwk_1),
             new_patch_upsert_jwk(b"bob", jwk_3),

@@ -1,4 +1,4 @@
-spec aptos_framework::aptos_coin {
+spec starcoin_framework::aptos_coin {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: The native token, APT, must be initialized during genesis.
@@ -34,11 +34,11 @@ spec aptos_framework::aptos_coin {
         pragma aborts_if_is_strict;
     }
 
-    spec initialize(aptos_framework: &signer): (BurnCapability<AptosCoin>, MintCapability<AptosCoin>) {
-        use aptos_framework::aggregator_factory;
+    spec initialize(starcoin_framework: &signer): (BurnCapability<AptosCoin>, MintCapability<AptosCoin>) {
+        use starcoin_framework::aggregator_factory;
 
-        let addr = signer::address_of(aptos_framework);
-        aborts_if addr != @aptos_framework;
+        let addr = signer::address_of(starcoin_framework);
+        aborts_if addr != @starcoin_framework;
         aborts_if !string::spec_internal_check_utf8(b"Aptos Coin");
         aborts_if !string::spec_internal_check_utf8(b"APT");
         aborts_if exists<MintCapStore>(addr);
@@ -55,9 +55,9 @@ spec aptos_framework::aptos_coin {
     }
 
     spec destroy_mint_cap {
-        let addr = signer::address_of(aptos_framework);
-        aborts_if addr != @aptos_framework;
-        aborts_if !exists<MintCapStore>(@aptos_framework);
+        let addr = signer::address_of(starcoin_framework);
+        aborts_if addr != @starcoin_framework;
+        aborts_if !exists<MintCapStore>(@starcoin_framework);
     }
 
     // Test function, not needed verify.
@@ -89,7 +89,7 @@ spec aptos_framework::aptos_coin {
     }
 
     spec schema ExistsAptosCoin {
-        requires exists<coin::CoinInfo<AptosCoin>>(@aptos_framework);
+        requires exists<coin::CoinInfo<AptosCoin>>(@starcoin_framework);
     }
 
 }

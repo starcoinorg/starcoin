@@ -1,6 +1,6 @@
 /// This module is responsible for configuring keyless blockchain accounts which were introduced in
 /// [AIP-61](https://github.com/aptos-foundation/AIPs/blob/main/aips/aip-61.md).
-module aptos_framework::keyless_account {
+module starcoin_framework::keyless_account {
     use std::bn254_algebra;
     use std::config_buffer;
     use std::option;
@@ -10,11 +10,11 @@ module aptos_framework::keyless_account {
     use std::vector;
     use aptos_std::crypto_algebra;
     use aptos_std::ed25519;
-    use aptos_framework::chain_status;
-    use aptos_framework::system_addresses;
+    use starcoin_framework::chain_status;
+    use starcoin_framework::system_addresses;
 
-    // The `aptos_framework::reconfiguration_with_dkg` module needs to be able to call `on_new_epoch`.
-    friend aptos_framework::reconfiguration_with_dkg;
+    // The `starcoin_framework::reconfiguration_with_dkg` module needs to be able to call `on_new_epoch`.
+    friend starcoin_framework::reconfiguration_with_dkg;
 
     /// The training wheels PK needs to be 32 bytes long.
     const E_TRAINING_WHEELS_PK_WRONG_SIZE : u64 = 1;
@@ -28,7 +28,7 @@ module aptos_framework::keyless_account {
     #[resource_group(scope = global)]
     struct Group {}
 
-    #[resource_group_member(group = aptos_framework::keyless_account::Group)]
+    #[resource_group_member(group = starcoin_framework::keyless_account::Group)]
     /// The 288-byte Groth16 verification key (VK) for the ZK relation that implements keyless accounts
     struct Groth16VerificationKey has key, store, drop {
         /// 32-byte serialization of `alpha * G`, where `G` is the generator of `G1`.
@@ -44,7 +44,7 @@ module aptos_framework::keyless_account {
         gamma_abc_g1: vector<vector<u8>>,
     }
 
-    #[resource_group_member(group = aptos_framework::keyless_account::Group)]
+    #[resource_group_member(group = starcoin_framework::keyless_account::Group)]
     struct Configuration has key, store, drop, copy {
         /// An override `aud` for the identity of a recovery service, which will help users recover their keyless accounts
         /// associated with dapps or wallets that have disappeared.
@@ -293,8 +293,8 @@ module aptos_framework::keyless_account {
 
         if (config_buffer::does_exist<Groth16VerificationKey>()) {
             let vk = config_buffer::extract();
-            if (exists<Groth16VerificationKey>(@aptos_framework)) {
-                *borrow_global_mut<Groth16VerificationKey>(@aptos_framework) = vk;
+            if (exists<Groth16VerificationKey>(@starcoin_framework)) {
+                *borrow_global_mut<Groth16VerificationKey>(@starcoin_framework) = vk;
             } else {
                 move_to(fx, vk);
             }
@@ -302,8 +302,8 @@ module aptos_framework::keyless_account {
 
         if (config_buffer::does_exist<Configuration>()) {
             let config = config_buffer::extract();
-            if (exists<Configuration>(@aptos_framework)) {
-                *borrow_global_mut<Configuration>(@aptos_framework) = config;
+            if (exists<Configuration>(@starcoin_framework)) {
+                *borrow_global_mut<Configuration>(@starcoin_framework) = config;
             } else {
                 move_to(fx, config);
             }

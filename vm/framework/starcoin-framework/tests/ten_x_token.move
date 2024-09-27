@@ -1,9 +1,9 @@
 #[test_only]
 module 0xcafe::ten_x_token {
-    use aptos_framework::fungible_asset;
-    use aptos_framework::dispatchable_fungible_asset;
-    use aptos_framework::object::{ConstructorRef, Object};
-    use aptos_framework::function_info;
+    use starcoin_framework::fungible_asset;
+    use starcoin_framework::dispatchable_fungible_asset;
+    use starcoin_framework::object::{ConstructorRef, Object};
+    use starcoin_framework::function_info;
 
     use std::option;
     use std::option::Option;

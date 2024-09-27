@@ -1,24 +1,24 @@
 /// This module defines a struct storing the metadata of the block and new block events.
-module aptos_framework::block {
+module starcoin_framework::block {
     use std::error;
     use std::features;
     use std::vector;
     use std::option;
     use aptos_std::table_with_length::{Self, TableWithLength};
     use std::option::Option;
-    use aptos_framework::randomness;
+    use starcoin_framework::randomness;
 
-    use aptos_framework::account;
-    use aptos_framework::event::{Self, EventHandle};
-    use aptos_framework::reconfiguration;
-    use aptos_framework::reconfiguration_with_dkg;
-    use aptos_framework::stake;
-    use aptos_framework::state_storage;
-    use aptos_framework::system_addresses;
-    use aptos_framework::timestamp;
-    use aptos_framework::transaction_fee;
+    use starcoin_framework::account;
+    use starcoin_framework::event::{Self, EventHandle};
+    use starcoin_framework::reconfiguration;
+    use starcoin_framework::reconfiguration_with_dkg;
+    use starcoin_framework::stake;
+    use starcoin_framework::state_storage;
+    use starcoin_framework::system_addresses;
+    use starcoin_framework::timestamp;
+    use starcoin_framework::transaction_fee;
 
-    friend aptos_framework::genesis;
+    friend starcoin_framework::genesis;
 
     const MAX_U64: u64 = 18446744073709551615;
 
@@ -90,23 +90,23 @@ module aptos_framework::block {
     const EZERO_MAX_CAPACITY: u64 = 3;
 
     /// This can only be called during Genesis.
-    public(friend) fun initialize(aptos_framework: &signer, epoch_interval_microsecs: u64) {
-        system_addresses::assert_aptos_framework(aptos_framework);
+    public(friend) fun initialize(starcoin_framework: &signer, epoch_interval_microsecs: u64) {
+        system_addresses::assert_aptos_framework(starcoin_framework);
         assert!(epoch_interval_microsecs > 0, error::invalid_argument(EZERO_EPOCH_INTERVAL));
 
-        move_to<CommitHistory>(aptos_framework, CommitHistory {
+        move_to<CommitHistory>(starcoin_framework, CommitHistory {
             max_capacity: 2000,
             next_idx: 0,
             table: table_with_length::new(),
         });
 
         move_to<BlockResource>(
-            aptos_framework,
+            starcoin_framework,
             BlockResource {
                 height: 0,
                 epoch_interval: epoch_interval_microsecs,
-                new_block_events: account::new_event_handle<NewBlockEvent>(aptos_framework),
-                update_epoch_interval_events: account::new_event_handle<UpdateEpochIntervalEvent>(aptos_framework),
+                new_block_events: account::new_event_handle<NewBlockEvent>(starcoin_framework),
+                update_epoch_interval_events: account::new_event_handle<UpdateEpochIntervalEvent>(starcoin_framework),
             }
         );
     }
@@ -124,13 +124,13 @@ module aptos_framework::block {
     /// Update the epoch interval.
     /// Can only be called as part of the Aptos governance proposal process established by the AptosGovernance module.
     public fun update_epoch_interval_microsecs(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         new_epoch_interval: u64,
     ) acquires BlockResource {
-        system_addresses::assert_aptos_framework(aptos_framework);
+        system_addresses::assert_aptos_framework(starcoin_framework);
         assert!(new_epoch_interval > 0, error::invalid_argument(EZERO_EPOCH_INTERVAL));
 
-        let block_resource = borrow_global_mut<BlockResource>(@aptos_framework);
+        let block_resource = borrow_global_mut<BlockResource>(@starcoin_framework);
         let old_epoch_interval = block_resource.epoch_interval;
         block_resource.epoch_interval = new_epoch_interval;
 
@@ -148,7 +148,7 @@ module aptos_framework::block {
     #[view]
     /// Return epoch interval in seconds.
     public fun get_epoch_interval_secs(): u64 acquires BlockResource {
-        borrow_global<BlockResource>(@aptos_framework).epoch_interval / 1000000
+        borrow_global<BlockResource>(@starcoin_framework).epoch_interval / 1000000
     }
 
 
@@ -176,7 +176,7 @@ module aptos_framework::block {
             proposer_index = option::some(stake::get_validator_index(proposer));
         };
 
-        let block_metadata_ref = borrow_global_mut<BlockResource>(@aptos_framework);
+        let block_metadata_ref = borrow_global_mut<BlockResource>(@starcoin_framework);
         block_metadata_ref.height = event::counter(&block_metadata_ref.new_block_events);
 
         // Emit both event v1 and v2 for compatibility. Eventually only module events will be kept.
@@ -270,7 +270,7 @@ module aptos_framework::block {
     #[view]
     /// Get the current block height
     public fun get_current_block_height(): u64 acquires BlockResource {
-        borrow_global<BlockResource>(@aptos_framework).height
+        borrow_global<BlockResource>(@starcoin_framework).height
     }
 
     /// Emit the event and update height and global timestamp
@@ -280,8 +280,8 @@ module aptos_framework::block {
         new_block_event: NewBlockEvent,
         new_block_event_v2: NewBlock
     ) acquires CommitHistory {
-        if (exists<CommitHistory>(@aptos_framework)) {
-            let commit_history_ref = borrow_global_mut<CommitHistory>(@aptos_framework);
+        if (exists<CommitHistory>(@starcoin_framework)) {
+            let commit_history_ref = borrow_global_mut<CommitHistory>(@starcoin_framework);
             let idx = commit_history_ref.next_idx;
             if (table_with_length::contains(&commit_history_ref.table, idx)) {
                 table_with_length::remove(&mut commit_history_ref.table, idx);
@@ -306,7 +306,7 @@ module aptos_framework::block {
     /// Emit a `NewBlockEvent` event. This function will be invoked by genesis directly to generate the very first
     /// reconfiguration event.
     fun emit_genesis_block_event(vm: signer) acquires BlockResource, CommitHistory {
-        let block_metadata_ref = borrow_global_mut<BlockResource>(@aptos_framework);
+        let block_metadata_ref = borrow_global_mut<BlockResource>(@starcoin_framework);
         let genesis_id = @0x0;
         emit_new_block_event(
             &vm,
@@ -338,7 +338,7 @@ module aptos_framework::block {
     ///  new block event for WriteSetPayload.
     public fun emit_writeset_block_event(vm_signer: &signer, fake_block_hash: address) acquires BlockResource, CommitHistory {
         system_addresses::assert_vm(vm_signer);
-        let block_metadata_ref = borrow_global_mut<BlockResource>(@aptos_framework);
+        let block_metadata_ref = borrow_global_mut<BlockResource>(@starcoin_framework);
         block_metadata_ref.height = event::counter(&block_metadata_ref.new_block_events);
 
         emit_new_block_event(
@@ -372,23 +372,23 @@ module aptos_framework::block {
         initialize(account, epoch_interval_microsecs);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
-    public entry fun test_update_epoch_interval(aptos_framework: signer) acquires BlockResource {
-        account::create_account_for_test(@aptos_framework);
-        initialize(&aptos_framework, 1);
-        assert!(borrow_global<BlockResource>(@aptos_framework).epoch_interval == 1, 0);
-        update_epoch_interval_microsecs(&aptos_framework, 2);
-        assert!(borrow_global<BlockResource>(@aptos_framework).epoch_interval == 2, 1);
+    #[test(starcoin_framework = @starcoin_framework)]
+    public entry fun test_update_epoch_interval(starcoin_framework: signer) acquires BlockResource {
+        account::create_account_for_test(@starcoin_framework);
+        initialize(&starcoin_framework, 1);
+        assert!(borrow_global<BlockResource>(@starcoin_framework).epoch_interval == 1, 0);
+        update_epoch_interval_microsecs(&starcoin_framework, 2);
+        assert!(borrow_global<BlockResource>(@starcoin_framework).epoch_interval == 2, 1);
     }
 
-    #[test(aptos_framework = @aptos_framework, account = @0x123)]
-    #[expected_failure(abort_code = 0x50003, location = aptos_framework::system_addresses)]
+    #[test(starcoin_framework = @starcoin_framework, account = @0x123)]
+    #[expected_failure(abort_code = 0x50003, location = starcoin_framework::system_addresses)]
     public entry fun test_update_epoch_interval_unauthorized_should_fail(
-        aptos_framework: signer,
+        starcoin_framework: signer,
         account: signer,
     ) acquires BlockResource {
-        account::create_account_for_test(@aptos_framework);
-        initialize(&aptos_framework, 1);
+        account::create_account_for_test(@starcoin_framework);
+        initialize(&starcoin_framework, 1);
         update_epoch_interval_microsecs(&account, 2);
     }
 }
