@@ -14,7 +14,10 @@ use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
+use starcoin_vm_types::state_store::errors::StateviewError;
+use starcoin_vm_types::state_store::state_key::inner::StateKeyInner;
 use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::state_storage_usage::StateStorageUsage;
 use starcoin_vm_types::state_store::state_value::StateValue;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_store::TStateView;
@@ -140,21 +143,21 @@ impl ChainStateReader for RemoteChainStateReader {
 
 impl TStateView for RemoteChainStateReader {
     type Key = StateKey;
-    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>> {
-        match state_key {
-            StateKey::AccessPath(access_path) => {
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>, StateviewError> {
+        match state_key.inner() {
+            StateKeyInner::AccessPath(access_path) => {
                 let state_proof = self.get_with_proof(access_path)?;
                 Ok(state_proof.state.map(|v| StateValue::from(v)))
             }
-            StateKey::TableItem(table_item) => {
-                let state_proof =
-                    self.get_with_table_item_proof(&table_item.handle, &table_item.key)?;
+            StateKeyInner::TableItem { handle, key } => {
+                let state_proof = self.get_with_table_item_proof(handle, key)?;
                 Ok(state_proof.key_proof.0.map(|v| StateValue::from(v)))
             }
+            StateKeyInner::Raw(_) => unimplemented!(),
         }
     }
 
-    fn is_genesis(&self) -> bool {
-        false
+    fn get_usage(&self) -> Result<StateStorageUsage, StateviewError> {
+        unimplemented!()
     }
 }
