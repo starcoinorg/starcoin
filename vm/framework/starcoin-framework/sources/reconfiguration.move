@@ -15,7 +15,7 @@ module starcoin_framework::reconfiguration {
     use starcoin_framework::storage_gas;
     use starcoin_framework::transaction_fee;
 
-    friend starcoin_framework::aptos_governance;
+    friend starcoin_framework::starcoin_governance;
     friend starcoin_framework::block;
     friend starcoin_framework::consensus_config;
     friend starcoin_framework::execution_config;
@@ -68,7 +68,7 @@ module starcoin_framework::reconfiguration {
     /// Only called during genesis.
     /// Publishes `Configuration` resource. Can only be invoked by aptos framework account, and only a single time in Genesis.
     public(friend) fun initialize(starcoin_framework: &signer) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
 
         // assert it matches `new_epoch_event_key()`, otherwise the event can't be recognized
         assert!(account::get_guid_next_creation_num(signer::address_of(starcoin_framework)) == 2, error::invalid_state(EINVALID_GUID_FOR_EVENT));
@@ -85,7 +85,7 @@ module starcoin_framework::reconfiguration {
     /// Private function to temporarily halt reconfiguration.
     /// This function should only be used for offline WriteSet generation purpose and should never be invoked on chain.
     fun disable_reconfiguration(starcoin_framework: &signer) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         assert!(reconfiguration_enabled(), error::invalid_state(ECONFIGURATION));
         move_to(starcoin_framework, DisableReconfiguration {})
     }
@@ -93,7 +93,7 @@ module starcoin_framework::reconfiguration {
     /// Private function to resume reconfiguration.
     /// This function should only be used for offline WriteSet generation purpose and should never be invoked on chain.
     fun enable_reconfiguration(starcoin_framework: &signer) acquires DisableReconfiguration {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
 
         assert!(!reconfiguration_enabled(), error::invalid_state(ECONFIGURATION));
         DisableReconfiguration {} = move_from<DisableReconfiguration>(signer::address_of(starcoin_framework));
@@ -206,7 +206,7 @@ module starcoin_framework::reconfiguration {
     // For tests, skips the guid validation.
     #[test_only]
     public fun initialize_for_test(account: &signer) {
-        system_addresses::assert_aptos_framework(account);
+        system_addresses::assert_starcoin_framework(account);
         move_to<Configuration>(
             account,
             Configuration {

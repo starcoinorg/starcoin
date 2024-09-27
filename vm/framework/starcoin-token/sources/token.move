@@ -1,6 +1,6 @@
 /// This module provides the foundation for Tokens.
-/// Checkout our developer doc on our token standard https://aptos.dev/standards
-module aptos_token::token {
+/// Checkout our developer doc on our token standard https://starcoin.org/standards
+module starcoin_token::token {
     use std::error;
     use std::option::{Self, Option};
     use std::signer;
@@ -10,9 +10,9 @@ module aptos_token::token {
     use starcoin_framework::account;
     use starcoin_framework::event::{Self, EventHandle};
     use starcoin_framework::timestamp;
-    use aptos_std::table::{Self, Table};
-    use aptos_token::property_map::{Self, PropertyMap, PropertyValue};
-    use aptos_token::token_event_store;
+    use starcoin_std::table::{Self, Table};
+    use starcoin_token::property_map::{Self, PropertyMap, PropertyValue};
+    use starcoin_token::token_event_store;
 
     //
     // Constants
@@ -1874,7 +1874,7 @@ module aptos_token::token {
             string::utf8(b"Hello, Token"),
             100,
             2,
-            string::utf8(b"https://aptos.dev"),
+            string::utf8(b"https://starcoin.org"),
             signer::address_of(&creator),
             100,
             0,
@@ -1942,7 +1942,7 @@ module aptos_token::token {
             creator,
             get_collection_name(),
             string::utf8(b"Collection: Hello, World"),
-            string::utf8(b"https://aptos.dev"),
+            string::utf8(b"https://starcoin.org"),
             collection_max,
             mutate_setting
         );
@@ -1958,7 +1958,7 @@ module aptos_token::token {
             string::utf8(b"Hello, Token"),
             amount,
             token_max,
-            string::utf8(b"https://aptos.dev"),
+            string::utf8(b"https://starcoin.org"),
             signer::address_of(creator),
             100,
             0,

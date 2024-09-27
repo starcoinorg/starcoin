@@ -21,7 +21,7 @@ module starcoin_framework::object {
     use std::signer;
     use std::vector;
 
-    use aptos_std::from_bcs;
+    use starcoin_std::from_bcs;
 
     use starcoin_framework::account;
     use starcoin_framework::transaction_context;

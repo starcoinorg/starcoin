@@ -1,4 +1,4 @@
-spec aptos_std::smart_vector {
+spec starcoin_std::smart_vector {
 
     spec SmartVector {
         // `bucket_size` shouldn't be 0, if specified.
@@ -39,8 +39,8 @@ spec aptos_std::smart_vector {
     }
 
     spec push_back<T: store>(self: &mut SmartVector<T>, val: T) {
-        // use aptos_std::big_vector;
-        // use aptos_std::type_info;
+        // use starcoin_std::big_vector;
+        // use starcoin_std::type_info;
         pragma verify = false; // TODO: set to false because of timeout
         // pragma aborts_if_is_partial;
         // let pre_length = length(v);
@@ -62,7 +62,7 @@ spec aptos_std::smart_vector {
     }
 
     spec pop_back {
-        use aptos_std::table_with_length;
+        use starcoin_std::table_with_length;
 
         pragma verify_duration_estimate = 120; // TODO: set because of timeout (property proved)
 

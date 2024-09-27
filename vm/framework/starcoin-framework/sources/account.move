@@ -10,13 +10,13 @@ module starcoin_framework::account {
     use starcoin_framework::event::{Self, EventHandle};
     use starcoin_framework::guid;
     use starcoin_framework::system_addresses;
-    use aptos_std::ed25519;
-    use aptos_std::from_bcs;
-    use aptos_std::multi_ed25519;
-    use aptos_std::table::{Self, Table};
-    use aptos_std::type_info::{Self, TypeInfo};
+    use starcoin_std::ed25519;
+    use starcoin_std::from_bcs;
+    use starcoin_std::multi_ed25519;
+    use starcoin_std::table::{Self, Table};
+    use starcoin_std::type_info::{Self, TypeInfo};
 
-    friend starcoin_framework::aptos_account;
+    friend starcoin_framework::starcoin_account;
     friend starcoin_framework::coin;
     friend starcoin_framework::genesis;
     friend starcoin_framework::multisig_account;
@@ -179,7 +179,7 @@ module starcoin_framework::account {
 
     /// Only called during genesis to initialize system resources for this module.
     public(friend) fun initialize(starcoin_framework: &signer) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         move_to(starcoin_framework, OriginatingAddress {
             address_map: table::new(),
         });
@@ -200,7 +200,7 @@ module starcoin_framework::account {
 
         // NOTE: @core_resources gets created via a `create_account` call, so we do not include it below.
         assert!(
-            new_address != @vm_reserved && new_address != @starcoin_framework && new_address != @aptos_token,
+            new_address != @vm_reserved && new_address != @starcoin_framework && new_address != @starcoin_token,
             error::invalid_argument(ECANNOT_RESERVED_ADDRESS)
         );
 

@@ -75,7 +75,7 @@ spec starcoin_framework::code {
     spec initialize(starcoin_framework: &signer, package_owner: &signer, metadata: PackageMetadata) {
         let aptos_addr = signer::address_of(starcoin_framework);
         let owner_addr = signer::address_of(package_owner);
-        aborts_if !system_addresses::is_aptos_framework_address(aptos_addr);
+        aborts_if !system_addresses::is_starcoin_framework_address(aptos_addr);
 
         ensures exists<PackageRegistry>(owner_addr);
     }

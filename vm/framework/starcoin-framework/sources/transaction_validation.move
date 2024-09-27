@@ -6,8 +6,8 @@ module starcoin_framework::transaction_validation {
     use std::vector;
 
     use starcoin_framework::account;
-    use starcoin_framework::aptos_account;
-    use starcoin_framework::aptos_coin::AptosCoin;
+    use starcoin_framework::starcoin_account;
+    use starcoin_framework::starcoin_coin::StarcoinCoin;
     use starcoin_framework::chain_id;
     use starcoin_framework::coin;
     use starcoin_framework::system_addresses;
@@ -57,7 +57,7 @@ module starcoin_framework::transaction_validation {
         multi_agent_prologue_name: vector<u8>,
         user_epilogue_name: vector<u8>,
     ) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
 
         move_to(starcoin_framework, TransactionValidation {
             module_addr: @starcoin_framework,
@@ -141,12 +141,12 @@ module starcoin_framework::transaction_validation {
         if (!features::transaction_simulation_enhancement_enabled() || !skip_gas_payment(is_simulation, gas_payer)) {
             if (features::operations_default_to_fa_apt_store_enabled()) {
                 assert!(
-                    aptos_account::is_fungible_balance_at_least(gas_payer, max_transaction_fee),
+                    starcoin_account::is_fungible_balance_at_least(gas_payer, max_transaction_fee),
                     error::invalid_argument(PROLOGUE_ECANT_PAY_GAS_DEPOSIT)
                 );
             } else {
                 assert!(
-                    coin::is_balance_at_least<AptosCoin>(gas_payer, max_transaction_fee),
+                    coin::is_balance_at_least<StarcoinCoin>(gas_payer, max_transaction_fee),
                     error::invalid_argument(PROLOGUE_ECANT_PAY_GAS_DEPOSIT)
                 );
             }
@@ -452,12 +452,12 @@ module starcoin_framework::transaction_validation {
         if (!features::transaction_simulation_enhancement_enabled() || !skip_gas_payment(is_simulation, gas_payer)) {
             if (features::operations_default_to_fa_apt_store_enabled()) {
                 assert!(
-                    aptos_account::is_fungible_balance_at_least(gas_payer, transaction_fee_amount),
+                    starcoin_account::is_fungible_balance_at_least(gas_payer, transaction_fee_amount),
                     error::out_of_range(PROLOGUE_ECANT_PAY_GAS_DEPOSIT),
                 );
             } else {
                 assert!(
-                    coin::is_balance_at_least<AptosCoin>(gas_payer, transaction_fee_amount),
+                    coin::is_balance_at_least<StarcoinCoin>(gas_payer, transaction_fee_amount),
                     error::out_of_range(PROLOGUE_ECANT_PAY_GAS_DEPOSIT),
                 );
             };

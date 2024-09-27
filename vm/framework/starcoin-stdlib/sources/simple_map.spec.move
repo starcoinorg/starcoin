@@ -1,5 +1,5 @@
 /// Specifications of the `simple_map` module.
-spec aptos_std::simple_map {
+spec starcoin_std::simple_map {
 
     // Make most of the public API intrinsic. Those functions have custom specifications in the prover.
 

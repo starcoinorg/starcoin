@@ -44,7 +44,7 @@ module starcoin_framework::dkg {
 
     /// Called in genesis to initialize on-chain states.
     public fun initialize(starcoin_framework: &signer) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         if (!exists<DKGState>(@starcoin_framework)) {
             move_to<DKGState>(
                 starcoin_framework,
@@ -98,7 +98,7 @@ module starcoin_framework::dkg {
 
     /// Delete the currently incomplete session, if it exists.
     public fun try_clear_incomplete_session(fx: &signer) acquires DKGState {
-        system_addresses::assert_aptos_framework(fx);
+        system_addresses::assert_starcoin_framework(fx);
         if (exists<DKGState>(@starcoin_framework)) {
             let dkg_state = borrow_global_mut<DKGState>(@starcoin_framework);
             dkg_state.in_progress = option::none();

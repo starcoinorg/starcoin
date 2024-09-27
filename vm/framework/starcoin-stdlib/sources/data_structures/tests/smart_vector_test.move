@@ -1,7 +1,7 @@
 #[test_only]
-module aptos_std::smart_vector_test {
-    use aptos_std::smart_vector as V;
-    use aptos_std::smart_vector::SmartVector;
+module starcoin_std::smart_vector_test {
+    use starcoin_std::smart_vector as V;
+    use starcoin_std::smart_vector::SmartVector;
 
     #[test_only]
     fun make_smart_vector(k: u64): SmartVector<u64> {

@@ -6,8 +6,8 @@ module starcoin_framework::staking_config {
     use starcoin_framework::system_addresses;
     use starcoin_framework::timestamp;
 
-    use aptos_std::fixed_point64::{Self, FixedPoint64, less_or_equal};
-    use aptos_std::math_fixed64;
+    use starcoin_std::fixed_point64::{Self, FixedPoint64, less_or_equal};
+    use starcoin_std::math_fixed64;
 
     friend starcoin_framework::genesis;
     friend starcoin_framework::stake;
@@ -100,7 +100,7 @@ module starcoin_framework::staking_config {
         rewards_rate_denominator: u64,
         voting_power_increase_limit: u64,
     ) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
 
         // This can fail genesis but is necessary so that any misconfigurations can be corrected before genesis succeeds
         validate_required_stake(minimum_stake, maximum_stake);
@@ -150,7 +150,7 @@ module starcoin_framework::staking_config {
         last_rewards_rate_period_start_in_secs: u64,
         rewards_rate_decrease_rate: FixedPoint64,
     ) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
 
         validate_rewards_config(
             rewards_rate,
@@ -265,7 +265,7 @@ module starcoin_framework::staking_config {
         minimum_stake: u64,
         maximum_stake: u64,
     ) acquires StakingConfig {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         validate_required_stake(minimum_stake, maximum_stake);
 
         let staking_config = borrow_global_mut<StakingConfig>(@starcoin_framework);
@@ -280,7 +280,7 @@ module starcoin_framework::staking_config {
         new_recurring_lockup_duration_secs: u64,
     ) acquires StakingConfig {
         assert!(new_recurring_lockup_duration_secs > 0, error::invalid_argument(EZERO_LOCKUP_DURATION));
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
 
         let staking_config = borrow_global_mut<StakingConfig>(@starcoin_framework);
         staking_config.recurring_lockup_duration_secs = new_recurring_lockup_duration_secs;
@@ -295,7 +295,7 @@ module starcoin_framework::staking_config {
         new_rewards_rate_denominator: u64,
     ) acquires StakingConfig {
         assert!(!features::periodical_reward_rate_decrease_enabled(), error::invalid_state(EDEPRECATED_FUNCTION));
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         assert!(
             new_rewards_rate_denominator > 0,
             error::invalid_argument(EZERO_REWARDS_RATE_DENOMINATOR),
@@ -320,7 +320,7 @@ module starcoin_framework::staking_config {
         rewards_rate_period_in_secs: u64,
         rewards_rate_decrease_rate: FixedPoint64,
     ) acquires StakingRewardsConfig {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
 
         validate_rewards_config(
             rewards_rate,
@@ -348,7 +348,7 @@ module starcoin_framework::staking_config {
         starcoin_framework: &signer,
         new_voting_power_increase_limit: u64,
     ) acquires StakingConfig {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         assert!(
             new_voting_power_increase_limit > 0 && new_voting_power_increase_limit <= 50,
             error::invalid_argument(EINVALID_VOTING_POWER_INCREASE_LIMIT),
@@ -391,7 +391,7 @@ module starcoin_framework::staking_config {
     }
 
     #[test_only]
-    use aptos_std::fixed_point64::{equal, create_from_rational};
+    use starcoin_std::fixed_point64::{equal, create_from_rational};
 
     #[test(starcoin_framework = @starcoin_framework)]
     public entry fun test_change_staking_configs(starcoin_framework: signer) acquires StakingConfig {

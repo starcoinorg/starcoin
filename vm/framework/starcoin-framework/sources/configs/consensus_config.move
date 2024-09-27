@@ -21,7 +21,7 @@ module starcoin_framework::consensus_config {
 
     /// Publishes the ConsensusConfig config.
     public(friend) fun initialize(starcoin_framework: &signer, config: vector<u8>) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         assert!(vector::length(&config) > 0, error::invalid_argument(EINVALID_CONFIG));
         move_to(starcoin_framework, ConsensusConfig { config });
     }
@@ -32,7 +32,7 @@ module starcoin_framework::consensus_config {
     ///
     /// TODO: update all the tests that reference this function, then disable this function.
     public fun set(account: &signer, config: vector<u8>) acquires ConsensusConfig {
-        system_addresses::assert_aptos_framework(account);
+        system_addresses::assert_starcoin_framework(account);
         chain_status::assert_genesis();
         assert!(vector::length(&config) > 0, error::invalid_argument(EINVALID_CONFIG));
 
@@ -47,17 +47,17 @@ module starcoin_framework::consensus_config {
     /// Example usage:
     /// ```
     /// starcoin_framework::consensus_config::set_for_next_epoch(&framework_signer, some_config_bytes);
-    /// starcoin_framework::aptos_governance::reconfigure(&framework_signer);
+    /// starcoin_framework::starcoin_governance::reconfigure(&framework_signer);
     /// ```
     public fun set_for_next_epoch(account: &signer, config: vector<u8>) {
-        system_addresses::assert_aptos_framework(account);
+        system_addresses::assert_starcoin_framework(account);
         assert!(vector::length(&config) > 0, error::invalid_argument(EINVALID_CONFIG));
         std::config_buffer::upsert<ConsensusConfig>(ConsensusConfig {config});
     }
 
     /// Only used in reconfigurations to apply the pending `ConsensusConfig`, if there is any.
     public(friend) fun on_new_epoch(framework: &signer) acquires ConsensusConfig {
-        system_addresses::assert_aptos_framework(framework);
+        system_addresses::assert_starcoin_framework(framework);
         if (config_buffer::does_exist<ConsensusConfig>()) {
             let new_config = config_buffer::extract<ConsensusConfig>();
             if (exists<ConsensusConfig>(@starcoin_framework)) {

@@ -4,15 +4,15 @@
 /// when expanding to avoid unexpected gas cost.
 /// SmartTable uses faster hash function SipHash instead of cryptographically secure hash functions like sha3-256 since
 /// it tolerates collisions.
-module aptos_std::smart_table {
+module starcoin_std::smart_table {
     use std::error;
     use std::vector;
-    use aptos_std::aptos_hash::sip_hash_from_value;
-    use aptos_std::table_with_length::{Self, TableWithLength};
-    use aptos_std::type_info::size_of_val;
-    use aptos_std::math64::max;
-    use aptos_std::simple_map::SimpleMap;
-    use aptos_std::simple_map;
+    use starcoin_std::aptos_hash::sip_hash_from_value;
+    use starcoin_std::table_with_length::{Self, TableWithLength};
+    use starcoin_std::type_info::size_of_val;
+    use starcoin_std::math64::max;
+    use starcoin_std::simple_map::SimpleMap;
+    use starcoin_std::simple_map;
     use std::option::{Self, Option};
 
     /// Key not found in the smart table
@@ -421,11 +421,11 @@ module aptos_std::smart_table {
     /// Apply the function to a reference of each key-value pair in the table.
     public inline fun for_each_ref<K, V>(self: &SmartTable<K, V>, f: |&K, &V|) {
         let i = 0;
-        while (i < aptos_std::smart_table::num_buckets(self)) {
+        while (i < starcoin_std::smart_table::num_buckets(self)) {
             vector::for_each_ref(
-                aptos_std::table_with_length::borrow(aptos_std::smart_table::borrow_buckets(self), i),
+                starcoin_std::table_with_length::borrow(starcoin_std::smart_table::borrow_buckets(self), i),
                 |elem| {
-                    let (key, value) = aptos_std::smart_table::borrow_kv(elem);
+                    let (key, value) = starcoin_std::smart_table::borrow_kv(elem);
                     f(key, value)
                 }
             );
@@ -436,11 +436,11 @@ module aptos_std::smart_table {
     /// Apply the function to a mutable reference of each key-value pair in the table.
     public inline fun for_each_mut<K, V>(self: &mut SmartTable<K, V>, f: |&K, &mut V|) {
         let i = 0;
-        while (i < aptos_std::smart_table::num_buckets(self)) {
+        while (i < starcoin_std::smart_table::num_buckets(self)) {
             vector::for_each_mut(
-                table_with_length::borrow_mut(aptos_std::smart_table::borrow_buckets_mut(self), i),
+                table_with_length::borrow_mut(starcoin_std::smart_table::borrow_buckets_mut(self), i),
                 |elem| {
-                    let (key, value) = aptos_std::smart_table::borrow_kv_mut(elem);
+                    let (key, value) = starcoin_std::smart_table::borrow_kv_mut(elem);
                     f(key, value)
                 }
             );
@@ -465,9 +465,9 @@ module aptos_std::smart_table {
     ): bool {
         let found = false;
         let i = 0;
-        while (i < aptos_std::smart_table::num_buckets(self)) {
-            found = vector::any(table_with_length::borrow(aptos_std::smart_table::borrow_buckets(self), i), |elem| {
-                let (key, value) = aptos_std::smart_table::borrow_kv(elem);
+        while (i < starcoin_std::smart_table::num_buckets(self)) {
+            found = vector::any(table_with_length::borrow(starcoin_std::smart_table::borrow_buckets(self), i), |elem| {
+                let (key, value) = starcoin_std::smart_table::borrow_kv(elem);
                 p(key, value)
             });
             if (found) break;

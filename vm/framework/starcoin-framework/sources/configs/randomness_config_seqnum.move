@@ -22,13 +22,13 @@ module starcoin_framework::randomness_config_seqnum {
     /// Update `RandomnessConfigSeqNum`.
     /// Used when re-enable randomness after an emergency randomness disable via local override.
     public fun set_for_next_epoch(framework: &signer, seq_num: u64) {
-        system_addresses::assert_aptos_framework(framework);
+        system_addresses::assert_starcoin_framework(framework);
         config_buffer::upsert(RandomnessConfigSeqNum { seq_num });
     }
 
     /// Initialize the configuration. Used in genesis or governance.
     public fun initialize(framework: &signer) {
-        system_addresses::assert_aptos_framework(framework);
+        system_addresses::assert_starcoin_framework(framework);
         if (!exists<RandomnessConfigSeqNum>(@starcoin_framework)) {
             move_to(framework, RandomnessConfigSeqNum { seq_num: 0 })
         }
@@ -36,7 +36,7 @@ module starcoin_framework::randomness_config_seqnum {
 
     /// Only used in reconfigurations to apply the pending `RandomnessConfig`, if there is any.
     public(friend) fun on_new_epoch(framework: &signer) acquires RandomnessConfigSeqNum {
-        system_addresses::assert_aptos_framework(framework);
+        system_addresses::assert_starcoin_framework(framework);
         if (config_buffer::does_exist<RandomnessConfigSeqNum>()) {
             let new_config = config_buffer::extract<RandomnessConfigSeqNum>();
             if (exists<RandomnessConfigSeqNum>(@starcoin_framework)) {

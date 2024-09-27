@@ -8,7 +8,7 @@ spec starcoin_framework::staking_config {
     /// StakingRewardConfig resources. Updating the resources, can be done using the update_required_stake,
     /// update_recurring_lockup_duration_secs, update_rewards_rate, update_rewards_config,
     /// update_voting_power_increase_limit functions, which ensure that the signer is starcoin_framework using the
-    /// assert_aptos_framework function.
+    /// assert_starcoin_framework function.
     /// Enforcement: Verified via [high-level-req-1.1](initialize), [high-level-req-1.2](initialize_rewards), [high-level-req-1.3](update_required_stake), [high-level-req-1.4](update_recurring_lockup_duration_secs), [high-level-req-1.5](update_rewards_rate), [high-level-req-1.6](update_rewards_config), and [high-level-req-1.7](update_voting_power_increase_limit).
     ///
     /// No.: 2

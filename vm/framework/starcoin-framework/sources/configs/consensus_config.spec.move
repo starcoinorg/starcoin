@@ -3,7 +3,7 @@ spec starcoin_framework::consensus_config {
     /// No.: 1
     /// Requirement: During genesis, the Aptos framework account should be assigned the consensus config resource.
     /// Criticality: Medium
-    /// Implementation: The consensus_config::initialize function calls the assert_aptos_framework function to ensure
+    /// Implementation: The consensus_config::initialize function calls the assert_starcoin_framework function to ensure
     /// that the signer is the starcoin_framework and then assigns the ConsensusConfig resource to it.
     /// Enforcement: Formally verified via [high-level-req-1](initialize).
     ///
@@ -34,7 +34,7 @@ spec starcoin_framework::consensus_config {
         use std::signer;
         let addr = signer::address_of(starcoin_framework);
         /// [high-level-req-1]
-        aborts_if !system_addresses::is_aptos_framework_address(addr);
+        aborts_if !system_addresses::is_starcoin_framework_address(addr);
         aborts_if exists<ConsensusConfig>(@starcoin_framework);
         /// [high-level-req-3.1]
         aborts_if !(len(config) > 0);
@@ -49,7 +49,7 @@ spec starcoin_framework::consensus_config {
         use std::signer;
         use starcoin_framework::stake;
         use starcoin_framework::coin::CoinInfo;
-        use starcoin_framework::aptos_coin::AptosCoin;
+        use starcoin_framework::starcoin_coin::StarcoinCoin;
         use starcoin_framework::transaction_fee;
         use starcoin_framework::staking_config;
 
@@ -59,7 +59,7 @@ spec starcoin_framework::consensus_config {
         include staking_config::StakingRewardsConfigRequirement;
         let addr = signer::address_of(account);
         /// [high-level-req-2]
-        aborts_if !system_addresses::is_aptos_framework_address(addr);
+        aborts_if !system_addresses::is_starcoin_framework_address(addr);
         aborts_if !exists<ConsensusConfig>(@starcoin_framework);
         /// [high-level-req-3.2]
         aborts_if !(len(config) > 0);
@@ -67,7 +67,7 @@ spec starcoin_framework::consensus_config {
         requires chain_status::is_genesis();
         requires timestamp::spec_now_microseconds() >= reconfiguration::last_reconfiguration_time();
         requires exists<stake::ValidatorFees>(@starcoin_framework);
-        requires exists<CoinInfo<AptosCoin>>(@starcoin_framework);
+        requires exists<CoinInfo<StarcoinCoin>>(@starcoin_framework);
         ensures global<ConsensusConfig>(@starcoin_framework).config == config;
     }
 

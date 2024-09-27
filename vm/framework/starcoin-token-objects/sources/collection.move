@@ -16,7 +16,7 @@
 ///   require adding the field original_name.
 /// * Consider supporting changing the aspects of supply with the MutatorRef.
 /// * Add aggregator support when added to framework
-module aptos_token_objects::collection {
+module starcoin_token_objects::collection {
     use std::error;
     use std::features;
     use std::option::{Self, Option};
@@ -26,9 +26,9 @@ module aptos_token_objects::collection {
     use starcoin_framework::event;
     use starcoin_framework::object::{Self, ConstructorRef, ExtendRef, Object};
 
-    use aptos_token_objects::royalty::{Self, Royalty};
+    use starcoin_token_objects::royalty::{Self, Royalty};
 
-    friend aptos_token_objects::token;
+    friend starcoin_token_objects::token;
 
     /// The collection does not exist
     const ECOLLECTION_DOES_NOT_EXIST: u64 = 1;
@@ -946,7 +946,7 @@ module aptos_token_objects::collection {
     }
 
     #[test(creator = @0x123)]
-    #[expected_failure(abort_code = 0x1000A, location = aptos_token_objects::collection)]
+    #[expected_failure(abort_code = 0x1000A, location = starcoin_token_objects::collection)]
     entry fun test_set_max_supply_none(creator: &signer) acquires ConcurrentSupply, FixedSupply {
         let collection_name = string::utf8(b"collection name");
         let constructor_ref = create_collection_helper(creator, collection_name);
@@ -955,7 +955,7 @@ module aptos_token_objects::collection {
     }
 
     #[test(creator = @0x123)]
-    #[expected_failure(abort_code = 0x20009, location = aptos_token_objects::collection)]
+    #[expected_failure(abort_code = 0x20009, location = starcoin_token_objects::collection)]
     entry fun test_set_max_supply_too_low_fixed_supply(creator: &signer) acquires ConcurrentSupply, FixedSupply, UnlimitedSupply {
         let max_supply = 3;
         let collection_name = string::utf8(b"Low Supply Collection");
@@ -977,7 +977,7 @@ module aptos_token_objects::collection {
     }
 
     #[test(creator = @0x123)]
-    #[expected_failure(abort_code = 0x20009, location = aptos_token_objects::collection)]
+    #[expected_failure(abort_code = 0x20009, location = starcoin_token_objects::collection)]
     entry fun test_set_max_supply_too_low_concurrent_supply(creator: &signer) acquires ConcurrentSupply, FixedSupply, UnlimitedSupply {
         let collection_name = string::utf8(b"Low Supply Collection");
         let max_supply = 3;

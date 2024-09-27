@@ -1,4 +1,4 @@
-spec aptos_std::secp256k1 {
+spec starcoin_std::secp256k1 {
     spec ecdsa_signature_from_bytes(bytes: vector<u8>): ECDSASignature {
         aborts_if len(bytes) != SIGNATURE_NUM_BYTES;
         ensures result == ECDSASignature { bytes };

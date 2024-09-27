@@ -1,4 +1,4 @@
-spec starcoin_framework::aptos_governance {
+spec starcoin_framework::starcoin_governance {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: The create proposal function calls create proposal v2.
@@ -37,7 +37,7 @@ spec starcoin_framework::aptos_governance {
         signer_address: address,
         signer_cap: SignerCapability,
     ) {
-        aborts_if !system_addresses::is_aptos_framework_address(signer::address_of(starcoin_framework));
+        aborts_if !system_addresses::is_starcoin_framework_address(signer::address_of(starcoin_framework));
         aborts_if !system_addresses::is_framework_reserved_address(signer_address);
 
         let signer_caps = global<GovernanceResponsbility>(@starcoin_framework).signer_caps;
@@ -58,7 +58,7 @@ spec starcoin_framework::aptos_governance {
         required_proposer_stake: u64,
         voting_duration_secs: u64,
     ) {
-        use aptos_std::type_info::Self;
+        use starcoin_std::type_info::Self;
 
         let addr = signer::address_of(starcoin_framework);
         let register_account = global<account::Account>(addr);
@@ -137,7 +137,7 @@ spec starcoin_framework::aptos_governance {
     ) {
         use starcoin_framework::chain_status;
         use starcoin_framework::coin::CoinInfo;
-        use starcoin_framework::aptos_coin::AptosCoin;
+        use starcoin_framework::starcoin_coin::StarcoinCoin;
         use starcoin_framework::transaction_fee;
         pragma verify = false; // TODO: set because of timeout (property proved).
         let addr = signer::address_of(starcoin_framework);
@@ -149,7 +149,7 @@ spec starcoin_framework::aptos_governance {
         include transaction_fee::RequiresCollectedFeesPerValueLeqBlockAptosSupply;
         requires chain_status::is_operating();
         requires exists<stake::ValidatorFees>(@starcoin_framework);
-        requires exists<CoinInfo<AptosCoin>>(@starcoin_framework);
+        requires exists<CoinInfo<StarcoinCoin>>(@starcoin_framework);
         requires exists<staking_config::StakingRewardsConfig>(@starcoin_framework);
         include staking_config::StakingRewardsConfigRequirement;
     }
@@ -256,9 +256,9 @@ spec starcoin_framework::aptos_governance {
         // verify create_proposal_metadata
         include CreateProposalMetadataAbortsIf;
 
-        let addr = aptos_std::type_info::type_of<AptosCoin>().account_address;
-        aborts_if !exists<coin::CoinInfo<AptosCoin>>(addr);
-        let maybe_supply = global<coin::CoinInfo<AptosCoin>>(addr).supply;
+        let addr = starcoin_std::type_info::type_of<StarcoinCoin>().account_address;
+        aborts_if !exists<coin::CoinInfo<StarcoinCoin>>(addr);
+        let maybe_supply = global<coin::CoinInfo<StarcoinCoin>>(addr).supply;
         let supply = option::spec_borrow(maybe_supply);
         let total_supply = starcoin_framework::optional_aggregator::optional_aggregator_value(supply);
         let early_resolution_vote_threshold_value = total_supply / 2 + 1;
@@ -538,8 +538,8 @@ spec starcoin_framework::aptos_governance {
 
         let multi_step_key = utf8(voting::IS_MULTI_STEP_PROPOSAL_KEY);
         let has_multi_step_key = simple_map::spec_contains_key(proposal.metadata, multi_step_key);
-        let is_multi_step_proposal = aptos_std::from_bcs::deserialize<bool>(simple_map::spec_get(proposal.metadata, multi_step_key));
-        aborts_if has_multi_step_key && !aptos_std::from_bcs::deserializable<bool>(simple_map::spec_get(proposal.metadata, multi_step_key));
+        let is_multi_step_proposal = starcoin_std::from_bcs::deserialize<bool>(simple_map::spec_get(proposal.metadata, multi_step_key));
+        aborts_if has_multi_step_key && !starcoin_std::from_bcs::deserializable<bool>(simple_map::spec_get(proposal.metadata, multi_step_key));
         aborts_if !string::spec_internal_check_utf8(voting::IS_MULTI_STEP_PROPOSAL_KEY);
         aborts_if has_multi_step_key && is_multi_step_proposal;
 
@@ -577,10 +577,10 @@ spec starcoin_framework::aptos_governance {
     spec reconfigure(starcoin_framework: &signer) {
         use starcoin_framework::chain_status;
         use starcoin_framework::coin::CoinInfo;
-        use starcoin_framework::aptos_coin::AptosCoin;
+        use starcoin_framework::starcoin_coin::StarcoinCoin;
         use starcoin_framework::transaction_fee;
         pragma verify = false; // TODO: set because of timeout (property proved).
-        aborts_if !system_addresses::is_aptos_framework_address(signer::address_of(starcoin_framework));
+        aborts_if !system_addresses::is_starcoin_framework_address(signer::address_of(starcoin_framework));
         include reconfiguration_with_dkg::FinishRequirement {
             framework: starcoin_framework
         };
@@ -589,7 +589,7 @@ spec starcoin_framework::aptos_governance {
         include transaction_fee::RequiresCollectedFeesPerValueLeqBlockAptosSupply;
         requires chain_status::is_operating();
         requires exists<stake::ValidatorFees>(@starcoin_framework);
-        requires exists<CoinInfo<AptosCoin>>(@starcoin_framework);
+        requires exists<CoinInfo<StarcoinCoin>>(@starcoin_framework);
         requires exists<staking_config::StakingRewardsConfig>(@starcoin_framework);
         include staking_config::StakingRewardsConfigRequirement;
     }
@@ -599,7 +599,7 @@ spec starcoin_framework::aptos_governance {
     /// Address @starcoin_framework must exist GovernanceResponsbility.
     spec get_signer_testnet_only(core_resources: &signer, signer_address: address): signer {
         aborts_if signer::address_of(core_resources) != @core_resources;
-        aborts_if !exists<aptos_coin::MintCapStore>(signer::address_of(core_resources));
+        aborts_if !exists<starcoin_coin::MintCapStore>(signer::address_of(core_resources));
         include GetSignerAbortsIf;
     }
 
@@ -773,9 +773,9 @@ spec starcoin_framework::aptos_governance {
         aborts_if !string::spec_internal_check_utf8(voting::IS_MULTI_STEP_PROPOSAL_KEY);
         let multi_step_key = utf8(voting::IS_MULTI_STEP_PROPOSAL_KEY);
         aborts_if simple_map::spec_contains_key(proposal.metadata, multi_step_key) &&
-            !aptos_std::from_bcs::deserializable<bool>(simple_map::spec_get(proposal.metadata, multi_step_key));
+            !starcoin_std::from_bcs::deserializable<bool>(simple_map::spec_get(proposal.metadata, multi_step_key));
         let is_multi_step = simple_map::spec_contains_key(proposal.metadata, multi_step_key) &&
-                            aptos_std::from_bcs::deserialize<bool>(simple_map::spec_get(proposal.metadata, multi_step_key));
+                            starcoin_std::from_bcs::deserialize<bool>(simple_map::spec_get(proposal.metadata, multi_step_key));
         let next_execution_hash_is_empty = len(next_execution_hash) == 0;
         aborts_if !is_multi_step && !next_execution_hash_is_empty;
         aborts_if next_execution_hash_is_empty && is_multi_step && !simple_map::spec_contains_key(proposal.metadata, multi_step_in_execution_key); // ?
@@ -824,8 +824,8 @@ spec starcoin_framework::aptos_governance {
         aborts_if proposal.is_resolved;
         aborts_if !string::spec_internal_check_utf8(voting::RESOLVABLE_TIME_METADATA_KEY);
         aborts_if !simple_map::spec_contains_key(proposal.metadata, utf8(voting::RESOLVABLE_TIME_METADATA_KEY));
-        let resolvable_time = aptos_std::from_bcs::deserialize<u64>(simple_map::spec_get(proposal.metadata, utf8(voting::RESOLVABLE_TIME_METADATA_KEY)));
-        aborts_if !aptos_std::from_bcs::deserializable<u64>(simple_map::spec_get(proposal.metadata, utf8(voting::RESOLVABLE_TIME_METADATA_KEY)));
+        let resolvable_time = starcoin_std::from_bcs::deserialize<u64>(simple_map::spec_get(proposal.metadata, utf8(voting::RESOLVABLE_TIME_METADATA_KEY)));
+        aborts_if !starcoin_std::from_bcs::deserializable<u64>(simple_map::spec_get(proposal.metadata, utf8(voting::RESOLVABLE_TIME_METADATA_KEY)));
         aborts_if timestamp::now_seconds() <= resolvable_time;
         aborts_if starcoin_framework::transaction_context::spec_get_script_hash() != proposal.execution_hash;
     }

@@ -1,6 +1,6 @@
-module starcoin_framework::aptos_account {
+module starcoin_framework::starcoin_account {
     use starcoin_framework::account::{Self, new_event_handle};
-    use starcoin_framework::aptos_coin::AptosCoin;
+    use starcoin_framework::starcoin_coin::StarcoinCoin;
     use starcoin_framework::coin::{Self, Coin};
     use starcoin_framework::create_signer::create_signer;
     use starcoin_framework::event::{EventHandle, emit_event, emit};
@@ -83,10 +83,10 @@ module starcoin_framework::aptos_account {
         } else {
             // Resource accounts can be created without registering them to receive APT.
             // This conveniently does the registration if necessary.
-            if (!coin::is_account_registered<AptosCoin>(to)) {
-                coin::register<AptosCoin>(&create_signer(to));
+            if (!coin::is_account_registered<StarcoinCoin>(to)) {
+                coin::register<StarcoinCoin>(&create_signer(to));
             };
-            coin::transfer<AptosCoin>(source, to, amount)
+            coin::transfer<StarcoinCoin>(source, to, amount)
         }
     }
 
@@ -117,8 +117,8 @@ module starcoin_framework::aptos_account {
         if (!account::exists_at(to)) {
             create_account(to);
             spec {
-                assert coin::spec_is_account_registered<AptosCoin>(to);
-                assume aptos_std::type_info::type_of<CoinType>() == aptos_std::type_info::type_of<AptosCoin>() ==>
+                assert coin::spec_is_account_registered<StarcoinCoin>(to);
+                assume starcoin_std::type_info::type_of<CoinType>() == starcoin_std::type_info::type_of<StarcoinCoin>() ==>
                     coin::spec_is_account_registered<CoinType>(to);
             };
         };
@@ -138,7 +138,7 @@ module starcoin_framework::aptos_account {
 
     public fun assert_account_is_registered_for_apt(addr: address) {
         assert_account_exists(addr);
-        assert!(coin::is_account_registered<AptosCoin>(addr), error::not_found(EACCOUNT_NOT_REGISTERED_FOR_APT));
+        assert!(coin::is_account_registered<StarcoinCoin>(addr), error::not_found(EACCOUNT_NOT_REGISTERED_FOR_APT));
     }
 
     /// Set whether `account` can receive direct transfers of coins that they have not explicitly registered to receive.
@@ -188,7 +188,7 @@ module starcoin_framework::aptos_account {
         if (features::new_accounts_default_to_fa_apt_store_enabled()) {
             ensure_primary_fungible_store_exists(signer::address_of(account_signer));
         } else {
-            coin::register<AptosCoin>(account_signer);
+            coin::register<StarcoinCoin>(account_signer);
         }
     }
 
@@ -238,19 +238,19 @@ module starcoin_framework::aptos_account {
         if (fungible_asset::store_exists(store_addr)) {
             store_addr
         } else {
-            object::object_address(&primary_fungible_store::create_primary_store(owner, object::address_to_object<Metadata>(@aptos_fungible_asset)))
+            object::object_address(&primary_fungible_store::create_primary_store(owner, object::address_to_object<Metadata>(@starcoin_fungible_asset)))
         }
     }
 
     /// Address of APT Primary Fungible Store
     inline fun primary_fungible_store_address(account: address): address {
-        object::create_user_derived_object_address(account, @aptos_fungible_asset)
+        object::create_user_derived_object_address(account, @starcoin_fungible_asset)
     }
 
     // tests
 
     #[test_only]
-    use aptos_std::from_bcs;
+    use starcoin_std::from_bcs;
     #[test_only]
     use std::string::utf8;
     #[test_only]
@@ -264,15 +264,15 @@ module starcoin_framework::aptos_account {
         let bob = from_bcs::to_address(x"0000000000000000000000000000000000000000000000000000000000000b0b");
         let carol = from_bcs::to_address(x"00000000000000000000000000000000000000000000000000000000000ca501");
 
-        let (burn_cap, mint_cap) = starcoin_framework::aptos_coin::initialize_for_test(core);
+        let (burn_cap, mint_cap) = starcoin_framework::starcoin_coin::initialize_for_test(core);
         create_account(signer::address_of(alice));
         coin::deposit(signer::address_of(alice), coin::mint(10000, &mint_cap));
         transfer(alice, bob, 500);
-        assert!(coin::balance<AptosCoin>(bob) == 500, 0);
+        assert!(coin::balance<StarcoinCoin>(bob) == 500, 0);
         transfer(alice, carol, 500);
-        assert!(coin::balance<AptosCoin>(carol) == 500, 1);
+        assert!(coin::balance<StarcoinCoin>(carol) == 500, 1);
         transfer(alice, carol, 1500);
-        assert!(coin::balance<AptosCoin>(carol) == 2000, 2);
+        assert!(coin::balance<StarcoinCoin>(carol) == 2000, 2);
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
@@ -282,13 +282,13 @@ module starcoin_framework::aptos_account {
     public fun test_transfer_to_resource_account(alice: &signer, core: &signer) {
         let (resource_account, _) = account::create_resource_account(alice, vector[]);
         let resource_acc_addr = signer::address_of(&resource_account);
-        let (burn_cap, mint_cap) = starcoin_framework::aptos_coin::initialize_for_test(core);
-        assert!(!coin::is_account_registered<AptosCoin>(resource_acc_addr), 0);
+        let (burn_cap, mint_cap) = starcoin_framework::starcoin_coin::initialize_for_test(core);
+        assert!(!coin::is_account_registered<StarcoinCoin>(resource_acc_addr), 0);
 
         create_account(signer::address_of(alice));
         coin::deposit(signer::address_of(alice), coin::mint(10000, &mint_cap));
         transfer(alice, resource_acc_addr, 500);
-        assert!(coin::balance<AptosCoin>(resource_acc_addr) == 500, 1);
+        assert!(coin::balance<StarcoinCoin>(resource_acc_addr) == 500, 1);
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
@@ -296,7 +296,7 @@ module starcoin_framework::aptos_account {
 
     #[test(from = @0x123, core = @0x1, recipient_1 = @0x124, recipient_2 = @0x125)]
     public fun test_batch_transfer(from: &signer, core: &signer, recipient_1: &signer, recipient_2: &signer) {
-        let (burn_cap, mint_cap) = starcoin_framework::aptos_coin::initialize_for_test(core);
+        let (burn_cap, mint_cap) = starcoin_framework::starcoin_coin::initialize_for_test(core);
         create_account(signer::address_of(from));
         let recipient_1_addr = signer::address_of(recipient_1);
         let recipient_2_addr = signer::address_of(recipient_2);
@@ -308,8 +308,8 @@ module starcoin_framework::aptos_account {
             vector[recipient_1_addr, recipient_2_addr],
             vector[100, 500],
         );
-        assert!(coin::balance<AptosCoin>(recipient_1_addr) == 100, 0);
-        assert!(coin::balance<AptosCoin>(recipient_2_addr) == 500, 1);
+        assert!(coin::balance<StarcoinCoin>(recipient_1_addr) == 100, 0);
+        assert!(coin::balance<StarcoinCoin>(recipient_2_addr) == 500, 1);
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
     }
@@ -429,11 +429,11 @@ module starcoin_framework::aptos_account {
         user: &signer,
     ) {
         use starcoin_framework::fungible_asset::Metadata;
-        use starcoin_framework::aptos_coin;
+        use starcoin_framework::starcoin_coin;
 
-        aptos_coin::ensure_initialized_with_apt_fa_metadata_for_test();
+        starcoin_coin::ensure_initialized_with_apt_fa_metadata_for_test();
 
-        let apt_metadata = object::address_to_object<Metadata>(@aptos_fungible_asset);
+        let apt_metadata = object::address_to_object<Metadata>(@starcoin_fungible_asset);
         let user_addr = signer::address_of(user);
         assert!(primary_fungible_store_address(user_addr) == primary_fungible_store::primary_store_address(user_addr, apt_metadata), 1);
 

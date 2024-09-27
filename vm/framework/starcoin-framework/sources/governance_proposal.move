@@ -2,7 +2,7 @@
 ///
 /// This is separate from the AptosGovernance module to avoid circular dependency between AptosGovernance and Stake.
 module starcoin_framework::governance_proposal {
-    friend starcoin_framework::aptos_governance;
+    friend starcoin_framework::starcoin_governance;
 
     struct GovernanceProposal has store, drop {}
 

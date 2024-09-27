@@ -9,7 +9,7 @@
 /// track proposal creation and proposal ids.
 /// 2. Voters can vote on a proposal. Their voting power is derived from the backing stake pool. A stake pool can vote
 /// on a proposal multiple times as long as the total voting power of these votes doesn't exceed its total voting power.
-module starcoin_framework::aptos_governance {
+module starcoin_framework::starcoin_governance {
     use std::error;
     use std::option;
     use std::signer;
@@ -17,10 +17,10 @@ module starcoin_framework::aptos_governance {
     use std::vector;
     use std::features;
 
-    use aptos_std::math64::min;
-    use aptos_std::simple_map::{Self, SimpleMap};
-    use aptos_std::smart_table::{Self, SmartTable};
-    use aptos_std::table::{Self, Table};
+    use starcoin_std::math64::min;
+    use starcoin_std::simple_map::{Self, SimpleMap};
+    use starcoin_std::smart_table::{Self, SmartTable};
+    use starcoin_std::table::{Self, Table};
 
     use starcoin_framework::account::{Self, SignerCapability, create_signer_with_capability};
     use starcoin_framework::coin;
@@ -29,7 +29,7 @@ module starcoin_framework::aptos_governance {
     use starcoin_framework::stake;
     use starcoin_framework::staking_config;
     use starcoin_framework::system_addresses;
-    use starcoin_framework::aptos_coin::{Self, AptosCoin};
+    use starcoin_framework::starcoin_coin::{Self, StarcoinCoin};
     use starcoin_framework::consensus_config;
     use starcoin_framework::randomness_config;
     use starcoin_framework::reconfiguration_with_dkg;
@@ -173,7 +173,7 @@ module starcoin_framework::aptos_governance {
         signer_address: address,
         signer_cap: SignerCapability,
     ) acquires GovernanceResponsbility {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         system_addresses::assert_framework_reserved(signer_address);
 
         if (!exists<GovernanceResponsbility>(@starcoin_framework)) {
@@ -196,7 +196,7 @@ module starcoin_framework::aptos_governance {
         required_proposer_stake: u64,
         voting_duration_secs: u64,
     ) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
 
         voting::register<GovernanceProposal>(starcoin_framework);
         move_to(starcoin_framework, GovernanceConfig {
@@ -225,7 +225,7 @@ module starcoin_framework::aptos_governance {
         required_proposer_stake: u64,
         voting_duration_secs: u64,
     ) acquires GovernanceConfig, GovernanceEvents {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
 
         let governance_config = borrow_global_mut<GovernanceConfig>(@starcoin_framework);
         governance_config.voting_duration_secs = voting_duration_secs;
@@ -257,7 +257,7 @@ module starcoin_framework::aptos_governance {
     public fun initialize_partial_voting(
         starcoin_framework: &signer,
     ) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
 
         move_to(starcoin_framework, VotingRecordsV2 {
             votes: smart_table::new(),
@@ -404,7 +404,7 @@ module starcoin_framework::aptos_governance {
         // has voted. This doesn't take into subsequent inflation/deflation (rewards are issued every epoch and gas fees
         // are burnt after every transaction), but inflation/delation is very unlikely to have a major impact on total
         // supply during the voting period.
-        let total_voting_token_supply = coin::supply<AptosCoin>();
+        let total_voting_token_supply = coin::supply<StarcoinCoin>();
         let early_resolution_vote_threshold = option::none<u128>();
         if (option::is_some(&total_voting_token_supply)) {
             let total_supply = *option::borrow(&total_voting_token_supply);
@@ -661,7 +661,7 @@ module starcoin_framework::aptos_governance {
     /// This behavior affects when an update of an on-chain config (e.g. `ConsensusConfig`, `Features`) takes effect,
     /// since such updates are applied whenever we enter an new epoch.
     public entry fun reconfigure(starcoin_framework: &signer) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         if (consensus_config::validator_txn_enabled() && randomness_config::enabled()) {
             reconfiguration_with_dkg::try_start();
         } else {
@@ -676,7 +676,7 @@ module starcoin_framework::aptos_governance {
     /// WARNING: currently only used by tests. In most cases you should use `reconfigure()` instead.
     /// TODO: migrate these tests to be aware of async reconfiguration.
     public entry fun force_end_epoch(starcoin_framework: &signer) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         reconfiguration_with_dkg::finish(starcoin_framework);
     }
 
@@ -684,13 +684,13 @@ module starcoin_framework::aptos_governance {
     /// where the core resources account exists and has been granted power to mint Aptos coins.
     public entry fun force_end_epoch_test_only(starcoin_framework: &signer) acquires GovernanceResponsbility {
         let core_signer = get_signer_testnet_only(starcoin_framework, @0x1);
-        system_addresses::assert_aptos_framework(&core_signer);
+        system_addresses::assert_starcoin_framework(&core_signer);
         reconfiguration_with_dkg::finish(&core_signer);
     }
 
     /// Update feature flags and also trigger reconfiguration.
     public fun toggle_features(starcoin_framework: &signer, enable: vector<u64>, disable: vector<u64>) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         features::change_feature_flags_for_next_epoch(starcoin_framework, enable, disable);
         reconfigure(starcoin_framework);
     }
@@ -700,7 +700,7 @@ module starcoin_framework::aptos_governance {
         core_resources: &signer, signer_address: address): signer acquires GovernanceResponsbility {
         system_addresses::assert_core_resource(core_resources);
         // Core resources account only has mint capability in tests/testnets.
-        assert!(aptos_coin::has_mint_capability(core_resources), error::unauthenticated(EUNAUTHORIZED));
+        assert!(starcoin_coin::has_mint_capability(core_resources), error::unauthenticated(EUNAUTHORIZED));
         get_signer(signer_address)
     }
 
@@ -1147,8 +1147,8 @@ module starcoin_framework::aptos_governance {
         initialize_partial_voting(&starcoin_framework);
         features::change_feature_flags_for_testing(&starcoin_framework, vector[features::get_partial_governance_voting()], vector[]);
 
-        coin::register<AptosCoin>(&voter_1);
-        coin::register<AptosCoin>(&voter_2);
+        coin::register<StarcoinCoin>(&voter_1);
+        coin::register<StarcoinCoin>(&voter_2);
         stake::add_stake(&voter_1, 20);
         stake::add_stake(&voter_2, 5);
 
@@ -1205,7 +1205,7 @@ module starcoin_framework::aptos_governance {
         use std::vector;
         use starcoin_framework::account;
         use starcoin_framework::coin;
-        use starcoin_framework::aptos_coin::{Self, AptosCoin};
+        use starcoin_framework::starcoin_coin::{Self, StarcoinCoin};
 
         timestamp::set_time_has_started_for_testing(starcoin_framework);
         account::create_account_for_test(signer::address_of(starcoin_framework));
@@ -1233,20 +1233,20 @@ module starcoin_framework::aptos_governance {
         let pks = vector[pk_1, pk_2, pk_3];
         stake::create_validator_set(starcoin_framework, active_validators, pks);
 
-        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(starcoin_framework);
+        let (burn_cap, mint_cap) = starcoin_coin::initialize_for_test(starcoin_framework);
         // Spread stake among active and pending_inactive because both need to be accounted for when computing voting
         // power.
-        coin::register<AptosCoin>(proposer);
+        coin::register<StarcoinCoin>(proposer);
         coin::deposit(signer::address_of(proposer), coin::mint(100, &mint_cap));
-        coin::register<AptosCoin>(yes_voter);
+        coin::register<StarcoinCoin>(yes_voter);
         coin::deposit(signer::address_of(yes_voter), coin::mint(20, &mint_cap));
-        coin::register<AptosCoin>(no_voter);
+        coin::register<StarcoinCoin>(no_voter);
         coin::deposit(signer::address_of(no_voter), coin::mint(10, &mint_cap));
         stake::create_stake_pool(proposer, coin::mint(50, &mint_cap), coin::mint(50, &mint_cap), 10000);
         stake::create_stake_pool(yes_voter, coin::mint(10, &mint_cap), coin::mint(10, &mint_cap), 10000);
         stake::create_stake_pool(no_voter, coin::mint(5, &mint_cap), coin::mint(5, &mint_cap), 10000);
-        coin::destroy_mint_cap<AptosCoin>(mint_cap);
-        coin::destroy_burn_cap<AptosCoin>(burn_cap);
+        coin::destroy_mint_cap<StarcoinCoin>(mint_cap);
+        coin::destroy_burn_cap<StarcoinCoin>(burn_cap);
     }
 
     #[test_only]
@@ -1258,7 +1258,7 @@ module starcoin_framework::aptos_governance {
     ) acquires GovernanceResponsbility {
         use starcoin_framework::account;
         use starcoin_framework::coin;
-        use starcoin_framework::aptos_coin::AptosCoin;
+        use starcoin_framework::starcoin_coin::StarcoinCoin;
 
         timestamp::set_time_has_started_for_testing(starcoin_framework);
         account::create_account_for_test(signer::address_of(starcoin_framework));
@@ -1278,11 +1278,11 @@ module starcoin_framework::aptos_governance {
         // Initialize the stake pools for proposer and voters.
         // Spread stake among active and pending_inactive because both need to be accounted for when computing voting
         // power.
-        coin::register<AptosCoin>(proposer);
+        coin::register<StarcoinCoin>(proposer);
         coin::deposit(signer::address_of(proposer), stake::mint_coins(100));
-        coin::register<AptosCoin>(yes_voter);
+        coin::register<StarcoinCoin>(yes_voter);
         coin::deposit(signer::address_of(yes_voter), stake::mint_coins(20));
-        coin::register<AptosCoin>(no_voter);
+        coin::register<StarcoinCoin>(no_voter);
         coin::deposit(signer::address_of(no_voter), stake::mint_coins(10));
 
         let (_sk_1, pk_1, pop_1) = stake::generate_identity();

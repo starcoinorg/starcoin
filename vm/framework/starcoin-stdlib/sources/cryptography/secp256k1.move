@@ -1,6 +1,6 @@
 /// This module implements ECDSA signatures based on the prime-order secp256k1 ellptic curve (i.e., cofactor is 1).
 
-module aptos_std::secp256k1 {
+module starcoin_std::secp256k1 {
     use std::option::Option;
 
     /// An error occurred while deserializing, for example due to wrong input size.

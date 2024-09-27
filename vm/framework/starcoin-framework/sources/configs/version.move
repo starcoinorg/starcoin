@@ -25,7 +25,7 @@ module starcoin_framework::version {
     /// Only called during genesis.
     /// Publishes the Version config.
     public(friend) fun initialize(starcoin_framework: &signer, initial_version: u64) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
 
         move_to(starcoin_framework, Version { major: initial_version });
         // Give aptos framework account capability to call set version. This allows on chain governance to do it through
@@ -55,7 +55,7 @@ module starcoin_framework::version {
     /// Used in on-chain governances to update the major version for the next epoch.
     /// Example usage:
     /// - `starcoin_framework::version::set_for_next_epoch(&framework_signer, new_version);`
-    /// - `starcoin_framework::aptos_governance::reconfigure(&framework_signer);`
+    /// - `starcoin_framework::starcoin_governance::reconfigure(&framework_signer);`
     public entry fun set_for_next_epoch(account: &signer, major: u64) acquires Version {
         assert!(exists<SetVersionCapability>(signer::address_of(account)), error::permission_denied(ENOT_AUTHORIZED));
         let old_major = borrow_global<Version>(@starcoin_framework).major;
@@ -65,7 +65,7 @@ module starcoin_framework::version {
 
     /// Only used in reconfigurations to apply the pending `Version`, if there is any.
     public(friend) fun on_new_epoch(framework: &signer) acquires Version {
-        system_addresses::assert_aptos_framework(framework);
+        system_addresses::assert_starcoin_framework(framework);
         if (config_buffer::does_exist<Version>()) {
             let new_value = config_buffer::extract<Version>();
             if (exists<Version>(@starcoin_framework)) {

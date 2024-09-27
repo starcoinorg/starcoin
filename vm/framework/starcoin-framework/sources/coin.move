@@ -5,7 +5,7 @@ module starcoin_framework::coin {
     use std::option::{Self, Option};
     use std::signer;
     use std::string::{Self, String};
-    use aptos_std::table::{Self, Table};
+    use starcoin_std::table::{Self, Table};
 
     use starcoin_framework::account;
     use starcoin_framework::aggregator_factory;
@@ -18,10 +18,10 @@ module starcoin_framework::coin {
     use starcoin_framework::fungible_asset::{Self, FungibleAsset, Metadata, MintRef, TransferRef, BurnRef};
     use starcoin_framework::object::{Self, Object, object_address};
     use starcoin_framework::primary_fungible_store;
-    use aptos_std::type_info::{Self, TypeInfo, type_name};
+    use starcoin_std::type_info::{Self, TypeInfo, type_name};
     use starcoin_framework::create_signer;
 
-    friend starcoin_framework::aptos_coin;
+    friend starcoin_framework::starcoin_coin;
     friend starcoin_framework::genesis;
     friend starcoin_framework::transaction_fee;
 
@@ -286,7 +286,7 @@ module starcoin_framework::coin {
     }
 
     public entry fun create_coin_conversion_map(starcoin_framework: &signer) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         if (!exists<CoinConversionMap>(@starcoin_framework)) {
             move_to(starcoin_framework, CoinConversionMap {
                 coin_to_fungible_asset_map: table::new(),
@@ -294,16 +294,16 @@ module starcoin_framework::coin {
         };
     }
 
-    /// Create APT pairing by passing `AptosCoin`.
+    /// Create APT pairing by passing `StarcoinCoin`.
     public entry fun create_pairing<CoinType>(
         starcoin_framework: &signer
     ) acquires CoinConversionMap, CoinInfo {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         create_and_return_paired_metadata_if_not_exist<CoinType>(true);
     }
 
     inline fun is_apt<CoinType>(): bool {
-        type_info::type_name<CoinType>() == string::utf8(b"0x1::aptos_coin::AptosCoin")
+        type_info::type_name<CoinType>() == string::utf8(b"0x1::starcoin_coin::StarcoinCoin")
     }
 
     inline fun create_and_return_paired_metadata_if_not_exist<CoinType>(allow_apt_creation: bool): Object<Metadata> {
@@ -319,10 +319,10 @@ module starcoin_framework::coin {
             assert!(!is_apt || allow_apt_creation, error::invalid_state(EAPT_PAIRING_IS_NOT_ENABLED));
             let metadata_object_cref =
                 if (is_apt) {
-                    object::create_sticky_object_at_address(@starcoin_framework, @aptos_fungible_asset)
+                    object::create_sticky_object_at_address(@starcoin_framework, @starcoin_fungible_asset)
                 } else {
                     object::create_named_object(
-                        &create_signer::create_signer(@aptos_fungible_asset),
+                        &create_signer::create_signer(@starcoin_fungible_asset),
                         *string::bytes(&type_info::type_name<CoinType>())
                     )
                 };
@@ -544,14 +544,14 @@ module starcoin_framework::coin {
 
     /// Publishes supply configuration. Initially, upgrading is not allowed.
     public(friend) fun initialize_supply_config(starcoin_framework: &signer) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         move_to(starcoin_framework, SupplyConfig { allow_upgrades: false });
     }
 
     /// This should be called by on-chain governance to update the config and allow
     /// or disallow upgradability of total supply.
     public fun allow_supply_upgrades(starcoin_framework: &signer, allowed: bool) acquires SupplyConfig {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         let allow_upgrades = &mut borrow_global_mut<SupplyConfig>(@starcoin_framework).allow_upgrades;
         *allow_upgrades = allowed;
     }
@@ -1061,7 +1061,7 @@ module starcoin_framework::coin {
         decimals: u8,
         monitor_supply: bool,
     ): (BurnCapability<CoinType>, FreezeCapability<CoinType>, MintCapability<CoinType>) {
-        system_addresses::assert_aptos_framework(account);
+        system_addresses::assert_starcoin_framework(account);
         initialize_internal(account, name, symbol, decimals, monitor_supply, true)
     }
 

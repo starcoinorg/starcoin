@@ -361,7 +361,7 @@ module starcoin_framework::storage_gas {
     }
 
     public(friend) fun set_config(starcoin_framework: &signer, config: StorageGasConfig) acquires StorageGasConfig {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         *borrow_global_mut<StorageGasConfig>(@starcoin_framework) = config;
     }
 
@@ -387,7 +387,7 @@ module starcoin_framework::storage_gas {
     /// See `base_8192_exponential_curve()` fore more information on
     /// target utilization.
     public fun initialize(starcoin_framework: &signer) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         assert!(
             !exists<StorageGasConfig>(@starcoin_framework),
             error::already_exists(ESTORAGE_GAS_CONFIG)

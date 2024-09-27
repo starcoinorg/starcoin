@@ -4,7 +4,7 @@ module starcoin_framework::block {
     use std::features;
     use std::vector;
     use std::option;
-    use aptos_std::table_with_length::{Self, TableWithLength};
+    use starcoin_std::table_with_length::{Self, TableWithLength};
     use std::option::Option;
     use starcoin_framework::randomness;
 
@@ -91,7 +91,7 @@ module starcoin_framework::block {
 
     /// This can only be called during Genesis.
     public(friend) fun initialize(starcoin_framework: &signer, epoch_interval_microsecs: u64) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         assert!(epoch_interval_microsecs > 0, error::invalid_argument(EZERO_EPOCH_INTERVAL));
 
         move_to<CommitHistory>(starcoin_framework, CommitHistory {
@@ -127,7 +127,7 @@ module starcoin_framework::block {
         starcoin_framework: &signer,
         new_epoch_interval: u64,
     ) acquires BlockResource {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         assert!(new_epoch_interval > 0, error::invalid_argument(EZERO_EPOCH_INTERVAL));
 
         let block_resource = borrow_global_mut<BlockResource>(@starcoin_framework);

@@ -13,7 +13,7 @@ module starcoin_framework::chain_id {
     /// Only called during genesis.
     /// Publish the chain ID `id` of this instance under the SystemAddresses address
     public(friend) fun initialize(starcoin_framework: &signer, id: u8) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         move_to(starcoin_framework, ChainId { id })
     }
 

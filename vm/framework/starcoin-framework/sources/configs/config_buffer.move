@@ -11,11 +11,11 @@
 /// NOTE: on-chain config `0x1::state::ValidatorSet` implemented its own buffer.
 module starcoin_framework::config_buffer {
     use std::string::String;
-    use aptos_std::any;
-    use aptos_std::any::Any;
-    use aptos_std::simple_map;
-    use aptos_std::simple_map::SimpleMap;
-    use aptos_std::type_info;
+    use starcoin_std::any;
+    use starcoin_std::any::Any;
+    use starcoin_std::simple_map;
+    use starcoin_std::simple_map::SimpleMap;
+    use starcoin_std::type_info;
     use starcoin_framework::system_addresses;
 
     friend starcoin_framework::consensus_config;
@@ -37,7 +37,7 @@ module starcoin_framework::config_buffer {
     }
 
     public fun initialize(starcoin_framework: &signer) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         if (!exists<PendingConfigs>(@starcoin_framework)) {
             move_to(starcoin_framework, PendingConfigs {
                 configs: simple_map::new(),

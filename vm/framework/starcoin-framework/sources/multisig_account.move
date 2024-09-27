@@ -37,14 +37,14 @@
 /// and implement the governance voting logic on top.
 module starcoin_framework::multisig_account {
     use starcoin_framework::account::{Self, SignerCapability, new_event_handle, create_resource_address};
-    use starcoin_framework::aptos_coin::AptosCoin;
+    use starcoin_framework::starcoin_coin::StarcoinCoin;
     use starcoin_framework::chain_id;
     use starcoin_framework::create_signer::create_signer;
     use starcoin_framework::coin;
     use starcoin_framework::event::{EventHandle, emit_event, emit};
     use starcoin_framework::timestamp::now_seconds;
-    use aptos_std::simple_map::{Self, SimpleMap};
-    use aptos_std::table::{Self, Table};
+    use starcoin_std::simple_map::{Self, SimpleMap};
+    use starcoin_std::table::{Self, Table};
     use std::bcs::to_bytes;
     use std::error;
     use std::hash::sha3_256;
@@ -1264,8 +1264,8 @@ module starcoin_framework::multisig_account {
             account::create_resource_account(owner, create_multisig_account_seed(to_bytes(&owner_nonce)));
         // Register the account to receive APT as this is not done by default as part of the resource account creation
         // flow.
-        if (!coin::is_account_registered<AptosCoin>(address_of(&multisig_signer))) {
-            coin::register<AptosCoin>(&multisig_signer);
+        if (!coin::is_account_registered<StarcoinCoin>(address_of(&multisig_signer))) {
+            coin::register<StarcoinCoin>(&multisig_signer);
         };
 
         (multisig_signer, multisig_signer_cap)
@@ -1459,18 +1459,18 @@ module starcoin_framework::multisig_account {
     ////////////////////////// Tests ///////////////////////////////
 
     #[test_only]
-    use starcoin_framework::aptos_account::create_account;
+    use starcoin_framework::starcoin_account::create_account;
     #[test_only]
     use starcoin_framework::timestamp;
     #[test_only]
-    use aptos_std::from_bcs;
+    use starcoin_std::from_bcs;
     #[test_only]
-    use aptos_std::multi_ed25519;
+    use starcoin_std::multi_ed25519;
     #[test_only]
     use std::string::utf8;
     use std::features;
     #[test_only]
-    use starcoin_framework::aptos_coin;
+    use starcoin_framework::starcoin_coin;
     #[test_only]
     use starcoin_framework::coin::{destroy_mint_cap, destroy_burn_cap};
 
@@ -1499,7 +1499,7 @@ module starcoin_framework::multisig_account {
             framework_signer, vector[features::get_multisig_accounts_feature(), features::get_multisig_v2_enhancement_feature(), features::get_abort_if_multisig_payload_mismatch_feature()], vector[]);
         timestamp::set_time_has_started_for_testing(framework_signer);
         chain_id::initialize_for_test(framework_signer, 1);
-        let (burn, mint) = aptos_coin::initialize_for_test(framework_signer);
+        let (burn, mint) = starcoin_coin::initialize_for_test(framework_signer);
         destroy_mint_cap(mint);
         destroy_burn_cap(burn);
     }
@@ -1511,7 +1511,7 @@ module starcoin_framework::multisig_account {
             framework_signer, vector[], vector[features::get_multisig_accounts_feature()]);
         timestamp::set_time_has_started_for_testing(framework_signer);
         chain_id::initialize_for_test(framework_signer, 1);
-        let (burn, mint) = aptos_coin::initialize_for_test(framework_signer);
+        let (burn, mint) = starcoin_coin::initialize_for_test(framework_signer);
         destroy_mint_cap(mint);
         destroy_burn_cap(burn);
     }

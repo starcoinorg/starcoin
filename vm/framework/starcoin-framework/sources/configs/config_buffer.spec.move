@@ -46,7 +46,7 @@ spec starcoin_framework::config_buffer {
     }
 
     spec schema OnNewEpochAbortsIf<T> {
-        use aptos_std::type_info;
+        use starcoin_std::type_info;
         let type_name = type_info::type_name<T>();
         let configs = global<PendingConfigs>(@starcoin_framework);
         // TODO(#12015)
@@ -56,7 +56,7 @@ spec starcoin_framework::config_buffer {
     }
 
     spec schema OnNewEpochRequirement<T> {
-        use aptos_std::type_info;
+        use starcoin_std::type_info;
         let type_name = type_info::type_name<T>();
         let configs = global<PendingConfigs>(@starcoin_framework);
         // TODO(#12015)

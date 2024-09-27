@@ -4,9 +4,9 @@ module starcoin_framework::jwk_consensus_config {
     use std::option;
     use std::string::String;
     use std::vector;
-    use aptos_std::copyable_any;
-    use aptos_std::copyable_any::Any;
-    use aptos_std::simple_map;
+    use starcoin_std::copyable_any;
+    use starcoin_std::copyable_any::Any;
+    use starcoin_std::simple_map;
     use starcoin_framework::config_buffer;
     use starcoin_framework::system_addresses;
     #[test_only]
@@ -43,7 +43,7 @@ module starcoin_framework::jwk_consensus_config {
 
     /// Initialize the configuration. Used in genesis or governance.
     public fun initialize(framework: &signer, config: JWKConsensusConfig) {
-        system_addresses::assert_aptos_framework(framework);
+        system_addresses::assert_starcoin_framework(framework);
         if (!exists<JWKConsensusConfig>(@starcoin_framework)) {
             move_to(framework, config);
         }
@@ -53,20 +53,20 @@ module starcoin_framework::jwk_consensus_config {
     /// Example usage:
     /// ```
     /// use starcoin_framework::jwk_consensus_config;
-    /// use starcoin_framework::aptos_governance;
+    /// use starcoin_framework::starcoin_governance;
     /// // ...
     /// let config = jwk_consensus_config::new_v1(vector[]);
     /// jwk_consensus_config::set_for_next_epoch(&framework_signer, config);
-    /// aptos_governance::reconfigure(&framework_signer);
+    /// starcoin_governance::reconfigure(&framework_signer);
     /// ```
     public fun set_for_next_epoch(framework: &signer, config: JWKConsensusConfig) {
-        system_addresses::assert_aptos_framework(framework);
+        system_addresses::assert_starcoin_framework(framework);
         config_buffer::upsert(config);
     }
 
     /// Only used in reconfigurations to apply the pending `JWKConsensusConfig`, if there is any.
     public(friend) fun on_new_epoch(framework: &signer) acquires JWKConsensusConfig {
-        system_addresses::assert_aptos_framework(framework);
+        system_addresses::assert_starcoin_framework(framework);
         if (config_buffer::does_exist<JWKConsensusConfig>()) {
             let new_config = config_buffer::extract<JWKConsensusConfig>();
             if (exists<JWKConsensusConfig>(@starcoin_framework)) {

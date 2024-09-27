@@ -3,13 +3,13 @@ module starcoin_framework::genesis {
     use std::fixed_point32;
     use std::vector;
 
-    use aptos_std::simple_map;
+    use starcoin_std::simple_map;
 
     use starcoin_framework::account;
     use starcoin_framework::aggregator_factory;
-    use starcoin_framework::aptos_account;
-    use starcoin_framework::aptos_coin::{Self, AptosCoin};
-    use starcoin_framework::aptos_governance;
+    use starcoin_framework::starcoin_account;
+    use starcoin_framework::starcoin_coin::{Self, StarcoinCoin};
+    use starcoin_framework::starcoin_governance;
     use starcoin_framework::block;
     use starcoin_framework::chain_id;
     use starcoin_framework::chain_status;
@@ -95,14 +95,14 @@ module starcoin_framework::genesis {
         );
 
         // Give the decentralized on-chain governance control over the core framework account.
-        aptos_governance::store_signer_cap(&aptos_framework_account, @starcoin_framework, aptos_framework_signer_cap);
+        starcoin_governance::store_signer_cap(&aptos_framework_account, @starcoin_framework, aptos_framework_signer_cap);
 
         // put reserved framework reserved accounts under aptos governance
         let framework_reserved_addresses = vector<address>[@0x2, @0x3, @0x4, @0x5, @0x6, @0x7, @0x8, @0x9, @0xa];
         while (!vector::is_empty(&framework_reserved_addresses)) {
             let address = vector::pop_back<address>(&mut framework_reserved_addresses);
             let (_, framework_signer_cap) = account::create_framework_reserved_account(address);
-            aptos_governance::store_signer_cap(&aptos_framework_account, address, framework_signer_cap);
+            starcoin_governance::store_signer_cap(&aptos_framework_account, address, framework_signer_cap);
         };
 
         consensus_config::initialize(&aptos_framework_account, consensus_config);
@@ -135,16 +135,16 @@ module starcoin_framework::genesis {
 
     /// Genesis step 2: Initialize Aptos coin.
     fun initialize_aptos_coin(starcoin_framework: &signer) {
-        let (burn_cap, mint_cap) = aptos_coin::initialize(starcoin_framework);
+        let (burn_cap, mint_cap) = starcoin_coin::initialize(starcoin_framework);
 
         coin::create_coin_conversion_map(starcoin_framework);
-        coin::create_pairing<AptosCoin>(starcoin_framework);
+        coin::create_pairing<StarcoinCoin>(starcoin_framework);
 
-        // Give stake module MintCapability<AptosCoin> so it can mint rewards.
+        // Give stake module MintCapability<StarcoinCoin> so it can mint rewards.
         stake::store_aptos_coin_mint_cap(starcoin_framework, mint_cap);
-        // Give transaction_fee module BurnCapability<AptosCoin> so it can burn gas.
+        // Give transaction_fee module BurnCapability<StarcoinCoin> so it can burn gas.
         transaction_fee::store_aptos_coin_burn_cap(starcoin_framework, burn_cap);
-        // Give transaction_fee module MintCapability<AptosCoin> so it can mint refunds.
+        // Give transaction_fee module MintCapability<StarcoinCoin> so it can mint refunds.
         transaction_fee::store_aptos_coin_mint_cap(starcoin_framework, mint_cap);
     }
 
@@ -153,22 +153,22 @@ module starcoin_framework::genesis {
         starcoin_framework: &signer,
         core_resources_auth_key: vector<u8>,
     ) {
-        let (burn_cap, mint_cap) = aptos_coin::initialize(starcoin_framework);
+        let (burn_cap, mint_cap) = starcoin_coin::initialize(starcoin_framework);
 
         coin::create_coin_conversion_map(starcoin_framework);
-        coin::create_pairing<AptosCoin>(starcoin_framework);
+        coin::create_pairing<StarcoinCoin>(starcoin_framework);
 
-        // Give stake module MintCapability<AptosCoin> so it can mint rewards.
+        // Give stake module MintCapability<StarcoinCoin> so it can mint rewards.
         stake::store_aptos_coin_mint_cap(starcoin_framework, mint_cap);
-        // Give transaction_fee module BurnCapability<AptosCoin> so it can burn gas.
+        // Give transaction_fee module BurnCapability<StarcoinCoin> so it can burn gas.
         transaction_fee::store_aptos_coin_burn_cap(starcoin_framework, burn_cap);
-        // Give transaction_fee module MintCapability<AptosCoin> so it can mint refunds.
+        // Give transaction_fee module MintCapability<StarcoinCoin> so it can mint refunds.
         transaction_fee::store_aptos_coin_mint_cap(starcoin_framework, mint_cap);
 
         let core_resources = account::create_account(@core_resources);
         account::rotate_authentication_key_internal(&core_resources, core_resources_auth_key);
-        aptos_account::register_apt(&core_resources); // registers APT store
-        aptos_coin::configure_accounts_for_test(starcoin_framework, &core_resources, mint_cap);
+        starcoin_account::register_apt(&core_resources); // registers APT store
+        starcoin_coin::configure_accounts_for_test(starcoin_framework, &core_resources, mint_cap);
     }
 
     fun create_accounts(starcoin_framework: &signer, accounts: vector<AccountMap>) {
@@ -196,8 +196,8 @@ module starcoin_framework::genesis {
             create_signer(account_address)
         } else {
             let account = account::create_account(account_address);
-            coin::register<AptosCoin>(&account);
-            aptos_coin::mint(starcoin_framework, account_address, balance);
+            coin::register<StarcoinCoin>(&account);
+            starcoin_coin::mint(starcoin_framework, account_address, balance);
             account
         }
     }
@@ -225,8 +225,8 @@ module starcoin_framework::genesis {
                 vector::push_back(&mut unique_accounts, *account);
 
                 let employee = create_signer(*account);
-                let total = coin::balance<AptosCoin>(*account);
-                let coins = coin::withdraw<AptosCoin>(&employee, total);
+                let total = coin::balance<StarcoinCoin>(*account);
+                let coins = coin::withdraw<StarcoinCoin>(&employee, total);
                 simple_map::add(&mut buy_ins, *account, coins);
 
                 j = j + 1;
@@ -300,7 +300,7 @@ module starcoin_framework::genesis {
 
         // Destroy the aptos framework account's ability to mint coins now that we're done with setting up the initial
         // validators.
-        aptos_coin::destroy_mint_cap(starcoin_framework);
+        starcoin_coin::destroy_mint_cap(starcoin_framework);
 
         stake::on_new_epoch();
     }
@@ -434,7 +434,7 @@ module starcoin_framework::genesis {
         );
         features::change_feature_flags_for_verification(starcoin_framework, vector[1, 2], vector[]);
         initialize_aptos_coin(starcoin_framework);
-        aptos_governance::initialize_for_verification(
+        starcoin_governance::initialize_for_verification(
             starcoin_framework,
             min_voting_threshold,
             required_proposer_stake,
@@ -489,7 +489,7 @@ module starcoin_framework::genesis {
         let test_signer_before = create_account(starcoin_framework, addr, 15);
         let test_signer_after = create_account(starcoin_framework, addr, 500);
         assert!(test_signer_before == test_signer_after, 0);
-        assert!(coin::balance<AptosCoin>(addr) == 15, 1);
+        assert!(coin::balance<StarcoinCoin>(addr) == 15, 1);
     }
 
     #[test(starcoin_framework = @0x1)]
@@ -513,11 +513,11 @@ module starcoin_framework::genesis {
         ];
 
         create_accounts(starcoin_framework, accounts);
-        assert!(coin::balance<AptosCoin>(addr0) == 12345, 0);
-        assert!(coin::balance<AptosCoin>(addr1) == 67890, 1);
+        assert!(coin::balance<StarcoinCoin>(addr0) == 12345, 0);
+        assert!(coin::balance<StarcoinCoin>(addr1) == 67890, 1);
 
         create_account(starcoin_framework, addr0, 23456);
-        assert!(coin::balance<AptosCoin>(addr0) == 12345, 2);
+        assert!(coin::balance<StarcoinCoin>(addr0) == 12345, 2);
     }
 
     #[test(starcoin_framework = @0x1, root = @0xabcd)]
@@ -533,16 +533,16 @@ module starcoin_framework::genesis {
 
         aggregator_factory::initialize_aggregator_factory_for_test(starcoin_framework);
 
-        let (burn_cap, mint_cap) = aptos_coin::initialize(starcoin_framework);
-        aptos_coin::ensure_initialized_with_apt_fa_metadata_for_test();
+        let (burn_cap, mint_cap) = starcoin_coin::initialize(starcoin_framework);
+        starcoin_coin::ensure_initialized_with_apt_fa_metadata_for_test();
 
         let core_resources = account::create_account(@core_resources);
-        aptos_account::register_apt(&core_resources); // registers APT store
+        starcoin_account::register_apt(&core_resources); // registers APT store
 
-        let apt_metadata = object::address_to_object<Metadata>(@aptos_fungible_asset);
+        let apt_metadata = object::address_to_object<Metadata>(@starcoin_fungible_asset);
         assert!(primary_fungible_store::primary_store_exists(@core_resources, apt_metadata), 2);
 
-        aptos_coin::configure_accounts_for_test(starcoin_framework, &core_resources, mint_cap);
+        starcoin_coin::configure_accounts_for_test(starcoin_framework, &core_resources, mint_cap);
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);

@@ -1,9 +1,9 @@
 /// Structs and functions for on-chain randomness configurations.
 module starcoin_framework::randomness_config {
     use std::string;
-    use aptos_std::copyable_any;
-    use aptos_std::copyable_any::Any;
-    use aptos_std::fixed_point64::FixedPoint64;
+    use starcoin_std::copyable_any;
+    use starcoin_std::copyable_any::Any;
+    use starcoin_std::fixed_point64::FixedPoint64;
     use starcoin_framework::config_buffer;
     use starcoin_framework::system_addresses;
 
@@ -43,7 +43,7 @@ module starcoin_framework::randomness_config {
 
     /// Initialize the configuration. Used in genesis or governance.
     public fun initialize(framework: &signer, config: RandomnessConfig) {
-        system_addresses::assert_aptos_framework(framework);
+        system_addresses::assert_starcoin_framework(framework);
         if (!exists<RandomnessConfig>(@starcoin_framework)) {
             move_to(framework, config)
         }
@@ -51,13 +51,13 @@ module starcoin_framework::randomness_config {
 
     /// This can be called by on-chain governance to update on-chain consensus configs for the next epoch.
     public fun set_for_next_epoch(framework: &signer, new_config: RandomnessConfig) {
-        system_addresses::assert_aptos_framework(framework);
+        system_addresses::assert_starcoin_framework(framework);
         config_buffer::upsert(new_config);
     }
 
     /// Only used in reconfigurations to apply the pending `RandomnessConfig`, if there is any.
     public(friend) fun on_new_epoch(framework: &signer) acquires RandomnessConfig {
-        system_addresses::assert_aptos_framework(framework);
+        system_addresses::assert_starcoin_framework(framework);
         if (config_buffer::does_exist<RandomnessConfig>()) {
             let new_config = config_buffer::extract<RandomnessConfig>();
             if (exists<RandomnessConfig>(@starcoin_framework)) {
@@ -124,7 +124,7 @@ module starcoin_framework::randomness_config {
     }
 
     #[test_only]
-    use aptos_std::fixed_point64;
+    use starcoin_std::fixed_point64;
 
     #[test_only]
     fun initialize_for_testing(framework: &signer) {

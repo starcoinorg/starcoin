@@ -7,7 +7,7 @@ spec starcoin_framework::reconfiguration_state {
 
     spec initialize(fx: &signer) {
         use std::signer;
-        use aptos_std::from_bcs;
+        use starcoin_std::from_bcs;
         aborts_if signer::address_of(fx) != @starcoin_framework;
         let post post_state = global<State>(@starcoin_framework);
         ensures exists<State>(@starcoin_framework);
@@ -32,8 +32,8 @@ spec starcoin_framework::reconfiguration_state {
     }
 
     spec State {
-        use aptos_std::from_bcs;
-        use aptos_std::type_info;
+        use starcoin_std::from_bcs;
+        use starcoin_std::type_info;
         invariant copyable_any::type_name(variant).bytes == b"0x1::reconfiguration_state::StateActive" ||
             copyable_any::type_name(variant).bytes == b"0x1::reconfiguration_state::StateInactive";
         invariant copyable_any::type_name(variant).bytes == b"0x1::reconfiguration_state::StateActive"
@@ -47,8 +47,8 @@ spec starcoin_framework::reconfiguration_state {
     }
 
     spec on_reconfig_start {
-        use aptos_std::from_bcs;
-        use aptos_std::type_info;
+        use starcoin_std::from_bcs;
+        use starcoin_std::type_info;
         use std::bcs;
         aborts_if false;
         requires exists<timestamp::CurrentTimeMicroseconds>(@starcoin_framework);
@@ -74,7 +74,7 @@ spec starcoin_framework::reconfiguration_state {
     }
 
     spec fun spec_start_time_secs(): u64 {
-        use aptos_std::from_bcs;
+        use starcoin_std::from_bcs;
         let state = global<State>(@starcoin_framework);
         from_bcs::deserialize<StateActive>(state.variant.data).start_time_secs
     }
@@ -89,8 +89,8 @@ spec starcoin_framework::reconfiguration_state {
     }
 
     spec schema UnpackRequiresStateActive {
-        use aptos_std::from_bcs;
-        use aptos_std::type_info;
+        use starcoin_std::from_bcs;
+        use starcoin_std::type_info;
         x: Any;
         requires type_info::type_name<StateActive>() == x.type_name && from_bcs::deserializable<StateActive>(x.data);
     }

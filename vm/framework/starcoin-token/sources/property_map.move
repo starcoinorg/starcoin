@@ -2,14 +2,14 @@
 /// It maps a String key to a PropertyValue that consists of type (string) and value (vector<u8>)
 /// It provides basic on-chain serialization of primitive and string to property value with type information
 /// It also supports deserializing property value to it original type.
-module aptos_token::property_map {
+module starcoin_token::property_map {
     use std::bcs;
     use std::vector;
     use std::error;
     use std::string::{Self, String};
-    use aptos_std::from_bcs;
-    use aptos_std::simple_map::{Self, SimpleMap};
-    use aptos_std::type_info::type_name;
+    use starcoin_std::from_bcs;
+    use starcoin_std::simple_map::{Self, SimpleMap};
+    use starcoin_std::type_info::type_name;
 
     //
     // Constants

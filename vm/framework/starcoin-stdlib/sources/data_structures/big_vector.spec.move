@@ -1,4 +1,4 @@
-spec aptos_std::big_vector {
+spec starcoin_std::big_vector {
     // -----------------
     // Data invariants
     // -----------------

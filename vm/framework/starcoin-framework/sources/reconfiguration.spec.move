@@ -57,7 +57,7 @@ spec starcoin_framework::reconfiguration {
         starcoin_framework: &signer;
 
         let addr = signer::address_of(starcoin_framework);
-        aborts_if !system_addresses::is_aptos_framework_address(addr);
+        aborts_if !system_addresses::is_starcoin_framework_address(addr);
     }
 
     /// Address @starcoin_framework must exist resource Account and Configuration.
@@ -126,7 +126,7 @@ spec starcoin_framework::reconfiguration {
     }
 
     spec reconfigure {
-        use starcoin_framework::aptos_coin;
+        use starcoin_framework::starcoin_coin;
         use starcoin_framework::transaction_fee;
         use starcoin_framework::staking_config;
 
@@ -138,7 +138,7 @@ spec starcoin_framework::reconfiguration {
         let success = !(chain_status::is_genesis() || timestamp::spec_now_microseconds() == 0 || !reconfiguration_enabled())
             && timestamp::spec_now_microseconds() != global<Configuration>(@starcoin_framework).last_reconfiguration_time;
         include features::spec_periodical_reward_rate_decrease_enabled() ==> staking_config::StakingRewardsConfigEnabledRequirement;
-        include success ==> aptos_coin::ExistsAptosCoin;
+        include success ==> starcoin_coin::ExistsAptosCoin;
         include transaction_fee::RequiresCollectedFeesPerValueLeqBlockAptosSupply;
         aborts_if false;
         // The ensure conditions of the reconfigure function are not fully written, because there is a new cycle in it,

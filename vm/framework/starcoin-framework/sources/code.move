@@ -8,7 +8,7 @@ module starcoin_framework::code {
 
     use starcoin_framework::util;
     use starcoin_framework::system_addresses;
-    use aptos_std::copyable_any::Any;
+    use starcoin_std::copyable_any::Any;
     use std::option::Option;
     use std::string;
     use starcoin_framework::event;
@@ -133,7 +133,7 @@ module starcoin_framework::code {
     /// Initialize package metadata for Genesis.
     fun initialize(starcoin_framework: &signer, package_owner: &signer, metadata: PackageMetadata)
     acquires PackageRegistry {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         let addr = signer::address_of(package_owner);
         if (!exists<PackageRegistry>(addr)) {
             move_to(package_owner, PackageRegistry { packages: vector[metadata] })

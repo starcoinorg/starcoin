@@ -1,4 +1,4 @@
-spec aptos_token::token {
+spec starcoin_token::token {
     spec module {
         pragma verify = true;
         pragma aborts_if_is_strict;
@@ -176,7 +176,7 @@ spec aptos_token::token {
         property_version: u64,
         amount: u64,
     ) {
-        use aptos_std::simple_map;
+        use starcoin_std::simple_map;
         //TODO: Abort condition is complex because of the read_bool in the property_map module.
         pragma aborts_if_is_partial;
         let creator_address = signer::address_of(creator);
@@ -202,7 +202,7 @@ spec aptos_token::token {
         property_version: u64,
         amount: u64
     ) {
-        use aptos_std::simple_map;
+        use starcoin_std::simple_map;
         //TODO: Abort condition is complex because of the read_bool in the property_map module.
         pragma aborts_if_is_partial;
         let token_id = spec_create_token_id_raw(creators_address, collection, name, property_version);
@@ -378,7 +378,7 @@ spec aptos_token::token {
         values: vector<vector<u8>>,
         types: vector<String>,
     ): TokenId {
-        use aptos_std::simple_map;
+        use starcoin_std::simple_map;
         //TODO: Abort condition is complex because of the read_bool funtion in the property_map module.
         pragma aborts_if_is_partial;
         let creator = token_id.token_data_id.creator;

@@ -1,9 +1,9 @@
 /// Standard math utilities missing in the Move Language.
 
-module aptos_std::math_fixed64 {
-    use aptos_std::fixed_point64;
-    use aptos_std::fixed_point64::FixedPoint64;
-    use aptos_std::math128;
+module starcoin_std::math_fixed64 {
+    use starcoin_std::fixed_point64;
+    use starcoin_std::fixed_point64::FixedPoint64;
+    use starcoin_std::math128;
 
     /// Abort code on overflow
     const EOVERFLOW_EXP: u64 = 1;

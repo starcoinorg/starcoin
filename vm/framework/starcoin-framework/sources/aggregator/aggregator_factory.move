@@ -8,7 +8,7 @@ module starcoin_framework::aggregator_factory {
 
     use starcoin_framework::system_addresses;
     use starcoin_framework::aggregator::Aggregator;
-    use aptos_std::table::{Self, Table};
+    use starcoin_std::table::{Self, Table};
 
     friend starcoin_framework::genesis;
     friend starcoin_framework::optional_aggregator;
@@ -25,7 +25,7 @@ module starcoin_framework::aggregator_factory {
 
     /// Creates a new factory for aggregators. Can only be called during genesis.
     public(friend) fun initialize_aggregator_factory(starcoin_framework: &signer) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         let aggregator_factory = AggregatorFactory {
             phantom_table: table::new()
         };
@@ -47,7 +47,7 @@ module starcoin_framework::aggregator_factory {
     /// to allow any signer to call.
     public fun create_aggregator(account: &signer, limit: u128): Aggregator acquires AggregatorFactory {
         // Only Aptos Framework (0x1) account can call this for now.
-        system_addresses::assert_aptos_framework(account);
+        system_addresses::assert_starcoin_framework(account);
         create_aggregator_internal(limit)
     }
 

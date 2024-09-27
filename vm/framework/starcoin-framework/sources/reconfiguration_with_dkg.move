@@ -17,7 +17,7 @@ module starcoin_framework::reconfiguration_with_dkg {
     use starcoin_framework::stake;
     use starcoin_framework::system_addresses;
     friend starcoin_framework::block;
-    friend starcoin_framework::aptos_governance;
+    friend starcoin_framework::starcoin_governance;
 
     /// Trigger a reconfiguration with DKG.
     /// Do nothing if one is already in progress.
@@ -44,7 +44,7 @@ module starcoin_framework::reconfiguration_with_dkg {
     /// Re-enable validator set changes.
     /// Run the default reconfiguration to enter the new epoch.
     public(friend) fun finish(framework: &signer) {
-        system_addresses::assert_aptos_framework(framework);
+        system_addresses::assert_starcoin_framework(framework);
         dkg::try_clear_incomplete_session(framework);
         consensus_config::on_new_epoch(framework);
         execution_config::on_new_epoch(framework);

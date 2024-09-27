@@ -1,8 +1,8 @@
-module aptos_std::big_vector {
+module starcoin_std::big_vector {
     use std::error;
     use std::vector;
-    use aptos_std::table_with_length::{Self, TableWithLength};
-    friend aptos_std::smart_vector;
+    use starcoin_std::table_with_length::{Self, TableWithLength};
+    friend starcoin_std::smart_vector;
 
     /// Vector index is out of bounds
     const EINDEX_OUT_OF_BOUNDS: u64 = 1;

@@ -28,7 +28,7 @@ spec starcoin_framework::version {
         use starcoin_framework::timestamp;
         use starcoin_framework::stake;
         use starcoin_framework::coin::CoinInfo;
-        use starcoin_framework::aptos_coin::AptosCoin;
+        use starcoin_framework::starcoin_coin::StarcoinCoin;
         use starcoin_framework::transaction_fee;
         use starcoin_framework::staking_config;
         use starcoin_framework::reconfiguration;
@@ -40,7 +40,7 @@ spec starcoin_framework::version {
         requires chain_status::is_genesis();
         requires timestamp::spec_now_microseconds() >= reconfiguration::last_reconfiguration_time();
         requires exists<stake::ValidatorFees>(@starcoin_framework);
-        requires exists<CoinInfo<AptosCoin>>(@starcoin_framework);
+        requires exists<CoinInfo<StarcoinCoin>>(@starcoin_framework);
 
         aborts_if !exists<SetVersionCapability>(signer::address_of(account));
         aborts_if !exists<Version>(@starcoin_framework);

@@ -22,7 +22,7 @@ module starcoin_framework::state_storage {
     }
 
     public(friend) fun initialize(starcoin_framework: &signer) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         assert!(
             !exists<StateStorageUsage>(@starcoin_framework),
             error::already_exists(ESTATE_STORAGE_USAGE)

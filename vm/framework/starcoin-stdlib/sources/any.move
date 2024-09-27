@@ -1,11 +1,11 @@
-module aptos_std::any {
-    use aptos_std::type_info;
-    use aptos_std::from_bcs::from_bytes;
+module starcoin_std::any {
+    use starcoin_std::type_info;
+    use starcoin_std::from_bcs::from_bytes;
     use std::bcs::to_bytes;
     use std::error;
     use std::string::String;
 
-    friend aptos_std::copyable_any;
+    friend starcoin_std::copyable_any;
 
     /// The type provided for `unpack` is not the same as was given for `pack`.
     const ETYPE_MISMATCH: u64 = 1;

@@ -10,7 +10,7 @@
 /// on account to have access to this.
 module starcoin_framework::create_signer {
     friend starcoin_framework::account;
-    friend starcoin_framework::aptos_account;
+    friend starcoin_framework::starcoin_account;
     friend starcoin_framework::coin;
     friend starcoin_framework::fungible_asset;
     friend starcoin_framework::genesis;

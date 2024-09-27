@@ -1,6 +1,6 @@
 #[test_only]
-module aptos_std::smart_table_test {
-    use aptos_std::smart_table::{Self, SmartTable};
+module starcoin_std::smart_table_test {
+    use starcoin_std::smart_table::{Self, SmartTable};
 
     #[test_only]
     public fun make_smart_table(): SmartTable<u64, u64> {

@@ -16,7 +16,7 @@ module starcoin_framework::fungible_asset {
 
     friend starcoin_framework::coin;
     friend starcoin_framework::primary_fungible_store;
-    friend starcoin_framework::aptos_account;
+    friend starcoin_framework::starcoin_account;
 
     friend starcoin_framework::dispatchable_fungible_asset;
 
@@ -425,7 +425,7 @@ module starcoin_framework::fungible_asset {
     )  {
         // Cannot register hook for APT.
         assert!(
-            object::address_from_constructor_ref(constructor_ref) != @aptos_fungible_asset,
+            object::address_from_constructor_ref(constructor_ref) != @starcoin_fungible_asset,
             error::permission_denied(EAPT_NOT_DISPATCHABLE)
         );
         assert!(
@@ -644,7 +644,7 @@ module starcoin_framework::fungible_asset {
     fun has_deposit_dispatch_function(metadata: Object<Metadata>): bool acquires DispatchFunctionStore {
         let metadata_addr = object::object_address(&metadata);
         // Short circuit on APT for better perf
-        if(metadata_addr != @aptos_fungible_asset && exists<DispatchFunctionStore>(metadata_addr)) {
+        if(metadata_addr != @starcoin_fungible_asset && exists<DispatchFunctionStore>(metadata_addr)) {
             option::is_some(&borrow_global<DispatchFunctionStore>(metadata_addr).deposit_function)
         } else {
             false
@@ -664,7 +664,7 @@ module starcoin_framework::fungible_asset {
     fun has_withdraw_dispatch_function(metadata: Object<Metadata>): bool acquires DispatchFunctionStore {
         let metadata_addr = object::object_address(&metadata);
         // Short circuit on APT for better perf
-        if (metadata_addr != @aptos_fungible_asset && exists<DispatchFunctionStore>(metadata_addr)) {
+        if (metadata_addr != @starcoin_fungible_asset && exists<DispatchFunctionStore>(metadata_addr)) {
             option::is_some(&borrow_global<DispatchFunctionStore>(metadata_addr).withdraw_function)
         } else {
             false

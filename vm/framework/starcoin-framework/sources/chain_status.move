@@ -18,7 +18,7 @@ module starcoin_framework::chain_status {
 
     /// Marks that genesis has finished.
     public(friend) fun set_genesis_end(starcoin_framework: &signer) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         move_to(starcoin_framework, GenesisEndMarker {});
     }
 

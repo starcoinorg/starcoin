@@ -8,8 +8,8 @@ module starcoin_framework::keyless_account {
     use std::signer;
     use std::string::String;
     use std::vector;
-    use aptos_std::crypto_algebra;
-    use aptos_std::ed25519;
+    use starcoin_std::crypto_algebra;
+    use starcoin_std::ed25519;
     use starcoin_framework::chain_status;
     use starcoin_framework::system_addresses;
 
@@ -69,7 +69,7 @@ module starcoin_framework::keyless_account {
 
     #[test_only]
     public fun initialize_for_test(fx: &signer, vk: Groth16VerificationKey, constants: Configuration) {
-        system_addresses::assert_aptos_framework(fx);
+        system_addresses::assert_starcoin_framework(fx);
 
         move_to(fx, vk);
         move_to(fx, constants);
@@ -129,7 +129,7 @@ module starcoin_framework::keyless_account {
     ///
     /// WARNING: See `set_groth16_verification_key_for_next_epoch` for caveats.
     public fun update_groth16_verification_key(fx: &signer, vk: Groth16VerificationKey) {
-        system_addresses::assert_aptos_framework(fx);
+        system_addresses::assert_starcoin_framework(fx);
         chain_status::assert_genesis();
         // There should not be a previous resource set here.
         move_to(fx, vk);
@@ -140,7 +140,7 @@ module starcoin_framework::keyless_account {
     ///
     /// WARNING: See `set_configuration_for_next_epoch` for caveats.
     public fun update_configuration(fx: &signer, config: Configuration) {
-        system_addresses::assert_aptos_framework(fx);
+        system_addresses::assert_starcoin_framework(fx);
         chain_status::assert_genesis();
         // There should not be a previous resource set here.
         move_to(fx, config);
@@ -148,7 +148,7 @@ module starcoin_framework::keyless_account {
 
     #[deprecated]
     public fun update_training_wheels(fx: &signer, pk: Option<vector<u8>>) acquires Configuration {
-        system_addresses::assert_aptos_framework(fx);
+        system_addresses::assert_starcoin_framework(fx);
         chain_status::assert_genesis();
 
         if (option::is_some(&pk)) {
@@ -161,7 +161,7 @@ module starcoin_framework::keyless_account {
 
     #[deprecated]
     public fun update_max_exp_horizon(fx: &signer, max_exp_horizon_secs: u64) acquires Configuration {
-        system_addresses::assert_aptos_framework(fx);
+        system_addresses::assert_starcoin_framework(fx);
         chain_status::assert_genesis();
 
         let config = borrow_global_mut<Configuration>(signer::address_of(fx));
@@ -170,7 +170,7 @@ module starcoin_framework::keyless_account {
 
     #[deprecated]
     public fun remove_all_override_auds(fx: &signer) acquires Configuration {
-        system_addresses::assert_aptos_framework(fx);
+        system_addresses::assert_starcoin_framework(fx);
         chain_status::assert_genesis();
 
         let config = borrow_global_mut<Configuration>(signer::address_of(fx));
@@ -179,7 +179,7 @@ module starcoin_framework::keyless_account {
 
     #[deprecated]
     public fun add_override_aud(fx: &signer, aud: String) acquires Configuration {
-        system_addresses::assert_aptos_framework(fx);
+        system_addresses::assert_starcoin_framework(fx);
         chain_status::assert_genesis();
 
         let config = borrow_global_mut<Configuration>(signer::address_of(fx));
@@ -194,7 +194,7 @@ module starcoin_framework::keyless_account {
     ///
     /// WARNING: If a malicious key is set, this would lead to stolen funds.
     public fun set_groth16_verification_key_for_next_epoch(fx: &signer, vk: Groth16VerificationKey) {
-        system_addresses::assert_aptos_framework(fx);
+        system_addresses::assert_starcoin_framework(fx);
         config_buffer::upsert<Groth16VerificationKey>(vk);
     }
 
@@ -205,7 +205,7 @@ module starcoin_framework::keyless_account {
     /// WARNING: A malicious `Configuration` could lead to DoS attacks, create liveness issues, or enable a malicious
     /// recovery service provider to phish users' accounts.
     public fun set_configuration_for_next_epoch(fx: &signer, config: Configuration) {
-        system_addresses::assert_aptos_framework(fx);
+        system_addresses::assert_starcoin_framework(fx);
         config_buffer::upsert<Configuration>(config);
     }
 
@@ -214,7 +214,7 @@ module starcoin_framework::keyless_account {
     ///
     /// WARNING: If a malicious key is set, this *could* lead to stolen funds.
     public fun update_training_wheels_for_next_epoch(fx: &signer, pk: Option<vector<u8>>) acquires Configuration {
-        system_addresses::assert_aptos_framework(fx);
+        system_addresses::assert_starcoin_framework(fx);
 
         // If a PK is being set, validate it first.
         if (option::is_some(&pk)) {
@@ -237,7 +237,7 @@ module starcoin_framework::keyless_account {
     /// Convenience method to queues up a change to the max expiration horizon. The change will only be effective after
     /// reconfiguration. Only callable via governance proposal.
     public fun update_max_exp_horizon_for_next_epoch(fx: &signer, max_exp_horizon_secs: u64) acquires Configuration {
-        system_addresses::assert_aptos_framework(fx);
+        system_addresses::assert_starcoin_framework(fx);
 
         let config = if (config_buffer::does_exist<Configuration>()) {
             config_buffer::extract<Configuration>()
@@ -256,7 +256,7 @@ module starcoin_framework::keyless_account {
     /// WARNING: When no override `aud` is set, recovery of keyless accounts associated with applications that disappeared
     /// is no longer possible.
     public fun remove_all_override_auds_for_next_epoch(fx: &signer) acquires Configuration {
-        system_addresses::assert_aptos_framework(fx);
+        system_addresses::assert_starcoin_framework(fx);
 
         let config = if (config_buffer::does_exist<Configuration>()) {
             config_buffer::extract<Configuration>()
@@ -274,7 +274,7 @@ module starcoin_framework::keyless_account {
     ///
     /// WARNING: If a malicious override `aud` is set, this *could* lead to stolen funds.
     public fun add_override_aud_for_next_epoch(fx: &signer, aud: String) acquires Configuration {
-        system_addresses::assert_aptos_framework(fx);
+        system_addresses::assert_starcoin_framework(fx);
 
         let config = if (config_buffer::does_exist<Configuration>()) {
             config_buffer::extract<Configuration>()
@@ -289,7 +289,7 @@ module starcoin_framework::keyless_account {
 
     /// Only used in reconfigurations to apply the queued up configuration changes, if there are any.
     public(friend) fun on_new_epoch(fx: &signer) acquires Groth16VerificationKey, Configuration {
-        system_addresses::assert_aptos_framework(fx);
+        system_addresses::assert_starcoin_framework(fx);
 
         if (config_buffer::does_exist<Groth16VerificationKey>()) {
             let vk = config_buffer::extract();

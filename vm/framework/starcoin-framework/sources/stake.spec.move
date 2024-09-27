@@ -21,7 +21,7 @@ spec starcoin_framework::stake {
     /// Requirement: The total staked value in the stake pool should remain constant, excluding operations related to
     /// adding and withdrawing.
     /// Criticality: Low
-    /// Implementation: The total staked value (AptosCoin) of a stake pool is grouped by: active, inactive,
+    /// Implementation: The total staked value (StarcoinCoin) of a stake pool is grouped by: active, inactive,
     /// pending_active, and pending_inactive. The stake value remains constant except during the execution of the
     /// add_stake_with_cap or withdraw_with_cap functions or on_new_epoch (which distributes the reward).
     /// Enforcement: Formally specified in the schema [high-level-req-3](StakedValueNoChange).
@@ -120,7 +120,7 @@ spec starcoin_framework::stake {
 
     spec initialize_validator_fees(starcoin_framework: &signer) {
         let aptos_addr = signer::address_of(starcoin_framework);
-        aborts_if !system_addresses::is_aptos_framework_address(aptos_addr);
+        aborts_if !system_addresses::is_starcoin_framework_address(aptos_addr);
         aborts_if exists<ValidatorFees>(aptos_addr);
         ensures exists<ValidatorFees>(aptos_addr);
     }
@@ -161,7 +161,7 @@ spec starcoin_framework::stake {
     spec initialize(starcoin_framework: &signer) {
         pragma disable_invariants_in_body;
         let aptos_addr = signer::address_of(starcoin_framework);
-        aborts_if !system_addresses::is_aptos_framework_address(aptos_addr);
+        aborts_if !system_addresses::is_starcoin_framework_address(aptos_addr);
         aborts_if exists<ValidatorSet>(aptos_addr);
         aborts_if exists<ValidatorPerformance>(aptos_addr);
         ensures exists<ValidatorSet>(aptos_addr);
@@ -250,16 +250,16 @@ spec starcoin_framework::stake {
                     new_withdraw_amount_1 > 0 && stake_pool.inactive.value + stake_pool.pending_inactive.value < new_withdraw_amount_1;
         aborts_if !(bool_find_validator && exists<timestamp::CurrentTimeMicroseconds>(@starcoin_framework)) &&
                     new_withdraw_amount_2 > 0 && stake_pool.inactive.value < new_withdraw_amount_2;
-        aborts_if !exists<coin::CoinStore<AptosCoin>>(addr);
-        include coin::DepositAbortsIf<AptosCoin>{account_addr: addr};
+        aborts_if !exists<coin::CoinStore<StarcoinCoin>>(addr);
+        include coin::DepositAbortsIf<StarcoinCoin>{account_addr: addr};
 
-        let coin_store = global<coin::CoinStore<AptosCoin>>(addr);
-        let post p_coin_store = global<coin::CoinStore<AptosCoin>>(addr);
+        let coin_store = global<coin::CoinStore<StarcoinCoin>>(addr);
+        let post p_coin_store = global<coin::CoinStore<StarcoinCoin>>(addr);
         ensures bool_find_validator && timestamp::now_seconds() > stake_pool.locked_until_secs
-                    && exists<account::Account>(addr) && exists<coin::CoinStore<AptosCoin>>(addr) ==>
+                    && exists<account::Account>(addr) && exists<coin::CoinStore<StarcoinCoin>>(addr) ==>
                         coin_store.coin.value + new_withdraw_amount_1 == p_coin_store.coin.value;
         ensures !(bool_find_validator && exists<timestamp::CurrentTimeMicroseconds>(@starcoin_framework))
-                    && exists<account::Account>(addr) && exists<coin::CoinStore<AptosCoin>>(addr) ==>
+                    && exists<account::Account>(addr) && exists<coin::CoinStore<StarcoinCoin>>(addr) ==>
                         coin_store.coin.value + new_withdraw_amount_2 == p_coin_store.coin.value;
     }
 
@@ -326,7 +326,7 @@ spec starcoin_framework::stake {
         aborts_if amount != 0 && !exists<StakePool>(pool_address);
         modifies global<StakePool>(pool_address);
         include StakedValueNochange;
-        let min_amount = aptos_std::math64::min(amount,pre_stake_pool.active.value);
+        let min_amount = starcoin_std::math64::min(amount,pre_stake_pool.active.value);
 
         ensures stake_pool.active.value == pre_stake_pool.active.value - min_amount;
         ensures stake_pool.pending_inactive.value == pre_stake_pool.pending_inactive.value + min_amount;
@@ -392,7 +392,7 @@ spec starcoin_framework::stake {
         let pre_stake_pool = global<StakePool>(pool_address);
         let post stake_pool = global<StakePool>(pool_address);
         modifies global<StakePool>(pool_address);
-        let min_amount = aptos_std::math64::min(amount, pre_stake_pool.pending_inactive.value);
+        let min_amount = starcoin_std::math64::min(amount, pre_stake_pool.pending_inactive.value);
 
         ensures stake_pool.pending_inactive.value == pre_stake_pool.pending_inactive.value - min_amount;
         ensures stake_pool.active.value == pre_stake_pool.active.value + min_amount;
@@ -438,7 +438,7 @@ spec starcoin_framework::stake {
         include ResourceRequirement;
         include GetReconfigStartTimeRequirement;
         include staking_config::StakingRewardsConfigRequirement;
-        include starcoin_framework::aptos_coin::ExistsAptosCoin;
+        include starcoin_framework::starcoin_coin::ExistsAptosCoin;
         // This function should never abort.
         /// [high-level-req-4]
         aborts_if false;
@@ -517,7 +517,7 @@ spec starcoin_framework::stake {
     }
 
     spec schema UpdateStakePoolAbortsIf {
-        use aptos_std::type_info;
+        use starcoin_std::type_info;
 
         pool_address: address;
         validator_perf: ValidatorPerformance;
@@ -526,7 +526,7 @@ spec starcoin_framework::stake {
         aborts_if !exists<ValidatorConfig>(pool_address);
         aborts_if global<ValidatorConfig>(pool_address).validator_index >= len(validator_perf.validators);
 
-        let aptos_addr = type_info::type_of<AptosCoin>().account_address;
+        let aptos_addr = type_info::type_of<StarcoinCoin>().account_address;
         aborts_if !exists<ValidatorFees>(aptos_addr);
 
         let stake_pool = global<StakePool>(pool_address);
@@ -563,9 +563,9 @@ spec starcoin_framework::stake {
     }
 
     spec schema DistributeRewardsAbortsIf {
-        use aptos_std::type_info;
+        use starcoin_std::type_info;
 
-        stake: Coin<AptosCoin>;
+        stake: Coin<StarcoinCoin>;
         num_successful_proposals: num;
         num_total_proposals: num;
         rewards_rate: num;
@@ -578,10 +578,10 @@ spec starcoin_framework::stake {
             0
         };
         let amount = rewards_amount;
-        let addr = type_info::type_of<AptosCoin>().account_address;
-        aborts_if (rewards_amount > 0) && !exists<coin::CoinInfo<AptosCoin>>(addr);
-        modifies global<coin::CoinInfo<AptosCoin>>(addr);
-        include (rewards_amount > 0) ==> coin::CoinAddAbortsIf<AptosCoin> { amount: amount };
+        let addr = type_info::type_of<StarcoinCoin>().account_address;
+        aborts_if (rewards_amount > 0) && !exists<coin::CoinInfo<StarcoinCoin>>(addr);
+        modifies global<coin::CoinInfo<StarcoinCoin>>(addr);
+        include (rewards_amount > 0) ==> coin::CoinAddAbortsIf<StarcoinCoin> { amount: amount };
     }
 
     spec get_reconfig_start_time_secs(): u64 {
@@ -726,7 +726,7 @@ spec starcoin_framework::stake {
             active == initial_stake_amount;
     }
 
-    spec add_transaction_fee(validator_addr: address, fee: Coin<AptosCoin>) {
+    spec add_transaction_fee(validator_addr: address, fee: Coin<StarcoinCoin>) {
         aborts_if !exists<ValidatorFees>(@starcoin_framework);
         let fees_table = global<ValidatorFees>(@starcoin_framework).fees_table;
         let post post_fees_table = global<ValidatorFees>(@starcoin_framework).fees_table;
@@ -745,10 +745,10 @@ spec starcoin_framework::stake {
         aborts_if !exists<ValidatorSet>(@starcoin_framework);
         aborts_if !exists<staking_config::StakingConfig>(@starcoin_framework);
 
-        let aptos = @starcoin_framework;
-        let pre_validator_set = global<ValidatorSet>(aptos);
-        let post validator_set = global<ValidatorSet>(aptos);
-        let staking_config = global<staking_config::StakingConfig>(aptos);
+        let starcoin = @starcoin_framework;
+        let pre_validator_set = global<ValidatorSet>(starcoin);
+        let post validator_set = global<ValidatorSet>(starcoin);
+        let staking_config = global<staking_config::StakingConfig>(starcoin);
         let voting_power_increase_limit = staking_config.voting_power_increase_limit;
         aborts_if pre_validator_set.total_joining_power + increase_amount > MAX_U128;
         aborts_if pre_validator_set.total_voting_power > 0 && pre_validator_set.total_voting_power * voting_power_increase_limit > MAX_U128;
@@ -766,7 +766,7 @@ spec starcoin_framework::stake {
 
     spec configure_allowed_validators(starcoin_framework: &signer, accounts: vector<address>) {
         let aptos_framework_address = signer::address_of(starcoin_framework);
-        aborts_if !system_addresses::is_aptos_framework_address(aptos_framework_address);
+        aborts_if !system_addresses::is_starcoin_framework_address(aptos_framework_address);
         let post allowed = global<AllowedValidators>(aptos_framework_address);
         // Make sure that the accounts of AllowedValidators are always the passed parameter.
         ensures allowed.accounts == accounts;
@@ -931,13 +931,13 @@ spec starcoin_framework::stake {
             if (epoch_rewards_rate.value == 0) {
                 0
             } else {
-                let denominator_0 = aptos_std::fixed_point64::spec_divide_u128(staking_config::MAX_REWARDS_RATE, epoch_rewards_rate);
+                let denominator_0 = starcoin_std::fixed_point64::spec_divide_u128(staking_config::MAX_REWARDS_RATE, epoch_rewards_rate);
                 let denominator = if (denominator_0 > MAX_U64) {
                     MAX_U64
                 } else {
                     denominator_0
                 };
-                let nominator = aptos_std::fixed_point64::spec_multiply_u128(denominator, epoch_rewards_rate);
+                let nominator = starcoin_std::fixed_point64::spec_multiply_u128(denominator, epoch_rewards_rate);
                 nominator
             }
         } else {
@@ -951,7 +951,7 @@ spec starcoin_framework::stake {
             if (epoch_rewards_rate.value == 0) {
                 1
             } else {
-                let denominator_0 = aptos_std::fixed_point64::spec_divide_u128(staking_config::MAX_REWARDS_RATE, epoch_rewards_rate);
+                let denominator_0 = starcoin_std::fixed_point64::spec_divide_u128(staking_config::MAX_REWARDS_RATE, epoch_rewards_rate);
                 let denominator = if (denominator_0 > MAX_U64) {
                     MAX_U64
                 } else {

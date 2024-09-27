@@ -1,5 +1,5 @@
 /// Specifications of the `table` module.
-spec aptos_std::table {
+spec starcoin_std::table {
 
     // Make most of the public API intrinsic. Those functions have custom specifications in the prover.
 

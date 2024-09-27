@@ -1,14 +1,14 @@
 /// `PropertyMap` provides generic metadata support for `AptosToken`. It is a specialization of
 /// `SimpleMap` that enforces strict typing with minimal storage use by using constant u64 to
 /// represent types and storing values in bcs format.
-module aptos_token_objects::property_map {
+module starcoin_token_objects::property_map {
     use std::bcs;
     use std::vector;
     use std::error;
     use std::string::{Self, String};
-    use aptos_std::from_bcs;
-    use aptos_std::simple_map::{Self, SimpleMap};
-    use aptos_std::type_info;
+    use starcoin_std::from_bcs;
+    use starcoin_std::simple_map::{Self, SimpleMap};
+    use starcoin_std::type_info;
     use starcoin_framework::object::{Self, ConstructorRef, Object, ExtendRef, ObjectCore};
 
     // Errors
@@ -561,7 +561,7 @@ module aptos_token_objects::property_map {
     }
 
     #[test(creator = @0x123)]
-    #[expected_failure(abort_code = 0x10001, location = aptos_std::from_bcs)]
+    #[expected_failure(abort_code = 0x10001, location = starcoin_std::from_bcs)]
     fun test_invalid_init(creator: &signer) {
         let constructor_ref = object::create_named_object(creator, b"");
 
@@ -600,7 +600,7 @@ module aptos_token_objects::property_map {
     }
 
     #[test(creator = @0x123)]
-    #[expected_failure(abort_code = 0x10001, location = aptos_std::from_bcs)]
+    #[expected_failure(abort_code = 0x10001, location = starcoin_std::from_bcs)]
     fun test_invalid_add(creator: &signer) acquires PropertyMap {
         let constructor_ref = object::create_named_object(creator, b"");
 
@@ -616,7 +616,7 @@ module aptos_token_objects::property_map {
     }
 
     #[test(creator = @0x123)]
-    #[expected_failure(abort_code = 0x10001, location = aptos_std::from_bcs)]
+    #[expected_failure(abort_code = 0x10001, location = starcoin_std::from_bcs)]
     fun test_invalid_update(creator: &signer) acquires PropertyMap {
         let constructor_ref = object::create_named_object(creator, b"");
 

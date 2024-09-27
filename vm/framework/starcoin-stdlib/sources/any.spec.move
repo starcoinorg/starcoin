@@ -1,4 +1,4 @@
-spec aptos_std::any {
+spec starcoin_std::any {
 
     // -----------------------
     // Function specifications
@@ -6,7 +6,7 @@ spec aptos_std::any {
 
     spec pack<T: drop + store>(x: T): Any {
         use std::bcs;
-        use aptos_std::from_bcs;
+        use starcoin_std::from_bcs;
         aborts_if false;
         ensures result == Any {
             type_name: type_info::type_name<T>(),
@@ -16,20 +16,20 @@ spec aptos_std::any {
     }
 
     spec unpack<T>(self: Any): T {
-        use aptos_std::from_bcs;
+        use starcoin_std::from_bcs;
         include UnpackAbortsIf<T>;
         ensures result == from_bcs::deserialize<T>(self.data);
     }
 
     spec schema UnpackAbortsIf<T> {
-        use aptos_std::from_bcs;
+        use starcoin_std::from_bcs;
         self: Any;
         aborts_if type_info::type_name<T>() != self.type_name;
         aborts_if !from_bcs::deserializable<T>(self.data);
     }
 
     spec schema UnpackRequirement<T> {
-        use aptos_std::from_bcs;
+        use starcoin_std::from_bcs;
         self: Any;
         requires type_info::type_name<T>() == self.type_name;
         requires from_bcs::deserializable<T>(self.data);

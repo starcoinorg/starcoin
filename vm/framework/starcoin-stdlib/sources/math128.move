@@ -1,10 +1,10 @@
 /// Standard math utilities missing in the Move Language.
-module aptos_std::math128 {
+module starcoin_std::math128 {
 
     use std::fixed_point32::FixedPoint32;
     use std::fixed_point32;
-    use aptos_std::fixed_point64::FixedPoint64;
-    use aptos_std::fixed_point64;
+    use starcoin_std::fixed_point64::FixedPoint64;
+    use starcoin_std::fixed_point64;
 
     /// Cannot log2 the value 0
     const EINVALID_ARG_FLOOR_LOG2: u64 = 1;
@@ -274,7 +274,7 @@ module aptos_std::math128 {
     }
 
     #[test]
-    #[expected_failure(abort_code = 0x10004, location = aptos_std::math128)]
+    #[expected_failure(abort_code = 0x10004, location = starcoin_std::math128)]
     public entry fun test_mul_div_by_zero() {
         mul_div(1, 1, 0);
     }

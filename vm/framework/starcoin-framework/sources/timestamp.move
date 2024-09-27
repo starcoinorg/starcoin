@@ -23,7 +23,7 @@ module starcoin_framework::timestamp {
 
     /// Marks that time has started. This can only be called from genesis and with the aptos framework account.
     public(friend) fun set_time_has_started(starcoin_framework: &signer) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         let timer = CurrentTimeMicroseconds { microseconds: 0 };
         move_to(starcoin_framework, timer);
     }

@@ -23,10 +23,10 @@ module starcoin_framework::stake {
     use std::option::{Self, Option};
     use std::signer;
     use std::vector;
-    use aptos_std::bls12381;
-    use aptos_std::math64::min;
-    use aptos_std::table::{Self, Table};
-    use starcoin_framework::aptos_coin::AptosCoin;
+    use starcoin_std::bls12381;
+    use starcoin_std::math64::min;
+    use starcoin_std::table::{Self, Table};
+    use starcoin_framework::starcoin_coin::StarcoinCoin;
     use starcoin_framework::account;
     use starcoin_framework::coin::{Self, Coin, MintCapability};
     use starcoin_framework::event::{Self, EventHandle};
@@ -117,13 +117,13 @@ module starcoin_framework::stake {
     /// 3. When the next epoch starts, the validator can be activated if their active stake is more than the minimum.
     struct StakePool has key {
         // active stake
-        active: Coin<AptosCoin>,
+        active: Coin<StarcoinCoin>,
         // inactive stake, can be withdrawn
-        inactive: Coin<AptosCoin>,
+        inactive: Coin<StarcoinCoin>,
         // pending activation for next epoch
-        pending_active: Coin<AptosCoin>,
+        pending_active: Coin<StarcoinCoin>,
         // pending deactivation for next epoch
-        pending_inactive: Coin<AptosCoin>,
+        pending_inactive: Coin<StarcoinCoin>,
         locked_until_secs: u64,
         // Track the current operator of the validator node.
         // This allows the operator to be different from the original account and allow for separation of
@@ -185,10 +185,10 @@ module starcoin_framework::stake {
         total_joining_power: u128,
     }
 
-    /// AptosCoin capabilities, set during genesis and stored in @CoreResource account.
+    /// StarcoinCoin capabilities, set during genesis and stored in @CoreResource account.
     /// This allows the Stake module to mint rewards to stakers.
     struct AptosCoinCapabilities has key {
-        mint_cap: MintCapability<AptosCoin>,
+        mint_cap: MintCapability<StarcoinCoin>,
     }
 
     struct IndividualValidatorPerformance has store, drop {
@@ -341,13 +341,13 @@ module starcoin_framework::stake {
     /// Stores transaction fees assigned to validators. All fees are distributed to validators
     /// at the end of the epoch.
     struct ValidatorFees has key {
-        fees_table: Table<address, Coin<AptosCoin>>,
+        fees_table: Table<address, Coin<StarcoinCoin>>,
     }
 
     /// Initializes the resource storing information about collected transaction fees per validator.
     /// Used by `transaction_fee.move` to initialize fee collection and distribution.
     public(friend) fun initialize_validator_fees(starcoin_framework: &signer) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         assert!(
             !exists<ValidatorFees>(@starcoin_framework),
             error::already_exists(EFEES_TABLE_ALREADY_EXISTS)
@@ -356,7 +356,7 @@ module starcoin_framework::stake {
     }
 
     /// Stores the transaction fee collected to the specified validator address.
-    public(friend) fun add_transaction_fee(validator_addr: address, fee: Coin<AptosCoin>) acquires ValidatorFees {
+    public(friend) fun add_transaction_fee(validator_addr: address, fee: Coin<StarcoinCoin>) acquires ValidatorFees {
         let fees_table = &mut borrow_global_mut<ValidatorFees>(@starcoin_framework).fees_table;
         if (table::contains(fees_table, validator_addr)) {
             let collected_fee = table::borrow_mut(fees_table, validator_addr);
@@ -483,7 +483,7 @@ module starcoin_framework::stake {
 
     /// Initialize validator set to the core resource account.
     public(friend) fun initialize(starcoin_framework: &signer) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
 
         move_to(starcoin_framework, ValidatorSet {
             consensus_scheme: 0,
@@ -499,10 +499,10 @@ module starcoin_framework::stake {
         });
     }
 
-    /// This is only called during Genesis, which is where MintCapability<AptosCoin> can be created.
-    /// Beyond genesis, no one can create AptosCoin mint/burn capabilities.
-    public(friend) fun store_aptos_coin_mint_cap(starcoin_framework: &signer, mint_cap: MintCapability<AptosCoin>) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+    /// This is only called during Genesis, which is where MintCapability<StarcoinCoin> can be created.
+    /// Beyond genesis, no one can create StarcoinCoin mint/burn capabilities.
+    public(friend) fun store_aptos_coin_mint_cap(starcoin_framework: &signer, mint_cap: MintCapability<StarcoinCoin>) {
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         move_to(starcoin_framework, AptosCoinCapabilities { mint_cap })
     }
 
@@ -512,7 +512,7 @@ module starcoin_framework::stake {
         validators: &vector<address>,
     ) acquires ValidatorSet {
         assert_reconfig_not_in_progress();
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         let validator_set = borrow_global_mut<ValidatorSet>(@starcoin_framework);
         let active_validators = &mut validator_set.active_validators;
         let pending_inactive = &mut validator_set.pending_inactive;
@@ -609,10 +609,10 @@ module starcoin_framework::stake {
         assert!(!stake_pool_exists(owner_address), error::already_exists(EALREADY_REGISTERED));
 
         move_to(owner, StakePool {
-            active: coin::zero<AptosCoin>(),
-            pending_active: coin::zero<AptosCoin>(),
-            pending_inactive: coin::zero<AptosCoin>(),
-            inactive: coin::zero<AptosCoin>(),
+            active: coin::zero<StarcoinCoin>(),
+            pending_active: coin::zero<StarcoinCoin>(),
+            pending_inactive: coin::zero<StarcoinCoin>(),
+            inactive: coin::zero<StarcoinCoin>(),
             locked_until_secs: 0,
             operator_address: owner_address,
             delegated_voter: owner_address,
@@ -712,11 +712,11 @@ module starcoin_framework::stake {
         let owner_address = signer::address_of(owner);
         assert_owner_cap_exists(owner_address);
         let ownership_cap = borrow_global<OwnerCapability>(owner_address);
-        add_stake_with_cap(ownership_cap, coin::withdraw<AptosCoin>(owner, amount));
+        add_stake_with_cap(ownership_cap, coin::withdraw<StarcoinCoin>(owner, amount));
     }
 
     /// Add `coins` into `pool_address`. this requires the corresponding `owner_cap` to be passed in.
-    public fun add_stake_with_cap(owner_cap: &OwnerCapability, coins: Coin<AptosCoin>) acquires StakePool, ValidatorSet {
+    public fun add_stake_with_cap(owner_cap: &OwnerCapability, coins: Coin<StarcoinCoin>) acquires StakePool, ValidatorSet {
         assert_reconfig_not_in_progress();
         let pool_address = owner_cap.pool_address;
         assert_stake_pool_exists(pool_address);
@@ -741,9 +741,9 @@ module starcoin_framework::stake {
         // Otherwise, the delegation can be added to active directly as the validator is also activated in the epoch.
         let stake_pool = borrow_global_mut<StakePool>(pool_address);
         if (is_current_epoch_validator(pool_address)) {
-            coin::merge<AptosCoin>(&mut stake_pool.pending_active, coins);
+            coin::merge<StarcoinCoin>(&mut stake_pool.pending_active, coins);
         } else {
-            coin::merge<AptosCoin>(&mut stake_pool.active, coins);
+            coin::merge<StarcoinCoin>(&mut stake_pool.active, coins);
         };
 
         let (_, maximum_stake) = staking_config::get_required_stake(&staking_config::get());
@@ -1024,7 +1024,7 @@ module starcoin_framework::stake {
         // Cap amount to unlock by maximum active stake.
         let amount = min(amount, coin::value(&stake_pool.active));
         let unlocked_stake = coin::extract(&mut stake_pool.active, amount);
-        coin::merge<AptosCoin>(&mut stake_pool.pending_inactive, unlocked_stake);
+        coin::merge<StarcoinCoin>(&mut stake_pool.pending_inactive, unlocked_stake);
 
         if (std::features::module_event_migration_enabled()) {
             event::emit(
@@ -1052,14 +1052,14 @@ module starcoin_framework::stake {
         assert_owner_cap_exists(owner_address);
         let ownership_cap = borrow_global<OwnerCapability>(owner_address);
         let coins = withdraw_with_cap(ownership_cap, withdraw_amount);
-        coin::deposit<AptosCoin>(owner_address, coins);
+        coin::deposit<StarcoinCoin>(owner_address, coins);
     }
 
     /// Withdraw from `pool_address`'s inactive stake with the corresponding `owner_cap`.
     public fun withdraw_with_cap(
         owner_cap: &OwnerCapability,
         withdraw_amount: u64
-    ): Coin<AptosCoin> acquires StakePool, ValidatorSet {
+    ): Coin<StarcoinCoin> acquires StakePool, ValidatorSet {
         assert_reconfig_not_in_progress();
         let pool_address = owner_cap.pool_address;
         assert_stake_pool_exists(pool_address);
@@ -1075,7 +1075,7 @@ module starcoin_framework::stake {
 
         // Cap withdraw amount by total inactive coins.
         withdraw_amount = min(withdraw_amount, coin::value(&stake_pool.inactive));
-        if (withdraw_amount == 0) return coin::zero<AptosCoin>();
+        if (withdraw_amount == 0) return coin::zero<StarcoinCoin>();
 
         if (std::features::module_event_migration_enabled()) {
             event::emit(
@@ -1646,7 +1646,7 @@ module starcoin_framework::stake {
 
     /// Mint rewards corresponding to current epoch's `stake` and `num_successful_votes`.
     fun distribute_rewards(
-        stake: &mut Coin<AptosCoin>,
+        stake: &mut Coin<StarcoinCoin>,
         num_successful_proposals: u64,
         num_total_proposals: u64,
         rewards_rate: u64,
@@ -1746,7 +1746,7 @@ module starcoin_framework::stake {
         accounts: vector<address>
     ) acquires AllowedValidators {
         let aptos_framework_address = signer::address_of(starcoin_framework);
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         if (!exists<AllowedValidators>(aptos_framework_address)) {
             move_to(starcoin_framework, AllowedValidators { accounts });
         } else {
@@ -1773,13 +1773,13 @@ module starcoin_framework::stake {
     }
 
     #[test_only]
-    use starcoin_framework::aptos_coin;
-    use aptos_std::bls12381::proof_of_possession_from_bytes;
+    use starcoin_framework::starcoin_coin;
+    use starcoin_std::bls12381::proof_of_possession_from_bytes;
     use starcoin_framework::reconfiguration_state;
     use starcoin_framework::validator_consensus_info;
     use starcoin_framework::validator_consensus_info::ValidatorConsensusInfo;
     #[test_only]
-    use aptos_std::fixed_point64;
+    use starcoin_std::fixed_point64;
 
     #[test_only]
     const EPOCH_DURATION: u64 = 60;
@@ -1847,22 +1847,22 @@ module starcoin_framework::stake {
         );
 
         if (!exists<AptosCoinCapabilities>(@starcoin_framework)) {
-            let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(starcoin_framework);
+            let (burn_cap, mint_cap) = starcoin_coin::initialize_for_test(starcoin_framework);
             store_aptos_coin_mint_cap(starcoin_framework, mint_cap);
-            coin::destroy_burn_cap<AptosCoin>(burn_cap);
+            coin::destroy_burn_cap<StarcoinCoin>(burn_cap);
         };
     }
 
     // This function assumes the stake module already the capability to mint aptos coins.
     #[test_only]
-    public fun mint_coins(amount: u64): Coin<AptosCoin> acquires AptosCoinCapabilities {
+    public fun mint_coins(amount: u64): Coin<StarcoinCoin> acquires AptosCoinCapabilities {
         let mint_cap = &borrow_global<AptosCoinCapabilities>(@starcoin_framework).mint_cap;
         coin::mint(amount, mint_cap)
     }
 
     #[test_only]
     public fun mint(account: &signer, amount: u64) acquires AptosCoinCapabilities {
-        coin::register<AptosCoin>(account);
+        coin::register<StarcoinCoin>(account);
         coin::deposit(signer::address_of(account), mint_coins(amount));
     }
 
@@ -1943,8 +1943,8 @@ module starcoin_framework::stake {
     #[test_only]
     public fun create_stake_pool(
         account: &signer,
-        active: Coin<AptosCoin>,
-        pending_inactive: Coin<AptosCoin>,
+        active: Coin<StarcoinCoin>,
+        pending_inactive: Coin<StarcoinCoin>,
         locked_until_secs: u64,
     ) acquires AllowedValidators, OwnerCapability, StakePool, ValidatorSet {
         let account_address = signer::address_of(account);
@@ -2077,7 +2077,7 @@ module starcoin_framework::stake {
         // The added stake should go to pending_active to wait for activation when next epoch starts.
         mint(validator, 900);
         add_stake(validator, 100);
-        assert!(coin::balance<AptosCoin>(validator_address) == 800, 2);
+        assert!(coin::balance<StarcoinCoin>(validator_address) == 800, 2);
         assert_validator_state(validator_address, 100, 0, 100, 0, 0);
 
         // Pending_active stake is activated in the new epoch.
@@ -2104,10 +2104,10 @@ module starcoin_framework::stake {
 
         // Validator withdraws from inactive stake multiple times.
         withdraw(validator, 50);
-        assert!(coin::balance<AptosCoin>(validator_address) == 850, 6);
+        assert!(coin::balance<StarcoinCoin>(validator_address) == 850, 6);
         assert_validator_state(validator_address, 102, 51, 0, 0, 0);
         withdraw(validator, 51);
-        assert!(coin::balance<AptosCoin>(validator_address) == 901, 7);
+        assert!(coin::balance<StarcoinCoin>(validator_address) == 901, 7);
         assert_validator_state(validator_address, 102, 0, 0, 0, 0);
 
         // Enough time has passed again and the validator's lockup is renewed once more. Validator is still active.
@@ -2384,7 +2384,7 @@ module starcoin_framework::stake {
         withdraw(validator, 200);
         let validator_address = signer::address_of(validator);
         // Receive back all coins with an extra 1 for rewards.
-        assert!(coin::balance<AptosCoin>(validator_address) == 1001, 2);
+        assert!(coin::balance<StarcoinCoin>(validator_address) == 1001, 2);
         assert_validator_state(validator_address, 0, 0, 0, 0, 0);
     }
 
@@ -2689,7 +2689,7 @@ module starcoin_framework::stake {
         assert!(validator_config.fullnode_addresses == b"2", 4);
 
         // Cleanups.
-        coin::register<AptosCoin>(validator);
+        coin::register<StarcoinCoin>(validator);
         coin::deposit(pool_address, coins);
         deposit_owner_cap(validator, owner_cap);
     }
@@ -3181,11 +3181,11 @@ module starcoin_framework::stake {
         validator: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, ValidatorSet {
         let addr = signer::address_of(validator);
-        let (burn, mint) = aptos_coin::initialize_for_test(starcoin_framework);
+        let (burn, mint) = starcoin_coin::initialize_for_test(starcoin_framework);
         configure_allowed_validators(starcoin_framework, vector[addr]);
 
         account::create_account_for_test(addr);
-        coin::register<AptosCoin>(validator);
+        coin::register<StarcoinCoin>(validator);
         initialize_stake_owner(validator, 0, addr, addr);
         coin::destroy_burn_cap(burn);
         coin::destroy_mint_cap(mint);
@@ -3198,11 +3198,11 @@ module starcoin_framework::stake {
         validator: &signer,
     ) acquires AllowedValidators, OwnerCapability, StakePool, ValidatorSet {
         configure_allowed_validators(starcoin_framework, vector[]);
-        let (burn, mint) = aptos_coin::initialize_for_test(starcoin_framework);
+        let (burn, mint) = starcoin_coin::initialize_for_test(starcoin_framework);
 
         let addr = signer::address_of(validator);
         account::create_account_for_test(addr);
-        coin::register<AptosCoin>(validator);
+        coin::register<StarcoinCoin>(validator);
         initialize_stake_owner(validator, 0, addr, addr);
         coin::destroy_burn_cap(burn);
         coin::destroy_mint_cap(mint);

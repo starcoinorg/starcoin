@@ -39,7 +39,7 @@ spec starcoin_framework::transaction_validation {
     ) {
         use std::signer;
         let addr = signer::address_of(starcoin_framework);
-        aborts_if !system_addresses::is_aptos_framework_address(addr);
+        aborts_if !system_addresses::is_starcoin_framework_address(addr);
         aborts_if exists<TransactionValidation>(addr);
 
         ensures exists<TransactionValidation>(addr);
@@ -91,10 +91,10 @@ spec starcoin_framework::transaction_validation {
 
         let max_transaction_fee = txn_gas_price * txn_max_gas_units;
         aborts_if max_transaction_fee > MAX_U64;
-        aborts_if !exists<CoinStore<AptosCoin>>(gas_payer);
+        aborts_if !exists<CoinStore<StarcoinCoin>>(gas_payer);
         // property 1: The sender of a transaction should have sufficient coin balance to pay the transaction fee.
         /// [high-level-req-1]
-        aborts_if !(global<CoinStore<AptosCoin>>(gas_payer).coin.value >= max_transaction_fee);
+        aborts_if !(global<CoinStore<StarcoinCoin>>(gas_payer).coin.value >= max_transaction_fee);
     }
 
     spec prologue_common(
@@ -342,10 +342,10 @@ spec starcoin_framework::transaction_validation {
 
     spec schema EpilogueGasPayerAbortsIf {
         use std::option;
-        use aptos_std::type_info;
+        use starcoin_std::type_info;
         use starcoin_framework::account::{Account};
         use starcoin_framework::aggregator;
-        use starcoin_framework::aptos_coin::{AptosCoin};
+        use starcoin_framework::starcoin_coin::{StarcoinCoin};
         use starcoin_framework::coin;
         use starcoin_framework::coin::{CoinStore, CoinInfo};
         use starcoin_framework::optional_aggregator;
@@ -367,12 +367,12 @@ spec starcoin_framework::transaction_validation {
         // Check account invariants.
         let addr = signer::address_of(account);
         // TODO(fa_migration)
-        // let pre_balance = global<coin::CoinStore<AptosCoin>>(gas_payer).coin.value;
-        // let post balance = global<coin::CoinStore<AptosCoin>>(gas_payer).coin.value;
+        // let pre_balance = global<coin::CoinStore<StarcoinCoin>>(gas_payer).coin.value;
+        // let post balance = global<coin::CoinStore<StarcoinCoin>>(gas_payer).coin.value;
         let pre_account = global<account::Account>(addr);
         let post account = global<account::Account>(addr);
 
-        aborts_if !exists<CoinStore<AptosCoin>>(gas_payer);
+        aborts_if !exists<CoinStore<StarcoinCoin>>(gas_payer);
         aborts_if !exists<Account>(addr);
         aborts_if !(global<Account>(addr).sequence_number < MAX_U64);
         // aborts_if pre_balance < transaction_fee_amount;
@@ -398,17 +398,17 @@ spec starcoin_framework::transaction_validation {
         } else {
             transaction_fee_amount - storage_fee_refunded
         };
-        let apt_addr = type_info::type_of<AptosCoin>().account_address;
-        let maybe_apt_supply = global<CoinInfo<AptosCoin>>(apt_addr).supply;
+        let apt_addr = type_info::type_of<StarcoinCoin>().account_address;
+        let maybe_apt_supply = global<CoinInfo<StarcoinCoin>>(apt_addr).supply;
         let total_supply_enabled = option::spec_is_some(maybe_apt_supply);
         let apt_supply = option::spec_borrow(maybe_apt_supply);
         let apt_supply_value = optional_aggregator::optional_aggregator_value(apt_supply);
-        let post post_maybe_apt_supply = global<CoinInfo<AptosCoin>>(apt_addr).supply;
+        let post post_maybe_apt_supply = global<CoinInfo<StarcoinCoin>>(apt_addr).supply;
         let post post_apt_supply = option::spec_borrow(post_maybe_apt_supply);
         let post post_apt_supply_value = optional_aggregator::optional_aggregator_value(post_apt_supply);
 
         aborts_if amount_to_burn > 0 && !exists<AptosCoinCapabilities>(@starcoin_framework);
-        aborts_if amount_to_burn > 0 && !exists<CoinInfo<AptosCoin>>(apt_addr);
+        aborts_if amount_to_burn > 0 && !exists<CoinInfo<StarcoinCoin>>(apt_addr);
         aborts_if amount_to_burn > 0 && total_supply_enabled && apt_supply_value < amount_to_burn;
         ensures total_supply_enabled ==> apt_supply_value - amount_to_burn == post_apt_supply_value;
 
@@ -418,16 +418,16 @@ spec starcoin_framework::transaction_validation {
         } else {
             storage_fee_refunded - transaction_fee_amount
         };
-        let total_supply = coin::supply<AptosCoin>;
-        let post post_total_supply = coin::supply<AptosCoin>;
+        let total_supply = coin::supply<StarcoinCoin>;
+        let post post_total_supply = coin::supply<StarcoinCoin>;
 
-        aborts_if amount_to_mint > 0 && !exists<CoinStore<AptosCoin>>(addr);
+        aborts_if amount_to_mint > 0 && !exists<CoinStore<StarcoinCoin>>(addr);
         aborts_if amount_to_mint > 0 && !exists<AptosCoinMintCapability>(@starcoin_framework);
         aborts_if amount_to_mint > 0 && total_supply + amount_to_mint > MAX_U128;
         ensures amount_to_mint > 0 ==> post_total_supply == total_supply + amount_to_mint;
 
-        let aptos_addr = type_info::type_of<AptosCoin>().account_address;
-        aborts_if (amount_to_mint != 0) && !exists<coin::CoinInfo<AptosCoin>>(aptos_addr);
-        include coin::CoinAddAbortsIf<AptosCoin> { amount: amount_to_mint };
+        let aptos_addr = type_info::type_of<StarcoinCoin>().account_address;
+        aborts_if (amount_to_mint != 0) && !exists<coin::CoinInfo<StarcoinCoin>>(aptos_addr);
+        include coin::CoinAddAbortsIf<StarcoinCoin> { amount: amount_to_mint };
     }
 }

@@ -1,4 +1,4 @@
-spec aptos_std::multi_ed25519 {
+spec starcoin_std::multi_ed25519 {
 
     // -----------------------
     // Function specifications

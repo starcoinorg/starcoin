@@ -54,7 +54,7 @@ spec starcoin_framework::managed_coin {
         account: &signer,
         amount: u64,
     ) {
-        use aptos_std::type_info;
+        use starcoin_std::type_info;
         // TODO(fa_migration)
         pragma verify = false;
 
@@ -113,7 +113,7 @@ spec starcoin_framework::managed_coin {
         dst_addr: address,
         amount: u64,
     ) {
-        use aptos_std::type_info;
+        use starcoin_std::type_info;
         // TODO(fa_migration)
         pragma verify = false;
         let account_addr = signer::address_of(account);
@@ -134,7 +134,7 @@ spec starcoin_framework::managed_coin {
     /// Updating `Account.guid_creation_num` will not overflow.
     spec register<CoinType>(account: &signer) {
         use starcoin_framework::account;
-        use aptos_std::type_info;
+        use starcoin_std::type_info;
         // TODO(fa_migration)
         pragma verify = false;
 

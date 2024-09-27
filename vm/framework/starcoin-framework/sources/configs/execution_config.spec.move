@@ -14,7 +14,7 @@ spec starcoin_framework::execution_config {
         use starcoin_framework::chain_status;
         use starcoin_framework::stake;
         use starcoin_framework::staking_config;
-        use starcoin_framework::aptos_coin;
+        use starcoin_framework::starcoin_coin;
 
         // TODO: set because of timeout (property proved)
         pragma verify_duration_estimate = 600;
@@ -25,8 +25,8 @@ spec starcoin_framework::execution_config {
         requires exists<staking_config::StakingRewardsConfig>(@starcoin_framework);
         requires len(config) > 0;
         include features::spec_periodical_reward_rate_decrease_enabled() ==> staking_config::StakingRewardsConfigEnabledRequirement;
-        include aptos_coin::ExistsAptosCoin;
-        requires system_addresses::is_aptos_framework_address(addr);
+        include starcoin_coin::ExistsAptosCoin;
+        requires system_addresses::is_starcoin_framework_address(addr);
         requires timestamp::spec_now_microseconds() >= reconfiguration::last_reconfiguration_time();
 
         ensures exists<ExecutionConfig>(@starcoin_framework);

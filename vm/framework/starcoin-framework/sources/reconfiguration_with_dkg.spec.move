@@ -30,7 +30,7 @@ spec starcoin_framework::reconfiguration_with_dkg {
         use std::features;
         use starcoin_framework::stake;
         use starcoin_framework::coin::CoinInfo;
-        use starcoin_framework::aptos_coin::AptosCoin;
+        use starcoin_framework::starcoin_coin::StarcoinCoin;
         use starcoin_framework::transaction_fee;
         use starcoin_framework::staking_config;
         use starcoin_framework::config_buffer;
@@ -44,7 +44,7 @@ spec starcoin_framework::reconfiguration_with_dkg {
         framework: signer;
         requires signer::address_of(framework) == @starcoin_framework;
         requires chain_status::is_operating();
-        requires exists<CoinInfo<AptosCoin>>(@starcoin_framework);
+        requires exists<CoinInfo<StarcoinCoin>>(@starcoin_framework);
         include staking_config::StakingRewardsConfigRequirement;
         requires exists<stake::ValidatorFees>(@starcoin_framework);
         include transaction_fee::RequiresCollectedFeesPerValueLeqBlockAptosSupply;

@@ -1,7 +1,7 @@
 /// Defines a fixed-point numeric type with a 64-bit integer part and
 /// a 64-bit fractional part.
 
-module aptos_std::fixed_point64 {
+module starcoin_std::fixed_point64 {
 
     /// Define a fixed-point numeric type with 64 fractional bits.
     /// This is just a u128 integer but it is wrapped in a struct to

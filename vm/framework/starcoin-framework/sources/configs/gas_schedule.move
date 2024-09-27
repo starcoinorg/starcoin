@@ -5,7 +5,7 @@ module starcoin_framework::gas_schedule {
     use std::error;
     use std::string::String;
     use std::vector;
-    use aptos_std::aptos_hash;
+    use starcoin_std::aptos_hash;
     use starcoin_framework::chain_status;
     use starcoin_framework::config_buffer;
 
@@ -41,7 +41,7 @@ module starcoin_framework::gas_schedule {
 
     /// Only called during genesis.
     public(friend) fun initialize(starcoin_framework: &signer, gas_schedule_blob: vector<u8>) {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         assert!(!vector::is_empty(&gas_schedule_blob), error::invalid_argument(EINVALID_GAS_SCHEDULE));
 
         // TODO(Gas): check if gas schedule is consistent
@@ -55,7 +55,7 @@ module starcoin_framework::gas_schedule {
     ///
     /// TODO: update all the tests that reference this function, then disable this function.
     public fun set_gas_schedule(starcoin_framework: &signer, gas_schedule_blob: vector<u8>) acquires GasSchedule, GasScheduleV2 {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         assert!(!vector::is_empty(&gas_schedule_blob), error::invalid_argument(EINVALID_GAS_SCHEDULE));
         chain_status::assert_genesis();
 
@@ -86,10 +86,10 @@ module starcoin_framework::gas_schedule {
     /// Example usage:
     /// ```
     /// starcoin_framework::gas_schedule::set_for_next_epoch(&framework_signer, some_gas_schedule_blob);
-    /// starcoin_framework::aptos_governance::reconfigure(&framework_signer);
+    /// starcoin_framework::starcoin_governance::reconfigure(&framework_signer);
     /// ```
     public fun set_for_next_epoch(starcoin_framework: &signer, gas_schedule_blob: vector<u8>) acquires GasScheduleV2 {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         assert!(!vector::is_empty(&gas_schedule_blob), error::invalid_argument(EINVALID_GAS_SCHEDULE));
         let new_gas_schedule: GasScheduleV2 = from_bytes(gas_schedule_blob);
         if (exists<GasScheduleV2>(@starcoin_framework)) {
@@ -110,7 +110,7 @@ module starcoin_framework::gas_schedule {
         old_gas_schedule_hash: vector<u8>,
         new_gas_schedule_blob: vector<u8>
     ) acquires GasScheduleV2 {
-        system_addresses::assert_aptos_framework(starcoin_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         assert!(!vector::is_empty(&new_gas_schedule_blob), error::invalid_argument(EINVALID_GAS_SCHEDULE));
 
         let new_gas_schedule: GasScheduleV2 = from_bytes(new_gas_schedule_blob);
@@ -133,7 +133,7 @@ module starcoin_framework::gas_schedule {
 
     /// Only used in reconfigurations to apply the pending `GasScheduleV2`, if there is any.
     public(friend) fun on_new_epoch(framework: &signer) acquires GasScheduleV2 {
-        system_addresses::assert_aptos_framework(framework);
+        system_addresses::assert_starcoin_framework(framework);
         if (config_buffer::does_exist<GasScheduleV2>()) {
             let new_gas_schedule = config_buffer::extract<GasScheduleV2>();
             if (exists<GasScheduleV2>(@starcoin_framework)) {

@@ -123,7 +123,7 @@ spec starcoin_framework::coin {
     /// Can only be published by reserved addresses.
     spec initialize_supply_config(starcoin_framework: &signer) {
         let aptos_addr = signer::address_of(starcoin_framework);
-        aborts_if !system_addresses::is_aptos_framework_address(aptos_addr);
+        aborts_if !system_addresses::is_starcoin_framework_address(aptos_addr);
         aborts_if exists<SupplyConfig>(aptos_addr);
         ensures !global<SupplyConfig>(aptos_addr).allow_upgrades;
         ensures exists<SupplyConfig>(aptos_addr);
@@ -133,7 +133,7 @@ spec starcoin_framework::coin {
     spec allow_supply_upgrades(starcoin_framework: &signer, allowed: bool) {
         modifies global<SupplyConfig>(@starcoin_framework);
         let aptos_addr = signer::address_of(starcoin_framework);
-        aborts_if !system_addresses::is_aptos_framework_address(aptos_addr);
+        aborts_if !system_addresses::is_starcoin_framework_address(aptos_addr);
         aborts_if !exists<SupplyConfig>(aptos_addr);
         let post allow_upgrades_post = global<SupplyConfig>(@starcoin_framework);
         ensures allow_upgrades_post.allow_upgrades == allowed;

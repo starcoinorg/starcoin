@@ -13,9 +13,9 @@ module starcoin_framework::jwks {
     use std::string;
     use std::string::{String, utf8};
     use std::vector;
-    use aptos_std::comparator::{compare_u8_vector, is_greater_than, is_equal};
-    use aptos_std::copyable_any;
-    use aptos_std::copyable_any::Any;
+    use starcoin_std::comparator::{compare_u8_vector, is_greater_than, is_equal};
+    use starcoin_std::copyable_any;
+    use starcoin_std::copyable_any::Any;
     use starcoin_framework::chain_status;
     use starcoin_framework::config_buffer;
     use starcoin_framework::event::emit;
@@ -181,7 +181,7 @@ module starcoin_framework::jwks {
     /// need to be careful how we read it in Rust (but BCS serialization should be the same).
     public fun patch_federated_jwks(jwk_owner: &signer, patches: vector<Patch>) acquires FederatedJWKs {
         // Prevents accidental calls in 0x1::jwks that install federated JWKs at the Aptos framework address.
-        assert!(!system_addresses::is_aptos_framework_address(signer::address_of(jwk_owner)),
+        assert!(!system_addresses::is_starcoin_framework_address(signer::address_of(jwk_owner)),
             error::invalid_argument(EINSTALL_FEDERATED_JWKS_AT_APTOS_FRAMEWORK)
         );
 
@@ -219,7 +219,7 @@ module starcoin_framework::jwks {
     ///
     /// TODO: update all the tests that reference this function, then disable this function.
     public fun upsert_oidc_provider(fx: &signer, name: vector<u8>, config_url: vector<u8>): Option<vector<u8>> acquires SupportedOIDCProviders {
-        system_addresses::assert_aptos_framework(fx);
+        system_addresses::assert_starcoin_framework(fx);
         chain_status::assert_genesis();
 
         let provider_set = borrow_global_mut<SupportedOIDCProviders>(@starcoin_framework);
@@ -237,10 +237,10 @@ module starcoin_framework::jwks {
     ///     b"https://accounts.google.com",
     ///     b"https://accounts.google.com/.well-known/openid-configuration"
     /// );
-    /// starcoin_framework::aptos_governance::reconfigure(&framework_signer);
+    /// starcoin_framework::starcoin_governance::reconfigure(&framework_signer);
     /// ```
     public fun upsert_oidc_provider_for_next_epoch(fx: &signer, name: vector<u8>, config_url: vector<u8>): Option<vector<u8>> acquires SupportedOIDCProviders {
-        system_addresses::assert_aptos_framework(fx);
+        system_addresses::assert_starcoin_framework(fx);
 
         let provider_set = if (config_buffer::does_exist<SupportedOIDCProviders>()) {
             config_buffer::extract<SupportedOIDCProviders>()
@@ -258,7 +258,7 @@ module starcoin_framework::jwks {
     ///
     /// TODO: update all the tests that reference this function, then disable this function.
     public fun remove_oidc_provider(fx: &signer, name: vector<u8>): Option<vector<u8>> acquires SupportedOIDCProviders {
-        system_addresses::assert_aptos_framework(fx);
+        system_addresses::assert_starcoin_framework(fx);
         chain_status::assert_genesis();
 
         let provider_set = borrow_global_mut<SupportedOIDCProviders>(@starcoin_framework);
@@ -272,10 +272,10 @@ module starcoin_framework::jwks {
     ///     &framework_signer,
     ///     b"https://accounts.google.com",
     /// );
-    /// starcoin_framework::aptos_governance::reconfigure(&framework_signer);
+    /// starcoin_framework::starcoin_governance::reconfigure(&framework_signer);
     /// ```
     public fun remove_oidc_provider_for_next_epoch(fx: &signer, name: vector<u8>): Option<vector<u8>> acquires SupportedOIDCProviders {
-        system_addresses::assert_aptos_framework(fx);
+        system_addresses::assert_starcoin_framework(fx);
 
         let provider_set = if (config_buffer::does_exist<SupportedOIDCProviders>()) {
             config_buffer::extract<SupportedOIDCProviders>()
@@ -289,7 +289,7 @@ module starcoin_framework::jwks {
 
     /// Only used in reconfigurations to apply the pending `SupportedOIDCProviders`, if there is any.
     public(friend) fun on_new_epoch(framework: &signer) acquires SupportedOIDCProviders {
-        system_addresses::assert_aptos_framework(framework);
+        system_addresses::assert_starcoin_framework(framework);
         if (config_buffer::does_exist<SupportedOIDCProviders>()) {
             let new_config = config_buffer::extract<SupportedOIDCProviders>();
             if (exists<SupportedOIDCProviders>(@starcoin_framework)) {
@@ -302,7 +302,7 @@ module starcoin_framework::jwks {
 
     /// Set the `Patches`. Only called in governance proposals.
     public fun set_patches(fx: &signer, patches: vector<Patch>) acquires Patches, PatchedJWKs, ObservedJWKs {
-        system_addresses::assert_aptos_framework(fx);
+        system_addresses::assert_starcoin_framework(fx);
         borrow_global_mut<Patches>(@starcoin_framework).patches = patches;
         regenerate_patched_jwks();
     }
@@ -357,7 +357,7 @@ module starcoin_framework::jwks {
 
     /// Initialize some JWK resources. Should only be invoked by genesis.
     public fun initialize(fx: &signer) {
-        system_addresses::assert_aptos_framework(fx);
+        system_addresses::assert_starcoin_framework(fx);
         move_to(fx, SupportedOIDCProviders { providers: vector[] });
         move_to(fx, ObservedJWKs { jwks: AllProvidersJWKs { entries: vector[] } });
         move_to(fx, Patches { patches: vector[] });
@@ -385,7 +385,7 @@ module starcoin_framework::jwks {
     /// NOTE: It is assumed verification has been done to ensure each update is quorum-certified,
     /// and its `version` equals to the on-chain version + 1.
     public fun upsert_into_observed_jwks(fx: &signer, provider_jwks_vec: vector<ProviderJWKs>) acquires ObservedJWKs, PatchedJWKs, Patches {
-        system_addresses::assert_aptos_framework(fx);
+        system_addresses::assert_starcoin_framework(fx);
         let observed_jwks = borrow_global_mut<ObservedJWKs>(@starcoin_framework);
         vector::for_each(provider_jwks_vec, |obj| {
             let provider_jwks: ProviderJWKs = obj;
@@ -401,7 +401,7 @@ module starcoin_framework::jwks {
     ///
     /// Return the potentially existing `ProviderJWKs` of the given issuer.
     public fun remove_issuer_from_observed_jwks(fx: &signer, issuer: vector<u8>): Option<ProviderJWKs> acquires ObservedJWKs, PatchedJWKs, Patches {
-        system_addresses::assert_aptos_framework(fx);
+        system_addresses::assert_starcoin_framework(fx);
         let observed_jwks = borrow_global_mut<ObservedJWKs>(@starcoin_framework);
         let old_value = remove_issuer(&mut observed_jwks.jwks, issuer);
 

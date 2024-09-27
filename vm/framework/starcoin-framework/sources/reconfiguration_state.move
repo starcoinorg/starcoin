@@ -4,8 +4,8 @@
 module starcoin_framework::reconfiguration_state {
     use std::error;
     use std::string;
-    use aptos_std::copyable_any;
-    use aptos_std::copyable_any::Any;
+    use starcoin_std::copyable_any;
+    use starcoin_std::copyable_any::Any;
     use starcoin_framework::system_addresses;
     use starcoin_framework::timestamp;
 
@@ -37,7 +37,7 @@ module starcoin_framework::reconfiguration_state {
     }
 
     public fun initialize(fx: &signer) {
-        system_addresses::assert_aptos_framework(fx);
+        system_addresses::assert_starcoin_framework(fx);
         if (!exists<State>(@starcoin_framework)) {
             move_to(fx, State {
                 variant: copyable_any::pack(StateInactive {})

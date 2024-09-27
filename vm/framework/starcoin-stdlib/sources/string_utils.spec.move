@@ -1,4 +1,4 @@
-spec aptos_std::string_utils {
+spec starcoin_std::string_utils {
     spec to_string<T>(s: &T): String {
         aborts_if false;
         ensures result == spec_native_format(s, false, false, true, false);

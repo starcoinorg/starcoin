@@ -1,10 +1,10 @@
 /// This module provides the foundation for transferring of Tokens
-module aptos_token::token_transfers {
+module starcoin_token::token_transfers {
     use std::signer;
     use std::string::String;
     use std::error;
-    use aptos_std::table::{Self, Table};
-    use aptos_token::token::{Self, Token, TokenId};
+    use starcoin_std::table::{Self, Table};
+    use starcoin_token::token::{Self, Token, TokenId};
     use starcoin_framework::account;
     use starcoin_framework::event::{Self, EventHandle};
 
@@ -292,7 +292,7 @@ module aptos_token::token_transfers {
             creator,
             collection_name,
             string::utf8(b"Collection: Hello, World"),
-            string::utf8(b"https://aptos.dev"),
+            string::utf8(b"https://starcoin.org"),
             1,
             collection_mutation_setting,
         );
@@ -308,7 +308,7 @@ module aptos_token::token_transfers {
             string::utf8(b"Hello, Token"),
             amount,
             amount,
-            string::utf8(b"https://aptos.dev"),
+            string::utf8(b"https://starcoin.org"),
             signer::address_of(creator),
             100,
             0,

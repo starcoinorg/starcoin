@@ -3,14 +3,14 @@ spec starcoin_framework::gas_schedule {
     /// No.: 1
     /// Requirement: During genesis, the Aptos framework account should be assigned the gas schedule resource.
     /// Criticality: Medium
-    /// Implementation: The gas_schedule::initialize function calls the assert_aptos_framework function to ensure that
+    /// Implementation: The gas_schedule::initialize function calls the assert_starcoin_framework function to ensure that
     /// the signer is the starcoin_framework and then assigns the GasScheduleV2 resource to it.
     /// Enforcement: Formally verified via [high-level-req-1](initialize).
     ///
     /// No.: 2
     /// Requirement: Only the Aptos framework account should be allowed to update the gas schedule resource.
     /// Criticality: Critical
-    /// Implementation: The gas_schedule::set_gas_schedule function calls the assert_aptos_framework function to ensure
+    /// Implementation: The gas_schedule::set_gas_schedule function calls the assert_starcoin_framework function to ensure
     /// that the signer is the aptos framework account.
     /// Enforcement: Formally verified via [high-level-req-2](set_gas_schedule).
     ///
@@ -51,7 +51,7 @@ spec starcoin_framework::gas_schedule {
         use starcoin_framework::util;
         use starcoin_framework::stake;
         use starcoin_framework::coin::CoinInfo;
-        use starcoin_framework::aptos_coin::AptosCoin;
+        use starcoin_framework::starcoin_coin::StarcoinCoin;
         use starcoin_framework::transaction_fee;
         use starcoin_framework::staking_config;
         use starcoin_framework::chain_status;
@@ -59,7 +59,7 @@ spec starcoin_framework::gas_schedule {
         // TODO: set because of timeout (property proved)
         pragma verify_duration_estimate = 600;
         requires exists<stake::ValidatorFees>(@starcoin_framework);
-        requires exists<CoinInfo<AptosCoin>>(@starcoin_framework);
+        requires exists<CoinInfo<StarcoinCoin>>(@starcoin_framework);
         requires chain_status::is_genesis();
         include transaction_fee::RequiresCollectedFeesPerValueLeqBlockAptosSupply;
         include staking_config::StakingRewardsConfigRequirement;
@@ -79,14 +79,14 @@ spec starcoin_framework::gas_schedule {
     spec set_storage_gas_config(starcoin_framework: &signer, config: StorageGasConfig) {
         use starcoin_framework::stake;
         use starcoin_framework::coin::CoinInfo;
-        use starcoin_framework::aptos_coin::AptosCoin;
+        use starcoin_framework::starcoin_coin::StarcoinCoin;
         use starcoin_framework::transaction_fee;
         use starcoin_framework::staking_config;
 
         // TODO: set because of timeout (property proved).
         pragma verify_duration_estimate = 600;
         requires exists<stake::ValidatorFees>(@starcoin_framework);
-        requires exists<CoinInfo<AptosCoin>>(@starcoin_framework);
+        requires exists<CoinInfo<StarcoinCoin>>(@starcoin_framework);
         include system_addresses::AbortsIfNotAptosFramework{ account: starcoin_framework };
         include transaction_fee::RequiresCollectedFeesPerValueLeqBlockAptosSupply;
         include staking_config::StakingRewardsConfigRequirement;
@@ -108,7 +108,7 @@ spec starcoin_framework::gas_schedule {
     }
 
     spec set_for_next_epoch_check_hash(starcoin_framework: &signer, old_gas_schedule_hash: vector<u8>, new_gas_schedule_blob: vector<u8>) {
-        use aptos_std::aptos_hash;
+        use starcoin_std::aptos_hash;
         use std::bcs;
         use std::features;
         use starcoin_framework::util;

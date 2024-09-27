@@ -1,13 +1,13 @@
 [package]
-name = "AptosFramework"
+name = "StarcoinFramework"
 version = "1.0.0"
 
 [addresses]
 std = "0x1"
-aptos_std = "0x1"
+starcoin_std = "0x1"
 starcoin_framework = "0x1"
-aptos_fungible_asset = "0xA"
-aptos_token = "0x3"
+starcoin_fungible_asset = "0xA"
+starcoin_token = "0x3"
 core_resources = "0xA550C18"
 vm_reserved = "0x0"
 

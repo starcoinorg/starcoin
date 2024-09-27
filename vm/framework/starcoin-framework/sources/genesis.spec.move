@@ -77,7 +77,7 @@ spec starcoin_framework::genesis {
 
         // property 1: All the core resources and modules should be created during genesis and owned by the Aptos framework account.
         /// [high-level-req-1]
-        ensures exists<aptos_governance::GovernanceResponsbility>(@starcoin_framework);
+        ensures exists<starcoin_governance::GovernanceResponsbility>(@starcoin_framework);
         ensures exists<consensus_config::ConsensusConfig>(@starcoin_framework);
         ensures exists<execution_config::ExecutionConfig>(@starcoin_framework);
         ensures exists<version::Version>(@starcoin_framework);
@@ -114,7 +114,7 @@ spec starcoin_framework::genesis {
         include stake::ResourceRequirement;
         include stake::GetReconfigStartTimeRequirement;
         include CompareTimeRequires;
-        include aptos_coin::ExistsAptosCoin;
+        include starcoin_coin::ExistsAptosCoin;
     }
 
     spec create_initialize_validators {
@@ -123,7 +123,7 @@ spec starcoin_framework::genesis {
         include stake::ResourceRequirement;
         include stake::GetReconfigStartTimeRequirement;
         include CompareTimeRequires;
-        include aptos_coin::ExistsAptosCoin;
+        include starcoin_coin::ExistsAptosCoin;
     }
 
     spec create_initialize_validator {
@@ -158,7 +158,7 @@ spec starcoin_framework::genesis {
         requires len(execution_config) > 0;
         requires exists<staking_config::StakingRewardsConfig>(@starcoin_framework);
         requires exists<stake::ValidatorFees>(@starcoin_framework);
-        requires exists<coin::CoinInfo<AptosCoin>>(@starcoin_framework);
+        requires exists<coin::CoinInfo<StarcoinCoin>>(@starcoin_framework);
         include CompareTimeRequires;
         include transaction_fee::RequiresCollectedFeesPerValueLeqBlockAptosSupply;
     }

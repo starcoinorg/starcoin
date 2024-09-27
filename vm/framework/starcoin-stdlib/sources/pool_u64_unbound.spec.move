@@ -1,6 +1,6 @@
 // This file specifies the module `pool_u64_unbound`.
 // It specifies the pre/post-conditions of the functions.
-spec aptos_std::pool_u64_unbound {
+spec starcoin_std::pool_u64_unbound {
 
     // -----------------------
     // Function specifications

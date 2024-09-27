@@ -14,9 +14,9 @@ module starcoin_framework::randomness {
     use starcoin_framework::system_addresses;
     use starcoin_framework::transaction_context;
     #[test_only]
-    use aptos_std::debug;
+    use starcoin_std::debug;
     #[test_only]
-    use aptos_std::table_with_length;
+    use starcoin_std::table_with_length;
 
     friend starcoin_framework::block;
 
@@ -44,7 +44,7 @@ module starcoin_framework::randomness {
     /// Called in genesis.move.
     /// Must be called in tests to initialize the `PerBlockRandomness` resource.
     public fun initialize(framework: &signer) {
-        system_addresses::assert_aptos_framework(framework);
+        system_addresses::assert_starcoin_framework(framework);
         if (!exists<PerBlockRandomness>(@starcoin_framework)) {
             move_to(framework, PerBlockRandomness {
                 epoch: 0,

@@ -55,7 +55,7 @@ spec starcoin_framework::state_storage {
         use std::signer;
         let addr = signer::address_of(starcoin_framework);
         /// [high-level-req-4]
-        aborts_if !system_addresses::is_aptos_framework_address(addr);
+        aborts_if !system_addresses::is_starcoin_framework_address(addr);
         /// [high-level-req-3]
         aborts_if exists<StateStorageUsage>(@starcoin_framework);
         ensures exists<StateStorageUsage>(@starcoin_framework);

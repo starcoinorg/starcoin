@@ -1,2 +1,2 @@
-spec aptos_std::ristretto255_elgamal {
+spec starcoin_std::ristretto255_elgamal {
 }

@@ -27,16 +27,16 @@ module starcoin_framework::voting {
     use std::string::{String, utf8};
     use std::vector;
 
-    use aptos_std::from_bcs::to_u64;
-    use aptos_std::simple_map::{Self, SimpleMap};
-    use aptos_std::table::{Self, Table};
-    use aptos_std::type_info::{Self, TypeInfo};
+    use starcoin_std::from_bcs::to_u64;
+    use starcoin_std::simple_map::{Self, SimpleMap};
+    use starcoin_std::table::{Self, Table};
+    use starcoin_std::type_info::{Self, TypeInfo};
 
     use starcoin_framework::account;
     use starcoin_framework::event::{Self, EventHandle};
     use starcoin_framework::timestamp;
     use starcoin_framework::transaction_context;
-    use aptos_std::from_bcs;
+    use starcoin_std::from_bcs;
 
     /// Current script's execution hash does not match the specified proposal's
     const EPROPOSAL_EXECUTION_HASH_NOT_MATCHING: u64 = 1;

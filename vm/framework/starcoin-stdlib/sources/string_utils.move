@@ -1,5 +1,5 @@
 /// A module for formatting move values as strings.
-module aptos_std::string_utils {
+module starcoin_std::string_utils {
     use std::string::String;
 
     /// The number of values in the list does not match the number of "{}" in the format string.
