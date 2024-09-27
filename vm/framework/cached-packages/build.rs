@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Context, Result};
-use aptos_framework::ReleaseTarget;
+use starcoin_framework::ReleaseTarget;
 use std::{env::current_dir, path::PathBuf};
 
 fn main() -> Result<()> {

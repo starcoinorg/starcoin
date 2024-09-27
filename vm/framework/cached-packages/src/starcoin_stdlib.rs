@@ -18,7 +18,7 @@ use starcoin_vm_types::{
 
 pub fn starcoin_coin_transfer(to: AccountAddress, amount: u64) -> TransactionPayload {
     coin_transfer(
-        starcoin_vm_types::utility_coin::APTOS_COIN_TYPE.clone(),
+        starcoin_vm_types::utility_coin::STARCOIN_COIN_TYPE.clone(),
         to,
         amount,
     )
