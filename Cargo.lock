@@ -12190,6 +12190,7 @@ dependencies = [
  "move-vm-types",
  "sha3",
  "smallvec 1.10.0",
+ "starcoin-gas-schedule",
  "starcoin-native-interface",
 ]
 
