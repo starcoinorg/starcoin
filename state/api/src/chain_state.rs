@@ -169,10 +169,7 @@ where
     }
 
     /// Get AccountResource by address
-    pub fn get_account_resource(
-        &self,
-        address: &AccountAddress,
-    ) -> Result<AccountResource> {
+    pub fn get_account_resource(&self, address: &AccountAddress) -> Result<AccountResource> {
         self.reader.get_account_resource(*address)
     }
 

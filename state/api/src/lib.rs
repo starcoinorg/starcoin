@@ -51,15 +51,16 @@ pub trait ChainStateAsyncService: Clone + std::marker::Unpin + Send + Sync {
     where
         R: MoveResource,
     {
-        let rsrc_bytes = self.get(&StateKey::resource_typed::<R>(&address)?).await?.ok_or_else(
-            || {
+        let rsrc_bytes = self
+            .get(&StateKey::resource_typed::<R>(&address)?)
+            .await?
+            .ok_or_else(|| {
                 format_err!(
                     "Resource {:?} not exists at address:{}",
                     R::module_identifier(),
                     address
                 )
-            },
-        )?;
+            })?;
         let rsrc = bcs_ext::from_bytes::<R>(&rsrc_bytes)?;
         Ok(rsrc)
     }
@@ -117,7 +118,9 @@ where
     }
 
     async fn get_with_proof(self, state_key: &StateKey) -> Result<StateWithProof> {
-        let response = self.send(StateRequest::GetWithProof(state_key.clone())).await??;
+        let response = self
+            .send(StateRequest::GetWithProof(state_key.clone()))
+            .await??;
         if let StateResponse::StateWithProof(state) = response {
             Ok(*state)
         } else {
@@ -128,9 +131,8 @@ where
     async fn get_account_state(self, address: AccountAddress) -> Result<AccountState> {
         let response = self.send(StateRequest::GetAccountState(address)).await??;
         if let StateResponse::AccountState(state) = response {
-            Ok(state.ok_or_else(|| {
-                format_err!("AccountState not exists for address: {}", address)
-            })?)
+            Ok(state
+                .ok_or_else(|| format_err!("AccountState not exists for address: {}", address))?)
         } else {
             panic!("Unexpect response type.")
         }
@@ -234,9 +236,10 @@ where
     async fn get_table_info(self, address: AccountAddress) -> Result<TableInfo> {
         let response = self.send(StateRequest::GetTableInfo(address)).await??;
         if let StateResponse::TableInfo(state) = response {
-            Ok(state.ok_or_else(|| {
-                format_err!("TableInfo not exists for address: {}", address)
-            })?)
+            Ok(
+                state
+                    .ok_or_else(|| format_err!("TableInfo not exists for address: {}", address))?,
+            )
         } else {
             panic!("Unexpect response type.")
         }
