@@ -21,7 +21,7 @@ use move_core_types::{
 };
 use starcoin_vm_types::{
     account_address::AccountAddress,
-    transaction::{EntryFunction, TransactionPayload, ScriptFunction, TransactionArgument},
+    transaction::{EntryFunction, ScriptFunction, TransactionArgument, TransactionPayload},
 };
 
 type Bytes = Vec<u8>;
@@ -1674,9 +1674,7 @@ pub fn account_offer_rotation_capability(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("account").to_owned(),
         ),
         ident_str!("offer_rotation_capability").to_owned(),
@@ -1707,9 +1705,7 @@ pub fn account_offer_signer_capability(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("account").to_owned(),
         ),
         ident_str!("offer_signer_capability").to_owned(),
@@ -1727,9 +1723,7 @@ pub fn account_offer_signer_capability(
 pub fn account_revoke_any_rotation_capability() -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("account").to_owned(),
         ),
         ident_str!("revoke_any_rotation_capability").to_owned(),
@@ -1742,9 +1736,7 @@ pub fn account_revoke_any_rotation_capability() -> TransactionPayload {
 pub fn account_revoke_any_signer_capability() -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("account").to_owned(),
         ),
         ident_str!("revoke_any_signer_capability").to_owned(),
@@ -1759,9 +1751,7 @@ pub fn account_revoke_rotation_capability(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("account").to_owned(),
         ),
         ident_str!("revoke_rotation_capability").to_owned(),
@@ -1777,9 +1767,7 @@ pub fn account_revoke_signer_capability(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("account").to_owned(),
         ),
         ident_str!("revoke_signer_capability").to_owned(),
@@ -1826,9 +1814,7 @@ pub fn account_rotate_authentication_key(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("account").to_owned(),
         ),
         ident_str!("rotate_authentication_key").to_owned(),
@@ -1852,9 +1838,7 @@ pub fn account_rotate_authentication_key(
 pub fn account_rotate_authentication_key_call(new_auth_key: Vec<u8>) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("account").to_owned(),
         ),
         ident_str!("rotate_authentication_key_call").to_owned(),
@@ -1871,9 +1855,7 @@ pub fn account_rotate_authentication_key_with_rotation_capability(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("account").to_owned(),
         ),
         ident_str!("rotate_authentication_key_with_rotation_capability").to_owned(),
@@ -1894,9 +1876,7 @@ pub fn aptos_account_batch_transfer(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("aptos_account").to_owned(),
         ),
         ident_str!("batch_transfer").to_owned(),
@@ -1916,9 +1896,7 @@ pub fn aptos_account_batch_transfer_coins(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("aptos_account").to_owned(),
         ),
         ident_str!("batch_transfer_coins").to_owned(),
@@ -1934,9 +1912,7 @@ pub fn aptos_account_batch_transfer_coins(
 pub fn aptos_account_create_account(auth_key: AccountAddress) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("aptos_account").to_owned(),
         ),
         ident_str!("create_account").to_owned(),
@@ -1949,9 +1925,7 @@ pub fn aptos_account_create_account(auth_key: AccountAddress) -> TransactionPayl
 pub fn aptos_account_set_allow_direct_coin_transfers(allow: bool) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("aptos_account").to_owned(),
         ),
         ident_str!("set_allow_direct_coin_transfers").to_owned(),
@@ -1965,9 +1939,7 @@ pub fn aptos_account_set_allow_direct_coin_transfers(allow: bool) -> Transaction
 pub fn aptos_account_transfer(to: AccountAddress, amount: u64) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("aptos_account").to_owned(),
         ),
         ident_str!("transfer").to_owned(),
@@ -1985,9 +1957,7 @@ pub fn aptos_account_transfer_coins(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("aptos_account").to_owned(),
         ),
         ident_str!("transfer_coins").to_owned(),
@@ -2001,9 +1971,7 @@ pub fn aptos_account_transfer_coins(
 pub fn aptos_coin_claim_mint_capability() -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("aptos_coin").to_owned(),
         ),
         ident_str!("claim_mint_capability").to_owned(),
@@ -2017,9 +1985,7 @@ pub fn aptos_coin_claim_mint_capability() -> TransactionPayload {
 pub fn aptos_coin_delegate_mint_capability(to: AccountAddress) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("aptos_coin").to_owned(),
         ),
         ident_str!("delegate_mint_capability").to_owned(),
@@ -2033,9 +1999,7 @@ pub fn aptos_coin_delegate_mint_capability(to: AccountAddress) -> TransactionPay
 pub fn aptos_coin_mint(dst_addr: AccountAddress, amount: u64) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("aptos_coin").to_owned(),
         ),
         ident_str!("mint").to_owned(),
@@ -2050,9 +2014,7 @@ pub fn aptos_coin_mint(dst_addr: AccountAddress, amount: u64) -> TransactionPayl
 pub fn aptos_governance_add_approved_script_hash_script(proposal_id: u64) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("aptos_governance").to_owned(),
         ),
         ident_str!("add_approved_script_hash_script").to_owned(),
@@ -2070,9 +2032,7 @@ pub fn aptos_governance_batch_partial_vote(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("aptos_governance").to_owned(),
         ),
         ident_str!("batch_partial_vote").to_owned(),
@@ -2094,9 +2054,7 @@ pub fn aptos_governance_batch_vote(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("aptos_governance").to_owned(),
         ),
         ident_str!("batch_vote").to_owned(),
@@ -2120,9 +2078,7 @@ pub fn aptos_governance_create_proposal(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("aptos_governance").to_owned(),
         ),
         ident_str!("create_proposal").to_owned(),
@@ -2148,9 +2104,7 @@ pub fn aptos_governance_create_proposal_v2(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("aptos_governance").to_owned(),
         ),
         ident_str!("create_proposal_v2").to_owned(),
@@ -2174,9 +2128,7 @@ pub fn aptos_governance_create_proposal_v2(
 pub fn aptos_governance_force_end_epoch() -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("aptos_governance").to_owned(),
         ),
         ident_str!("force_end_epoch").to_owned(),
@@ -2190,9 +2142,7 @@ pub fn aptos_governance_force_end_epoch() -> TransactionPayload {
 pub fn aptos_governance_force_end_epoch_test_only() -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("aptos_governance").to_owned(),
         ),
         ident_str!("force_end_epoch_test_only").to_owned(),
@@ -2210,9 +2160,7 @@ pub fn aptos_governance_partial_vote(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("aptos_governance").to_owned(),
         ),
         ident_str!("partial_vote").to_owned(),
@@ -2238,9 +2186,7 @@ pub fn aptos_governance_partial_vote(
 pub fn aptos_governance_reconfigure() -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("aptos_governance").to_owned(),
         ),
         ident_str!("reconfigure").to_owned(),
@@ -2257,9 +2203,7 @@ pub fn aptos_governance_vote(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("aptos_governance").to_owned(),
         ),
         ident_str!("vote").to_owned(),
@@ -2280,9 +2224,7 @@ pub fn code_publish_package_txn(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("code").to_owned(),
         ),
         ident_str!("publish_package_txn").to_owned(),
@@ -2297,9 +2239,7 @@ pub fn code_publish_package_txn(
 pub fn coin_create_coin_conversion_map() -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("coin").to_owned(),
         ),
         ident_str!("create_coin_conversion_map").to_owned(),
@@ -2312,9 +2252,7 @@ pub fn coin_create_coin_conversion_map() -> TransactionPayload {
 pub fn coin_create_pairing(coin_type: TypeTag) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("coin").to_owned(),
         ),
         ident_str!("create_pairing").to_owned(),
@@ -2327,9 +2265,7 @@ pub fn coin_create_pairing(coin_type: TypeTag) -> TransactionPayload {
 pub fn coin_migrate_to_fungible_store(coin_type: TypeTag) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("coin").to_owned(),
         ),
         ident_str!("migrate_to_fungible_store").to_owned(),
@@ -2342,9 +2278,7 @@ pub fn coin_migrate_to_fungible_store(coin_type: TypeTag) -> TransactionPayload 
 pub fn coin_transfer(coin_type: TypeTag, to: AccountAddress, amount: u64) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("coin").to_owned(),
         ),
         ident_str!("transfer").to_owned(),
@@ -2358,9 +2292,7 @@ pub fn coin_transfer(coin_type: TypeTag, to: AccountAddress, amount: u64) -> Tra
 pub fn coin_upgrade_supply(coin_type: TypeTag) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("coin").to_owned(),
         ),
         ident_str!("upgrade_supply").to_owned(),
@@ -2373,9 +2305,7 @@ pub fn coin_upgrade_supply(coin_type: TypeTag) -> TransactionPayload {
 pub fn delegation_pool_add_stake(pool_address: AccountAddress, amount: u64) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("delegation_pool").to_owned(),
         ),
         ident_str!("add_stake").to_owned(),
@@ -2393,9 +2323,7 @@ pub fn delegation_pool_allowlist_delegator(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("delegation_pool").to_owned(),
         ),
         ident_str!("allowlist_delegator").to_owned(),
@@ -2416,9 +2344,7 @@ pub fn delegation_pool_create_proposal(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("delegation_pool").to_owned(),
         ),
         ident_str!("create_proposal").to_owned(),
@@ -2441,9 +2367,7 @@ pub fn delegation_pool_delegate_voting_power(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("delegation_pool").to_owned(),
         ),
         ident_str!("delegate_voting_power").to_owned(),
@@ -2459,9 +2383,7 @@ pub fn delegation_pool_delegate_voting_power(
 pub fn delegation_pool_disable_delegators_allowlisting() -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("delegation_pool").to_owned(),
         ),
         ident_str!("disable_delegators_allowlisting").to_owned(),
@@ -2474,9 +2396,7 @@ pub fn delegation_pool_disable_delegators_allowlisting() -> TransactionPayload {
 pub fn delegation_pool_enable_delegators_allowlisting() -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("delegation_pool").to_owned(),
         ),
         ident_str!("enable_delegators_allowlisting").to_owned(),
@@ -2492,9 +2412,7 @@ pub fn delegation_pool_enable_partial_governance_voting(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("delegation_pool").to_owned(),
         ),
         ident_str!("enable_partial_governance_voting").to_owned(),
@@ -2507,9 +2425,7 @@ pub fn delegation_pool_enable_partial_governance_voting(
 pub fn delegation_pool_evict_delegator(delegator_address: AccountAddress) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("delegation_pool").to_owned(),
         ),
         ident_str!("evict_delegator").to_owned(),
@@ -2528,9 +2444,7 @@ pub fn delegation_pool_initialize_delegation_pool(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("delegation_pool").to_owned(),
         ),
         ident_str!("initialize_delegation_pool").to_owned(),
@@ -2549,9 +2463,7 @@ pub fn delegation_pool_reactivate_stake(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("delegation_pool").to_owned(),
         ),
         ident_str!("reactivate_stake").to_owned(),
@@ -2569,9 +2481,7 @@ pub fn delegation_pool_remove_delegator_from_allowlist(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("delegation_pool").to_owned(),
         ),
         ident_str!("remove_delegator_from_allowlist").to_owned(),
@@ -2589,9 +2499,7 @@ pub fn delegation_pool_set_beneficiary_for_operator(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("delegation_pool").to_owned(),
         ),
         ident_str!("set_beneficiary_for_operator").to_owned(),
@@ -2604,9 +2512,7 @@ pub fn delegation_pool_set_beneficiary_for_operator(
 pub fn delegation_pool_set_delegated_voter(new_voter: AccountAddress) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("delegation_pool").to_owned(),
         ),
         ident_str!("set_delegated_voter").to_owned(),
@@ -2619,9 +2525,7 @@ pub fn delegation_pool_set_delegated_voter(new_voter: AccountAddress) -> Transac
 pub fn delegation_pool_set_operator(new_operator: AccountAddress) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("delegation_pool").to_owned(),
         ),
         ident_str!("set_operator").to_owned(),
@@ -2637,9 +2541,7 @@ pub fn delegation_pool_synchronize_delegation_pool(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("delegation_pool").to_owned(),
         ),
         ident_str!("synchronize_delegation_pool").to_owned(),
@@ -2653,9 +2555,7 @@ pub fn delegation_pool_synchronize_delegation_pool(
 pub fn delegation_pool_unlock(pool_address: AccountAddress, amount: u64) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("delegation_pool").to_owned(),
         ),
         ident_str!("unlock").to_owned(),
@@ -2673,9 +2573,7 @@ pub fn delegation_pool_update_commission_percentage(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("delegation_pool").to_owned(),
         ),
         ident_str!("update_commission_percentage").to_owned(),
@@ -2697,9 +2595,7 @@ pub fn delegation_pool_vote(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("delegation_pool").to_owned(),
         ),
         ident_str!("vote").to_owned(),
@@ -2717,9 +2613,7 @@ pub fn delegation_pool_vote(
 pub fn delegation_pool_withdraw(pool_address: AccountAddress, amount: u64) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("delegation_pool").to_owned(),
         ),
         ident_str!("withdraw").to_owned(),
@@ -2735,9 +2629,7 @@ pub fn delegation_pool_withdraw(pool_address: AccountAddress, amount: u64) -> Tr
 pub fn managed_coin_burn(coin_type: TypeTag, amount: u64) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("managed_coin").to_owned(),
         ),
         ident_str!("burn").to_owned(),
@@ -2757,9 +2649,7 @@ pub fn managed_coin_initialize(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("managed_coin").to_owned(),
         ),
         ident_str!("initialize").to_owned(),
@@ -2781,9 +2671,7 @@ pub fn managed_coin_mint(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("managed_coin").to_owned(),
         ),
         ident_str!("mint").to_owned(),
@@ -2800,9 +2688,7 @@ pub fn managed_coin_mint(
 pub fn managed_coin_register(coin_type: TypeTag) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("managed_coin").to_owned(),
         ),
         ident_str!("register").to_owned(),
@@ -2815,9 +2701,7 @@ pub fn managed_coin_register(coin_type: TypeTag) -> TransactionPayload {
 pub fn multisig_account_add_owner(new_owner: AccountAddress) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("multisig_account").to_owned(),
         ),
         ident_str!("add_owner").to_owned(),
@@ -2835,9 +2719,7 @@ pub fn multisig_account_add_owner(new_owner: AccountAddress) -> TransactionPaylo
 pub fn multisig_account_add_owners(new_owners: Vec<AccountAddress>) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("multisig_account").to_owned(),
         ),
         ident_str!("add_owners").to_owned(),
@@ -2853,9 +2735,7 @@ pub fn multisig_account_add_owners_and_update_signatures_required(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("multisig_account").to_owned(),
         ),
         ident_str!("add_owners_and_update_signatures_required").to_owned(),
@@ -2874,9 +2754,7 @@ pub fn multisig_account_approve_transaction(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("multisig_account").to_owned(),
         ),
         ident_str!("approve_transaction").to_owned(),
@@ -2896,9 +2774,7 @@ pub fn multisig_account_create(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("multisig_account").to_owned(),
         ),
         ident_str!("create").to_owned(),
@@ -2918,9 +2794,7 @@ pub fn multisig_account_create_transaction(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("multisig_account").to_owned(),
         ),
         ident_str!("create_transaction").to_owned(),
@@ -2941,9 +2815,7 @@ pub fn multisig_account_create_transaction_with_hash(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("multisig_account").to_owned(),
         ),
         ident_str!("create_transaction_with_hash").to_owned(),
@@ -2976,9 +2848,7 @@ pub fn multisig_account_create_with_existing_account(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("multisig_account").to_owned(),
         ),
         ident_str!("create_with_existing_account").to_owned(),
@@ -3013,9 +2883,7 @@ pub fn multisig_account_create_with_existing_account_and_revoke_auth_key(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("multisig_account").to_owned(),
         ),
         ident_str!("create_with_existing_account_and_revoke_auth_key").to_owned(),
@@ -3047,9 +2915,7 @@ pub fn multisig_account_create_with_owners(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("multisig_account").to_owned(),
         ),
         ident_str!("create_with_owners").to_owned(),
@@ -3075,9 +2941,7 @@ pub fn multisig_account_create_with_owners_then_remove_bootstrapper(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("multisig_account").to_owned(),
         ),
         ident_str!("create_with_owners_then_remove_bootstrapper").to_owned(),
@@ -3097,9 +2961,7 @@ pub fn multisig_account_execute_rejected_transaction(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("multisig_account").to_owned(),
         ),
         ident_str!("execute_rejected_transaction").to_owned(),
@@ -3115,9 +2977,7 @@ pub fn multisig_account_execute_rejected_transactions(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("multisig_account").to_owned(),
         ),
         ident_str!("execute_rejected_transactions").to_owned(),
@@ -3136,9 +2996,7 @@ pub fn multisig_account_reject_transaction(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("multisig_account").to_owned(),
         ),
         ident_str!("reject_transaction").to_owned(),
@@ -3154,9 +3012,7 @@ pub fn multisig_account_reject_transaction(
 pub fn multisig_account_remove_owner(owner_to_remove: AccountAddress) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("multisig_account").to_owned(),
         ),
         ident_str!("remove_owner").to_owned(),
@@ -3175,9 +3031,7 @@ pub fn multisig_account_remove_owner(owner_to_remove: AccountAddress) -> Transac
 pub fn multisig_account_remove_owners(owners_to_remove: Vec<AccountAddress>) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("multisig_account").to_owned(),
         ),
         ident_str!("remove_owners").to_owned(),
@@ -3193,9 +3047,7 @@ pub fn multisig_account_swap_owner(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("multisig_account").to_owned(),
         ),
         ident_str!("swap_owner").to_owned(),
@@ -3214,9 +3066,7 @@ pub fn multisig_account_swap_owners(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("multisig_account").to_owned(),
         ),
         ident_str!("swap_owners").to_owned(),
@@ -3236,9 +3086,7 @@ pub fn multisig_account_swap_owners_and_update_signatures_required(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("multisig_account").to_owned(),
         ),
         ident_str!("swap_owners_and_update_signatures_required").to_owned(),
@@ -3264,9 +3112,7 @@ pub fn multisig_account_update_metadata(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("multisig_account").to_owned(),
         ),
         ident_str!("update_metadata").to_owned(),
@@ -3289,9 +3135,7 @@ pub fn multisig_account_update_signatures_required(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("multisig_account").to_owned(),
         ),
         ident_str!("update_signatures_required").to_owned(),
@@ -3308,9 +3152,7 @@ pub fn multisig_account_vote_transaction(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("multisig_account").to_owned(),
         ),
         ident_str!("vote_transaction").to_owned(),
@@ -3332,9 +3174,7 @@ pub fn multisig_account_vote_transactions(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("multisig_account").to_owned(),
         ),
         ident_str!("vote_transactions").to_owned(),
@@ -3358,9 +3198,7 @@ pub fn multisig_account_vote_transanction(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("multisig_account").to_owned(),
         ),
         ident_str!("vote_transanction").to_owned(),
@@ -3377,9 +3215,7 @@ pub fn multisig_account_vote_transanction(
 pub fn object_transfer_call(object: AccountAddress, to: AccountAddress) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("object").to_owned(),
         ),
         ident_str!("transfer_call").to_owned(),
@@ -3398,9 +3234,7 @@ pub fn object_code_deployment_publish(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("object_code_deployment").to_owned(),
         ),
         ident_str!("publish").to_owned(),
@@ -3421,9 +3255,7 @@ pub fn resource_account_create_resource_account(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("resource_account").to_owned(),
         ),
         ident_str!("create_resource_account").to_owned(),
@@ -3447,9 +3279,7 @@ pub fn resource_account_create_resource_account_and_fund(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("resource_account").to_owned(),
         ),
         ident_str!("create_resource_account_and_fund").to_owned(),
@@ -3471,9 +3301,7 @@ pub fn resource_account_create_resource_account_and_publish_package(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("resource_account").to_owned(),
         ),
         ident_str!("create_resource_account_and_publish_package").to_owned(),
@@ -3490,9 +3318,7 @@ pub fn resource_account_create_resource_account_and_publish_package(
 pub fn stake_add_stake(amount: u64) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("stake").to_owned(),
         ),
         ident_str!("add_stake").to_owned(),
@@ -3505,9 +3331,7 @@ pub fn stake_add_stake(amount: u64) -> TransactionPayload {
 pub fn stake_increase_lockup() -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("stake").to_owned(),
         ),
         ident_str!("increase_lockup").to_owned(),
@@ -3527,9 +3351,7 @@ pub fn stake_initialize_stake_owner(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("stake").to_owned(),
         ),
         ident_str!("initialize_stake_owner").to_owned(),
@@ -3551,9 +3373,7 @@ pub fn stake_initialize_validator(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("stake").to_owned(),
         ),
         ident_str!("initialize_validator").to_owned(),
@@ -3571,9 +3391,7 @@ pub fn stake_initialize_validator(
 pub fn stake_join_validator_set(pool_address: AccountAddress) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("stake").to_owned(),
         ),
         ident_str!("join_validator_set").to_owned(),
@@ -3591,9 +3409,7 @@ pub fn stake_join_validator_set(pool_address: AccountAddress) -> TransactionPayl
 pub fn stake_leave_validator_set(pool_address: AccountAddress) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("stake").to_owned(),
         ),
         ident_str!("leave_validator_set").to_owned(),
@@ -3606,9 +3422,7 @@ pub fn stake_leave_validator_set(pool_address: AccountAddress) -> TransactionPay
 pub fn stake_reactivate_stake(amount: u64) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("stake").to_owned(),
         ),
         ident_str!("reactivate_stake").to_owned(),
@@ -3625,9 +3439,7 @@ pub fn stake_rotate_consensus_key(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("stake").to_owned(),
         ),
         ident_str!("rotate_consensus_key").to_owned(),
@@ -3644,9 +3456,7 @@ pub fn stake_rotate_consensus_key(
 pub fn stake_set_delegated_voter(new_voter: AccountAddress) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("stake").to_owned(),
         ),
         ident_str!("set_delegated_voter").to_owned(),
@@ -3659,9 +3469,7 @@ pub fn stake_set_delegated_voter(new_voter: AccountAddress) -> TransactionPayloa
 pub fn stake_set_operator(new_operator: AccountAddress) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("stake").to_owned(),
         ),
         ident_str!("set_operator").to_owned(),
@@ -3674,9 +3482,7 @@ pub fn stake_set_operator(new_operator: AccountAddress) -> TransactionPayload {
 pub fn stake_unlock(amount: u64) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("stake").to_owned(),
         ),
         ident_str!("unlock").to_owned(),
@@ -3693,9 +3499,7 @@ pub fn stake_update_network_and_fullnode_addresses(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("stake").to_owned(),
         ),
         ident_str!("update_network_and_fullnode_addresses").to_owned(),
@@ -3712,9 +3516,7 @@ pub fn stake_update_network_and_fullnode_addresses(
 pub fn stake_withdraw(withdraw_amount: u64) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("stake").to_owned(),
         ),
         ident_str!("withdraw").to_owned(),
@@ -3727,9 +3529,7 @@ pub fn stake_withdraw(withdraw_amount: u64) -> TransactionPayload {
 pub fn staking_contract_add_stake(operator: AccountAddress, amount: u64) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("staking_contract").to_owned(),
         ),
         ident_str!("add_stake").to_owned(),
@@ -3751,9 +3551,7 @@ pub fn staking_contract_create_staking_contract(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("staking_contract").to_owned(),
         ),
         ident_str!("create_staking_contract").to_owned(),
@@ -3776,9 +3574,7 @@ pub fn staking_contract_distribute(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("staking_contract").to_owned(),
         ),
         ident_str!("distribute").to_owned(),
@@ -3800,9 +3596,7 @@ pub fn staking_contract_request_commission(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("staking_contract").to_owned(),
         ),
         ident_str!("request_commission").to_owned(),
@@ -3818,9 +3612,7 @@ pub fn staking_contract_request_commission(
 pub fn staking_contract_reset_lockup(operator: AccountAddress) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("staking_contract").to_owned(),
         ),
         ident_str!("reset_lockup").to_owned(),
@@ -3837,9 +3629,7 @@ pub fn staking_contract_set_beneficiary_for_operator(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("staking_contract").to_owned(),
         ),
         ident_str!("set_beneficiary_for_operator").to_owned(),
@@ -3856,9 +3646,7 @@ pub fn staking_contract_switch_operator(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("staking_contract").to_owned(),
         ),
         ident_str!("switch_operator").to_owned(),
@@ -3878,9 +3666,7 @@ pub fn staking_contract_switch_operator_with_same_commission(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("staking_contract").to_owned(),
         ),
         ident_str!("switch_operator_with_same_commission").to_owned(),
@@ -3896,9 +3682,7 @@ pub fn staking_contract_switch_operator_with_same_commission(
 pub fn staking_contract_unlock_rewards(operator: AccountAddress) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("staking_contract").to_owned(),
         ),
         ident_str!("unlock_rewards").to_owned(),
@@ -3912,9 +3696,7 @@ pub fn staking_contract_unlock_rewards(operator: AccountAddress) -> TransactionP
 pub fn staking_contract_unlock_stake(operator: AccountAddress, amount: u64) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("staking_contract").to_owned(),
         ),
         ident_str!("unlock_stake").to_owned(),
@@ -3934,9 +3716,7 @@ pub fn staking_contract_update_commision(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("staking_contract").to_owned(),
         ),
         ident_str!("update_commision").to_owned(),
@@ -3955,9 +3735,7 @@ pub fn staking_contract_update_voter(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("staking_contract").to_owned(),
         ),
         ident_str!("update_voter").to_owned(),
@@ -3975,9 +3753,7 @@ pub fn staking_proxy_set_operator(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("staking_proxy").to_owned(),
         ),
         ident_str!("set_operator").to_owned(),
@@ -3992,9 +3768,7 @@ pub fn staking_proxy_set_operator(
 pub fn staking_proxy_set_stake_pool_operator(new_operator: AccountAddress) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("staking_proxy").to_owned(),
         ),
         ident_str!("set_stake_pool_operator").to_owned(),
@@ -4006,9 +3780,7 @@ pub fn staking_proxy_set_stake_pool_operator(new_operator: AccountAddress) -> Tr
 pub fn staking_proxy_set_stake_pool_voter(new_voter: AccountAddress) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("staking_proxy").to_owned(),
         ),
         ident_str!("set_stake_pool_voter").to_owned(),
@@ -4023,9 +3795,7 @@ pub fn staking_proxy_set_staking_contract_operator(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("staking_proxy").to_owned(),
         ),
         ident_str!("set_staking_contract_operator").to_owned(),
@@ -4043,9 +3813,7 @@ pub fn staking_proxy_set_staking_contract_voter(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("staking_proxy").to_owned(),
         ),
         ident_str!("set_staking_contract_voter").to_owned(),
@@ -4063,9 +3831,7 @@ pub fn staking_proxy_set_vesting_contract_operator(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("staking_proxy").to_owned(),
         ),
         ident_str!("set_vesting_contract_operator").to_owned(),
@@ -4083,9 +3849,7 @@ pub fn staking_proxy_set_vesting_contract_voter(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("staking_proxy").to_owned(),
         ),
         ident_str!("set_vesting_contract_voter").to_owned(),
@@ -4103,9 +3867,7 @@ pub fn staking_proxy_set_voter(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("staking_proxy").to_owned(),
         ),
         ident_str!("set_voter").to_owned(),
@@ -4120,9 +3882,7 @@ pub fn staking_proxy_set_voter(
 pub fn transaction_fee_convert_to_aptos_fa_burn_ref() -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("transaction_fee").to_owned(),
         ),
         ident_str!("convert_to_aptos_fa_burn_ref").to_owned(),
@@ -4138,9 +3898,7 @@ pub fn transaction_fee_convert_to_aptos_fa_burn_ref() -> TransactionPayload {
 pub fn version_set_for_next_epoch(major: u64) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("version").to_owned(),
         ),
         ident_str!("set_for_next_epoch").to_owned(),
@@ -4157,9 +3915,7 @@ pub fn version_set_for_next_epoch(major: u64) -> TransactionPayload {
 pub fn version_set_version(major: u64) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("version").to_owned(),
         ),
         ident_str!("set_version").to_owned(),
@@ -4173,9 +3929,7 @@ pub fn version_set_version(major: u64) -> TransactionPayload {
 pub fn vesting_admin_withdraw(contract_address: AccountAddress) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("vesting").to_owned(),
         ),
         ident_str!("admin_withdraw").to_owned(),
@@ -4188,9 +3942,7 @@ pub fn vesting_admin_withdraw(contract_address: AccountAddress) -> TransactionPa
 pub fn vesting_distribute(contract_address: AccountAddress) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("vesting").to_owned(),
         ),
         ident_str!("distribute").to_owned(),
@@ -4203,9 +3955,7 @@ pub fn vesting_distribute(contract_address: AccountAddress) -> TransactionPayloa
 pub fn vesting_distribute_many(contract_addresses: Vec<AccountAddress>) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("vesting").to_owned(),
         ),
         ident_str!("distribute_many").to_owned(),
@@ -4222,9 +3972,7 @@ pub fn vesting_reset_beneficiary(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("vesting").to_owned(),
         ),
         ident_str!("reset_beneficiary").to_owned(),
@@ -4239,9 +3987,7 @@ pub fn vesting_reset_beneficiary(
 pub fn vesting_reset_lockup(contract_address: AccountAddress) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("vesting").to_owned(),
         ),
         ident_str!("reset_lockup").to_owned(),
@@ -4257,9 +4003,7 @@ pub fn vesting_set_beneficiary(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("vesting").to_owned(),
         ),
         ident_str!("set_beneficiary").to_owned(),
@@ -4276,9 +4020,7 @@ pub fn vesting_set_beneficiary(
 pub fn vesting_set_beneficiary_for_operator(new_beneficiary: AccountAddress) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("vesting").to_owned(),
         ),
         ident_str!("set_beneficiary_for_operator").to_owned(),
@@ -4293,9 +4035,7 @@ pub fn vesting_set_beneficiary_resetter(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("vesting").to_owned(),
         ),
         ident_str!("set_beneficiary_resetter").to_owned(),
@@ -4314,9 +4054,7 @@ pub fn vesting_set_management_role(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("vesting").to_owned(),
         ),
         ident_str!("set_management_role").to_owned(),
@@ -4333,9 +4071,7 @@ pub fn vesting_set_management_role(
 pub fn vesting_terminate_vesting_contract(contract_address: AccountAddress) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("vesting").to_owned(),
         ),
         ident_str!("terminate_vesting_contract").to_owned(),
@@ -4348,9 +4084,7 @@ pub fn vesting_terminate_vesting_contract(contract_address: AccountAddress) -> T
 pub fn vesting_unlock_rewards(contract_address: AccountAddress) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("vesting").to_owned(),
         ),
         ident_str!("unlock_rewards").to_owned(),
@@ -4363,9 +4097,7 @@ pub fn vesting_unlock_rewards(contract_address: AccountAddress) -> TransactionPa
 pub fn vesting_unlock_rewards_many(contract_addresses: Vec<AccountAddress>) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("vesting").to_owned(),
         ),
         ident_str!("unlock_rewards_many").to_owned(),
@@ -4380,9 +4112,7 @@ pub fn vesting_update_commission_percentage(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("vesting").to_owned(),
         ),
         ident_str!("update_commission_percentage").to_owned(),
@@ -4401,9 +4131,7 @@ pub fn vesting_update_operator(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("vesting").to_owned(),
         ),
         ident_str!("update_operator").to_owned(),
@@ -4422,9 +4150,7 @@ pub fn vesting_update_operator_with_same_commission(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("vesting").to_owned(),
         ),
         ident_str!("update_operator_with_same_commission").to_owned(),
@@ -4442,9 +4168,7 @@ pub fn vesting_update_voter(
 ) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("vesting").to_owned(),
         ),
         ident_str!("update_voter").to_owned(),
@@ -4460,9 +4184,7 @@ pub fn vesting_update_voter(
 pub fn vesting_vest(contract_address: AccountAddress) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("vesting").to_owned(),
         ),
         ident_str!("vest").to_owned(),
@@ -4475,9 +4197,7 @@ pub fn vesting_vest(contract_address: AccountAddress) -> TransactionPayload {
 pub fn vesting_vest_many(contract_addresses: Vec<AccountAddress>) -> TransactionPayload {
     TransactionPayload::ScriptFunction(ScriptFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("vesting").to_owned(),
         ),
         ident_str!("vest_many").to_owned(),

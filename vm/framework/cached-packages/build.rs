@@ -51,11 +51,17 @@ fn main() -> Result<()> {
         );
         println!(
             "cargo:rerun-if-changed={}",
-            prev_dir.join("starcoin-framework").join("sources").display()
+            prev_dir
+                .join("starcoin-framework")
+                .join("sources")
+                .display()
         );
         println!(
             "cargo:rerun-if-changed={}",
-            prev_dir.join("starcoin-framework").join("Move.toml").display()
+            prev_dir
+                .join("starcoin-framework")
+                .join("Move.toml")
+                .display()
         );
         println!(
             "cargo:rerun-if-changed={}",

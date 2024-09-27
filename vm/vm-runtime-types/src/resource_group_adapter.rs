@@ -69,8 +69,8 @@ pub fn group_size_as_sum<T: Serialize + Clone + Debug>(
 
 #[test]
 fn test_group_size_same_as_bcs() {
-    use starcoin_vm_types::PeerId;
     use move_core_types::identifier::Identifier;
+    use starcoin_vm_types::PeerId;
 
     let reused_vec = Bytes::from(vec![5; 20000]);
 
@@ -138,9 +138,8 @@ impl<'r> ResourceGroupAdapter<'r> {
             //     In this case, disabled will lead to a different gas behavior,
             //     but gas is not relevant for those contexts.
             resource_groups_split_in_vm_change_set_enabled
-                && maybe_resource_group_view.map_or(false, |v| {
-                v.is_resource_group_split_in_change_set_capable()
-            }),
+                && maybe_resource_group_view
+                    .map_or(false, |v| v.is_resource_group_split_in_change_set_capable()),
         );
 
         Self {

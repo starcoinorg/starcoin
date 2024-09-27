@@ -7,22 +7,22 @@ use crate::{
     delta_change_set::serialize,
     resolver::{TAggregatorV1View, TDelayedFieldView},
     types::{
-        code_invariant_error, expect_ok, DelayedFieldValue,
-        DelayedFieldsSpeculativeError, PanicOr,
+        code_invariant_error, expect_ok, DelayedFieldValue, DelayedFieldsSpeculativeError, PanicOr,
     },
 };
-use starcoin_vm_types::{
-    state_store::{state_key::StateKey, state_value::{StateValue, StateValueMetadata}},
-};
+use move_binary_format::errors::PartialVMResult;
 use move_core_types::{language_storage::StructTag, value::MoveTypeLayout};
+use move_vm_types::delayed_values::delayed_field_id::{DelayedFieldID, ExtractUniqueIndex};
+use starcoin_types::delayed_fields::PanicError;
+use starcoin_vm_types::state_store::{
+    state_key::StateKey,
+    state_value::{StateValue, StateValueMetadata},
+};
 use std::{
     cell::RefCell,
     collections::{BTreeMap, HashMap, HashSet},
     sync::Arc,
 };
-use move_binary_format::errors::PartialVMResult;
-use move_vm_types::delayed_values::delayed_field_id::{DelayedFieldID, ExtractUniqueIndex};
-use starcoin_types::delayed_fields::PanicError;
 
 pub fn aggregator_v1_id_for_test(key: u128) -> AggregatorID {
     AggregatorID(aggregator_v1_state_key_for_test(key))
@@ -130,7 +130,6 @@ impl TDelayedFieldView for FakeAggregatorView {
         }
         Ok(())
     }
-
 
     fn get_reads_needing_exchange(
         &self,
