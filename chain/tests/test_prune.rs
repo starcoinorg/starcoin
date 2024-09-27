@@ -99,15 +99,29 @@ fn test_block_chain_prune() -> anyhow::Result<()> {
             .collect::<HashSet<_>>(),
         HashSet::from_iter(vec![block_blue_6.id(), block_blue_6_1.id()])
     );
+
+    let tips = mock_chain.head().get_dag_state()?.tips;
     assert_eq!(
-        mock_chain
-            .head()
-            .get_dag_state()?
-            .tips
-            .into_iter()
-            .collect::<HashSet<_>>(),
+        tips.iter().cloned().collect::<HashSet<_>>(),
         HashSet::from_iter(vec![block_blue_7.id()])
     );
+
+    let failure_block = mock_chain.produce_block_by_params(
+        block_blue_7.header().clone(),
+        vec![block_red_4.id(), block_blue_7.id()],
+        block_blue_7.header().pruning_point(),
+    )?;
+    assert_eq!(
+        failure_block
+            .header()
+            .parents_hash()
+            .into_iter()
+            .collect::<HashSet<_>>(),
+        HashSet::from_iter(vec![block_red_4.id(), block_blue_7.id()])
+    );
+    let result = mock_chain.apply(failure_block);
+    debug!("apply failure block result: {:?}", result);
+    assert!(result.is_err());
 
     Ok(())
 }

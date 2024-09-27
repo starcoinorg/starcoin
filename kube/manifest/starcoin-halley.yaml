@@ -23,7 +23,7 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: starcoin/starcoin:dag-master
+        image: starcoin/starcoin:pruning-point
         imagePullPolicy: Always
         command:
           - bash
@@ -63,18 +63,6 @@ spec:
         livenessProbe:
           tcpSocket:
             port: 9840
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          timeoutSeconds: 2
-          failureThreshold: 3
-          successThreshold: 1
-        readinessProbe:
-          exec:
-            command:
-             - sh
-             - -c
-             - >-
-                 /starcoin/starcoin -n halley -d /sc-data node sync status|grep Synchronized
           initialDelaySeconds: 10
           periodSeconds: 5
           timeoutSeconds: 2

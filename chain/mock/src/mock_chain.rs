@@ -200,6 +200,26 @@ impl MockChain {
             .create_block(template, self.net.time_service().as_ref())
     }
 
+    pub fn produce_block_by_params(
+        &mut self,
+        parent_header: BlockHeader,
+        tips: Vec<HashValue>,
+        pruning_point: HashValue,
+    ) -> Result<Block> {
+        let (template, _) = self.head.create_block_template_by_header(
+            *self.miner.address(),
+            parent_header,
+            vec![],
+            vec![],
+            None,
+            tips,
+            pruning_point,
+        )?;
+        self.head
+            .consensus()
+            .create_block(template, self.net.time_service().as_ref())
+    }
+
     pub fn produce_block_by_tips(
         &mut self,
         parent_header: BlockHeader,

@@ -455,8 +455,11 @@ where
                 .find_absent_ancestor(vec![block_header.clone()])
                 .await?;
 
-            if count == 0
-                || block_header.number() % 1000 == 0
+            if count == 0 {
+                return anyhow::Ok(ParallelSign::Continue);
+            }
+
+            if block_header.number() % 1000 == 0
                 || block_header.number() >= self.target.target_id.number()
             {
                 let parallel_execute = DagBlockSender::new(

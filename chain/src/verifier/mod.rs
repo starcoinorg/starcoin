@@ -404,8 +404,8 @@ impl BasicDagVerifier {
                             ),
                         )
                     })?,
-                    "Invalid block: parent {} might not exist.",
-                    parent_hash
+                    "Invalid block: parent {:?} is not the descendant of pruning point: {:?}",
+                    parent_hash, new_block_header.pruning_point()
                 );
                 Ok::<(), ConnectBlockError>(())
             })?;
