@@ -4,7 +4,7 @@
 use crate::data_cache::{IntoMoveResolver, RemoteStorageOwned};
 use starcoin_parallel_executor::executor::MVHashMapView;
 use starcoin_vm_types::state_store::state_value::StateValue;
-use starcoin_vm_types::state_view::TStateView;
+use starcoin_vm_types::state_store::TStateView;
 use starcoin_vm_types::{
     state_store::state_key::StateKey, state_view::StateView, write_set::WriteOp,
 };

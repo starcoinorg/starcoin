@@ -17,7 +17,7 @@ use starcoin_crypto::HashValue;
 use starcoin_statedb::ChainStateWriter;
 use starcoin_types::state_set::ChainStateSet;
 use starcoin_vm_types::state_store::state_value::StateValue;
-use starcoin_vm_types::state_view::TStateView;
+use starcoin_vm_types::state_store::TStateView;
 use std::collections::HashMap;
 use std::sync::{RwLock, RwLockReadGuard};
 

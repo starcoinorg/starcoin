@@ -15,7 +15,7 @@ use starcoin_logger::prelude::*;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::state_value::StateValue;
-use starcoin_vm_types::state_view::TStateView;
+use starcoin_vm_types::state_store::TStateView;
 use starcoin_vm_types::{
     access_path::AccessPath,
     errors::*,

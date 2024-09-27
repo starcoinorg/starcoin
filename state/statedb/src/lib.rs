@@ -31,7 +31,7 @@ use starcoin_vm_types::language_storage::StructTag;
 use starcoin_vm_types::state_store::state_value::StateValue;
 use starcoin_vm_types::state_store::table::TableInfo;
 use starcoin_vm_types::state_store::{state_key::StateKey, table::TableHandle};
-use starcoin_vm_types::state_view::TStateView;
+use starcoin_vm_types::state_store::TStateView;
 use std::collections::HashSet;
 use std::convert::TryInto;
 use std::sync::Arc;
