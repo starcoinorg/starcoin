@@ -14,7 +14,7 @@ use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::state_value::StateValue;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
-use starcoin_vm_types::state_view::TStateView;
+use starcoin_vm_types::state_store::TStateView;
 use std::str::FromStr;
 
 #[derive(Debug, Clone, Copy, Default)]

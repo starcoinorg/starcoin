@@ -28,10 +28,13 @@ use starcoin_vm_types::access_path::{DataPath, ModuleName};
 use starcoin_vm_types::account_config::TABLE_ADDRESS_LIST_LEN;
 use starcoin_vm_types::account_config::TABLE_HANDLE_ADDRESS_LIST;
 use starcoin_vm_types::language_storage::StructTag;
+use starcoin_vm_types::state_store::errors::StateviewError;
+use starcoin_vm_types::state_store::state_key::inner::StateKeyInner;
+use starcoin_vm_types::state_store::state_storage_usage::StateStorageUsage;
 use starcoin_vm_types::state_store::state_value::StateValue;
 use starcoin_vm_types::state_store::table::TableInfo;
+use starcoin_vm_types::state_store::TStateView;
 use starcoin_vm_types::state_store::{state_key::StateKey, table::TableHandle};
-use starcoin_vm_types::state_view::TStateView;
 use std::collections::HashSet;
 use std::convert::TryInto;
 use std::sync::Arc;
@@ -105,6 +108,7 @@ impl AccountStateObject {
                 .transpose()?
                 .flatten()),
             DataPath::Resource(struct_tag) => self.resource_tree.lock().get(struct_tag),
+            DataPath::ResourceGroup(_) => unimplemented!(),
         }
     }
 
@@ -123,6 +127,7 @@ impl AccountStateObject {
                 .transpose()?
                 .unwrap_or((None, SparseMerkleProof::new(None, vec![])))),
             DataPath::Resource(struct_tag) => self.resource_tree.lock().get_with_proof(struct_tag),
+            DataPath::ResourceGroup(_) => unimplemented!(),
         }
     }
 
@@ -142,6 +147,7 @@ impl AccountStateObject {
             DataPath::Resource(struct_tag) => {
                 self.resource_tree.lock().put(struct_tag, value);
             }
+            DataPath::ResourceGroup(_) => unimplemented!(),
         }
     }
 
@@ -409,30 +415,31 @@ impl ChainStateDB {
 
 impl TStateView for ChainStateDB {
     type Key = StateKey;
-    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>> {
-        match state_key {
-            StateKey::AccessPath(access_path) => {
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>, StateviewError> {
+        match state_key.inner() {
+            StateKeyInner::AccessPath(access_path) => {
                 let account_address = &access_path.address;
                 let data_path = &access_path.path;
-                self.get_account_state_object_option(account_address)
+                Ok(self
+                    .get_account_state_object_option(account_address)
                     .and_then(|account_state| match account_state {
                         Some(account_state) => account_state.get(data_path),
                         None => Ok(None),
                     })
-                    .map(|v| v.map(|v| StateValue::from(v)))
+                    .map(|v| v.map(|v| StateValue::from(v)))?)
             }
-            StateKey::TableItem(table_item) => {
-                let table_handle_state_object =
-                    self.get_table_handle_state_object(&table_item.handle)?;
-                table_handle_state_object
-                    .get(&table_item.key)
-                    .map(|v| v.map(|v| StateValue::from(v)))
+            StateKeyInner::TableItem { handle, key } => {
+                let table_handle_state_object = self.get_table_handle_state_object(handle)?;
+                Ok(table_handle_state_object
+                    .get(key)
+                    .map(|v| v.map(|v| StateValue::from(v)))?)
             }
+            StateKeyInner::Raw(_) => unimplemented!(),
         }
     }
 
-    fn is_genesis(&self) -> bool {
-        self.state_tree.is_genesis()
+    fn get_usage(&self) -> starcoin_vm_types::state_store::Result<StateStorageUsage> {
+        unimplemented!()
     }
 }
 
@@ -511,6 +518,7 @@ impl ChainStateReader for ChainStateDB {
                             DataType::RESOURCE => {
                                 Some(self.new_state_tree::<StructTag>(*storage_root).dump()?)
                             }
+                            DataType::ResourceGroup => unimplemented!(),
                         }
                     }
                     None => None,
@@ -578,24 +586,36 @@ impl ChainStateReader for ChainStateDB {
 
 impl ChainStateWriter for ChainStateDB {
     fn set(&self, access_path: &AccessPath, value: Vec<u8>) -> Result<()> {
+        let state_key = {
+            match &access_path.path {
+                DataPath::Code(name) => StateKey::module(&access_path.address, name),
+                DataPath::Resource(struct_tag) => {
+                    StateKey::resource(&access_path.address, struct_tag)?
+                }
+                DataPath::ResourceGroup(_) => unimplemented!(),
+            }
+        };
         self.apply_write_set(
-            WriteSetMut::new(vec![(
-                StateKey::AccessPath(access_path.clone()),
-                WriteOp::Value(value),
-            )])
-            .freeze()
-            .expect("freeze write_set must success."),
+            WriteSetMut::new(vec![(state_key, WriteOp::legacy_creation(value.into()))])
+                .freeze()
+                .expect("freeze write_set must success."),
         )
     }
 
     fn remove(&self, access_path: &AccessPath) -> Result<()> {
+        let state_key = {
+            match &access_path.path {
+                DataPath::Code(name) => StateKey::module(&access_path.address, name),
+                DataPath::Resource(struct_tag) => {
+                    StateKey::resource(&access_path.address, struct_tag)?
+                }
+                DataPath::ResourceGroup(_) => unimplemented!(),
+            }
+        };
         self.apply_write_set(
-            WriteSetMut::new(vec![(
-                StateKey::AccessPath(access_path.clone()),
-                WriteOp::Deletion,
-            )])
-            .freeze()
-            .expect("freeze write_set must success."),
+            WriteSetMut::new(vec![(state_key, WriteOp::legacy_deletion())])
+                .freeze()
+                .expect("freeze write_set must success."),
         )
     }
 
@@ -630,37 +650,36 @@ impl ChainStateWriter for ChainStateDB {
         let mut locks = self.updates.write();
         for (state_key, write_op) in write_set {
             //update self updates record
-            match state_key {
-                StateKey::AccessPath(access_path) => {
+            match state_key.inner() {
+                StateKeyInner::AccessPath(access_path) => {
                     locks.insert(access_path.address);
-                    let (account_address, data_path) = access_path.into_inner();
+                    let (account_address, data_path) = access_path.clone().into_inner();
                     match write_op {
-                        WriteOp::Value(value) => {
+                        WriteOp::Creation { data, .. } | WriteOp::Modification { data, .. } => {
                             let account_state_object =
                                 self.get_account_state_object(&account_address, true)?;
-                            account_state_object.set(data_path, value);
+                            account_state_object.set(data_path, data.into());
                         }
-                        WriteOp::Deletion => {
+                        WriteOp::Deletion { .. } => {
                             let account_state_object =
                                 self.get_account_state_object(&account_address, false)?;
                             account_state_object.remove(&data_path)?;
                         }
                     }
                 }
-                StateKey::TableItem(table_item) => {
-                    debug!("{:?}", table_item);
-                    lock_table_handle.insert(table_item.handle);
-                    let table_handle_state_object =
-                        self.get_table_handle_state_object(&table_item.handle)?;
+                StateKeyInner::TableItem { handle, key } => {
+                    lock_table_handle.insert(*handle);
+                    let table_handle_state_object = self.get_table_handle_state_object(handle)?;
                     match write_op {
-                        WriteOp::Value(value) => {
-                            table_handle_state_object.set(table_item.key, value);
+                        WriteOp::Creation { data, .. } | WriteOp::Modification { data, .. } => {
+                            table_handle_state_object.set(key.clone(), data.into());
                         }
-                        WriteOp::Deletion => {
-                            table_handle_state_object.remove(&table_item.key);
+                        WriteOp::Deletion { .. } => {
+                            table_handle_state_object.remove(key);
                         }
                     }
                 }
+                StateKeyInner::Raw(_) => unimplemented!(),
             }
         }
         Ok(())

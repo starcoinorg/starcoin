@@ -127,18 +127,19 @@ fn main() {
     }
 
     // Transaction builders
-    let installer: Box<dyn starcoin_sdk_builder::SourceInstaller<Error = Box<dyn std::error::Error>>> =
-        match options.language {
-            Language::Rust => Box::new(starcoin_sdk_builder::rust::Installer::new(
-                install_dir,
-                options.aptos_version_number,
-            )),
-            Language::Go => Box::new(starcoin_sdk_builder::golang::Installer::new(
-                install_dir,
-                options.serde_package_name,
-                options.package_name,
-            )),
-        };
+    let installer: Box<
+        dyn starcoin_sdk_builder::SourceInstaller<Error = Box<dyn std::error::Error>>,
+    > = match options.language {
+        Language::Rust => Box::new(starcoin_sdk_builder::rust::Installer::new(
+            install_dir,
+            options.aptos_version_number,
+        )),
+        Language::Go => Box::new(starcoin_sdk_builder::golang::Installer::new(
+            install_dir,
+            options.serde_package_name,
+            options.package_name,
+        )),
+    };
 
     if let Some(ref name) = options.module_name {
         installer
