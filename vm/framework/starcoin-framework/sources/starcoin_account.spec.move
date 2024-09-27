@@ -1,4 +1,4 @@
-spec aptos_framework::aptos_account {
+spec starcoin_framework::starcoin_account {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: During the creation of an Aptos account the following rules should hold: (1) the authentication key
@@ -10,10 +10,10 @@ spec aptos_framework::aptos_account {
     /// Enforcement: Formally verified via [high-level-req-1](CreateAccountAbortsIf).
     ///
     /// No.: 2
-    /// Requirement: After creating an Aptos account, the account should become registered to receive AptosCoin.
+    /// Requirement: After creating an Aptos account, the account should become registered to receive StarcoinCoin.
     /// Criticality: Critical
     /// Implementation: The create_account function creates a new account for the particular address and registers
-    /// AptosCoin.
+    /// StarcoinCoin.
     /// Enforcement: Formally verified via [high-level-req-2](create_account).
     ///
     /// No.: 3
@@ -34,10 +34,10 @@ spec aptos_framework::aptos_account {
     ///
     /// No.: 5
     /// Requirement: The transfer function should ensure an account is created for the provided destination if one does not
-    /// exist; then, register AptosCoin for that account if a particular is unregistered before transferring the amount.
+    /// exist; then, register StarcoinCoin for that account if a particular is unregistered before transferring the amount.
     /// Criticality: Critical
     /// Implementation: The transfer function checks if the recipient account exists. If the account does not exist,
-    /// the function creates one and registers the account to AptosCoin if not registered.
+    /// the function creates one and registers the account to StarcoinCoin if not registered.
     /// Enforcement: Formally verified via [high-level-req-5](transfer).
     ///
     /// No.: 6
@@ -64,7 +64,7 @@ spec aptos_framework::aptos_account {
 
     /// Check if the bytes of the auth_key is 32.
     /// The Account does not exist under the auth_key before creating the account.
-    /// Limit the address of auth_key is not @vm_reserved / @aptos_framework / @aptos_toke.
+    /// Limit the address of auth_key is not @vm_reserved / @starcoin_framework / @aptos_toke.
     spec create_account(auth_key: address) {
         /// [high-level-req-1]
         pragma aborts_if_is_partial;
@@ -75,7 +75,7 @@ spec aptos_framework::aptos_account {
         auth_key: address;
         aborts_if exists<account::Account>(auth_key);
         aborts_if length_judgment(auth_key);
-        aborts_if auth_key == @vm_reserved || auth_key == @aptos_framework || auth_key == @aptos_token;
+        aborts_if auth_key == @vm_reserved || auth_key == @starcoin_framework || auth_key == @starcoin_token;
     }
 
     spec fun length_judgment(auth_key: address): bool {
@@ -94,14 +94,14 @@ spec aptos_framework::aptos_account {
         requires account_addr_source != to;
 
         include CreateAccountTransferAbortsIf;
-        include GuidAbortsIf<AptosCoin>;
-        include WithdrawAbortsIf<AptosCoin>{from: source};
-        include TransferEnsures<AptosCoin>;
+        include GuidAbortsIf<StarcoinCoin>;
+        include WithdrawAbortsIf<StarcoinCoin>{from: source};
+        include TransferEnsures<StarcoinCoin>;
 
-        aborts_if exists<coin::CoinStore<AptosCoin>>(to) && global<coin::CoinStore<AptosCoin>>(to).frozen;
+        aborts_if exists<coin::CoinStore<StarcoinCoin>>(to) && global<coin::CoinStore<StarcoinCoin>>(to).frozen;
         /// [high-level-req-5]
-        ensures exists<aptos_framework::account::Account>(to);
-        ensures exists<coin::CoinStore<AptosCoin>>(to);
+        ensures exists<starcoin_framework::account::Account>(to);
+        ensures exists<coin::CoinStore<StarcoinCoin>>(to);
     }
 
     spec assert_account_exists(addr: address) {
@@ -109,11 +109,11 @@ spec aptos_framework::aptos_account {
     }
 
     /// Check if the address existed.
-    /// Check if the AptosCoin under the address existed.
+    /// Check if the StarcoinCoin under the address existed.
     spec assert_account_is_registered_for_apt(addr: address) {
         pragma aborts_if_is_partial;
         aborts_if !account::exists_at(addr);
-        aborts_if !coin::spec_is_account_registered<AptosCoin>(addr);
+        aborts_if !coin::spec_is_account_registered<StarcoinCoin>(addr);
     }
 
     spec set_allow_direct_coin_transfers(account: &signer, allow: bool) {
@@ -128,7 +128,7 @@ spec aptos_framework::aptos_account {
         //TODO: Can't verify the loop invariant in enumerate
         pragma verify = false;
         let account_addr_source = signer::address_of(source);
-        let coin_store_source = global<coin::CoinStore<AptosCoin>>(account_addr_source);
+        let coin_store_source = global<coin::CoinStore<StarcoinCoin>>(account_addr_source);
         let balance_source = coin_store_source.coin.value;
 
         requires forall i in 0..len(recipients):
@@ -141,28 +141,28 @@ spec aptos_framework::aptos_account {
         aborts_if exists i in 0..len(recipients):
                 !account::exists_at(recipients[i]) && length_judgment(recipients[i]);
         aborts_if exists i in 0..len(recipients):
-                !account::exists_at(recipients[i]) && (recipients[i] == @vm_reserved || recipients[i] == @aptos_framework || recipients[i] == @aptos_token);
+                !account::exists_at(recipients[i]) && (recipients[i] == @vm_reserved || recipients[i] == @starcoin_framework || recipients[i] == @starcoin_token);
         ensures forall i in 0..len(recipients):
                 (!account::exists_at(recipients[i]) ==> !length_judgment(recipients[i])) &&
-                    (!account::exists_at(recipients[i]) ==> (recipients[i] != @vm_reserved && recipients[i] != @aptos_framework && recipients[i] != @aptos_token));
+                    (!account::exists_at(recipients[i]) ==> (recipients[i] != @vm_reserved && recipients[i] != @starcoin_framework && recipients[i] != @starcoin_token));
 
         // coin::withdraw properties
         aborts_if exists i in 0..len(recipients):
-            !exists<coin::CoinStore<AptosCoin>>(account_addr_source);
+            !exists<coin::CoinStore<StarcoinCoin>>(account_addr_source);
         aborts_if exists i in 0..len(recipients):
             coin_store_source.frozen;
         aborts_if exists i in 0..len(recipients):
-            global<coin::CoinStore<AptosCoin>>(account_addr_source).coin.value < amounts[i];
+            global<coin::CoinStore<StarcoinCoin>>(account_addr_source).coin.value < amounts[i];
 
         // deposit properties
         aborts_if exists i in 0..len(recipients):
-            exists<coin::CoinStore<AptosCoin>>(recipients[i]) && global<coin::CoinStore<AptosCoin>>(recipients[i]).frozen;
+            exists<coin::CoinStore<StarcoinCoin>>(recipients[i]) && global<coin::CoinStore<StarcoinCoin>>(recipients[i]).frozen;
 
         // guid properties
         aborts_if exists i in 0..len(recipients):
-            account::exists_at(recipients[i]) && !exists<coin::CoinStore<AptosCoin>>(recipients[i]) && global<account::Account>(recipients[i]).guid_creation_num + 2 >= account::MAX_GUID_CREATION_NUM;
+            account::exists_at(recipients[i]) && !exists<coin::CoinStore<StarcoinCoin>>(recipients[i]) && global<account::Account>(recipients[i]).guid_creation_num + 2 >= account::MAX_GUID_CREATION_NUM;
         aborts_if exists i in 0..len(recipients):
-            account::exists_at(recipients[i]) && !exists<coin::CoinStore<AptosCoin>>(recipients[i]) && global<account::Account>(recipients[i]).guid_creation_num + 2 > MAX_U64;
+            account::exists_at(recipients[i]) && !exists<coin::CoinStore<StarcoinCoin>>(recipients[i]) && global<account::Account>(recipients[i]).guid_creation_num + 2 > MAX_U64;
     }
 
     spec can_receive_direct_coin_transfers(account: address): bool {
@@ -176,7 +176,7 @@ spec aptos_framework::aptos_account {
 
     spec batch_transfer_coins<CoinType>(from: &signer, recipients: vector<address>, amounts: vector<u64>) {
         //TODO: Can't verify the loop invariant in enumerate
-        use aptos_std::type_info;
+        use starcoin_std::type_info;
         pragma verify = false;
         let account_addr_source = signer::address_of(from);
         let coin_store_source = global<coin::CoinStore<CoinType>>(account_addr_source);
@@ -195,10 +195,10 @@ spec aptos_framework::aptos_account {
         aborts_if exists i in 0..len(recipients):
                 !account::exists_at(recipients[i]) && length_judgment(recipients[i]);
         aborts_if exists i in 0..len(recipients):
-                !account::exists_at(recipients[i]) && (recipients[i] == @vm_reserved || recipients[i] == @aptos_framework || recipients[i] == @aptos_token);
+                !account::exists_at(recipients[i]) && (recipients[i] == @vm_reserved || recipients[i] == @starcoin_framework || recipients[i] == @starcoin_token);
         ensures forall i in 0..len(recipients):
                 (!account::exists_at(recipients[i]) ==> !length_judgment(recipients[i])) &&
-                    (!account::exists_at(recipients[i]) ==> (recipients[i] != @vm_reserved && recipients[i] != @aptos_framework && recipients[i] != @aptos_token));
+                    (!account::exists_at(recipients[i]) ==> (recipients[i] != @vm_reserved && recipients[i] != @starcoin_framework && recipients[i] != @starcoin_token));
 
         // coin::withdraw properties
         aborts_if exists i in 0..len(recipients):
@@ -233,8 +233,8 @@ spec aptos_framework::aptos_account {
         let if_exist_coin = exists<coin::CoinStore<CoinType>>(to);
         aborts_if if_exist_coin && global<coin::CoinStore<CoinType>>(to).frozen;
         /// [high-level-spec-6]
-        ensures exists<aptos_framework::account::Account>(to);
-        ensures exists<aptos_framework::coin::CoinStore<CoinType>>(to);
+        ensures exists<starcoin_framework::account::Account>(to);
+        ensures exists<starcoin_framework::coin::CoinStore<CoinType>>(to);
 
         let coin_store_to = global<coin::CoinStore<CoinType>>(to).coin.value;
         let post post_coin_store_to = global<coin::CoinStore<CoinType>>(to).coin.value;
@@ -256,8 +256,8 @@ spec aptos_framework::aptos_account {
         include TransferEnsures<CoinType>;
 
         aborts_if exists<coin::CoinStore<CoinType>>(to) && global<coin::CoinStore<CoinType>>(to).frozen;
-        ensures exists<aptos_framework::account::Account>(to);
-        ensures exists<aptos_framework::coin::CoinStore<CoinType>>(to);
+        ensures exists<starcoin_framework::account::Account>(to);
+        ensures exists<starcoin_framework::coin::CoinStore<CoinType>>(to);
     }
 
     spec register_apt(account_signer: &signer) {
@@ -287,7 +287,7 @@ spec aptos_framework::aptos_account {
     spec schema CreateAccountTransferAbortsIf {
         to: address;
         aborts_if !account::exists_at(to) && length_judgment(to);
-        aborts_if !account::exists_at(to) && (to == @vm_reserved || to == @aptos_framework || to == @aptos_token);
+        aborts_if !account::exists_at(to) && (to == @vm_reserved || to == @starcoin_framework || to == @starcoin_token);
     }
 
     spec schema WithdrawAbortsIf<CoinType> {
@@ -309,11 +309,11 @@ spec aptos_framework::aptos_account {
     }
 
     spec schema RegistCoinAbortsIf<CoinType> {
-        use aptos_std::type_info;
+        use starcoin_std::type_info;
         to: address;
         aborts_if !coin::spec_is_account_registered<CoinType>(to) && !type_info::spec_is_struct<CoinType>();
-        aborts_if exists<aptos_framework::account::Account>(to);
-        aborts_if type_info::type_of<CoinType>() != type_info::type_of<AptosCoin>();
+        aborts_if exists<starcoin_framework::account::Account>(to);
+        aborts_if type_info::type_of<CoinType>() != type_info::type_of<StarcoinCoin>();
     }
 
     spec schema TransferEnsures<CoinType> {

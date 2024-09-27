@@ -1,8 +1,8 @@
 /// Extends Table and provides functions such as length and the ability to be destroyed
 
-module aptos_std::table_with_length {
+module starcoin_std::table_with_length {
     use std::error;
-    use aptos_std::table::{Self, Table};
+    use starcoin_std::table::{Self, Table};
 
     // native code raises this with error::invalid_arguments()
     const EALREADY_EXISTS: u64 = 100;

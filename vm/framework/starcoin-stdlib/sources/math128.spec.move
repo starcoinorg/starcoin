@@ -1,4 +1,4 @@
-spec aptos_std::math128 {
+spec starcoin_std::math128 {
 
     spec max(a: u128, b: u128): u128 {
         aborts_if false;

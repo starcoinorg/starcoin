@@ -1,10 +1,10 @@
 #[test_only]
-module aptos_framework::aggregator_tests {
+module starcoin_framework::aggregator_tests {
 
-    use aptos_framework::aggregator;
-    use aptos_framework::aggregator_factory;
+    use starcoin_framework::aggregator;
+    use starcoin_framework::aggregator_factory;
 
-    #[test(account = @aptos_framework)]
+    #[test(account = @starcoin_framework)]
     fun test_can_add_and_sub_and_read(account: signer) {
         aggregator_factory::initialize_aggregator_factory_for_test(&account);
         let aggregator = aggregator_factory::create_aggregator(&account, 1000);
@@ -26,8 +26,8 @@ module aptos_framework::aggregator_tests {
         aggregator::destroy(aggregator);
     }
 
-    #[test(account = @aptos_framework)]
-    #[expected_failure(abort_code = 0x020001, location = aptos_framework::aggregator)]
+    #[test(account = @starcoin_framework)]
+    #[expected_failure(abort_code = 0x020001, location = starcoin_framework::aggregator)]
     fun test_overflow(account: signer) {
         aggregator_factory::initialize_aggregator_factory_for_test(&account);
         let aggregator = aggregator_factory::create_aggregator(&account, 10);
@@ -38,8 +38,8 @@ module aptos_framework::aggregator_tests {
         aggregator::destroy(aggregator);
     }
 
-    #[test(account = @aptos_framework)]
-    #[expected_failure(abort_code = 0x020002, location = aptos_framework::aggregator)]
+    #[test(account = @starcoin_framework)]
+    #[expected_failure(abort_code = 0x020002, location = starcoin_framework::aggregator)]
     fun test_underflow(account: signer) {
         aggregator_factory::initialize_aggregator_factory_for_test(&account);
         let aggregator = aggregator_factory::create_aggregator(&account, 10);

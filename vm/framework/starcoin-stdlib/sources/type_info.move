@@ -1,4 +1,4 @@
-module aptos_std::type_info {
+module starcoin_std::type_info {
     use std::bcs;
     use std::features;
     use std::string::{Self, String};
@@ -35,9 +35,9 @@ module aptos_std::type_info {
         self.struct_name
     }
 
-    /// Returns the current chain ID, mirroring what `aptos_framework::chain_id::get()` would return, except in `#[test]`
-    /// functions, where this will always return `4u8` as the chain ID, whereas `aptos_framework::chain_id::get()` will
-    /// return whichever ID was passed to `aptos_framework::chain_id::initialize_for_test()`.
+    /// Returns the current chain ID, mirroring what `starcoin_framework::chain_id::get()` would return, except in `#[test]`
+    /// functions, where this will always return `4u8` as the chain ID, whereas `starcoin_framework::chain_id::get()` will
+    /// return whichever ID was passed to `starcoin_framework::chain_id::initialize_for_test()`.
     public fun chain_id(): u8 {
         if (!features::aptos_stdlib_chain_id_enabled()) {
             abort(std::error::invalid_state(E_NATIVE_FUN_NOT_AVAILABLE))
@@ -50,7 +50,7 @@ module aptos_std::type_info {
     public native fun type_of<T>(): TypeInfo;
 
     /// Return the human readable string for the type, including the address, module name, and any type arguments.
-    /// Example: 0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>
+    /// Example: 0x1::coin::CoinStore<0x1::starcoin_coin::StarcoinCoin>
     /// Or: 0x1::table::Table<0x1::string::String, 0x1::string::String>
     public native fun type_name<T>(): String;
 
@@ -68,7 +68,7 @@ module aptos_std::type_info {
     }
 
     #[test_only]
-    use aptos_std::table::Table;
+    use starcoin_std::table::Table;
 
     #[test_only]
     use std::vector;
@@ -76,7 +76,7 @@ module aptos_std::type_info {
     #[test]
     fun test_type_of() {
         let type_info = type_of<TypeInfo>();
-        assert!(account_address(&type_info) == @aptos_std, 0);
+        assert!(account_address(&type_info) == @starcoin_std, 0);
         assert!(module_name(&type_info) == b"type_info", 1);
         assert!(struct_name(&type_info) == b"TypeInfo", 2);
     }
@@ -84,7 +84,7 @@ module aptos_std::type_info {
     #[test]
     fun test_type_of_with_type_arg() {
         let type_info = type_of<Table<String, String>>();
-        assert!(account_address(&type_info) == @aptos_std, 0);
+        assert!(account_address(&type_info) == @starcoin_std, 0);
         assert!(module_name(&type_info) == b"table", 1);
         assert!(struct_name(&type_info) == b"Table<0x1::string::String, 0x1::string::String>", 2);
     }
@@ -132,7 +132,7 @@ module aptos_std::type_info {
         let module_name = module_name(&type_info);
         let struct_name = struct_name(&type_info);
         spec {
-            assert account_address == @aptos_std;
+            assert account_address == @starcoin_std;
             assert module_name == b"type_info";
             assert struct_name == b"TypeInfo";
         };

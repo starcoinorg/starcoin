@@ -6,7 +6,7 @@ proportionally to their stake and provided the same stake-management API as the 
 The main accounting logic in the delegation pool contract handles the following:
 1. Tracks how much stake each delegator owns, privately deposited as well as earned.
 Accounting individual delegator stakes is achieved through the shares-based pool defined at
-<code>aptos_std::pool_u64</code>, hence delegators own shares rather than absolute stakes into the delegation pool.
+<code>starcoin_std::pool_u64</code>, hence delegators own shares rather than absolute stakes into the delegation pool.
 2. Tracks rewards earned by the stake pool, implicitly by the delegation one, in the meantime
 and distribute them accordingly.
 3. Tracks lockup cycles on the stake pool in order to separate inactive stake (not earning rewards)
@@ -107,29 +107,29 @@ into the pending_inactive one on A's behalf</li>
 </ol>
 </ol>
  */
-module aptos_framework::delegation_pool {
+module starcoin_framework::delegation_pool {
     use std::error;
     use std::features;
     use std::signer;
     use std::vector;
 
-    use aptos_std::math64;
-    use aptos_std::pool_u64_unbound::{Self as pool_u64, total_coins};
-    use aptos_std::table::{Self, Table};
-    use aptos_std::smart_table::{Self, SmartTable};
+    use starcoin_std::math64;
+    use starcoin_std::pool_u64_unbound::{Self as pool_u64, total_coins};
+    use starcoin_std::table::{Self, Table};
+    use starcoin_std::smart_table::{Self, SmartTable};
 
-    use aptos_framework::account;
-    use aptos_framework::aptos_account;
-    use aptos_framework::aptos_coin::AptosCoin;
-    use aptos_framework::aptos_governance;
-    use aptos_framework::coin;
-    use aptos_framework::event::{Self, EventHandle, emit};
-    use aptos_framework::stake;
-    use aptos_framework::stake::get_operator;
-    use aptos_framework::staking_config;
-    use aptos_framework::timestamp;
+    use starcoin_framework::account;
+    use starcoin_framework::starcoin_account;
+    use starcoin_framework::starcoin_coin::StarcoinCoin;
+    use starcoin_framework::starcoin_governance;
+    use starcoin_framework::coin;
+    use starcoin_framework::event::{Self, EventHandle, emit};
+    use starcoin_framework::stake;
+    use starcoin_framework::stake::get_operator;
+    use starcoin_framework::staking_config;
+    use starcoin_framework::timestamp;
 
-    const MODULE_SALT: vector<u8> = b"aptos_framework::delegation_pool";
+    const MODULE_SALT: vector<u8> = b"starcoin_framework::delegation_pool";
 
     /// Delegation pool owner capability does not exist at the provided account.
     const EOWNER_CAP_NOT_FOUND: u64 = 1;
@@ -743,7 +743,7 @@ module aptos_framework::delegation_pool {
         assert_partial_governance_voting_enabled(pool_address);
         // If the whole stake pool has no voting power(e.g. it has already voted before partial
         // governance voting flag is enabled), the delegator also has no voting power.
-        if (aptos_governance::get_remaining_voting_power(pool_address, proposal_id) == 0) {
+        if (starcoin_governance::get_remaining_voting_power(pool_address, proposal_id) == 0) {
             return 0
         };
 
@@ -850,7 +850,7 @@ module aptos_framework::delegation_pool {
         let seed = create_resource_account_seed(delegation_pool_creation_seed);
 
         let (stake_pool_signer, stake_pool_signer_cap) = account::create_resource_account(owner, seed);
-        coin::register<AptosCoin>(&stake_pool_signer);
+        coin::register<StarcoinCoin>(&stake_pool_signer);
 
         // stake_pool_signer will be owner of the stake pool and have its `stake::OwnerCapability`
         let pool_address = signer::address_of(&stake_pool_signer);
@@ -963,7 +963,7 @@ module aptos_framework::delegation_pool {
         *used_voting_power = *used_voting_power + voting_power;
 
         let pool_signer = retrieve_stake_pool_owner(borrow_global<DelegationPool>(pool_address));
-        aptos_governance::partial_vote(&pool_signer, pool_address, proposal_id, voting_power, should_pass);
+        starcoin_governance::partial_vote(&pool_signer, pool_address, proposal_id, voting_power, should_pass);
 
         if (features::module_event_migration_enabled()) {
             event::emit(
@@ -991,7 +991,7 @@ module aptos_framework::delegation_pool {
 
     /// A voter could create a governance proposal by this function. To successfully create a proposal, the voter's
     /// voting power in THIS delegation pool must be not less than the minimum required voting power specified in
-    /// `aptos_governance.move`.
+    /// `starcoin_governance.move`.
     public entry fun create_proposal(
         voter: &signer,
         pool_address: address,
@@ -1010,10 +1010,10 @@ module aptos_framework::delegation_pool {
         let governance_records = borrow_global_mut<GovernanceRecords>(pool_address);
         let total_voting_power = calculate_and_update_delegated_votes(pool, governance_records, voter_addr);
         assert!(
-            total_voting_power >= aptos_governance::get_required_proposer_stake(),
+            total_voting_power >= starcoin_governance::get_required_proposer_stake(),
             error::invalid_argument(EINSUFFICIENT_PROPOSER_STAKE));
         let pool_signer = retrieve_stake_pool_owner(borrow_global<DelegationPool>(pool_address));
-        let proposal_id = aptos_governance::create_proposal_v2_impl(
+        let proposal_id = starcoin_governance::create_proposal_v2_impl(
             &pool_signer,
             pool_address,
             execution_hash,
@@ -1554,7 +1554,7 @@ module aptos_framework::delegation_pool {
         let pool = borrow_global_mut<DelegationPool>(pool_address);
 
         // stake the entire amount to the stake pool
-        aptos_account::transfer(delegator, pool_address, amount);
+        starcoin_account::transfer(delegator, pool_address, amount);
         stake::add_stake(&retrieve_stake_pool_owner(pool), amount);
 
         // but buy shares for delegator just for the remaining amount after fee
@@ -1759,7 +1759,7 @@ module aptos_framework::delegation_pool {
             // no excess stake if `stake::withdraw` does not inactivate at all
             stake::withdraw(stake_pool_owner, amount);
         };
-        aptos_account::transfer(stake_pool_owner, delegator_address, amount);
+        starcoin_account::transfer(stake_pool_owner, delegator_address, amount);
 
         // commit withdrawal of possibly inactive stake to the `total_coins_inactive`
         // known by the delegation pool in order to not mistake it for slashing at next synchronization
@@ -2110,8 +2110,8 @@ module aptos_framework::delegation_pool {
     inline fun assert_and_update_proposal_used_voting_power(
         governance_records: &mut GovernanceRecords, pool_address: address, proposal_id: u64, voting_power: u64
     ) {
-        let stake_pool_remaining_voting_power = aptos_governance::get_remaining_voting_power(pool_address, proposal_id);
-        let stake_pool_used_voting_power = aptos_governance::get_voting_power(
+        let stake_pool_remaining_voting_power = starcoin_governance::get_remaining_voting_power(pool_address, proposal_id);
+        let stake_pool_used_voting_power = starcoin_governance::get_voting_power(
             pool_address
         ) - stake_pool_remaining_voting_power;
         let proposal_used_voting_power = smart_table::borrow_mut_with_default(
@@ -2213,13 +2213,13 @@ module aptos_framework::delegation_pool {
     }
 
     #[test_only]
-    use aptos_framework::reconfiguration;
+    use starcoin_framework::reconfiguration;
     #[test_only]
-    use aptos_std::fixed_point64;
+    use starcoin_std::fixed_point64;
     #[test_only]
-    use aptos_framework::stake::fast_forward_to_unlock;
+    use starcoin_framework::stake::fast_forward_to_unlock;
     #[test_only]
-    use aptos_framework::timestamp::fast_forward_seconds;
+    use starcoin_framework::timestamp::fast_forward_seconds;
 
     #[test_only]
     const CONSENSUS_KEY_1: vector<u8> = x"8a54b92288d4ba5073d3a52e80cc00ae9fbbc1cc5b433b46089b7804c38a76f00fc64746c7685ee628fc2d0b929c2294";
@@ -2260,9 +2260,9 @@ module aptos_framework::delegation_pool {
     }
 
     #[test_only]
-    public fun initialize_for_test(aptos_framework: &signer) {
+    public fun initialize_for_test(starcoin_framework: &signer) {
         initialize_for_test_custom(
-            aptos_framework,
+            starcoin_framework,
             100 * ONE_APT,
             10000000 * ONE_APT,
             LOCKUP_CYCLE_SECONDS,
@@ -2274,9 +2274,9 @@ module aptos_framework::delegation_pool {
     }
 
     #[test_only]
-    public fun initialize_for_test_no_reward(aptos_framework: &signer) {
+    public fun initialize_for_test_no_reward(starcoin_framework: &signer) {
         initialize_for_test_custom(
-            aptos_framework,
+            starcoin_framework,
             100 * ONE_APT,
             10000000 * ONE_APT,
             LOCKUP_CYCLE_SECONDS,
@@ -2289,7 +2289,7 @@ module aptos_framework::delegation_pool {
 
     #[test_only]
     public fun initialize_for_test_custom(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         minimum_stake: u64,
         maximum_stake: u64,
         recurring_lockup_secs: u64,
@@ -2298,9 +2298,9 @@ module aptos_framework::delegation_pool {
         rewards_rate_denominator: u64,
         voting_power_increase_limit: u64,
     ) {
-        account::create_account_for_test(signer::address_of(aptos_framework));
+        account::create_account_for_test(signer::address_of(starcoin_framework));
         stake::initialize_for_test_custom(
-            aptos_framework,
+            starcoin_framework,
             minimum_stake,
             maximum_stake,
             recurring_lockup_secs,
@@ -2309,9 +2309,9 @@ module aptos_framework::delegation_pool {
             rewards_rate_denominator,
             voting_power_increase_limit,
         );
-        reconfiguration::initialize_for_test(aptos_framework);
+        reconfiguration::initialize_for_test(starcoin_framework);
         features::change_feature_flags_for_testing(
-            aptos_framework,
+            starcoin_framework,
             vector[DELEGATION_POOLS, MODULE_EVENT, OPERATOR_BENEFICIARY_CHANGE, COMMISSION_CHANGE_DELEGATION_POOL],
             vector[]
         );
@@ -2376,32 +2376,32 @@ module aptos_framework::delegation_pool {
     }
 
     #[test_only]
-    public fun enable_delegation_pool_allowlisting_feature(aptos_framework: &signer) {
+    public fun enable_delegation_pool_allowlisting_feature(starcoin_framework: &signer) {
         features::change_feature_flags_for_testing(
-            aptos_framework,
+            starcoin_framework,
             vector[features::get_delegation_pool_allowlisting_feature()],
             vector[]
         );
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     #[expected_failure(abort_code = 0x3000A, location = Self)]
     public entry fun test_delegation_pools_disabled(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage {
-        initialize_for_test(aptos_framework);
-        features::change_feature_flags_for_testing(aptos_framework, vector[], vector[DELEGATION_POOLS]);
+        initialize_for_test(starcoin_framework);
+        features::change_feature_flags_for_testing(starcoin_framework, vector[], vector[DELEGATION_POOLS]);
 
         initialize_delegation_pool(validator, 0, vector::empty<u8>());
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     public entry fun test_set_operator_and_delegated_voter(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
 
         let validator_address = signer::address_of(validator);
         initialize_delegation_pool(validator, 0, vector::empty<u8>());
@@ -2417,56 +2417,56 @@ module aptos_framework::delegation_pool {
         assert!(stake::get_delegated_voter(pool_address) == @0x112, 2);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     #[expected_failure(abort_code = 0x60001, location = Self)]
     public entry fun test_cannot_set_operator(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         // account does not own any delegation pool
         set_operator(validator, @0x111);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     #[expected_failure(abort_code = 0x60001, location = Self)]
     public entry fun test_cannot_set_delegated_voter(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         // account does not own any delegation pool
         set_delegated_voter(validator, @0x112);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     #[expected_failure(abort_code = 0x80002, location = Self)]
     public entry fun test_already_owns_delegation_pool(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         initialize_delegation_pool(validator, 0, x"00");
         initialize_delegation_pool(validator, 0, x"01");
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     #[expected_failure(abort_code = 0x1000B, location = Self)]
     public entry fun test_cannot_withdraw_zero_stake(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         initialize_delegation_pool(validator, 0, x"00");
         withdraw(validator, get_owned_pool_address(signer::address_of(validator)), 0);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     public entry fun test_initialize_delegation_pool(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
 
         let validator_address = signer::address_of(validator);
         initialize_delegation_pool(validator, 1234, vector::empty<u8>());
@@ -2486,15 +2486,15 @@ module aptos_framework::delegation_pool {
         stake::assert_stake_pool(pool_address, 0, 0, 0, 0);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, delegator1 = @0x010, delegator2 = @0x020)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, delegator1 = @0x010, delegator2 = @0x020)]
     public entry fun test_add_stake_fee(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator1: &signer,
         delegator2: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
         initialize_for_test_custom(
-            aptos_framework,
+            starcoin_framework,
             100 * ONE_APT,
             10000000 * ONE_APT,
             LOCKUP_CYCLE_SECONDS,
@@ -2599,7 +2599,7 @@ module aptos_framework::delegation_pool {
         // Enable rewards rate decrease. Initially rewards rate is still 1% every epoch. Rewards rate halves every year.
         let one_year_in_secs: u64 = 31536000;
         staking_config::initialize_rewards(
-            aptos_framework,
+            starcoin_framework,
             fixed_point64::create_from_rational(2, 100),
             fixed_point64::create_from_rational(6, 1000),
             one_year_in_secs,
@@ -2607,7 +2607,7 @@ module aptos_framework::delegation_pool {
             fixed_point64::create_from_rational(50, 100),
         );
         features::change_feature_flags_for_testing(
-            aptos_framework,
+            starcoin_framework,
             vector[features::get_periodical_reward_rate_decrease_feature()],
             vector[]
         );
@@ -2640,13 +2640,13 @@ module aptos_framework::delegation_pool {
         fast_forward_seconds(one_year_in_secs);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, delegator = @0x010)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, delegator = @0x010)]
     public entry fun test_never_create_pending_withdrawal_if_no_shares_bought(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         initialize_test_validator(validator, 1000 * ONE_APT, true, false);
 
         let validator_address = signer::address_of(validator);
@@ -2703,22 +2703,22 @@ module aptos_framework::delegation_pool {
         assert_pending_withdrawal(delegator_address, pool_address, false, 0, false, 0);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     #[expected_failure(abort_code = 0x10008, location = Self)]
     public entry fun test_add_stake_min_amount(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         initialize_test_validator(validator, MIN_COINS_ON_SHARES_POOL - 1, false, false);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     public entry fun test_add_stake_single(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         initialize_test_validator(validator, 1000 * ONE_APT, false, false);
 
         let validator_address = signer::address_of(validator);
@@ -2733,11 +2733,11 @@ module aptos_framework::delegation_pool {
 
         // check `add_stake` increases `active` stakes of delegator and stake pool
         stake::mint(validator, 300 * ONE_APT);
-        let balance = coin::balance<AptosCoin>(validator_address);
+        let balance = coin::balance<StarcoinCoin>(validator_address);
         add_stake(validator, pool_address, 250 * ONE_APT);
 
         // check added stake have been transferred out of delegator account
-        assert!(coin::balance<AptosCoin>(validator_address) == balance - 250 * ONE_APT, 0);
+        assert!(coin::balance<StarcoinCoin>(validator_address) == balance - 250 * ONE_APT, 0);
         // zero `add_stake` fee charged from added stake
         assert_delegation(validator_address, pool_address, 1250 * ONE_APT, 0, 0);
         // zero `add_stake` fee transferred to null shareholder
@@ -2802,13 +2802,13 @@ module aptos_framework::delegation_pool {
         assert_delegation(NULL_SHAREHOLDER, pool_address, 0, 0, 0);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, delegator = @0x010)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, delegator = @0x010)]
     public entry fun test_add_stake_many(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         initialize_test_validator(validator, 1000 * ONE_APT, true, true);
 
         let validator_address = signer::address_of(validator);
@@ -2864,13 +2864,13 @@ module aptos_framework::delegation_pool {
         stake::assert_stake_pool(pool_address, 162260000000, 0, 0, 0);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, delegator = @0x010)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, delegator = @0x010)]
     public entry fun test_unlock_single(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         initialize_test_validator(validator, 100 * ONE_APT, true, true);
 
         let validator_address = signer::address_of(validator);
@@ -2951,11 +2951,11 @@ module aptos_framework::delegation_pool {
 
         // cannot withdraw stake unlocked by others
         withdraw(delegator, pool_address, 50 * ONE_APT);
-        assert!(coin::balance<AptosCoin>(delegator_address) == 0, 0);
+        assert!(coin::balance<StarcoinCoin>(delegator_address) == 0, 0);
 
         // withdraw own unlocked stake
         withdraw(validator, pool_address, 15301499997);
-        assert!(coin::balance<AptosCoin>(validator_address) == 15301499997, 0);
+        assert!(coin::balance<StarcoinCoin>(validator_address) == 15301499997, 0);
         assert_delegation(validator_address, pool_address, 15403510001, 0, 0);
         // pending withdrawal has been executed and deleted
         assert_pending_withdrawal(validator_address, pool_address, false, 0, false, 0);
@@ -2976,9 +2976,9 @@ module aptos_framework::delegation_pool {
         assert_pending_withdrawal(validator_address, pool_address, true, 1, true, 5457545100);
 
         // unlock when the pending withdrawal exists and gets automatically executed
-        let balance = coin::balance<AptosCoin>(validator_address);
+        let balance = coin::balance<StarcoinCoin>(validator_address);
         unlock(validator, pool_address, 10100000000);
-        assert!(coin::balance<AptosCoin>(validator_address) == balance + 5457545100, 0);
+        assert!(coin::balance<StarcoinCoin>(validator_address) == balance + 5457545100, 0);
         assert_delegation(validator_address, pool_address, 0, 0, 10100000000);
         // this is the new pending withdrawal replacing the executed one
         assert_pending_withdrawal(validator_address, pool_address, true, 2, false, 10100000000);
@@ -3006,10 +3006,10 @@ module aptos_framework::delegation_pool {
         assert_pending_withdrawal(validator_address, pool_address, true, 2, false, 10303010000);
 
         // validator is inactive and lockup expired => pending_inactive stake is withdrawable
-        balance = coin::balance<AptosCoin>(validator_address);
+        balance = coin::balance<StarcoinCoin>(validator_address);
         withdraw(validator, pool_address, 10303010000);
 
-        assert!(coin::balance<AptosCoin>(validator_address) == balance + 10303010000, 0);
+        assert!(coin::balance<StarcoinCoin>(validator_address) == balance + 10303010000, 0);
         assert_delegation(validator_address, pool_address, 0, 0, 0);
         assert_pending_withdrawal(validator_address, pool_address, false, 0, false, 0);
         stake::assert_stake_pool(pool_address, 5100500001, 0, 0, 0);
@@ -3024,23 +3024,23 @@ module aptos_framework::delegation_pool {
         // the pending withdrawal should be reported as still pending
         assert_pending_withdrawal(validator_address, pool_address, true, 2, false, 1000000000);
 
-        balance = coin::balance<AptosCoin>(validator_address);
+        balance = coin::balance<StarcoinCoin>(validator_address);
         // pending_inactive balance would be under threshold => redeem entire balance
         withdraw(validator, pool_address, 1);
         // pending_inactive balance has been withdrawn and the pending withdrawal executed
         assert_delegation(validator_address, pool_address, 1999999999, 0, 0);
         assert_pending_withdrawal(validator_address, pool_address, false, 0, false, 0);
-        assert!(coin::balance<AptosCoin>(validator_address) == balance + 1000000000, 0);
+        assert!(coin::balance<StarcoinCoin>(validator_address) == balance + 1000000000, 0);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, delegator1 = @0x010, delegator2 = @0x020)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, delegator1 = @0x010, delegator2 = @0x020)]
     public entry fun test_total_coins_inactive(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator1: &signer,
         delegator2: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         initialize_test_validator(validator, 200 * ONE_APT, true, true);
 
         let validator_address = signer::address_of(validator);
@@ -3142,12 +3142,12 @@ module aptos_framework::delegation_pool {
         assert!(inactive == 0, inactive);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     public entry fun test_reactivate_stake_single(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         initialize_test_validator(validator, 200 * ONE_APT, true, true);
 
         let validator_address = signer::address_of(validator);
@@ -3197,7 +3197,7 @@ module aptos_framework::delegation_pool {
 
         // unlock stake in the new lockup cycle (the pending withdrawal is executed)
         unlock(validator, pool_address, 100 * ONE_APT);
-        assert!(coin::balance<AptosCoin>(validator_address) == 15149999998, 0);
+        assert!(coin::balance<StarcoinCoin>(validator_address) == 15149999998, 0);
         assert_delegation(validator_address, pool_address, 10402000002, 0, 9999999999);
         assert_pending_withdrawal(validator_address, pool_address, true, 1, false, 9999999999);
 
@@ -3209,13 +3209,13 @@ module aptos_framework::delegation_pool {
         assert_pending_withdrawal(validator_address, pool_address, false, 0, false, 0);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, delegator = @0x010)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, delegator = @0x010)]
     public entry fun test_withdraw_many(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         initialize_test_validator(validator, 1000 * ONE_APT, true, true);
 
         let validator_address = signer::address_of(validator);
@@ -3254,9 +3254,9 @@ module aptos_framework::delegation_pool {
         assert_delegation(validator_address, pool_address, 90900000000, 10100000000, 0);
 
         // withdraw entire owned inactive stake
-        let balance = coin::balance<AptosCoin>(validator_address);
+        let balance = coin::balance<StarcoinCoin>(validator_address);
         withdraw(validator, pool_address, MAX_U64);
-        assert!(coin::balance<AptosCoin>(validator_address) == balance + 10100000000, 0);
+        assert!(coin::balance<StarcoinCoin>(validator_address) == balance + 10100000000, 0);
         assert_pending_withdrawal(validator_address, pool_address, false, 0, false, 0);
         assert_inactive_shares_pool(pool_address, 0, false, 0);
 
@@ -3285,13 +3285,13 @@ module aptos_framework::delegation_pool {
         assert_inactive_shares_pool(pool_address, 2, true, 1);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, delegator = @0x010)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, delegator = @0x010)]
     public entry fun test_inactivate_no_excess_stake(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         initialize_test_validator(validator, 1200 * ONE_APT, true, true);
 
         let validator_address = signer::address_of(validator);
@@ -3392,12 +3392,12 @@ module aptos_framework::delegation_pool {
         assert_pending_withdrawal(delegator_address, pool_address, true, 1, false, 10201000002);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     public entry fun test_active_stake_rewards(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         initialize_test_validator(validator, 1000 * ONE_APT, true, true);
 
         let validator_address = signer::address_of(validator);
@@ -3464,13 +3464,13 @@ module aptos_framework::delegation_pool {
         assert_delegation(validator_address, pool_address, 214962865320, 20199999998, 0);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, delegator = @0x010)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, delegator = @0x010)]
     public entry fun test_active_stake_rewards_multiple(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         initialize_test_validator(validator, 200 * ONE_APT, true, true);
 
         let validator_address = signer::address_of(validator);
@@ -3525,12 +3525,12 @@ module aptos_framework::delegation_pool {
         stake::assert_stake_pool(pool_address, 152238321302, 0, 0, 0);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     public entry fun test_pending_inactive_stake_rewards(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         initialize_test_validator(validator, 1000 * ONE_APT, true, true);
 
         let validator_address = signer::address_of(validator);
@@ -3553,7 +3553,7 @@ module aptos_framework::delegation_pool {
 
         // unlock 200 coins from delegator `validator` which implicitly executes its pending withdrawal
         unlock(validator, pool_address, 200 * ONE_APT);
-        assert!(coin::balance<AptosCoin>(validator_address) == 20606019996, 0);
+        assert!(coin::balance<StarcoinCoin>(validator_address) == 20606019996, 0);
         assert_delegation(validator_address, pool_address, 64288924812, 0, 19999999999);
 
         // lockup cycle is not ended, pending_inactive stake is still earning
@@ -3570,14 +3570,14 @@ module aptos_framework::delegation_pool {
         assert_delegation(validator_address, pool_address, 68926429037, 21020200996, 0);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, delegator1 = @0x010, delegator2 = @0x020)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, delegator1 = @0x010, delegator2 = @0x020)]
     public entry fun test_out_of_order_redeem(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator1: &signer,
         delegator2: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         initialize_test_validator(validator, 1000 * ONE_APT, true, true);
 
         let validator_address = signer::address_of(validator);
@@ -3624,8 +3624,8 @@ module aptos_framework::delegation_pool {
 
         assert_pending_withdrawal(delegator2_address, pool_address, true, 1, true, 10000000001);
         assert_pending_withdrawal(delegator1_address, pool_address, false, 0, false, 0);
-        assert!(coin::balance<AptosCoin>(delegator1_address) == 15149999998, 0);
-        assert!(coin::balance<AptosCoin>(delegator2_address) == 5149999997, 0);
+        assert!(coin::balance<StarcoinCoin>(delegator1_address) == 15149999998, 0);
+        assert!(coin::balance<StarcoinCoin>(delegator2_address) == 5149999997, 0);
 
         // recreate the pending withdrawal of delegator 1 in lockup cycle 2
         unlock(delegator1, pool_address, 100 * ONE_APT);
@@ -3640,23 +3640,23 @@ module aptos_framework::delegation_pool {
 
         // withdraw inactive stake of delegator 2 left from lockup cycle 1 in cycle 3
         withdraw(delegator2, pool_address, 10000000001);
-        assert!(coin::balance<AptosCoin>(delegator2_address) == 15149999998, 0);
+        assert!(coin::balance<StarcoinCoin>(delegator2_address) == 15149999998, 0);
         assert_pending_withdrawal(delegator2_address, pool_address, false, 0, false, 0);
 
         // withdraw inactive stake of delegator 1 left from previous lockup cycle
         withdraw(delegator1, pool_address, 10099999998);
-        assert!(coin::balance<AptosCoin>(delegator1_address) == 15149999998 + 10099999998, 0);
+        assert!(coin::balance<StarcoinCoin>(delegator1_address) == 15149999998 + 10099999998, 0);
         assert_pending_withdrawal(delegator1_address, pool_address, false, 0, false, 0);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, delegator1 = @0x010, delegator2 = @0x020)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, delegator1 = @0x010, delegator2 = @0x020)]
     public entry fun test_operator_fee(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator1: &signer,
         delegator2: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
 
         let validator_address = signer::address_of(validator);
         account::create_account_for_test(validator_address);
@@ -3788,9 +3788,9 @@ module aptos_framework::delegation_pool {
         assert_pending_withdrawal(validator_address, pool_address, true, 0, true, 25536996);
 
         // distribute in-flight pending_inactive commission, implicitly executing the inactive withdrawal of operator
-        coin::register<AptosCoin>(validator);
+        coin::register<StarcoinCoin>(validator);
         synchronize_delegation_pool(pool_address);
-        assert!(coin::balance<AptosCoin>(validator_address) == 25536996, 0);
+        assert!(coin::balance<StarcoinCoin>(validator_address) == 25536996, 0);
 
         // in-flight commission has been synced, implicitly used to buy shares for operator
         // expect operator stake to be slightly less than previously reported by `Self::get_stake`
@@ -3798,14 +3798,14 @@ module aptos_framework::delegation_pool {
         assert_pending_withdrawal(validator_address, pool_address, true, 1, false, 13671159);
     }
 
-    #[test(aptos_framework = @aptos_framework, old_operator = @0x123, delegator = @0x010, new_operator = @0x020)]
+    #[test(starcoin_framework = @starcoin_framework, old_operator = @0x123, delegator = @0x010, new_operator = @0x020)]
     public entry fun test_change_operator(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         old_operator: &signer,
         delegator: &signer,
         new_operator: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
 
         let old_operator_address = signer::address_of(old_operator);
         account::create_account_for_test(old_operator_address);
@@ -3861,29 +3861,29 @@ module aptos_framework::delegation_pool {
     }
 
     #[test(
-        aptos_framework = @aptos_framework,
+        starcoin_framework = @starcoin_framework,
         operator1 = @0x123,
         delegator = @0x010,
         beneficiary = @0x020,
         operator2 = @0x030
     )]
     public entry fun test_set_beneficiary_for_operator(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         operator1: &signer,
         delegator: &signer,
         beneficiary: &signer,
         operator2: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
 
         let operator1_address = signer::address_of(operator1);
-        aptos_account::create_account(operator1_address);
+        starcoin_account::create_account(operator1_address);
 
         let operator2_address = signer::address_of(operator2);
-        aptos_account::create_account(operator2_address);
+        starcoin_account::create_account(operator2_address);
 
         let beneficiary_address = signer::address_of(beneficiary);
-        aptos_account::create_account(beneficiary_address);
+        starcoin_account::create_account(beneficiary_address);
 
         // create delegation pool of commission fee 12.65%
         initialize_delegation_pool(operator1, 1265, vector::empty<u8>());
@@ -3914,7 +3914,7 @@ module aptos_framework::delegation_pool {
         end_aptos_epoch();
 
         withdraw(operator1, pool_address, ONE_APT);
-        assert!(coin::balance<AptosCoin>(operator1_address) == ONE_APT - 1, 0);
+        assert!(coin::balance<StarcoinCoin>(operator1_address) == ONE_APT - 1, 0);
 
         set_beneficiary_for_operator(operator1, beneficiary_address);
         assert!(beneficiary_for_operator(operator1_address) == beneficiary_address, 0);
@@ -3925,8 +3925,8 @@ module aptos_framework::delegation_pool {
         end_aptos_epoch();
 
         withdraw(beneficiary, pool_address, ONE_APT);
-        assert!(coin::balance<AptosCoin>(beneficiary_address) == ONE_APT - 1, 0);
-        assert!(coin::balance<AptosCoin>(operator1_address) == ONE_APT - 1, 0);
+        assert!(coin::balance<StarcoinCoin>(beneficiary_address) == ONE_APT - 1, 0);
+        assert!(coin::balance<StarcoinCoin>(operator1_address) == ONE_APT - 1, 0);
 
         // switch operator to operator2. The rewards should go to operator2 not to the beneficiay of operator1.
         set_operator(operator1, operator2_address);
@@ -3936,17 +3936,17 @@ module aptos_framework::delegation_pool {
         end_aptos_epoch();
 
         withdraw(operator2, pool_address, ONE_APT);
-        assert!(coin::balance<AptosCoin>(beneficiary_address) == ONE_APT - 1, 0);
-        assert!(coin::balance<AptosCoin>(operator2_address) == ONE_APT - 1, 0);
+        assert!(coin::balance<StarcoinCoin>(beneficiary_address) == ONE_APT - 1, 0);
+        assert!(coin::balance<StarcoinCoin>(operator2_address) == ONE_APT - 1, 0);
     }
 
-    #[test(aptos_framework = @aptos_framework, operator = @0x123, delegator = @0x010)]
+    #[test(starcoin_framework = @starcoin_framework, operator = @0x123, delegator = @0x010)]
     public entry fun test_update_commission_percentage(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         operator: &signer,
         delegator: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
 
         let operator_address = signer::address_of(operator);
         account::create_account_for_test(operator_address);
@@ -4001,14 +4001,14 @@ module aptos_framework::delegation_pool {
         assert_delegation(operator_address, pool_address, 86058258, 38552865, 0);
     }
 
-    #[test(aptos_framework = @aptos_framework, operator = @0x123, delegator = @0x010)]
+    #[test(starcoin_framework = @starcoin_framework, operator = @0x123, delegator = @0x010)]
     #[expected_failure(abort_code = 196629, location = Self)]
     public entry fun test_last_minute_commission_rate_change_failed(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         operator: &signer,
         delegator: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
 
         let operator_address = signer::address_of(operator);
         account::create_account_for_test(operator_address);
@@ -4054,14 +4054,14 @@ module aptos_framework::delegation_pool {
         update_commission_percentage(operator, 2255);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, delegator1 = @0x010, delegator2 = @0x020)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, delegator1 = @0x010, delegator2 = @0x020)]
     public entry fun test_min_stake_is_preserved(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator1: &signer,
         delegator2: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         initialize_test_validator(validator, 100 * ONE_APT, true, false);
 
         let validator_address = signer::address_of(validator);
@@ -4160,24 +4160,24 @@ module aptos_framework::delegation_pool {
         assert_delegation(delegator1_address, pool_address, 5049999998, 0, 0);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, delegator1 = @0x010)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, delegator1 = @0x010)]
     #[expected_failure(abort_code = 0x1000f, location = Self)]
     public entry fun test_create_proposal_abort_if_inefficient_stake(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator1: &signer,
         // delegator2: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
-        aptos_governance::initialize_for_test(
-            aptos_framework,
+        initialize_for_test(starcoin_framework);
+        starcoin_governance::initialize_for_test(
+            starcoin_framework,
             (10 * ONE_APT as u128),
             100 * ONE_APT,
             1000,
         );
-        aptos_governance::initialize_partial_voting(aptos_framework);
+        starcoin_governance::initialize_partial_voting(starcoin_framework);
         features::change_feature_flags_for_testing(
-            aptos_framework,
+            starcoin_framework,
             vector[features::get_partial_governance_voting(), features::get_delegation_pool_partial_governance_voting(
             )],
             vector[]);
@@ -4208,22 +4208,22 @@ module aptos_framework::delegation_pool {
         );
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, delegator1 = @0x010)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, delegator1 = @0x010)]
     public entry fun test_create_proposal_with_sufficient_stake(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator1: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
-        aptos_governance::initialize_for_test(
-            aptos_framework,
+        initialize_for_test(starcoin_framework);
+        starcoin_governance::initialize_for_test(
+            starcoin_framework,
             (10 * ONE_APT as u128),
             100 * ONE_APT,
             1000,
         );
-        aptos_governance::initialize_partial_voting(aptos_framework);
+        starcoin_governance::initialize_partial_voting(starcoin_framework);
         features::change_feature_flags_for_testing(
-            aptos_framework,
+            starcoin_framework,
             vector[features::get_partial_governance_voting(), features::get_delegation_pool_partial_governance_voting(
             )],
             vector[]);
@@ -4255,7 +4255,7 @@ module aptos_framework::delegation_pool {
     }
 
     #[test(
-        aptos_framework = @aptos_framework,
+        starcoin_framework = @starcoin_framework,
         validator = @0x123,
         delegator1 = @0x010,
         delegator2 = @0x020,
@@ -4263,23 +4263,23 @@ module aptos_framework::delegation_pool {
         voter2 = @0x040
     )]
     public entry fun test_voting_power_change(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator1: &signer,
         delegator2: &signer,
         voter1: &signer,
         voter2: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test_no_reward(aptos_framework);
-        aptos_governance::initialize_for_test(
-            aptos_framework,
+        initialize_for_test_no_reward(starcoin_framework);
+        starcoin_governance::initialize_for_test(
+            starcoin_framework,
             (10 * ONE_APT as u128),
             100 * ONE_APT,
             1000,
         );
-        aptos_governance::initialize_partial_voting(aptos_framework);
+        starcoin_governance::initialize_partial_voting(starcoin_framework);
         features::change_feature_flags_for_testing(
-            aptos_framework,
+            starcoin_framework,
             vector[features::get_partial_governance_voting(), features::get_delegation_pool_partial_governance_voting(
             )],
             vector[]
@@ -4414,21 +4414,21 @@ module aptos_framework::delegation_pool {
         assert!(calculate_and_update_voter_total_voting_power(pool_address, delegator2_address) == 0, 1);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, delegator1 = @0x010, voter1 = @0x030)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, delegator1 = @0x010, voter1 = @0x030)]
     public entry fun test_voting_power_change_for_existing_delegation_pool(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator1: &signer,
         voter1: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test_no_reward(aptos_framework);
-        aptos_governance::initialize_for_test(
-            aptos_framework,
+        initialize_for_test_no_reward(starcoin_framework);
+        starcoin_governance::initialize_for_test(
+            starcoin_framework,
             (10 * ONE_APT as u128),
             100 * ONE_APT,
             1000,
         );
-        aptos_governance::initialize_partial_voting(aptos_framework);
+        starcoin_governance::initialize_partial_voting(starcoin_framework);
 
         initialize_test_validator(validator, 100 * ONE_APT, true, false);
 
@@ -4449,7 +4449,7 @@ module aptos_framework::delegation_pool {
 
         // Enable partial governance voting feature flag.
         features::change_feature_flags_for_testing(
-            aptos_framework,
+            starcoin_framework,
             vector[features::get_partial_governance_voting(), features::get_delegation_pool_partial_governance_voting(
             )],
             vector[]
@@ -4479,7 +4479,7 @@ module aptos_framework::delegation_pool {
     }
 
     #[test(
-        aptos_framework = @aptos_framework,
+        starcoin_framework = @starcoin_framework,
         validator = @0x123,
         delegator1 = @0x010,
         delegator2 = @0x020,
@@ -4487,7 +4487,7 @@ module aptos_framework::delegation_pool {
         voter2 = @0x040
     )]
     public entry fun test_voting_power_change_for_rewards(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator1: &signer,
         delegator2: &signer,
@@ -4495,7 +4495,7 @@ module aptos_framework::delegation_pool {
         voter2: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
         initialize_for_test_custom(
-            aptos_framework,
+            starcoin_framework,
             100 * ONE_APT,
             10000 * ONE_APT,
             LOCKUP_CYCLE_SECONDS,
@@ -4504,15 +4504,15 @@ module aptos_framework::delegation_pool {
             100,
             1000000
         );
-        aptos_governance::initialize_for_test(
-            aptos_framework,
+        starcoin_governance::initialize_for_test(
+            starcoin_framework,
             (10 * ONE_APT as u128),
             100 * ONE_APT,
             1000,
         );
-        aptos_governance::initialize_partial_voting(aptos_framework);
+        starcoin_governance::initialize_partial_voting(starcoin_framework);
         features::change_feature_flags_for_testing(
-            aptos_framework,
+            starcoin_framework,
             vector[features::get_partial_governance_voting(), features::get_delegation_pool_partial_governance_voting(
             )],
             vector[]
@@ -4577,7 +4577,7 @@ module aptos_framework::delegation_pool {
     }
 
     #[test(
-        aptos_framework = @aptos_framework,
+        starcoin_framework = @starcoin_framework,
         validator = @0x123,
         delegator1 = @0x010,
         delegator2 = @0x020,
@@ -4585,7 +4585,7 @@ module aptos_framework::delegation_pool {
         voter2 = @0x040
     )]
     public entry fun test_voting_power_change_already_voted_before_partial(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator1: &signer,
         delegator2: &signer,
@@ -4593,7 +4593,7 @@ module aptos_framework::delegation_pool {
         voter2: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
         // partial voing hasn't been enabled yet. A proposal has been created by the validator.
-        let proposal1_id = setup_vote(aptos_framework, validator, false);
+        let proposal1_id = setup_vote(starcoin_framework, validator, false);
 
         let validator_address = signer::address_of(validator);
         let pool_address = get_owned_pool_address(validator_address);
@@ -4615,7 +4615,7 @@ module aptos_framework::delegation_pool {
         // Create 2 proposals and vote for proposal1.
         let execution_hash = vector::empty<u8>();
         vector::push_back(&mut execution_hash, 1);
-        let proposal2_id = aptos_governance::create_proposal_v2_impl(
+        let proposal2_id = starcoin_governance::create_proposal_v2_impl(
             validator,
             pool_address,
             execution_hash,
@@ -4623,11 +4623,11 @@ module aptos_framework::delegation_pool {
             b"",
             true,
         );
-        aptos_governance::vote(validator, pool_address, proposal1_id, true);
+        starcoin_governance::vote(validator, pool_address, proposal1_id, true);
 
         // Enable partial governance voting feature flag.
         features::change_feature_flags_for_testing(
-            aptos_framework,
+            starcoin_framework,
             vector[features::get_partial_governance_voting(), features::get_delegation_pool_partial_governance_voting(
             )],
             vector[]
@@ -4677,16 +4677,16 @@ module aptos_framework::delegation_pool {
         );
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, delegator1 = @0x010, voter1 = @0x030)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, delegator1 = @0x010, voter1 = @0x030)]
     #[expected_failure(abort_code = 0x10010, location = Self)]
     public entry fun test_vote_should_failed_if_already_voted_before_enable_partial_voting_flag(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator1: &signer,
         voter1: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
         // partial voing hasn't been enabled yet. A proposal has been created by the validator.
-        let proposal1_id = setup_vote(aptos_framework, validator, false);
+        let proposal1_id = setup_vote(starcoin_framework, validator, false);
 
         let validator_address = signer::address_of(validator);
         let pool_address = get_owned_pool_address(validator_address);
@@ -4699,11 +4699,11 @@ module aptos_framework::delegation_pool {
         add_stake(delegator1, pool_address, 10 * ONE_APT);
         end_aptos_epoch();
 
-        aptos_governance::vote(validator, pool_address, proposal1_id, true);
+        starcoin_governance::vote(validator, pool_address, proposal1_id, true);
 
         // Enable partial governance voting feature flag.
         features::change_feature_flags_for_testing(
-            aptos_framework,
+            starcoin_framework,
             vector[features::get_partial_governance_voting(), features::get_delegation_pool_partial_governance_voting(
             )],
             vector[]
@@ -4714,16 +4714,16 @@ module aptos_framework::delegation_pool {
         vote(delegator1, pool_address, proposal1_id, 10 * ONE_APT, true);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, delegator1 = @0x010, voter1 = @0x030)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, delegator1 = @0x010, voter1 = @0x030)]
     #[expected_failure(abort_code = 0x10011, location = Self)]
     public entry fun test_vote_should_failed_if_already_voted_before_enable_partial_voting_on_pool(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator1: &signer,
         voter1: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
         // partial voing hasn't been enabled yet. A proposal has been created by the validator.
-        let proposal1_id = setup_vote(aptos_framework, validator, false);
+        let proposal1_id = setup_vote(starcoin_framework, validator, false);
 
         let validator_address = signer::address_of(validator);
         let pool_address = get_owned_pool_address(validator_address);
@@ -4738,14 +4738,14 @@ module aptos_framework::delegation_pool {
 
         // Enable partial governance voting feature flag.
         features::change_feature_flags_for_testing(
-            aptos_framework,
+            starcoin_framework,
             vector[features::get_partial_governance_voting(), features::get_delegation_pool_partial_governance_voting(
             )],
             vector[]
         );
 
         // The operator voter votes on the proposal after partial governace voting flag is enabled but before partial voting is enabled on the pool.
-        aptos_governance::vote(validator, pool_address, proposal1_id, true);
+        starcoin_governance::vote(validator, pool_address, proposal1_id, true);
 
         // Enable partial governance voting on this delegation pool.
         enable_partial_governance_voting(pool_address);
@@ -4754,15 +4754,15 @@ module aptos_framework::delegation_pool {
         vote(delegator1, pool_address, proposal1_id, 10 * ONE_APT, true);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, delegator1 = @0x010)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, delegator1 = @0x010)]
     #[expected_failure(abort_code = 0x10010, location = Self)]
     public entry fun test_vote_should_failed_if_no_stake(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator1: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
         // partial voing hasn't been enabled yet. A proposal has been created by the validator.
-        let proposal1_id = setup_vote(aptos_framework, validator, true);
+        let proposal1_id = setup_vote(starcoin_framework, validator, true);
 
         let validator_address = signer::address_of(validator);
         let pool_address = get_owned_pool_address(validator_address);
@@ -4773,15 +4773,15 @@ module aptos_framework::delegation_pool {
         vote(delegator1, pool_address, proposal1_id, 10 * ONE_APT, true);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, delegator1 = @0x010, voter1 = @0x030)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, delegator1 = @0x010, voter1 = @0x030)]
     public entry fun test_delegate_voting_power_should_pass_even_if_no_stake(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator1: &signer,
         voter1: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
         // partial voing hasn't been enabled yet. A proposal has been created by the validator.
-        setup_vote(aptos_framework, validator, true);
+        setup_vote(starcoin_framework, validator, true);
 
         let validator_address = signer::address_of(validator);
         let pool_address = get_owned_pool_address(validator_address);
@@ -4793,23 +4793,23 @@ module aptos_framework::delegation_pool {
     }
 
     #[test(
-        aptos_framework = @aptos_framework,
+        starcoin_framework = @starcoin_framework,
         validator = @0x123,
         delegator = @0x010,
         voter1 = @0x020,
         voter2 = @0x030
     )]
     public entry fun test_delegate_voting_power_applies_next_lockup(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator: &signer,
         voter1: &signer,
         voter2: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
-        aptos_governance::initialize_partial_voting(aptos_framework);
+        initialize_for_test(starcoin_framework);
+        starcoin_governance::initialize_partial_voting(starcoin_framework);
         features::change_feature_flags_for_testing(
-            aptos_framework,
+            starcoin_framework,
             vector[
                 features::get_partial_governance_voting(),
                 features::get_delegation_pool_partial_governance_voting()
@@ -4939,7 +4939,7 @@ module aptos_framework::delegation_pool {
     }
 
     #[test(
-        aptos_framework = @aptos_framework,
+        starcoin_framework = @starcoin_framework,
         validator = @0x123,
         validator_min_consensus = @0x234,
         delegator = @0x010,
@@ -4947,17 +4947,17 @@ module aptos_framework::delegation_pool {
         voter2 = @0x030
     )]
     public entry fun test_delegate_voting_power_from_inactive_validator(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         validator_min_consensus: &signer,
         delegator: &signer,
         voter1: &signer,
         voter2: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
-        aptos_governance::initialize_partial_voting(aptos_framework);
+        initialize_for_test(starcoin_framework);
+        starcoin_governance::initialize_partial_voting(starcoin_framework);
         features::change_feature_flags_for_testing(
-            aptos_framework,
+            starcoin_framework,
             vector[
                 features::get_partial_governance_voting(),
                 features::get_delegation_pool_partial_governance_voting()
@@ -5063,16 +5063,16 @@ module aptos_framework::delegation_pool {
         assert!(pool_address == @0xe9fc2fbb82b7e1cb7af3daef8c7a24e66780f9122d15e4f1d486ee7c7c36c48d, 0);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     #[expected_failure(abort_code = 0x30017, location = Self)]
     public entry fun test_delegators_allowlisting_not_supported(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         initialize_test_validator(validator, 100 * ONE_APT, true, true);
         features::change_feature_flags_for_testing(
-            aptos_framework,
+            starcoin_framework,
             vector[],
             vector[features::get_delegation_pool_allowlisting_feature()],
         );
@@ -5080,13 +5080,13 @@ module aptos_framework::delegation_pool {
         enable_delegators_allowlisting(validator);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123)]
     #[expected_failure(abort_code = 0x30018, location = Self)]
     public entry fun test_cannot_disable_allowlisting_if_already_off(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         initialize_test_validator(validator, 100 * ONE_APT, true, true);
 
         let pool_address = get_owned_pool_address(signer::address_of(validator));
@@ -5095,14 +5095,14 @@ module aptos_framework::delegation_pool {
         disable_delegators_allowlisting(validator);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, delegator_1 = @0x010)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, delegator_1 = @0x010)]
     #[expected_failure(abort_code = 0x30018, location = Self)]
     public entry fun test_cannot_allowlist_delegator_if_allowlisting_disabled(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator_1: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         initialize_test_validator(validator, 100 * ONE_APT, true, true);
 
         let pool_address = get_owned_pool_address(signer::address_of(validator));
@@ -5111,14 +5111,14 @@ module aptos_framework::delegation_pool {
         allowlist_delegator(validator, signer::address_of(delegator_1));
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, delegator_1 = @0x010)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, delegator_1 = @0x010)]
     #[expected_failure(abort_code = 0x30018, location = Self)]
     public entry fun test_cannot_remove_delegator_from_allowlist_if_allowlisting_disabled(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator_1: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         initialize_test_validator(validator, 100 * ONE_APT, true, true);
 
         let pool_address = get_owned_pool_address(signer::address_of(validator));
@@ -5127,14 +5127,14 @@ module aptos_framework::delegation_pool {
         remove_delegator_from_allowlist(validator, signer::address_of(delegator_1));
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, delegator_1 = @0x010)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, delegator_1 = @0x010)]
     #[expected_failure(abort_code = 0x30018, location = Self)]
     public entry fun test_cannot_evict_delegator_if_allowlisting_disabled(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator_1: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         initialize_test_validator(validator, 100 * ONE_APT, true, true);
 
         let pool_address = get_owned_pool_address(signer::address_of(validator));
@@ -5143,16 +5143,16 @@ module aptos_framework::delegation_pool {
         evict_delegator(validator, signer::address_of(delegator_1));
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, delegator_1 = @0x010, delegator_2 = @0x020)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, delegator_1 = @0x010, delegator_2 = @0x020)]
     public entry fun test_allowlist_operations_only_e2e(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator_1: &signer,
         delegator_2: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         initialize_test_validator(validator, 100 * ONE_APT, true, true);
-        enable_delegation_pool_allowlisting_feature(aptos_framework);
+        enable_delegation_pool_allowlisting_feature(starcoin_framework);
 
         let validator_address = signer::address_of(validator);
         let pool_address = get_owned_pool_address(validator_address);
@@ -5225,16 +5225,16 @@ module aptos_framework::delegation_pool {
         assert!(vector::length(allowlist) == 1 && vector::contains(allowlist, &delegator_2_address), 0);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, delegator_1 = @0x010)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, delegator_1 = @0x010)]
     #[expected_failure(abort_code = 0x3001a, location = Self)]
     public entry fun test_cannot_evict_explicitly_allowlisted_delegator(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator_1: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         initialize_test_validator(validator, 100 * ONE_APT, true, true);
-        enable_delegation_pool_allowlisting_feature(aptos_framework);
+        enable_delegation_pool_allowlisting_feature(starcoin_framework);
 
         let validator_address = signer::address_of(validator);
         let pool_address = get_owned_pool_address(validator_address);
@@ -5249,16 +5249,16 @@ module aptos_framework::delegation_pool {
         evict_delegator(validator, delegator_1_address);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, delegator_1 = @0x010)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, delegator_1 = @0x010)]
     #[expected_failure(abort_code = 0x1001b, location = Self)]
     public entry fun test_cannot_evict_null_address(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator_1: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         initialize_test_validator(validator, 100 * ONE_APT, true, true);
-        enable_delegation_pool_allowlisting_feature(aptos_framework);
+        enable_delegation_pool_allowlisting_feature(starcoin_framework);
 
         let validator_address = signer::address_of(validator);
         let pool_address = get_owned_pool_address(validator_address);
@@ -5275,16 +5275,16 @@ module aptos_framework::delegation_pool {
         evict_delegator(validator, NULL_SHAREHOLDER);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, delegator_1 = @0x010)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, delegator_1 = @0x010)]
     #[expected_failure(abort_code = 0x50019, location = Self)]
     public entry fun test_cannot_add_stake_if_not_allowlisted(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator_1: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         initialize_test_validator(validator, 100 * ONE_APT, true, true);
-        enable_delegation_pool_allowlisting_feature(aptos_framework);
+        enable_delegation_pool_allowlisting_feature(starcoin_framework);
 
         let validator_address = signer::address_of(validator);
         let pool_address = get_owned_pool_address(validator_address);
@@ -5310,16 +5310,16 @@ module aptos_framework::delegation_pool {
         add_stake(delegator_1, pool_address, 10 * ONE_APT);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, delegator_1 = @0x010)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, delegator_1 = @0x010)]
     #[expected_failure(abort_code = 0x50019, location = Self)]
     public entry fun test_cannot_reactivate_stake_if_not_allowlisted(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator_1: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         initialize_test_validator(validator, 100 * ONE_APT, true, true);
-        enable_delegation_pool_allowlisting_feature(aptos_framework);
+        enable_delegation_pool_allowlisting_feature(starcoin_framework);
 
         let validator_address = signer::address_of(validator);
         let pool_address = get_owned_pool_address(validator_address);
@@ -5358,16 +5358,16 @@ module aptos_framework::delegation_pool {
         assert_delegation(delegator_1_address, pool_address, 0, 0, 4999999999);
     }
 
-    #[test(aptos_framework = @aptos_framework, validator = @0x123, delegator_1 = @0x010, delegator_2 = @0x020)]
+    #[test(starcoin_framework = @starcoin_framework, validator = @0x123, delegator_1 = @0x010, delegator_2 = @0x020)]
     public entry fun test_delegation_pool_allowlisting_e2e(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         delegator_1: &signer,
         delegator_2: &signer,
     ) acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test(aptos_framework);
+        initialize_for_test(starcoin_framework);
         initialize_test_validator(validator, 100 * ONE_APT, true, true);
-        enable_delegation_pool_allowlisting_feature(aptos_framework);
+        enable_delegation_pool_allowlisting_feature(starcoin_framework);
 
         let validator_address = signer::address_of(validator);
         let pool_address = get_owned_pool_address(validator_address);
@@ -5516,18 +5516,18 @@ module aptos_framework::delegation_pool {
 
     #[test_only]
     public fun setup_vote(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         validator: &signer,
         enable_partial_voting: bool,
     ): u64 acquires DelegationPoolOwnership, DelegationPool, GovernanceRecords, BeneficiaryForOperator, NextCommissionPercentage, DelegationPoolAllowlisting {
-        initialize_for_test_no_reward(aptos_framework);
-        aptos_governance::initialize_for_test(
-            aptos_framework,
+        initialize_for_test_no_reward(starcoin_framework);
+        starcoin_governance::initialize_for_test(
+            starcoin_framework,
             (10 * ONE_APT as u128),
             100 * ONE_APT,
             1000,
         );
-        aptos_governance::initialize_partial_voting(aptos_framework);
+        starcoin_governance::initialize_partial_voting(starcoin_framework);
 
         initialize_test_validator(validator, 100 * ONE_APT, true, false);
 
@@ -5542,7 +5542,7 @@ module aptos_framework::delegation_pool {
         // Create 1 proposals and vote for proposal1.
         let execution_hash = vector::empty<u8>();
         vector::push_back(&mut execution_hash, 1);
-        let proposal_id = aptos_governance::create_proposal_v2_impl(
+        let proposal_id = starcoin_governance::create_proposal_v2_impl(
             validator,
             pool_address,
             execution_hash,
@@ -5552,7 +5552,7 @@ module aptos_framework::delegation_pool {
         );
         if (enable_partial_voting) {
             features::change_feature_flags_for_testing(
-                aptos_framework,
+                starcoin_framework,
                 vector[features::get_partial_governance_voting(
                 ), features::get_delegation_pool_partial_governance_voting()],
                 vector[]);

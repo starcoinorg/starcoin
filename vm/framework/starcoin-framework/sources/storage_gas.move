@@ -146,16 +146,16 @@
 /// # Complete docgen index
 ///
 /// The below index is automatically generated from source code:
-module aptos_framework::storage_gas {
+module starcoin_framework::storage_gas {
 
-    use aptos_framework::system_addresses;
+    use starcoin_framework::system_addresses;
     use std::error;
-    use aptos_framework::state_storage;
+    use starcoin_framework::state_storage;
     use std::vector;
 
-    friend aptos_framework::gas_schedule;
-    friend aptos_framework::genesis;
-    friend aptos_framework::reconfiguration;
+    friend starcoin_framework::gas_schedule;
+    friend starcoin_framework::genesis;
+    friend starcoin_framework::reconfiguration;
 
     const ESTORAGE_GAS_CONFIG: u64 = 0;
     const ESTORAGE_GAS: u64 = 1;
@@ -360,9 +360,9 @@ module aptos_framework::storage_gas {
         }
     }
 
-    public(friend) fun set_config(aptos_framework: &signer, config: StorageGasConfig) acquires StorageGasConfig {
-        system_addresses::assert_aptos_framework(aptos_framework);
-        *borrow_global_mut<StorageGasConfig>(@aptos_framework) = config;
+    public(friend) fun set_config(starcoin_framework: &signer, config: StorageGasConfig) acquires StorageGasConfig {
+        system_addresses::assert_starcoin_framework(starcoin_framework);
+        *borrow_global_mut<StorageGasConfig>(@starcoin_framework) = config;
     }
 
     /// Initialize per-item and per-byte gas prices.
@@ -386,10 +386,10 @@ module aptos_framework::storage_gas {
     ///
     /// See `base_8192_exponential_curve()` fore more information on
     /// target utilization.
-    public fun initialize(aptos_framework: &signer) {
-        system_addresses::assert_aptos_framework(aptos_framework);
+    public fun initialize(starcoin_framework: &signer) {
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         assert!(
-            !exists<StorageGasConfig>(@aptos_framework),
+            !exists<StorageGasConfig>(@starcoin_framework),
             error::already_exists(ESTORAGE_GAS_CONFIG)
         );
 
@@ -408,16 +408,16 @@ module aptos_framework::storage_gas {
             create_curve: base_8192_exponential_curve(5 * k,  5 * k * 100),
             write_curve: base_8192_exponential_curve(5 * k,  5 * k * 100),
         };
-        move_to(aptos_framework, StorageGasConfig {
+        move_to(starcoin_framework, StorageGasConfig {
             item_config,
             byte_config,
         });
 
         assert!(
-            !exists<StorageGas>(@aptos_framework),
+            !exists<StorageGas>(@starcoin_framework),
             error::already_exists(ESTORAGE_GAS)
         );
-        move_to(aptos_framework, StorageGas {
+        move_to(starcoin_framework, StorageGas {
             per_item_read: 300 * k,
             per_item_create: 5 * m,
             per_item_write: 300 * k,
@@ -514,16 +514,16 @@ module aptos_framework::storage_gas {
 
     public(friend) fun on_reconfig() acquires StorageGas, StorageGasConfig {
         assert!(
-            exists<StorageGasConfig>(@aptos_framework),
+            exists<StorageGasConfig>(@starcoin_framework),
             error::not_found(ESTORAGE_GAS_CONFIG)
         );
         assert!(
-            exists<StorageGas>(@aptos_framework),
+            exists<StorageGas>(@starcoin_framework),
             error::not_found(ESTORAGE_GAS)
         );
         let (items, bytes) = state_storage::current_items_and_bytes();
-        let gas_config = borrow_global<StorageGasConfig>(@aptos_framework);
-        let gas = borrow_global_mut<StorageGas>(@aptos_framework);
+        let gas_config = borrow_global<StorageGasConfig>(@starcoin_framework);
+        let gas = borrow_global_mut<StorageGas>(@starcoin_framework);
         gas.per_item_read = calculate_read_gas(&gas_config.item_config, items);
         gas.per_item_create = calculate_create_gas(&gas_config.item_config, items);
         gas.per_item_write = calculate_write_gas(&gas_config.item_config, items);
@@ -533,13 +533,13 @@ module aptos_framework::storage_gas {
     }
 
     // TODO: reactivate this test after fixing assertions
-    //#[test(framework = @aptos_framework)]
+    //#[test(framework = @starcoin_framework)]
     #[test_only]
     fun test_initialize_and_reconfig(framework: signer) acquires StorageGas, StorageGasConfig {
         state_storage::initialize(&framework);
         initialize(&framework);
         on_reconfig();
-        let gas_parameter = borrow_global<StorageGas>(@aptos_framework);
+        let gas_parameter = borrow_global<StorageGas>(@starcoin_framework);
         assert!(gas_parameter.per_item_read == 10, 0);
         assert!(gas_parameter.per_item_create == 10, 0);
         assert!(gas_parameter.per_item_write == 10, 0);
@@ -570,7 +570,7 @@ module aptos_framework::storage_gas {
         }
     }
 
-    #[test(framework = @aptos_framework)]
+    #[test(framework = @starcoin_framework)]
     fun test_set_storage_gas_config(framework: signer) acquires StorageGas, StorageGasConfig {
         state_storage::initialize(&framework);
         initialize(&framework);
@@ -585,28 +585,28 @@ module aptos_framework::storage_gas {
         {
             state_storage::set_for_test(0, 20, 100);
             on_reconfig();
-            let gas_parameter = borrow_global<StorageGas>(@aptos_framework);
+            let gas_parameter = borrow_global<StorageGas>(@starcoin_framework);
             assert!(gas_parameter.per_item_read == 1000, 0);
             assert!(gas_parameter.per_byte_read == 30, 0);
         };
         {
             state_storage::set_for_test(0, 40, 800);
             on_reconfig();
-            let gas_parameter = borrow_global<StorageGas>(@aptos_framework);
+            let gas_parameter = borrow_global<StorageGas>(@starcoin_framework);
             assert!(gas_parameter.per_item_create == 1250, 0);
             assert!(gas_parameter.per_byte_create == 240, 0);
         };
         {
             state_storage::set_for_test(0, 60, 1200);
             on_reconfig();
-            let gas_parameter = borrow_global<StorageGas>(@aptos_framework);
+            let gas_parameter = borrow_global<StorageGas>(@starcoin_framework);
             assert!(gas_parameter.per_item_write == 1500, 0);
             assert!(gas_parameter.per_byte_write == 440, 0);
         };
         {
             state_storage::set_for_test(0, 90, 1800);
             on_reconfig();
-            let gas_parameter = borrow_global<StorageGas>(@aptos_framework);
+            let gas_parameter = borrow_global<StorageGas>(@starcoin_framework);
             assert!(gas_parameter.per_item_create == 1750, 0);
             assert!(gas_parameter.per_byte_create == 860, 0);
         };
@@ -614,7 +614,7 @@ module aptos_framework::storage_gas {
             // usage overflow case
             state_storage::set_for_test(0, 110, 2200);
             on_reconfig();
-            let gas_parameter = borrow_global<StorageGas>(@aptos_framework);
+            let gas_parameter = borrow_global<StorageGas>(@starcoin_framework);
             assert!(gas_parameter.per_item_read == 2000, 0);
             assert!(gas_parameter.per_byte_read == 1000, 0);
         };

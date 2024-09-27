@@ -60,14 +60,14 @@
 ///    module.resource_signer_cap = option::some(resource_signer_cap);
 /// }
 /// ```
-module aptos_framework::resource_account {
+module starcoin_framework::resource_account {
     use std::error;
     use std::signer;
     use std::vector;
-    use aptos_framework::account;
-    use aptos_framework::aptos_coin::AptosCoin;
-    use aptos_framework::coin;
-    use aptos_std::simple_map::{Self, SimpleMap};
+    use starcoin_framework::account;
+    use starcoin_framework::starcoin_coin::StarcoinCoin;
+    use starcoin_framework::coin;
+    use starcoin_std::simple_map::{Self, SimpleMap};
 
     /// Container resource not found in account
     const ECONTAINER_NOT_PUBLISHED: u64 = 1;
@@ -101,7 +101,7 @@ module aptos_framework::resource_account {
     /// account, and rotates the authentication key to either the optional auth key if it is
     /// non-empty (though auth keys are 32-bytes) or the source accounts current auth key. Note,
     /// this function adds additional resource ownership to the resource account and should only be
-    /// used for resource accounts that need access to `Coin<AptosCoin>`.
+    /// used for resource accounts that need access to `Coin<StarcoinCoin>`.
     public entry fun create_resource_account_and_fund(
         origin: &signer,
         seed: vector<u8>,
@@ -109,8 +109,8 @@ module aptos_framework::resource_account {
         fund_amount: u64,
     ) acquires Container {
         let (resource, resource_signer_cap) = account::create_resource_account(origin, seed);
-        coin::register<AptosCoin>(&resource);
-        coin::transfer<AptosCoin>(origin, signer::address_of(&resource), fund_amount);
+        coin::register<StarcoinCoin>(&resource);
+        coin::transfer<StarcoinCoin>(origin, signer::address_of(&resource), fund_amount);
         rotate_account_authentication_key_and_store_capability(
             origin,
             resource,
@@ -128,7 +128,7 @@ module aptos_framework::resource_account {
         code: vector<vector<u8>>,
     ) acquires Container {
         let (resource, resource_signer_cap) = account::create_resource_account(origin, seed);
-        aptos_framework::code::publish_package_txn(&resource, metadata_serialized, code);
+        starcoin_framework::code::publish_package_txn(&resource, metadata_serialized, code);
         rotate_account_authentication_key_and_store_capability(
             origin,
             resource,
@@ -200,7 +200,7 @@ module aptos_framework::resource_account {
         create_resource_account(&user, copy seed, vector::empty());
         let container = borrow_global<Container>(user_addr);
 
-        let resource_addr = aptos_framework::account::create_resource_address(&user_addr, seed);
+        let resource_addr = starcoin_framework::account::create_resource_address(&user_addr, seed);
         let resource_cap = simple_map::borrow(&container.store, &resource_addr);
 
         let resource = account::create_signer_with_capability(resource_cap);
@@ -208,7 +208,7 @@ module aptos_framework::resource_account {
     }
 
     #[test(user = @0x1111)]
-    #[expected_failure(abort_code = 0x10002, location = aptos_std::simple_map)]
+    #[expected_failure(abort_code = 0x10002, location = starcoin_std::simple_map)]
     public entry fun test_create_account_and_retrieve_cap_resource_address_does_not_exist(
         user: signer
     ) acquires Container {
@@ -231,34 +231,34 @@ module aptos_framework::resource_account {
     #[test(framework = @0x1, user = @0x1234)]
     public entry fun with_coin(framework: signer, user: signer) acquires Container {
         let user_addr = signer::address_of(&user);
-        let (burn, mint) = aptos_framework::aptos_coin::initialize_for_test(&framework);
-        aptos_framework::aptos_account::create_account(copy user_addr);
+        let (burn, mint) = starcoin_framework::starcoin_coin::initialize_for_test(&framework);
+        starcoin_framework::starcoin_account::create_account(copy user_addr);
 
-        let coin = coin::mint<AptosCoin>(100, &mint);
+        let coin = coin::mint<StarcoinCoin>(100, &mint);
         coin::deposit(copy user_addr, coin);
 
         let seed = x"01";
         create_resource_account_and_fund(&user, copy seed, vector::empty(), 10);
 
-        let resource_addr = aptos_framework::account::create_resource_address(&user_addr, seed);
-        coin::transfer<AptosCoin>(&user, resource_addr, 10);
+        let resource_addr = starcoin_framework::account::create_resource_address(&user_addr, seed);
+        coin::transfer<StarcoinCoin>(&user, resource_addr, 10);
 
         coin::destroy_burn_cap(burn);
         coin::destroy_mint_cap(mint);
     }
 
     #[test(framework = @0x1, user = @0x2345)]
-    #[expected_failure(abort_code = 0x60005, location = aptos_framework::coin)]
+    #[expected_failure(abort_code = 0x60005, location = starcoin_framework::coin)]
     public entry fun without_coin(framework: signer, user: signer) acquires Container {
         let user_addr = signer::address_of(&user);
-        let (burn, mint) = aptos_framework::aptos_coin::initialize_for_test(&framework);
-        aptos_framework::aptos_account::create_account(user_addr);
+        let (burn, mint) = starcoin_framework::starcoin_coin::initialize_for_test(&framework);
+        starcoin_framework::starcoin_account::create_account(user_addr);
 
         let seed = x"01";
         create_resource_account(&user, copy seed, vector::empty());
 
-        let resource_addr = aptos_framework::account::create_resource_address(&user_addr, seed);
-        let coin = coin::mint<AptosCoin>(100, &mint);
+        let resource_addr = starcoin_framework::account::create_resource_address(&user_addr, seed);
+        let coin = coin::mint<StarcoinCoin>(100, &mint);
         coin::deposit(resource_addr, coin);
 
         coin::destroy_burn_cap(burn);

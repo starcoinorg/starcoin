@@ -1,4 +1,4 @@
-spec aptos_framework::multisig_account {
+spec starcoin_framework::multisig_account {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: For every multi-signature account, the range of required signatures should always be in the range of

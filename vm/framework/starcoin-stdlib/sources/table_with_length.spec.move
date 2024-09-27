@@ -1,5 +1,5 @@
 /// Specifications of the `table_with_length` module.
-spec aptos_std::table_with_length {
+spec starcoin_std::table_with_length {
 
     // Make most of the public API intrinsic. Those functions have custom specifications in the prover.
 

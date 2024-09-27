@@ -1,4 +1,4 @@
-spec aptos_std::type_info {
+spec starcoin_std::type_info {
 
     spec native fun spec_is_struct<T>(): bool;
 

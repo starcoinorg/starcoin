@@ -5,8 +5,8 @@
 /// separate global state items. The number of items and a unique handle are tracked on the table
 /// struct itself, while the operations are implemented as native functions. No traversal is provided.
 
-module aptos_std::table {
-    friend aptos_std::table_with_length;
+module starcoin_std::table {
+    friend starcoin_std::table_with_length;
 
     /// Type of tables
     struct Table<phantom K: copy + drop, phantom V> has store {

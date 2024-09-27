@@ -1,4 +1,4 @@
-spec aptos_framework::primary_fungible_store {
+spec starcoin_framework::primary_fungible_store {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: Creating a fungible asset with primary store support should initiate a derived reference and store it

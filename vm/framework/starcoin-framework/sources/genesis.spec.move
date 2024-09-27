@@ -1,4 +1,4 @@
-spec aptos_framework::genesis {
+spec starcoin_framework::genesis {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: All the core resources and modules should be created during genesis and owned by the Aptos framework
@@ -77,35 +77,35 @@ spec aptos_framework::genesis {
 
         // property 1: All the core resources and modules should be created during genesis and owned by the Aptos framework account.
         /// [high-level-req-1]
-        ensures exists<aptos_governance::GovernanceResponsbility>(@aptos_framework);
-        ensures exists<consensus_config::ConsensusConfig>(@aptos_framework);
-        ensures exists<execution_config::ExecutionConfig>(@aptos_framework);
-        ensures exists<version::Version>(@aptos_framework);
-        ensures exists<stake::ValidatorSet>(@aptos_framework);
-        ensures exists<stake::ValidatorPerformance>(@aptos_framework);
-        ensures exists<storage_gas::StorageGasConfig>(@aptos_framework);
-        ensures exists<storage_gas::StorageGas>(@aptos_framework);
-        ensures exists<gas_schedule::GasScheduleV2>(@aptos_framework);
-        ensures exists<aggregator_factory::AggregatorFactory>(@aptos_framework);
-        ensures exists<coin::SupplyConfig>(@aptos_framework);
-        ensures exists<chain_id::ChainId>(@aptos_framework);
-        ensures exists<reconfiguration::Configuration>(@aptos_framework);
-        ensures exists<block::BlockResource>(@aptos_framework);
-        ensures exists<state_storage::StateStorageUsage>(@aptos_framework);
-        ensures exists<timestamp::CurrentTimeMicroseconds>(@aptos_framework);
-        ensures exists<account::Account>(@aptos_framework);
-        ensures exists<version::SetVersionCapability>(@aptos_framework);
-        ensures exists<staking_config::StakingConfig>(@aptos_framework);
+        ensures exists<starcoin_governance::GovernanceResponsbility>(@starcoin_framework);
+        ensures exists<consensus_config::ConsensusConfig>(@starcoin_framework);
+        ensures exists<execution_config::ExecutionConfig>(@starcoin_framework);
+        ensures exists<version::Version>(@starcoin_framework);
+        ensures exists<stake::ValidatorSet>(@starcoin_framework);
+        ensures exists<stake::ValidatorPerformance>(@starcoin_framework);
+        ensures exists<storage_gas::StorageGasConfig>(@starcoin_framework);
+        ensures exists<storage_gas::StorageGas>(@starcoin_framework);
+        ensures exists<gas_schedule::GasScheduleV2>(@starcoin_framework);
+        ensures exists<aggregator_factory::AggregatorFactory>(@starcoin_framework);
+        ensures exists<coin::SupplyConfig>(@starcoin_framework);
+        ensures exists<chain_id::ChainId>(@starcoin_framework);
+        ensures exists<reconfiguration::Configuration>(@starcoin_framework);
+        ensures exists<block::BlockResource>(@starcoin_framework);
+        ensures exists<state_storage::StateStorageUsage>(@starcoin_framework);
+        ensures exists<timestamp::CurrentTimeMicroseconds>(@starcoin_framework);
+        ensures exists<account::Account>(@starcoin_framework);
+        ensures exists<version::SetVersionCapability>(@starcoin_framework);
+        ensures exists<staking_config::StakingConfig>(@starcoin_framework);
     }
 
     spec initialize_aptos_coin {
         // property 3: The Aptos coin should be initialized during genesis and only the Aptos framework account should
         // own the mint and burn capabilities for the APT token.
         /// [high-level-req-3]
-        requires !exists<stake::AptosCoinCapabilities>(@aptos_framework);
-        ensures exists<stake::AptosCoinCapabilities>(@aptos_framework);
-        requires exists<transaction_fee::AptosCoinCapabilities>(@aptos_framework);
-        ensures exists<transaction_fee::AptosCoinCapabilities>(@aptos_framework);
+        requires !exists<stake::AptosCoinCapabilities>(@starcoin_framework);
+        ensures exists<stake::AptosCoinCapabilities>(@starcoin_framework);
+        requires exists<transaction_fee::CoinCapabilities>(@starcoin_framework);
+        ensures exists<transaction_fee::CoinCapabilities>(@starcoin_framework);
     }
 
     spec create_initialize_validators_with_commission {
@@ -114,7 +114,7 @@ spec aptos_framework::genesis {
         include stake::ResourceRequirement;
         include stake::GetReconfigStartTimeRequirement;
         include CompareTimeRequires;
-        include aptos_coin::ExistsAptosCoin;
+        include starcoin_coin::ExistsAptosCoin;
     }
 
     spec create_initialize_validators {
@@ -123,7 +123,7 @@ spec aptos_framework::genesis {
         include stake::ResourceRequirement;
         include stake::GetReconfigStartTimeRequirement;
         include CompareTimeRequires;
-        include aptos_coin::ExistsAptosCoin;
+        include starcoin_coin::ExistsAptosCoin;
     }
 
     spec create_initialize_validator {
@@ -142,29 +142,29 @@ spec aptos_framework::genesis {
         pragma delegate_invariants_to_caller;
         // property 4: An initial set of validators should exist before the end of genesis.
         /// [high-level-req-4]
-        requires len(global<stake::ValidatorSet>(@aptos_framework).active_validators) >= 1;
+        requires len(global<stake::ValidatorSet>(@starcoin_framework).active_validators) >= 1;
         // property 5: The end of genesis should be marked on chain.
         /// [high-level-req-5]
-        let addr = std::signer::address_of(aptos_framework);
-        aborts_if addr != @aptos_framework;
-        aborts_if exists<chain_status::GenesisEndMarker>(@aptos_framework);
-        ensures global<chain_status::GenesisEndMarker>(@aptos_framework) == chain_status::GenesisEndMarker {};
+        let addr = std::signer::address_of(starcoin_framework);
+        aborts_if addr != @starcoin_framework;
+        aborts_if exists<chain_status::GenesisEndMarker>(@starcoin_framework);
+        ensures global<chain_status::GenesisEndMarker>(@starcoin_framework) == chain_status::GenesisEndMarker {};
     }
 
     spec schema InitalizeRequires {
         execution_config: vector<u8>;
-        requires !exists<account::Account>(@aptos_framework);
+        requires !exists<account::Account>(@starcoin_framework);
         requires chain_status::is_operating();
         requires len(execution_config) > 0;
-        requires exists<staking_config::StakingRewardsConfig>(@aptos_framework);
-        requires exists<stake::ValidatorFees>(@aptos_framework);
-        requires exists<coin::CoinInfo<AptosCoin>>(@aptos_framework);
+        requires exists<staking_config::StakingRewardsConfig>(@starcoin_framework);
+        requires exists<stake::ValidatorFees>(@starcoin_framework);
+        requires exists<coin::CoinInfo<StarcoinCoin>>(@starcoin_framework);
         include CompareTimeRequires;
-        include transaction_fee::RequiresCollectedFeesPerValueLeqBlockAptosSupply;
+        include transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply;
     }
 
     spec schema CompareTimeRequires {
-        let staking_rewards_config = global<staking_config::StakingRewardsConfig>(@aptos_framework);
+        let staking_rewards_config = global<staking_config::StakingRewardsConfig>(@starcoin_framework);
         requires staking_rewards_config.last_rewards_rate_period_start_in_secs <= timestamp::spec_now_seconds();
     }
 }

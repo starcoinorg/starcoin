@@ -1,4 +1,4 @@
-spec aptos_framework::system_addresses {
+spec starcoin_framework::system_addresses {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: Asserting that a provided address corresponds to the Core Resources address should always yield a true
@@ -12,8 +12,8 @@ spec aptos_framework::system_addresses {
     /// Requirement: Asserting that a provided address corresponds to the Aptos Framework Resources address should always
     /// yield a true result when matched.
     /// Criticality: High
-    /// Implementation: The assert_aptos_framework function ensures that the provided signer belongs to the
-    /// @aptos_framework account.
+    /// Implementation: The assert_starcoin_framework function ensures that the provided signer belongs to the
+    /// @starcoin_framework account.
     /// Enforcement: Formally verified via [high-level-req-2](AbortsIfNotAptosFramework).
     ///
     /// No.: 3
@@ -52,7 +52,7 @@ spec aptos_framework::system_addresses {
         aborts_if addr != @core_resources with error::PERMISSION_DENIED;
     }
 
-    spec assert_aptos_framework(account: &signer) {
+    spec assert_starcoin_framework(account: &signer) {
         pragma opaque;
         include AbortsIfNotAptosFramework;
     }
@@ -68,7 +68,7 @@ spec aptos_framework::system_addresses {
     spec schema AbortsIfNotAptosFramework {
         account: signer;
         /// [high-level-req-2]
-        aborts_if signer::address_of(account) != @aptos_framework with error::PERMISSION_DENIED;
+        aborts_if signer::address_of(account) != @starcoin_framework with error::PERMISSION_DENIED;
     }
 
     spec assert_vm(account: &signer) {

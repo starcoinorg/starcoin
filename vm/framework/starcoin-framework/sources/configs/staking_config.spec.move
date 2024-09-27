@@ -1,4 +1,4 @@
-spec aptos_framework::staking_config {
+spec starcoin_framework::staking_config {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: The ability to initialize the staking config and staking rewards resources, as well as the ability to
@@ -7,8 +7,8 @@ spec aptos_framework::staking_config {
     /// Implementation: The function initialize and initialize_rewards are used to initialize the StakingConfig and
     /// StakingRewardConfig resources. Updating the resources, can be done using the update_required_stake,
     /// update_recurring_lockup_duration_secs, update_rewards_rate, update_rewards_config,
-    /// update_voting_power_increase_limit functions, which ensure that the signer is aptos_framework using the
-    /// assert_aptos_framework function.
+    /// update_voting_power_increase_limit functions, which ensure that the signer is starcoin_framework using the
+    /// assert_starcoin_framework function.
     /// Enforcement: Verified via [high-level-req-1.1](initialize), [high-level-req-1.2](initialize_rewards), [high-level-req-1.3](update_required_stake), [high-level-req-1.4](update_recurring_lockup_duration_secs), [high-level-req-1.5](update_rewards_rate), [high-level-req-1.6](update_rewards_config), and [high-level-req-1.7](update_voting_power_increase_limit).
     ///
     /// No.: 2
@@ -56,8 +56,8 @@ spec aptos_framework::staking_config {
     /// </high-level-req>
     ///
     spec module {
-        use aptos_framework::chain_status;
-        invariant [suspendable] chain_status::is_operating() ==> exists<StakingConfig>(@aptos_framework);
+        use starcoin_framework::chain_status;
+        invariant [suspendable] chain_status::is_operating() ==> exists<StakingConfig>(@starcoin_framework);
         pragma verify = true;
         pragma aborts_if_is_strict;
     }
@@ -87,15 +87,15 @@ spec aptos_framework::staking_config {
         invariant fixed_point64::spec_ceil(rewards_rate_decrease_rate) <= 1;
     }
 
-    /// Caller must be @aptos_framework.
+    /// Caller must be @starcoin_framework.
     /// The maximum_stake must be greater than maximum_stake in the range of Specified stake and the maximum_stake greater than zero.
     /// The rewards_rate_denominator must greater than zero.
     /// Only this %0-%50 of current total voting power is allowed to join the validator set in each epoch.
     /// The `rewards_rate` which is the numerator is limited to be `<= MAX_REWARDS_RATE` in order to avoid the arithmetic overflow in the rewards calculation.
     /// rewards_rate/rewards_rate_denominator <= 1.
-    /// StakingConfig does not exist under the aptos_framework before creating it.
+    /// StakingConfig does not exist under the starcoin_framework before creating it.
     spec initialize(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         minimum_stake: u64,
         maximum_stake: u64,
         recurring_lockup_duration_secs: u64,
@@ -105,9 +105,9 @@ spec aptos_framework::staking_config {
         voting_power_increase_limit: u64,
     ) {
         use std::signer;
-        let addr = signer::address_of(aptos_framework);
+        let addr = signer::address_of(starcoin_framework);
         /// [high-level-req-1.1]
-        aborts_if addr != @aptos_framework;
+        aborts_if addr != @starcoin_framework;
         aborts_if minimum_stake > maximum_stake || maximum_stake == 0;
         /// [high-level-req-3.1]
         aborts_if recurring_lockup_duration_secs == 0;
@@ -120,12 +120,12 @@ spec aptos_framework::staking_config {
         ensures exists<StakingConfig>(addr);
     }
 
-    /// Caller must be @aptos_framework.
+    /// Caller must be @starcoin_framework.
     /// last_rewards_rate_period_start_in_secs cannot be later than now.
     /// Abort at any condition in StakingRewardsConfigValidationAborts.
-    /// StakingRewardsConfig does not exist under the aptos_framework before creating it.
+    /// StakingRewardsConfig does not exist under the starcoin_framework before creating it.
     spec initialize_rewards(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         rewards_rate: FixedPoint64,
         min_rewards_rate: FixedPoint64,
         rewards_rate_period_in_secs: u64,
@@ -134,10 +134,10 @@ spec aptos_framework::staking_config {
     ) {
         use std::signer;
         pragma verify_duration_estimate = 120;
-        requires exists<timestamp::CurrentTimeMicroseconds>(@aptos_framework);
-        let addr = signer::address_of(aptos_framework);
+        requires exists<timestamp::CurrentTimeMicroseconds>(@starcoin_framework);
+        let addr = signer::address_of(starcoin_framework);
         /// [high-level-req-1.2]
-        aborts_if addr != @aptos_framework;
+        aborts_if addr != @starcoin_framework;
         aborts_if last_rewards_rate_period_start_in_secs > timestamp::spec_now_seconds();
         include StakingRewardsConfigValidationAbortsIf;
         aborts_if exists<StakingRewardsConfig>(addr);
@@ -145,28 +145,28 @@ spec aptos_framework::staking_config {
     }
 
     spec get(): StakingConfig {
-        aborts_if !exists<StakingConfig>(@aptos_framework);
+        aborts_if !exists<StakingConfig>(@starcoin_framework);
     }
 
     spec get_reward_rate(config: &StakingConfig): (u64, u64) {
         include StakingRewardsConfigRequirement;
         ensures (features::spec_periodical_reward_rate_decrease_enabled() &&
-            (global<StakingRewardsConfig>(@aptos_framework).rewards_rate.value as u64) != 0) ==>
+            (global<StakingRewardsConfig>(@starcoin_framework).rewards_rate.value as u64) != 0) ==>
                 result_1 <= MAX_REWARDS_RATE && result_2 <= MAX_U64;
     }
 
     spec reward_rate(): (u64, u64) {
-        let config = global<StakingConfig>(@aptos_framework);
-        aborts_if !exists<StakingConfig>(@aptos_framework);
+        let config = global<StakingConfig>(@starcoin_framework);
+        aborts_if !exists<StakingConfig>(@starcoin_framework);
         include StakingRewardsConfigRequirement;
         ensures (features::spec_periodical_reward_rate_decrease_enabled() &&
-            (global<StakingRewardsConfig>(@aptos_framework).rewards_rate.value as u64) != 0) ==>
+            (global<StakingRewardsConfig>(@starcoin_framework).rewards_rate.value as u64) != 0) ==>
             result_1 <= MAX_REWARDS_RATE && result_2 <= MAX_U64;
     }
 
     spec calculate_and_save_latest_epoch_rewards_rate(): FixedPoint64 {
         pragma verify_duration_estimate = 120;
-        aborts_if !exists<StakingRewardsConfig>(@aptos_framework);
+        aborts_if !exists<StakingRewardsConfig>(@starcoin_framework);
         aborts_if !features::spec_periodical_reward_rate_decrease_enabled();
         include StakingRewardsConfigRequirement;
     }
@@ -175,72 +175,72 @@ spec aptos_framework::staking_config {
         pragma verify_duration_estimate = 120;
         requires features::spec_periodical_reward_rate_decrease_enabled();
         include StakingRewardsConfigRequirement;
-        aborts_if !exists<StakingRewardsConfig>(@aptos_framework);
+        aborts_if !exists<StakingRewardsConfig>(@starcoin_framework);
     }
 
-    /// Caller must be @aptos_framework.
+    /// Caller must be @starcoin_framework.
     /// The maximum_stake must be greater than maximum_stake in the range of Specified stake and the maximum_stake greater than zero.
-    /// The StakingConfig is under @aptos_framework.
+    /// The StakingConfig is under @starcoin_framework.
     spec update_required_stake(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         minimum_stake: u64,
         maximum_stake: u64,
     ) {
         use std::signer;
-        let addr = signer::address_of(aptos_framework);
+        let addr = signer::address_of(starcoin_framework);
         /// [high-level-req-1.3]
-        aborts_if addr != @aptos_framework;
+        aborts_if addr != @starcoin_framework;
         aborts_if minimum_stake > maximum_stake || maximum_stake == 0;
-        aborts_if !exists<StakingConfig>(@aptos_framework);
-        ensures global<StakingConfig>(@aptos_framework).minimum_stake == minimum_stake &&
-            global<StakingConfig>(@aptos_framework).maximum_stake == maximum_stake;
+        aborts_if !exists<StakingConfig>(@starcoin_framework);
+        ensures global<StakingConfig>(@starcoin_framework).minimum_stake == minimum_stake &&
+            global<StakingConfig>(@starcoin_framework).maximum_stake == maximum_stake;
     }
 
-    /// Caller must be @aptos_framework.
+    /// Caller must be @starcoin_framework.
     /// The new_recurring_lockup_duration_secs must greater than zero.
-    /// The StakingConfig is under @aptos_framework.
+    /// The StakingConfig is under @starcoin_framework.
     spec update_recurring_lockup_duration_secs(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         new_recurring_lockup_duration_secs: u64,
     ) {
         use std::signer;
-        let addr = signer::address_of(aptos_framework);
+        let addr = signer::address_of(starcoin_framework);
         /// [high-level-req-1.4]
-        aborts_if addr != @aptos_framework;
+        aborts_if addr != @starcoin_framework;
         /// [high-level-req-3.2]
         aborts_if new_recurring_lockup_duration_secs == 0;
-        aborts_if !exists<StakingConfig>(@aptos_framework);
-        ensures global<StakingConfig>(@aptos_framework).recurring_lockup_duration_secs == new_recurring_lockup_duration_secs;
+        aborts_if !exists<StakingConfig>(@starcoin_framework);
+        ensures global<StakingConfig>(@starcoin_framework).recurring_lockup_duration_secs == new_recurring_lockup_duration_secs;
     }
 
-    /// Caller must be @aptos_framework.
+    /// Caller must be @starcoin_framework.
     /// The new_rewards_rate_denominator must greater than zero.
-    /// The StakingConfig is under @aptos_framework.
+    /// The StakingConfig is under @starcoin_framework.
     /// The `rewards_rate` which is the numerator is limited to be `<= MAX_REWARDS_RATE` in order to avoid the arithmetic overflow in the rewards calculation.
     /// rewards_rate/rewards_rate_denominator <= 1.
     spec update_rewards_rate(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         new_rewards_rate: u64,
         new_rewards_rate_denominator: u64,
     ) {
         use std::signer;
         aborts_if features::spec_periodical_reward_rate_decrease_enabled();
-        let addr = signer::address_of(aptos_framework);
+        let addr = signer::address_of(starcoin_framework);
         /// [high-level-req-1.5]
-        aborts_if addr != @aptos_framework;
+        aborts_if addr != @starcoin_framework;
         aborts_if new_rewards_rate_denominator == 0;
-        aborts_if !exists<StakingConfig>(@aptos_framework);
+        aborts_if !exists<StakingConfig>(@starcoin_framework);
         aborts_if new_rewards_rate > MAX_REWARDS_RATE;
         aborts_if new_rewards_rate > new_rewards_rate_denominator;
-        let post staking_config = global<StakingConfig>(@aptos_framework);
+        let post staking_config = global<StakingConfig>(@starcoin_framework);
         ensures staking_config.rewards_rate == new_rewards_rate;
         ensures staking_config.rewards_rate_denominator == new_rewards_rate_denominator;
     }
 
-    /// Caller must be @aptos_framework.
-    /// StakingRewardsConfig is under the @aptos_framework.
+    /// Caller must be @starcoin_framework.
+    /// StakingRewardsConfig is under the @starcoin_framework.
     spec update_rewards_config(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         rewards_rate: FixedPoint64,
         min_rewards_rate: FixedPoint64,
         rewards_rate_period_in_secs: u64,
@@ -249,34 +249,34 @@ spec aptos_framework::staking_config {
         use std::signer;
         pragma verify_duration_estimate = 120; // verified but takes long
         include StakingRewardsConfigRequirement;
-        let addr = signer::address_of(aptos_framework);
+        let addr = signer::address_of(starcoin_framework);
         /// [high-level-req-1.6]
-        aborts_if addr != @aptos_framework;
-        aborts_if global<StakingRewardsConfig>(@aptos_framework).rewards_rate_period_in_secs != rewards_rate_period_in_secs;
+        aborts_if addr != @starcoin_framework;
+        aborts_if global<StakingRewardsConfig>(@starcoin_framework).rewards_rate_period_in_secs != rewards_rate_period_in_secs;
         include StakingRewardsConfigValidationAbortsIf;
         aborts_if !exists<StakingRewardsConfig>(addr);
-        let post staking_rewards_config = global<StakingRewardsConfig>(@aptos_framework);
+        let post staking_rewards_config = global<StakingRewardsConfig>(@starcoin_framework);
         ensures staking_rewards_config.rewards_rate == rewards_rate;
         ensures staking_rewards_config.min_rewards_rate == min_rewards_rate;
         ensures staking_rewards_config.rewards_rate_period_in_secs == rewards_rate_period_in_secs;
         ensures staking_rewards_config.rewards_rate_decrease_rate == rewards_rate_decrease_rate;
     }
 
-    /// Caller must be @aptos_framework.
+    /// Caller must be @starcoin_framework.
     /// Only this %0-%50 of current total voting power is allowed to join the validator set in each epoch.
-    /// The StakingConfig is under @aptos_framework.
+    /// The StakingConfig is under @starcoin_framework.
     spec update_voting_power_increase_limit(
-        aptos_framework: &signer,
+        starcoin_framework: &signer,
         new_voting_power_increase_limit: u64,
     ) {
         use std::signer;
-        let addr = signer::address_of(aptos_framework);
+        let addr = signer::address_of(starcoin_framework);
         /// [high-level-req-1.7]
-        aborts_if addr != @aptos_framework;
+        aborts_if addr != @starcoin_framework;
         /// [high-level-req-2.2]
         aborts_if new_voting_power_increase_limit == 0 || new_voting_power_increase_limit > 50;
-        aborts_if !exists<StakingConfig>(@aptos_framework);
-        ensures global<StakingConfig>(@aptos_framework).voting_power_increase_limit == new_voting_power_increase_limit;
+        aborts_if !exists<StakingConfig>(@starcoin_framework);
+        ensures global<StakingConfig>(@starcoin_framework).voting_power_increase_limit == new_voting_power_increase_limit;
     }
 
     /// The maximum_stake must be greater than maximum_stake in the range of Specified stake and the maximum_stake greater than zero.
@@ -313,13 +313,13 @@ spec aptos_framework::staking_config {
     }
 
     spec schema StakingRewardsConfigRequirement {
-        requires exists<timestamp::CurrentTimeMicroseconds>(@aptos_framework);
+        requires exists<timestamp::CurrentTimeMicroseconds>(@starcoin_framework);
         include features::spec_periodical_reward_rate_decrease_enabled() ==> StakingRewardsConfigEnabledRequirement;
     }
 
     spec schema StakingRewardsConfigEnabledRequirement {
-        requires exists<StakingRewardsConfig>(@aptos_framework);
-        let staking_rewards_config = global<StakingRewardsConfig>(@aptos_framework);
+        requires exists<StakingRewardsConfig>(@starcoin_framework);
+        let staking_rewards_config = global<StakingRewardsConfig>(@starcoin_framework);
         let rewards_rate = staking_rewards_config.rewards_rate;
         let min_rewards_rate = staking_rewards_config.min_rewards_rate;
         let rewards_rate_period_in_secs = staking_rewards_config.rewards_rate_period_in_secs;

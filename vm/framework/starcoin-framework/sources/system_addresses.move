@@ -1,4 +1,4 @@
-module aptos_framework::system_addresses {
+module starcoin_framework::system_addresses {
     use std::error;
     use std::signer;
 
@@ -7,7 +7,7 @@ module aptos_framework::system_addresses {
     /// The operation can only be performed by the VM
     const EVM: u64 = 2;
     /// The address/account did not correspond to the core framework address
-    const ENOT_APTOS_FRAMEWORK_ADDRESS: u64 = 3;
+    const ENOT_STARCOIN_FRAMEWORK_ADDRESS: u64 = 3;
     /// The address is not framework reserved address
     const ENOT_FRAMEWORK_RESERVED_ADDRESS: u64 = 4;
 
@@ -23,10 +23,10 @@ module aptos_framework::system_addresses {
         addr == @core_resources
     }
 
-    public fun assert_aptos_framework(account: &signer) {
+    public fun assert_starcoin_framework(account: &signer) {
         assert!(
-            is_aptos_framework_address(signer::address_of(account)),
-            error::permission_denied(ENOT_APTOS_FRAMEWORK_ADDRESS),
+            is_starcoin_framework_address(signer::address_of(account)),
+            error::permission_denied(ENOT_STARCOIN_FRAMEWORK_ADDRESS),
         )
     }
 
@@ -43,7 +43,7 @@ module aptos_framework::system_addresses {
 
     /// Return true if `addr` is 0x0 or under the on chain governance's control.
     public fun is_framework_reserved_address(addr: address): bool {
-        is_aptos_framework_address(addr) ||
+        is_starcoin_framework_address(addr) ||
             addr == @0x2 ||
             addr == @0x3 ||
             addr == @0x4 ||
@@ -56,8 +56,8 @@ module aptos_framework::system_addresses {
     }
 
     /// Return true if `addr` is 0x1.
-    public fun is_aptos_framework_address(addr: address): bool {
-        addr == @aptos_framework
+    public fun is_starcoin_framework_address(addr: address): bool {
+        addr == @starcoin_framework
     }
 
     /// Assert that the signer has the VM reserved address.
@@ -75,8 +75,8 @@ module aptos_framework::system_addresses {
         addr == @vm_reserved
     }
 
-    /// Return true if `addr` is either the VM address or an Aptos Framework address.
+    /// Return true if `addr` is either the VM address or an Starcoin Framework address.
     public fun is_reserved_address(addr: address): bool {
-        is_aptos_framework_address(addr) || is_vm_address(addr)
+        is_starcoin_framework_address(addr) || is_vm_address(addr)
     }
 }

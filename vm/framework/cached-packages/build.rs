@@ -1,8 +1,8 @@
-// Copyright © Aptos Foundation
+// Copyright © Starcoin Foundation
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Context, Result};
-use aptos_framework::ReleaseTarget;
+use starcoin_framework::ReleaseTarget;
 use std::{env::current_dir, path::PathBuf};
 
 fn main() -> Result<()> {
@@ -16,54 +16,54 @@ fn main() -> Result<()> {
         println!(
             "cargo:rerun-if-changed={}",
             prev_dir
-                .join("aptos-token-objects")
+                .join("starcoin-token-objects")
                 .join("Move.toml")
                 .display()
         );
         println!(
             "cargo:rerun-if-changed={}",
             prev_dir
-                .join("aptos-token-objects")
+                .join("starcoin-token-objects")
                 .join("sources")
                 .display()
         );
         println!(
             "cargo:rerun-if-changed={}",
-            prev_dir.join("aptos-token").join("sources").display()
+            prev_dir.join("starcoin-token").join("sources").display()
         );
         println!(
             "cargo:rerun-if-changed={}",
-            prev_dir.join("aptos-token").join("Move.toml").display()
+            prev_dir.join("starcoin-token").join("Move.toml").display()
         );
         println!(
             "cargo:rerun-if-changed={}",
             prev_dir
-                .join("aptos-token-objects")
+                .join("starcoin-token-objects")
                 .join("sources")
                 .display()
         );
         println!(
             "cargo:rerun-if-changed={}",
             prev_dir
-                .join("aptos-token-objects")
+                .join("starcoin-token-objects")
                 .join("Move.toml")
                 .display()
         );
         println!(
             "cargo:rerun-if-changed={}",
-            prev_dir.join("aptos-framework").join("sources").display()
+            prev_dir.join("starcoin-framework").join("sources").display()
         );
         println!(
             "cargo:rerun-if-changed={}",
-            prev_dir.join("aptos-framework").join("Move.toml").display()
+            prev_dir.join("starcoin-framework").join("Move.toml").display()
         );
         println!(
             "cargo:rerun-if-changed={}",
-            prev_dir.join("aptos-stdlib").join("sources").display()
+            prev_dir.join("starcoin-stdlib").join("sources").display()
         );
         println!(
             "cargo:rerun-if-changed={}",
-            prev_dir.join("aptos-stdlib").join("Move.toml").display()
+            prev_dir.join("starcoin-stdlib").join("Move.toml").display()
         );
         println!(
             "cargo:rerun-if-changed={}",

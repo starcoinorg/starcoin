@@ -2,9 +2,9 @@
 ///
 ///  1. [Ed25519](https://en.wikipedia.org/wiki/EdDSA#Ed25519) digital signatures: i.e., EdDSA signatures over Edwards25519 curves with co-factor 8
 ///
-module aptos_std::ed25519 {
+module starcoin_std::ed25519 {
     use std::bcs;
-    use aptos_std::type_info::{Self, TypeInfo};
+    use starcoin_std::type_info::{Self, TypeInfo};
     use std::option::{Self, Option};
 
     //

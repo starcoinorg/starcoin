@@ -1,4 +1,4 @@
-spec aptos_std::copyable_any {
+spec starcoin_std::copyable_any {
 
     // -----------------------
     // Function specifications
@@ -6,7 +6,7 @@ spec aptos_std::copyable_any {
 
     spec pack<T: drop + store + copy>(x: T): Any {
         use std::bcs;
-        use aptos_std::from_bcs;
+        use starcoin_std::from_bcs;
         aborts_if false;
         pragma opaque;
         ensures result == Any {
@@ -17,13 +17,13 @@ spec aptos_std::copyable_any {
     }
 
     spec unpack<T>(self: Any): T {
-        use aptos_std::from_bcs;
+        use starcoin_std::from_bcs;
         include UnpackAbortsIf<T>;
         ensures result == from_bcs::deserialize<T>(self.data);
     }
 
     spec schema UnpackAbortsIf<T> {
-        use aptos_std::from_bcs;
+        use starcoin_std::from_bcs;
         self: Any;
         aborts_if type_info::type_name<T>() != self.type_name;
         aborts_if !from_bcs::deserializable<T>(self.data);

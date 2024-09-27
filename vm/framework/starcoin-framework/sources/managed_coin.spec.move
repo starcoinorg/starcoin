@@ -1,4 +1,4 @@
-spec aptos_framework::managed_coin {
+spec starcoin_framework::managed_coin {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: The initializing account should hold the capabilities to operate the coin.
@@ -54,7 +54,7 @@ spec aptos_framework::managed_coin {
         account: &signer,
         amount: u64,
     ) {
-        use aptos_std::type_info;
+        use starcoin_std::type_info;
         // TODO(fa_migration)
         pragma verify = false;
 
@@ -113,7 +113,7 @@ spec aptos_framework::managed_coin {
         dst_addr: address,
         amount: u64,
     ) {
-        use aptos_std::type_info;
+        use starcoin_std::type_info;
         // TODO(fa_migration)
         pragma verify = false;
         let account_addr = signer::address_of(account);
@@ -133,8 +133,8 @@ spec aptos_framework::managed_coin {
     /// An account can only be registered once.
     /// Updating `Account.guid_creation_num` will not overflow.
     spec register<CoinType>(account: &signer) {
-        use aptos_framework::account;
-        use aptos_std::type_info;
+        use starcoin_framework::account;
+        use starcoin_std::type_info;
         // TODO(fa_migration)
         pragma verify = false;
 

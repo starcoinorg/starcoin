@@ -1,15 +1,15 @@
 /// This module provides utils to add and emit new token events that are not in token.move
-module aptos_token::token_event_store {
+module starcoin_token::token_event_store {
     use std::string::String;
     use std::signer;
-    use aptos_framework::event::{Self, EventHandle};
-    use aptos_framework::account;
+    use starcoin_framework::event::{Self, EventHandle};
+    use starcoin_framework::account;
     use std::option::Option;
-    use aptos_std::any::Any;
+    use starcoin_std::any::Any;
     use std::option;
-    use aptos_token::property_map::PropertyValue;
+    use starcoin_token::property_map::PropertyValue;
 
-    friend aptos_token::token;
+    friend starcoin_token::token;
 
     //
     // Collection mutation events

@@ -1,5 +1,5 @@
 /// Provides a framework for comparing two elements
-module aptos_std::comparator {
+module starcoin_std::comparator {
     use std::bcs;
     use std::vector;
 

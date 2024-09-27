@@ -1,4 +1,4 @@
-spec aptos_std::smart_table {
+spec starcoin_std::smart_table {
     spec SmartTable {
         pragma intrinsic = map,
             map_new = new,

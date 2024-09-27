@@ -1,4 +1,4 @@
-spec aptos_framework::timestamp {
+spec starcoin_framework::timestamp {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: There should only exist one global wall clock and it should be created during genesis.
@@ -10,8 +10,8 @@ spec aptos_framework::timestamp {
     /// No.: 2
     /// Requirement: The global wall clock resource should only be owned by the Aptos framework.
     /// Criticality: High
-    /// Implementation: The function set_time_has_started ensures that only the aptos_framework account can possess the
-    /// CurrentTimeMicroseconds resource using the assert_aptos_framework function.
+    /// Implementation: The function set_time_has_started ensures that only the starcoin_framework account can possess the
+    /// CurrentTimeMicroseconds resource using the assert_starcoin_framework function.
     /// Enforcement: Formally verified via [high-level-req-2](module).
     ///
     /// No.: 3
@@ -30,14 +30,14 @@ spec aptos_framework::timestamp {
     /// </high-level-req>
     ///
     spec module {
-        use aptos_framework::chain_status;
+        use starcoin_framework::chain_status;
         /// [high-level-req-1]
         /// [high-level-req-2]
-        invariant [suspendable] chain_status::is_operating() ==> exists<CurrentTimeMicroseconds>(@aptos_framework);
+        invariant [suspendable] chain_status::is_operating() ==> exists<CurrentTimeMicroseconds>(@starcoin_framework);
     }
 
     spec update_global_time {
-        use aptos_framework::chain_status;
+        use starcoin_framework::chain_status;
         requires chain_status::is_operating();
         include UpdateGlobalTimeAbortsIf;
         ensures (proposer != @vm_reserved) ==> (spec_now_microseconds() == timestamp);
@@ -55,7 +55,7 @@ spec aptos_framework::timestamp {
     }
 
     spec fun spec_now_microseconds(): u64 {
-        global<CurrentTimeMicroseconds>(@aptos_framework).microseconds
+        global<CurrentTimeMicroseconds>(@starcoin_framework).microseconds
     }
 
     spec fun spec_now_seconds(): u64 {

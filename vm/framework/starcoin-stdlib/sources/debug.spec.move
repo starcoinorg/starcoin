@@ -1,4 +1,4 @@
-spec aptos_std::debug {
+spec starcoin_std::debug {
     spec print<T>(x: &T) {
         aborts_if false;
     }

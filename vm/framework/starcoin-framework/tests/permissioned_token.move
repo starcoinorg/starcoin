@@ -1,9 +1,9 @@
 #[test_only]
 module 0xcafe::permissioned_token {
-    use aptos_framework::fungible_asset::{Self, FungibleAsset, TransferRef};
-    use aptos_framework::dispatchable_fungible_asset;
-    use aptos_framework::object::{Self, ConstructorRef, Object};
-    use aptos_framework::function_info;
+    use starcoin_framework::fungible_asset::{Self, FungibleAsset, TransferRef};
+    use starcoin_framework::dispatchable_fungible_asset;
+    use starcoin_framework::object::{Self, ConstructorRef, Object};
+    use starcoin_framework::function_info;
 
     use std::option;
     use std::signer;

@@ -6,7 +6,7 @@
 ///
 /// Non-cryptograhic hashes:
 /// - SipHash: an add-rotate-xor (ARX) based family of pseudorandom functions created by Jean-Philippe Aumasson and Daniel J. Bernstein in 2012
-module aptos_std::aptos_hash {
+module starcoin_std::aptos_hash {
     use std::bcs;
     use std::features;
 
@@ -122,7 +122,7 @@ module aptos_std::aptos_hash {
         };
     }
 
-    #[test(fx = @aptos_std)]
+    #[test(fx = @starcoin_std)]
     fun sha2_512_test(fx: signer) {
         // We need to enable the feature in order for the native call to be allowed.
         features::change_feature_flags_for_testing(&fx, vector[features::get_sha_512_and_ripemd_160_feature()], vector[]);
@@ -150,7 +150,7 @@ module aptos_std::aptos_hash {
         };
     }
 
-    #[test(fx = @aptos_std)]
+    #[test(fx = @starcoin_std)]
     fun sha3_512_test(fx: signer) {
         // We need to enable the feature in order for the native call to be allowed.
         features::change_feature_flags_for_testing(&fx, vector[features::get_sha_512_and_ripemd_160_feature()], vector[]);
@@ -177,7 +177,7 @@ module aptos_std::aptos_hash {
         };
     }
 
-    #[test(fx = @aptos_std)]
+    #[test(fx = @starcoin_std)]
     fun ripemd160_test(fx: signer) {
         // We need to enable the feature in order for the native call to be allowed.
         features::change_feature_flags_for_testing(&fx, vector[features::get_sha_512_and_ripemd_160_feature()], vector[]);
@@ -204,7 +204,7 @@ module aptos_std::aptos_hash {
         };
     }
 
-    #[test(fx = @aptos_std)]
+    #[test(fx = @starcoin_std)]
     #[expected_failure(abort_code = 196609, location = Self)]
     fun blake2b_256_aborts(fx: signer) {
         // We disable the feature to make sure the `blake2b_256` call aborts
@@ -213,7 +213,7 @@ module aptos_std::aptos_hash {
         blake2b_256(b"This will abort");
     }
 
-    #[test(fx = @aptos_std)]
+    #[test(fx = @starcoin_std)]
     fun blake2b_256_test(fx: signer) {
         // We need to enable the feature in order for the native call to be allowed.
         features::change_feature_flags_for_testing(&fx, vector[features::get_blake2b_256_feature()], vector[]);

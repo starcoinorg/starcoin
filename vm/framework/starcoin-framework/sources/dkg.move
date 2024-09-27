@@ -1,15 +1,15 @@
 /// DKG on-chain states and helper functions.
-module aptos_framework::dkg {
+module starcoin_framework::dkg {
     use std::error;
     use std::option;
     use std::option::Option;
-    use aptos_framework::event::emit;
-    use aptos_framework::randomness_config::RandomnessConfig;
-    use aptos_framework::system_addresses;
-    use aptos_framework::timestamp;
-    use aptos_framework::validator_consensus_info::ValidatorConsensusInfo;
-    friend aptos_framework::block;
-    friend aptos_framework::reconfiguration_with_dkg;
+    use starcoin_framework::event::emit;
+    use starcoin_framework::randomness_config::RandomnessConfig;
+    use starcoin_framework::system_addresses;
+    use starcoin_framework::timestamp;
+    use starcoin_framework::validator_consensus_info::ValidatorConsensusInfo;
+    friend starcoin_framework::block;
+    friend starcoin_framework::reconfiguration_with_dkg;
 
     const EDKG_IN_PROGRESS: u64 = 1;
     const EDKG_NOT_IN_PROGRESS: u64 = 2;
@@ -43,11 +43,11 @@ module aptos_framework::dkg {
     }
 
     /// Called in genesis to initialize on-chain states.
-    public fun initialize(aptos_framework: &signer) {
-        system_addresses::assert_aptos_framework(aptos_framework);
-        if (!exists<DKGState>(@aptos_framework)) {
+    public fun initialize(starcoin_framework: &signer) {
+        system_addresses::assert_starcoin_framework(starcoin_framework);
+        if (!exists<DKGState>(@starcoin_framework)) {
             move_to<DKGState>(
-                aptos_framework,
+                starcoin_framework,
                 DKGState {
                     last_completed: std::option::none(),
                     in_progress: std::option::none(),
@@ -64,7 +64,7 @@ module aptos_framework::dkg {
         dealer_validator_set: vector<ValidatorConsensusInfo>,
         target_validator_set: vector<ValidatorConsensusInfo>,
     ) acquires DKGState {
-        let dkg_state = borrow_global_mut<DKGState>(@aptos_framework);
+        let dkg_state = borrow_global_mut<DKGState>(@starcoin_framework);
         let new_session_metadata = DKGSessionMetadata {
             dealer_epoch,
             randomness_config,
@@ -88,7 +88,7 @@ module aptos_framework::dkg {
     ///
     /// Abort if DKG is not in progress.
     public(friend) fun finish(transcript: vector<u8>) acquires DKGState {
-        let dkg_state = borrow_global_mut<DKGState>(@aptos_framework);
+        let dkg_state = borrow_global_mut<DKGState>(@starcoin_framework);
         assert!(option::is_some(&dkg_state.in_progress), error::invalid_state(EDKG_NOT_IN_PROGRESS));
         let session = option::extract(&mut dkg_state.in_progress);
         session.transcript = transcript;
@@ -98,17 +98,17 @@ module aptos_framework::dkg {
 
     /// Delete the currently incomplete session, if it exists.
     public fun try_clear_incomplete_session(fx: &signer) acquires DKGState {
-        system_addresses::assert_aptos_framework(fx);
-        if (exists<DKGState>(@aptos_framework)) {
-            let dkg_state = borrow_global_mut<DKGState>(@aptos_framework);
+        system_addresses::assert_starcoin_framework(fx);
+        if (exists<DKGState>(@starcoin_framework)) {
+            let dkg_state = borrow_global_mut<DKGState>(@starcoin_framework);
             dkg_state.in_progress = option::none();
         }
     }
 
     /// Return the incomplete DKG session state, if it exists.
     public fun incomplete_session(): Option<DKGSessionState> acquires DKGState {
-        if (exists<DKGState>(@aptos_framework)) {
-            borrow_global<DKGState>(@aptos_framework).in_progress
+        if (exists<DKGState>(@starcoin_framework)) {
+            borrow_global<DKGState>(@starcoin_framework).in_progress
         } else {
             option::none()
         }

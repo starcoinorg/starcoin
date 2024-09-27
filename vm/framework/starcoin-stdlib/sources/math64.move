@@ -1,5 +1,5 @@
 /// Standard math utilities missing in the Move Language.
-module aptos_std::math64 {
+module starcoin_std::math64 {
 
     use std::fixed_point32::FixedPoint32;
     use std::fixed_point32;
@@ -254,7 +254,7 @@ module aptos_std::math64 {
     }
 
     #[test]
-    #[expected_failure(abort_code = 0x10004, location = aptos_std::math64)]
+    #[expected_failure(abort_code = 0x10004, location = starcoin_std::math64)]
     public entry fun test_mul_div_by_zero() {
         mul_div(1, 1, 0);
     }

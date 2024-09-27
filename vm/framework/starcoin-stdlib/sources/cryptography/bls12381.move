@@ -4,7 +4,7 @@
 ///     where public keys are BLS12-381 elliptic-curve points in $\mathbb{G}_1$ and signatures are in $\mathbb{G}_2$,
 ///     as per the [IETF BLS draft standard](https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bls-signature#section-2.1).
 
-module aptos_std::bls12381 {
+module starcoin_std::bls12381 {
     use std::option::{Self, Option};
     #[test_only]
     use std::error::invalid_argument;

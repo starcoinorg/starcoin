@@ -1,11 +1,11 @@
 /// Deprecated module
-module aptos_token::token_coin_swap {
+module starcoin_token::token_coin_swap {
     use std::string::String;
     use std::error;
-    use aptos_std::table::Table;
-    use aptos_std::type_info::TypeInfo;
-    use aptos_framework::event::EventHandle;
-    use aptos_token::token::{Token, TokenId};
+    use starcoin_std::table::Table;
+    use starcoin_std::type_info::TypeInfo;
+    use starcoin_framework::event::EventHandle;
+    use starcoin_token::token::{Token, TokenId};
 
     //
     // Errors.

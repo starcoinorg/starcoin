@@ -1,12 +1,12 @@
 /// ManagedCoin is built to make a simple walkthrough of the Coins module.
 /// It contains scripts you will need to initialize, mint, burn, transfer coins.
 /// By utilizing this current module, a developer can create his own coin and care less about mint and burn capabilities,
-module aptos_framework::managed_coin {
+module starcoin_framework::managed_coin {
     use std::string;
     use std::error;
     use std::signer;
 
-    use aptos_framework::coin::{Self, BurnCapability, FreezeCapability, MintCapability};
+    use starcoin_framework::coin::{Self, BurnCapability, FreezeCapability, MintCapability};
 
     //
     // Errors
@@ -105,7 +105,7 @@ module aptos_framework::managed_coin {
     use std::option;
 
     #[test_only]
-    use aptos_framework::aggregator_factory;
+    use starcoin_framework::aggregator_factory;
 
     #[test_only]
     struct FakeMoney {}
@@ -118,9 +118,9 @@ module aptos_framework::managed_coin {
     ) acquires Capabilities {
         let source_addr = signer::address_of(&source);
         let destination_addr = signer::address_of(&destination);
-        aptos_framework::account::create_account_for_test(source_addr);
-        aptos_framework::account::create_account_for_test(destination_addr);
-        aptos_framework::account::create_account_for_test(signer::address_of(&mod_account));
+        starcoin_framework::account::create_account_for_test(source_addr);
+        starcoin_framework::account::create_account_for_test(destination_addr);
+        starcoin_framework::account::create_account_for_test(signer::address_of(&mod_account));
         aggregator_factory::initialize_aggregator_factory_for_test(&mod_account);
 
         initialize<FakeMoney>(
@@ -167,9 +167,9 @@ module aptos_framework::managed_coin {
     ) acquires Capabilities {
         let source_addr = signer::address_of(&source);
 
-        aptos_framework::account::create_account_for_test(source_addr);
-        aptos_framework::account::create_account_for_test(signer::address_of(&destination));
-        aptos_framework::account::create_account_for_test(signer::address_of(&mod_account));
+        starcoin_framework::account::create_account_for_test(source_addr);
+        starcoin_framework::account::create_account_for_test(signer::address_of(&destination));
+        starcoin_framework::account::create_account_for_test(signer::address_of(&mod_account));
         aggregator_factory::initialize_aggregator_factory_for_test(&mod_account);
 
         initialize<FakeMoney>(&mod_account, b"Fake money", b"FMD", 1, true);
@@ -189,9 +189,9 @@ module aptos_framework::managed_coin {
     ) acquires Capabilities {
         let source_addr = signer::address_of(&source);
 
-        aptos_framework::account::create_account_for_test(source_addr);
-        aptos_framework::account::create_account_for_test(signer::address_of(&destination));
-        aptos_framework::account::create_account_for_test(signer::address_of(&mod_account));
+        starcoin_framework::account::create_account_for_test(source_addr);
+        starcoin_framework::account::create_account_for_test(signer::address_of(&destination));
+        starcoin_framework::account::create_account_for_test(signer::address_of(&mod_account));
         aggregator_factory::initialize_aggregator_factory_for_test(&mod_account);
 
         initialize<FakeMoney>(&mod_account, b"Fake money", b"FMD", 1, true);

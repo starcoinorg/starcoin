@@ -1,12 +1,12 @@
 /// The `function_info` module defines the `FunctionInfo` type which simulates a function pointer.
-module aptos_framework::function_info {
+module starcoin_framework::function_info {
     use std::error;
     use std::features;
     use std::signer;
     use std::string::{Self, String};
 
-    friend aptos_framework::fungible_asset;
-    friend aptos_framework::dispatchable_fungible_asset;
+    friend starcoin_framework::fungible_asset;
+    friend starcoin_framework::dispatchable_fungible_asset;
 
     /// String is not a valid Move identifier
     const EINVALID_IDENTIFIER: u64 = 1;
@@ -57,7 +57,7 @@ module aptos_framework::function_info {
 
     /// Check if the dispatch target function meets the type requirements of the disptach entry point.
     ///
-    /// framework_function is the dispatch native function defined in the aptos_framework.
+    /// framework_function is the dispatch native function defined in the starcoin_framework.
     /// dispatch_target is the function passed in by the user.
     ///
     /// dispatch_target should have the same signature (same argument type, same generics constraint) except
@@ -96,5 +96,5 @@ module aptos_framework::function_info {
 
     // Test only dependencies so we can invoke those friend functions.
     #[test_only]
-    friend aptos_framework::function_info_tests;
+    friend starcoin_framework::function_info_tests;
 }

@@ -1,4 +1,4 @@
-spec aptos_framework::resource_account {
+spec starcoin_framework::resource_account {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: The length of the authentication key must be 32 bytes.
@@ -19,7 +19,7 @@ spec aptos_framework::resource_account {
     /// Requirement: The resource account is registered for the Aptos coin.
     /// Criticality: High
     /// Implementation: The create_resource_account_and_fund ensures the newly created resource account is registered to
-    /// receive the AptosCoin.
+    /// receive the StarcoinCoin.
     /// Enforcement: Formally verified via [high-level-req-3](create_resource_account_and_fund).
     ///
     /// No.: 4
@@ -79,21 +79,21 @@ spec aptos_framework::resource_account {
         optional_auth_key: vector<u8>,
         fund_amount: u64,
     ) {
-        use aptos_framework::aptos_account;
+        use starcoin_framework::starcoin_account;
         // TODO(fa_migration)
         pragma verify = false;
         let source_addr = signer::address_of(origin);
         let resource_addr = account::spec_create_resource_address(source_addr, seed);
-        let coin_store_resource = global<coin::CoinStore<AptosCoin>>(resource_addr);
+        let coin_store_resource = global<coin::CoinStore<StarcoinCoin>>(resource_addr);
 
-        include aptos_account::WithdrawAbortsIf<AptosCoin>{from: origin, amount: fund_amount};
-        include aptos_account::GuidAbortsIf<AptosCoin>{to: resource_addr};
+        include starcoin_account::WithdrawAbortsIf<StarcoinCoin>{from: origin, amount: fund_amount};
+        include starcoin_account::GuidAbortsIf<StarcoinCoin>{to: resource_addr};
         include RotateAccountAuthenticationKeyAndStoreCapabilityAbortsIfWithoutAccountLimit;
 
         //coin property
-        aborts_if coin::spec_is_account_registered<AptosCoin>(resource_addr) && coin_store_resource.frozen;
+        aborts_if coin::spec_is_account_registered<StarcoinCoin>(resource_addr) && coin_store_resource.frozen;
         /// [high-level-req-3]
-        ensures exists<aptos_framework::coin::CoinStore<AptosCoin>>(resource_addr);
+        ensures exists<starcoin_framework::coin::CoinStore<StarcoinCoin>>(resource_addr);
     }
 
     spec create_resource_account_and_publish_package(
@@ -123,11 +123,11 @@ spec aptos_framework::resource_account {
         ensures exists<Container>(signer::address_of(origin));
         /// [high-level-req-5]
         ensures vector::length(optional_auth_key) != 0 ==>
-            global<aptos_framework::account::Account>(resource_addr).authentication_key == optional_auth_key;
+            global<starcoin_framework::account::Account>(resource_addr).authentication_key == optional_auth_key;
     }
 
     spec schema RotateAccountAuthenticationKeyAndStoreCapabilityAbortsIf {
-        use aptos_framework::account::{Account};
+        use starcoin_framework::account::{Account};
         origin: signer;
         resource_addr: address;
         optional_auth_key: vector<u8>;

@@ -1,4 +1,4 @@
-spec aptos_framework::code {
+spec starcoin_framework::code {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: Updating a package should fail if the user is not the owner of it.
@@ -72,10 +72,10 @@ spec aptos_framework::code {
         pragma opaque;
     }
 
-    spec initialize(aptos_framework: &signer, package_owner: &signer, metadata: PackageMetadata) {
-        let aptos_addr = signer::address_of(aptos_framework);
+    spec initialize(starcoin_framework: &signer, package_owner: &signer, metadata: PackageMetadata) {
+        let starcoin_addr = signer::address_of(starcoin_framework);
         let owner_addr = signer::address_of(package_owner);
-        aborts_if !system_addresses::is_aptos_framework_address(aptos_addr);
+        aborts_if !system_addresses::is_starcoin_framework_address(starcoin_addr);
 
         ensures exists<PackageRegistry>(owner_addr);
     }

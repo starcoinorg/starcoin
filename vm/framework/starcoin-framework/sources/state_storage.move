@@ -1,11 +1,11 @@
-module aptos_framework::state_storage {
+module starcoin_framework::state_storage {
 
-    use aptos_framework::system_addresses;
+    use starcoin_framework::system_addresses;
     use std::error;
 
-    friend aptos_framework::block;
-    friend aptos_framework::genesis;
-    friend aptos_framework::storage_gas;
+    friend starcoin_framework::block;
+    friend starcoin_framework::genesis;
+    friend starcoin_framework::storage_gas;
 
     const ESTATE_STORAGE_USAGE: u64 = 0;
 
@@ -21,13 +21,13 @@ module aptos_framework::state_storage {
         usage: Usage,
     }
 
-    public(friend) fun initialize(aptos_framework: &signer) {
-        system_addresses::assert_aptos_framework(aptos_framework);
+    public(friend) fun initialize(starcoin_framework: &signer) {
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         assert!(
-            !exists<StateStorageUsage>(@aptos_framework),
+            !exists<StateStorageUsage>(@starcoin_framework),
             error::already_exists(ESTATE_STORAGE_USAGE)
         );
-        move_to(aptos_framework, StateStorageUsage {
+        move_to(starcoin_framework, StateStorageUsage {
             epoch: 0,
             usage: Usage {
                 items: 0,
@@ -38,10 +38,10 @@ module aptos_framework::state_storage {
 
     public(friend) fun on_new_block(epoch: u64) acquires StateStorageUsage {
         assert!(
-            exists<StateStorageUsage>(@aptos_framework),
+            exists<StateStorageUsage>(@starcoin_framework),
             error::not_found(ESTATE_STORAGE_USAGE)
         );
-        let usage = borrow_global_mut<StateStorageUsage>(@aptos_framework);
+        let usage = borrow_global_mut<StateStorageUsage>(@starcoin_framework);
         if (epoch != usage.epoch) {
             usage.epoch = epoch;
             usage.usage = get_state_storage_usage_only_at_epoch_beginning();
@@ -50,10 +50,10 @@ module aptos_framework::state_storage {
 
     public(friend) fun current_items_and_bytes(): (u64, u64) acquires StateStorageUsage {
         assert!(
-            exists<StateStorageUsage>(@aptos_framework),
+            exists<StateStorageUsage>(@starcoin_framework),
             error::not_found(ESTATE_STORAGE_USAGE)
         );
-        let usage = borrow_global<StateStorageUsage>(@aptos_framework);
+        let usage = borrow_global<StateStorageUsage>(@starcoin_framework);
         (usage.usage.items, usage.usage.bytes)
     }
 
@@ -66,10 +66,10 @@ module aptos_framework::state_storage {
     #[test_only]
     public fun set_for_test(epoch: u64, items: u64, bytes: u64) acquires StateStorageUsage {
         assert!(
-            exists<StateStorageUsage>(@aptos_framework),
+            exists<StateStorageUsage>(@starcoin_framework),
             error::not_found(ESTATE_STORAGE_USAGE)
         );
-        let usage = borrow_global_mut<StateStorageUsage>(@aptos_framework);
+        let usage = borrow_global_mut<StateStorageUsage>(@starcoin_framework);
         usage.epoch = epoch;
         usage.usage = Usage {
             items,
@@ -78,7 +78,7 @@ module aptos_framework::state_storage {
     }
 
     // ======================== deprecated ============================
-    friend aptos_framework::reconfiguration;
+    friend starcoin_framework::reconfiguration;
 
     struct GasParameter has key, store {
         usage: Usage,

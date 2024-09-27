@@ -1,4 +1,4 @@
-spec aptos_framework::voting {
+spec starcoin_framework::voting {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: The proposal ID in a voting forum is unique and always increases monotonically with each new proposal
@@ -69,7 +69,7 @@ spec aptos_framework::voting {
         early_resolution_vote_threshold: Option<u128>,
         metadata: SimpleMap<String, vector<u8>>,
     ): u64 {
-        use aptos_framework::chain_status;
+        use starcoin_framework::chain_status;
 
         requires chain_status::is_operating();
         include CreateProposalAbortsIfAndEnsures<ProposalType>{is_multi_step_proposal: false};
@@ -82,7 +82,7 @@ spec aptos_framework::voting {
     // Make sure the execution script's hash is not empty.
     // VotingForum<ProposalType> existed under the voting_forum_address.
     // The next_proposal_id in VotingForum is up to MAX_U64.
-    // CurrentTimeMicroseconds existed under the @aptos_framework.
+    // CurrentTimeMicroseconds existed under the @starcoin_framework.
     spec create_proposal_v2<ProposalType: store>(
         proposer: address,
         voting_forum_address: address,
@@ -94,7 +94,7 @@ spec aptos_framework::voting {
         metadata: SimpleMap<String, vector<u8>>,
         is_multi_step_proposal: bool,
     ): u64 {
-        use aptos_framework::chain_status;
+        use starcoin_framework::chain_status;
 
         requires chain_status::is_operating();
         include CreateProposalAbortsIfAndEnsures<ProposalType>;
@@ -144,7 +144,7 @@ spec aptos_framework::voting {
         num_votes: u64,
         should_pass: bool,
     ) {
-        use aptos_framework::chain_status;
+        use starcoin_framework::chain_status;
         // Ensures existence of Timestamp
         requires chain_status::is_operating();
 
@@ -158,7 +158,7 @@ spec aptos_framework::voting {
         aborts_if !table::spec_contains(voting_forum.proposals, proposal_id);
         aborts_if is_voting_period_over(proposal);
         aborts_if proposal.is_resolved;
-        aborts_if !exists<timestamp::CurrentTimeMicroseconds>(@aptos_framework);
+        aborts_if !exists<timestamp::CurrentTimeMicroseconds>(@starcoin_framework);
         // Assert this proposal is single-step, or if the proposal is multi-step, it is not in execution yet.
         aborts_if !std::string::spec_internal_check_utf8(IS_MULTI_STEP_PROPOSAL_IN_EXECUTION_KEY);
         let execution_key = std::string::spec_utf8(IS_MULTI_STEP_PROPOSAL_IN_EXECUTION_KEY);
@@ -184,7 +184,7 @@ spec aptos_framework::voting {
         voting_forum_address: address,
         proposal_id: u64,
     ) {
-        use aptos_framework::chain_status;
+        use starcoin_framework::chain_status;
         // Ensures existence of Timestamp
         requires chain_status::is_operating();
         include IsProposalResolvableAbortsIf<ProposalType>;
@@ -216,7 +216,7 @@ spec aptos_framework::voting {
         voting_forum_address: address,
         proposal_id: u64,
     ): ProposalType {
-        use aptos_framework::chain_status;
+        use starcoin_framework::chain_status;
         // Ensures existence of Timestamp
         requires chain_status::is_operating();
 
@@ -231,7 +231,7 @@ spec aptos_framework::voting {
 
         let post post_voting_forum = global<VotingForum<ProposalType>>(voting_forum_address);
         let post post_proposal = table::spec_get(post_voting_forum.proposals, proposal_id);
-        aborts_if !exists<timestamp::CurrentTimeMicroseconds>(@aptos_framework);
+        aborts_if !exists<timestamp::CurrentTimeMicroseconds>(@starcoin_framework);
         // property 3: Ensure that proposal is successfully resolved.
         /// [high-level-req-3]
         ensures post_proposal.is_resolved == true;
@@ -247,7 +247,7 @@ spec aptos_framework::voting {
         proposal_id: u64,
         next_execution_hash: vector<u8>,
     ) {
-        use aptos_framework::chain_status;
+        use starcoin_framework::chain_status;
         pragma verify_duration_estimate = 300;
         // Ensures existence of Timestamp
         requires chain_status::is_operating();
@@ -273,7 +273,7 @@ spec aptos_framework::voting {
             from_bcs::deserialize(simple_map::spec_get(proposal.metadata, multi_step_key));
         aborts_if !is_multi_step && len(next_execution_hash) != 0;
 
-        aborts_if len(next_execution_hash) == 0 && !exists<timestamp::CurrentTimeMicroseconds>(@aptos_framework);
+        aborts_if len(next_execution_hash) == 0 && !exists<timestamp::CurrentTimeMicroseconds>(@starcoin_framework);
         aborts_if len(next_execution_hash) == 0 && is_multi_step && !simple_map::spec_contains_key(proposal.metadata, multi_step_in_execution_key);
         // property 4: For single-step proposals, it ensures that the next_execution_hash parameter is empty and resolves the proposal.
         /// [high-level-req-4]
@@ -290,11 +290,11 @@ spec aptos_framework::voting {
     }
 
     spec is_voting_closed<ProposalType: store>(voting_forum_address: address, proposal_id: u64): bool {
-        use aptos_framework::chain_status;
+        use starcoin_framework::chain_status;
         // Ensures existence of Timestamp
         requires chain_status::is_operating();
         include AbortsIfNotContainProposalID<ProposalType>;
-        aborts_if !exists<timestamp::CurrentTimeMicroseconds>(@aptos_framework);
+        aborts_if !exists<timestamp::CurrentTimeMicroseconds>(@starcoin_framework);
         ensures result == spec_is_voting_closed<ProposalType>(voting_forum_address, proposal_id);
     }
 
@@ -353,7 +353,7 @@ spec aptos_framework::voting {
         proposal_id: u64,
     ): u64 {
 
-        use aptos_framework::chain_status;
+        use starcoin_framework::chain_status;
 
         pragma addition_overflow_unchecked;
         // Ensures existence of Timestamp
@@ -503,7 +503,7 @@ spec aptos_framework::voting {
     }
 
     spec is_voting_period_over<ProposalType: store>(proposal: &Proposal<ProposalType>): bool {
-        use aptos_framework::chain_status;
+        use starcoin_framework::chain_status;
         requires chain_status::is_operating();
         aborts_if false;
         ensures result == (timestamp::spec_now_seconds() > proposal.expiration_secs);

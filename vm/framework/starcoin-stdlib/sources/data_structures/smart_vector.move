@@ -1,9 +1,9 @@
-module aptos_std::smart_vector {
+module starcoin_std::smart_vector {
     use std::error;
     use std::vector;
-    use aptos_std::big_vector::{Self, BigVector};
-    use aptos_std::math64::max;
-    use aptos_std::type_info::size_of_val;
+    use starcoin_std::big_vector::{Self, BigVector};
+    use starcoin_std::math64::max;
+    use starcoin_std::type_info::size_of_val;
     use std::option::{Self, Option};
 
     /// Vector index is out of bounds
@@ -346,26 +346,26 @@ module aptos_std::smart_vector {
 
     /// Apply the function to each T in the vector, consuming it.
     public inline fun for_each<T: store>(self: SmartVector<T>, f: |T|) {
-        aptos_std::smart_vector::reverse(&mut self); // We need to reverse the vector to consume it efficiently
-        aptos_std::smart_vector::for_each_reverse(self, |e| f(e));
+        starcoin_std::smart_vector::reverse(&mut self); // We need to reverse the vector to consume it efficiently
+        starcoin_std::smart_vector::for_each_reverse(self, |e| f(e));
     }
 
     /// Apply the function to each T in the vector, consuming it.
     public inline fun for_each_reverse<T>(self: SmartVector<T>, f: |T|) {
-        let len = aptos_std::smart_vector::length(&self);
+        let len = starcoin_std::smart_vector::length(&self);
         while (len > 0) {
-            f(aptos_std::smart_vector::pop_back(&mut self));
+            f(starcoin_std::smart_vector::pop_back(&mut self));
             len = len - 1;
         };
-        aptos_std::smart_vector::destroy_empty(self)
+        starcoin_std::smart_vector::destroy_empty(self)
     }
 
     /// Apply the function to a reference of each T in the vector.
     public inline fun for_each_ref<T>(self: &SmartVector<T>, f: |&T|) {
         let i = 0;
-        let len = aptos_std::smart_vector::length(self);
+        let len = starcoin_std::smart_vector::length(self);
         while (i < len) {
-            f(aptos_std::smart_vector::borrow(self, i));
+            f(starcoin_std::smart_vector::borrow(self, i));
             i = i + 1
         }
     }
@@ -373,9 +373,9 @@ module aptos_std::smart_vector {
     /// Apply the function to a mutable reference to each T in the vector.
     public inline fun for_each_mut<T>(self: &mut SmartVector<T>, f: |&mut T|) {
         let i = 0;
-        let len = aptos_std::smart_vector::length(self);
+        let len = starcoin_std::smart_vector::length(self);
         while (i < len) {
-            f(aptos_std::smart_vector::borrow_mut(self, i));
+            f(starcoin_std::smart_vector::borrow_mut(self, i));
             i = i + 1
         }
     }
@@ -383,9 +383,9 @@ module aptos_std::smart_vector {
     /// Apply the function to a reference of each T in the vector with its index.
     public inline fun enumerate_ref<T>(self: &SmartVector<T>, f: |u64, &T|) {
         let i = 0;
-        let len = aptos_std::smart_vector::length(self);
+        let len = starcoin_std::smart_vector::length(self);
         while (i < len) {
-            f(i, aptos_std::smart_vector::borrow(self, i));
+            f(i, starcoin_std::smart_vector::borrow(self, i));
             i = i + 1;
         };
     }
@@ -408,7 +408,7 @@ module aptos_std::smart_vector {
         f: |Accumulator, T|Accumulator
     ): Accumulator {
         let accu = init;
-        aptos_std::smart_vector::for_each(self, |elem| accu = f(accu, elem));
+        starcoin_std::smart_vector::for_each(self, |elem| accu = f(accu, elem));
         accu
     }
 
@@ -420,7 +420,7 @@ module aptos_std::smart_vector {
         f: |T, Accumulator|Accumulator
     ): Accumulator {
         let accu = init;
-        aptos_std::smart_vector::for_each_reverse(self, |elem| accu = f(elem, accu));
+        starcoin_std::smart_vector::for_each_reverse(self, |elem| accu = f(elem, accu));
         accu
     }
 
@@ -430,8 +430,8 @@ module aptos_std::smart_vector {
         self: &SmartVector<T1>,
         f: |&T1|T2
     ): SmartVector<T2> {
-        let result = aptos_std::smart_vector::new<T2>();
-        aptos_std::smart_vector::for_each_ref(self, |elem| aptos_std::smart_vector::push_back(&mut result, f(elem)));
+        let result = starcoin_std::smart_vector::new<T2>();
+        starcoin_std::smart_vector::for_each_ref(self, |elem| starcoin_std::smart_vector::push_back(&mut result, f(elem)));
         result
     }
 
@@ -440,8 +440,8 @@ module aptos_std::smart_vector {
         self: SmartVector<T1>,
         f: |T1|T2
     ): SmartVector<T2> {
-        let result = aptos_std::smart_vector::new<T2>();
-        aptos_std::smart_vector::for_each(self, |elem| push_back(&mut result, f(elem)));
+        let result = starcoin_std::smart_vector::new<T2>();
+        starcoin_std::smart_vector::for_each(self, |elem| push_back(&mut result, f(elem)));
         result
     }
 
@@ -450,18 +450,18 @@ module aptos_std::smart_vector {
         self: SmartVector<T>,
         p: |&T|bool
     ): SmartVector<T> {
-        let result = aptos_std::smart_vector::new<T>();
-        aptos_std::smart_vector::for_each(self, |elem| {
-            if (p(&elem)) aptos_std::smart_vector::push_back(&mut result, elem);
+        let result = starcoin_std::smart_vector::new<T>();
+        starcoin_std::smart_vector::for_each(self, |elem| {
+            if (p(&elem)) starcoin_std::smart_vector::push_back(&mut result, elem);
         });
         result
     }
 
     public inline fun zip<T1: store, T2: store>(self: SmartVector<T1>, v2: SmartVector<T2>, f: |T1, T2|) {
         // We need to reverse the vectors to consume it efficiently
-        aptos_std::smart_vector::reverse(&mut self);
-        aptos_std::smart_vector::reverse(&mut v2);
-        aptos_std::smart_vector::zip_reverse(self, v2, |e1, e2| f(e1, e2));
+        starcoin_std::smart_vector::reverse(&mut self);
+        starcoin_std::smart_vector::reverse(&mut v2);
+        starcoin_std::smart_vector::zip_reverse(self, v2, |e1, e2| f(e1, e2));
     }
 
     /// Apply the function to each pair of elements in the two given vectors in the reverse order, consuming them.
@@ -471,16 +471,16 @@ module aptos_std::smart_vector {
         v2: SmartVector<T2>,
         f: |T1, T2|,
     ) {
-        let len = aptos_std::smart_vector::length(&self);
+        let len = starcoin_std::smart_vector::length(&self);
         // We can't use the constant ESMART_VECTORS_LENGTH_MISMATCH here as all calling code would then need to define it
         // due to how inline functions work.
-        assert!(len == aptos_std::smart_vector::length(&v2), 0x20005);
+        assert!(len == starcoin_std::smart_vector::length(&v2), 0x20005);
         while (len > 0) {
-            f(aptos_std::smart_vector::pop_back(&mut self), aptos_std::smart_vector::pop_back(&mut v2));
+            f(starcoin_std::smart_vector::pop_back(&mut self), starcoin_std::smart_vector::pop_back(&mut v2));
             len = len - 1;
         };
-        aptos_std::smart_vector::destroy_empty(self);
-        aptos_std::smart_vector::destroy_empty(v2);
+        starcoin_std::smart_vector::destroy_empty(self);
+        starcoin_std::smart_vector::destroy_empty(v2);
     }
 
     /// Apply the function to the references of each pair of elements in the two given vectors.
@@ -490,13 +490,13 @@ module aptos_std::smart_vector {
         v2: &SmartVector<T2>,
         f: |&T1, &T2|,
     ) {
-        let len = aptos_std::smart_vector::length(self);
+        let len = starcoin_std::smart_vector::length(self);
         // We can't use the constant ESMART_VECTORS_LENGTH_MISMATCH here as all calling code would then need to define it
         // due to how inline functions work.
-        assert!(len == aptos_std::smart_vector::length(v2), 0x20005);
+        assert!(len == starcoin_std::smart_vector::length(v2), 0x20005);
         let i = 0;
         while (i < len) {
-            f(aptos_std::smart_vector::borrow(self, i), aptos_std::smart_vector::borrow(v2, i));
+            f(starcoin_std::smart_vector::borrow(self, i), starcoin_std::smart_vector::borrow(v2, i));
             i = i + 1
         }
     }
@@ -509,12 +509,12 @@ module aptos_std::smart_vector {
         f: |&mut T1, &mut T2|,
     ) {
         let i = 0;
-        let len = aptos_std::smart_vector::length(self);
+        let len = starcoin_std::smart_vector::length(self);
         // We can't use the constant ESMART_VECTORS_LENGTH_MISMATCH here as all calling code would then need to define it
         // due to how inline functions work.
-        assert!(len == aptos_std::smart_vector::length(v2), 0x20005);
+        assert!(len == starcoin_std::smart_vector::length(v2), 0x20005);
         while (i < len) {
-            f(aptos_std::smart_vector::borrow_mut(self, i), aptos_std::smart_vector::borrow_mut(v2, i));
+            f(starcoin_std::smart_vector::borrow_mut(self, i), starcoin_std::smart_vector::borrow_mut(v2, i));
             i = i + 1
         }
     }
@@ -527,10 +527,10 @@ module aptos_std::smart_vector {
     ): SmartVector<NewT> {
         // We can't use the constant ESMART_VECTORS_LENGTH_MISMATCH here as all calling code would then need to define it
         // due to how inline functions work.
-        assert!(aptos_std::smart_vector::length(&self) == aptos_std::smart_vector::length(&v2), 0x20005);
+        assert!(starcoin_std::smart_vector::length(&self) == starcoin_std::smart_vector::length(&v2), 0x20005);
 
-        let result = aptos_std::smart_vector::new<NewT>();
-        aptos_std::smart_vector::zip(self, v2, |e1, e2| push_back(&mut result, f(e1, e2)));
+        let result = starcoin_std::smart_vector::new<NewT>();
+        starcoin_std::smart_vector::zip(self, v2, |e1, e2| push_back(&mut result, f(e1, e2)));
         result
     }
 
@@ -543,10 +543,10 @@ module aptos_std::smart_vector {
     ): SmartVector<NewT> {
         // We can't use the constant ESMART_VECTORS_LENGTH_MISMATCH here as all calling code would then need to define it
         // due to how inline functions work.
-        assert!(aptos_std::smart_vector::length(self) == aptos_std::smart_vector::length(v2), 0x20005);
+        assert!(starcoin_std::smart_vector::length(self) == starcoin_std::smart_vector::length(v2), 0x20005);
 
-        let result = aptos_std::smart_vector::new<NewT>();
-        aptos_std::smart_vector::zip_ref(self, v2, |e1, e2| push_back(&mut result, f(e1, e2)));
+        let result = starcoin_std::smart_vector::new<NewT>();
+        starcoin_std::smart_vector::zip_ref(self, v2, |e1, e2| push_back(&mut result, f(e1, e2)));
         result
     }
 

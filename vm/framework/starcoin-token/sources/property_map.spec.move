@@ -1,4 +1,4 @@
-spec aptos_token::property_map {
+spec starcoin_token::property_map {
     spec module {
         pragma verify = true;
         pragma aborts_if_is_strict;
@@ -41,7 +41,7 @@ spec aptos_token::property_map {
     }
 
     spec add(map: &mut PropertyMap, key: String, value: PropertyValue) {
-        use aptos_framework::simple_map;
+        use starcoin_framework::simple_map;
 
         aborts_if !(string::length(key) <= MAX_PROPERTY_NAME_LENGTH);
         aborts_if !(!simple_map::spec_contains_key(map.map, key));
@@ -65,7 +65,7 @@ spec aptos_token::property_map {
     }
 
     spec borrow(map: &PropertyMap, key: &String): &PropertyValue {
-        use aptos_framework::simple_map;
+        use starcoin_framework::simple_map;
         aborts_if !simple_map::spec_contains_key(map.map, key);
     }
 
@@ -73,7 +73,7 @@ spec aptos_token::property_map {
     /// to `prop.type`
     spec read_string(map: &PropertyMap, key: &String): String {
         use std::string;
-        use aptos_framework::simple_map;
+        use starcoin_framework::simple_map;
         pragma aborts_if_is_partial;
 
         // TODO: Unable to handle abort from `from_bcs::to_string` because there is a function call at assert.
@@ -81,7 +81,7 @@ spec aptos_token::property_map {
         aborts_if !string::spec_internal_check_utf8(b"0x1::string::String");
         let prop = simple_map::spec_get(map.map, key);
         aborts_if prop.type != spec_utf8(b"0x1::string::String");
-        aborts_if !aptos_std::from_bcs::deserializable<String>(prop.value);
+        aborts_if !starcoin_std::from_bcs::deserializable<String>(prop.value);
     }
 
     spec fun spec_utf8(bytes: vector<u8>): String {
@@ -90,62 +90,62 @@ spec aptos_token::property_map {
 
     spec read_u8(map: &PropertyMap, key: &String): u8 {
         use std::string;
-        use aptos_framework::simple_map;
+        use starcoin_framework::simple_map;
 
         let str = b"u8";
         aborts_if !simple_map::spec_contains_key(map.map, key);
         aborts_if !string::spec_internal_check_utf8(str);
         let prop = simple_map::spec_get(map.map, key);
         aborts_if prop.type != spec_utf8(str);
-        aborts_if !aptos_std::from_bcs::deserializable<u8>(prop.value);
+        aborts_if !starcoin_std::from_bcs::deserializable<u8>(prop.value);
     }
 
     spec read_u64(map: &PropertyMap, key: &String): u64 {
         use std::string;
-        use aptos_framework::simple_map;
+        use starcoin_framework::simple_map;
 
         let str = b"u64";
         aborts_if !simple_map::spec_contains_key(map.map, key);
         aborts_if !string::spec_internal_check_utf8(str);
         let prop = simple_map::spec_get(map.map, key);
         aborts_if prop.type != spec_utf8(str);
-        aborts_if !aptos_std::from_bcs::deserializable<u64>(prop.value);
+        aborts_if !starcoin_std::from_bcs::deserializable<u64>(prop.value);
     }
 
     spec read_address(map: &PropertyMap, key: &String): address {
         use std::string;
-        use aptos_framework::simple_map;
+        use starcoin_framework::simple_map;
 
         let str = b"address";
         aborts_if !simple_map::spec_contains_key(map.map, key);
         aborts_if !string::spec_internal_check_utf8(str);
         let prop = simple_map::spec_get(map.map, key);
         aborts_if prop.type != spec_utf8(str);
-        aborts_if !aptos_std::from_bcs::deserializable<address>(prop.value);
+        aborts_if !starcoin_std::from_bcs::deserializable<address>(prop.value);
     }
 
     spec read_u128(map: &PropertyMap, key: &String): u128 {
         use std::string;
-        use aptos_framework::simple_map;
+        use starcoin_framework::simple_map;
 
         let str = b"u128";
         aborts_if !simple_map::spec_contains_key(map.map, key);
         aborts_if !string::spec_internal_check_utf8(str);
         let prop = simple_map::spec_get(map.map, key);
         aborts_if prop.type != spec_utf8(str);
-        aborts_if !aptos_std::from_bcs::deserializable<u128>(prop.value);
+        aborts_if !starcoin_std::from_bcs::deserializable<u128>(prop.value);
     }
 
     spec read_bool(map: &PropertyMap, key: &String): bool {
         use std::string;
-        use aptos_framework::simple_map;
+        use starcoin_framework::simple_map;
 
         let str = b"bool";
         aborts_if !simple_map::spec_contains_key(map.map, key);
         aborts_if !string::spec_internal_check_utf8(str);
         let prop = simple_map::spec_get(map.map, key);
         aborts_if prop.type != spec_utf8(str);
-        aborts_if !aptos_std::from_bcs::deserializable<bool>(prop.value);
+        aborts_if !starcoin_std::from_bcs::deserializable<bool>(prop.value);
     }
 
     spec borrow_value(property: &PropertyValue): vector<u8> {
@@ -195,7 +195,7 @@ spec aptos_token::property_map {
 
     /// Abort according to the code
     spec create_property_value<T: copy>(data: &T): PropertyValue {
-        use aptos_std::type_info::{type_name};
+        use starcoin_std::type_info::{type_name};
 
         let name = type_name<T>();
         aborts_if !string::spec_internal_check_utf8(b"bool");

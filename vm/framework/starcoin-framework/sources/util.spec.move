@@ -1,4 +1,4 @@
-spec aptos_framework::util {
+spec starcoin_framework::util {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: The address input bytes should be exactly 32 bytes long.

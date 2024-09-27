@@ -35,16 +35,16 @@
 /// are, the more expensive voting on transactions will become. If a large number of owners is designed, such as in a
 /// flat governance structure, clients are encouraged to write their own modules on top of this multisig account module
 /// and implement the governance voting logic on top.
-module aptos_framework::multisig_account {
-    use aptos_framework::account::{Self, SignerCapability, new_event_handle, create_resource_address};
-    use aptos_framework::aptos_coin::AptosCoin;
-    use aptos_framework::chain_id;
-    use aptos_framework::create_signer::create_signer;
-    use aptos_framework::coin;
-    use aptos_framework::event::{EventHandle, emit_event, emit};
-    use aptos_framework::timestamp::now_seconds;
-    use aptos_std::simple_map::{Self, SimpleMap};
-    use aptos_std::table::{Self, Table};
+module starcoin_framework::multisig_account {
+    use starcoin_framework::account::{Self, SignerCapability, new_event_handle, create_resource_address};
+    use starcoin_framework::starcoin_coin::StarcoinCoin;
+    use starcoin_framework::chain_id;
+    use starcoin_framework::create_signer::create_signer;
+    use starcoin_framework::coin;
+    use starcoin_framework::event::{EventHandle, emit_event, emit};
+    use starcoin_framework::timestamp::now_seconds;
+    use starcoin_std::simple_map::{Self, SimpleMap};
+    use starcoin_std::table::{Self, Table};
     use std::bcs::to_bytes;
     use std::error;
     use std::hash::sha3_256;
@@ -56,7 +56,7 @@ module aptos_framework::multisig_account {
     /// The salt used to create a resource account during multisig account creation.
     /// This is used to avoid conflicts with other modules that also create resource accounts with the same owner
     /// account.
-    const DOMAIN_SEPARATOR: vector<u8> = b"aptos_framework::multisig_account";
+    const DOMAIN_SEPARATOR: vector<u8> = b"starcoin_framework::multisig_account";
 
     // Any error codes > 2000 can be thrown as part of transaction prologue.
     /// Owner list cannot contain the same address more than once.
@@ -1264,8 +1264,8 @@ module aptos_framework::multisig_account {
             account::create_resource_account(owner, create_multisig_account_seed(to_bytes(&owner_nonce)));
         // Register the account to receive APT as this is not done by default as part of the resource account creation
         // flow.
-        if (!coin::is_account_registered<AptosCoin>(address_of(&multisig_signer))) {
-            coin::register<AptosCoin>(&multisig_signer);
+        if (!coin::is_account_registered<StarcoinCoin>(address_of(&multisig_signer))) {
+            coin::register<StarcoinCoin>(&multisig_signer);
         };
 
         (multisig_signer, multisig_signer_cap)
@@ -1459,20 +1459,20 @@ module aptos_framework::multisig_account {
     ////////////////////////// Tests ///////////////////////////////
 
     #[test_only]
-    use aptos_framework::aptos_account::create_account;
+    use starcoin_framework::starcoin_account::create_account;
     #[test_only]
-    use aptos_framework::timestamp;
+    use starcoin_framework::timestamp;
     #[test_only]
-    use aptos_std::from_bcs;
+    use starcoin_std::from_bcs;
     #[test_only]
-    use aptos_std::multi_ed25519;
+    use starcoin_std::multi_ed25519;
     #[test_only]
     use std::string::utf8;
     use std::features;
     #[test_only]
-    use aptos_framework::aptos_coin;
+    use starcoin_framework::starcoin_coin;
     #[test_only]
-    use aptos_framework::coin::{destroy_mint_cap, destroy_burn_cap};
+    use starcoin_framework::coin::{destroy_mint_cap, destroy_burn_cap};
 
     #[test_only]
     const PAYLOAD: vector<u8> = vector[1, 2, 3];
@@ -1499,7 +1499,7 @@ module aptos_framework::multisig_account {
             framework_signer, vector[features::get_multisig_accounts_feature(), features::get_multisig_v2_enhancement_feature(), features::get_abort_if_multisig_payload_mismatch_feature()], vector[]);
         timestamp::set_time_has_started_for_testing(framework_signer);
         chain_id::initialize_for_test(framework_signer, 1);
-        let (burn, mint) = aptos_coin::initialize_for_test(framework_signer);
+        let (burn, mint) = starcoin_coin::initialize_for_test(framework_signer);
         destroy_mint_cap(mint);
         destroy_burn_cap(burn);
     }
@@ -1511,7 +1511,7 @@ module aptos_framework::multisig_account {
             framework_signer, vector[], vector[features::get_multisig_accounts_feature()]);
         timestamp::set_time_has_started_for_testing(framework_signer);
         chain_id::initialize_for_test(framework_signer, 1);
-        let (burn, mint) = aptos_coin::initialize_for_test(framework_signer);
+        let (burn, mint) = starcoin_coin::initialize_for_test(framework_signer);
         destroy_mint_cap(mint);
         destroy_burn_cap(burn);
     }

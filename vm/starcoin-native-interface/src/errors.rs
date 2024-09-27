@@ -32,7 +32,7 @@ pub enum SafeNativeError {
 
     /// Indicating the native function will result in a switch in control flow.
     ///
-    /// Please refer to the implementation in aptos_framework::natives::dispatchable_fungible_asset::native_dispatch
+    /// Please refer to the implementation in starcoin_framework::natives::dispatchable_fungible_asset::native_dispatch
     /// for reference implementation and avoid having an alternative implementation.
     ///
     /// It is important to make sure the args are in the exact same order as passed in from the native argument input

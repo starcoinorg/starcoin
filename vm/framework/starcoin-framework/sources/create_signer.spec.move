@@ -1,4 +1,4 @@
-spec aptos_framework::create_signer {
+spec starcoin_framework::create_signer {
     use std::signer;
 
     /// <high-level-req>

@@ -1,11 +1,11 @@
-spec aptos_framework::reconfiguration {
+spec starcoin_framework::reconfiguration {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: The Configuration resource is stored under the Aptos framework account with initial values upon
     /// module's initialization.
     /// Criticality: Medium
     /// Implementation: The Configuration resource may only be initialized with specific values and published under the
-    /// aptos_framework account.
+    /// starcoin_framework account.
     /// Enforcement: Formally verified via [high-level-req-1](initialize).
     ///
     /// No.: 2
@@ -47,113 +47,113 @@ spec aptos_framework::reconfiguration {
         pragma aborts_if_is_strict;
 
         // After genesis, `Configuration` exists.
-        invariant [suspendable] chain_status::is_operating() ==> exists<Configuration>(@aptos_framework);
+        invariant [suspendable] chain_status::is_operating() ==> exists<Configuration>(@starcoin_framework);
         invariant [suspendable] chain_status::is_operating() ==>
             (timestamp::spec_now_microseconds() >= last_reconfiguration_time());
     }
 
-    /// Make sure the signer address is @aptos_framework.
-    spec schema AbortsIfNotAptosFramework {
-        aptos_framework: &signer;
+    /// Make sure the signer address is @starcoin_framework.
+    spec schema AbortsIfNotStarcoinFramework {
+        starcoin_framework: &signer;
 
-        let addr = signer::address_of(aptos_framework);
-        aborts_if !system_addresses::is_aptos_framework_address(addr);
+        let addr = signer::address_of(starcoin_framework);
+        aborts_if !system_addresses::is_starcoin_framework_address(addr);
     }
 
-    /// Address @aptos_framework must exist resource Account and Configuration.
+    /// Address @starcoin_framework must exist resource Account and Configuration.
     /// Already exists in framework account.
     /// Guid_creation_num should be 2 according to logic.
-    spec initialize(aptos_framework: &signer) {
+    spec initialize(starcoin_framework: &signer) {
         use std::signer;
-        use aptos_framework::account::{Account};
-        use aptos_framework::guid;
+        use starcoin_framework::account::{Account};
+        use starcoin_framework::guid;
 
-        include AbortsIfNotAptosFramework;
-        let addr = signer::address_of(aptos_framework);
-        let post config = global<Configuration>(@aptos_framework);
+        include AbortsIfNotStarcoinFramework;
+        let addr = signer::address_of(starcoin_framework);
+        let post config = global<Configuration>(@starcoin_framework);
         requires exists<Account>(addr);
         aborts_if !(global<Account>(addr).guid_creation_num == 2);
-        aborts_if exists<Configuration>(@aptos_framework);
+        aborts_if exists<Configuration>(@starcoin_framework);
         // property 1: During the module's initialization, it guarantees that the Configuration resource will move under
         // the Aptos framework account with initial values.
         /// [high-level-req-1]
-        ensures exists<Configuration>(@aptos_framework);
+        ensures exists<Configuration>(@starcoin_framework);
         ensures config.epoch == 0 && config.last_reconfiguration_time == 0;
         ensures config.events == event::EventHandle<NewEpochEvent> {
             counter: 0,
             guid: guid::GUID {
                 id: guid::ID {
                     creation_num: 2,
-                    addr: @aptos_framework
+                    addr: @starcoin_framework
                 }
             }
         };
     }
 
     spec current_epoch(): u64 {
-        aborts_if !exists<Configuration>(@aptos_framework);
-        ensures result == global<Configuration>(@aptos_framework).epoch;
+        aborts_if !exists<Configuration>(@starcoin_framework);
+        ensures result == global<Configuration>(@starcoin_framework).epoch;
     }
 
-    spec disable_reconfiguration(aptos_framework: &signer) {
-        include AbortsIfNotAptosFramework;
-        aborts_if exists<DisableReconfiguration>(@aptos_framework);
-        ensures exists<DisableReconfiguration>(@aptos_framework);
+    spec disable_reconfiguration(starcoin_framework: &signer) {
+        include AbortsIfNotStarcoinFramework;
+        aborts_if exists<DisableReconfiguration>(@starcoin_framework);
+        ensures exists<DisableReconfiguration>(@starcoin_framework);
     }
 
     /// Make sure the caller is admin and check the resource DisableReconfiguration.
-    spec enable_reconfiguration(aptos_framework: &signer) {
-        use aptos_framework::reconfiguration::{DisableReconfiguration};
-        include AbortsIfNotAptosFramework;
-        aborts_if !exists<DisableReconfiguration>(@aptos_framework);
-        ensures !exists<DisableReconfiguration>(@aptos_framework);
+    spec enable_reconfiguration(starcoin_framework: &signer) {
+        use starcoin_framework::reconfiguration::{DisableReconfiguration};
+        include AbortsIfNotStarcoinFramework;
+        aborts_if !exists<DisableReconfiguration>(@starcoin_framework);
+        ensures !exists<DisableReconfiguration>(@starcoin_framework);
     }
 
     /// When genesis_event emit the epoch and the `last_reconfiguration_time` .
     /// Should equal to 0
     spec emit_genesis_reconfiguration_event {
-        use aptos_framework::reconfiguration::{Configuration};
+        use starcoin_framework::reconfiguration::{Configuration};
 
-        aborts_if !exists<Configuration>(@aptos_framework);
-        let config_ref = global<Configuration>(@aptos_framework);
+        aborts_if !exists<Configuration>(@starcoin_framework);
+        let config_ref = global<Configuration>(@starcoin_framework);
         aborts_if !(config_ref.epoch == 0 && config_ref.last_reconfiguration_time == 0);
-        ensures global<Configuration>(@aptos_framework).epoch == 1;
+        ensures global<Configuration>(@starcoin_framework).epoch == 1;
     }
 
     spec last_reconfiguration_time {
-        aborts_if !exists<Configuration>(@aptos_framework);
-        ensures result == global<Configuration>(@aptos_framework).last_reconfiguration_time;
+        aborts_if !exists<Configuration>(@starcoin_framework);
+        ensures result == global<Configuration>(@starcoin_framework).last_reconfiguration_time;
     }
 
     spec reconfigure {
-        use aptos_framework::aptos_coin;
-        use aptos_framework::transaction_fee;
-        use aptos_framework::staking_config;
+        use starcoin_framework::starcoin_coin;
+        use starcoin_framework::transaction_fee;
+        use starcoin_framework::staking_config;
 
         // TODO: set because of timeout (property proved)
         pragma verify = true;
         pragma verify_duration_estimate = 600;
-        requires exists<stake::ValidatorFees>(@aptos_framework);
+        requires exists<stake::ValidatorFees>(@starcoin_framework);
 
         let success = !(chain_status::is_genesis() || timestamp::spec_now_microseconds() == 0 || !reconfiguration_enabled())
-            && timestamp::spec_now_microseconds() != global<Configuration>(@aptos_framework).last_reconfiguration_time;
+            && timestamp::spec_now_microseconds() != global<Configuration>(@starcoin_framework).last_reconfiguration_time;
         include features::spec_periodical_reward_rate_decrease_enabled() ==> staking_config::StakingRewardsConfigEnabledRequirement;
-        include success ==> aptos_coin::ExistsAptosCoin;
-        include transaction_fee::RequiresCollectedFeesPerValueLeqBlockAptosSupply;
+        include success ==> starcoin_coin::ExistsAptosCoin;
+        include transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply;
         aborts_if false;
         // The ensure conditions of the reconfigure function are not fully written, because there is a new cycle in it,
         // but its existing ensure conditions satisfy hp.
         // The property below is not proved within 500s and still cause an timeout
         // property 3: Synchronization of NewEpochEvent counter with configuration epoch.
-        ensures success ==> global<Configuration>(@aptos_framework).epoch == old(global<Configuration>(@aptos_framework).epoch) + 1;
-        ensures success ==> global<Configuration>(@aptos_framework).last_reconfiguration_time == timestamp::spec_now_microseconds();
+        ensures success ==> global<Configuration>(@starcoin_framework).epoch == old(global<Configuration>(@starcoin_framework).epoch) + 1;
+        ensures success ==> global<Configuration>(@starcoin_framework).last_reconfiguration_time == timestamp::spec_now_microseconds();
         // We remove the ensures of event increment due to inconsisency
         // TODO: property 4: Only performs reconfiguration if genesis has started and reconfiguration is enabled.
         // Also, the last reconfiguration must not be the current time, returning early without further actions otherwise.
         // property 5: Consecutive reconfigurations without the passage of time are not permitted.
         /// [high-level-req-4]
         /// [high-level-req-5]
-        ensures !success ==> global<Configuration>(@aptos_framework).epoch == old(global<Configuration>(@aptos_framework).epoch);
+        ensures !success ==> global<Configuration>(@starcoin_framework).epoch == old(global<Configuration>(@starcoin_framework).epoch);
     }
 
     spec reconfiguration_enabled {
@@ -161,6 +161,6 @@ spec aptos_framework::reconfiguration {
         // whether or not the system allows reconfiguration.
         /// [high-level-req-2]
         aborts_if false;
-        ensures result == !exists<DisableReconfiguration>(@aptos_framework);
+        ensures result == !exists<DisableReconfiguration>(@starcoin_framework);
     }
 }

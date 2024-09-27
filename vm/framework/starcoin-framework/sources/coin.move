@@ -1,29 +1,29 @@
 /// This module provides the foundation for typesafe Coins.
-module aptos_framework::coin {
+module starcoin_framework::coin {
     use std::error;
     use std::features;
     use std::option::{Self, Option};
     use std::signer;
     use std::string::{Self, String};
-    use aptos_std::table::{Self, Table};
+    use starcoin_std::table::{Self, Table};
 
-    use aptos_framework::account;
-    use aptos_framework::aggregator_factory;
-    use aptos_framework::aggregator::{Self, Aggregator};
-    use aptos_framework::event::{Self, EventHandle};
-    use aptos_framework::guid;
-    use aptos_framework::optional_aggregator::{Self, OptionalAggregator};
-    use aptos_framework::system_addresses;
+    use starcoin_framework::account;
+    use starcoin_framework::aggregator_factory;
+    use starcoin_framework::aggregator::{Self, Aggregator};
+    use starcoin_framework::event::{Self, EventHandle};
+    use starcoin_framework::guid;
+    use starcoin_framework::optional_aggregator::{Self, OptionalAggregator};
+    use starcoin_framework::system_addresses;
 
-    use aptos_framework::fungible_asset::{Self, FungibleAsset, Metadata, MintRef, TransferRef, BurnRef};
-    use aptos_framework::object::{Self, Object, object_address};
-    use aptos_framework::primary_fungible_store;
-    use aptos_std::type_info::{Self, TypeInfo, type_name};
-    use aptos_framework::create_signer;
+    use starcoin_framework::fungible_asset::{Self, FungibleAsset, Metadata, MintRef, TransferRef, BurnRef};
+    use starcoin_framework::object::{Self, Object, object_address};
+    use starcoin_framework::primary_fungible_store;
+    use starcoin_std::type_info::{Self, TypeInfo, type_name};
+    use starcoin_framework::create_signer;
 
-    friend aptos_framework::aptos_coin;
-    friend aptos_framework::genesis;
-    friend aptos_framework::transaction_fee;
+    friend starcoin_framework::starcoin_coin;
+    friend starcoin_framework::genesis;
+    friend starcoin_framework::transaction_fee;
 
     //
     // Errors.
@@ -224,7 +224,7 @@ module aptos_framework::coin {
         fungible_asset_metadata_address: address,
     }
 
-    #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
+    #[resource_group_member(group = starcoin_framework::object::ObjectGroup)]
     /// The flag the existence of which indicates the primary fungible store is created by the migration from CoinStore.
     struct MigrationFlag has key {}
 
@@ -242,13 +242,13 @@ module aptos_framework::coin {
         coin_to_fungible_asset_map: Table<TypeInfo, Object<Metadata>>,
     }
 
-    #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
+    #[resource_group_member(group = starcoin_framework::object::ObjectGroup)]
     /// The paired coin type info stored in fungible asset metadata object.
     struct PairedCoinType has key {
         type: TypeInfo,
     }
 
-    #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
+    #[resource_group_member(group = starcoin_framework::object::ObjectGroup)]
     /// The refs of the paired fungible asset.
     struct PairedFungibleAssetRefs has key {
         mint_ref_opt: Option<MintRef>,
@@ -274,9 +274,9 @@ module aptos_framework::coin {
     #[view]
     /// Get the paired fungible asset metadata object of a coin type. If not exist, return option::none().
     public fun paired_metadata<CoinType>(): Option<Object<Metadata>> acquires CoinConversionMap {
-        if (exists<CoinConversionMap>(@aptos_framework) && features::coin_to_fungible_asset_migration_feature_enabled(
+        if (exists<CoinConversionMap>(@starcoin_framework) && features::coin_to_fungible_asset_migration_feature_enabled(
         )) {
-            let map = &borrow_global<CoinConversionMap>(@aptos_framework).coin_to_fungible_asset_map;
+            let map = &borrow_global<CoinConversionMap>(@starcoin_framework).coin_to_fungible_asset_map;
             let type = type_info::type_of<CoinType>();
             if (table::contains(map, type)) {
                 return option::some(*table::borrow(map, type))
@@ -285,25 +285,25 @@ module aptos_framework::coin {
         option::none()
     }
 
-    public entry fun create_coin_conversion_map(aptos_framework: &signer) {
-        system_addresses::assert_aptos_framework(aptos_framework);
-        if (!exists<CoinConversionMap>(@aptos_framework)) {
-            move_to(aptos_framework, CoinConversionMap {
+    public entry fun create_coin_conversion_map(starcoin_framework: &signer) {
+        system_addresses::assert_starcoin_framework(starcoin_framework);
+        if (!exists<CoinConversionMap>(@starcoin_framework)) {
+            move_to(starcoin_framework, CoinConversionMap {
                 coin_to_fungible_asset_map: table::new(),
             })
         };
     }
 
-    /// Create APT pairing by passing `AptosCoin`.
+    /// Create APT pairing by passing `StarcoinCoin`.
     public entry fun create_pairing<CoinType>(
-        aptos_framework: &signer
+        starcoin_framework: &signer
     ) acquires CoinConversionMap, CoinInfo {
-        system_addresses::assert_aptos_framework(aptos_framework);
+        system_addresses::assert_starcoin_framework(starcoin_framework);
         create_and_return_paired_metadata_if_not_exist<CoinType>(true);
     }
 
     inline fun is_apt<CoinType>(): bool {
-        type_info::type_name<CoinType>() == string::utf8(b"0x1::aptos_coin::AptosCoin")
+        type_info::type_name<CoinType>() == string::utf8(b"0x1::starcoin_coin::StarcoinCoin")
     }
 
     inline fun create_and_return_paired_metadata_if_not_exist<CoinType>(allow_apt_creation: bool): Object<Metadata> {
@@ -311,18 +311,18 @@ module aptos_framework::coin {
             features::coin_to_fungible_asset_migration_feature_enabled(),
             error::invalid_state(EMIGRATION_FRAMEWORK_NOT_ENABLED)
         );
-        assert!(exists<CoinConversionMap>(@aptos_framework), error::not_found(ECOIN_CONVERSION_MAP_NOT_FOUND));
-        let map = borrow_global_mut<CoinConversionMap>(@aptos_framework);
+        assert!(exists<CoinConversionMap>(@starcoin_framework), error::not_found(ECOIN_CONVERSION_MAP_NOT_FOUND));
+        let map = borrow_global_mut<CoinConversionMap>(@starcoin_framework);
         let type = type_info::type_of<CoinType>();
         if (!table::contains(&map.coin_to_fungible_asset_map, type)) {
             let is_apt = is_apt<CoinType>();
             assert!(!is_apt || allow_apt_creation, error::invalid_state(EAPT_PAIRING_IS_NOT_ENABLED));
             let metadata_object_cref =
                 if (is_apt) {
-                    object::create_sticky_object_at_address(@aptos_framework, @aptos_fungible_asset)
+                    object::create_sticky_object_at_address(@starcoin_framework, @starcoin_fungible_asset)
                 } else {
                     object::create_named_object(
-                        &create_signer::create_signer(@aptos_fungible_asset),
+                        &create_signer::create_signer(@starcoin_fungible_asset),
                         *string::bytes(&type_info::type_name<CoinType>())
                     )
                 };
@@ -543,16 +543,16 @@ module aptos_framework::coin {
     //
 
     /// Publishes supply configuration. Initially, upgrading is not allowed.
-    public(friend) fun initialize_supply_config(aptos_framework: &signer) {
-        system_addresses::assert_aptos_framework(aptos_framework);
-        move_to(aptos_framework, SupplyConfig { allow_upgrades: false });
+    public(friend) fun initialize_supply_config(starcoin_framework: &signer) {
+        system_addresses::assert_starcoin_framework(starcoin_framework);
+        move_to(starcoin_framework, SupplyConfig { allow_upgrades: false });
     }
 
     /// This should be called by on-chain governance to update the config and allow
     /// or disallow upgradability of total supply.
-    public fun allow_supply_upgrades(aptos_framework: &signer, allowed: bool) acquires SupplyConfig {
-        system_addresses::assert_aptos_framework(aptos_framework);
-        let allow_upgrades = &mut borrow_global_mut<SupplyConfig>(@aptos_framework).allow_upgrades;
+    public fun allow_supply_upgrades(starcoin_framework: &signer, allowed: bool) acquires SupplyConfig {
+        system_addresses::assert_starcoin_framework(starcoin_framework);
+        let allow_upgrades = &mut borrow_global_mut<SupplyConfig>(@starcoin_framework).allow_upgrades;
         *allow_upgrades = allowed;
     }
 
@@ -562,8 +562,8 @@ module aptos_framework::coin {
 
     /// Creates a new aggregatable coin with value overflowing on `limit`. Note that this function can
     /// only be called by Aptos Framework (0x1) account for now because of `create_aggregator`.
-    public(friend) fun initialize_aggregatable_coin<CoinType>(aptos_framework: &signer): AggregatableCoin<CoinType> {
-        let aggregator = aggregator_factory::create_aggregator(aptos_framework, MAX_U64);
+    public(friend) fun initialize_aggregatable_coin<CoinType>(starcoin_framework: &signer): AggregatableCoin<CoinType> {
+        let aggregator = aggregator_factory::create_aggregator(starcoin_framework, MAX_U64);
         AggregatableCoin<CoinType> {
             value: aggregator,
         }
@@ -1025,7 +1025,7 @@ module aptos_framework::coin {
 
         // Can only succeed once on-chain governance agreed on the upgrade.
         assert!(
-            borrow_global_mut<SupplyConfig>(@aptos_framework).allow_upgrades,
+            borrow_global_mut<SupplyConfig>(@starcoin_framework).allow_upgrades,
             error::permission_denied(ECOIN_SUPPLY_UPGRADE_NOT_SUPPORTED)
         );
 
@@ -1061,7 +1061,7 @@ module aptos_framework::coin {
         decimals: u8,
         monitor_supply: bool,
     ): (BurnCapability<CoinType>, FreezeCapability<CoinType>, MintCapability<CoinType>) {
-        system_addresses::assert_aptos_framework(account);
+        system_addresses::assert_starcoin_framework(account);
         initialize_internal(account, name, symbol, decimals, monitor_supply, true)
     }
 
@@ -1240,8 +1240,8 @@ module aptos_framework::coin {
         if (option::is_some(maybe_supply)) {
             let supply = option::borrow_mut(maybe_supply);
             spec {
-                use aptos_framework::optional_aggregator;
-                use aptos_framework::aggregator;
+                use starcoin_framework::optional_aggregator;
+                use starcoin_framework::aggregator;
                 assume optional_aggregator::is_parallelizable(supply) ==> (aggregator::spec_aggregator_get_val(
                     option::borrow(supply.aggregator)
                 )
@@ -1444,7 +1444,7 @@ module aptos_framework::coin {
         });
     }
 
-    #[test(source = @0x2, framework = @aptos_framework)]
+    #[test(source = @0x2, framework = @starcoin_framework)]
     #[expected_failure(abort_code = 0x10001, location = Self)]
     public fun fail_initialize(source: signer, framework: signer) {
         aggregator_factory::initialize_aggregator_factory_for_test(&framework);
@@ -1645,7 +1645,7 @@ module aptos_framework::coin {
     }
 
     #[test(account = @0x1)]
-    #[expected_failure(abort_code = 0x50003, location = aptos_framework::fungible_asset)]
+    #[expected_failure(abort_code = 0x50003, location = starcoin_framework::fungible_asset)]
     public entry fun withdraw_frozen(account: signer) acquires CoinInfo, CoinStore, CoinConversionMap, PairedCoinType {
         let account_addr = signer::address_of(&account);
         account::create_account_for_test(account_addr);
@@ -1741,8 +1741,8 @@ module aptos_framework::coin {
     }
 
 
-    #[test(framework = @aptos_framework, other = @0x123)]
-    #[expected_failure(abort_code = 0x50003, location = aptos_framework::system_addresses)]
+    #[test(framework = @starcoin_framework, other = @0x123)]
+    #[expected_failure(abort_code = 0x50003, location = starcoin_framework::system_addresses)]
     fun test_supply_initialize_fails(framework: signer, other: signer) {
         aggregator_factory::initialize_aggregator_factory_for_test(&framework);
         initialize_with_aggregator(&other);
@@ -1760,7 +1760,7 @@ module aptos_framework::coin {
         migrate_to_fungible_store<String>(&other);
     }
 
-    #[test(framework = @aptos_framework)]
+    #[test(framework = @starcoin_framework)]
     fun test_supply_initialize(framework: signer) acquires CoinInfo {
         aggregator_factory::initialize_aggregator_factory_for_test(&framework);
         initialize_with_aggregator(&framework);
@@ -1777,8 +1777,8 @@ module aptos_framework::coin {
         assert!(optional_aggregator::read(supply) == 1000, 0);
     }
 
-    #[test(framework = @aptos_framework)]
-    #[expected_failure(abort_code = 0x20001, location = aptos_framework::aggregator)]
+    #[test(framework = @starcoin_framework)]
+    #[expected_failure(abort_code = 0x20001, location = starcoin_framework::aggregator)]
     fun test_supply_overflow(framework: signer) acquires CoinInfo {
         aggregator_factory::initialize_aggregator_factory_for_test(&framework);
         initialize_with_aggregator(&framework);
@@ -1791,8 +1791,8 @@ module aptos_framework::coin {
         optional_aggregator::sub(supply, 1);
     }
 
-    #[test(framework = @aptos_framework)]
-    #[expected_failure(abort_code = 0x5000B, location = aptos_framework::coin)]
+    #[test(framework = @starcoin_framework)]
+    #[expected_failure(abort_code = 0x5000B, location = starcoin_framework::coin)]
     fun test_supply_upgrade_fails(framework: signer) acquires CoinInfo, SupplyConfig {
         initialize_supply_config(&framework);
         aggregator_factory::initialize_aggregator_factory_for_test(&framework);
@@ -1812,7 +1812,7 @@ module aptos_framework::coin {
         upgrade_supply<FakeMoney>(&framework);
     }
 
-    #[test(framework = @aptos_framework)]
+    #[test(framework = @starcoin_framework)]
     fun test_supply_upgrade(framework: signer) acquires CoinInfo, SupplyConfig {
         initialize_supply_config(&framework);
         aggregator_factory::initialize_aggregator_factory_for_test(&framework);
@@ -1841,7 +1841,7 @@ module aptos_framework::coin {
         aggregator::destroy(value);
     }
 
-    #[test(framework = @aptos_framework)]
+    #[test(framework = @starcoin_framework)]
     public entry fun test_collect_from_and_drain(
         framework: signer,
     ) acquires CoinInfo, CoinStore, CoinConversionMap, PairedCoinType {
@@ -1907,7 +1907,7 @@ module aptos_framework::coin {
         merge(&mut coin_store.coin, coin);
     }
 
-    #[test(account = @aptos_framework)]
+    #[test(account = @starcoin_framework)]
     fun test_conversion_basic(
         account: &signer
     ) acquires CoinConversionMap, CoinInfo, CoinStore, PairedCoinType, PairedFungibleAssetRefs {
@@ -1968,7 +1968,7 @@ module aptos_framework::coin {
         });
     }
 
-    #[test(account = @aptos_framework, aaron = @0xcafe)]
+    #[test(account = @starcoin_framework, aaron = @0xcafe)]
     fun test_balance_with_both_stores(
         account: &signer,
         aaron: &signer
@@ -1996,7 +1996,7 @@ module aptos_framework::coin {
         });
     }
 
-    #[test(account = @aptos_framework)]
+    #[test(account = @starcoin_framework)]
     fun test_deposit(
         account: &signer,
     ) acquires CoinConversionMap, CoinInfo, CoinStore {
@@ -2023,7 +2023,7 @@ module aptos_framework::coin {
         });
     }
 
-    #[test(account = @aptos_framework)]
+    #[test(account = @starcoin_framework)]
     fun test_withdraw(
         account: &signer,
     ) acquires CoinConversionMap, CoinInfo, CoinStore, PairedCoinType {
@@ -2069,7 +2069,7 @@ module aptos_framework::coin {
         });
     }
 
-    #[test(account = @aptos_framework)]
+    #[test(account = @starcoin_framework)]
     fun test_supply(
         account: &signer,
     ) acquires CoinConversionMap, CoinInfo, PairedCoinType, PairedFungibleAssetRefs {
@@ -2105,7 +2105,7 @@ module aptos_framework::coin {
         });
     }
 
-    #[test(account = @aptos_framework, aaron = @0xaa10, bob = @0xb0b)]
+    #[test(account = @starcoin_framework, aaron = @0xaa10, bob = @0xb0b)]
     #[expected_failure(abort_code = 0x60005, location = Self)]
     fun test_force_deposit(
         account: &signer,
@@ -2137,7 +2137,7 @@ module aptos_framework::coin {
         });
     }
 
-    #[test(account = @aptos_framework, aaron = @0xaa10, bob = @0xb0b)]
+    #[test(account = @starcoin_framework, aaron = @0xaa10, bob = @0xb0b)]
     fun test_is_account_registered(
         account: &signer,
         aaron: &signer,
@@ -2185,7 +2185,7 @@ module aptos_framework::coin {
         });
     }
 
-    #[test(account = @aptos_framework, aaron = @0xaa10)]
+    #[test(account = @starcoin_framework, aaron = @0xaa10)]
     fun test_migration_with_existing_primary_fungible_store(
         account: &signer,
     ) acquires CoinConversionMap, CoinInfo, CoinStore, PairedCoinType {

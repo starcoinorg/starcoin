@@ -1,4 +1,4 @@
-spec aptos_framework::vesting {
+spec starcoin_framework::vesting {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: In order to retrieve the address of the underlying stake pool, the vesting start timestamp of the
@@ -244,7 +244,7 @@ spec aptos_framework::vesting {
         /// [high-level-req-6]
         aborts_if !(len(schedule) > 0);
         aborts_if !(period_duration > 0);
-        aborts_if !exists<timestamp::CurrentTimeMicroseconds>(@aptos_framework);
+        aborts_if !exists<timestamp::CurrentTimeMicroseconds>(@starcoin_framework);
         aborts_if !(start_timestamp_secs >= timestamp::now_seconds());
     }
 
@@ -252,9 +252,9 @@ spec aptos_framework::vesting {
         // TODO: Data invariant does not hold.
         pragma verify = false;
         /// [high-level-req-10]
-        aborts_if withdrawal_address == @aptos_framework || withdrawal_address == @vm_reserved;
+        aborts_if withdrawal_address == @starcoin_framework || withdrawal_address == @vm_reserved;
         aborts_if !exists<account::Account>(withdrawal_address);
-        aborts_if !exists<coin::CoinStore<AptosCoin>>(withdrawal_address);
+        aborts_if !exists<coin::CoinStore<StarcoinCoin>>(withdrawal_address);
         aborts_if len(shareholders) == 0;
         // property 2: The vesting pool should not exceed a maximum of 30 shareholders.
         aborts_if simple_map::spec_len(buy_ins) != len(shareholders);
@@ -439,7 +439,7 @@ spec aptos_framework::vesting {
         pragma verify_duration_estimate = 300;
         pragma aborts_if_is_partial;
         aborts_if !account::exists_at(new_beneficiary);
-        aborts_if !coin::spec_is_account_registered<AptosCoin>(new_beneficiary);
+        aborts_if !coin::spec_is_account_registered<StarcoinCoin>(new_beneficiary);
         include VerifyAdminAbortsIf;
         let post vesting_contract = global<VestingContract>(contract_address);
         ensures simple_map::spec_contains_key(vesting_contract.beneficiaries,shareholder);
@@ -533,11 +533,11 @@ spec aptos_framework::vesting {
 
         let acc = global<account::Account>(resource_addr);
         let post post_acc = global<account::Account>(resource_addr);
-        aborts_if !exists<coin::CoinStore<AptosCoin>>(resource_addr) && !aptos_std::type_info::spec_is_struct<AptosCoin>();
-        aborts_if !exists<coin::CoinStore<AptosCoin>>(resource_addr) && ea && acc.guid_creation_num + 2 > MAX_U64;
-        aborts_if !exists<coin::CoinStore<AptosCoin>>(resource_addr) && ea && acc.guid_creation_num + 2 >= account::MAX_GUID_CREATION_NUM;
+        aborts_if !exists<coin::CoinStore<StarcoinCoin>>(resource_addr) && !starcoin_std::type_info::spec_is_struct<StarcoinCoin>();
+        aborts_if !exists<coin::CoinStore<StarcoinCoin>>(resource_addr) && ea && acc.guid_creation_num + 2 > MAX_U64;
+        aborts_if !exists<coin::CoinStore<StarcoinCoin>>(resource_addr) && ea && acc.guid_creation_num + 2 >= account::MAX_GUID_CREATION_NUM;
         ensures exists<account::Account>(resource_addr) && post_acc.authentication_key == account::ZERO_AUTH_KEY &&
-                exists<coin::CoinStore<AptosCoin>>(resource_addr);
+                exists<coin::CoinStore<StarcoinCoin>>(resource_addr);
         ensures signer::address_of(result_1) == resource_addr;
         ensures result_2.account == resource_addr;
     }
@@ -577,7 +577,7 @@ spec aptos_framework::vesting {
         include amount != 0 ==> DistributeInternalAbortsIf { staker: acc, operator, staking_contract, distribute_events: store.distribute_events };
     }
 
-    spec withdraw_stake(vesting_contract: &VestingContract, contract_address: address): Coin<AptosCoin> {
+    spec withdraw_stake(vesting_contract: &VestingContract, contract_address: address): Coin<StarcoinCoin> {
         // TODO: Calls `staking_contract::distribute` which is not verified.
         pragma verify = false;
         include WithdrawStakeAbortsIf;
@@ -614,8 +614,8 @@ spec aptos_framework::vesting {
         let pool_address_1 = staking_contract.owner_cap.pool_address;
         aborts_if !exists<stake::StakePool>(pool_address_1);
         let stake_pool_1 = global<stake::StakePool>(pool_address_1);
-        aborts_if !exists<stake::ValidatorSet>(@aptos_framework);
-        let validator_set = global<stake::ValidatorSet>(@aptos_framework);
+        aborts_if !exists<stake::ValidatorSet>(@starcoin_framework);
+        let validator_set = global<stake::ValidatorSet>(@starcoin_framework);
         let inactive_state = !stake::spec_contains(validator_set.pending_active, pool_address_1)
             && !stake::spec_contains(validator_set.active_validators, pool_address_1)
             && !stake::spec_contains(validator_set.pending_inactive, pool_address_1);

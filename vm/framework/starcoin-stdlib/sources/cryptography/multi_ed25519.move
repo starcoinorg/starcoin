@@ -1,13 +1,13 @@
 /// Exports MultiEd25519 multi-signatures in Move.
 /// This module has the exact same interface as the Ed25519 module.
 
-module aptos_std::multi_ed25519 {
+module starcoin_std::multi_ed25519 {
     use std::bcs;
     use std::error;
     use std::features;
     use std::option::{Self, Option};
     use std::vector;
-    use aptos_std::ed25519;
+    use starcoin_std::ed25519;
 
     //
     // Error codes

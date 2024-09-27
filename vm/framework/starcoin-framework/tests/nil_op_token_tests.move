@@ -1,13 +1,13 @@
 #[test_only]
-module aptos_framework::nil_op_token_tests {
-    use aptos_framework::fungible_asset::{Self, Metadata, TestToken};
-    use aptos_framework::dispatchable_fungible_asset;
+module starcoin_framework::nil_op_token_tests {
+    use starcoin_framework::fungible_asset::{Self, Metadata, TestToken};
+    use starcoin_framework::dispatchable_fungible_asset;
     use 0xcafe::nil_op_token;
-    use aptos_framework::object;
+    use starcoin_framework::object;
     use std::option;
 
     #[test(creator = @0xcafe)]
-    #[expected_failure(abort_code=0x70002, location=aptos_framework::dispatchable_fungible_asset)]
+    #[expected_failure(abort_code=0x70002, location=starcoin_framework::dispatchable_fungible_asset)]
     fun test_nil_op_token(
         creator: &signer,
     ) {

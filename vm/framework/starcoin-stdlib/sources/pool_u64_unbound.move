@@ -13,8 +13,8 @@
 /// 6. A redeems 500 shares. Each share is worth 6000 / 1500 = 4. A receives 2000 coins. Pool has 4000 coins and 1000
 /// shares left.
 ///
-module aptos_std::pool_u64_unbound {
-    use aptos_std::table_with_length::{Self as table, TableWithLength as Table};
+module starcoin_std::pool_u64_unbound {
+    use starcoin_std::table_with_length::{Self as table, TableWithLength as Table};
     use std::error;
 
     /// Shareholder not present in pool.
