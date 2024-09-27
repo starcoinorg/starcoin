@@ -47,7 +47,7 @@ spec starcoin_framework::reconfiguration_with_dkg {
         requires exists<CoinInfo<StarcoinCoin>>(@starcoin_framework);
         include staking_config::StakingRewardsConfigRequirement;
         requires exists<stake::ValidatorFees>(@starcoin_framework);
-        include transaction_fee::RequiresCollectedFeesPerValueLeqBlockAptosSupply;
+        include transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply;
         requires exists<features::Features>(@std);
         include config_buffer::OnNewEpochRequirement<version::Version>;
         include config_buffer::OnNewEpochRequirement<gas_schedule::GasScheduleV2>;

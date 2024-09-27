@@ -104,8 +104,8 @@ spec starcoin_framework::genesis {
         /// [high-level-req-3]
         requires !exists<stake::AptosCoinCapabilities>(@starcoin_framework);
         ensures exists<stake::AptosCoinCapabilities>(@starcoin_framework);
-        requires exists<transaction_fee::AptosCoinCapabilities>(@starcoin_framework);
-        ensures exists<transaction_fee::AptosCoinCapabilities>(@starcoin_framework);
+        requires exists<transaction_fee::CoinCapabilities>(@starcoin_framework);
+        ensures exists<transaction_fee::CoinCapabilities>(@starcoin_framework);
     }
 
     spec create_initialize_validators_with_commission {
@@ -160,7 +160,7 @@ spec starcoin_framework::genesis {
         requires exists<stake::ValidatorFees>(@starcoin_framework);
         requires exists<coin::CoinInfo<StarcoinCoin>>(@starcoin_framework);
         include CompareTimeRequires;
-        include transaction_fee::RequiresCollectedFeesPerValueLeqBlockAptosSupply;
+        include transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply;
     }
 
     spec schema CompareTimeRequires {

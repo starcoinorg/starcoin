@@ -61,7 +61,7 @@ spec starcoin_framework::gas_schedule {
         requires exists<stake::ValidatorFees>(@starcoin_framework);
         requires exists<CoinInfo<StarcoinCoin>>(@starcoin_framework);
         requires chain_status::is_genesis();
-        include transaction_fee::RequiresCollectedFeesPerValueLeqBlockAptosSupply;
+        include transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply;
         include staking_config::StakingRewardsConfigRequirement;
 
         /// [high-level-req-2]
@@ -88,7 +88,7 @@ spec starcoin_framework::gas_schedule {
         requires exists<stake::ValidatorFees>(@starcoin_framework);
         requires exists<CoinInfo<StarcoinCoin>>(@starcoin_framework);
         include system_addresses::AbortsIfNotAptosFramework{ account: starcoin_framework };
-        include transaction_fee::RequiresCollectedFeesPerValueLeqBlockAptosSupply;
+        include transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply;
         include staking_config::StakingRewardsConfigRequirement;
         aborts_if !exists<StorageGasConfig>(@starcoin_framework);
         ensures global<StorageGasConfig>(@starcoin_framework) == config;

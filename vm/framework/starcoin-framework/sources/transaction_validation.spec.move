@@ -349,7 +349,8 @@ spec starcoin_framework::transaction_validation {
         use starcoin_framework::coin;
         use starcoin_framework::coin::{CoinStore, CoinInfo};
         use starcoin_framework::optional_aggregator;
-        use starcoin_framework::transaction_fee::{AptosCoinCapabilities, AptosCoinMintCapability, CollectedFeesPerBlock};
+        use starcoin_framework::transaction_fee::{
+            CoinCapabilities, CoinMintCapability, CollectedFeesPerBlock};
 
         account: signer;
         gas_payer: address;
@@ -407,7 +408,7 @@ spec starcoin_framework::transaction_validation {
         let post post_apt_supply = option::spec_borrow(post_maybe_apt_supply);
         let post post_apt_supply_value = optional_aggregator::optional_aggregator_value(post_apt_supply);
 
-        aborts_if amount_to_burn > 0 && !exists<AptosCoinCapabilities>(@starcoin_framework);
+        aborts_if amount_to_burn > 0 && !exists<CoinCapabilities>(@starcoin_framework);
         aborts_if amount_to_burn > 0 && !exists<CoinInfo<StarcoinCoin>>(apt_addr);
         aborts_if amount_to_burn > 0 && total_supply_enabled && apt_supply_value < amount_to_burn;
         ensures total_supply_enabled ==> apt_supply_value - amount_to_burn == post_apt_supply_value;
@@ -422,7 +423,7 @@ spec starcoin_framework::transaction_validation {
         let post post_total_supply = coin::supply<StarcoinCoin>;
 
         aborts_if amount_to_mint > 0 && !exists<CoinStore<StarcoinCoin>>(addr);
-        aborts_if amount_to_mint > 0 && !exists<AptosCoinMintCapability>(@starcoin_framework);
+        aborts_if amount_to_mint > 0 && !exists<CoinMintCapability>(@starcoin_framework);
         aborts_if amount_to_mint > 0 && total_supply + amount_to_mint > MAX_U128;
         ensures amount_to_mint > 0 ==> post_total_supply == total_supply + amount_to_mint;
 

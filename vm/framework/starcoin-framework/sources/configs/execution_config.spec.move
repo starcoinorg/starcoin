@@ -19,7 +19,7 @@ spec starcoin_framework::execution_config {
         // TODO: set because of timeout (property proved)
         pragma verify_duration_estimate = 600;
         let addr = signer::address_of(account);
-        include transaction_fee::RequiresCollectedFeesPerValueLeqBlockAptosSupply;
+        include transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply;
         requires chain_status::is_genesis();
         requires exists<stake::ValidatorFees>(@starcoin_framework);
         requires exists<staking_config::StakingRewardsConfig>(@starcoin_framework);

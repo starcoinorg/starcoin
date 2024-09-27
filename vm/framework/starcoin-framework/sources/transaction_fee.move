@@ -30,17 +30,17 @@ module starcoin_framework::transaction_fee {
     const EFA_GAS_CHARGING_NOT_ENABLED: u64 = 5;
 
     /// Stores burn capability to burn the gas fees.
-    struct AptosCoinCapabilities has key {
+    struct CoinCapabilities has key {
         burn_cap: BurnCapability<StarcoinCoin>,
     }
 
     /// Stores burn capability to burn the gas fees.
-    struct AptosFABurnCapabilities has key {
+    struct FABurnCapabilities has key {
         burn_ref: BurnRef,
     }
 
     /// Stores mint capability to mint the refunds.
-    struct AptosCoinMintCapability has key {
+    struct CoinMintCapability has key {
         mint_cap: MintCapability<StarcoinCoin>,
     }
 
@@ -115,7 +115,7 @@ module starcoin_framework::transaction_fee {
     public fun upgrade_burn_percentage(
         starcoin_framework: &signer,
         new_burn_percentage: u8
-    ) acquires AptosCoinCapabilities, CollectedFeesPerBlock {
+    ) acquires CoinCapabilities, CollectedFeesPerBlock {
         system_addresses::assert_starcoin_framework(starcoin_framework);
         assert!(new_burn_percentage <= 100, error::out_of_range(EINVALID_BURN_PERCENTAGE));
 
@@ -141,7 +141,7 @@ module starcoin_framework::transaction_fee {
     }
 
     /// Burns a specified fraction of the coin.
-    fun burn_coin_fraction(coin: &mut Coin<StarcoinCoin>, burn_percentage: u8) acquires AptosCoinCapabilities {
+    fun burn_coin_fraction(coin: &mut Coin<StarcoinCoin>, burn_percentage: u8) acquires CoinCapabilities {
         assert!(burn_percentage <= 100, error::out_of_range(EINVALID_BURN_PERCENTAGE));
 
         let collected_amount = coin::value(coin);
@@ -154,7 +154,7 @@ module starcoin_framework::transaction_fee {
             let coin_to_burn = coin::extract(coin, amount_to_burn);
             coin::burn(
                 coin_to_burn,
-                &borrow_global<AptosCoinCapabilities>(@starcoin_framework).burn_cap,
+                &borrow_global<CoinCapabilities>(@starcoin_framework).burn_cap,
             );
         }
     }
@@ -162,7 +162,7 @@ module starcoin_framework::transaction_fee {
     /// Calculates the fee which should be distributed to the block proposer at the
     /// end of an epoch, and records it in the system. This function can only be called
     /// at the beginning of the block or during reconfiguration.
-    public(friend) fun process_collected_fees() acquires AptosCoinCapabilities, CollectedFeesPerBlock {
+    public(friend) fun process_collected_fees() acquires CoinCapabilities, CollectedFeesPerBlock {
         if (!is_fees_collection_enabled()) {
             return
         };
@@ -208,12 +208,12 @@ module starcoin_framework::transaction_fee {
     }
 
     /// Burn transaction fees in epilogue.
-    public(friend) fun burn_fee(account: address, fee: u64) acquires AptosFABurnCapabilities, AptosCoinCapabilities {
-        if (exists<AptosFABurnCapabilities>(@starcoin_framework)) {
-            let burn_ref = &borrow_global<AptosFABurnCapabilities>(@starcoin_framework).burn_ref;
+    public(friend) fun burn_fee(account: address, fee: u64) acquires FABurnCapabilities, CoinCapabilities {
+        if (exists<FABurnCapabilities>(@starcoin_framework)) {
+            let burn_ref = &borrow_global<FABurnCapabilities>(@starcoin_framework).burn_ref;
             starcoin_account::burn_from_fungible_store(burn_ref, account, fee);
         } else {
-            let burn_cap = &borrow_global<AptosCoinCapabilities>(@starcoin_framework).burn_cap;
+            let burn_cap = &borrow_global<CoinCapabilities>(@starcoin_framework).burn_cap;
             if (features::operations_default_to_fa_apt_store_enabled()) {
                 let (burn_ref, burn_receipt) = coin::get_paired_burn_ref(burn_cap);
                 starcoin_account::burn_from_fungible_store(&burn_ref, account, fee);
@@ -229,8 +229,8 @@ module starcoin_framework::transaction_fee {
     }
 
     /// Mint refund in epilogue.
-    public(friend) fun mint_and_refund(account: address, refund: u64) acquires AptosCoinMintCapability {
-        let mint_cap = &borrow_global<AptosCoinMintCapability>(@starcoin_framework).mint_cap;
+    public(friend) fun mint_and_refund(account: address, refund: u64) acquires CoinMintCapability {
+        let mint_cap = &borrow_global<CoinMintCapability>(@starcoin_framework).mint_cap;
         let refund_coin = coin::mint(refund, mint_cap);
         coin::force_deposit(account, refund_coin);
     }
@@ -247,31 +247,31 @@ module starcoin_framework::transaction_fee {
     }
 
     /// Only called during genesis.
-    public(friend) fun store_aptos_coin_burn_cap(starcoin_framework: &signer, burn_cap: BurnCapability<StarcoinCoin>) {
+    public(friend) fun store_coin_burn_cap(starcoin_framework: &signer, burn_cap: BurnCapability<StarcoinCoin>) {
         system_addresses::assert_starcoin_framework(starcoin_framework);
 
         if (features::operations_default_to_fa_apt_store_enabled()) {
             let burn_ref = coin::convert_and_take_paired_burn_ref(burn_cap);
-            move_to(starcoin_framework, AptosFABurnCapabilities { burn_ref });
+            move_to(starcoin_framework, FABurnCapabilities { burn_ref });
         } else {
-            move_to(starcoin_framework, AptosCoinCapabilities { burn_cap })
+            move_to(starcoin_framework, CoinCapabilities { burn_cap })
         }
     }
 
-    public entry fun convert_to_aptos_fa_burn_ref(starcoin_framework: &signer) acquires AptosCoinCapabilities {
+    public entry fun convert_to_starcoin_fa_burn_ref(starcoin_framework: &signer) acquires CoinCapabilities {
         assert!(features::operations_default_to_fa_apt_store_enabled(), EFA_GAS_CHARGING_NOT_ENABLED);
         system_addresses::assert_starcoin_framework(starcoin_framework);
-        let AptosCoinCapabilities {
+        let CoinCapabilities {
             burn_cap,
-        } = move_from<AptosCoinCapabilities>(signer::address_of(starcoin_framework));
+        } = move_from<CoinCapabilities>(signer::address_of(starcoin_framework));
         let burn_ref = coin::convert_and_take_paired_burn_ref(burn_cap);
-        move_to(starcoin_framework, AptosFABurnCapabilities { burn_ref });
+        move_to(starcoin_framework, FABurnCapabilities { burn_ref });
     }
 
     /// Only called during genesis.
-    public(friend) fun store_aptos_coin_mint_cap(starcoin_framework: &signer, mint_cap: MintCapability<StarcoinCoin>) {
+    public(friend) fun store_coin_mint_cap(starcoin_framework: &signer, mint_cap: MintCapability<StarcoinCoin>) {
         system_addresses::assert_starcoin_framework(starcoin_framework);
-        move_to(starcoin_framework, AptosCoinMintCapability { mint_cap })
+        move_to(starcoin_framework, CoinMintCapability { mint_cap })
     }
 
     #[deprecated]
@@ -305,10 +305,10 @@ module starcoin_framework::transaction_fee {
     }
 
     #[test(starcoin_framework = @starcoin_framework)]
-    fun test_burn_fraction_calculation(starcoin_framework: signer) acquires AptosCoinCapabilities {
+    fun test_burn_fraction_calculation(starcoin_framework: signer) acquires CoinCapabilities {
         use starcoin_framework::starcoin_coin;
         let (burn_cap, mint_cap) = starcoin_coin::initialize_for_test(&starcoin_framework);
-        store_aptos_coin_burn_cap(&starcoin_framework, burn_cap);
+        store_coin_burn_cap(&starcoin_framework, burn_cap);
 
         let c1 = coin::mint<StarcoinCoin>(100, &mint_cap);
         assert!(*option::borrow(&coin::supply<StarcoinCoin>()) == 100, 0);
@@ -348,14 +348,14 @@ module starcoin_framework::transaction_fee {
         alice: signer,
         bob: signer,
         carol: signer,
-    ) acquires AptosCoinCapabilities, CollectedFeesPerBlock {
+    ) acquires CoinCapabilities, CollectedFeesPerBlock {
         use std::signer;
         use starcoin_framework::starcoin_account;
         use starcoin_framework::starcoin_coin;
 
         // Initialization.
         let (burn_cap, mint_cap) = starcoin_coin::initialize_for_test(&starcoin_framework);
-        store_aptos_coin_burn_cap(&starcoin_framework, burn_cap);
+        store_coin_burn_cap(&starcoin_framework, burn_cap);
         initialize_fee_collection_and_distribution(&starcoin_framework, 10);
 
         // Create dummy accounts.

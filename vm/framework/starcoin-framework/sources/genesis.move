@@ -143,9 +143,9 @@ module starcoin_framework::genesis {
         // Give stake module MintCapability<StarcoinCoin> so it can mint rewards.
         stake::store_aptos_coin_mint_cap(starcoin_framework, mint_cap);
         // Give transaction_fee module BurnCapability<StarcoinCoin> so it can burn gas.
-        transaction_fee::store_aptos_coin_burn_cap(starcoin_framework, burn_cap);
+        transaction_fee::store_coin_burn_cap(starcoin_framework, burn_cap);
         // Give transaction_fee module MintCapability<StarcoinCoin> so it can mint refunds.
-        transaction_fee::store_aptos_coin_mint_cap(starcoin_framework, mint_cap);
+        transaction_fee::store_coin_mint_cap(starcoin_framework, mint_cap);
     }
 
     /// Only called for testnets and e2e tests.
@@ -161,9 +161,9 @@ module starcoin_framework::genesis {
         // Give stake module MintCapability<StarcoinCoin> so it can mint rewards.
         stake::store_aptos_coin_mint_cap(starcoin_framework, mint_cap);
         // Give transaction_fee module BurnCapability<StarcoinCoin> so it can burn gas.
-        transaction_fee::store_aptos_coin_burn_cap(starcoin_framework, burn_cap);
+        transaction_fee::store_coin_burn_cap(starcoin_framework, burn_cap);
         // Give transaction_fee module MintCapability<StarcoinCoin> so it can mint refunds.
-        transaction_fee::store_aptos_coin_mint_cap(starcoin_framework, mint_cap);
+        transaction_fee::store_coin_mint_cap(starcoin_framework, mint_cap);
 
         let core_resources = account::create_account(@core_resources);
         account::rotate_authentication_key_internal(&core_resources, core_resources_auth_key);

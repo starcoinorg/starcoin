@@ -53,7 +53,7 @@ spec starcoin_framework::reconfiguration {
     }
 
     /// Make sure the signer address is @starcoin_framework.
-    spec schema AbortsIfNotAptosFramework {
+    spec schema AbortsIfNotStarcoinFramework {
         starcoin_framework: &signer;
 
         let addr = signer::address_of(starcoin_framework);
@@ -68,7 +68,7 @@ spec starcoin_framework::reconfiguration {
         use starcoin_framework::account::{Account};
         use starcoin_framework::guid;
 
-        include AbortsIfNotAptosFramework;
+        include AbortsIfNotStarcoinFramework;
         let addr = signer::address_of(starcoin_framework);
         let post config = global<Configuration>(@starcoin_framework);
         requires exists<Account>(addr);
@@ -96,7 +96,7 @@ spec starcoin_framework::reconfiguration {
     }
 
     spec disable_reconfiguration(starcoin_framework: &signer) {
-        include AbortsIfNotAptosFramework;
+        include AbortsIfNotStarcoinFramework;
         aborts_if exists<DisableReconfiguration>(@starcoin_framework);
         ensures exists<DisableReconfiguration>(@starcoin_framework);
     }
@@ -104,7 +104,7 @@ spec starcoin_framework::reconfiguration {
     /// Make sure the caller is admin and check the resource DisableReconfiguration.
     spec enable_reconfiguration(starcoin_framework: &signer) {
         use starcoin_framework::reconfiguration::{DisableReconfiguration};
-        include AbortsIfNotAptosFramework;
+        include AbortsIfNotStarcoinFramework;
         aborts_if !exists<DisableReconfiguration>(@starcoin_framework);
         ensures !exists<DisableReconfiguration>(@starcoin_framework);
     }
@@ -139,7 +139,7 @@ spec starcoin_framework::reconfiguration {
             && timestamp::spec_now_microseconds() != global<Configuration>(@starcoin_framework).last_reconfiguration_time;
         include features::spec_periodical_reward_rate_decrease_enabled() ==> staking_config::StakingRewardsConfigEnabledRequirement;
         include success ==> starcoin_coin::ExistsAptosCoin;
-        include transaction_fee::RequiresCollectedFeesPerValueLeqBlockAptosSupply;
+        include transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply;
         aborts_if false;
         // The ensure conditions of the reconfigure function are not fully written, because there is a new cycle in it,
         // but its existing ensure conditions satisfy hp.

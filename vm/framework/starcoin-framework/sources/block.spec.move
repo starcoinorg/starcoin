@@ -147,7 +147,7 @@ spec starcoin_framework::block {
         requires (proposer != @vm_reserved) ==> (timestamp::spec_now_microseconds() < timestamp);
         requires exists<stake::ValidatorFees>(@starcoin_framework);
         requires exists<CoinInfo<StarcoinCoin>>(@starcoin_framework);
-        include transaction_fee::RequiresCollectedFeesPerValueLeqBlockAptosSupply;
+        include transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply;
         include staking_config::StakingRewardsConfigRequirement;
     }
 

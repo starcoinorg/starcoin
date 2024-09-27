@@ -146,7 +146,7 @@ spec starcoin_framework::starcoin_governance {
             framework: starcoin_framework
         };
         include stake::GetReconfigStartTimeRequirement;
-        include transaction_fee::RequiresCollectedFeesPerValueLeqBlockAptosSupply;
+        include transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply;
         requires chain_status::is_operating();
         requires exists<stake::ValidatorFees>(@starcoin_framework);
         requires exists<CoinInfo<StarcoinCoin>>(@starcoin_framework);
@@ -586,7 +586,7 @@ spec starcoin_framework::starcoin_governance {
         };
         include stake::GetReconfigStartTimeRequirement;
 
-        include transaction_fee::RequiresCollectedFeesPerValueLeqBlockAptosSupply;
+        include transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply;
         requires chain_status::is_operating();
         requires exists<stake::ValidatorFees>(@starcoin_framework);
         requires exists<CoinInfo<StarcoinCoin>>(@starcoin_framework);
