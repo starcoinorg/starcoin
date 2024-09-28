@@ -389,7 +389,7 @@ dependencies = [
 [[package]]
 name = "aptos-crypto"
 version = "0.0.3"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=2e8b5525258838236b87e9345002ef5b2c1f8796#2e8b5525258838236b87e9345002ef5b2c1f8796"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=5ab51764db7202d4adfdbfd5cf1db9d125fd8971#5ab51764db7202d4adfdbfd5cf1db9d125fd8971"
 dependencies = [
  "aes-gcm 0.10.3",
  "anyhow",
@@ -443,7 +443,7 @@ dependencies = [
 [[package]]
 name = "aptos-crypto-derive"
 version = "0.0.3"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=2e8b5525258838236b87e9345002ef5b2c1f8796#2e8b5525258838236b87e9345002ef5b2c1f8796"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=5ab51764db7202d4adfdbfd5cf1db9d125fd8971#5ab51764db7202d4adfdbfd5cf1db9d125fd8971"
 dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.36",
@@ -1196,29 +1196,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1f45e9417d87227c7a56d22e471c6206462cba514c7590c09aff4cf6d1ddcad"
 dependencies = [
  "serde",
-]
-
-[[package]]
-name = "bindgen"
-version = "0.59.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2bd2a9a458e8f4304c52c43ebb0cfbd520289f8379a52e329a38afda99bf8eb8"
-dependencies = [
- "bitflags 1.3.2",
- "cexpr",
- "clang-sys",
- "clap 2.34.0",
- "env_logger",
- "lazy_static",
- "lazycell",
- "log 0.4.22",
- "peeking_take_while",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
- "regex",
- "rustc-hash",
- "shlex",
- "which",
 ]
 
 [[package]]
@@ -2445,20 +2422,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "curve25519-dalek-fiat"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44339b9ecede7f72a0d3b012bf9bb5a616dc8bfde23ce544e42da075c87198f0"
-dependencies = [
- "byteorder",
- "digest 0.9.0",
- "fiat-crypto",
- "rand_core 0.6.4",
- "subtle",
- "zeroize",
-]
-
-[[package]]
 name = "curve25519-dalek-ng"
 version = "4.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2989,51 +2952,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "850878694b7933ca4c9569d30a34b55031b9b139ee1fc7b94a527c4ef960d690"
 
 [[package]]
-name = "diem-crypto"
-version = "0.0.3"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=2e8b5525258838236b87e9345002ef5b2c1f8796#2e8b5525258838236b87e9345002ef5b2c1f8796"
-dependencies = [
- "aes-gcm 0.8.0",
- "anyhow",
- "bcs 0.1.5",
- "bindgen 0.59.2",
- "bytes 1.6.1",
- "cc",
- "curve25519-dalek-fiat",
- "diem-crypto-derive",
- "digest 0.9.0",
- "ed25519-dalek-fiat",
- "hex",
- "hkdf 0.10.0",
- "libc",
- "mirai-annotations",
- "once_cell",
- "openrpc-schema",
- "proptest",
- "proptest-derive 0.3.0",
- "rand 0.8.5",
- "rand_core 0.6.4",
- "serde",
- "serde-name",
- "serde_bytes",
- "sha2 0.9.9",
- "static_assertions",
- "thiserror",
- "tiny-keccak",
- "x25519-dalek-fiat",
-]
-
-[[package]]
-name = "diem-crypto-derive"
-version = "0.0.3"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=2e8b5525258838236b87e9345002ef5b2c1f8796#2e8b5525258838236b87e9345002ef5b2c1f8796"
-dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
- "syn 1.0.107",
-]
-
-[[package]]
 name = "difference"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3174,21 +3092,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ed25519-dalek-fiat"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97c6ac152eba578c1c53d2cefe8ad02e239e3d6f971b0f1ef3cb54cd66037fa0"
-dependencies = [
- "curve25519-dalek-fiat",
- "ed25519",
- "rand 0.8.5",
- "serde",
- "serde_bytes",
- "sha2 0.9.9",
- "zeroize",
-]
-
-[[package]]
 name = "either"
 version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3293,19 +3196,6 @@ dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.36",
  "syn 1.0.107",
-]
-
-[[package]]
-name = "env_logger"
-version = "0.9.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a12e6657c4c97ebab115a42dcee77225f7f482cdd841cf7088c657a42e9e00e7"
-dependencies = [
- "atty",
- "humantime",
- "log 0.4.22",
- "regex",
- "termcolor",
 ]
 
 [[package]]
@@ -5514,7 +5404,7 @@ version = "0.11.0+8.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d3386f101bcb4bd252d8e9d2fb41ec3b0862a15a62b478c355b2982efa469e3e"
 dependencies = [
- "bindgen 0.65.1",
+ "bindgen",
  "bzip2-sys",
  "cc",
  "glob",
@@ -10668,14 +10558,12 @@ dependencies = [
 [[package]]
 name = "starcoin-crypto"
 version = "1.10.0-rc.2"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=2e8b5525258838236b87e9345002ef5b2c1f8796#2e8b5525258838236b87e9345002ef5b2c1f8796"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=5ab51764db7202d4adfdbfd5cf1db9d125fd8971#5ab51764db7202d4adfdbfd5cf1db9d125fd8971"
 dependencies = [
  "anyhow",
  "aptos-crypto",
  "aptos-crypto-derive",
  "bcs 0.1.4",
- "diem-crypto",
- "diem-crypto-derive",
  "hex",
  "once_cell",
  "rand 0.7.3",
@@ -10689,7 +10577,7 @@ dependencies = [
 [[package]]
 name = "starcoin-crypto-macro"
 version = "1.10.0-rc.2"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=2e8b5525258838236b87e9345002ef5b2c1f8796#2e8b5525258838236b87e9345002ef5b2c1f8796"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=5ab51764db7202d4adfdbfd5cf1db9d125fd8971#5ab51764db7202d4adfdbfd5cf1db9d125fd8971"
 dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.36",
@@ -14901,17 +14789,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e5da623d8af10a62342bcbbb230e33e58a63255a58012f8653c578e54bab48df"
 dependencies = [
  "curve25519-dalek 3.2.0",
- "rand_core 0.6.4",
- "zeroize",
-]
-
-[[package]]
-name = "x25519-dalek-fiat"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f3519d56987103ef084eba6ddfc3be45b7eaee08f2d60bc8495cdca30362a32"
-dependencies = [
- "curve25519-dalek-fiat",
  "rand_core 0.6.4",
  "zeroize",
 ]
