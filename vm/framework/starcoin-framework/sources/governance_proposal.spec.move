@@ -7,7 +7,7 @@ spec starcoin_framework::governance_proposal {
     /// Enforcement: Enforced via [high-level-req-1.1](create_proposal) and [high-level-req-1.2](create_empty_proposal).
     ///
     /// No.: 2
-    /// Requirement: The governance proposal module should only be accessible to the aptos governance.
+    /// Requirement: The governance proposal module should only be accessible to the starcoin governance.
     /// Criticality: Medium
     /// Implementation: Both create_proposal and create_empty_proposal functions are only available to the friend module
     /// starcoin_framework::starcoin_governance.

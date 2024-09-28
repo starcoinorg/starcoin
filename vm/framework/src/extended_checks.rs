@@ -1,4 +1,4 @@
-// Copyright © Aptos Foundation
+// Copyright © Starcoin Foundation
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{KnownAttribute, RandomnessAnnotation, RuntimeModuleMetadataV1};
@@ -237,7 +237,7 @@ impl<'a> ExtendedChecker<'a> {
 
     fn is_allowed_input_struct(&self, qid: QualifiedId<StructId>) -> bool {
         let name = self.env.get_struct(qid).get_full_name_with_address();
-        // TODO(gerben) find a nice way to keep this in sync with allowed_structs in aptos-vm
+        // TODO(gerben) find a nice way to keep this in sync with allowed_structs in starcoin-vm
         matches!(
             name.as_str(),
             "0x1::string::String"

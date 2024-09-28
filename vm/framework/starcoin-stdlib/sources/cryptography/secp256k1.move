@@ -86,7 +86,7 @@ module starcoin_std::secp256k1 {
         use std::hash;
 
         let pk = ecdsa_recover(
-            hash::sha2_256(b"test aptos secp256k1"),
+            hash::sha2_256(b"test starcoin secp256k1"),
             0,
             &ECDSASignature { bytes: x"f7ad936da03f948c14c542020e3c5f4e02aaacd1f20427c11aa6e2fbf8776477646bba0e1a37f9e7c777c423a1d2849baafd7ff6a9930814a43c3f80d59db56f" },
         );
@@ -95,7 +95,7 @@ module starcoin_std::secp256k1 {
 
         // Flipped bits; Signature stays valid
         let pk = ecdsa_recover(
-            hash::sha2_256(b"test aptos secp256k1"),
+            hash::sha2_256(b"test starcoin secp256k1"),
             0,
             // NOTE: A '7' was flipped to an 'f' here
             &ECDSASignature { bytes: x"f7ad936da03f948c14c542020e3c5f4e02aaacd1f20427c11aa6e2fbf8776477646bba0e1a37f9e7c7f7c423a1d2849baafd7ff6a9930814a43c3f80d59db56f" },
@@ -105,7 +105,7 @@ module starcoin_std::secp256k1 {
 
         // Flipped bits; Signature becomes invalid
         let pk = ecdsa_recover(
-            hash::sha2_256(b"test aptos secp256k1"),
+            hash::sha2_256(b"test starcoin secp256k1"),
             0,
             &ECDSASignature { bytes: x"ffad936da03f948c14c542020e3c5f4e02aaacd1f20427c11aa6e2fbf8776477646bba0e1a37f9e7c7f7c423a1d2849baafd7ff6a9930814a43c3f80d59db56f" },
         );

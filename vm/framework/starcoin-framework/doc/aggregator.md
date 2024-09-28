@@ -13,7 +13,7 @@ is doing <code><a href="aggregator.md#0x1_aggregator_sub">sub</a>(X,3)</code>, t
 dependency.
 However, reading the aggregator value (i.e. calling <code><a href="aggregator.md#0x1_aggregator_read">read</a>(X)</code>) is an expensive
 operation and should be avoided as much as possible because it reduces the
-parallelism. Moreover, **aggregators can only be created by Aptos Framework (0x1)
+parallelism. Moreover, **aggregators can only be created by Starcoin Framework (0x1)
 at the moment.**
 
 
@@ -471,4 +471,4 @@ Destroys an aggregator and removes it from its <code>AggregatorFactory</code>.
 </code></pre>
 
 
-[move-book]: https://aptos.dev/move/book/SUMMARY
+[move-book]: https://starcoin.dev/move/book/SUMMARY

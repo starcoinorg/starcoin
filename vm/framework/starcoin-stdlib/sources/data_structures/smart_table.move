@@ -7,7 +7,7 @@
 module starcoin_std::smart_table {
     use std::error;
     use std::vector;
-    use starcoin_std::aptos_hash::sip_hash_from_value;
+    use starcoin_std::starcoin_hash::sip_hash_from_value;
     use starcoin_std::table_with_length::{Self, TableWithLength};
     use starcoin_std::type_info::size_of_val;
     use starcoin_std::math64::max;

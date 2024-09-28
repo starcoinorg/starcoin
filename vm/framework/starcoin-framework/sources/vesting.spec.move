@@ -37,7 +37,7 @@ spec starcoin_framework::vesting {
     /// Implementation: The end of the vesting cliff is stored under VestingContract.vesting_schedule.start_timestamp_secs.
     /// The vest function always checks that timestamp::now_seconds is greater or equal to the end of the vesting cliff
     /// period.
-    /// Enforcement: Audited the check for the end of vesting cliff: [https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/framework/aptos-framework/sources/vesting.move#L566](vest) module.
+    /// Enforcement: Audited the check for the end of vesting cliff: [https://github.com/starcoin-labs/starcoin-core/blob/main/starcoin-move/framework/starcoin-framework/sources/vesting.move#L566](vest) module.
     ///
     /// No.: 5
     /// Requirement: In order to retrieve the total accumulated rewards that have not been distributed, the accumulated

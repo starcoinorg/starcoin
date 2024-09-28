@@ -1,10 +1,10 @@
 
-<a id="@Aptos_Standard_Library_0"></a>
+<a id="@Starcoin_Standard_Library_0"></a>
 
-# Aptos Standard Library
+# Starcoin Standard Library
 
 
-This is the reference documentation of the Aptos standard library.
+This is the reference documentation of the Starcoin standard library.
 
 
 <a id="@Index_1"></a>
@@ -13,7 +13,7 @@ This is the reference documentation of the Aptos standard library.
 
 
 -  [`0x1::any`](any.md#0x1_any)
--  [`0x1::aptos_hash`](hash.md#0x1_aptos_hash)
+-  [`0x1::starcoin_hash`](hash.md#0x1_starcoin_hash)
 -  [`0x1::big_vector`](big_vector.md#0x1_big_vector)
 -  [`0x1::bls12381`](bls12381.md#0x1_bls12381)
 -  [`0x1::bls12381_algebra`](bls12381_algebra.md#0x1_bls12381_algebra)
@@ -47,4 +47,4 @@ This is the reference documentation of the Aptos standard library.
 -  [`0x1::type_info`](type_info.md#0x1_type_info)
 
 
-[move-book]: https://aptos.dev/move/book/SUMMARY
+[move-book]: https://starcoin.dev/move/book/SUMMARY

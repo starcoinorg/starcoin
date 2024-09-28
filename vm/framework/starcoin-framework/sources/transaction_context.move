@@ -10,7 +10,7 @@ module starcoin_framework::transaction_context {
     /// The transaction context extension feature is not enabled.
     const ETRANSACTION_CONTEXT_EXTENSION_NOT_ENABLED: u64 = 2;
 
-    /// A wrapper denoting aptos unique identifer (AUID)
+    /// A wrapper denoting starcoin unique identifer (AUID)
     /// for storing an address
     struct AUID has drop, store {
         unique_address: address
@@ -50,7 +50,7 @@ module starcoin_framework::transaction_context {
     /// from other ways of generating unique addresses.
     native fun generate_unique_address(): address;
 
-    /// Returns a aptos unique identifier. Internally calls
+    /// Returns a starcoin unique identifier. Internally calls
     /// the private function `generate_unique_address`. This function is
     /// created for to feature gate the `generate_unique_address` function.
     public fun generate_auid_address(): address {

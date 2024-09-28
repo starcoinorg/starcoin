@@ -61,7 +61,7 @@ module starcoin_framework::jwks {
         providers: vector<OIDCProvider>,
     }
 
-    /// An JWK variant that represents the JWKs which were observed but not yet supported by Aptos.
+    /// An JWK variant that represents the JWKs which were observed but not yet supported by Starcoin.
     /// Observing `UnsupportedJWK`s means the providers adopted a new key type/format, and the system should be updated.
     struct UnsupportedJWK has copy, drop, store {
         id: vector<u8>,
@@ -180,7 +180,7 @@ module starcoin_framework::jwks {
     /// reusing `PatchedJWKs { jwks: AllProviderJWKs }`, which is a JWK-consensus-specific struct. We'd
     /// need to be careful how we read it in Rust (but BCS serialization should be the same).
     public fun patch_federated_jwks(jwk_owner: &signer, patches: vector<Patch>) acquires FederatedJWKs {
-        // Prevents accidental calls in 0x1::jwks that install federated JWKs at the Aptos framework address.
+        // Prevents accidental calls in 0x1::jwks that install federated JWKs at the Starcoin framework address.
         assert!(!system_addresses::is_starcoin_framework_address(signer::address_of(jwk_owner)),
             error::invalid_argument(EINSTALL_FEDERATED_JWKS_AT_APTOS_FRAMEWORK)
         );

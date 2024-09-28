@@ -141,7 +141,7 @@ module starcoin_framework::staking_config {
     }
 
     /// Initialize rewards configurations.
-    /// Can only be called as part of the Aptos governance proposal process established by the AptosGovernance module.
+    /// Can only be called as part of the Starcoin governance proposal process established by the StarcoinGovernance module.
     public fun initialize_rewards(
         starcoin_framework: &signer,
         rewards_rate: FixedPoint64,
@@ -259,7 +259,7 @@ module starcoin_framework::staking_config {
     }
 
     /// Update the min and max stake amounts.
-    /// Can only be called as part of the Aptos governance proposal process established by the AptosGovernance module.
+    /// Can only be called as part of the Starcoin governance proposal process established by the StarcoinGovernance module.
     public fun update_required_stake(
         starcoin_framework: &signer,
         minimum_stake: u64,
@@ -274,7 +274,7 @@ module starcoin_framework::staking_config {
     }
 
     /// Update the recurring lockup duration.
-    /// Can only be called as part of the Aptos governance proposal process established by the AptosGovernance module.
+    /// Can only be called as part of the Starcoin governance proposal process established by the StarcoinGovernance module.
     public fun update_recurring_lockup_duration_secs(
         starcoin_framework: &signer,
         new_recurring_lockup_duration_secs: u64,
@@ -288,7 +288,7 @@ module starcoin_framework::staking_config {
 
     /// DEPRECATING
     /// Update the rewards rate.
-    /// Can only be called as part of the Aptos governance proposal process established by the AptosGovernance module.
+    /// Can only be called as part of the Starcoin governance proposal process established by the StarcoinGovernance module.
     public fun update_rewards_rate(
         starcoin_framework: &signer,
         new_rewards_rate: u64,
@@ -343,7 +343,7 @@ module starcoin_framework::staking_config {
     }
 
     /// Update the joining limit %.
-    /// Can only be called as part of the Aptos governance proposal process established by the AptosGovernance module.
+    /// Can only be called as part of the Starcoin governance proposal process established by the StarcoinGovernance module.
     public fun update_voting_power_increase_limit(
         starcoin_framework: &signer,
         new_voting_power_increase_limit: u64,

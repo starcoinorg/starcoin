@@ -6,12 +6,12 @@
 This module provides a number of functions to convert _primitive_ types from their representation in <code>std::bcs</code>
 to values. This is the opposite of <code><a href="../../../move-stdlib/tests/compiler-v2-doc/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a></code>. Note that it is not safe to define a generic public <code>from_bytes</code>
 function because this can violate implicit struct invariants, therefore only primitive types are offerred. If
-a general conversion back-and-force is needed, consider the <code>aptos_std::Any</code> type which preserves invariants.
+a general conversion back-and-force is needed, consider the <code>starcoin_std::Any</code> type which preserves invariants.
 
 Example:
 ```
 use std::bcs;
-use aptos_std::from_bcs;
+use starcoin_std::from_bcs;
 
 assert!(from_bcs::to_address(bcs::to_bytes(&@0xabcdef)) == @0xabcdef, 0);
 ```
@@ -360,4 +360,4 @@ owned.
 </code></pre>
 
 
-[move-book]: https://aptos.dev/move/book/SUMMARY
+[move-book]: https://starcoin.dev/move/book/SUMMARY

@@ -621,4 +621,4 @@ Returns square root of x, precisely floor(sqrt(x))
 </code></pre>
 
 
-[move-book]: https://aptos.dev/move/book/SUMMARY
+[move-book]: https://starcoin.dev/move/book/SUMMARY

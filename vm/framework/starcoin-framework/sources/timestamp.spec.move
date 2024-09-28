@@ -8,7 +8,7 @@ spec starcoin_framework::timestamp {
     /// Enforcement: Formally verified via [high-level-req-1](module).
     ///
     /// No.: 2
-    /// Requirement: The global wall clock resource should only be owned by the Aptos framework.
+    /// Requirement: The global wall clock resource should only be owned by the Starcoin framework.
     /// Criticality: High
     /// Implementation: The function set_time_has_started ensures that only the starcoin_framework account can possess the
     /// CurrentTimeMicroseconds resource using the assert_starcoin_framework function.

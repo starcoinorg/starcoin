@@ -112,7 +112,7 @@ Module providing debug functionality.
 
 
 <pre><code>inline <b>fun</b> <a href="debug.md#0x1_debug_format">format</a>&lt;T&gt;(x: &T): String {
-    aptos_std::string_utils::debug_string(x)
+    starcoin_std::string_utils::debug_string(x)
 }
 </code></pre>
 
@@ -234,4 +234,4 @@ Module providing debug functionality.
 </code></pre>
 
 
-[move-book]: https://aptos.dev/move/book/SUMMARY
+[move-book]: https://starcoin.dev/move/book/SUMMARY

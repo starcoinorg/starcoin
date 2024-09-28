@@ -2,16 +2,16 @@ spec starcoin_framework::block {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: During the module's initialization, it guarantees that the BlockResource resource moves under the
-    /// Aptos framework account with initial values.
+    /// Starcoin framework account with initial values.
     /// Criticality: High
     /// Implementation: The initialize function is responsible for setting up the initial state of the module, ensuring
     /// that the following conditions are met (1) the BlockResource resource is created, indicating its existence within
-    /// the module's context, and moved under the Aptos framework account, (2) the block height is set to zero during
+    /// the module's context, and moved under the Starcoin framework account, (2) the block height is set to zero during
     /// initialization, and (3) the epoch interval is greater than zero.
     /// Enforcement: Formally Verified via [high-level-req-1](Initialize).
     ///
     /// No.: 2
-    /// Requirement: Only the Aptos framework address may execute the following functionalities: (1) initialize
+    /// Requirement: Only the Starcoin framework address may execute the following functionalities: (1) initialize
     /// BlockResource, and (2) update the epoch interval.
     /// Criticality: Critical
     /// Implementation: The initialize and  update_epoch_interval_microsecs functions ensure that only starcoin_framework

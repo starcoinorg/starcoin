@@ -1,6 +1,6 @@
-# Aptos Token Framework
+# Starcoin Token Framework
 
-This is the reference documentation of the Aptos Token Objects framework.
+This is the reference documentation of the Starcoin Token Objects framework.
 
 ## Index
 

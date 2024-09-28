@@ -35,19 +35,19 @@ module starcoin_framework::starcoin_coin {
         inner: vector<DelegatedMintCapability>,
     }
 
-    /// Can only called during genesis to initialize the Aptos coin.
+    /// Can only called during genesis to initialize the Starcoin coin.
     public(friend) fun initialize(starcoin_framework: &signer): (BurnCapability<StarcoinCoin>, MintCapability<StarcoinCoin>) {
         system_addresses::assert_starcoin_framework(starcoin_framework);
 
         let (burn_cap, freeze_cap, mint_cap) = coin::initialize_with_parallelizable_supply<StarcoinCoin>(
             starcoin_framework,
-            string::utf8(b"Aptos Coin"),
+            string::utf8(b"Starcoin Coin"),
             string::utf8(b"APT"),
             8, // decimals
             true, // monitor_supply
         );
 
-        // Aptos framework needs mint cap to mint coins to initial validators. This will be revoked once the validators
+        // Starcoin framework needs mint cap to mint coins to initial validators. This will be revoked once the validators
         // have been initialized.
         move_to(starcoin_framework, MintCapStore { mint_cap });
 
@@ -59,7 +59,7 @@ module starcoin_framework::starcoin_coin {
         exists<MintCapStore>(signer::address_of(account))
     }
 
-    /// Only called during genesis to destroy the aptos framework account's mint capability once all initial validators
+    /// Only called during genesis to destroy the starcoin framework account's mint capability once all initial validators
     /// and accounts have been initialized during genesis.
     public(friend) fun destroy_mint_cap(starcoin_framework: &signer) acquires MintCapStore {
         system_addresses::assert_starcoin_framework(starcoin_framework);
@@ -67,7 +67,7 @@ module starcoin_framework::starcoin_coin {
         coin::destroy_mint_cap(mint_cap);
     }
 
-    /// Can only be called during genesis for tests to grant mint capability to aptos framework and core resources
+    /// Can only be called during genesis for tests to grant mint capability to starcoin framework and core resources
     /// accounts.
     /// Expects account and APT store to be registered before calling.
     public(friend) fun configure_accounts_for_test(

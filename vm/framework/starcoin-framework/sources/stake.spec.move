@@ -44,8 +44,8 @@ spec starcoin_framework::stake {
         pragma verify = true;
         // The validator set should satisfy its desired invariant.
         invariant [suspendable] exists<ValidatorSet>(@starcoin_framework) ==> validator_set_is_valid();
-        // After genesis, `AptosCoinCapabilities`, `ValidatorPerformance` and `ValidatorSet` exist.
-        invariant [suspendable] chain_status::is_operating() ==> exists<AptosCoinCapabilities>(@starcoin_framework);
+        // After genesis, `StarcoinCoinCapabilities`, `ValidatorPerformance` and `ValidatorSet` exist.
+        invariant [suspendable] chain_status::is_operating() ==> exists<StarcoinCoinCapabilities>(@starcoin_framework);
         invariant [suspendable] chain_status::is_operating() ==> exists<ValidatorPerformance>(@starcoin_framework);
         invariant [suspendable] chain_status::is_operating() ==> exists<ValidatorSet>(@starcoin_framework);
 
@@ -119,10 +119,10 @@ spec starcoin_framework::stake {
     // -----------------------
 
     spec initialize_validator_fees(starcoin_framework: &signer) {
-        let aptos_addr = signer::address_of(starcoin_framework);
-        aborts_if !system_addresses::is_starcoin_framework_address(aptos_addr);
-        aborts_if exists<ValidatorFees>(aptos_addr);
-        ensures exists<ValidatorFees>(aptos_addr);
+        let starcoin_addr = signer::address_of(starcoin_framework);
+        aborts_if !system_addresses::is_starcoin_framework_address(starcoin_addr);
+        aborts_if exists<ValidatorFees>(starcoin_addr);
+        ensures exists<ValidatorFees>(starcoin_addr);
     }
 
     spec initialize_validator(
@@ -160,13 +160,13 @@ spec starcoin_framework::stake {
     // `Validator` is initialized once.
     spec initialize(starcoin_framework: &signer) {
         pragma disable_invariants_in_body;
-        let aptos_addr = signer::address_of(starcoin_framework);
-        aborts_if !system_addresses::is_starcoin_framework_address(aptos_addr);
-        aborts_if exists<ValidatorSet>(aptos_addr);
-        aborts_if exists<ValidatorPerformance>(aptos_addr);
-        ensures exists<ValidatorSet>(aptos_addr);
-        ensures global<ValidatorSet>(aptos_addr).consensus_scheme == 0;
-        ensures exists<ValidatorPerformance>(aptos_addr);
+        let starcoin_addr = signer::address_of(starcoin_framework);
+        aborts_if !system_addresses::is_starcoin_framework_address(starcoin_addr);
+        aborts_if exists<ValidatorSet>(starcoin_addr);
+        aborts_if exists<ValidatorPerformance>(starcoin_addr);
+        ensures exists<ValidatorSet>(starcoin_addr);
+        ensures global<ValidatorSet>(starcoin_addr).consensus_scheme == 0;
+        ensures exists<ValidatorPerformance>(starcoin_addr);
     }
 
     spec join_validator_set(
@@ -438,7 +438,7 @@ spec starcoin_framework::stake {
         include ResourceRequirement;
         include GetReconfigStartTimeRequirement;
         include staking_config::StakingRewardsConfigRequirement;
-        include starcoin_framework::starcoin_coin::ExistsAptosCoin;
+        include starcoin_framework::starcoin_coin::ExistsStarcoinCoin;
         // This function should never abort.
         /// [high-level-req-4]
         aborts_if false;
@@ -526,8 +526,8 @@ spec starcoin_framework::stake {
         aborts_if !exists<ValidatorConfig>(pool_address);
         aborts_if global<ValidatorConfig>(pool_address).validator_index >= len(validator_perf.validators);
 
-        let aptos_addr = type_info::type_of<StarcoinCoin>().account_address;
-        aborts_if !exists<ValidatorFees>(aptos_addr);
+        let starcoin_addr = type_info::type_of<StarcoinCoin>().account_address;
+        aborts_if !exists<ValidatorFees>(starcoin_addr);
 
         let stake_pool = global<StakePool>(pool_address);
 
@@ -765,9 +765,9 @@ spec starcoin_framework::stake {
     }
 
     spec configure_allowed_validators(starcoin_framework: &signer, accounts: vector<address>) {
-        let aptos_framework_address = signer::address_of(starcoin_framework);
-        aborts_if !system_addresses::is_starcoin_framework_address(aptos_framework_address);
-        let post allowed = global<AllowedValidators>(aptos_framework_address);
+        let starcoin_framework_address = signer::address_of(starcoin_framework);
+        aborts_if !system_addresses::is_starcoin_framework_address(starcoin_framework_address);
+        let post allowed = global<AllowedValidators>(starcoin_framework_address);
         // Make sure that the accounts of AllowedValidators are always the passed parameter.
         ensures allowed.accounts == accounts;
     }
@@ -914,7 +914,7 @@ spec starcoin_framework::stake {
     // These resources are required to successfully execute `on_new_epoch`, which cannot
     // be discharged by the global invariants because `on_new_epoch` is called in genesis.
     spec schema ResourceRequirement {
-        requires exists<AptosCoinCapabilities>(@starcoin_framework);
+        requires exists<StarcoinCoinCapabilities>(@starcoin_framework);
         requires exists<ValidatorPerformance>(@starcoin_framework);
         requires exists<ValidatorSet>(@starcoin_framework);
         requires exists<StakingConfig>(@starcoin_framework);

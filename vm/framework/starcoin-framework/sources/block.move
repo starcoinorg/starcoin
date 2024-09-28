@@ -122,7 +122,7 @@ module starcoin_framework::block {
     }
 
     /// Update the epoch interval.
-    /// Can only be called as part of the Aptos governance proposal process established by the AptosGovernance module.
+    /// Can only be called as part of the Starcoin governance proposal process established by the StarcoinGovernance module.
     public fun update_epoch_interval_microsecs(
         starcoin_framework: &signer,
         new_epoch_interval: u64,

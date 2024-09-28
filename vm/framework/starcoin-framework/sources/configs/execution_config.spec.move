@@ -25,7 +25,7 @@ spec starcoin_framework::execution_config {
         requires exists<staking_config::StakingRewardsConfig>(@starcoin_framework);
         requires len(config) > 0;
         include features::spec_periodical_reward_rate_decrease_enabled() ==> staking_config::StakingRewardsConfigEnabledRequirement;
-        include starcoin_coin::ExistsAptosCoin;
+        include starcoin_coin::ExistsStarcoinCoin;
         requires system_addresses::is_starcoin_framework_address(addr);
         requires timestamp::spec_now_microseconds() >= reconfiguration::last_reconfiguration_time();
 

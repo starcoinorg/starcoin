@@ -122,19 +122,19 @@ spec starcoin_framework::coin {
     /// Can only be initialized once.
     /// Can only be published by reserved addresses.
     spec initialize_supply_config(starcoin_framework: &signer) {
-        let aptos_addr = signer::address_of(starcoin_framework);
-        aborts_if !system_addresses::is_starcoin_framework_address(aptos_addr);
-        aborts_if exists<SupplyConfig>(aptos_addr);
-        ensures !global<SupplyConfig>(aptos_addr).allow_upgrades;
-        ensures exists<SupplyConfig>(aptos_addr);
+        let starcoin_addr = signer::address_of(starcoin_framework);
+        aborts_if !system_addresses::is_starcoin_framework_address(starcoin_addr);
+        aborts_if exists<SupplyConfig>(starcoin_addr);
+        ensures !global<SupplyConfig>(starcoin_addr).allow_upgrades;
+        ensures exists<SupplyConfig>(starcoin_addr);
     }
 
     /// Can only be updated by `@starcoin_framework`.
     spec allow_supply_upgrades(starcoin_framework: &signer, allowed: bool) {
         modifies global<SupplyConfig>(@starcoin_framework);
-        let aptos_addr = signer::address_of(starcoin_framework);
-        aborts_if !system_addresses::is_starcoin_framework_address(aptos_addr);
-        aborts_if !exists<SupplyConfig>(aptos_addr);
+        let starcoin_addr = signer::address_of(starcoin_framework);
+        aborts_if !system_addresses::is_starcoin_framework_address(starcoin_addr);
+        aborts_if !exists<SupplyConfig>(starcoin_addr);
         let post allow_upgrades_post = global<SupplyConfig>(@starcoin_framework);
         ensures allow_upgrades_post.allow_upgrades == allowed;
     }
@@ -580,7 +580,7 @@ spec starcoin_framework::coin {
     }
 
     spec initialize_aggregatable_coin<CoinType>(starcoin_framework: &signer): AggregatableCoin<CoinType> {
-        include system_addresses::AbortsIfNotAptosFramework { account: starcoin_framework };
+        include system_addresses::AbortsIfNotStarcoinFramework { account: starcoin_framework };
         include aggregator_factory::CreateAggregatorInternalAbortsIf;
     }
 

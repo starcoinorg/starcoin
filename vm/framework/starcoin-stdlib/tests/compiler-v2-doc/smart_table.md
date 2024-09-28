@@ -69,7 +69,7 @@ it tolerates collisions.
     -  [Function `borrow_buckets_mut`](#@Specification_1_borrow_buckets_mut)
 
 
-<pre><code><b>use</b> <a href="hash.md#0x1_aptos_hash">0x1::aptos_hash</a>;
+<pre><code><b>use</b> <a href="hash.md#0x1_starcoin_hash">0x1::starcoin_hash</a>;
 <b>use</b> <a href="../../../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="math64.md#0x1_math64">0x1::math64</a>;
 <b>use</b> <a href="../../../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option">0x1::option</a>;
@@ -1135,11 +1135,11 @@ Apply the function to a reference of each key-value pair in the table.
 
 <pre><code><b>public</b> inline <b>fun</b> <a href="smart_table.md#0x1_smart_table_for_each_ref">for_each_ref</a>&lt;K, V&gt;(self: &<a href="smart_table.md#0x1_smart_table_SmartTable">SmartTable</a>&lt;K, V&gt;, f: |&K, &V|) {
     <b>let</b> i = 0;
-    <b>while</b> (i &lt; aptos_std::smart_table::num_buckets(self)) {
+    <b>while</b> (i &lt; starcoin_std::smart_table::num_buckets(self)) {
         <a href="../../../move-stdlib/tests/compiler-v2-doc/vector.md#0x1_vector_for_each_ref">vector::for_each_ref</a>(
-            aptos_std::table_with_length::borrow(aptos_std::smart_table::borrow_buckets(self), i),
+            starcoin_std::table_with_length::borrow(starcoin_std::smart_table::borrow_buckets(self), i),
             |elem| {
-                <b>let</b> (key, value) = aptos_std::smart_table::borrow_kv(elem);
+                <b>let</b> (key, value) = starcoin_std::smart_table::borrow_kv(elem);
                 f(key, value)
             }
         );
@@ -1170,11 +1170,11 @@ Apply the function to a mutable reference of each key-value pair in the table.
 
 <pre><code><b>public</b> inline <b>fun</b> <a href="smart_table.md#0x1_smart_table_for_each_mut">for_each_mut</a>&lt;K, V&gt;(self: &<b>mut</b> <a href="smart_table.md#0x1_smart_table_SmartTable">SmartTable</a>&lt;K, V&gt;, f: |&K, &<b>mut</b> V|) {
     <b>let</b> i = 0;
-    <b>while</b> (i &lt; aptos_std::smart_table::num_buckets(self)) {
+    <b>while</b> (i &lt; starcoin_std::smart_table::num_buckets(self)) {
         <a href="../../../move-stdlib/tests/compiler-v2-doc/vector.md#0x1_vector_for_each_mut">vector::for_each_mut</a>(
-            <a href="table_with_length.md#0x1_table_with_length_borrow_mut">table_with_length::borrow_mut</a>(aptos_std::smart_table::borrow_buckets_mut(self), i),
+            <a href="table_with_length.md#0x1_table_with_length_borrow_mut">table_with_length::borrow_mut</a>(starcoin_std::smart_table::borrow_buckets_mut(self), i),
             |elem| {
-                <b>let</b> (key, value) = aptos_std::smart_table::borrow_kv_mut(elem);
+                <b>let</b> (key, value) = starcoin_std::smart_table::borrow_kv_mut(elem);
                 f(key, value)
             }
         );
@@ -1239,9 +1239,9 @@ Return true if any key-value pair in the table satisfies the predicate.
 ): bool {
     <b>let</b> found = <b>false</b>;
     <b>let</b> i = 0;
-    <b>while</b> (i &lt; aptos_std::smart_table::num_buckets(self)) {
-        found = <a href="../../../move-stdlib/tests/compiler-v2-doc/vector.md#0x1_vector_any">vector::any</a>(<a href="table_with_length.md#0x1_table_with_length_borrow">table_with_length::borrow</a>(aptos_std::smart_table::borrow_buckets(self), i), |elem| {
-            <b>let</b> (key, value) = aptos_std::smart_table::borrow_kv(elem);
+    <b>while</b> (i &lt; starcoin_std::smart_table::num_buckets(self)) {
+        found = <a href="../../../move-stdlib/tests/compiler-v2-doc/vector.md#0x1_vector_any">vector::any</a>(<a href="table_with_length.md#0x1_table_with_length_borrow">table_with_length::borrow</a>(starcoin_std::smart_table::borrow_buckets(self), i), |elem| {
+            <b>let</b> (key, value) = starcoin_std::smart_table::borrow_kv(elem);
             p(key, value)
         });
         <b>if</b> (found) <b>break</b>;
@@ -1783,4 +1783,4 @@ map_spec_has_key = spec_contains;
 </code></pre>
 
 
-[move-book]: https://aptos.dev/move/book/SUMMARY
+[move-book]: https://starcoin.dev/move/book/SUMMARY

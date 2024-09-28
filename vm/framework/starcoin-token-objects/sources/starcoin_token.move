@@ -32,7 +32,7 @@ module starcoin_token_objects::starcoin_token {
 
     #[resource_group_member(group = starcoin_framework::object::ObjectGroup)]
     /// Storage state for managing the no-code Collection.
-    struct AptosCollection has key {
+    struct StarcoinCollection has key {
         /// Used to mutate collection fields
         mutator_ref: Option<collection::MutatorRef>,
         /// Used to mutate royalties
@@ -57,7 +57,7 @@ module starcoin_token_objects::starcoin_token {
 
     #[resource_group_member(group = starcoin_framework::object::ObjectGroup)]
     /// Storage state for managing the no-code Token.
-    struct AptosToken has key {
+    struct StarcoinToken has key {
         /// Used to burn.
         burn_ref: Option<token::BurnRef>,
         /// Used to control freeze.
@@ -124,7 +124,7 @@ module starcoin_token_objects::starcoin_token {
         tokens_freezable_by_creator: bool,
         royalty_numerator: u64,
         royalty_denominator: u64,
-    ): Object<AptosCollection> {
+    ): Object<StarcoinCollection> {
         let creator_addr = signer::address_of(creator);
         let royalty = royalty::create(royalty_numerator, royalty_denominator, creator_addr);
         let constructor_ref = collection::create_fixed_collection(
@@ -149,7 +149,7 @@ module starcoin_token_objects::starcoin_token {
             option::none()
         };
 
-        let aptos_collection = AptosCollection {
+        let starcoin_collection = StarcoinCollection {
             mutator_ref,
             royalty_mutator_ref,
             mutable_description,
@@ -161,7 +161,7 @@ module starcoin_token_objects::starcoin_token {
             tokens_burnable_by_creator,
             tokens_freezable_by_creator,
         };
-        move_to(&object_signer, aptos_collection);
+        move_to(&object_signer, starcoin_collection);
         object::object_from_constructor_ref(&constructor_ref)
     }
 
@@ -175,7 +175,7 @@ module starcoin_token_objects::starcoin_token {
         property_keys: vector<String>,
         property_types: vector<String>,
         property_values: vector<vector<u8>>,
-    ) acquires AptosCollection, AptosToken {
+    ) acquires StarcoinCollection, StarcoinToken {
         mint_token_object(creator, collection, description, name, uri, property_keys, property_types, property_values);
     }
 
@@ -189,7 +189,7 @@ module starcoin_token_objects::starcoin_token {
         property_keys: vector<String>,
         property_types: vector<String>,
         property_values: vector<vector<u8>>,
-    ): Object<AptosToken> acquires AptosCollection, AptosToken {
+    ): Object<StarcoinToken> acquires StarcoinCollection, StarcoinToken {
         let constructor_ref = mint_internal(
             creator,
             collection,
@@ -206,8 +206,8 @@ module starcoin_token_objects::starcoin_token {
         // If tokens are freezable, add a transfer ref to be able to freeze transfers
         let freezable_by_creator = are_collection_tokens_freezable(collection);
         if (freezable_by_creator) {
-            let aptos_token_addr = object::address_from_constructor_ref(&constructor_ref);
-            let starcoin_token = borrow_global_mut<AptosToken>(aptos_token_addr);
+            let starcoin_token_addr = object::address_from_constructor_ref(&constructor_ref);
+            let starcoin_token = borrow_global_mut<StarcoinToken>(starcoin_token_addr);
             let transfer_ref = object::generate_transfer_ref(&constructor_ref);
             option::fill(&mut starcoin_token.transfer_ref, transfer_ref);
         };
@@ -226,7 +226,7 @@ module starcoin_token_objects::starcoin_token {
         property_types: vector<String>,
         property_values: vector<vector<u8>>,
         soul_bound_to: address,
-    ) acquires AptosCollection {
+    ) acquires StarcoinCollection {
         mint_soul_bound_token_object(
             creator,
             collection,
@@ -251,7 +251,7 @@ module starcoin_token_objects::starcoin_token {
         property_types: vector<String>,
         property_values: vector<vector<u8>>,
         soul_bound_to: address,
-    ): Object<AptosToken> acquires AptosCollection {
+    ): Object<StarcoinToken> acquires StarcoinCollection {
         let constructor_ref = mint_internal(
             creator,
             collection,
@@ -280,7 +280,7 @@ module starcoin_token_objects::starcoin_token {
         property_keys: vector<String>,
         property_types: vector<String>,
         property_values: vector<vector<u8>>,
-    ): ConstructorRef acquires AptosCollection {
+    ): ConstructorRef acquires StarcoinCollection {
         let constructor_ref = token::create(creator, collection, description, name, option::none(), uri);
 
         let object_signer = object::generate_signer(&constructor_ref);
@@ -304,7 +304,7 @@ module starcoin_token_objects::starcoin_token {
             option::none()
         };
 
-        let starcoin_token = AptosToken {
+        let starcoin_token = StarcoinToken {
             burn_ref,
             transfer_ref: option::none(),
             mutator_ref,
@@ -320,52 +320,52 @@ module starcoin_token_objects::starcoin_token {
 
     // Token accessors
 
-    inline fun borrow<T: key>(token: &Object<T>): &AptosToken {
+    inline fun borrow<T: key>(token: &Object<T>): &StarcoinToken {
         let token_address = object::object_address(token);
         assert!(
-            exists<AptosToken>(token_address),
+            exists<StarcoinToken>(token_address),
             error::not_found(ETOKEN_DOES_NOT_EXIST),
         );
-        borrow_global<AptosToken>(token_address)
+        borrow_global<StarcoinToken>(token_address)
     }
 
     #[view]
-    public fun are_properties_mutable<T: key>(token: Object<T>): bool acquires AptosCollection {
+    public fun are_properties_mutable<T: key>(token: Object<T>): bool acquires StarcoinCollection {
         let collection = token::collection_object(token);
         borrow_collection(&collection).mutable_token_properties
     }
 
     #[view]
-    public fun is_burnable<T: key>(token: Object<T>): bool acquires AptosToken {
+    public fun is_burnable<T: key>(token: Object<T>): bool acquires StarcoinToken {
         option::is_some(&borrow(&token).burn_ref)
     }
 
     #[view]
-    public fun is_freezable_by_creator<T: key>(token: Object<T>): bool acquires AptosCollection {
+    public fun is_freezable_by_creator<T: key>(token: Object<T>): bool acquires StarcoinCollection {
         are_collection_tokens_freezable(token::collection_object(token))
     }
 
     #[view]
-    public fun is_mutable_description<T: key>(token: Object<T>): bool acquires AptosCollection {
+    public fun is_mutable_description<T: key>(token: Object<T>): bool acquires StarcoinCollection {
         is_mutable_collection_token_description(token::collection_object(token))
     }
 
     #[view]
-    public fun is_mutable_name<T: key>(token: Object<T>): bool acquires AptosCollection {
+    public fun is_mutable_name<T: key>(token: Object<T>): bool acquires StarcoinCollection {
         is_mutable_collection_token_name(token::collection_object(token))
     }
 
     #[view]
-    public fun is_mutable_uri<T: key>(token: Object<T>): bool acquires AptosCollection {
+    public fun is_mutable_uri<T: key>(token: Object<T>): bool acquires StarcoinCollection {
         is_mutable_collection_token_uri(token::collection_object(token))
     }
 
     // Token mutators
 
-    inline fun authorized_borrow<T: key>(token: &Object<T>, creator: &signer): &AptosToken {
+    inline fun authorized_borrow<T: key>(token: &Object<T>, creator: &signer): &StarcoinToken {
         let token_address = object::object_address(token);
         assert!(
-            exists<AptosToken>(token_address),
+            exists<StarcoinToken>(token_address),
             error::not_found(ETOKEN_DOES_NOT_EXIST),
         );
 
@@ -373,18 +373,18 @@ module starcoin_token_objects::starcoin_token {
             token::creator(*token) == signer::address_of(creator),
             error::permission_denied(ENOT_CREATOR),
         );
-        borrow_global<AptosToken>(token_address)
+        borrow_global<StarcoinToken>(token_address)
     }
 
-    public entry fun burn<T: key>(creator: &signer, token: Object<T>) acquires AptosToken {
+    public entry fun burn<T: key>(creator: &signer, token: Object<T>) acquires StarcoinToken {
         let starcoin_token = authorized_borrow(&token, creator);
         assert!(
             option::is_some(&starcoin_token.burn_ref),
             error::permission_denied(ETOKEN_NOT_BURNABLE),
         );
         move starcoin_token;
-        let starcoin_token = move_from<AptosToken>(object::object_address(&token));
-        let AptosToken {
+        let starcoin_token = move_from<StarcoinToken>(object::object_address(&token));
+        let StarcoinToken {
             burn_ref,
             transfer_ref: _,
             mutator_ref: _,
@@ -394,7 +394,7 @@ module starcoin_token_objects::starcoin_token {
         token::burn(option::extract(&mut burn_ref));
     }
 
-    public entry fun freeze_transfer<T: key>(creator: &signer, token: Object<T>) acquires AptosCollection, AptosToken {
+    public entry fun freeze_transfer<T: key>(creator: &signer, token: Object<T>) acquires StarcoinCollection, StarcoinToken {
         let starcoin_token = authorized_borrow(&token, creator);
         assert!(
             are_collection_tokens_freezable(token::collection_object(token))
@@ -407,7 +407,7 @@ module starcoin_token_objects::starcoin_token {
     public entry fun unfreeze_transfer<T: key>(
         creator: &signer,
         token: Object<T>
-    ) acquires AptosCollection, AptosToken {
+    ) acquires StarcoinCollection, StarcoinToken {
         let starcoin_token = authorized_borrow(&token, creator);
         assert!(
             are_collection_tokens_freezable(token::collection_object(token))
@@ -421,7 +421,7 @@ module starcoin_token_objects::starcoin_token {
         creator: &signer,
         token: Object<T>,
         description: String,
-    ) acquires AptosCollection, AptosToken {
+    ) acquires StarcoinCollection, StarcoinToken {
         assert!(
             is_mutable_description(token),
             error::permission_denied(EFIELD_NOT_MUTABLE),
@@ -434,7 +434,7 @@ module starcoin_token_objects::starcoin_token {
         creator: &signer,
         token: Object<T>,
         name: String,
-    ) acquires AptosCollection, AptosToken {
+    ) acquires StarcoinCollection, StarcoinToken {
         assert!(
             is_mutable_name(token),
             error::permission_denied(EFIELD_NOT_MUTABLE),
@@ -447,7 +447,7 @@ module starcoin_token_objects::starcoin_token {
         creator: &signer,
         token: Object<T>,
         uri: String,
-    ) acquires AptosCollection, AptosToken {
+    ) acquires StarcoinCollection, StarcoinToken {
         assert!(
             is_mutable_uri(token),
             error::permission_denied(EFIELD_NOT_MUTABLE),
@@ -462,7 +462,7 @@ module starcoin_token_objects::starcoin_token {
         key: String,
         type: String,
         value: vector<u8>,
-    ) acquires AptosCollection, AptosToken {
+    ) acquires StarcoinCollection, StarcoinToken {
         let starcoin_token = authorized_borrow(&token, creator);
         assert!(
             are_properties_mutable(token),
@@ -477,7 +477,7 @@ module starcoin_token_objects::starcoin_token {
         token: Object<T>,
         key: String,
         value: V,
-    ) acquires AptosCollection, AptosToken {
+    ) acquires StarcoinCollection, StarcoinToken {
         let starcoin_token = authorized_borrow(&token, creator);
         assert!(
             are_properties_mutable(token),
@@ -491,7 +491,7 @@ module starcoin_token_objects::starcoin_token {
         creator: &signer,
         token: Object<T>,
         key: String,
-    ) acquires AptosCollection, AptosToken {
+    ) acquires StarcoinCollection, StarcoinToken {
         let starcoin_token = authorized_borrow(&token, creator);
         assert!(
             are_properties_mutable(token),
@@ -507,7 +507,7 @@ module starcoin_token_objects::starcoin_token {
         key: String,
         type: String,
         value: vector<u8>,
-    ) acquires AptosCollection, AptosToken {
+    ) acquires StarcoinCollection, StarcoinToken {
         let starcoin_token = authorized_borrow(&token, creator);
         assert!(
             are_properties_mutable(token),
@@ -522,7 +522,7 @@ module starcoin_token_objects::starcoin_token {
         token: Object<T>,
         key: String,
         value: V,
-    ) acquires AptosCollection, AptosToken {
+    ) acquires StarcoinCollection, StarcoinToken {
         let starcoin_token = authorized_borrow(&token, creator);
         assert!(
             are_properties_mutable(token),
@@ -534,113 +534,113 @@ module starcoin_token_objects::starcoin_token {
 
     // Collection accessors
 
-    inline fun collection_object(creator: &signer, name: &String): Object<AptosCollection> {
+    inline fun collection_object(creator: &signer, name: &String): Object<StarcoinCollection> {
         let collection_addr = collection::create_collection_address(&signer::address_of(creator), name);
-        object::address_to_object<AptosCollection>(collection_addr)
+        object::address_to_object<StarcoinCollection>(collection_addr)
     }
 
-    inline fun borrow_collection<T: key>(token: &Object<T>): &AptosCollection {
+    inline fun borrow_collection<T: key>(token: &Object<T>): &StarcoinCollection {
         let collection_address = object::object_address(token);
         assert!(
-            exists<AptosCollection>(collection_address),
+            exists<StarcoinCollection>(collection_address),
             error::not_found(ECOLLECTION_DOES_NOT_EXIST),
         );
-        borrow_global<AptosCollection>(collection_address)
+        borrow_global<StarcoinCollection>(collection_address)
     }
 
     public fun is_mutable_collection_description<T: key>(
         collection: Object<T>,
-    ): bool acquires AptosCollection {
+    ): bool acquires StarcoinCollection {
         borrow_collection(&collection).mutable_description
     }
 
     public fun is_mutable_collection_royalty<T: key>(
         collection: Object<T>,
-    ): bool acquires AptosCollection {
+    ): bool acquires StarcoinCollection {
         option::is_some(&borrow_collection(&collection).royalty_mutator_ref)
     }
 
     public fun is_mutable_collection_uri<T: key>(
         collection: Object<T>,
-    ): bool acquires AptosCollection {
+    ): bool acquires StarcoinCollection {
         borrow_collection(&collection).mutable_uri
     }
 
     public fun is_mutable_collection_token_description<T: key>(
         collection: Object<T>,
-    ): bool acquires AptosCollection {
+    ): bool acquires StarcoinCollection {
         borrow_collection(&collection).mutable_token_description
     }
 
     public fun is_mutable_collection_token_name<T: key>(
         collection: Object<T>,
-    ): bool acquires AptosCollection {
+    ): bool acquires StarcoinCollection {
         borrow_collection(&collection).mutable_token_name
     }
 
     public fun is_mutable_collection_token_uri<T: key>(
         collection: Object<T>,
-    ): bool acquires AptosCollection {
+    ): bool acquires StarcoinCollection {
         borrow_collection(&collection).mutable_token_uri
     }
 
     public fun is_mutable_collection_token_properties<T: key>(
         collection: Object<T>,
-    ): bool acquires AptosCollection {
+    ): bool acquires StarcoinCollection {
         borrow_collection(&collection).mutable_token_properties
     }
 
     public fun are_collection_tokens_burnable<T: key>(
         collection: Object<T>,
-    ): bool acquires AptosCollection {
+    ): bool acquires StarcoinCollection {
         borrow_collection(&collection).tokens_burnable_by_creator
     }
 
     public fun are_collection_tokens_freezable<T: key>(
         collection: Object<T>,
-    ): bool acquires AptosCollection {
+    ): bool acquires StarcoinCollection {
         borrow_collection(&collection).tokens_freezable_by_creator
     }
 
     // Collection mutators
 
-    inline fun authorized_borrow_collection<T: key>(collection: &Object<T>, creator: &signer): &AptosCollection {
+    inline fun authorized_borrow_collection<T: key>(collection: &Object<T>, creator: &signer): &StarcoinCollection {
         let collection_address = object::object_address(collection);
         assert!(
-            exists<AptosCollection>(collection_address),
+            exists<StarcoinCollection>(collection_address),
             error::not_found(ECOLLECTION_DOES_NOT_EXIST),
         );
         assert!(
             collection::creator(*collection) == signer::address_of(creator),
             error::permission_denied(ENOT_CREATOR),
         );
-        borrow_global<AptosCollection>(collection_address)
+        borrow_global<StarcoinCollection>(collection_address)
     }
 
     public entry fun set_collection_description<T: key>(
         creator: &signer,
         collection: Object<T>,
         description: String,
-    ) acquires AptosCollection {
-        let aptos_collection = authorized_borrow_collection(&collection, creator);
+    ) acquires StarcoinCollection {
+        let starcoin_collection = authorized_borrow_collection(&collection, creator);
         assert!(
-            aptos_collection.mutable_description,
+            starcoin_collection.mutable_description,
             error::permission_denied(EFIELD_NOT_MUTABLE),
         );
-        collection::set_description(option::borrow(&aptos_collection.mutator_ref), description);
+        collection::set_description(option::borrow(&starcoin_collection.mutator_ref), description);
     }
 
     public fun set_collection_royalties<T: key>(
         creator: &signer,
         collection: Object<T>,
         royalty: royalty::Royalty,
-    ) acquires AptosCollection {
-        let aptos_collection = authorized_borrow_collection(&collection, creator);
+    ) acquires StarcoinCollection {
+        let starcoin_collection = authorized_borrow_collection(&collection, creator);
         assert!(
-            option::is_some(&aptos_collection.royalty_mutator_ref),
+            option::is_some(&starcoin_collection.royalty_mutator_ref),
             error::permission_denied(EFIELD_NOT_MUTABLE),
         );
-        royalty::update(option::borrow(&aptos_collection.royalty_mutator_ref), royalty);
+        royalty::update(option::borrow(&starcoin_collection.royalty_mutator_ref), royalty);
     }
 
     entry fun set_collection_royalties_call<T: key>(
@@ -649,7 +649,7 @@ module starcoin_token_objects::starcoin_token {
         royalty_numerator: u64,
         royalty_denominator: u64,
         payee_address: address,
-    ) acquires AptosCollection {
+    ) acquires StarcoinCollection {
         let royalty = royalty::create(royalty_numerator, royalty_denominator, payee_address);
         set_collection_royalties(creator, collection, royalty);
     }
@@ -658,13 +658,13 @@ module starcoin_token_objects::starcoin_token {
         creator: &signer,
         collection: Object<T>,
         uri: String,
-    ) acquires AptosCollection {
-        let aptos_collection = authorized_borrow_collection(&collection, creator);
+    ) acquires StarcoinCollection {
+        let starcoin_collection = authorized_borrow_collection(&collection, creator);
         assert!(
-            aptos_collection.mutable_uri,
+            starcoin_collection.mutable_uri,
             error::permission_denied(EFIELD_NOT_MUTABLE),
         );
-        collection::set_uri(option::borrow(&aptos_collection.mutator_ref), uri);
+        collection::set_uri(option::borrow(&starcoin_collection.mutator_ref), uri);
     }
 
     // Tests
@@ -675,7 +675,7 @@ module starcoin_token_objects::starcoin_token {
     use starcoin_framework::account;
 
     #[test(creator = @0x123)]
-    fun test_create_and_transfer(creator: &signer) acquires AptosCollection, AptosToken {
+    fun test_create_and_transfer(creator: &signer) acquires StarcoinCollection, StarcoinToken {
         let collection_name = string::utf8(b"collection name");
         let token_name = string::utf8(b"token name");
 
@@ -689,7 +689,7 @@ module starcoin_token_objects::starcoin_token {
 
     #[test(creator = @0x123, bob = @0x456)]
     #[expected_failure(abort_code = 0x50003, location = object)]
-    fun test_mint_soul_bound(creator: &signer, bob: &signer) acquires AptosCollection {
+    fun test_mint_soul_bound(creator: &signer, bob: &signer) acquires StarcoinCollection {
         let collection_name = string::utf8(b"collection name");
         let token_name = string::utf8(b"token name");
 
@@ -715,7 +715,7 @@ module starcoin_token_objects::starcoin_token {
 
     #[test(creator = @0x123)]
     #[expected_failure(abort_code = 0x50003, location = object)]
-    fun test_frozen_transfer(creator: &signer) acquires AptosCollection, AptosToken {
+    fun test_frozen_transfer(creator: &signer) acquires StarcoinCollection, StarcoinToken {
         let collection_name = string::utf8(b"collection name");
         let token_name = string::utf8(b"token name");
 
@@ -726,7 +726,7 @@ module starcoin_token_objects::starcoin_token {
     }
 
     #[test(creator = @0x123)]
-    fun test_unfrozen_transfer(creator: &signer) acquires AptosCollection, AptosToken {
+    fun test_unfrozen_transfer(creator: &signer) acquires StarcoinCollection, StarcoinToken {
         let collection_name = string::utf8(b"collection name");
         let token_name = string::utf8(b"token name");
 
@@ -739,7 +739,7 @@ module starcoin_token_objects::starcoin_token {
 
     #[test(creator = @0x123, another = @0x456)]
     #[expected_failure(abort_code = 0x50003, location = Self)]
-    fun test_noncreator_freeze(creator: &signer, another: &signer) acquires AptosCollection, AptosToken {
+    fun test_noncreator_freeze(creator: &signer, another: &signer) acquires StarcoinCollection, StarcoinToken {
         let collection_name = string::utf8(b"collection name");
         let token_name = string::utf8(b"token name");
 
@@ -750,7 +750,7 @@ module starcoin_token_objects::starcoin_token {
 
     #[test(creator = @0x123, another = @0x456)]
     #[expected_failure(abort_code = 0x50003, location = Self)]
-    fun test_noncreator_unfreeze(creator: &signer, another: &signer) acquires AptosCollection, AptosToken {
+    fun test_noncreator_unfreeze(creator: &signer, another: &signer) acquires StarcoinCollection, StarcoinToken {
         let collection_name = string::utf8(b"collection name");
         let token_name = string::utf8(b"token name");
 
@@ -761,7 +761,7 @@ module starcoin_token_objects::starcoin_token {
     }
 
     #[test(creator = @0x123)]
-    fun test_set_description(creator: &signer) acquires AptosCollection, AptosToken {
+    fun test_set_description(creator: &signer) acquires StarcoinCollection, StarcoinToken {
         let collection_name = string::utf8(b"collection name");
         let token_name = string::utf8(b"token name");
 
@@ -776,7 +776,7 @@ module starcoin_token_objects::starcoin_token {
 
     #[test(creator = @0x123)]
     #[expected_failure(abort_code = 0x50004, location = Self)]
-    fun test_set_immutable_description(creator: &signer) acquires AptosCollection, AptosToken {
+    fun test_set_immutable_description(creator: &signer) acquires StarcoinCollection, StarcoinToken {
         let collection_name = string::utf8(b"collection name");
         let token_name = string::utf8(b"token name");
 
@@ -791,7 +791,7 @@ module starcoin_token_objects::starcoin_token {
     fun test_set_description_non_creator(
         creator: &signer,
         noncreator: &signer,
-    ) acquires AptosCollection, AptosToken {
+    ) acquires StarcoinCollection, StarcoinToken {
         let collection_name = string::utf8(b"collection name");
         let token_name = string::utf8(b"token name");
 
@@ -803,7 +803,7 @@ module starcoin_token_objects::starcoin_token {
     }
 
     #[test(creator = @0x123)]
-    fun test_set_name(creator: &signer) acquires AptosCollection, AptosToken {
+    fun test_set_name(creator: &signer) acquires StarcoinCollection, StarcoinToken {
         let collection_name = string::utf8(b"collection name");
         let token_name = string::utf8(b"token name");
 
@@ -818,7 +818,7 @@ module starcoin_token_objects::starcoin_token {
 
     #[test(creator = @0x123)]
     #[expected_failure(abort_code = 0x50004, location = Self)]
-    fun test_set_immutable_name(creator: &signer) acquires AptosCollection, AptosToken {
+    fun test_set_immutable_name(creator: &signer) acquires StarcoinCollection, StarcoinToken {
         let collection_name = string::utf8(b"collection name");
         let token_name = string::utf8(b"token name");
 
@@ -833,7 +833,7 @@ module starcoin_token_objects::starcoin_token {
     fun test_set_name_non_creator(
         creator: &signer,
         noncreator: &signer,
-    ) acquires AptosCollection, AptosToken {
+    ) acquires StarcoinCollection, StarcoinToken {
         let collection_name = string::utf8(b"collection name");
         let token_name = string::utf8(b"token name");
 
@@ -845,7 +845,7 @@ module starcoin_token_objects::starcoin_token {
     }
 
     #[test(creator = @0x123)]
-    fun test_set_uri(creator: &signer) acquires AptosCollection, AptosToken {
+    fun test_set_uri(creator: &signer) acquires StarcoinCollection, StarcoinToken {
         let collection_name = string::utf8(b"collection name");
         let token_name = string::utf8(b"token name");
 
@@ -860,7 +860,7 @@ module starcoin_token_objects::starcoin_token {
 
     #[test(creator = @0x123)]
     #[expected_failure(abort_code = 0x50004, location = Self)]
-    fun test_set_immutable_uri(creator: &signer) acquires AptosCollection, AptosToken {
+    fun test_set_immutable_uri(creator: &signer) acquires StarcoinCollection, StarcoinToken {
         let collection_name = string::utf8(b"collection name");
         let token_name = string::utf8(b"token name");
 
@@ -875,7 +875,7 @@ module starcoin_token_objects::starcoin_token {
     fun test_set_uri_non_creator(
         creator: &signer,
         noncreator: &signer,
-    ) acquires AptosCollection, AptosToken {
+    ) acquires StarcoinCollection, StarcoinToken {
         let collection_name = string::utf8(b"collection name");
         let token_name = string::utf8(b"token name");
 
@@ -887,7 +887,7 @@ module starcoin_token_objects::starcoin_token {
     }
 
     #[test(creator = @0x123)]
-    fun test_burnable(creator: &signer) acquires AptosCollection, AptosToken {
+    fun test_burnable(creator: &signer) acquires StarcoinCollection, StarcoinToken {
         let collection_name = string::utf8(b"collection name");
         let token_name = string::utf8(b"token name");
 
@@ -895,14 +895,14 @@ module starcoin_token_objects::starcoin_token {
         let token = mint_helper(creator, collection_name, token_name);
         let token_addr = object::object_address(&token);
 
-        assert!(exists<AptosToken>(token_addr), 0);
+        assert!(exists<StarcoinToken>(token_addr), 0);
         burn(creator, token);
-        assert!(!exists<AptosToken>(token_addr), 1);
+        assert!(!exists<StarcoinToken>(token_addr), 1);
     }
 
     #[test(creator = @0x123)]
     #[expected_failure(abort_code = 0x50005, location = Self)]
-    fun test_not_burnable(creator: &signer) acquires AptosCollection, AptosToken {
+    fun test_not_burnable(creator: &signer) acquires StarcoinCollection, StarcoinToken {
         let collection_name = string::utf8(b"collection name");
         let token_name = string::utf8(b"token name");
 
@@ -917,7 +917,7 @@ module starcoin_token_objects::starcoin_token {
     fun test_burn_non_creator(
         creator: &signer,
         noncreator: &signer,
-    ) acquires AptosCollection, AptosToken {
+    ) acquires StarcoinCollection, StarcoinToken {
         let collection_name = string::utf8(b"collection name");
         let token_name = string::utf8(b"token name");
 
@@ -928,7 +928,7 @@ module starcoin_token_objects::starcoin_token {
     }
 
     #[test(creator = @0x123)]
-    fun test_set_collection_description(creator: &signer) acquires AptosCollection {
+    fun test_set_collection_description(creator: &signer) acquires StarcoinCollection {
         let collection_name = string::utf8(b"collection name");
         let collection = create_collection_helper(creator, collection_name, true);
         let value = string::utf8(b"not");
@@ -939,7 +939,7 @@ module starcoin_token_objects::starcoin_token {
 
     #[test(creator = @0x123)]
     #[expected_failure(abort_code = 0x50004, location = Self)]
-    fun test_set_immutable_collection_description(creator: &signer) acquires AptosCollection {
+    fun test_set_immutable_collection_description(creator: &signer) acquires StarcoinCollection {
         let collection_name = string::utf8(b"collection name");
         let collection = create_collection_helper(creator, collection_name, false);
         set_collection_description(creator, collection, string::utf8(b""));
@@ -950,14 +950,14 @@ module starcoin_token_objects::starcoin_token {
     fun test_set_collection_description_non_creator(
         creator: &signer,
         noncreator: &signer,
-    ) acquires AptosCollection {
+    ) acquires StarcoinCollection {
         let collection_name = string::utf8(b"collection name");
         let collection = create_collection_helper(creator, collection_name, true);
         set_collection_description(noncreator, collection, string::utf8(b""));
     }
 
     #[test(creator = @0x123)]
-    fun test_set_collection_uri(creator: &signer) acquires AptosCollection {
+    fun test_set_collection_uri(creator: &signer) acquires StarcoinCollection {
         let collection_name = string::utf8(b"collection name");
         let collection = create_collection_helper(creator, collection_name, true);
         let value = string::utf8(b"not");
@@ -968,7 +968,7 @@ module starcoin_token_objects::starcoin_token {
 
     #[test(creator = @0x123)]
     #[expected_failure(abort_code = 0x50004, location = Self)]
-    fun test_set_immutable_collection_uri(creator: &signer) acquires AptosCollection {
+    fun test_set_immutable_collection_uri(creator: &signer) acquires StarcoinCollection {
         let collection_name = string::utf8(b"collection name");
         let collection = create_collection_helper(creator, collection_name, false);
         set_collection_uri(creator, collection, string::utf8(b""));
@@ -979,14 +979,14 @@ module starcoin_token_objects::starcoin_token {
     fun test_set_collection_uri_non_creator(
         creator: &signer,
         noncreator: &signer,
-    ) acquires AptosCollection {
+    ) acquires StarcoinCollection {
         let collection_name = string::utf8(b"collection name");
         let collection = create_collection_helper(creator, collection_name, true);
         set_collection_uri(noncreator, collection, string::utf8(b""));
     }
 
     #[test(creator = @0x123)]
-    fun test_property_add(creator: &signer) acquires AptosCollection, AptosToken {
+    fun test_property_add(creator: &signer) acquires StarcoinCollection, StarcoinToken {
         let collection_name = string::utf8(b"collection name");
         let token_name = string::utf8(b"token name");
         let property_name = string::utf8(b"u8");
@@ -1000,20 +1000,20 @@ module starcoin_token_objects::starcoin_token {
     }
 
     #[test(creator = @0x123)]
-    fun test_property_typed_add(creator: &signer) acquires AptosCollection, AptosToken {
+    fun test_property_typed_add(creator: &signer) acquires StarcoinCollection, StarcoinToken {
         let collection_name = string::utf8(b"collection name");
         let token_name = string::utf8(b"token name");
         let property_name = string::utf8(b"u8");
 
         create_collection_helper(creator, collection_name, true);
         let token = mint_helper(creator, collection_name, token_name);
-        add_typed_property<AptosToken, u8>(creator, token, property_name, 0x8);
+        add_typed_property<StarcoinToken, u8>(creator, token, property_name, 0x8);
 
         assert!(property_map::read_u8(&token, &property_name) == 0x8, 0);
     }
 
     #[test(creator = @0x123)]
-    fun test_property_update(creator: &signer) acquires AptosCollection, AptosToken {
+    fun test_property_update(creator: &signer) acquires StarcoinCollection, StarcoinToken {
         let collection_name = string::utf8(b"collection name");
         let token_name = string::utf8(b"token name");
         let property_name = string::utf8(b"bool");
@@ -1027,20 +1027,20 @@ module starcoin_token_objects::starcoin_token {
     }
 
     #[test(creator = @0x123)]
-    fun test_property_update_typed(creator: &signer) acquires AptosCollection, AptosToken {
+    fun test_property_update_typed(creator: &signer) acquires StarcoinCollection, StarcoinToken {
         let collection_name = string::utf8(b"collection name");
         let token_name = string::utf8(b"token name");
         let property_name = string::utf8(b"bool");
 
         create_collection_helper(creator, collection_name, true);
         let token = mint_helper(creator, collection_name, token_name);
-        update_typed_property<AptosToken, bool>(creator, token, property_name, false);
+        update_typed_property<StarcoinToken, bool>(creator, token, property_name, false);
 
         assert!(!property_map::read_bool(&token, &property_name), 0);
     }
 
     #[test(creator = @0x123)]
-    fun test_property_remove(creator: &signer) acquires AptosCollection, AptosToken {
+    fun test_property_remove(creator: &signer) acquires StarcoinCollection, StarcoinToken {
         let collection_name = string::utf8(b"collection name");
         let token_name = string::utf8(b"token name");
         let property_name = string::utf8(b"bool");
@@ -1051,7 +1051,7 @@ module starcoin_token_objects::starcoin_token {
     }
 
     #[test(creator = @0x123)]
-    fun test_royalties(creator: &signer) acquires AptosCollection, AptosToken {
+    fun test_royalties(creator: &signer) acquires StarcoinCollection, StarcoinToken {
         let collection_name = string::utf8(b"collection name");
         let token_name = string::utf8(b"token name");
 
@@ -1069,7 +1069,7 @@ module starcoin_token_objects::starcoin_token {
         creator: &signer,
         collection_name: String,
         flag: bool,
-    ): Object<AptosCollection> {
+    ): Object<StarcoinCollection> {
         create_collection_object(
             creator,
             string::utf8(b"collection description"),
@@ -1095,7 +1095,7 @@ module starcoin_token_objects::starcoin_token {
         creator: &signer,
         collection_name: String,
         token_name: String,
-    ): Object<AptosToken> acquires AptosCollection, AptosToken {
+    ): Object<StarcoinToken> acquires StarcoinCollection, StarcoinToken {
         let creator_addr = signer::address_of(creator);
         account::create_account_for_test(creator_addr);
 

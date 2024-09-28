@@ -1,4 +1,4 @@
-// Copyright © Aptos Foundation
+// Copyright © Starcoin Foundation
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
@@ -43,11 +43,11 @@ pub const METADATA_FILE_NAME: &str = "package-metadata.bcs";
 pub const UPGRADE_POLICY_CUSTOM_FIELD: &str = "upgrade_policy";
 
 pub const APTOS_PACKAGES: [&str; 5] = [
-    "AptosFramework",
+    "StarcoinFramework",
     "MoveStdlib",
-    "AptosStdlib",
-    "AptosToken",
-    "AptosTokenObjects",
+    "StarcoinStdlib",
+    "StarcoinToken",
+    "StarcoinTokenObjects",
 ];
 
 /// Represents a set of options for building artifacts from Move.

@@ -1,5 +1,5 @@
 /// This module is responsible for configuring keyless blockchain accounts which were introduced in
-/// [AIP-61](https://github.com/aptos-foundation/AIPs/blob/main/aips/aip-61.md).
+/// [AIP-61](https://github.com/starcoin-foundation/AIPs/blob/main/aips/aip-61.md).
 module starcoin_framework::keyless_account {
     use std::bn254_algebra;
     use std::config_buffer;

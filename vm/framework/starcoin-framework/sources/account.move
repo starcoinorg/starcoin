@@ -149,7 +149,7 @@ module starcoin_framework::account {
     const ENO_CAPABILITY: u64 = 9;
     /// The caller does not have a valid rotation capability offer from the other account
     const EINVALID_ACCEPT_ROTATION_CAPABILITY: u64 = 10;
-    /// Address to create is not a valid reserved address for Aptos framework
+    /// Address to create is not a valid reserved address for Starcoin framework
     const ENO_VALID_FRAMEWORK_RESERVED_ADDRESS: u64 = 11;
     /// Specified scheme required to proceed with the smart contract operation - can only be ED25519_SCHEME(0) OR MULTI_ED25519_SCHEME(1)
     const EINVALID_SCHEME: u64 = 12;
@@ -174,7 +174,7 @@ module starcoin_framework::account {
     const MAX_GUID_CREATION_NUM: u64 = 0x4000000000000;
 
     #[test_only]
-    /// Create signer for testing, independently of an Aptos-style `Account`.
+    /// Create signer for testing, independently of an Starcoin-style `Account`.
     public fun create_signer_for_test(addr: address): signer { create_signer(addr) }
 
     /// Only called during genesis to initialize system resources for this module.
@@ -713,10 +713,10 @@ module starcoin_framework::account {
     }
 
     /// A resource account is used to manage resources independent of an account managed by a user.
-    /// In Aptos a resource account is created based upon the sha3 256 of the source's address and additional seed data.
+    /// In Starcoin a resource account is created based upon the sha3 256 of the source's address and additional seed data.
     /// A resource account can only be created once, this is designated by setting the
     /// `Account::signer_capability_offer::for` to the address of the resource account. While an entity may call
-    /// `create_account` to attempt to claim an account ahead of the creation of a resource account, if found Aptos will
+    /// `create_account` to attempt to claim an account ahead of the creation of a resource account, if found Starcoin will
     /// transition ownership of the account over to the resource account. This is done by validating that the account has
     /// yet to execute any transactions and that the `Account::signer_capability_offer::for` is none. The probability of a
     /// collision where someone has legitimately produced a private key that maps to a resource account address is less

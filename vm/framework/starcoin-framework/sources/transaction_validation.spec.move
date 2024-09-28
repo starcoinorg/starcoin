@@ -285,7 +285,7 @@ spec starcoin_framework::transaction_validation {
     }
 
     /// Abort according to the conditions.
-    /// `AptosCoinCapabilities` and `CoinInfo` should exists.
+    /// `StarcoinCoinCapabilities` and `CoinInfo` should exists.
     /// Skip transaction_fee::burn_fee verification.
     spec epilogue_extended(
     account: signer,
@@ -312,7 +312,7 @@ spec starcoin_framework::transaction_validation {
     }
 
     /// Abort according to the conditions.
-    /// `AptosCoinCapabilities` and `CoinInfo` should exist.
+    /// `StarcoinCoinCapabilities` and `CoinInfo` should exist.
     /// Skip transaction_fee::burn_fee verification.
     spec epilogue_gas_payer_extended(
     account: signer,
@@ -427,8 +427,8 @@ spec starcoin_framework::transaction_validation {
         aborts_if amount_to_mint > 0 && total_supply + amount_to_mint > MAX_U128;
         ensures amount_to_mint > 0 ==> post_total_supply == total_supply + amount_to_mint;
 
-        let aptos_addr = type_info::type_of<StarcoinCoin>().account_address;
-        aborts_if (amount_to_mint != 0) && !exists<coin::CoinInfo<StarcoinCoin>>(aptos_addr);
+        let starcoin_addr = type_info::type_of<StarcoinCoin>().account_address;
+        aborts_if (amount_to_mint != 0) && !exists<coin::CoinInfo<StarcoinCoin>>(starcoin_addr);
         include coin::CoinAddAbortsIf<StarcoinCoin> { amount: amount_to_mint };
     }
 }

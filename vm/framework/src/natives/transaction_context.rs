@@ -1,4 +1,4 @@
-// Copyright © Aptos Foundation
+// Copyright © Starcoin Foundation
 // SPDX-License-Identifier: Apache-2.0
 
 use better_any::{Tid, TidAble};
@@ -32,7 +32,7 @@ pub mod abort_codes {
 #[derive(Tid)]
 pub struct NativeTransactionContext {
     txn_hash: Vec<u8>,
-    /// The number of AUIDs (Aptos unique identifiers) issued during the
+    /// The number of AUIDs (Starcoin unique identifiers) issued during the
     /// execution of this transaction.
     auid_counter: u64,
     script_hash: Vec<u8>,

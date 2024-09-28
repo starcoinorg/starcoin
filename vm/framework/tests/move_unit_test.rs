@@ -1,8 +1,8 @@
-// Copyright © Aptos Foundation
+// Copyright © Starcoin Foundation
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use aptos_vm::natives;
+use starcoin_vm::natives;
 use move_cli::base::test::{run_move_unit_tests, UnitTestResult};
 use move_command_line_common::env::get_move_compiler_v2_from_env;
 use move_model::metadata::CompilerVersion;
@@ -12,7 +12,7 @@ use move_vm_runtime::native_functions::NativeFunctionTable;
 use starcoin_framework::{extended_checks, path_in_crate};
 use starcoin_gas_schedule::{MiscGasParameters, NativeGasParameters, LATEST_GAS_FEATURE_VERSION};
 use starcoin_vm_types::on_chain_config::{
-    aptos_test_feature_flags_genesis, Features, TimedFeaturesBuilder,
+    starcoin_test_feature_flags_genesis, Features, TimedFeaturesBuilder,
 };
 use tempfile::tempdir;
 
@@ -35,8 +35,8 @@ fn run_tests_for_pkg(path_to_pkg: impl Into<String>) {
         build_config.clone(),
         // TODO(Gas): double check if this is correct
         UnitTestingConfig::default_with_bound(Some(100_000)),
-        aptos_test_natives(),
-        aptos_test_feature_flags_genesis(),
+        starcoin_test_natives(),
+        starcoin_test_feature_flags_genesis(),
         /* cost_table */ None,
         /* compute_coverage */ false,
         &mut std::io::stdout(),
@@ -53,8 +53,8 @@ fn run_tests_for_pkg(path_to_pkg: impl Into<String>) {
             &pkg_path,
             build_config,
             UnitTestingConfig::default_with_bound(Some(100_000)),
-            aptos_test_natives(),
-            aptos_test_feature_flags_genesis(),
+            starcoin_test_natives(),
+            starcoin_test_feature_flags_genesis(),
             /* cost_table */ None,
             /* compute_coverage */ false,
             &mut std::io::stdout(),
@@ -66,12 +66,12 @@ fn run_tests_for_pkg(path_to_pkg: impl Into<String>) {
     }
 }
 
-pub fn aptos_test_natives() -> NativeFunctionTable {
+pub fn starcoin_test_natives() -> NativeFunctionTable {
     // By side effect, configure for unit tests
     natives::configure_for_unit_test();
     extended_checks::configure_extended_checks_for_unit_test();
     // move_stdlib has the testing feature enabled to include debug native functions
-    natives::aptos_natives(
+    natives::starcoin_natives(
         LATEST_GAS_FEATURE_VERSION,
         NativeGasParameters::zeros(),
         MiscGasParameters::zeros(),
@@ -82,12 +82,12 @@ pub fn aptos_test_natives() -> NativeFunctionTable {
 
 #[test]
 fn move_framework_unit_tests() {
-    run_tests_for_pkg("aptos-framework");
+    run_tests_for_pkg("starcoin-framework");
 }
 
 #[test]
-fn move_aptos_stdlib_unit_tests() {
-    run_tests_for_pkg("aptos-stdlib");
+fn move_starcoin_stdlib_unit_tests() {
+    run_tests_for_pkg("starcoin-stdlib");
 }
 
 #[test]
@@ -97,10 +97,10 @@ fn move_stdlib_unit_tests() {
 
 #[test]
 fn move_token_unit_tests() {
-    run_tests_for_pkg("aptos-token");
+    run_tests_for_pkg("starcoin-token");
 }
 
 #[test]
 fn move_token_objects_unit_tests() {
-    run_tests_for_pkg("aptos-token-objects");
+    run_tests_for_pkg("starcoin-token-objects");
 }

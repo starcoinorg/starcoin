@@ -66,7 +66,7 @@ module starcoin_framework::reconfiguration {
     const EINVALID_GUID_FOR_EVENT: u64 = 5;
 
     /// Only called during genesis.
-    /// Publishes `Configuration` resource. Can only be invoked by aptos framework account, and only a single time in Genesis.
+    /// Publishes `Configuration` resource. Can only be invoked by starcoin framework account, and only a single time in Genesis.
     public(friend) fun initialize(starcoin_framework: &signer) {
         system_addresses::assert_starcoin_framework(starcoin_framework);
 

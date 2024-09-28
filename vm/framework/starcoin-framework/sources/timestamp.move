@@ -21,7 +21,7 @@ module starcoin_framework::timestamp {
     /// An invalid timestamp was provided
     const EINVALID_TIMESTAMP: u64 = 2;
 
-    /// Marks that time has started. This can only be called from genesis and with the aptos framework account.
+    /// Marks that time has started. This can only be called from genesis and with the starcoin framework account.
     public(friend) fun set_time_has_started(starcoin_framework: &signer) {
         system_addresses::assert_starcoin_framework(starcoin_framework);
         let timer = CurrentTimeMicroseconds { microseconds: 0 };
@@ -34,7 +34,7 @@ module starcoin_framework::timestamp {
         proposer: address,
         timestamp: u64
     ) acquires CurrentTimeMicroseconds {
-        // Can only be invoked by AptosVM signer.
+        // Can only be invoked by StarcoinVM signer.
         system_addresses::assert_vm(account);
 
         let global_timer = borrow_global_mut<CurrentTimeMicroseconds>(@starcoin_framework);

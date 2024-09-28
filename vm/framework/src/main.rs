@@ -1,4 +1,4 @@
-// Copyright © Aptos Foundation
+// Copyright © Starcoin Foundation
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -10,7 +10,7 @@ use starcoin_framework::{ReleaseOptions, ReleaseTarget};
 #[derive(Parser)]
 #[clap(name = "starcoin-framework", author, version, propagate_version = true)]
 enum Commands {
-    /// Creates an Aptos framework release for the specified target.
+    /// Creates an Starcoin framework release for the specified target.
     Release(StandardRelease),
     /// Allows to create a custom release package,
     Custom(CustomRelease),

@@ -1,6 +1,6 @@
-# Aptos Standard Library
+# Starcoin Standard Library
 
-This is the reference documentation of the Aptos standard library.
+This is the reference documentation of the Starcoin standard library.
 
 ## Index
 

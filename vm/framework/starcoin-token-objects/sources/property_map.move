@@ -1,4 +1,4 @@
-/// `PropertyMap` provides generic metadata support for `AptosToken`. It is a specialization of
+/// `PropertyMap` provides generic metadata support for `StarcoinToken`. It is a specialization of
 /// `SimpleMap` that enforces strict typing with minimal storage use by using constant u64 to
 /// represent types and storing values in bcs format.
 module starcoin_token_objects::property_map {

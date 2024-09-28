@@ -1,14 +1,14 @@
 spec starcoin_framework::consensus_config {
     /// <high-level-req>
     /// No.: 1
-    /// Requirement: During genesis, the Aptos framework account should be assigned the consensus config resource.
+    /// Requirement: During genesis, the Starcoin framework account should be assigned the consensus config resource.
     /// Criticality: Medium
     /// Implementation: The consensus_config::initialize function calls the assert_starcoin_framework function to ensure
     /// that the signer is the starcoin_framework and then assigns the ConsensusConfig resource to it.
     /// Enforcement: Formally verified via [high-level-req-1](initialize).
     ///
     /// No.: 2
-    /// Requirement: Only aptos framework account is allowed to update the consensus configuration.
+    /// Requirement: Only starcoin framework account is allowed to update the consensus configuration.
     /// Criticality: Medium
     /// Implementation: The consensus_config::set function ensures that the signer is starcoin_framework.
     /// Enforcement: Formally verified via [high-level-req-2](set).

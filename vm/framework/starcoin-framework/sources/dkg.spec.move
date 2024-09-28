@@ -7,8 +7,8 @@ spec starcoin_framework::dkg {
 
     spec initialize(starcoin_framework: &signer) {
         use std::signer;
-        let aptos_framework_addr = signer::address_of(starcoin_framework);
-        aborts_if aptos_framework_addr != @starcoin_framework;
+        let starcoin_framework_addr = signer::address_of(starcoin_framework);
+        aborts_if starcoin_framework_addr != @starcoin_framework;
     }
 
     spec start(

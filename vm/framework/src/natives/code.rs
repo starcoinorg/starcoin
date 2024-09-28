@@ -1,4 +1,4 @@
-// Copyright © Aptos Foundation
+// Copyright © Starcoin Foundation
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::unzip_metadata_str;
@@ -200,7 +200,7 @@ pub struct NativeCodeContext {
 }
 
 /// Represents a request for code publishing made from a native call and to be processed
-/// by the Aptos VM.
+/// by the Starcoin VM.
 pub struct PublishRequest {
     pub destination: AccountAddress,
     pub bundle: ModuleBundle,

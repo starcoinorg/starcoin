@@ -1,7 +1,7 @@
 spec starcoin_framework::reconfiguration {
     /// <high-level-req>
     /// No.: 1
-    /// Requirement: The Configuration resource is stored under the Aptos framework account with initial values upon
+    /// Requirement: The Configuration resource is stored under the Starcoin framework account with initial values upon
     /// module's initialization.
     /// Criticality: Medium
     /// Implementation: The Configuration resource may only be initialized with specific values and published under the
@@ -75,7 +75,7 @@ spec starcoin_framework::reconfiguration {
         aborts_if !(global<Account>(addr).guid_creation_num == 2);
         aborts_if exists<Configuration>(@starcoin_framework);
         // property 1: During the module's initialization, it guarantees that the Configuration resource will move under
-        // the Aptos framework account with initial values.
+        // the Starcoin framework account with initial values.
         /// [high-level-req-1]
         ensures exists<Configuration>(@starcoin_framework);
         ensures config.epoch == 0 && config.last_reconfiguration_time == 0;
@@ -138,7 +138,7 @@ spec starcoin_framework::reconfiguration {
         let success = !(chain_status::is_genesis() || timestamp::spec_now_microseconds() == 0 || !reconfiguration_enabled())
             && timestamp::spec_now_microseconds() != global<Configuration>(@starcoin_framework).last_reconfiguration_time;
         include features::spec_periodical_reward_rate_decrease_enabled() ==> staking_config::StakingRewardsConfigEnabledRequirement;
-        include success ==> starcoin_coin::ExistsAptosCoin;
+        include success ==> starcoin_coin::ExistsStarcoinCoin;
         include transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply;
         aborts_if false;
         // The ensure conditions of the reconfigure function are not fully written, because there is a new cycle in it,
