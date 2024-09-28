@@ -179,7 +179,7 @@ module starcoin_framework::transaction_validation {
     }
 
     // This function extends the script_prologue by adding a parameter to indicate simulation mode.
-    // Once the transaction_simulation_enhancement feature is enabled, the Aptos VM will invoke this function instead.
+    // Once the transaction_simulation_enhancement feature is enabled, the Starcoin VM will invoke this function instead.
     // Eventually, this function will be consolidated with the original function once the feature is fully enabled.
     fun script_prologue_extended(
         sender: signer,
@@ -235,7 +235,7 @@ module starcoin_framework::transaction_validation {
     }
 
     // This function extends the multi_agent_script_prologue by adding a parameter to indicate simulation mode.
-    // Once the transaction_simulation_enhancement feature is enabled, the Aptos VM will invoke this function instead.
+    // Once the transaction_simulation_enhancement feature is enabled, the Starcoin VM will invoke this function instead.
     // Eventually, this function will be consolidated with the original function once the feature is fully enabled.
     fun multi_agent_script_prologue_extended(
         sender: signer,
@@ -337,7 +337,7 @@ module starcoin_framework::transaction_validation {
     }
 
     // This function extends the fee_payer_script_prologue by adding a parameter to indicate simulation mode.
-    // Once the transaction_simulation_enhancement feature is enabled, the Aptos VM will invoke this function instead.
+    // Once the transaction_simulation_enhancement feature is enabled, the Starcoin VM will invoke this function instead.
     // Eventually, this function will be consolidated with the original function once the feature is fully enabled.
     fun fee_payer_script_prologue_extended(
         sender: signer,
@@ -389,7 +389,7 @@ module starcoin_framework::transaction_validation {
     }
 
     // This function extends the epilogue by adding a parameter to indicate simulation mode.
-    // Once the transaction_simulation_enhancement feature is enabled, the Aptos VM will invoke this function instead.
+    // Once the transaction_simulation_enhancement feature is enabled, the Starcoin VM will invoke this function instead.
     // Eventually, this function will be consolidated with the original function once the feature is fully enabled.
     fun epilogue_extended(
         account: signer,
@@ -427,7 +427,7 @@ module starcoin_framework::transaction_validation {
     }
 
     // This function extends the epilogue_gas_payer by adding a parameter to indicate simulation mode.
-    // Once the transaction_simulation_enhancement feature is enabled, the Aptos VM will invoke this function instead.
+    // Once the transaction_simulation_enhancement feature is enabled, the Starcoin VM will invoke this function instead.
     // Eventually, this function will be consolidated with the original function once the feature is fully enabled.
     fun epilogue_gas_payer_extended(
         account: signer,

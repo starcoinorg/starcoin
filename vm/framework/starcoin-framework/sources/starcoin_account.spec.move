@@ -1,8 +1,8 @@
 spec starcoin_framework::starcoin_account {
     /// <high-level-req>
     /// No.: 1
-    /// Requirement: During the creation of an Aptos account the following rules should hold: (1) the authentication key
-    /// should be 32 bytes in length, (2) an Aptos account should not already exist for that authentication key, and (3)
+    /// Requirement: During the creation of an Starcoin account the following rules should hold: (1) the authentication key
+    /// should be 32 bytes in length, (2) an Starcoin account should not already exist for that authentication key, and (3)
     /// the address of the authentication key should not be equal to a reserved address (0x0, 0x1, or 0x3).
     /// Criticality: Critical
     /// Implementation: The authentication key which is passed in as an argument to create_account should satisfy all
@@ -10,7 +10,7 @@ spec starcoin_framework::starcoin_account {
     /// Enforcement: Formally verified via [high-level-req-1](CreateAccountAbortsIf).
     ///
     /// No.: 2
-    /// Requirement: After creating an Aptos account, the account should become registered to receive StarcoinCoin.
+    /// Requirement: After creating an Starcoin account, the account should become registered to receive StarcoinCoin.
     /// Criticality: Critical
     /// Implementation: The create_account function creates a new account for the particular address and registers
     /// StarcoinCoin.
@@ -49,7 +49,7 @@ spec starcoin_framework::starcoin_account {
     /// Enforcement: Formally verified via [high-level-req-6](deposit_coins).
     ///
     /// No.: 7
-    /// Requirement: When performing a batch transfer of Aptos Coin and/or a batch transfer of a custom coin type, it
+    /// Requirement: When performing a batch transfer of Starcoin Coin and/or a batch transfer of a custom coin type, it
     /// should ensure that the vector containing destination addresses and the vector containing the corresponding
     /// amounts are equal in length.
     /// Criticality: Low
@@ -64,7 +64,7 @@ spec starcoin_framework::starcoin_account {
 
     /// Check if the bytes of the auth_key is 32.
     /// The Account does not exist under the auth_key before creating the account.
-    /// Limit the address of auth_key is not @vm_reserved / @starcoin_framework / @aptos_toke.
+    /// Limit the address of auth_key is not @vm_reserved / @starcoin_framework / @starcoin_toke.
     spec create_account(auth_key: address) {
         /// [high-level-req-1]
         pragma aborts_if_is_partial;

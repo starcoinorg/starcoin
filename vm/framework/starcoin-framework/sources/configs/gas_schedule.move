@@ -5,7 +5,7 @@ module starcoin_framework::gas_schedule {
     use std::error;
     use std::string::String;
     use std::vector;
-    use starcoin_std::aptos_hash;
+    use starcoin_std::starcoin_hash;
     use starcoin_framework::chain_status;
     use starcoin_framework::config_buffer;
 
@@ -121,7 +121,7 @@ module starcoin_framework::gas_schedule {
                 error::invalid_argument(EINVALID_GAS_FEATURE_VERSION)
             );
             let cur_gas_schedule_bytes = bcs::to_bytes(cur_gas_schedule);
-            let cur_gas_schedule_hash = aptos_hash::sha3_512(cur_gas_schedule_bytes);
+            let cur_gas_schedule_hash = starcoin_hash::sha3_512(cur_gas_schedule_bytes);
             assert!(
                 cur_gas_schedule_hash == old_gas_schedule_hash,
                 error::invalid_argument(EINVALID_GAS_SCHEDULE_HASH)

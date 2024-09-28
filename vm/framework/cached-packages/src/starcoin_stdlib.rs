@@ -1,12 +1,12 @@
-// Copyright © Aptos Foundation
+// Copyright © Starcoin Foundation
 // SPDX-License-Identifier: Apache-2.0
 
 #![allow(unused_imports)]
 
 pub use crate::{
     starcoin_framework_sdk_builder::*,
-    starcoin_token_objects_sdk_builder as aptos_token_objects_stdlib,
-    starcoin_token_sdk_builder as aptos_token_stdlib,
+    starcoin_token_objects_sdk_builder as starcoin_token_objects_stdlib,
+    starcoin_token_sdk_builder as starcoin_token_stdlib,
 };
 use move_core_types::{ident_str, language_storage::ModuleId};
 use starcoin_framework::{BuildOptions, BuiltPackage};

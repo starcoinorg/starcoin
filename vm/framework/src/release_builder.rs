@@ -1,4 +1,4 @@
-// Copyright © Aptos Foundation
+// Copyright © Starcoin Foundation
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
@@ -16,7 +16,7 @@ pub const RELEASE_BUNDLE_EXTENSION: &str = "mrb";
 
 /// Options to configure the generation of a release.
 #[derive(Debug, Clone, Parser)]
-#[clap(name = "Aptos Releasing", author, version)]
+#[clap(name = "Starcoin Releasing", author, version)]
 pub struct ReleaseOptions {
     #[clap(flatten)]
     pub build_options: BuildOptions,

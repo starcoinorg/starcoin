@@ -296,4 +296,4 @@ Specialized function for x * y / z that omits intermediate shifting
 </details>
 
 
-[move-book]: https://aptos.dev/move/book/SUMMARY
+[move-book]: https://starcoin.dev/move/book/SUMMARY

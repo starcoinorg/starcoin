@@ -25,9 +25,9 @@ Structs and functions for on-chain randomness configurations.
 
 
 <pre><code><b>use</b> <a href="config_buffer.md#0x1_config_buffer">0x1::config_buffer</a>;
-<b>use</b> <a href="../../../aptos-stdlib/tests/compiler-v2-doc/copyable_any.md#0x1_copyable_any">0x1::copyable_any</a>;
-<b>use</b> <a href="../../../aptos-stdlib/tests/compiler-v2-doc/fixed_point64.md#0x1_fixed_point64">0x1::fixed_point64</a>;
-<b>use</b> <a href="../../../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string">0x1::string</a>;
+<b>use</b> <a href="../../../starcoin-stdlib/tests/compiler-v2-doc/copyable_any.md#0x1_copyable_any">0x1::copyable_any</a>;
+<b>use</b> <a href="../../../starcoin-stdlib/tests/compiler-v2-doc/fixed_point64.md#0x1_fixed_point64">0x1::fixed_point64</a>;
+<b>use</b> <a href="../../../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string">0x1::string</a>;
 <b>use</b> <a href="system_addresses.md#0x1_system_addresses">0x1::system_addresses</a>;
 </code></pre>
 
@@ -51,7 +51,7 @@ The configuration of the on-chain randomness feature.
 
 <dl>
 <dt>
-<code>variant: <a href="../../../aptos-stdlib/tests/compiler-v2-doc/copyable_any.md#0x1_copyable_any_Any">copyable_any::Any</a></code>
+<code>variant: <a href="../../../starcoin-stdlib/tests/compiler-v2-doc/copyable_any.md#0x1_copyable_any_Any">copyable_any::Any</a></code>
 </dt>
 <dd>
  A config variant packed as an <code>Any</code>.
@@ -110,13 +110,13 @@ A randomness config variant indicating the feature is enabled.
 
 <dl>
 <dt>
-<code>secrecy_threshold: <a href="../../../aptos-stdlib/tests/compiler-v2-doc/fixed_point64.md#0x1_fixed_point64_FixedPoint64">fixed_point64::FixedPoint64</a></code>
+<code>secrecy_threshold: <a href="../../../starcoin-stdlib/tests/compiler-v2-doc/fixed_point64.md#0x1_fixed_point64_FixedPoint64">fixed_point64::FixedPoint64</a></code>
 </dt>
 <dd>
  Any validator subset should not be able to reconstruct randomness if <code>subset_power / total_power &lt;= secrecy_threshold</code>,
 </dd>
 <dt>
-<code>reconstruction_threshold: <a href="../../../aptos-stdlib/tests/compiler-v2-doc/fixed_point64.md#0x1_fixed_point64_FixedPoint64">fixed_point64::FixedPoint64</a></code>
+<code>reconstruction_threshold: <a href="../../../starcoin-stdlib/tests/compiler-v2-doc/fixed_point64.md#0x1_fixed_point64_FixedPoint64">fixed_point64::FixedPoint64</a></code>
 </dt>
 <dd>
  Any validator subset should be able to reconstruct randomness if <code>subset_power / total_power &gt; reconstruction_threshold</code>.
@@ -144,19 +144,19 @@ A randomness config variant indicating the feature is enabled with fast path.
 
 <dl>
 <dt>
-<code>secrecy_threshold: <a href="../../../aptos-stdlib/tests/compiler-v2-doc/fixed_point64.md#0x1_fixed_point64_FixedPoint64">fixed_point64::FixedPoint64</a></code>
+<code>secrecy_threshold: <a href="../../../starcoin-stdlib/tests/compiler-v2-doc/fixed_point64.md#0x1_fixed_point64_FixedPoint64">fixed_point64::FixedPoint64</a></code>
 </dt>
 <dd>
  Any validator subset should not be able to reconstruct randomness if <code>subset_power / total_power &lt;= secrecy_threshold</code>,
 </dd>
 <dt>
-<code>reconstruction_threshold: <a href="../../../aptos-stdlib/tests/compiler-v2-doc/fixed_point64.md#0x1_fixed_point64_FixedPoint64">fixed_point64::FixedPoint64</a></code>
+<code>reconstruction_threshold: <a href="../../../starcoin-stdlib/tests/compiler-v2-doc/fixed_point64.md#0x1_fixed_point64_FixedPoint64">fixed_point64::FixedPoint64</a></code>
 </dt>
 <dd>
  Any validator subset should be able to reconstruct randomness if <code>subset_power / total_power &gt; reconstruction_threshold</code>.
 </dd>
 <dt>
-<code>fast_path_secrecy_threshold: <a href="../../../aptos-stdlib/tests/compiler-v2-doc/fixed_point64.md#0x1_fixed_point64_FixedPoint64">fixed_point64::FixedPoint64</a></code>
+<code>fast_path_secrecy_threshold: <a href="../../../starcoin-stdlib/tests/compiler-v2-doc/fixed_point64.md#0x1_fixed_point64_FixedPoint64">fixed_point64::FixedPoint64</a></code>
 </dt>
 <dd>
  Any validator subset should not be able to reconstruct randomness via the fast path if <code>subset_power / total_power &lt;= fast_path_secrecy_threshold</code>,
@@ -187,7 +187,7 @@ A randomness config variant indicating the feature is enabled with fast path.
 Initialize the configuration. Used in genesis or governance.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="randomness_config.md#0x1_randomness_config_initialize">initialize</a>(framework: &<a href="../../../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>, config: <a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">randomness_config::RandomnessConfig</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="randomness_config.md#0x1_randomness_config_initialize">initialize</a>(framework: &<a href="../../../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>, config: <a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">randomness_config::RandomnessConfig</a>)
 </code></pre>
 
 
@@ -196,9 +196,9 @@ Initialize the configuration. Used in genesis or governance.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="randomness_config.md#0x1_randomness_config_initialize">initialize</a>(framework: &<a href="../../../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>, config: <a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a>) {
-    <a href="system_addresses.md#0x1_system_addresses_assert_aptos_framework">system_addresses::assert_aptos_framework</a>(framework);
-    <b>if</b> (!<b>exists</b>&lt;<a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a>&gt;(@aptos_framework)) {
+<pre><code><b>public</b> <b>fun</b> <a href="randomness_config.md#0x1_randomness_config_initialize">initialize</a>(framework: &<a href="../../../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>, config: <a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a>) {
+    <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(framework);
+    <b>if</b> (!<b>exists</b>&lt;<a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a>&gt;(@starcoin_framework)) {
         <b>move_to</b>(framework, config)
     }
 }
@@ -215,7 +215,7 @@ Initialize the configuration. Used in genesis or governance.
 This can be called by on-chain governance to update on-chain consensus configs for the next epoch.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="randomness_config.md#0x1_randomness_config_set_for_next_epoch">set_for_next_epoch</a>(framework: &<a href="../../../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>, new_config: <a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">randomness_config::RandomnessConfig</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="randomness_config.md#0x1_randomness_config_set_for_next_epoch">set_for_next_epoch</a>(framework: &<a href="../../../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>, new_config: <a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">randomness_config::RandomnessConfig</a>)
 </code></pre>
 
 
@@ -224,8 +224,8 @@ This can be called by on-chain governance to update on-chain consensus configs f
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="randomness_config.md#0x1_randomness_config_set_for_next_epoch">set_for_next_epoch</a>(framework: &<a href="../../../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>, new_config: <a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a>) {
-    <a href="system_addresses.md#0x1_system_addresses_assert_aptos_framework">system_addresses::assert_aptos_framework</a>(framework);
+<pre><code><b>public</b> <b>fun</b> <a href="randomness_config.md#0x1_randomness_config_set_for_next_epoch">set_for_next_epoch</a>(framework: &<a href="../../../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>, new_config: <a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a>) {
+    <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(framework);
     <a href="config_buffer.md#0x1_config_buffer_upsert">config_buffer::upsert</a>(new_config);
 }
 </code></pre>
@@ -241,7 +241,7 @@ This can be called by on-chain governance to update on-chain consensus configs f
 Only used in reconfigurations to apply the pending <code><a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a></code>, if there is any.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="randomness_config.md#0x1_randomness_config_on_new_epoch">on_new_epoch</a>(framework: &<a href="../../../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="randomness_config.md#0x1_randomness_config_on_new_epoch">on_new_epoch</a>(framework: &<a href="../../../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -250,12 +250,12 @@ Only used in reconfigurations to apply the pending <code><a href="randomness_con
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="randomness_config.md#0x1_randomness_config_on_new_epoch">on_new_epoch</a>(framework: &<a href="../../../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>) <b>acquires</b> <a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a> {
-    <a href="system_addresses.md#0x1_system_addresses_assert_aptos_framework">system_addresses::assert_aptos_framework</a>(framework);
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="randomness_config.md#0x1_randomness_config_on_new_epoch">on_new_epoch</a>(framework: &<a href="../../../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>) <b>acquires</b> <a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a> {
+    <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(framework);
     <b>if</b> (<a href="config_buffer.md#0x1_config_buffer_does_exist">config_buffer::does_exist</a>&lt;<a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a>&gt;()) {
         <b>let</b> new_config = <a href="config_buffer.md#0x1_config_buffer_extract">config_buffer::extract</a>&lt;<a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a>&gt;();
-        <b>if</b> (<b>exists</b>&lt;<a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a>&gt;(@aptos_framework)) {
-            *<b>borrow_global_mut</b>&lt;<a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a>&gt;(@aptos_framework) = new_config;
+        <b>if</b> (<b>exists</b>&lt;<a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a>&gt;(@starcoin_framework)) {
+            *<b>borrow_global_mut</b>&lt;<a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a>&gt;(@starcoin_framework) = new_config;
         } <b>else</b> {
             <b>move_to</b>(framework, new_config);
         }
@@ -287,9 +287,9 @@ The feature works if and only if <code><a href="consensus_config.md#0x1_consensu
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="randomness_config.md#0x1_randomness_config_enabled">enabled</a>(): bool <b>acquires</b> <a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a> {
-    <b>if</b> (<b>exists</b>&lt;<a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a>&gt;(@aptos_framework)) {
-        <b>let</b> config = <b>borrow_global</b>&lt;<a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a>&gt;(@aptos_framework);
-        <b>let</b> variant_type_name = *<a href="../../../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_bytes">string::bytes</a>(<a href="../../../aptos-stdlib/tests/compiler-v2-doc/copyable_any.md#0x1_copyable_any_type_name">copyable_any::type_name</a>(&config.variant));
+    <b>if</b> (<b>exists</b>&lt;<a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a>&gt;(@starcoin_framework)) {
+        <b>let</b> config = <b>borrow_global</b>&lt;<a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a>&gt;(@starcoin_framework);
+        <b>let</b> variant_type_name = *<a href="../../../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_bytes">string::bytes</a>(<a href="../../../starcoin-stdlib/tests/compiler-v2-doc/copyable_any.md#0x1_copyable_any_type_name">copyable_any::type_name</a>(&config.variant));
         variant_type_name != b"<a href="randomness_config.md#0x1_randomness_config_ConfigOff">0x1::randomness_config::ConfigOff</a>"
     } <b>else</b> {
         <b>false</b>
@@ -319,7 +319,7 @@ Create a <code><a href="randomness_config.md#0x1_randomness_config_ConfigOff">Co
 
 <pre><code><b>public</b> <b>fun</b> <a href="randomness_config.md#0x1_randomness_config_new_off">new_off</a>(): <a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a> {
     <a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a> {
-        variant: <a href="../../../aptos-stdlib/tests/compiler-v2-doc/copyable_any.md#0x1_copyable_any_pack">copyable_any::pack</a>( <a href="randomness_config.md#0x1_randomness_config_ConfigOff">ConfigOff</a> {} )
+        variant: <a href="../../../starcoin-stdlib/tests/compiler-v2-doc/copyable_any.md#0x1_copyable_any_pack">copyable_any::pack</a>( <a href="randomness_config.md#0x1_randomness_config_ConfigOff">ConfigOff</a> {} )
     }
 }
 </code></pre>
@@ -335,7 +335,7 @@ Create a <code><a href="randomness_config.md#0x1_randomness_config_ConfigOff">Co
 Create a <code><a href="randomness_config.md#0x1_randomness_config_ConfigV1">ConfigV1</a></code> variant.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="randomness_config.md#0x1_randomness_config_new_v1">new_v1</a>(secrecy_threshold: <a href="../../../aptos-stdlib/tests/compiler-v2-doc/fixed_point64.md#0x1_fixed_point64_FixedPoint64">fixed_point64::FixedPoint64</a>, reconstruction_threshold: <a href="../../../aptos-stdlib/tests/compiler-v2-doc/fixed_point64.md#0x1_fixed_point64_FixedPoint64">fixed_point64::FixedPoint64</a>): <a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">randomness_config::RandomnessConfig</a>
+<pre><code><b>public</b> <b>fun</b> <a href="randomness_config.md#0x1_randomness_config_new_v1">new_v1</a>(secrecy_threshold: <a href="../../../starcoin-stdlib/tests/compiler-v2-doc/fixed_point64.md#0x1_fixed_point64_FixedPoint64">fixed_point64::FixedPoint64</a>, reconstruction_threshold: <a href="../../../starcoin-stdlib/tests/compiler-v2-doc/fixed_point64.md#0x1_fixed_point64_FixedPoint64">fixed_point64::FixedPoint64</a>): <a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">randomness_config::RandomnessConfig</a>
 </code></pre>
 
 
@@ -346,7 +346,7 @@ Create a <code><a href="randomness_config.md#0x1_randomness_config_ConfigV1">Con
 
 <pre><code><b>public</b> <b>fun</b> <a href="randomness_config.md#0x1_randomness_config_new_v1">new_v1</a>(secrecy_threshold: FixedPoint64, reconstruction_threshold: FixedPoint64): <a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a> {
     <a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a> {
-        variant: <a href="../../../aptos-stdlib/tests/compiler-v2-doc/copyable_any.md#0x1_copyable_any_pack">copyable_any::pack</a>( <a href="randomness_config.md#0x1_randomness_config_ConfigV1">ConfigV1</a> {
+        variant: <a href="../../../starcoin-stdlib/tests/compiler-v2-doc/copyable_any.md#0x1_copyable_any_pack">copyable_any::pack</a>( <a href="randomness_config.md#0x1_randomness_config_ConfigV1">ConfigV1</a> {
             secrecy_threshold,
             reconstruction_threshold
         } )
@@ -365,7 +365,7 @@ Create a <code><a href="randomness_config.md#0x1_randomness_config_ConfigV1">Con
 Create a <code><a href="randomness_config.md#0x1_randomness_config_ConfigV2">ConfigV2</a></code> variant.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="randomness_config.md#0x1_randomness_config_new_v2">new_v2</a>(secrecy_threshold: <a href="../../../aptos-stdlib/tests/compiler-v2-doc/fixed_point64.md#0x1_fixed_point64_FixedPoint64">fixed_point64::FixedPoint64</a>, reconstruction_threshold: <a href="../../../aptos-stdlib/tests/compiler-v2-doc/fixed_point64.md#0x1_fixed_point64_FixedPoint64">fixed_point64::FixedPoint64</a>, fast_path_secrecy_threshold: <a href="../../../aptos-stdlib/tests/compiler-v2-doc/fixed_point64.md#0x1_fixed_point64_FixedPoint64">fixed_point64::FixedPoint64</a>): <a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">randomness_config::RandomnessConfig</a>
+<pre><code><b>public</b> <b>fun</b> <a href="randomness_config.md#0x1_randomness_config_new_v2">new_v2</a>(secrecy_threshold: <a href="../../../starcoin-stdlib/tests/compiler-v2-doc/fixed_point64.md#0x1_fixed_point64_FixedPoint64">fixed_point64::FixedPoint64</a>, reconstruction_threshold: <a href="../../../starcoin-stdlib/tests/compiler-v2-doc/fixed_point64.md#0x1_fixed_point64_FixedPoint64">fixed_point64::FixedPoint64</a>, fast_path_secrecy_threshold: <a href="../../../starcoin-stdlib/tests/compiler-v2-doc/fixed_point64.md#0x1_fixed_point64_FixedPoint64">fixed_point64::FixedPoint64</a>): <a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">randomness_config::RandomnessConfig</a>
 </code></pre>
 
 
@@ -380,7 +380,7 @@ Create a <code><a href="randomness_config.md#0x1_randomness_config_ConfigV2">Con
     fast_path_secrecy_threshold: FixedPoint64,
 ): <a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a> {
     <a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a> {
-        variant: <a href="../../../aptos-stdlib/tests/compiler-v2-doc/copyable_any.md#0x1_copyable_any_pack">copyable_any::pack</a>( <a href="randomness_config.md#0x1_randomness_config_ConfigV2">ConfigV2</a> {
+        variant: <a href="../../../starcoin-stdlib/tests/compiler-v2-doc/copyable_any.md#0x1_copyable_any_pack">copyable_any::pack</a>( <a href="randomness_config.md#0x1_randomness_config_ConfigV2">ConfigV2</a> {
             secrecy_threshold,
             reconstruction_threshold,
             fast_path_secrecy_threshold,
@@ -410,8 +410,8 @@ Get the currently effective randomness configuration object.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="randomness_config.md#0x1_randomness_config_current">current</a>(): <a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a> <b>acquires</b> <a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a> {
-    <b>if</b> (<b>exists</b>&lt;<a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a>&gt;(@aptos_framework)) {
-        *<b>borrow_global</b>&lt;<a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a>&gt;(@aptos_framework)
+    <b>if</b> (<b>exists</b>&lt;<a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a>&gt;(@starcoin_framework)) {
+        *<b>borrow_global</b>&lt;<a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a>&gt;(@starcoin_framework)
     } <b>else</b> {
         <a href="randomness_config.md#0x1_randomness_config_new_off">new_off</a>()
     }
@@ -432,13 +432,13 @@ Get the currently effective randomness configuration object.
 ### Function `on_new_epoch`
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="randomness_config.md#0x1_randomness_config_on_new_epoch">on_new_epoch</a>(framework: &<a href="../../../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="randomness_config.md#0x1_randomness_config_on_new_epoch">on_new_epoch</a>(framework: &<a href="../../../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
 
 
-<pre><code><b>requires</b> @aptos_framework == std::signer::address_of(framework);
+<pre><code><b>requires</b> @starcoin_framework == std::signer::address_of(framework);
 <b>include</b> <a href="config_buffer.md#0x1_config_buffer_OnNewEpochRequirement">config_buffer::OnNewEpochRequirement</a>&lt;<a href="randomness_config.md#0x1_randomness_config_RandomnessConfig">RandomnessConfig</a>&gt;;
 <b>aborts_if</b> <b>false</b>;
 </code></pre>
@@ -460,4 +460,4 @@ Get the currently effective randomness configuration object.
 </code></pre>
 
 
-[move-book]: https://aptos.dev/move/book/SUMMARY
+[move-book]: https://starcoin.dev/move/book/SUMMARY

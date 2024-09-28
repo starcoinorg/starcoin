@@ -1,4 +1,4 @@
-// Copyright © Aptos Foundation
+// Copyright © Starcoin Foundation
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -58,7 +58,7 @@ pub fn all_natives(
     add_natives_from_module!("multi_ed25519", multi_ed25519::make_all(builder));
     add_natives_from_module!("bls12381", cryptography::bls12381::make_all(builder));
     add_natives_from_module!("secp256k1", cryptography::secp256k1::make_all(builder));
-    add_natives_from_module!("aptos_hash", hash::make_all(builder));
+    add_natives_from_module!("starcoin_hash", hash::make_all(builder));
     add_natives_from_module!(
         "ristretto255",
         cryptography::ristretto255::make_all(builder)
@@ -92,7 +92,7 @@ pub fn all_natives(
 
     if inject_create_signer_for_gov_sim {
         add_natives_from_module!(
-            "aptos_governance",
+            "starcoin_governance",
             builder.make_named_natives([(
                 "create_signer",
                 create_signer::native_create_signer as RawSafeNative

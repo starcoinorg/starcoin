@@ -65,14 +65,14 @@ require adding the field original_name.
 -  [Function `set_max_supply`](#0x4_collection_set_max_supply)
 
 
-<pre><code><b>use</b> <a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2">0x1::aggregator_v2</a>;
-<b>use</b> <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error">0x1::error</a>;
-<b>use</b> <a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event">0x1::event</a>;
-<b>use</b> <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/features.md#0x1_features">0x1::features</a>;
-<b>use</b> <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object">0x1::object</a>;
-<b>use</b> <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option">0x1::option</a>;
-<b>use</b> <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">0x1::signer</a>;
-<b>use</b> <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string">0x1::string</a>;
+<pre><code><b>use</b> <a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2">0x1::aggregator_v2</a>;
+<b>use</b> <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error">0x1::error</a>;
+<b>use</b> <a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event">0x1::event</a>;
+<b>use</b> <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/features.md#0x1_features">0x1::features</a>;
+<b>use</b> <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object">0x1::object</a>;
+<b>use</b> <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option">0x1::option</a>;
+<b>use</b> <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">0x1::signer</a>;
+<b>use</b> <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string">0x1::string</a>;
 <b>use</b> <a href="royalty.md#0x4_royalty">0x4::royalty</a>;
 </code></pre>
 
@@ -85,7 +85,7 @@ require adding the field original_name.
 Represents the common fields for a collection.
 
 
-<pre><code>#[resource_group_member(#[group = <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_ObjectGroup">0x1::object::ObjectGroup</a>])]
+<pre><code>#[resource_group_member(#[group = <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_ObjectGroup">0x1::object::ObjectGroup</a>])]
 <b>struct</b> <a href="collection.md#0x4_collection_Collection">Collection</a> <b>has</b> key
 </code></pre>
 
@@ -103,26 +103,26 @@ Represents the common fields for a collection.
  The creator of this collection.
 </dd>
 <dt>
-<code>description: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a></code>
+<code>description: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
  A brief description of the collection.
 </dd>
 <dt>
-<code>name: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a></code>
+<code>name: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
  An optional categorization of similar token.
 </dd>
 <dt>
-<code>uri: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a></code>
+<code>uri: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
  The Uniform Resource Identifier (uri) pointing to the JSON file stored in off-chain
  storage; the URL length will likely need a maximum any suggestions?
 </dd>
 <dt>
-<code>mutation_events: <a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="collection.md#0x4_collection_MutationEvent">collection::MutationEvent</a>&gt;</code>
+<code>mutation_events: <a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="collection.md#0x4_collection_MutationEvent">collection::MutationEvent</a>&gt;</code>
 </dt>
 <dd>
  Emitted upon any mutation of the collection.
@@ -179,7 +179,7 @@ directly understand the behavior in a writeset.
 
 <dl>
 <dt>
-<code>mutated_field_name: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a></code>
+<code>mutated_field_name: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
@@ -197,7 +197,7 @@ Contains the mutated fields name. This makes the life of indexers easier, so tha
 directly understand the behavior in a writeset.
 
 
-<pre><code>#[<a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event">event</a>]
+<pre><code>#[<a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event">event</a>]
 <b>struct</b> <a href="collection.md#0x4_collection_Mutation">Mutation</a> <b>has</b> drop, store
 </code></pre>
 
@@ -209,25 +209,25 @@ directly understand the behavior in a writeset.
 
 <dl>
 <dt>
-<code>mutated_field_name: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a></code>
+<code>mutated_field_name: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code><a href="collection.md#0x4_collection">collection</a>: <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_Object">object::Object</a>&lt;<a href="collection.md#0x4_collection_Collection">collection::Collection</a>&gt;</code>
+<code><a href="collection.md#0x4_collection">collection</a>: <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_Object">object::Object</a>&lt;<a href="collection.md#0x4_collection_Collection">collection::Collection</a>&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>old_value: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a></code>
+<code>old_value: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>new_value: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a></code>
+<code>new_value: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
@@ -245,7 +245,7 @@ Fixed supply tracker, this is useful for ensuring that a limited number of token
 and adding events and supply tracking to a collection.
 
 
-<pre><code>#[resource_group_member(#[group = <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_ObjectGroup">0x1::object::ObjectGroup</a>])]
+<pre><code>#[resource_group_member(#[group = <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_ObjectGroup">0x1::object::ObjectGroup</a>])]
 <b>struct</b> <a href="collection.md#0x4_collection_FixedSupply">FixedSupply</a> <b>has</b> key
 </code></pre>
 
@@ -275,13 +275,13 @@ and adding events and supply tracking to a collection.
 
 </dd>
 <dt>
-<code>burn_events: <a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="collection.md#0x4_collection_BurnEvent">collection::BurnEvent</a>&gt;</code>
+<code>burn_events: <a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="collection.md#0x4_collection_BurnEvent">collection::BurnEvent</a>&gt;</code>
 </dt>
 <dd>
  Emitted upon burning a Token.
 </dd>
 <dt>
-<code>mint_events: <a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="collection.md#0x4_collection_MintEvent">collection::MintEvent</a>&gt;</code>
+<code>mint_events: <a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="collection.md#0x4_collection_MintEvent">collection::MintEvent</a>&gt;</code>
 </dt>
 <dd>
  Emitted upon minting an Token.
@@ -298,7 +298,7 @@ and adding events and supply tracking to a collection.
 Unlimited supply tracker, this is useful for adding events and supply tracking to a collection.
 
 
-<pre><code>#[resource_group_member(#[group = <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_ObjectGroup">0x1::object::ObjectGroup</a>])]
+<pre><code>#[resource_group_member(#[group = <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_ObjectGroup">0x1::object::ObjectGroup</a>])]
 <b>struct</b> <a href="collection.md#0x4_collection_UnlimitedSupply">UnlimitedSupply</a> <b>has</b> key
 </code></pre>
 
@@ -322,13 +322,13 @@ Unlimited supply tracker, this is useful for adding events and supply tracking t
 
 </dd>
 <dt>
-<code>burn_events: <a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="collection.md#0x4_collection_BurnEvent">collection::BurnEvent</a>&gt;</code>
+<code>burn_events: <a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="collection.md#0x4_collection_BurnEvent">collection::BurnEvent</a>&gt;</code>
 </dt>
 <dd>
  Emitted upon burning a Token.
 </dd>
 <dt>
-<code>mint_events: <a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="collection.md#0x4_collection_MintEvent">collection::MintEvent</a>&gt;</code>
+<code>mint_events: <a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="collection.md#0x4_collection_MintEvent">collection::MintEvent</a>&gt;</code>
 </dt>
 <dd>
  Emitted upon minting an Token.
@@ -346,7 +346,7 @@ Supply tracker, useful for tracking amount of issued tokens.
 If max_value is not set to U64_MAX, this ensures that a limited number of tokens are minted.
 
 
-<pre><code>#[resource_group_member(#[group = <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_ObjectGroup">0x1::object::ObjectGroup</a>])]
+<pre><code>#[resource_group_member(#[group = <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_ObjectGroup">0x1::object::ObjectGroup</a>])]
 <b>struct</b> <a href="collection.md#0x4_collection_ConcurrentSupply">ConcurrentSupply</a> <b>has</b> key
 </code></pre>
 
@@ -358,13 +358,13 @@ If max_value is not set to U64_MAX, this ensures that a limited number of tokens
 
 <dl>
 <dt>
-<code>current_supply: <a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_Aggregator">aggregator_v2::Aggregator</a>&lt;u64&gt;</code>
+<code>current_supply: <a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_Aggregator">aggregator_v2::Aggregator</a>&lt;u64&gt;</code>
 </dt>
 <dd>
  Total minted - total burned
 </dd>
 <dt>
-<code>total_minted: <a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_Aggregator">aggregator_v2::Aggregator</a>&lt;u64&gt;</code>
+<code>total_minted: <a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_Aggregator">aggregator_v2::Aggregator</a>&lt;u64&gt;</code>
 </dt>
 <dd>
 
@@ -446,7 +446,7 @@ If max_value is not set to U64_MAX, this ensures that a limited number of tokens
 
 
 
-<pre><code>#[<a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event">event</a>]
+<pre><code>#[<a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event">event</a>]
 <b>struct</b> <a href="collection.md#0x4_collection_Burn">Burn</a> <b>has</b> drop, store
 </code></pre>
 
@@ -492,7 +492,7 @@ If max_value is not set to U64_MAX, this ensures that a limited number of tokens
 
 
 
-<pre><code>#[<a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event">event</a>]
+<pre><code>#[<a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event">event</a>]
 <b>struct</b> <a href="collection.md#0x4_collection_Mint">Mint</a> <b>has</b> drop, store
 </code></pre>
 
@@ -510,7 +510,7 @@ If max_value is not set to U64_MAX, this ensures that a limited number of tokens
 
 </dd>
 <dt>
-<code>index: <a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_AggregatorSnapshot">aggregator_v2::AggregatorSnapshot</a>&lt;u64&gt;</code>
+<code>index: <a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_AggregatorSnapshot">aggregator_v2::AggregatorSnapshot</a>&lt;u64&gt;</code>
 </dt>
 <dd>
 
@@ -532,7 +532,7 @@ If max_value is not set to U64_MAX, this ensures that a limited number of tokens
 
 
 
-<pre><code>#[<a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event">event</a>]
+<pre><code>#[<a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event">event</a>]
 #[deprecated]
 <b>struct</b> <a href="collection.md#0x4_collection_ConcurrentBurnEvent">ConcurrentBurnEvent</a> <b>has</b> drop, store
 </code></pre>
@@ -573,7 +573,7 @@ If max_value is not set to U64_MAX, this ensures that a limited number of tokens
 
 
 
-<pre><code>#[<a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event">event</a>]
+<pre><code>#[<a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event">event</a>]
 #[deprecated]
 <b>struct</b> <a href="collection.md#0x4_collection_ConcurrentMintEvent">ConcurrentMintEvent</a> <b>has</b> drop, store
 </code></pre>
@@ -592,7 +592,7 @@ If max_value is not set to U64_MAX, this ensures that a limited number of tokens
 
 </dd>
 <dt>
-<code>index: <a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_AggregatorSnapshot">aggregator_v2::AggregatorSnapshot</a>&lt;u64&gt;</code>
+<code>index: <a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_AggregatorSnapshot">aggregator_v2::AggregatorSnapshot</a>&lt;u64&gt;</code>
 </dt>
 <dd>
 
@@ -614,7 +614,7 @@ If max_value is not set to U64_MAX, this ensures that a limited number of tokens
 
 
 
-<pre><code>#[<a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event">event</a>]
+<pre><code>#[<a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event">event</a>]
 <b>struct</b> <a href="collection.md#0x4_collection_SetMaxSupply">SetMaxSupply</a> <b>has</b> drop, store
 </code></pre>
 
@@ -626,7 +626,7 @@ If max_value is not set to U64_MAX, this ensures that a limited number of tokens
 
 <dl>
 <dt>
-<code><a href="collection.md#0x4_collection">collection</a>: <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_Object">object::Object</a>&lt;<a href="collection.md#0x4_collection_Collection">collection::Collection</a>&gt;</code>
+<code><a href="collection.md#0x4_collection">collection</a>: <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_Object">object::Object</a>&lt;<a href="collection.md#0x4_collection_Collection">collection::Collection</a>&gt;</code>
 </dt>
 <dd>
 
@@ -806,11 +806,11 @@ The collection does not have a max supply
 Creates a fixed-sized collection, or a collection that supports a fixed amount of tokens.
 This is useful to create a guaranteed, limited supply on-chain digital asset. For example,
 a collection 1111 vicious vipers. Note, creating restrictions such as upward limits results
-in data structures that prevent Aptos from parallelizing mints of this collection type.
+in data structures that prevent Starcoin from parallelizing mints of this collection type.
 Beyond that, it adds supply tracking with events.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_create_fixed_collection">create_fixed_collection</a>(creator: &<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>, description: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>, max_supply: u64, name: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>, <a href="royalty.md#0x4_royalty">royalty</a>: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="royalty.md#0x4_royalty_Royalty">royalty::Royalty</a>&gt;, uri: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>): <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>
+<pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_create_fixed_collection">create_fixed_collection</a>(creator: &<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>, description: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>, max_supply: u64, name: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>, <a href="royalty.md#0x4_royalty">royalty</a>: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="royalty.md#0x4_royalty_Royalty">royalty::Royalty</a>&gt;, uri: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>): <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>
 </code></pre>
 
 
@@ -820,20 +820,20 @@ Beyond that, it adds supply tracking with events.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_create_fixed_collection">create_fixed_collection</a>(
-    creator: &<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>,
+    creator: &<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>,
     description: String,
     max_supply: u64,
     name: String,
     <a href="royalty.md#0x4_royalty">royalty</a>: Option&lt;Royalty&gt;,
     uri: String,
 ): ConstructorRef {
-    <b>assert</b>!(max_supply != 0, <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="collection.md#0x4_collection_EMAX_SUPPLY_CANNOT_BE_ZERO">EMAX_SUPPLY_CANNOT_BE_ZERO</a>));
+    <b>assert</b>!(max_supply != 0, <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="collection.md#0x4_collection_EMAX_SUPPLY_CANNOT_BE_ZERO">EMAX_SUPPLY_CANNOT_BE_ZERO</a>));
     <b>let</b> collection_seed = <a href="collection.md#0x4_collection_create_collection_seed">create_collection_seed</a>(&name);
-    <b>let</b> constructor_ref = <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_create_named_object">object::create_named_object</a>(creator, collection_seed);
+    <b>let</b> constructor_ref = <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_create_named_object">object::create_named_object</a>(creator, collection_seed);
 
     <b>let</b> supply = <a href="collection.md#0x4_collection_ConcurrentSupply">ConcurrentSupply</a> {
-        current_supply: <a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_create_aggregator">aggregator_v2::create_aggregator</a>(max_supply),
-        total_minted: <a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_create_unbounded_aggregator">aggregator_v2::create_unbounded_aggregator</a>(),
+        current_supply: <a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_create_aggregator">aggregator_v2::create_aggregator</a>(max_supply),
+        total_minted: <a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_create_unbounded_aggregator">aggregator_v2::create_unbounded_aggregator</a>(),
     };
 
     <a href="collection.md#0x4_collection_create_collection_internal">create_collection_internal</a>(
@@ -843,7 +843,7 @@ Beyond that, it adds supply tracking with events.
         name,
         <a href="royalty.md#0x4_royalty">royalty</a>,
         uri,
-        <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_some">option::some</a>(supply),
+        <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_some">option::some</a>(supply),
     )
 }
 </code></pre>
@@ -861,7 +861,7 @@ This means that the caller can transfer the collection to another address.
 This transfers ownership and minting permissions to the new address.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_create_fixed_collection_as_owner">create_fixed_collection_as_owner</a>(creator: &<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>, description: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>, max_supply: u64, name: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>, <a href="royalty.md#0x4_royalty">royalty</a>: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="royalty.md#0x4_royalty_Royalty">royalty::Royalty</a>&gt;, uri: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>): <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>
+<pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_create_fixed_collection_as_owner">create_fixed_collection_as_owner</a>(creator: &<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>, description: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>, max_supply: u64, name: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>, <a href="royalty.md#0x4_royalty">royalty</a>: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="royalty.md#0x4_royalty_Royalty">royalty::Royalty</a>&gt;, uri: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>): <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>
 </code></pre>
 
 
@@ -871,14 +871,14 @@ This transfers ownership and minting permissions to the new address.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_create_fixed_collection_as_owner">create_fixed_collection_as_owner</a>(
-    creator: &<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>,
+    creator: &<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>,
     description: String,
     max_supply: u64,
     name: String,
     <a href="royalty.md#0x4_royalty">royalty</a>: Option&lt;Royalty&gt;,
     uri: String,
 ): ConstructorRef {
-    <b>assert</b>!(<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/features.md#0x1_features_is_collection_owner_enabled">features::is_collection_owner_enabled</a>(), <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_unavailable">error::unavailable</a>(<a href="collection.md#0x4_collection_ECOLLECTION_OWNER_NOT_SUPPORTED">ECOLLECTION_OWNER_NOT_SUPPORTED</a>));
+    <b>assert</b>!(<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/features.md#0x1_features_is_collection_owner_enabled">features::is_collection_owner_enabled</a>(), <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_unavailable">error::unavailable</a>(<a href="collection.md#0x4_collection_ECOLLECTION_OWNER_NOT_SUPPORTED">ECOLLECTION_OWNER_NOT_SUPPORTED</a>));
 
     <b>let</b> constructor_ref = <a href="collection.md#0x4_collection_create_fixed_collection">create_fixed_collection</a>(
         creator,
@@ -905,7 +905,7 @@ Creates an unlimited collection. This has support for supply tracking but does n
 the supply of tokens.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_create_unlimited_collection">create_unlimited_collection</a>(creator: &<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>, description: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>, <a href="royalty.md#0x4_royalty">royalty</a>: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="royalty.md#0x4_royalty_Royalty">royalty::Royalty</a>&gt;, uri: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>): <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>
+<pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_create_unlimited_collection">create_unlimited_collection</a>(creator: &<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>, description: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>, <a href="royalty.md#0x4_royalty">royalty</a>: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="royalty.md#0x4_royalty_Royalty">royalty::Royalty</a>&gt;, uri: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>): <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>
 </code></pre>
 
 
@@ -915,18 +915,18 @@ the supply of tokens.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_create_unlimited_collection">create_unlimited_collection</a>(
-    creator: &<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>,
+    creator: &<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>,
     description: String,
     name: String,
     <a href="royalty.md#0x4_royalty">royalty</a>: Option&lt;Royalty&gt;,
     uri: String,
 ): ConstructorRef {
     <b>let</b> collection_seed = <a href="collection.md#0x4_collection_create_collection_seed">create_collection_seed</a>(&name);
-    <b>let</b> constructor_ref = <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_create_named_object">object::create_named_object</a>(creator, collection_seed);
+    <b>let</b> constructor_ref = <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_create_named_object">object::create_named_object</a>(creator, collection_seed);
 
     <b>let</b> supply = <a href="collection.md#0x4_collection_ConcurrentSupply">ConcurrentSupply</a> {
-        current_supply: <a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_create_unbounded_aggregator">aggregator_v2::create_unbounded_aggregator</a>(),
-        total_minted: <a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_create_unbounded_aggregator">aggregator_v2::create_unbounded_aggregator</a>(),
+        current_supply: <a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_create_unbounded_aggregator">aggregator_v2::create_unbounded_aggregator</a>(),
+        total_minted: <a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_create_unbounded_aggregator">aggregator_v2::create_unbounded_aggregator</a>(),
     };
 
     <a href="collection.md#0x4_collection_create_collection_internal">create_collection_internal</a>(
@@ -936,7 +936,7 @@ the supply of tokens.
         name,
         <a href="royalty.md#0x4_royalty">royalty</a>,
         uri,
-        <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_some">option::some</a>(supply),
+        <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_some">option::some</a>(supply),
     )
 }
 </code></pre>
@@ -954,7 +954,7 @@ This means that the caller can transfer the collection to another address.
 This transfers ownership and minting permissions to the new address.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_create_unlimited_collection_as_owner">create_unlimited_collection_as_owner</a>(creator: &<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>, description: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>, <a href="royalty.md#0x4_royalty">royalty</a>: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="royalty.md#0x4_royalty_Royalty">royalty::Royalty</a>&gt;, uri: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>): <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>
+<pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_create_unlimited_collection_as_owner">create_unlimited_collection_as_owner</a>(creator: &<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>, description: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>, <a href="royalty.md#0x4_royalty">royalty</a>: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="royalty.md#0x4_royalty_Royalty">royalty::Royalty</a>&gt;, uri: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>): <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>
 </code></pre>
 
 
@@ -964,13 +964,13 @@ This transfers ownership and minting permissions to the new address.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_create_unlimited_collection_as_owner">create_unlimited_collection_as_owner</a>(
-    creator: &<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>,
+    creator: &<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>,
     description: String,
     name: String,
     <a href="royalty.md#0x4_royalty">royalty</a>: Option&lt;Royalty&gt;,
     uri: String,
 ): ConstructorRef {
-    <b>assert</b>!(<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/features.md#0x1_features_is_collection_owner_enabled">features::is_collection_owner_enabled</a>(), <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_unavailable">error::unavailable</a>(<a href="collection.md#0x4_collection_ECOLLECTION_OWNER_NOT_SUPPORTED">ECOLLECTION_OWNER_NOT_SUPPORTED</a>));
+    <b>assert</b>!(<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/features.md#0x1_features_is_collection_owner_enabled">features::is_collection_owner_enabled</a>(), <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_unavailable">error::unavailable</a>(<a href="collection.md#0x4_collection_ECOLLECTION_OWNER_NOT_SUPPORTED">ECOLLECTION_OWNER_NOT_SUPPORTED</a>));
 
     <b>let</b> constructor_ref = <a href="collection.md#0x4_collection_create_unlimited_collection">create_unlimited_collection</a>(
         creator,
@@ -993,11 +993,11 @@ This transfers ownership and minting permissions to the new address.
 ## Function `create_untracked_collection`
 
 Creates an untracked collection, or a collection that supports an arbitrary amount of
-tokens. This is useful for mass airdrops that fully leverage Aptos parallelization.
+tokens. This is useful for mass airdrops that fully leverage Starcoin parallelization.
 TODO: Hide this until we bring back meaningful way to enforce burns
 
 
-<pre><code><b>fun</b> <a href="collection.md#0x4_collection_create_untracked_collection">create_untracked_collection</a>(creator: &<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>, description: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>, <a href="royalty.md#0x4_royalty">royalty</a>: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="royalty.md#0x4_royalty_Royalty">royalty::Royalty</a>&gt;, uri: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>): <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>
+<pre><code><b>fun</b> <a href="collection.md#0x4_collection_create_untracked_collection">create_untracked_collection</a>(creator: &<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>, description: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>, <a href="royalty.md#0x4_royalty">royalty</a>: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="royalty.md#0x4_royalty_Royalty">royalty::Royalty</a>&gt;, uri: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>): <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>
 </code></pre>
 
 
@@ -1007,14 +1007,14 @@ TODO: Hide this until we bring back meaningful way to enforce burns
 
 
 <pre><code><b>fun</b> <a href="collection.md#0x4_collection_create_untracked_collection">create_untracked_collection</a>(
-    creator: &<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>,
+    creator: &<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>,
     description: String,
     name: String,
     <a href="royalty.md#0x4_royalty">royalty</a>: Option&lt;Royalty&gt;,
     uri: String,
 ): ConstructorRef {
     <b>let</b> collection_seed = <a href="collection.md#0x4_collection_create_collection_seed">create_collection_seed</a>(&name);
-    <b>let</b> constructor_ref = <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_create_named_object">object::create_named_object</a>(creator, collection_seed);
+    <b>let</b> constructor_ref = <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_create_named_object">object::create_named_object</a>(creator, collection_seed);
 
     <a href="collection.md#0x4_collection_create_collection_internal">create_collection_internal</a>&lt;<a href="collection.md#0x4_collection_FixedSupply">FixedSupply</a>&gt;(
         creator,
@@ -1023,7 +1023,7 @@ TODO: Hide this until we bring back meaningful way to enforce burns
         name,
         <a href="royalty.md#0x4_royalty">royalty</a>,
         uri,
-        <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_none">option::none</a>(),
+        <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_none">option::none</a>(),
     )
 }
 </code></pre>
@@ -1038,7 +1038,7 @@ TODO: Hide this until we bring back meaningful way to enforce burns
 
 
 
-<pre><code><b>fun</b> <a href="collection.md#0x4_collection_create_collection_internal">create_collection_internal</a>&lt;Supply: key&gt;(creator: &<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>, constructor_ref: <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>, description: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>, <a href="royalty.md#0x4_royalty">royalty</a>: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="royalty.md#0x4_royalty_Royalty">royalty::Royalty</a>&gt;, uri: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>, supply: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_Option">option::Option</a>&lt;Supply&gt;): <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>
+<pre><code><b>fun</b> <a href="collection.md#0x4_collection_create_collection_internal">create_collection_internal</a>&lt;Supply: key&gt;(creator: &<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>, constructor_ref: <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>, description: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>, <a href="royalty.md#0x4_royalty">royalty</a>: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="royalty.md#0x4_royalty_Royalty">royalty::Royalty</a>&gt;, uri: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>, supply: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_Option">option::Option</a>&lt;Supply&gt;): <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>
 </code></pre>
 
 
@@ -1048,7 +1048,7 @@ TODO: Hide this until we bring back meaningful way to enforce burns
 
 
 <pre><code>inline <b>fun</b> <a href="collection.md#0x4_collection_create_collection_internal">create_collection_internal</a>&lt;Supply: key&gt;(
-    creator: &<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>,
+    creator: &<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer">signer</a>,
     constructor_ref: ConstructorRef,
     description: String,
     name: String,
@@ -1056,33 +1056,33 @@ TODO: Hide this until we bring back meaningful way to enforce burns
     uri: String,
     supply: Option&lt;Supply&gt;,
 ): ConstructorRef {
-    <b>assert</b>!(<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_length">string::length</a>(&name) &lt;= <a href="collection.md#0x4_collection_MAX_COLLECTION_NAME_LENGTH">MAX_COLLECTION_NAME_LENGTH</a>, <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="collection.md#0x4_collection_ECOLLECTION_NAME_TOO_LONG">ECOLLECTION_NAME_TOO_LONG</a>));
-    <b>assert</b>!(<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_length">string::length</a>(&uri) &lt;= <a href="collection.md#0x4_collection_MAX_URI_LENGTH">MAX_URI_LENGTH</a>, <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="collection.md#0x4_collection_EURI_TOO_LONG">EURI_TOO_LONG</a>));
-    <b>assert</b>!(<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_length">string::length</a>(&description) &lt;= <a href="collection.md#0x4_collection_MAX_DESCRIPTION_LENGTH">MAX_DESCRIPTION_LENGTH</a>, <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="collection.md#0x4_collection_EDESCRIPTION_TOO_LONG">EDESCRIPTION_TOO_LONG</a>));
+    <b>assert</b>!(<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_length">string::length</a>(&name) &lt;= <a href="collection.md#0x4_collection_MAX_COLLECTION_NAME_LENGTH">MAX_COLLECTION_NAME_LENGTH</a>, <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="collection.md#0x4_collection_ECOLLECTION_NAME_TOO_LONG">ECOLLECTION_NAME_TOO_LONG</a>));
+    <b>assert</b>!(<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_length">string::length</a>(&uri) &lt;= <a href="collection.md#0x4_collection_MAX_URI_LENGTH">MAX_URI_LENGTH</a>, <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="collection.md#0x4_collection_EURI_TOO_LONG">EURI_TOO_LONG</a>));
+    <b>assert</b>!(<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_length">string::length</a>(&description) &lt;= <a href="collection.md#0x4_collection_MAX_DESCRIPTION_LENGTH">MAX_DESCRIPTION_LENGTH</a>, <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="collection.md#0x4_collection_EDESCRIPTION_TOO_LONG">EDESCRIPTION_TOO_LONG</a>));
 
-    <b>let</b> object_signer = <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_generate_signer">object::generate_signer</a>(&constructor_ref);
+    <b>let</b> object_signer = <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_generate_signer">object::generate_signer</a>(&constructor_ref);
 
     <b>let</b> <a href="collection.md#0x4_collection">collection</a> = <a href="collection.md#0x4_collection_Collection">Collection</a> {
-        creator: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator),
+        creator: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator),
         description,
         name,
         uri,
-        mutation_events: <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_new_event_handle">object::new_event_handle</a>(&object_signer),
+        mutation_events: <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_new_event_handle">object::new_event_handle</a>(&object_signer),
     };
     <b>move_to</b>(&object_signer, <a href="collection.md#0x4_collection">collection</a>);
 
-    <b>if</b> (<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_is_some">option::is_some</a>(&supply)) {
-        <b>move_to</b>(&object_signer, <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_destroy_some">option::destroy_some</a>(supply))
+    <b>if</b> (<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_is_some">option::is_some</a>(&supply)) {
+        <b>move_to</b>(&object_signer, <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_destroy_some">option::destroy_some</a>(supply))
     } <b>else</b> {
-        <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_destroy_none">option::destroy_none</a>(supply)
+        <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_destroy_none">option::destroy_none</a>(supply)
     };
 
-    <b>if</b> (<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_is_some">option::is_some</a>(&<a href="royalty.md#0x4_royalty">royalty</a>)) {
-        <a href="royalty.md#0x4_royalty_init">royalty::init</a>(&constructor_ref, <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_extract">option::extract</a>(&<b>mut</b> <a href="royalty.md#0x4_royalty">royalty</a>))
+    <b>if</b> (<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_is_some">option::is_some</a>(&<a href="royalty.md#0x4_royalty">royalty</a>)) {
+        <a href="royalty.md#0x4_royalty_init">royalty::init</a>(&constructor_ref, <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_extract">option::extract</a>(&<b>mut</b> <a href="royalty.md#0x4_royalty">royalty</a>))
     };
 
-    <b>let</b> transfer_ref = <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_generate_transfer_ref">object::generate_transfer_ref</a>(&constructor_ref);
-    <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_disable_ungated_transfer">object::disable_ungated_transfer</a>(&transfer_ref);
+    <b>let</b> transfer_ref = <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_generate_transfer_ref">object::generate_transfer_ref</a>(&constructor_ref);
+    <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_disable_ungated_transfer">object::disable_ungated_transfer</a>(&transfer_ref);
 
     constructor_ref
 }
@@ -1098,7 +1098,7 @@ TODO: Hide this until we bring back meaningful way to enforce burns
 
 
 
-<pre><code><b>fun</b> <a href="collection.md#0x4_collection_enable_ungated_transfer">enable_ungated_transfer</a>(constructor_ref: &<a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>)
+<pre><code><b>fun</b> <a href="collection.md#0x4_collection_enable_ungated_transfer">enable_ungated_transfer</a>(constructor_ref: &<a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>)
 </code></pre>
 
 
@@ -1108,8 +1108,8 @@ TODO: Hide this until we bring back meaningful way to enforce burns
 
 
 <pre><code>inline <b>fun</b> <a href="collection.md#0x4_collection_enable_ungated_transfer">enable_ungated_transfer</a>(constructor_ref: &ConstructorRef) {
-    <b>let</b> transfer_ref = <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_generate_transfer_ref">object::generate_transfer_ref</a>(constructor_ref);
-    <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_enable_ungated_transfer">object::enable_ungated_transfer</a>(&transfer_ref);
+    <b>let</b> transfer_ref = <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_generate_transfer_ref">object::generate_transfer_ref</a>(constructor_ref);
+    <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_enable_ungated_transfer">object::enable_ungated_transfer</a>(&transfer_ref);
 }
 </code></pre>
 
@@ -1124,7 +1124,7 @@ TODO: Hide this until we bring back meaningful way to enforce burns
 Generates the collections address based upon the creators address and the collection's name
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_create_collection_address">create_collection_address</a>(creator: &<b>address</b>, name: &<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_create_collection_address">create_collection_address</a>(creator: &<b>address</b>, name: &<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>): <b>address</b>
 </code></pre>
 
 
@@ -1134,7 +1134,7 @@ Generates the collections address based upon the creators address and the collec
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_create_collection_address">create_collection_address</a>(creator: &<b>address</b>, name: &String): <b>address</b> {
-    <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_create_object_address">object::create_object_address</a>(creator, <a href="collection.md#0x4_collection_create_collection_seed">create_collection_seed</a>(name))
+    <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_create_object_address">object::create_object_address</a>(creator, <a href="collection.md#0x4_collection_create_collection_seed">create_collection_seed</a>(name))
 }
 </code></pre>
 
@@ -1149,7 +1149,7 @@ Generates the collections address based upon the creators address and the collec
 Named objects are derived from a seed, the collection's seed is its name.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_create_collection_seed">create_collection_seed</a>(name: &<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>): <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_create_collection_seed">create_collection_seed</a>(name: &<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>): <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -1158,9 +1158,9 @@ Named objects are derived from a seed, the collection's seed is its name.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_create_collection_seed">create_collection_seed</a>(name: &String): <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
-    <b>assert</b>!(<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_length">string::length</a>(name) &lt;= <a href="collection.md#0x4_collection_MAX_COLLECTION_NAME_LENGTH">MAX_COLLECTION_NAME_LENGTH</a>, <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="collection.md#0x4_collection_ECOLLECTION_NAME_TOO_LONG">ECOLLECTION_NAME_TOO_LONG</a>));
-    *<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_bytes">string::bytes</a>(name)
+<pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_create_collection_seed">create_collection_seed</a>(name: &String): <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
+    <b>assert</b>!(<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_length">string::length</a>(name) &lt;= <a href="collection.md#0x4_collection_MAX_COLLECTION_NAME_LENGTH">MAX_COLLECTION_NAME_LENGTH</a>, <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="collection.md#0x4_collection_ECOLLECTION_NAME_TOO_LONG">ECOLLECTION_NAME_TOO_LONG</a>));
+    *<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_bytes">string::bytes</a>(name)
 }
 </code></pre>
 
@@ -1175,7 +1175,7 @@ Named objects are derived from a seed, the collection's seed is its name.
 Called by token on mint to increment supply if there's an appropriate Supply struct.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="collection.md#0x4_collection_increment_supply">increment_supply</a>(<a href="collection.md#0x4_collection">collection</a>: &<a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_Object">object::Object</a>&lt;<a href="collection.md#0x4_collection_Collection">collection::Collection</a>&gt;, <a href="token.md#0x4_token">token</a>: <b>address</b>): <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_AggregatorSnapshot">aggregator_v2::AggregatorSnapshot</a>&lt;u64&gt;&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="collection.md#0x4_collection_increment_supply">increment_supply</a>(<a href="collection.md#0x4_collection">collection</a>: &<a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_Object">object::Object</a>&lt;<a href="collection.md#0x4_collection_Collection">collection::Collection</a>&gt;, <a href="token.md#0x4_token">token</a>: <b>address</b>): <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_AggregatorSnapshot">aggregator_v2::AggregatorSnapshot</a>&lt;u64&gt;&gt;
 </code></pre>
 
 
@@ -1188,69 +1188,69 @@ Called by token on mint to increment supply if there's an appropriate Supply str
     <a href="collection.md#0x4_collection">collection</a>: &Object&lt;<a href="collection.md#0x4_collection_Collection">Collection</a>&gt;,
     <a href="token.md#0x4_token">token</a>: <b>address</b>,
 ): Option&lt;AggregatorSnapshot&lt;u64&gt;&gt; <b>acquires</b> <a href="collection.md#0x4_collection_FixedSupply">FixedSupply</a>, <a href="collection.md#0x4_collection_UnlimitedSupply">UnlimitedSupply</a>, <a href="collection.md#0x4_collection_ConcurrentSupply">ConcurrentSupply</a> {
-    <b>let</b> collection_addr = <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_object_address">object::object_address</a>(<a href="collection.md#0x4_collection">collection</a>);
+    <b>let</b> collection_addr = <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_object_address">object::object_address</a>(<a href="collection.md#0x4_collection">collection</a>);
     <b>if</b> (<b>exists</b>&lt;<a href="collection.md#0x4_collection_ConcurrentSupply">ConcurrentSupply</a>&gt;(collection_addr)) {
         <b>let</b> supply = <b>borrow_global_mut</b>&lt;<a href="collection.md#0x4_collection_ConcurrentSupply">ConcurrentSupply</a>&gt;(collection_addr);
         <b>assert</b>!(
-            <a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_try_add">aggregator_v2::try_add</a>(&<b>mut</b> supply.current_supply, 1),
-            <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="collection.md#0x4_collection_ECOLLECTION_SUPPLY_EXCEEDED">ECOLLECTION_SUPPLY_EXCEEDED</a>),
+            <a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_try_add">aggregator_v2::try_add</a>(&<b>mut</b> supply.current_supply, 1),
+            <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="collection.md#0x4_collection_ECOLLECTION_SUPPLY_EXCEEDED">ECOLLECTION_SUPPLY_EXCEEDED</a>),
         );
-        <a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_add">aggregator_v2::add</a>(&<b>mut</b> supply.total_minted, 1);
-        <a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event_emit">event::emit</a>(
+        <a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_add">aggregator_v2::add</a>(&<b>mut</b> supply.total_minted, 1);
+        <a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event_emit">event::emit</a>(
             <a href="collection.md#0x4_collection_Mint">Mint</a> {
                 <a href="collection.md#0x4_collection">collection</a>: collection_addr,
-                index: <a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_snapshot">aggregator_v2::snapshot</a>(&supply.total_minted),
+                index: <a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_snapshot">aggregator_v2::snapshot</a>(&supply.total_minted),
                 <a href="token.md#0x4_token">token</a>,
             },
         );
-        <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_some">option::some</a>(<a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_snapshot">aggregator_v2::snapshot</a>(&supply.total_minted))
+        <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_some">option::some</a>(<a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_snapshot">aggregator_v2::snapshot</a>(&supply.total_minted))
     } <b>else</b> <b>if</b> (<b>exists</b>&lt;<a href="collection.md#0x4_collection_FixedSupply">FixedSupply</a>&gt;(collection_addr)) {
         <b>let</b> supply = <b>borrow_global_mut</b>&lt;<a href="collection.md#0x4_collection_FixedSupply">FixedSupply</a>&gt;(collection_addr);
         supply.current_supply = supply.current_supply + 1;
         supply.total_minted = supply.total_minted + 1;
         <b>assert</b>!(
             supply.current_supply &lt;= supply.max_supply,
-            <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="collection.md#0x4_collection_ECOLLECTION_SUPPLY_EXCEEDED">ECOLLECTION_SUPPLY_EXCEEDED</a>),
+            <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="collection.md#0x4_collection_ECOLLECTION_SUPPLY_EXCEEDED">ECOLLECTION_SUPPLY_EXCEEDED</a>),
         );
         <b>if</b> (std::features::module_event_migration_enabled()) {
-            <a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event_emit">event::emit</a>(
+            <a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event_emit">event::emit</a>(
                 <a href="collection.md#0x4_collection_Mint">Mint</a> {
                     <a href="collection.md#0x4_collection">collection</a>: collection_addr,
-                    index: <a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_create_snapshot">aggregator_v2::create_snapshot</a>(supply.total_minted),
+                    index: <a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_create_snapshot">aggregator_v2::create_snapshot</a>(supply.total_minted),
                     <a href="token.md#0x4_token">token</a>,
                 },
             );
         };
-        <a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event_emit_event">event::emit_event</a>(&<b>mut</b> supply.mint_events,
+        <a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event_emit_event">event::emit_event</a>(&<b>mut</b> supply.mint_events,
             <a href="collection.md#0x4_collection_MintEvent">MintEvent</a> {
                 index: supply.total_minted,
                 <a href="token.md#0x4_token">token</a>,
             },
         );
-        <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_some">option::some</a>(<a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_create_snapshot">aggregator_v2::create_snapshot</a>&lt;u64&gt;(supply.total_minted))
+        <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_some">option::some</a>(<a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_create_snapshot">aggregator_v2::create_snapshot</a>&lt;u64&gt;(supply.total_minted))
     } <b>else</b> <b>if</b> (<b>exists</b>&lt;<a href="collection.md#0x4_collection_UnlimitedSupply">UnlimitedSupply</a>&gt;(collection_addr)) {
         <b>let</b> supply = <b>borrow_global_mut</b>&lt;<a href="collection.md#0x4_collection_UnlimitedSupply">UnlimitedSupply</a>&gt;(collection_addr);
         supply.current_supply = supply.current_supply + 1;
         supply.total_minted = supply.total_minted + 1;
         <b>if</b> (std::features::module_event_migration_enabled()) {
-            <a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event_emit">event::emit</a>(
+            <a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event_emit">event::emit</a>(
                 <a href="collection.md#0x4_collection_Mint">Mint</a> {
                     <a href="collection.md#0x4_collection">collection</a>: collection_addr,
-                    index: <a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_create_snapshot">aggregator_v2::create_snapshot</a>(supply.total_minted),
+                    index: <a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_create_snapshot">aggregator_v2::create_snapshot</a>(supply.total_minted),
                     <a href="token.md#0x4_token">token</a>,
                 },
             );
         };
-        <a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event_emit_event">event::emit_event</a>(
+        <a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event_emit_event">event::emit_event</a>(
             &<b>mut</b> supply.mint_events,
             <a href="collection.md#0x4_collection_MintEvent">MintEvent</a> {
                 index: supply.total_minted,
                 <a href="token.md#0x4_token">token</a>,
             },
         );
-        <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_some">option::some</a>(<a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_create_snapshot">aggregator_v2::create_snapshot</a>&lt;u64&gt;(supply.total_minted))
+        <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_some">option::some</a>(<a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_create_snapshot">aggregator_v2::create_snapshot</a>&lt;u64&gt;(supply.total_minted))
     } <b>else</b> {
-        <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_none">option::none</a>()
+        <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_none">option::none</a>()
     }
 }
 </code></pre>
@@ -1266,7 +1266,7 @@ Called by token on mint to increment supply if there's an appropriate Supply str
 Called by token on burn to decrement supply if there's an appropriate Supply struct.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="collection.md#0x4_collection_decrement_supply">decrement_supply</a>(<a href="collection.md#0x4_collection">collection</a>: &<a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_Object">object::Object</a>&lt;<a href="collection.md#0x4_collection_Collection">collection::Collection</a>&gt;, <a href="token.md#0x4_token">token</a>: <b>address</b>, index: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_Option">option::Option</a>&lt;u64&gt;, previous_owner: <b>address</b>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="collection.md#0x4_collection_decrement_supply">decrement_supply</a>(<a href="collection.md#0x4_collection">collection</a>: &<a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_Object">object::Object</a>&lt;<a href="collection.md#0x4_collection_Collection">collection::Collection</a>&gt;, <a href="token.md#0x4_token">token</a>: <b>address</b>, index: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_Option">option::Option</a>&lt;u64&gt;, previous_owner: <b>address</b>)
 </code></pre>
 
 
@@ -1281,15 +1281,15 @@ Called by token on burn to decrement supply if there's an appropriate Supply str
     index: Option&lt;u64&gt;,
     previous_owner: <b>address</b>,
 ) <b>acquires</b> <a href="collection.md#0x4_collection_FixedSupply">FixedSupply</a>, <a href="collection.md#0x4_collection_UnlimitedSupply">UnlimitedSupply</a>, <a href="collection.md#0x4_collection_ConcurrentSupply">ConcurrentSupply</a> {
-    <b>let</b> collection_addr = <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_object_address">object::object_address</a>(<a href="collection.md#0x4_collection">collection</a>);
+    <b>let</b> collection_addr = <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_object_address">object::object_address</a>(<a href="collection.md#0x4_collection">collection</a>);
     <b>if</b> (<b>exists</b>&lt;<a href="collection.md#0x4_collection_ConcurrentSupply">ConcurrentSupply</a>&gt;(collection_addr)) {
         <b>let</b> supply = <b>borrow_global_mut</b>&lt;<a href="collection.md#0x4_collection_ConcurrentSupply">ConcurrentSupply</a>&gt;(collection_addr);
-        <a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_sub">aggregator_v2::sub</a>(&<b>mut</b> supply.current_supply, 1);
+        <a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_sub">aggregator_v2::sub</a>(&<b>mut</b> supply.current_supply, 1);
 
-        <a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event_emit">event::emit</a>(
+        <a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event_emit">event::emit</a>(
             <a href="collection.md#0x4_collection_Burn">Burn</a> {
                 <a href="collection.md#0x4_collection">collection</a>: collection_addr,
-                index: *<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_borrow">option::borrow</a>(&index),
+                index: *<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_borrow">option::borrow</a>(&index),
                 <a href="token.md#0x4_token">token</a>,
                 previous_owner,
             },
@@ -1298,19 +1298,19 @@ Called by token on burn to decrement supply if there's an appropriate Supply str
         <b>let</b> supply = <b>borrow_global_mut</b>&lt;<a href="collection.md#0x4_collection_FixedSupply">FixedSupply</a>&gt;(collection_addr);
         supply.current_supply = supply.current_supply - 1;
         <b>if</b> (std::features::module_event_migration_enabled()) {
-            <a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event_emit">event::emit</a>(
+            <a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event_emit">event::emit</a>(
                 <a href="collection.md#0x4_collection_Burn">Burn</a> {
                     <a href="collection.md#0x4_collection">collection</a>: collection_addr,
-                    index: *<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_borrow">option::borrow</a>(&index),
+                    index: *<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_borrow">option::borrow</a>(&index),
                     <a href="token.md#0x4_token">token</a>,
                     previous_owner,
                 },
             );
         };
-        <a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event_emit_event">event::emit_event</a>(
+        <a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event_emit_event">event::emit_event</a>(
             &<b>mut</b> supply.burn_events,
             <a href="collection.md#0x4_collection_BurnEvent">BurnEvent</a> {
-                index: *<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_borrow">option::borrow</a>(&index),
+                index: *<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_borrow">option::borrow</a>(&index),
                 <a href="token.md#0x4_token">token</a>,
             },
         );
@@ -1318,19 +1318,19 @@ Called by token on burn to decrement supply if there's an appropriate Supply str
         <b>let</b> supply = <b>borrow_global_mut</b>&lt;<a href="collection.md#0x4_collection_UnlimitedSupply">UnlimitedSupply</a>&gt;(collection_addr);
         supply.current_supply = supply.current_supply - 1;
         <b>if</b> (std::features::module_event_migration_enabled()) {
-            <a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event_emit">event::emit</a>(
+            <a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event_emit">event::emit</a>(
                 <a href="collection.md#0x4_collection_Burn">Burn</a> {
                     <a href="collection.md#0x4_collection">collection</a>: collection_addr,
-                    index: *<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_borrow">option::borrow</a>(&index),
+                    index: *<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_borrow">option::borrow</a>(&index),
                     <a href="token.md#0x4_token">token</a>,
                     previous_owner,
                 },
             );
         };
-        <a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event_emit_event">event::emit_event</a>(
+        <a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event_emit_event">event::emit_event</a>(
             &<b>mut</b> supply.burn_events,
             <a href="collection.md#0x4_collection_BurnEvent">BurnEvent</a> {
-                index: *<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_borrow">option::borrow</a>(&index),
+                index: *<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_borrow">option::borrow</a>(&index),
                 <a href="token.md#0x4_token">token</a>,
             },
         );
@@ -1349,7 +1349,7 @@ Called by token on burn to decrement supply if there's an appropriate Supply str
 Creates a MutatorRef, which gates the ability to mutate any fields that support mutation.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_generate_mutator_ref">generate_mutator_ref</a>(ref: &<a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>): <a href="collection.md#0x4_collection_MutatorRef">collection::MutatorRef</a>
+<pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_generate_mutator_ref">generate_mutator_ref</a>(ref: &<a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>): <a href="collection.md#0x4_collection_MutatorRef">collection::MutatorRef</a>
 </code></pre>
 
 
@@ -1359,8 +1359,8 @@ Creates a MutatorRef, which gates the ability to mutate any fields that support 
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_generate_mutator_ref">generate_mutator_ref</a>(ref: &ConstructorRef): <a href="collection.md#0x4_collection_MutatorRef">MutatorRef</a> {
-    <b>let</b> <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object">object</a> = <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_object_from_constructor_ref">object::object_from_constructor_ref</a>&lt;<a href="collection.md#0x4_collection_Collection">Collection</a>&gt;(ref);
-    <a href="collection.md#0x4_collection_MutatorRef">MutatorRef</a> { self: <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_object_address">object::object_address</a>(&<a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object">object</a>) }
+    <b>let</b> <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object">object</a> = <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_object_from_constructor_ref">object::object_from_constructor_ref</a>&lt;<a href="collection.md#0x4_collection_Collection">Collection</a>&gt;(ref);
+    <a href="collection.md#0x4_collection_MutatorRef">MutatorRef</a> { self: <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_object_address">object::object_address</a>(&<a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object">object</a>) }
 }
 </code></pre>
 
@@ -1374,7 +1374,7 @@ Creates a MutatorRef, which gates the ability to mutate any fields that support 
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_upgrade_to_concurrent">upgrade_to_concurrent</a>(ref: &<a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_ExtendRef">object::ExtendRef</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_upgrade_to_concurrent">upgrade_to_concurrent</a>(ref: &<a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_ExtendRef">object::ExtendRef</a>)
 </code></pre>
 
 
@@ -1386,8 +1386,8 @@ Creates a MutatorRef, which gates the ability to mutate any fields that support 
 <pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_upgrade_to_concurrent">upgrade_to_concurrent</a>(
     ref: &ExtendRef,
 ) <b>acquires</b> <a href="collection.md#0x4_collection_FixedSupply">FixedSupply</a>, <a href="collection.md#0x4_collection_UnlimitedSupply">UnlimitedSupply</a> {
-    <b>let</b> metadata_object_address = <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_address_from_extend_ref">object::address_from_extend_ref</a>(ref);
-    <b>let</b> metadata_object_signer = <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_generate_signer_for_extending">object::generate_signer_for_extending</a>(ref);
+    <b>let</b> metadata_object_address = <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_address_from_extend_ref">object::address_from_extend_ref</a>(ref);
+    <b>let</b> metadata_object_signer = <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_generate_signer_for_extending">object::generate_signer_for_extending</a>(ref);
 
     <b>let</b> (supply, current_supply, total_minted, burn_events, mint_events) = <b>if</b> (<b>exists</b>&lt;<a href="collection.md#0x4_collection_FixedSupply">FixedSupply</a>&gt;(
         metadata_object_address
@@ -1401,8 +1401,8 @@ Creates a MutatorRef, which gates the ability to mutate any fields that support 
         } = <b>move_from</b>&lt;<a href="collection.md#0x4_collection_FixedSupply">FixedSupply</a>&gt;(metadata_object_address);
 
         <b>let</b> supply = <a href="collection.md#0x4_collection_ConcurrentSupply">ConcurrentSupply</a> {
-            current_supply: <a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_create_aggregator">aggregator_v2::create_aggregator</a>(max_supply),
-            total_minted: <a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_create_unbounded_aggregator">aggregator_v2::create_unbounded_aggregator</a>(),
+            current_supply: <a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_create_aggregator">aggregator_v2::create_aggregator</a>(max_supply),
+            total_minted: <a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_create_unbounded_aggregator">aggregator_v2::create_unbounded_aggregator</a>(),
         };
         (supply, current_supply, total_minted, burn_events, mint_events)
     } <b>else</b> <b>if</b> (<b>exists</b>&lt;<a href="collection.md#0x4_collection_UnlimitedSupply">UnlimitedSupply</a>&gt;(metadata_object_address)) {
@@ -1414,22 +1414,22 @@ Creates a MutatorRef, which gates the ability to mutate any fields that support 
         } = <b>move_from</b>&lt;<a href="collection.md#0x4_collection_UnlimitedSupply">UnlimitedSupply</a>&gt;(metadata_object_address);
 
         <b>let</b> supply = <a href="collection.md#0x4_collection_ConcurrentSupply">ConcurrentSupply</a> {
-            current_supply: <a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_create_unbounded_aggregator">aggregator_v2::create_unbounded_aggregator</a>(),
-            total_minted: <a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_create_unbounded_aggregator">aggregator_v2::create_unbounded_aggregator</a>(),
+            current_supply: <a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_create_unbounded_aggregator">aggregator_v2::create_unbounded_aggregator</a>(),
+            total_minted: <a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_create_unbounded_aggregator">aggregator_v2::create_unbounded_aggregator</a>(),
         };
         (supply, current_supply, total_minted, burn_events, mint_events)
     } <b>else</b> {
         // untracked <a href="collection.md#0x4_collection">collection</a> is already concurrent, and other variants too.
-        <b>abort</b> <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="collection.md#0x4_collection_EALREADY_CONCURRENT">EALREADY_CONCURRENT</a>)
+        <b>abort</b> <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="collection.md#0x4_collection_EALREADY_CONCURRENT">EALREADY_CONCURRENT</a>)
     };
 
     // <b>update</b> current state:
-    <a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_add">aggregator_v2::add</a>(&<b>mut</b> supply.current_supply, current_supply);
-    <a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_add">aggregator_v2::add</a>(&<b>mut</b> supply.total_minted, total_minted);
+    <a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_add">aggregator_v2::add</a>(&<b>mut</b> supply.current_supply, current_supply);
+    <a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_add">aggregator_v2::add</a>(&<b>mut</b> supply.total_minted, total_minted);
     <b>move_to</b>(&metadata_object_signer, supply);
 
-    <a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event_destroy_handle">event::destroy_handle</a>(burn_events);
-    <a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event_destroy_handle">event::destroy_handle</a>(mint_events);
+    <a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event_destroy_handle">event::destroy_handle</a>(burn_events);
+    <a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event_destroy_handle">event::destroy_handle</a>(mint_events);
 }
 </code></pre>
 
@@ -1455,7 +1455,7 @@ Creates a MutatorRef, which gates the ability to mutate any fields that support 
 <pre><code>inline <b>fun</b> <a href="collection.md#0x4_collection_check_collection_exists">check_collection_exists</a>(addr: <b>address</b>) {
     <b>assert</b>!(
         <b>exists</b>&lt;<a href="collection.md#0x4_collection_Collection">Collection</a>&gt;(addr),
-        <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="collection.md#0x4_collection_ECOLLECTION_DOES_NOT_EXIST">ECOLLECTION_DOES_NOT_EXIST</a>),
+        <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="collection.md#0x4_collection_ECOLLECTION_DOES_NOT_EXIST">ECOLLECTION_DOES_NOT_EXIST</a>),
     );
 }
 </code></pre>
@@ -1470,7 +1470,7 @@ Creates a MutatorRef, which gates the ability to mutate any fields that support 
 
 
 
-<pre><code><b>fun</b> <a href="collection.md#0x4_collection_borrow">borrow</a>&lt;T: key&gt;(<a href="collection.md#0x4_collection">collection</a>: &<a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_Object">object::Object</a>&lt;T&gt;): &<a href="collection.md#0x4_collection_Collection">collection::Collection</a>
+<pre><code><b>fun</b> <a href="collection.md#0x4_collection_borrow">borrow</a>&lt;T: key&gt;(<a href="collection.md#0x4_collection">collection</a>: &<a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_Object">object::Object</a>&lt;T&gt;): &<a href="collection.md#0x4_collection_Collection">collection::Collection</a>
 </code></pre>
 
 
@@ -1480,7 +1480,7 @@ Creates a MutatorRef, which gates the ability to mutate any fields that support 
 
 
 <pre><code>inline <b>fun</b> <a href="collection.md#0x4_collection_borrow">borrow</a>&lt;T: key&gt;(<a href="collection.md#0x4_collection">collection</a>: &Object&lt;T&gt;): &<a href="collection.md#0x4_collection_Collection">Collection</a> {
-    <b>let</b> collection_address = <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_object_address">object::object_address</a>(<a href="collection.md#0x4_collection">collection</a>);
+    <b>let</b> collection_address = <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_object_address">object::object_address</a>(<a href="collection.md#0x4_collection">collection</a>);
     <a href="collection.md#0x4_collection_check_collection_exists">check_collection_exists</a>(collection_address);
     <b>borrow_global</b>&lt;<a href="collection.md#0x4_collection_Collection">Collection</a>&gt;(collection_address)
 }
@@ -1501,7 +1501,7 @@ it from being parallelized.
 
 
 <pre><code>#[view]
-<b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_count">count</a>&lt;T: key&gt;(<a href="collection.md#0x4_collection">collection</a>: <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_Object">object::Object</a>&lt;T&gt;): <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_Option">option::Option</a>&lt;u64&gt;
+<b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_count">count</a>&lt;T: key&gt;(<a href="collection.md#0x4_collection">collection</a>: <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_Object">object::Object</a>&lt;T&gt;): <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_Option">option::Option</a>&lt;u64&gt;
 </code></pre>
 
 
@@ -1513,20 +1513,20 @@ it from being parallelized.
 <pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_count">count</a>&lt;T: key&gt;(
     <a href="collection.md#0x4_collection">collection</a>: Object&lt;T&gt;
 ): Option&lt;u64&gt; <b>acquires</b> <a href="collection.md#0x4_collection_FixedSupply">FixedSupply</a>, <a href="collection.md#0x4_collection_UnlimitedSupply">UnlimitedSupply</a>, <a href="collection.md#0x4_collection_ConcurrentSupply">ConcurrentSupply</a> {
-    <b>let</b> collection_address = <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_object_address">object::object_address</a>(&<a href="collection.md#0x4_collection">collection</a>);
+    <b>let</b> collection_address = <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_object_address">object::object_address</a>(&<a href="collection.md#0x4_collection">collection</a>);
     <a href="collection.md#0x4_collection_check_collection_exists">check_collection_exists</a>(collection_address);
 
     <b>if</b> (<b>exists</b>&lt;<a href="collection.md#0x4_collection_ConcurrentSupply">ConcurrentSupply</a>&gt;(collection_address)) {
         <b>let</b> supply = <b>borrow_global_mut</b>&lt;<a href="collection.md#0x4_collection_ConcurrentSupply">ConcurrentSupply</a>&gt;(collection_address);
-        <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_some">option::some</a>(<a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_read">aggregator_v2::read</a>(&supply.current_supply))
+        <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_some">option::some</a>(<a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_read">aggregator_v2::read</a>(&supply.current_supply))
     } <b>else</b> <b>if</b> (<b>exists</b>&lt;<a href="collection.md#0x4_collection_FixedSupply">FixedSupply</a>&gt;(collection_address)) {
         <b>let</b> supply = <b>borrow_global_mut</b>&lt;<a href="collection.md#0x4_collection_FixedSupply">FixedSupply</a>&gt;(collection_address);
-        <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_some">option::some</a>(supply.current_supply)
+        <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_some">option::some</a>(supply.current_supply)
     } <b>else</b> <b>if</b> (<b>exists</b>&lt;<a href="collection.md#0x4_collection_UnlimitedSupply">UnlimitedSupply</a>&gt;(collection_address)) {
         <b>let</b> supply = <b>borrow_global_mut</b>&lt;<a href="collection.md#0x4_collection_UnlimitedSupply">UnlimitedSupply</a>&gt;(collection_address);
-        <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_some">option::some</a>(supply.current_supply)
+        <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_some">option::some</a>(supply.current_supply)
     } <b>else</b> {
-        <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_none">option::none</a>()
+        <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/option.md#0x1_option_none">option::none</a>()
     }
 }
 </code></pre>
@@ -1542,7 +1542,7 @@ it from being parallelized.
 
 
 <pre><code>#[view]
-<b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_creator">creator</a>&lt;T: key&gt;(<a href="collection.md#0x4_collection">collection</a>: <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_Object">object::Object</a>&lt;T&gt;): <b>address</b>
+<b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_creator">creator</a>&lt;T: key&gt;(<a href="collection.md#0x4_collection">collection</a>: <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_Object">object::Object</a>&lt;T&gt;): <b>address</b>
 </code></pre>
 
 
@@ -1567,7 +1567,7 @@ it from being parallelized.
 
 
 <pre><code>#[view]
-<b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_description">description</a>&lt;T: key&gt;(<a href="collection.md#0x4_collection">collection</a>: <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_Object">object::Object</a>&lt;T&gt;): <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>
+<b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_description">description</a>&lt;T: key&gt;(<a href="collection.md#0x4_collection">collection</a>: <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_Object">object::Object</a>&lt;T&gt;): <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>
 </code></pre>
 
 
@@ -1592,7 +1592,7 @@ it from being parallelized.
 
 
 <pre><code>#[view]
-<b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_name">name</a>&lt;T: key&gt;(<a href="collection.md#0x4_collection">collection</a>: <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_Object">object::Object</a>&lt;T&gt;): <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>
+<b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_name">name</a>&lt;T: key&gt;(<a href="collection.md#0x4_collection">collection</a>: <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_Object">object::Object</a>&lt;T&gt;): <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>
 </code></pre>
 
 
@@ -1617,7 +1617,7 @@ it from being parallelized.
 
 
 <pre><code>#[view]
-<b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_uri">uri</a>&lt;T: key&gt;(<a href="collection.md#0x4_collection">collection</a>: <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_Object">object::Object</a>&lt;T&gt;): <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>
+<b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_uri">uri</a>&lt;T: key&gt;(<a href="collection.md#0x4_collection">collection</a>: <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_Object">object::Object</a>&lt;T&gt;): <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>
 </code></pre>
 
 
@@ -1672,7 +1672,7 @@ Once the collection has been created, the collection address should be saved for
 After changing the collection's name, to create tokens - only call functions that accept the collection object as an argument.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_set_name">set_name</a>(mutator_ref: &<a href="collection.md#0x4_collection_MutatorRef">collection::MutatorRef</a>, name: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_set_name">set_name</a>(mutator_ref: &<a href="collection.md#0x4_collection_MutatorRef">collection::MutatorRef</a>, name: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>)
 </code></pre>
 
 
@@ -1682,11 +1682,11 @@ After changing the collection's name, to create tokens - only call functions tha
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_set_name">set_name</a>(mutator_ref: &<a href="collection.md#0x4_collection_MutatorRef">MutatorRef</a>, name: String) <b>acquires</b> <a href="collection.md#0x4_collection_Collection">Collection</a> {
-    <b>assert</b>!(<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_length">string::length</a>(&name) &lt;= <a href="collection.md#0x4_collection_MAX_COLLECTION_NAME_LENGTH">MAX_COLLECTION_NAME_LENGTH</a>, <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="collection.md#0x4_collection_ECOLLECTION_NAME_TOO_LONG">ECOLLECTION_NAME_TOO_LONG</a>));
+    <b>assert</b>!(<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_length">string::length</a>(&name) &lt;= <a href="collection.md#0x4_collection_MAX_COLLECTION_NAME_LENGTH">MAX_COLLECTION_NAME_LENGTH</a>, <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="collection.md#0x4_collection_ECOLLECTION_NAME_TOO_LONG">ECOLLECTION_NAME_TOO_LONG</a>));
     <b>let</b> <a href="collection.md#0x4_collection">collection</a> = <a href="collection.md#0x4_collection_borrow_mut">borrow_mut</a>(mutator_ref);
-    <a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event_emit">event::emit</a>(<a href="collection.md#0x4_collection_Mutation">Mutation</a> {
-        mutated_field_name: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_utf8">string::utf8</a>(b"name") ,
-        <a href="collection.md#0x4_collection">collection</a>: <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_address_to_object">object::address_to_object</a>(mutator_ref.self),
+    <a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event_emit">event::emit</a>(<a href="collection.md#0x4_collection_Mutation">Mutation</a> {
+        mutated_field_name: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_utf8">string::utf8</a>(b"name") ,
+        <a href="collection.md#0x4_collection">collection</a>: <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_address_to_object">object::address_to_object</a>(mutator_ref.self),
         old_value: <a href="collection.md#0x4_collection">collection</a>.name,
         new_value: name,
     });
@@ -1704,7 +1704,7 @@ After changing the collection's name, to create tokens - only call functions tha
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_set_description">set_description</a>(mutator_ref: &<a href="collection.md#0x4_collection_MutatorRef">collection::MutatorRef</a>, description: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_set_description">set_description</a>(mutator_ref: &<a href="collection.md#0x4_collection_MutatorRef">collection::MutatorRef</a>, description: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>)
 </code></pre>
 
 
@@ -1714,20 +1714,20 @@ After changing the collection's name, to create tokens - only call functions tha
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_set_description">set_description</a>(mutator_ref: &<a href="collection.md#0x4_collection_MutatorRef">MutatorRef</a>, description: String) <b>acquires</b> <a href="collection.md#0x4_collection_Collection">Collection</a> {
-    <b>assert</b>!(<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_length">string::length</a>(&description) &lt;= <a href="collection.md#0x4_collection_MAX_DESCRIPTION_LENGTH">MAX_DESCRIPTION_LENGTH</a>, <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="collection.md#0x4_collection_EDESCRIPTION_TOO_LONG">EDESCRIPTION_TOO_LONG</a>));
+    <b>assert</b>!(<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_length">string::length</a>(&description) &lt;= <a href="collection.md#0x4_collection_MAX_DESCRIPTION_LENGTH">MAX_DESCRIPTION_LENGTH</a>, <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="collection.md#0x4_collection_EDESCRIPTION_TOO_LONG">EDESCRIPTION_TOO_LONG</a>));
     <b>let</b> <a href="collection.md#0x4_collection">collection</a> = <a href="collection.md#0x4_collection_borrow_mut">borrow_mut</a>(mutator_ref);
     <b>if</b> (std::features::module_event_migration_enabled()) {
-        <a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event_emit">event::emit</a>(<a href="collection.md#0x4_collection_Mutation">Mutation</a> {
-            mutated_field_name: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_utf8">string::utf8</a>(b"description"),
-            <a href="collection.md#0x4_collection">collection</a>: <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_address_to_object">object::address_to_object</a>(mutator_ref.self),
+        <a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event_emit">event::emit</a>(<a href="collection.md#0x4_collection_Mutation">Mutation</a> {
+            mutated_field_name: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_utf8">string::utf8</a>(b"description"),
+            <a href="collection.md#0x4_collection">collection</a>: <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_address_to_object">object::address_to_object</a>(mutator_ref.self),
             old_value: <a href="collection.md#0x4_collection">collection</a>.description,
             new_value: description,
         });
     };
     <a href="collection.md#0x4_collection">collection</a>.description = description;
-    <a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event_emit_event">event::emit_event</a>(
+    <a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event_emit_event">event::emit_event</a>(
         &<b>mut</b> <a href="collection.md#0x4_collection">collection</a>.mutation_events,
-        <a href="collection.md#0x4_collection_MutationEvent">MutationEvent</a> { mutated_field_name: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_utf8">string::utf8</a>(b"description") },
+        <a href="collection.md#0x4_collection_MutationEvent">MutationEvent</a> { mutated_field_name: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_utf8">string::utf8</a>(b"description") },
     );
 }
 </code></pre>
@@ -1742,7 +1742,7 @@ After changing the collection's name, to create tokens - only call functions tha
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_set_uri">set_uri</a>(mutator_ref: &<a href="collection.md#0x4_collection_MutatorRef">collection::MutatorRef</a>, uri: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_set_uri">set_uri</a>(mutator_ref: &<a href="collection.md#0x4_collection_MutatorRef">collection::MutatorRef</a>, uri: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_String">string::String</a>)
 </code></pre>
 
 
@@ -1752,20 +1752,20 @@ After changing the collection's name, to create tokens - only call functions tha
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_set_uri">set_uri</a>(mutator_ref: &<a href="collection.md#0x4_collection_MutatorRef">MutatorRef</a>, uri: String) <b>acquires</b> <a href="collection.md#0x4_collection_Collection">Collection</a> {
-    <b>assert</b>!(<a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_length">string::length</a>(&uri) &lt;= <a href="collection.md#0x4_collection_MAX_URI_LENGTH">MAX_URI_LENGTH</a>, <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="collection.md#0x4_collection_EURI_TOO_LONG">EURI_TOO_LONG</a>));
+    <b>assert</b>!(<a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_length">string::length</a>(&uri) &lt;= <a href="collection.md#0x4_collection_MAX_URI_LENGTH">MAX_URI_LENGTH</a>, <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="collection.md#0x4_collection_EURI_TOO_LONG">EURI_TOO_LONG</a>));
     <b>let</b> <a href="collection.md#0x4_collection">collection</a> = <a href="collection.md#0x4_collection_borrow_mut">borrow_mut</a>(mutator_ref);
     <b>if</b> (std::features::module_event_migration_enabled()) {
-        <a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event_emit">event::emit</a>(<a href="collection.md#0x4_collection_Mutation">Mutation</a> {
-            mutated_field_name: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_utf8">string::utf8</a>(b"uri"),
-            <a href="collection.md#0x4_collection">collection</a>: <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_address_to_object">object::address_to_object</a>(mutator_ref.self),
+        <a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event_emit">event::emit</a>(<a href="collection.md#0x4_collection_Mutation">Mutation</a> {
+            mutated_field_name: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_utf8">string::utf8</a>(b"uri"),
+            <a href="collection.md#0x4_collection">collection</a>: <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_address_to_object">object::address_to_object</a>(mutator_ref.self),
             old_value: <a href="collection.md#0x4_collection">collection</a>.uri,
             new_value: uri,
         });
     };
     <a href="collection.md#0x4_collection">collection</a>.uri = uri;
-    <a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event_emit_event">event::emit_event</a>(
+    <a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event_emit_event">event::emit_event</a>(
         &<b>mut</b> <a href="collection.md#0x4_collection">collection</a>.mutation_events,
-        <a href="collection.md#0x4_collection_MutationEvent">MutationEvent</a> { mutated_field_name: <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_utf8">string::utf8</a>(b"uri") },
+        <a href="collection.md#0x4_collection_MutationEvent">MutationEvent</a> { mutated_field_name: <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/string.md#0x1_string_utf8">string::utf8</a>(b"uri") },
     );
 }
 </code></pre>
@@ -1790,33 +1790,33 @@ After changing the collection's name, to create tokens - only call functions tha
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="collection.md#0x4_collection_set_max_supply">set_max_supply</a>(mutator_ref: &<a href="collection.md#0x4_collection_MutatorRef">MutatorRef</a>, max_supply: u64) <b>acquires</b> <a href="collection.md#0x4_collection_ConcurrentSupply">ConcurrentSupply</a>, <a href="collection.md#0x4_collection_FixedSupply">FixedSupply</a> {
-    <b>let</b> <a href="collection.md#0x4_collection">collection</a> = <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_address_to_object">object::address_to_object</a>&lt;<a href="collection.md#0x4_collection_Collection">Collection</a>&gt;(mutator_ref.self);
-    <b>let</b> collection_address = <a href="../../../aptos-framework/tests/compiler-v2-doc/object.md#0x1_object_object_address">object::object_address</a>(&<a href="collection.md#0x4_collection">collection</a>);
+    <b>let</b> <a href="collection.md#0x4_collection">collection</a> = <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_address_to_object">object::address_to_object</a>&lt;<a href="collection.md#0x4_collection_Collection">Collection</a>&gt;(mutator_ref.self);
+    <b>let</b> collection_address = <a href="../../../starcoin-framework/tests/compiler-v2-doc/object.md#0x1_object_object_address">object::object_address</a>(&<a href="collection.md#0x4_collection">collection</a>);
     <b>let</b> old_max_supply;
 
     <b>if</b> (<b>exists</b>&lt;<a href="collection.md#0x4_collection_ConcurrentSupply">ConcurrentSupply</a>&gt;(collection_address)) {
         <b>let</b> supply = <b>borrow_global_mut</b>&lt;<a href="collection.md#0x4_collection_ConcurrentSupply">ConcurrentSupply</a>&gt;(collection_address);
-        <b>let</b> current_supply = <a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_read">aggregator_v2::read</a>(&supply.current_supply);
+        <b>let</b> current_supply = <a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_read">aggregator_v2::read</a>(&supply.current_supply);
         <b>assert</b>!(
             max_supply &gt;= current_supply,
-            <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="collection.md#0x4_collection_EINVALID_MAX_SUPPLY">EINVALID_MAX_SUPPLY</a>),
+            <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="collection.md#0x4_collection_EINVALID_MAX_SUPPLY">EINVALID_MAX_SUPPLY</a>),
         );
-        old_max_supply = <a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_max_value">aggregator_v2::max_value</a>(&supply.current_supply);
-        supply.current_supply = <a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_create_aggregator">aggregator_v2::create_aggregator</a>(max_supply);
-        <a href="../../../aptos-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_add">aggregator_v2::add</a>(&<b>mut</b> supply.current_supply, current_supply);
+        old_max_supply = <a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_max_value">aggregator_v2::max_value</a>(&supply.current_supply);
+        supply.current_supply = <a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_create_aggregator">aggregator_v2::create_aggregator</a>(max_supply);
+        <a href="../../../starcoin-framework/tests/compiler-v2-doc/aggregator_v2.md#0x1_aggregator_v2_add">aggregator_v2::add</a>(&<b>mut</b> supply.current_supply, current_supply);
     } <b>else</b> <b>if</b> (<b>exists</b>&lt;<a href="collection.md#0x4_collection_FixedSupply">FixedSupply</a>&gt;(collection_address)) {
         <b>let</b> supply = <b>borrow_global_mut</b>&lt;<a href="collection.md#0x4_collection_FixedSupply">FixedSupply</a>&gt;(collection_address);
         <b>assert</b>!(
             max_supply &gt;= supply.current_supply,
-            <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="collection.md#0x4_collection_EINVALID_MAX_SUPPLY">EINVALID_MAX_SUPPLY</a>),
+            <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="collection.md#0x4_collection_EINVALID_MAX_SUPPLY">EINVALID_MAX_SUPPLY</a>),
         );
         old_max_supply = supply.max_supply;
         supply.max_supply = max_supply;
     } <b>else</b> {
-        <b>abort</b> <a href="../../../aptos-framework/../aptos-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="collection.md#0x4_collection_ENO_MAX_SUPPLY_IN_COLLECTION">ENO_MAX_SUPPLY_IN_COLLECTION</a>)
+        <b>abort</b> <a href="../../../starcoin-framework/../starcoin-stdlib/../move-stdlib/tests/compiler-v2-doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="collection.md#0x4_collection_ENO_MAX_SUPPLY_IN_COLLECTION">ENO_MAX_SUPPLY_IN_COLLECTION</a>)
     };
 
-    <a href="../../../aptos-framework/tests/compiler-v2-doc/event.md#0x1_event_emit">event::emit</a>(<a href="collection.md#0x4_collection_SetMaxSupply">SetMaxSupply</a> { <a href="collection.md#0x4_collection">collection</a>, old_max_supply, new_max_supply: max_supply });
+    <a href="../../../starcoin-framework/tests/compiler-v2-doc/event.md#0x1_event_emit">event::emit</a>(<a href="collection.md#0x4_collection_SetMaxSupply">SetMaxSupply</a> { <a href="collection.md#0x4_collection">collection</a>, old_max_supply, new_max_supply: max_supply });
 }
 </code></pre>
 
@@ -1825,4 +1825,4 @@ After changing the collection's name, to create tokens - only call functions tha
 </details>
 
 
-[move-book]: https://aptos.dev/move/book/SUMMARY
+[move-book]: https://starcoin.dev/move/book/SUMMARY

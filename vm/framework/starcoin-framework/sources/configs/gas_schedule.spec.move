@@ -1,17 +1,17 @@
 spec starcoin_framework::gas_schedule {
     /// <high-level-req>
     /// No.: 1
-    /// Requirement: During genesis, the Aptos framework account should be assigned the gas schedule resource.
+    /// Requirement: During genesis, the Starcoin framework account should be assigned the gas schedule resource.
     /// Criticality: Medium
     /// Implementation: The gas_schedule::initialize function calls the assert_starcoin_framework function to ensure that
     /// the signer is the starcoin_framework and then assigns the GasScheduleV2 resource to it.
     /// Enforcement: Formally verified via [high-level-req-1](initialize).
     ///
     /// No.: 2
-    /// Requirement: Only the Aptos framework account should be allowed to update the gas schedule resource.
+    /// Requirement: Only the Starcoin framework account should be allowed to update the gas schedule resource.
     /// Criticality: Critical
     /// Implementation: The gas_schedule::set_gas_schedule function calls the assert_starcoin_framework function to ensure
-    /// that the signer is the aptos framework account.
+    /// that the signer is the starcoin framework account.
     /// Enforcement: Formally verified via [high-level-req-2](set_gas_schedule).
     ///
     /// No.: 3
@@ -39,7 +39,7 @@ spec starcoin_framework::gas_schedule {
 
         let addr = signer::address_of(starcoin_framework);
         /// [high-level-req-1]
-        include system_addresses::AbortsIfNotAptosFramework{ account: starcoin_framework };
+        include system_addresses::AbortsIfNotStarcoinFramework{ account: starcoin_framework };
         /// [high-level-req-3.3]
         aborts_if len(gas_schedule_blob) == 0;
         aborts_if exists<GasScheduleV2>(addr);
@@ -65,7 +65,7 @@ spec starcoin_framework::gas_schedule {
         include staking_config::StakingRewardsConfigRequirement;
 
         /// [high-level-req-2]
-        include system_addresses::AbortsIfNotAptosFramework{ account: starcoin_framework };
+        include system_addresses::AbortsIfNotStarcoinFramework{ account: starcoin_framework };
         /// [high-level-req-3.2]
         aborts_if len(gas_schedule_blob) == 0;
         let new_gas_schedule = util::spec_from_bytes<GasScheduleV2>(gas_schedule_blob);
@@ -87,7 +87,7 @@ spec starcoin_framework::gas_schedule {
         pragma verify_duration_estimate = 600;
         requires exists<stake::ValidatorFees>(@starcoin_framework);
         requires exists<CoinInfo<StarcoinCoin>>(@starcoin_framework);
-        include system_addresses::AbortsIfNotAptosFramework{ account: starcoin_framework };
+        include system_addresses::AbortsIfNotStarcoinFramework{ account: starcoin_framework };
         include transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply;
         include staking_config::StakingRewardsConfigRequirement;
         aborts_if !exists<StorageGasConfig>(@starcoin_framework);
@@ -97,7 +97,7 @@ spec starcoin_framework::gas_schedule {
     spec set_for_next_epoch(starcoin_framework: &signer, gas_schedule_blob: vector<u8>) {
         use starcoin_framework::util;
 
-        include system_addresses::AbortsIfNotAptosFramework{ account: starcoin_framework };
+        include system_addresses::AbortsIfNotStarcoinFramework{ account: starcoin_framework };
         include config_buffer::SetForNextEpochAbortsIf {
             account: starcoin_framework,
             config: gas_schedule_blob
@@ -108,12 +108,12 @@ spec starcoin_framework::gas_schedule {
     }
 
     spec set_for_next_epoch_check_hash(starcoin_framework: &signer, old_gas_schedule_hash: vector<u8>, new_gas_schedule_blob: vector<u8>) {
-        use starcoin_std::aptos_hash;
+        use starcoin_std::starcoin_hash;
         use std::bcs;
         use std::features;
         use starcoin_framework::util;
 
-        include system_addresses::AbortsIfNotAptosFramework{ account: starcoin_framework };
+        include system_addresses::AbortsIfNotStarcoinFramework{ account: starcoin_framework };
         include config_buffer::SetForNextEpochAbortsIf {
             account: starcoin_framework,
             config: new_gas_schedule_blob
@@ -121,7 +121,7 @@ spec starcoin_framework::gas_schedule {
         let new_gas_schedule = util::spec_from_bytes<GasScheduleV2>(new_gas_schedule_blob);
         let cur_gas_schedule = global<GasScheduleV2>(@starcoin_framework);
         aborts_if exists<GasScheduleV2>(@starcoin_framework) && new_gas_schedule.feature_version < cur_gas_schedule.feature_version;
-        aborts_if exists<GasScheduleV2>(@starcoin_framework) && (!features::spec_sha_512_and_ripemd_160_enabled() || aptos_hash::spec_sha3_512_internal(bcs::serialize(cur_gas_schedule)) != old_gas_schedule_hash);
+        aborts_if exists<GasScheduleV2>(@starcoin_framework) && (!features::spec_sha_512_and_ripemd_160_enabled() || starcoin_hash::spec_sha3_512_internal(bcs::serialize(cur_gas_schedule)) != old_gas_schedule_hash);
     }
 
     spec on_new_epoch(framework: &signer) {
@@ -131,12 +131,12 @@ spec starcoin_framework::gas_schedule {
     }
 
     spec set_storage_gas_config(starcoin_framework: &signer, config: storage_gas::StorageGasConfig) {
-        include system_addresses::AbortsIfNotAptosFramework{ account: starcoin_framework };
+        include system_addresses::AbortsIfNotStarcoinFramework{ account: starcoin_framework };
         aborts_if !exists<storage_gas::StorageGasConfig>(@starcoin_framework);
     }
 
     spec set_storage_gas_config_for_next_epoch(starcoin_framework: &signer, config: storage_gas::StorageGasConfig) {
-        include system_addresses::AbortsIfNotAptosFramework{ account: starcoin_framework };
+        include system_addresses::AbortsIfNotStarcoinFramework{ account: starcoin_framework };
         aborts_if !exists<storage_gas::StorageGasConfig>(@starcoin_framework);
     }
 }

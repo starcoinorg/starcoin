@@ -1330,4 +1330,4 @@ Returns the value of a FixedPoint64 to the nearest integer.
 </code></pre>
 
 
-[move-book]: https://aptos.dev/move/book/SUMMARY
+[move-book]: https://starcoin.dev/move/book/SUMMARY

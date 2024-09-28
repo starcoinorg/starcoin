@@ -1032,4 +1032,4 @@ Remove a key/value pair from the map. The key must exist.
 </code></pre>
 
 
-[move-book]: https://aptos.dev/move/book/SUMMARY
+[move-book]: https://starcoin.dev/move/book/SUMMARY

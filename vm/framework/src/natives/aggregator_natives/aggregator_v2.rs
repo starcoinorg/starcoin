@@ -1,4 +1,4 @@
-// Copyright © Aptos Foundation
+// Copyright © Starcoin Foundation
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::natives::aggregator_natives::{helpers_v2::*, NativeAggregatorContext};

@@ -3,7 +3,7 @@ spec starcoin_framework::create_signer {
 
     /// <high-level-req>
     /// No.: 1
-    /// Requirement: Obtaining a signer for an arbitrary account should only be available within the Aptos Framework.
+    /// Requirement: Obtaining a signer for an arbitrary account should only be available within the Starcoin Framework.
     /// Criticality: Critical
     /// Implementation: The create_signer::create_signer function only allows friend modules to retrieve the signer for
     /// an arbitrarily address.
@@ -14,7 +14,7 @@ spec starcoin_framework::create_signer {
     /// Criticality: Medium
     /// Implementation: Before an Account resource is created, a signer is created for the specified new_address, and
     /// later, the Account resource is assigned to this signer.
-    /// Enforcement: Enforced by the [https://github.com/aptos-labs/aptos-core/blob/main/third_party/move/move-vm/types/src/values/values_impl.rs#L1129](move vm).
+    /// Enforcement: Enforced by the [https://github.com/starcoin-labs/starcoin-core/blob/main/third_party/move/move-vm/types/src/values/values_impl.rs#L1129](move vm).
     ///
     /// No.: 3
     /// Requirement: An account should only be able to create a signer for another account if that account has granted it

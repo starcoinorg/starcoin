@@ -63,7 +63,7 @@ module starcoin_framework::genesis {
         join_during_genesis: bool,
     }
 
-    /// Genesis step 1: Initialize aptos framework account and core modules on chain.
+    /// Genesis step 1: Initialize starcoin framework account and core modules on chain.
     fun initialize(
         gas_schedule: vector<u8>,
         chain_id: u8,
@@ -79,15 +79,15 @@ module starcoin_framework::genesis {
         rewards_rate_denominator: u64,
         voting_power_increase_limit: u64,
     ) {
-        // Initialize the aptos framework account. This is the account where system resources and modules will be
+        // Initialize the starcoin framework account. This is the account where system resources and modules will be
         // deployed to. This will be entirely managed by on-chain governance and no entities have the key or privileges
         // to use this account.
-        let (aptos_framework_account, aptos_framework_signer_cap) = account::create_framework_reserved_account(@starcoin_framework);
-        // Initialize account configs on aptos framework account.
-        account::initialize(&aptos_framework_account);
+        let (starcoin_framework_account, starcoin_framework_signer_cap) = account::create_framework_reserved_account(@starcoin_framework);
+        // Initialize account configs on starcoin framework account.
+        account::initialize(&starcoin_framework_account);
 
         transaction_validation::initialize(
-            &aptos_framework_account,
+            &starcoin_framework_account,
             b"script_prologue",
             b"module_prologue",
             b"multi_agent_script_prologue",
@@ -95,22 +95,22 @@ module starcoin_framework::genesis {
         );
 
         // Give the decentralized on-chain governance control over the core framework account.
-        starcoin_governance::store_signer_cap(&aptos_framework_account, @starcoin_framework, aptos_framework_signer_cap);
+        starcoin_governance::store_signer_cap(&starcoin_framework_account, @starcoin_framework, starcoin_framework_signer_cap);
 
-        // put reserved framework reserved accounts under aptos governance
+        // put reserved framework reserved accounts under starcoin governance
         let framework_reserved_addresses = vector<address>[@0x2, @0x3, @0x4, @0x5, @0x6, @0x7, @0x8, @0x9, @0xa];
         while (!vector::is_empty(&framework_reserved_addresses)) {
             let address = vector::pop_back<address>(&mut framework_reserved_addresses);
             let (_, framework_signer_cap) = account::create_framework_reserved_account(address);
-            starcoin_governance::store_signer_cap(&aptos_framework_account, address, framework_signer_cap);
+            starcoin_governance::store_signer_cap(&starcoin_framework_account, address, framework_signer_cap);
         };
 
-        consensus_config::initialize(&aptos_framework_account, consensus_config);
-        execution_config::set(&aptos_framework_account, execution_config);
-        version::initialize(&aptos_framework_account, initial_version);
-        stake::initialize(&aptos_framework_account);
+        consensus_config::initialize(&starcoin_framework_account, consensus_config);
+        execution_config::set(&starcoin_framework_account, execution_config);
+        version::initialize(&starcoin_framework_account, initial_version);
+        stake::initialize(&starcoin_framework_account);
         staking_config::initialize(
-            &aptos_framework_account,
+            &starcoin_framework_account,
             minimum_stake,
             maximum_stake,
             recurring_lockup_duration_secs,
@@ -119,29 +119,29 @@ module starcoin_framework::genesis {
             rewards_rate_denominator,
             voting_power_increase_limit,
         );
-        storage_gas::initialize(&aptos_framework_account);
-        gas_schedule::initialize(&aptos_framework_account, gas_schedule);
+        storage_gas::initialize(&starcoin_framework_account);
+        gas_schedule::initialize(&starcoin_framework_account, gas_schedule);
 
         // Ensure we can create aggregators for supply, but not enable it for common use just yet.
-        aggregator_factory::initialize_aggregator_factory(&aptos_framework_account);
-        coin::initialize_supply_config(&aptos_framework_account);
+        aggregator_factory::initialize_aggregator_factory(&starcoin_framework_account);
+        coin::initialize_supply_config(&starcoin_framework_account);
 
-        chain_id::initialize(&aptos_framework_account, chain_id);
-        reconfiguration::initialize(&aptos_framework_account);
-        block::initialize(&aptos_framework_account, epoch_interval_microsecs);
-        state_storage::initialize(&aptos_framework_account);
-        timestamp::set_time_has_started(&aptos_framework_account);
+        chain_id::initialize(&starcoin_framework_account, chain_id);
+        reconfiguration::initialize(&starcoin_framework_account);
+        block::initialize(&starcoin_framework_account, epoch_interval_microsecs);
+        state_storage::initialize(&starcoin_framework_account);
+        timestamp::set_time_has_started(&starcoin_framework_account);
     }
 
-    /// Genesis step 2: Initialize Aptos coin.
-    fun initialize_aptos_coin(starcoin_framework: &signer) {
+    /// Genesis step 2: Initialize Starcoin coin.
+    fun initialize_starcoin_coin(starcoin_framework: &signer) {
         let (burn_cap, mint_cap) = starcoin_coin::initialize(starcoin_framework);
 
         coin::create_coin_conversion_map(starcoin_framework);
         coin::create_pairing<StarcoinCoin>(starcoin_framework);
 
         // Give stake module MintCapability<StarcoinCoin> so it can mint rewards.
-        stake::store_aptos_coin_mint_cap(starcoin_framework, mint_cap);
+        stake::store_starcoin_coin_mint_cap(starcoin_framework, mint_cap);
         // Give transaction_fee module BurnCapability<StarcoinCoin> so it can burn gas.
         transaction_fee::store_coin_burn_cap(starcoin_framework, burn_cap);
         // Give transaction_fee module MintCapability<StarcoinCoin> so it can mint refunds.
@@ -149,7 +149,7 @@ module starcoin_framework::genesis {
     }
 
     /// Only called for testnets and e2e tests.
-    fun initialize_core_resources_and_aptos_coin(
+    fun initialize_core_resources_and_starcoin_coin(
         starcoin_framework: &signer,
         core_resources_auth_key: vector<u8>,
     ) {
@@ -159,7 +159,7 @@ module starcoin_framework::genesis {
         coin::create_pairing<StarcoinCoin>(starcoin_framework);
 
         // Give stake module MintCapability<StarcoinCoin> so it can mint rewards.
-        stake::store_aptos_coin_mint_cap(starcoin_framework, mint_cap);
+        stake::store_starcoin_coin_mint_cap(starcoin_framework, mint_cap);
         // Give transaction_fee module BurnCapability<StarcoinCoin> so it can burn gas.
         transaction_fee::store_coin_burn_cap(starcoin_framework, burn_cap);
         // Give transaction_fee module MintCapability<StarcoinCoin> so it can mint refunds.
@@ -298,7 +298,7 @@ module starcoin_framework::genesis {
             create_initialize_validator(starcoin_framework, validator, use_staking_contract);
         });
 
-        // Destroy the aptos framework account's ability to mint coins now that we're done with setting up the initial
+        // Destroy the starcoin framework account's ability to mint coins now that we're done with setting up the initial
         // validators.
         starcoin_coin::destroy_mint_cap(starcoin_framework);
 
@@ -433,7 +433,7 @@ module starcoin_framework::genesis {
             voting_power_increase_limit
         );
         features::change_feature_flags_for_verification(starcoin_framework, vector[1, 2], vector[]);
-        initialize_aptos_coin(starcoin_framework);
+        initialize_starcoin_coin(starcoin_framework);
         starcoin_governance::initialize_for_verification(
             starcoin_framework,
             min_voting_threshold,
@@ -483,7 +483,7 @@ module starcoin_framework::genesis {
     #[test(starcoin_framework = @0x1)]
     fun test_create_account(starcoin_framework: &signer) {
         setup();
-        initialize_aptos_coin(starcoin_framework);
+        initialize_starcoin_coin(starcoin_framework);
 
         let addr = @0x121341; // 01 -> 0a are taken
         let test_signer_before = create_account(starcoin_framework, addr, 15);
@@ -495,7 +495,7 @@ module starcoin_framework::genesis {
     #[test(starcoin_framework = @0x1)]
     fun test_create_accounts(starcoin_framework: &signer) {
         setup();
-        initialize_aptos_coin(starcoin_framework);
+        initialize_starcoin_coin(starcoin_framework);
 
         // 01 -> 0a are taken
         let addr0 = @0x121341;

@@ -2,14 +2,14 @@ spec starcoin_framework::version {
     /// <high-level-req>
     /// No.: 1
     /// Requirement: During genesis, the Version resource should be initialized with the initial version and stored along
-    /// with its capability under the aptos framework account.
+    /// with its capability under the starcoin framework account.
     /// Criticality: Medium
-    /// Implementation: The initialize function ensures that the signer is the aptos framework account and stores the
+    /// Implementation: The initialize function ensures that the signer is the starcoin framework account and stores the
     /// Version and SetVersionCapability resources in it.
     /// Enforcement: Formally verified via [high-level-req-1](initialize).
     ///
     /// No.: 2
-    /// Requirement: The version should be updateable after initialization, but only by the Aptos framework account and
+    /// Requirement: The version should be updateable after initialization, but only by the Starcoin framework account and
     /// with an increasing version number.
     /// Criticality: Medium
     /// Implementation: The version number for the blockchain should be updatable whenever necessary. This functionality
@@ -52,7 +52,7 @@ spec starcoin_framework::version {
         ensures global<Version>(@starcoin_framework).major == major;
     }
 
-    /// Abort if resource already exists in `@aptos_framwork` when initializing.
+    /// Abort if resource already exists in `@starcoin_framwork` when initializing.
     spec initialize(starcoin_framework: &signer, initial_version: u64) {
         use std::signer;
 

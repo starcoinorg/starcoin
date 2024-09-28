@@ -662,4 +662,4 @@ NOTE: other implementation(s) using this format: ark-bn254-0.4.0.
 </details>
 
 
-[move-book]: https://aptos.dev/move/book/SUMMARY
+[move-book]: https://starcoin.dev/move/book/SUMMARY

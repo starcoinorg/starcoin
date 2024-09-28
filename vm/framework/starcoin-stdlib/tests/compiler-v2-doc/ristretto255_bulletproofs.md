@@ -318,4 +318,4 @@ Aborts with <code><a href="../../../move-stdlib/tests/compiler-v2-doc/error.md#0
 </code></pre>
 
 
-[move-book]: https://aptos.dev/move/book/SUMMARY
+[move-book]: https://starcoin.dev/move/book/SUMMARY

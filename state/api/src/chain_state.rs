@@ -8,20 +8,23 @@ use forkable_jellyfish_merkle::{blob::Blob, proof::SparseMerkleProof, RawKey};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_state_tree::AccountStateSetIterator;
-use starcoin_types::language_storage::StructTag;
-use starcoin_types::state_set::AccountStateSet;
-use starcoin_types::write_set::WriteSet;
 use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_config::AccountResource,
-    account_state::AccountState, state_set::ChainStateSet,
+    account_state::AccountState, language_storage::StructTag, state_set::AccountStateSet,
+    state_set::ChainStateSet, write_set::WriteSet,
 };
-use starcoin_vm_types::account_config::TABLE_HANDLE_ADDRESS_LIST;
-use starcoin_vm_types::genesis_config::ChainId;
-use starcoin_vm_types::on_chain_resource::{Epoch, EpochInfo, GlobalTimeOnChain};
-use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
-use starcoin_vm_types::state_store::StateView;
-use starcoin_vm_types::token::token_code::TokenCode;
-use starcoin_vm_types::{move_resource::MoveResource, on_chain_config::OnChainConfig};
+use starcoin_vm_types::{
+    account_config::TABLE_HANDLE_ADDRESS_LIST,
+    genesis_config::ChainId,
+    move_resource::MoveResource,
+    on_chain_config::OnChainConfig,
+    on_chain_resource::{Epoch, EpochInfo, GlobalTimeOnChain},
+    state_store::{
+        table::{TableHandle, TableInfo},
+        StateView,
+    },
+    token::token_code::TokenCode,
+};
 use std::convert::TryFrom;
 
 #[derive(Debug, Default, Eq, PartialEq, Clone, Serialize, Deserialize)]

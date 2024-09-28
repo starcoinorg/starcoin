@@ -776,4 +776,4 @@ Returns true iff <code>self</code> contains an entry for <code>key</code>.
 </code></pre>
 
 
-[move-book]: https://aptos.dev/move/book/SUMMARY
+[move-book]: https://starcoin.dev/move/book/SUMMARY

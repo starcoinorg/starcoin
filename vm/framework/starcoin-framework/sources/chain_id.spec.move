@@ -1,7 +1,7 @@
 spec starcoin_framework::chain_id {
     /// <high-level-req>
     /// No.: 1
-    /// Requirement: During genesis, the ChainId resource should be created and moved under the Aptos framework account
+    /// Requirement: During genesis, the ChainId resource should be created and moved under the Starcoin framework account
     /// with the specified chain id.
     /// Criticality: Medium
     /// Implementation: The chain_id::initialize function is responsible for generating the ChainId resource and then
@@ -9,7 +9,7 @@ spec starcoin_framework::chain_id {
     /// Enforcement: Formally verified via [high-level-req-1](initialize).
     ///
     /// No.: 2
-    /// Requirement: The chain id can only be fetched if the chain id resource exists under the Aptos
+    /// Requirement: The chain id can only be fetched if the chain id resource exists under the Starcoin
     /// framework account.
     /// Criticality: Low
     /// Implementation: The chain_id::get function fetches the chain id by borrowing the ChainId

@@ -9,12 +9,12 @@ spec starcoin_framework::system_addresses {
     /// Enforcement: Formally verified via [high-level-req-1](AbortsIfNotCoreResource).
     ///
     /// No.: 2
-    /// Requirement: Asserting that a provided address corresponds to the Aptos Framework Resources address should always
+    /// Requirement: Asserting that a provided address corresponds to the Starcoin Framework Resources address should always
     /// yield a true result when matched.
     /// Criticality: High
     /// Implementation: The assert_starcoin_framework function ensures that the provided signer belongs to the
     /// @starcoin_framework account.
-    /// Enforcement: Formally verified via [high-level-req-2](AbortsIfNotAptosFramework).
+    /// Enforcement: Formally verified via [high-level-req-2](AbortsIfNotStarcoinFramework).
     ///
     /// No.: 3
     /// Requirement: Asserting that a provided address corresponds to the VM address should always yield a true result when
@@ -54,7 +54,7 @@ spec starcoin_framework::system_addresses {
 
     spec assert_starcoin_framework(account: &signer) {
         pragma opaque;
-        include AbortsIfNotAptosFramework;
+        include AbortsIfNotStarcoinFramework;
     }
 
     spec assert_framework_reserved_address(account: &signer) {
@@ -64,8 +64,8 @@ spec starcoin_framework::system_addresses {
     spec assert_framework_reserved(addr: address) {
         aborts_if !is_framework_reserved_address(addr);
     }
-    /// Specifies that a function aborts if the account does not have the aptos framework address.
-    spec schema AbortsIfNotAptosFramework {
+    /// Specifies that a function aborts if the account does not have the starcoin framework address.
+    spec schema AbortsIfNotStarcoinFramework {
         account: signer;
         /// [high-level-req-2]
         aborts_if signer::address_of(account) != @starcoin_framework with error::PERMISSION_DENIED;

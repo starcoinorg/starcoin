@@ -120,7 +120,7 @@ spec starcoin_framework::storage_gas {
 
     /// Signer address must be @starcoin_framework and StorageGasConfig exists.
     spec set_config(starcoin_framework: &signer, config: StorageGasConfig) {
-        include system_addresses::AbortsIfNotAptosFramework{ account: starcoin_framework };
+        include system_addresses::AbortsIfNotStarcoinFramework{ account: starcoin_framework };
         aborts_if !exists<StorageGasConfig>(@starcoin_framework);
     }
 
@@ -128,7 +128,7 @@ spec starcoin_framework::storage_gas {
     /// Address @starcoin_framework does not exist StorageGasConfig and StorageGas before the function call is restricted
     /// and exists after the function is executed.
     spec initialize(starcoin_framework: &signer) {
-        include system_addresses::AbortsIfNotAptosFramework{ account: starcoin_framework };
+        include system_addresses::AbortsIfNotStarcoinFramework{ account: starcoin_framework };
         pragma verify_duration_estimate = 120;
         aborts_if exists<StorageGasConfig>(@starcoin_framework);
         aborts_if exists<StorageGas>(@starcoin_framework);

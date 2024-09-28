@@ -1,6 +1,6 @@
 use super::function_info::extract_function_info;
 use starcoin_gas_schedule::gas_params::natives::starcoin_framework::DISPATCHABLE_FUNGIBLE_ASSET_DISPATCH_BASE;
-// Copyright © Aptos Foundation
+// Copyright © Starcoin Foundation
 // SPDX-License-Identifier: Apache-2.0
 use move_vm_runtime::native_functions::NativeFunction;
 use move_vm_types::{loaded_data::runtime_types::Type, values::Value};

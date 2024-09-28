@@ -89,7 +89,7 @@ module starcoin_framework::stake {
     const VALIDATOR_STATUS_INACTIVE: u64 = 4;
 
     /// Limit the maximum size to u16::max, it's the current limit of the bitvec
-    /// https://github.com/aptos-labs/aptos-core/blob/main/crates/aptos-bitvec/src/lib.rs#L20
+    /// https://github.com/starcoin-labs/starcoin-core/blob/main/crates/starcoin-bitvec/src/lib.rs#L20
     const MAX_VALIDATOR_SET_SIZE: u64 = 65536;
 
     /// Limit the maximum value of `rewards_rate` in order to avoid any arithmetic overflow.
@@ -187,7 +187,7 @@ module starcoin_framework::stake {
 
     /// StarcoinCoin capabilities, set during genesis and stored in @CoreResource account.
     /// This allows the Stake module to mint rewards to stakers.
-    struct AptosCoinCapabilities has key {
+    struct StarcoinCoinCapabilities has key {
         mint_cap: MintCapability<StarcoinCoin>,
     }
 
@@ -501,9 +501,9 @@ module starcoin_framework::stake {
 
     /// This is only called during Genesis, which is where MintCapability<StarcoinCoin> can be created.
     /// Beyond genesis, no one can create StarcoinCoin mint/burn capabilities.
-    public(friend) fun store_aptos_coin_mint_cap(starcoin_framework: &signer, mint_cap: MintCapability<StarcoinCoin>) {
+    public(friend) fun store_starcoin_coin_mint_cap(starcoin_framework: &signer, mint_cap: MintCapability<StarcoinCoin>) {
         system_addresses::assert_starcoin_framework(starcoin_framework);
-        move_to(starcoin_framework, AptosCoinCapabilities { mint_cap })
+        move_to(starcoin_framework, StarcoinCoinCapabilities { mint_cap })
     }
 
     /// Allow on chain governance to remove validators from the validator set.
@@ -1232,7 +1232,7 @@ module starcoin_framework::stake {
     /// 4. The validator's voting power in the validator set is updated to be the corresponding staking pool's voting
     /// power.
     public(friend) fun on_new_epoch(
-    ) acquires StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         let validator_set = borrow_global_mut<ValidatorSet>(@starcoin_framework);
         let config = staking_config::get();
         let validator_perf = borrow_global_mut<ValidatorPerformance>(@starcoin_framework);
@@ -1546,7 +1546,7 @@ module starcoin_framework::stake {
         validator_perf: &ValidatorPerformance,
         pool_address: address,
         staking_config: &StakingConfig,
-    ) acquires StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorFees {
+    ) acquires StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorFees {
         let stake_pool = borrow_global_mut<StakePool>(pool_address);
         let validator_config = borrow_global<ValidatorConfig>(pool_address);
         let cur_validator_perf = vector::borrow(&validator_perf.validators, validator_config.validator_index);
@@ -1651,7 +1651,7 @@ module starcoin_framework::stake {
         num_total_proposals: u64,
         rewards_rate: u64,
         rewards_rate_denominator: u64,
-    ): u64 acquires AptosCoinCapabilities {
+    ): u64 acquires StarcoinCoinCapabilities {
         let stake_amount = coin::value(stake);
         let rewards_amount = if (stake_amount > 0) {
             calculate_rewards_amount(
@@ -1665,7 +1665,7 @@ module starcoin_framework::stake {
             0
         };
         if (rewards_amount > 0) {
-            let mint_cap = &borrow_global<AptosCoinCapabilities>(@starcoin_framework).mint_cap;
+            let mint_cap = &borrow_global<StarcoinCoinCapabilities>(@starcoin_framework).mint_cap;
             let rewards = coin::mint(rewards_amount, mint_cap);
             coin::merge(stake, rewards);
         };
@@ -1745,12 +1745,12 @@ module starcoin_framework::stake {
         starcoin_framework: &signer,
         accounts: vector<address>
     ) acquires AllowedValidators {
-        let aptos_framework_address = signer::address_of(starcoin_framework);
+        let starcoin_framework_address = signer::address_of(starcoin_framework);
         system_addresses::assert_starcoin_framework(starcoin_framework);
-        if (!exists<AllowedValidators>(aptos_framework_address)) {
+        if (!exists<AllowedValidators>(starcoin_framework_address)) {
             move_to(starcoin_framework, AllowedValidators { accounts });
         } else {
-            let allowed = borrow_global_mut<AllowedValidators>(aptos_framework_address);
+            let allowed = borrow_global_mut<AllowedValidators>(starcoin_framework_address);
             allowed.accounts = accounts;
         }
     }
@@ -1800,7 +1800,7 @@ module starcoin_framework::stake {
         operator: &signer,
         pool_address: address,
         should_end_epoch: bool,
-    ) acquires AptosCoinCapabilities, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires StarcoinCoinCapabilities, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         let pk_bytes = bls12381::public_key_to_bytes(pk);
         let pop_bytes = bls12381::proof_of_possession_to_bytes(pop);
         rotate_consensus_key(operator, pool_address, pk_bytes, pop_bytes);
@@ -1812,7 +1812,7 @@ module starcoin_framework::stake {
 
     #[test_only]
     public fun fast_forward_to_unlock(pool_address: address)
-    acquires AptosCoinCapabilities, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    acquires StarcoinCoinCapabilities, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         let expiration_time = get_lockup_secs(pool_address);
         timestamp::update_global_time_for_test_secs(expiration_time);
         end_epoch();
@@ -1846,29 +1846,29 @@ module starcoin_framework::stake {
             voting_power_increase_limit,
         );
 
-        if (!exists<AptosCoinCapabilities>(@starcoin_framework)) {
+        if (!exists<StarcoinCoinCapabilities>(@starcoin_framework)) {
             let (burn_cap, mint_cap) = starcoin_coin::initialize_for_test(starcoin_framework);
-            store_aptos_coin_mint_cap(starcoin_framework, mint_cap);
+            store_starcoin_coin_mint_cap(starcoin_framework, mint_cap);
             coin::destroy_burn_cap<StarcoinCoin>(burn_cap);
         };
     }
 
-    // This function assumes the stake module already the capability to mint aptos coins.
+    // This function assumes the stake module already the capability to mint starcoin coins.
     #[test_only]
-    public fun mint_coins(amount: u64): Coin<StarcoinCoin> acquires AptosCoinCapabilities {
-        let mint_cap = &borrow_global<AptosCoinCapabilities>(@starcoin_framework).mint_cap;
+    public fun mint_coins(amount: u64): Coin<StarcoinCoin> acquires StarcoinCoinCapabilities {
+        let mint_cap = &borrow_global<StarcoinCoinCapabilities>(@starcoin_framework).mint_cap;
         coin::mint(amount, mint_cap)
     }
 
     #[test_only]
-    public fun mint(account: &signer, amount: u64) acquires AptosCoinCapabilities {
+    public fun mint(account: &signer, amount: u64) acquires StarcoinCoinCapabilities {
         coin::register<StarcoinCoin>(account);
         coin::deposit(signer::address_of(account), mint_coins(amount));
     }
 
     #[test_only]
     public fun mint_and_add_stake(
-        account: &signer, amount: u64) acquires AptosCoinCapabilities, OwnerCapability, StakePool, ValidatorSet {
+        account: &signer, amount: u64) acquires StarcoinCoinCapabilities, OwnerCapability, StakePool, ValidatorSet {
         mint(account, amount);
         add_stake(account, amount);
     }
@@ -1881,7 +1881,7 @@ module starcoin_framework::stake {
         amount: u64,
         should_join_validator_set: bool,
         should_end_epoch: bool,
-    ) acquires AllowedValidators, AptosCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, StarcoinCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         let validator_address = signer::address_of(validator);
         if (!account::exists_at(signer::address_of(validator))) {
             account::create_account_for_test(validator_address);
@@ -1977,7 +1977,7 @@ module starcoin_framework::stake {
     public entry fun test_inactive_validator_can_add_stake_if_exceeding_max_allowed(
         starcoin_framework: &signer,
         validator: &signer,
-    ) acquires AllowedValidators, AptosCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, StarcoinCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         initialize_for_test(starcoin_framework);
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, false, false);
@@ -1992,7 +1992,7 @@ module starcoin_framework::stake {
         starcoin_framework: &signer,
         validator_1: &signer,
         validator_2: &signer,
-    ) acquires AllowedValidators, AptosCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, StarcoinCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         initialize_for_test_custom(starcoin_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 10, 100000);
         // Have one validator join the set to ensure the validator set is not empty when main validator joins.
         let (_sk_1, pk_1, pop_1) = generate_identity();
@@ -2011,7 +2011,7 @@ module starcoin_framework::stake {
     public entry fun test_active_validator_cannot_add_stake_if_exceeding_max_allowed(
         starcoin_framework: &signer,
         validator: &signer,
-    ) acquires AllowedValidators, AptosCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, StarcoinCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         initialize_for_test(starcoin_framework);
         // Validator joins validator set and waits for epoch end so it's in the validator set.
         let (_sk, pk, pop) = generate_identity();
@@ -2026,7 +2026,7 @@ module starcoin_framework::stake {
     public entry fun test_active_validator_with_pending_inactive_stake_cannot_add_stake_if_exceeding_max_allowed(
         starcoin_framework: &signer,
         validator: &signer,
-    ) acquires AllowedValidators, AptosCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, StarcoinCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         initialize_for_test(starcoin_framework);
         // Validator joins validator set and waits for epoch end so it's in the validator set.
         let (_sk, pk, pop) = generate_identity();
@@ -2046,7 +2046,7 @@ module starcoin_framework::stake {
         starcoin_framework: &signer,
         validator_1: &signer,
         validator_2: &signer,
-    ) acquires AllowedValidators, AptosCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, StarcoinCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         initialize_for_test(starcoin_framework);
         let (_sk_1, pk_1, pop_1) = generate_identity();
         let (_sk_2, pk_2, pop_2) = generate_identity();
@@ -2064,7 +2064,7 @@ module starcoin_framework::stake {
     public entry fun test_end_to_end(
         starcoin_framework: &signer,
         validator: &signer,
-    ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, OwnerCapability, StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         initialize_for_test(starcoin_framework);
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, true, true);
@@ -2121,7 +2121,7 @@ module starcoin_framework::stake {
     public entry fun test_inactive_validator_with_existing_lockup_join_validator_set(
         starcoin_framework: &signer,
         validator: &signer,
-    ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, OwnerCapability, StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         initialize_for_test(starcoin_framework);
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, false, false);
@@ -2147,7 +2147,7 @@ module starcoin_framework::stake {
     public entry fun test_cannot_reduce_lockup(
         starcoin_framework: &signer,
         validator: &signer,
-    ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, OwnerCapability, StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         initialize_for_test(starcoin_framework);
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, false, false);
@@ -2166,7 +2166,7 @@ module starcoin_framework::stake {
         starcoin_framework: &signer,
         validator_1: &signer,
         validator_2: &signer,
-    ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, OwnerCapability, StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         // Only 50% voting power increase is allowed in each epoch.
         initialize_for_test_custom(starcoin_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 10, 50);
         let (_sk_1, pk_1, pop_1) = generate_identity();
@@ -2188,7 +2188,7 @@ module starcoin_framework::stake {
         starcoin_framework: &signer,
         validator_1: &signer,
         validator_2: &signer,
-    ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, OwnerCapability, StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         initialize_for_test_custom(starcoin_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 10, 10000);
         // Need 1 validator to be in the active validator set so joining limit works.
         let (_sk_1, pk_1, pop_1) = generate_identity();
@@ -2210,7 +2210,7 @@ module starcoin_framework::stake {
         starcoin_framework: &signer,
         validator_1: &signer,
         validator_2: &signer,
-    ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, OwnerCapability, StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         // 100% voting power increase is allowed in each epoch.
         initialize_for_test_custom(starcoin_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 10, 100);
         // Need 1 validator to be in the active validator set so joining limit works.
@@ -2230,7 +2230,7 @@ module starcoin_framework::stake {
     public entry fun test_pending_active_validator_leaves_validator_set(
         starcoin_framework: &signer,
         validator: &signer,
-    ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, OwnerCapability, StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         initialize_for_test(starcoin_framework);
         // Validator joins but epoch hasn't ended, so the validator is still pending_active.
         let (_sk, pk, pop) = generate_identity();
@@ -2254,7 +2254,7 @@ module starcoin_framework::stake {
     public entry fun test_active_validator_cannot_add_more_stake_than_limit_in_multiple_epochs(
         starcoin_framework: &signer,
         validator: &signer,
-    ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, OwnerCapability, StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         // Only 50% voting power increase is allowed in each epoch.
         initialize_for_test_custom(starcoin_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 10, 50);
         // Add initial stake and join the validator set.
@@ -2276,7 +2276,7 @@ module starcoin_framework::stake {
     public entry fun test_active_validator_cannot_add_more_stake_than_limit(
         starcoin_framework: &signer,
         validator: &signer,
-    ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, OwnerCapability, StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         // Only 50% voting power increase is allowed in each epoch.
         initialize_for_test_custom(starcoin_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 10, 50);
         let (_sk, pk, pop) = generate_identity();
@@ -2290,7 +2290,7 @@ module starcoin_framework::stake {
     public entry fun test_active_validator_unlock_partial_stake(
         starcoin_framework: &signer,
         validator: &signer,
-    ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, OwnerCapability, StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         // Reward rate = 10%.
         initialize_for_test_custom(starcoin_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 10, 100);
         let (_sk, pk, pop) = generate_identity();
@@ -2316,7 +2316,7 @@ module starcoin_framework::stake {
     public entry fun test_active_validator_can_withdraw_all_stake_and_rewards_at_once(
         starcoin_framework: &signer,
         validator: &signer,
-    ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, OwnerCapability, StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         initialize_for_test(starcoin_framework);
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, true, true);
@@ -2353,7 +2353,7 @@ module starcoin_framework::stake {
     public entry fun test_active_validator_unlocking_more_than_available_stake_should_cap(
         starcoin_framework: &signer,
         validator: &signer,
-    ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, OwnerCapability, StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         initialize_for_test(starcoin_framework);
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, false, false);
@@ -2367,7 +2367,7 @@ module starcoin_framework::stake {
     public entry fun test_active_validator_withdraw_should_cap_by_inactive_stake(
         starcoin_framework: &signer,
         validator: &signer,
-    ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, OwnerCapability, StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         initialize_for_test(starcoin_framework);
         // Initial balance = 900 (idle) + 100 (staked) = 1000.
         let (_sk, pk, pop) = generate_identity();
@@ -2392,7 +2392,7 @@ module starcoin_framework::stake {
     public entry fun test_active_validator_can_reactivate_pending_inactive_stake(
         starcoin_framework: &signer,
         validator: &signer,
-    ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, OwnerCapability, StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         initialize_for_test(starcoin_framework);
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, true, true);
@@ -2411,7 +2411,7 @@ module starcoin_framework::stake {
     public entry fun test_active_validator_reactivate_more_than_available_pending_inactive_stake_should_cap(
         starcoin_framework: &signer,
         validator: &signer,
-    ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, OwnerCapability, StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         initialize_for_test(starcoin_framework);
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, true, true);
@@ -2428,7 +2428,7 @@ module starcoin_framework::stake {
     public entry fun test_active_validator_having_insufficient_remaining_stake_after_withdrawal_gets_kicked(
         starcoin_framework: &signer,
         validator: &signer,
-    ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, OwnerCapability, StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         initialize_for_test(starcoin_framework);
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, true, true);
@@ -2456,7 +2456,7 @@ module starcoin_framework::stake {
         starcoin_framework: &signer,
         validator: &signer,
         validator_2: &signer,
-    ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, OwnerCapability, StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         initialize_for_test(starcoin_framework);
         let (_sk_1, pk_1, pop_1) = generate_identity();
         let (_sk_2, pk_2, pop_2) = generate_identity();
@@ -2500,7 +2500,7 @@ module starcoin_framework::stake {
         starcoin_framework: &signer,
         validator: &signer,
         validator_2: &signer,
-    ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, OwnerCapability, StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         initialize_for_test(starcoin_framework);
         let (_sk_1, pk_1, pop_1) = generate_identity();
         let (_sk_2, pk_2, pop_2) = generate_identity();
@@ -2531,7 +2531,7 @@ module starcoin_framework::stake {
         starcoin_framework: &signer,
         validator_1: &signer,
         validator_2: &signer,
-    ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, OwnerCapability, StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         // Only 50% voting power increase is allowed in each epoch.
         initialize_for_test_custom(starcoin_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 10, 50);
         let (_sk_1, pk_1, pop_1) = generate_identity();
@@ -2552,7 +2552,7 @@ module starcoin_framework::stake {
         validator_1: &signer,
         validator_2: &signer,
         validator_3: &signer
-    ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, OwnerCapability, StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         let validator_1_address = signer::address_of(validator_1);
         let validator_2_address = signer::address_of(validator_2);
         let validator_3_address = signer::address_of(validator_3);
@@ -2646,7 +2646,7 @@ module starcoin_framework::stake {
     public entry fun test_delegated_staking_with_owner_cap(
         starcoin_framework: &signer,
         validator: &signer,
-    ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, OwnerCapability, StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         initialize_for_test_custom(starcoin_framework, 100, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 100, 100);
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 0, false, false);
@@ -2699,7 +2699,7 @@ module starcoin_framework::stake {
     public entry fun test_validator_cannot_join_post_genesis(
         starcoin_framework: &signer,
         validator: &signer,
-    ) acquires AllowedValidators, AptosCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, StarcoinCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         initialize_for_test_custom(starcoin_framework, 100, 10000, LOCKUP_CYCLE_SECONDS, false, 1, 100, 100);
 
         // Joining the validator set should fail as post genesis validator set change is not allowed.
@@ -2712,7 +2712,7 @@ module starcoin_framework::stake {
     public entry fun test_invalid_pool_address(
         starcoin_framework: &signer,
         validator: &signer,
-    ) acquires AllowedValidators, AptosCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, StarcoinCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         initialize_for_test(starcoin_framework);
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, true, true);
@@ -2724,7 +2724,7 @@ module starcoin_framework::stake {
     public entry fun test_validator_cannot_leave_post_genesis(
         starcoin_framework: &signer,
         validator: &signer,
-    ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, OwnerCapability, StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         initialize_for_test_custom(starcoin_framework, 100, 10000, LOCKUP_CYCLE_SECONDS, false, 1, 100, 100);
         let (_sk, pk, pop) = generate_identity();
         initialize_test_validator(&pk, &pop, validator, 100, false, false);
@@ -2753,7 +2753,7 @@ module starcoin_framework::stake {
         validator_3: &signer,
         validator_4: &signer,
         validator_5: &signer,
-    ) acquires AllowedValidators, AptosCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, StarcoinCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         let v1_addr = signer::address_of(validator_1);
         let v2_addr = signer::address_of(validator_2);
         let v3_addr = signer::address_of(validator_3);
@@ -2826,7 +2826,7 @@ module starcoin_framework::stake {
         validator_3: &signer,
         validator_4: &signer,
         validator_5: &signer,
-    ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, OwnerCapability, StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         let v1_addr = signer::address_of(validator_1);
         let v2_addr = signer::address_of(validator_2);
         let v3_addr = signer::address_of(validator_3);
@@ -2889,7 +2889,7 @@ module starcoin_framework::stake {
         starcoin_framework: &signer,
         validator_1: &signer,
         validator_2: &signer,
-    ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, OwnerCapability, StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         initialize_for_test(starcoin_framework);
 
         let validator_1_address = signer::address_of(validator_1);
@@ -2937,7 +2937,7 @@ module starcoin_framework::stake {
         starcoin_framework: &signer,
         validator_1: &signer,
         validator_2: &signer,
-    ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, OwnerCapability, StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         initialize_for_test(starcoin_framework);
 
         let genesis_time_in_secs = timestamp::now_seconds();
@@ -2993,7 +2993,7 @@ module starcoin_framework::stake {
     public entry fun test_update_performance_statistics_should_not_fail_due_to_out_of_bounds(
         starcoin_framework: &signer,
         validator: &signer,
-    ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, OwnerCapability, StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         initialize_for_test(starcoin_framework);
 
         let validator_address = signer::address_of(validator);
@@ -3024,7 +3024,7 @@ module starcoin_framework::stake {
     public entry fun test_invalid_config(
         starcoin_framework: &signer,
         validator: &signer,
-    ) acquires AllowedValidators, AptosCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorSet {
+    ) acquires AllowedValidators, StarcoinCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorSet {
         initialize_for_test_custom(starcoin_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 100, 100);
 
         // Call initialize_stake_owner, which only initializes the stake pool but not validator config.
@@ -3042,7 +3042,7 @@ module starcoin_framework::stake {
     public entry fun test_valid_config(
         starcoin_framework: &signer,
         validator: &signer,
-    ) acquires AllowedValidators, AptosCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorSet {
+    ) acquires AllowedValidators, StarcoinCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorSet {
         initialize_for_test_custom(starcoin_framework, 50, 10000, LOCKUP_CYCLE_SECONDS, true, 1, 100, 100);
 
         // Call initialize_stake_owner, which only initializes the stake pool but not validator config.
@@ -3116,7 +3116,7 @@ module starcoin_framework::stake {
         starcoin_framework: &signer,
         validator_1: &signer,
         validator_2: &signer,
-    ) acquires AllowedValidators, OwnerCapability, StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, OwnerCapability, StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         initialize_for_test(starcoin_framework);
         let (_sk_1, pk_1, pop_1) = generate_identity();
         let (_sk_2, pk_2, pop_2) = generate_identity();
@@ -3133,7 +3133,7 @@ module starcoin_framework::stake {
 
     #[test_only]
     public fun end_epoch(
-    ) acquires StakePool, AptosCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires StakePool, StarcoinCoinCapabilities, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         // Set the number of blocks to 1, to give out rewards to non-failing validators.
         set_validator_perf_at_least_one_block();
         timestamp::fast_forward_seconds(EPOCH_DURATION);
@@ -3236,7 +3236,7 @@ module starcoin_framework::stake {
         validator_1: &signer,
         validator_2: &signer,
         validator_3: &signer,
-    ) acquires AllowedValidators, AptosCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
+    ) acquires AllowedValidators, StarcoinCoinCapabilities, OwnerCapability, StakePool, ValidatorConfig, ValidatorPerformance, ValidatorSet, ValidatorFees {
         // Make sure that fees collection and distribution is enabled.
         features::change_feature_flags_for_testing(starcoin_framework, vector[COLLECT_AND_DISTRIBUTE_GAS_FEES], vector[]);
         assert!(features::collect_and_distribute_gas_fees(), 0);

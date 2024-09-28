@@ -112,10 +112,10 @@ spec starcoin_framework::account {
     /// Only the address `@starcoin_framework` can call.
     /// OriginatingAddress does not exist under `@starcoin_framework` before the call.
     spec initialize(starcoin_framework: &signer) {
-        let aptos_addr = signer::address_of(starcoin_framework);
-        aborts_if !system_addresses::is_starcoin_framework_address(aptos_addr);
-        aborts_if exists<OriginatingAddress>(aptos_addr);
-        ensures exists<OriginatingAddress>(aptos_addr);
+        let starcoin_addr = signer::address_of(starcoin_framework);
+        aborts_if !system_addresses::is_starcoin_framework_address(starcoin_addr);
+        aborts_if exists<OriginatingAddress>(starcoin_addr);
+        ensures exists<OriginatingAddress>(starcoin_addr);
     }
 
     /// Ensure that the account exists at the end of the call.
@@ -134,7 +134,7 @@ spec starcoin_framework::account {
 
     /// Check if the bytes of the new address is 32.
     /// The Account does not exist under the new address before creating the account.
-    /// Limit the new account address is not @vm_reserved / @starcoin_framework / @aptos_toke.
+    /// Limit the new account address is not @vm_reserved / @starcoin_framework / @starcoin_toke.
     spec create_account(new_address: address): signer {
         include CreateAccountAbortsIf {addr: new_address};
         aborts_if new_address == @vm_reserved || new_address == @starcoin_framework || new_address == @starcoin_token;

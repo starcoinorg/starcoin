@@ -497,4 +497,4 @@ Functions to construct a canonical error code of the given category.
 </code></pre>
 
 
-[move-book]: https://aptos.dev/move/book/SUMMARY
+[move-book]: https://starcoin.dev/move/book/SUMMARY

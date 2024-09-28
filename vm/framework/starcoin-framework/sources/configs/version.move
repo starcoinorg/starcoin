@@ -28,8 +28,8 @@ module starcoin_framework::version {
         system_addresses::assert_starcoin_framework(starcoin_framework);
 
         move_to(starcoin_framework, Version { major: initial_version });
-        // Give aptos framework account capability to call set version. This allows on chain governance to do it through
-        // control of the aptos framework account.
+        // Give starcoin framework account capability to call set version. This allows on chain governance to do it through
+        // control of the starcoin framework account.
         move_to(starcoin_framework, SetVersionCapability {});
     }
 

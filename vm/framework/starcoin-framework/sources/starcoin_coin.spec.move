@@ -10,11 +10,11 @@ spec starcoin_framework::starcoin_coin {
     /// Requirement: The APT coin may only be created exactly once.
     /// Criticality: Medium
     /// Implementation: The initialization function may only be called once.
-    /// Enforcement: Enforced through the [https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/framework/aptos-framework/sources/coin.move](coin)
+    /// Enforcement: Enforced through the [https://github.com/starcoin-labs/starcoin-core/blob/main/starcoin-move/framework/starcoin-framework/sources/coin.move](coin)
     /// module, which has been audited.
     ///
     /// No.: 3
-    /// Requirement: The abilities to mint Aptos tokens should be transferable, duplicatable, and destroyable.
+    /// Requirement: The abilities to mint Starcoin tokens should be transferable, duplicatable, and destroyable.
     /// Criticality: High
     /// Implementation: The MintCapability struct has the copy and store abilities. This means that it can be duplicated
     /// and stored in different object wrappers (such as MintCapStore). This capability is tested against the
@@ -25,7 +25,7 @@ spec starcoin_framework::starcoin_coin {
     /// Requirement: Any type of operation on the APT coin should fail if the user has not registered for the coin.
     /// Criticality: Medium
     /// Implementation: Coin operations may succeed only on valid user coin registration.
-    /// Enforcement: Enforced through the [https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/framework/aptos-framework/sources/coin.move](coin)
+    /// Enforcement: Enforced through the [https://github.com/starcoin-labs/starcoin-core/blob/main/starcoin-move/framework/starcoin-framework/sources/coin.move](coin)
     /// module, which has been audited.
     /// </high-level-req>
     ///
@@ -39,14 +39,14 @@ spec starcoin_framework::starcoin_coin {
 
         let addr = signer::address_of(starcoin_framework);
         aborts_if addr != @starcoin_framework;
-        aborts_if !string::spec_internal_check_utf8(b"Aptos Coin");
+        aborts_if !string::spec_internal_check_utf8(b"Starcoin Coin");
         aborts_if !string::spec_internal_check_utf8(b"APT");
         aborts_if exists<MintCapStore>(addr);
         aborts_if exists<coin::CoinInfo<StarcoinCoin>>(addr);
         aborts_if !exists<aggregator_factory::AggregatorFactory>(addr);
         /// [high-level-req-1]
         ensures exists<MintCapStore>(addr);
-        // property 3: The abilities to mint Aptos tokens should be transferable, duplicatable, and destroyable.
+        // property 3: The abilities to mint Starcoin tokens should be transferable, duplicatable, and destroyable.
         /// [high-level-req-3]
         ensures global<MintCapStore>(addr).mint_cap ==  MintCapability<StarcoinCoin> {};
         ensures exists<coin::CoinInfo<StarcoinCoin>>(addr);
@@ -88,7 +88,7 @@ spec starcoin_framework::starcoin_coin {
         aborts_if !exists<Delegations>(@core_resources);
     }
 
-    spec schema ExistsAptosCoin {
+    spec schema ExistsStarcoinCoin {
         requires exists<coin::CoinInfo<StarcoinCoin>>(@starcoin_framework);
     }
 

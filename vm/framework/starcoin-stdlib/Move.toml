@@ -1,5 +1,5 @@
 [package]
-name = "AptosStdlib"
+name = "StarcoinStdlib"
 version = "1.0.0"
 
 [addresses]

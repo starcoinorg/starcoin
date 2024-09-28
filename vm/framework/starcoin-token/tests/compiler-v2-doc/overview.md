@@ -1,10 +1,10 @@
 
-<a id="@Aptos_Token_Framework_0"></a>
+<a id="@Starcoin_Token_Framework_0"></a>
 
-# Aptos Token Framework
+# Starcoin Token Framework
 
 
-This is the reference documentation of the Aptos Token framework.
+This is the reference documentation of the Starcoin Token framework.
 
 
 <a id="@Index_1"></a>
@@ -19,4 +19,4 @@ This is the reference documentation of the Aptos Token framework.
 -  [`0x3::token_transfers`](token_transfers.md#0x3_token_transfers)
 
 
-[move-book]: https://aptos.dev/move/book/SUMMARY
+[move-book]: https://starcoin.dev/move/book/SUMMARY

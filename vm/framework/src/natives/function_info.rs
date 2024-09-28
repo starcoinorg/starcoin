@@ -1,4 +1,4 @@
-// Copyright © Aptos Foundation
+// Copyright © Starcoin Foundation
 // SPDX-License-Identifier: Apache-2.0
 use move_binary_format::errors::PartialVMError;
 use move_core_types::{

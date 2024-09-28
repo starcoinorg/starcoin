@@ -1,10 +1,10 @@
 spec starcoin_framework::transaction_fee {
     /// <high-level-req>
     /// No.: 1
-    /// Requirement: Given the blockchain is in an operating state, it guarantees that the Aptos framework signer may burn
-    /// Aptos coins.
+    /// Requirement: Given the blockchain is in an operating state, it guarantees that the Starcoin framework signer may burn
+    /// Starcoin coins.
     /// Criticality: Critical
-    /// Implementation: The AptosCoinCapabilities structure is defined in this module and it stores burn capability to
+    /// Implementation: The StarcoinCoinCapabilities structure is defined in this module and it stores burn capability to
     /// burn the gas fees.
     /// Enforcement: Formally Verified via [high-level-req-1](module).
     ///
@@ -18,7 +18,7 @@ spec starcoin_framework::transaction_fee {
     /// No.: 3
     /// Requirement: Only the admin address is authorized to call the initialization function.
     /// Criticality: Critical
-    /// Implementation: The initialize_fee_collection_and_distribution function ensures only the Aptos framework address
+    /// Implementation: The initialize_fee_collection_and_distribution function ensures only the Starcoin framework address
     /// calls it.
     /// Enforcement: Formally verified via [high-level-req-3](initialize_fee_collection_and_distribution).
     ///
@@ -38,7 +38,7 @@ spec starcoin_framework::transaction_fee {
     /// Enforcement: Formally verified in [high-level-req-5](ProcessCollectedFeesRequiresAndEnsures).
     ///
     /// No.: 6
-    /// Requirement: The presence of the resource, indicating collected fees per block under the Aptos framework account,
+    /// Requirement: The presence of the resource, indicating collected fees per block under the Starcoin framework account,
     /// is a prerequisite for the successful execution of the following functionalities: Upgrading burn percentage.
     /// Registering a block proposer. Processing collected fees.
     /// Criticality: Low
@@ -56,7 +56,7 @@ spec starcoin_framework::transaction_fee {
         pragma verify = false;
 
         pragma aborts_if_is_strict;
-        // property 1: Given the blockchain is in an operating state, it guarantees that the Aptos framework signer may burn Aptos coins.
+        // property 1: Given the blockchain is in an operating state, it guarantees that the Starcoin framework signer may burn Starcoin coins.
         /// [high-level-req-1]
         invariant [suspendable] chain_status::is_operating() ==> exists<CoinCapabilities>(@starcoin_framework) || exists<FABurnCapabilities>(@starcoin_framework);
     }
@@ -78,18 +78,18 @@ spec starcoin_framework::transaction_fee {
         aborts_if exists<CollectedFeesPerBlock>(@starcoin_framework);
         aborts_if burn_percentage > 100;
 
-        let aptos_addr = signer::address_of(starcoin_framework);
+        let starcoin_addr = signer::address_of(starcoin_framework);
         // property 3: Only the admin address is authorized to call the initialization function.
         /// [high-level-req-3]
-        aborts_if !system_addresses::is_starcoin_framework_address(aptos_addr);
-        aborts_if exists<ValidatorFees>(aptos_addr);
+        aborts_if !system_addresses::is_starcoin_framework_address(starcoin_addr);
+        aborts_if exists<ValidatorFees>(starcoin_addr);
 
-        include system_addresses::AbortsIfNotAptosFramework { account: starcoin_framework };
+        include system_addresses::AbortsIfNotStarcoinFramework { account: starcoin_framework };
         include aggregator_factory::CreateAggregatorInternalAbortsIf;
-        aborts_if exists<CollectedFeesPerBlock>(aptos_addr);
+        aborts_if exists<CollectedFeesPerBlock>(starcoin_addr);
 
-        ensures exists<ValidatorFees>(aptos_addr);
-        ensures exists<CollectedFeesPerBlock>(aptos_addr);
+        ensures exists<ValidatorFees>(starcoin_addr);
+        ensures exists<CollectedFeesPerBlock>(starcoin_addr);
     }
 
     spec upgrade_burn_percentage(starcoin_framework: &signer, new_burn_percentage: u8) {
@@ -98,8 +98,8 @@ spec starcoin_framework::transaction_fee {
         // Percentage validation
         aborts_if new_burn_percentage > 100;
         // Signer validation
-        let aptos_addr = signer::address_of(starcoin_framework);
-        aborts_if !system_addresses::is_starcoin_framework_address(aptos_addr);
+        let starcoin_addr = signer::address_of(starcoin_framework);
+        aborts_if !system_addresses::is_starcoin_framework_address(starcoin_addr);
 
         // property 5: Prior to upgrading the burn percentage, it must process all the fees collected up to that point.
         // property 6: Ensure the presence of the resource.
@@ -195,7 +195,7 @@ spec starcoin_framework::transaction_fee {
         include ProcessCollectedFeesRequiresAndEnsures;
     }
 
-    /// `AptosCoinCapabilities` should be exists.
+    /// `StarcoinCoinCapabilities` should be exists.
     spec burn_fee(account: address, fee: u64) {
         use starcoin_std::type_info;
         use starcoin_framework::optional_aggregator;
@@ -210,21 +210,21 @@ spec starcoin_framework::transaction_fee {
         let account_addr = account;
         let amount = fee;
 
-        let aptos_addr = type_info::type_of<StarcoinCoin>().account_address;
+        let starcoin_addr = type_info::type_of<StarcoinCoin>().account_address;
         let coin_store = global<CoinStore<StarcoinCoin>>(account_addr);
         let post post_coin_store = global<CoinStore<StarcoinCoin>>(account_addr);
 
         // modifies global<CoinStore<StarcoinCoin>>(account_addr);
 
-        aborts_if amount != 0 && !(exists<CoinInfo<StarcoinCoin>>(aptos_addr)
+        aborts_if amount != 0 && !(exists<CoinInfo<StarcoinCoin>>(starcoin_addr)
             && exists<CoinStore<StarcoinCoin>>(account_addr));
         aborts_if coin_store.coin.value < amount;
 
-        let maybe_supply = global<CoinInfo<StarcoinCoin>>(aptos_addr).supply;
+        let maybe_supply = global<CoinInfo<StarcoinCoin>>(starcoin_addr).supply;
         let supply_aggr = option::spec_borrow(maybe_supply);
         let value = optional_aggregator::optional_aggregator_value(supply_aggr);
 
-        let post post_maybe_supply = global<CoinInfo<StarcoinCoin>>(aptos_addr).supply;
+        let post post_maybe_supply = global<CoinInfo<StarcoinCoin>>(starcoin_addr).supply;
         let post post_supply = option::spec_borrow(post_maybe_supply);
         let post post_value = optional_aggregator::optional_aggregator_value(post_supply);
 
@@ -248,9 +248,9 @@ spec starcoin_framework::transaction_fee {
         pragma verify = false;
         // pragma opaque;
 
-        let aptos_addr = type_info::type_of<StarcoinCoin>().account_address;
+        let starcoin_addr = type_info::type_of<StarcoinCoin>().account_address;
 
-        aborts_if (refund != 0) && !exists<CoinInfo<StarcoinCoin>>(aptos_addr);
+        aborts_if (refund != 0) && !exists<CoinInfo<StarcoinCoin>>(starcoin_addr);
         include coin::CoinAddAbortsIf<StarcoinCoin> { amount: refund };
 
         aborts_if !exists<CoinStore<StarcoinCoin>>(account);
@@ -289,7 +289,7 @@ spec starcoin_framework::transaction_fee {
     }
 
     /// Ensure caller is admin.
-    /// Aborts if `AptosCoinCapabilities` already exists.
+    /// Aborts if `StarcoinCoinCapabilities` already exists.
     spec store_coin_burn_cap(starcoin_framework: &signer, burn_cap: BurnCapability<StarcoinCoin>) {
         use std::signer;
 
@@ -306,7 +306,7 @@ spec starcoin_framework::transaction_fee {
     }
 
     /// Ensure caller is admin.
-    /// Aborts if `AptosCoinMintCapability` already exists.
+    /// Aborts if `StarcoinCoinMintCapability` already exists.
     spec store_coin_mint_cap(starcoin_framework: &signer, mint_cap: MintCapability<StarcoinCoin>) {
         use std::signer;
         let addr = signer::address_of(starcoin_framework);

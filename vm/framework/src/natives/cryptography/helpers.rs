@@ -1,4 +1,4 @@
-// Copyright © Aptos Foundation
+// Copyright © Starcoin Foundation
 // SPDX-License-Identifier: Apache-2.0
 
 /// For all $n > 0$, returns $\floor{\log_2{n}}$, contained within a `Some`.

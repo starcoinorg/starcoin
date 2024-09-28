@@ -160,9 +160,9 @@
 
 ## Function `chain_id`
 
-Returns the current chain ID, mirroring what <code>aptos_framework::chain_id::get()</code> would return, except in <code>#[test]</code>
-functions, where this will always return <code>4u8</code> as the chain ID, whereas <code>aptos_framework::chain_id::get()</code> will
-return whichever ID was passed to <code>aptos_framework::chain_id::initialize_for_test()</code>.
+Returns the current chain ID, mirroring what <code>starcoin_framework::chain_id::get()</code> would return, except in <code>#[test]</code>
+functions, where this will always return <code>4u8</code> as the chain ID, whereas <code>starcoin_framework::chain_id::get()</code> will
+return whichever ID was passed to <code>starcoin_framework::chain_id::initialize_for_test()</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="type_info.md#0x1_type_info_chain_id">chain_id</a>(): u8
@@ -175,7 +175,7 @@ return whichever ID was passed to <code>aptos_framework::chain_id::initialize_fo
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="type_info.md#0x1_type_info_chain_id">chain_id</a>(): u8 {
-    <b>if</b> (!<a href="../../../move-stdlib/tests/compiler-v2-doc/features.md#0x1_features_aptos_stdlib_chain_id_enabled">features::aptos_stdlib_chain_id_enabled</a>()) {
+    <b>if</b> (!<a href="../../../move-stdlib/tests/compiler-v2-doc/features.md#0x1_features_starcoin_stdlib_chain_id_enabled">features::starcoin_stdlib_chain_id_enabled</a>()) {
         <b>abort</b>(std::error::invalid_state(<a href="type_info.md#0x1_type_info_E_NATIVE_FUN_NOT_AVAILABLE">E_NATIVE_FUN_NOT_AVAILABLE</a>))
     };
 
@@ -215,7 +215,7 @@ Return the <code><a href="type_info.md#0x1_type_info_TypeInfo">TypeInfo</a></cod
 ## Function `type_name`
 
 Return the human readable string for the type, including the address, module name, and any type arguments.
-Example: 0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>
+Example: 0x1::coin::CoinStore<0x1::starcoin_coin::StarcoinCoin>
 Or: 0x1::table::Table<0x1::string::String, 0x1::string::String>
 
 
@@ -394,4 +394,4 @@ analysis of vector size dynamism.
 </code></pre>
 
 
-[move-book]: https://aptos.dev/move/book/SUMMARY
+[move-book]: https://starcoin.dev/move/book/SUMMARY

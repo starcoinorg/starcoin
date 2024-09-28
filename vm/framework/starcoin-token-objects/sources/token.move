@@ -1,4 +1,4 @@
-/// This defines an object-based Token. The key differentiating features from the Aptos standard
+/// This defines an object-based Token. The key differentiating features from the Starcoin standard
 /// token are:
 /// * Decoupled token ownership from token data.
 /// * Explicit data model for token metadata via adjacent resources
@@ -61,7 +61,7 @@ module starcoin_token_objects::token {
         /// Was populated until concurrent_token_v2_enabled feature flag was enabled.
         ///
         /// The name of the token, which should be unique within the collection; the length of name
-        /// should be smaller than 128, characters, eg: "Aptos Animal #1234"
+        /// should be smaller than 128, characters, eg: "Starcoin Animal #1234"
         name: String,
         // DEPRECATED
         /// The Uniform Resource Identifier (uri) pointing to the JSON file stored in off-chain
@@ -78,7 +78,7 @@ module starcoin_token_objects::token {
         /// Unique identifier within the collection, optional, 0 means unassigned
         index: AggregatorSnapshot<u64>,
         /// The name of the token, which should be unique within the collection; the length of name
-        /// should be smaller than 128, characters, eg: "Aptos Animal #1234"
+        /// should be smaller than 128, characters, eg: "Starcoin Animal #1234"
         name: DerivedStringSnapshot,
     }
 

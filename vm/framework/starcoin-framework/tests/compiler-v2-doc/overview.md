@@ -1,10 +1,10 @@
 
-<a id="@Aptos_Framework_0"></a>
+<a id="@Starcoin_Framework_0"></a>
 
-# Aptos Framework
+# Starcoin Framework
 
 
-This is the reference documentation of the Aptos framework.
+This is the reference documentation of the Starcoin framework.
 
 
 <a id="@Index_1"></a>
@@ -16,9 +16,9 @@ This is the reference documentation of the Aptos framework.
 -  [`0x1::aggregator`](aggregator.md#0x1_aggregator)
 -  [`0x1::aggregator_factory`](aggregator_factory.md#0x1_aggregator_factory)
 -  [`0x1::aggregator_v2`](aggregator_v2.md#0x1_aggregator_v2)
--  [`0x1::aptos_account`](aptos_account.md#0x1_aptos_account)
--  [`0x1::aptos_coin`](aptos_coin.md#0x1_aptos_coin)
--  [`0x1::aptos_governance`](aptos_governance.md#0x1_aptos_governance)
+-  [`0x1::starcoin_account`](starcoin_account.md#0x1_starcoin_account)
+-  [`0x1::starcoin_coin`](starcoin_coin.md#0x1_starcoin_coin)
+-  [`0x1::starcoin_governance`](starcoin_governance.md#0x1_starcoin_governance)
 -  [`0x1::block`](block.md#0x1_block)
 -  [`0x1::chain_id`](chain_id.md#0x1_chain_id)
 -  [`0x1::chain_status`](chain_status.md#0x1_chain_status)
@@ -73,4 +73,4 @@ This is the reference documentation of the Aptos framework.
 -  [`0x1::voting`](voting.md#0x1_voting)
 
 
-[move-book]: https://aptos.dev/move/book/SUMMARY
+[move-book]: https://starcoin.dev/move/book/SUMMARY

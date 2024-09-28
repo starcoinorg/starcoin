@@ -429,4 +429,4 @@ and returns <code>([], <b>false</b>)</code> otherwise.
 </code></pre>
 
 
-[move-book]: https://aptos.dev/move/book/SUMMARY
+[move-book]: https://starcoin.dev/move/book/SUMMARY

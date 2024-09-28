@@ -1,4 +1,4 @@
-// Copyright © Aptos Foundation
+// Copyright © Starcoin Foundation
 // SPDX-License-Identifier: Apache-2.0
 
 #![forbid(unsafe_code)]
@@ -58,18 +58,18 @@ impl ReleaseTarget {
     pub fn packages(self) -> Vec<(&'static str, Option<&'static str>)> {
         let result = vec![
             ("move-stdlib", None),
-            ("aptos-stdlib", None),
+            ("starcoin-stdlib", None),
             (
-                "aptos-framework",
+                "starcoin-framework",
                 Some("cached-packages/src/starcoin_framework_sdk_builder.rs"),
             ),
             (
-                "aptos-token",
-                Some("cached-packages/src/aptos_token_sdk_builder.rs"),
+                "starcoin-token",
+                Some("cached-packages/src/starcoin_token_sdk_builder.rs"),
             ),
             (
-                "aptos-token-objects",
-                Some("cached-packages/src/aptos_token_objects_sdk_builder.rs"),
+                "starcoin-token-objects",
+                Some("cached-packages/src/starcoin_token_objects_sdk_builder.rs"),
             ),
         ];
         // Currently we don't have experimental packages only included in particular targets.

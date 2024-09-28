@@ -590,7 +590,7 @@ spec starcoin_framework::staking_contract {
         ) || !std::features::spec_periodical_reward_rate_decrease_enabled();
         requires exists<stake::ValidatorFees>(@starcoin_framework);
         requires exists<starcoin_framework::timestamp::CurrentTimeMicroseconds>(@starcoin_framework);
-        requires exists<stake::AptosCoinCapabilities>(@starcoin_framework);
+        requires exists<stake::StarcoinCoinCapabilities>(@starcoin_framework);
     }
 
     spec schema CreateStakePoolAbortsIf {

@@ -1,5 +1,5 @@
 [package]
-name = "AptosToken"
+name = "StarcoinToken"
 version = "1.0.0"
 
 [addresses]
