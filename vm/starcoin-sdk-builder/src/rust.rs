@@ -264,14 +264,14 @@ impl EntryFunctionCall {
                 ),
                 ("move_core_types", vec!["ident_str"]),
                 (
-                    "starcoin_types::transaction",
+                    "starcoin_vm_types::transaction",
                     vec!["TransactionPayload", "EntryFunction"],
                 ),
-                ("starcoin_types::account_address", vec!["AccountAddress"]),
+                ("starcoin_vm_types::account_address", vec!["AccountAddress"]),
             ]
         } else {
             vec![(
-                "starcoin_types",
+                "starcoin_vm_types",
                 vec![
                     "AccountAddress",
                     "TypeTag",
@@ -962,7 +962,7 @@ edition = "2021"
 once_cell = "1.10.0"
 serde = {{ version = "1.0", features = ["derive"] }}
 serde_bytes = "0.11.6"
-starcoin-types = {{ path = "../starcoin-types", version = "{}" }}
+starcoin-vm-types = {{ path = "../starcoin-vm-types", version = "{}" }}
 "#,
             name, version, self.starcoin_types_version,
         )?;
