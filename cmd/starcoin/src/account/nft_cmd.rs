@@ -158,7 +158,7 @@ impl CommandAction for NFTCommand {
                 println!("{:?}", script_function);
                 let result = ctx.state().build_and_execute_transaction(
                     transaction_opts.clone(),
-                    TransactionPayload::ScriptFunction(script_function),
+                    TransactionPayload::EntryFunction(script_function),
                 );
                 println!("{:?}", result);
                 NFTResult::Transfer(result?)

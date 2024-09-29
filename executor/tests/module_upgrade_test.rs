@@ -11,7 +11,7 @@ use starcoin_types::account_config::config_change::ConfigChangeEvent;
 use starcoin_types::account_config::TwoPhaseUpgradeV2Resource;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::{ModuleId, StructTag, TypeTag};
-use starcoin_types::transaction::ScriptFunction;
+use starcoin_types::transaction::EntryFunction;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::upgrade::UpgradeEvent;
 use starcoin_vm_types::account_config::{association_address, core_code_address, AccountResource};
@@ -55,7 +55,7 @@ fn test_init_script() -> Result<()> {
         type_params: vec![],
     }));
 
-    let init_script = ScriptFunction::new(
+    let init_script = EntryFunction::new(
         ModuleId::new(
             core_code_address(),
             Identifier::new("PackageTxnManager").unwrap(),
@@ -73,7 +73,7 @@ fn test_init_script() -> Result<()> {
     )?;
     let package_hash = package.crypto_hash();
 
-    let vote_script_function = ScriptFunction::new(
+    let vote_script_function = EntryFunction::new(
         ModuleId::new(
             core_code_address(),
             Identifier::new("ModuleUpgradeScripts").unwrap(),
@@ -87,7 +87,7 @@ fn test_init_script() -> Result<()> {
             bcs_ext::to_bytes(&0u64).unwrap(),
         ],
     );
-    let execute_script_function = ScriptFunction::new(
+    let execute_script_function = EntryFunction::new(
         ModuleId::new(
             core_code_address(),
             Identifier::new("ModuleUpgradeScripts").unwrap(),
@@ -141,7 +141,7 @@ fn test_stdlib_upgrade_with_incremental_package() -> Result<()> {
 
     let package_hash = package.crypto_hash();
 
-    let vote_script_function = ScriptFunction::new(
+    let vote_script_function = EntryFunction::new(
         ModuleId::new(
             core_code_address(),
             Identifier::new("ModuleUpgradeScripts").unwrap(),
@@ -155,7 +155,7 @@ fn test_stdlib_upgrade_with_incremental_package() -> Result<()> {
             bcs_ext::to_bytes(&0u64).unwrap(),
         ],
     );
-    let execute_script_function = ScriptFunction::new(
+    let execute_script_function = EntryFunction::new(
         ModuleId::new(
             core_code_address(),
             Identifier::new("ModuleUpgradeScripts").unwrap(),
@@ -273,7 +273,7 @@ fn test_stdlib_upgrade() -> Result<()> {
             !StdlibVersion::compatible_with_previous(&new_version),
         );
 
-        let execute_script_function = ScriptFunction::new(
+        let execute_script_function = EntryFunction::new(
             ModuleId::new(
                 core_code_address(),
                 Identifier::new("ModuleUpgradeScripts").unwrap(),
@@ -326,7 +326,7 @@ fn ext_execute_after_upgrade(
             //do nothing
         }
         StdlibVersion::Version(3) => {
-            let take_liner_time_capability = ScriptFunction::new(
+            let take_liner_time_capability = EntryFunction::new(
                 ModuleId::new(
                     core_code_address(),
                     Identifier::new("StdlibUpgradeScripts").unwrap(),
@@ -338,7 +338,7 @@ fn ext_execute_after_upgrade(
             association_execute_should_success(
                 net,
                 chain_state,
-                TransactionPayload::ScriptFunction(take_liner_time_capability),
+                TransactionPayload::EntryFunction(take_liner_time_capability),
             )?;
         }
         StdlibVersion::Version(6) => {

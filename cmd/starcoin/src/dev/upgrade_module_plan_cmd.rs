@@ -64,7 +64,7 @@ impl CommandAction for UpgradeModulePlanCommand {
             build_module_upgrade_plan(proposer_address, opt.proposal_id, opt.dao_token.clone());
         ctx.state().build_and_execute_transaction(
             opt.transaction_opts.clone(),
-            TransactionPayload::ScriptFunction(module_upgrade_plan),
+            TransactionPayload::EntryFunction(module_upgrade_plan),
         )
     }
 }

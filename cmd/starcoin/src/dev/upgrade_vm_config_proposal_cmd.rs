@@ -65,7 +65,7 @@ impl CommandAction for UpgradeVMConfigProposalCommand {
             build_vm_config_upgrade_proposal(genesis_config.vm_config, min_action_delay);
         ctx.state().build_and_execute_transaction(
             opt.transaction_opts.clone(),
-            TransactionPayload::ScriptFunction(vm_config_upgrade_proposal),
+            TransactionPayload::EntryFunction(vm_config_upgrade_proposal),
         )
     }
 }

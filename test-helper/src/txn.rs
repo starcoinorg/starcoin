@@ -18,7 +18,7 @@ use starcoin_vm_types::account_config::stc_type_tag;
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
-use starcoin_vm_types::transaction::{RawUserTransaction, ScriptFunction, TransactionPayload};
+use starcoin_vm_types::transaction::{EntryFunction, RawUserTransaction, TransactionPayload};
 
 const NEW_ACCOUNT_AMOUNT: u128 = 1_000_000_000;
 const TRANSFER_AMOUNT: u128 = 1_000;
@@ -124,7 +124,7 @@ pub fn create_account_txn_sent_as_association(
     ];
 
     create_signed_txn_with_association_account(
-        TransactionPayload::ScriptFunction(ScriptFunction::new(
+        TransactionPayload::EntryFunction(EntryFunction::new(
             ModuleId::new(core_code_address(), Identifier::new("Account").unwrap()),
             Identifier::new("create_account_with_initial_amount").unwrap(),
             vec![stc_type_tag()],
@@ -175,7 +175,7 @@ pub fn create_user_txn(
         .sign_with_association(build_transaction(
             address,
             seq_number,
-            TransactionPayload::ScriptFunction(script_function),
+            TransactionPayload::EntryFunction(script_function),
             expire_time + 60 * 60,
         ))?;
     Ok(vec![txn])
@@ -184,13 +184,13 @@ pub fn create_user_txn(
 pub fn build_create_vote_txn(
     alice: &Account,
     seq_number: u64,
-    vote_script_function: ScriptFunction,
+    vote_script_function: EntryFunction,
     expire_time: u64,
 ) -> SignedUserTransaction {
     alice.sign_txn(build_transaction(
         *alice.address(),
         seq_number,
-        TransactionPayload::ScriptFunction(vote_script_function),
+        TransactionPayload::EntryFunction(vote_script_function),
         expire_time,
     ))
 }
@@ -204,7 +204,7 @@ pub fn build_cast_vote_txn(
 ) -> SignedUserTransaction {
     let proposer_id: u64 = 0;
     println!("alice voting power: {}", voting_power);
-    let vote_script_function = ScriptFunction::new(
+    let vote_script_function = EntryFunction::new(
         ModuleId::new(
             core_code_address(),
             Identifier::new("DaoVoteScripts").unwrap(),
@@ -221,7 +221,7 @@ pub fn build_cast_vote_txn(
     alice.sign_txn(build_transaction(
         *alice.address(),
         seq_number,
-        TransactionPayload::ScriptFunction(vote_script_function),
+        TransactionPayload::EntryFunction(vote_script_function),
         expire_time,
     ))
 }
@@ -233,7 +233,7 @@ pub fn build_queue_txn(
     action_type_tag: TypeTag,
     expire_time: u64,
 ) -> SignedUserTransaction {
-    let script_function = ScriptFunction::new(
+    let script_function = EntryFunction::new(
         ModuleId::new(core_code_address(), Identifier::new("Dao").unwrap()),
         Identifier::new("queue_proposal_action").unwrap(),
         vec![stc_type_tag(), action_type_tag],
@@ -245,7 +245,7 @@ pub fn build_queue_txn(
     alice.sign_txn(build_transaction(
         *alice.address(),
         seq_number,
-        TransactionPayload::ScriptFunction(script_function),
+        TransactionPayload::EntryFunction(script_function),
         expire_time,
     ))
 }
@@ -253,13 +253,13 @@ pub fn build_queue_txn(
 pub fn build_execute_txn(
     seq_number: u64,
     alice: &Account,
-    execute_script_function: ScriptFunction,
+    execute_script_function: EntryFunction,
     expire_time: u64,
 ) -> SignedUserTransaction {
     alice.sign_txn(build_transaction(
         *alice.address(),
         seq_number,
-        TransactionPayload::ScriptFunction(execute_script_function),
+        TransactionPayload::EntryFunction(execute_script_function),
         expire_time,
     ))
 }

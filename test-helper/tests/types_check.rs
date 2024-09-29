@@ -14,7 +14,7 @@ use starcoin_types::compact_block::CompactBlock;
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_vm_types::block_metadata::BlockMetadata;
 use starcoin_vm_types::transaction::{
-    Module, Package, RawUserTransaction, Script, ScriptFunction, SignedUserTransaction,
+    EntryFunction, Module, Package, RawUserTransaction, Script, SignedUserTransaction,
     TransactionInfo,
 };
 use std::any::type_name;
@@ -26,7 +26,7 @@ fn check_types() {
     //Transaction
     check_data::<Script>().unwrap();
     check_data::<Module>().unwrap();
-    check_data::<ScriptFunction>().unwrap();
+    check_data::<EntryFunction>().unwrap();
 
     check_data_and_hash::<Package>().unwrap();
     check_data_and_hash::<RawUserTransaction>().unwrap();

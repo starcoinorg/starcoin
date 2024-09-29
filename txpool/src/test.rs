@@ -299,7 +299,7 @@ fn generate_txn(config: Arc<NodeConfig>, seq: u64) -> SignedUserTransaction {
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let account_address = account_address::from_public_key(&public_key);
     let txn = starcoin_transaction_builder::create_signed_txn_with_association_account(
-        TransactionPayload::ScriptFunction(
+        TransactionPayload::EntryFunction(
             starcoin_transaction_builder::encode_transfer_script_function(account_address, 10000),
         ),
         seq,

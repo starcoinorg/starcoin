@@ -18,7 +18,7 @@ use starcoin_types::genesis_config::ChainId;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
 use starcoin_types::transaction::authenticator::AccountPrivateKey;
-use starcoin_types::transaction::{RawUserTransaction, ScriptFunction};
+use starcoin_types::transaction::{EntryFunction, RawUserTransaction};
 use starcoin_vm_types::account_config::auto_accept_token::AutoAcceptToken;
 use starcoin_vm_types::account_config::{stc_type_tag, BalanceResource, G_STC_TOKEN_CODE};
 use starcoin_vm_types::language_storage::{StructTag, TypeTag};
@@ -242,7 +242,7 @@ async fn main() -> Result<()> {
                 .collect(),
         );
 
-        let script_function = ScriptFunction::new(
+        let script_function = EntryFunction::new(
             ModuleId::new(
                 genesis_address(),
                 Identifier::new("TransferScripts").unwrap(),

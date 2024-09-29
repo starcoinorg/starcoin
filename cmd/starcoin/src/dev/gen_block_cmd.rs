@@ -37,6 +37,6 @@ impl CommandAction for GenBlockCommand {
             ..Default::default()
         };
         ctx.state()
-            .build_and_execute_transaction(txn_opts, TransactionPayload::ScriptFunction(empty))
+            .build_and_execute_transaction(txn_opts, TransactionPayload::EntryFunction(empty))
     }
 }

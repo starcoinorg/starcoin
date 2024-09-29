@@ -18,7 +18,7 @@ use starcoin_types::transaction::{
 };
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE_STR;
-use starcoin_vm_types::transaction::{ScriptFunction, TransactionPayload};
+use starcoin_vm_types::transaction::{EntryFunction, TransactionPayload};
 use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 
@@ -111,13 +111,13 @@ impl CommandAction for GenerateMultisigTxnCommand {
         let (raw_txn, existing_signatures) =
             if let Some(function_id) = opt.script_function.clone().map(|t| t.0) {
                 let sender = ctx.opt().sender.expect("sender address should be provided");
-                let script_function = ScriptFunction::new(
+                let script_function = EntryFunction::new(
                     function_id.module,
                     function_id.function,
                     type_tags,
                     convert_txn_args(&args),
                 );
-                let payload = TransactionPayload::ScriptFunction(script_function);
+                let payload = TransactionPayload::EntryFunction(script_function);
 
                 let node_info = rpc_client.node_info()?;
                 let chain_state_reader = rpc_client.state_reader(StateRootOption::Latest)?;

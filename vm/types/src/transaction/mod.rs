@@ -40,7 +40,7 @@ pub use module::{Module, ModuleBundle};
 pub use package::Package;
 pub use pending_transaction::{Condition, PendingTransaction};
 use schemars::{self, JsonSchema};
-pub use script::{Script, ScriptFunction};
+pub use script::Script;
 
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
@@ -179,7 +179,7 @@ impl RawUserTransaction {
     pub fn new_script_function(
         sender: AccountAddress,
         sequence_number: u64,
-        script_function: ScriptFunction,
+        script_function: EntryFunction,
         max_gas_amount: u64,
         gas_unit_price: u64,
         expiration_timestamp_secs: u64,
@@ -188,7 +188,7 @@ impl RawUserTransaction {
         Self {
             sender,
             sequence_number,
-            payload: TransactionPayload::ScriptFunction(script_function),
+            payload: TransactionPayload::EntryFunction(script_function.into()),
             max_gas_amount,
             gas_unit_price,
             gas_token_code: STC_TOKEN_CODE_STR.to_string(),
@@ -385,8 +385,8 @@ pub enum TransactionPayload {
     Script(Script),
     /// A transaction that publish or update module code by a package.
     Package(Package),
-    /// A transaction that executes an existing script function published on-chain.
-    ScriptFunction(ScriptFunction),
+    /// A transaction that executes an existing entry function published on-chain.
+    EntryFunction(EntryFunction),
 }
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
@@ -402,7 +402,7 @@ impl TransactionPayload {
         match self {
             Self::Script(_) => TransactionPayloadType::Script,
             Self::Package(_) => TransactionPayloadType::Package,
-            Self::ScriptFunction(_) => TransactionPayloadType::ScriptFunction,
+            Self::EntryFunction(_) => TransactionPayloadType::ScriptFunction,
         }
     }
 }

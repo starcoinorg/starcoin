@@ -18,7 +18,7 @@ use starcoin_move_compiler::bytecode_transpose::ModuleBytecodeDowngrader;
 use starcoin_types::transaction::parse_transaction_argument;
 use starcoin_vm_types::language_storage::FunctionId;
 use starcoin_vm_types::parser::parse_type_tag;
-use starcoin_vm_types::transaction::{Module, Package, ScriptFunction};
+use starcoin_vm_types::transaction::{EntryFunction, Module, Package};
 use std::path::PathBuf;
 
 pub const DEFAULT_RELEASE_DIR: &str = "release";
@@ -115,7 +115,7 @@ pub fn handle_release(
             let type_tags = type_tags.unwrap_or_default();
             let args = args.unwrap_or_default();
             let script_function = script.clone();
-            Some(ScriptFunction::new(
+            Some(EntryFunction::new(
                 script_function.module,
                 script_function.function,
                 type_tags,

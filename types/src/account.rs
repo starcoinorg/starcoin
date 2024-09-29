@@ -23,7 +23,7 @@ use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::token::token_code::TokenCode;
-use starcoin_vm_types::transaction::ScriptFunction;
+use starcoin_vm_types::transaction::EntryFunction;
 use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
 use starcoin_vm_types::{
     account_config::{self, AccountResource, BalanceResource},
@@ -257,7 +257,7 @@ pub fn peer_to_peer_txn(
 
     // get a SignedUserTransaction
     sender.create_signed_txn_with_args(
-        TransactionPayload::ScriptFunction(ScriptFunction::new(
+        TransactionPayload::EntryFunction(EntryFunction::new(
             ModuleId::new(
                 core_code_address(),
                 Identifier::new("TransferScripts").unwrap(),

@@ -86,7 +86,7 @@ fn gen_header(
 }
 
 fn gen_script_payload() -> TransactionPayload {
-    TransactionPayload::ScriptFunction(build_empty_script())
+    TransactionPayload::EntryFunction(build_empty_script())
 }
 
 fn txn_transfer(

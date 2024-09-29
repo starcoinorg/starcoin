@@ -13,7 +13,7 @@ use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::{ModuleId, TypeTag};
 use starcoin_vm_types::state_store::StateView;
-use starcoin_vm_types::transaction::{Module, Package, Script, ScriptFunction, TransactionPayload};
+use starcoin_vm_types::transaction::{EntryFunction, Module, Package, Script, TransactionPayload};
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DecodedTransactionPayload {
     /// A transaction that executes code.
@@ -123,7 +123,7 @@ pub fn decode_txn_payload(
     match payload {
         TransactionPayload::Script(s) => decode_script(state, s).map(Into::into),
         TransactionPayload::Package(pkg) => decode_package(state, pkg).map(Into::into),
-        TransactionPayload::ScriptFunction(sf) => decode_script_function(state, sf).map(Into::into),
+        TransactionPayload::EntryFunction(sf) => decode_script_function(state, sf).map(Into::into),
     }
 }
 
@@ -190,7 +190,7 @@ pub fn decode_package(state: &dyn StateView, pkg: &Package) -> Result<DecodedPac
 }
 pub fn decode_script_function(
     state: &dyn StateView,
-    sf: &ScriptFunction,
+    sf: &EntryFunction,
 ) -> Result<DecodedScriptFunction> {
     let resolver = ABIResolver::new(state);
     decode_script_function_inner(&resolver, sf)
@@ -198,7 +198,7 @@ pub fn decode_script_function(
 
 fn decode_script_function_inner(
     resolver: &ABIResolver,
-    sf: &ScriptFunction,
+    sf: &EntryFunction,
 ) -> Result<DecodedScriptFunction> {
     let func_abi =
         resolver.resolve_function_instantiation(sf.module(), sf.function(), sf.ty_args())?;

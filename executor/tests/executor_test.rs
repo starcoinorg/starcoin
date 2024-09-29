@@ -14,7 +14,7 @@ use starcoin_transaction_builder::{
 use starcoin_types::account::peer_to_peer_txn;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
-use starcoin_types::transaction::{RawUserTransaction, ScriptFunction, TransactionArgument};
+use starcoin_types::transaction::{EntryFunction, RawUserTransaction, TransactionArgument};
 use starcoin_types::{
     account_config, block_metadata::BlockMetadata, transaction::Transaction,
     transaction::TransactionPayload, transaction::TransactionStatus,
@@ -181,7 +181,7 @@ fn test_batch_transfer() -> Result<()> {
     association_execute_should_success(
         &net,
         &chain_state,
-        TransactionPayload::ScriptFunction(script_function),
+        TransactionPayload::EntryFunction(script_function),
     )?;
     Ok(())
 }
@@ -202,7 +202,7 @@ fn test_txn_verify_err_case() -> Result<()> {
     let txn = RawUserTransaction::new_with_default_gas_token(
         *alice.address(),
         0,
-        TransactionPayload::ScriptFunction(script_function),
+        TransactionPayload::EntryFunction(script_function),
         10000000,
         1,
         1000 + 60 * 60,
@@ -238,7 +238,7 @@ fn test_package_txn() -> Result<()> {
         association_execute_should_success(
             &net,
             &chain_state,
-            TransactionPayload::ScriptFunction(script_function),
+            TransactionPayload::EntryFunction(script_function),
         )?;
 
         let script_function = encode_create_account_script_function(
@@ -251,7 +251,7 @@ fn test_package_txn() -> Result<()> {
         association_execute_should_success(
             &net,
             &chain_state,
-            TransactionPayload::ScriptFunction(script_function),
+            TransactionPayload::EntryFunction(script_function),
         )?;
     }
 
@@ -340,7 +340,7 @@ fn test_wrong_package_address() -> Result<()> {
         association_execute_should_success(
             &net,
             &chain_state,
-            TransactionPayload::ScriptFunction(script_function),
+            TransactionPayload::EntryFunction(script_function),
         )?;
 
         let script_function = encode_create_account_script_function(
@@ -353,7 +353,7 @@ fn test_wrong_package_address() -> Result<()> {
         association_execute_should_success(
             &net,
             &chain_state,
-            TransactionPayload::ScriptFunction(script_function),
+            TransactionPayload::EntryFunction(script_function),
         )?;
     }
 
@@ -565,7 +565,7 @@ fn test_validate_txn_args() -> Result<()> {
     let account1 = Account::new();
 
     let txn = {
-        let action = ScriptFunction::new(
+        let action = EntryFunction::new(
             ModuleId::new(
                 core_code_address(),
                 Identifier::new("TransferScript").unwrap(),
@@ -577,7 +577,7 @@ fn test_validate_txn_args() -> Result<()> {
         let txn = build_raw_txn(
             *account1.address(),
             &chain_state,
-            TransactionPayload::ScriptFunction(action),
+            TransactionPayload::EntryFunction(action),
             None,
         );
         account1.sign_txn(txn)
@@ -585,7 +585,7 @@ fn test_validate_txn_args() -> Result<()> {
     assert!(validate_transaction(&chain_state, txn, None).is_some());
 
     let txn = {
-        let action = ScriptFunction::new(
+        let action = EntryFunction::new(
             ModuleId::new(
                 core_code_address(),
                 Identifier::new("TransferScripts").unwrap(),
@@ -597,7 +597,7 @@ fn test_validate_txn_args() -> Result<()> {
         let txn = build_raw_txn(
             *account1.address(),
             &chain_state,
-            TransactionPayload::ScriptFunction(action),
+            TransactionPayload::EntryFunction(action),
             None,
         );
         account1.sign_txn(txn)
@@ -605,7 +605,7 @@ fn test_validate_txn_args() -> Result<()> {
     assert!(validate_transaction(&chain_state, txn, None).is_some());
 
     let txn = {
-        let action = ScriptFunction::new(
+        let action = EntryFunction::new(
             ModuleId::new(
                 core_code_address(),
                 Identifier::new("TransferScripts").unwrap(),
@@ -617,7 +617,7 @@ fn test_validate_txn_args() -> Result<()> {
         let txn = build_raw_txn(
             *account1.address(),
             &chain_state,
-            TransactionPayload::ScriptFunction(action),
+            TransactionPayload::EntryFunction(action),
             None,
         );
         account1.sign_txn(txn)
@@ -705,7 +705,7 @@ fn test_gas_charge_for_invalid_script_argument_txn() -> Result<()> {
     assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
 
     let sequence_number2 = get_sequence_number(*account1.address(), &chain_state);
-    let payload = TransactionPayload::ScriptFunction(ScriptFunction::new(
+    let payload = TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
             core_code_address(),
             Identifier::new("TransferScripts").unwrap(),

@@ -27,7 +27,7 @@ use starcoin_types::{
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::token::stc;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
-use starcoin_vm_types::transaction::ScriptFunction;
+use starcoin_vm_types::transaction::EntryFunction;
 use std::sync::mpsc;
 use std::sync::Arc;
 
@@ -287,12 +287,12 @@ pub fn run_benchmark(
 
 fn create_transaction(
     sequence_number: u64,
-    program: ScriptFunction,
+    program: EntryFunction,
     expiration_timestamp_secs: u64,
     net: &ChainNetwork,
 ) -> Transaction {
     let signed_txn = create_signed_txn_with_association_account(
-        TransactionPayload::ScriptFunction(program),
+        TransactionPayload::EntryFunction(program),
         sequence_number,
         40_000_000,
         1,

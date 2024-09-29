@@ -7,7 +7,7 @@ use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::association_address;
-use starcoin_vm_types::transaction::{Package, ScriptFunction, TransactionPayload};
+use starcoin_vm_types::transaction::{EntryFunction, Package, TransactionPayload};
 use starcoin_vm_types::value::MoveValue;
 use test_helper::executor::{
     association_execute_should_success, compile_modules_with_address, prepare_genesis,
@@ -40,7 +40,7 @@ fn test_starcoin_merkle() -> Result<()> {
     let state_root = chain_state.state_root();
 
     {
-        let script_function = ScriptFunction::new(
+        let script_function = EntryFunction::new(
             ModuleId::new(
                 association_address(),
                 Identifier::new("StarcoinVerifierScripts").unwrap(),
@@ -54,7 +54,7 @@ fn test_starcoin_merkle() -> Result<()> {
         association_execute_should_success(
             &net,
             &chain_state,
-            TransactionPayload::ScriptFunction(script_function),
+            TransactionPayload::EntryFunction(script_function),
         )?;
         chain_state.commit()?;
         chain_state.flush()?;

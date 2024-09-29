@@ -9,7 +9,7 @@ use starcoin_transaction_builder::{
 };
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
-use starcoin_types::transaction::ScriptFunction;
+use starcoin_types::transaction::EntryFunction;
 use starcoin_types::{
     account::Account, block_metadata::BlockMetadata, transaction::Transaction,
     transaction::TransactionStatus,
@@ -203,7 +203,7 @@ pub fn raw_peer_to_peer_txn_with_non_default_gas_token(
     RawUserTransaction::new(
         sender,
         seq_num,
-        TransactionPayload::ScriptFunction(encode_transfer_script_by_token_code(
+        TransactionPayload::EntryFunction(encode_transfer_script_by_token_code(
             receiver,
             transfer_amount,
             G_STC_TOKEN_CODE.clone(),
@@ -228,7 +228,7 @@ fn test_call_deprecated_function() -> Result<()> {
         .unwrap();
     let package = Package::new_with_module(module)?;
     let package_hash = package.crypto_hash();
-    let propose_module_upgrade_script_function = ScriptFunction::new(
+    let propose_module_upgrade_script_function = EntryFunction::new(
         ModuleId::new(
             core_code_address(),
             Identifier::new("ModuleUpgradeScripts").unwrap(),
@@ -245,7 +245,7 @@ fn test_call_deprecated_function() -> Result<()> {
     let output = association_execute(
         &net,
         &chain_state,
-        TransactionPayload::ScriptFunction(propose_module_upgrade_script_function),
+        TransactionPayload::EntryFunction(propose_module_upgrade_script_function),
     )?;
     let _status = output.status().status().unwrap();
 

@@ -88,7 +88,7 @@ impl TransactionMetadata {
                     package.crypto_hash(),
                     package.package_address(),
                 ),
-                TransactionPayload::ScriptFunction(_) => TransactionPayloadMetadata::ScriptFunction,
+                TransactionPayload::EntryFunction(_) => TransactionPayloadMetadata::ScriptFunction,
             },
         })
     }

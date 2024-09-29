@@ -64,7 +64,7 @@ impl CommandAction for TransferCommand {
             encode_transfer_script_by_token_code(receiver_address, opt.amount, token_code);
         ctx.state().build_and_execute_transaction(
             opt.transaction_opts.clone(),
-            TransactionPayload::ScriptFunction(script_function),
+            TransactionPayload::EntryFunction(script_function),
         )
     }
 }

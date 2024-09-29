@@ -68,7 +68,7 @@ use starcoin_vm_types::{
     on_chain_config::VMConfig,
     on_chain_resource,
     token::{stc::stc_type_tag, token_code::TokenCode},
-    transaction::{Module, Script, ScriptFunction, Transaction, TransactionStatus},
+    transaction::{EntryFunction, Module, Script, Transaction, TransactionStatus},
     vm_status::KeptVMStatus,
 };
 use std::collections::HashMap;
@@ -776,7 +776,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         let txn = RawUserTransaction::new_script_function(
             sender,
             params.sequence_number,
-            ScriptFunction::new(
+            EntryFunction::new(
                 ModuleId::new(
                     core_code_address(),
                     Identifier::new("TransferScripts").unwrap(),
@@ -892,7 +892,7 @@ impl<'a> StarcoinTestAdapter<'a> {
 
     fn build_package(
         modules: Vec<CompiledModule>,
-        init_function: Option<ScriptFunction>,
+        init_function: Option<EntryFunction>,
     ) -> Result<Package> {
         let mut ms = vec![];
         for m in modules {
@@ -947,7 +947,7 @@ impl<'a> StarcoinTestAdapter<'a> {
                     .iter()
                     .map(|arg| MoveValue::from(arg.clone()))
                     .collect::<Vec<_>>();
-                ScriptFunction::new(
+                EntryFunction::new(
                     fid.0.module,
                     fid.0.function,
                     type_args
@@ -1328,7 +1328,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         let txn = RawUserTransaction::new_script_function(
             sender,
             params.sequence_number,
-            ScriptFunction::new(
+            EntryFunction::new(
                 module.clone(),
                 function.to_owned(),
                 type_args,

@@ -13,7 +13,7 @@ use starcoin_framework::{BuildOptions, BuiltPackage};
 use starcoin_package_builder::PackageBuilder;
 use starcoin_vm_types::{
     account_address::AccountAddress,
-    transaction::{EntryFunction, ScriptFunction, TransactionPayload},
+    transaction::{EntryFunction, TransactionPayload},
 };
 
 pub fn starcoin_coin_transfer(to: AccountAddress, amount: u64) -> TransactionPayload {
@@ -47,7 +47,7 @@ pub fn object_code_deployment_upgrade(
     code: Vec<Vec<u8>>,
     code_object: AccountAddress,
 ) -> TransactionPayload {
-    TransactionPayload::ScriptFunction(ScriptFunction::new(
+    TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
             AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("object_code_deployment").to_owned(),
@@ -67,7 +67,7 @@ pub fn object_code_deployment_upgrade(
 pub fn object_code_deployment_freeze_code_object(
     code_object: AccountAddress,
 ) -> TransactionPayload {
-    TransactionPayload::ScriptFunction(ScriptFunction::new(
+    TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
             AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("object_code_deployment").to_owned(),
