@@ -1,10 +1,10 @@
-// Copyright © Aptos Foundation
+// Copyright © Starcoin Foundation
 // SPDX-License-Identifier: Apache-2.0
 
 //! # Code generator for Move script builders
 //!
 //! '''bash
-//! cargo run -p aptos-sdk-builder -- --help
+//! cargo run -p starcoin-sdk-builder -- --help
 //! '''
 
 use clap::{Parser, ValueEnum};
@@ -19,7 +19,7 @@ enum Language {
 }
 
 #[derive(Debug, Parser)]
-#[clap(name = "Aptos SDK Builder", about = "Generate boilerplate Aptos SDKs")]
+#[clap(name = "Starcoin SDK Builder", about = "Generate boilerplate Starcoin SDKs")]
 struct Options {
     /// Path to the directory containing ABI files in BCS encoding.
     abi_directories: Vec<PathBuf>,
@@ -32,15 +32,15 @@ struct Options {
     #[clap(long)]
     target_source_dir: Option<PathBuf>,
 
-    /// Also install the aptos types described by the given YAML file, along with the BCS runtime.
+    /// Also install the starcoin types described by the given YAML file, along with the BCS runtime.
     #[clap(long)]
-    with_aptos_types: Option<PathBuf>,
+    with_starcoin_types: Option<PathBuf>,
 
     /// Module name for the transaction builders installed in the `target_source_dir`.
     /// * Rust crates may contain a version number, e.g. "test:1.2.0".
     /// * In Java, this is expected to be a package name, e.g. "com.test" to create Java files in `com/test`.
     /// * In Go, this is expected to be of the format "go_module/path/go_package_name",
-    /// and `aptos_types` is assumed to be in "go_module/path/aptos_types".
+    /// and `starcoin_types` is assumed to be in "go_module/path/starcoin_types".
     #[clap(long)]
     module_name: Option<String>,
 
@@ -48,12 +48,12 @@ struct Options {
     #[clap(long)]
     serde_package_name: Option<String>,
 
-    /// Optional version number for the `aptos_types` module (useful in Rust).
-    /// If `--with-aptos-types` is passed, this will be the version of the generated `aptos_types` module.
+    /// Optional version number for the `starcoin_types` module (useful in Rust).
+    /// If `--with-starcoin-types` is passed, this will be the version of the generated `starcoin_types` module.
     #[clap(long, default_value = "0.1.0")]
-    aptos_version_number: String,
+    starcoin_version_number: String,
 
-    /// Optional package name (Python) or module path (Go) of the `aptos_types` dependency.
+    /// Optional package name (Python) or module path (Go) of the `starcoin_types` dependency.
     #[clap(long)]
     package_name: Option<String>,
 }
@@ -89,8 +89,8 @@ fn main() {
         Some(dir) => dir,
     };
 
-    // Aptos types
-    if let Some(registry_file) = options.with_aptos_types {
+    // Starcoin types
+    if let Some(registry_file) = options.with_starcoin_types {
         let installer: Box<dyn serdegen::SourceInstaller<Error = Box<dyn std::error::Error>>> =
             match options.language {
                 Language::Rust => Box::new(serdegen::rust::Installer::new(install_dir.clone())),
@@ -110,14 +110,14 @@ fn main() {
 
         let (package_name, _package_path) = match options.language {
             Language::Rust => (
-                if options.aptos_version_number == "0.1.0" {
-                    "aptos-types".to_string()
+                if options.starcoin_version_number == "0.1.0" {
+                    "starcoin-types".to_string()
                 } else {
-                    format!("aptos-types:{}", options.aptos_version_number)
+                    format!("starcoin-types:{}", options.starcoin_version_number)
                 },
-                vec!["aptos-types"],
+                vec!["starcoin-types"],
             ),
-            Language::Go => ("aptostypes".to_string(), vec!["aptostypes"]),
+            Language::Go => ("starcointypes".to_string(), vec!["starcointypes"]),
         };
 
         let config = serdegen::CodeGeneratorConfig::new(package_name)
@@ -132,7 +132,7 @@ fn main() {
     > = match options.language {
         Language::Rust => Box::new(starcoin_sdk_builder::rust::Installer::new(
             install_dir,
-            options.aptos_version_number,
+            options.starcoin_version_number,
         )),
         Language::Go => Box::new(starcoin_sdk_builder::golang::Installer::new(
             install_dir,

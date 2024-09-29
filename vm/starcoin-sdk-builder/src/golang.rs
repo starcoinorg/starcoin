@@ -1,4 +1,4 @@
-// Copyright © Aptos Foundation
+// Copyright © Starcoin Foundation
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -28,14 +28,14 @@ use std::{
 pub fn output(
     out: &mut dyn Write,
     serde_module_path: Option<String>,
-    aptos_module_path: Option<String>,
+    starcoin_module_path: Option<String>,
     package_name: String,
     abis: &[EntryABI],
 ) -> Result<()> {
     let mut emitter = GoEmitter {
         out: IndentedWriter::new(out, IndentConfig::Tab),
         serde_module_path,
-        aptos_module_path,
+        starcoin_module_path,
         package_name,
     };
 
@@ -47,9 +47,9 @@ pub fn output(
             if let EntryABI::EntryFunction(sf) = abi {
                 sf.module_name().name().as_str() != "code"
                     && sf.name() != "publish_package_txn"
-                    && sf.module_name().name().as_str() != "aptos_account"
+                    && sf.module_name().name().as_str() != "starcoin_account"
                     && sf.name() != "batch_transfer"
-                    && sf.module_name().name().as_str() != "aptos_account"
+                    && sf.module_name().name().as_str() != "starcoin_account"
                     && sf.name() != "batch_transfer_coins"
             } else {
                 true
@@ -102,9 +102,9 @@ struct GoEmitter<T> {
     /// Go module path for Serde runtime packages
     /// `None` to use the default path.
     serde_module_path: Option<String>,
-    /// Go module path for Aptos types.
+    /// Go module path for Starcoin types.
     /// `None` to use an empty path.
-    aptos_module_path: Option<String>,
+    starcoin_module_path: Option<String>,
     /// Name of the package owning the generated definitions (e.g. "my_package")
     package_name: String,
 }
@@ -114,15 +114,15 @@ where
     T: Write,
 {
     fn output_script_call_enum_with_imports(&mut self, abis: &[EntryABI]) -> Result<()> {
-        let aptos_types_package = match &self.aptos_module_path {
-            Some(path) => format!("{}/aptostypes", path),
-            None => "aptostypes".into(),
+        let starcoin_types_package = match &self.starcoin_module_path {
+            Some(path) => format!("{}/starcointypes", path),
+            None => "starcointypes".into(),
         };
         let mut external_definitions =
-            crate::common::get_external_definitions(&aptos_types_package);
+            crate::common::get_external_definitions(&starcoin_types_package);
         // We need BCS for argument encoding and decoding
         external_definitions.insert(
-            "github.com/aptos-labs/serde-reflection/serde-generate/runtime/golang/bcs".to_string(),
+            "github.com/starcoin-labs/serde-reflection/serde-generate/runtime/golang/bcs".to_string(),
             Vec::new(),
         );
         // Add standard imports
@@ -207,8 +207,8 @@ where
             writeln!(
                 self.out,
                 r#"
-// Build an Aptos `Script` from a structured object `ScriptCall`.
-func EncodeScript(call ScriptCall) aptostypes.Script {{"#
+// Build an Starcoin `Script` from a structured object `ScriptCall`.
+func EncodeScript(call ScriptCall) starcointypes.Script {{"#
             )?;
             self.out.indent();
             writeln!(self.out, "switch call := call.(type) {{")?;
@@ -239,8 +239,8 @@ func EncodeScript(call ScriptCall) aptostypes.Script {{"#
             writeln!(
                 self.out,
                 r#"
-// Build an Aptos `TransactionPayload` from a structured object `EntryFunctionCall`.
-func EncodeEntryFunction(call EntryFunctionCall) aptostypes.TransactionPayload {{"#
+// Build an Starcoin `TransactionPayload` from a structured object `EntryFunctionCall`.
+func EncodeEntryFunction(call EntryFunctionCall) starcointypes.TransactionPayload {{"#
             )?;
             self.out.indent();
             writeln!(self.out, "switch call := call.(type) {{")?;
@@ -274,8 +274,8 @@ func EncodeEntryFunction(call EntryFunctionCall) aptostypes.TransactionPayload {
         writeln!(
             self.out,
             r#"
-// Try to recognize an Aptos `Script` and convert it into a structured object `ScriptCall`.
-func DecodeScript(script *aptostypes.Script) (ScriptCall, error) {{
+// Try to recognize an Starcoin `Script` and convert it into a structured object `ScriptCall`.
+func DecodeScript(script *starcointypes.Script) (ScriptCall, error) {{
 	if helper := script_decoder_map[string(script.Code)]; helper != nil {{
 		val, err := helper(script)
                 return val, err
@@ -290,10 +290,10 @@ func DecodeScript(script *aptostypes.Script) (ScriptCall, error) {{
         writeln!(
             self.out,
             r#"
-// Try to recognize an Aptos `TransactionPayload` and convert it into a structured object `EntryFunctionCall`.
-func DecodeEntryFunctionPayload(script aptostypes.TransactionPayload) (EntryFunctionCall, error) {{
+// Try to recognize an Starcoin `TransactionPayload` and convert it into a structured object `EntryFunctionCall`.
+func DecodeEntryFunctionPayload(script starcointypes.TransactionPayload) (EntryFunctionCall, error) {{
     switch script := script.(type) {{
-        case *aptostypes.TransactionPayload__EntryFunction:
+        case *starcointypes.TransactionPayload__EntryFunction:
             if helper := entry_function_decoder_map[string(script.Value.Module.Name) + "_" + string(script.Value.Function)]; helper != nil {{
                     val, err := helper(script)
                     return val, err
@@ -313,7 +313,7 @@ func DecodeEntryFunctionPayload(script aptostypes.TransactionPayload) (EntryFunc
     ) -> Result<()> {
         writeln!(
             self.out,
-            "\n{}\nfunc Encode{}({}) aptostypes.Script {{",
+            "\n{}\nfunc Encode{}({}) starcointypes.Script {{",
             Self::quote_doc(abi.doc()),
             abi.name().to_upper_camel_case(),
             [
@@ -326,10 +326,10 @@ func DecodeEntryFunctionPayload(script aptostypes.TransactionPayload) (EntryFunc
         self.out.indent();
         writeln!(
             self.out,
-            r#"return aptostypes.Script {{
+            r#"return starcointypes.Script {{
 	Code: append([]byte(nil), {}_code...),
-	TyArgs: []aptostypes.TypeTag{{{}}},
-	Args: []aptostypes.TransactionArgument{{{}}},
+	TyArgs: []starcointypes.TypeTag{{{}}},
+	Args: []starcointypes.TransactionArgument{{{}}},
 }}"#,
             abi.name(),
             Self::quote_type_arguments(abi.ty_args()),
@@ -342,7 +342,7 @@ func DecodeEntryFunctionPayload(script aptostypes.TransactionPayload) (EntryFunc
     fn output_entry_function_encoder_function(&mut self, abi: &EntryFunctionABI) -> Result<()> {
         writeln!(
             self.out,
-            "\n{}\nfunc Encode{}{}({}) aptostypes.TransactionPayload {{",
+            "\n{}\nfunc Encode{}{}({}) starcointypes.TransactionPayload {{",
             Self::quote_doc(abi.doc()),
             abi.module_name().name().to_string().to_upper_camel_case(),
             abi.name().to_upper_camel_case(),
@@ -356,11 +356,11 @@ func DecodeEntryFunctionPayload(script aptostypes.TransactionPayload) (EntryFunc
         self.out.indent();
         writeln!(
             self.out,
-            r#"return &aptostypes.TransactionPayload__EntryFunction {{
-            aptostypes.EntryFunction {{
+            r#"return &starcointypes.TransactionPayload__EntryFunction {{
+            starcointypes.EntryFunction {{
                 Module: {},
                 Function: {},
-                TyArgs: []aptostypes.TypeTag{{{}}},
+                TyArgs: []starcointypes.TypeTag{{{}}},
                 Args: [][]byte{{{}}},
     }},
 }}"#,
@@ -379,7 +379,7 @@ func DecodeEntryFunctionPayload(script aptostypes.TransactionPayload) (EntryFunc
     ) -> Result<()> {
         writeln!(
             self.out,
-            "\nfunc decode_{}(script *aptostypes.Script) (ScriptCall, error) {{",
+            "\nfunc decode_{}(script *starcointypes.Script) (ScriptCall, error) {{",
             abi.name(),
         )?;
         self.out.indent();
@@ -429,7 +429,7 @@ func DecodeEntryFunctionPayload(script aptostypes.TransactionPayload) (EntryFunc
     fn output_entry_function_decoder_function(&mut self, abi: &EntryFunctionABI) -> Result<()> {
         writeln!(
             self.out,
-            "\nfunc decode_{}_{}(script aptostypes.TransactionPayload) (EntryFunctionCall, error) {{",
+            "\nfunc decode_{}_{}(script starcointypes.TransactionPayload) (EntryFunctionCall, error) {{",
             abi.module_name().name(),
             abi.name(),
         )?;
@@ -438,7 +438,7 @@ func DecodeEntryFunctionPayload(script aptostypes.TransactionPayload) (EntryFunc
         self.out.indent();
         writeln!(
             self.out,
-            "case *aptostypes.TransactionPayload__EntryFunction:"
+            "case *starcointypes.TransactionPayload__EntryFunction:"
         )?;
         self.out.indent();
         writeln!(
@@ -558,7 +558,7 @@ if val, err := {}; err == nil {{
         writeln!(
             self.out,
             r#"
-var script_decoder_map = map[string]func(*aptostypes.Script) (ScriptCall, error) {{"#
+var script_decoder_map = map[string]func(*starcointypes.Script) (ScriptCall, error) {{"#
         )?;
         self.out.indent();
         for abi in abis {
@@ -572,7 +572,7 @@ var script_decoder_map = map[string]func(*aptostypes.Script) (ScriptCall, error)
         writeln!(
             self.out,
             r#"
-var entry_function_decoder_map = map[string]func(aptostypes.TransactionPayload) (EntryFunctionCall, error) {{"#
+var entry_function_decoder_map = map[string]func(starcointypes.TransactionPayload) (EntryFunctionCall, error) {{"#
         )?;
         self.out.indent();
         for abi in abis {
@@ -677,8 +677,8 @@ func encode_{}_argument(arg {}) []byte {{
         writeln!(
             self.out,
             r#"
-func decode_{0}_argument(arg aptostypes.TransactionArgument) (value {1}, err error) {{
-	if arg, ok := arg.(*aptostypes.TransactionArgument__{2}); ok {{
+func decode_{0}_argument(arg starcointypes.TransactionArgument) (value {1}, err error) {{
+	if arg, ok := arg.(*starcointypes.TransactionArgument__{2}); ok {{
 		{3}
 	}} else {{
 		err = fmt.Errorf("Was expecting a {2} argument")
@@ -727,7 +727,7 @@ func decode_{0}_argument(arg aptostypes.TransactionArgument) (value {1}, err err
 
     fn quote_module_id(module_id: &ModuleId) -> String {
         format!(
-            "aptostypes.ModuleId {{ Address: {}, Name: {} }}",
+            "starcointypes.ModuleId {{ Address: {}, Name: {} }}",
             Self::quote_address(module_id.address()),
             Self::quote_identifier(module_id.name().as_str()),
         )
@@ -741,7 +741,7 @@ func decode_{0}_argument(arg aptostypes.TransactionArgument) (value {1}, err err
     fn quote_type_parameters(ty_args: &[TypeArgumentABI]) -> Vec<String> {
         ty_args
             .iter()
-            .map(|ty_arg| format!("{} aptostypes.TypeTag", ty_arg.name()))
+            .map(|ty_arg| format!("{} starcointypes.TypeTag", ty_arg.name()))
             .collect()
     }
 
@@ -785,7 +785,7 @@ func decode_{0}_argument(arg aptostypes.TransactionArgument) (value {1}, err err
             U64 => "uint64".into(),
             U128 => "serde.Uint128".into(),
             U256 => unimplemented!(),
-            Address => "aptostypes.AccountAddress".into(),
+            Address => "starcointypes.AccountAddress".into(),
             Vector(type_tag) => {
                 format!("[]{}", Self::quote_type(type_tag))
             }
@@ -808,16 +808,16 @@ func decode_{0}_argument(arg aptostypes.TransactionArgument) (value {1}, err err
     fn quote_transaction_argument_for_script(type_tag: &TypeTag, name: &str) -> String {
         use TypeTag::*;
         match type_tag {
-            Bool => format!("(*aptostypes.TransactionArgument__Bool)(&{})", name),
-            U8 => format!("(*aptostypes.TransactionArgument__U8)(&{})", name),
-            U16 => format!("(*aptostypes.TransactionArgument__U16)(&{})", name),
-            U32 => format!("(*aptostypes.TransactionArgument__U32)(&{})", name),
-            U64 => format!("(*aptostypes.TransactionArgument__U64)(&{})", name),
-            U128 => format!("(*aptostypes.TransactionArgument__U128)(&{})", name),
-            U256 => format!("(*aptostypes.TransactionArgument__U256)(&{})", name),
-            Address => format!("&aptostypes.TransactionArgument__Address{{{}}}", name),
+            Bool => format!("(*starcointypes.TransactionArgument__Bool)(&{})", name),
+            U8 => format!("(*starcointypes.TransactionArgument__U8)(&{})", name),
+            U16 => format!("(*starcointypes.TransactionArgument__U16)(&{})", name),
+            U32 => format!("(*starcointypes.TransactionArgument__U32)(&{})", name),
+            U64 => format!("(*starcointypes.TransactionArgument__U64)(&{})", name),
+            U128 => format!("(*starcointypes.TransactionArgument__U128)(&{})", name),
+            U256 => format!("(*starcointypes.TransactionArgument__U256)(&{})", name),
+            Address => format!("&starcointypes.TransactionArgument__Address{{{}}}", name),
             Vector(type_tag) => match type_tag.as_ref() {
-                U8 => format!("(*aptostypes.TransactionArgument__U8Vector)(&{})", name),
+                U8 => format!("(*starcointypes.TransactionArgument__U8Vector)(&{})", name),
                 _ => common::type_not_allowed(type_tag),
             },
             Struct(_) | Signer => common::type_not_allowed(type_tag),
@@ -862,19 +862,19 @@ func decode_{0}_argument(arg aptostypes.TransactionArgument) (value {1}, err err
 pub struct Installer {
     install_dir: PathBuf,
     serde_module_path: Option<String>,
-    aptos_module_path: Option<String>,
+    starcoin_module_path: Option<String>,
 }
 
 impl Installer {
     pub fn new(
         install_dir: PathBuf,
         serde_module_path: Option<String>,
-        aptos_module_path: Option<String>,
+        starcoin_module_path: Option<String>,
     ) -> Self {
         Installer {
             install_dir,
             serde_module_path,
-            aptos_module_path,
+            starcoin_module_path,
         }
     }
 }
@@ -893,7 +893,7 @@ impl crate::SourceInstaller for Installer {
         output(
             &mut file,
             self.serde_module_path.clone(),
-            self.aptos_module_path.clone(),
+            self.starcoin_module_path.clone(),
             name.to_string(),
             abis,
         )?;

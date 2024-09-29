@@ -1,4 +1,4 @@
-// Copyright © Aptos Foundation
+// Copyright © Starcoin Foundation
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -6,22 +6,22 @@ package main
 
 import (
 	"fmt"
-	stdlib "testing/aptosstdlib"
-	aptos "testing/aptostypes"
+	stdlib "testing/starcoinstdlib"
+	starcoin "testing/starcointypes"
 )
 
 func demo_coin_transfer() {
-	token := &aptos.TypeTag__Struct{
-		Value: aptos.StructTag{
-			Address: aptos.AccountAddress(
+	token := &starcoin.TypeTag__Struct{
+		Value: starcoin.StructTag{
+			Address: starcoin.AccountAddress(
 				[32]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
 			),
-			Module:     aptos.Identifier("aptos_coin"),
-			Name:       aptos.Identifier("AptosCoin"),
+			Module:     starcoin.Identifier("starcoin_coin"),
+			Name:       starcoin.Identifier("StarcoinCoin"),
 		},
 	}
 
-	to := aptos.AccountAddress(
+	to := starcoin.AccountAddress(
 		[32]uint8{0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
     0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22},
 	)

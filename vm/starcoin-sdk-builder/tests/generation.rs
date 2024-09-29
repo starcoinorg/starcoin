@@ -1,17 +1,17 @@
-// Copyright © Aptos Foundation
+// Copyright © Starcoin Foundation
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use aptos_sdk_builder as buildgen;
-use aptos_types::transaction::EntryABI;
+use starcoin_sdk_builder as buildgen;
+use starcoin_types::transaction::EntryABI;
 use serde_generate as serdegen;
 use serde_generate::SourceInstaller as _;
 use serde_reflection::Registry;
 use std::{io::Write, process::Command};
 use tempfile::tempdir;
 
-fn get_aptos_registry() -> Registry {
-    let path = "../../testsuite/generate-format/tests/staged/aptos.yaml";
+fn get_starcoin_registry() -> Registry {
+    let path = "../../testsuite/generate-format/tests/staged/starcoin.yaml";
     let content = std::fs::read_to_string(path).unwrap();
     serde_yaml::from_str::<Registry>(content.as_str()).unwrap()
 }
@@ -19,12 +19,12 @@ fn get_aptos_registry() -> Registry {
 const EXPECTED_SCRIPT_FUN_OUTPUT: &str = "3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 8 84 101 115 116 67 111 105 110 8 116 114 97 110 115 102 101 114 0 2 32 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 8 135 214 18 0 0 0 0 0 \n";
 
 fn test_rust(abis: &[EntryABI], demo_file: &str, expected_output: &str) {
-    let mut registry = get_aptos_registry();
+    let mut registry = get_starcoin_registry();
     buildgen::rust::replace_keywords(&mut registry);
     let dir = tempdir().unwrap();
 
     let installer = serdegen::rust::Installer::new(dir.path().to_path_buf());
-    let config = serdegen::CodeGeneratorConfig::new("aptos-types".to_string());
+    let config = serdegen::CodeGeneratorConfig::new("starcoin-types".to_string());
     installer.install_module(&config, &registry).unwrap();
 
     let stdlib_dir_path = dir.path().join("framework");
@@ -39,10 +39,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-aptos-types = {{ path = "../aptos-types", version = "0.1.0" }}
+starcoin-types = {{ path = "../starcoin-types", version = "0.1.0" }}
 serde_bytes = "0.11.6"
 serde = {{ version = "1.0.114", features = ["derive"] }}
-bcs = {{ git = "https://github.com/aptos-labs/bcs", rev = "2cde3e8446c460cb17b0c1d6bac7e27e964ac169" }}
+bcs = {{ git = "https://github.com/starcoin-labs/bcs", rev = "2cde3e8446c460cb17b0c1d6bac7e27e964ac169" }}
 once_cell = "1.10.0"
 
 [[bin]]
@@ -81,14 +81,14 @@ test = false
 }
 
 #[test]
-// Ignored because transactions require minting/transferring Coin<AptosCoin>, which the
+// Ignored because transactions require minting/transferring Coin<StarcoinCoin>, which the
 // transaction builder does not support (it doesn't supported typed functions yet).
 #[ignore]
 fn test_that_rust_entry_fun_code_compiles() {
     // TODO: need a way to get abis to reactivate this test
     let abis = vec![];
     test_rust(
-        &abis, // &aptos_cached_packages::head_release_bundle().abis(),
+        &abis, // &starcoin_cached_packages::head_release_bundle().abis(),
         "examples/rust/script_fun_demo.rs",
         EXPECTED_SCRIPT_FUN_OUTPUT,
     );
