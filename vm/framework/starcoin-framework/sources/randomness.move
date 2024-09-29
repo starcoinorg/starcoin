@@ -20,7 +20,7 @@ module starcoin_framework::randomness {
 
     friend starcoin_framework::block;
 
-    const DST: vector<u8> = b"APTOS_RANDOMNESS";
+    const DST: vector<u8> = b"STARCOIN_RANDOMNESS";
 
     /// Randomness APIs calls must originate from a private entry function with
     /// `#[randomness]` annotation. Otherwise, malicious users can bias randomness result.

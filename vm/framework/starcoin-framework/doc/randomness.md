@@ -185,7 +185,7 @@ Event emitted every time a public randomness API in this module is called.
 
 
 
-<pre><code><b>const</b> <a href="randomness.md#0x1_randomness_DST">DST</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; = [65, 80, 84, 79, 83, 95, 82, 65, 78, 68, 79, 77, 78, 69, 83, 83];
+<pre><code><b>const</b> <a href="randomness.md#0x1_randomness_DST">DST</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; = [83, 84, 65, 82, 67, 79, 73, 78, 95, 82, 65, 78, 68, 79, 77, 78, 69, 83, 83];
 </code></pre>
 
 
@@ -1068,7 +1068,7 @@ function as its payload.
 
 
 <pre><code><b>include</b> <a href="randomness.md#0x1_randomness_NextBlobAbortsIf">NextBlobAbortsIf</a>;
-<b>let</b> input = b"APTOS_RANDOMNESS";
+<b>let</b> input = b"STARCOIN_RANDOMNESS";
 <b>let</b> <a href="randomness.md#0x1_randomness">randomness</a> = <b>global</b>&lt;<a href="randomness.md#0x1_randomness_PerBlockRandomness">PerBlockRandomness</a>&gt;(@starcoin_framework);
 <b>let</b> seed = <a href="../../move-stdlib/doc/option.md#0x1_option_spec_borrow">option::spec_borrow</a>(<a href="randomness.md#0x1_randomness">randomness</a>.seed);
 <b>let</b> txn_hash = <a href="transaction_context.md#0x1_transaction_context_spec_get_txn_hash">transaction_context::spec_get_txn_hash</a>();

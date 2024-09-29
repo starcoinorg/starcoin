@@ -67,12 +67,12 @@ module std::features {
     /// Whether the new `starcoin_stdlib::type_info::chain_id()` native for fetching the chain ID is enabled.
     /// This is needed because of the introduction of a new native function.
     /// Lifetime: transient
-    const APTOS_STD_CHAIN_ID_NATIVES: u64 = 4;
+    const STARCOIN_STD_CHAIN_ID_NATIVES: u64 = 4;
 
-    public fun get_starcoin_stdlib_chain_id_feature(): u64 { APTOS_STD_CHAIN_ID_NATIVES }
+    public fun get_starcoin_stdlib_chain_id_feature(): u64 { STARCOIN_STD_CHAIN_ID_NATIVES }
 
     public fun starcoin_stdlib_chain_id_enabled(): bool acquires Features {
-        is_enabled(APTOS_STD_CHAIN_ID_NATIVES)
+        is_enabled(STARCOIN_STD_CHAIN_ID_NATIVES)
     }
 
     /// Whether to allow the use of binary format version v6.
@@ -222,7 +222,7 @@ module std::features {
 
     /// Whether enable MOVE functions to call create_auid method to create AUIDs.
     /// Lifetime: transient
-    const APTOS_UNIQUE_IDENTIFIERS: u64 = 23;
+    const STARCOIN_UNIQUE_IDENTIFIERS: u64 = 23;
 
     public fun get_auids(): u64 {
         error::invalid_argument(EFEATURE_CANNOT_BE_DISABLED)

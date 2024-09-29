@@ -5,8 +5,8 @@ use crate::{
     docgen::DocgenOptions,
     extended_checks,
     natives::code::{ModuleMetadata, MoveOption, PackageDep, PackageMetadata, UpgradePolicy},
-    zip_metadata, zip_metadata_str, RuntimeModuleMetadataV1, APTOS_METADATA_KEY,
-    APTOS_METADATA_KEY_V1, METADATA_V1_MIN_FILE_FORMAT_VERSION,
+    zip_metadata, zip_metadata_str, RuntimeModuleMetadataV1, STARCOIN_METADATA_KEY,
+    STARCOIN_METADATA_KEY_V1, METADATA_V1_MIN_FILE_FORMAT_VERSION,
 };
 use anyhow::{anyhow, bail};
 use clap::Parser;
@@ -42,7 +42,7 @@ use std::{
 pub const METADATA_FILE_NAME: &str = "package-metadata.bcs";
 pub const UPGRADE_POLICY_CUSTOM_FIELD: &str = "upgrade_policy";
 
-pub const APTOS_PACKAGES: [&str; 5] = [
+pub const STARCOIN_PACKAGES: [&str; 5] = [
     "StarcoinFramework",
     "MoveStdlib",
     "StarcoinStdlib",
@@ -494,7 +494,7 @@ fn inject_runtime_metadata(
                             let serialized_metadata = bcs::to_bytes(&module_metadata)
                                 .expect("BCS for RuntimeModuleMetadata");
                             named_module.module.metadata.push(Metadata {
-                                key: APTOS_METADATA_KEY_V1.to_vec(),
+                                key: STARCOIN_METADATA_KEY_V1.to_vec(),
                                 value: serialized_metadata,
                             });
                         } else {
@@ -502,7 +502,7 @@ fn inject_runtime_metadata(
                                 bcs::to_bytes(&module_metadata.clone().downgrade())
                                     .expect("BCS for RuntimeModuleMetadata");
                             named_module.module.metadata.push(Metadata {
-                                key: APTOS_METADATA_KEY.to_vec(),
+                                key: STARCOIN_METADATA_KEY.to_vec(),
                                 value: serialized_metadata,
                             });
                         }
