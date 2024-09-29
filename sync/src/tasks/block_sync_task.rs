@@ -32,6 +32,8 @@ use stream_task::{CollectorState, TaskError, TaskResultCollector, TaskState};
 use super::continue_execute_absent_block::ContinueChainOperator;
 use super::{BlockConnectAction, BlockConnectedFinishEvent};
 
+const ASYNC_BLOCK_COUNT: u64 = 1000;
+
 enum ParallelSign {
     NeedMoreBlocks,
     Continue,
@@ -459,7 +461,7 @@ where
                 return anyhow::Ok(ParallelSign::Continue);
             }
 
-            if block_header.number() % 1000 == 0
+            if block_header.number() % ASYNC_BLOCK_COUNT == 0
                 || block_header.number() >= self.target.target_id.number()
             {
                 let parallel_execute = DagBlockSender::new(
