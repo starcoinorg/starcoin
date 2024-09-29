@@ -117,7 +117,7 @@ spec starcoin_std::pool_u64_unbound {
         }
     }
 
-    spec multiply_then_divide(self: &Pool, x: u128, y: u128, z: u128): u128 {
+    spec multiply_then_divide(_self: &Pool, x: u128, y: u128, z: u128): u128 {
         aborts_if z == 0;
         aborts_if (x * y) / z > MAX_U128;
         ensures result == (x * y) / z;

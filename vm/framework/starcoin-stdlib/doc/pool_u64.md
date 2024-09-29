@@ -845,7 +845,7 @@ Return the number of coins <code>shares</code> are worth in <code>self</code> wi
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="pool_u64.md#0x1_pool_u64_multiply_then_divide">multiply_then_divide</a>(self: &<a href="pool_u64.md#0x1_pool_u64_Pool">pool_u64::Pool</a>, x: u64, y: u64, z: u64): u64
+<pre><code><b>public</b> <b>fun</b> <a href="pool_u64.md#0x1_pool_u64_multiply_then_divide">multiply_then_divide</a>(_self: &<a href="pool_u64.md#0x1_pool_u64_Pool">pool_u64::Pool</a>, x: u64, y: u64, z: u64): u64
 </code></pre>
 
 
@@ -854,7 +854,7 @@ Return the number of coins <code>shares</code> are worth in <code>self</code> wi
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="pool_u64.md#0x1_pool_u64_multiply_then_divide">multiply_then_divide</a>(self: &<a href="pool_u64.md#0x1_pool_u64_Pool">Pool</a>, x: u64, y: u64, z: u64): u64 {
+<pre><code><b>public</b> <b>fun</b> <a href="pool_u64.md#0x1_pool_u64_multiply_then_divide">multiply_then_divide</a>(_self: &<a href="pool_u64.md#0x1_pool_u64_Pool">Pool</a>, x: u64, y: u64, z: u64): u64 {
     <b>let</b> result = (<a href="pool_u64.md#0x1_pool_u64_to_u128">to_u128</a>(x) * <a href="pool_u64.md#0x1_pool_u64_to_u128">to_u128</a>(y)) / <a href="pool_u64.md#0x1_pool_u64_to_u128">to_u128</a>(z);
     (result <b>as</b> u64)
 }
@@ -1277,7 +1277,7 @@ Return the number of coins <code>shares</code> are worth in <code>self</code> wi
 ### Function `multiply_then_divide`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="pool_u64.md#0x1_pool_u64_multiply_then_divide">multiply_then_divide</a>(self: &<a href="pool_u64.md#0x1_pool_u64_Pool">pool_u64::Pool</a>, x: u64, y: u64, z: u64): u64
+<pre><code><b>public</b> <b>fun</b> <a href="pool_u64.md#0x1_pool_u64_multiply_then_divide">multiply_then_divide</a>(_self: &<a href="pool_u64.md#0x1_pool_u64_Pool">pool_u64::Pool</a>, x: u64, y: u64, z: u64): u64
 </code></pre>
 
 
