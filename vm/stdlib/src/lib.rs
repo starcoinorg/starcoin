@@ -20,7 +20,7 @@ use starcoin_move_compiler::diagnostics::{
 pub use starcoin_move_compiler::{starcoin_framework_named_addresses, Compiler};
 use starcoin_vm_types::file_format::CompiledModule;
 pub use starcoin_vm_types::genesis_config::StdlibVersion;
-use starcoin_vm_types::transaction::{Module, Package, ScriptFunction};
+use starcoin_vm_types::transaction::{EntryFunction, Module, Package};
 use std::str::FromStr;
 use std::{
     collections::{BTreeMap, HashMap},
@@ -149,7 +149,7 @@ pub fn stdlib_compiled_modules(option: StdLibOptions) -> Vec<CompiledModule> {
 
 pub fn stdlib_package(
     stdlib_option: StdLibOptions,
-    init_script: Option<ScriptFunction>,
+    init_script: Option<EntryFunction>,
 ) -> Result<Package> {
     let modules = stdlib_modules(stdlib_option);
     module_to_package(modules.to_vec(), init_script)
@@ -157,7 +157,7 @@ pub fn stdlib_package(
 
 pub fn module_to_package(
     modules: Vec<Vec<u8>>,
-    init_script: Option<ScriptFunction>,
+    init_script: Option<EntryFunction>,
 ) -> Result<Package> {
     Package::new(modules.into_iter().map(Module::new).collect(), init_script)
 }

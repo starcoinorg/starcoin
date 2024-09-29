@@ -13,7 +13,7 @@ use starcoin_move_compiler::dependency_order::sort_by_dependency_order;
 use starcoin_rpc_api::types::FunctionIdView;
 use starcoin_types::transaction::{parse_transaction_argument_advance, TransactionArgument};
 use starcoin_vm_types::file_format::CompiledModule;
-use starcoin_vm_types::transaction::ScriptFunction;
+use starcoin_vm_types::transaction::EntryFunction;
 use starcoin_vm_types::transaction::{Module, Package};
 use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
@@ -113,7 +113,7 @@ impl CommandAction for PackageCmd {
                 let type_tags = opt.type_tags.clone().unwrap_or_default();
                 let args = opt.args.clone().unwrap_or_default();
                 let script_function = script.clone().0;
-                Some(ScriptFunction::new(
+                Some(EntryFunction::new(
                     script_function.module,
                     script_function.function,
                     type_tags,

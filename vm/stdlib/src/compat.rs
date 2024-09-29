@@ -7,7 +7,7 @@ use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::{core_code_address, genesis_address};
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::{ModuleId, StructTag, TypeTag};
-use starcoin_vm_types::transaction::ScriptFunction;
+use starcoin_vm_types::transaction::EntryFunction;
 
 pub trait StdlibCompat {
     fn upgrade_module_type_tag(&self) -> TypeTag;
@@ -20,7 +20,7 @@ pub trait StdlibCompat {
         package_hash: HashValue,
         exec_delay: u64,
         enforced: bool,
-    ) -> ScriptFunction;
+    ) -> EntryFunction;
 
     // this method use only in starcoin-framework daospace-v12,
     // https://github.com/starcoinorg/starcoin-framework/releases/tag/daospace-v12
@@ -35,7 +35,7 @@ pub trait StdlibCompat {
         action_delay: u64,
         package_hash: HashValue,
         enforced: bool,
-    ) -> ScriptFunction;
+    ) -> EntryFunction;
 }
 
 impl StdlibCompat for StdlibVersion {
@@ -60,7 +60,7 @@ impl StdlibCompat for StdlibVersion {
         package_hash: HashValue,
         exec_delay: u64,
         enforced: bool,
-    ) -> ScriptFunction {
+    ) -> EntryFunction {
         // propose_module_upgrade_v2 is available after v2 upgrade.
         // 'self' is the target stdlib version to be upgraded to.
         let (function_name, args) = if self > &Self::Version(2) {
@@ -86,7 +86,7 @@ impl StdlibCompat for StdlibVersion {
             )
         };
 
-        ScriptFunction::new(
+        EntryFunction::new(
             ModuleId::new(
                 core_code_address(),
                 Identifier::new("ModuleUpgradeScripts").unwrap(),
@@ -109,7 +109,7 @@ impl StdlibCompat for StdlibVersion {
         action_delay: u64,
         package_hash: HashValue,
         enforced: bool,
-    ) -> ScriptFunction {
+    ) -> EntryFunction {
         assert!(self > &Self::Version(12), "Expect stdlib version > 12.");
 
         let args = vec![
@@ -122,7 +122,7 @@ impl StdlibCompat for StdlibVersion {
             bcs_ext::to_bytes(&enforced).unwrap(),
         ];
 
-        ScriptFunction::new(
+        EntryFunction::new(
             ModuleId::new(
                 core_code_address(),
                 Identifier::new("UpgradeModulePlugin").unwrap(),

@@ -99,7 +99,7 @@ impl CommandAction for UpgradeModuleProposalCommand {
         eprintln!("package_hash {:?}", package_hash);
         ctx.state().build_and_execute_transaction(
             opt.transaction_opts.clone(),
-            TransactionPayload::ScriptFunction(module_upgrade_proposal),
+            TransactionPayload::EntryFunction(module_upgrade_proposal),
         )
     }
 }

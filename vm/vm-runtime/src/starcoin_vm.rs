@@ -461,7 +461,7 @@ impl StarcoinVM {
                     )
                     .map_err(|e| e.into_vm_status())?;
             }
-            TransactionPayload::ScriptFunction(s) => {
+            TransactionPayload::EntryFunction(s) => {
                 session
                     .verify_script_function_args(
                         s.module(),
@@ -699,7 +699,7 @@ impl StarcoinVM {
                         txn_data.sender(),
                     )
                 }
-                TransactionPayload::ScriptFunction(script_function) => {
+                TransactionPayload::EntryFunction(script_function) => {
                     debug!("TransactionPayload::{:?}", script_function);
                     Self::validate_execute_entry_function(
                         &mut session,
@@ -1040,7 +1040,7 @@ impl StarcoinVM {
             Ok(txn) => {
                 let result = match txn.payload() {
                     payload @ TransactionPayload::Script(_)
-                    | payload @ TransactionPayload::ScriptFunction(_) => self
+                    | payload @ TransactionPayload::EntryFunction(_) => self
                         .execute_script_or_script_function(
                             session,
                             &mut gas_meter,
@@ -1109,7 +1109,7 @@ impl StarcoinVM {
         gas_meter.set_metering(false);
         let result = match txn.raw_txn.payload() {
             payload @ TransactionPayload::Script(_)
-            | payload @ TransactionPayload::ScriptFunction(_) => {
+            | payload @ TransactionPayload::EntryFunction(_) => {
                 self.execute_script_or_script_function(session, &mut gas_meter, &txn_data, payload)
             }
             TransactionPayload::Package(p) => {

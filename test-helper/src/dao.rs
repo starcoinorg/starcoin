@@ -26,7 +26,7 @@ use starcoin_types::account_config::{association_address, genesis_address, stc_t
 use starcoin_types::block_metadata::BlockMetadata;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::{ModuleId, StructTag, TypeTag};
-use starcoin_types::transaction::{ScriptFunction, TransactionPayload};
+use starcoin_types::transaction::{EntryFunction, TransactionPayload};
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::on_chain_config::VMConfig;
 use starcoin_vm_types::value::{serialize_values, MoveValue};
@@ -167,7 +167,7 @@ pub fn execute_create_account(
             association_execute_should_success(
                 net,
                 chain_state,
-                TransactionPayload::ScriptFunction(script_function),
+                TransactionPayload::EntryFunction(script_function),
             )?;
         }
 
@@ -257,7 +257,7 @@ fn execute_cast_vote(
     let proposer_id = proposal_id;
     let voting_power = get_balance(*alice.address(), chain_state);
     debug!("{} voting power: {}", alice.address(), voting_power);
-    let script_function = ScriptFunction::new(
+    let script_function = EntryFunction::new(
         ModuleId::new(
             core_code_address(),
             Identifier::new("DaoVoteScripts").unwrap(),
@@ -275,7 +275,7 @@ fn execute_cast_vote(
     account_execute_should_success(
         alice,
         chain_state,
-        TransactionPayload::ScriptFunction(script_function),
+        TransactionPayload::EntryFunction(script_function),
     )?;
     let quorum = quorum_vote(chain_state, stc_type_tag());
     debug!(
@@ -299,8 +299,8 @@ fn execute_cast_vote(
 }
 
 ///vote script consensus
-pub fn vote_script_consensus(_net: &ChainNetwork, strategy: u8) -> ScriptFunction {
-    ScriptFunction::new(
+pub fn vote_script_consensus(_net: &ChainNetwork, strategy: u8) -> EntryFunction {
+    EntryFunction::new(
         ModuleId::new(
             core_code_address(),
             Identifier::new("OnChainConfigScripts").unwrap(),
@@ -325,8 +325,8 @@ pub fn vote_script_consensus(_net: &ChainNetwork, strategy: u8) -> ScriptFunctio
 }
 
 ///reward on chain config script
-pub fn vote_reward_scripts(_net: &ChainNetwork, reward_delay: u64) -> ScriptFunction {
-    ScriptFunction::new(
+pub fn vote_reward_scripts(_net: &ChainNetwork, reward_delay: u64) -> EntryFunction {
+    EntryFunction::new(
         ModuleId::new(
             core_code_address(),
             Identifier::new("OnChainConfigScripts").unwrap(),
@@ -341,8 +341,8 @@ pub fn vote_reward_scripts(_net: &ChainNetwork, reward_delay: u64) -> ScriptFunc
 }
 
 /// vote txn publish option scripts
-pub fn vote_txn_timeout_script(_net: &ChainNetwork, duration_seconds: u64) -> ScriptFunction {
-    ScriptFunction::new(
+pub fn vote_txn_timeout_script(_net: &ChainNetwork, duration_seconds: u64) -> EntryFunction {
+    EntryFunction::new(
         ModuleId::new(
             core_code_address(),
             Identifier::new("OnChainConfigScripts").unwrap(),
@@ -361,8 +361,8 @@ pub fn vote_txn_publish_option_script(
     _net: &ChainNetwork,
     script_allowed: bool,
     module_publishing_allowed: bool,
-) -> ScriptFunction {
-    ScriptFunction::new(
+) -> EntryFunction {
+    EntryFunction::new(
         ModuleId::new(
             core_code_address(),
             Identifier::new("OnChainConfigScripts").unwrap(),
@@ -378,9 +378,9 @@ pub fn vote_txn_publish_option_script(
 }
 
 /// vote vm config scripts
-pub fn vote_vm_config_script(_net: &ChainNetwork, vm_config: VMConfig) -> ScriptFunction {
+pub fn vote_vm_config_script(_net: &ChainNetwork, vm_config: VMConfig) -> EntryFunction {
     let gas_constants = &vm_config.gas_schedule.gas_constants;
-    ScriptFunction::new(
+    EntryFunction::new(
         ModuleId::new(
             core_code_address(),
             Identifier::new("OnChainConfigScripts").unwrap(),
@@ -410,8 +410,8 @@ pub fn vote_vm_config_script(_net: &ChainNetwork, vm_config: VMConfig) -> Script
     )
 }
 
-pub fn vote_language_version(_net: &ChainNetwork, lang_version: u64) -> ScriptFunction {
-    ScriptFunction::new(
+pub fn vote_language_version(_net: &ChainNetwork, lang_version: u64) -> EntryFunction {
+    EntryFunction::new(
         ModuleId::new(
             core_code_address(),
             Identifier::new("OnChainConfigScripts").unwrap(),
@@ -425,8 +425,8 @@ pub fn vote_language_version(_net: &ChainNetwork, lang_version: u64) -> ScriptFu
     )
 }
 
-pub fn vote_flexi_dag_config(_net: &ChainNetwork, effective_height: u64) -> ScriptFunction {
-    ScriptFunction::new(
+pub fn vote_flexi_dag_config(_net: &ChainNetwork, effective_height: u64) -> EntryFunction {
+    EntryFunction::new(
         ModuleId::new(
             core_code_address(),
             Identifier::new("OnChainConfigScripts").unwrap(),
@@ -445,8 +445,8 @@ pub fn execute_script_on_chain_config(
     _net: &ChainNetwork,
     type_tag: TypeTag,
     proposal_id: u64,
-) -> ScriptFunction {
-    ScriptFunction::new(
+) -> EntryFunction {
+    EntryFunction::new(
         ModuleId::new(
             core_code_address(),
             Identifier::new("OnChainConfigScripts").unwrap(),
@@ -458,16 +458,16 @@ pub fn execute_script_on_chain_config(
 }
 
 pub fn empty_txn_payload() -> TransactionPayload {
-    TransactionPayload::ScriptFunction(build_empty_script())
+    TransactionPayload::EntryFunction(build_empty_script())
 }
 
 pub fn dao_vote_test(
     alice: &Account,
     chain_state: &ChainStateDB,
     net: &ChainNetwork,
-    vote_script: ScriptFunction,
+    vote_script: EntryFunction,
     action_type_tag: TypeTag,
-    execute_script: ScriptFunction,
+    execute_script: EntryFunction,
     proposal_id: u64,
 ) -> Result<()> {
     let pre_mint_amount = net.genesis_config().pre_mine_amount;
@@ -503,7 +503,7 @@ pub fn dao_vote_test(
         account_execute_should_success(
             alice,
             chain_state,
-            TransactionPayload::ScriptFunction(vote_script),
+            TransactionPayload::EntryFunction(vote_script),
         )?;
         let state = proposal_state(
             chain_state,
@@ -581,7 +581,7 @@ pub fn dao_vote_test(
         );
         assert_eq!(state, AGREED);
 
-        let script_function = ScriptFunction::new(
+        let script_function = EntryFunction::new(
             ModuleId::new(core_code_address(), Identifier::new("Dao").unwrap()),
             Identifier::new("queue_proposal_action").unwrap(),
             vec![stc_type_tag(), action_type_tag.clone()],
@@ -593,7 +593,7 @@ pub fn dao_vote_test(
         account_execute_should_success(
             alice,
             chain_state,
-            TransactionPayload::ScriptFunction(script_function),
+            TransactionPayload::EntryFunction(script_function),
         )?;
         let state = proposal_state(
             chain_state,
@@ -633,7 +633,7 @@ pub fn dao_vote_test(
         account_execute_should_success(
             alice,
             chain_state,
-            TransactionPayload::ScriptFunction(execute_script),
+            TransactionPayload::EntryFunction(execute_script),
         )?;
     }
 
@@ -665,7 +665,7 @@ pub fn dao_vote_test(
     }
     {
         // Unstake
-        let script_function = ScriptFunction::new(
+        let script_function = EntryFunction::new(
             ModuleId::new(
                 core_code_address(),
                 Identifier::new("DaoVoteScripts").unwrap(),
@@ -680,12 +680,12 @@ pub fn dao_vote_test(
         account_execute_should_success(
             alice,
             chain_state,
-            TransactionPayload::ScriptFunction(script_function),
+            TransactionPayload::EntryFunction(script_function),
         )?;
     }
     {
         // Destroy terminated proposal
-        let script_function = ScriptFunction::new(
+        let script_function = EntryFunction::new(
             ModuleId::new(core_code_address(), Identifier::new("Dao").unwrap()),
             Identifier::new("destroy_terminated_proposal").unwrap(),
             vec![stc_type_tag(), action_type_tag],
@@ -697,7 +697,7 @@ pub fn dao_vote_test(
         account_execute_should_success(
             alice,
             chain_state,
-            TransactionPayload::ScriptFunction(script_function),
+            TransactionPayload::EntryFunction(script_function),
         )?;
     }
     Ok(())
@@ -707,9 +707,9 @@ pub fn modify_on_chain_config_by_dao_block(
     alice: Account,
     mut chain: BlockChain,
     net: &ChainNetwork,
-    vote_script: ScriptFunction,
+    vote_script: EntryFunction,
     action_type_tag: TypeTag,
-    execute_script: ScriptFunction,
+    execute_script: EntryFunction,
 ) -> Result<BlockChain> {
     let pre_mint_amount = net.genesis_config().pre_mine_amount;
     let one_day: u64 = 60 * 60 * 24 * 1000;

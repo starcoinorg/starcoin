@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account_config::genesis_address;
-use crate::transaction::ScriptFunction;
+use crate::transaction::EntryFunction;
 use crate::{
     access::ModuleAccess, account_address::AccountAddress, file_format::CompiledModule,
     transaction::Module,
@@ -21,11 +21,11 @@ pub struct Package {
     #[schemars(with = "String")]
     package_address: AccountAddress,
     modules: Vec<Module>,
-    init_script: Option<ScriptFunction>,
+    init_script: Option<EntryFunction>,
 }
 
 impl Package {
-    pub fn new(modules: Vec<Module>, init_script: Option<ScriptFunction>) -> Result<Self> {
+    pub fn new(modules: Vec<Module>, init_script: Option<EntryFunction>) -> Result<Self> {
         ensure!(!modules.is_empty(), "must at latest one module");
         let package_address = Self::parse_module_address(&modules[0])?;
         for m in &modules[1..] {
@@ -57,7 +57,7 @@ impl Package {
         Ok(*compiled_module.address())
     }
 
-    pub fn set_init_script(&mut self, script: ScriptFunction) {
+    pub fn set_init_script(&mut self, script: EntryFunction) {
         self.init_script = Some(script);
     }
 
@@ -89,11 +89,11 @@ impl Package {
         &self.modules
     }
 
-    pub fn init_script(&self) -> Option<&ScriptFunction> {
+    pub fn init_script(&self) -> Option<&EntryFunction> {
         self.init_script.as_ref()
     }
 
-    pub fn into_inner(self) -> (AccountAddress, Vec<Module>, Option<ScriptFunction>) {
+    pub fn into_inner(self) -> (AccountAddress, Vec<Module>, Option<EntryFunction>) {
         (self.package_address, self.modules, self.init_script)
     }
 }

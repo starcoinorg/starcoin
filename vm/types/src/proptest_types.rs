@@ -9,7 +9,7 @@ use crate::identifier::Identifier;
 use crate::language_storage::ModuleId;
 use crate::transaction::authenticator::AuthenticationKey;
 use crate::transaction::{
-    Module, Package, RawUserTransaction, Script, ScriptFunction, SignatureCheckedTransaction,
+    EntryFunction, Module, Package, RawUserTransaction, Script, SignatureCheckedTransaction,
     SignedUserTransaction, TransactionPayload,
 };
 use crate::transaction_argument::convert_txn_args;
@@ -444,7 +444,7 @@ impl Arbitrary for Script {
     }
 }
 
-impl Arbitrary for ScriptFunction {
+impl Arbitrary for EntryFunction {
     type Parameters = ();
     type Strategy = BoxedStrategy<Self>;
 
@@ -478,7 +478,7 @@ impl Arbitrary for Module {
 impl Package {
     fn strategy_impl(
         compiled_module_strategy: impl Strategy<Value = CompiledModule>,
-        script_strategy: impl Strategy<Value = ScriptFunction>,
+        script_strategy: impl Strategy<Value = EntryFunction>,
     ) -> impl Strategy<Value = Self> {
         (compiled_module_strategy, script_strategy).prop_map(|(compile_module, script)| {
             let mut vec_bytes: Vec<u8> = vec![];
@@ -497,7 +497,7 @@ impl Arbitrary for Package {
         Self::strategy_impl(
             CompiledModule::valid_strategy(20),
             // CompiledModuleStrategyGen::new(20).generate(),
-            any::<ScriptFunction>(),
+            any::<EntryFunction>(),
         )
         .boxed()
     }

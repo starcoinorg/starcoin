@@ -7,7 +7,7 @@ use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
 use starcoin_vm_types::account_config::association_address;
 use starcoin_vm_types::token::stc::stc_type_tag;
-use starcoin_vm_types::transaction::{Package, ScriptFunction, TransactionPayload};
+use starcoin_vm_types::transaction::{EntryFunction, Package, TransactionPayload};
 use starcoin_vm_types::value::MoveValue;
 use test_helper::executor::{
     association_execute, association_execute_should_success, compile_modules_with_address,
@@ -54,7 +54,7 @@ fn test_merkle_distributor() -> Result<()> {
         let rewards_total = MoveValue::U128(proofs.iter().map(|p| p.amount).sum());
         let leaves = MoveValue::U64(proofs.len() as u64);
 
-        let script_function = ScriptFunction::new(
+        let script_function = EntryFunction::new(
             ModuleId::new(
                 association_address(),
                 Identifier::new("MerkleDistributorScripts").unwrap(),
@@ -71,7 +71,7 @@ fn test_merkle_distributor() -> Result<()> {
         association_execute_should_success(
             &net,
             &chain_state,
-            TransactionPayload::ScriptFunction(script_function),
+            TransactionPayload::EntryFunction(script_function),
         )?;
     }
 
@@ -117,7 +117,7 @@ fn test_merkle_distributor() -> Result<()> {
                 .map(MoveValue::vector_u8)
                 .collect(),
         );
-        let script_function = ScriptFunction::new(
+        let script_function = EntryFunction::new(
             ModuleId::new(
                 association_address(),
                 Identifier::new("MerkleDistributorScripts").unwrap(),
@@ -136,7 +136,7 @@ fn test_merkle_distributor() -> Result<()> {
         let result = association_execute(
             &net,
             &chain_state,
-            TransactionPayload::ScriptFunction(script_function),
+            TransactionPayload::EntryFunction(script_function),
         )?;
         let status = result.status().status().unwrap();
         // INVALID_PROOF
@@ -162,7 +162,7 @@ fn test_merkle_distributor() -> Result<()> {
                 .map(MoveValue::vector_u8)
                 .collect(),
         );
-        let script_function = ScriptFunction::new(
+        let script_function = EntryFunction::new(
             ModuleId::new(
                 association_address(),
                 Identifier::new("MerkleDistributorScripts").unwrap(),
@@ -180,7 +180,7 @@ fn test_merkle_distributor() -> Result<()> {
         association_execute_should_success(
             &net,
             &chain_state,
-            TransactionPayload::ScriptFunction(script_function),
+            TransactionPayload::EntryFunction(script_function),
         )?;
     }
 

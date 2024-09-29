@@ -58,7 +58,7 @@ use starcoin_vm_types::{
     identifier::Identifier,
     language_storage::{ModuleId, StructTag},
     parser::parse_struct_tag,
-    transaction::{ScriptFunction, SignedUserTransaction, TransactionPayload},
+    transaction::{EntryFunction, SignedUserTransaction, TransactionPayload},
 };
 use std::{
     collections::{HashMap, HashSet},
@@ -1083,7 +1083,7 @@ pub fn create_account_txn_sent_as_association(
     ];
 
     create_signed_txn_with_association_account(
-        TransactionPayload::ScriptFunction(ScriptFunction::new(
+        TransactionPayload::EntryFunction(EntryFunction::new(
             ModuleId::new(
                 starcoin_vm_types::account_config::core_code_address(),
                 Identifier::new("Account").unwrap(),

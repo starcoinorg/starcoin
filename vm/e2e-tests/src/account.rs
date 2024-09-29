@@ -17,7 +17,7 @@ use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::transaction::{
-    RawUserTransaction, Script, ScriptFunction, SignedUserTransaction, TransactionPayload,
+    EntryFunction, RawUserTransaction, Script, SignedUserTransaction, TransactionPayload,
 };
 use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
 use starcoin_vm_types::values::{Struct, Value};
@@ -219,8 +219,8 @@ impl TransactionBuilder {
         self
     }
 
-    pub fn script_function(mut self, f: ScriptFunction) -> Self {
-        self.program = Some(TransactionPayload::ScriptFunction(f));
+    pub fn script_function(mut self, f: EntryFunction) -> Self {
+        self.program = Some(TransactionPayload::EntryFunction(f));
         self
     }
 

@@ -10,7 +10,7 @@ use starcoin_types::{
     transaction::SignedUserTransaction,
 };
 use starcoin_vm_types::account_config::core_code_address;
-use starcoin_vm_types::transaction::ScriptFunction;
+use starcoin_vm_types::transaction::EntryFunction;
 use starcoin_vm_types::{
     account_config::STC_TOKEN_CODE_STR,
     genesis_config::ChainId,
@@ -37,7 +37,7 @@ impl ForceUpgrade {
             })
             .ok_or_else(|| format_err!("Can not find upgrade package {}", package_file))?;
 
-        let init_script = ScriptFunction::new(
+        let init_script = EntryFunction::new(
             ModuleId::new(
                 core_code_address(),
                 Identifier::new("StdlibUpgradeScripts").unwrap(),

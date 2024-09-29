@@ -21,7 +21,7 @@ use starcoin_vm_types::token::stc::{stc_type_tag, G_STC_TOKEN_CODE};
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::authenticator::{AccountPrivateKey, AuthenticationKey};
 use starcoin_vm_types::transaction::{
-    Module, Package, RawUserTransaction, ScriptFunction, SignedUserTransaction, Transaction,
+    EntryFunction, Module, Package, RawUserTransaction, SignedUserTransaction, Transaction,
     TransactionPayload,
 };
 use starcoin_vm_types::value::MoveValue;
@@ -74,10 +74,10 @@ pub fn build_transfer_txn(
 pub fn build_batch_script_function(
     receivers: Vec<AccountAddress>,
     amounts: Vec<u128>,
-) -> ScriptFunction {
+) -> EntryFunction {
     let addresses = MoveValue::vector_address(receivers);
     let amounts = MoveValue::Vector(amounts.into_iter().map(MoveValue::U128).collect());
-    ScriptFunction::new(
+    EntryFunction::new(
         ModuleId::new(
             core_code_address(),
             Identifier::new("TransferScripts").unwrap(),
@@ -94,7 +94,7 @@ pub fn build_batch_script_function(
 pub fn build_batch_script_function_same_amount(
     receivers: Vec<AccountAddress>,
     amount: u128,
-) -> ScriptFunction {
+) -> EntryFunction {
     let len = receivers.len();
     build_batch_script_function(receivers, (0..len).map(|_| amount).collect())
 }
@@ -109,7 +109,7 @@ pub fn build_batch_transfer_txn(
     expiration_timestamp_secs: u64,
     chain_id: ChainId,
 ) -> RawUserTransaction {
-    let payload = TransactionPayload::ScriptFunction(build_batch_script_function_same_amount(
+    let payload = TransactionPayload::EntryFunction(build_batch_script_function_same_amount(
         receivers, amount,
     ));
 
@@ -182,7 +182,7 @@ pub fn raw_peer_to_peer_txn(
     RawUserTransaction::new_with_default_gas_token(
         sender,
         seq_num,
-        TransactionPayload::ScriptFunction(encode_transfer_script_by_token_code(
+        TransactionPayload::EntryFunction(encode_transfer_script_by_token_code(
             receiver,
             transfer_amount,
             token_code,
@@ -203,7 +203,7 @@ pub fn raw_accept_token_txn(
     expiration_timestamp_secs: u64,
     chain_id: ChainId,
 ) -> RawUserTransaction {
-    let payload = TransactionPayload::ScriptFunction(ScriptFunction::new(
+    let payload = TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(core_code_address(), Identifier::new("Account").unwrap()),
         Identifier::new("accept_token").unwrap(),
         vec![TypeTag::Struct(Box::new(token_code.try_into().unwrap()))],
@@ -227,8 +227,8 @@ pub fn encode_create_account_script_function(
     account_address: &AccountAddress,
     auth_key: AuthenticationKey,
     initial_balance: u128,
-) -> ScriptFunction {
-    ScriptFunction::new(
+) -> EntryFunction {
+    EntryFunction::new(
         ModuleId::new(core_code_address(), Identifier::new("Account").unwrap()),
         Identifier::new("create_account_with_initial_amount").unwrap(),
         vec![token_type],
@@ -240,7 +240,7 @@ pub fn encode_create_account_script_function(
     )
 }
 
-pub fn encode_transfer_script_function(recipient: AccountAddress, amount: u128) -> ScriptFunction {
+pub fn encode_transfer_script_function(recipient: AccountAddress, amount: u128) -> EntryFunction {
     encode_transfer_script_by_token_code(recipient, amount, G_STC_TOKEN_CODE.clone())
 }
 
@@ -248,8 +248,8 @@ pub fn encode_transfer_script_by_token_code(
     recipient: AccountAddress,
     amount: u128,
     token_code: TokenCode,
-) -> ScriptFunction {
-    ScriptFunction::new(
+) -> EntryFunction {
+    EntryFunction::new(
         ModuleId::new(
             core_code_address(),
             Identifier::new("TransferScripts").unwrap(),
@@ -263,8 +263,8 @@ pub fn encode_transfer_script_by_token_code(
     )
 }
 
-pub fn encode_nft_transfer_script(uuid: NFTUUID, recipient: AccountAddress) -> ScriptFunction {
-    ScriptFunction::new(
+pub fn encode_nft_transfer_script(uuid: NFTUUID, recipient: AccountAddress) -> EntryFunction {
+    EntryFunction::new(
         ModuleId::new(
             core_code_address(),
             Identifier::new("NFTGalleryScripts").unwrap(),
@@ -286,7 +286,7 @@ pub fn peer_to_peer_txn_sent_as_association(
     net: &ChainNetwork,
 ) -> SignedUserTransaction {
     crate::create_signed_txn_with_association_account(
-        TransactionPayload::ScriptFunction(encode_transfer_script_function(recipient, amount)),
+        TransactionPayload::EntryFunction(encode_transfer_script_function(recipient, amount)),
         seq_num,
         DEFAULT_MAX_GAS_AMOUNT,
         1,
@@ -307,7 +307,7 @@ pub fn peer_to_peer_v2(
         .sign_txn(RawUserTransaction::new_with_default_gas_token(
             *sender.address(),
             seq_num,
-            TransactionPayload::ScriptFunction(ScriptFunction::new(
+            TransactionPayload::EntryFunction(EntryFunction::new(
                 ModuleId::new(
                     core_code_address(),
                     Identifier::new("TransferScripts").unwrap(),
@@ -350,7 +350,7 @@ pub fn create_signed_txn_with_association_account(
         .expect("Sign txn should work.")
 }
 
-fn build_init_script(net: &ChainNetwork) -> ScriptFunction {
+fn build_init_script(net: &ChainNetwork) -> EntryFunction {
     match net.genesis_config().stdlib_version {
         StdlibVersion::Version(1) => build_init_script_v1(net),
         version if version < StdlibVersion::Version(12) => build_init_script_v2(net),
@@ -371,7 +371,7 @@ pub fn build_stdlib_package_with_modules(
     module_to_package(modules, Some(init_script))
 }
 
-pub fn build_init_script_v1(net: &ChainNetwork) -> ScriptFunction {
+pub fn build_init_script_v1(net: &ChainNetwork) -> EntryFunction {
     let genesis_config = net.genesis_config();
     let chain_id = net.chain_id().id();
     let genesis_timestamp = net.genesis_block_parameter().timestamp;
@@ -391,7 +391,7 @@ pub fn build_init_script_v1(net: &ChainNetwork) -> ScriptFunction {
             .expect("Cannot serialize gas schedule");
     let native_schedule = bcs_ext::to_bytes(&genesis_config.vm_config.gas_schedule.native_table)
         .expect("Cannot serialize gas schedule");
-    ScriptFunction::new(
+    EntryFunction::new(
         ModuleId::new(core_code_address(), Identifier::new("Genesis").unwrap()),
         Identifier::new("initialize").unwrap(),
         vec![],
@@ -534,7 +534,7 @@ pub fn build_init_script_v1(net: &ChainNetwork) -> ScriptFunction {
     )
 }
 
-pub fn build_init_script_v2(net: &ChainNetwork) -> ScriptFunction {
+pub fn build_init_script_v2(net: &ChainNetwork) -> EntryFunction {
     let genesis_config = net.genesis_config();
     let chain_id = net.chain_id().id();
     let genesis_timestamp = net.genesis_block_parameter().timestamp;
@@ -555,7 +555,7 @@ pub fn build_init_script_v2(net: &ChainNetwork) -> ScriptFunction {
     let native_schedule = bcs_ext::to_bytes(&genesis_config.vm_config.gas_schedule.native_table)
         .expect("Cannot serialize gas schedule");
 
-    ScriptFunction::new(
+    EntryFunction::new(
         ModuleId::new(core_code_address(), Identifier::new("Genesis").unwrap()),
         Identifier::new("initialize_v2").unwrap(),
         vec![],
@@ -699,7 +699,7 @@ pub fn build_init_script_v2(net: &ChainNetwork) -> ScriptFunction {
     )
 }
 
-pub fn build_init_script_v3(net: &ChainNetwork) -> ScriptFunction {
+pub fn build_init_script_v3(net: &ChainNetwork) -> EntryFunction {
     let genesis_config = net.genesis_config();
     let chain_id = net.chain_id().id();
     let genesis_timestamp = net.genesis_block_parameter().timestamp;
@@ -720,7 +720,7 @@ pub fn build_init_script_v3(net: &ChainNetwork) -> ScriptFunction {
     let native_schedule = bcs_ext::to_bytes(&genesis_config.vm_config.gas_schedule.native_table)
         .expect("Cannot serialize gas schedule");
 
-    ScriptFunction::new(
+    EntryFunction::new(
         ModuleId::new(core_code_address(), Identifier::new("Genesis").unwrap()),
         Identifier::new("initialize_v3").unwrap(),
         vec![],
@@ -869,7 +869,7 @@ pub fn build_init_script_v3(net: &ChainNetwork) -> ScriptFunction {
 pub fn build_package_with_stdlib_module(
     stdlib_option: StdLibOptions,
     module_names: Vec<&str>,
-    init_script: Option<ScriptFunction>,
+    init_script: Option<EntryFunction>,
 ) -> Result<Package> {
     let modules = stdlib_modules(stdlib_option);
     let mut package = Package::new_with_modules(
@@ -902,7 +902,7 @@ pub fn build_package_with_stdlib_module(
 
 pub fn build_stdlib_package_for_test(
     stdlib_option: StdLibOptions,
-    init_script: Option<ScriptFunction>,
+    init_script: Option<EntryFunction>,
 ) -> Result<Package> {
     stdlib_package(stdlib_option, init_script)
 }
@@ -914,7 +914,7 @@ pub fn build_module_upgrade_proposal(
     enforced: bool,
     token_code: TokenCode,
     stdlib_version: StdlibVersion,
-) -> (ScriptFunction, HashValue) {
+) -> (EntryFunction, HashValue) {
     let package_hash = package.crypto_hash();
     // propose_module_upgrade_v2 is available after v2 upgrade.
     let (function_name, args) = if stdlib_version >= StdlibVersion::Version(2) {
@@ -941,7 +941,7 @@ pub fn build_module_upgrade_proposal(
     };
 
     (
-        ScriptFunction::new(
+        EntryFunction::new(
             ModuleId::new(
                 core_code_address(),
                 Identifier::new("ModuleUpgradeScripts").unwrap(),
@@ -960,8 +960,8 @@ pub fn build_module_upgrade_plan(
     proposer_address: AccountAddress,
     proposal_id: u64,
     token_code: TokenCode,
-) -> ScriptFunction {
-    ScriptFunction::new(
+) -> EntryFunction {
+    EntryFunction::new(
         ModuleId::new(
             core_code_address(),
             Identifier::new("ModuleUpgradeScripts").unwrap(),
@@ -982,7 +982,7 @@ pub fn build_module_upgrade_queue(
     proposal_id: u64,
     token_code: TokenCode,
     stdlib_version: StdlibVersion,
-) -> ScriptFunction {
+) -> EntryFunction {
     let upgrade_module = if stdlib_version >= StdlibVersion::Version(2) {
         TypeTag::Struct(Box::new(StructTag {
             address: genesis_address(),
@@ -999,7 +999,7 @@ pub fn build_module_upgrade_queue(
         }))
     };
 
-    ScriptFunction::new(
+    EntryFunction::new(
         ModuleId::new(core_code_address(), Identifier::new("Dao").unwrap()),
         Identifier::new("queue_proposal_action").unwrap(),
         vec![
@@ -1015,9 +1015,9 @@ pub fn build_module_upgrade_queue(
     )
 }
 
-pub fn build_vm_config_upgrade_proposal(vm_config: VMConfig, exec_delay: u64) -> ScriptFunction {
+pub fn build_vm_config_upgrade_proposal(vm_config: VMConfig, exec_delay: u64) -> EntryFunction {
     let gas_constants = &vm_config.gas_schedule.gas_constants;
-    ScriptFunction::new(
+    EntryFunction::new(
         ModuleId::new(
             core_code_address(),
             Identifier::new("OnChainConfigScripts").unwrap(),
@@ -1047,8 +1047,8 @@ pub fn build_vm_config_upgrade_proposal(vm_config: VMConfig, exec_delay: u64) ->
     )
 }
 
-pub fn build_empty_script() -> ScriptFunction {
-    ScriptFunction::new(
+pub fn build_empty_script() -> EntryFunction {
+    EntryFunction::new(
         ModuleId::new(
             core_code_address(),
             Identifier::new("EmptyScripts").unwrap(),
@@ -1060,7 +1060,7 @@ pub fn build_empty_script() -> ScriptFunction {
 }
 
 fn empty_txn_payload() -> TransactionPayload {
-    TransactionPayload::ScriptFunction(build_empty_script())
+    TransactionPayload::EntryFunction(build_empty_script())
 }
 
 pub fn build_signed_empty_txn(

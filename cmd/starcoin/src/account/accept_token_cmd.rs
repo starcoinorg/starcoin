@@ -11,7 +11,7 @@ use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::{ModuleId, TypeTag};
 use starcoin_vm_types::token::token_code::TokenCode;
-use starcoin_vm_types::transaction::{ScriptFunction, TransactionPayload};
+use starcoin_vm_types::transaction::{EntryFunction, TransactionPayload};
 use std::convert::TryInto;
 
 /// Accept a new token, this operator will call 0x1::Account::accept_token function.
@@ -43,7 +43,7 @@ impl CommandAction for AcceptTokenCommand {
         let opt = ctx.opt();
         ctx.state().build_and_execute_transaction(
             opt.transaction_opts.clone(),
-            TransactionPayload::ScriptFunction(ScriptFunction::new(
+            TransactionPayload::EntryFunction(EntryFunction::new(
                 ModuleId::new(core_code_address(), Identifier::new("Account").unwrap()),
                 Identifier::new("accept_token").unwrap(),
                 vec![TypeTag::Struct(Box::new(

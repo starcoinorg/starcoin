@@ -33,7 +33,7 @@ use starcoin_types::language_storage::TypeTag;
 use starcoin_types::proof::SparseMerkleProof;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::authenticator::{AuthenticationKey, TransactionAuthenticator};
-use starcoin_types::transaction::{RawUserTransaction, ScriptFunction, TransactionArgument};
+use starcoin_types::transaction::{EntryFunction, RawUserTransaction, TransactionArgument};
 use starcoin_types::vm_error::AbortLocation;
 use starcoin_types::U256;
 use starcoin_vm_types::access_path::AccessPath;
@@ -228,7 +228,7 @@ impl From<RawUserTransaction> for TransactionRequest {
                 request.script = s.map(Into::into);
                 request.modules = m.into_iter().map(|m| StrView(m.into())).collect();
             }
-            TransactionPayload::ScriptFunction(s) => {
+            TransactionPayload::EntryFunction(s) => {
                 request.script = Some(ScriptData::from(s));
             }
         }
@@ -301,7 +301,7 @@ pub struct ScriptData {
 }
 
 impl ScriptData {
-    pub fn into_script_function(self) -> anyhow::Result<ScriptFunction> {
+    pub fn into_script_function(self) -> anyhow::Result<EntryFunction> {
         match self.into_data() {
             Err(script_function) => Ok(script_function),
             _ => {
@@ -317,14 +317,14 @@ impl ScriptData {
             }
         }
     }
-    fn into_data(self) -> Result<Script, ScriptFunction> {
+    fn into_data(self) -> Result<Script, EntryFunction> {
         let ty_args: Vec<_> = self.type_args.into_iter().map(|s| s.0).collect();
         let args: Vec<_> = self.args.to_bcs_bytes();
 
         match self.code.0 {
             ByteCodeOrScriptFunction::ByteCode(code) => Ok(Script::new(code, ty_args, args)),
             ByteCodeOrScriptFunction::ScriptFunction(FunctionId { module, function }) => {
-                Err(ScriptFunction::new(module, function, ty_args, args))
+                Err(EntryFunction::new(module, function, ty_args, args))
             }
         }
     }
@@ -335,7 +335,7 @@ impl Into<TransactionPayload> for ScriptData {
     fn into(self) -> TransactionPayload {
         match self.into_data() {
             Ok(script) => TransactionPayload::Script(script),
-            Err(func) => TransactionPayload::ScriptFunction(func),
+            Err(func) => TransactionPayload::EntryFunction(func),
         }
     }
 }
@@ -351,8 +351,8 @@ impl From<Script> for ScriptData {
     }
 }
 
-impl From<ScriptFunction> for ScriptData {
-    fn from(s: ScriptFunction) -> Self {
+impl From<EntryFunction> for ScriptData {
+    fn from(s: EntryFunction) -> Self {
         let (module, function, ty_args, args) = s.into_inner();
         Self {
             code: StrView(ByteCodeOrScriptFunction::ScriptFunction(FunctionId {

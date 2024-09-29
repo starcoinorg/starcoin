@@ -15,7 +15,7 @@ use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::transaction::{
-    parse_transaction_argument, ScriptFunction, TransactionArgument,
+    parse_transaction_argument, EntryFunction, TransactionArgument,
 };
 use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::{
@@ -51,7 +51,7 @@ fn incremental_update_with_version(
     dest_dir: PathBuf,
     sub_dir: String,
     new_modules: &BTreeMap<String, CompiledModule>,
-    init_script: Option<ScriptFunction>,
+    init_script: Option<EntryFunction>,
 ) {
     if pre_dir.exists() {
         let pre_compiled_modules = compiled_modules(pre_dir);
@@ -288,7 +288,7 @@ fn main() {
         println!("type_args {:?}", type_args);
         println!("args {:?}", args);
 
-        let init_script = ScriptFunction::new(
+        let init_script = EntryFunction::new(
             ModuleId::new(core_code_address(), Identifier::new(module_name).unwrap()),
             Identifier::new(function_name).unwrap(),
             type_args,

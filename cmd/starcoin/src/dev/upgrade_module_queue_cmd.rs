@@ -79,7 +79,7 @@ impl CommandAction for UpgradeModuleQueueCommand {
         );
         ctx.state().build_and_execute_transaction(
             opt.transaction_opts.clone(),
-            TransactionPayload::ScriptFunction(module_upgrade_queue),
+            TransactionPayload::EntryFunction(module_upgrade_queue),
         )
     }
 }

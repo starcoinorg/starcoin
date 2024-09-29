@@ -15,7 +15,7 @@ use starcoin_types::language_storage::ModuleId;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::transaction::authenticator::{AccountPrivateKey, AccountPublicKey};
-use starcoin_vm_types::transaction::{ScriptFunction, TransactionArgument, TransactionPayload};
+use starcoin_vm_types::transaction::{EntryFunction, TransactionArgument, TransactionPayload};
 use starcoin_vm_types::value::MoveValue;
 
 use crate::cli_state::CliState;
@@ -95,7 +95,7 @@ impl CommandAction for RotateAuthenticationKeyCommand {
         txn_opt.sender = Option::from(opt.account_address);
         let result = ctx.state().build_and_execute_transaction(
             txn_opt,
-            TransactionPayload::ScriptFunction(ScriptFunction::new(
+            TransactionPayload::EntryFunction(EntryFunction::new(
                 ModuleId::new(core_code_address(), Identifier::new("Account").unwrap()),
                 Identifier::new("rotate_authentication_key").unwrap(),
                 vec![],

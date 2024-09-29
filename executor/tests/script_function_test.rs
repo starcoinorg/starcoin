@@ -16,7 +16,7 @@ use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::state_view::StateReaderExt;
 use starcoin_vm_types::transaction::{
-    Package, Script, ScriptFunction, TransactionPayload, TransactionStatus,
+    EntryFunction, Package, Script, TransactionPayload, TransactionStatus,
 };
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use std::ops::Sub;
@@ -88,7 +88,7 @@ fn test_invoke_script_function() -> Result<()> {
     let output1 = execute_and_apply(&chain_state, txn1);
     assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
 
-    let payload = TransactionPayload::ScriptFunction(ScriptFunction::new(
+    let payload = TransactionPayload::EntryFunction(EntryFunction::new(
         module_id,
         Identifier::new("fn_script").unwrap(),
         vec![],
@@ -121,7 +121,7 @@ fn test_invoke_public_function() -> Result<()> {
     let output1 = execute_and_apply(&chain_state, txn1);
     assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
 
-    let payload = TransactionPayload::ScriptFunction(ScriptFunction::new(
+    let payload = TransactionPayload::EntryFunction(EntryFunction::new(
         module_id,
         Identifier::new("fn_public").unwrap(),
         vec![],
@@ -157,7 +157,7 @@ fn test_invoke_private_function() -> Result<()> {
     let output1 = execute_and_apply(&chain_state, txn1);
     assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
 
-    let payload = TransactionPayload::ScriptFunction(ScriptFunction::new(
+    let payload = TransactionPayload::EntryFunction(EntryFunction::new(
         module_id,
         Identifier::new("fn_private").unwrap(),
         vec![],
@@ -221,7 +221,7 @@ fn test_signer_cap_internal_type_error() -> Result<()> {
     let compiled_module = compile_modules_with_address(*alice.address(), module_source)
         .pop()
         .unwrap();
-    let init_script = ScriptFunction::new(
+    let init_script = EntryFunction::new(
         ModuleId::new(
             *alice.address(),
             Identifier::new("IdentifierNFTTest").unwrap(),
@@ -436,7 +436,7 @@ fn test_transaction_arg_verify() -> Result<()> {
 
     let money = 100_000;
     let num: u128 = 50_000_000;
-    let payload = TransactionPayload::ScriptFunction(ScriptFunction::new(
+    let payload = TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(*account1.address(), Identifier::new("test").unwrap()),
         Identifier::new("deposit_token").unwrap(),
         vec![stc_type_tag()],

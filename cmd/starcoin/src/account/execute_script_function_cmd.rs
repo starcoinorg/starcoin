@@ -9,7 +9,7 @@ use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_api::types::FunctionIdView;
 use starcoin_types::transaction::{parse_transaction_argument_advance, TransactionArgument};
-use starcoin_vm_types::transaction::{ScriptFunction, TransactionPayload};
+use starcoin_vm_types::transaction::{EntryFunction, TransactionPayload};
 use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 
@@ -56,7 +56,7 @@ impl CommandAction for ExecuteScriptFunctionCmd {
         let script_function = opt.script_function.clone().0;
         ctx.state().build_and_execute_transaction(
             opt.transaction_opts.clone(),
-            TransactionPayload::ScriptFunction(ScriptFunction::new(
+            TransactionPayload::EntryFunction(EntryFunction::new(
                 script_function.module,
                 script_function.function,
                 type_tags,

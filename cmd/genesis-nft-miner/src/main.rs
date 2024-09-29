@@ -13,7 +13,7 @@ use starcoin_types::genesis_config::ChainId;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
 use starcoin_types::transaction::authenticator::AccountPrivateKey;
-use starcoin_types::transaction::{RawUserTransaction, ScriptFunction, SignedUserTransaction};
+use starcoin_types::transaction::{EntryFunction, RawUserTransaction, SignedUserTransaction};
 use starcoin_vm_types::value::MoveValue;
 use std::str::FromStr;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -96,7 +96,7 @@ async fn main() -> Result<()> {
             .unwrap_or_default()
     };
     let (index, proofs) = get_index_proofs(sender)?;
-    let script_function = ScriptFunction::new(
+    let script_function = EntryFunction::new(
         ModuleId::new(
             genesis_address(),
             Identifier::new("GenesisNFTScripts").unwrap(),

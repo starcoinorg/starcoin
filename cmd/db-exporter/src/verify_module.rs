@@ -69,7 +69,7 @@ impl BatchCmdExec<VerifyModulesType, Self, VerifyModuleError> for Block {
                 TransactionPayload::Script(_) => {
                     //TODO
                 }
-                TransactionPayload::ScriptFunction(_) => {
+                TransactionPayload::EntryFunction(_) => {
                     //continue
                 }
             }
