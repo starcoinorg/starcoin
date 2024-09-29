@@ -238,22 +238,22 @@ transferred to A
 
 
 <pre><code><b>use</b> <a href="account.md#0x1_account">0x1::account</a>;
-<b>use</b> <a href="starcoin_account.md#0x1_starcoin_account">0x1::starcoin_account</a>;
-<b>use</b> <a href="starcoin_coin.md#0x1_starcoin_coin">0x1::starcoin_coin</a>;
-<b>use</b> <a href="starcoin_governance.md#0x1_starcoin_governance">0x1::starcoin_governance</a>;
 <b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
-<b>use</b> <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
+<b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="event.md#0x1_event">0x1::event</a>;
-<b>use</b> <a href="../../starcoin-stdlib/../move-stdlib/doc/features.md#0x1_features">0x1::features</a>;
+<b>use</b> <a href="../../move-stdlib/doc/features.md#0x1_features">0x1::features</a>;
 <b>use</b> <a href="../../starcoin-stdlib/doc/pool_u64_unbound.md#0x1_pool_u64_unbound">0x1::pool_u64_unbound</a>;
-<b>use</b> <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
+<b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
 <b>use</b> <a href="../../starcoin-stdlib/doc/smart_table.md#0x1_smart_table">0x1::smart_table</a>;
 <b>use</b> <a href="stake.md#0x1_stake">0x1::stake</a>;
 <b>use</b> <a href="staking_config.md#0x1_staking_config">0x1::staking_config</a>;
+<b>use</b> <a href="starcoin_account.md#0x1_starcoin_account">0x1::starcoin_account</a>;
+<b>use</b> <a href="starcoin_coin.md#0x1_starcoin_coin">0x1::starcoin_coin</a>;
+<b>use</b> <a href="starcoin_governance.md#0x1_starcoin_governance">0x1::starcoin_governance</a>;
 <b>use</b> <a href="../../starcoin-stdlib/doc/table.md#0x1_table">0x1::table</a>;
 <b>use</b> <a href="../../starcoin-stdlib/doc/table_with_length.md#0x1_table_with_length">0x1::table_with_length</a>;
 <b>use</b> <a href="timestamp.md#0x1_timestamp">0x1::timestamp</a>;
-<b>use</b> <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">0x1::vector</a>;
+<b>use</b> <a href="../../move-stdlib/doc/vector.md#0x1_vector">0x1::vector</a>;
 </code></pre>
 
 
@@ -1941,7 +1941,7 @@ This constraint is not enforced on inactive pools as they only allow redeems
 
 
 
-<pre><code><b>const</b> <a href="delegation_pool.md#0x1_delegation_pool_MODULE_SALT">MODULE_SALT</a>: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; = [97, 112, 116, 111, 115, 95, 102, 114, 97, 109, 101, 119, 111, 114, 107, 58, 58, 100, 101, 108, 101, 103, 97, 116, 105, 111, 110, 95, 112, 111, 111, 108];
+<pre><code><b>const</b> <a href="delegation_pool.md#0x1_delegation_pool_MODULE_SALT">MODULE_SALT</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; = [115, 116, 97, 114, 99, 111, 105, 110, 95, 102, 114, 97, 109, 101, 119, 111, 114, 107, 58, 58, 100, 101, 108, 101, 103, 97, 116, 105, 111, 110, 95, 112, 111, 111, 108];
 </code></pre>
 
 
@@ -2617,7 +2617,7 @@ Return the address of the stake pool to be created with the provided owner, and 
 
 
 <pre><code>#[view]
-<b>public</b> <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_get_expected_stake_pool_address">get_expected_stake_pool_address</a>(owner: <b>address</b>, delegation_pool_creation_seed: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <b>address</b>
+<b>public</b> <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_get_expected_stake_pool_address">get_expected_stake_pool_address</a>(owner: <b>address</b>, delegation_pool_creation_seed: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <b>address</b>
 </code></pre>
 
 
@@ -2626,7 +2626,7 @@ Return the address of the stake pool to be created with the provided owner, and 
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_get_expected_stake_pool_address">get_expected_stake_pool_address</a>(owner: <b>address</b>, delegation_pool_creation_seed: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_get_expected_stake_pool_address">get_expected_stake_pool_address</a>(owner: <b>address</b>, delegation_pool_creation_seed: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;
 ): <b>address</b> {
     <b>let</b> seed = <a href="delegation_pool.md#0x1_delegation_pool_create_resource_account_seed">create_resource_account_seed</a>(delegation_pool_creation_seed);
     <a href="account.md#0x1_account_create_resource_address">account::create_resource_address</a>(&owner, seed)
@@ -2732,7 +2732,7 @@ Return allowlist or revert if allowlisting is not enabled for the provided deleg
 
 
 <pre><code>#[view]
-<b>public</b> <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_get_delegators_allowlist">get_delegators_allowlist</a>(pool_address: <b>address</b>): <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt;
+<b>public</b> <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_get_delegators_allowlist">get_delegators_allowlist</a>(pool_address: <b>address</b>): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt;
 </code></pre>
 
 
@@ -2743,12 +2743,12 @@ Return allowlist or revert if allowlisting is not enabled for the provided deleg
 
 <pre><code><b>public</b> <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_get_delegators_allowlist">get_delegators_allowlist</a>(
     pool_address: <b>address</b>,
-): <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt; <b>acquires</b> <a href="delegation_pool.md#0x1_delegation_pool_DelegationPoolAllowlisting">DelegationPoolAllowlisting</a> {
+): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt; <b>acquires</b> <a href="delegation_pool.md#0x1_delegation_pool_DelegationPoolAllowlisting">DelegationPoolAllowlisting</a> {
     <a href="delegation_pool.md#0x1_delegation_pool_assert_allowlisting_enabled">assert_allowlisting_enabled</a>(pool_address);
 
-    <b>let</b> allowlist = <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>[];
+    <b>let</b> allowlist = <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>[];
     <a href="../../starcoin-stdlib/doc/smart_table.md#0x1_smart_table_for_each_ref">smart_table::for_each_ref</a>(<b>freeze</b>(<a href="delegation_pool.md#0x1_delegation_pool_borrow_mut_delegators_allowlist">borrow_mut_delegators_allowlist</a>(pool_address)), |delegator, _v| {
-        <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> allowlist, *delegator);
+        <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> allowlist, *delegator);
     });
     allowlist
 }
@@ -2768,7 +2768,7 @@ to host the delegation pool resource and own the underlying stake pool.
 Ownership over setting the operator/voter is granted to <code>owner</code> who has both roles initially.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_initialize_delegation_pool">initialize_delegation_pool</a>(owner: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, operator_commission_percentage: u64, delegation_pool_creation_seed: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_initialize_delegation_pool">initialize_delegation_pool</a>(owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, operator_commission_percentage: u64, delegation_pool_creation_seed: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -2778,14 +2778,14 @@ Ownership over setting the operator/voter is granted to <code>owner</code> who h
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_initialize_delegation_pool">initialize_delegation_pool</a>(
-    owner: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     operator_commission_percentage: u64,
-    delegation_pool_creation_seed: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    delegation_pool_creation_seed: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
 ) <b>acquires</b> <a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>, <a href="delegation_pool.md#0x1_delegation_pool_GovernanceRecords">GovernanceRecords</a>, <a href="delegation_pool.md#0x1_delegation_pool_BeneficiaryForOperator">BeneficiaryForOperator</a>, <a href="delegation_pool.md#0x1_delegation_pool_NextCommissionPercentage">NextCommissionPercentage</a> {
-    <b>assert</b>!(<a href="../../starcoin-stdlib/../move-stdlib/doc/features.md#0x1_features_delegation_pools_enabled">features::delegation_pools_enabled</a>(), <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="delegation_pool.md#0x1_delegation_pool_EDELEGATION_POOLS_DISABLED">EDELEGATION_POOLS_DISABLED</a>));
-    <b>let</b> owner_address = <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(owner);
-    <b>assert</b>!(!<a href="delegation_pool.md#0x1_delegation_pool_owner_cap_exists">owner_cap_exists</a>(owner_address), <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_already_exists">error::already_exists</a>(<a href="delegation_pool.md#0x1_delegation_pool_EOWNER_CAP_ALREADY_EXISTS">EOWNER_CAP_ALREADY_EXISTS</a>));
-    <b>assert</b>!(<a href="delegation_pool.md#0x1_delegation_pool_operator_commission_percentage">operator_commission_percentage</a> &lt;= <a href="delegation_pool.md#0x1_delegation_pool_MAX_FEE">MAX_FEE</a>, <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="delegation_pool.md#0x1_delegation_pool_EINVALID_COMMISSION_PERCENTAGE">EINVALID_COMMISSION_PERCENTAGE</a>));
+    <b>assert</b>!(<a href="../../move-stdlib/doc/features.md#0x1_features_delegation_pools_enabled">features::delegation_pools_enabled</a>(), <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="delegation_pool.md#0x1_delegation_pool_EDELEGATION_POOLS_DISABLED">EDELEGATION_POOLS_DISABLED</a>));
+    <b>let</b> owner_address = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(owner);
+    <b>assert</b>!(!<a href="delegation_pool.md#0x1_delegation_pool_owner_cap_exists">owner_cap_exists</a>(owner_address), <a href="../../move-stdlib/doc/error.md#0x1_error_already_exists">error::already_exists</a>(<a href="delegation_pool.md#0x1_delegation_pool_EOWNER_CAP_ALREADY_EXISTS">EOWNER_CAP_ALREADY_EXISTS</a>));
+    <b>assert</b>!(<a href="delegation_pool.md#0x1_delegation_pool_operator_commission_percentage">operator_commission_percentage</a> &lt;= <a href="delegation_pool.md#0x1_delegation_pool_MAX_FEE">MAX_FEE</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="delegation_pool.md#0x1_delegation_pool_EINVALID_COMMISSION_PERCENTAGE">EINVALID_COMMISSION_PERCENTAGE</a>));
 
     // generate a seed <b>to</b> be used <b>to</b> create the resource <a href="account.md#0x1_account">account</a> hosting the delegation pool
     <b>let</b> seed = <a href="delegation_pool.md#0x1_delegation_pool_create_resource_account_seed">create_resource_account_seed</a>(delegation_pool_creation_seed);
@@ -2794,7 +2794,7 @@ Ownership over setting the operator/voter is granted to <code>owner</code> who h
     <a href="coin.md#0x1_coin_register">coin::register</a>&lt;StarcoinCoin&gt;(&stake_pool_signer);
 
     // stake_pool_signer will be owner of the <a href="stake.md#0x1_stake">stake</a> pool and have its `<a href="stake.md#0x1_stake_OwnerCapability">stake::OwnerCapability</a>`
-    <b>let</b> pool_address = <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(&stake_pool_signer);
+    <b>let</b> pool_address = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(&stake_pool_signer);
     <a href="stake.md#0x1_stake_initialize_stake_owner">stake::initialize_stake_owner</a>(&stake_pool_signer, 0, owner_address, owner_address);
 
     <b>let</b> inactive_shares = <a href="../../starcoin-stdlib/doc/table.md#0x1_table_new">table::new</a>&lt;<a href="delegation_pool.md#0x1_delegation_pool_ObservedLockupCycle">ObservedLockupCycle</a>, <a href="../../starcoin-stdlib/doc/pool_u64.md#0x1_pool_u64_Pool">pool_u64::Pool</a>&gt;();
@@ -2823,8 +2823,8 @@ Ownership over setting the operator/voter is granted to <code>owner</code> who h
     <b>move_to</b>(owner, <a href="delegation_pool.md#0x1_delegation_pool_DelegationPoolOwnership">DelegationPoolOwnership</a> { pool_address });
 
     // All delegation pool enable partial governance <a href="voting.md#0x1_voting">voting</a> by default once the feature flag is enabled.
-    <b>if</b> (<a href="../../starcoin-stdlib/../move-stdlib/doc/features.md#0x1_features_partial_governance_voting_enabled">features::partial_governance_voting_enabled</a>(
-    ) && <a href="../../starcoin-stdlib/../move-stdlib/doc/features.md#0x1_features_delegation_pool_partial_governance_voting_enabled">features::delegation_pool_partial_governance_voting_enabled</a>()) {
+    <b>if</b> (<a href="../../move-stdlib/doc/features.md#0x1_features_partial_governance_voting_enabled">features::partial_governance_voting_enabled</a>(
+    ) && <a href="../../move-stdlib/doc/features.md#0x1_features_delegation_pool_partial_governance_voting_enabled">features::delegation_pool_partial_governance_voting_enabled</a>()) {
         <a href="delegation_pool.md#0x1_delegation_pool_enable_partial_governance_voting">enable_partial_governance_voting</a>(pool_address);
     }
 }
@@ -2884,10 +2884,10 @@ The existing voter will be replaced. The function is permissionless.
 <pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_enable_partial_governance_voting">enable_partial_governance_voting</a>(
     pool_address: <b>address</b>,
 ) <b>acquires</b> <a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>, <a href="delegation_pool.md#0x1_delegation_pool_GovernanceRecords">GovernanceRecords</a>, <a href="delegation_pool.md#0x1_delegation_pool_BeneficiaryForOperator">BeneficiaryForOperator</a>, <a href="delegation_pool.md#0x1_delegation_pool_NextCommissionPercentage">NextCommissionPercentage</a> {
-    <b>assert</b>!(<a href="../../starcoin-stdlib/../move-stdlib/doc/features.md#0x1_features_partial_governance_voting_enabled">features::partial_governance_voting_enabled</a>(), <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="delegation_pool.md#0x1_delegation_pool_EDISABLED_FUNCTION">EDISABLED_FUNCTION</a>));
+    <b>assert</b>!(<a href="../../move-stdlib/doc/features.md#0x1_features_partial_governance_voting_enabled">features::partial_governance_voting_enabled</a>(), <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="delegation_pool.md#0x1_delegation_pool_EDISABLED_FUNCTION">EDISABLED_FUNCTION</a>));
     <b>assert</b>!(
-        <a href="../../starcoin-stdlib/../move-stdlib/doc/features.md#0x1_features_delegation_pool_partial_governance_voting_enabled">features::delegation_pool_partial_governance_voting_enabled</a>(),
-        <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="delegation_pool.md#0x1_delegation_pool_EDISABLED_FUNCTION">EDISABLED_FUNCTION</a>)
+        <a href="../../move-stdlib/doc/features.md#0x1_features_delegation_pool_partial_governance_voting_enabled">features::delegation_pool_partial_governance_voting_enabled</a>(),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="delegation_pool.md#0x1_delegation_pool_EDISABLED_FUNCTION">EDISABLED_FUNCTION</a>)
     );
     <a href="delegation_pool.md#0x1_delegation_pool_assert_delegation_pool_exists">assert_delegation_pool_exists</a>(pool_address);
     // synchronize delegation and <a href="stake.md#0x1_stake">stake</a> pools before <a href="../../starcoin-stdlib/doc/any.md#0x1_any">any</a> user operation.
@@ -2895,9 +2895,9 @@ The existing voter will be replaced. The function is permissionless.
 
     <b>let</b> <a href="delegation_pool.md#0x1_delegation_pool">delegation_pool</a> = <b>borrow_global</b>&lt;<a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>&gt;(pool_address);
     <b>let</b> stake_pool_signer = <a href="delegation_pool.md#0x1_delegation_pool_retrieve_stake_pool_owner">retrieve_stake_pool_owner</a>(<a href="delegation_pool.md#0x1_delegation_pool">delegation_pool</a>);
-    // delegated_voter is managed by the <a href="stake.md#0x1_stake">stake</a> pool itself, which <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a> capability is managed by <a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>.
+    // delegated_voter is managed by the <a href="stake.md#0x1_stake">stake</a> pool itself, which <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a> capability is managed by <a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>.
     // So <a href="voting.md#0x1_voting">voting</a> power of this <a href="stake.md#0x1_stake">stake</a> pool can only be used through this <b>module</b>.
-    <a href="stake.md#0x1_stake_set_delegated_voter">stake::set_delegated_voter</a>(&stake_pool_signer, <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(&stake_pool_signer));
+    <a href="stake.md#0x1_stake_set_delegated_voter">stake::set_delegated_voter</a>(&stake_pool_signer, <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(&stake_pool_signer));
 
     <b>move_to</b>(&stake_pool_signer, <a href="delegation_pool.md#0x1_delegation_pool_GovernanceRecords">GovernanceRecords</a> {
         votes: <a href="../../starcoin-stdlib/doc/smart_table.md#0x1_smart_table_new">smart_table::new</a>(),
@@ -2926,7 +2926,7 @@ Vote on a proposal with a voter's voting power. To successfully vote, the follow
 4. The delegation pool never votes on the proposal before enabling partial governance voting.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_vote">vote</a>(voter: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, pool_address: <b>address</b>, proposal_id: u64, voting_power: u64, should_pass: bool)
+<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_vote">vote</a>(voter: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, pool_address: <b>address</b>, proposal_id: u64, voting_power: u64, should_pass: bool)
 </code></pre>
 
 
@@ -2936,7 +2936,7 @@ Vote on a proposal with a voter's voting power. To successfully vote, the follow
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_vote">vote</a>(
-    voter: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    voter: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     pool_address: <b>address</b>,
     proposal_id: u64,
     voting_power: u64,
@@ -2946,7 +2946,7 @@ Vote on a proposal with a voter's voting power. To successfully vote, the follow
     // synchronize delegation and <a href="stake.md#0x1_stake">stake</a> pools before <a href="../../starcoin-stdlib/doc/any.md#0x1_any">any</a> user operation.
     <a href="delegation_pool.md#0x1_delegation_pool_synchronize_delegation_pool">synchronize_delegation_pool</a>(pool_address);
 
-    <b>let</b> voter_address = <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(voter);
+    <b>let</b> voter_address = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(voter);
     <b>let</b> remaining_voting_power = <a href="delegation_pool.md#0x1_delegation_pool_calculate_and_update_remaining_voting_power">calculate_and_update_remaining_voting_power</a>(
         pool_address,
         voter_address,
@@ -2955,7 +2955,7 @@ Vote on a proposal with a voter's voting power. To successfully vote, the follow
     <b>if</b> (voting_power &gt; remaining_voting_power) {
         voting_power = remaining_voting_power;
     };
-    <b>assert</b>!(voting_power &gt; 0, <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="delegation_pool.md#0x1_delegation_pool_ENO_VOTING_POWER">ENO_VOTING_POWER</a>));
+    <b>assert</b>!(voting_power &gt; 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="delegation_pool.md#0x1_delegation_pool_ENO_VOTING_POWER">ENO_VOTING_POWER</a>));
 
     <b>let</b> governance_records = <b>borrow_global_mut</b>&lt;<a href="delegation_pool.md#0x1_delegation_pool_GovernanceRecords">GovernanceRecords</a>&gt;(pool_address);
     // Check a edge case during the transient period of enabling partial governance <a href="voting.md#0x1_voting">voting</a>.
@@ -2966,7 +2966,7 @@ Vote on a proposal with a voter's voting power. To successfully vote, the follow
     <b>let</b> pool_signer = <a href="delegation_pool.md#0x1_delegation_pool_retrieve_stake_pool_owner">retrieve_stake_pool_owner</a>(<b>borrow_global</b>&lt;<a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>&gt;(pool_address));
     <a href="starcoin_governance.md#0x1_starcoin_governance_partial_vote">starcoin_governance::partial_vote</a>(&pool_signer, pool_address, proposal_id, voting_power, should_pass);
 
-    <b>if</b> (<a href="../../starcoin-stdlib/../move-stdlib/doc/features.md#0x1_features_module_event_migration_enabled">features::module_event_migration_enabled</a>()) {
+    <b>if</b> (<a href="../../move-stdlib/doc/features.md#0x1_features_module_event_migration_enabled">features::module_event_migration_enabled</a>()) {
         <a href="event.md#0x1_event_emit">event::emit</a>(
             <a href="delegation_pool.md#0x1_delegation_pool_Vote">Vote</a> {
                 voter: voter_address,
@@ -3004,7 +3004,7 @@ voting power in THIS delegation pool must be not less than the minimum required 
 <code><a href="starcoin_governance.md#0x1_starcoin_governance">starcoin_governance</a>.<b>move</b></code>.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_create_proposal">create_proposal</a>(voter: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, pool_address: <b>address</b>, execution_hash: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, metadata_location: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, metadata_hash: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, is_multi_step_proposal: bool)
+<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_create_proposal">create_proposal</a>(voter: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, pool_address: <b>address</b>, execution_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, metadata_location: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, metadata_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, is_multi_step_proposal: bool)
 </code></pre>
 
 
@@ -3014,11 +3014,11 @@ voting power in THIS delegation pool must be not less than the minimum required 
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_create_proposal">create_proposal</a>(
-    voter: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    voter: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     pool_address: <b>address</b>,
-    execution_hash: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    metadata_location: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    metadata_hash: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    execution_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    metadata_location: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    metadata_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     is_multi_step_proposal: bool,
 ) <b>acquires</b> <a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>, <a href="delegation_pool.md#0x1_delegation_pool_GovernanceRecords">GovernanceRecords</a>, <a href="delegation_pool.md#0x1_delegation_pool_BeneficiaryForOperator">BeneficiaryForOperator</a>, <a href="delegation_pool.md#0x1_delegation_pool_NextCommissionPercentage">NextCommissionPercentage</a> {
     <a href="delegation_pool.md#0x1_delegation_pool_assert_partial_governance_voting_enabled">assert_partial_governance_voting_enabled</a>(pool_address);
@@ -3026,13 +3026,13 @@ voting power in THIS delegation pool must be not less than the minimum required 
     // synchronize delegation and <a href="stake.md#0x1_stake">stake</a> pools before <a href="../../starcoin-stdlib/doc/any.md#0x1_any">any</a> user operation
     <a href="delegation_pool.md#0x1_delegation_pool_synchronize_delegation_pool">synchronize_delegation_pool</a>(pool_address);
 
-    <b>let</b> voter_addr = <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(voter);
+    <b>let</b> voter_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(voter);
     <b>let</b> pool = <b>borrow_global</b>&lt;<a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>&gt;(pool_address);
     <b>let</b> governance_records = <b>borrow_global_mut</b>&lt;<a href="delegation_pool.md#0x1_delegation_pool_GovernanceRecords">GovernanceRecords</a>&gt;(pool_address);
     <b>let</b> total_voting_power = <a href="delegation_pool.md#0x1_delegation_pool_calculate_and_update_delegated_votes">calculate_and_update_delegated_votes</a>(pool, governance_records, voter_addr);
     <b>assert</b>!(
         total_voting_power &gt;= <a href="starcoin_governance.md#0x1_starcoin_governance_get_required_proposer_stake">starcoin_governance::get_required_proposer_stake</a>(),
-        <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="delegation_pool.md#0x1_delegation_pool_EINSUFFICIENT_PROPOSER_STAKE">EINSUFFICIENT_PROPOSER_STAKE</a>));
+        <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="delegation_pool.md#0x1_delegation_pool_EINSUFFICIENT_PROPOSER_STAKE">EINSUFFICIENT_PROPOSER_STAKE</a>));
     <b>let</b> pool_signer = <a href="delegation_pool.md#0x1_delegation_pool_retrieve_stake_pool_owner">retrieve_stake_pool_owner</a>(<b>borrow_global</b>&lt;<a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>&gt;(pool_address));
     <b>let</b> proposal_id = <a href="starcoin_governance.md#0x1_starcoin_governance_create_proposal_v2_impl">starcoin_governance::create_proposal_v2_impl</a>(
         &pool_signer,
@@ -3045,7 +3045,7 @@ voting power in THIS delegation pool must be not less than the minimum required 
 
     <b>let</b> governance_records = <b>borrow_global_mut</b>&lt;<a href="delegation_pool.md#0x1_delegation_pool_GovernanceRecords">GovernanceRecords</a>&gt;(pool_address);
 
-    <b>if</b> (<a href="../../starcoin-stdlib/../move-stdlib/doc/features.md#0x1_features_module_event_migration_enabled">features::module_event_migration_enabled</a>()) {
+    <b>if</b> (<a href="../../move-stdlib/doc/features.md#0x1_features_module_event_migration_enabled">features::module_event_migration_enabled</a>()) {
         <a href="event.md#0x1_event_emit">event::emit</a>(
             <a href="delegation_pool.md#0x1_delegation_pool_CreateProposal">CreateProposal</a> {
                 proposal_id,
@@ -3086,7 +3086,7 @@ voting power in THIS delegation pool must be not less than the minimum required 
 
 
 <pre><code><b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_assert_owner_cap_exists">assert_owner_cap_exists</a>(owner: <b>address</b>) {
-    <b>assert</b>!(<a href="delegation_pool.md#0x1_delegation_pool_owner_cap_exists">owner_cap_exists</a>(owner), <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="delegation_pool.md#0x1_delegation_pool_EOWNER_CAP_NOT_FOUND">EOWNER_CAP_NOT_FOUND</a>));
+    <b>assert</b>!(<a href="delegation_pool.md#0x1_delegation_pool_owner_cap_exists">owner_cap_exists</a>(owner), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="delegation_pool.md#0x1_delegation_pool_EOWNER_CAP_NOT_FOUND">EOWNER_CAP_NOT_FOUND</a>));
 }
 </code></pre>
 
@@ -3110,7 +3110,7 @@ voting power in THIS delegation pool must be not less than the minimum required 
 
 
 <pre><code><b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_assert_delegation_pool_exists">assert_delegation_pool_exists</a>(pool_address: <b>address</b>) {
-    <b>assert</b>!(<a href="delegation_pool.md#0x1_delegation_pool_delegation_pool_exists">delegation_pool_exists</a>(pool_address), <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="delegation_pool.md#0x1_delegation_pool_EDELEGATION_POOL_DOES_NOT_EXIST">EDELEGATION_POOL_DOES_NOT_EXIST</a>));
+    <b>assert</b>!(<a href="delegation_pool.md#0x1_delegation_pool_delegation_pool_exists">delegation_pool_exists</a>(pool_address), <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="delegation_pool.md#0x1_delegation_pool_EDELEGATION_POOL_DOES_NOT_EXIST">EDELEGATION_POOL_DOES_NOT_EXIST</a>));
 }
 </code></pre>
 
@@ -3135,7 +3135,7 @@ voting power in THIS delegation pool must be not less than the minimum required 
 
 <pre><code><b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_assert_min_active_balance">assert_min_active_balance</a>(pool: &<a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>, delegator_address: <b>address</b>) {
     <b>let</b> balance = <a href="../../starcoin-stdlib/doc/pool_u64.md#0x1_pool_u64_balance">pool_u64::balance</a>(&pool.active_shares, delegator_address);
-    <b>assert</b>!(balance &gt;= <a href="delegation_pool.md#0x1_delegation_pool_MIN_COINS_ON_SHARES_POOL">MIN_COINS_ON_SHARES_POOL</a>, <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="delegation_pool.md#0x1_delegation_pool_EDELEGATOR_ACTIVE_BALANCE_TOO_LOW">EDELEGATOR_ACTIVE_BALANCE_TOO_LOW</a>));
+    <b>assert</b>!(balance &gt;= <a href="delegation_pool.md#0x1_delegation_pool_MIN_COINS_ON_SHARES_POOL">MIN_COINS_ON_SHARES_POOL</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="delegation_pool.md#0x1_delegation_pool_EDELEGATOR_ACTIVE_BALANCE_TOO_LOW">EDELEGATOR_ACTIVE_BALANCE_TOO_LOW</a>));
 }
 </code></pre>
 
@@ -3162,7 +3162,7 @@ voting power in THIS delegation pool must be not less than the minimum required 
     <b>let</b> balance = <a href="../../starcoin-stdlib/doc/pool_u64.md#0x1_pool_u64_balance">pool_u64::balance</a>(<a href="delegation_pool.md#0x1_delegation_pool_pending_inactive_shares_pool">pending_inactive_shares_pool</a>(pool), delegator_address);
     <b>assert</b>!(
         balance &gt;= <a href="delegation_pool.md#0x1_delegation_pool_MIN_COINS_ON_SHARES_POOL">MIN_COINS_ON_SHARES_POOL</a>,
-        <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="delegation_pool.md#0x1_delegation_pool_EDELEGATOR_PENDING_INACTIVE_BALANCE_TOO_LOW">EDELEGATOR_PENDING_INACTIVE_BALANCE_TOO_LOW</a>)
+        <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="delegation_pool.md#0x1_delegation_pool_EDELEGATOR_PENDING_INACTIVE_BALANCE_TOO_LOW">EDELEGATOR_PENDING_INACTIVE_BALANCE_TOO_LOW</a>)
     );
 }
 </code></pre>
@@ -3190,7 +3190,7 @@ voting power in THIS delegation pool must be not less than the minimum required 
     <a href="delegation_pool.md#0x1_delegation_pool_assert_delegation_pool_exists">assert_delegation_pool_exists</a>(pool_address);
     <b>assert</b>!(
         <a href="delegation_pool.md#0x1_delegation_pool_partial_governance_voting_enabled">partial_governance_voting_enabled</a>(pool_address),
-        <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="delegation_pool.md#0x1_delegation_pool_EPARTIAL_GOVERNANCE_VOTING_NOT_ENABLED">EPARTIAL_GOVERNANCE_VOTING_NOT_ENABLED</a>)
+        <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="delegation_pool.md#0x1_delegation_pool_EPARTIAL_GOVERNANCE_VOTING_NOT_ENABLED">EPARTIAL_GOVERNANCE_VOTING_NOT_ENABLED</a>)
     );
 }
 </code></pre>
@@ -3215,7 +3215,7 @@ voting power in THIS delegation pool must be not less than the minimum required 
 
 
 <pre><code><b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_assert_allowlisting_enabled">assert_allowlisting_enabled</a>(pool_address: <b>address</b>) {
-    <b>assert</b>!(<a href="delegation_pool.md#0x1_delegation_pool_allowlisting_enabled">allowlisting_enabled</a>(pool_address), <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="delegation_pool.md#0x1_delegation_pool_EDELEGATORS_ALLOWLISTING_NOT_ENABLED">EDELEGATORS_ALLOWLISTING_NOT_ENABLED</a>));
+    <b>assert</b>!(<a href="delegation_pool.md#0x1_delegation_pool_allowlisting_enabled">allowlisting_enabled</a>(pool_address), <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="delegation_pool.md#0x1_delegation_pool_EDELEGATORS_ALLOWLISTING_NOT_ENABLED">EDELEGATORS_ALLOWLISTING_NOT_ENABLED</a>));
 }
 </code></pre>
 
@@ -3244,7 +3244,7 @@ voting power in THIS delegation pool must be not less than the minimum required 
 ) <b>acquires</b> <a href="delegation_pool.md#0x1_delegation_pool_DelegationPoolAllowlisting">DelegationPoolAllowlisting</a> {
     <b>assert</b>!(
         <a href="delegation_pool.md#0x1_delegation_pool_delegator_allowlisted">delegator_allowlisted</a>(pool_address, delegator_address),
-        <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="delegation_pool.md#0x1_delegation_pool_EDELEGATOR_NOT_ALLOWLISTED">EDELEGATOR_NOT_ALLOWLISTED</a>)
+        <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="delegation_pool.md#0x1_delegation_pool_EDELEGATOR_NOT_ALLOWLISTED">EDELEGATOR_NOT_ALLOWLISTED</a>)
     );
 }
 </code></pre>
@@ -3340,7 +3340,7 @@ Retrieves the shared resource account owning the stake pool in order
 to forward a stake-management operation to this underlying pool.
 
 
-<pre><code><b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_retrieve_stake_pool_owner">retrieve_stake_pool_owner</a>(pool: &<a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">delegation_pool::DelegationPool</a>): <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>
+<pre><code><b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_retrieve_stake_pool_owner">retrieve_stake_pool_owner</a>(pool: &<a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">delegation_pool::DelegationPool</a>): <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>
 </code></pre>
 
 
@@ -3349,7 +3349,7 @@ to forward a stake-management operation to this underlying pool.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_retrieve_stake_pool_owner">retrieve_stake_pool_owner</a>(pool: &<a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>): <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a> {
+<pre><code><b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_retrieve_stake_pool_owner">retrieve_stake_pool_owner</a>(pool: &<a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>): <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a> {
     <a href="account.md#0x1_account_create_signer_with_capability">account::create_signer_with_capability</a>(&pool.stake_pool_signer_cap)
 }
 </code></pre>
@@ -3470,7 +3470,7 @@ Get the used voting power of a voter on a proposal.
 Create the seed to derive the resource account address.
 
 
-<pre><code><b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_create_resource_account_seed">create_resource_account_seed</a>(delegation_pool_creation_seed: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;
+<pre><code><b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_create_resource_account_seed">create_resource_account_seed</a>(delegation_pool_creation_seed: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -3480,13 +3480,13 @@ Create the seed to derive the resource account address.
 
 
 <pre><code><b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_create_resource_account_seed">create_resource_account_seed</a>(
-    delegation_pool_creation_seed: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-): <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
-    <b>let</b> seed = <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>&lt;u8&gt;();
+    delegation_pool_creation_seed: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
+    <b>let</b> seed = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>&lt;u8&gt;();
     // <b>include</b> <b>module</b> salt (before <a href="../../starcoin-stdlib/doc/any.md#0x1_any">any</a> subseeds) <b>to</b> avoid conflicts <b>with</b> other modules creating resource accounts
-    <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector_append">vector::append</a>(&<b>mut</b> seed, <a href="delegation_pool.md#0x1_delegation_pool_MODULE_SALT">MODULE_SALT</a>);
+    <a href="../../move-stdlib/doc/vector.md#0x1_vector_append">vector::append</a>(&<b>mut</b> seed, <a href="delegation_pool.md#0x1_delegation_pool_MODULE_SALT">MODULE_SALT</a>);
     // <b>include</b> an additional salt in case the same resource <a href="account.md#0x1_account">account</a> <b>has</b> already been created
-    <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector_append">vector::append</a>(&<b>mut</b> seed, delegation_pool_creation_seed);
+    <a href="../../move-stdlib/doc/vector.md#0x1_vector_append">vector::append</a>(&<b>mut</b> seed, delegation_pool_creation_seed);
     seed
 }
 </code></pre>
@@ -3780,7 +3780,7 @@ Update DelegatedVotes of a voter to up-to-date then return the total voting powe
 Allows an owner to change the operator of the underlying stake pool.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_set_operator">set_operator</a>(owner: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, new_operator: <b>address</b>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_set_operator">set_operator</a>(owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, new_operator: <b>address</b>)
 </code></pre>
 
 
@@ -3790,10 +3790,10 @@ Allows an owner to change the operator of the underlying stake pool.
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_set_operator">set_operator</a>(
-    owner: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     new_operator: <b>address</b>
 ) <b>acquires</b> <a href="delegation_pool.md#0x1_delegation_pool_DelegationPoolOwnership">DelegationPoolOwnership</a>, <a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>, <a href="delegation_pool.md#0x1_delegation_pool_GovernanceRecords">GovernanceRecords</a>, <a href="delegation_pool.md#0x1_delegation_pool_BeneficiaryForOperator">BeneficiaryForOperator</a>, <a href="delegation_pool.md#0x1_delegation_pool_NextCommissionPercentage">NextCommissionPercentage</a> {
-    <b>let</b> pool_address = <a href="delegation_pool.md#0x1_delegation_pool_get_owned_pool_address">get_owned_pool_address</a>(<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(owner));
+    <b>let</b> pool_address = <a href="delegation_pool.md#0x1_delegation_pool_get_owned_pool_address">get_owned_pool_address</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(owner));
     // synchronize delegation and <a href="stake.md#0x1_stake">stake</a> pools before <a href="../../starcoin-stdlib/doc/any.md#0x1_any">any</a> user operation
     // ensure the <b>old</b> operator is paid its uncommitted commission rewards
     <a href="delegation_pool.md#0x1_delegation_pool_synchronize_delegation_pool">synchronize_delegation_pool</a>(pool_address);
@@ -3815,7 +3815,7 @@ before switching the beneficiary. An operator can set one beneficiary for delega
 one for each pool.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_set_beneficiary_for_operator">set_beneficiary_for_operator</a>(operator: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, new_beneficiary: <b>address</b>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_set_beneficiary_for_operator">set_beneficiary_for_operator</a>(operator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, new_beneficiary: <b>address</b>)
 </code></pre>
 
 
@@ -3825,15 +3825,15 @@ one for each pool.
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_set_beneficiary_for_operator">set_beneficiary_for_operator</a>(
-    operator: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    operator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     new_beneficiary: <b>address</b>
 ) <b>acquires</b> <a href="delegation_pool.md#0x1_delegation_pool_BeneficiaryForOperator">BeneficiaryForOperator</a> {
-    <b>assert</b>!(<a href="../../starcoin-stdlib/../move-stdlib/doc/features.md#0x1_features_operator_beneficiary_change_enabled">features::operator_beneficiary_change_enabled</a>(), std::error::invalid_state(
+    <b>assert</b>!(<a href="../../move-stdlib/doc/features.md#0x1_features_operator_beneficiary_change_enabled">features::operator_beneficiary_change_enabled</a>(), std::error::invalid_state(
         <a href="delegation_pool.md#0x1_delegation_pool_EOPERATOR_BENEFICIARY_CHANGE_NOT_SUPPORTED">EOPERATOR_BENEFICIARY_CHANGE_NOT_SUPPORTED</a>
     ));
     // The beneficiay <b>address</b> of an operator is stored under the operator's <b>address</b>.
     // So, the operator does not need <b>to</b> be validated <b>with</b> respect <b>to</b> a staking pool.
-    <b>let</b> operator_addr = <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(operator);
+    <b>let</b> operator_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(operator);
     <b>let</b> old_beneficiary = <a href="delegation_pool.md#0x1_delegation_pool_beneficiary_for_operator">beneficiary_for_operator</a>(operator_addr);
     <b>if</b> (<b>exists</b>&lt;<a href="delegation_pool.md#0x1_delegation_pool_BeneficiaryForOperator">BeneficiaryForOperator</a>&gt;(operator_addr)) {
         <b>borrow_global_mut</b>&lt;<a href="delegation_pool.md#0x1_delegation_pool_BeneficiaryForOperator">BeneficiaryForOperator</a>&gt;(operator_addr).beneficiary_for_operator = new_beneficiary;
@@ -3860,7 +3860,7 @@ one for each pool.
 Allows an owner to update the commission percentage for the operator of the underlying stake pool.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_update_commission_percentage">update_commission_percentage</a>(owner: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, new_commission_percentage: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_update_commission_percentage">update_commission_percentage</a>(owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, new_commission_percentage: u64)
 </code></pre>
 
 
@@ -3870,22 +3870,22 @@ Allows an owner to update the commission percentage for the operator of the unde
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_update_commission_percentage">update_commission_percentage</a>(
-    owner: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     new_commission_percentage: u64
 ) <b>acquires</b> <a href="delegation_pool.md#0x1_delegation_pool_DelegationPoolOwnership">DelegationPoolOwnership</a>, <a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>, <a href="delegation_pool.md#0x1_delegation_pool_GovernanceRecords">GovernanceRecords</a>, <a href="delegation_pool.md#0x1_delegation_pool_BeneficiaryForOperator">BeneficiaryForOperator</a>, <a href="delegation_pool.md#0x1_delegation_pool_NextCommissionPercentage">NextCommissionPercentage</a> {
-    <b>assert</b>!(<a href="../../starcoin-stdlib/../move-stdlib/doc/features.md#0x1_features_commission_change_delegation_pool_enabled">features::commission_change_delegation_pool_enabled</a>(), <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(
+    <b>assert</b>!(<a href="../../move-stdlib/doc/features.md#0x1_features_commission_change_delegation_pool_enabled">features::commission_change_delegation_pool_enabled</a>(), <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(
         <a href="delegation_pool.md#0x1_delegation_pool_ECOMMISSION_RATE_CHANGE_NOT_SUPPORTED">ECOMMISSION_RATE_CHANGE_NOT_SUPPORTED</a>
     ));
-    <b>assert</b>!(new_commission_percentage &lt;= <a href="delegation_pool.md#0x1_delegation_pool_MAX_FEE">MAX_FEE</a>, <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="delegation_pool.md#0x1_delegation_pool_EINVALID_COMMISSION_PERCENTAGE">EINVALID_COMMISSION_PERCENTAGE</a>));
-    <b>let</b> owner_address = <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(owner);
+    <b>assert</b>!(new_commission_percentage &lt;= <a href="delegation_pool.md#0x1_delegation_pool_MAX_FEE">MAX_FEE</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="delegation_pool.md#0x1_delegation_pool_EINVALID_COMMISSION_PERCENTAGE">EINVALID_COMMISSION_PERCENTAGE</a>));
+    <b>let</b> owner_address = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(owner);
     <b>let</b> pool_address = <a href="delegation_pool.md#0x1_delegation_pool_get_owned_pool_address">get_owned_pool_address</a>(owner_address);
     <b>assert</b>!(
         <a href="delegation_pool.md#0x1_delegation_pool_operator_commission_percentage">operator_commission_percentage</a>(pool_address) + <a href="delegation_pool.md#0x1_delegation_pool_MAX_COMMISSION_INCREASE">MAX_COMMISSION_INCREASE</a> &gt;= new_commission_percentage,
-        <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="delegation_pool.md#0x1_delegation_pool_ETOO_LARGE_COMMISSION_INCREASE">ETOO_LARGE_COMMISSION_INCREASE</a>)
+        <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="delegation_pool.md#0x1_delegation_pool_ETOO_LARGE_COMMISSION_INCREASE">ETOO_LARGE_COMMISSION_INCREASE</a>)
     );
     <b>assert</b>!(
         <a href="stake.md#0x1_stake_get_remaining_lockup_secs">stake::get_remaining_lockup_secs</a>(pool_address) &gt;= <a href="delegation_pool.md#0x1_delegation_pool_min_remaining_secs_for_commission_change">min_remaining_secs_for_commission_change</a>(),
-        <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="delegation_pool.md#0x1_delegation_pool_ETOO_LATE_COMMISSION_CHANGE">ETOO_LATE_COMMISSION_CHANGE</a>)
+        <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="delegation_pool.md#0x1_delegation_pool_ETOO_LATE_COMMISSION_CHANGE">ETOO_LATE_COMMISSION_CHANGE</a>)
     );
 
     // synchronize delegation and <a href="stake.md#0x1_stake">stake</a> pools before <a href="../../starcoin-stdlib/doc/any.md#0x1_any">any</a> user operation. this <b>ensures</b>:
@@ -3925,7 +3925,7 @@ Allows an owner to update the commission percentage for the operator of the unde
 Allows an owner to change the delegated voter of the underlying stake pool.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_set_delegated_voter">set_delegated_voter</a>(owner: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, new_voter: <b>address</b>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_set_delegated_voter">set_delegated_voter</a>(owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, new_voter: <b>address</b>)
 </code></pre>
 
 
@@ -3935,15 +3935,15 @@ Allows an owner to change the delegated voter of the underlying stake pool.
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_set_delegated_voter">set_delegated_voter</a>(
-    owner: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     new_voter: <b>address</b>
 ) <b>acquires</b> <a href="delegation_pool.md#0x1_delegation_pool_DelegationPoolOwnership">DelegationPoolOwnership</a>, <a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>, <a href="delegation_pool.md#0x1_delegation_pool_GovernanceRecords">GovernanceRecords</a>, <a href="delegation_pool.md#0x1_delegation_pool_BeneficiaryForOperator">BeneficiaryForOperator</a>, <a href="delegation_pool.md#0x1_delegation_pool_NextCommissionPercentage">NextCommissionPercentage</a> {
     // No one can change delegated_voter once the partial governance <a href="voting.md#0x1_voting">voting</a> feature is enabled.
     <b>assert</b>!(
-        !<a href="../../starcoin-stdlib/../move-stdlib/doc/features.md#0x1_features_delegation_pool_partial_governance_voting_enabled">features::delegation_pool_partial_governance_voting_enabled</a>(),
-        <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="delegation_pool.md#0x1_delegation_pool_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>)
+        !<a href="../../move-stdlib/doc/features.md#0x1_features_delegation_pool_partial_governance_voting_enabled">features::delegation_pool_partial_governance_voting_enabled</a>(),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="delegation_pool.md#0x1_delegation_pool_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>)
     );
-    <b>let</b> pool_address = <a href="delegation_pool.md#0x1_delegation_pool_get_owned_pool_address">get_owned_pool_address</a>(<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(owner));
+    <b>let</b> pool_address = <a href="delegation_pool.md#0x1_delegation_pool_get_owned_pool_address">get_owned_pool_address</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(owner));
     // synchronize delegation and <a href="stake.md#0x1_stake">stake</a> pools before <a href="../../starcoin-stdlib/doc/any.md#0x1_any">any</a> user operation
     <a href="delegation_pool.md#0x1_delegation_pool_synchronize_delegation_pool">synchronize_delegation_pool</a>(pool_address);
     <a href="stake.md#0x1_stake_set_delegated_voter">stake::set_delegated_voter</a>(&<a href="delegation_pool.md#0x1_delegation_pool_retrieve_stake_pool_owner">retrieve_stake_pool_owner</a>(<b>borrow_global</b>&lt;<a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>&gt;(pool_address)), new_voter);
@@ -3962,7 +3962,7 @@ Allows a delegator to delegate its voting power to a voter. If this delegator al
 this change won't take effects until the next lockup period.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_delegate_voting_power">delegate_voting_power</a>(delegator: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, pool_address: <b>address</b>, new_voter: <b>address</b>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_delegate_voting_power">delegate_voting_power</a>(delegator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, pool_address: <b>address</b>, new_voter: <b>address</b>)
 </code></pre>
 
 
@@ -3972,7 +3972,7 @@ this change won't take effects until the next lockup period.
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_delegate_voting_power">delegate_voting_power</a>(
-    delegator: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    delegator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     pool_address: <b>address</b>,
     new_voter: <b>address</b>
 ) <b>acquires</b> <a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>, <a href="delegation_pool.md#0x1_delegation_pool_GovernanceRecords">GovernanceRecords</a>, <a href="delegation_pool.md#0x1_delegation_pool_BeneficiaryForOperator">BeneficiaryForOperator</a>, <a href="delegation_pool.md#0x1_delegation_pool_NextCommissionPercentage">NextCommissionPercentage</a> {
@@ -3981,7 +3981,7 @@ this change won't take effects until the next lockup period.
     // synchronize delegation and <a href="stake.md#0x1_stake">stake</a> pools before <a href="../../starcoin-stdlib/doc/any.md#0x1_any">any</a> user operation
     <a href="delegation_pool.md#0x1_delegation_pool_synchronize_delegation_pool">synchronize_delegation_pool</a>(pool_address);
 
-    <b>let</b> delegator_address = <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(delegator);
+    <b>let</b> delegator_address = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(delegator);
     <b>let</b> <a href="delegation_pool.md#0x1_delegation_pool">delegation_pool</a> = <b>borrow_global</b>&lt;<a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>&gt;(pool_address);
     <b>let</b> governance_records = <b>borrow_global_mut</b>&lt;<a href="delegation_pool.md#0x1_delegation_pool_GovernanceRecords">GovernanceRecords</a>&gt;(pool_address);
     <b>let</b> delegator_vote_delegation = <a href="delegation_pool.md#0x1_delegation_pool_update_and_borrow_mut_delegator_vote_delegation">update_and_borrow_mut_delegator_vote_delegation</a>(
@@ -4014,7 +4014,7 @@ this change won't take effects until the next lockup period.
             new_delegated_votes.active_shares_next_lockup + active_shares;
     };
 
-    <b>if</b> (<a href="../../starcoin-stdlib/../move-stdlib/doc/features.md#0x1_features_module_event_migration_enabled">features::module_event_migration_enabled</a>()) {
+    <b>if</b> (<a href="../../move-stdlib/doc/features.md#0x1_features_module_event_migration_enabled">features::module_event_migration_enabled</a>()) {
         <a href="event.md#0x1_event_emit">event::emit</a>(<a href="delegation_pool.md#0x1_delegation_pool_DelegateVotingPower">DelegateVotingPower</a> {
             pool_address,
             delegator: delegator_address,
@@ -4041,7 +4041,7 @@ this change won't take effects until the next lockup period.
 Enable delegators allowlisting as the pool owner.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_enable_delegators_allowlisting">enable_delegators_allowlisting</a>(owner: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_enable_delegators_allowlisting">enable_delegators_allowlisting</a>(owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -4051,14 +4051,14 @@ Enable delegators allowlisting as the pool owner.
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_enable_delegators_allowlisting">enable_delegators_allowlisting</a>(
-    owner: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
 ) <b>acquires</b> <a href="delegation_pool.md#0x1_delegation_pool_DelegationPoolOwnership">DelegationPoolOwnership</a>, <a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a> {
     <b>assert</b>!(
-        <a href="../../starcoin-stdlib/../move-stdlib/doc/features.md#0x1_features_delegation_pool_allowlisting_enabled">features::delegation_pool_allowlisting_enabled</a>(),
-        <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="delegation_pool.md#0x1_delegation_pool_EDELEGATORS_ALLOWLISTING_NOT_SUPPORTED">EDELEGATORS_ALLOWLISTING_NOT_SUPPORTED</a>)
+        <a href="../../move-stdlib/doc/features.md#0x1_features_delegation_pool_allowlisting_enabled">features::delegation_pool_allowlisting_enabled</a>(),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="delegation_pool.md#0x1_delegation_pool_EDELEGATORS_ALLOWLISTING_NOT_SUPPORTED">EDELEGATORS_ALLOWLISTING_NOT_SUPPORTED</a>)
     );
 
-    <b>let</b> pool_address = <a href="delegation_pool.md#0x1_delegation_pool_get_owned_pool_address">get_owned_pool_address</a>(<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(owner));
+    <b>let</b> pool_address = <a href="delegation_pool.md#0x1_delegation_pool_get_owned_pool_address">get_owned_pool_address</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(owner));
     <b>if</b> (<a href="delegation_pool.md#0x1_delegation_pool_allowlisting_enabled">allowlisting_enabled</a>(pool_address)) { <b>return</b> };
 
     <b>let</b> pool_signer = <a href="delegation_pool.md#0x1_delegation_pool_retrieve_stake_pool_owner">retrieve_stake_pool_owner</a>(<b>borrow_global</b>&lt;<a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>&gt;(pool_address));
@@ -4079,7 +4079,7 @@ Enable delegators allowlisting as the pool owner.
 Disable delegators allowlisting as the pool owner. The existing allowlist will be emptied.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_disable_delegators_allowlisting">disable_delegators_allowlisting</a>(owner: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_disable_delegators_allowlisting">disable_delegators_allowlisting</a>(owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -4089,9 +4089,9 @@ Disable delegators allowlisting as the pool owner. The existing allowlist will b
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_disable_delegators_allowlisting">disable_delegators_allowlisting</a>(
-    owner: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
 ) <b>acquires</b> <a href="delegation_pool.md#0x1_delegation_pool_DelegationPoolOwnership">DelegationPoolOwnership</a>, <a href="delegation_pool.md#0x1_delegation_pool_DelegationPoolAllowlisting">DelegationPoolAllowlisting</a> {
-    <b>let</b> pool_address = <a href="delegation_pool.md#0x1_delegation_pool_get_owned_pool_address">get_owned_pool_address</a>(<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(owner));
+    <b>let</b> pool_address = <a href="delegation_pool.md#0x1_delegation_pool_get_owned_pool_address">get_owned_pool_address</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(owner));
     <a href="delegation_pool.md#0x1_delegation_pool_assert_allowlisting_enabled">assert_allowlisting_enabled</a>(pool_address);
 
     <b>let</b> <a href="delegation_pool.md#0x1_delegation_pool_DelegationPoolAllowlisting">DelegationPoolAllowlisting</a> { allowlist } = <b>move_from</b>&lt;<a href="delegation_pool.md#0x1_delegation_pool_DelegationPoolAllowlisting">DelegationPoolAllowlisting</a>&gt;(pool_address);
@@ -4113,7 +4113,7 @@ Disable delegators allowlisting as the pool owner. The existing allowlist will b
 Allowlist a delegator as the pool owner.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_allowlist_delegator">allowlist_delegator</a>(owner: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, delegator_address: <b>address</b>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_allowlist_delegator">allowlist_delegator</a>(owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, delegator_address: <b>address</b>)
 </code></pre>
 
 
@@ -4123,10 +4123,10 @@ Allowlist a delegator as the pool owner.
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_allowlist_delegator">allowlist_delegator</a>(
-    owner: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     delegator_address: <b>address</b>,
 ) <b>acquires</b> <a href="delegation_pool.md#0x1_delegation_pool_DelegationPoolOwnership">DelegationPoolOwnership</a>, <a href="delegation_pool.md#0x1_delegation_pool_DelegationPoolAllowlisting">DelegationPoolAllowlisting</a> {
-    <b>let</b> pool_address = <a href="delegation_pool.md#0x1_delegation_pool_get_owned_pool_address">get_owned_pool_address</a>(<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(owner));
+    <b>let</b> pool_address = <a href="delegation_pool.md#0x1_delegation_pool_get_owned_pool_address">get_owned_pool_address</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(owner));
     <a href="delegation_pool.md#0x1_delegation_pool_assert_allowlisting_enabled">assert_allowlisting_enabled</a>(pool_address);
 
     <b>if</b> (<a href="delegation_pool.md#0x1_delegation_pool_delegator_allowlisted">delegator_allowlisted</a>(pool_address, delegator_address)) { <b>return</b> };
@@ -4148,7 +4148,7 @@ Allowlist a delegator as the pool owner.
 Remove a delegator from the allowlist as the pool owner, but do not unlock their stake.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_remove_delegator_from_allowlist">remove_delegator_from_allowlist</a>(owner: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, delegator_address: <b>address</b>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_remove_delegator_from_allowlist">remove_delegator_from_allowlist</a>(owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, delegator_address: <b>address</b>)
 </code></pre>
 
 
@@ -4158,10 +4158,10 @@ Remove a delegator from the allowlist as the pool owner, but do not unlock their
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_remove_delegator_from_allowlist">remove_delegator_from_allowlist</a>(
-    owner: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     delegator_address: <b>address</b>,
 ) <b>acquires</b> <a href="delegation_pool.md#0x1_delegation_pool_DelegationPoolOwnership">DelegationPoolOwnership</a>, <a href="delegation_pool.md#0x1_delegation_pool_DelegationPoolAllowlisting">DelegationPoolAllowlisting</a> {
-    <b>let</b> pool_address = <a href="delegation_pool.md#0x1_delegation_pool_get_owned_pool_address">get_owned_pool_address</a>(<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(owner));
+    <b>let</b> pool_address = <a href="delegation_pool.md#0x1_delegation_pool_get_owned_pool_address">get_owned_pool_address</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(owner));
     <a href="delegation_pool.md#0x1_delegation_pool_assert_allowlisting_enabled">assert_allowlisting_enabled</a>(pool_address);
 
     <b>if</b> (!<a href="delegation_pool.md#0x1_delegation_pool_delegator_allowlisted">delegator_allowlisted</a>(pool_address, delegator_address)) { <b>return</b> };
@@ -4183,7 +4183,7 @@ Remove a delegator from the allowlist as the pool owner, but do not unlock their
 Evict a delegator that is not allowlisted by unlocking their entire stake.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_evict_delegator">evict_delegator</a>(owner: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, delegator_address: <b>address</b>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_evict_delegator">evict_delegator</a>(owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, delegator_address: <b>address</b>)
 </code></pre>
 
 
@@ -4193,14 +4193,14 @@ Evict a delegator that is not allowlisted by unlocking their entire stake.
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_evict_delegator">evict_delegator</a>(
-    owner: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     delegator_address: <b>address</b>,
 ) <b>acquires</b> <a href="delegation_pool.md#0x1_delegation_pool_DelegationPoolOwnership">DelegationPoolOwnership</a>, <a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>, <a href="delegation_pool.md#0x1_delegation_pool_GovernanceRecords">GovernanceRecords</a>, <a href="delegation_pool.md#0x1_delegation_pool_BeneficiaryForOperator">BeneficiaryForOperator</a>, <a href="delegation_pool.md#0x1_delegation_pool_NextCommissionPercentage">NextCommissionPercentage</a>, <a href="delegation_pool.md#0x1_delegation_pool_DelegationPoolAllowlisting">DelegationPoolAllowlisting</a> {
-    <b>let</b> pool_address = <a href="delegation_pool.md#0x1_delegation_pool_get_owned_pool_address">get_owned_pool_address</a>(<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(owner));
+    <b>let</b> pool_address = <a href="delegation_pool.md#0x1_delegation_pool_get_owned_pool_address">get_owned_pool_address</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(owner));
     <a href="delegation_pool.md#0x1_delegation_pool_assert_allowlisting_enabled">assert_allowlisting_enabled</a>(pool_address);
     <b>assert</b>!(
         !<a href="delegation_pool.md#0x1_delegation_pool_delegator_allowlisted">delegator_allowlisted</a>(pool_address, delegator_address),
-        <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="delegation_pool.md#0x1_delegation_pool_ECANNOT_EVICT_ALLOWLISTED_DELEGATOR">ECANNOT_EVICT_ALLOWLISTED_DELEGATOR</a>)
+        <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="delegation_pool.md#0x1_delegation_pool_ECANNOT_EVICT_ALLOWLISTED_DELEGATOR">ECANNOT_EVICT_ALLOWLISTED_DELEGATOR</a>)
     );
 
     // synchronize pool in order <b>to</b> query latest balance of delegator
@@ -4226,7 +4226,7 @@ Evict a delegator that is not allowlisted by unlocking their entire stake.
 Add <code>amount</code> of coins to the delegation pool <code>pool_address</code>.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_add_stake">add_stake</a>(delegator: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, pool_address: <b>address</b>, amount: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_add_stake">add_stake</a>(delegator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, pool_address: <b>address</b>, amount: u64)
 </code></pre>
 
 
@@ -4236,14 +4236,14 @@ Add <code>amount</code> of coins to the delegation pool <code>pool_address</code
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_add_stake">add_stake</a>(
-    delegator: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    delegator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     pool_address: <b>address</b>,
     amount: u64
 ) <b>acquires</b> <a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>, <a href="delegation_pool.md#0x1_delegation_pool_GovernanceRecords">GovernanceRecords</a>, <a href="delegation_pool.md#0x1_delegation_pool_BeneficiaryForOperator">BeneficiaryForOperator</a>, <a href="delegation_pool.md#0x1_delegation_pool_NextCommissionPercentage">NextCommissionPercentage</a>, <a href="delegation_pool.md#0x1_delegation_pool_DelegationPoolAllowlisting">DelegationPoolAllowlisting</a> {
     // short-circuit <b>if</b> amount <b>to</b> add is 0 so no <a href="event.md#0x1_event">event</a> is emitted
     <b>if</b> (amount == 0) { <b>return</b> };
 
-    <b>let</b> delegator_address = <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(delegator);
+    <b>let</b> delegator_address = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(delegator);
     <a href="delegation_pool.md#0x1_delegation_pool_assert_delegator_allowlisted">assert_delegator_allowlisted</a>(pool_address, delegator_address);
 
     // synchronize delegation and <a href="stake.md#0x1_stake">stake</a> pools before <a href="../../starcoin-stdlib/doc/any.md#0x1_any">any</a> user operation
@@ -4268,7 +4268,7 @@ Add <code>amount</code> of coins to the delegation pool <code>pool_address</code
     // in order <b>to</b> appreciate all shares on the active pool atomically
     <a href="delegation_pool.md#0x1_delegation_pool_buy_in_active_shares">buy_in_active_shares</a>(pool, <a href="delegation_pool.md#0x1_delegation_pool_NULL_SHAREHOLDER">NULL_SHAREHOLDER</a>, add_stake_fee);
 
-    <b>if</b> (<a href="../../starcoin-stdlib/../move-stdlib/doc/features.md#0x1_features_module_event_migration_enabled">features::module_event_migration_enabled</a>()) {
+    <b>if</b> (<a href="../../move-stdlib/doc/features.md#0x1_features_module_event_migration_enabled">features::module_event_migration_enabled</a>()) {
         <a href="event.md#0x1_event_emit">event::emit</a>(
             <a href="delegation_pool.md#0x1_delegation_pool_AddStake">AddStake</a> {
                 pool_address,
@@ -4303,7 +4303,7 @@ Unlock <code>amount</code> from the active + pending_active stake of <code>deleg
 at most how much active stake there is on the stake pool.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_unlock">unlock</a>(delegator: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, pool_address: <b>address</b>, amount: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_unlock">unlock</a>(delegator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, pool_address: <b>address</b>, amount: u64)
 </code></pre>
 
 
@@ -4313,7 +4313,7 @@ at most how much active stake there is on the stake pool.
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_unlock">unlock</a>(
-    delegator: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    delegator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     pool_address: <b>address</b>,
     amount: u64
 ) <b>acquires</b> <a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>, <a href="delegation_pool.md#0x1_delegation_pool_GovernanceRecords">GovernanceRecords</a>, <a href="delegation_pool.md#0x1_delegation_pool_BeneficiaryForOperator">BeneficiaryForOperator</a>, <a href="delegation_pool.md#0x1_delegation_pool_NextCommissionPercentage">NextCommissionPercentage</a> {
@@ -4323,7 +4323,7 @@ at most how much active stake there is on the stake pool.
     // synchronize delegation and <a href="stake.md#0x1_stake">stake</a> pools before <a href="../../starcoin-stdlib/doc/any.md#0x1_any">any</a> user operation
     <a href="delegation_pool.md#0x1_delegation_pool_synchronize_delegation_pool">synchronize_delegation_pool</a>(pool_address);
 
-    <b>let</b> delegator_address = <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(delegator);
+    <b>let</b> delegator_address = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(delegator);
     <a href="delegation_pool.md#0x1_delegation_pool_unlock_internal">unlock_internal</a>(delegator_address, pool_address, amount);
 }
 </code></pre>
@@ -4352,11 +4352,11 @@ at most how much active stake there is on the stake pool.
     pool_address: <b>address</b>,
     amount: u64
 ) <b>acquires</b> <a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>, <a href="delegation_pool.md#0x1_delegation_pool_GovernanceRecords">GovernanceRecords</a> {
-    <b>assert</b>!(delegator_address != <a href="delegation_pool.md#0x1_delegation_pool_NULL_SHAREHOLDER">NULL_SHAREHOLDER</a>, <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="delegation_pool.md#0x1_delegation_pool_ECANNOT_UNLOCK_NULL_SHAREHOLDER">ECANNOT_UNLOCK_NULL_SHAREHOLDER</a>));
+    <b>assert</b>!(delegator_address != <a href="delegation_pool.md#0x1_delegation_pool_NULL_SHAREHOLDER">NULL_SHAREHOLDER</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="delegation_pool.md#0x1_delegation_pool_ECANNOT_UNLOCK_NULL_SHAREHOLDER">ECANNOT_UNLOCK_NULL_SHAREHOLDER</a>));
 
     // fail unlock of more <a href="stake.md#0x1_stake">stake</a> than `active` on the <a href="stake.md#0x1_stake">stake</a> pool
     <b>let</b> (active, _, _, _) = <a href="stake.md#0x1_stake_get_stake">stake::get_stake</a>(pool_address);
-    <b>assert</b>!(amount &lt;= active, <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="delegation_pool.md#0x1_delegation_pool_ENOT_ENOUGH_ACTIVE_STAKE_TO_UNLOCK">ENOT_ENOUGH_ACTIVE_STAKE_TO_UNLOCK</a>));
+    <b>assert</b>!(amount &lt;= active, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="delegation_pool.md#0x1_delegation_pool_ENOT_ENOUGH_ACTIVE_STAKE_TO_UNLOCK">ENOT_ENOUGH_ACTIVE_STAKE_TO_UNLOCK</a>));
 
     <b>let</b> pool = <b>borrow_global_mut</b>&lt;<a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>&gt;(pool_address);
     amount = <a href="delegation_pool.md#0x1_delegation_pool_coins_to_transfer_to_ensure_min_stake">coins_to_transfer_to_ensure_min_stake</a>(
@@ -4372,7 +4372,7 @@ at most how much active stake there is on the stake pool.
     <a href="delegation_pool.md#0x1_delegation_pool_buy_in_pending_inactive_shares">buy_in_pending_inactive_shares</a>(pool, delegator_address, amount);
     <a href="delegation_pool.md#0x1_delegation_pool_assert_min_pending_inactive_balance">assert_min_pending_inactive_balance</a>(pool, delegator_address);
 
-    <b>if</b> (<a href="../../starcoin-stdlib/../move-stdlib/doc/features.md#0x1_features_module_event_migration_enabled">features::module_event_migration_enabled</a>()) {
+    <b>if</b> (<a href="../../move-stdlib/doc/features.md#0x1_features_module_event_migration_enabled">features::module_event_migration_enabled</a>()) {
         <a href="event.md#0x1_event_emit">event::emit</a>(
             <a href="delegation_pool.md#0x1_delegation_pool_UnlockStake">UnlockStake</a> {
                 pool_address,
@@ -4404,7 +4404,7 @@ at most how much active stake there is on the stake pool.
 Move <code>amount</code> of coins from pending_inactive to active.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_reactivate_stake">reactivate_stake</a>(delegator: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, pool_address: <b>address</b>, amount: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_reactivate_stake">reactivate_stake</a>(delegator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, pool_address: <b>address</b>, amount: u64)
 </code></pre>
 
 
@@ -4414,14 +4414,14 @@ Move <code>amount</code> of coins from pending_inactive to active.
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_reactivate_stake">reactivate_stake</a>(
-    delegator: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    delegator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     pool_address: <b>address</b>,
     amount: u64
 ) <b>acquires</b> <a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>, <a href="delegation_pool.md#0x1_delegation_pool_GovernanceRecords">GovernanceRecords</a>, <a href="delegation_pool.md#0x1_delegation_pool_BeneficiaryForOperator">BeneficiaryForOperator</a>, <a href="delegation_pool.md#0x1_delegation_pool_NextCommissionPercentage">NextCommissionPercentage</a>, <a href="delegation_pool.md#0x1_delegation_pool_DelegationPoolAllowlisting">DelegationPoolAllowlisting</a> {
     // short-circuit <b>if</b> amount <b>to</b> reactivate is 0 so no <a href="event.md#0x1_event">event</a> is emitted
     <b>if</b> (amount == 0) { <b>return</b> };
 
-    <b>let</b> delegator_address = <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(delegator);
+    <b>let</b> delegator_address = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(delegator);
     <a href="delegation_pool.md#0x1_delegation_pool_assert_delegator_allowlisted">assert_delegator_allowlisted</a>(pool_address, delegator_address);
 
     // synchronize delegation and <a href="stake.md#0x1_stake">stake</a> pools before <a href="../../starcoin-stdlib/doc/any.md#0x1_any">any</a> user operation
@@ -4442,7 +4442,7 @@ Move <code>amount</code> of coins from pending_inactive to active.
     <a href="delegation_pool.md#0x1_delegation_pool_buy_in_active_shares">buy_in_active_shares</a>(pool, delegator_address, amount);
     <a href="delegation_pool.md#0x1_delegation_pool_assert_min_active_balance">assert_min_active_balance</a>(pool, delegator_address);
 
-    <b>if</b> (<a href="../../starcoin-stdlib/../move-stdlib/doc/features.md#0x1_features_module_event_migration_enabled">features::module_event_migration_enabled</a>()) {
+    <b>if</b> (<a href="../../move-stdlib/doc/features.md#0x1_features_module_event_migration_enabled">features::module_event_migration_enabled</a>()) {
         <a href="event.md#0x1_event_emit">event::emit</a>(
             <a href="delegation_pool.md#0x1_delegation_pool_ReactivateStake">ReactivateStake</a> {
                 pool_address,
@@ -4474,7 +4474,7 @@ Move <code>amount</code> of coins from pending_inactive to active.
 Withdraw <code>amount</code> of owned inactive stake from the delegation pool at <code>pool_address</code>.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_withdraw">withdraw</a>(delegator: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, pool_address: <b>address</b>, amount: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_withdraw">withdraw</a>(delegator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, pool_address: <b>address</b>, amount: u64)
 </code></pre>
 
 
@@ -4484,14 +4484,14 @@ Withdraw <code>amount</code> of owned inactive stake from the delegation pool at
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_withdraw">withdraw</a>(
-    delegator: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    delegator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     pool_address: <b>address</b>,
     amount: u64
 ) <b>acquires</b> <a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>, <a href="delegation_pool.md#0x1_delegation_pool_GovernanceRecords">GovernanceRecords</a>, <a href="delegation_pool.md#0x1_delegation_pool_BeneficiaryForOperator">BeneficiaryForOperator</a>, <a href="delegation_pool.md#0x1_delegation_pool_NextCommissionPercentage">NextCommissionPercentage</a> {
-    <b>assert</b>!(amount &gt; 0, <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="delegation_pool.md#0x1_delegation_pool_EWITHDRAW_ZERO_STAKE">EWITHDRAW_ZERO_STAKE</a>));
+    <b>assert</b>!(amount &gt; 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="delegation_pool.md#0x1_delegation_pool_EWITHDRAW_ZERO_STAKE">EWITHDRAW_ZERO_STAKE</a>));
     // synchronize delegation and <a href="stake.md#0x1_stake">stake</a> pools before <a href="../../starcoin-stdlib/doc/any.md#0x1_any">any</a> user operation
     <a href="delegation_pool.md#0x1_delegation_pool_synchronize_delegation_pool">synchronize_delegation_pool</a>(pool_address);
-    <a href="delegation_pool.md#0x1_delegation_pool_withdraw_internal">withdraw_internal</a>(<b>borrow_global_mut</b>&lt;<a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>&gt;(pool_address), <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(delegator), amount);
+    <a href="delegation_pool.md#0x1_delegation_pool_withdraw_internal">withdraw_internal</a>(<b>borrow_global_mut</b>&lt;<a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>&gt;(pool_address), <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(delegator), amount);
 }
 </code></pre>
 
@@ -4567,7 +4567,7 @@ Withdraw <code>amount</code> of owned inactive stake from the delegation pool at
     <b>let</b> (_, inactive, _, _) = <a href="stake.md#0x1_stake_get_stake">stake::get_stake</a>(pool_address);
     pool.total_coins_inactive = inactive;
 
-    <b>if</b> (<a href="../../starcoin-stdlib/../move-stdlib/doc/features.md#0x1_features_module_event_migration_enabled">features::module_event_migration_enabled</a>()) {
+    <b>if</b> (<a href="../../move-stdlib/doc/features.md#0x1_features_module_event_migration_enabled">features::module_event_migration_enabled</a>()) {
         <a href="event.md#0x1_event_emit">event::emit</a>(
             <a href="delegation_pool.md#0x1_delegation_pool_WithdrawStake">WithdrawStake</a> {
                 pool_address,
@@ -4793,7 +4793,7 @@ to ensure there is always only one withdrawal request.
         shareholder,
         observed_lockup_cycle
     ) == observed_lockup_cycle,
-        <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="delegation_pool.md#0x1_delegation_pool_EPENDING_WITHDRAWAL_EXISTS">EPENDING_WITHDRAWAL_EXISTS</a>)
+        <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="delegation_pool.md#0x1_delegation_pool_EPENDING_WITHDRAWAL_EXISTS">EPENDING_WITHDRAWAL_EXISTS</a>)
     );
 
     new_shares
@@ -4973,7 +4973,7 @@ whether the lockup expired on the stake pool.
     <b>let</b> (active, inactive, pending_active, pending_inactive) = <a href="stake.md#0x1_stake_get_stake">stake::get_stake</a>(<a href="delegation_pool.md#0x1_delegation_pool_get_pool_address">get_pool_address</a>(pool));
     <b>assert</b>!(
         inactive &gt;= pool.total_coins_inactive,
-        <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="delegation_pool.md#0x1_delegation_pool_ESLASHED_INACTIVE_STAKE_ON_PAST_OLC">ESLASHED_INACTIVE_STAKE_ON_PAST_OLC</a>)
+        <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="delegation_pool.md#0x1_delegation_pool_ESLASHED_INACTIVE_STAKE_ON_PAST_OLC">ESLASHED_INACTIVE_STAKE_ON_PAST_OLC</a>)
     );
     // determine whether a new lockup cycle <b>has</b> been ended on the <a href="stake.md#0x1_stake">stake</a> pool and
     // inactivated SOME `pending_inactive` <a href="stake.md#0x1_stake">stake</a> which should stop earning rewards now,
@@ -5095,7 +5095,7 @@ shares pools, assign commission to operator and eventually prepare delegation po
         },
     );
 
-    <b>if</b> (<a href="../../starcoin-stdlib/../move-stdlib/doc/features.md#0x1_features_operator_beneficiary_change_enabled">features::operator_beneficiary_change_enabled</a>()) {
+    <b>if</b> (<a href="../../move-stdlib/doc/features.md#0x1_features_operator_beneficiary_change_enabled">features::operator_beneficiary_change_enabled</a>()) {
         emit(<a href="delegation_pool.md#0x1_delegation_pool_DistributeCommission">DistributeCommission</a> {
             pool_address,
             operator: <a href="stake.md#0x1_stake_get_operator">stake::get_operator</a>(pool_address),
@@ -5151,7 +5151,10 @@ shares pools, assign commission to operator and eventually prepare delegation po
 <pre><code>inline <b>fun</b> <a href="delegation_pool.md#0x1_delegation_pool_assert_and_update_proposal_used_voting_power">assert_and_update_proposal_used_voting_power</a>(
     governance_records: &<b>mut</b> <a href="delegation_pool.md#0x1_delegation_pool_GovernanceRecords">GovernanceRecords</a>, pool_address: <b>address</b>, proposal_id: u64, voting_power: u64
 ) {
-    <b>let</b> stake_pool_remaining_voting_power = <a href="starcoin_governance.md#0x1_starcoin_governance_get_remaining_voting_power">starcoin_governance::get_remaining_voting_power</a>(pool_address, proposal_id);
+    <b>let</b> stake_pool_remaining_voting_power = <a href="starcoin_governance.md#0x1_starcoin_governance_get_remaining_voting_power">starcoin_governance::get_remaining_voting_power</a>(
+        pool_address,
+        proposal_id
+    );
     <b>let</b> stake_pool_used_voting_power = <a href="starcoin_governance.md#0x1_starcoin_governance_get_voting_power">starcoin_governance::get_voting_power</a>(
         pool_address
     ) - stake_pool_remaining_voting_power;
@@ -5167,7 +5170,7 @@ shares pools, assign commission to operator and eventually prepare delegation po
     // To detect this case, check <b>if</b> the <a href="stake.md#0x1_stake">stake</a> pool had used <a href="voting.md#0x1_voting">voting</a> power not through <a href="delegation_pool.md#0x1_delegation_pool">delegation_pool</a> <b>module</b>.
     <b>assert</b>!(
         stake_pool_used_voting_power == *proposal_used_voting_power,
-        <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="delegation_pool.md#0x1_delegation_pool_EALREADY_VOTED_BEFORE_ENABLE_PARTIAL_VOTING">EALREADY_VOTED_BEFORE_ENABLE_PARTIAL_VOTING</a>)
+        <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="delegation_pool.md#0x1_delegation_pool_EALREADY_VOTED_BEFORE_ENABLE_PARTIAL_VOTING">EALREADY_VOTED_BEFORE_ENABLE_PARTIAL_VOTING</a>)
     );
     *proposal_used_voting_power = *proposal_used_voting_power + voting_power;
 }

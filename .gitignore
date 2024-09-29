@@ -47,3 +47,6 @@ build/
 
 # CI experimental mold binary
 mold
+
+# ignore framework release bundle file
+**/*.mrb

@@ -6,9 +6,9 @@
 This module provides an interface to burn or collect and redistribute transaction fees.
 
 
--  [Resource `StarcoinCoinCapabilities`](#0x1_transaction_fee_StarcoinCoinCapabilities)
--  [Resource `StarcoinFABurnCapabilities`](#0x1_transaction_fee_StarcoinFABurnCapabilities)
--  [Resource `StarcoinCoinMintCapability`](#0x1_transaction_fee_StarcoinCoinMintCapability)
+-  [Resource `CoinCapabilities`](#0x1_transaction_fee_CoinCapabilities)
+-  [Resource `FABurnCapabilities`](#0x1_transaction_fee_FABurnCapabilities)
+-  [Resource `CoinMintCapability`](#0x1_transaction_fee_CoinMintCapability)
 -  [Resource `CollectedFeesPerBlock`](#0x1_transaction_fee_CollectedFeesPerBlock)
 -  [Struct `FeeStatement`](#0x1_transaction_fee_FeeStatement)
 -  [Constants](#@Constants_0)
@@ -21,9 +21,9 @@ This module provides an interface to burn or collect and redistribute transactio
 -  [Function `burn_fee`](#0x1_transaction_fee_burn_fee)
 -  [Function `mint_and_refund`](#0x1_transaction_fee_mint_and_refund)
 -  [Function `collect_fee`](#0x1_transaction_fee_collect_fee)
--  [Function `store_starcoin_coin_burn_cap`](#0x1_transaction_fee_store_starcoin_coin_burn_cap)
+-  [Function `store_coin_burn_cap`](#0x1_transaction_fee_store_coin_burn_cap)
 -  [Function `convert_to_starcoin_fa_burn_ref`](#0x1_transaction_fee_convert_to_starcoin_fa_burn_ref)
--  [Function `store_starcoin_coin_mint_cap`](#0x1_transaction_fee_store_starcoin_coin_mint_cap)
+-  [Function `store_coin_mint_cap`](#0x1_transaction_fee_store_coin_mint_cap)
 -  [Function `initialize_storage_refund`](#0x1_transaction_fee_initialize_storage_refund)
 -  [Function `emit_fee_statement`](#0x1_transaction_fee_emit_fee_statement)
 -  [Specification](#@Specification_1)
@@ -38,35 +38,35 @@ This module provides an interface to burn or collect and redistribute transactio
     -  [Function `burn_fee`](#@Specification_1_burn_fee)
     -  [Function `mint_and_refund`](#@Specification_1_mint_and_refund)
     -  [Function `collect_fee`](#@Specification_1_collect_fee)
-    -  [Function `store_starcoin_coin_burn_cap`](#@Specification_1_store_starcoin_coin_burn_cap)
-    -  [Function `store_starcoin_coin_mint_cap`](#@Specification_1_store_starcoin_coin_mint_cap)
+    -  [Function `store_coin_burn_cap`](#@Specification_1_store_coin_burn_cap)
+    -  [Function `store_coin_mint_cap`](#@Specification_1_store_coin_mint_cap)
     -  [Function `initialize_storage_refund`](#@Specification_1_initialize_storage_refund)
     -  [Function `emit_fee_statement`](#@Specification_1_emit_fee_statement)
 
 
-<pre><code><b>use</b> <a href="starcoin_account.md#0x1_starcoin_account">0x1::starcoin_account</a>;
-<b>use</b> <a href="starcoin_coin.md#0x1_starcoin_coin">0x1::starcoin_coin</a>;
-<b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
-<b>use</b> <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
+<pre><code><b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
+<b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="event.md#0x1_event">0x1::event</a>;
-<b>use</b> <a href="../../starcoin-stdlib/../move-stdlib/doc/features.md#0x1_features">0x1::features</a>;
+<b>use</b> <a href="../../move-stdlib/doc/features.md#0x1_features">0x1::features</a>;
 <b>use</b> <a href="fungible_asset.md#0x1_fungible_asset">0x1::fungible_asset</a>;
-<b>use</b> <a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option">0x1::option</a>;
-<b>use</b> <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
+<b>use</b> <a href="../../move-stdlib/doc/option.md#0x1_option">0x1::option</a>;
+<b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
 <b>use</b> <a href="stake.md#0x1_stake">0x1::stake</a>;
+<b>use</b> <a href="starcoin_account.md#0x1_starcoin_account">0x1::starcoin_account</a>;
+<b>use</b> <a href="starcoin_coin.md#0x1_starcoin_coin">0x1::starcoin_coin</a>;
 <b>use</b> <a href="system_addresses.md#0x1_system_addresses">0x1::system_addresses</a>;
 </code></pre>
 
 
 
-<a id="0x1_transaction_fee_StarcoinCoinCapabilities"></a>
+<a id="0x1_transaction_fee_CoinCapabilities"></a>
 
-## Resource `StarcoinCoinCapabilities`
+## Resource `CoinCapabilities`
 
 Stores burn capability to burn the gas fees.
 
 
-<pre><code><b>struct</b> <a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinCapabilities">StarcoinCoinCapabilities</a> <b>has</b> key
+<pre><code><b>struct</b> <a href="transaction_fee.md#0x1_transaction_fee_CoinCapabilities">CoinCapabilities</a> <b>has</b> key
 </code></pre>
 
 
@@ -87,14 +87,14 @@ Stores burn capability to burn the gas fees.
 
 </details>
 
-<a id="0x1_transaction_fee_StarcoinFABurnCapabilities"></a>
+<a id="0x1_transaction_fee_FABurnCapabilities"></a>
 
-## Resource `StarcoinFABurnCapabilities`
+## Resource `FABurnCapabilities`
 
 Stores burn capability to burn the gas fees.
 
 
-<pre><code><b>struct</b> <a href="transaction_fee.md#0x1_transaction_fee_StarcoinFABurnCapabilities">StarcoinFABurnCapabilities</a> <b>has</b> key
+<pre><code><b>struct</b> <a href="transaction_fee.md#0x1_transaction_fee_FABurnCapabilities">FABurnCapabilities</a> <b>has</b> key
 </code></pre>
 
 
@@ -115,14 +115,14 @@ Stores burn capability to burn the gas fees.
 
 </details>
 
-<a id="0x1_transaction_fee_StarcoinCoinMintCapability"></a>
+<a id="0x1_transaction_fee_CoinMintCapability"></a>
 
-## Resource `StarcoinCoinMintCapability`
+## Resource `CoinMintCapability`
 
 Stores mint capability to mint the refunds.
 
 
-<pre><code><b>struct</b> <a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinMintCapability">StarcoinCoinMintCapability</a> <b>has</b> key
+<pre><code><b>struct</b> <a href="transaction_fee.md#0x1_transaction_fee_CoinMintCapability">CoinMintCapability</a> <b>has</b> key
 </code></pre>
 
 
@@ -168,7 +168,7 @@ collected when executing the block.
 
 </dd>
 <dt>
-<code>proposer: <a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<b>address</b>&gt;</code>
+<code>proposer: <a href="../../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<b>address</b>&gt;</code>
 </dt>
 <dd>
 
@@ -308,7 +308,7 @@ Initializes the resource storing information about gas fees collection and
 distribution. Should be called by on-chain governance.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_initialize_fee_collection_and_distribution">initialize_fee_collection_and_distribution</a>(starcoin_framework: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, burn_percentage: u8)
+<pre><code><b>public</b> <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_initialize_fee_collection_and_distribution">initialize_fee_collection_and_distribution</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, burn_percentage: u8)
 </code></pre>
 
 
@@ -317,13 +317,13 @@ distribution. Should be called by on-chain governance.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_initialize_fee_collection_and_distribution">initialize_fee_collection_and_distribution</a>(starcoin_framework: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, burn_percentage: u8) {
+<pre><code><b>public</b> <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_initialize_fee_collection_and_distribution">initialize_fee_collection_and_distribution</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, burn_percentage: u8) {
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(starcoin_framework);
     <b>assert</b>!(
         !<b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_CollectedFeesPerBlock">CollectedFeesPerBlock</a>&gt;(@starcoin_framework),
-        <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_already_exists">error::already_exists</a>(<a href="transaction_fee.md#0x1_transaction_fee_EALREADY_COLLECTING_FEES">EALREADY_COLLECTING_FEES</a>)
+        <a href="../../move-stdlib/doc/error.md#0x1_error_already_exists">error::already_exists</a>(<a href="transaction_fee.md#0x1_transaction_fee_EALREADY_COLLECTING_FEES">EALREADY_COLLECTING_FEES</a>)
     );
-    <b>assert</b>!(burn_percentage &lt;= 100, <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="transaction_fee.md#0x1_transaction_fee_EINVALID_BURN_PERCENTAGE">EINVALID_BURN_PERCENTAGE</a>));
+    <b>assert</b>!(burn_percentage &lt;= 100, <a href="../../move-stdlib/doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="transaction_fee.md#0x1_transaction_fee_EINVALID_BURN_PERCENTAGE">EINVALID_BURN_PERCENTAGE</a>));
 
     // Make sure stakng <b>module</b> is aware of transaction fees collection.
     <a href="stake.md#0x1_stake_initialize_validator_fees">stake::initialize_validator_fees</a>(starcoin_framework);
@@ -331,7 +331,7 @@ distribution. Should be called by on-chain governance.
     // Initially, no fees are collected and the <a href="block.md#0x1_block">block</a> proposer is not set.
     <b>let</b> collected_fees = <a href="transaction_fee.md#0x1_transaction_fee_CollectedFeesPerBlock">CollectedFeesPerBlock</a> {
         amount: <a href="coin.md#0x1_coin_initialize_aggregatable_coin">coin::initialize_aggregatable_coin</a>(starcoin_framework),
-        proposer: <a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_none">option::none</a>(),
+        proposer: <a href="../../move-stdlib/doc/option.md#0x1_option_none">option::none</a>(),
         burn_percentage,
     };
     <b>move_to</b>(starcoin_framework, collected_fees);
@@ -373,7 +373,7 @@ distribution. Should be called by on-chain governance.
 Sets the burn percentage for collected fees to a new value. Should be called by on-chain governance.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_upgrade_burn_percentage">upgrade_burn_percentage</a>(starcoin_framework: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, new_burn_percentage: u8)
+<pre><code><b>public</b> <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_upgrade_burn_percentage">upgrade_burn_percentage</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, new_burn_percentage: u8)
 </code></pre>
 
 
@@ -383,11 +383,11 @@ Sets the burn percentage for collected fees to a new value. Should be called by 
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_upgrade_burn_percentage">upgrade_burn_percentage</a>(
-    starcoin_framework: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     new_burn_percentage: u8
-) <b>acquires</b> <a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinCapabilities">StarcoinCoinCapabilities</a>, <a href="transaction_fee.md#0x1_transaction_fee_CollectedFeesPerBlock">CollectedFeesPerBlock</a> {
+) <b>acquires</b> <a href="transaction_fee.md#0x1_transaction_fee_CoinCapabilities">CoinCapabilities</a>, <a href="transaction_fee.md#0x1_transaction_fee_CollectedFeesPerBlock">CollectedFeesPerBlock</a> {
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(starcoin_framework);
-    <b>assert</b>!(new_burn_percentage &lt;= 100, <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="transaction_fee.md#0x1_transaction_fee_EINVALID_BURN_PERCENTAGE">EINVALID_BURN_PERCENTAGE</a>));
+    <b>assert</b>!(new_burn_percentage &lt;= 100, <a href="../../move-stdlib/doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="transaction_fee.md#0x1_transaction_fee_EINVALID_BURN_PERCENTAGE">EINVALID_BURN_PERCENTAGE</a>));
 
     // Prior <b>to</b> upgrading the burn percentage, make sure <b>to</b> process collected
     // fees. Otherwise we would <b>use</b> the new (incorrect) burn_percentage when
@@ -426,7 +426,7 @@ can only be called at the beginning of the block.
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_register_proposer_for_fee_collection">register_proposer_for_fee_collection</a>(proposer_addr: <b>address</b>) <b>acquires</b> <a href="transaction_fee.md#0x1_transaction_fee_CollectedFeesPerBlock">CollectedFeesPerBlock</a> {
     <b>if</b> (<a href="transaction_fee.md#0x1_transaction_fee_is_fees_collection_enabled">is_fees_collection_enabled</a>()) {
         <b>let</b> collected_fees = <b>borrow_global_mut</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_CollectedFeesPerBlock">CollectedFeesPerBlock</a>&gt;(@starcoin_framework);
-        <b>let</b> _ = <a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_swap_or_fill">option::swap_or_fill</a>(&<b>mut</b> collected_fees.proposer, proposer_addr);
+        <b>let</b> _ = <a href="../../move-stdlib/doc/option.md#0x1_option_swap_or_fill">option::swap_or_fill</a>(&<b>mut</b> collected_fees.proposer, proposer_addr);
     }
 }
 </code></pre>
@@ -451,8 +451,8 @@ Burns a specified fraction of the coin.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_burn_coin_fraction">burn_coin_fraction</a>(<a href="coin.md#0x1_coin">coin</a>: &<b>mut</b> Coin&lt;StarcoinCoin&gt;, burn_percentage: u8) <b>acquires</b> <a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinCapabilities">StarcoinCoinCapabilities</a> {
-    <b>assert</b>!(burn_percentage &lt;= 100, <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="transaction_fee.md#0x1_transaction_fee_EINVALID_BURN_PERCENTAGE">EINVALID_BURN_PERCENTAGE</a>));
+<pre><code><b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_burn_coin_fraction">burn_coin_fraction</a>(<a href="coin.md#0x1_coin">coin</a>: &<b>mut</b> Coin&lt;StarcoinCoin&gt;, burn_percentage: u8) <b>acquires</b> <a href="transaction_fee.md#0x1_transaction_fee_CoinCapabilities">CoinCapabilities</a> {
+    <b>assert</b>!(burn_percentage &lt;= 100, <a href="../../move-stdlib/doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="transaction_fee.md#0x1_transaction_fee_EINVALID_BURN_PERCENTAGE">EINVALID_BURN_PERCENTAGE</a>));
 
     <b>let</b> collected_amount = <a href="coin.md#0x1_coin_value">coin::value</a>(<a href="coin.md#0x1_coin">coin</a>);
     <b>spec</b> {
@@ -464,7 +464,7 @@ Burns a specified fraction of the coin.
         <b>let</b> coin_to_burn = <a href="coin.md#0x1_coin_extract">coin::extract</a>(<a href="coin.md#0x1_coin">coin</a>, amount_to_burn);
         <a href="coin.md#0x1_coin_burn">coin::burn</a>(
             coin_to_burn,
-            &<b>borrow_global</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinCapabilities">StarcoinCoinCapabilities</a>&gt;(@starcoin_framework).burn_cap,
+            &<b>borrow_global</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_CoinCapabilities">CoinCapabilities</a>&gt;(@starcoin_framework).burn_cap,
         );
     }
 }
@@ -492,32 +492,32 @@ at the beginning of the block or during reconfiguration.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_process_collected_fees">process_collected_fees</a>() <b>acquires</b> <a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinCapabilities">StarcoinCoinCapabilities</a>, <a href="transaction_fee.md#0x1_transaction_fee_CollectedFeesPerBlock">CollectedFeesPerBlock</a> {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_process_collected_fees">process_collected_fees</a>() <b>acquires</b> <a href="transaction_fee.md#0x1_transaction_fee_CoinCapabilities">CoinCapabilities</a>, <a href="transaction_fee.md#0x1_transaction_fee_CollectedFeesPerBlock">CollectedFeesPerBlock</a> {
     <b>if</b> (!<a href="transaction_fee.md#0x1_transaction_fee_is_fees_collection_enabled">is_fees_collection_enabled</a>()) {
         <b>return</b>
     };
     <b>let</b> collected_fees = <b>borrow_global_mut</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_CollectedFeesPerBlock">CollectedFeesPerBlock</a>&gt;(@starcoin_framework);
 
     // If there are no collected fees, only unset the proposer. See the rationale for
-    // setting proposer <b>to</b> <a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_none">option::none</a>() below.
+    // setting proposer <b>to</b> <a href="../../move-stdlib/doc/option.md#0x1_option_none">option::none</a>() below.
     <b>if</b> (<a href="coin.md#0x1_coin_is_aggregatable_coin_zero">coin::is_aggregatable_coin_zero</a>(&collected_fees.amount)) {
-        <b>if</b> (<a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&collected_fees.proposer)) {
-            <b>let</b> _ = <a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_extract">option::extract</a>(&<b>mut</b> collected_fees.proposer);
+        <b>if</b> (<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&collected_fees.proposer)) {
+            <b>let</b> _ = <a href="../../move-stdlib/doc/option.md#0x1_option_extract">option::extract</a>(&<b>mut</b> collected_fees.proposer);
         };
         <b>return</b>
     };
 
     // Otherwise get the collected fee, and check <b>if</b> it can distributed later.
     <b>let</b> <a href="coin.md#0x1_coin">coin</a> = <a href="coin.md#0x1_coin_drain_aggregatable_coin">coin::drain_aggregatable_coin</a>(&<b>mut</b> collected_fees.amount);
-    <b>if</b> (<a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&collected_fees.proposer)) {
-        // Extract the <b>address</b> of proposer here and reset it <b>to</b> <a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_none">option::none</a>(). This
+    <b>if</b> (<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&collected_fees.proposer)) {
+        // Extract the <b>address</b> of proposer here and reset it <b>to</b> <a href="../../move-stdlib/doc/option.md#0x1_option_none">option::none</a>(). This
         // is particularly useful <b>to</b> avoid <a href="../../starcoin-stdlib/doc/any.md#0x1_any">any</a> undesired side-effects <b>where</b> coins are
         // collected but never distributed or distributed <b>to</b> the wrong <a href="account.md#0x1_account">account</a>.
         // With this design, processing collected fees enforces that all fees will be burnt
         // unless the proposer is specified in the <a href="block.md#0x1_block">block</a> prologue. When we have a governance
         // proposal that triggers <a href="reconfiguration.md#0x1_reconfiguration">reconfiguration</a>, we distribute pending fees and burn the
         // fee for the proposal. Otherwise, that fee would be leaked <b>to</b> the next <a href="block.md#0x1_block">block</a>.
-        <b>let</b> proposer = <a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_extract">option::extract</a>(&<b>mut</b> collected_fees.proposer);
+        <b>let</b> proposer = <a href="../../move-stdlib/doc/option.md#0x1_option_extract">option::extract</a>(&<b>mut</b> collected_fees.proposer);
 
         // Since the <a href="block.md#0x1_block">block</a> can be produced by the VM itself, we have <b>to</b> make sure we catch
         // this case.
@@ -558,13 +558,13 @@ Burn transaction fees in epilogue.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_burn_fee">burn_fee</a>(<a href="account.md#0x1_account">account</a>: <b>address</b>, fee: u64) <b>acquires</b> <a href="transaction_fee.md#0x1_transaction_fee_StarcoinFABurnCapabilities">StarcoinFABurnCapabilities</a>, <a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinCapabilities">StarcoinCoinCapabilities</a> {
-    <b>if</b> (<b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_StarcoinFABurnCapabilities">StarcoinFABurnCapabilities</a>&gt;(@starcoin_framework)) {
-        <b>let</b> burn_ref = &<b>borrow_global</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_StarcoinFABurnCapabilities">StarcoinFABurnCapabilities</a>&gt;(@starcoin_framework).burn_ref;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_burn_fee">burn_fee</a>(<a href="account.md#0x1_account">account</a>: <b>address</b>, fee: u64) <b>acquires</b> <a href="transaction_fee.md#0x1_transaction_fee_FABurnCapabilities">FABurnCapabilities</a>, <a href="transaction_fee.md#0x1_transaction_fee_CoinCapabilities">CoinCapabilities</a> {
+    <b>if</b> (<b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_FABurnCapabilities">FABurnCapabilities</a>&gt;(@starcoin_framework)) {
+        <b>let</b> burn_ref = &<b>borrow_global</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_FABurnCapabilities">FABurnCapabilities</a>&gt;(@starcoin_framework).burn_ref;
         <a href="starcoin_account.md#0x1_starcoin_account_burn_from_fungible_store">starcoin_account::burn_from_fungible_store</a>(burn_ref, <a href="account.md#0x1_account">account</a>, fee);
     } <b>else</b> {
-        <b>let</b> burn_cap = &<b>borrow_global</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinCapabilities">StarcoinCoinCapabilities</a>&gt;(@starcoin_framework).burn_cap;
-        <b>if</b> (<a href="../../starcoin-stdlib/../move-stdlib/doc/features.md#0x1_features_operations_default_to_fa_apt_store_enabled">features::operations_default_to_fa_apt_store_enabled</a>()) {
+        <b>let</b> burn_cap = &<b>borrow_global</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_CoinCapabilities">CoinCapabilities</a>&gt;(@starcoin_framework).burn_cap;
+        <b>if</b> (<a href="../../move-stdlib/doc/features.md#0x1_features_operations_default_to_fa_apt_store_enabled">features::operations_default_to_fa_apt_store_enabled</a>()) {
             <b>let</b> (burn_ref, burn_receipt) = <a href="coin.md#0x1_coin_get_paired_burn_ref">coin::get_paired_burn_ref</a>(burn_cap);
             <a href="starcoin_account.md#0x1_starcoin_account_burn_from_fungible_store">starcoin_account::burn_from_fungible_store</a>(&burn_ref, <a href="account.md#0x1_account">account</a>, fee);
             <a href="coin.md#0x1_coin_return_paired_burn_ref">coin::return_paired_burn_ref</a>(burn_ref, burn_receipt);
@@ -599,8 +599,8 @@ Mint refund in epilogue.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_mint_and_refund">mint_and_refund</a>(<a href="account.md#0x1_account">account</a>: <b>address</b>, refund: u64) <b>acquires</b> <a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinMintCapability">StarcoinCoinMintCapability</a> {
-    <b>let</b> mint_cap = &<b>borrow_global</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinMintCapability">StarcoinCoinMintCapability</a>&gt;(@starcoin_framework).mint_cap;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_mint_and_refund">mint_and_refund</a>(<a href="account.md#0x1_account">account</a>: <b>address</b>, refund: u64) <b>acquires</b> <a href="transaction_fee.md#0x1_transaction_fee_CoinMintCapability">CoinMintCapability</a> {
+    <b>let</b> mint_cap = &<b>borrow_global</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_CoinMintCapability">CoinMintCapability</a>&gt;(@starcoin_framework).mint_cap;
     <b>let</b> refund_coin = <a href="coin.md#0x1_coin_mint">coin::mint</a>(refund, mint_cap);
     <a href="coin.md#0x1_coin_force_deposit">coin::force_deposit</a>(<a href="account.md#0x1_account">account</a>, refund_coin);
 }
@@ -641,14 +641,14 @@ Collect transaction fees in epilogue.
 
 </details>
 
-<a id="0x1_transaction_fee_store_starcoin_coin_burn_cap"></a>
+<a id="0x1_transaction_fee_store_coin_burn_cap"></a>
 
-## Function `store_starcoin_coin_burn_cap`
+## Function `store_coin_burn_cap`
 
 Only called during genesis.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_store_starcoin_coin_burn_cap">store_starcoin_coin_burn_cap</a>(starcoin_framework: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, burn_cap: <a href="coin.md#0x1_coin_BurnCapability">coin::BurnCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_store_coin_burn_cap">store_coin_burn_cap</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, burn_cap: <a href="coin.md#0x1_coin_BurnCapability">coin::BurnCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;)
 </code></pre>
 
 
@@ -657,14 +657,14 @@ Only called during genesis.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_store_starcoin_coin_burn_cap">store_starcoin_coin_burn_cap</a>(starcoin_framework: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, burn_cap: BurnCapability&lt;StarcoinCoin&gt;) {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_store_coin_burn_cap">store_coin_burn_cap</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, burn_cap: BurnCapability&lt;StarcoinCoin&gt;) {
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(starcoin_framework);
 
-    <b>if</b> (<a href="../../starcoin-stdlib/../move-stdlib/doc/features.md#0x1_features_operations_default_to_fa_apt_store_enabled">features::operations_default_to_fa_apt_store_enabled</a>()) {
+    <b>if</b> (<a href="../../move-stdlib/doc/features.md#0x1_features_operations_default_to_fa_apt_store_enabled">features::operations_default_to_fa_apt_store_enabled</a>()) {
         <b>let</b> burn_ref = <a href="coin.md#0x1_coin_convert_and_take_paired_burn_ref">coin::convert_and_take_paired_burn_ref</a>(burn_cap);
-        <b>move_to</b>(starcoin_framework, <a href="transaction_fee.md#0x1_transaction_fee_StarcoinFABurnCapabilities">StarcoinFABurnCapabilities</a> { burn_ref });
+        <b>move_to</b>(starcoin_framework, <a href="transaction_fee.md#0x1_transaction_fee_FABurnCapabilities">FABurnCapabilities</a> { burn_ref });
     } <b>else</b> {
-        <b>move_to</b>(starcoin_framework, <a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinCapabilities">StarcoinCoinCapabilities</a> { burn_cap })
+        <b>move_to</b>(starcoin_framework, <a href="transaction_fee.md#0x1_transaction_fee_CoinCapabilities">CoinCapabilities</a> { burn_cap })
     }
 }
 </code></pre>
@@ -679,7 +679,7 @@ Only called during genesis.
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_convert_to_starcoin_fa_burn_ref">convert_to_starcoin_fa_burn_ref</a>(starcoin_framework: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_convert_to_starcoin_fa_burn_ref">convert_to_starcoin_fa_burn_ref</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -688,14 +688,14 @@ Only called during genesis.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_convert_to_starcoin_fa_burn_ref">convert_to_starcoin_fa_burn_ref</a>(starcoin_framework: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>) <b>acquires</b> <a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinCapabilities">StarcoinCoinCapabilities</a> {
-    <b>assert</b>!(<a href="../../starcoin-stdlib/../move-stdlib/doc/features.md#0x1_features_operations_default_to_fa_apt_store_enabled">features::operations_default_to_fa_apt_store_enabled</a>(), <a href="transaction_fee.md#0x1_transaction_fee_EFA_GAS_CHARGING_NOT_ENABLED">EFA_GAS_CHARGING_NOT_ENABLED</a>);
+<pre><code><b>public</b> entry <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_convert_to_starcoin_fa_burn_ref">convert_to_starcoin_fa_burn_ref</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) <b>acquires</b> <a href="transaction_fee.md#0x1_transaction_fee_CoinCapabilities">CoinCapabilities</a> {
+    <b>assert</b>!(<a href="../../move-stdlib/doc/features.md#0x1_features_operations_default_to_fa_apt_store_enabled">features::operations_default_to_fa_apt_store_enabled</a>(), <a href="transaction_fee.md#0x1_transaction_fee_EFA_GAS_CHARGING_NOT_ENABLED">EFA_GAS_CHARGING_NOT_ENABLED</a>);
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(starcoin_framework);
-    <b>let</b> <a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinCapabilities">StarcoinCoinCapabilities</a> {
+    <b>let</b> <a href="transaction_fee.md#0x1_transaction_fee_CoinCapabilities">CoinCapabilities</a> {
         burn_cap,
-    } = <b>move_from</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinCapabilities">StarcoinCoinCapabilities</a>&gt;(<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(starcoin_framework));
+    } = <b>move_from</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_CoinCapabilities">CoinCapabilities</a>&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(starcoin_framework));
     <b>let</b> burn_ref = <a href="coin.md#0x1_coin_convert_and_take_paired_burn_ref">coin::convert_and_take_paired_burn_ref</a>(burn_cap);
-    <b>move_to</b>(starcoin_framework, <a href="transaction_fee.md#0x1_transaction_fee_StarcoinFABurnCapabilities">StarcoinFABurnCapabilities</a> { burn_ref });
+    <b>move_to</b>(starcoin_framework, <a href="transaction_fee.md#0x1_transaction_fee_FABurnCapabilities">FABurnCapabilities</a> { burn_ref });
 }
 </code></pre>
 
@@ -703,14 +703,14 @@ Only called during genesis.
 
 </details>
 
-<a id="0x1_transaction_fee_store_starcoin_coin_mint_cap"></a>
+<a id="0x1_transaction_fee_store_coin_mint_cap"></a>
 
-## Function `store_starcoin_coin_mint_cap`
+## Function `store_coin_mint_cap`
 
 Only called during genesis.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_store_starcoin_coin_mint_cap">store_starcoin_coin_mint_cap</a>(starcoin_framework: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, mint_cap: <a href="coin.md#0x1_coin_MintCapability">coin::MintCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_store_coin_mint_cap">store_coin_mint_cap</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, mint_cap: <a href="coin.md#0x1_coin_MintCapability">coin::MintCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;)
 </code></pre>
 
 
@@ -719,9 +719,9 @@ Only called during genesis.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_store_starcoin_coin_mint_cap">store_starcoin_coin_mint_cap</a>(starcoin_framework: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, mint_cap: MintCapability&lt;StarcoinCoin&gt;) {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_store_coin_mint_cap">store_coin_mint_cap</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, mint_cap: MintCapability&lt;StarcoinCoin&gt;) {
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(starcoin_framework);
-    <b>move_to</b>(starcoin_framework, <a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinMintCapability">StarcoinCoinMintCapability</a> { mint_cap })
+    <b>move_to</b>(starcoin_framework, <a href="transaction_fee.md#0x1_transaction_fee_CoinMintCapability">CoinMintCapability</a> { mint_cap })
 }
 </code></pre>
 
@@ -736,7 +736,7 @@ Only called during genesis.
 
 
 <pre><code>#[deprecated]
-<b>public</b> <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_initialize_storage_refund">initialize_storage_refund</a>(_: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
+<b>public</b> <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_initialize_storage_refund">initialize_storage_refund</a>(_: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -745,8 +745,8 @@ Only called during genesis.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_initialize_storage_refund">initialize_storage_refund</a>(_: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
-    <b>abort</b> <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_not_implemented">error::not_implemented</a>(<a href="transaction_fee.md#0x1_transaction_fee_ENO_LONGER_SUPPORTED">ENO_LONGER_SUPPORTED</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_initialize_storage_refund">initialize_storage_refund</a>(_: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
+    <b>abort</b> <a href="../../move-stdlib/doc/error.md#0x1_error_not_implemented">error::not_implemented</a>(<a href="transaction_fee.md#0x1_transaction_fee_ENO_LONGER_SUPPORTED">ENO_LONGER_SUPPORTED</a>)
 }
 </code></pre>
 
@@ -855,7 +855,7 @@ Only called during genesis.
 <pre><code><b>pragma</b> verify = <b>false</b>;
 <b>pragma</b> aborts_if_is_strict;
 // This enforces <a id="high-level-req-1" href="#high-level-req">high-level requirement 1</a>:
-<b>invariant</b> [suspendable] <a href="chain_status.md#0x1_chain_status_is_operating">chain_status::is_operating</a>() ==&gt; <b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinCapabilities">StarcoinCoinCapabilities</a>&gt;(@starcoin_framework) || <b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_StarcoinFABurnCapabilities">StarcoinFABurnCapabilities</a>&gt;(@starcoin_framework);
+<b>invariant</b> [suspendable] <a href="chain_status.md#0x1_chain_status_is_operating">chain_status::is_operating</a>() ==&gt; <b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_CoinCapabilities">CoinCapabilities</a>&gt;(@starcoin_framework) || <b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_FABurnCapabilities">FABurnCapabilities</a>&gt;(@starcoin_framework);
 </code></pre>
 
 
@@ -878,7 +878,7 @@ Only called during genesis.
 
 </dd>
 <dt>
-<code>proposer: <a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<b>address</b>&gt;</code>
+<code>proposer: <a href="../../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<b>address</b>&gt;</code>
 </dt>
 <dd>
 
@@ -904,7 +904,7 @@ Only called during genesis.
 ### Function `initialize_fee_collection_and_distribution`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_initialize_fee_collection_and_distribution">initialize_fee_collection_and_distribution</a>(starcoin_framework: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, burn_percentage: u8)
+<pre><code><b>public</b> <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_initialize_fee_collection_and_distribution">initialize_fee_collection_and_distribution</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, burn_percentage: u8)
 </code></pre>
 
 
@@ -913,7 +913,7 @@ Only called during genesis.
 <pre><code>// This enforces <a id="high-level-req-2" href="#high-level-req">high-level requirement 2</a>:
 <b>aborts_if</b> <b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_CollectedFeesPerBlock">CollectedFeesPerBlock</a>&gt;(@starcoin_framework);
 <b>aborts_if</b> burn_percentage &gt; 100;
-<b>let</b> starcoin_addr = <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(starcoin_framework);
+<b>let</b> starcoin_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(starcoin_framework);
 // This enforces <a id="high-level-req-3" href="#high-level-req">high-level requirement 3</a>:
 <b>aborts_if</b> !<a href="system_addresses.md#0x1_system_addresses_is_starcoin_framework_address">system_addresses::is_starcoin_framework_address</a>(starcoin_addr);
 <b>aborts_if</b> <b>exists</b>&lt;ValidatorFees&gt;(starcoin_addr);
@@ -931,14 +931,14 @@ Only called during genesis.
 ### Function `upgrade_burn_percentage`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_upgrade_burn_percentage">upgrade_burn_percentage</a>(starcoin_framework: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, new_burn_percentage: u8)
+<pre><code><b>public</b> <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_upgrade_burn_percentage">upgrade_burn_percentage</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, new_burn_percentage: u8)
 </code></pre>
 
 
 
 
 <pre><code><b>aborts_if</b> new_burn_percentage &gt; 100;
-<b>let</b> starcoin_addr = <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(starcoin_framework);
+<b>let</b> starcoin_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(starcoin_framework);
 <b>aborts_if</b> !<a href="system_addresses.md#0x1_system_addresses_is_starcoin_framework_address">system_addresses::is_starcoin_framework_address</a>(starcoin_addr);
 // This enforces <a id="high-level-req-5" href="#high-level-req">high-level requirement 5</a> and <a id="high-level-req-6.3" href="#high-level-req">high-level requirement 6</a>:
 <b>include</b> <a href="transaction_fee.md#0x1_transaction_fee_ProcessCollectedFeesRequiresAndEnsures">ProcessCollectedFeesRequiresAndEnsures</a>;
@@ -962,7 +962,7 @@ Only called during genesis.
 <pre><code><b>aborts_if</b> <b>false</b>;
 // This enforces <a id="high-level-req-6.1" href="#high-level-req">high-level requirement 6</a>:
 <b>ensures</b> <a href="transaction_fee.md#0x1_transaction_fee_is_fees_collection_enabled">is_fees_collection_enabled</a>() ==&gt;
-    <a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_spec_borrow">option::spec_borrow</a>(<b>global</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_CollectedFeesPerBlock">CollectedFeesPerBlock</a>&gt;(@starcoin_framework).proposer) == proposer_addr;
+    <a href="../../move-stdlib/doc/option.md#0x1_option_spec_borrow">option::spec_borrow</a>(<b>global</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_CollectedFeesPerBlock">CollectedFeesPerBlock</a>&gt;(@starcoin_framework).proposer) == proposer_addr;
 </code></pre>
 
 
@@ -979,7 +979,7 @@ Only called during genesis.
 
 
 <pre><code><b>requires</b> burn_percentage &lt;= 100;
-<b>requires</b> <b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinCapabilities">StarcoinCoinCapabilities</a>&gt;(@starcoin_framework);
+<b>requires</b> <b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_CoinCapabilities">CoinCapabilities</a>&gt;(@starcoin_framework);
 <b>requires</b> <b>exists</b>&lt;CoinInfo&lt;StarcoinCoin&gt;&gt;(@starcoin_framework);
 <b>let</b> amount_to_burn = (burn_percentage * <a href="coin.md#0x1_coin_value">coin::value</a>(<a href="coin.md#0x1_coin">coin</a>)) / 100;
 <b>include</b> amount_to_burn &gt; 0 ==&gt; <a href="coin.md#0x1_coin_CoinSubAbortsIf">coin::CoinSubAbortsIf</a>&lt;StarcoinCoin&gt; { amount: amount_to_burn };
@@ -1006,10 +1006,10 @@ Only called during genesis.
 <pre><code><b>schema</b> <a href="transaction_fee.md#0x1_transaction_fee_RequiresCollectedFeesPerValueLeqBlockStarcoinSupply">RequiresCollectedFeesPerValueLeqBlockStarcoinSupply</a> {
     <b>let</b> maybe_supply = <a href="coin.md#0x1_coin_get_coin_supply_opt">coin::get_coin_supply_opt</a>&lt;StarcoinCoin&gt;();
     <b>requires</b>
-        (<a href="transaction_fee.md#0x1_transaction_fee_is_fees_collection_enabled">is_fees_collection_enabled</a>() && <a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(maybe_supply)) ==&gt;
+        (<a href="transaction_fee.md#0x1_transaction_fee_is_fees_collection_enabled">is_fees_collection_enabled</a>() && <a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(maybe_supply)) ==&gt;
             (<a href="aggregator.md#0x1_aggregator_spec_aggregator_get_val">aggregator::spec_aggregator_get_val</a>(<b>global</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_CollectedFeesPerBlock">CollectedFeesPerBlock</a>&gt;(@starcoin_framework).amount.value) &lt;=
                 <a href="optional_aggregator.md#0x1_optional_aggregator_optional_aggregator_value">optional_aggregator::optional_aggregator_value</a>(
-                    <a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_spec_borrow">option::spec_borrow</a>(<a href="coin.md#0x1_coin_get_coin_supply_opt">coin::get_coin_supply_opt</a>&lt;StarcoinCoin&gt;())
+                    <a href="../../move-stdlib/doc/option.md#0x1_option_spec_borrow">option::spec_borrow</a>(<a href="coin.md#0x1_coin_get_coin_supply_opt">coin::get_coin_supply_opt</a>&lt;StarcoinCoin&gt;())
                 ));
 }
 </code></pre>
@@ -1021,7 +1021,7 @@ Only called during genesis.
 
 
 <pre><code><b>schema</b> <a href="transaction_fee.md#0x1_transaction_fee_ProcessCollectedFeesRequiresAndEnsures">ProcessCollectedFeesRequiresAndEnsures</a> {
-    <b>requires</b> <b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinCapabilities">StarcoinCoinCapabilities</a>&gt;(@starcoin_framework);
+    <b>requires</b> <b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_CoinCapabilities">CoinCapabilities</a>&gt;(@starcoin_framework);
     <b>requires</b> <b>exists</b>&lt;<a href="stake.md#0x1_stake_ValidatorFees">stake::ValidatorFees</a>&gt;(@starcoin_framework);
     <b>requires</b> <b>exists</b>&lt;CoinInfo&lt;StarcoinCoin&gt;&gt;(@starcoin_framework);
     <b>include</b> <a href="transaction_fee.md#0x1_transaction_fee_RequiresCollectedFeesPerValueLeqBlockStarcoinSupply">RequiresCollectedFeesPerValueLeqBlockStarcoinSupply</a>;
@@ -1032,11 +1032,11 @@ Only called during genesis.
     <b>let</b> <b>post</b> post_amount = <a href="aggregator.md#0x1_aggregator_spec_aggregator_get_val">aggregator::spec_aggregator_get_val</a>(post_collected_fees.amount.value);
     <b>let</b> fees_table = <b>global</b>&lt;<a href="stake.md#0x1_stake_ValidatorFees">stake::ValidatorFees</a>&gt;(@starcoin_framework).fees_table;
     <b>let</b> <b>post</b> post_fees_table = <b>global</b>&lt;<a href="stake.md#0x1_stake_ValidatorFees">stake::ValidatorFees</a>&gt;(@starcoin_framework).fees_table;
-    <b>let</b> proposer = <a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_spec_borrow">option::spec_borrow</a>(collected_fees.proposer);
+    <b>let</b> proposer = <a href="../../move-stdlib/doc/option.md#0x1_option_spec_borrow">option::spec_borrow</a>(collected_fees.proposer);
     <b>let</b> fee_to_add = pre_amount - pre_amount * collected_fees.burn_percentage / 100;
-    <b>ensures</b> <a href="transaction_fee.md#0x1_transaction_fee_is_fees_collection_enabled">is_fees_collection_enabled</a>() ==&gt; <a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_spec_is_none">option::spec_is_none</a>(post_collected_fees.proposer) && post_amount == 0;
+    <b>ensures</b> <a href="transaction_fee.md#0x1_transaction_fee_is_fees_collection_enabled">is_fees_collection_enabled</a>() ==&gt; <a href="../../move-stdlib/doc/option.md#0x1_option_spec_is_none">option::spec_is_none</a>(post_collected_fees.proposer) && post_amount == 0;
     <b>ensures</b> <a href="transaction_fee.md#0x1_transaction_fee_is_fees_collection_enabled">is_fees_collection_enabled</a>() && <a href="aggregator.md#0x1_aggregator_spec_read">aggregator::spec_read</a>(collected_fees.amount.value) &gt; 0 &&
-        <a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_spec_is_some">option::spec_is_some</a>(collected_fees.proposer) ==&gt;
+        <a href="../../move-stdlib/doc/option.md#0x1_option_spec_is_some">option::spec_is_some</a>(collected_fees.proposer) ==&gt;
         <b>if</b> (proposer != @vm_reserved) {
             <b>if</b> (<a href="../../starcoin-stdlib/doc/table.md#0x1_table_spec_contains">table::spec_contains</a>(fees_table, proposer)) {
                 <a href="../../starcoin-stdlib/doc/table.md#0x1_table_spec_get">table::spec_get</a>(post_fees_table, proposer).value == <a href="../../starcoin-stdlib/doc/table.md#0x1_table_spec_get">table::spec_get</a>(
@@ -1047,7 +1047,7 @@ Only called during genesis.
                 <a href="../../starcoin-stdlib/doc/table.md#0x1_table_spec_get">table::spec_get</a>(post_fees_table, proposer).value == fee_to_add
             }
         } <b>else</b> {
-            <a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_spec_is_none">option::spec_is_none</a>(post_collected_fees.proposer) && post_amount == 0
+            <a href="../../move-stdlib/doc/option.md#0x1_option_spec_is_none">option::spec_is_none</a>(post_collected_fees.proposer) && post_amount == 0
         };
 }
 </code></pre>
@@ -1080,11 +1080,11 @@ Only called during genesis.
 </code></pre>
 
 
-<code><a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinCapabilities">StarcoinCoinCapabilities</a></code> should be exists.
+<code>StarcoinCoinCapabilities</code> should be exists.
 
 
 <pre><code><b>pragma</b> verify = <b>false</b>;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinCapabilities">StarcoinCoinCapabilities</a>&gt;(@starcoin_framework);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_CoinCapabilities">CoinCapabilities</a>&gt;(@starcoin_framework);
 <b>let</b> account_addr = <a href="account.md#0x1_account">account</a>;
 <b>let</b> amount = fee;
 <b>let</b> starcoin_addr = <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;StarcoinCoin&gt;().account_address;
@@ -1094,17 +1094,17 @@ Only called during genesis.
     && <b>exists</b>&lt;CoinStore&lt;StarcoinCoin&gt;&gt;(account_addr));
 <b>aborts_if</b> coin_store.<a href="coin.md#0x1_coin">coin</a>.value &lt; amount;
 <b>let</b> maybe_supply = <b>global</b>&lt;CoinInfo&lt;StarcoinCoin&gt;&gt;(starcoin_addr).supply;
-<b>let</b> supply_aggr = <a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_spec_borrow">option::spec_borrow</a>(maybe_supply);
+<b>let</b> supply_aggr = <a href="../../move-stdlib/doc/option.md#0x1_option_spec_borrow">option::spec_borrow</a>(maybe_supply);
 <b>let</b> value = <a href="optional_aggregator.md#0x1_optional_aggregator_optional_aggregator_value">optional_aggregator::optional_aggregator_value</a>(supply_aggr);
 <b>let</b> <b>post</b> post_maybe_supply = <b>global</b>&lt;CoinInfo&lt;StarcoinCoin&gt;&gt;(starcoin_addr).supply;
-<b>let</b> <b>post</b> post_supply = <a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_spec_borrow">option::spec_borrow</a>(post_maybe_supply);
+<b>let</b> <b>post</b> post_supply = <a href="../../move-stdlib/doc/option.md#0x1_option_spec_borrow">option::spec_borrow</a>(post_maybe_supply);
 <b>let</b> <b>post</b> post_value = <a href="optional_aggregator.md#0x1_optional_aggregator_optional_aggregator_value">optional_aggregator::optional_aggregator_value</a>(post_supply);
-<b>aborts_if</b> <a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_spec_is_some">option::spec_is_some</a>(maybe_supply) && value &lt; amount;
+<b>aborts_if</b> <a href="../../move-stdlib/doc/option.md#0x1_option_spec_is_some">option::spec_is_some</a>(maybe_supply) && value &lt; amount;
 <b>ensures</b> post_coin_store.<a href="coin.md#0x1_coin">coin</a>.value == coin_store.<a href="coin.md#0x1_coin">coin</a>.value - amount;
-<b>ensures</b> <b>if</b> (<a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_spec_is_some">option::spec_is_some</a>(maybe_supply)) {
+<b>ensures</b> <b>if</b> (<a href="../../move-stdlib/doc/option.md#0x1_option_spec_is_some">option::spec_is_some</a>(maybe_supply)) {
     post_value == value - amount
 } <b>else</b> {
-    <a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_spec_is_none">option::spec_is_none</a>(post_maybe_supply)
+    <a href="../../move-stdlib/doc/option.md#0x1_option_spec_is_none">option::spec_is_none</a>(post_maybe_supply)
 };
 <b>ensures</b> <a href="coin.md#0x1_coin_supply">coin::supply</a>&lt;StarcoinCoin&gt; == <b>old</b>(<a href="coin.md#0x1_coin_supply">coin::supply</a>&lt;StarcoinCoin&gt;) - amount;
 </code></pre>
@@ -1127,7 +1127,7 @@ Only called during genesis.
 <b>aborts_if</b> (refund != 0) && !<b>exists</b>&lt;CoinInfo&lt;StarcoinCoin&gt;&gt;(starcoin_addr);
 <b>include</b> <a href="coin.md#0x1_coin_CoinAddAbortsIf">coin::CoinAddAbortsIf</a>&lt;StarcoinCoin&gt; { amount: refund };
 <b>aborts_if</b> !<b>exists</b>&lt;CoinStore&lt;StarcoinCoin&gt;&gt;(<a href="account.md#0x1_account">account</a>);
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinMintCapability">StarcoinCoinMintCapability</a>&gt;(@starcoin_framework);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_CoinMintCapability">CoinMintCapability</a>&gt;(@starcoin_framework);
 <b>let</b> supply = <a href="coin.md#0x1_coin_supply">coin::supply</a>&lt;StarcoinCoin&gt;;
 <b>let</b> <b>post</b> post_supply = <a href="coin.md#0x1_coin_supply">coin::supply</a>&lt;StarcoinCoin&gt;;
 <b>aborts_if</b> [abstract] supply + refund &gt; MAX_U128;
@@ -1168,46 +1168,46 @@ Only called during genesis.
 
 
 
-<a id="@Specification_1_store_starcoin_coin_burn_cap"></a>
+<a id="@Specification_1_store_coin_burn_cap"></a>
 
-### Function `store_starcoin_coin_burn_cap`
+### Function `store_coin_burn_cap`
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_store_starcoin_coin_burn_cap">store_starcoin_coin_burn_cap</a>(starcoin_framework: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, burn_cap: <a href="coin.md#0x1_coin_BurnCapability">coin::BurnCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_store_coin_burn_cap">store_coin_burn_cap</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, burn_cap: <a href="coin.md#0x1_coin_BurnCapability">coin::BurnCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;)
 </code></pre>
 
 
 Ensure caller is admin.
-Aborts if <code><a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinCapabilities">StarcoinCoinCapabilities</a></code> already exists.
+Aborts if <code>StarcoinCoinCapabilities</code> already exists.
 
 
 <pre><code><b>pragma</b> verify = <b>false</b>;
-<b>let</b> addr = <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(starcoin_framework);
+<b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(starcoin_framework);
 <b>aborts_if</b> !<a href="system_addresses.md#0x1_system_addresses_is_starcoin_framework_address">system_addresses::is_starcoin_framework_address</a>(addr);
-<b>aborts_if</b> <b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_StarcoinFABurnCapabilities">StarcoinFABurnCapabilities</a>&gt;(addr);
-<b>aborts_if</b> <b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinCapabilities">StarcoinCoinCapabilities</a>&gt;(addr);
-<b>ensures</b> <b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_StarcoinFABurnCapabilities">StarcoinFABurnCapabilities</a>&gt;(addr) || <b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinCapabilities">StarcoinCoinCapabilities</a>&gt;(addr);
+<b>aborts_if</b> <b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_FABurnCapabilities">FABurnCapabilities</a>&gt;(addr);
+<b>aborts_if</b> <b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_CoinCapabilities">CoinCapabilities</a>&gt;(addr);
+<b>ensures</b> <b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_FABurnCapabilities">FABurnCapabilities</a>&gt;(addr) || <b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_CoinCapabilities">CoinCapabilities</a>&gt;(addr);
 </code></pre>
 
 
 
-<a id="@Specification_1_store_starcoin_coin_mint_cap"></a>
+<a id="@Specification_1_store_coin_mint_cap"></a>
 
-### Function `store_starcoin_coin_mint_cap`
+### Function `store_coin_mint_cap`
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_store_starcoin_coin_mint_cap">store_starcoin_coin_mint_cap</a>(starcoin_framework: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, mint_cap: <a href="coin.md#0x1_coin_MintCapability">coin::MintCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_store_coin_mint_cap">store_coin_mint_cap</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, mint_cap: <a href="coin.md#0x1_coin_MintCapability">coin::MintCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;)
 </code></pre>
 
 
 Ensure caller is admin.
-Aborts if <code><a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinMintCapability">StarcoinCoinMintCapability</a></code> already exists.
+Aborts if <code>StarcoinCoinMintCapability</code> already exists.
 
 
-<pre><code><b>let</b> addr = <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(starcoin_framework);
+<pre><code><b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(starcoin_framework);
 <b>aborts_if</b> !<a href="system_addresses.md#0x1_system_addresses_is_starcoin_framework_address">system_addresses::is_starcoin_framework_address</a>(addr);
-<b>aborts_if</b> <b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinMintCapability">StarcoinCoinMintCapability</a>&gt;(addr);
-<b>ensures</b> <b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinMintCapability">StarcoinCoinMintCapability</a>&gt;(addr);
+<b>aborts_if</b> <b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_CoinMintCapability">CoinMintCapability</a>&gt;(addr);
+<b>ensures</b> <b>exists</b>&lt;<a href="transaction_fee.md#0x1_transaction_fee_CoinMintCapability">CoinMintCapability</a>&gt;(addr);
 </code></pre>
 
 
@@ -1218,7 +1218,7 @@ Aborts if <code><a href="transaction_fee.md#0x1_transaction_fee_StarcoinCoinMint
 
 
 <pre><code>#[deprecated]
-<b>public</b> <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_initialize_storage_refund">initialize_storage_refund</a>(_: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
+<b>public</b> <b>fun</b> <a href="transaction_fee.md#0x1_transaction_fee_initialize_storage_refund">initialize_storage_refund</a>(_: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
