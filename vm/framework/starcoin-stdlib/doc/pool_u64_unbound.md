@@ -842,7 +842,7 @@ Return the number of coins <code>shares</code> are worth in <code>pool</code> wi
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="pool_u64_unbound.md#0x1_pool_u64_unbound_multiply_then_divide">multiply_then_divide</a>(self: &<a href="pool_u64_unbound.md#0x1_pool_u64_unbound_Pool">pool_u64_unbound::Pool</a>, x: u128, y: u128, z: u128): u128
+<pre><code><b>public</b> <b>fun</b> <a href="pool_u64_unbound.md#0x1_pool_u64_unbound_multiply_then_divide">multiply_then_divide</a>(_self: &<a href="pool_u64_unbound.md#0x1_pool_u64_unbound_Pool">pool_u64_unbound::Pool</a>, x: u128, y: u128, z: u128): u128
 </code></pre>
 
 
@@ -851,7 +851,7 @@ Return the number of coins <code>shares</code> are worth in <code>pool</code> wi
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="pool_u64_unbound.md#0x1_pool_u64_unbound_multiply_then_divide">multiply_then_divide</a>(self: &<a href="pool_u64_unbound.md#0x1_pool_u64_unbound_Pool">Pool</a>, x: u128, y: u128, z: u128): u128 {
+<pre><code><b>public</b> <b>fun</b> <a href="pool_u64_unbound.md#0x1_pool_u64_unbound_multiply_then_divide">multiply_then_divide</a>(_self: &<a href="pool_u64_unbound.md#0x1_pool_u64_unbound_Pool">Pool</a>, x: u128, y: u128, z: u128): u128 {
     <b>let</b> result = (<a href="pool_u64_unbound.md#0x1_pool_u64_unbound_to_u256">to_u256</a>(x) * <a href="pool_u64_unbound.md#0x1_pool_u64_unbound_to_u256">to_u256</a>(y)) / <a href="pool_u64_unbound.md#0x1_pool_u64_unbound_to_u256">to_u256</a>(z);
     (result <b>as</b> u128)
 }
@@ -1287,7 +1287,7 @@ Return the number of coins <code>shares</code> are worth in <code>pool</code> wi
 ### Function `multiply_then_divide`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="pool_u64_unbound.md#0x1_pool_u64_unbound_multiply_then_divide">multiply_then_divide</a>(self: &<a href="pool_u64_unbound.md#0x1_pool_u64_unbound_Pool">pool_u64_unbound::Pool</a>, x: u128, y: u128, z: u128): u128
+<pre><code><b>public</b> <b>fun</b> <a href="pool_u64_unbound.md#0x1_pool_u64_unbound_multiply_then_divide">multiply_then_divide</a>(_self: &<a href="pool_u64_unbound.md#0x1_pool_u64_unbound_Pool">pool_u64_unbound::Pool</a>, x: u128, y: u128, z: u128): u128
 </code></pre>
 
 
