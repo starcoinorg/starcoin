@@ -43,8 +43,8 @@ const COMPLEXITY_BUDGET: usize = 200000000;
 /// The keys used to identify the metadata in the metadata section of the module bytecode.
 /// This is more or less arbitrary, besides we should use some unique key to identify
 /// Starcoin specific metadata (`starcoin::` here).
-pub static APTOS_METADATA_KEY: &[u8] = "starcoin::metadata_v0".as_bytes();
-pub static APTOS_METADATA_KEY_V1: &[u8] = "starcoin::metadata_v1".as_bytes();
+pub static STARCOIN_METADATA_KEY: &[u8] = "starcoin::metadata_v0".as_bytes();
+pub static STARCOIN_METADATA_KEY_V1: &[u8] = "starcoin::metadata_v1".as_bytes();
 
 /// Starcoin specific metadata attached to the metadata section of file_format.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -189,7 +189,7 @@ thread_local! {
 
 /// Extract metadata from the VM, upgrading V0 to V1 representation as needed
 pub fn get_metadata(md: &[Metadata]) -> Option<Arc<RuntimeModuleMetadataV1>> {
-    if let Some(data) = md.iter().find(|md| md.key == APTOS_METADATA_KEY_V1) {
+    if let Some(data) = md.iter().find(|md| md.key == STARCOIN_METADATA_KEY_V1) {
         V1_METADATA_CACHE.with(|ref_cell| {
             let mut cache = ref_cell.borrow_mut();
             if let Some(meta) = cache.get(&data.value) {
@@ -208,7 +208,7 @@ pub fn get_metadata(md: &[Metadata]) -> Option<Arc<RuntimeModuleMetadataV1>> {
 }
 
 pub fn get_metadata_v0(md: &[Metadata]) -> Option<Arc<RuntimeModuleMetadataV1>> {
-    if let Some(data) = md.iter().find(|md| md.key == APTOS_METADATA_KEY) {
+    if let Some(data) = md.iter().find(|md| md.key == STARCOIN_METADATA_KEY) {
         V0_METADATA_CACHE.with(|ref_cell| {
             let mut cache = ref_cell.borrow_mut();
             if let Some(meta) = cache.get(&data.value) {
@@ -248,16 +248,16 @@ pub fn check_metadata_format(
     let mut exist = false;
     let mut compilation_key_exist = false;
     for data in module.metadata.iter() {
-        if data.key == *APTOS_METADATA_KEY || data.key == *APTOS_METADATA_KEY_V1 {
+        if data.key == *STARCOIN_METADATA_KEY || data.key == *STARCOIN_METADATA_KEY_V1 {
             if exist {
                 return Err(MalformedError::DuplicateKey);
             }
             exist = true;
 
-            if data.key == *APTOS_METADATA_KEY {
+            if data.key == *STARCOIN_METADATA_KEY {
                 bcs::from_bytes::<RuntimeModuleMetadata>(&data.value)
                     .map_err(|e| MalformedError::DeserializedError(data.key.clone(), e))?;
-            } else if data.key == *APTOS_METADATA_KEY_V1 {
+            } else if data.key == *STARCOIN_METADATA_KEY_V1 {
                 bcs::from_bytes::<RuntimeModuleMetadataV1>(&data.value)
                     .map_err(|e| MalformedError::DeserializedError(data.key.clone(), e))?;
             }
@@ -282,7 +282,7 @@ pub fn check_metadata_format(
 pub fn get_metadata_from_compiled_module(
     module: &CompiledModule,
 ) -> Option<RuntimeModuleMetadataV1> {
-    if let Some(data) = find_metadata(module, APTOS_METADATA_KEY_V1) {
+    if let Some(data) = find_metadata(module, STARCOIN_METADATA_KEY_V1) {
         let mut metadata = bcs::from_bytes::<RuntimeModuleMetadataV1>(&data.value).ok();
         // Clear out metadata for v5, since it shouldn't have existed in the first place and isn't
         // being used. Note, this should have been gated in the verify module metadata.
@@ -293,7 +293,7 @@ pub fn get_metadata_from_compiled_module(
             }
         }
         metadata
-    } else if let Some(data) = find_metadata(module, APTOS_METADATA_KEY) {
+    } else if let Some(data) = find_metadata(module, STARCOIN_METADATA_KEY) {
         // Old format available, upgrade to new one on the fly
         let data_v0 = bcs::from_bytes::<RuntimeModuleMetadata>(&data.value).ok()?;
         Some(data_v0.upgrade())
@@ -326,7 +326,7 @@ pub fn get_compilation_metadata_from_compiled_module(
 pub fn get_metadata_from_compiled_script(
     script: &CompiledScript,
 ) -> Option<RuntimeModuleMetadataV1> {
-    if let Some(data) = find_metadata_in_script(script, APTOS_METADATA_KEY_V1) {
+    if let Some(data) = find_metadata_in_script(script, STARCOIN_METADATA_KEY_V1) {
         let mut metadata = bcs::from_bytes::<RuntimeModuleMetadataV1>(&data.value).ok();
         // Clear out metadata for v5, since it shouldn't have existed in the first place and isn't
         // being used. Note, this should have been gated in the verify module metadata.
@@ -337,7 +337,7 @@ pub fn get_metadata_from_compiled_script(
             }
         }
         metadata
-    } else if let Some(data) = find_metadata_in_script(script, APTOS_METADATA_KEY) {
+    } else if let Some(data) = find_metadata_in_script(script, STARCOIN_METADATA_KEY) {
         // Old format available, upgrade to new one on the fly
         let data_v0 = bcs::from_bytes::<RuntimeModuleMetadata>(&data.value).ok()?;
         Some(data_v0.upgrade())

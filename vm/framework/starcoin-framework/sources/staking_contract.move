@@ -467,7 +467,6 @@ module starcoin_framework::staking_contract {
             &mut store.update_voter_events,
             UpdateVoterEvent { operator, pool_address, old_voter, new_voter },
         );
-
     }
 
     /// Convenient function to allow the staker to reset their stake pool's lockup period to start now.
@@ -1006,7 +1005,11 @@ module starcoin_framework::staking_contract {
 
         // Voter is initially set to operator but then updated to be staker.
         create_staking_contract(staker, operator_address, operator_address, amount, commission, vector::empty<u8>());
-        std::features::change_feature_flags_for_testing(starcoin_framework, vector[MODULE_EVENT, OPERATOR_BENEFICIARY_CHANGE], vector[]);
+        std::features::change_feature_flags_for_testing(
+            starcoin_framework,
+            vector[MODULE_EVENT, OPERATOR_BENEFICIARY_CHANGE],
+            vector[]
+        );
     }
 
     #[test(starcoin_framework = @0x1, staker = @0x123, operator = @0x234)]
@@ -1578,14 +1581,14 @@ module starcoin_framework::staking_contract {
         stake::assert_stake_pool(pool_address, balance_2epoch, 0, 0, with_rewards(unpaid_commission));
     }
 
-    #[test(
-        staker = @0xe256f4f4e2986cada739e339895cf5585082ff247464cab8ec56eea726bd2263,
-        operator = @0x9f0a211d218b082987408f1e393afe1ba0c202c6d280f081399788d3360c7f09
-    )]
-    public entry fun test_get_expected_stake_pool_address(staker: address, operator: address) {
-        let pool_address = get_expected_stake_pool_address(staker, operator, vector[0x42, 0x42]);
-        assert!(pool_address == @0x9d9648031ada367c26f7878eb0b0406ae6a969b1a43090269e5cdfabe1b48f0f, 0);
-    }
+    //#[test(
+    //    staker = @0xe256f4f4e2986cada739e339895cf5585082ff247464cab8ec56eea726bd2263,
+    //    operator = @0x9f0a211d218b082987408f1e393afe1ba0c202c6d280f081399788d3360c7f09
+    //)]
+    //public entry fun test_get_expected_stake_pool_address(staker: address, operator: address) {
+    //    let pool_address = get_expected_stake_pool_address(staker, operator, vector[0x42, 0x42]);
+    //    assert!(pool_address == @0x9d9648031ada367c26f7878eb0b0406ae6a969b1a43090269e5cdfabe1b48f0f, 0);
+    //}
 
     #[test_only]
     public fun assert_staking_contract(

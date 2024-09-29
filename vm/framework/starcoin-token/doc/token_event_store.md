@@ -51,10 +51,10 @@ This module provides utils to add and emit new token events that are not in toke
 <pre><code><b>use</b> <a href="../../starcoin-framework/doc/account.md#0x1_account">0x1::account</a>;
 <b>use</b> <a href="../../starcoin-framework/../starcoin-stdlib/doc/any.md#0x1_any">0x1::any</a>;
 <b>use</b> <a href="../../starcoin-framework/doc/event.md#0x1_event">0x1::event</a>;
-<b>use</b> <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/features.md#0x1_features">0x1::features</a>;
-<b>use</b> <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option">0x1::option</a>;
-<b>use</b> <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
-<b>use</b> <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
+<b>use</b> <a href="../../move-stdlib/doc/features.md#0x1_features">0x1::features</a>;
+<b>use</b> <a href="../../move-stdlib/doc/option.md#0x1_option">0x1::option</a>;
+<b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
+<b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 <b>use</b> <a href="property_map.md#0x3_property_map">0x3::property_map</a>;
 </code></pre>
 
@@ -84,19 +84,19 @@ Event emitted when collection description is mutated
 
 </dd>
 <dt>
-<code>collection_name: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>old_description: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>old_description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>new_description: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>new_description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
@@ -131,19 +131,19 @@ Event emitted when collection description is mutated
 
 </dd>
 <dt>
-<code>collection_name: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>old_description: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>old_description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>new_description: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>new_description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
@@ -177,19 +177,19 @@ Event emitted when collection uri is mutated
 
 </dd>
 <dt>
-<code>collection_name: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>old_uri: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>old_uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>new_uri: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>new_uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
@@ -224,19 +224,19 @@ Event emitted when collection uri is mutated
 
 </dd>
 <dt>
-<code>collection_name: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>old_uri: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>old_uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>new_uri: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>new_uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
@@ -270,7 +270,7 @@ Event emitted when the collection maximum is mutated
 
 </dd>
 <dt>
-<code>collection_name: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
@@ -317,7 +317,7 @@ Event emitted when the collection maximum is mutated
 
 </dd>
 <dt>
-<code>collection_name: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
@@ -426,25 +426,25 @@ Event emitted when the tokendata uri mutates
 
 </dd>
 <dt>
-<code>collection: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code><a href="token.md#0x3_token">token</a>: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code><a href="token.md#0x3_token">token</a>: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>old_uri: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>old_uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>new_uri: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>new_uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
@@ -479,25 +479,25 @@ Event emitted when the tokendata uri mutates
 
 </dd>
 <dt>
-<code>collection: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code><a href="token.md#0x3_token">token</a>: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code><a href="token.md#0x3_token">token</a>: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>old_uri: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>old_uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>new_uri: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>new_uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
@@ -531,31 +531,31 @@ Event emitted when mutating the default the token properties stored at tokendata
 
 </dd>
 <dt>
-<code>collection: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code><a href="token.md#0x3_token">token</a>: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code><a href="token.md#0x3_token">token</a>: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>keys: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;</code>
+<code>keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>old_values: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="property_map.md#0x3_property_map_PropertyValue">property_map::PropertyValue</a>&gt;&gt;</code>
+<code>old_values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="property_map.md#0x3_property_map_PropertyValue">property_map::PropertyValue</a>&gt;&gt;</code>
 </dt>
 <dd>
  we allow upsert so the old values might be none
 </dd>
 <dt>
-<code>new_values: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="property_map.md#0x3_property_map_PropertyValue">property_map::PropertyValue</a>&gt;</code>
+<code>new_values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="property_map.md#0x3_property_map_PropertyValue">property_map::PropertyValue</a>&gt;</code>
 </dt>
 <dd>
 
@@ -590,31 +590,31 @@ Event emitted when mutating the default the token properties stored at tokendata
 
 </dd>
 <dt>
-<code>collection: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code><a href="token.md#0x3_token">token</a>: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code><a href="token.md#0x3_token">token</a>: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>keys: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;</code>
+<code>keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>old_values: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="property_map.md#0x3_property_map_PropertyValue">property_map::PropertyValue</a>&gt;&gt;</code>
+<code>old_values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="property_map.md#0x3_property_map_PropertyValue">property_map::PropertyValue</a>&gt;&gt;</code>
 </dt>
 <dd>
  we allow upsert so the old values might be none
 </dd>
 <dt>
-<code>new_values: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="property_map.md#0x3_property_map_PropertyValue">property_map::PropertyValue</a>&gt;</code>
+<code>new_values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="property_map.md#0x3_property_map_PropertyValue">property_map::PropertyValue</a>&gt;</code>
 </dt>
 <dd>
 
@@ -648,25 +648,25 @@ Event emitted when the tokendata description is mutated
 
 </dd>
 <dt>
-<code>collection: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code><a href="token.md#0x3_token">token</a>: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code><a href="token.md#0x3_token">token</a>: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>old_description: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>old_description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>new_description: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>new_description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
@@ -701,25 +701,25 @@ Event emitted when the tokendata description is mutated
 
 </dd>
 <dt>
-<code>collection: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code><a href="token.md#0x3_token">token</a>: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code><a href="token.md#0x3_token">token</a>: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>old_description: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>old_description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>new_description: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>new_description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
@@ -753,13 +753,13 @@ Event emitted when the token royalty is mutated
 
 </dd>
 <dt>
-<code>collection: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code><a href="token.md#0x3_token">token</a>: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code><a href="token.md#0x3_token">token</a>: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
@@ -830,13 +830,13 @@ Event emitted when the token royalty is mutated
 
 </dd>
 <dt>
-<code>collection: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code><a href="token.md#0x3_token">token</a>: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code><a href="token.md#0x3_token">token</a>: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
@@ -906,13 +906,13 @@ Event emitted when the token maximum is mutated
 
 </dd>
 <dt>
-<code>collection: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code><a href="token.md#0x3_token">token</a>: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code><a href="token.md#0x3_token">token</a>: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
@@ -959,13 +959,13 @@ Event emitted when the token maximum is mutated
 
 </dd>
 <dt>
-<code>collection: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code>collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code><a href="token.md#0x3_token">token</a>: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+<code><a href="token.md#0x3_token">token</a>: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
 </dt>
 <dd>
 
@@ -1058,7 +1058,7 @@ Event emitted when the token maximum is mutated
 
 </dd>
 <dt>
-<code>extension: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="../../starcoin-framework/../starcoin-stdlib/doc/any.md#0x1_any_Any">any::Any</a>&gt;</code>
+<code>extension: <a href="../../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="../../starcoin-framework/../starcoin-stdlib/doc/any.md#0x1_any_Any">any::Any</a>&gt;</code>
 </dt>
 <dd>
  This is for adding new events in future
@@ -1074,7 +1074,7 @@ Event emitted when the token maximum is mutated
 
 
 
-<pre><code><b>fun</b> <a href="token_event_store.md#0x3_token_event_store_initialize_token_event_store">initialize_token_event_store</a>(acct: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
+<pre><code><b>fun</b> <a href="token_event_store.md#0x3_token_event_store_initialize_token_event_store">initialize_token_event_store</a>(acct: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -1083,8 +1083,8 @@ Event emitted when the token maximum is mutated
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="token_event_store.md#0x3_token_event_store_initialize_token_event_store">initialize_token_event_store</a>(acct: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>){
-    <b>if</b> (!<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">TokenEventStoreV1</a>&gt;(<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(acct))) {
+<pre><code><b>fun</b> <a href="token_event_store.md#0x3_token_event_store_initialize_token_event_store">initialize_token_event_store</a>(acct: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>){
+    <b>if</b> (!<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">TokenEventStoreV1</a>&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(acct))) {
         <b>move_to</b>(acct, <a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">TokenEventStoreV1</a> {
             collection_uri_mutate_events: <a href="../../starcoin-framework/doc/account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="token_event_store.md#0x3_token_event_store_CollectionUriMutateEvent">CollectionUriMutateEvent</a>&gt;(acct),
             collection_maximum_mutate_events: <a href="../../starcoin-framework/doc/account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="token_event_store.md#0x3_token_event_store_CollectionMaxiumMutateEvent">CollectionMaxiumMutateEvent</a>&gt;(acct),
@@ -1095,7 +1095,7 @@ Event emitted when the token maximum is mutated
             description_mutate_events: <a href="../../starcoin-framework/doc/account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="token_event_store.md#0x3_token_event_store_DescriptionMutateEvent">DescriptionMutateEvent</a>&gt;(acct),
             royalty_mutate_events: <a href="../../starcoin-framework/doc/account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="token_event_store.md#0x3_token_event_store_RoyaltyMutateEvent">RoyaltyMutateEvent</a>&gt;(acct),
             maximum_mutate_events: <a href="../../starcoin-framework/doc/account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="token_event_store.md#0x3_token_event_store_MaxiumMutateEvent">MaxiumMutateEvent</a>&gt;(acct),
-            extension: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_none">option::none</a>&lt;Any&gt;(),
+            extension: <a href="../../move-stdlib/doc/option.md#0x1_option_none">option::none</a>&lt;Any&gt;(),
         });
     };
 }
@@ -1112,7 +1112,7 @@ Event emitted when the token maximum is mutated
 Emit the collection uri mutation event
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_collection_uri_mutate_event">emit_collection_uri_mutate_event</a>(creator: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_uri: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, new_uri: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_collection_uri_mutate_event">emit_collection_uri_mutate_event</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, new_uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
 </code></pre>
 
 
@@ -1121,19 +1121,19 @@ Emit the collection uri mutation event
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_collection_uri_mutate_event">emit_collection_uri_mutate_event</a>(creator: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: String, old_uri: String, new_uri: String) <b>acquires</b> <a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">TokenEventStoreV1</a> {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_collection_uri_mutate_event">emit_collection_uri_mutate_event</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: String, old_uri: String, new_uri: String) <b>acquires</b> <a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">TokenEventStoreV1</a> {
     <b>let</b> <a href="../../starcoin-framework/doc/event.md#0x1_event">event</a> = <a href="token_event_store.md#0x3_token_event_store_CollectionUriMutateEvent">CollectionUriMutateEvent</a> {
-        creator_addr: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator),
+        creator_addr: <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator),
         collection_name: collection,
         old_uri,
         new_uri,
     };
     <a href="token_event_store.md#0x3_token_event_store_initialize_token_event_store">initialize_token_event_store</a>(creator);
-    <b>let</b> <a href="token_event_store.md#0x3_token_event_store">token_event_store</a> = <b>borrow_global_mut</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">TokenEventStoreV1</a>&gt;(<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator));
+    <b>let</b> <a href="token_event_store.md#0x3_token_event_store">token_event_store</a> = <b>borrow_global_mut</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">TokenEventStoreV1</a>&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator));
     <b>if</b> (std::features::module_event_migration_enabled()) {
         <a href="../../starcoin-framework/doc/event.md#0x1_event_emit">event::emit</a>(
             <a href="token_event_store.md#0x3_token_event_store_CollectionUriMutate">CollectionUriMutate</a> {
-                creator_addr: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator),
+                creator_addr: <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator),
                 collection_name: collection,
                 old_uri,
                 new_uri,
@@ -1158,7 +1158,7 @@ Emit the collection uri mutation event
 Emit the collection description mutation event
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_collection_description_mutate_event">emit_collection_description_mutate_event</a>(creator: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_description: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, new_description: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_collection_description_mutate_event">emit_collection_description_mutate_event</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, new_description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
 </code></pre>
 
 
@@ -1167,19 +1167,19 @@ Emit the collection description mutation event
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_collection_description_mutate_event">emit_collection_description_mutate_event</a>(creator: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: String, old_description: String, new_description: String) <b>acquires</b> <a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">TokenEventStoreV1</a> {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_collection_description_mutate_event">emit_collection_description_mutate_event</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: String, old_description: String, new_description: String) <b>acquires</b> <a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">TokenEventStoreV1</a> {
     <b>let</b> <a href="../../starcoin-framework/doc/event.md#0x1_event">event</a> = <a href="token_event_store.md#0x3_token_event_store_CollectionDescriptionMutateEvent">CollectionDescriptionMutateEvent</a> {
-        creator_addr: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator),
+        creator_addr: <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator),
         collection_name: collection,
         old_description,
         new_description,
     };
     <a href="token_event_store.md#0x3_token_event_store_initialize_token_event_store">initialize_token_event_store</a>(creator);
-    <b>let</b> <a href="token_event_store.md#0x3_token_event_store">token_event_store</a> = <b>borrow_global_mut</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">TokenEventStoreV1</a>&gt;(<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator));
+    <b>let</b> <a href="token_event_store.md#0x3_token_event_store">token_event_store</a> = <b>borrow_global_mut</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">TokenEventStoreV1</a>&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator));
     <b>if</b> (std::features::module_event_migration_enabled()) {
         <a href="../../starcoin-framework/doc/event.md#0x1_event_emit">event::emit</a>(
             <a href="token_event_store.md#0x3_token_event_store_CollectionDescriptionMutate">CollectionDescriptionMutate</a> {
-                creator_addr: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator),
+                creator_addr: <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator),
                 collection_name: collection,
                 old_description,
                 new_description,
@@ -1204,7 +1204,7 @@ Emit the collection description mutation event
 Emit the collection maximum mutation event
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_collection_maximum_mutate_event">emit_collection_maximum_mutate_event</a>(creator: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_maximum: u64, new_maximum: u64)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_collection_maximum_mutate_event">emit_collection_maximum_mutate_event</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_maximum: u64, new_maximum: u64)
 </code></pre>
 
 
@@ -1213,19 +1213,19 @@ Emit the collection maximum mutation event
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_collection_maximum_mutate_event">emit_collection_maximum_mutate_event</a>(creator: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: String, old_maximum: u64, new_maximum: u64) <b>acquires</b> <a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">TokenEventStoreV1</a> {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_collection_maximum_mutate_event">emit_collection_maximum_mutate_event</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: String, old_maximum: u64, new_maximum: u64) <b>acquires</b> <a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">TokenEventStoreV1</a> {
     <b>let</b> <a href="../../starcoin-framework/doc/event.md#0x1_event">event</a> = <a href="token_event_store.md#0x3_token_event_store_CollectionMaxiumMutateEvent">CollectionMaxiumMutateEvent</a> {
-        creator_addr: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator),
+        creator_addr: <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator),
         collection_name: collection,
         old_maximum,
         new_maximum,
     };
     <a href="token_event_store.md#0x3_token_event_store_initialize_token_event_store">initialize_token_event_store</a>(creator);
-    <b>let</b> <a href="token_event_store.md#0x3_token_event_store">token_event_store</a> = <b>borrow_global_mut</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">TokenEventStoreV1</a>&gt;(<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator));
+    <b>let</b> <a href="token_event_store.md#0x3_token_event_store">token_event_store</a> = <b>borrow_global_mut</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">TokenEventStoreV1</a>&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator));
     <b>if</b> (std::features::module_event_migration_enabled()) {
         <a href="../../starcoin-framework/doc/event.md#0x1_event_emit">event::emit</a>(
             <a href="token_event_store.md#0x3_token_event_store_CollectionMaxiumMutate">CollectionMaxiumMutate</a> {
-                creator_addr: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator),
+                creator_addr: <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator),
                 collection_name: collection,
                 old_maximum,
                 new_maximum,
@@ -1250,7 +1250,7 @@ Emit the collection maximum mutation event
 Emit the direct opt-in event
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_token_opt_in_event">emit_token_opt_in_event</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, opt_in: bool)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_token_opt_in_event">emit_token_opt_in_event</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, opt_in: bool)
 </code></pre>
 
 
@@ -1259,16 +1259,16 @@ Emit the direct opt-in event
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_token_opt_in_event">emit_token_opt_in_event</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, opt_in: bool) <b>acquires</b> <a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">TokenEventStoreV1</a> {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_token_opt_in_event">emit_token_opt_in_event</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, opt_in: bool) <b>acquires</b> <a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">TokenEventStoreV1</a> {
     <b>let</b> opt_in_event = <a href="token_event_store.md#0x3_token_event_store_OptInTransferEvent">OptInTransferEvent</a> {
       opt_in,
     };
     <a href="token_event_store.md#0x3_token_event_store_initialize_token_event_store">initialize_token_event_store</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>);
-    <b>let</b> <a href="token_event_store.md#0x3_token_event_store">token_event_store</a> = <b>borrow_global_mut</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">TokenEventStoreV1</a>&gt;(<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>));
+    <b>let</b> <a href="token_event_store.md#0x3_token_event_store">token_event_store</a> = <b>borrow_global_mut</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">TokenEventStoreV1</a>&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>));
     <b>if</b> (std::features::module_event_migration_enabled()) {
         <a href="../../starcoin-framework/doc/event.md#0x1_event_emit">event::emit</a>(
             <a href="token_event_store.md#0x3_token_event_store_OptInTransfer">OptInTransfer</a> {
-                account_address: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>),
+                account_address: <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>),
                 opt_in,
             });
     };
@@ -1290,7 +1290,7 @@ Emit the direct opt-in event
 Emit URI mutation event
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_token_uri_mutate_event">emit_token_uri_mutate_event</a>(creator: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, <a href="token.md#0x3_token">token</a>: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_uri: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, new_uri: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_token_uri_mutate_event">emit_token_uri_mutate_event</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, <a href="token.md#0x3_token">token</a>: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, new_uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
 </code></pre>
 
 
@@ -1300,13 +1300,13 @@ Emit URI mutation event
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_token_uri_mutate_event">emit_token_uri_mutate_event</a>(
-    creator: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     collection: String,
     <a href="token.md#0x3_token">token</a>: String,
     old_uri: String,
     new_uri: String,
 ) <b>acquires</b> <a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">TokenEventStoreV1</a> {
-    <b>let</b> creator_addr = <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
+    <b>let</b> creator_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
 
     <b>let</b> <a href="../../starcoin-framework/doc/event.md#0x1_event">event</a> = <a href="token_event_store.md#0x3_token_event_store_UriMutationEvent">UriMutationEvent</a> {
         creator: creator_addr,
@@ -1346,7 +1346,7 @@ Emit URI mutation event
 Emit tokendata property map mutation event
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_default_property_mutate_event">emit_default_property_mutate_event</a>(creator: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, <a href="token.md#0x3_token">token</a>: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, keys: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, old_values: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="property_map.md#0x3_property_map_PropertyValue">property_map::PropertyValue</a>&gt;&gt;, new_values: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="property_map.md#0x3_property_map_PropertyValue">property_map::PropertyValue</a>&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_default_property_mutate_event">emit_default_property_mutate_event</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, <a href="token.md#0x3_token">token</a>: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, old_values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="property_map.md#0x3_property_map_PropertyValue">property_map::PropertyValue</a>&gt;&gt;, new_values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="property_map.md#0x3_property_map_PropertyValue">property_map::PropertyValue</a>&gt;)
 </code></pre>
 
 
@@ -1356,14 +1356,14 @@ Emit tokendata property map mutation event
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_default_property_mutate_event">emit_default_property_mutate_event</a>(
-    creator: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     collection: String,
     <a href="token.md#0x3_token">token</a>: String,
-    keys: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;String&gt;,
-    old_values: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;Option&lt;PropertyValue&gt;&gt;,
-    new_values: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;PropertyValue&gt;,
+    keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;String&gt;,
+    old_values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;Option&lt;PropertyValue&gt;&gt;,
+    new_values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;PropertyValue&gt;,
 ) <b>acquires</b> <a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">TokenEventStoreV1</a> {
-    <b>let</b> creator_addr = <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
+    <b>let</b> creator_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
 
     <b>let</b> <a href="../../starcoin-framework/doc/event.md#0x1_event">event</a> = <a href="token_event_store.md#0x3_token_event_store_DefaultPropertyMutateEvent">DefaultPropertyMutateEvent</a> {
         creator: creator_addr,
@@ -1405,7 +1405,7 @@ Emit tokendata property map mutation event
 Emit description mutation event
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_token_descrition_mutate_event">emit_token_descrition_mutate_event</a>(creator: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, <a href="token.md#0x3_token">token</a>: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_description: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, new_description: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_token_descrition_mutate_event">emit_token_descrition_mutate_event</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, <a href="token.md#0x3_token">token</a>: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, new_description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
 </code></pre>
 
 
@@ -1415,13 +1415,13 @@ Emit description mutation event
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_token_descrition_mutate_event">emit_token_descrition_mutate_event</a>(
-    creator: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     collection: String,
     <a href="token.md#0x3_token">token</a>: String,
     old_description: String,
     new_description: String,
 ) <b>acquires</b> <a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">TokenEventStoreV1</a> {
-    <b>let</b> creator_addr = <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
+    <b>let</b> creator_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
 
     <b>let</b> <a href="../../starcoin-framework/doc/event.md#0x1_event">event</a> = <a href="token_event_store.md#0x3_token_event_store_DescriptionMutateEvent">DescriptionMutateEvent</a> {
         creator: creator_addr,
@@ -1461,7 +1461,7 @@ Emit description mutation event
 Emit royalty mutation event
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_token_royalty_mutate_event">emit_token_royalty_mutate_event</a>(creator: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, <a href="token.md#0x3_token">token</a>: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_royalty_numerator: u64, old_royalty_denominator: u64, old_royalty_payee_addr: <b>address</b>, new_royalty_numerator: u64, new_royalty_denominator: u64, new_royalty_payee_addr: <b>address</b>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_token_royalty_mutate_event">emit_token_royalty_mutate_event</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, <a href="token.md#0x3_token">token</a>: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_royalty_numerator: u64, old_royalty_denominator: u64, old_royalty_payee_addr: <b>address</b>, new_royalty_numerator: u64, new_royalty_denominator: u64, new_royalty_payee_addr: <b>address</b>)
 </code></pre>
 
 
@@ -1471,7 +1471,7 @@ Emit royalty mutation event
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_token_royalty_mutate_event">emit_token_royalty_mutate_event</a>(
-    creator: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     collection: String,
     <a href="token.md#0x3_token">token</a>: String,
     old_royalty_numerator: u64,
@@ -1481,7 +1481,7 @@ Emit royalty mutation event
     new_royalty_denominator: u64,
     new_royalty_payee_addr: <b>address</b>,
 ) <b>acquires</b> <a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">TokenEventStoreV1</a> {
-    <b>let</b> creator_addr = <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
+    <b>let</b> creator_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
     <b>let</b> <a href="../../starcoin-framework/doc/event.md#0x1_event">event</a> = <a href="token_event_store.md#0x3_token_event_store_RoyaltyMutateEvent">RoyaltyMutateEvent</a> {
         creator: creator_addr,
         collection,
@@ -1528,7 +1528,7 @@ Emit royalty mutation event
 Emit maximum mutation event
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_token_maximum_mutate_event">emit_token_maximum_mutate_event</a>(creator: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, <a href="token.md#0x3_token">token</a>: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_maximum: u64, new_maximum: u64)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_token_maximum_mutate_event">emit_token_maximum_mutate_event</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, <a href="token.md#0x3_token">token</a>: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_maximum: u64, new_maximum: u64)
 </code></pre>
 
 
@@ -1538,13 +1538,13 @@ Emit maximum mutation event
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_token_maximum_mutate_event">emit_token_maximum_mutate_event</a>(
-    creator: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     collection: String,
     <a href="token.md#0x3_token">token</a>: String,
     old_maximum: u64,
     new_maximum: u64,
 ) <b>acquires</b> <a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">TokenEventStoreV1</a> {
-    <b>let</b> creator_addr = <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
+    <b>let</b> creator_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
 
     <b>let</b> <a href="../../starcoin-framework/doc/event.md#0x1_event">event</a> = <a href="token_event_store.md#0x3_token_event_store_MaxiumMutateEvent">MaxiumMutateEvent</a> {
         creator: creator_addr,
@@ -1594,14 +1594,14 @@ Emit maximum mutation event
 ### Function `initialize_token_event_store`
 
 
-<pre><code><b>fun</b> <a href="token_event_store.md#0x3_token_event_store_initialize_token_event_store">initialize_token_event_store</a>(acct: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
+<pre><code><b>fun</b> <a href="token_event_store.md#0x3_token_event_store_initialize_token_event_store">initialize_token_event_store</a>(acct: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
 
 
 <pre><code><b>pragma</b> verify = <b>true</b>;
-<b>let</b> addr = <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(acct);
+<b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(acct);
 <b>include</b> <a href="token_event_store.md#0x3_token_event_store_InitializeTokenEventStoreAbortsIf">InitializeTokenEventStoreAbortsIf</a> {creator : acct};
 </code></pre>
 
@@ -1614,8 +1614,8 @@ number of registered events
 
 
 <pre><code><b>schema</b> <a href="token_event_store.md#0x3_token_event_store_InitializeTokenEventStoreAbortsIf">InitializeTokenEventStoreAbortsIf</a> {
-    creator: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>;
-    <b>let</b> addr = <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
+    creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>;
+    <b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
     <b>let</b> <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a> = <b>global</b>&lt;Account&gt;(addr);
     <b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">TokenEventStoreV1</a>&gt;(addr) && !<b>exists</b>&lt;Account&gt;(addr);
     <b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt;= <a href="../../starcoin-framework/doc/account.md#0x1_account_MAX_GUID_CREATION_NUM">account::MAX_GUID_CREATION_NUM</a>;
@@ -1630,8 +1630,8 @@ number of registered events
 
 
 <pre><code><b>schema</b> <a href="token_event_store.md#0x3_token_event_store_TokenEventStoreAbortsIf">TokenEventStoreAbortsIf</a> {
-    creator: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>;
-    <b>let</b> addr = <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
+    creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>;
+    <b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
     <b>let</b> <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a> = <b>global</b>&lt;Account&gt;(addr);
     <b>aborts_if</b> !<b>exists</b>&lt;Account&gt;(addr);
     <b>aborts_if</b> <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt;= <a href="../../starcoin-framework/doc/account.md#0x1_account_MAX_GUID_CREATION_NUM">account::MAX_GUID_CREATION_NUM</a>;
@@ -1646,7 +1646,7 @@ number of registered events
 ### Function `emit_collection_uri_mutate_event`
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_collection_uri_mutate_event">emit_collection_uri_mutate_event</a>(creator: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_uri: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, new_uri: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_collection_uri_mutate_event">emit_collection_uri_mutate_event</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, new_uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
 </code></pre>
 
 
@@ -1662,7 +1662,7 @@ number of registered events
 ### Function `emit_collection_description_mutate_event`
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_collection_description_mutate_event">emit_collection_description_mutate_event</a>(creator: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_description: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, new_description: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_collection_description_mutate_event">emit_collection_description_mutate_event</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, new_description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
 </code></pre>
 
 
@@ -1678,7 +1678,7 @@ number of registered events
 ### Function `emit_collection_maximum_mutate_event`
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_collection_maximum_mutate_event">emit_collection_maximum_mutate_event</a>(creator: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_maximum: u64, new_maximum: u64)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_collection_maximum_mutate_event">emit_collection_maximum_mutate_event</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_maximum: u64, new_maximum: u64)
 </code></pre>
 
 
@@ -1694,7 +1694,7 @@ number of registered events
 ### Function `emit_token_opt_in_event`
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_token_opt_in_event">emit_token_opt_in_event</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, opt_in: bool)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_token_opt_in_event">emit_token_opt_in_event</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, opt_in: bool)
 </code></pre>
 
 
@@ -1710,7 +1710,7 @@ number of registered events
 ### Function `emit_token_uri_mutate_event`
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_token_uri_mutate_event">emit_token_uri_mutate_event</a>(creator: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, <a href="token.md#0x3_token">token</a>: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_uri: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, new_uri: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_token_uri_mutate_event">emit_token_uri_mutate_event</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, <a href="token.md#0x3_token">token</a>: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, new_uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
 </code></pre>
 
 
@@ -1726,7 +1726,7 @@ number of registered events
 ### Function `emit_default_property_mutate_event`
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_default_property_mutate_event">emit_default_property_mutate_event</a>(creator: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, <a href="token.md#0x3_token">token</a>: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, keys: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, old_values: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="property_map.md#0x3_property_map_PropertyValue">property_map::PropertyValue</a>&gt;&gt;, new_values: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="property_map.md#0x3_property_map_PropertyValue">property_map::PropertyValue</a>&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_default_property_mutate_event">emit_default_property_mutate_event</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, <a href="token.md#0x3_token">token</a>: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, old_values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="property_map.md#0x3_property_map_PropertyValue">property_map::PropertyValue</a>&gt;&gt;, new_values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="property_map.md#0x3_property_map_PropertyValue">property_map::PropertyValue</a>&gt;)
 </code></pre>
 
 
@@ -1742,7 +1742,7 @@ number of registered events
 ### Function `emit_token_descrition_mutate_event`
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_token_descrition_mutate_event">emit_token_descrition_mutate_event</a>(creator: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, <a href="token.md#0x3_token">token</a>: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_description: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, new_description: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_token_descrition_mutate_event">emit_token_descrition_mutate_event</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, <a href="token.md#0x3_token">token</a>: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, new_description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
 </code></pre>
 
 
@@ -1758,7 +1758,7 @@ number of registered events
 ### Function `emit_token_royalty_mutate_event`
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_token_royalty_mutate_event">emit_token_royalty_mutate_event</a>(creator: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, <a href="token.md#0x3_token">token</a>: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_royalty_numerator: u64, old_royalty_denominator: u64, old_royalty_payee_addr: <b>address</b>, new_royalty_numerator: u64, new_royalty_denominator: u64, new_royalty_payee_addr: <b>address</b>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_token_royalty_mutate_event">emit_token_royalty_mutate_event</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, <a href="token.md#0x3_token">token</a>: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_royalty_numerator: u64, old_royalty_denominator: u64, old_royalty_payee_addr: <b>address</b>, new_royalty_numerator: u64, new_royalty_denominator: u64, new_royalty_payee_addr: <b>address</b>)
 </code></pre>
 
 
@@ -1774,7 +1774,7 @@ number of registered events
 ### Function `emit_token_maximum_mutate_event`
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_token_maximum_mutate_event">emit_token_maximum_mutate_event</a>(creator: &<a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, <a href="token.md#0x3_token">token</a>: <a href="../../starcoin-framework/../starcoin-stdlib/../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_maximum: u64, new_maximum: u64)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="token_event_store.md#0x3_token_event_store_emit_token_maximum_mutate_event">emit_token_maximum_mutate_event</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, <a href="token.md#0x3_token">token</a>: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, old_maximum: u64, new_maximum: u64)
 </code></pre>
 
 

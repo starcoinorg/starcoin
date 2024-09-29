@@ -40,7 +40,7 @@ spec starcoin_framework::randomness {
     spec next_32_bytes(): vector<u8> {
         use std::hash;
         include NextBlobAbortsIf;
-        let input = b"APTOS_RANDOMNESS";
+        let input = b"STARCOIN_RANDOMNESS";
         let randomness = global<PerBlockRandomness>(@starcoin_framework);
         let seed = option::spec_borrow(randomness.seed);
         let txn_hash = transaction_context::spec_get_txn_hash();

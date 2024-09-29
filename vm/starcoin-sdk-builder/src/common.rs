@@ -1,4 +1,4 @@
-// Copyright © Aptos Foundation
+// Copyright © Starcoin Foundation
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -129,9 +129,9 @@ pub(crate) fn mangle_type(type_tag: &TypeTag) -> String {
     }
 }
 
-pub(crate) fn get_external_definitions(aptos_types: &str) -> serde_generate::ExternalDefinitions {
+pub(crate) fn get_external_definitions(starcoin_types: &str) -> serde_generate::ExternalDefinitions {
     let definitions = vec![(
-        aptos_types,
+        starcoin_types,
         vec!["AccountAddress", "TypeTag", "Script", "TransactionArgument"],
     )];
     definitions

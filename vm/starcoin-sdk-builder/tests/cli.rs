@@ -1,4 +1,4 @@
-// Copyright © Aptos Foundation
+// Copyright © Starcoin Foundation
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -23,7 +23,7 @@ fn test_examples_in_readme() -> std::io::Result<()> {
         write!(&mut test_script, "{}", quotes.next().unwrap())?;
         write!(&mut test_script, "{}", quotes.next().unwrap())?;
         let output = Command::new("bash")
-            .current_dir("../..") // root of Aptos
+            .current_dir("../..") // root of Starcoin
             .env("DEST", dir.path())
             .arg("-e")
             .arg("-x")
@@ -42,7 +42,7 @@ fn test_examples_in_readme() -> std::io::Result<()> {
     let mut test_script = std::fs::File::create(dir.path().join("test.sh"))?;
     write!(&mut test_script, "{}", quotes.next().unwrap())?;
     let output = Command::new("bash")
-        .current_dir("../..") // root of Aptos
+        .current_dir("../..") // root of Starcoin
         .env("DEST", dir.path())
         .arg("-e")
         .arg("-x")

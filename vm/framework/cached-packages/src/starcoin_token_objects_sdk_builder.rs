@@ -15,14 +15,16 @@
 #![allow(clippy::too_many_arguments)]
 #![allow(clippy::arc_with_non_send_sync)]
 #![allow(clippy::get_first)]
+#![allow(unused_imports)]
 use move_core_types::{
     ident_str,
     language_storage::{ModuleId, TypeTag},
 };
 use starcoin_vm_types::{
     account_address::AccountAddress,
-    transaction::{ScriptFunction, TransactionPayload},
+    transaction::{EntryFunction, TransactionPayload},
 };
+use std::collections::BTreeMap as Map;
 
 type Bytes = Vec<u8>;
 
@@ -159,7 +161,7 @@ impl EntryFunctionCall {
 
     /// Try to recognize an Starcoin `TransactionPayload` and convert it into a structured object `EntryFunctionCall`.
     pub fn decode(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
-        if let TransactionPayload::ScriptFunction(script) = payload {
+        if let TransactionPayload::EntryFunction(script) = payload {
             match SCRIPT_FUNCTION_DECODER_MAP.get(&format!(
                 "{}_{}",
                 script.module().name(),
@@ -192,13 +194,9 @@ pub fn starcoin_token_create_collection(
     royalty_numerator: u64,
     royalty_denominator: u64,
 ) -> TransactionPayload {
-    TransactionPayload::ScriptFunction(ScriptFunction::new(
+    TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                // 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                // 0, 0, 0, 4,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4,
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4]),
             ident_str!("starcoin_token").to_owned(),
         ),
         ident_str!("create_collection").to_owned(),
@@ -233,13 +231,9 @@ pub fn starcoin_token_mint(
     property_types: Vec<Vec<u8>>,
     property_values: Vec<Vec<u8>>,
 ) -> TransactionPayload {
-    TransactionPayload::ScriptFunction(ScriptFunction::new(
+    TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                // 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                // 0, 0, 0, 4,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4,
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4]),
             ident_str!("starcoin_token").to_owned(),
         ),
         ident_str!("mint").to_owned(),
@@ -267,13 +261,9 @@ pub fn starcoin_token_mint_soul_bound(
     property_values: Vec<Vec<u8>>,
     soul_bound_to: AccountAddress,
 ) -> TransactionPayload {
-    TransactionPayload::ScriptFunction(ScriptFunction::new(
+    TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
-            AccountAddress::new([
-                // 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                // 0, 0, 0, 4,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4,
-            ]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4]),
             ident_str!("starcoin_token").to_owned(),
         ),
         ident_str!("mint_soul_bound").to_owned(),
@@ -295,7 +285,7 @@ mod decoder {
     pub fn starcoin_token_create_collection(
         payload: &TransactionPayload,
     ) -> Option<EntryFunctionCall> {
-        if let TransactionPayload::ScriptFunction(script) = payload {
+        if let TransactionPayload::EntryFunction(script) = payload {
             Some(EntryFunctionCall::StarcoinTokenCreateCollection {
                 description: bcs::from_bytes(script.args().get(0)?).ok()?,
                 max_supply: bcs::from_bytes(script.args().get(1)?).ok()?,
@@ -319,7 +309,7 @@ mod decoder {
     }
 
     pub fn starcoin_token_mint(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
-        if let TransactionPayload::ScriptFunction(script) = payload {
+        if let TransactionPayload::EntryFunction(script) = payload {
             Some(EntryFunctionCall::StarcoinTokenMint {
                 collection: bcs::from_bytes(script.args().get(0)?).ok()?,
                 description: bcs::from_bytes(script.args().get(1)?).ok()?,
@@ -334,8 +324,10 @@ mod decoder {
         }
     }
 
-    pub fn starcoin_token_mint_soul_bound(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
-        if let TransactionPayload::ScriptFunction(script) = payload {
+    pub fn starcoin_token_mint_soul_bound(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
             Some(EntryFunctionCall::StarcoinTokenMintSoulBound {
                 collection: bcs::from_bytes(script.args().get(0)?).ok()?,
                 description: bcs::from_bytes(script.args().get(1)?).ok()?,

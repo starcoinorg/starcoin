@@ -42,10 +42,10 @@ This module defines a struct storing the metadata of the block and new block eve
 
 
 <pre><code><b>use</b> <a href="account.md#0x1_account">0x1::account</a>;
-<b>use</b> <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
+<b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="event.md#0x1_event">0x1::event</a>;
-<b>use</b> <a href="../../starcoin-stdlib/../move-stdlib/doc/features.md#0x1_features">0x1::features</a>;
-<b>use</b> <a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option">0x1::option</a>;
+<b>use</b> <a href="../../move-stdlib/doc/features.md#0x1_features">0x1::features</a>;
+<b>use</b> <a href="../../move-stdlib/doc/option.md#0x1_option">0x1::option</a>;
 <b>use</b> <a href="randomness.md#0x1_randomness">0x1::randomness</a>;
 <b>use</b> <a href="reconfiguration.md#0x1_reconfiguration">0x1::reconfiguration</a>;
 <b>use</b> <a href="reconfiguration_with_dkg.md#0x1_reconfiguration_with_dkg">0x1::reconfiguration_with_dkg</a>;
@@ -163,7 +163,7 @@ Should be in-sync with NewBlockEvent rust struct in new_block.rs
 
 <dl>
 <dt>
-<code><a href="../../starcoin-stdlib/../move-stdlib/doc/hash.md#0x1_hash">hash</a>: <b>address</b></code>
+<code><a href="../../move-stdlib/doc/hash.md#0x1_hash">hash</a>: <b>address</b></code>
 </dt>
 <dd>
 
@@ -187,7 +187,7 @@ Should be in-sync with NewBlockEvent rust struct in new_block.rs
 
 </dd>
 <dt>
-<code>previous_block_votes_bitvec: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+<code>previous_block_votes_bitvec: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
 
@@ -199,7 +199,7 @@ Should be in-sync with NewBlockEvent rust struct in new_block.rs
 
 </dd>
 <dt>
-<code>failed_proposer_indices: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;</code>
+<code>failed_proposer_indices: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;</code>
 </dt>
 <dd>
 
@@ -268,7 +268,7 @@ Should be in-sync with NewBlockEvent rust struct in new_block.rs
 
 <dl>
 <dt>
-<code><a href="../../starcoin-stdlib/../move-stdlib/doc/hash.md#0x1_hash">hash</a>: <b>address</b></code>
+<code><a href="../../move-stdlib/doc/hash.md#0x1_hash">hash</a>: <b>address</b></code>
 </dt>
 <dd>
 
@@ -292,7 +292,7 @@ Should be in-sync with NewBlockEvent rust struct in new_block.rs
 
 </dd>
 <dt>
-<code>previous_block_votes_bitvec: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+<code>previous_block_votes_bitvec: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
 
@@ -304,7 +304,7 @@ Should be in-sync with NewBlockEvent rust struct in new_block.rs
 
 </dd>
 <dt>
-<code>failed_proposer_indices: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;</code>
+<code>failed_proposer_indices: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;</code>
 </dt>
 <dd>
 
@@ -416,7 +416,7 @@ The maximum capacity of the commit history cannot be 0.
 This can only be called during Genesis.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="block.md#0x1_block_initialize">initialize</a>(starcoin_framework: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, epoch_interval_microsecs: u64)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="block.md#0x1_block_initialize">initialize</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, epoch_interval_microsecs: u64)
 </code></pre>
 
 
@@ -425,9 +425,9 @@ This can only be called during Genesis.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="block.md#0x1_block_initialize">initialize</a>(starcoin_framework: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, epoch_interval_microsecs: u64) {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="block.md#0x1_block_initialize">initialize</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, epoch_interval_microsecs: u64) {
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(starcoin_framework);
-    <b>assert</b>!(epoch_interval_microsecs &gt; 0, <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="block.md#0x1_block_EZERO_EPOCH_INTERVAL">EZERO_EPOCH_INTERVAL</a>));
+    <b>assert</b>!(epoch_interval_microsecs &gt; 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="block.md#0x1_block_EZERO_EPOCH_INTERVAL">EZERO_EPOCH_INTERVAL</a>));
 
     <b>move_to</b>&lt;<a href="block.md#0x1_block_CommitHistory">CommitHistory</a>&gt;(starcoin_framework, <a href="block.md#0x1_block_CommitHistory">CommitHistory</a> {
         max_capacity: 2000,
@@ -458,7 +458,7 @@ This can only be called during Genesis.
 Initialize the commit history resource if it's not in genesis.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="block.md#0x1_block_initialize_commit_history">initialize_commit_history</a>(fx: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, max_capacity: u32)
+<pre><code><b>public</b> <b>fun</b> <a href="block.md#0x1_block_initialize_commit_history">initialize_commit_history</a>(fx: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, max_capacity: u32)
 </code></pre>
 
 
@@ -467,8 +467,8 @@ Initialize the commit history resource if it's not in genesis.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="block.md#0x1_block_initialize_commit_history">initialize_commit_history</a>(fx: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, max_capacity: u32) {
-    <b>assert</b>!(max_capacity &gt; 0, <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="block.md#0x1_block_EZERO_MAX_CAPACITY">EZERO_MAX_CAPACITY</a>));
+<pre><code><b>public</b> <b>fun</b> <a href="block.md#0x1_block_initialize_commit_history">initialize_commit_history</a>(fx: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, max_capacity: u32) {
+    <b>assert</b>!(max_capacity &gt; 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="block.md#0x1_block_EZERO_MAX_CAPACITY">EZERO_MAX_CAPACITY</a>));
     <b>move_to</b>&lt;<a href="block.md#0x1_block_CommitHistory">CommitHistory</a>&gt;(fx, <a href="block.md#0x1_block_CommitHistory">CommitHistory</a> {
         max_capacity,
         next_idx: 0,
@@ -489,7 +489,7 @@ Update the epoch interval.
 Can only be called as part of the Starcoin governance proposal process established by the StarcoinGovernance module.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="block.md#0x1_block_update_epoch_interval_microsecs">update_epoch_interval_microsecs</a>(starcoin_framework: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, new_epoch_interval: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="block.md#0x1_block_update_epoch_interval_microsecs">update_epoch_interval_microsecs</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, new_epoch_interval: u64)
 </code></pre>
 
 
@@ -499,11 +499,11 @@ Can only be called as part of the Starcoin governance proposal process establish
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="block.md#0x1_block_update_epoch_interval_microsecs">update_epoch_interval_microsecs</a>(
-    starcoin_framework: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     new_epoch_interval: u64,
 ) <b>acquires</b> <a href="block.md#0x1_block_BlockResource">BlockResource</a> {
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(starcoin_framework);
-    <b>assert</b>!(new_epoch_interval &gt; 0, <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="block.md#0x1_block_EZERO_EPOCH_INTERVAL">EZERO_EPOCH_INTERVAL</a>));
+    <b>assert</b>!(new_epoch_interval &gt; 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="block.md#0x1_block_EZERO_EPOCH_INTERVAL">EZERO_EPOCH_INTERVAL</a>));
 
     <b>let</b> block_resource = <b>borrow_global_mut</b>&lt;<a href="block.md#0x1_block_BlockResource">BlockResource</a>&gt;(@starcoin_framework);
     <b>let</b> old_epoch_interval = block_resource.epoch_interval;
@@ -557,7 +557,7 @@ Return epoch interval in seconds.
 
 
 
-<pre><code><b>fun</b> <a href="block.md#0x1_block_block_prologue_common">block_prologue_common</a>(vm: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="../../starcoin-stdlib/../move-stdlib/doc/hash.md#0x1_hash">hash</a>: <b>address</b>, epoch: u64, round: u64, proposer: <b>address</b>, failed_proposer_indices: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;, previous_block_votes_bitvec: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64): u64
+<pre><code><b>fun</b> <a href="block.md#0x1_block_block_prologue_common">block_prologue_common</a>(vm: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="../../move-stdlib/doc/hash.md#0x1_hash">hash</a>: <b>address</b>, epoch: u64, round: u64, proposer: <b>address</b>, failed_proposer_indices: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;, previous_block_votes_bitvec: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64): u64
 </code></pre>
 
 
@@ -567,13 +567,13 @@ Return epoch interval in seconds.
 
 
 <pre><code><b>fun</b> <a href="block.md#0x1_block_block_prologue_common">block_prologue_common</a>(
-    vm: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
-    <a href="../../starcoin-stdlib/../move-stdlib/doc/hash.md#0x1_hash">hash</a>: <b>address</b>,
+    vm: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    <a href="../../move-stdlib/doc/hash.md#0x1_hash">hash</a>: <b>address</b>,
     epoch: u64,
     round: u64,
     proposer: <b>address</b>,
-    failed_proposer_indices: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;,
-    previous_block_votes_bitvec: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    failed_proposer_indices: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;,
+    previous_block_votes_bitvec: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64
 ): u64 <b>acquires</b> <a href="block.md#0x1_block_BlockResource">BlockResource</a>, <a href="block.md#0x1_block_CommitHistory">CommitHistory</a> {
     // Operational constraint: can only be invoked by the VM.
@@ -582,12 +582,12 @@ Return epoch interval in seconds.
     // Blocks can only be produced by a valid proposer or by the VM itself for Nil blocks (no user txs).
     <b>assert</b>!(
         proposer == @vm_reserved || <a href="stake.md#0x1_stake_is_current_epoch_validator">stake::is_current_epoch_validator</a>(proposer),
-        <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="block.md#0x1_block_EINVALID_PROPOSER">EINVALID_PROPOSER</a>),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="block.md#0x1_block_EINVALID_PROPOSER">EINVALID_PROPOSER</a>),
     );
 
-    <b>let</b> proposer_index = <a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_none">option::none</a>();
+    <b>let</b> proposer_index = <a href="../../move-stdlib/doc/option.md#0x1_option_none">option::none</a>();
     <b>if</b> (proposer != @vm_reserved) {
-        proposer_index = <a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_some">option::some</a>(<a href="stake.md#0x1_stake_get_validator_index">stake::get_validator_index</a>(proposer));
+        proposer_index = <a href="../../move-stdlib/doc/option.md#0x1_option_some">option::some</a>(<a href="stake.md#0x1_stake_get_validator_index">stake::get_validator_index</a>(proposer));
     };
 
     <b>let</b> block_metadata_ref = <b>borrow_global_mut</b>&lt;<a href="block.md#0x1_block_BlockResource">BlockResource</a>&gt;(@starcoin_framework);
@@ -595,7 +595,7 @@ Return epoch interval in seconds.
 
     // Emit both <a href="event.md#0x1_event">event</a> v1 and v2 for compatibility. Eventually only <b>module</b> events will be kept.
     <b>let</b> new_block_event = <a href="block.md#0x1_block_NewBlockEvent">NewBlockEvent</a> {
-        <a href="../../starcoin-stdlib/../move-stdlib/doc/hash.md#0x1_hash">hash</a>,
+        <a href="../../move-stdlib/doc/hash.md#0x1_hash">hash</a>,
         epoch,
         round,
         height: block_metadata_ref.height,
@@ -605,7 +605,7 @@ Return epoch interval in seconds.
         time_microseconds: <a href="timestamp.md#0x1_timestamp">timestamp</a>,
     };
     <b>let</b> new_block_event_v2 = <a href="block.md#0x1_block_NewBlock">NewBlock</a> {
-        <a href="../../starcoin-stdlib/../move-stdlib/doc/hash.md#0x1_hash">hash</a>,
+        <a href="../../move-stdlib/doc/hash.md#0x1_hash">hash</a>,
         epoch,
         round,
         height: block_metadata_ref.height,
@@ -616,7 +616,7 @@ Return epoch interval in seconds.
     };
     <a href="block.md#0x1_block_emit_new_block_event">emit_new_block_event</a>(vm, &<b>mut</b> block_metadata_ref.new_block_events, new_block_event, new_block_event_v2);
 
-    <b>if</b> (<a href="../../starcoin-stdlib/../move-stdlib/doc/features.md#0x1_features_collect_and_distribute_gas_fees">features::collect_and_distribute_gas_fees</a>()) {
+    <b>if</b> (<a href="../../move-stdlib/doc/features.md#0x1_features_collect_and_distribute_gas_fees">features::collect_and_distribute_gas_fees</a>()) {
         // Assign the fees collected from the previous <a href="block.md#0x1_block">block</a> <b>to</b> the previous <a href="block.md#0x1_block">block</a> proposer.
         // If for <a href="../../starcoin-stdlib/doc/any.md#0x1_any">any</a> reason the fees cannot be assigned, this function burns the collected coins.
         <a href="transaction_fee.md#0x1_transaction_fee_process_collected_fees">transaction_fee::process_collected_fees</a>();
@@ -646,7 +646,7 @@ Set the metadata for the current block.
 The runtime always runs this before executing the transactions in a block.
 
 
-<pre><code><b>fun</b> <a href="block.md#0x1_block_block_prologue">block_prologue</a>(vm: <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="../../starcoin-stdlib/../move-stdlib/doc/hash.md#0x1_hash">hash</a>: <b>address</b>, epoch: u64, round: u64, proposer: <b>address</b>, failed_proposer_indices: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;, previous_block_votes_bitvec: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64)
+<pre><code><b>fun</b> <a href="block.md#0x1_block_block_prologue">block_prologue</a>(vm: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="../../move-stdlib/doc/hash.md#0x1_hash">hash</a>: <b>address</b>, epoch: u64, round: u64, proposer: <b>address</b>, failed_proposer_indices: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;, previous_block_votes_bitvec: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64)
 </code></pre>
 
 
@@ -656,17 +656,17 @@ The runtime always runs this before executing the transactions in a block.
 
 
 <pre><code><b>fun</b> <a href="block.md#0x1_block_block_prologue">block_prologue</a>(
-    vm: <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
-    <a href="../../starcoin-stdlib/../move-stdlib/doc/hash.md#0x1_hash">hash</a>: <b>address</b>,
+    vm: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    <a href="../../move-stdlib/doc/hash.md#0x1_hash">hash</a>: <b>address</b>,
     epoch: u64,
     round: u64,
     proposer: <b>address</b>,
-    failed_proposer_indices: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;,
-    previous_block_votes_bitvec: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    failed_proposer_indices: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;,
+    previous_block_votes_bitvec: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64
 ) <b>acquires</b> <a href="block.md#0x1_block_BlockResource">BlockResource</a>, <a href="block.md#0x1_block_CommitHistory">CommitHistory</a> {
-    <b>let</b> epoch_interval = <a href="block.md#0x1_block_block_prologue_common">block_prologue_common</a>(&vm, <a href="../../starcoin-stdlib/../move-stdlib/doc/hash.md#0x1_hash">hash</a>, epoch, round, proposer, failed_proposer_indices, previous_block_votes_bitvec, <a href="timestamp.md#0x1_timestamp">timestamp</a>);
-    <a href="randomness.md#0x1_randomness_on_new_block">randomness::on_new_block</a>(&vm, epoch, round, <a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_none">option::none</a>());
+    <b>let</b> epoch_interval = <a href="block.md#0x1_block_block_prologue_common">block_prologue_common</a>(&vm, <a href="../../move-stdlib/doc/hash.md#0x1_hash">hash</a>, epoch, round, proposer, failed_proposer_indices, previous_block_votes_bitvec, <a href="timestamp.md#0x1_timestamp">timestamp</a>);
+    <a href="randomness.md#0x1_randomness_on_new_block">randomness::on_new_block</a>(&vm, epoch, round, <a href="../../move-stdlib/doc/option.md#0x1_option_none">option::none</a>());
     <b>if</b> (<a href="timestamp.md#0x1_timestamp">timestamp</a> - <a href="reconfiguration.md#0x1_reconfiguration_last_reconfiguration_time">reconfiguration::last_reconfiguration_time</a>() &gt;= epoch_interval) {
         <a href="reconfiguration.md#0x1_reconfiguration_reconfigure">reconfiguration::reconfigure</a>();
     };
@@ -684,7 +684,7 @@ The runtime always runs this before executing the transactions in a block.
 <code><a href="block.md#0x1_block_block_prologue">block_prologue</a>()</code> but trigger reconfiguration with DKG after epoch timed out.
 
 
-<pre><code><b>fun</b> <a href="block.md#0x1_block_block_prologue_ext">block_prologue_ext</a>(vm: <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="../../starcoin-stdlib/../move-stdlib/doc/hash.md#0x1_hash">hash</a>: <b>address</b>, epoch: u64, round: u64, proposer: <b>address</b>, failed_proposer_indices: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;, previous_block_votes_bitvec: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64, randomness_seed: <a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;)
+<pre><code><b>fun</b> <a href="block.md#0x1_block_block_prologue_ext">block_prologue_ext</a>(vm: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="../../move-stdlib/doc/hash.md#0x1_hash">hash</a>: <b>address</b>, epoch: u64, round: u64, proposer: <b>address</b>, failed_proposer_indices: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;, previous_block_votes_bitvec: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64, randomness_seed: <a href="../../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;)
 </code></pre>
 
 
@@ -694,19 +694,19 @@ The runtime always runs this before executing the transactions in a block.
 
 
 <pre><code><b>fun</b> <a href="block.md#0x1_block_block_prologue_ext">block_prologue_ext</a>(
-    vm: <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
-    <a href="../../starcoin-stdlib/../move-stdlib/doc/hash.md#0x1_hash">hash</a>: <b>address</b>,
+    vm: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    <a href="../../move-stdlib/doc/hash.md#0x1_hash">hash</a>: <b>address</b>,
     epoch: u64,
     round: u64,
     proposer: <b>address</b>,
-    failed_proposer_indices: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;,
-    previous_block_votes_bitvec: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    failed_proposer_indices: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;,
+    previous_block_votes_bitvec: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64,
-    randomness_seed: Option&lt;<a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
+    randomness_seed: Option&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
 ) <b>acquires</b> <a href="block.md#0x1_block_BlockResource">BlockResource</a>, <a href="block.md#0x1_block_CommitHistory">CommitHistory</a> {
     <b>let</b> epoch_interval = <a href="block.md#0x1_block_block_prologue_common">block_prologue_common</a>(
         &vm,
-        <a href="../../starcoin-stdlib/../move-stdlib/doc/hash.md#0x1_hash">hash</a>,
+        <a href="../../move-stdlib/doc/hash.md#0x1_hash">hash</a>,
         epoch,
         round,
         proposer,
@@ -759,7 +759,7 @@ Get the current block height
 Emit the event and update height and global timestamp
 
 
-<pre><code><b>fun</b> <a href="block.md#0x1_block_emit_new_block_event">emit_new_block_event</a>(vm: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, event_handle: &<b>mut</b> <a href="event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="block.md#0x1_block_NewBlockEvent">block::NewBlockEvent</a>&gt;, new_block_event: <a href="block.md#0x1_block_NewBlockEvent">block::NewBlockEvent</a>, new_block_event_v2: <a href="block.md#0x1_block_NewBlock">block::NewBlock</a>)
+<pre><code><b>fun</b> <a href="block.md#0x1_block_emit_new_block_event">emit_new_block_event</a>(vm: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, event_handle: &<b>mut</b> <a href="event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="block.md#0x1_block_NewBlockEvent">block::NewBlockEvent</a>&gt;, new_block_event: <a href="block.md#0x1_block_NewBlockEvent">block::NewBlockEvent</a>, new_block_event_v2: <a href="block.md#0x1_block_NewBlock">block::NewBlock</a>)
 </code></pre>
 
 
@@ -769,7 +769,7 @@ Emit the event and update height and global timestamp
 
 
 <pre><code><b>fun</b> <a href="block.md#0x1_block_emit_new_block_event">emit_new_block_event</a>(
-    vm: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    vm: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     event_handle: &<b>mut</b> EventHandle&lt;<a href="block.md#0x1_block_NewBlockEvent">NewBlockEvent</a>&gt;,
     new_block_event: <a href="block.md#0x1_block_NewBlockEvent">NewBlockEvent</a>,
     new_block_event_v2: <a href="block.md#0x1_block_NewBlock">NewBlock</a>
@@ -789,7 +789,7 @@ Emit the event and update height and global timestamp
     <a href="timestamp.md#0x1_timestamp_update_global_time">timestamp::update_global_time</a>(vm, new_block_event.proposer, new_block_event.time_microseconds);
     <b>assert</b>!(
         <a href="event.md#0x1_event_counter">event::counter</a>(event_handle) == new_block_event.height,
-        <a href="../../starcoin-stdlib/../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="block.md#0x1_block_ENUM_NEW_BLOCK_EVENTS_DOES_NOT_MATCH_BLOCK_HEIGHT">ENUM_NEW_BLOCK_EVENTS_DOES_NOT_MATCH_BLOCK_HEIGHT</a>),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="block.md#0x1_block_ENUM_NEW_BLOCK_EVENTS_DOES_NOT_MATCH_BLOCK_HEIGHT">ENUM_NEW_BLOCK_EVENTS_DOES_NOT_MATCH_BLOCK_HEIGHT</a>),
     );
     <b>if</b> (std::features::module_event_migration_enabled()) {
         <a href="event.md#0x1_event_emit">event::emit</a>(new_block_event_v2);
@@ -810,7 +810,7 @@ Emit a <code><a href="block.md#0x1_block_NewBlockEvent">NewBlockEvent</a></code>
 reconfiguration event.
 
 
-<pre><code><b>fun</b> <a href="block.md#0x1_block_emit_genesis_block_event">emit_genesis_block_event</a>(vm: <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
+<pre><code><b>fun</b> <a href="block.md#0x1_block_emit_genesis_block_event">emit_genesis_block_event</a>(vm: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -819,30 +819,30 @@ reconfiguration event.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="block.md#0x1_block_emit_genesis_block_event">emit_genesis_block_event</a>(vm: <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>) <b>acquires</b> <a href="block.md#0x1_block_BlockResource">BlockResource</a>, <a href="block.md#0x1_block_CommitHistory">CommitHistory</a> {
+<pre><code><b>fun</b> <a href="block.md#0x1_block_emit_genesis_block_event">emit_genesis_block_event</a>(vm: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) <b>acquires</b> <a href="block.md#0x1_block_BlockResource">BlockResource</a>, <a href="block.md#0x1_block_CommitHistory">CommitHistory</a> {
     <b>let</b> block_metadata_ref = <b>borrow_global_mut</b>&lt;<a href="block.md#0x1_block_BlockResource">BlockResource</a>&gt;(@starcoin_framework);
     <b>let</b> genesis_id = @0x0;
     <a href="block.md#0x1_block_emit_new_block_event">emit_new_block_event</a>(
         &vm,
         &<b>mut</b> block_metadata_ref.new_block_events,
         <a href="block.md#0x1_block_NewBlockEvent">NewBlockEvent</a> {
-            <a href="../../starcoin-stdlib/../move-stdlib/doc/hash.md#0x1_hash">hash</a>: genesis_id,
+            <a href="../../move-stdlib/doc/hash.md#0x1_hash">hash</a>: genesis_id,
             epoch: 0,
             round: 0,
             height: 0,
-            previous_block_votes_bitvec: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>(),
+            previous_block_votes_bitvec: <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>(),
             proposer: @vm_reserved,
-            failed_proposer_indices: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>(),
+            failed_proposer_indices: <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>(),
             time_microseconds: 0,
         },
         <a href="block.md#0x1_block_NewBlock">NewBlock</a> {
-            <a href="../../starcoin-stdlib/../move-stdlib/doc/hash.md#0x1_hash">hash</a>: genesis_id,
+            <a href="../../move-stdlib/doc/hash.md#0x1_hash">hash</a>: genesis_id,
             epoch: 0,
             round: 0,
             height: 0,
-            previous_block_votes_bitvec: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>(),
+            previous_block_votes_bitvec: <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>(),
             proposer: @vm_reserved,
-            failed_proposer_indices: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>(),
+            failed_proposer_indices: <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>(),
             time_microseconds: 0,
         }
     );
@@ -861,7 +861,7 @@ Emit a <code><a href="block.md#0x1_block_NewBlockEvent">NewBlockEvent</a></code>
 new block event for WriteSetPayload.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="block.md#0x1_block_emit_writeset_block_event">emit_writeset_block_event</a>(vm_signer: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, fake_block_hash: <b>address</b>)
+<pre><code><b>public</b> <b>fun</b> <a href="block.md#0x1_block_emit_writeset_block_event">emit_writeset_block_event</a>(vm_signer: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, fake_block_hash: <b>address</b>)
 </code></pre>
 
 
@@ -870,7 +870,7 @@ new block event for WriteSetPayload.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="block.md#0x1_block_emit_writeset_block_event">emit_writeset_block_event</a>(vm_signer: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, fake_block_hash: <b>address</b>) <b>acquires</b> <a href="block.md#0x1_block_BlockResource">BlockResource</a>, <a href="block.md#0x1_block_CommitHistory">CommitHistory</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="block.md#0x1_block_emit_writeset_block_event">emit_writeset_block_event</a>(vm_signer: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, fake_block_hash: <b>address</b>) <b>acquires</b> <a href="block.md#0x1_block_BlockResource">BlockResource</a>, <a href="block.md#0x1_block_CommitHistory">CommitHistory</a> {
     <a href="system_addresses.md#0x1_system_addresses_assert_vm">system_addresses::assert_vm</a>(vm_signer);
     <b>let</b> block_metadata_ref = <b>borrow_global_mut</b>&lt;<a href="block.md#0x1_block_BlockResource">BlockResource</a>&gt;(@starcoin_framework);
     block_metadata_ref.height = <a href="event.md#0x1_event_counter">event::counter</a>(&block_metadata_ref.new_block_events);
@@ -879,23 +879,23 @@ new block event for WriteSetPayload.
         vm_signer,
         &<b>mut</b> block_metadata_ref.new_block_events,
         <a href="block.md#0x1_block_NewBlockEvent">NewBlockEvent</a> {
-            <a href="../../starcoin-stdlib/../move-stdlib/doc/hash.md#0x1_hash">hash</a>: fake_block_hash,
+            <a href="../../move-stdlib/doc/hash.md#0x1_hash">hash</a>: fake_block_hash,
             epoch: <a href="reconfiguration.md#0x1_reconfiguration_current_epoch">reconfiguration::current_epoch</a>(),
             round: <a href="block.md#0x1_block_MAX_U64">MAX_U64</a>,
             height: block_metadata_ref.height,
-            previous_block_votes_bitvec: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>(),
+            previous_block_votes_bitvec: <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>(),
             proposer: @vm_reserved,
-            failed_proposer_indices: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>(),
+            failed_proposer_indices: <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>(),
             time_microseconds: <a href="timestamp.md#0x1_timestamp_now_microseconds">timestamp::now_microseconds</a>(),
         },
         <a href="block.md#0x1_block_NewBlock">NewBlock</a> {
-            <a href="../../starcoin-stdlib/../move-stdlib/doc/hash.md#0x1_hash">hash</a>: fake_block_hash,
+            <a href="../../move-stdlib/doc/hash.md#0x1_hash">hash</a>: fake_block_hash,
             epoch: <a href="reconfiguration.md#0x1_reconfiguration_current_epoch">reconfiguration::current_epoch</a>(),
             round: <a href="block.md#0x1_block_MAX_U64">MAX_U64</a>,
             height: block_metadata_ref.height,
-            previous_block_votes_bitvec: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>(),
+            previous_block_votes_bitvec: <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>(),
             proposer: @vm_reserved,
-            failed_proposer_indices: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>(),
+            failed_proposer_indices: <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>(),
             time_microseconds: <a href="timestamp.md#0x1_timestamp_now_microseconds">timestamp::now_microseconds</a>(),
         }
     );
@@ -1066,7 +1066,7 @@ new block event for WriteSetPayload.
 ### Function `initialize`
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="block.md#0x1_block_initialize">initialize</a>(starcoin_framework: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, epoch_interval_microsecs: u64)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="block.md#0x1_block_initialize">initialize</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, epoch_interval_microsecs: u64)
 </code></pre>
 
 
@@ -1081,9 +1081,73 @@ The number of new events created does not exceed MAX_U64.
 <pre><code>// This enforces <a id="high-level-req-1" href="#high-level-req">high-level requirement 1</a>:
 <b>include</b> <a href="block.md#0x1_block_Initialize">Initialize</a>;
 <b>include</b> <a href="block.md#0x1_block_NewEventHandle">NewEventHandle</a>;
-<b>let</b> addr = <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(starcoin_framework);
+<b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(starcoin_framework);
 <b>let</b> <a href="account.md#0x1_account">account</a> = <b>global</b>&lt;<a href="account.md#0x1_account_Account">account::Account</a>&gt;(addr);
 <b>aborts_if</b> <a href="account.md#0x1_account">account</a>.guid_creation_num + 2 &gt;= <a href="account.md#0x1_account_MAX_GUID_CREATION_NUM">account::MAX_GUID_CREATION_NUM</a>;
+</code></pre>
+
+
+
+
+<a id="0x1_block_BlockRequirement"></a>
+
+
+<pre><code><b>schema</b> <a href="block.md#0x1_block_BlockRequirement">BlockRequirement</a> {
+    vm: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>;
+    <a href="../../move-stdlib/doc/hash.md#0x1_hash">hash</a>: <b>address</b>;
+    epoch: u64;
+    round: u64;
+    proposer: <b>address</b>;
+    failed_proposer_indices: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;;
+    previous_block_votes_bitvec: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;;
+    <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64;
+    <b>requires</b> <a href="chain_status.md#0x1_chain_status_is_operating">chain_status::is_operating</a>();
+    <b>requires</b> <a href="system_addresses.md#0x1_system_addresses_is_vm">system_addresses::is_vm</a>(vm);
+    // This enforces <a id="high-level-req-4" href="#high-level-req">high-level requirement 4</a>:
+    <b>requires</b> proposer == @vm_reserved || <a href="stake.md#0x1_stake_spec_is_current_epoch_validator">stake::spec_is_current_epoch_validator</a>(proposer);
+    <b>requires</b> (proposer == @vm_reserved) ==&gt; (<a href="timestamp.md#0x1_timestamp_spec_now_microseconds">timestamp::spec_now_microseconds</a>() == <a href="timestamp.md#0x1_timestamp">timestamp</a>);
+    <b>requires</b> (proposer != @vm_reserved) ==&gt; (<a href="timestamp.md#0x1_timestamp_spec_now_microseconds">timestamp::spec_now_microseconds</a>() &lt; <a href="timestamp.md#0x1_timestamp">timestamp</a>);
+    <b>requires</b> <b>exists</b>&lt;<a href="stake.md#0x1_stake_ValidatorFees">stake::ValidatorFees</a>&gt;(@starcoin_framework);
+    <b>requires</b> <b>exists</b>&lt;CoinInfo&lt;StarcoinCoin&gt;&gt;(@starcoin_framework);
+    <b>include</b> <a href="transaction_fee.md#0x1_transaction_fee_RequiresCollectedFeesPerValueLeqBlockStarcoinSupply">transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply</a>;
+    <b>include</b> <a href="staking_config.md#0x1_staking_config_StakingRewardsConfigRequirement">staking_config::StakingRewardsConfigRequirement</a>;
+}
+</code></pre>
+
+
+
+
+<a id="0x1_block_Initialize"></a>
+
+
+<pre><code><b>schema</b> <a href="block.md#0x1_block_Initialize">Initialize</a> {
+    starcoin_framework: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>;
+    epoch_interval_microsecs: u64;
+    <b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(starcoin_framework);
+    // This enforces <a id="high-level-req-2.1" href="#high-level-req">high-level requirement 2</a>:
+    <b>aborts_if</b> addr != @starcoin_framework;
+    <b>aborts_if</b> epoch_interval_microsecs == 0;
+    <b>aborts_if</b> <b>exists</b>&lt;<a href="block.md#0x1_block_BlockResource">BlockResource</a>&gt;(addr);
+    <b>aborts_if</b> <b>exists</b>&lt;<a href="block.md#0x1_block_CommitHistory">CommitHistory</a>&gt;(addr);
+    <b>ensures</b> <b>exists</b>&lt;<a href="block.md#0x1_block_BlockResource">BlockResource</a>&gt;(addr);
+    <b>ensures</b> <b>exists</b>&lt;<a href="block.md#0x1_block_CommitHistory">CommitHistory</a>&gt;(addr);
+    <b>ensures</b> <b>global</b>&lt;<a href="block.md#0x1_block_BlockResource">BlockResource</a>&gt;(addr).height == 0;
+}
+</code></pre>
+
+
+
+
+<a id="0x1_block_NewEventHandle"></a>
+
+
+<pre><code><b>schema</b> <a href="block.md#0x1_block_NewEventHandle">NewEventHandle</a> {
+    starcoin_framework: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>;
+    <b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(starcoin_framework);
+    <b>let</b> <a href="account.md#0x1_account">account</a> = <b>global</b>&lt;<a href="account.md#0x1_account_Account">account::Account</a>&gt;(addr);
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="account.md#0x1_account_Account">account::Account</a>&gt;(addr);
+    <b>aborts_if</b> <a href="account.md#0x1_account">account</a>.guid_creation_num + 2 &gt; <a href="block.md#0x1_block_MAX_U64">MAX_U64</a>;
+}
 </code></pre>
 
 
@@ -1093,7 +1157,7 @@ The number of new events created does not exceed MAX_U64.
 ### Function `update_epoch_interval_microsecs`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="block.md#0x1_block_update_epoch_interval_microsecs">update_epoch_interval_microsecs</a>(starcoin_framework: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, new_epoch_interval: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="block.md#0x1_block_update_epoch_interval_microsecs">update_epoch_interval_microsecs</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, new_epoch_interval: u64)
 </code></pre>
 
 
@@ -1113,9 +1177,9 @@ The BlockResource existed under the @starcoin_framework.
 
 
 <pre><code><b>schema</b> <a href="block.md#0x1_block_UpdateEpochIntervalMicrosecs">UpdateEpochIntervalMicrosecs</a> {
-    starcoin_framework: <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>;
+    starcoin_framework: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>;
     new_epoch_interval: u64;
-    <b>let</b> addr = <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(starcoin_framework);
+    <b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(starcoin_framework);
     // This enforces <a id="high-level-req-2.2" href="#high-level-req">high-level requirement 2</a>:
     <b>aborts_if</b> addr != @starcoin_framework;
     <b>aborts_if</b> new_epoch_interval == 0;
@@ -1149,7 +1213,7 @@ The BlockResource existed under the @starcoin_framework.
 ### Function `block_prologue_common`
 
 
-<pre><code><b>fun</b> <a href="block.md#0x1_block_block_prologue_common">block_prologue_common</a>(vm: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="../../starcoin-stdlib/../move-stdlib/doc/hash.md#0x1_hash">hash</a>: <b>address</b>, epoch: u64, round: u64, proposer: <b>address</b>, failed_proposer_indices: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;, previous_block_votes_bitvec: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64): u64
+<pre><code><b>fun</b> <a href="block.md#0x1_block_block_prologue_common">block_prologue_common</a>(vm: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="../../move-stdlib/doc/hash.md#0x1_hash">hash</a>: <b>address</b>, epoch: u64, round: u64, proposer: <b>address</b>, failed_proposer_indices: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;, previous_block_votes_bitvec: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64): u64
 </code></pre>
 
 
@@ -1167,7 +1231,7 @@ The BlockResource existed under the @starcoin_framework.
 ### Function `block_prologue`
 
 
-<pre><code><b>fun</b> <a href="block.md#0x1_block_block_prologue">block_prologue</a>(vm: <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="../../starcoin-stdlib/../move-stdlib/doc/hash.md#0x1_hash">hash</a>: <b>address</b>, epoch: u64, round: u64, proposer: <b>address</b>, failed_proposer_indices: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;, previous_block_votes_bitvec: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64)
+<pre><code><b>fun</b> <a href="block.md#0x1_block_block_prologue">block_prologue</a>(vm: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="../../move-stdlib/doc/hash.md#0x1_hash">hash</a>: <b>address</b>, epoch: u64, round: u64, proposer: <b>address</b>, failed_proposer_indices: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;, previous_block_votes_bitvec: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64)
 </code></pre>
 
 
@@ -1186,7 +1250,7 @@ The BlockResource existed under the @starcoin_framework.
 ### Function `block_prologue_ext`
 
 
-<pre><code><b>fun</b> <a href="block.md#0x1_block_block_prologue_ext">block_prologue_ext</a>(vm: <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="../../starcoin-stdlib/../move-stdlib/doc/hash.md#0x1_hash">hash</a>: <b>address</b>, epoch: u64, round: u64, proposer: <b>address</b>, failed_proposer_indices: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;, previous_block_votes_bitvec: <a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64, randomness_seed: <a href="../../starcoin-stdlib/../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="../../starcoin-stdlib/../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;)
+<pre><code><b>fun</b> <a href="block.md#0x1_block_block_prologue_ext">block_prologue_ext</a>(vm: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="../../move-stdlib/doc/hash.md#0x1_hash">hash</a>: <b>address</b>, epoch: u64, round: u64, proposer: <b>address</b>, failed_proposer_indices: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;, previous_block_votes_bitvec: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64, randomness_seed: <a href="../../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;)
 </code></pre>
 
 
@@ -1224,7 +1288,7 @@ The BlockResource existed under the @starcoin_framework.
 ### Function `emit_new_block_event`
 
 
-<pre><code><b>fun</b> <a href="block.md#0x1_block_emit_new_block_event">emit_new_block_event</a>(vm: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, event_handle: &<b>mut</b> <a href="event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="block.md#0x1_block_NewBlockEvent">block::NewBlockEvent</a>&gt;, new_block_event: <a href="block.md#0x1_block_NewBlockEvent">block::NewBlockEvent</a>, new_block_event_v2: <a href="block.md#0x1_block_NewBlock">block::NewBlock</a>)
+<pre><code><b>fun</b> <a href="block.md#0x1_block_emit_new_block_event">emit_new_block_event</a>(vm: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, event_handle: &<b>mut</b> <a href="event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="block.md#0x1_block_NewBlockEvent">block::NewBlockEvent</a>&gt;, new_block_event: <a href="block.md#0x1_block_NewBlockEvent">block::NewBlockEvent</a>, new_block_event_v2: <a href="block.md#0x1_block_NewBlock">block::NewBlock</a>)
 </code></pre>
 
 
@@ -1248,7 +1312,7 @@ The BlockResource existed under the @starcoin_framework.
 ### Function `emit_genesis_block_event`
 
 
-<pre><code><b>fun</b> <a href="block.md#0x1_block_emit_genesis_block_event">emit_genesis_block_event</a>(vm: <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
+<pre><code><b>fun</b> <a href="block.md#0x1_block_emit_genesis_block_event">emit_genesis_block_event</a>(vm: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -1268,7 +1332,7 @@ The BlockResource existed under the @starcoin_framework.
 ### Function `emit_writeset_block_event`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="block.md#0x1_block_emit_writeset_block_event">emit_writeset_block_event</a>(vm_signer: &<a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>, fake_block_hash: <b>address</b>)
+<pre><code><b>public</b> <b>fun</b> <a href="block.md#0x1_block_emit_writeset_block_event">emit_writeset_block_event</a>(vm_signer: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, fake_block_hash: <b>address</b>)
 </code></pre>
 
 
@@ -1289,8 +1353,8 @@ The CurrentTimeMicroseconds existed under the @starcoin_framework.
 
 
 <pre><code><b>schema</b> <a href="block.md#0x1_block_EmitWritesetBlockEvent">EmitWritesetBlockEvent</a> {
-    vm_signer: <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer">signer</a>;
-    <b>let</b> addr = <a href="../../starcoin-stdlib/../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(vm_signer);
+    vm_signer: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>;
+    <b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(vm_signer);
     <b>aborts_if</b> addr != @vm_reserved;
     <b>aborts_if</b> !<b>exists</b>&lt;<a href="block.md#0x1_block_BlockResource">BlockResource</a>&gt;(@starcoin_framework);
     <b>aborts_if</b> !<b>exists</b>&lt;<a href="reconfiguration.md#0x1_reconfiguration_Configuration">reconfiguration::Configuration</a>&gt;(@starcoin_framework);
