@@ -1625,7 +1625,7 @@ impl BlockChain {
         } else if chain_id.is_proxima() {
             850000
         } else if chain_id.is_halley() {
-            4200000
+            4090000
         } else if chain_id.is_main() {
             1
         } else if chain_id.is_dag_test() || chain_id.is_test() || chain_id.is_dev() {
