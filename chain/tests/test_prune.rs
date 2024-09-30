@@ -10,38 +10,29 @@ fn test_block_chain_prune() -> anyhow::Result<()> {
     let genesis = mock_chain.head().status().head.clone();
 
     // blue blocks
-    let block_blue_1 = mock_chain.produce_block_by_tips(genesis.clone(), vec![genesis.id()])?;
-    mock_chain.apply(block_blue_1.clone())?;
+    let block_blue_1 = mock_chain.produce_and_apply_by_tips(genesis.clone(), vec![genesis.id()])?;
     let block_blue_2 =
-        mock_chain.produce_block_by_tips(block_blue_1.header().clone(), vec![block_blue_1.id()])?;
-    mock_chain.apply(block_blue_2.clone())?;
+        mock_chain.produce_and_apply_by_tips(block_blue_1.clone(), vec![block_blue_1.id()])?;
     let block_blue_3 =
-        mock_chain.produce_block_by_tips(block_blue_2.header().clone(), vec![block_blue_2.id()])?;
-    mock_chain.apply(block_blue_3.clone())?;
+        mock_chain.produce_and_apply_by_tips(block_blue_2.clone(), vec![block_blue_2.id()])?;
     let block_blue_3_1 =
-        mock_chain.produce_block_by_tips(block_blue_2.header().clone(), vec![block_blue_2.id()])?;
-    mock_chain.apply(block_blue_3_1.clone())?;
-    let block_blue_4 = mock_chain.produce_block_by_tips(
-        block_blue_3.header().clone(),
+        mock_chain.produce_and_apply_by_tips(block_blue_2.clone(), vec![block_blue_2.id()])?;
+    let block_blue_4 = mock_chain.produce_and_apply_by_tips(
+        block_blue_3.clone(),
         vec![block_blue_3.id(), block_blue_3_1.id()],
     )?;
-    mock_chain.apply(block_blue_4.clone())?;
     let block_blue_5 =
-        mock_chain.produce_block_by_tips(block_blue_4.header().clone(), vec![block_blue_4.id()])?;
-    mock_chain.apply(block_blue_5.clone())?;
+        mock_chain.produce_and_apply_by_tips(block_blue_4.clone(), vec![block_blue_4.id()])?;
 
     // red blocks
     let block_red_2 =
-        mock_chain.produce_block_by_tips(block_blue_1.header().clone(), vec![block_blue_1.id()])?;
-    mock_chain.apply(block_red_2.clone())?;
+        mock_chain.produce_and_apply_by_tips(block_blue_1.clone(), vec![block_blue_1.id()])?;
     let block_red_2_1 =
-        mock_chain.produce_block_by_tips(block_blue_1.header().clone(), vec![block_blue_1.id()])?;
-    mock_chain.apply(block_red_2_1.clone())?;
-    let block_red_3 = mock_chain.produce_block_by_tips(
-        block_red_2.header().clone(),
+        mock_chain.produce_and_apply_by_tips(block_blue_1.clone(), vec![block_blue_1.id()])?;
+    let block_red_3 = mock_chain.produce_and_apply_by_tips(
+        block_red_2.clone(),
         vec![block_red_2.id(), block_red_2_1.id()],
     )?;
-    mock_chain.apply(block_red_3.clone())?;
 
     debug!(
         "tips: {:?}, pruning point: {:?}",
@@ -59,14 +50,11 @@ fn test_block_chain_prune() -> anyhow::Result<()> {
     );
 
     let block_blue_6 =
-        mock_chain.produce_block_by_tips(block_blue_5.header().clone(), vec![block_blue_5.id()])?;
-    mock_chain.apply(block_blue_6.clone())?;
+        mock_chain.produce_and_apply_by_tips(block_blue_5.clone(), vec![block_blue_5.id()])?;
     let block_blue_6_1 =
-        mock_chain.produce_block_by_tips(block_blue_5.header().clone(), vec![block_blue_5.id()])?;
-    mock_chain.apply(block_blue_6_1.clone())?;
+        mock_chain.produce_and_apply_by_tips(block_blue_5.clone(), vec![block_blue_5.id()])?;
     let block_red_4 =
-        mock_chain.produce_block_by_tips(block_red_3.header().clone(), vec![block_red_3.id()])?;
-    mock_chain.apply(block_red_4.clone())?;
+        mock_chain.produce_and_apply_by_tips(block_red_3.clone(), vec![block_red_3.id()])?;
 
     debug!(
         "tips: {:?}, pruning point: {:?}",

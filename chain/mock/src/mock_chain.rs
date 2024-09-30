@@ -47,8 +47,7 @@ impl MockChain {
         pruning_finality: u64,
     ) -> Result<Self> {
         let (storage, chain_info, _, dag) =
-            Genesis::init_storage_for_test_with_param(&net, k, pruning_depth, pruning_finality)
-                .expect("init storage by genesis fail.");
+            Genesis::init_storage_for_test_with_param(&net, k, pruning_depth, pruning_finality)?;
 
         let chain = BlockChain::new(
             net.time_service(),
@@ -283,16 +282,19 @@ impl MockChain {
             *self.miner.address(),
             selected_header,
             vec![],
-            blue_blocks[1..]
+            blue_blocks
+                .get(1..)
+                .unwrap_or(&[])
                 .iter()
                 .map(|block_id| {
                     self.head()
                         .get_storage()
-                        .get_block_header_by_hash(*block_id)
-                        .unwrap()
-                        .unwrap()
+                        .get_block_header_by_hash(*block_id)?
+                        .ok_or_else(|| {
+                            format_err!("Block header not found for hash: {:?}", block_id)
+                        })
                 })
-                .collect(),
+                .collect::<Result<Vec<_>>>()?,
             None,
             pruned_tips,
             pruning_point,

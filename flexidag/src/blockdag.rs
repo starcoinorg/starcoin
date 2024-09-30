@@ -56,6 +56,15 @@ pub struct BlockDAG {
 }
 
 impl BlockDAG {
+    pub fn create_blockdag(dag_storage: FlexiDagStorage) -> Self {
+        Self::new(
+            DEFAULT_GHOSTDAG_K,
+            dag_storage,
+            G_PRUNING_DEPTH,
+            G_PRUNING_FINALITY,
+        )
+    }
+
     pub fn new(k: KType, db: FlexiDagStorage, pruning_depth: u64, pruning_finality: u64) -> Self {
         let ghostdag_store = db.ghost_dag_store.clone();
         let header_store = db.header_store.clone();
@@ -89,12 +98,7 @@ impl BlockDAG {
             ..Default::default()
         };
         let dag_storage = FlexiDagStorage::create_from_path(temp_dir(), config)?;
-        Ok(Self::new(
-            DEFAULT_GHOSTDAG_K,
-            dag_storage,
-            G_PRUNING_DEPTH,
-            G_PRUNING_FINALITY,
-        ))
+        Ok(Self::create_blockdag(dag_storage))
     }
 
     pub fn create_for_testing_with_parameters(

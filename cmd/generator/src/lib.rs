@@ -5,9 +5,8 @@ use anyhow::{bail, Result};
 use starcoin_account::account_storage::AccountStorage;
 use starcoin_account::AccountManager;
 use starcoin_account_api::AccountInfo;
-use starcoin_config::genesis_config::{G_PRUNING_DEPTH, G_PRUNING_FINALITY};
 use starcoin_config::{NodeConfig, StarcoinOpt};
-use starcoin_dag::blockdag::{BlockDAG, DEFAULT_GHOSTDAG_K};
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_genesis::Genesis;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
@@ -37,12 +36,7 @@ pub fn init_or_load_data_dir(
         config.storage.dag_dir(),
         config.storage.clone().into(),
     )?;
-    let dag = starcoin_dag::blockdag::BlockDAG::new(
-        DEFAULT_GHOSTDAG_K,
-        dag_storage,
-        G_PRUNING_DEPTH,
-        G_PRUNING_FINALITY,
-    );
+    let dag = starcoin_dag::blockdag::BlockDAG::create_blockdag(dag_storage);
     let (chain_info, _genesis) = Genesis::init_and_check_storage(
         config.net(),
         storage.clone(),

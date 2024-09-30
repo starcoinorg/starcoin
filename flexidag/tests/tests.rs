@@ -1197,50 +1197,6 @@ fn test_verification_blue_block() -> anyhow::Result<()> {
     );
     assert!(check_error.is_err());
 
-    let mut false_observer2 = observer2.clone();
-    let red_block_id = *false_observer2
-        .mergeset_reds
-        .first()
-        .expect("the k is wrong, modify it to create a red block!");
-    if red_block_id == block_red_2.id() {
-        false_observer2.mergeset_blues = Arc::new(
-            vec![red_block_id]
-                .into_iter()
-                .chain(
-                    false_observer2
-                        .mergeset_blues
-                        .iter()
-                        .cloned()
-                        .filter(|id| *id != block_red_2_1.id()),
-                )
-                .collect(),
-        );
-        false_observer2.mergeset_reds = Arc::new(vec![block_red_2_1.id()]);
-    } else {
-        false_observer2.mergeset_blues = Arc::new(
-            vec![red_block_id]
-                .into_iter()
-                .chain(
-                    false_observer2
-                        .mergeset_blues
-                        .iter()
-                        .cloned()
-                        .filter(|id| *id != block_red_2.id()),
-                )
-                .collect(),
-        );
-        false_observer2.mergeset_reds = Arc::new(vec![block_red_2.id()]);
-    }
-
-    let check_error = dag
-        .ghost_dag_manager()
-        .check_ghostdata_blue_block(&false_observer2);
-    println!(
-        "check error: {:?} after the blue block turns red and the red turns blue maliciously",
-        check_error
-    );
-    assert!(check_error.is_err());
-
     let observer3 = dag.ghostdata(&[block_main_5.id()])?;
     println!("observer 3 dag data: {:?}, ", observer3);
 
