@@ -129,7 +129,9 @@ pub(crate) fn mangle_type(type_tag: &TypeTag) -> String {
     }
 }
 
-pub(crate) fn get_external_definitions(starcoin_types: &str) -> serde_generate::ExternalDefinitions {
+pub(crate) fn get_external_definitions(
+    starcoin_types: &str,
+) -> serde_generate::ExternalDefinitions {
     let definitions = vec![(
         starcoin_types,
         vec!["AccountAddress", "TypeTag", "Script", "TransactionArgument"],

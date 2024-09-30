@@ -122,7 +122,8 @@ where
             crate::common::get_external_definitions(&starcoin_types_package);
         // We need BCS for argument encoding and decoding
         external_definitions.insert(
-            "github.com/starcoin-labs/serde-reflection/serde-generate/runtime/golang/bcs".to_string(),
+            "github.com/starcoin-labs/serde-reflection/serde-generate/runtime/golang/bcs"
+                .to_string(),
             Vec::new(),
         );
         // Add standard imports
