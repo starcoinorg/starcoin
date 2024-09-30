@@ -19,7 +19,10 @@ enum Language {
 }
 
 #[derive(Debug, Parser)]
-#[clap(name = "Starcoin SDK Builder", about = "Generate boilerplate Starcoin SDKs")]
+#[clap(
+    name = "Starcoin SDK Builder",
+    about = "Generate boilerplate Starcoin SDKs"
+)]
 struct Options {
     /// Path to the directory containing ABI files in BCS encoding.
     abi_directories: Vec<PathBuf>,

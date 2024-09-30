@@ -5,8 +5,8 @@ use crate::{
     docgen::DocgenOptions,
     extended_checks,
     natives::code::{ModuleMetadata, MoveOption, PackageDep, PackageMetadata, UpgradePolicy},
-    zip_metadata, zip_metadata_str, RuntimeModuleMetadataV1, STARCOIN_METADATA_KEY,
-    STARCOIN_METADATA_KEY_V1, METADATA_V1_MIN_FILE_FORMAT_VERSION,
+    zip_metadata, zip_metadata_str, RuntimeModuleMetadataV1, METADATA_V1_MIN_FILE_FORMAT_VERSION,
+    STARCOIN_METADATA_KEY, STARCOIN_METADATA_KEY_V1,
 };
 use anyhow::{anyhow, bail};
 use clap::Parser;
