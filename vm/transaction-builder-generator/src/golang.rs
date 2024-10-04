@@ -133,7 +133,7 @@ where
                         } else {
                             "ScriptFunctionCall".to_string()
                         },
-                        abi.name().to_camel_case(),
+                        abi.name().to_upper_camel_case(),
                     ],
                     crate::common::prepare_doc_string(abi.doc()),
                 )
@@ -185,14 +185,14 @@ func EncodeScript(call ScriptCall) diemtypes.Script {{"#
                     let params = std::iter::empty()
                         .chain(abi.ty_args().iter().map(TypeArgumentABI::name))
                         .chain(abi.args().iter().map(ArgumentABI::name))
-                        .map(|name| format!("call.{}", name.to_camel_case()))
+                        .map(|name| format!("call.{}", name.to_upper_camel_case()))
                         .collect::<Vec<_>>()
                         .join(", ");
                     writeln!(
                         self.out,
                         r#"case *ScriptCall__{0}:
                 return Encode{0}Script({1})"#,
-                        abi.name().to_camel_case(),
+                        abi.name().to_upper_camel_case(),
                         params,
                     )?;
                 }
@@ -217,14 +217,14 @@ func EncodeScriptFunction(call ScriptFunctionCall) diemtypes.TransactionPayload 
                     let params = std::iter::empty()
                         .chain(abi.ty_args().iter().map(TypeArgumentABI::name))
                         .chain(abi.args().iter().map(ArgumentABI::name))
-                        .map(|name| format!("call.{}", name.to_camel_case()))
+                        .map(|name| format!("call.{}", name.to_upper_camel_case()))
                         .collect::<Vec<_>>()
                         .join(", ");
                     writeln!(
                         self.out,
                         r#"case *ScriptFunctionCall__{0}:
                 return Encode{0}ScriptFunction({1})"#,
-                        abi.name().to_camel_case(),
+                        abi.name().to_upper_camel_case(),
                         params,
                     )?;
                 }
@@ -282,7 +282,7 @@ func DecodeScriptFunctionPayload(script diemtypes.TransactionPayload) (ScriptFun
             self.out,
             "\n{}\nfunc Encode{}Script({}) diemtypes.Script {{",
             Self::quote_doc(abi.doc()),
-            abi.name().to_camel_case(),
+            abi.name().to_upper_camel_case(),
             [
                 Self::quote_type_parameters(abi.ty_args()),
                 Self::quote_parameters(abi.args()),
@@ -311,7 +311,7 @@ func DecodeScriptFunctionPayload(script diemtypes.TransactionPayload) (ScriptFun
             self.out,
             "\n{}\nfunc Encode{}ScriptFunction({}) diemtypes.TransactionPayload {{",
             Self::quote_doc(abi.doc()),
-            abi.name().to_camel_case(),
+            abi.name().to_upper_camel_case(),
             [
                 Self::quote_type_parameters(abi.ty_args()),
                 Self::quote_parameters(abi.args()),
@@ -359,13 +359,13 @@ func DecodeScriptFunctionPayload(script diemtypes.TransactionPayload) (ScriptFun
         writeln!(
             self.out,
             "var call ScriptCall__{0}",
-            abi.name().to_camel_case(),
+            abi.name().to_upper_camel_case(),
         )?;
         for (index, ty_arg) in abi.ty_args().iter().enumerate() {
             writeln!(
                 self.out,
                 "call.{} = script.TyArgs[{}]",
-                ty_arg.name().to_camel_case(),
+                ty_arg.name().to_upper_camel_case(),
                 index,
             )?;
         }
@@ -380,7 +380,7 @@ func DecodeScriptFunctionPayload(script diemtypes.TransactionPayload) (ScriptFun
 "#,
                 common::mangle_type(arg.type_tag()),
                 index,
-                arg.name().to_camel_case(),
+                arg.name().to_upper_camel_case(),
             )?;
         }
         writeln!(self.out, "return &call, nil")?;
@@ -416,13 +416,13 @@ func DecodeScriptFunctionPayload(script diemtypes.TransactionPayload) (ScriptFun
         writeln!(
             self.out,
             "var call ScriptFunctionCall__{0}",
-            abi.name().to_camel_case(),
+            abi.name().to_upper_camel_case(),
         )?;
         for (index, ty_arg) in abi.ty_args().iter().enumerate() {
             writeln!(
                 self.out,
                 "call.{} = script.Value.TyArgs[{}]",
-                ty_arg.name().to_camel_case(),
+                ty_arg.name().to_upper_camel_case(),
                 index,
             )?;
         }
@@ -437,7 +437,7 @@ func DecodeScriptFunctionPayload(script diemtypes.TransactionPayload) (ScriptFun
 "#,
                 common::mangle_type(arg.type_tag()),
                 index,
-                arg.name().to_camel_case(),
+                arg.name().to_upper_camel_case(),
             )?;
         }
         writeln!(self.out, "return &call, nil")?;

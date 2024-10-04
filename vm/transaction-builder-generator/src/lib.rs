@@ -1,9 +1,9 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use move_core_types::abi::ScriptABI;
 use serde_generate::CustomCode;
 use starcoin_vm_types::language_storage::TypeTag;
-use starcoin_vm_types::transaction::ScriptABI;
 use std::{ffi::OsStr, fs, io::Read, path::Path};
 
 /// Support for code-generation in C++17.

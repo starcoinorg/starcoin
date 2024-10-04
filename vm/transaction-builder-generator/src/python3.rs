@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::common;
-use heck::{CamelCase, ShoutySnakeCase};
 use move_core_types::{
     account_address::AccountAddress,
     language_storage::{ModuleId, TypeTag},
@@ -11,10 +10,10 @@ use serde_generate::{
     indent::{IndentConfig, IndentedWriter},
     python3, CodeGeneratorConfig,
 };
-use starcoin_vm_types::transaction::{
-    ArgumentABI, ScriptABI, ScriptFunctionABI, TransactionScriptABI, TypeArgumentABI,
-};
+use starcoin_vm_types::transaction::{ArgumentABI, TransactionScriptABI, TypeArgumentABI};
 
+use heck::{ToShoutySnakeCase, ToUpperCamelCase};
+use move_core_types::abi::{ScriptABI, ScriptFunctionABI};
 use std::{
     collections::BTreeMap,
     io::{Result, Write},
@@ -172,7 +171,7 @@ def decode_script_function_payload(payload: TransactionPayload) -> ScriptFunctio
                             "ScriptFunctionCall"
                         }
                         .to_string(),
-                        abi.name().to_camel_case(),
+                        abi.name().to_upper_camel_case(),
                     ],
                     Self::prepare_doc_string(abi.doc()),
                 )
@@ -298,7 +297,7 @@ def decode_script_function_payload(payload: TransactionPayload) -> ScriptFunctio
         writeln!(
             self.out,
             "return ScriptCall__{0}(",
-            abi.name().to_camel_case(),
+            abi.name().to_upper_camel_case(),
         )?;
         self.out.indent();
         for (index, ty_arg) in abi.ty_args().iter().enumerate() {
@@ -336,7 +335,7 @@ def decode_script_function_payload(payload: TransactionPayload) -> ScriptFunctio
         writeln!(
             self.out,
             "return ScriptFunctionCall__{0}(",
-            abi.name().to_camel_case(),
+            abi.name().to_upper_camel_case(),
         )?;
         self.out.indent();
         for (index, ty_arg) in abi.ty_args().iter().enumerate() {
@@ -392,7 +391,7 @@ TRANSACTION_SCRIPT_ENCODER_MAP: typing.Dict[typing.Type[ScriptCall], typing.Call
             writeln!(
                 self.out,
                 "ScriptCall__{}: encode_{}_script,",
-                abi.name().to_camel_case(),
+                abi.name().to_upper_camel_case(),
                 abi.name()
             )?;
         }
@@ -412,7 +411,7 @@ SCRIPT_FUNCTION_ENCODER_MAP: typing.Dict[typing.Type[ScriptFunctionCall], typing
             writeln!(
                 self.out,
                 "ScriptFunctionCall__{}: encode_{}_script_function,",
-                abi.name().to_camel_case(),
+                abi.name().to_upper_camel_case(),
                 abi.name()
             )?;
         }
