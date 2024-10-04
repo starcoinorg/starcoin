@@ -26,8 +26,11 @@ use starcoin_types::transaction::{
     Module, Package, Script, SignedUserTransaction, Transaction, TransactionArgument,
     TransactionPayload,
 };
-use starcoin_types::write_set::{WriteOp, WriteSet};
-use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_types::write_set::{self, WriteOp, WriteSet};
+use starcoin_vm_types::state_store::{
+    state_key::StateKey,
+    state_value::{PersistedStateValueMetadata, StateValueMetadata},
+};
 
 fn main() {
     generate().unwrap();
@@ -52,7 +55,8 @@ fn generate() -> Result<(), Error> {
         let pri_key = Ed25519PrivateKey::generate_for_testing();
         tracer.trace_value(&mut samples, &pri_key)?;
         tracer.trace_value(&mut samples, &pri_key.public_key())?;
-        tracer.trace_value(&mut samples, &pri_key.sign(&DummyObj::default())?)?;
+        let signature = pri_key.sign(&DummyObj::default()).unwrap();
+        tracer.trace_value(&mut samples, &signature)?;
 
         tracer.trace_value::<AuthenticationKey>(
             &mut samples,
@@ -63,7 +67,8 @@ fn generate() -> Result<(), Error> {
         let pri_key = MultiEd25519PrivateKey::generate_for_testing();
         tracer.trace_value(&mut samples, &pri_key)?;
         tracer.trace_value(&mut samples, &pri_key.public_key())?;
-        tracer.trace_value(&mut samples, &pri_key.sign(&DummyObj::default())?)?;
+        let signature = pri_key.sign(&DummyObj::default()).unwrap();
+        tracer.trace_value(&mut samples, &signature)?;
     }
 
     tracer.trace_type::<BlockMetadata>(&samples)?;
@@ -75,12 +80,19 @@ fn generate() -> Result<(), Error> {
     tracer.trace_type::<ContractEventV0>(&samples)?;
     tracer.trace_type::<ContractEvent>(&samples)?;
     tracer.trace_type::<StateKey>(&samples)?;
+    tracer.trace_type::<PersistedStateValueMetadata>(&samples)?;
     tracer.trace_type::<WriteSet>(&samples)?;
 
     tracer.trace_type::<TransactionArgument>(&samples)?;
     tracer.trace_type::<TransactionAuthenticator>(&samples)?;
     tracer.trace_type::<TransactionPayload>(&samples)?;
     tracer.trace_type::<TypeTag>(&samples)?;
+    tracer.trace_value(
+        &mut samples,
+        &write_set::WriteOp::Deletion {
+            metadata: StateValueMetadata::none(),
+        },
+    )?;
     tracer.trace_type::<WriteOp>(&samples)?;
     tracer.trace_type::<Script>(&samples)?;
     tracer.trace_type::<Module>(&samples)?;
@@ -100,10 +112,11 @@ fn generate() -> Result<(), Error> {
     tracer.trace_type::<SigningMessage>(&samples)?;
     tracer.trace_type::<SignedMessage>(&samples)?;
     tracer.ignore_aliases("StructTag", &["type_params"])?;
+    println!("YSG after");
     let registry = tracer.registry()?;
+    println!("YSG before");
     let data = serde_yaml::to_string(&registry).unwrap();
     std::fs::write("../etc/starcoin_types.yml", data).unwrap();
-
     {
         let mut tracer = Tracer::new(TracerConfig::default());
         let samples = Samples::new();
@@ -120,6 +133,7 @@ fn generate() -> Result<(), Error> {
         let data = serde_yaml::to_string(&registry).unwrap();
         std::fs::write("../etc/onchain_events.yml", data).unwrap();
     }
+
     // println!("{}", data);
     Ok(())
 }
