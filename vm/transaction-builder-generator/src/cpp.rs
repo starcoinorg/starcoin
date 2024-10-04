@@ -2,15 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::common;
+use move_core_types::abi::{ScriptABI, ScriptFunctionABI};
 use move_core_types::{
     account_address::AccountAddress,
     language_storage::{ModuleId, TypeTag},
 };
 use serde_generate::indent::{IndentConfig, IndentedWriter};
-use starcoin_vm_types::transaction::{
-    ArgumentABI, ScriptABI, ScriptFunctionABI, TransactionScriptABI, TypeArgumentABI,
-};
-
+use starcoin_vm_types::transaction::{ArgumentABI, TransactionScriptABI, TypeArgumentABI};
 use std::{
     io::{Result, Write},
     path::PathBuf,

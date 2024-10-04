@@ -10,11 +10,11 @@ use serde_generate::{
     indent::{IndentConfig, IndentedWriter},
     java, CodeGeneratorConfig,
 };
-use starcoin_vm_types::transaction::{
-    ArgumentABI, ScriptABI, ScriptFunctionABI, TransactionScriptABI, TypeArgumentABI,
-};
+use starcoin_vm_types::transaction::{ArgumentABI, TransactionScriptABI, TypeArgumentABI};
 
-use heck::{CamelCase, ShoutySnakeCase};
+use heck::ToShoutySnakeCase;
+use heck::ToUpperCamelCase;
+use move_core_types::abi::{ScriptABI, ScriptFunctionABI};
 use std::{
     collections::BTreeMap,
     io::{Result, Write},
@@ -124,7 +124,7 @@ fn write_script_call_files(
                 }
                 .to_string(),
             );
-            paths.push(abi.name().to_camel_case());
+            paths.push(abi.name().to_upper_camel_case());
             (paths, prepare_doc_string(abi.doc()))
         })
         .collect();
@@ -416,7 +416,7 @@ return builder.build();"#,
         writeln!(
             self.out,
             "ScriptCall.{0}.Builder builder = new ScriptCall.{0}.Builder();",
-            abi.name().to_camel_case(),
+            abi.name().to_upper_camel_case(),
         )?;
         for (index, ty_arg) in abi.ty_args().iter().enumerate() {
             writeln!(
@@ -468,7 +468,7 @@ return builder.build();"#,
         writeln!(
             self.out,
             "ScriptFunctionCall.{0}.Builder builder = new ScriptFunctionCall.{0}.Builder();",
-            abi.name().to_camel_case(),
+            abi.name().to_upper_camel_case(),
         )?;
         for (index, ty_arg) in abi.ty_args().iter().enumerate() {
             writeln!(
@@ -526,7 +526,7 @@ private static java.util.Map<Class<?>, ScriptEncodingHelper> initTransactionScri
     ScriptCall.{0} obj = (ScriptCall.{0})call;
     return Helpers.encode_{1}_script({2});
 }}));",
-                abi.name().to_camel_case(),
+                abi.name().to_upper_camel_case(),
                 abi.name(),
                 params,
             )?;
@@ -566,7 +566,7 @@ private static java.util.Map<Class<?>, ScriptFunctionEncodingHelper> initScriptF
     ScriptFunctionCall.{0} obj = (ScriptFunctionCall.{0})call;
     return Helpers.encode_{1}_script_function({2});
 }}));",
-                abi.name().to_camel_case(),
+                abi.name().to_upper_camel_case(),
                 abi.name(),
                 params,
             )?;

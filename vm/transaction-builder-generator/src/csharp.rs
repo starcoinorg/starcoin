@@ -118,7 +118,7 @@ fn write_script_call_files(
             } else {
                 "ScriptFunctionCall".to_string()
             });
-            paths.push(abi.name().to_camel_case());
+            paths.push(abi.name().to_upper_camel_case());
             (paths, prepare_doc_string(abi.doc()))
         })
         .collect();
@@ -411,7 +411,7 @@ return new TransactionPayload.ScriptFunction(
         writeln!(
             self.out,
             "return new ScriptCall.{0}(",
-            abi.name().to_camel_case(),
+            abi.name().to_upper_camel_case(),
         )?;
         let mut params = String::from("");
         for (index, ty_arg) in abi.ty_args().iter().enumerate() {
@@ -462,7 +462,7 @@ return new TransactionPayload.ScriptFunction(
         writeln!(
             self.out,
             "return new ScriptFunctionCall.{0}(",
-            abi.name().to_camel_case(),
+            abi.name().to_upper_camel_case(),
         )?;
         let mut params = String::from("");
         for (index, ty_arg) in abi.ty_args().iter().enumerate() {
@@ -534,7 +534,7 @@ private static System.Collections.Generic.Dictionary<Type, ScriptEncodingHelper>
     ScriptCall.{0} obj = (ScriptCall.{0})call;
     return Helpers.encode_{1}_script({2});
 }}));",
-                abi.name().to_camel_case(),
+                abi.name().to_upper_camel_case(),
                 abi.name(),
                 params,
             )?;
@@ -572,7 +572,7 @@ private static System.Collections.Generic.Dictionary<Type, ScriptFunctionEncodin
     ScriptFunctionCall.{0} obj = (ScriptFunctionCall.{0})call;
     return Helpers.encode_{1}_script_function({2});
 }}));",
-                abi.name().to_camel_case(),
+                abi.name().to_upper_camel_case(),
                 abi.name(),
                 params,
             )?;
