@@ -29,7 +29,6 @@ starcoin-uint = { workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-gas-algebra = { workspace = true }
 starcoin-gas-meter = { workspace = true }
-stdlib = { workspace = true }
 tempfile = { workspace = true }
 thiserror = { workspace = true }
 toml = { features = ["default"], workspace = true }
