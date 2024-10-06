@@ -9613,7 +9613,6 @@ dependencies = [
  "starcoin-types",
  "starcoin-uint",
  "starcoin-vm-types",
- "stdlib",
  "tempfile",
  "thiserror",
  "toml",
