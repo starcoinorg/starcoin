@@ -389,7 +389,7 @@ dependencies = [
 [[package]]
 name = "aptos-crypto"
 version = "0.0.3"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=5ab51764db7202d4adfdbfd5cf1db9d125fd8971#5ab51764db7202d4adfdbfd5cf1db9d125fd8971"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=e5e905760304c48fa15f2dde90df02c55c2b6f61#e5e905760304c48fa15f2dde90df02c55c2b6f61"
 dependencies = [
  "aes-gcm 0.10.3",
  "anyhow",
@@ -443,7 +443,7 @@ dependencies = [
 [[package]]
 name = "aptos-crypto-derive"
 version = "0.0.3"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=5ab51764db7202d4adfdbfd5cf1db9d125fd8971#5ab51764db7202d4adfdbfd5cf1db9d125fd8971"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=e5e905760304c48fa15f2dde90df02c55c2b6f61#e5e905760304c48fa15f2dde90df02c55c2b6f61"
 dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.36",
@@ -10522,7 +10522,6 @@ dependencies = [
  "starcoin-types",
  "starcoin-uint",
  "starcoin-vm-types",
- "stdlib",
  "tempfile",
  "thiserror",
  "toml 0.5.11",
@@ -10558,7 +10557,7 @@ dependencies = [
 [[package]]
 name = "starcoin-crypto"
 version = "1.10.0-rc.2"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=5ab51764db7202d4adfdbfd5cf1db9d125fd8971#5ab51764db7202d4adfdbfd5cf1db9d125fd8971"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=e5e905760304c48fa15f2dde90df02c55c2b6f61#e5e905760304c48fa15f2dde90df02c55c2b6f61"
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -10577,7 +10576,7 @@ dependencies = [
 [[package]]
 name = "starcoin-crypto-macro"
 version = "1.10.0-rc.2"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=5ab51764db7202d4adfdbfd5cf1db9d125fd8971#5ab51764db7202d4adfdbfd5cf1db9d125fd8971"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=e5e905760304c48fa15f2dde90df02c55c2b6f61#e5e905760304c48fa15f2dde90df02c55c2b6f61"
 dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.36",
