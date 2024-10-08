@@ -13,7 +13,6 @@ use starcoin_account_api::AccountInfo;
 use starcoin_chain_api::ChainReader;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork, NodeConfig, RocksdbConfig};
-use starcoin_dag::blockdag::DEFAULT_GHOSTDAG_K;
 use starcoin_dag::consensusdb::prelude::FlexiDagStorageConfig;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
@@ -59,7 +58,7 @@ impl SyncTestSystem {
             FlexiDagStorageConfig::new(),
         )
         .expect("init dag storage fail.");
-        let dag = starcoin_dag::blockdag::BlockDAG::new(DEFAULT_GHOSTDAG_K, dag_storage); // local dag
+        let dag = starcoin_dag::blockdag::BlockDAG::create_blockdag(dag_storage); // local dag
 
         let chain_info =
             genesis.execute_genesis_block(config.net(), storage.clone(), dag.clone())?;

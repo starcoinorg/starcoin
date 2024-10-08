@@ -485,6 +485,18 @@ where
         let fut = async move { service.get_ghostdagdata(block_hash).await }.map_err(map_err);
         Box::pin(fut.boxed())
     }
+
+    #[doc = " Check the ancestor and descendants\' relationship "]
+    fn is_ancestor_of(
+        &self,
+        ancestor: HashValue,
+        descendants: Vec<HashValue>,
+    ) -> FutureResult<starcoin_dag::consensusdb::consenses_state::ReachabilityView> {
+        let service = self.service.clone();
+        let fut =
+            async move { service.is_ancestor_of(ancestor, descendants).await }.map_err(map_err);
+        Box::pin(fut.boxed())
+    }
 }
 
 fn try_decode_block_txns(state: &dyn StateView, block: &mut BlockView) -> anyhow::Result<()> {

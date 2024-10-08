@@ -4173,6 +4173,57 @@
           }
         }
       }
+    },
+    {
+      "name": "chain.is_ancestor_of",
+      "params": [
+        {
+          "name": "ancestor",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "HashValue",
+            "type": "string",
+            "format": "HashValue"
+          }
+        },
+        {
+          "name": "descendants",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Array_of_HashValue",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "HashValue"
+            }
+          }
+        }
+      ],
+      "result": {
+        "name": "starcoin_dag :: consensusdb :: consenses_state :: ReachabilityView",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "ReachabilityView",
+          "type": "object",
+          "required": [
+            "ancestor",
+            "descendants"
+          ],
+          "properties": {
+            "ancestor": {
+              "type": "string",
+              "format": "HashValue"
+            },
+            "descendants": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "HashValue"
+              }
+            }
+          }
+        }
+      }
     }
   ]
 }

@@ -24,6 +24,7 @@ use starcoin_storage::table_info::TableInfoStore;
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_transaction_builder::build_stdlib_package_with_modules;
 use starcoin_transaction_builder::{build_stdlib_package, StdLibOptions};
+use starcoin_types::blockhash::KType;
 use starcoin_types::startup_info::{ChainInfo, StartupInfo};
 use starcoin_types::transaction::Package;
 use starcoin_types::transaction::TransactionInfo;
@@ -365,6 +366,20 @@ impl Genesis {
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
         let genesis = Self::load_or_build(net)?;
         let dag = BlockDAG::create_for_testing()?;
+        let chain_info = genesis.execute_genesis_block(net, storage.clone(), dag.clone())?;
+        Ok((storage, chain_info, genesis, dag))
+    }
+
+    pub fn init_storage_for_test_with_param(
+        net: &ChainNetwork,
+        k: KType,
+        pruning_depth: u64,
+        pruning_finality: u64,
+    ) -> Result<(Arc<Storage>, ChainInfo, Self, BlockDAG)> {
+        debug!("init storage by genesis for test. {net:?}");
+        let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
+        let genesis = Self::load_or_build(net)?;
+        let dag = BlockDAG::create_for_testing_with_parameters(k, pruning_depth, pruning_finality)?;
         let chain_info = genesis.execute_genesis_block(net, storage.clone(), dag.clone())?;
         Ok((storage, chain_info, genesis, dag))
     }

@@ -7,6 +7,7 @@ use starcoin_chain_api::{
     verify_block, ChainReader, ConnectBlockError, VerifiedBlock, VerifyBlockField,
 };
 use starcoin_consensus::{Consensus, ConsensusVerifyError};
+use starcoin_crypto::HashValue;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_logger::prelude::debug;
 use starcoin_open_block::AddressFilter;
@@ -347,7 +348,6 @@ impl BasicDagVerifier {
         R: ChainReader,
     {
         let parents_hash = new_block_header.parents_hash();
-
         verify_block!(
             VerifyBlockField::Header,
             parents_hash.len() == parents_hash.iter().collect::<HashSet<_>>().len(),
@@ -363,6 +363,7 @@ impl BasicDagVerifier {
             parents_hash,
             new_block_header.parent_hash()
         );
+
         parents_hash.iter().try_for_each(|parent_hash| {
             verify_block!(
                 VerifyBlockField::Header,
@@ -383,6 +384,33 @@ impl BasicDagVerifier {
             Ok::<(), ConnectBlockError>(())
         })?;
 
+        // verify the pruning point
+        let parent_header = current_chain.current_header();
+        if parent_header.pruning_point() != HashValue::zero() {
+            // the chain had pruning point already checking the descendants of the pruning point is a must
+            // check the parents are the descendants of the pruning point
+            parents_hash.iter().try_for_each(|parent_hash| {
+                verify_block!(
+                    VerifyBlockField::Header,
+                    current_chain.is_dag_ancestor_of(new_block_header.pruning_point(), vec![*parent_hash]).map_err(|e| {
+                        ConnectBlockError::VerifyBlockFailed(
+                            VerifyBlockField::Header,
+                            anyhow::anyhow!(
+                                "the block {:?} 's parent: {:?} is not the descendant of pruning point {:?}, error: {:?}",
+                                new_block_header.id(),
+                                parent_hash,
+                                new_block_header.pruning_point(),
+                                e
+                            ),
+                        )
+                    })?,
+                    "Invalid block: parent {:?} is not the descendant of pruning point: {:?}",
+                    parent_hash, new_block_header.pruning_point()
+                );
+                Ok::<(), ConnectBlockError>(())
+            })?;
+        }
+
         ConsensusVerifier::verify_header(current_chain, new_block_header)
     }
 
@@ -397,7 +425,7 @@ impl BasicDagVerifier {
         current_chain.verify_and_ghostdata(uncles, header)
     }
 }
-//TODO: Implement it.
+
 pub struct DagVerifier;
 impl BlockVerifier for DagVerifier {
     fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
@@ -408,14 +436,18 @@ impl BlockVerifier for DagVerifier {
     }
 
     fn verify_uncles<R>(
-        _current_chain: &R,
-        _uncles: &[BlockHeader],
-        _header: &BlockHeader,
+        current_chain: &R,
+        uncles: &[BlockHeader],
+        header: &BlockHeader,
     ) -> Result<Option<GhostdagData>>
     where
         R: ChainReader,
     {
-        Ok(None)
+        Ok(Some(BasicDagVerifier::verify_blue_blocks(
+            current_chain,
+            uncles,
+            header,
+        )?))
     }
 }
 

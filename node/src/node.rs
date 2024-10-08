@@ -321,6 +321,8 @@ impl NodeService {
         let dag = starcoin_dag::blockdag::BlockDAG::new(
             KType::try_from(G_BASE_MAX_UNCLES_PER_BLOCK)?,
             dag_storage.clone(),
+            config.base().net().genesis_config().pruning_depth,
+            config.base().net().genesis_config().pruning_finality,
         );
         registry.put_shared(dag.clone()).await?;
         let (chain_info, genesis) = Genesis::init_and_check_storage(
@@ -336,10 +338,7 @@ impl NodeService {
             upgrade_time.as_secs()
         );
 
-        dag.check_upgrade(
-            chain_info.status().info().block_accumulator_info.clone(),
-            storage.clone(),
-        )?;
+        dag.check_upgrade(chain_info.status().head(), genesis.block().id())?;
 
         registry.put_shared(genesis).await?;
 

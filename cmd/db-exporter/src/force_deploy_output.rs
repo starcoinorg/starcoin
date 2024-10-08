@@ -10,7 +10,7 @@ use clap::Parser;
 use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
 use starcoin_cmd::dev::dev_helper;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
-use starcoin_dag::blockdag::{BlockDAG, DEFAULT_GHOSTDAG_K};
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_dag::consensusdb::prelude::FlexiDagStorageConfig;
 use starcoin_genesis::Genesis;
 use starcoin_state_api::ChainStateWriter;
@@ -77,8 +77,7 @@ pub fn force_deploy_output(
         db_storage,
     ))?);
 
-    let dag = BlockDAG::new(
-        DEFAULT_GHOSTDAG_K,
+    let dag = BlockDAG::create_blockdag(
         starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
             network_path.join("dag/db/starcoindb"),
             FlexiDagStorageConfig::new(),

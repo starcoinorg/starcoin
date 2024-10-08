@@ -21,7 +21,7 @@ use starcoin_chain::{
 use starcoin_config::{BuiltinNetworkID, ChainNetwork, RocksdbConfig};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
-use starcoin_dag::blockdag::{BlockDAG, DEFAULT_GHOSTDAG_K};
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_dag::consensusdb::prelude::FlexiDagStorageConfig;
 use starcoin_genesis::Genesis;
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
@@ -768,7 +768,7 @@ pub fn export_block_range(
         from_dir.join("dag/db/starcoindb"),
         FlexiDagStorageConfig::new(),
     )?;
-    let dag = starcoin_dag::blockdag::BlockDAG::new(DEFAULT_GHOSTDAG_K, dag_storage);
+    let dag = starcoin_dag::blockdag::BlockDAG::create_blockdag(dag_storage);
 
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(None),
@@ -895,7 +895,7 @@ pub fn apply_block(
         to_dir.join("dag/db/starcoindb"),
         FlexiDagStorageConfig::new(),
     )?;
-    let dag = starcoin_dag::blockdag::BlockDAG::new(DEFAULT_GHOSTDAG_K, dag_storage);
+    let dag = starcoin_dag::blockdag::BlockDAG::create_blockdag(dag_storage);
     // StarcoinVM::set_concurrency_level_once(num_cpus::get());
     let (chain_info, _) =
         Genesis::init_and_check_storage(&net, storage.clone(), dag.clone(), to_dir.as_ref())?;
@@ -986,7 +986,7 @@ pub fn startup_info_back(
         to_dir.join("dag/db/starcoindb"),
         FlexiDagStorageConfig::new(),
     )?;
-    let dag = starcoin_dag::blockdag::BlockDAG::new(DEFAULT_GHOSTDAG_K, dag_storage);
+    let dag = starcoin_dag::blockdag::BlockDAG::create_blockdag(dag_storage);
     let (chain_info, _) =
         Genesis::init_and_check_storage(&net, storage.clone(), dag.clone(), to_dir.as_ref())?;
     let chain = BlockChain::new(
@@ -1038,7 +1038,7 @@ pub fn gen_block_transactions(
         to_dir.join("dag/db/starcoindb"),
         FlexiDagStorageConfig::new(),
     )?;
-    let dag = starcoin_dag::blockdag::BlockDAG::new(DEFAULT_GHOSTDAG_K, dag_storage);
+    let dag = starcoin_dag::blockdag::BlockDAG::create_blockdag(dag_storage);
     let (chain_info, _) =
         Genesis::init_and_check_storage(&net, storage.clone(), dag.clone(), to_dir.as_ref())?;
     let mut chain = BlockChain::new(
@@ -1564,7 +1564,7 @@ pub fn export_snapshot(
         from_dir.join("dag/db/starcoindb"),
         FlexiDagStorageConfig::new(),
     )?;
-    let dag = starcoin_dag::blockdag::BlockDAG::new(DEFAULT_GHOSTDAG_K, dag_storage);
+    let dag = starcoin_dag::blockdag::BlockDAG::create_blockdag(dag_storage);
     let (chain_info, _) =
         Genesis::init_and_check_storage(&net, storage.clone(), dag.clone(), from_dir.as_ref())?;
     let chain = BlockChain::new(
@@ -1916,7 +1916,7 @@ pub fn apply_snapshot(
         to_dir.join("dag/db/starcoindb"),
         FlexiDagStorageConfig::new(),
     )?;
-    let dag = starcoin_dag::blockdag::BlockDAG::new(DEFAULT_GHOSTDAG_K, dag_storage);
+    let dag = starcoin_dag::blockdag::BlockDAG::create_blockdag(dag_storage);
 
     let (chain_info, _) =
         Genesis::init_and_check_storage(&net, storage.clone(), dag.clone(), to_dir.as_ref())?;
@@ -2258,7 +2258,7 @@ pub fn gen_turbo_stm_transactions(to_dir: PathBuf, block_num: Option<u64>) -> an
         to_dir.join("dag/db/starcoindb"),
         FlexiDagStorageConfig::new(),
     )?;
-    let dag = starcoin_dag::blockdag::BlockDAG::new(DEFAULT_GHOSTDAG_K, dag_storage);
+    let dag = starcoin_dag::blockdag::BlockDAG::create_blockdag(dag_storage);
     let (chain_info, _) =
         Genesis::init_and_check_storage(&net, storage.clone(), dag.clone(), to_dir.as_ref())?;
     let mut chain = BlockChain::new(
@@ -2290,7 +2290,7 @@ pub fn apply_turbo_stm_block(
         to_dir.join("dag/db/starcoindb"),
         FlexiDagStorageConfig::new(),
     )?;
-    let dag = starcoin_dag::blockdag::BlockDAG::new(DEFAULT_GHOSTDAG_K, dag_storage);
+    let dag = starcoin_dag::blockdag::BlockDAG::create_blockdag(dag_storage);
     let (chain_info_seq, _) =
         Genesis::init_and_check_storage(&net, storage_seq.clone(), dag.clone(), to_dir.as_ref())?;
     let mut chain_seq = BlockChain::new(
@@ -2354,7 +2354,7 @@ pub fn apply_turbo_stm_block(
         to_dir.join("dag/db/starcoindb"),
         FlexiDagStorageConfig::new(),
     )?;
-    let dag = starcoin_dag::blockdag::BlockDAG::new(DEFAULT_GHOSTDAG_K, dag_storage);
+    let dag = starcoin_dag::blockdag::BlockDAG::create_blockdag(dag_storage);
     let (chain_info_stm, _) = Genesis::init_and_check_storage(
         &net,
         storage_stm.clone(),
@@ -2412,8 +2412,7 @@ pub fn verify_block(
         db_storage,
     ))?);
 
-    let dag = BlockDAG::new(
-        DEFAULT_GHOSTDAG_K,
+    let dag = BlockDAG::create_blockdag(
         starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
             from_dir.join("dag/db/starcoindb"),
             FlexiDagStorageConfig::new(),
@@ -2526,8 +2525,7 @@ pub fn block_output(
         db_storage,
     ))?);
 
-    let dag = BlockDAG::new(
-        DEFAULT_GHOSTDAG_K,
+    let dag = BlockDAG::create_blockdag(
         starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
             from_dir.join("dag/db/starcoindb"),
             FlexiDagStorageConfig::new(),
@@ -2571,8 +2569,7 @@ pub fn apply_block_output(
         CacheStorage::new(None),
         db_storage,
     ))?);
-    let dag = BlockDAG::new(
-        DEFAULT_GHOSTDAG_K,
+    let dag = BlockDAG::create_blockdag(
         starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
             to_dir.join("dag/db/starcoindb"),
             FlexiDagStorageConfig::new(),
@@ -2632,8 +2629,7 @@ fn save_startup_info(
         CacheStorage::new(None),
         db_storage,
     ))?);
-    let dag = BlockDAG::new(
-        DEFAULT_GHOSTDAG_K,
+    let dag = BlockDAG::create_blockdag(
         starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
             to_dir.join("dag/db/starcoindb"),
             FlexiDagStorageConfig::new(),
@@ -2668,8 +2664,7 @@ fn token_supply(
         CacheStorage::new(None),
         db_storage,
     ))?);
-    let dag = BlockDAG::new(
-        DEFAULT_GHOSTDAG_K,
+    let dag = BlockDAG::create_blockdag(
         starcoin_dag::consensusdb::prelude::FlexiDagStorage::create_from_path(
             from_dir.join("dag/db/starcoindb"),
             FlexiDagStorageConfig::new(),

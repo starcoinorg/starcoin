@@ -97,7 +97,7 @@ impl BusinessLayerHandle for Networkp2pHandle {
         match Status::decode(&received_handshake[..]) {
             Result::Ok(status) => self.inner_handshake(peer_id, status),
             Err(err) => {
-                error!(target: "network-p2p", "Couldn't decode handshake packet sent by {}: {:?}: {}", peer_id, hex::encode(received_handshake),  err);
+                error!(target: "network-p2p", "Couldn't decode handshake packet sent by {}, err: {}", peer_id, err);
                 Err(rep::BAD_MESSAGE)
             }
         }

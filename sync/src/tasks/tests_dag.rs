@@ -144,7 +144,6 @@ async fn test_continue_sync_dag_blocks() -> Result<()> {
         .unwrap()
         .produce_fork_chain(one_fork_count, two_fork_count)?;
 
-    /////
     let target_dag_genesis_header_id = target_node
         .chain()
         .get_storage()

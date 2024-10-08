@@ -222,6 +222,7 @@ impl<
                 .collect::<HashSet<_>>()
         {
             if header.number() < 10000000 {
+                // no bail before 10000000
                 warn!("The data of blue set is not equal when executing the block: {:?}, for {:?}, checking data: {:?}", header.id(), blue_blocks.iter().map(|header| header.id()).collect::<Vec<_>>(), new_block_data.mergeset_blues);
             } else {
                 bail!("The data of blue set is not equal when executing the block: {:?}, for {:?}, checking data: {:?}", header.id(), blue_blocks.iter().map(|header| header.id()).collect::<Vec<_>>(), new_block_data.mergeset_blues);
@@ -261,7 +262,6 @@ impl<
             header.id(),
             new_block_data
         );
-
         Ok(new_block_data)
     }
 
@@ -501,7 +501,6 @@ impl<
         blocks: impl IntoIterator<Item = Hash>,
     ) -> Result<Vec<Hash>> {
         let mut sorted_blocks: Vec<Hash> = blocks.into_iter().collect();
-
         sorted_blocks.sort_by_cached_key(|block| {
             let blue_work = self
                 .ghostdag_store

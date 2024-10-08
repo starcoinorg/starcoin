@@ -132,6 +132,14 @@ pub trait ChainApi {
     /// Get block ghostdag data
     #[rpc(name = "chain.get_ghostdagdata")]
     fn get_ghostdagdata(&self, block_hash: HashValue) -> FutureResult<Option<GhostdagData>>;
+
+    /// Check the ancestor and descendants' relationship
+    #[rpc(name = "chain.is_ancestor_of")]
+    fn is_ancestor_of(
+        &self,
+        ancestor: HashValue,
+        descendants: Vec<HashValue>,
+    ) -> FutureResult<starcoin_dag::consensusdb::consenses_state::ReachabilityView>;
 }
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize, JsonSchema)]

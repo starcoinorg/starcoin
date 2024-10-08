@@ -111,7 +111,6 @@ impl SyncDagStore {
                             block: Some(block.clone()),
                         }])
                         .map_err(|e| format_err!("Failed to save absent block: {:?}", e))?;
-
                     Ok(())
                 }
                 _ => Err(format_err!(

@@ -23,13 +23,13 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: ghcr.io/starcoinorg/starcoin:dag-master
+        image: ghcr.io/starcoinorg/starcoin:pruning-point
         imagePullPolicy: Always
         command:
           - bash
           - -c
         args:
-          - rm -rf /sc-data/proxima/ /sc-data/proxima/starcoindb/db/starcoindb/LOCK;
+          - rm -rf /sc-data/proxima/starcoindb/db/starcoindb/LOCK /sc-data/proxima/genesis_config.json;
             id=$(echo -e $POD_NAME|awk -F'-' '{print $2}') && IFS='; ' read -r -a node_keys <<< $NODE_KEYS &&
             node_key=${node_keys[$id]};
             if [ ! -z $node_key ]; then
@@ -65,18 +65,6 @@ spec:
         livenessProbe:
           tcpSocket:
             port: 9840
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          timeoutSeconds: 2
-          failureThreshold: 3
-          successThreshold: 1
-        readinessProbe:
-          exec:
-            command:
-              - sh
-              - -c
-              - >-
-                 /starcoin/starcoin -n proxima -d /sc-data node sync status|grep Synchronized
           initialDelaySeconds: 10
           periodSeconds: 5
           timeoutSeconds: 2

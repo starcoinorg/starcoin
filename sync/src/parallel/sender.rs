@@ -96,6 +96,23 @@ impl<'a> DagBlockSender<'a> {
             }
         }
 
+        for executor in &mut self.executors {
+            match &executor.state {
+                ExecuteState::Executed(_) => {
+                    executor.state = ExecuteState::Executing(block.id());
+                    executor
+                        .sender_to_executor
+                        .send(Some(block.clone()))
+                        .await?;
+                    return anyhow::Ok(true);
+                }
+
+                ExecuteState::Executing(_) | ExecuteState::Error(_) | ExecuteState::Closed => {
+                    continue;
+                }
+            }
+        }
+
         anyhow::Ok(false)
     }
 
@@ -134,13 +151,11 @@ impl<'a> DagBlockSender<'a> {
             });
 
             sender_to_worker.send(Some(block)).await?;
-
             self.flush_executor_state().await?;
         }
 
         self.wait_for_finish().await?;
         sync_dag_store.delete_all_dag_sync_block()?;
-
         Ok(())
     }
 

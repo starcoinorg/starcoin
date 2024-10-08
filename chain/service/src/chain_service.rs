@@ -254,6 +254,12 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetGhostdagData(id) => Ok(ChainResponse::GhostdagDataOption(Box::new(
                 self.inner.get_ghostdagdata(id)?,
             ))),
+            ChainRequest::IsAncestorOfCommand {
+                ancestor,
+                descendants,
+            } => Ok(ChainResponse::IsAncestorOfCommand {
+                reachability_view: self.inner.dag.is_ancestor_of(ancestor, descendants)?,
+            }),
         }
     }
 }

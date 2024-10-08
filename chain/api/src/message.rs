@@ -4,7 +4,7 @@
 use crate::{ChainType, TransactionInfoWithProof};
 use anyhow::Result;
 use starcoin_crypto::HashValue;
-use starcoin_dag::consensusdb::consenses_state::DagStateView;
+use starcoin_dag::consensusdb::consenses_state::{DagStateView, ReachabilityView};
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::transaction::RichTransactionInfo;
@@ -68,6 +68,10 @@ pub enum ChainRequest {
     GetDagStateView,
     CheckChainType,
     GetGhostdagData(HashValue),
+    IsAncestorOfCommand {
+        ancestor: HashValue,
+        descendants: Vec<HashValue>,
+    },
 }
 
 impl ServiceRequest for ChainRequest {
@@ -99,4 +103,5 @@ pub enum ChainResponse {
     DagStateView(Box<DagStateView>),
     CheckChainType(ChainType),
     GhostdagDataOption(Box<Option<GhostdagData>>),
+    IsAncestorOfCommand { reachability_view: ReachabilityView },
 }

@@ -106,7 +106,7 @@ pub trait ChainReader {
         access_path: Option<AccessPath>,
     ) -> Result<Option<TransactionInfoWithProof>>;
 
-    fn current_tips_hash(&self) -> Result<Vec<HashValue>>;
+    fn current_tips_hash(&self, pruning_point: HashValue) -> Result<Vec<HashValue>>;
     fn has_dag_block(&self, header_id: HashValue) -> Result<bool>;
     fn check_chain_type(&self) -> Result<ChainType>;
     fn verify_and_ghostdata(
@@ -114,6 +114,8 @@ pub trait ChainReader {
         uncles: &[BlockHeader],
         header: &BlockHeader,
     ) -> Result<GhostdagData>;
+    fn is_dag_ancestor_of(&self, ancestor: HashValue, descendants: Vec<HashValue>) -> Result<bool>;
+    fn get_pruning_height(&self) -> BlockNumber;
 }
 
 pub trait ChainWriter {

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, format_err, Ok, Result};
+use starcoin_config::genesis_config::{G_PRUNING_DEPTH, G_PRUNING_FINALITY};
 use starcoin_crypto::HashValue as Hash;
 use starcoin_dag::{
     blockdag::{BlockDAG, MineNewDagBlockInfo},
@@ -22,6 +23,7 @@ use starcoin_types::{
 };
 
 use std::{
+    collections::HashSet,
     ops::{Deref, DerefMut},
     sync::Arc,
     time::Instant,
@@ -323,14 +325,14 @@ fn test_dag_tips_store() {
     dag.storage
         .state_store
         .write()
-        .insert(state.clone())
+        .insert(Hash::zero(), state.clone())
         .expect("failed to store the dag state");
 
     assert_eq!(
         dag.storage
             .state_store
             .read()
-            .get_state()
+            .get_state_by_hash(Hash::zero())
             .expect("failed to get the dag state"),
         state
     );
@@ -736,11 +738,12 @@ fn add_and_print_with_ghostdata(
     Ok(header)
 }
 
-fn add_and_print(
+fn add_and_print_with_pruning_point(
     number: BlockNumber,
     parent: Hash,
     parents: Vec<Hash>,
     origin: Hash,
+    pruning_point: Hash,
     dag: &mut BlockDAG,
 ) -> anyhow::Result<BlockHeader> {
     let header_builder = BlockHeaderBuilder::random();
@@ -748,6 +751,7 @@ fn add_and_print(
         .with_parent_hash(parent)
         .with_parents_hash(parents)
         .with_number(number)
+        .with_pruning_point(pruning_point)
         .build();
     let start = Instant::now();
     dag.commit(header.to_owned(), origin)?;
@@ -764,6 +768,16 @@ fn add_and_print(
     //     header, ghostdata.mergeset_blues, ghostdata.mergeset_reds, ghostdata.blues_anticone_sizes
     // );
     Ok(header)
+}
+
+fn add_and_print(
+    number: BlockNumber,
+    parent: Hash,
+    parents: Vec<Hash>,
+    origin: Hash,
+    dag: &mut BlockDAG,
+) -> anyhow::Result<BlockHeader> {
+    add_and_print_with_pruning_point(number, parent, parents, origin, Hash::zero(), dag)
 }
 
 #[test]
@@ -869,7 +883,6 @@ fn test_big_data_commit() -> anyhow::Result<()> {
     anyhow::Result::Ok(())
 }
 
-#[ignore = "pruning will be tested in next release"]
 #[test]
 fn test_prune() -> anyhow::Result<()> {
     // initialzie the dag firstly
@@ -877,7 +890,8 @@ fn test_prune() -> anyhow::Result<()> {
     let pruning_depth = 4;
     let pruning_finality = 3;
 
-    let mut dag = BlockDAG::create_for_testing_with_parameters(k).unwrap();
+    let mut dag =
+        BlockDAG::create_for_testing_with_parameters(k, pruning_depth, pruning_finality).unwrap();
 
     let origin = BlockHeaderBuilder::random().with_number(0).build();
     let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;
@@ -966,20 +980,84 @@ fn test_prune() -> anyhow::Result<()> {
     assert_eq!(observer3.blue_score, observer2.blue_score);
     assert_eq!(observer3.selected_parent, observer2.selected_parent);
 
+    dag.save_dag_state(
+        genesis.id(),
+        DagState {
+            tips: vec![block_red_3.id(), block_main_5.id()],
+        },
+    )?;
+
     // prunning process begins
-    dag.save_dag_state(DagState {
-        tips: vec![block_red_3.id(), block_main_5.id()],
-    })?;
+    let (previous_ghostdata, previous_pruning_point) =
+        if block_main_5.pruning_point() == Hash::zero() {
+            (
+                dag.ghostdata_by_hash(genesis.id())?.ok_or_else(|| {
+                    format_err!("failed to get the ghostdata by genesis: {:?}", genesis.id())
+                })?,
+                genesis.id(),
+            )
+        } else {
+            (
+                dag.ghostdata_by_hash(block_main_5.pruning_point())?
+                    .ok_or_else(|| {
+                        format_err!(
+                            "failed to get the ghostdata by pruning point: {:?}",
+                            block_main_5.pruning_point()
+                        )
+                    })?,
+                block_main_5.pruning_point(),
+            )
+        };
+
+    // test the pruning point calculation
+    let MineNewDagBlockInfo {
+        tips,
+        blue_blocks: _,
+        pruning_point,
+    } = dag.calc_mergeset_and_tips(previous_pruning_point, previous_ghostdata.as_ref())?;
+
+    assert_eq!(pruning_point, block_main_2.id());
+    assert_eq!(tips.len(), 1);
+    assert_eq!(*tips.last().unwrap(), block_main_5.id());
+
+    // test the pruning logic
+
+    let block_main_6 = add_and_print(
+        6,
+        block_main_5.id(),
+        tips.clone(),
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+    let block_main_6_1 =
+        add_and_print(6, block_main_5.id(), tips, genesis.parent_hash(), &mut dag)?;
+    let block_fork = add_and_print(
+        4,
+        block_red_3.id(),
+        vec![block_red_3.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+
+    dag.save_dag_state(
+        genesis.id(),
+        DagState {
+            tips: vec![block_main_6.id(), block_main_6_1.id(), block_fork.id()],
+        },
+    )?;
 
     let MineNewDagBlockInfo {
         tips,
         blue_blocks: _,
         pruning_point,
-    } = dag.calc_mergeset_and_tips(pruning_depth, pruning_finality)?;
+    } = dag.calc_mergeset_and_tips(previous_pruning_point, previous_ghostdata.as_ref())?;
 
     assert_eq!(pruning_point, block_main_2.id());
-    assert_eq!(tips.len(), 1);
-    assert_eq!(*tips.last().unwrap(), block_main_5.id());
+    assert_eq!(tips.len(), 2);
+    assert_eq!(
+        tips.into_iter().collect::<HashSet<_>>(),
+        HashSet::from_iter(vec![block_main_6.id(), block_main_6_1.id()])
+    );
 
     anyhow::Result::Ok(())
 }
@@ -989,7 +1067,9 @@ fn test_verification_blue_block() -> anyhow::Result<()> {
     // initialzie the dag firstly
     let k = 5;
 
-    let mut dag = BlockDAG::create_for_testing_with_parameters(k).unwrap();
+    let mut dag =
+        BlockDAG::create_for_testing_with_parameters(k, G_PRUNING_DEPTH, G_PRUNING_FINALITY)
+            .unwrap();
 
     let origin = BlockHeaderBuilder::random().with_number(0).build();
     let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;
@@ -1197,6 +1277,18 @@ fn test_verification_blue_block() -> anyhow::Result<()> {
         .check_ghostdata_blue_block(&ghostdag_data_from_normal)?;
     dag.ghost_dag_manager()
         .check_ghostdata_blue_block(&ghostdag_data_from_makeup)?;
+
+    let together_mine = dag.ghostdata(&[block_from_normal.id(), block_from_makeup.id()])?;
+    let mine_together = add_and_print(
+        8,
+        together_mine.selected_parent,
+        vec![block_from_normal.id(), block_from_makeup.id()],
+        genesis.parent_hash(),
+        &mut dag,
+    )?;
+    let together_ghost_data = dag.storage.ghost_dag_store.get_data(mine_together.id())?;
+    dag.ghost_dag_manager()
+        .check_ghostdata_blue_block(&together_ghost_data)?;
 
     let together_mine = dag.ghostdata(&[block_from_normal.id(), block_from_makeup.id()])?;
     let mine_together = add_and_print(

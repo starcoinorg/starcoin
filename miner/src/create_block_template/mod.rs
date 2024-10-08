@@ -113,6 +113,7 @@ impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
             .net()
             .genesis_config()
             .block_header_version;
+
         self.inner.create_block_template(header_version)
     }
 }
@@ -188,7 +189,7 @@ where
             next_difficulty: difficulty,
             now_milliseconds: mut now_millis,
             pruning_point,
-        } = *block_on(self.block_connector_service.send(MinerRequest {}))??;
+        } = *block_on(self.block_connector_service.send(MinerRequest { version }))??;
 
         let block_gas_limit = self
             .local_block_gas_limit

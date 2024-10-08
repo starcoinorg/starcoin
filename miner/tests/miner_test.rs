@@ -30,6 +30,7 @@ async fn test_miner_service() {
     registry.put_shared(dag).await.unwrap();
 
     let genesis_hash = genesis.block().id();
+    registry.put_shared(genesis).await.unwrap();
     let chain_header = storage
         .get_block_header_by_hash(genesis_hash)
         .unwrap()

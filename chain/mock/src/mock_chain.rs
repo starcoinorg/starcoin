@@ -1,17 +1,18 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
 use starcoin_config::ChainNetwork;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
-use starcoin_dag::blockdag::BlockDAG;
+use starcoin_dag::blockdag::{BlockDAG, MineNewDagBlockInfo};
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_storage::Storage;
 use starcoin_types::block::{Block, BlockHeader};
+use starcoin_types::blockhash::KType;
 use starcoin_types::startup_info::ChainInfo;
 use std::sync::Arc;
 use std::vec;
@@ -27,6 +28,26 @@ impl MockChain {
     pub fn new(net: ChainNetwork) -> Result<Self> {
         let (storage, chain_info, _, dag) =
             Genesis::init_storage_for_test(&net).expect("init storage by genesis fail.");
+
+        let chain = BlockChain::new(
+            net.time_service(),
+            chain_info.head().id(),
+            storage.clone(),
+            None,
+            dag,
+        )?;
+        let miner = AccountInfo::random();
+        Ok(Self::new_inner(net, chain, miner, storage))
+    }
+
+    pub fn new_with_params(
+        net: ChainNetwork,
+        k: KType,
+        pruning_depth: u64,
+        pruning_finality: u64,
+    ) -> Result<Self> {
+        let (storage, chain_info, _, dag) =
+            Genesis::init_storage_for_test_with_param(&net, k, pruning_depth, pruning_finality)?;
 
         let chain = BlockChain::new(
             net.time_service(),
@@ -178,6 +199,26 @@ impl MockChain {
             .create_block(template, self.net.time_service().as_ref())
     }
 
+    pub fn produce_block_by_params(
+        &mut self,
+        parent_header: BlockHeader,
+        tips: Vec<HashValue>,
+        pruning_point: HashValue,
+    ) -> Result<Block> {
+        let (template, _) = self.head.create_block_template_by_header(
+            *self.miner.address(),
+            parent_header,
+            vec![],
+            vec![],
+            None,
+            tips,
+            pruning_point,
+        )?;
+        self.head
+            .consensus()
+            .create_block(template, self.net.time_service().as_ref())
+    }
+
     pub fn produce_block_by_tips(
         &mut self,
         parent_header: BlockHeader,
@@ -191,6 +232,72 @@ impl MockChain {
             None,
             tips,
             HashValue::zero(),
+        )?;
+        self.head
+            .consensus()
+            .create_block(template, self.net.time_service().as_ref())
+    }
+
+    pub fn produce_block_for_pruning(&mut self) -> Result<Block> {
+        let tips = self.head.get_dag_state()?.tips;
+        let ghostdata = self.head.dag().ghost_dag_manager().ghostdag(&tips)?;
+        let selected_header = self
+            .head()
+            .get_storage()
+            .get_block_header_by_hash(ghostdata.selected_parent)?
+            .ok_or_else(|| {
+                format_err!(
+                    "Cannot find block header by hash: {:?}",
+                    ghostdata.selected_parent
+                )
+            })?;
+
+        let previous_pruning = if selected_header.pruning_point() == HashValue::zero() {
+            self.head().get_storage().get_genesis()?.unwrap()
+        } else {
+            selected_header.pruning_point()
+        };
+
+        let prevous_ghostdata = self
+            .head()
+            .dag()
+            .ghostdata_by_hash(previous_pruning)?
+            .ok_or_else(|| format_err!("Cannot find ghostdata by hash: {:?}", previous_pruning))?;
+
+        let MineNewDagBlockInfo {
+            tips: pruned_tips,
+            blue_blocks,
+            pruning_point,
+        } = self
+            .head
+            .dag()
+            .calc_mergeset_and_tips(previous_pruning, prevous_ghostdata.as_ref())?;
+
+        debug!(
+            "tips: {:?}, blue_blocks: {:?}, pruning_point: {:?}",
+            pruned_tips, blue_blocks, pruning_point
+        );
+
+        let (template, _) = self.head.create_block_template_by_header(
+            *self.miner.address(),
+            selected_header,
+            vec![],
+            blue_blocks
+                .get(1..)
+                .unwrap_or(&[])
+                .iter()
+                .map(|block_id| {
+                    self.head()
+                        .get_storage()
+                        .get_block_header_by_hash(*block_id)?
+                        .ok_or_else(|| {
+                            format_err!("Block header not found for hash: {:?}", block_id)
+                        })
+                })
+                .collect::<Result<Vec<_>>>()?,
+            None,
+            pruned_tips,
+            pruning_point,
         )?;
         self.head
             .consensus()

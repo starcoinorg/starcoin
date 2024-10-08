@@ -21,7 +21,7 @@ use serde_json::Value;
 use starcoin_abi_types::{FunctionABI, ModuleABI, StructInstantiation};
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
-use starcoin_dag::consensusdb::consenses_state::DagStateView;
+use starcoin_dag::consensusdb::consenses_state::{DagStateView, ReachabilityView};
 use starcoin_logger::{prelude::*, LogPattern};
 use starcoin_rpc_api::chain::{
     GetBlockOption, GetBlocksOption, GetEventOption, GetTransactionOption,
@@ -787,6 +787,15 @@ impl RpcClient {
 
     pub fn get_dag_state(&self) -> anyhow::Result<DagStateView> {
         self.call_rpc_blocking(|inner| inner.chain_client.get_dag_state())
+            .map_err(map_err)
+    }
+
+    pub fn is_ancestor_of(
+        &self,
+        ancestor: HashValue,
+        descendants: Vec<HashValue>,
+    ) -> anyhow::Result<ReachabilityView> {
+        self.call_rpc_blocking(|inner| inner.chain_client.is_ancestor_of(ancestor, descendants))
             .map_err(map_err)
     }
 
