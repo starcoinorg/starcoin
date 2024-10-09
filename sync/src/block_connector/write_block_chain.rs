@@ -377,18 +377,36 @@ where
             self.dag.clone(),
         )?;
 
-        // delete block since from block.number + 1 to latest.
-        let start = new_head_block.header().number().saturating_add(1);
-        let latest = self.main.status().head.number();
-        for block_number in start..latest {
-            if let Some(block) = self.main.get_block_by_number(block_number)? {
-                info!("Delete block({:?})", block.header);
-                self.storage.delete_block(block.id())?;
-                self.storage.delete_block_info(block.id())?;
-            } else {
-                warn!("Can not find block by number:{}", block_number);
+        let start = new_head_block.header().id();
+        let lastest = self.main.status().head.id();
+        let reachability_service = self.main.dag().reachability_service();
+        for child in reachability_service.forward_chain_iterator(start, lastest, true) {
+            if child == start {
+                continue;
+            }
+
+            let child_block = self
+                .main
+                .get_storage()
+                .get_block_header_by_hash(child)?
+                .ok_or_else(|| format_err!("Cannot find block header by hash: {:?}", child))?;
+
+            self.storage.delete_block(child)?;
+            self.storage.delete_block_info(child)?;
+
+            for parent in child_block.parents_hash().into_iter() {
+                if parent == start {
+                    continue;
+                }
+                if self.main.dag().check_ancestor_of(parent, vec![start])? {
+                    continue;
+                }
+
+                self.storage.delete_block(parent)?;
+                self.storage.delete_block_info(parent)?;
             }
         }
+
         let executed_block = new_branch.head_block();
 
         self.main = new_branch;

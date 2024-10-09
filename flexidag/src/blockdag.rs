@@ -559,6 +559,10 @@ impl BlockDAG {
         self.storage.reachability_store.clone()
     }
 
+    pub fn reachability_service(&self) -> MTReachabilityService<DbReachabilityStore> {
+        self.pruning_point_manager().reachability_service()
+    }
+
     pub fn verify_and_ghostdata(
         &self,
         blue_blocks: &[BlockHeader],
