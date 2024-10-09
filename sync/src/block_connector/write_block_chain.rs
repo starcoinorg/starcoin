@@ -469,6 +469,12 @@ where
                     tips: vec![new_head_block.header().pruning_point()],
                 },
             )?;
+            self.main.dag().save_dag_state(
+                HashValue::zero(),
+                DagState {
+                    tips: vec![new_head_block.header().pruning_point()],
+                },
+            )?;
         } else {
             self.main.dag().save_dag_state(
                 new_head_block.header().pruning_point(),
