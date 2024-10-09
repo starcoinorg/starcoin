@@ -22,7 +22,7 @@ pub struct GhostdagManager<
     pub(super) ghostdag_store: T,
     pub(super) relations_store: Arc<RwLock<S>>,
     pub(super) headers_store: V,
-    pub(super) reachability_service: U,
+    pub reachability_service: U,
 }
 
 impl<
