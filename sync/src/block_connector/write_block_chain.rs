@@ -12,6 +12,7 @@ use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
+use starcoin_dag::consensusdb::consenses_state::DagState;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::bus::{Bus, BusService};
@@ -405,6 +406,27 @@ where
                 self.storage.delete_block(parent)?;
                 self.storage.delete_block_info(parent)?;
             }
+        }
+
+        if new_head_block.header().pruning_point() == HashValue::zero() {
+            let genesis = self
+                .main
+                .get_storage()
+                .get_genesis()?
+                .ok_or_else(|| format_err!("Cannot get the genesis in storage!"))?;
+            self.main.dag().save_dag_state(
+                genesis,
+                DagState {
+                    tips: vec![new_head_block.header().pruning_point()],
+                },
+            )?;
+        } else {
+            self.main.dag().save_dag_state(
+                new_head_block.header().pruning_point(),
+                DagState {
+                    tips: vec![new_head_block.header().pruning_point()],
+                },
+            )?;
         }
 
         let executed_block = new_branch.head_block();
