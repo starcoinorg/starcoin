@@ -19,6 +19,7 @@ starcoin-move-compiler = { workspace = true }
 starcoin-vm-types = { workspace = true }
 tempfile = { workspace = true }
 walkdir = { workspace = true }
+starcoin-framework-legacy = { workspace = true }
 
 [dev-dependencies]
 datatest-stable = { workspace = true }
