@@ -417,20 +417,20 @@ where
             self.main.dag().save_dag_state(
                 genesis,
                 DagState {
-                    tips: vec![new_head_block.header().pruning_point()],
+                    tips: vec![new_head_block.header().id()],
                 },
             )?;
             self.main.dag().save_dag_state(
                 HashValue::zero(),
                 DagState {
-                    tips: vec![new_head_block.header().pruning_point()],
+                    tips: vec![new_head_block.header().id()],
                 },
             )?;
         } else {
             self.main.dag().save_dag_state(
                 new_head_block.header().pruning_point(),
                 DagState {
-                    tips: vec![new_head_block.header().pruning_point()],
+                    tips: vec![new_head_block.header().id()],
                 },
             )?;
         }
