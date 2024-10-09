@@ -154,7 +154,7 @@ pub fn starcoin_natives_with_builder(builder: &mut SafeNativeBuilder) -> NativeF
             CORE_CODE_ADDRESS,
             builder,
         ))
-        .chain(aptos_table_natives::table_natives(
+        .chain(starcoin_table_natives::table_natives(
             CORE_CODE_ADDRESS,
             builder,
         ))
@@ -163,7 +163,7 @@ pub fn starcoin_natives_with_builder(builder: &mut SafeNativeBuilder) -> NativeF
 
 pub fn assert_no_test_natives(err_msg: &str) {
     assert!(
-        aptos_natives(
+        starcoin_natives(
             LATEST_GAS_FEATURE_VERSION,
             NativeGasParameters::zeros(),
             MiscGasParameters::zeros(),
@@ -200,7 +200,7 @@ pub fn configure_for_unit_test() {
 
 #[cfg(feature = "testing")]
 fn unit_test_extensions_hook(exts: &mut NativeContextExtensions) {
-    use starcoin_table_natives::NativeTableContext;
+    //use starcoin_table_natives::NativeTableContext;
 
     exts.add(NativeTableContext::new([0u8; 32], &*DUMMY_RESOLVER));
     exts.add(NativeCodeContext::default());

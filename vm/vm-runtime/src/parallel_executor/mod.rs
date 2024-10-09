@@ -19,7 +19,7 @@ use starcoin_parallel_executor::{
 };
 use starcoin_vm_types::{
     state_store::state_key::StateKey,
-    state_view::StateView,
+    state_store::StateView,
     transaction::{Transaction, TransactionOutput, TransactionStatus},
     write_set::{WriteOp, WriteSet},
 };
@@ -103,8 +103,9 @@ impl ParallelStarcoinVM {
                     Some(err),
                 ))
             }
-            Err(Error::InvariantViolation) => Err(VMStatus::Error(
+            Err(Error::InvariantViolation) => Err(VMStatus::error(
                 StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR,
+                None,
             )),
             Err(Error::UserError(err)) => Err(err),
         }

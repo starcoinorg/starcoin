@@ -15,7 +15,7 @@ use starcoin_parallel_executor::{
 use move_core_types::vm_status::VMStatus;
 use starcoin_logger::prelude::*;
 use starcoin_vm_types::{
-    state_store::state_key::StateKey, state_view::StateView, write_set::WriteOp,
+    state_store::state_key::StateKey, state_store::StateView, write_set::WriteOp,
 };
 
 pub(crate) struct StarcoinVMWrapper<'a, S> {

@@ -23,6 +23,7 @@ rand = { workspace = true }
 rand_core = { default-features = false, workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-frameworks = { workspace = true }
+starcoin-framework = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 move-stdlib = { workspace = true }
@@ -41,9 +42,8 @@ serde_bytes = { workspace = true }
 rayon = { workspace = true }
 num_cpus = { workspace = true }
 hex = "0.4.3"
-bytes = {  workspace = true }
+bytes = { workspace = true }
 move-bytecode-verifier = { workspace = true }
-
 
 [dev-dependencies]
 stdlib = { workspace = true }

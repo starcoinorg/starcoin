@@ -3,11 +3,11 @@
 
 use crate::data_cache::{IntoMoveResolver, RemoteStorageOwned};
 use starcoin_parallel_executor::executor::MVHashMapView;
-use starcoin_vm_types::state_store::state_value::StateValue;
-use starcoin_vm_types::state_store::TStateView;
-use starcoin_vm_types::{
-    state_store::state_key::StateKey, state_view::StateView, write_set::WriteOp,
+use starcoin_vm_types::state_store::{
+    errors::StateviewError, state_key::StateKey, state_storage_usage::StateStorageUsage,
+    state_value::StateValue, StateView, TStateView,
 };
+use starcoin_vm_types::write_set::WriteOp;
 
 pub(crate) struct VersionedView<'a, S: StateView> {
     base_view: &'a S,
@@ -31,7 +31,7 @@ impl<'a, S: TStateView> TStateView for VersionedView<'a, S> {
     type Key = StateKey;
 
     // Get some data either through the cache or the `StateView` on a cache miss.
-    fn get_state_value(&self, state_key: &StateKey) -> anyhow::Result<Option<StateValue>> {
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>, StateviewError> {
         match self.hashmap_view.read(state_key) {
             Some(v) => Ok(match v.as_ref() {
                 WriteOp::Value(w) => Some(w.clone().map(|v| StateValue::from(v))),
@@ -41,7 +41,7 @@ impl<'a, S: TStateView> TStateView for VersionedView<'a, S> {
         }
     }
 
-    fn is_genesis(&self) -> bool {
-        self.base_view.is_genesis()
+    fn get_usage(&self) -> Result<StateStorageUsage, StateviewError> {
+        todo!()
     }
 }

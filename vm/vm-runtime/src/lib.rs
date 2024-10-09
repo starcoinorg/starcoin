@@ -26,7 +26,7 @@ use starcoin_vm_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
     language_storage::StructTag,
-    state_view::StateView,
+    state_store::StateView,
     transaction::{Transaction, TransactionOutput},
 };
 

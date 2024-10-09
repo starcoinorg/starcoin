@@ -3,9 +3,9 @@
 
 use anyhow::Result;
 use move_core_types::vm_status::{StatusCode, VMStatus};
-use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::{
     block_metadata::BlockMetadata,
+    state_store::StateView,
     transaction::{SignedUserTransaction, Transaction, TransactionOutput, TransactionStatus},
     write_set::WriteSet,
 };
