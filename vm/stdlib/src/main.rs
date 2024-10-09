@@ -8,7 +8,7 @@ use itertools::Itertools;
 use log::LevelFilter;
 use simplelog::{Config, SimpleLogger};
 use starcoin_crypto::hash::PlainCryptoHash;
-use starcoin_framework::STARCOIN_FRAMEWORK_SOURCES;
+use starcoin_framework_legacy::STARCOIN_FRAMEWORK_SOURCES;
 use starcoin_move_compiler::check_compiled_module_compat;
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::file_format::CompiledModule;

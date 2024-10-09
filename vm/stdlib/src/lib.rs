@@ -31,7 +31,7 @@ use std::{
 
 mod compat;
 pub use compat::*;
-pub use starcoin_framework::SourceFiles;
+pub use starcoin_framework_legacy::SourceFiles;
 pub use starcoin_move_compiler::utils::iterate_directory;
 
 pub const NO_USE_COMPILED: &str = "MOVE_NO_USE_COMPILED";
@@ -58,7 +58,8 @@ pub const ERROR_DESC_EXTENSION: &str = "errmap";
 pub const ERROR_DESCRIPTIONS: &[u8] =
     std::include_bytes!("../compiled/latest/error_descriptions/error_descriptions.errmap");
 
-pub const STDLIB_DIR: Dir = starcoin_framework::SOURCES_DIR;
+// XXX FIXME YSG need to remove
+pub const STDLIB_DIR: Dir = starcoin_framework_legacy::SOURCES_DIR;
 
 // The current stdlib that is freshly built. This will never be used in deployment so we don't need
 // to pull the same trick here in order to include this in the Rust binary.
@@ -104,7 +105,7 @@ pub static G_COMPILED_STDLIB: Lazy<HashMap<StdlibVersion, Vec<Vec<u8>>>> = Lazy:
 
 pub const SCRIPT_HASH_LENGTH: usize = HashValue::LENGTH;
 
-pub use starcoin_framework::STARCOIN_FRAMEWORK_SOURCES;
+pub use starcoin_framework_legacy::STARCOIN_FRAMEWORK_SOURCES;
 
 /// Return all versions of stdlib, include latest.
 pub fn stdlib_versions() -> Vec<StdlibVersion> {

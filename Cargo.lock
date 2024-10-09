@@ -10277,7 +10277,7 @@ dependencies = [
  "once_cell",
  "proptest",
  "proptest-derive 0.3.0",
- "starcoin-framework",
+ "starcoin-framework 0.1.0",
  "starcoin-package-builder",
  "starcoin-vm-types",
 ]
@@ -10852,6 +10852,19 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tiny-keccak",
+]
+
+[[package]]
+name = "starcoin-framework"
+version = "13.0.0"
+source = "git+https://github.com/starcoinorg/starcoin-framework?rev=94bcd77e80232b169cf95754ef4e87775645afcd#94bcd77e80232b169cf95754ef4e87775645afcd"
+dependencies = [
+ "anyhow",
+ "include_dir",
+ "log 0.4.22",
+ "once_cell",
+ "tempfile",
+ "walkdir",
 ]
 
 [[package]]
@@ -11514,7 +11527,7 @@ dependencies = [
  "itertools 0.10.5",
  "move-command-line-common",
  "move-package",
- "starcoin-framework",
+ "starcoin-framework 0.1.0",
  "tempfile",
 ]
 
@@ -11800,7 +11813,7 @@ dependencies = [
  "serde-reflection 0.3.2",
  "serde_yaml",
  "starcoin-cached-packages",
- "starcoin-framework",
+ "starcoin-framework 0.1.0",
  "starcoin-vm-types",
  "tempfile",
  "textwrap 0.14.2",
@@ -12445,7 +12458,8 @@ dependencies = [
  "sha2 0.9.9",
  "simplelog",
  "starcoin-crypto",
- "starcoin-framework",
+ "starcoin-framework 0.1.0",
+ "starcoin-framework 13.0.0",
  "starcoin-move-compiler",
  "starcoin-vm-types",
  "tempfile",
