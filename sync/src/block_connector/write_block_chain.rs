@@ -28,6 +28,7 @@ use starcoin_types::{
 };
 #[cfg(test)]
 use starcoin_vm_types::{account_address::AccountAddress, transaction::SignedUserTransaction};
+use std::collections::HashSet;
 use std::{fmt::Formatter, sync::Arc};
 
 use super::BlockConnectorService;
@@ -395,16 +396,37 @@ where
             self.storage.delete_block(child)?;
             self.storage.delete_block_info(child)?;
 
-            for parent in child_block.parents_hash().into_iter() {
-                if parent == start {
-                    continue;
-                }
-                if self.main.dag().check_ancestor_of(parent, vec![start])? {
-                    continue;
+            let mut deleted_chain = child_block
+                .parents_hash()
+                .into_iter()
+                .collect::<HashSet<_>>();
+            loop {
+                let loop_to_delete = deleted_chain.clone();
+                deleted_chain.clear();
+                for parent in loop_to_delete.into_iter() {
+                    if parent == start {
+                        continue;
+                    }
+                    if self.main.dag().check_ancestor_of(parent, vec![start])? {
+                        continue;
+                    }
+
+                    let parent_header =
+                        self.storage
+                            .get_block_header_by_hash(parent)?
+                            .ok_or_else(|| {
+                                format_err!("Cannot find block by parent id: {:?}", parent)
+                            })?;
+
+                    self.storage.delete_block(parent)?;
+                    self.storage.delete_block_info(parent)?;
+
+                    deleted_chain.extend(parent_header.parents_hash());
                 }
 
-                self.storage.delete_block(parent)?;
-                self.storage.delete_block_info(parent)?;
+                if deleted_chain.is_empty() {
+                    break;
+                }
             }
         }
 
