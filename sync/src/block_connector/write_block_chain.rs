@@ -416,6 +416,7 @@ where
                             descendant
                         )
                     })?;
+
                 deleted_chain.extend(descendant_header.parents_hash());
 
                 ready_to_delete.insert(descendant);
