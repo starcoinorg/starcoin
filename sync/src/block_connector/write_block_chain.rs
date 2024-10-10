@@ -406,10 +406,15 @@ where
                     continue;
                 }
 
-                let descendant_header = match self.storage.get_block_header_by_hash(descendant)? {
-                    Some(header) => header,
-                    None => continue,
-                };
+                let descendant_header = self
+                    .storage
+                    .get_block_header_by_hash(descendant)?
+                    .ok_or_else(|| {
+                        format_err!(
+                            "in resetting, cannot find the block header for {:?}",
+                            descendant
+                        )
+                    })?;
 
                 self.storage.delete_block(descendant)?;
                 self.storage.delete_block_info(descendant)?;
