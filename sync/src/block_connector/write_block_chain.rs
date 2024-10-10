@@ -395,6 +395,7 @@ where
         };
 
         let mut deleted_chain = lastest_dag_state.tips.into_iter().collect::<HashSet<_>>();
+        let mut ready_to_delete = HashSet::new();
         loop {
             let loop_to_delete = deleted_chain.clone();
             deleted_chain.clear();
@@ -415,14 +416,16 @@ where
                             descendant
                         )
                     })?;
-
-                self.storage.delete_block(descendant)?;
-                self.storage.delete_block_info(descendant)?;
-
                 deleted_chain.extend(descendant_header.parents_hash());
+
+                ready_to_delete.insert(descendant);
             }
 
             if deleted_chain.is_empty() {
+                for candidate in ready_to_delete.into_iter() {
+                    self.storage.delete_block(candidate)?;
+                    self.storage.delete_block_info(candidate)?;
+                }
                 break;
             }
         }
