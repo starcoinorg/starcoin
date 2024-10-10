@@ -10,7 +10,7 @@ use network_p2p_types::peer_id::PeerId;
 use network_types::peer_info::PeerInfo;
 pub use node_api_types::*;
 use schemars::{self, JsonSchema};
-use serde::de::{DeserializeOwned, Error};
+use serde::de::Error;
 use serde::{Deserialize, Serializer};
 use serde::{Deserializer, Serialize};
 pub use starcoin_abi_decoder::DecodedMoveValue;
@@ -1036,6 +1036,7 @@ impl From<KeptVMStatus> for TransactionStatusView {
                 location,
                 function,
                 code_offset,
+                ..
             } => Self::ExecutionFailure {
                 location,
                 function,
@@ -1075,6 +1076,7 @@ impl From<TransactionStatusView> for TransactionStatus {
                 location,
                 function,
                 code_offset,
+                message: None,
             }),
             TransactionStatusView::Discard {
                 status_code,
@@ -1186,7 +1188,8 @@ use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_chain_api::{EventWithProof, TransactionInfoWithProof};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::move_resource::MoveResource;
-use starcoin_vm_types::state_store::state_key::{StateKey, TableItem};
+use starcoin_vm_types::state_store::state_key::inner::StateKeyInner;
+use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 pub use vm_status_translator::VmStatusExplainView;
 
@@ -1212,13 +1215,18 @@ impl From<TransactionOutput> for TransactionOutputView {
         let mut access_write_set = vec![];
         let mut table_item_write_set = vec![];
         for (state_key, op) in write_set {
-            match state_key {
-                StateKey::AccessPath(access_path) => {
-                    access_write_set.push((access_path, op));
+            match state_key.inner() {
+                StateKeyInner::AccessPath(access_path) => {
+                    access_write_set.push((access_path.clone(), op));
                 }
-                StateKey::TableItem(table_item) => {
+                StateKeyInner::TableItem { handle, key } => {
+                    let table_item = TableItemView {
+                        handle: handle.clone(),
+                        key: StrView::from(key.to_vec()),
+                    };
                     table_item_write_set.push((table_item, op));
                 }
+                StateKeyInner::Raw(_) => todo!("not support raw key"),
             }
         }
         Self {
@@ -1239,13 +1247,13 @@ impl From<TransactionOutput> for TransactionOutputView {
 impl From<(AccessPath, WriteOp)> for TransactionOutputAction {
     fn from((access_path, op): (AccessPath, WriteOp)) -> Self {
         let (action, value) = match op {
-            WriteOp::Deletion => (WriteOpView::Deletion, None),
-            WriteOp::Value(v) => (
+            WriteOp::Deletion { .. } => (WriteOpView::Deletion, None),
+            WriteOp::Modification { data, .. } | WriteOp::Creation { data, .. } => (
                 WriteOpView::Value,
                 Some(if access_path.path.is_resource() {
-                    WriteOpValueView::Resource(v.into())
+                    WriteOpValueView::Resource(data.to_vec().into())
                 } else {
-                    WriteOpValueView::Code(v.into())
+                    WriteOpValueView::Code(data.to_vec().into())
                 }),
             ),
         };
@@ -1277,15 +1285,17 @@ pub enum WriteOpView {
     Value,
 }
 
-impl From<(TableItem, WriteOp)> for TransactionOutputTableItemAction {
-    fn from((table_item, op): (TableItem, WriteOp)) -> Self {
+impl From<(TableItemView, WriteOp)> for TransactionOutputTableItemAction {
+    fn from((table_item, op): (TableItemView, WriteOp)) -> Self {
         let (action, value) = match op {
-            WriteOp::Deletion => (WriteOpView::Deletion, None),
-            WriteOp::Value(v) => (WriteOpView::Value, Some(StrView(v))),
+            WriteOp::Deletion { .. } => (WriteOpView::Deletion, None),
+            WriteOp::Modification { data, .. } | WriteOp::Creation { data, .. } => {
+                (WriteOpView::Value, Some(StrView(data.to_vec())))
+            }
         };
 
         Self {
-            table_item: table_item.into(),
+            table_item,
             action,
             value,
         }
@@ -1913,15 +1923,6 @@ pub struct TableItemView {
     key: StrView<Vec<u8>>,
 }
 
-impl From<TableItem> for TableItemView {
-    fn from(table_item: TableItem) -> Self {
-        Self {
-            handle: table_item.handle,
-            key: table_item.key.into(),
-        }
-    }
-}
-
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub enum StateKeyView {
     #[serde(rename = "access_path")]
@@ -1932,12 +1933,13 @@ pub enum StateKeyView {
 
 impl From<StateKey> for StateKeyView {
     fn from(state_key: StateKey) -> Self {
-        match state_key {
-            StateKey::AccessPath(access_path) => Self::AccessPath(access_path),
-            StateKey::TableItem(table_item) => Self::TableItem(TableItemView {
-                handle: table_item.handle,
-                key: table_item.key.into(),
+        match state_key.inner() {
+            StateKeyInner::AccessPath(access_path) => Self::AccessPath(access_path.clone()),
+            StateKeyInner::TableItem { handle, key } => Self::TableItem(TableItemView {
+                handle: handle.clone(),
+                key: StrView::from(key.to_vec()),
             }),
+            StateKeyInner::Raw(_) => todo!("not support raw key"),
         }
     }
 }
