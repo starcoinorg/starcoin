@@ -387,11 +387,10 @@ where
                 continue;
             }
 
-            let child_block = self
-                .main
-                .get_storage()
-                .get_block_header_by_hash(child)?
-                .ok_or_else(|| format_err!("Cannot find block header by hash: {:?}", child))?;
+            let child_block = match self.main.get_storage().get_block_header_by_hash(child)? {
+                Some(header) => header,
+                None => continue,
+            };
 
             self.storage.delete_block(child)?;
             self.storage.delete_block_info(child)?;
@@ -411,12 +410,10 @@ where
                         continue;
                     }
 
-                    let parent_header =
-                        self.storage
-                            .get_block_header_by_hash(parent)?
-                            .ok_or_else(|| {
-                                format_err!("Cannot find block by parent id: {:?}", parent)
-                            })?;
+                    let parent_header = match self.storage.get_block_header_by_hash(parent)? {
+                        Some(header) => header,
+                        None => continue,
+                    };
 
                     self.storage.delete_block(parent)?;
                     self.storage.delete_block_info(parent)?;
