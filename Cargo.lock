@@ -281,6 +281,7 @@ dependencies = [
  "futures-util",
  "hex",
  "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "move-core-types",
  "rpassword",
  "serde",
  "serde_json",
