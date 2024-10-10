@@ -449,6 +449,11 @@ impl BlockDAG {
         Ok(self.storage.state_store.read().get_state_by_hash(hash)?)
     }
 
+    pub fn save_dag_state_directly(&self, hash: Hash, state: DagState) -> anyhow::Result<()> {
+        self.storage.state_store.write().insert(hash, state)?;
+        anyhow::Ok(())
+    }
+
     pub fn save_dag_state(&self, hash: Hash, state: DagState) -> anyhow::Result<()> {
         let writer = self.storage.state_store.write();
         match writer.get_state_by_hash(hash) {

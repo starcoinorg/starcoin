@@ -414,20 +414,20 @@ where
                 .get_storage()
                 .get_genesis()?
                 .ok_or_else(|| format_err!("Cannot get the genesis in storage!"))?;
-            self.main.dag().save_dag_state(
+            self.main.dag().save_dag_state_directly(
                 genesis,
                 DagState {
                     tips: vec![new_head_block.header().id()],
                 },
             )?;
-            self.main.dag().save_dag_state(
+            self.main.dag().save_dag_state_directly(
                 HashValue::zero(),
                 DagState {
                     tips: vec![new_head_block.header().id()],
                 },
             )?;
         } else {
-            self.main.dag().save_dag_state(
+            self.main.dag().save_dag_state_directly(
                 new_head_block.header().pruning_point(),
                 DagState {
                     tips: vec![new_head_block.header().id()],
