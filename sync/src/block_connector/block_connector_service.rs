@@ -10,15 +10,12 @@ use super::CreateBlockResponse;
 use crate::block_connector::{
     ExecuteRequest, MinerRequest, MinerResponse, ResetRequest, WriteBlockChainService,
 };
-use crate::store::sync_dag_store::SyncDagStore;
-use crate::store::sync_dag_store::SyncDagStoreConfig;
 use crate::sync::{CheckSyncEvent, SyncService};
 use crate::tasks::{BlockConnectedEvent, BlockConnectedFinishEvent, BlockDiskCheckEvent};
 use anyhow::{bail, format_err, Ok, Result};
 use network_api::PeerProvider;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
-use starcoin_config::RocksdbConfig;
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
@@ -33,7 +30,6 @@ use starcoin_service_registry::{
 };
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::PeerNewBlock;
-use starcoin_sync_api::SyncAsyncService;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 #[cfg(test)]
@@ -356,26 +352,7 @@ impl<TransactionPoolServiceT> ServiceHandler<Self, ResetRequest>
 where
     TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
-    fn handle(&mut self, msg: ResetRequest, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        // cancel the sync to avoid the db writing conflict
-        let sync_service = ctx.service_ref::<SyncService>()?.clone();
-        async_std::task::block_on(async {
-            sync_service.cancel().await?;
-            anyhow::Ok(())
-        })?;
-
-        let config = ctx.get_shared::<Arc<NodeConfig>>()?;
-
-        let sync_dag_store = SyncDagStore::create_from_path(
-            config.storage.sync_dir(),
-            SyncDagStoreConfig::create_with_params(
-                config.storage.cache_size(),
-                RocksdbConfig::default(),
-            ),
-        )?;
-
-        sync_dag_store.delete_all_dag_sync_block()?;
-
+    fn handle(&mut self, msg: ResetRequest, _ctx: &mut ServiceContext<Self>) -> Result<()> {
         self.chain_service.reset(msg.block_hash)
     }
 }
