@@ -369,7 +369,8 @@ where
     pub fn reset(&mut self, block_id: HashValue) -> Result<()> {
         let new_head_block = self
             .main
-            .get_block(block_id)?
+            .get_storage()
+            .get_block_by_hash(block_id)?
             .ok_or_else(|| format_err!("Can not find block {} in main chain", block_id,))?;
         let new_branch = BlockChain::new(
             self.config.net().time_service(),
