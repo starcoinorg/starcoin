@@ -380,50 +380,44 @@ where
         )?;
 
         let start = new_head_block.header().id();
-        let lastest = self.main.status().head.id();
-        let reachability_service = self.main.dag().reachability_service();
-        for child in reachability_service.forward_chain_iterator(start, lastest, true) {
-            if child == start {
-                continue;
+        let lastest = self.main.status().head.clone();
+
+        let lastest_dag_state = if lastest.pruning_point() == HashValue::zero() {
+            let genesis = self
+                .main
+                .get_storage()
+                .get_genesis()?
+                .ok_or_else(|| format_err!("Cannot get the genesis in storage!"))?;
+            self.main.dag().get_dag_state(genesis)?
+        } else {
+            self.main.dag().get_dag_state(lastest.pruning_point())?
+        };
+
+        let mut deleted_chain = lastest_dag_state.tips.into_iter().collect::<HashSet<_>>();
+        loop {
+            let loop_to_delete = deleted_chain.clone();
+            deleted_chain.clear();
+            for descendant in loop_to_delete.into_iter() {
+                if descendant == start {
+                    continue;
+                }
+                if self.main.dag().check_ancestor_of(descendant, vec![start])? {
+                    continue;
+                }
+
+                let descendant_header = match self.storage.get_block_header_by_hash(descendant)? {
+                    Some(header) => header,
+                    None => continue,
+                };
+
+                self.storage.delete_block(descendant)?;
+                self.storage.delete_block_info(descendant)?;
+
+                deleted_chain.extend(descendant_header.parents_hash());
             }
 
-            let child_block = match self.main.get_storage().get_block_header_by_hash(child)? {
-                Some(header) => header,
-                None => continue,
-            };
-
-            self.storage.delete_block(child)?;
-            self.storage.delete_block_info(child)?;
-
-            let mut deleted_chain = child_block
-                .parents_hash()
-                .into_iter()
-                .collect::<HashSet<_>>();
-            loop {
-                let loop_to_delete = deleted_chain.clone();
-                deleted_chain.clear();
-                for parent in loop_to_delete.into_iter() {
-                    if parent == start {
-                        continue;
-                    }
-                    if self.main.dag().check_ancestor_of(parent, vec![start])? {
-                        continue;
-                    }
-
-                    let parent_header = match self.storage.get_block_header_by_hash(parent)? {
-                        Some(header) => header,
-                        None => continue,
-                    };
-
-                    self.storage.delete_block(parent)?;
-                    self.storage.delete_block_info(parent)?;
-
-                    deleted_chain.extend(parent_header.parents_hash());
-                }
-
-                if deleted_chain.is_empty() {
-                    break;
-                }
+            if deleted_chain.is_empty() {
+                break;
             }
         }
 
