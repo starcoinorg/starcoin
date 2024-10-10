@@ -4,14 +4,17 @@
 use crate::RpcClient;
 use anyhow::{format_err, Result};
 use starcoin_crypto::HashValue;
-use starcoin_state_api::{ChainStateReader, StateView, StateWithProof, StateWithTableItemProof};
+use starcoin_state_api::{ChainStateReader, StateWithProof, StateWithTableItemProof};
 use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::block::BlockNumber;
 use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
+use starcoin_vm_types::state_store::errors::StateviewError;
+use starcoin_vm_types::state_store::state_key::inner::StateKeyInner;
 use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::state_storage_usage::StateStorageUsage;
 use starcoin_vm_types::state_store::state_value::StateValue;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_store::TStateView;
@@ -116,29 +119,30 @@ impl<'a> ChainStateReader for RemoteStateReader<'a> {
 impl<'a> TStateView for RemoteStateReader<'a> {
     type Key = StateKey;
 
-    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>> {
-        match state_key {
-            StateKey::AccessPath(access_path) => Ok(self
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>, StateviewError> {
+        match state_key.inner() {
+            StateKeyInner::AccessPath(access_path) => Ok(self
                 .client
                 .state_get_with_proof_by_root(access_path.clone(), self.state_root())?
                 .state
                 .map(|v| v.0))
             .map(|v| v.map(|v| StateValue::from(v))),
-            StateKey::TableItem(table_item) => Ok(self
+            StateKeyInner::TableItem { handle, key } => Ok(self
                 .client
                 .state_get_with_table_item_proof_by_root(
-                    table_item.handle,
-                    table_item.key.clone(),
+                    handle.clone(),
+                    key.clone(),
                     self.state_root(),
                 )?
                 .key_proof
                 .0
                 .map(|v| v.0)
                 .map(|v| StateValue::from(v))),
+            StateKeyInner::Raw(_) => Err(format_err!("Can not get raw state value.").into()),
         }
     }
 
-    fn is_genesis(&self) -> bool {
-        false
+    fn get_usage(&self) -> starcoin_vm_types::state_store::Result<StateStorageUsage> {
+        Err(format_err!("Can not get usage.").into())
     }
 }
