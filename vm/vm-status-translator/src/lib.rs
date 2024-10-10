@@ -3,12 +3,11 @@ use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;
 use starcoin_vm_types::access::ModuleAccess;
-use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::file_format::{CompiledModule, FunctionDefinitionIndex};
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::state_store::state_key::StateKey;
-use starcoin_vm_types::state_view::StateView;
+use starcoin_vm_types::state_store::StateView;
 use starcoin_vm_types::vm_status::{AbortLocation, StatusCode, VMStatus};
 use std::convert::TryFrom;
 use std::fmt;
@@ -20,10 +19,9 @@ pub fn locate_execution_failure(
 ) -> Result<Option<(ModuleId, Identifier)>> {
     let module = match location {
         AbortLocation::Module(module_id) => {
-            let ap =
-                AccessPath::code_access_path(*module_id.address(), module_id.name().to_owned());
+            let state_key = StateKey::module_id(&module_id);
 
-            match state.get_state_value_bytes(&StateKey::AccessPath(ap))? {
+            match state.get_state_value_bytes(&state_key)? {
                 Some(bytes) => CompiledModule::deserialize(&bytes.as_ref()).ok(),
                 None => None,
             }
@@ -56,7 +54,7 @@ pub fn explain_move_abort(abort_location: AbortLocation, abort_code: u64) -> Mov
 
     let err_description = match abort_location {
         AbortLocation::Module(module_id) => {
-            starcoin_move_explain::get_explanation(&module_id, abort_code)
+            starcoin_move_explain::get_explanation(module_id.name().as_str(), abort_code)
         }
         AbortLocation::Script => None,
     };
@@ -132,6 +130,8 @@ impl fmt::Debug for VmStatusExplainView {
                     location: location.clone(),
                     function: *function,
                     code_offset: *code_offset,
+                    sub_status: None,
+                    message: None,
                 },
                 f,
             ),
@@ -145,7 +145,9 @@ pub fn explain_vm_status(
 ) -> Result<VmStatusExplainView> {
     let vm_status_explain = match &vm_status {
         VMStatus::Executed => VmStatusExplainView::Executed,
-        VMStatus::Error(c) => VmStatusExplainView::Error(format!("{:?}", c)),
+        VMStatus::Error { status_code, .. } => {
+            VmStatusExplainView::Error(format!("{:?}", status_code))
+        }
         VMStatus::MoveAbort(location, abort_code) => VmStatusExplainView::MoveAbort {
             location: location.clone(),
             abort_code: *abort_code,
@@ -156,6 +158,7 @@ pub fn explain_vm_status(
             location,
             function,
             code_offset,
+            ..
         } => VmStatusExplainView::ExecutionFailure {
             status_code: format!("{:?}", status_code),
             status: (*status_code).into(),
