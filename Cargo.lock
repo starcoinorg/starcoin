@@ -10778,7 +10778,6 @@ dependencies = [
  "starcoin-statedb",
  "starcoin-storage",
  "starcoin-types",
- "starcoin-vm-runtime",
  "starcoin-vm-types",
  "stdlib",
  "stest",
