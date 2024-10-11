@@ -10,8 +10,7 @@ use starcoin_service_registry::{
 };
 use starcoin_state_api::message::{StateRequest, StateResponse};
 use starcoin_state_api::{
-    ChainStateReader, StateNodeStore, StateReaderExt, StateView, StateWithProof,
-    StateWithTableItemProof,
+    ChainStateReader, StateNodeStore, StateReaderExt, StateWithProof, StateWithTableItemProof,
 };
 use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_statedb::ChainStateDB;
@@ -22,6 +21,8 @@ use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
     state_set::ChainStateSet,
 };
+use starcoin_vm_types::state_store::errors::StateviewError;
+use starcoin_vm_types::state_store::state_key::inner::StateKeyInner;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::state_value::StateValue;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
@@ -82,18 +83,29 @@ impl ServiceHandler<Self, StateRequest> for ChainStateService {
         _ctx: &mut ServiceContext<Self>,
     ) -> Result<StateResponse> {
         let response = match msg {
-            StateRequest::Get(access_path) => StateResponse::State(
-                self.service
-                    .get_state_value(&StateKey::AccessPath(access_path))?,
-            ),
-            StateRequest::GetWithProof(access_path) => {
-                StateResponse::StateWithProof(Box::new(self.service.get_with_proof(&access_path)?))
+            StateRequest::Get(state_key) => {
+                StateResponse::State(self.service.get_state_value_bytes(&state_key)?)
+            }
+            StateRequest::GetWithProof(state_key) => {
+                let access_path = match state_key.inner() {
+                    StateKeyInner::AccessPath(access_path) => access_path,
+                    _ => {
+                        return Err(format_err!("Invalid StateKey."));
+                    }
+                };
+                StateResponse::StateWithProof(Box::new(self.service.get_with_proof(access_path)?))
             }
             StateRequest::GetAccountState(address) => {
                 StateResponse::AccountState(self.service.get_account_state(&address)?)
             }
             StateRequest::StateRoot() => StateResponse::StateRoot(self.service.state_root()),
-            StateRequest::GetWithProofByRoot(access_path, state_root) => {
+            StateRequest::GetWithProofByRoot(state_key, state_root) => {
+                let access_path = match state_key.inner() {
+                    StateKeyInner::AccessPath(access_path) => access_path,
+                    _ => {
+                        return Err(format_err!("Invalid StateKey."));
+                    }
+                };
                 StateResponse::StateWithProof(Box::new(
                     self.service
                         .get_with_proof_by_root(access_path, state_root)?,
@@ -173,11 +185,11 @@ impl Inner {
 
     pub(crate) fn get_with_proof_by_root(
         &self,
-        access_path: AccessPath,
+        access_path: &AccessPath,
         state_root: HashValue,
     ) -> Result<StateWithProof> {
         let reader = self.state_db.fork_at(state_root);
-        reader.get_with_proof(&access_path)
+        reader.get_with_proof(access_path)
     }
 
     pub(crate) fn get_with_table_item_proof_by_root(
@@ -255,12 +267,16 @@ impl ChainStateReader for Inner {
 
 impl TStateView for Inner {
     type Key = StateKey;
-    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>> {
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>, StateviewError> {
         self.state_db.get_state_value(state_key)
     }
 
-    fn is_genesis(&self) -> bool {
-        false
+    fn get_usage(
+        &self,
+    ) -> starcoin_vm_types::state_store::Result<
+        starcoin_vm_types::state_store::state_storage_usage::StateStorageUsage,
+    > {
+        todo!("not impl get_usage")
     }
 }
 
