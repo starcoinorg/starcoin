@@ -463,6 +463,7 @@ proptest = "1.0.0"
 proptest-derive = "0.3.0"
 quote = "1.0.16"
 rand = "0.8.5"
+rand_0_7_3 = { package = "rand", version = "0.7.3" }
 rand_core = { version = "0.6.3", default-features = false }
 rayon = "1.6.1"
 regex = "1.6.0"
