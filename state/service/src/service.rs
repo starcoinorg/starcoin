@@ -22,6 +22,7 @@ use starcoin_types::{
     state_set::ChainStateSet,
 };
 use starcoin_vm_types::state_store::errors::StateviewError;
+use starcoin_vm_types::state_store::state_key::inner::StateKeyInner;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::state_value::StateValue;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
@@ -83,18 +84,31 @@ impl ServiceHandler<Self, StateRequest> for ChainStateService {
     ) -> Result<StateResponse> {
         let response = match msg {
             StateRequest::Get(state_key) => {
-                StateResponse::State(self.service.get_state_value(&state_key)?)
+                StateResponse::State(self.service.get_state_value_bytes(&state_key)?)
             }
             StateRequest::GetWithProof(state_key) => {
-                StateResponse::StateWithProof(Box::new(self.service.get_with_proof(&state_key)?))
+                let access_path = match state_key.inner() {
+                    StateKeyInner::AccessPath(access_path) => access_path,
+                    _ => {
+                        return Err(format_err!("Invalid StateKey."));
+                    }
+                };
+                StateResponse::StateWithProof(Box::new(self.service.get_with_proof(access_path)?))
             }
             StateRequest::GetAccountState(address) => {
                 StateResponse::AccountState(self.service.get_account_state(&address)?)
             }
             StateRequest::StateRoot() => StateResponse::StateRoot(self.service.state_root()),
             StateRequest::GetWithProofByRoot(state_key, state_root) => {
+                let access_path = match state_key.inner() {
+                    StateKeyInner::AccessPath(access_path) => access_path,
+                    _ => {
+                        return Err(format_err!("Invalid StateKey."));
+                    }
+                };
                 StateResponse::StateWithProof(Box::new(
-                    self.service.get_with_proof_by_root(state_key, state_root)?,
+                    self.service
+                        .get_with_proof_by_root(access_path, state_root)?,
                 ))
             }
             StateRequest::GetAccountStateByRoot(account, state_root) => {
@@ -171,11 +185,11 @@ impl Inner {
 
     pub(crate) fn get_with_proof_by_root(
         &self,
-        access_path: AccessPath,
+        access_path: &AccessPath,
         state_root: HashValue,
     ) -> Result<StateWithProof> {
         let reader = self.state_db.fork_at(state_root);
-        reader.get_with_proof(&access_path)
+        reader.get_with_proof(access_path)
     }
 
     pub(crate) fn get_with_table_item_proof_by_root(
