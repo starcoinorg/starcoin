@@ -8,6 +8,7 @@ hyper = { features = ["full"], optional = true, workspace = true }
 
 [features]
 server = ["prometheus/push", "hyper", "futures"]
+metrics = []
 
 [package]
 authors = { workspace = true }

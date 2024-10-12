@@ -11,11 +11,11 @@ starcoin-chain-api = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-logger = { workspace = true }
+starcoin-metrics = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-state-api = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-types = { workspace = true }
-starcoin-vm-runtime = { workspace = true }
 starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }

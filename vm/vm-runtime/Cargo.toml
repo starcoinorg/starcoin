@@ -50,6 +50,6 @@ stdlib = { workspace = true }
 
 [features]
 default = ["metrics"]
-metrics = ["starcoin-metrics"]
+metrics = ["starcoin-metrics/metrics"]
 testing = ["move-stdlib/testing", "starcoin-frameworks/testing"]
 force-deploy = []

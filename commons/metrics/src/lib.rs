@@ -241,3 +241,5 @@ pub fn get_metric_from_registry(
 
 #[cfg(test)]
 mod tests;
+#[cfg(feature = "metrics")]
+pub mod metrics;

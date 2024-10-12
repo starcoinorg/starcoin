@@ -3,7 +3,6 @@
 
 pub mod data_cache;
 #[cfg(feature = "metrics")]
-pub mod metrics;
 pub mod natives;
 pub mod starcoin_vm;
 
@@ -21,7 +20,6 @@ pub mod parallel_executor;
 mod verifier;
 mod vm_adapter;
 
-use crate::metrics::VMMetrics;
 use starcoin_vm_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
