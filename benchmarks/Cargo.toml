@@ -35,7 +35,6 @@ starcoin-state-store-api = { workspace = true }
 starcoin-state-tree = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
-starcoin-vm-runtime = { workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-executor-benchmark = { workspace = true }

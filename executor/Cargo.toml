@@ -28,7 +28,6 @@ starcoin-transaction-builder = { workspace = true }
 starcoin-state-tree = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
-starcoin-force-upgrade = { workspace = true }
 stdlib = { workspace = true }
 stest = { workspace = true }
 tempfile = { workspace = true }
@@ -38,7 +37,7 @@ move-transactional-test-runner = { workspace = true }
 [features]
 default = []
 fuzzing = ["starcoin-types/fuzzing"]
-force-deploy = ["starcoin-vm-runtime/force-deploy"]
+force-deploy = ["starcoin-force-upgrade/force-deploy"]
 
 [package]
 authors = { workspace = true }

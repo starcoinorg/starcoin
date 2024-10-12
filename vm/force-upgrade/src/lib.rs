@@ -18,6 +18,9 @@ use starcoin_vm_types::{
 };
 use stdlib::COMPILED_MOVE_CODE_DIR;
 
+#[cfg(feature = "force-deploy")]
+pub mod force_upgrade_management;
+
 pub struct ForceUpgrade;
 
 impl ForceUpgrade {

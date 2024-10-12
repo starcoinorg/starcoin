@@ -27,11 +27,10 @@ use std::{convert::TryInto, sync::Arc};
 
 #[cfg(feature = "force-deploy")]
 use {
-    starcoin_force_upgrade::ForceUpgrade,
-    starcoin_types::{account::DEFAULT_EXPIRATION_TIME, identifier::Identifier},
-    starcoin_vm_runtime::force_upgrade_management::{
-        get_force_upgrade_account, get_force_upgrade_block_number,
+    starcoin_force_upgrade::force_upgrade_management::{
+        get_force_upgrade_account, get_force_upgrade_block_number, ForceUpgrade,
     },
+    starcoin_types::{account::DEFAULT_EXPIRATION_TIME, identifier::Identifier},
     starcoin_vm_types::{
         access_path::AccessPath,
         account_config::{genesis_address, ModuleUpgradeStrategy},
