@@ -54,9 +54,19 @@ impl DagBlockExecutor {
 
     pub fn waiting_for_parents(
         chain: &BlockDAG,
+        storage: Arc<dyn Store>,
         parents_hash: Vec<HashValue>,
     ) -> anyhow::Result<bool> {
         for parent_id in parents_hash {
+            let header = match storage.get_block_header_by_hash(parent_id)? {
+                Some(header) => header,
+                None => return Ok(false),
+            };
+
+            if storage.get_block_info(header.id())?.is_none() {
+                return Ok(false);
+            }
+
             if !chain.has_dag_block(parent_id)? {
                 return Ok(false);
             }
@@ -89,6 +99,7 @@ impl DagBlockExecutor {
                         loop {
                             match Self::waiting_for_parents(
                                 &self.dag,
+                                self.storage.clone(),
                                 block.header().parents_hash(),
                             ) {
                                 Ok(true) => break,

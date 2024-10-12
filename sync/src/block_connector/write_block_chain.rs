@@ -12,6 +12,7 @@ use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
+use starcoin_dag::consensusdb::consenses_state::DagState;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::bus::{Bus, BusService};
@@ -27,6 +28,7 @@ use starcoin_types::{
 };
 #[cfg(test)]
 use starcoin_vm_types::{account_address::AccountAddress, transaction::SignedUserTransaction};
+use std::collections::HashSet;
 use std::{fmt::Formatter, sync::Arc};
 
 use super::BlockConnectorService;
@@ -367,7 +369,8 @@ where
     pub fn reset(&mut self, block_id: HashValue) -> Result<()> {
         let new_head_block = self
             .main
-            .get_block(block_id)?
+            .get_storage()
+            .get_block_by_hash(block_id)?
             .ok_or_else(|| format_err!("Can not find block {} in main chain", block_id,))?;
         let new_branch = BlockChain::new(
             self.config.net().time_service(),
@@ -377,18 +380,83 @@ where
             self.dag.clone(),
         )?;
 
-        // delete block since from block.number + 1 to latest.
-        let start = new_head_block.header().number().saturating_add(1);
-        let latest = self.main.status().head.number();
-        for block_number in start..latest {
-            if let Some(block) = self.main.get_block_by_number(block_number)? {
-                info!("Delete block({:?})", block.header);
-                self.storage.delete_block(block.id())?;
-                self.storage.delete_block_info(block.id())?;
-            } else {
-                warn!("Can not find block by number:{}", block_number);
+        let start = new_head_block.header().id();
+        let lastest = self.main.status().head.clone();
+
+        let lastest_dag_state = if lastest.pruning_point() == HashValue::zero() {
+            let genesis = self
+                .main
+                .get_storage()
+                .get_genesis()?
+                .ok_or_else(|| format_err!("Cannot get the genesis in storage!"))?;
+            self.main.dag().get_dag_state(genesis)?
+        } else {
+            self.main.dag().get_dag_state(lastest.pruning_point())?
+        };
+
+        let mut deleted_chain = lastest_dag_state.tips.into_iter().collect::<HashSet<_>>();
+        let mut ready_to_delete = HashSet::new();
+        loop {
+            let loop_to_delete = deleted_chain.clone();
+            deleted_chain.clear();
+            for descendant in loop_to_delete.into_iter() {
+                if descendant == start {
+                    continue;
+                }
+                if self.main.dag().check_ancestor_of(descendant, vec![start])? {
+                    continue;
+                }
+
+                let descendant_header = self
+                    .storage
+                    .get_block_header_by_hash(descendant)?
+                    .ok_or_else(|| {
+                        format_err!(
+                            "in resetting, cannot find the block header for {:?}",
+                            descendant
+                        )
+                    })?;
+                deleted_chain.extend(descendant_header.parents_hash());
+
+                ready_to_delete.insert(descendant);
+            }
+
+            if deleted_chain.is_empty() {
+                for candidate in ready_to_delete.into_iter() {
+                    self.storage.delete_block(candidate)?;
+                    self.storage.delete_block_info(candidate)?;
+                }
+                break;
             }
         }
+
+        if new_head_block.header().pruning_point() == HashValue::zero() {
+            let genesis = self
+                .main
+                .get_storage()
+                .get_genesis()?
+                .ok_or_else(|| format_err!("Cannot get the genesis in storage!"))?;
+            self.main.dag().save_dag_state_directly(
+                genesis,
+                DagState {
+                    tips: vec![new_head_block.header().id()],
+                },
+            )?;
+            self.main.dag().save_dag_state_directly(
+                HashValue::zero(),
+                DagState {
+                    tips: vec![new_head_block.header().id()],
+                },
+            )?;
+        } else {
+            self.main.dag().save_dag_state_directly(
+                new_head_block.header().pruning_point(),
+                DagState {
+                    tips: vec![new_head_block.header().id()],
+                },
+            )?;
+        }
+
         let executed_block = new_branch.head_block();
 
         self.main = new_branch;
