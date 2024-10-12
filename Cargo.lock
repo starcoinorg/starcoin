@@ -712,7 +712,6 @@ dependencies = [
  "starcoin-storage",
  "starcoin-transaction-builder",
  "starcoin-types",
- "starcoin-vm-runtime",
  "starcoin-vm-types",
 ]
 
@@ -9855,6 +9854,7 @@ dependencies = [
  "async-trait",
  "bcs-ext",
  "futures 0.3.26",
+ "hex",
  "include_dir",
  "parking_lot 0.12.1",
  "starcoin-accumulator",
@@ -9867,7 +9867,6 @@ dependencies = [
  "starcoin-statedb",
  "starcoin-storage",
  "starcoin-types",
- "starcoin-vm-runtime",
  "starcoin-vm-types",
  "stdlib",
  "stest",
@@ -10471,7 +10470,6 @@ dependencies = [
  "starcoin-statedb",
  "starcoin-storage",
  "starcoin-types",
- "starcoin-vm-runtime",
  "starcoin-vm-types",
  "stest",
 ]

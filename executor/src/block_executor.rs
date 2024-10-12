@@ -20,12 +20,12 @@ use {
     crate::execute_transactions,
     anyhow::bail,
     log::info,
+    starcoin_force_upgrade::force_upgrade_management::{
+        get_force_upgrade_account, get_force_upgrade_block_number,
+    },
     starcoin_force_upgrade::ForceUpgrade,
     starcoin_types::account::DEFAULT_EXPIRATION_TIME,
     starcoin_types::identifier::Identifier,
-    starcoin_vm_runtime::force_upgrade_management::{
-        get_force_upgrade_account, get_force_upgrade_block_number,
-    },
     starcoin_vm_types::{
         access_path::AccessPath,
         account_config::{genesis_address, ModuleUpgradeStrategy},

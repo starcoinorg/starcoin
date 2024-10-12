@@ -6,7 +6,7 @@ use starcoin_consensus::Consensus;
 use starcoin_statedb::ChainStateDB;
 use starcoin_transaction_builder::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::account_address::AccountAddress;
-use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
+use starcoin_force_upgrade::force_upgrade_management::get_force_upgrade_block_number;
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::on_chain_config::Version;
 use starcoin_vm_types::{account_config, state_view::StateReaderExt};

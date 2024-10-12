@@ -25,11 +25,14 @@ starcoin-statedb = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
-starcoin-vm-runtime = { workspace = true }
 starcoin-move-compiler = { workspace = true }
 stdlib = { workspace = true }
 include_dir = { workspace = true }
+hex = "0.4.3"
 
 [dev-dependencies]
 starcoin-genesis = { workspace = true }
 stest = { workspace = true }
+
+[features]
+force-deploy = []

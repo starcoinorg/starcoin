@@ -21,6 +21,8 @@ use starcoin_dag::consensusdb::consenses_state::DagState;
 use starcoin_dag::consensusdb::prelude::StoreError;
 use starcoin_dag::consensusdb::schemadb::GhostdagStoreReader;
 use starcoin_executor::VMMetrics;
+#[cfg(feature = "force-deploy")]
+use starcoin_force_upgrade::force_upgrade_management::get_force_upgrade_block_number;
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
@@ -40,8 +42,6 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, Transaction},
     U256,
 };
-#[cfg(feature = "force-deploy")]
-use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy};
