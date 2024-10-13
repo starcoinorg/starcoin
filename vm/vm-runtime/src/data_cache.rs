@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Scratchpad for on chain values during the execution.
 
-use crate::create_access_path;
 use bytes::Bytes;
 use move_binary_format::deserializer::DeserializerConfig;
 use move_binary_format::CompiledModule;
@@ -18,7 +17,6 @@ use starcoin_vm_types::state_store::{
     state_value::StateValue, StateView, TStateView,
 };
 use starcoin_vm_types::{
-    access_path::AccessPath,
     errors::*,
     language_storage::{ModuleId, StructTag},
     vm_status::StatusCode,
@@ -88,13 +86,17 @@ impl<'a, S: StateView> StateViewCache<'a, S> {
     // track of the data as if the changes were applied immediately.
     pub(crate) fn push_write_set(&mut self, write_set: &WriteSet) {
         for (ref ap, ref write_op) in write_set.iter() {
+            // todo: handle WriteOp properly
             match write_op {
-                WriteOp::Value(blob) => {
-                    self.data_map.insert(ap.clone(), Some(blob.clone()));
+                WriteOp::Creation { data, metadata: _ } => {
+                    self.data_map.insert((*ap).clone(), Some(data.to_vec()));
                 }
-                WriteOp::Deletion => {
+                WriteOp::Modification { data, metadata: _ } => {
+                    self.data_map.insert((*ap).clone(), Some(data.to_vec()));
+                }
+                WriteOp::Deletion { metadata: _ } => {
                     self.data_map.remove(ap);
-                    self.data_map.insert(ap.clone(), None);
+                    self.data_map.insert((*ap).clone(), None);
                 }
             }
         }
@@ -105,7 +107,7 @@ impl<'block, S: TStateView> TStateView for StateViewCache<'block, S> {
     type Key = StateKey;
 
     // Get some data either through the cache or the `StateView` on a cache miss.
-    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>, StateviewError> {
+    fn get_state_value(&self, state_key: &Self::Key) -> Result<Option<StateValue>, StateviewError> {
         match self.data_map.get(state_key) {
             Some(opt_data) => Ok(opt_data.clone().map(|v| StateValue::from(v))),
             None => match self.data_view.get_state_value(state_key) {
@@ -125,7 +127,7 @@ impl<'block, S: TStateView> TStateView for StateViewCache<'block, S> {
 }
 
 impl<'block, S: StateView> ModuleResolver for StateViewCache<'block, S> {
-    type Error = VMError;
+    type Error = PartialVMError;
 
     fn get_module_metadata(&self, module_id: &ModuleId) -> Vec<Metadata> {
         RemoteStorage::new(self).get_module_metadata(module_id)
@@ -136,7 +138,7 @@ impl<'block, S: StateView> ModuleResolver for StateViewCache<'block, S> {
     }
 }
 impl<'block, S: StateView> ResourceResolver for StateViewCache<'block, S> {
-    type Error = VMError;
+    type Error = PartialVMError;
 
     fn get_resource_bytes_with_metadata_and_layout(
         &self,
@@ -158,15 +160,15 @@ impl<'a, S: StateView> RemoteStorage<'a, S> {
         Self(state_store)
     }
 
-    pub fn get(&self, access_path: &AccessPath) -> Result<Option<StateValue>, PartialVMError> {
+    pub fn get(&self, key: &StateKey) -> Result<Option<StateValue>, PartialVMError> {
         self.0
-            .get_state_value(&StateKey::AccessPath(access_path.clone()))
+            .get_state_value(key)
             .map_err(|_| PartialVMError::new(StatusCode::STORAGE_ERROR))
     }
 }
 
 impl<'a, S: StateView> ModuleResolver for RemoteStorage<'a, S> {
-    type Error = VMError;
+    type Error = PartialVMError;
 
     fn get_module_metadata(&self, module_id: &ModuleId) -> Vec<Metadata> {
         let module = match self.get_module(module_id) {
@@ -184,12 +186,12 @@ impl<'a, S: StateView> ModuleResolver for RemoteStorage<'a, S> {
 
     fn get_module(&self, module_id: &ModuleId) -> Result<Option<Bytes>, Self::Error> {
         // REVIEW: cache this?
-        let ap = AccessPath::from(module_id);
-        self.get(&ap).map(|r| r.map(Bytes::from))
+        let key = StateKey::module_id(module_id);
+        self.get(&key).map(|r| r.map(|v| v.bytes().clone()))
     }
 }
 impl<'a, S: StateView> ResourceResolver for RemoteStorage<'a, S> {
-    type Error = VMError;
+    type Error = PartialVMError;
 
     // TODO(simon): don't ignore metadata and layout
     fn get_resource_bytes_with_metadata_and_layout(
@@ -199,8 +201,9 @@ impl<'a, S: StateView> ResourceResolver for RemoteStorage<'a, S> {
         _metadata: &[Metadata],
         _layout: Option<&MoveTypeLayout>,
     ) -> Result<(Option<Bytes>, usize), Self::Error> {
-        let ap = create_access_path(*address, struct_tag.clone());
-        let buf = self.get(&ap)?.map(Bytes::from);
+        let key = StateKey::resource(address, struct_tag)
+            .map_err(|_| PartialVMError::new(StatusCode::STORAGE_ERROR))?;
+        let buf = self.get(&key)?.map(|v| v.bytes().clone());
         let size = resource_size(&buf);
         Ok((buf, size))
     }
@@ -230,8 +233,8 @@ impl<'a, S: StateView> TableResolver for RemoteStorage<'a, S> {
         _maybe_layout: Option<&MoveTypeLayout>,
     ) -> Result<Option<Bytes>, PartialVMError> {
         self.0
-            .get_state_value(&StateKey::table_item((*handle).into(), key.to_vec()))
-            .map(|r| r.map(Bytes::from))
+            .get_state_value(&StateKey::table_item(&(*handle).into(), key))
+            .map(|r| r.map(|v| v.bytes().clone()))
             .map_err(|e| {
                 PartialVMError::new(StatusCode::STORAGE_ERROR).with_message(format!("{:?}", e))
             })
@@ -267,7 +270,7 @@ impl<S> DerefMut for RemoteStorageOwned<S> {
 }
 
 impl<S: StateView> ModuleResolver for RemoteStorageOwned<S> {
-    type Error = VMError;
+    type Error = PartialVMError;
 
     fn get_module_metadata(&self, module_id: &ModuleId) -> Vec<Metadata> {
         self.as_move_resolver().get_module_metadata(module_id)
@@ -279,7 +282,7 @@ impl<S: StateView> ModuleResolver for RemoteStorageOwned<S> {
 }
 
 impl<S: StateView> ResourceResolver for RemoteStorageOwned<S> {
-    type Error = VMError;
+    type Error = PartialVMError;
 
     fn get_resource_bytes_with_metadata_and_layout(
         &self,
