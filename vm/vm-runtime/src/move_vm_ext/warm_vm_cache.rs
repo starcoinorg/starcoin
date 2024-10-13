@@ -56,7 +56,7 @@ impl WarmVmCache {
             return Ok(vm.clone());
         }
 
-        let mut cache_locked = self.cache.write().unwrap();
+        let cache_locked = self.cache.write().unwrap();
         if let Some(vm) = cache_locked.get(&id) {
             return Ok(vm.clone());
         }

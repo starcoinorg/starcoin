@@ -7,6 +7,9 @@
 use crate::event::EventKey;
 use crate::{language_storage::TypeTag, move_resource::MoveResource};
 use anyhow::Result;
+use move_core_types::ident_str;
+use move_core_types::identifier::IdentStr;
+use move_core_types::move_resource::MoveStructType;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::{CryptoHash, CryptoHasher};
 use std::ops::Deref;
@@ -38,6 +41,13 @@ impl ContractEvent {
         }
     }
 }
+
+impl MoveStructType for ContractEvent {
+    const MODULE_NAME: &'static IdentStr = ident_str!("Event");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("ContractEvent");
+}
+
+impl MoveResource for ContractEvent {}
 
 // Temporary hack to avoid massive changes, it won't work when new variant comes and needs proper
 // dispatch at that time.

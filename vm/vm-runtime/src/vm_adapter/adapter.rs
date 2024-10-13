@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use move_binary_format::errors::*;
+use move_binary_format::normalized::Module;
 use move_binary_format::{
     access::ModuleAccess, compatibility::Compatibility, CompiledModule, IndexKind,
 };
@@ -228,8 +229,9 @@ impl<'r, 'l> SessionAdapter<'r, 'l> {
                 let old_module_ref = self.inner.load_module(&module_id)?;
                 let old_module = CompiledModule::deserialize(old_module_ref.as_ref())
                     .map_err(|e| e.finish(Location::Undefined))?;
+                //todo: Remove Module, use CompiledModule directly
                 if Compatibility::new(true, false)
-                    .check(&old_module, module)
+                    .check(&Module::new(&old_module), &Module::new(&module))
                     .is_err()
                     && !option.force_publish
                 {
