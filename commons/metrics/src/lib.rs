@@ -52,6 +52,16 @@ pub mod prometheus_export {
     pub use prometheus::register;
 }
 
+pub trait TimerHelper {
+    fn timer_with(&self, labels: &[&str]) -> HistogramTimer;
+}
+
+impl TimerHelper for HistogramVec {
+    fn timer_with(&self, vals: &[&str]) -> HistogramTimer {
+        self.with_label_values(vals).start_timer()
+    }
+}
+
 pub type UIntGaugeVec = GenericGaugeVec<AtomicU64>;
 pub type UIntGauge = GenericGauge<AtomicU64>;
 

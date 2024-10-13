@@ -26,6 +26,8 @@ starcoin-frameworks = { workspace = true }
 starcoin-framework = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
+starcoin-move-stdlib = { workspace = true }
+starcoin-table-natives = { workspace = true }
 move-stdlib = { workspace = true }
 move-table-extension = { workspace = true }
 move-vm-types = { workspace = true }

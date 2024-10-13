@@ -7,7 +7,6 @@ use bytes::Bytes;
 use move_binary_format::errors::PartialVMError;
 #[cfg(feature = "testing")]
 use move_core_types::value::MoveTypeLayout;
-use move_table_extension::NativeTableContext;
 #[cfg(feature = "testing")]
 use move_table_extension::{TableHandle, TableResolver};
 use move_vm_runtime::native_functions::NativeFunctionTable;
@@ -193,14 +192,21 @@ pub fn assert_no_test_natives(err_msg: &str) {
     )
 }
 
-#[cfg(feature = "testing")]
-pub fn configure_for_unit_test() {
-    move_unit_test::extensions::set_extension_hook(Box::new(unit_test_extensions_hook))
-}
+//#[cfg(feature = "testing")]
+//pub fn configure_for_unit_test() {
+//    move_unit_test::extensions::set_extension_hook(Box::new(unit_test_extensions_hook))
+//}
 
 #[cfg(feature = "testing")]
 fn unit_test_extensions_hook(exts: &mut NativeContextExtensions) {
-    //use starcoin_table_natives::NativeTableContext;
+    use starcoin_framework::natives::aggregator_natives::NativeAggregatorContext;
+    use starcoin_framework::natives::code::NativeCodeContext;
+    use starcoin_framework::natives::cryptography::algebra::AlgebraContext;
+    use starcoin_framework::natives::cryptography::ristretto255_point::NativeRistrettoPointContext;
+    use starcoin_framework::natives::event::NativeEventContext;
+    use starcoin_framework::natives::transaction_context::NativeTransactionContext;
+    use starcoin_table_natives::NativeTableContext;
+    use starcoin_vm_types::genesis_config::ChainId;
 
     exts.add(NativeTableContext::new([0u8; 32], &*DUMMY_RESOLVER));
     exts.add(NativeCodeContext::default());
@@ -208,10 +214,12 @@ fn unit_test_extensions_hook(exts: &mut NativeContextExtensions) {
         vec![1],
         vec![1],
         ChainId::test().id(),
+        None,
     )); // We use the testing environment chain ID here
     exts.add(NativeAggregatorContext::new(
         [0; 32],
         &*DUMMY_RESOLVER,
+        true,
         &*DUMMY_RESOLVER,
     ));
     exts.add(NativeRistrettoPointContext::new());
