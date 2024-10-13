@@ -27,21 +27,27 @@ impl<'a, S: StateView> VersionedView<'a, S> {
     }
 }
 
-impl<'a, S: TStateView> TStateView for VersionedView<'a, S> {
+impl<'a, S: StateView> TStateView for VersionedView<'a, S> {
     type Key = StateKey;
 
     // Get some data either through the cache or the `StateView` on a cache miss.
-    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>, StateviewError> {
+    fn get_state_value(&self, state_key: &Self::Key) -> Result<Option<StateValue>, StateviewError> {
         match self.hashmap_view.read(state_key) {
+            // todo: handle WriteOp proplerly
             Some(v) => Ok(match v.as_ref() {
-                WriteOp::Value(w) => Some(w.clone().map(|v| StateValue::from(v))),
-                WriteOp::Deletion => None,
+                WriteOp::Creation { data, metadata: _ } => Some(StateValue::from(data.clone())),
+                WriteOp::Modification { data, metadata: _ } => Some(StateValue::from(data.clone())),
+                WriteOp::Deletion { metadata: _ } => None,
             }),
             None => self.base_view.get_state_value(state_key),
         }
     }
 
     fn get_usage(&self) -> Result<StateStorageUsage, StateviewError> {
-        todo!()
+        unimplemented!("get_usage not implemented for VersionedView")
+    }
+
+    fn is_genesis(&self) -> bool {
+        self.base_view.is_genesis()
     }
 }

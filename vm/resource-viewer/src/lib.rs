@@ -327,4 +327,8 @@ impl TStateView for NullStateView {
     fn get_usage(&self) -> starcoin_vm_types::state_store::Result<StateStorageUsage> {
         unimplemented!("get_usage not implemented for NullStateView")
     }
+
+    fn is_genesis(&self) -> bool {
+        false
+    }
 }

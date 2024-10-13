@@ -16,6 +16,7 @@ use starcoin_vm_types::{
 use starcoin_crypto::HashValue;
 use starcoin_statedb::ChainStateWriter;
 use starcoin_types::state_set::ChainStateSet;
+use starcoin_vm_types::state_store::state_storage_usage::StateStorageUsage;
 use starcoin_vm_types::state_store::state_value::StateValue;
 use starcoin_vm_types::state_store::TStateView;
 use std::collections::HashMap;
@@ -107,6 +108,10 @@ impl TStateView for FakeDataStore {
             .get(state_key)
             .cloned()
             .map(|v| StateValue::new(v)))
+    }
+
+    fn get_usage(&self) -> starcoin_vm_types::state_store::Result<StateStorageUsage> {
+        unimplemented!("get_usage not implemented for FakeDataStore")
     }
 
     fn is_genesis(&self) -> bool {

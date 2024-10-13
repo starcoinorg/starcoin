@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Scratchpad for on chain values during the execution.
 
+use crate::move_vm_ext::AsExecutorView;
 use bytes::Bytes;
 use move_binary_format::deserializer::DeserializerConfig;
 use move_binary_format::CompiledModule;
@@ -11,6 +12,7 @@ use move_core_types::value::MoveTypeLayout;
 use move_table_extension::{TableHandle, TableResolver};
 use starcoin_logger::prelude::*;
 use starcoin_types::account_address::AccountAddress;
+use starcoin_vm_runtime_types::resolver::ExecutorView;
 use starcoin_vm_runtime_types::resource_group_adapter::ResourceGroupAdapter;
 use starcoin_vm_types::state_store::{
     errors::StateviewError, state_key::StateKey, state_storage_usage::StateStorageUsage,
@@ -103,7 +105,7 @@ impl<'a, S: StateView> StateViewCache<'a, S> {
     }
 }
 
-impl<'block, S: TStateView> TStateView for StateViewCache<'block, S> {
+impl<'block, S: StateView> TStateView for StateViewCache<'block, S> {
     type Key = StateKey;
 
     // Get some data either through the cache or the `StateView` on a cache miss.
@@ -123,6 +125,10 @@ impl<'block, S: TStateView> TStateView for StateViewCache<'block, S> {
 
     fn get_usage(&self) -> Result<StateStorageUsage, StateviewError> {
         todo!()
+    }
+
+    fn is_genesis(&self) -> bool {
+        self.data_view.is_genesis()
     }
 }
 
@@ -251,6 +257,12 @@ impl<S: StateView> AsMoveResolver<S> for S {
     }
 }
 
+impl<S: StateView> AsExecutorView for S {
+    fn as_executor_view(&self) -> &dyn ExecutorView {
+        todo!()
+    }
+}
+
 pub struct RemoteStorageOwned<S> {
     state_view: S,
 }
@@ -307,13 +319,6 @@ impl<S: StateView> TableResolver for RemoteStorageOwned<S> {
             .resolve_table_entry_bytes_with_layout(handle, key, maybe_layout)
     }
 }
-
-// TODO Note for Conflicting: conflicting implementation in crate `starcoin_vm_types`: - impl<V> ConfigStorage for V where V: StateView;
-// impl<S: StateView> ConfigStorage for RemoteStorageOwned<S> {
-//     fn fetch_config(&self, access_path: AccessPath) -> Option<Vec<u8>> {
-//         self.as_move_resolver().fetch_config(access_path)
-//     }
-// }
 
 pub trait IntoMoveResolver<S> {
     fn into_move_resolver(self) -> RemoteStorageOwned<S>;

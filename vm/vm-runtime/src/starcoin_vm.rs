@@ -11,7 +11,7 @@ use crate::vm_adapter::{
     discard_error_output, discard_error_vm_status, PreprocessedTransaction,
     PublishModuleBundleOption, SessionAdapter, VMAdapter,
 };
-use anyhow::{bail, format_err, Error, Result};
+use anyhow::{bail, Error, Result};
 use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
 use move_core_types::move_resource::MoveStructType;
 use move_core_types::vm_status::StatusCode::VALUE_SERIALIZATION_ERROR;
@@ -30,9 +30,6 @@ use starcoin_gas_schedule::{
 };
 use starcoin_logger::prelude::*;
 use starcoin_types::account_config::config_change::ConfigChangeEvent;
-use starcoin_types::account_config::{
-    access_path_for_module_upgrade_strategy, access_path_for_two_phase_upgrade_v2,
-};
 use starcoin_types::{
     account_config,
     block_metadata::BlockMetadata,
@@ -1624,7 +1621,7 @@ impl VMExecutor for StarcoinVM {
     /// transaction output.
     fn execute_block(
         transactions: Vec<Transaction>,
-        state_view: &impl StateView,
+        state_view: &(impl StateView + Sync),
         block_gas_limit: Option<u64>,
         metrics: Option<VMMetrics>,
     ) -> Result<Vec<TransactionOutput>, VMStatus> {

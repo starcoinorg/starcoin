@@ -15,6 +15,11 @@ pub trait StarcoinMoveResolver:
 {
 }
 
+impl<S: ConfigStorage + MoveResolver<PartialVMError> + TableResolver + AsExecutorView>
+    StarcoinMoveResolver for S
+{
+}
+
 pub trait AsExecutorView {
     fn as_executor_view(&self) -> &dyn ExecutorView;
 }

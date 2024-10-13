@@ -143,6 +143,10 @@ impl<'a> TStateView for RemoteStateReader<'a> {
     }
 
     fn get_usage(&self) -> starcoin_vm_types::state_store::Result<StateStorageUsage> {
-        Err(format_err!("Can not get usage.").into())
+        unimplemented!("RemoteStateReader get_usage not implemented")
+    }
+
+    fn is_genesis(&self) -> bool {
+        false
     }
 }

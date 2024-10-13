@@ -33,8 +33,8 @@ use starcoin_vm_types::state_store::state_key::inner::StateKeyInner;
 use starcoin_vm_types::state_store::state_storage_usage::StateStorageUsage;
 use starcoin_vm_types::state_store::state_value::StateValue;
 use starcoin_vm_types::state_store::table::TableInfo;
-use starcoin_vm_types::state_store::TStateView;
 use starcoin_vm_types::state_store::{state_key::StateKey, table::TableHandle};
+use starcoin_vm_types::state_store::{StateView, TStateView};
 use std::collections::HashSet;
 use std::convert::TryInto;
 use std::sync::Arc;
@@ -440,6 +440,10 @@ impl TStateView for ChainStateDB {
 
     fn get_usage(&self) -> starcoin_vm_types::state_store::Result<StateStorageUsage> {
         unimplemented!()
+    }
+
+    fn is_genesis(&self) -> bool {
+        self.state_tree.is_genesis()
     }
 }
 

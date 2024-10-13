@@ -23,7 +23,7 @@ pub(crate) struct StarcoinVMWrapper<'a, S> {
     base_view: &'a S,
 }
 
-impl<'a, S: 'a + StateView> ExecutorTask for StarcoinVMWrapper<'a, S> {
+impl<'a, S: 'a + StateView + Sync> ExecutorTask for StarcoinVMWrapper<'a, S> {
     type T = PreprocessedTransaction;
     type Output = StarcoinTransactionOutput;
     type Error = VMStatus;
