@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::move_vm_ext::StarcoinMoveResolver;
 use anyhow::Result;
 use move_core_types::vm_status::{StatusCode, VMStatus};
 use starcoin_vm_types::{
@@ -17,7 +18,7 @@ pub trait VMAdapter {
     fn should_restart_execution(output: &TransactionOutput) -> bool;
 
     /// Execute a single transaction.
-    fn execute_single_transaction<S: MoveResolverExt + StateView>(
+    fn execute_single_transaction<S: StarcoinMoveResolver + StateView>(
         &self,
         txn: &PreprocessedTransaction,
         data_cache: &S,

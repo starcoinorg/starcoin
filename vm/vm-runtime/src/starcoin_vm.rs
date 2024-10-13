@@ -6,7 +6,7 @@ use crate::data_cache::{AsMoveResolver, RemoteStorage, StateViewCache};
 use crate::errors::{
     convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
 };
-use crate::move_vm_ext::{MoveVmExt, SessionId};
+use crate::move_vm_ext::{MoveVmExt, SessionId, StarcoinMoveResolver};
 use crate::vm_adapter::{
     discard_error_output, discard_error_vm_status, PreprocessedTransaction,
     PublishModuleBundleOption, SessionAdapter, VMAdapter,
@@ -559,7 +559,7 @@ impl StarcoinVM {
         }
     }
 
-    fn execute_package<S: MoveResolverExt + StateView>(
+    fn execute_package<S: StarcoinMoveResolver + StateView>(
         &self,
         mut session: SessionAdapter,
         gas_meter: &mut StarcoinGasMeter,
@@ -949,7 +949,7 @@ impl StarcoinVM {
             .or_else(convert_normal_success_epilogue_error)
     }
 
-    fn process_block_metadata<S: MoveResolverExt>(
+    fn process_block_metadata<S: StarcoinMoveResolver>(
         &self,
         storage: &S,
         block_metadata: BlockMetadata,
@@ -1026,7 +1026,7 @@ impl StarcoinVM {
         )
     }
 
-    fn execute_user_transaction<S: MoveResolverExt + StateView>(
+    fn execute_user_transaction<S: StarcoinMoveResolver + StateView>(
         &self,
         storage: &S,
         txn: SignedUserTransaction,
@@ -1100,7 +1100,7 @@ impl StarcoinVM {
         }
     }
 
-    pub fn dry_run_transaction<S: MoveResolverExt + StateView>(
+    pub fn dry_run_transaction<S: StarcoinMoveResolver + StateView>(
         &mut self,
         storage: &S,
         txn: DryRunTransaction,
@@ -1372,7 +1372,7 @@ impl StarcoinVM {
             .map(|(a, _)| a)
             .collect();
 
-        let (change_set, mut extensions) = session
+        let (change_set, mut extensions) = Into::<Session>::into(session)
             .finish_with_extensions()
             .map_err(|e| e.into_vm_status())?;
         let table_context: NativeTableContext = extensions.remove();
@@ -1414,7 +1414,7 @@ impl StarcoinVM {
         ))
     }
 
-    fn failed_transaction_cleanup<S: MoveResolverExt + StateView>(
+    fn failed_transaction_cleanup<S: StarcoinMoveResolver + StateView>(
         &self,
         error_code: VMStatus,
         gas_meter: &mut StarcoinGasMeter,
@@ -1490,7 +1490,7 @@ impl StarcoinVM {
         vm.execute_block_transactions(state_view, txns, block_gas_limit)
     }
 
-    pub fn load_module<R: MoveResolverExt>(
+    pub fn load_module<R: StarcoinMoveResolver>(
         &self,
         module_id: &ModuleId,
         remote: &R,
@@ -1676,7 +1676,7 @@ impl VMAdapter for StarcoinVM {
         false
     }
 
-    fn execute_single_transaction<S: MoveResolverExt + StateView>(
+    fn execute_single_transaction<S: StarcoinMoveResolver + StateView>(
         &self,
         txn: &PreprocessedTransaction,
         data_cache: &S,
