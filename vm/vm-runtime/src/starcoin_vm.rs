@@ -13,6 +13,7 @@ use crate::vm_adapter::{
 };
 use anyhow::{bail, format_err, Error, Result};
 use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
+use move_core_types::move_resource::MoveStructType;
 use move_core_types::vm_status::StatusCode::VALUE_SERIALIZATION_ERROR;
 use move_table_extension::NativeTableContext;
 use move_vm_runtime::module_traversal::{TraversalContext, TraversalStorage};
@@ -57,7 +58,7 @@ use starcoin_vm_types::on_chain_config::{
     G_GAS_CONSTANTS_IDENTIFIER, G_INSTRUCTION_SCHEDULE_IDENTIFIER, G_NATIVE_SCHEDULE_IDENTIFIER,
     G_VM_CONFIG_IDENTIFIER,
 };
-use starcoin_vm_types::state_store::{state_key::StateKey, StateView};
+use starcoin_vm_types::state_store::{state_key::StateKey, StateView, TStateView};
 use starcoin_vm_types::state_view::StateReaderExt;
 use starcoin_vm_types::transaction::{DryRunTransaction, Package, TransactionPayloadType};
 use starcoin_vm_types::transaction_metadata::{TransactionMetadata, TransactionPayloadMetadata};
@@ -174,12 +175,9 @@ impl StarcoinVM {
 
     fn load_configs_impl<S: StateView>(&mut self, state: &S) -> Result<(), Error> {
         let remote_storage = RemoteStorage::new(state);
-        self.version = Some(
-            Version::fetch_config(&remote_storage)?
-                .ok_or_else(|| format_err!("Load Version fail, Version resource not exist."))?,
-        );
+        self.version = Version::fetch_config(&remote_storage);
         // move version can be none.
-        self.move_version = MoveLanguageVersion::fetch_config(&remote_storage)?;
+        self.move_version = MoveLanguageVersion::fetch_config(&remote_storage);
 
         if let Some(v) = &self.version {
             // if version is 0, it represent latest version. we should consider it.
@@ -192,11 +190,9 @@ impl StarcoinVM {
                     "stdlib version: {}, fetch VMConfig from onchain resource",
                     stdlib_version
                 );
-                let gas_cost_table = VMConfig::fetch_config(&remote_storage)?
-                    .ok_or_else(|| format_err!("Load VMConfig fail, VMConfig resource not exist."))?
-                    .gas_schedule;
                 (
-                    Some(GasSchedule::from(&gas_cost_table)),
+                    VMConfig::fetch_config(&remote_storage)
+                        .map(|v| GasSchedule::from(v.gas_schedule)),
                     "gas schedule from VMConfig",
                 )
             } else {
@@ -265,7 +261,7 @@ impl StarcoinVM {
                 )
             };
             if stdlib_version >= StdlibVersion::Version(FLEXI_DAG_UPGRADE_VERSION_MARK) {
-                self.flexi_dag_config = FlexiDagConfig::fetch_config(&remote_storage)?;
+                self.flexi_dag_config = FlexiDagConfig::fetch_config(&remote_storage);
                 debug!(
                     "stdlib version: {}, fetch flexi_dag_config {:?} from FlexiDagConfig module",
                     stdlib_version, self.flexi_dag_config,
@@ -286,7 +282,7 @@ impl StarcoinVM {
 
     pub fn get_flexidag_config(&self) -> Result<FlexiDagConfig, VMStatus> {
         self.flexi_dag_config
-            .ok_or(VMStatus::Error(StatusCode::VM_STARTUP_FAILURE))
+            .ok_or(VMStatus::error(StatusCode::VM_STARTUP_FAILURE, None))
     }
 
     pub fn get_gas_schedule(&self) -> Result<&CostTable, VMStatus> {
@@ -518,11 +514,9 @@ impl StarcoinVM {
         remote_cache: &StateViewCache<S>,
         package_address: AccountAddress,
     ) -> Result<bool> {
-        let strategy_access_path = access_path_for_module_upgrade_strategy(package_address);
-        if let Some(data) =
-            remote_cache.get_state_value(&StateKey::AccessPath(strategy_access_path))?
-        {
-            Ok(bcs_ext::from_bytes::<ModuleUpgradeStrategy>(&data)?.only_new_module())
+        let key = StateKey::resource(&package_address, &ModuleUpgradeStrategy::struct_tag())?;
+        if let Some(data) = remote_cache.get_state_value(&key)? {
+            Ok(bcs_ext::from_bytes::<ModuleUpgradeStrategy>(data.bytes())?.only_new_module())
         } else {
             Ok(false)
         }
@@ -545,11 +539,11 @@ impl StarcoinVM {
             || (chain_id.is_main() && block_number < 8015088)
             || (chain_id.is_barnard() && block_number < 8311392)
         {
-            let two_phase_upgrade_v2_path = access_path_for_two_phase_upgrade_v2(package_address);
-            if let Some(data) =
-                remote_cache.get_state_value(&StateKey::AccessPath(two_phase_upgrade_v2_path))?
-            {
-                let enforced = bcs_ext::from_bytes::<TwoPhaseUpgradeV2Resource>(&data)?.enforced();
+            let key =
+                StateKey::resource(&package_address, &TwoPhaseUpgradeV2Resource::struct_tag())?;
+            if let Some(data) = remote_cache.get_state_value(&key)? {
+                let enforced =
+                    bcs_ext::from_bytes::<TwoPhaseUpgradeV2Resource>(&data.bytes())?.enforced();
                 Ok(enforced)
             } else {
                 Ok(false)
