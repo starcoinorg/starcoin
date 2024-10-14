@@ -88,6 +88,10 @@ impl<'r, 'l> SessionExt<'r, 'l> {
         let change_set = VMChangeSet::empty();
         Ok(change_set)
     }
+
+    pub fn into_inner(self) -> Session<'r, 'l> {
+        self.inner
+    }
 }
 
 impl<'r, 'l> Deref for SessionExt<'r, 'l> {

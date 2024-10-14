@@ -46,7 +46,11 @@ impl PTransactionOutput for StarcoinTransactionOutput {
     type T = PreprocessedTransaction;
 
     fn get_writes(&self) -> Vec<(StateKey, WriteOp)> {
-        self.0.write_set().iter().cloned().collect()
+        self.0
+            .write_set()
+            .iter()
+            .map(|v| (v.0.clone(), v.1.clone()))
+            .collect()
     }
 
     /// Execution output for transactions that comes after SkipRest signal.

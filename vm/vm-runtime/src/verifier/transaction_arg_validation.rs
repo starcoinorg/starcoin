@@ -4,7 +4,7 @@
 // see implementation in `aptos-core`
 // https://github.com/aptos-labs/aptos-core/blob/3af88bc872221c4958e6163660c60bc07bf53d38/aptos-move/aptos-vm/src/verifier/transaction_arg_validation.rs#L1
 
-use crate::vm_adapter::SessionAdapter;
+use crate::move_vm_ext::SessionExt;
 use move_binary_format::errors::{Location, PartialVMError, VMError, VMResult};
 use move_binary_format::file_format::FunctionDefinitionIndex;
 use move_binary_format::file_format_common::read_uleb128_as_u64;
@@ -86,12 +86,12 @@ fn get_allowed_structs() -> &'static ConstructorMap {
 /// 3. check arg types are allowed after signers
 ///
 pub(crate) fn validate_combine_singer_and_args(
-    session: &mut SessionAdapter,
+    session: &mut SessionExt,
     senders: Vec<AccountAddress>,
     args: &[impl Borrow<[u8]>],
     func: &LoadedFunction,
 ) -> VMResult<()> {
-    SessionAdapter::check_script_return(func.return_tys())?;
+    SessionExt::check_script_return(func.return_tys())?;
 
     let mut signer_param_cnt = 0;
     // find all signer params at the beginning
@@ -108,7 +108,7 @@ pub(crate) fn validate_combine_singer_and_args(
     }
 
     let allowed_structs = get_allowed_structs();
-    let ty_builder = session.inner.get_ty_builder();
+    let ty_builder = session.get_ty_builder();
 
     // Need to keep this here to ensure we return the historic correct error code for replay
     for ty in func.param_tys()[signer_param_cnt..].iter() {
@@ -166,7 +166,7 @@ pub(crate) fn validate_combine_singer_and_args(
 
 // Return whether the argument is valid/allowed and whether it needs construction.
 pub(crate) fn is_valid_txn_arg(
-    session: &SessionAdapter,
+    session: &SessionExt,
     typ: &Type,
     allowed_structs: &ConstructorMap,
 ) -> bool {
@@ -176,7 +176,6 @@ pub(crate) fn is_valid_txn_arg(
         Bool | U8 | U16 | U32 | U64 | U128 | U256 | Address => true,
         Vector(inner) => is_valid_txn_arg(session, inner, allowed_structs),
         Struct { idx, .. } | StructInstantiation { idx, .. } => session
-            .inner
             .get_struct_type(*idx)
             .map(|st| {
                 let full_name = format!("{}::{}", st.module.short_str_lossless(), st.name);
@@ -191,7 +190,7 @@ pub(crate) fn is_valid_txn_arg(
 // construct arguments that require so.
 // TODO: This needs a more solid story and a tighter integration with the VM.
 pub(crate) fn construct_args(
-    session: &mut SessionAdapter,
+    session: &mut SessionExt,
     types: &[Type],
     args: &[impl Borrow<[u8]>],
     ty_args: &[Type],
@@ -204,7 +203,7 @@ pub(crate) fn construct_args(
     if types.len() != args.len() {
         return Err(invalid_signature());
     }
-    let ty_builder = session.inner.get_ty_builder();
+    let ty_builder = session.get_ty_builder();
     for (ty, arg) in types.iter().zip(args) {
         let subst_res = ty_builder.create_ty_with_subst(ty, ty_args);
         let ty = subst_res.map_err(|e| e.finish(Location::Undefined))?;
@@ -226,7 +225,7 @@ fn invalid_signature() -> VMError {
 }
 
 fn construct_arg(
-    session: &mut SessionAdapter,
+    session: &mut SessionExt,
     ty: &Type,
     allowed_structs: &ConstructorMap,
     arg: Vec<u8>,
@@ -279,7 +278,7 @@ fn construct_arg(
 // are parsing the BCS serialized implicit constructor invocation tree, while serializing the
 // constructed types into the output parameter arg.
 pub(crate) fn recursively_construct_arg(
-    session: &mut SessionAdapter,
+    session: &mut SessionExt,
     ty: &Type,
     allowed_structs: &ConstructorMap,
     cursor: &mut Cursor<&[u8]>,
@@ -311,7 +310,6 @@ pub(crate) fn recursively_construct_arg(
         }
         Struct { idx, .. } | StructInstantiation { idx, .. } => {
             let st = session
-                .inner
                 .get_struct_type(*idx)
                 .ok_or_else(invalid_signature)?;
 
@@ -349,7 +347,7 @@ pub(crate) fn recursively_construct_arg(
 // said struct as a parameter. In this function we execute the constructor constructing the
 // value and returning the BCS serialized representation.
 fn validate_and_construct(
-    session: &mut SessionAdapter,
+    session: &mut SessionExt,
     expected_type: &Type,
     constructor: &FunctionId,
     allowed_structs: &ConstructorMap,
@@ -412,13 +410,13 @@ fn validate_and_construct(
         *max_invocations -= 1;
     }
 
-    let function = session.inner.load_function_with_type_arg_inference(
+    let function = session.load_function_with_type_arg_inference(
         &constructor.module,
         constructor.function.as_ref(),
         expected_type,
     )?;
     let mut args = vec![];
-    let ty_builder = session.inner.get_ty_builder();
+    let ty_builder = session.get_ty_builder();
     for param_ty in function.param_tys() {
         let mut arg = vec![];
         let arg_ty = ty_builder
@@ -438,7 +436,7 @@ fn validate_and_construct(
         args.push(arg);
     }
     let storage = TraversalStorage::new();
-    let serialized_result = session.inner.execute_loaded_function(
+    let serialized_result = session.execute_loaded_function(
         function,
         args,
         gas_meter,
