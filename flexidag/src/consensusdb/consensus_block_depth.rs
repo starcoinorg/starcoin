@@ -15,8 +15,8 @@ use super::{
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug, Default)]
 pub struct BlockDepthInfo {
-    merge_depth_root: Hash,
-    finality_point: Hash,
+    pub merge_depth_root: Hash,
+    pub finality_point: Hash,
 }
 
 pub(crate) const DAG_BLOCK_DEPTH_INFO_STORE_CF: &str = "dag-block-depth-info-store";
@@ -55,7 +55,7 @@ pub trait BlockDepthInfoStore: BlockDepthInfoReader {
     fn insert(&self, hash: Hash, info: BlockDepthInfo) -> Result<(), StoreError>;
 }
 
-/// A DB + cache implementation of `HeaderStore` trait, with concurrency support.
+/// A DB + cache implementation of `DbBlockDepthInfoStore` trait, with concurrency support.
 #[derive(Clone)]
 pub struct DbBlockDepthInfoStore {
     db: Arc<DBStorage>,

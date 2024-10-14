@@ -1,7 +1,7 @@
 mod access;
 mod cache;
 pub mod consenses_state;
-mod consensus_block_depth;
+pub mod consensus_block_depth;
 mod consensus_ghostdag;
 mod consensus_header;
 mod consensus_reachability;
