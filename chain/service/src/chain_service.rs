@@ -13,6 +13,7 @@ use starcoin_dag::blockdag::BlockDAG;
 use starcoin_dag::consensusdb::consenses_state::DagStateView;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_logger::prelude::*;
+use starcoin_metrics::metrics::VMMetrics;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
@@ -28,7 +29,6 @@ use starcoin_types::{
     startup_info::StartupInfo,
     transaction::Transaction,
 };
-use starcoin_vm_runtime::metrics::VMMetrics;
 use starcoin_vm_types::access_path::AccessPath;
 use std::sync::Arc;
 

@@ -9,12 +9,12 @@ parking_lot = { workspace = true }
 starcoin-accumulator = { workspace = true }
 starcoin-chain-api = { workspace = true }
 starcoin-executor = { workspace = true }
+starcoin-metrics = { workspace = true }
 starcoin-state-api = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
-starcoin-vm-runtime = { workspace = true }
 starcoin-force-upgrade = { workspace = true }
 
 [dev-dependencies]

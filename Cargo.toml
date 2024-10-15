@@ -40,7 +40,7 @@ members = [
     "chain",
     "chain/api",
     "chain/open-block",
-    "chain/force-upgrade",
+    "vm/force-upgrade",
     "chain/mock",
     "chain/chain-notify",
     "chain/service",
@@ -70,6 +70,7 @@ members = [
     "rpc/client",
     "rpc/server",
     "vm/types",
+    "vm/vm-runtime-mock",
     "vm/vm-runtime-types",
     "vm/vm-runtime",
     "vm/frameworks",
@@ -164,7 +165,7 @@ default-members = [
     "chain",
     "chain/api",
     "chain/open-block",
-    "chain/force-upgrade",
+    "vm/force-upgrade",
     "chain/mock",
     "chain/chain-notify",
     "chain/service",
@@ -192,6 +193,7 @@ default-members = [
     "rpc/client",
     "rpc/server",
     "vm/types",
+    "vm/vm-runtime-mock",
     "vm/vm-runtime-types",
     "vm/vm-runtime",
     "vm/framework",
@@ -481,7 +483,7 @@ rustyline-derive = "0.6.0"
 sc-peerset = { path = "network-p2p/peerset" }
 schemars = { git = "https://github.com/starcoinorg/schemars", rev = "9b3705780b8fe9c8676ff82919869ba7405b1062" }
 scmd = { path = "commons/scmd" }
-serde = {  version = "1.0.130", features = ["derive"] }
+serde = { version = "1.0.130", features = ["derive"] }
 serde-generate = { git = "https://github.com/starcoinorg/serde-reflection", rev = "eb95fd4e3b67e08d71432b522c53833a0b855d80" }
 serde-helpers = { path = "commons/serde-helpers" }
 serde-reflection = { git = "https://github.com/starcoinorg/serde-reflection", rev = "eb95fd4e3b67e08d71432b522c53833a0b855d80" }
@@ -523,7 +525,7 @@ starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev 
 starcoin-decrypt = { path = "commons/decrypt" }
 starcoin-dev = { path = "vm/dev" }
 starcoin-executor = { path = "executor" }
-starcoin-framework-legacy = { git = "https://github.com/starcoinorg/starcoin-framework", rev = "94bcd77e80232b169cf95754ef4e87775645afcd" , package = "starcoin-framework" }
+starcoin-framework-legacy = { git = "https://github.com/starcoinorg/starcoin-framework", rev = "94bcd77e80232b169cf95754ef4e87775645afcd", package = "starcoin-framework" }
 starcoin-framework = { path = "vm/framework" }
 starcoin-sdk-builder = { path = "vm/starcoin-sdk-builder" }
 starcoin-genesis = { path = "genesis" }
@@ -546,7 +548,7 @@ starcoin-network-rpc-api = { path = "network-rpc/api" }
 starcoin-node = { path = "node" }
 starcoin-node-api = { path = "node/api" }
 starcoin-open-block = { path = "chain/open-block" }
-starcoin-force-upgrade = { path = "chain/force-upgrade" }
+starcoin-force-upgrade = { path = "vm/force-upgrade" }
 starcoin-resource-viewer = { path = "vm/resource-viewer" }
 starcoin-package-builder = { path = "vm/package-builder" }
 starcoin-move-stdlib = { path = "vm/framework/move-stdlib" }
@@ -576,6 +578,7 @@ starcoin-txpool-mock-service = { path = "txpool/mock-service" }
 starcoin-types = { path = "types" }
 starcoin-uint = { path = "types/uint" }
 starcoin-vm-runtime = { path = "vm/vm-runtime" }
+starcoin-vm-runtime-mock = { path = "vm/vm-runtime-mock" }
 starcoin-vm-runtime-types = { path = "vm/vm-runtime-types" }
 starcoin-vm-types = { path = "vm/types" }
 stdlib = { path = "vm/stdlib" }

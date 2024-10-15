@@ -41,8 +41,6 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, Transaction},
     U256,
 };
-#[cfg(feature = "force-deploy")]
-use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy};
@@ -2389,7 +2387,5 @@ pub(crate) fn info_2_accumulator(
 
 fn get_epoch_from_statedb(statedb: &ChainStateDB) -> Result<Epoch> {
     let account_reader = AccountStateReader::new(statedb);
-    account_reader
-        .get_resource::<Epoch>(genesis_address())?
-        .ok_or_else(|| format_err!("Epoch is none."))
+    account_reader.get_resource::<Epoch>(genesis_address())
 }

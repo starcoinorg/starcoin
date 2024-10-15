@@ -5,7 +5,7 @@ use anyhow::{bail, format_err, Result};
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_chain_api::ExcludedTxns;
 use starcoin_crypto::HashValue;
-use starcoin_executor::{execute_block_transactions, execute_transactions, VMMetrics};
+use starcoin_executor::{execute_block_transactions, execute_transactions};
 use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
@@ -25,13 +25,14 @@ use starcoin_types::{
 };
 use std::{convert::TryInto, sync::Arc};
 
+use starcoin_metrics::metrics::VMMetrics;
 #[cfg(feature = "force-deploy")]
 use {
-    starcoin_force_upgrade::ForceUpgrade,
-    starcoin_types::{account::DEFAULT_EXPIRATION_TIME, identifier::Identifier},
-    starcoin_vm_runtime::force_upgrade_management::{
+    starcoin_force_upgrade::force_upgrade_management::{
         get_force_upgrade_account, get_force_upgrade_block_number,
     },
+    starcoin_force_upgrade::ForceUpgrade,
+    starcoin_types::{account::DEFAULT_EXPIRATION_TIME, identifier::Identifier},
     starcoin_vm_types::{
         access_path::AccessPath,
         account_config::{genesis_address, ModuleUpgradeStrategy},

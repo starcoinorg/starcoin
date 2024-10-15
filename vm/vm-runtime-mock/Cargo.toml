@@ -1,0 +1,55 @@
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-vm-runtime-mock"
+publish = { workspace = true }
+version = "2.0.1"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+anyhow = { workspace = true }
+bcs-ext = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-config = { workspace = true }
+move-core-types = { workspace = true }
+once_cell = { workspace = true }
+tracing = { workspace = true }
+move-vm-runtime = { workspace = true }
+num_enum = { workspace = true }
+rand = { workspace = true }
+rand_core = { default-features = false, workspace = true }
+starcoin-logger = { workspace = true }
+starcoin-frameworks = { workspace = true }
+starcoin-types = { workspace = true }
+starcoin-vm-types = { workspace = true }
+move-stdlib = { workspace = true }
+move-table-extension = { workspace = true }
+move-vm-types = { workspace = true }
+move-binary-format = { workspace = true }
+starcoin-metrics = { optional = true, workspace = true }
+starcoin-gas-schedule = { workspace = true }
+starcoin-gas-algebra = { workspace = true }
+starcoin-gas-meter = { workspace = true }
+starcoin-parallel-executor = { workspace = true }
+starcoin-vm-runtime-types = { workspace = true }
+starcoin-native-interface = { workspace = true }
+serde = { features = ["derive"], workspace = true }
+serde_bytes = { workspace = true }
+rayon = { workspace = true }
+num_cpus = { workspace = true }
+hex = "0.4.3"
+bytes = {  workspace = true }
+move-bytecode-verifier = { workspace = true }
+
+
+[dev-dependencies]
+stdlib = { workspace = true }
+
+[features]
+default = ["metrics"]
+metrics = ["starcoin-metrics/metrics"]
+testing = ["move-stdlib/testing", "starcoin-frameworks/testing"]
+force-deploy = []

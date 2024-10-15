@@ -9,23 +9,23 @@ use starcoin_types::error::BlockExecutorError;
 use starcoin_types::error::ExecutorResult;
 use starcoin_types::transaction::TransactionStatus;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
-use starcoin_vm_runtime::metrics::VMMetrics;
 use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::write_set::WriteSet;
 use std::collections::BTreeMap;
 
+use starcoin_metrics::metrics::VMMetrics;
 #[cfg(feature = "force-deploy")]
 use {
     crate::execute_transactions,
     anyhow::bail,
     log::info,
+    starcoin_force_upgrade::force_upgrade_management::{
+        get_force_upgrade_account, get_force_upgrade_block_number,
+    },
     starcoin_force_upgrade::ForceUpgrade,
     starcoin_types::account::DEFAULT_EXPIRATION_TIME,
     starcoin_types::identifier::Identifier,
-    starcoin_vm_runtime::force_upgrade_management::{
-        get_force_upgrade_account, get_force_upgrade_block_number,
-    },
     starcoin_vm_types::{
         access_path::AccessPath,
         account_config::{genesis_address, ModuleUpgradeStrategy},

@@ -37,10 +37,11 @@ proptest-derive = { workspace = true }
 starcoin-account-api = { workspace = true }
 starcoin-chain-mock = { workspace = true }
 starcoin-genesis = { workspace = true }
+starcoin-metrics = { workspace = true }
 starcoin-resource-viewer = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
 starcoin-types = { features = ["fuzzing"], workspace = true }
-starcoin-vm-runtime = { workspace = true }
+starcoin-vm-runtime-mock = { workspace = true }
 stdlib = { workspace = true }
 stest = { workspace = true }
 test-helper = { workspace = true }
@@ -49,9 +50,10 @@ starcoin-network-rpc-api = { workspace = true }
 starcoin-force-upgrade = { workspace = true }
 
 [features]
-default = []
+default = ["metrics"]
+metrics = ["starcoin-metrics/metrics"]
 fuzzing = ["proptest", "proptest-derive", "starcoin-types/fuzzing"]
-force-deploy = ["starcoin-vm-runtime/force-deploy", "starcoin-vm-runtime", "starcoin-executor/force-deploy"]
+force-deploy = []
 
 [package]
 authors = { workspace = true }
