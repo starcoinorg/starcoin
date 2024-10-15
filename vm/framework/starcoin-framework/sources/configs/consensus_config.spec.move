@@ -5,8 +5,8 @@ spec starcoin_framework::consensus_config {
     }
 
     spec initialize {
-        aborts_if !Timestamp::is_genesis();
-        aborts_if Signer::address_of(account) != CoreAddresses::GENESIS_ADDRESS();
+        // aborts_if !Timestamp::is_genesis();
+        aborts_if signer::address_of(account) != system_addresses::get_starcoin_framework();
         aborts_if uncle_rate_target == 0;
         aborts_if epoch_block_count == 0;
         aborts_if base_reward_per_block == 0;
@@ -15,8 +15,8 @@ spec starcoin_framework::consensus_config {
         aborts_if min_block_time_target == 0;
         aborts_if max_block_time_target < min_block_time_target;
 
-        include Config::PublishNewConfigAbortsIf<ConsensusConfig>;
-        include Config::PublishNewConfigEnsures<ConsensusConfig>;
+        include on_chain_config::PublishNewConfigAbortsIf<ConsensusConfig>;
+        include on_chain_config::PublishNewConfigEnsures<ConsensusConfig>;
     }
 
 
@@ -31,15 +31,15 @@ spec starcoin_framework::consensus_config {
     }
 
     spec get_config {
-        aborts_if !exists<Config::Config<ConsensusConfig>>(CoreAddresses::GENESIS_ADDRESS());
+        aborts_if !exists<on_chain_config::Config<ConsensusConfig>>(system_addresses::get_starcoin_framework());
     }
 
     spec fun spec_get_config(): ConsensusConfig {
-        global<Config::Config<ConsensusConfig>>(CoreAddresses::GENESIS_ADDRESS()).payload
+        global<on_chain_config::Config<ConsensusConfig>>(system_addresses::get_starcoin_framework()).payload
     }
 
     spec compute_reward_per_block {
-        aborts_if !exists<Config::Config<ConsensusConfig>>(CoreAddresses::GENESIS_ADDRESS());
+        aborts_if !exists<on_chain_config::Config<ConsensusConfig>>(system_addresses::get_starcoin_framework());
         include mul_div_aborts_if {
             x: spec_get_config().base_reward_per_block,
             y: new_epoch_block_time_target,
