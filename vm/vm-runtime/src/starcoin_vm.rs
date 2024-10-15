@@ -37,6 +37,7 @@ use starcoin_types::{
         TransactionPayload, TransactionStatus,
     },
 };
+use starcoin_vm_types::on_chain_config::{Features, TimedFeaturesBuilder};
 use starcoin_vm_types::{
     access::{ModuleAccess, ScriptAccess},
     account_address::AccountAddress,
@@ -93,11 +94,22 @@ const FLEXI_DAG_UPGRADE_VERSION_MARK: u64 = 12;
 
 impl StarcoinVM {
     #[cfg(feature = "metrics")]
-    pub fn new(metrics: Option<VMMetrics>) -> Self {
+    pub fn new<S: StateView>(metrics: Option<VMMetrics>, state: &S) -> Self {
+        let chain_id = state.get_chain_id().unwrap().id();
         let gas_params = StarcoinGasParameters::initial();
         let native_params = gas_params.natives.clone();
-        let inner = MoveVmExt::new(native_params.clone())
-            .expect("should be able to create Move VM; check if there are duplicated natives");
+        // todo: double check if it's ok to use RemoteStorage as StarcoinMoveResolver
+        let resolver = RemoteStorage::new(state);
+        let inner = MoveVmExt::new(
+            native_params.clone(),
+            gas_params.vm.misc.clone(),
+            1,
+            chain_id,
+            Features::default(),
+            TimedFeaturesBuilder::enable_all().build(),
+            &resolver,
+        )
+        .expect("should be able to create Move VM; check if there are duplicated natives");
         Self {
             move_vm: Arc::new(inner),
             vm_config: None,
@@ -111,11 +123,22 @@ impl StarcoinVM {
         }
     }
     #[cfg(not(feature = "metrics"))]
-    pub fn new() -> Self {
+    pub fn new<S: StateView>(state: &S) -> Self {
+        let chain_id = state.get_chain_id().id();
         let gas_params = StarcoinGasParameters::initial();
         let native_params = gas_params.natives.clone();
-        let inner = MoveVmExt::new(native_params.clone())
-            .expect("should be able to create Move VM; check if there are duplicated natives");
+        // todo: double check if it's ok to use RemoteStorage as StarcoinMoveResolver
+        let resolver = RemoteStorage::new(state);
+        let inner = MoveVmExt::new(
+            native_params.clone(),
+            gas_params.vm.misc.clone(),
+            1,
+            chain_id,
+            Features::default(),
+            TimedFeaturesBuilder::enable_all().build(),
+            resolver,
+        )
+        .expect("should be able to create Move VM; check if there are duplicated natives");
         Self {
             move_vm: Arc::new(inner),
             vm_config: None,
@@ -1467,7 +1490,7 @@ impl StarcoinVM {
         block_gas_limit: Option<u64>,
         metrics: Option<VMMetrics>,
     ) -> Result<Vec<(VMStatus, TransactionOutput)>, VMStatus> {
-        let mut vm = Self::new(metrics);
+        let mut vm = Self::new(metrics, state_view);
         vm.execute_block_transactions(state_view, txns, block_gas_limit)
     }
 

@@ -215,13 +215,6 @@ impl<'a, S: StateView> ResourceResolver for RemoteStorage<'a, S> {
     }
 }
 
-// TODO Note for Conflicting: conflicting implementation in crate `starcoin_vm_types`: - impl<V> ConfigStorage for V where V: StateView;
-// impl<'a, S: StateView> ConfigStorage for RemoteStorage<'a, S> {
-//     fn fetch_config(&self, access_path: AccessPath) -> Option<Vec<u8>> {
-//         self.get(&access_path).ok()?
-//     }
-// }
-
 impl<'a, S> Deref for RemoteStorage<'a, S> {
     type Target = S;
 
