@@ -11,7 +11,7 @@ use crate::vm_adapter::{
     discard_error_output, discard_error_vm_status, PreprocessedTransaction,
     PublishModuleBundleOption,
 };
-use anyhow::{bail, Error, Result};
+use anyhow::{bail, format_err, Error, Result};
 use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
 use move_core_types::move_resource::MoveStructType;
 use move_core_types::vm_status::StatusCode::VALUE_SERIALIZATION_ERROR;
@@ -147,23 +147,25 @@ impl StarcoinVM {
                 bail!("failed to load gas schedule!");
             }
             Some(gs) => {
-                let gas_params =
-                    StarcoinGasParameters::from_on_chain_gas_schedule(&gs.clone().to_btree_map());
-                if let Some(ref params) = gas_params {
-                    // TODO(simon): do double check
-                    // if params.natives != self.native_params {
-                    debug!("update native_params");
-                    match Arc::get_mut(&mut self.move_vm) {
-                        None => {
-                            bail!("failed to get move vm when load config");
-                        }
-                        Some(mv) => {
-                            mv.update_native_functions(params.clone().natives)?;
-                        }
+                // todo: select feature_version properly
+                let gas_params = StarcoinGasParameters::from_on_chain_gas_schedule(
+                    &gs.clone().to_btree_map(),
+                    1,
+                )
+                .map_err(|e| format_err!("{e}"))?;
+                // TODO(simon): do double check
+                // if params.natives != self.native_params {
+                debug!("update native_params");
+                match Arc::get_mut(&mut self.move_vm) {
+                    None => {
+                        bail!("failed to get move vm when load config");
                     }
-                    self.native_params = params.natives.clone();
-                    self.gas_params = gas_params;
+                    Some(mv) => {
+                        mv.update_native_functions(gas_params.clone().natives)?;
+                    }
                 }
+                self.native_params = gas_params.natives.clone();
+                self.gas_params = Some(gas_params);
             }
         }
         Ok(())
@@ -188,7 +190,7 @@ impl StarcoinVM {
                 );
                 (
                     VMConfig::fetch_config(&remote_storage)
-                        .map(|v| GasSchedule::from(v.gas_schedule)),
+                        .map(|v| GasSchedule::from(&v.gas_schedule)),
                     "gas schedule from VMConfig",
                 )
             } else {
@@ -310,7 +312,7 @@ impl StarcoinVM {
     }
 
     fn check_gas(&self, txn_data: &TransactionMetadata) -> Result<(), VMStatus> {
-        let txn_gas_params = &self.get_gas_parameters()?.txn;
+        let txn_gas_params = &self.get_gas_parameters()?.vm.txn;
         let raw_bytes_len = txn_data.transaction_size;
         // The transaction is too large.
         if raw_bytes_len > txn_gas_params.max_transaction_size_in_bytes {
@@ -1321,7 +1323,7 @@ impl StarcoinVM {
             let gas_params = self.get_gas_parameters()?;
             let mut gas_meter = StarcoinGasMeter::new(
                 G_LATEST_GAS_PARAMS.clone(),
-                gas_params.txn.maximum_number_of_gas_units,
+                gas_params.vm.txn.maximum_number_of_gas_units,
             );
             gas_meter.set_metering(true);
             gas_meter
