@@ -257,9 +257,9 @@ impl<S: StateView> AsMoveResolver<S> for S {
     }
 }
 
-impl<S: StateView> AsExecutorView for S {
+impl<'a, S: StateView> AsExecutorView for RemoteStorage<'a, S> {
     fn as_executor_view(&self) -> &dyn ExecutorView {
-        todo!()
+        self.0
     }
 }
 
@@ -317,6 +317,12 @@ impl<S: StateView> TableResolver for RemoteStorageOwned<S> {
     ) -> Result<Option<Bytes>, PartialVMError> {
         self.as_move_resolver()
             .resolve_table_entry_bytes_with_layout(handle, key, maybe_layout)
+    }
+}
+
+impl<S: StateView> AsExecutorView for RemoteStorageOwned<S> {
+    fn as_executor_view(&self) -> &dyn ExecutorView {
+        &self.state_view
     }
 }
 
