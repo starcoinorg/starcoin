@@ -2,7 +2,7 @@
 module starcoin_framework::reconfiguration_with_dkg {
     use std::features;
     use std::option;
-    use starcoin_framework::consensus_config;
+    // use starcoin_framework::consensus_config;
     use starcoin_framework::dkg;
     use starcoin_framework::execution_config;
     use starcoin_framework::gas_schedule;
@@ -46,7 +46,7 @@ module starcoin_framework::reconfiguration_with_dkg {
     public(friend) fun finish(framework: &signer) {
         system_addresses::assert_starcoin_framework(framework);
         dkg::try_clear_incomplete_session(framework);
-        consensus_config::on_new_epoch(framework);
+        // consensus_config::on_new_epoch(framework);
         execution_config::on_new_epoch(framework);
         gas_schedule::on_new_epoch(framework);
         std::version::on_new_epoch(framework);

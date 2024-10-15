@@ -30,8 +30,8 @@ module starcoin_framework::starcoin_governance {
     use starcoin_framework::staking_config;
     use starcoin_framework::system_addresses;
     use starcoin_framework::starcoin_coin::{Self, StarcoinCoin};
-    use starcoin_framework::consensus_config;
-    use starcoin_framework::randomness_config;
+    // use starcoin_framework::consensus_config;
+    // use starcoin_framework::randomness_config;
     use starcoin_framework::reconfiguration_with_dkg;
     use starcoin_framework::timestamp;
     use starcoin_framework::voting;
@@ -662,11 +662,11 @@ module starcoin_framework::starcoin_governance {
     /// since such updates are applied whenever we enter an new epoch.
     public entry fun reconfigure(starcoin_framework: &signer) {
         system_addresses::assert_starcoin_framework(starcoin_framework);
-        if (consensus_config::validator_txn_enabled() && randomness_config::enabled()) {
-            reconfiguration_with_dkg::try_start();
-        } else {
-            reconfiguration_with_dkg::finish(starcoin_framework);
-        }
+        // if (consensus_config::validator_txn_enabled() && randomness_config::enabled()) {
+        //     reconfiguration_with_dkg::try_start();
+        // } else {
+        //     reconfiguration_with_dkg::finish(starcoin_framework);
+        // }
     }
 
     /// Change epoch immediately.

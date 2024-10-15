@@ -40,7 +40,7 @@ spec starcoin_framework::consensus_config {
 
     spec compute_reward_per_block {
         aborts_if !exists<on_chain_config::Config<ConsensusConfig>>(system_addresses::get_starcoin_framework());
-        include mul_div_aborts_if {
+        include MulDivAbortsIf {
             x: spec_get_config().base_reward_per_block,
             y: new_epoch_block_time_target,
             z: spec_get_config().base_block_time_target
@@ -48,14 +48,14 @@ spec starcoin_framework::consensus_config {
     }
 
     spec do_compute_reward_per_block {
-        include mul_div_aborts_if {
+        include MulDivAbortsIf {
             x: config.base_reward_per_block,
             y: new_epoch_block_time_target,
             z: config.base_block_time_target
         };
     }
 
-    spec schema mul_div_aborts_if {
+    spec schema MulDivAbortsIf {
         x: u128;
         y: u128;
         z: u128;

@@ -68,7 +68,7 @@ module starcoin_framework::genesis {
         gas_schedule: vector<u8>,
         chain_id: u8,
         initial_version: u64,
-        consensus_config: vector<u8>,
+        _consensus_config: vector<u8>,
         execution_config: vector<u8>,
         epoch_interval_microsecs: u64,
         minimum_stake: u64,
@@ -105,7 +105,7 @@ module starcoin_framework::genesis {
             starcoin_governance::store_signer_cap(&starcoin_framework_account, address, framework_signer_cap);
         };
 
-        consensus_config::initialize(&starcoin_framework_account, consensus_config);
+        // consensus_config::initialize(&starcoin_framework_account, consensus_config);
         execution_config::set(&starcoin_framework_account, execution_config);
         version::initialize(&starcoin_framework_account, initial_version);
         stake::initialize(&starcoin_framework_account);

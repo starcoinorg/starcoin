@@ -26,14 +26,6 @@ module starcoin_framework::consensus_strategy {
         on_chain_config::destroy_modify_config_capability(cap);
     }
 
-    spec initialize {
-        aborts_if !Timestamp::is_genesis();
-        aborts_if Signer::address_of(account) != CoreAddresses::GENESIS_ADDRESS();
-        aborts_if exists<Config::Config<ConsensusStrategy>>(Signer::address_of(account));
-        aborts_if exists<Config::ModifyConfigCapabilityHolder<ConsensusStrategy>>(Signer::address_of(account));
-        ensures exists<Config::Config<ConsensusStrategy>>(Signer::address_of(account));
-    }
-
     /// Return the consensus strategy type of this chain
     public fun get(): u8 {
         on_chain_config::get_by_address<ConsensusStrategy>(system_addresses::get_starcoin_framework()).value

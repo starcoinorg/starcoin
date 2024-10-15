@@ -20,30 +20,40 @@ spec starcoin_framework::on_chain_config {
         ensures result == exists<Config<ConfigValue>>(addr);
     }
 
-    spec set {
-        let addr = Signer::address_of(account);
+    spec set<ConfigValue: copy + drop + store>(
+        account: &signer,
+        payload: ConfigValue,
+    ) {
+        use std::option;
+        use starcoin_framework::signer;
+
+        let addr = signer::address_of(account);
         let cap_opt = spec_cap<ConfigValue>(addr);
-        let cap = Option::borrow(spec_cap<ConfigValue>(Signer::address_of(account)));
+        // let cap = option::borrow<ConfigValue>(spec_cap<ConfigValue>(signer::address_of(account)));
 
         aborts_if !exists<ModifyConfigCapabilityHolder<ConfigValue>>(addr);
-        aborts_if Option::is_none<ModifyConfigCapability<ConfigValue>>(cap_opt);
+        aborts_if option::is_none<ModifyConfigCapability<ConfigValue>>(cap_opt);
         ensures exists<ModifyConfigCapabilityHolder<ConfigValue>>(addr);
 
         // TODO: For unknown reason we can't specify the strict abort conditions.
         // Intuitively, the commented out spec should be able to be verified because
         // it is exactly the spec of the callee `set_with_capability()`.
-        //aborts_if !exists<Config<ConfigValue>>(Option::borrow(spec_cap<ConfigValue>(Signer::address_of(account))).account_address);
+        //aborts_if !exists<Config<ConfigValue>>(option::borrow(spec_cap<ConfigValue>(signer::address_of(account))).account_address);
         pragma aborts_if_is_partial;
         ensures exists<Config<ConfigValue>>(
-            Option::borrow(spec_cap<ConfigValue>(Signer::address_of(account))).account_address,
+            option::borrow<ModifyConfigCapability<ConfigValue>>(
+                spec_cap<ConfigValue>(signer::address_of(account))
+            ).account_address,
         );
         ensures global<Config<ConfigValue>>(
-            Option::borrow(spec_cap<ConfigValue>(Signer::address_of(account))).account_address,
+            option::borrow<ModifyConfigCapability<ConfigValue>>(
+                spec_cap<ConfigValue>(signer::address_of(account))
+            ).account_address,
         ).payload == payload;
     }
 
 
-    spec fun spec_cap<ConfigValue>(addr: address): Option<ModifyConfigCapability<ConfigValue>> {
+    spec fun spec_cap<ConfigValue>(addr: address): option::Option<ModifyConfigCapability<ConfigValue>> {
         global<ModifyConfigCapabilityHolder<ConfigValue>>(addr).cap
     }
 
@@ -57,27 +67,27 @@ spec starcoin_framework::on_chain_config {
     spec publish_new_config_with_capability {
         include PublishNewConfigAbortsIf<ConfigValue>;
 
-        ensures exists<Config<ConfigValue>>(Signer::address_of(account));
-        ensures global<Config<ConfigValue>>(Signer::address_of(account)).payload == payload;
+        ensures exists<Config<ConfigValue>>(signer::address_of(account));
+        ensures global<Config<ConfigValue>>(signer::address_of(account)).payload == payload;
 
-        ensures exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::address_of(account));
-        ensures Option::is_none(global<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::address_of(account)).cap);
+        ensures exists<ModifyConfigCapabilityHolder<ConfigValue>>(signer::address_of(account));
+        ensures option::is_none(global<ModifyConfigCapabilityHolder<ConfigValue>>(signer::address_of(account)).cap);
     }
 
     spec publish_new_config {
         include PublishNewConfigAbortsIf<ConfigValue>;
 
-        ensures exists<Config<ConfigValue>>(Signer::address_of(account));
-        ensures global<Config<ConfigValue>>(Signer::address_of(account)).payload == payload;
+        ensures exists<Config<ConfigValue>>(signer::address_of(account));
+        ensures global<Config<ConfigValue>>(signer::address_of(account)).payload == payload;
 
-        ensures exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::address_of(account));
-        ensures Option::is_some(global<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::address_of(account)).cap);
+        ensures exists<ModifyConfigCapabilityHolder<ConfigValue>>(signer::address_of(account));
+        ensures option::is_some(global<ModifyConfigCapabilityHolder<ConfigValue>>(signer::address_of(account)).cap);
     }
 
     spec schema PublishNewConfigAbortsIf<ConfigValue> {
         account: signer;
-        aborts_if exists<Config<ConfigValue>>(Signer::address_of(account));
-        aborts_if exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::address_of(account));
+        aborts_if exists<Config<ConfigValue>>(signer::address_of(account));
+        aborts_if exists<ModifyConfigCapabilityHolder<ConfigValue>>(signer::address_of(account));
     }
 
     spec schema AbortsIfConfigNotExist<ConfigValue> {
@@ -95,36 +105,36 @@ spec starcoin_framework::on_chain_config {
 
     spec schema PublishNewConfigEnsures<ConfigValue> {
         account: signer;
-        ensures exists<Config<ConfigValue>>(Signer::address_of(account));
-        ensures exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::address_of(account));
+        ensures exists<Config<ConfigValue>>(signer::address_of(account));
+        ensures exists<ModifyConfigCapabilityHolder<ConfigValue>>(signer::address_of(account));
     }
 
     spec schema AbortsIfCapNotExist<ConfigValue> {
         address: address;
         aborts_if !exists<ModifyConfigCapabilityHolder<ConfigValue>>(address);
-        aborts_if Option::is_none<ModifyConfigCapability<ConfigValue>>(
+        aborts_if option::is_none<ModifyConfigCapability<ConfigValue>>(
             global<ModifyConfigCapabilityHolder<ConfigValue>>(address).cap,
         );
     }
 
     spec extract_modify_config_capability {
-        let address = Signer::address_of(account);
+        let address = signer::address_of(account);
         include AbortsIfCapNotExist<ConfigValue>;
 
         ensures exists<ModifyConfigCapabilityHolder<ConfigValue>>(address);
-        ensures Option::is_none<ModifyConfigCapability<ConfigValue>>(
+        ensures option::is_none<ModifyConfigCapability<ConfigValue>>(
             global<ModifyConfigCapabilityHolder<ConfigValue>>(address).cap
         );
-        ensures result == old(Option::borrow(global<ModifyConfigCapabilityHolder<ConfigValue>>(address).cap));
+        ensures result == old(option::borrow(global<ModifyConfigCapabilityHolder<ConfigValue>>(address).cap));
     }
 
     spec restore_modify_config_capability {
         aborts_if !exists<ModifyConfigCapabilityHolder<ConfigValue>>(cap.account_address);
-        aborts_if Option::is_some(global<ModifyConfigCapabilityHolder<ConfigValue>>(cap.account_address).cap);
+        aborts_if option::is_some(global<ModifyConfigCapabilityHolder<ConfigValue>>(cap.account_address).cap);
 
         ensures exists<ModifyConfigCapabilityHolder<ConfigValue>>(cap.account_address);
-        ensures Option::is_some(global<ModifyConfigCapabilityHolder<ConfigValue>>(cap.account_address).cap);
-        ensures Option::borrow(global<ModifyConfigCapabilityHolder<ConfigValue>>(cap.account_address).cap) == cap;
+        ensures option::is_some(global<ModifyConfigCapabilityHolder<ConfigValue>>(cap.account_address).cap);
+        ensures option::borrow(global<ModifyConfigCapabilityHolder<ConfigValue>>(cap.account_address).cap) == cap;
     }
 
     spec destroy_modify_config_capability {

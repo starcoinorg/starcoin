@@ -274,7 +274,7 @@ Only used in reconfigurations to apply the pending <code><a href="randomness_con
 Check whether on-chain randomness main logic (e.g., <code>DKGManager</code>, <code>RandManager</code>, <code>BlockMetadataExt</code>) is enabled.
 
 NOTE: this returning true does not mean randomness will run.
-The feature works if and only if <code><a href="consensus_config.md#0x1_consensus_config_validator_txn_enabled">consensus_config::validator_txn_enabled</a>() && <a href="randomness_config.md#0x1_randomness_config_enabled">randomness_config::enabled</a>()</code>.
+The feature works if and only if <code>consensus_config::validator_txn_enabled() && <a href="randomness_config.md#0x1_randomness_config_enabled">randomness_config::enabled</a>()</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="randomness_config.md#0x1_randomness_config_enabled">enabled</a>(): bool

@@ -84,7 +84,7 @@ module starcoin_framework::on_chain_config {
 
     /// Publish a new config item under account address.
     public fun publish_new_config<ConfigValue: copy + drop + store>(account: &signer, payload: ConfigValue) {
-        move_to<>(account, Config<ConfigValue> { payload });
+        move_to(account, Config<ConfigValue> { payload });
         let cap = ModifyConfigCapability<ConfigValue> {
             account_address: signer::address_of(account),
             events: account::new_event_handle<ConfigChangeEvent<ConfigValue>>(account),
