@@ -16,7 +16,9 @@ use move_package_manager::{run_integration_test, IntegrationTestCommand};
 use move_vm_test_utils::gas_schedule::CostTable;
 use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
 use starcoin_vm_runtime::natives::starcoin_natives;
-use starcoin_vm_types::on_chain_config::G_LATEST_INSTRUCTION_TABLE;
+use starcoin_vm_types::on_chain_config::{
+    TimedFeatures, TimedFeaturesBuilder, G_LATEST_INSTRUCTION_TABLE,
+};
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -81,7 +83,14 @@ fn main() -> Result<()> {
 
     let move_args = &args.move_args;
     let gas_params = G_LATEST_GAS_PARAMS.clone();
-    let natives = starcoin_natives(gas_params.natives);
+    // todo: select feature_version properly
+    let natives = starcoin_natives(
+        1,
+        gas_params.natives,
+        gas_params.vm.misc,
+        TimedFeaturesBuilder::enable_all().build(),
+        Default::default(),
+    );
     let cost_table = CostTable {
         instruction_table: G_LATEST_INSTRUCTION_TABLE.clone(),
     };

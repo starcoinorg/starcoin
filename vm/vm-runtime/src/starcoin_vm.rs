@@ -161,7 +161,8 @@ impl StarcoinVM {
                         bail!("failed to get move vm when load config");
                     }
                     Some(mv) => {
-                        mv.update_native_functions(gas_params.clone().natives)?;
+                        let gas_params = gas_params.clone();
+                        mv.update_native_functions(gas_params.natives, gas_params.vm.misc)?;
                     }
                 }
                 self.native_params = gas_params.natives.clone();

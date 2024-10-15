@@ -20,7 +20,9 @@ use move_vm_types::loaded_data::runtime_types::TypeBuilder;
 use starcoin_gas_algebra::DynamicExpression;
 use starcoin_gas_schedule::{MiscGasParameters, NativeGasParameters};
 use starcoin_native_interface::SafeNativeBuilder;
-use starcoin_vm_types::on_chain_config::{FeatureFlag, TimedFeatureFlag, TimedFeatures};
+use starcoin_vm_types::on_chain_config::{
+    FeatureFlag, TimedFeatureFlag, TimedFeatures, TimedFeaturesBuilder,
+};
 use starcoin_vm_types::{errors::PartialVMResult, on_chain_config::Features};
 use std::ops::Deref;
 use std::sync::Arc;
@@ -199,8 +201,16 @@ impl MoveVmExt {
     pub fn update_native_functions(
         &mut self,
         native_gas_params: NativeGasParameters,
+        misc_gas_parameters: MiscGasParameters,
     ) -> PartialVMResult<()> {
-        let native_functions = natives::starcoin_natives(native_gas_params);
+        //todo: select featrure version properly
+        let native_functions = natives::starcoin_natives(
+            1,
+            native_gas_params,
+            misc_gas_parameters,
+            TimedFeaturesBuilder::enable_all().build(),
+            Default::default(),
+        );
         self.inner.update_native_functions(native_functions)
     }
 }
