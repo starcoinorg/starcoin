@@ -1,77 +1,186 @@
-/// Maintains the consensus config for the blockchain. The config is stored in a
-/// Reconfiguration, and may be updated by root.
+/// The module provide configuration of consensus parameters.
 module starcoin_framework::consensus_config {
-    use std::error;
-    use std::vector;
-    use starcoin_framework::chain_status;
-    use starcoin_framework::config_buffer;
 
-    use starcoin_framework::reconfiguration;
+    use std::error;
+    use starcoin_std::math128;
+    use starcoin_framework::on_chain_config;
     use starcoin_framework::system_addresses;
 
-    friend starcoin_framework::genesis;
-    friend starcoin_framework::reconfiguration_with_dkg;
-
-    struct ConsensusConfig has drop, key, store {
-        config: vector<u8>,
+    /// consensus configurations.
+    struct ConsensusConfig has copy, drop, store {
+        /// Uncle block rate per epoch
+        uncle_rate_target: u64,
+        /// Average target time to calculate a block's difficulty
+        base_block_time_target: u64,
+        /// Rewards per block
+        base_reward_per_block: u128,
+        /// Percentage of `base_reward_per_block` to reward a uncle block
+        base_reward_per_uncle_percent: u64,
+        /// Blocks each epoch
+        epoch_block_count: u64,
+        /// How many ancestor blocks which use to calculate next block's difficulty
+        base_block_difficulty_window: u64,
+        /// Minimum target time to calculate a block's difficulty
+        min_block_time_target: u64,
+        /// Maximum target time to calculate a block's difficulty
+        max_block_time_target: u64,
+        /// Maximum number of uncle block per block
+        base_max_uncles_per_block: u64,
+        /// Maximum gases per block
+        base_block_gas_limit: u64,
+        /// Strategy to calculate difficulty
+        strategy: u8,
     }
 
-    /// The provided on chain config bytes are empty or invalid
-    const EINVALID_CONFIG: u64 = 1;
+    const EINVALID_ARGUMENT: u64 = 18;
 
-    /// Publishes the ConsensusConfig config.
-    public(friend) fun initialize(starcoin_framework: &signer, config: vector<u8>) {
-        system_addresses::assert_starcoin_framework(starcoin_framework);
-        assert!(vector::length(&config) > 0, error::invalid_argument(EINVALID_CONFIG));
-        move_to(starcoin_framework, ConsensusConfig { config });
-    }
-
-    /// Deprecated by `set_for_next_epoch()`.
-    ///
-    /// WARNING: calling this while randomness is enabled will trigger a new epoch without randomness!
-    ///
-    /// TODO: update all the tests that reference this function, then disable this function.
-    public fun set(account: &signer, config: vector<u8>) acquires ConsensusConfig {
+    /// Initialization of the module.
+    public(friend) fun initialize(
+        account: &signer,
+        uncle_rate_target: u64,
+        epoch_block_count: u64,
+        base_block_time_target: u64,
+        base_block_difficulty_window: u64,
+        base_reward_per_block: u128,
+        base_reward_per_uncle_percent: u64,
+        min_block_time_target: u64,
+        max_block_time_target: u64,
+        base_max_uncles_per_block: u64,
+        base_block_gas_limit: u64,
+        strategy: u8,
+    ) {
         system_addresses::assert_starcoin_framework(account);
-        chain_status::assert_genesis();
-        assert!(vector::length(&config) > 0, error::invalid_argument(EINVALID_CONFIG));
 
-        let config_ref = &mut borrow_global_mut<ConsensusConfig>(@starcoin_framework).config;
-        *config_ref = config;
-
-        // Need to trigger reconfiguration so validator nodes can sync on the updated configs.
-        reconfiguration::reconfigure();
+        on_chain_config::publish_new_config<Self::ConsensusConfig>(
+            account,
+            new_consensus_config(
+                uncle_rate_target,
+                base_block_time_target,
+                base_reward_per_block,
+                base_reward_per_uncle_percent,
+                epoch_block_count,
+                base_block_difficulty_window,
+                min_block_time_target,
+                max_block_time_target,
+                base_max_uncles_per_block,
+                base_block_gas_limit,
+                strategy,
+            ),
+        );
     }
 
-    /// This can be called by on-chain governance to update on-chain consensus configs for the next epoch.
-    /// Example usage:
-    /// ```
-    /// starcoin_framework::consensus_config::set_for_next_epoch(&framework_signer, some_config_bytes);
-    /// starcoin_framework::starcoin_governance::reconfigure(&framework_signer);
-    /// ```
-    public fun set_for_next_epoch(account: &signer, config: vector<u8>) {
-        system_addresses::assert_starcoin_framework(account);
-        assert!(vector::length(&config) > 0, error::invalid_argument(EINVALID_CONFIG));
-        std::config_buffer::upsert<ConsensusConfig>(ConsensusConfig {config});
-    }
 
-    /// Only used in reconfigurations to apply the pending `ConsensusConfig`, if there is any.
-    public(friend) fun on_new_epoch(framework: &signer) acquires ConsensusConfig {
-        system_addresses::assert_starcoin_framework(framework);
-        if (config_buffer::does_exist<ConsensusConfig>()) {
-            let new_config = config_buffer::extract<ConsensusConfig>();
-            if (exists<ConsensusConfig>(@starcoin_framework)) {
-                *borrow_global_mut<ConsensusConfig>(@starcoin_framework) = new_config;
-            } else {
-                move_to(framework, new_config);
-            };
+    /// Create a new consensus config mainly used in DAO.
+    public fun new_consensus_config(
+        uncle_rate_target: u64,
+        base_block_time_target: u64,
+        base_reward_per_block: u128,
+        base_reward_per_uncle_percent: u64,
+        epoch_block_count: u64,
+        base_block_difficulty_window: u64,
+        min_block_time_target: u64,
+        max_block_time_target: u64,
+        base_max_uncles_per_block: u64,
+        base_block_gas_limit: u64,
+        strategy: u8,
+    ): ConsensusConfig {
+        assert!(uncle_rate_target > 0, error::invalid_argument(EINVALID_ARGUMENT));
+        assert!(base_block_time_target > 0, error::invalid_argument(EINVALID_ARGUMENT));
+        assert!(base_reward_per_block > 0, error::invalid_argument(EINVALID_ARGUMENT));
+        assert!(epoch_block_count > 0, error::invalid_argument(EINVALID_ARGUMENT));
+        assert!(base_block_difficulty_window > 0, error::invalid_argument(EINVALID_ARGUMENT));
+        // base_reward_per_uncle_percent can been zero.
+        assert!(min_block_time_target > 0, error::invalid_argument(EINVALID_ARGUMENT));
+        assert!(max_block_time_target >= min_block_time_target, error::invalid_argument(EINVALID_ARGUMENT));
+
+        ConsensusConfig {
+            uncle_rate_target,
+            base_block_time_target,
+            base_reward_per_block,
+            epoch_block_count,
+            base_block_difficulty_window,
+            base_reward_per_uncle_percent,
+            min_block_time_target,
+            max_block_time_target,
+            base_max_uncles_per_block,
+            base_block_gas_limit,
+            strategy,
         }
     }
 
-    public fun validator_txn_enabled(): bool acquires ConsensusConfig {
-        let config_bytes = borrow_global<ConsensusConfig>(@starcoin_framework).config;
-        validator_txn_enabled_internal(config_bytes)
+    /// Get config data.
+    public fun get_config(): ConsensusConfig {
+        on_chain_config::get_by_address<ConsensusConfig>(system_addresses::get_starcoin_framework())
     }
 
-    native fun validator_txn_enabled_internal(config_bytes: vector<u8>): bool;
+    /// Get uncle_rate_target
+    public fun uncle_rate_target(config: &ConsensusConfig): u64 {
+        config.uncle_rate_target
+    }
+
+    /// Get base_block_time_target
+    public fun base_block_time_target(config: &ConsensusConfig): u64 {
+        config.base_block_time_target
+    }
+
+    /// Get base_reward_per_block
+    public fun base_reward_per_block(config: &ConsensusConfig): u128 {
+        config.base_reward_per_block
+    }
+
+    /// Get epoch_block_count
+    public fun epoch_block_count(config: &ConsensusConfig): u64 {
+        config.epoch_block_count
+    }
+
+    /// Get base_block_difficulty_window
+    public fun base_block_difficulty_window(config: &ConsensusConfig): u64 {
+        config.base_block_difficulty_window
+    }
+
+    /// Get base_reward_per_uncle_percent
+    public fun base_reward_per_uncle_percent(config: &ConsensusConfig): u64 {
+        config.base_reward_per_uncle_percent
+    }
+
+    /// Get min_block_time_target
+    public fun min_block_time_target(config: &ConsensusConfig): u64 {
+        config.min_block_time_target
+    }
+
+    /// Get max_block_time_target
+    public fun max_block_time_target(config: &ConsensusConfig): u64 {
+        config.max_block_time_target
+    }
+
+    /// Get base_max_uncles_per_block
+    public fun base_max_uncles_per_block(config: &ConsensusConfig): u64 {
+        config.base_max_uncles_per_block
+    }
+
+    /// Get base_block_gas_limit
+    public fun base_block_gas_limit(config: &ConsensusConfig): u64 {
+        config.base_block_gas_limit
+    }
+
+    /// Get strategy
+    public fun strategy(config: &ConsensusConfig): u8 {
+        config.strategy
+    }
+
+    /// Compute block reward given the `new_epoch_block_time_target`.
+    public fun compute_reward_per_block(new_epoch_block_time_target: u64): u128 {
+        let config = get_config();
+        do_compute_reward_per_block(&config, new_epoch_block_time_target)
+    }
+
+    /// Compute block reward given the `new_epoch_block_time_target`, and the consensus config.
+    public fun do_compute_reward_per_block(config: &ConsensusConfig, new_epoch_block_time_target: u64): u128 {
+        math128::mul_div(
+            config.base_reward_per_block,
+            (new_epoch_block_time_target as u128),
+            (config.base_block_time_target as u128)
+        )
+    }
+
 }

@@ -79,4 +79,8 @@ module starcoin_framework::system_addresses {
     public fun is_reserved_address(addr: address): bool {
         is_starcoin_framework_address(addr) || is_vm_address(addr)
     }
+
+    public fun get_starcoin_framework(): address {
+        @starcoin_framework
+    }
 }
