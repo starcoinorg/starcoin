@@ -107,3 +107,129 @@ impl<'r, 'l> DerefMut for SessionExt<'r, 'l> {
         &mut self.inner
     }
 }
+
+// TODO(Simon): remove following code
+
+use crate::access_path_cache::AccessPathCache;
+use move_core_types::effects::{ChangeSet as MoveChangeSet, Op as MoveStorageOp};
+use move_core_types::language_storage::ModuleId;
+use move_core_types::vm_status::{StatusCode, VMStatus};
+use move_table_extension::TableChangeSet;
+use starcoin_vm_types::contract_event::ContractEvent;
+use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::state_value::StateValueMetadata;
+use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use starcoin_vm_types::write_set::{WriteOp, WriteSet, WriteSetMut};
+use std::collections::BTreeMap;
+
+pub struct SessionOutput {
+    pub change_set: MoveChangeSet,
+    pub table_change_set: TableChangeSet,
+}
+
+impl SessionOutput {
+    pub fn into_change_set<C: AccessPathCache>(
+        self,
+        ap_cache: &mut C,
+    ) -> Result<
+        (
+            BTreeMap<TableHandle, TableInfo>,
+            WriteSet,
+            Vec<ContractEvent>,
+        ),
+        VMStatus,
+    > {
+        let Self {
+            change_set,
+            table_change_set,
+        } = self;
+
+        // XXX FIXME YSG check write_set need upgrade? why aptos no need MoveStorageOp
+        let mut write_set_mut = WriteSetMut::new(Vec::new());
+        for (addr, account_changeset) in change_set.into_inner() {
+            let (modules, resources) = account_changeset.into_inner();
+            for (struct_tag, blob_opt) in resources {
+                let state_key = StateKey::resource(&addr, &struct_tag).unwrap();
+                let ap = ap_cache.get_resource_path(addr, struct_tag);
+                let op = match blob_opt {
+                    MoveStorageOp::Delete => WriteOp::Deletion {
+                        metadata: StateValueMetadata::none(),
+                    },
+                    MoveStorageOp::New(data) => WriteOp::Creation {
+                        data,
+                        metadata: StateValueMetadata::none(),
+                    },
+                    MoveStorageOp::Modify(data) => WriteOp::Modification {
+                        data,
+                        metadata: StateValueMetadata::none(),
+                    },
+                };
+                write_set_mut.insert((state_key, op))
+            }
+
+            // XXX FIXME YSG check write_set need upgrade? why aptos no need MoveStorageOp
+            for (name, blob_opt) in modules {
+                let state_key = StateKey::module(&addr, &name);
+                let ap = ap_cache.get_module_path(ModuleId::new(addr, name));
+                let op = match blob_opt {
+                    MoveStorageOp::Delete => WriteOp::Deletion {
+                        metadata: StateValueMetadata::none(),
+                    },
+                    MoveStorageOp::New(data) => WriteOp::Creation {
+                        data,
+                        metadata: StateValueMetadata::none(),
+                    },
+                    MoveStorageOp::Modify(data) => WriteOp::Modification {
+                        data,
+                        metadata: StateValueMetadata::none(),
+                    },
+                };
+
+                write_set_mut.insert((state_key, op))
+            }
+        }
+
+        for (handle, change) in table_change_set.changes {
+            for (key, value_op) in change.entries {
+                let state_key = StateKey::table_item(&handle.into(), &key);
+                // XXX FIXME YSG check write_set need upgrade? why aptos no need MoveStorageOp
+                match value_op {
+                    MoveStorageOp::Delete => write_set_mut.insert((
+                        state_key,
+                        WriteOp::Deletion {
+                            metadata: StateValueMetadata::none(),
+                        },
+                    )),
+                    MoveStorageOp::New(data) => write_set_mut.insert((
+                        state_key,
+                        WriteOp::Creation {
+                            data,
+                            metadata: StateValueMetadata::none(),
+                        },
+                    )),
+                    MoveStorageOp::Modify(data) => write_set_mut.insert((
+                        state_key,
+                        WriteOp::Modification {
+                            data,
+                            metadata: StateValueMetadata::none(),
+                        },
+                    )),
+                }
+            }
+        }
+
+        let mut table_infos = BTreeMap::new();
+        for (key, value) in table_change_set.new_tables {
+            let handle = TableHandle(key.0);
+            let info = TableInfo::new(value.key_type, value.value_type);
+
+            table_infos.insert(handle, info);
+        }
+
+        let write_set = write_set_mut
+            .freeze()
+            .map_err(|_| VMStatus::error(StatusCode::DATA_FORMAT_ERROR, None))?;
+
+        Ok((table_infos, write_set, vec![]))
+    }
+}

@@ -6,7 +6,7 @@ use crate::data_cache::{AsMoveResolver, RemoteStorage, StateViewCache};
 use crate::errors::{
     convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
 };
-use crate::move_vm_ext::{MoveVmExt, SessionExt, SessionId, StarcoinMoveResolver};
+use crate::move_vm_ext::{MoveVmExt, SessionExt, SessionId, SessionOutput, StarcoinMoveResolver};
 use crate::vm_adapter::{
     discard_error_output, discard_error_vm_status, PreprocessedTransaction,
     PublishModuleBundleOption,
