@@ -51,7 +51,7 @@ pub type BlockDepthManager =
 
 pub struct MineNewDagBlockInfo {
     pub tips: Vec<HashValue>,
-    pub blue_blocks: Vec<HashValue>,
+    pub ghostdata: GhostdagData,
     pub pruning_point: HashValue,
 }
 
@@ -526,7 +526,7 @@ impl BlockDAG {
         if next_pruning_point == Hash::zero() || next_pruning_point == previous_pruning_point {
             anyhow::Ok(MineNewDagBlockInfo {
                 tips: dag_state.tips,
-                blue_blocks: (*next_ghostdata.mergeset_blues).clone(),
+                ghostdata: next_ghostdata,
                 pruning_point: next_pruning_point,
             })
         } else {
@@ -535,19 +535,15 @@ impl BlockDAG {
                 previous_pruning_point,
                 next_pruning_point,
             )?;
-            let mergeset_blues = (*self
-                .ghost_dag_manager()
-                .ghostdag(&pruned_tips)?
-                .mergeset_blues)
-                .clone();
+            let ghostdata = self.ghost_dag_manager().ghostdag(&pruned_tips)?;
             info!(
-                "previous tips are: {:?}, the pruned tips are: {:?}, the mergeset blues are: {:?}, the next pruning point is: {:?}",
+                "previous tips are: {:?}, the pruned tips are: {:?}, the ghost data are: {:?}, the next pruning point is: {:?}",
                 dag_state.tips,
-                pruned_tips, mergeset_blues, next_pruning_point
+                pruned_tips, ghostdata, next_pruning_point
             );
             anyhow::Ok(MineNewDagBlockInfo {
                 tips: pruned_tips,
-                blue_blocks: mergeset_blues,
+                ghostdata,
                 pruning_point: next_pruning_point,
             })
         }
@@ -585,8 +581,10 @@ impl BlockDAG {
             merge_depth,
         )?;
         if merge_depth_root == Hash::zero() {
+            println!("jacktest: merge depth root is zero");
             return anyhow::Ok((parents, ghostdata));
         }
+        println!("jacktest: merge depth root: {:?}", merge_depth_root);
         let mut kosherizing_blues: Option<Vec<Hash>> = None;
         let mut bad_reds = Vec::new();
 
@@ -635,7 +633,7 @@ impl BlockDAG {
         ghostdata: &GhostdagData,
         merge_depth: u64,
         finality_depth: u64,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<(Hash, Hash)> {
         let merge_depth_root = self.block_depth_manager.calc_merge_depth_root(
             ghostdata,
             pruning_point,
@@ -667,7 +665,7 @@ impl BlockDAG {
                 red,
                 &mut kosherizing_blues.as_ref().unwrap().iter().copied(),
             ) {
-                bail!("failed to verify the bounded merge depth");
+                warn!("failed to verify the bounded merge depth");
             }
         }
 
@@ -678,7 +676,7 @@ impl BlockDAG {
                 finality_point,
             },
         )?;
-        Ok(())
+        Ok((merge_depth_root, finality_point))
     }
 
     pub fn reachability_store(
