@@ -266,7 +266,7 @@ impl MockChain {
 
         let MineNewDagBlockInfo {
             tips: pruned_tips,
-            blue_blocks,
+            ghostdata,
             pruning_point,
         } = self
             .head
@@ -275,14 +275,15 @@ impl MockChain {
 
         debug!(
             "tips: {:?}, blue_blocks: {:?}, pruning_point: {:?}",
-            pruned_tips, blue_blocks, pruning_point
+            pruned_tips, ghostdata.mergeset_blues, pruning_point
         );
 
         let (template, _) = self.head.create_block_template_by_header(
             *self.miner.address(),
             selected_header,
             vec![],
-            blue_blocks
+            ghostdata
+                .mergeset_blues
                 .get(1..)
                 .unwrap_or(&[])
                 .iter()

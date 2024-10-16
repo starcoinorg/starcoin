@@ -581,10 +581,8 @@ impl BlockDAG {
             merge_depth,
         )?;
         if merge_depth_root == Hash::zero() {
-            println!("jacktest: merge depth root is zero");
             return anyhow::Ok((parents, ghostdata));
         }
-        println!("jacktest: merge depth root: {:?}", merge_depth_root);
         let mut kosherizing_blues: Option<Vec<Hash>> = None;
         let mut bad_reds = Vec::new();
 

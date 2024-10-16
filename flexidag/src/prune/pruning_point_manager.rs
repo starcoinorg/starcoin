@@ -97,6 +97,7 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
                 {
                     break;
                 }
+
                 if self.finality_score(next_pruning_ghostdata.blue_score)
                     > self.finality_score(latest_pruning_ghost_data.blue_score)
                 {
