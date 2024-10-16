@@ -160,4 +160,8 @@ impl TStateView for RemoteChainStateReader {
     fn get_usage(&self) -> Result<StateStorageUsage, StateviewError> {
         unimplemented!()
     }
+
+    fn is_genesis(&self) -> bool {
+        false
+    }
 }

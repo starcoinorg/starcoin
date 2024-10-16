@@ -286,14 +286,12 @@ impl StateValue {
     }
 }
 
-// #[cfg(any(test, feature = "fuzzing"))]
 impl From<Vec<u8>> for StateValue {
     fn from(bytes: Vec<u8>) -> Self {
         StateValue::new_legacy(bytes.into())
     }
 }
 
-#[cfg(any(test, feature = "fuzzing"))]
 impl From<Bytes> for StateValue {
     fn from(bytes: Bytes) -> Self {
         StateValue::new_legacy(bytes)

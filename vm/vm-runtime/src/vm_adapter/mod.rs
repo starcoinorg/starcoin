@@ -5,9 +5,9 @@ mod adapter;
 mod adapter_common;
 
 pub(crate) use {
-    adapter::{PublishModuleBundleOption, SessionAdapter},
+    adapter::PublishModuleBundleOption,
     adapter_common::{
         discard_error_output, discard_error_vm_status, preprocess_transaction,
-        PreprocessedTransaction, VMAdapter,
+        PreprocessedTransaction,
     },
 };

@@ -103,11 +103,11 @@ pub fn convert_prologue_runtime_error(error: VMError) -> Result<(), VMStatus> {
                     StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
                 }
             };
-            VMStatus::Error(new_major_status)
+            VMStatus::error(new_major_status, None)
         }
-        status @ VMStatus::ExecutionFailure { .. } | status @ VMStatus::Error(_) => {
+        status @ VMStatus::ExecutionFailure { .. } | status @ VMStatus::Error { .. } => {
             error!("[starcoin_vm] Unexpected prologue error: {:?}", status);
-            VMStatus::Error(StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION)
+            VMStatus::error(StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION, None)
         }
     })
 }
@@ -127,7 +127,7 @@ pub fn convert_normal_success_epilogue_error(error: VMError) -> Result<(), VMSta
                         "[starcoin_vm] Unexpected success epilogue Move abort: {:?}::{:?} (Category: {:?} Reason: {:?})",
                         location, code, category, reason,
                     );
-                    VMStatus::Error(StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION)
+                    VMStatus::error(StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION, None)
                 }
             }
         }
@@ -139,7 +139,7 @@ pub fn convert_normal_success_epilogue_error(error: VMError) -> Result<(), VMSta
                 "[starcoin_vm] Unexpected success epilogue error: {:?}",
                 status
             );
-            VMStatus::Error(StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION)
+            VMStatus::error(StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION, None)
         }
     })
 }

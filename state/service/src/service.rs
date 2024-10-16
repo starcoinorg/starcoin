@@ -24,6 +24,7 @@ use starcoin_types::{
 use starcoin_vm_types::state_store::errors::StateviewError;
 use starcoin_vm_types::state_store::state_key::inner::StateKeyInner;
 use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::state_storage_usage::StateStorageUsage;
 use starcoin_vm_types::state_store::state_value::StateValue;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_store::TStateView;
@@ -271,12 +272,12 @@ impl TStateView for Inner {
         self.state_db.get_state_value(state_key)
     }
 
-    fn get_usage(
-        &self,
-    ) -> starcoin_vm_types::state_store::Result<
-        starcoin_vm_types::state_store::state_storage_usage::StateStorageUsage,
-    > {
-        todo!("not impl get_usage")
+    fn get_usage(&self) -> Result<StateStorageUsage, StateviewError> {
+        unimplemented!("get_usage not implemented for ChainStateService")
+    }
+
+    fn is_genesis(&self) -> bool {
+        false
     }
 }
 

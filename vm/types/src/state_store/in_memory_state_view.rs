@@ -35,4 +35,8 @@ impl TStateView for InMemoryStateView {
     fn as_in_memory_state_view(&self) -> InMemoryStateView {
         self.clone()
     }
+
+    fn is_genesis(&self) -> bool {
+        unimplemented!("function is_genesis not implemented for InMemoryStateView")
+    }
 }

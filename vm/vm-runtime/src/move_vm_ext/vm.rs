@@ -20,7 +20,9 @@ use move_vm_types::loaded_data::runtime_types::TypeBuilder;
 use starcoin_gas_algebra::DynamicExpression;
 use starcoin_gas_schedule::{MiscGasParameters, NativeGasParameters};
 use starcoin_native_interface::SafeNativeBuilder;
-use starcoin_vm_types::on_chain_config::{FeatureFlag, TimedFeatureFlag, TimedFeatures};
+use starcoin_vm_types::on_chain_config::{
+    FeatureFlag, TimedFeatureFlag, TimedFeatures, TimedFeaturesBuilder,
+};
 use starcoin_vm_types::{errors::PartialVMResult, on_chain_config::Features};
 use std::ops::Deref;
 use std::sync::Arc;
@@ -79,9 +81,9 @@ impl MoveVmExt {
 
         let max_identifier_size = get_max_identifier_size(&features);
 
-        let enable_invariant_violation_check_in_swap_loc =
+        let _enable_invariant_violation_check_in_swap_loc =
             !timed_features.is_enabled(TimedFeatureFlag::DisableInvariantViolationCheckInSwapLoc);
-        let type_size_limit = true;
+        let _type_size_limit = true;
 
         let verifier_config = verifier_config(&features, &timed_features);
 
@@ -109,18 +111,18 @@ impl MoveVmExt {
             inner: WarmVmCache::get_warm_vm(
                 builder,
                 VMConfig {
-                                                verifier_config,
-                deserializer_config: DeserializerConfig::new(max_binary_format_version, max_identifier_size),
-                paranoid_type_checks: /*crate::StarcoinVM::get_paranoid_checks() */ false,
-                max_value_nest_depth: Some(128),
-                type_max_cost,
-                type_base_cost,
-                type_byte_cost,
-                aggregator_v2_type_tagging,
-
-                                                check_invariant_in_swap_loc: false,
-                                                ty_builder: TypeBuilder::Legacy,
-                                            },
+                    verifier_config,
+                    deserializer_config: DeserializerConfig::new(max_binary_format_version, max_identifier_size),
+                    paranoid_type_checks: /*crate::StarcoinVM::get_paranoid_checks() */ false,
+                    max_value_nest_depth: Some(128),
+                    type_max_cost,
+                    type_base_cost,
+                    type_byte_cost,
+                    // todo: support aggregator_v2_type_tagging, set false as default now.
+                    aggregator_v2_type_tagging: false,
+                    check_invariant_in_swap_loc: false,
+                    ty_builder: TypeBuilder::Legacy,
+                },
                 resolver,
             )?,
             chain_id,
@@ -199,8 +201,16 @@ impl MoveVmExt {
     pub fn update_native_functions(
         &mut self,
         native_gas_params: NativeGasParameters,
+        misc_gas_parameters: MiscGasParameters,
     ) -> PartialVMResult<()> {
-        let native_functions = natives::starcoin_natives(native_gas_params);
+        //todo: select featrure version properly
+        let native_functions = natives::starcoin_natives(
+            1,
+            native_gas_params,
+            misc_gas_parameters,
+            TimedFeaturesBuilder::enable_all().build(),
+            Default::default(),
+        );
         self.inner.update_native_functions(native_functions)
     }
 }

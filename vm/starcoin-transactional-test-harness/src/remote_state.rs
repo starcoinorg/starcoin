@@ -4,7 +4,7 @@
 use anyhow::{anyhow, Result};
 use jsonrpc_client_transports::RpcChannel;
 use move_binary_format::errors::VMError;
-use move_core_types::resolver::{ModuleResolver, ResourceResolver};
+use move_vm_types::resolver::{ModuleResolver, ResourceResolver};
 use starcoin_crypto::HashValue;
 
 use move_table_extension::{TableHandle, TableResolver};
@@ -163,8 +163,6 @@ where
     A: ModuleResolver,
     B: ModuleResolver<Error = A::Error>,
 {
-    type Error = A::Error;
-
     fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Self::Error> {
         match self.a.get_module(module_id)? {
             Some(d) => Ok(Some(d)),

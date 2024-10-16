@@ -13,7 +13,6 @@ pub(crate) mod write_op_converter;
 
 pub use crate::move_vm_ext::{
     resolver::{AsExecutorView, StarcoinMoveResolver},
-    session::SessionExt,
-    session::SessionId,
+    session::{SessionExt, SessionId, SessionOutput},
     vm::MoveVmExt,
 };

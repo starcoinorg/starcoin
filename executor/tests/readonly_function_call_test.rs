@@ -134,7 +134,7 @@ fn test_readonly_function_call() -> Result<()> {
     .map_err(|err| {
         assert_eq!(
             err.downcast::<VMStatus>().unwrap(),
-            VMStatus::Error(StatusCode::REJECTED_WRITE_SET)
+            VMStatus::error(StatusCode::REJECTED_WRITE_SET, None)
         );
     });
 

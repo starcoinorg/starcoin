@@ -4,7 +4,7 @@
 use crate::{
     parallel_executor::{storage_wrapper::VersionedView, StarcoinTransactionOutput},
     starcoin_vm::StarcoinVM,
-    vm_adapter::{PreprocessedTransaction, VMAdapter},
+    vm_adapter::PreprocessedTransaction,
 };
 
 use starcoin_parallel_executor::{
@@ -15,7 +15,7 @@ use starcoin_parallel_executor::{
 use move_core_types::vm_status::VMStatus;
 use starcoin_logger::prelude::*;
 use starcoin_vm_types::{
-    state_store::state_key::StateKey, state_view::StateView, write_set::WriteOp,
+    state_store::state_key::StateKey, state_store::StateView, write_set::WriteOp,
 };
 
 pub(crate) struct StarcoinVMWrapper<'a, S> {
@@ -23,7 +23,7 @@ pub(crate) struct StarcoinVMWrapper<'a, S> {
     base_view: &'a S,
 }
 
-impl<'a, S: 'a + StateView> ExecutorTask for StarcoinVMWrapper<'a, S> {
+impl<'a, S: 'a + StateView + Sync> ExecutorTask for StarcoinVMWrapper<'a, S> {
     type T = PreprocessedTransaction;
     type Output = StarcoinTransactionOutput;
     type Error = VMStatus;
@@ -32,7 +32,7 @@ impl<'a, S: 'a + StateView> ExecutorTask for StarcoinVMWrapper<'a, S> {
     // XXX FIXME YSG
     fn init(argument: &'a S) -> Self {
         // XXX FIXME YSG
-        let mut vm = StarcoinVM::new(None);
+        let mut vm = StarcoinVM::new(None, argument);
         // XXX FIXME YSG
         vm.load_configs(argument)
             .expect("load configs should always success");

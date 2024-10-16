@@ -1,28 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
 use move_core_types::vm_status::{StatusCode, VMStatus};
-use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::{
     block_metadata::BlockMetadata,
     transaction::{SignedUserTransaction, Transaction, TransactionOutput, TransactionStatus},
     write_set::WriteSet,
 };
 use std::collections::BTreeMap;
-
-/// TODO: bring more of the execution logic in starcoin_vm into this file.
-pub trait VMAdapter {
-    /// TODO: maybe remove this after more refactoring of execution logic.
-    fn should_restart_execution(output: &TransactionOutput) -> bool;
-
-    /// Execute a single transaction.
-    fn execute_single_transaction<S: MoveResolverExt + StateView>(
-        &self,
-        txn: &PreprocessedTransaction,
-        data_cache: &S,
-    ) -> Result<(VMStatus, TransactionOutput, Option<String>), VMStatus>;
-}
 
 #[derive(Debug)]
 pub enum PreprocessedTransaction {

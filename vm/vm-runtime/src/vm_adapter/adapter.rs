@@ -1,10 +1,11 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::move_vm_ext::SessionExt;
 use move_binary_format::errors::*;
-use move_binary_format::normalized::Function;
+use move_binary_format::normalized::Module;
 use move_binary_format::{
-    access::ModuleAccess, compatibility::Compatibility, normalized, CompiledModule, IndexKind,
+    access::ModuleAccess, compatibility::Compatibility, CompiledModule, IndexKind,
 };
 use move_core_types::value::MoveValue;
 use move_core_types::vm_status::StatusCode;
@@ -12,14 +13,12 @@ use move_core_types::{
     account_address::AccountAddress,
     identifier::IdentStr,
     language_storage::{ModuleId, TypeTag},
-    resolver::*,
 };
-use move_vm_runtime::session::Session;
+use move_vm_runtime::LoadedFunction;
 use move_vm_types::gas::GasMeter;
 use move_vm_types::loaded_data::runtime_types::Type;
 use std::borrow::Borrow;
 use std::collections::BTreeSet;
-use std::sync::Arc;
 use tracing::warn;
 
 /// Publish module bundle options
@@ -31,37 +30,7 @@ pub struct PublishModuleBundleOption {
     pub only_new_module: bool,
 }
 
-/// An adapter for wrap MoveVM Session
-pub struct SessionAdapter<'r, 'l> {
-    pub(crate) inner: Session<'r, 'l>,
-}
-
-impl<'r, 'l> From<Session<'r, 'l>> for SessionAdapter<'r, 'l> {
-    fn from(s: Session<'r, 'l>) -> Self {
-        Self { inner: s }
-    }
-}
-
-#[allow(clippy::from_over_into)]
-impl<'r, 'l> Into<Session<'r, 'l>> for SessionAdapter<'r, 'l> {
-    fn into(self) -> Session<'r, 'l> {
-        self.inner
-    }
-}
-
-impl<'r, 'l> AsRef<Session<'r, 'l>> for SessionAdapter<'r, 'l> {
-    fn as_ref(&self) -> &Session<'r, 'l> {
-        &self.inner
-    }
-}
-
-impl<'r, 'l> AsMut<Session<'r, 'l>> for SessionAdapter<'r, 'l> {
-    fn as_mut(&mut self) -> &mut Session<'r, 'l> {
-        &mut self.inner
-    }
-}
-
-impl<'r, 'l> SessionAdapter<'r, 'l> {
+impl<'r, 'l> SessionExt<'r, 'l> {
     ///// wrapper of Session, push signer as the first argument of function.
     //pub fn execute_entry_function(
     //    &mut self,
@@ -102,12 +71,12 @@ impl<'r, 'l> SessionAdapter<'r, 'l> {
     //}
 
     pub(crate) fn check_and_rearrange_args_by_signer_position(
-        func: Arc<Function>,
+        func: &LoadedFunction,
         args: Vec<Vec<u8>>,
         sender: AccountAddress,
     ) -> VMResult<Vec<Vec<u8>>> {
         let has_signer = func
-            .parameter_types()
+            .param_tys()
             .iter()
             .position(|i| matches!(i, &Type::Signer))
             .map(|pos| {
@@ -153,14 +122,13 @@ impl<'r, 'l> SessionAdapter<'r, 'l> {
         let mut clean_cache = false;
         // All modules verified, publish them to data cache
         for (module, blob) in compiled_modules.into_iter().zip(modules.into_iter()) {
-            let republish = if self.inner.exists_module(&module.self_id())? {
+            let republish = if self.exists_module(&module.self_id())? {
                 clean_cache = true;
                 true
             } else {
                 false
             };
-            self.inner
-                .publish_module_to_data_cache(&module.self_id(), blob, republish)?;
+            self.publish_module_to_data_cache(&module.self_id(), blob, republish)?;
         }
 
         // Clear vm runtimer loader's cache to reload new modules from state cache
@@ -217,7 +185,7 @@ impl<'r, 'l> SessionAdapter<'r, 'l> {
         // changing the bytecode format to include an `is_upgradable` flag in the CompiledModule.
         for module in &compiled_modules {
             let module_id = module.self_id();
-            if self.inner.exists_module(&module_id)? {
+            if self.exists_module(&module_id)? {
                 if option.only_new_module {
                     warn!(
                         "[VM] module {:?} already exists. Only allow publish new modules",
@@ -228,12 +196,12 @@ impl<'r, 'l> SessionAdapter<'r, 'l> {
                         .finish(Location::Undefined));
                 }
 
-                let old_module_ref = self.inner.load_module(&module_id)?;
-                let old_module = old_module_ref.module();
-                let old_m = normalized::Module::new(old_module);
-                let new_m = normalized::Module::new(module);
-                if Compatibility::new(true, true, false)
-                    .check(&old_m, &new_m)
+                let old_module_ref = self.load_module(&module_id)?;
+                let old_module = CompiledModule::deserialize(old_module_ref.as_ref())
+                    .map_err(|e| e.finish(Location::Undefined))?;
+                //todo: Remove Module, use CompiledModule directly
+                if Compatibility::new(true, false)
+                    .check(&Module::new(&old_module), &Module::new(&module))
                     .is_err()
                     && !option.force_publish
                 {
@@ -250,8 +218,7 @@ impl<'r, 'l> SessionAdapter<'r, 'l> {
         }
 
         // Perform bytecode and loading verification. Modules must be sorted in topological order.
-        self.inner
-            .verify_module_bundle_for_publication(&compiled_modules)?;
+        self.verify_module_bundle_for_publication(&compiled_modules)?;
         Ok(compiled_modules)
     }
 
@@ -263,18 +230,11 @@ impl<'r, 'l> SessionAdapter<'r, 'l> {
         sender: AccountAddress,
     ) -> VMResult<()> {
         //load the script, perform verification
-        let (
-            main,
-            LoadedFunctionInstantiation {
-                type_arguments: _,
-                parameters,
-                return_,
-            },
-        ) = self.inner.load_script(script.borrow(), ty_args)?;
+        let function = self.load_script(script.borrow(), ty_args.as_slice())?;
 
-        Self::check_script_return(return_)?;
+        Self::check_script_return(ty_args.as_slice())?;
 
-        self.check_script_signer_and_build_args(main, parameters, args, sender)?;
+        self.check_script_signer_and_build_args(&function, ty_args, args, sender)?;
 
         Ok(())
     }
@@ -287,25 +247,18 @@ impl<'r, 'l> SessionAdapter<'r, 'l> {
         args: Vec<Vec<u8>>,
         sender: AccountAddress,
     ) -> VMResult<()> {
-        let (
-            _module,
-            func,
-            LoadedFunctionInstantiation {
-                type_arguments: _,
-                parameters,
-                return_,
-            },
-        ) = self.inner.load_function(module, function_name, &ty_args)?;
+        let func = self.load_function(module, function_name, &ty_args)?;
 
-        Self::check_script_return(return_)?;
+        Self::check_script_return(func.ty_args())?;
 
-        self.check_script_signer_and_build_args(func, parameters, args, sender)?;
+        self.check_script_signer_and_build_args(&func, ty_args, args, sender)?;
 
         Ok(())
     }
 
+    // TODO(simon): what's the difference between Type and TypeTag?
     //ensure the script function not return value
-    pub(crate) fn check_script_return(return_: Vec<Type>) -> VMResult<()> {
+    pub(crate) fn check_script_return<T: std::fmt::Debug>(return_: &[T]) -> VMResult<()> {
         if !return_.is_empty() {
             Err(PartialVMError::new(StatusCode::RET_TYPE_MISMATCH_ERROR)
                 .with_message(format!(
@@ -319,22 +272,32 @@ impl<'r, 'l> SessionAdapter<'r, 'l> {
     }
 
     fn check_script_signer_and_build_args(
-        &self,
-        func: Arc<Function>,
-        arg_tys: Vec<Type>,
+        &mut self,
+        func: &LoadedFunction,
+        arg_tys: Vec<TypeTag>,
         args: Vec<Vec<u8>>,
         sender: AccountAddress,
     ) -> VMResult<()> {
         let final_args = Self::check_and_rearrange_args_by_signer_position(func, args, sender)?;
-        let (_, _) = self.inner.deserialize_args(arg_tys, final_args)?;
+        let arg_tys =
+            arg_tys
+                .into_iter()
+                .map(|tt| self.load_type(&tt))
+                .try_fold(vec![], |mut acc, ty| {
+                    acc.push(ty?);
+                    Ok(acc)
+                })?;
+        let (_, _) = self
+            .deserialize_args(arg_tys, final_args)
+            .map_err(|e| e.finish(Location::Undefined))?;
 
         Ok(())
     }
 
     /// Clear vm runtimer loader's cache to reload new modules from state cache
     fn empty_loader_cache(&self) -> VMResult<()> {
-        self.inner.mark_loader_cache_as_invaliddated();
-        self.inner.flush_loader_cache_if_invalidated();
+        self.get_move_vm().mark_loader_cache_as_invalid();
+        self.get_move_vm().flush_loader_cache_if_invalidated();
         Ok(())
     }
 }

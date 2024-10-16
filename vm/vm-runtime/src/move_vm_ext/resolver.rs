@@ -4,14 +4,19 @@
 use move_binary_format::errors::PartialVMError;
 use move_core_types::resolver::MoveResolver;
 use move_table_extension::TableResolver;
+use starcoin_vm_runtime_types::resolver::ExecutorView;
 use starcoin_vm_types::on_chain_config::ConfigStorage;
-use std::fmt::Debug;
 
 /// A general resolver used by StarcoinVM. Allows to implement custom hooks on
 /// top of storage, e.g. get resources from resource groups, etc.
 /// MoveResolver implements ResourceResolver and ModuleResolver
 pub trait StarcoinMoveResolver:
     ConfigStorage + MoveResolver<PartialVMError> + TableResolver + AsExecutorView
+{
+}
+
+impl<S: ConfigStorage + MoveResolver<PartialVMError> + TableResolver + AsExecutorView>
+    StarcoinMoveResolver for S
 {
 }
 

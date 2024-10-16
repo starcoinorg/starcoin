@@ -19,7 +19,7 @@ use starcoin_parallel_executor::{
 };
 use starcoin_vm_types::{
     state_store::state_key::StateKey,
-    state_view::StateView,
+    state_store::StateView,
     transaction::{Transaction, TransactionOutput, TransactionStatus},
     write_set::{WriteOp, WriteSet},
 };
@@ -46,7 +46,11 @@ impl PTransactionOutput for StarcoinTransactionOutput {
     type T = PreprocessedTransaction;
 
     fn get_writes(&self) -> Vec<(StateKey, WriteOp)> {
-        self.0.write_set().iter().cloned().collect()
+        self.0
+            .write_set()
+            .iter()
+            .map(|v| (v.0.clone(), v.1.clone()))
+            .collect()
     }
 
     /// Execution output for transactions that comes after SkipRest signal.
@@ -64,7 +68,7 @@ impl PTransactionOutput for StarcoinTransactionOutput {
 pub struct ParallelStarcoinVM();
 
 impl ParallelStarcoinVM {
-    pub fn execute_block<S: StateView>(
+    pub fn execute_block<S: StateView + Sync>(
         transactions: Vec<Transaction>,
         state_view: &S,
         concurrency_level: usize,
@@ -103,8 +107,9 @@ impl ParallelStarcoinVM {
                     Some(err),
                 ))
             }
-            Err(Error::InvariantViolation) => Err(VMStatus::Error(
+            Err(Error::InvariantViolation) => Err(VMStatus::error(
                 StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR,
+                None,
             )),
             Err(Error::UserError(err)) => Err(err),
         }

@@ -47,6 +47,10 @@ pub trait TStateView {
     fn as_in_memory_state_view(&self) -> InMemoryStateView {
         unreachable!("in-memory state view conversion not supported yet")
     }
+
+    //todo: remove me after refactor
+    /// Check if current state view is genesis state view.
+    fn is_genesis(&self) -> bool;
 }
 
 pub trait StateView: TStateView<Key = StateKey> {}
@@ -84,6 +88,10 @@ where
 
     fn get_usage(&self) -> Result<StateStorageUsage> {
         self.deref().get_usage()
+    }
+
+    fn is_genesis(&self) -> bool {
+        self.deref().is_genesis()
     }
 }
 

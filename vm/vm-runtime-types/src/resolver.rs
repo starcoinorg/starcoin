@@ -250,6 +250,19 @@ where
     }
 }
 
+impl<S> StateStorageView for S
+where
+    S: StateView,
+{
+    fn id(&self) -> StateViewId {
+        self.id()
+    }
+
+    fn get_usage(&self) -> anyhow::Result<StateStorageUsage> {
+        Ok(self.get_usage()?)
+    }
+}
+
 /// Allows to query storage metadata in the VM session. Needed for storage refunds.
 /// - Result being Err means storage error or some incostistency (e.g. during speculation,
 /// needing to abort/halt the transaction with an error status).
