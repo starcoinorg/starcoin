@@ -16,7 +16,7 @@ use starcoin_chain_api::{
 use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
-use starcoin_dag::blockdag::{BlockDAG, MineNewDagBlockInfo};
+use starcoin_dag::blockdag::BlockDAG;
 use starcoin_dag::consensusdb::consenses_state::DagState;
 use starcoin_dag::consensusdb::prelude::StoreError;
 use starcoin_dag::consensusdb::schemadb::GhostdagStoreReader;
@@ -316,24 +316,27 @@ impl BlockChain {
             (self.dag().ghostdata(&tips)?, tips)
         };
 
-        let MineNewDagBlockInfo {
-            tips,
-            blue_blocks,
-            pruning_point: _,
-        } = {
-            let blue_blocks = ghostdata.mergeset_blues.clone()[1..].to_vec();
-            MineNewDagBlockInfo {
-                tips,
-                blue_blocks,
-                pruning_point, // TODO: new test cases will need pass this field if they have some special requirements.
-            }
-        };
+        // let MineNewDagBlockInfo {
+        //     tips,
+        //     ghostdata,
+        //     pruning_point: _,
+        // } = {
+        //     let blue_blocks = ghostdata.mergeset_blues.clone()[1..].to_vec();
+        //     MineNewDagBlockInfo {
+        //         tips,
+        //         ghostdata,
+        //         pruning_point, // TODO: new test cases will need pass this field if they have some special requirements.
+        //     }
+        // };
 
         debug!(
             "Blue blocks:{:?} in chain/create_block_template_by_header",
-            blue_blocks
+            ghostdata.mergeset_blues,
         );
-        let blue_blocks = blue_blocks
+        let blue_blocks = ghostdata
+            .mergeset_blues
+            .as_ref()
+            .clone()
             .into_iter()
             .map(|block| self.storage.get_block_by_hash(block))
             .collect::<Result<Vec<Option<Block>>>>()?

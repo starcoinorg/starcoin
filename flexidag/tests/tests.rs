@@ -7,22 +7,19 @@ use starcoin_dag::{
     blockdag::{BlockDAG, MineNewDagBlockInfo},
     consensusdb::{
         consenses_state::{DagState, DagStateReader, DagStateStore},
-        consensus_block_depth::BlockDepthInfoStore,
         schemadb::{
-            DbReachabilityStore, GhostdagStore, GhostdagStoreReader, ReachabilityStore,
-            ReachabilityStoreReader, RelationsStore, RelationsStoreReader,
+            DbReachabilityStore, GhostdagStoreReader, ReachabilityStore, ReachabilityStoreReader,
+            RelationsStore, RelationsStoreReader,
         },
     },
     reachability::{inquirer, ReachabilityError},
-    types::{
-        ghostdata::{self, GhostdagData},
-        interval::Interval,
-    },
+    types::{ghostdata::GhostdagData, interval::Interval},
 };
-use starcoin_logger::prelude::{debug, info};
+use starcoin_logger::prelude::debug;
 use starcoin_types::{
     block::{BlockHeader, BlockHeaderBuilder, BlockNumber},
     blockhash::{BlockHashMap, HashKTypeMap, KType},
+    U256,
 };
 
 use std::{
@@ -741,6 +738,41 @@ fn add_and_print_with_ghostdata(
     Ok(header)
 }
 
+fn add_and_print_with_pruning_point_and_difficulty(
+    number: BlockNumber,
+    parent: Hash,
+    parents: Vec<Hash>,
+    origin: Hash,
+    pruning_point: Hash,
+    difficulty: U256,
+    dag: &mut BlockDAG,
+) -> anyhow::Result<BlockHeader> {
+    let header_builder = BlockHeaderBuilder::random();
+    let header = header_builder
+        .with_parent_hash(parent)
+        .with_parents_hash(parents.clone())
+        .with_number(number)
+        .with_pruning_point(pruning_point)
+        .with_difficulty(difficulty)
+        .build();
+    let start = Instant::now();
+    dag.commit(header.to_owned(), origin)?;
+    let duration = start.elapsed();
+    println!(
+        "commit header: {:?}, number: {:?}, duration: {:?}",
+        header.id(),
+        header.number(),
+        duration
+    );
+    // let ghostdata = dag.ghostdata(&parents)?;
+    // dag.storage.ghost_dag_store.insert(header.id(), Arc::new(ghostdata))?;
+    // println!(
+    //     "add a header: {:?}, blue set: {:?}, red set: {:?}, blue anticone size: {:?}",
+    //     header, ghostdata.mergeset_blues, ghostdata.mergeset_reds, ghostdata.blues_anticone_sizes
+    // );
+    Ok(header)
+}
+
 fn add_and_print_with_pruning_point(
     number: BlockNumber,
     parent: Hash,
@@ -755,6 +787,7 @@ fn add_and_print_with_pruning_point(
         .with_parents_hash(parents.clone())
         .with_number(number)
         .with_pruning_point(pruning_point)
+        .with_difficulty(100.into())
         .build();
     let start = Instant::now();
     dag.commit(header.to_owned(), origin)?;
@@ -1344,11 +1377,13 @@ fn test_merge_bounded() -> anyhow::Result<()> {
         &mut dag,
     )?;
 
-    let block_main_2 = add_and_print(
+    let block_main_2 = add_and_print_with_pruning_point_and_difficulty(
         2,
         block1.id(),
         vec![block1.id()],
         genesis.parent_hash(),
+        Hash::zero(),
+        3000.into(),
         &mut dag,
     )?;
     let block_main_3 = add_and_print(
@@ -1449,7 +1484,7 @@ fn test_merge_bounded() -> anyhow::Result<()> {
     let (tips, ghostdata) =
         dag.remove_bounded_merge_breaking_parents(tips, ghostdata, pruning_point, merge_depth)?;
     assert_eq!(tips, vec![block_main_5.id()]);
-    assert_eq!(ghostdata, dag.ghostdata(&vec![block_main_5.id()])?);
+    assert_eq!(ghostdata, dag.ghostdata(&[block_main_5.id()])?);
     dag.storage
         .state_store
         .write()
@@ -1512,10 +1547,16 @@ fn test_merge_bounded() -> anyhow::Result<()> {
         merge_depth,
         pruning_finality,
     )?;
-    let fork = dag
+    let mut fork = dag
         .ghost_dag_manager()
         .find_selected_parent(vec![block_main_3.id(), block_main_3_1.id()])?;
     assert_eq!(fork, merge_depth_root);
+
+    fork = if block_main_3.id() == fork {
+        block_main_3_1.id()
+    } else {
+        block_main_3.id()
+    };
 
     // to test the filter
     let block_red_4 = add_and_print(4, fork, vec![fork], genesis.parent_hash(), &mut dag)?;
@@ -1527,13 +1568,13 @@ fn test_merge_bounded() -> anyhow::Result<()> {
         &mut dag,
     )?;
 
-    let ghostdata = dag.ghostdata(&vec![block_main_6.id(), block_red_5.id()])?;
+    let ghostdata = dag.ghostdata(&[block_main_6.id(), block_red_5.id()])?;
     assert_eq!(
         HashSet::from_iter(vec![block_red_4.id(), block_red_5.id()]),
         ghostdata
             .mergeset_reds
             .as_ref()
-            .into_iter()
+            .iter()
             .cloned()
             .collect::<HashSet<_>>()
     );
@@ -1563,7 +1604,7 @@ fn test_merge_bounded() -> anyhow::Result<()> {
         HashSet::from_iter(vec![block_main_6.id(), block_red_5.id()])
     );
 
-    let (tips, ghostdata) =
+    let (tips, _ghostdata) =
         dag.remove_bounded_merge_breaking_parents(tips, ghostdata, pruning_point, merge_depth)?;
     assert_eq!(tips.len(), 1);
     assert_eq!(tips, vec![block_main_6.id()]);
