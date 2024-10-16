@@ -16,6 +16,7 @@ use anyhow::{bail, format_err, Ok, Result};
 use network_api::PeerProvider;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
+use starcoin_config::genesis_config::G_MERGE_DEPTH;
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
@@ -384,8 +385,8 @@ where
         let dag = self.chain_service.get_dag();
 
         let MineNewDagBlockInfo {
-            tips,
-            ghostdata,
+            mut tips,
+            mut ghostdata,
             pruning_point,
         } = if main_header.number() >= self.chain_service.get_main().get_pruning_height() {
             let (previous_ghostdata, pruning_point) = if main_header.pruning_point()
@@ -430,6 +431,14 @@ where
         if ghostdata.mergeset_blues.is_empty() {
             bail!("failed to get the blue blocks from the DAG");
         }
+
+        (tips, ghostdata) = dag.remove_bounded_merge_breaking_parents(
+            tips,
+            ghostdata,
+            pruning_point,
+            G_MERGE_DEPTH,
+        )?;
+
         let selected_parent = ghostdata.selected_parent;
         let time_service = self.config.net().time_service();
         let storage = ctx.get_shared::<Arc<Storage>>()?;

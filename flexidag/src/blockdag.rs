@@ -633,6 +633,9 @@ impl BlockDAG {
             pruning_point,
             merge_depth,
         )?;
+        if merge_depth_root == Hash::zero() {
+            return anyhow::Ok((Hash::zero(), Hash::zero()));
+        }
         let finality_point = self.block_depth_manager.calc_finality_point(
             ghostdata,
             pruning_point,

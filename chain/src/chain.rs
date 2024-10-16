@@ -13,6 +13,7 @@ use starcoin_chain_api::{
     ExcludedTxns, ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock,
     VerifyBlockField,
 };
+use starcoin_config::genesis_config::{G_MERGE_DEPTH, G_PRUNING_FINALITY};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
@@ -20,6 +21,7 @@ use starcoin_dag::blockdag::BlockDAG;
 use starcoin_dag::consensusdb::consenses_state::DagState;
 use starcoin_dag::consensusdb::prelude::StoreError;
 use starcoin_dag::consensusdb::schemadb::GhostdagStoreReader;
+use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_executor::VMMetrics;
 #[cfg(feature = "force-deploy")]
 use starcoin_force_upgrade::force_upgrade_management::get_force_upgrade_block_number;
@@ -30,6 +32,7 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
+use starcoin_types::consensus_header::ConsensusHeader;
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
@@ -48,6 +51,7 @@ use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy};
 use starcoin_vm_types::on_chain_config::FlexiDagConfigV2;
 use starcoin_vm_types::on_chain_resource::Epoch;
 use std::cmp::min;
+use std::collections::HashSet;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -1395,22 +1399,8 @@ impl ChainReader for BlockChain {
         let next_ghostdata = self.dag().verify_and_ghostdata(uncles, header)?;
         let (pruning_depth, pruning_finality) = self.get_pruning_config();
         if self.status().head().pruning_point() != HashValue::zero() {
-            let previous_ghostdata = if previous_header.pruning_point() == HashValue::zero() {
-                let genesis = self
-                    .storage
-                    .get_genesis()?
-                    .ok_or_else(|| format_err!("the genesis id is none!"))?;
-                self.dag().storage.ghost_dag_store.get_data(genesis)?
-            } else {
-                self.dag()
-                    .storage
-                    .ghost_dag_store
-                    .get_data(previous_header.pruning_point())?
-            };
-
-            self.dag().verify_pruning_point(
+            self.verify_pruning_point(
                 previous_header.pruning_point(),
-                previous_ghostdata.as_ref(),
                 header.pruning_point(),
                 &next_ghostdata,
                 pruning_depth,
@@ -1419,6 +1409,59 @@ impl ChainReader for BlockChain {
         }
 
         Ok(next_ghostdata)
+    }
+
+    fn merge_check_and_ghostdata(
+        &self,
+        uncles: &[BlockHeader],
+        header: &BlockHeader,
+    ) -> Result<starcoin_dag::types::ghostdata::GhostdagData> {
+        let next_ghostdata = self.dag().ghostdata(&header.parents())?;
+        if next_ghostdata
+            .mergeset_blues
+            .iter()
+            .skip(1)
+            .cloned()
+            .collect::<HashSet<_>>()
+            != uncles
+                .iter()
+                .map(|header| header.id())
+                .collect::<HashSet<_>>()
+        {
+            bail!(
+                "failed to check the uncle, local: {:?} and miner: {:?}",
+                next_ghostdata.mergeset_blues,
+                uncles
+            );
+        }
+        let previous_header = self
+            .storage
+            .get_block_header_by_hash(header.parent_hash())?
+            .ok_or_else(|| format_err!("cannot find parent block header"))?;
+        if self.status().head().pruning_point() != HashValue::zero() {
+            self.verify_pruning_point(
+                previous_header.pruning_point(),
+                header.pruning_point(),
+                &next_ghostdata,
+            )?;
+        }
+        let previous_pruning_point = if header.pruning_point() == HashValue::zero() {
+            self.storage
+                .get_genesis()?
+                .ok_or_else(|| format_err!("cannot find generation block"))?
+        } else {
+            header.pruning_point()
+        };
+
+        let _ = self.dag().check_bounded_merge_depth(
+            header.parent_hash(),
+            previous_pruning_point,
+            &next_ghostdata,
+            G_MERGE_DEPTH,
+            G_PRUNING_FINALITY,
+        )?;
+
+        anyhow::Ok(next_ghostdata)
     }
 
     fn is_dag_ancestor_of(&self, ancestor: HashValue, descendants: Vec<HashValue>) -> Result<bool> {
@@ -1651,6 +1694,34 @@ impl BlockChain {
         } else {
             1
         }
+    }
+
+    pub fn verify_pruning_point(
+        &self,
+        previous_pruning_point: HashValue,
+        next_pruning_point: HashValue,
+        next_ghostdata: &GhostdagData,
+    ) -> anyhow::Result<()> {
+        let previous_ghostdata = if previous_pruning_point == HashValue::zero() {
+            let genesis = self
+                .storage
+                .get_genesis()?
+                .ok_or_else(|| format_err!("the genesis id is none!"))?;
+            self.dag().storage.ghost_dag_store.get_data(genesis)?
+        } else {
+            self.dag()
+                .storage
+                .ghost_dag_store
+                .get_data(previous_pruning_point)?
+        };
+
+        self.dag().verify_pruning_point(
+            previous_pruning_point,
+            previous_ghostdata.as_ref(),
+            next_pruning_point,
+            next_ghostdata,
+        )?;
+        anyhow::Ok(())
     }
 }
 
