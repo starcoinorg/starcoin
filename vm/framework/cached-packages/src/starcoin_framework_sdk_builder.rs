@@ -921,6 +921,12 @@ pub enum EntryFunctionCall {
         should_pass: bool,
     },
 
+    StcBlockCheckpointEntry {},
+
+    StcBlockUpdateStateRootEntry {
+        header: Vec<u8>,
+    },
+
     TransactionFeeConvertToStarcoinFaBurnRef {},
 
     /// Used in on-chain governances to update the major version for the next epoch.
@@ -1591,6 +1597,8 @@ impl EntryFunctionCall {
                 proposal_id,
                 should_pass,
             } => starcoin_governance_vote(stake_pool, proposal_id, should_pass),
+            StcBlockCheckpointEntry {} => stc_block_checkpoint_entry(),
+            StcBlockUpdateStateRootEntry { header } => stc_block_update_state_root_entry(header),
             TransactionFeeConvertToStarcoinFaBurnRef {} => {
                 transaction_fee_convert_to_starcoin_fa_burn_ref()
             }
@@ -3920,6 +3928,30 @@ pub fn starcoin_governance_vote(
     ))
 }
 
+pub fn stc_block_checkpoint_entry() -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("stc_block").to_owned(),
+        ),
+        ident_str!("checkpoint_entry").to_owned(),
+        vec![],
+        vec![],
+    ))
+}
+
+pub fn stc_block_update_state_root_entry(header: Vec<u8>) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("stc_block").to_owned(),
+        ),
+        ident_str!("update_state_root_entry").to_owned(),
+        vec![],
+        vec![bcs::to_bytes(&header).unwrap()],
+    ))
+}
+
 pub fn transaction_fee_convert_to_starcoin_fa_burn_ref() -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
@@ -5767,6 +5799,26 @@ mod decoder {
         }
     }
 
+    pub fn stc_block_checkpoint_entry(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(_script) = payload {
+            Some(EntryFunctionCall::StcBlockCheckpointEntry {})
+        } else {
+            None
+        }
+    }
+
+    pub fn stc_block_update_state_root_entry(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::StcBlockUpdateStateRootEntry {
+                header: bcs::from_bytes(script.args().get(0)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
     pub fn transaction_fee_convert_to_starcoin_fa_burn_ref(
         payload: &TransactionPayload,
     ) -> Option<EntryFunctionCall> {
@@ -6487,6 +6539,14 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
         map.insert(
             "starcoin_governance_vote".to_string(),
             Box::new(decoder::starcoin_governance_vote),
+        );
+        map.insert(
+            "stc_block_checkpoint_entry".to_string(),
+            Box::new(decoder::stc_block_checkpoint_entry),
+        );
+        map.insert(
+            "stc_block_update_state_root_entry".to_string(),
+            Box::new(decoder::stc_block_update_state_root_entry),
         );
         map.insert(
             "transaction_fee_convert_to_starcoin_fa_burn_ref".to_string(),
