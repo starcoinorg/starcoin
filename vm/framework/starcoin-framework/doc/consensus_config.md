@@ -707,10 +707,10 @@ Compute block reward given the <code>new_epoch_block_time_target</code>, and the
 
 
 <pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="on_chain_config.md#0x1_on_chain_config_Config">on_chain_config::Config</a>&lt;<a href="consensus_config.md#0x1_consensus_config_ConsensusConfig">ConsensusConfig</a>&gt;&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>());
-<b>include</b> <a href="consensus_config.md#0x1_consensus_config_MulDivAbortsIf">MulDivAbortsIf</a> {
-    x: <a href="consensus_config.md#0x1_consensus_config_spec_get_config">spec_get_config</a>().base_reward_per_block,
-    y: new_epoch_block_time_target,
-    z: <a href="consensus_config.md#0x1_consensus_config_spec_get_config">spec_get_config</a>().base_block_time_target
+<b>include</b> <a href="../../starcoin-stdlib/doc/math128.md#0x1_math128_MulDivAbortsIf">math128::MulDivAbortsIf</a> {
+    a: <a href="consensus_config.md#0x1_consensus_config_spec_get_config">spec_get_config</a>().base_reward_per_block,
+    b: new_epoch_block_time_target,
+    c: <a href="consensus_config.md#0x1_consensus_config_spec_get_config">spec_get_config</a>().base_block_time_target
 };
 </code></pre>
 
@@ -727,36 +727,11 @@ Compute block reward given the <code>new_epoch_block_time_target</code>, and the
 
 
 
-<pre><code><b>include</b> <a href="consensus_config.md#0x1_consensus_config_MulDivAbortsIf">MulDivAbortsIf</a> {
-    x: config.base_reward_per_block,
-    y: new_epoch_block_time_target,
-    z: config.base_block_time_target
+<pre><code><b>include</b> <a href="../../starcoin-stdlib/doc/math128.md#0x1_math128_MulDivAbortsIf">math128::MulDivAbortsIf</a> {
+    a: config.base_reward_per_block,
+    b: new_epoch_block_time_target,
+    c: config.base_block_time_target
 };
-</code></pre>
-
-
-
-
-<a id="0x1_consensus_config_MulDivAbortsIf"></a>
-
-
-<pre><code><b>schema</b> <a href="consensus_config.md#0x1_consensus_config_MulDivAbortsIf">MulDivAbortsIf</a> {
-    x: u128;
-    y: u128;
-    z: u128;
-    <b>aborts_if</b> y != z && x &gt; z && z == 0;
-    <b>aborts_if</b> y != z && x &gt; z && z != 0 && x / z * y &gt; MAX_U128;
-    <b>aborts_if</b> y != z && x &lt;= z && z == 0;
-    <b>aborts_if</b> y != z && x &lt;= z && x / z * (x % z) &gt; MAX_U128;
-    <b>aborts_if</b> y != z && x &lt;= z && x / z * (x % z) * z &gt; MAX_U128;
-    <b>aborts_if</b> y != z && x &lt;= z && x / z * (y % z) &gt; MAX_U128;
-    <b>aborts_if</b> y != z && x &lt;= z && x / z * (x % z) * z + x / z * (y % z) &gt; MAX_U128;
-    <b>aborts_if</b> y != z && x &lt;= z && x % z * (y / z) &gt; MAX_U128;
-    <b>aborts_if</b> y != z && x &lt;= z && x % z * (y % z) &gt; MAX_U128;
-    <b>aborts_if</b> y != z && x &lt;= z && x % z * (y % z) / z &gt; MAX_U128;
-    <b>aborts_if</b> y != z && x &lt;= z && x / z * (x % z) * z + x / z * (y % z) + x % z * (y / z) &gt; MAX_U128;
-    <b>aborts_if</b> y != z && x &lt;= z && x / z * (x % z) * z + x / z * (y % z) + x % z * (y / z) + x % z * (y % z) / z &gt; MAX_U128;
-}
 </code></pre>
 
 

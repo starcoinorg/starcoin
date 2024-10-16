@@ -2346,7 +2346,7 @@ in each of its individual states: (<code>active</code>,<code>inactive</code>,<co
     <b>let</b> (_, _, pending_active, _) = <a href="stake.md#0x1_stake_get_stake">stake::get_stake</a>(pool_address);
     <b>if</b> (pending_active == 0) {
         // zero `pending_active` <a href="stake.md#0x1_stake">stake</a> indicates that either there are no `add_stake` fees or
-        // previous epoch <b>has</b> ended and should identify shares owning these fees <b>as</b> released
+        // previous <a href="epoch.md#0x1_epoch">epoch</a> <b>has</b> ended and should identify shares owning these fees <b>as</b> released
         total_active_shares = total_active_shares - <a href="../../starcoin-stdlib/doc/pool_u64.md#0x1_pool_u64_shares">pool_u64::shares</a>(&pool.active_shares, <a href="delegation_pool.md#0x1_delegation_pool_NULL_SHAREHOLDER">NULL_SHAREHOLDER</a>);
         <b>if</b> (delegator_address == <a href="delegation_pool.md#0x1_delegation_pool_NULL_SHAREHOLDER">NULL_SHAREHOLDER</a>) {
             delegator_active_shares = 0
@@ -4249,7 +4249,7 @@ Add <code>amount</code> of coins to the delegation pool <code>pool_address</code
     // synchronize delegation and <a href="stake.md#0x1_stake">stake</a> pools before <a href="../../starcoin-stdlib/doc/any.md#0x1_any">any</a> user operation
     <a href="delegation_pool.md#0x1_delegation_pool_synchronize_delegation_pool">synchronize_delegation_pool</a>(pool_address);
 
-    // fee <b>to</b> be charged for adding `amount` <a href="stake.md#0x1_stake">stake</a> on this delegation pool at this epoch
+    // fee <b>to</b> be charged for adding `amount` <a href="stake.md#0x1_stake">stake</a> on this delegation pool at this <a href="epoch.md#0x1_epoch">epoch</a>
     <b>let</b> add_stake_fee = <a href="delegation_pool.md#0x1_delegation_pool_get_add_stake_fee">get_add_stake_fee</a>(pool_address, amount);
 
     <b>let</b> pool = <b>borrow_global_mut</b>&lt;<a href="delegation_pool.md#0x1_delegation_pool_DelegationPool">DelegationPool</a>&gt;(pool_address);
@@ -4264,7 +4264,7 @@ Add <code>amount</code> of coins to the delegation pool <code>pool_address</code
 
     // grant temporary ownership over `add_stake` fees <b>to</b> a separate shareholder in order <b>to</b>:
     // - not mistake them for rewards <b>to</b> pay the operator from
-    // - distribute them together <b>with</b> the `active` rewards when this epoch ends
+    // - distribute them together <b>with</b> the `active` rewards when this <a href="epoch.md#0x1_epoch">epoch</a> ends
     // in order <b>to</b> appreciate all shares on the active pool atomically
     <a href="delegation_pool.md#0x1_delegation_pool_buy_in_active_shares">buy_in_active_shares</a>(pool, <a href="delegation_pool.md#0x1_delegation_pool_NULL_SHAREHOLDER">NULL_SHAREHOLDER</a>, add_stake_fee);
 
@@ -5055,7 +5055,7 @@ shares pools, assign commission to operator and eventually prepare delegation po
     ) = <a href="delegation_pool.md#0x1_delegation_pool_calculate_stake_pool_drift">calculate_stake_pool_drift</a>(pool);
 
     // zero `pending_active` <a href="stake.md#0x1_stake">stake</a> indicates that either there are no `add_stake` fees or
-    // previous epoch <b>has</b> ended and should release the shares owning the existing fees
+    // previous <a href="epoch.md#0x1_epoch">epoch</a> <b>has</b> ended and should release the shares owning the existing fees
     <b>let</b> (_, _, pending_active, _) = <a href="stake.md#0x1_stake_get_stake">stake::get_stake</a>(pool_address);
     <b>if</b> (pending_active == 0) {
         // renounce ownership over the `add_stake` fees by redeeming all shares of

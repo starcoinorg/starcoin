@@ -1,5 +1,4 @@
 spec starcoin_std::math64 {
-
     spec max(a: u64, b: u64): u64 {
         aborts_if false;
         ensures a >= b ==> result == a;
@@ -57,4 +56,40 @@ spec starcoin_std::math64 {
             n * spec_pow(n, e-1)
         }
     }
+
+    // spec mul_div(a: u64, b: u64, c: u64): u64 {
+    //     pragma opaque = true;
+    //     include MulDivAbortsIf;
+    //     aborts_if [abstract] false;
+    //     ensures [abstract] result == spec_mul_div();
+    // }
+
+    spec schema MulDivAbortsIf {
+        a: u64;
+        b: u64;
+        c: u64;
+        aborts_if b != c && a > c && c == 0;
+        aborts_if b != c && a > c && c!=0 && a/c*b > MAX_U64;
+        aborts_if b != c && a <= c && c == 0;
+        //a * b overflow
+        aborts_if b != c && a <= c && a / c * (a % c) > MAX_U64;
+        //a * b * c overflow
+        aborts_if b != c && a <= c && a / c * (a % c) * c > MAX_U64;
+        //a * d overflow
+        aborts_if b != c && a <= c && a / c * (b % c) > MAX_U64;
+        //a * b * c + a * d overflow
+        aborts_if b != c && a <= c && a / c * (a % c) * c + a / c * (b % c) > MAX_U64;
+        //b * c overflow
+        aborts_if b != c && a <= c && a % c * (b / c) > MAX_U64;
+        //b * d overflow
+        aborts_if b != c && a <= c && a % c * (b % c) > MAX_U64;
+        //b * d / c overflow
+        aborts_if b != c && a <= c && a % c * (b % c) / c > MAX_U64;
+        //a * b * c + a * d + b * c overflow
+        aborts_if b != c && a <= c && a / c * (a % c) * c + a / c * (b % c) + a % c * (b / c) > MAX_U64;
+        //a * b * c + a * d + b * c + b * d / c overflow
+        aborts_if b != c && a <= c && a / c * (a % c) * c + a / c * (b % c) + a % c * (b / c) + a % c * (b % c) / c > MAX_U64;
+    }
+
+    spec fun spec_mul_div(): u64;
 }

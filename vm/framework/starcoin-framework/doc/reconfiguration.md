@@ -70,7 +70,7 @@ with new configuration information. This is also called a
 
 <dl>
 <dt>
-<code>epoch: u64</code>
+<code><a href="epoch.md#0x1_epoch">epoch</a>: u64</code>
 </dt>
 <dd>
 
@@ -101,7 +101,7 @@ with new configuration information. This is also called a
 
 <dl>
 <dt>
-<code>epoch: u64</code>
+<code><a href="epoch.md#0x1_epoch">epoch</a>: u64</code>
 </dt>
 <dd>
 
@@ -129,7 +129,7 @@ Holds information about state of reconfiguration
 
 <dl>
 <dt>
-<code>epoch: u64</code>
+<code><a href="epoch.md#0x1_epoch">epoch</a>: u64</code>
 </dt>
 <dd>
  Epoch number
@@ -260,7 +260,7 @@ Publishes <code><a href="reconfiguration.md#0x1_reconfiguration_Configuration">C
     <b>move_to</b>&lt;<a href="reconfiguration.md#0x1_reconfiguration_Configuration">Configuration</a>&gt;(
         starcoin_framework,
         <a href="reconfiguration.md#0x1_reconfiguration_Configuration">Configuration</a> {
-            epoch: 0,
+            <a href="epoch.md#0x1_epoch">epoch</a>: 0,
             last_reconfiguration_time: 0,
             events: <a href="account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="reconfiguration.md#0x1_reconfiguration_NewEpochEvent">NewEpochEvent</a>&gt;(starcoin_framework),
         }
@@ -417,21 +417,21 @@ Signal validators to start using new configuration. Must be called from friend c
     <b>assert</b>!(current_time &gt; config_ref.last_reconfiguration_time, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="reconfiguration.md#0x1_reconfiguration_EINVALID_BLOCK_TIME">EINVALID_BLOCK_TIME</a>));
     config_ref.last_reconfiguration_time = current_time;
     <b>spec</b> {
-        <b>assume</b> config_ref.epoch + 1 &lt;= MAX_U64;
+        <b>assume</b> config_ref.<a href="epoch.md#0x1_epoch">epoch</a> + 1 &lt;= MAX_U64;
     };
-    config_ref.epoch = config_ref.epoch + 1;
+    config_ref.<a href="epoch.md#0x1_epoch">epoch</a> = config_ref.<a href="epoch.md#0x1_epoch">epoch</a> + 1;
 
     <b>if</b> (std::features::module_event_migration_enabled()) {
         <a href="event.md#0x1_event_emit">event::emit</a>(
             <a href="reconfiguration.md#0x1_reconfiguration_NewEpoch">NewEpoch</a> {
-                epoch: config_ref.epoch,
+                <a href="epoch.md#0x1_epoch">epoch</a>: config_ref.<a href="epoch.md#0x1_epoch">epoch</a>,
             },
         );
     };
     <a href="event.md#0x1_event_emit_event">event::emit_event</a>&lt;<a href="reconfiguration.md#0x1_reconfiguration_NewEpochEvent">NewEpochEvent</a>&gt;(
         &<b>mut</b> config_ref.events,
         <a href="reconfiguration.md#0x1_reconfiguration_NewEpochEvent">NewEpochEvent</a> {
-            epoch: config_ref.epoch,
+            <a href="epoch.md#0x1_epoch">epoch</a>: config_ref.<a href="epoch.md#0x1_epoch">epoch</a>,
         },
     );
 
@@ -483,7 +483,7 @@ Signal validators to start using new configuration. Must be called from friend c
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="reconfiguration.md#0x1_reconfiguration_current_epoch">current_epoch</a>(): u64 <b>acquires</b> <a href="reconfiguration.md#0x1_reconfiguration_Configuration">Configuration</a> {
-    <b>borrow_global</b>&lt;<a href="reconfiguration.md#0x1_reconfiguration_Configuration">Configuration</a>&gt;(@starcoin_framework).epoch
+    <b>borrow_global</b>&lt;<a href="reconfiguration.md#0x1_reconfiguration_Configuration">Configuration</a>&gt;(@starcoin_framework).<a href="epoch.md#0x1_epoch">epoch</a>
 }
 </code></pre>
 
@@ -510,20 +510,20 @@ reconfiguration event.
 
 <pre><code><b>fun</b> <a href="reconfiguration.md#0x1_reconfiguration_emit_genesis_reconfiguration_event">emit_genesis_reconfiguration_event</a>() <b>acquires</b> <a href="reconfiguration.md#0x1_reconfiguration_Configuration">Configuration</a> {
     <b>let</b> config_ref = <b>borrow_global_mut</b>&lt;<a href="reconfiguration.md#0x1_reconfiguration_Configuration">Configuration</a>&gt;(@starcoin_framework);
-    <b>assert</b>!(config_ref.epoch == 0 && config_ref.last_reconfiguration_time == 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="reconfiguration.md#0x1_reconfiguration_ECONFIGURATION">ECONFIGURATION</a>));
-    config_ref.epoch = 1;
+    <b>assert</b>!(config_ref.<a href="epoch.md#0x1_epoch">epoch</a> == 0 && config_ref.last_reconfiguration_time == 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="reconfiguration.md#0x1_reconfiguration_ECONFIGURATION">ECONFIGURATION</a>));
+    config_ref.<a href="epoch.md#0x1_epoch">epoch</a> = 1;
 
     <b>if</b> (std::features::module_event_migration_enabled()) {
         <a href="event.md#0x1_event_emit">event::emit</a>(
             <a href="reconfiguration.md#0x1_reconfiguration_NewEpoch">NewEpoch</a> {
-                epoch: config_ref.epoch,
+                <a href="epoch.md#0x1_epoch">epoch</a>: config_ref.<a href="epoch.md#0x1_epoch">epoch</a>,
             },
         );
     };
     <a href="event.md#0x1_event_emit_event">event::emit_event</a>&lt;<a href="reconfiguration.md#0x1_reconfiguration_NewEpochEvent">NewEpochEvent</a>&gt;(
         &<b>mut</b> config_ref.events,
         <a href="reconfiguration.md#0x1_reconfiguration_NewEpochEvent">NewEpochEvent</a> {
-            epoch: config_ref.epoch,
+            <a href="epoch.md#0x1_epoch">epoch</a>: config_ref.<a href="epoch.md#0x1_epoch">epoch</a>,
         },
     );
 }
@@ -644,7 +644,7 @@ Guid_creation_num should be 2 according to logic.
 <b>aborts_if</b> <b>exists</b>&lt;<a href="reconfiguration.md#0x1_reconfiguration_Configuration">Configuration</a>&gt;(@starcoin_framework);
 // This enforces <a id="high-level-req-1" href="#high-level-req">high-level requirement 1</a>:
 <b>ensures</b> <b>exists</b>&lt;<a href="reconfiguration.md#0x1_reconfiguration_Configuration">Configuration</a>&gt;(@starcoin_framework);
-<b>ensures</b> config.epoch == 0 && config.last_reconfiguration_time == 0;
+<b>ensures</b> config.<a href="epoch.md#0x1_epoch">epoch</a> == 0 && config.last_reconfiguration_time == 0;
 <b>ensures</b> config.events == <a href="event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="reconfiguration.md#0x1_reconfiguration_NewEpochEvent">NewEpochEvent</a>&gt; {
     counter: 0,
     <a href="guid.md#0x1_guid">guid</a>: <a href="guid.md#0x1_guid_GUID">guid::GUID</a> {
@@ -733,10 +733,10 @@ Make sure the caller is admin and check the resource DisableReconfiguration.
 <b>include</b> success ==&gt; <a href="starcoin_coin.md#0x1_starcoin_coin_ExistsStarcoinCoin">starcoin_coin::ExistsStarcoinCoin</a>;
 <b>include</b> <a href="transaction_fee.md#0x1_transaction_fee_RequiresCollectedFeesPerValueLeqBlockStarcoinSupply">transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply</a>;
 <b>aborts_if</b> <b>false</b>;
-<b>ensures</b> success ==&gt; <b>global</b>&lt;<a href="reconfiguration.md#0x1_reconfiguration_Configuration">Configuration</a>&gt;(@starcoin_framework).epoch == <b>old</b>(<b>global</b>&lt;<a href="reconfiguration.md#0x1_reconfiguration_Configuration">Configuration</a>&gt;(@starcoin_framework).epoch) + 1;
+<b>ensures</b> success ==&gt; <b>global</b>&lt;<a href="reconfiguration.md#0x1_reconfiguration_Configuration">Configuration</a>&gt;(@starcoin_framework).<a href="epoch.md#0x1_epoch">epoch</a> == <b>old</b>(<b>global</b>&lt;<a href="reconfiguration.md#0x1_reconfiguration_Configuration">Configuration</a>&gt;(@starcoin_framework).<a href="epoch.md#0x1_epoch">epoch</a>) + 1;
 <b>ensures</b> success ==&gt; <b>global</b>&lt;<a href="reconfiguration.md#0x1_reconfiguration_Configuration">Configuration</a>&gt;(@starcoin_framework).last_reconfiguration_time == <a href="timestamp.md#0x1_timestamp_spec_now_microseconds">timestamp::spec_now_microseconds</a>();
 // This enforces <a id="high-level-req-4" href="#high-level-req">high-level requirement 4</a> and <a id="high-level-req-5" href="#high-level-req">high-level requirement 5</a>:
-<b>ensures</b> !success ==&gt; <b>global</b>&lt;<a href="reconfiguration.md#0x1_reconfiguration_Configuration">Configuration</a>&gt;(@starcoin_framework).epoch == <b>old</b>(<b>global</b>&lt;<a href="reconfiguration.md#0x1_reconfiguration_Configuration">Configuration</a>&gt;(@starcoin_framework).epoch);
+<b>ensures</b> !success ==&gt; <b>global</b>&lt;<a href="reconfiguration.md#0x1_reconfiguration_Configuration">Configuration</a>&gt;(@starcoin_framework).<a href="epoch.md#0x1_epoch">epoch</a> == <b>old</b>(<b>global</b>&lt;<a href="reconfiguration.md#0x1_reconfiguration_Configuration">Configuration</a>&gt;(@starcoin_framework).<a href="epoch.md#0x1_epoch">epoch</a>);
 </code></pre>
 
 
@@ -770,7 +770,7 @@ Make sure the caller is admin and check the resource DisableReconfiguration.
 
 
 <pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="reconfiguration.md#0x1_reconfiguration_Configuration">Configuration</a>&gt;(@starcoin_framework);
-<b>ensures</b> result == <b>global</b>&lt;<a href="reconfiguration.md#0x1_reconfiguration_Configuration">Configuration</a>&gt;(@starcoin_framework).epoch;
+<b>ensures</b> result == <b>global</b>&lt;<a href="reconfiguration.md#0x1_reconfiguration_Configuration">Configuration</a>&gt;(@starcoin_framework).<a href="epoch.md#0x1_epoch">epoch</a>;
 </code></pre>
 
 
@@ -790,8 +790,8 @@ Should equal to 0
 
 <pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="reconfiguration.md#0x1_reconfiguration_Configuration">Configuration</a>&gt;(@starcoin_framework);
 <b>let</b> config_ref = <b>global</b>&lt;<a href="reconfiguration.md#0x1_reconfiguration_Configuration">Configuration</a>&gt;(@starcoin_framework);
-<b>aborts_if</b> !(config_ref.epoch == 0 && config_ref.last_reconfiguration_time == 0);
-<b>ensures</b> <b>global</b>&lt;<a href="reconfiguration.md#0x1_reconfiguration_Configuration">Configuration</a>&gt;(@starcoin_framework).epoch == 1;
+<b>aborts_if</b> !(config_ref.<a href="epoch.md#0x1_epoch">epoch</a> == 0 && config_ref.last_reconfiguration_time == 0);
+<b>ensures</b> <b>global</b>&lt;<a href="reconfiguration.md#0x1_reconfiguration_Configuration">Configuration</a>&gt;(@starcoin_framework).<a href="epoch.md#0x1_epoch">epoch</a> == 1;
 </code></pre>
 
 

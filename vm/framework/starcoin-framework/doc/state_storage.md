@@ -82,7 +82,7 @@ usage after the last txn of the previous epoch is committed.
 
 <dl>
 <dt>
-<code>epoch: u64</code>
+<code><a href="epoch.md#0x1_epoch">epoch</a>: u64</code>
 </dt>
 <dd>
 
@@ -161,7 +161,7 @@ usage after the last txn of the previous epoch is committed.
         <a href="../../move-stdlib/doc/error.md#0x1_error_already_exists">error::already_exists</a>(<a href="state_storage.md#0x1_state_storage_ESTATE_STORAGE_USAGE">ESTATE_STORAGE_USAGE</a>)
     );
     <b>move_to</b>(starcoin_framework, <a href="state_storage.md#0x1_state_storage_StateStorageUsage">StateStorageUsage</a> {
-        epoch: 0,
+        <a href="epoch.md#0x1_epoch">epoch</a>: 0,
         usage: <a href="state_storage.md#0x1_state_storage_Usage">Usage</a> {
             items: 0,
             bytes: 0,
@@ -180,7 +180,7 @@ usage after the last txn of the previous epoch is committed.
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="state_storage.md#0x1_state_storage_on_new_block">on_new_block</a>(epoch: u64)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="state_storage.md#0x1_state_storage_on_new_block">on_new_block</a>(<a href="epoch.md#0x1_epoch">epoch</a>: u64)
 </code></pre>
 
 
@@ -189,14 +189,14 @@ usage after the last txn of the previous epoch is committed.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="state_storage.md#0x1_state_storage_on_new_block">on_new_block</a>(epoch: u64) <b>acquires</b> <a href="state_storage.md#0x1_state_storage_StateStorageUsage">StateStorageUsage</a> {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="state_storage.md#0x1_state_storage_on_new_block">on_new_block</a>(<a href="epoch.md#0x1_epoch">epoch</a>: u64) <b>acquires</b> <a href="state_storage.md#0x1_state_storage_StateStorageUsage">StateStorageUsage</a> {
     <b>assert</b>!(
         <b>exists</b>&lt;<a href="state_storage.md#0x1_state_storage_StateStorageUsage">StateStorageUsage</a>&gt;(@starcoin_framework),
         <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="state_storage.md#0x1_state_storage_ESTATE_STORAGE_USAGE">ESTATE_STORAGE_USAGE</a>)
     );
     <b>let</b> usage = <b>borrow_global_mut</b>&lt;<a href="state_storage.md#0x1_state_storage_StateStorageUsage">StateStorageUsage</a>&gt;(@starcoin_framework);
-    <b>if</b> (epoch != usage.epoch) {
-        usage.epoch = epoch;
+    <b>if</b> (<a href="epoch.md#0x1_epoch">epoch</a> != usage.<a href="epoch.md#0x1_epoch">epoch</a>) {
+        usage.<a href="epoch.md#0x1_epoch">epoch</a> = <a href="epoch.md#0x1_epoch">epoch</a>;
         usage.usage = <a href="state_storage.md#0x1_state_storage_get_state_storage_usage_only_at_epoch_beginning">get_state_storage_usage_only_at_epoch_beginning</a>();
     }
 }
@@ -381,7 +381,7 @@ aborts if StateStorageUsage already exists.
 <b>ensures</b> <b>exists</b>&lt;<a href="state_storage.md#0x1_state_storage_StateStorageUsage">StateStorageUsage</a>&gt;(@starcoin_framework);
 <b>let</b> <b>post</b> state_usage = <b>global</b>&lt;<a href="state_storage.md#0x1_state_storage_StateStorageUsage">StateStorageUsage</a>&gt;(@starcoin_framework);
 // This enforces <a id="high-level-req-2" href="#high-level-req">high-level requirement 2</a>:
-<b>ensures</b> state_usage.epoch == 0 && state_usage.usage.bytes == 0 && state_usage.usage.items == 0;
+<b>ensures</b> state_usage.<a href="epoch.md#0x1_epoch">epoch</a> == 0 && state_usage.usage.bytes == 0 && state_usage.usage.items == 0;
 </code></pre>
 
 
@@ -391,7 +391,7 @@ aborts if StateStorageUsage already exists.
 ### Function `on_new_block`
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="state_storage.md#0x1_state_storage_on_new_block">on_new_block</a>(epoch: u64)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="state_storage.md#0x1_state_storage_on_new_block">on_new_block</a>(<a href="epoch.md#0x1_epoch">epoch</a>: u64)
 </code></pre>
 
 
@@ -400,7 +400,7 @@ aborts if StateStorageUsage already exists.
 <pre><code>// This enforces <a id="high-level-req-5.2" href="#high-level-req">high-level requirement 5</a>:
 <b>requires</b> <a href="chain_status.md#0x1_chain_status_is_operating">chain_status::is_operating</a>();
 <b>aborts_if</b> <b>false</b>;
-<b>ensures</b> epoch == <b>global</b>&lt;<a href="state_storage.md#0x1_state_storage_StateStorageUsage">StateStorageUsage</a>&gt;(@starcoin_framework).epoch;
+<b>ensures</b> <a href="epoch.md#0x1_epoch">epoch</a> == <b>global</b>&lt;<a href="state_storage.md#0x1_state_storage_StateStorageUsage">StateStorageUsage</a>&gt;(@starcoin_framework).<a href="epoch.md#0x1_epoch">epoch</a>;
 </code></pre>
 
 

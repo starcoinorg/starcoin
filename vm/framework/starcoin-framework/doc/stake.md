@@ -2095,7 +2095,7 @@ This is the same as the validator's total active and pending_inactive stake.
 <pre><code><b>public</b> <b>fun</b> <a href="stake.md#0x1_stake_get_current_epoch_voting_power">get_current_epoch_voting_power</a>(pool_address: <b>address</b>): u64 <b>acquires</b> <a href="stake.md#0x1_stake_StakePool">StakePool</a>, <a href="stake.md#0x1_stake_ValidatorSet">ValidatorSet</a> {
     <a href="stake.md#0x1_stake_assert_stake_pool_exists">assert_stake_pool_exists</a>(pool_address);
     <b>let</b> validator_state = <a href="stake.md#0x1_stake_get_validator_state">get_validator_state</a>(pool_address);
-    // Both active and pending inactive validators can still vote in the current epoch.
+    // Both active and pending inactive validators can still vote in the current <a href="epoch.md#0x1_epoch">epoch</a>.
     <b>if</b> (validator_state == <a href="stake.md#0x1_stake_VALIDATOR_STATUS_ACTIVE">VALIDATOR_STATUS_ACTIVE</a> || validator_state == <a href="stake.md#0x1_stake_VALIDATOR_STATUS_PENDING_INACTIVE">VALIDATOR_STATUS_PENDING_INACTIVE</a>) {
         <b>let</b> active_stake = <a href="coin.md#0x1_coin_value">coin::value</a>(&<b>borrow_global</b>&lt;<a href="stake.md#0x1_stake_StakePool">StakePool</a>&gt;(pool_address).active);
         <b>let</b> pending_inactive_stake = <a href="coin.md#0x1_coin_value">coin::value</a>(&<b>borrow_global</b>&lt;<a href="stake.md#0x1_stake_StakePool">StakePool</a>&gt;(pool_address).pending_inactive);
@@ -2841,7 +2841,7 @@ Add <code>coins</code> into <code>pool_address</code>. this requires the corresp
     };
 
     // Only track and validate <a href="voting.md#0x1_voting">voting</a> power increase for active and pending_active validator.
-    // Pending_inactive validator will be removed from the validator set in the next epoch.
+    // Pending_inactive validator will be removed from the validator set in the next <a href="epoch.md#0x1_epoch">epoch</a>.
     // Inactive validator's total <a href="stake.md#0x1_stake">stake</a> will be tracked when they join the validator set.
     <b>let</b> validator_set = <b>borrow_global_mut</b>&lt;<a href="stake.md#0x1_stake_ValidatorSet">ValidatorSet</a>&gt;(@starcoin_framework);
     // Search directly rather using get_validator_state <b>to</b> save on unnecessary loops.
@@ -2850,8 +2850,8 @@ Add <code>coins</code> into <code>pool_address</code>. this requires the corresp
         <a href="stake.md#0x1_stake_update_voting_power_increase">update_voting_power_increase</a>(amount);
     };
 
-    // Add <b>to</b> pending_active <b>if</b> it's a current validator because the <a href="stake.md#0x1_stake">stake</a> is not counted until the next epoch.
-    // Otherwise, the delegation can be added <b>to</b> active directly <b>as</b> the validator is also activated in the epoch.
+    // Add <b>to</b> pending_active <b>if</b> it's a current validator because the <a href="stake.md#0x1_stake">stake</a> is not counted until the next <a href="epoch.md#0x1_epoch">epoch</a>.
+    // Otherwise, the delegation can be added <b>to</b> active directly <b>as</b> the validator is also activated in the <a href="epoch.md#0x1_epoch">epoch</a>.
     <b>let</b> stake_pool = <b>borrow_global_mut</b>&lt;<a href="stake.md#0x1_stake_StakePool">StakePool</a>&gt;(pool_address);
     <b>if</b> (<a href="stake.md#0x1_stake_is_current_epoch_validator">is_current_epoch_validator</a>(pool_address)) {
         <a href="coin.md#0x1_coin_merge">coin::merge</a>&lt;StarcoinCoin&gt;(&<b>mut</b> stake_pool.pending_active, coins);
@@ -2940,7 +2940,7 @@ Move <code>amount</code> of coins from pending_inactive to active.
     amount = <b>min</b>(amount, total_pending_inactive);
 
     // Since this does not count <b>as</b> a <a href="voting.md#0x1_voting">voting</a> power change (pending inactive still counts <b>as</b> <a href="voting.md#0x1_voting">voting</a> power in the
-    // current epoch), <a href="stake.md#0x1_stake">stake</a> can be immediately moved from pending inactive <b>to</b> active.
+    // current <a href="epoch.md#0x1_epoch">epoch</a>), <a href="stake.md#0x1_stake">stake</a> can be immediately moved from pending inactive <b>to</b> active.
     // We also don't need <b>to</b> check <a href="voting.md#0x1_voting">voting</a> power increase <b>as</b> there's none.
     <b>let</b> reactivated_coins = <a href="coin.md#0x1_coin_extract">coin::extract</a>(&<b>mut</b> stake_pool.pending_inactive, amount);
     <a href="coin.md#0x1_coin_merge">coin::merge</a>(&<b>mut</b> stake_pool.active, reactivated_coins);
@@ -3248,7 +3248,7 @@ This internal version can only be called by the Genesis module during Genesis.
     // Track and validate <a href="voting.md#0x1_voting">voting</a> power increase.
     <a href="stake.md#0x1_stake_update_voting_power_increase">update_voting_power_increase</a>(voting_power);
 
-    // Add validator <b>to</b> pending_active, <b>to</b> be activated in the next epoch.
+    // Add validator <b>to</b> pending_active, <b>to</b> be activated in the next <a href="epoch.md#0x1_epoch">epoch</a>.
     <b>let</b> validator_config = <b>borrow_global_mut</b>&lt;<a href="stake.md#0x1_stake_ValidatorConfig">ValidatorConfig</a>&gt;(pool_address);
     <b>assert</b>!(!<a href="../../move-stdlib/doc/vector.md#0x1_vector_is_empty">vector::is_empty</a>(&validator_config.consensus_pubkey), <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="stake.md#0x1_stake_EINVALID_PUBLIC_KEY">EINVALID_PUBLIC_KEY</a>));
 
@@ -3330,7 +3330,7 @@ Unlock <code>amount</code> from the active stake. Only possible if the lockup ha
     };
 
     // Unlocked coins are moved <b>to</b> pending_inactive. When the current lockup cycle expires, they will be moved into
-    // inactive in the earliest possible epoch transition.
+    // inactive in the earliest possible <a href="epoch.md#0x1_epoch">epoch</a> transition.
     <b>let</b> pool_address = owner_cap.pool_address;
     <a href="stake.md#0x1_stake_assert_stake_pool_exists">assert_stake_pool_exists</a>(pool_address);
     <b>let</b> stake_pool = <b>borrow_global_mut</b>&lt;<a href="stake.md#0x1_stake_StakePool">StakePool</a>&gt;(pool_address);
@@ -3500,7 +3500,7 @@ Can only be called by the operator of the validator/staking pool.
 
         // Decrease the <a href="voting.md#0x1_voting">voting</a> power increase <b>as</b> the pending validator's <a href="voting.md#0x1_voting">voting</a> power was added when they requested
         // <b>to</b> join. Now that they changed their mind, their <a href="voting.md#0x1_voting">voting</a> power should not affect the joining limit of this
-        // epoch.
+        // <a href="epoch.md#0x1_epoch">epoch</a>.
         <b>let</b> validator_stake = (<a href="stake.md#0x1_stake_get_next_epoch_voting_power">get_next_epoch_voting_power</a>(stake_pool) <b>as</b> u128);
         // total_joining_power should be larger than validator_stake but just in case there <b>has</b> been a small
         // rounding <a href="../../move-stdlib/doc/error.md#0x1_error">error</a> somewhere that can lead <b>to</b> an underflow, we still want <b>to</b> allow this transaction <b>to</b>
@@ -3586,7 +3586,7 @@ This function cannot abort.
     proposer_index: Option&lt;u64&gt;,
     failed_proposer_indices: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;
 ) <b>acquires</b> <a href="stake.md#0x1_stake_ValidatorPerformance">ValidatorPerformance</a> {
-    // Validator set cannot change until the end of the epoch, so the validator index in arguments should
+    // Validator set cannot change until the end of the <a href="epoch.md#0x1_epoch">epoch</a>, so the validator index in arguments should
     // match <b>with</b> those of the validators in <a href="stake.md#0x1_stake_ValidatorPerformance">ValidatorPerformance</a> resource.
     <b>let</b> validator_perf = <b>borrow_global_mut</b>&lt;<a href="stake.md#0x1_stake_ValidatorPerformance">ValidatorPerformance</a>&gt;(@starcoin_framework);
     <b>let</b> validator_len = <a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(&validator_perf.validators);
@@ -3756,7 +3756,7 @@ power.
         });
 
         // Automatically renew a validator's lockup for validators that will still be in the validator set in the
-        // next epoch.
+        // next <a href="epoch.md#0x1_epoch">epoch</a>.
         <b>let</b> stake_pool = <b>borrow_global_mut</b>&lt;<a href="stake.md#0x1_stake_StakePool">StakePool</a>&gt;(validator_info.addr);
         <b>let</b> now_secs = <a href="timestamp.md#0x1_timestamp_now_seconds">timestamp::now_seconds</a>();
         <b>let</b> reconfig_start_secs = <b>if</b> (<a href="chain_status.md#0x1_chain_status_is_operating">chain_status::is_operating</a>()) {
@@ -4202,7 +4202,7 @@ Calculate the rewards amount.
         // The following condition must hold because
         // (1) num_successful_proposals &lt;= num_total_proposals, and
         // (2) `num_total_proposals` cannot be larger than 86400, the maximum number of proposals
-        //     in a day (1 proposal per second), and `num_total_proposals` is reset <b>to</b> 0 every epoch.
+        //     in a day (1 proposal per second), and `num_total_proposals` is reset <b>to</b> 0 every <a href="epoch.md#0x1_epoch">epoch</a>.
         <b>assume</b> num_successful_proposals * <a href="stake.md#0x1_stake_MAX_REWARDS_RATE">MAX_REWARDS_RATE</a> &lt;= <a href="stake.md#0x1_stake_MAX_U64">MAX_U64</a>;
     };
     // The rewards amount is equal <b>to</b> (<a href="stake.md#0x1_stake">stake</a> amount * rewards rate * performance multiplier).

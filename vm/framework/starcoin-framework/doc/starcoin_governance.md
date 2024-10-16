@@ -1285,7 +1285,7 @@ Return proposal_id when a proposal is successfully created.
     <b>let</b> proposal_metadata = <a href="starcoin_governance.md#0x1_starcoin_governance_create_proposal_metadata">create_proposal_metadata</a>(metadata_location, metadata_hash);
 
     // We want <b>to</b> allow early resolution of proposals <b>if</b> more than 50% of the total supply of the network coins
-    // <b>has</b> voted. This doesn't take into subsequent inflation/deflation (rewards are issued every epoch and gas fees
+    // <b>has</b> voted. This doesn't take into subsequent inflation/deflation (rewards are issued every <a href="epoch.md#0x1_epoch">epoch</a> and gas fees
     // are burnt after every transaction), but inflation/delation is very unlikely <b>to</b> have a major impact on total
     // supply during the <a href="voting.md#0x1_voting">voting</a> period.
     <b>let</b> total_voting_token_supply = <a href="coin.md#0x1_coin_supply">coin::supply</a>&lt;StarcoinCoin&gt;();
