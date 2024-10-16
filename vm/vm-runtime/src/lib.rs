@@ -45,7 +45,3 @@ pub trait VMExecutor: Send + Sync {
         metrics: Option<VMMetrics>,
     ) -> Result<Vec<TransactionOutput>, VMStatus>;
 }
-/// Get the AccessPath to a resource stored under `address` with type name `tag`
-fn create_access_path(address: AccountAddress, tag: StructTag) -> AccessPath {
-    AccessPath::resource_access_path(address, tag)
-}
