@@ -427,8 +427,8 @@ impl BasicDagVerifier {
 }
 
 // for mining
-pub struct DagVerifier;
-impl BlockVerifier for DagVerifier {
+pub struct DagVerifierForMining;
+impl BlockVerifier for DagVerifierForMining {
     fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
     where
         R: ChainReader,
@@ -451,8 +451,8 @@ impl BlockVerifier for DagVerifier {
 }
 
 // for sync
-pub struct DagVerifierWithGhostData;
-impl BlockVerifier for DagVerifierWithGhostData {
+pub struct DagVerifierForSync;
+impl BlockVerifier for DagVerifierForSync {
     fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
     where
         R: ChainReader,
