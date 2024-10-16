@@ -35,8 +35,6 @@ use std::ops::DerefMut;
 use std::sync::Arc;
 
 pub const DEFAULT_GHOSTDAG_K: KType = 8u16;
-pub const DEFAULT_PRUNING_DEPTH: u64 = 185798;
-pub const DEFAULT_FINALITY_DEPTH: u64 = 86400;
 
 pub type DbGhostdagManager = GhostdagManager<
     DbGhostdagStore,
@@ -637,6 +635,9 @@ impl BlockDAG {
             pruning_point,
             merge_depth,
         )?;
+        if merge_depth_root == Hash::zero() {
+            return anyhow::Ok((Hash::zero(), Hash::zero()));
+        }
         let finality_point = self.block_depth_manager.calc_finality_point(
             ghostdata,
             pruning_point,

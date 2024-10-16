@@ -756,6 +756,7 @@ pub static G_BASE_BLOCK_GAS_LIMIT: u64 = 50_000_000; //must big than maximum_num
 
 pub static G_PRUNING_DEPTH: u64 = 17280;
 pub static G_PRUNING_FINALITY: u64 = 8640;
+pub static G_MERGE_DEPTH: u64 = 3600; // the merge depth should be smaller than the pruning finality
 
 static G_EMPTY_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(Vec::new);
 const ONE_DAY: u64 = 86400;
