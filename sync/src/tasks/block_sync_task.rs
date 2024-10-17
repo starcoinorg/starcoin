@@ -476,11 +476,13 @@ where
                 parallel_execute.process_absent_blocks().await?;
                 anyhow::Ok(ParallelSign::Continue)
             } else {
+                info!("save the block into the local dag sync block db");
                 self.local_store
                     .save_dag_sync_block(starcoin_storage::block::DagSyncBlock {
                         block: block.clone(),
                         children: vec![],
                     })?;
+                info!("save the block into the sorted dag sync block db");
                 self.sync_dag_store.save_block(block)?;
                 anyhow::Ok(ParallelSign::NeedMoreBlocks)
             }
