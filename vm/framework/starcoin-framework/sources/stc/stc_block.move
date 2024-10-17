@@ -3,12 +3,23 @@ module starcoin_framework::stc_block {
     use std::error;
     use std::hash;
     use std::option;
+    use std::signer;
     use std::vector;
+
+    use starcoin_framework::epoch;
+    use starcoin_framework::block_reward;
+    use starcoin_framework::timestamp;
+    use starcoin_framework::starcoin_coin::STC;
+    use starcoin_framework::stc_transaction_fee;
+
+    use starcoin_framework::chain_id;
     use starcoin_framework::bcs_util;
     use starcoin_framework::account;
     use starcoin_framework::system_addresses;
     use starcoin_framework::ring;
     use starcoin_framework::event;
+
+    const EPROLOGUE_BAD_CHAIN_ID: u64 = 6;
 
     /// Block metadata struct.
     struct BlockMetadata has key {
@@ -102,8 +113,47 @@ module starcoin_framework::stc_block {
         borrow_global<BlockMetadata>(system_addresses::get_starcoin_framework()).author
     }
 
+    /// Set the metadata for the current block and distribute transaction fees and block rewards.
+    /// The runtime always runs this before executing the transactions in a block.
+    public fun block_prologue(
+        account: signer,
+        parent_hash: vector<u8>,
+        timestamp: u64,
+        author: address,
+        auth_key_vec: vector<u8>,
+        uncles: u64,
+        number: u64,
+        chain_id: u8,
+        parent_gas_used: u64,
+    ) acquires BlockMetadata {
+        // Can only be invoked by genesis account
+        system_addresses::assert_starcoin_framework(&account);
+
+        // Check that the chain ID stored on-chain matches the chain ID
+        // specified by the transaction
+        assert!(chain_id::get() == chain_id, error::invalid_argument(EPROLOGUE_BAD_CHAIN_ID));
+
+        // deal with previous block first.
+        let txn_fee = stc_transaction_fee::distribute_transaction_fees<STC>(&account);
+
+        // then deal with current block.
+        timestamp::update_global_time(&account, signer::address_of(&account), timestamp);
+        process_block_metadata(
+            &account,
+            parent_hash,
+            author,
+            timestamp,
+            uncles,
+            number,
+        );
+
+        let reward = epoch::adjust_epoch(&account, number, timestamp, uncles, parent_gas_used);
+        // pass in previous block gas fees.
+        block_reward::process_block_reward(&account, number, reward, author, auth_key_vec, txn_fee);
+    }
+
     /// Call at block prologue
-    public fun process_block_metadata(
+    fun process_block_metadata(
         account: &signer,
         parent_hash: vector<u8>,
         author: address,

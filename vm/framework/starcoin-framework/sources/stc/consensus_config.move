@@ -7,6 +7,8 @@ module starcoin_framework::consensus_config {
     use starcoin_framework::on_chain_config;
     use starcoin_framework::system_addresses;
 
+    // friend starcoin_framework::stc_genesis;
+
     /// consensus configurations.
     struct ConsensusConfig has copy, drop, store {
         /// Uncle block rate per epoch

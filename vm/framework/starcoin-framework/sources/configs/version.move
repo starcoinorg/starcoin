@@ -10,6 +10,7 @@ module starcoin_framework::version {
 
     friend starcoin_framework::genesis;
     friend starcoin_framework::reconfiguration_with_dkg;
+    // friend starcoin_framework::stc_genesis;
 
     struct Version has drop, key, store {
         major: u64,

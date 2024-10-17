@@ -15,6 +15,7 @@ Block module provide metadata for generated blocks.
 -  [Function `get_current_block_number`](#0x1_stc_block_get_current_block_number)
 -  [Function `get_parent_hash`](#0x1_stc_block_get_parent_hash)
 -  [Function `get_current_author`](#0x1_stc_block_get_current_author)
+-  [Function `block_prologue`](#0x1_stc_block_block_prologue)
 -  [Function `process_block_metadata`](#0x1_stc_block_process_block_metadata)
 -  [Function `checkpoints_init`](#0x1_stc_block_checkpoints_init)
 -  [Function `checkpoint_entry`](#0x1_stc_block_checkpoint_entry)
@@ -44,12 +45,20 @@ Block module provide metadata for generated blocks.
 
 <pre><code><b>use</b> <a href="account.md#0x1_account">0x1::account</a>;
 <b>use</b> <a href="bcs_util.md#0x1_bcs_util">0x1::bcs_util</a>;
+<b>use</b> <a href="block_reward.md#0x1_block_reward">0x1::block_reward</a>;
+<b>use</b> <a href="chain_id.md#0x1_chain_id">0x1::chain_id</a>;
+<b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
+<b>use</b> <a href="epoch.md#0x1_epoch">0x1::epoch</a>;
 <b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="event.md#0x1_event">0x1::event</a>;
 <b>use</b> <a href="../../move-stdlib/doc/hash.md#0x1_hash">0x1::hash</a>;
 <b>use</b> <a href="../../move-stdlib/doc/option.md#0x1_option">0x1::option</a>;
 <b>use</b> <a href="ring.md#0x1_ring">0x1::ring</a>;
+<b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
+<b>use</b> <a href="starcoin_coin.md#0x1_starcoin_coin">0x1::starcoin_coin</a>;
+<b>use</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee">0x1::stc_transaction_fee</a>;
 <b>use</b> <a href="system_addresses.md#0x1_system_addresses">0x1::system_addresses</a>;
+<b>use</b> <a href="timestamp.md#0x1_timestamp">0x1::timestamp</a>;
 <b>use</b> <a href="../../move-stdlib/doc/vector.md#0x1_vector">0x1::vector</a>;
 </code></pre>
 
@@ -272,6 +281,15 @@ Events emitted when new block generated.
 
 
 
+<a id="0x1_stc_block_EPROLOGUE_BAD_CHAIN_ID"></a>
+
+
+
+<pre><code><b>const</b> <a href="stc_block.md#0x1_stc_block_EPROLOGUE_BAD_CHAIN_ID">EPROLOGUE_BAD_CHAIN_ID</a>: u64 = 6;
+</code></pre>
+
+
+
 <a id="0x1_stc_block_ERROR_INTERVAL_TOO_LITTLE"></a>
 
 
@@ -410,14 +428,15 @@ Gets the address of the author of the current block
 
 </details>
 
-<a id="0x1_stc_block_process_block_metadata"></a>
+<a id="0x1_stc_block_block_prologue"></a>
 
-## Function `process_block_metadata`
+## Function `block_prologue`
 
-Call at block prologue
+Set the metadata for the current block and distribute transaction fees and block rewards.
+The runtime always runs this before executing the transactions in a block.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_process_block_metadata">process_block_metadata</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, parent_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, author: <b>address</b>, <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64, uncles: u64, number: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_block_prologue">block_prologue</a>(<a href="account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, parent_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64, author: <b>address</b>, auth_key_vec: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, uncles: u64, number: u64, <a href="chain_id.md#0x1_chain_id">chain_id</a>: u8, parent_gas_used: u64)
 </code></pre>
 
 
@@ -426,7 +445,65 @@ Call at block prologue
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_process_block_metadata">process_block_metadata</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_block_prologue">block_prologue</a>(
+    <a href="account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    parent_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64,
+    author: <b>address</b>,
+    auth_key_vec: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    uncles: u64,
+    number: u64,
+    <a href="chain_id.md#0x1_chain_id">chain_id</a>: u8,
+    parent_gas_used: u64,
+) <b>acquires</b> <a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a> {
+    // Can only be invoked by <a href="genesis.md#0x1_genesis">genesis</a> <a href="account.md#0x1_account">account</a>
+    <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(&<a href="account.md#0x1_account">account</a>);
+
+    // Check that the chain ID stored on-chain matches the chain ID
+    // specified by the transaction
+    <b>assert</b>!(<a href="chain_id.md#0x1_chain_id_get">chain_id::get</a>() == <a href="chain_id.md#0x1_chain_id">chain_id</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="stc_block.md#0x1_stc_block_EPROLOGUE_BAD_CHAIN_ID">EPROLOGUE_BAD_CHAIN_ID</a>));
+
+    // deal <b>with</b> previous <a href="block.md#0x1_block">block</a> first.
+    <b>let</b> txn_fee = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_distribute_transaction_fees">stc_transaction_fee::distribute_transaction_fees</a>&lt;STC&gt;(&<a href="account.md#0x1_account">account</a>);
+
+    // then deal <b>with</b> current <a href="block.md#0x1_block">block</a>.
+    <a href="timestamp.md#0x1_timestamp_update_global_time">timestamp::update_global_time</a>(&<a href="account.md#0x1_account">account</a>, <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(&<a href="account.md#0x1_account">account</a>), <a href="timestamp.md#0x1_timestamp">timestamp</a>);
+    <a href="stc_block.md#0x1_stc_block_process_block_metadata">process_block_metadata</a>(
+        &<a href="account.md#0x1_account">account</a>,
+        parent_hash,
+        author,
+        <a href="timestamp.md#0x1_timestamp">timestamp</a>,
+        uncles,
+        number,
+    );
+
+    <b>let</b> reward = <a href="epoch.md#0x1_epoch_adjust_epoch">epoch::adjust_epoch</a>(&<a href="account.md#0x1_account">account</a>, number, <a href="timestamp.md#0x1_timestamp">timestamp</a>, uncles, parent_gas_used);
+    // pass in previous <a href="block.md#0x1_block">block</a> gas fees.
+    <a href="block_reward.md#0x1_block_reward_process_block_reward">block_reward::process_block_reward</a>(&<a href="account.md#0x1_account">account</a>, number, reward, author, auth_key_vec, txn_fee);
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_stc_block_process_block_metadata"></a>
+
+## Function `process_block_metadata`
+
+Call at block prologue
+
+
+<pre><code><b>fun</b> <a href="stc_block.md#0x1_stc_block_process_block_metadata">process_block_metadata</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, parent_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, author: <b>address</b>, <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64, uncles: u64, number: u64)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="stc_block.md#0x1_stc_block_process_block_metadata">process_block_metadata</a>(
     <a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     parent_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     author: <b>address</b>,
@@ -859,7 +936,7 @@ Call at block prologue
 ### Function `process_block_metadata`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_process_block_metadata">process_block_metadata</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, parent_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, author: <b>address</b>, <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64, uncles: u64, number: u64)
+<pre><code><b>fun</b> <a href="stc_block.md#0x1_stc_block_process_block_metadata">process_block_metadata</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, parent_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, author: <b>address</b>, <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64, uncles: u64, number: u64)
 </code></pre>
 
 

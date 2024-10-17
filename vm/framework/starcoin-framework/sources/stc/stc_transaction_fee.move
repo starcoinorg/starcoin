@@ -35,7 +35,7 @@ module starcoin_framework::stc_transaction_fee {
     }
 
     /// publishing a wrapper of the `Preburn<TokenType>` resource under `fee_account`
-    fun add_txn_fee_token<TokenType: store>(account: &signer) {
+    fun add_txn_fee_token<TokenType>(account: &signer) {
         move_to(
             account,
             TransactionFee<TokenType> {
@@ -50,7 +50,7 @@ module starcoin_framework::stc_transaction_fee {
     }
 
     /// Deposit `token` into the transaction fees bucket
-    public fun pay_fee<TokenType: store>(token: coin::Coin<TokenType>) acquires TransactionFee {
+    public fun pay_fee<TokenType>(token: coin::Coin<TokenType>) acquires TransactionFee {
         let txn_fees = borrow_global_mut<TransactionFee<TokenType>>(
             system_addresses::get_starcoin_framework()
         );
@@ -69,7 +69,7 @@ module starcoin_framework::stc_transaction_fee {
     /// Distribute the transaction fees collected in the `TokenType` token.
     /// If the `TokenType` is STC, it unpacks the token and preburns the
     /// underlying fiat.
-    public fun distribute_transaction_fees<TokenType: store>(
+    public fun distribute_transaction_fees<TokenType>(
         account: &signer,
     ): coin::Coin<TokenType> acquires TransactionFee {
         let fee_address = system_addresses::get_starcoin_framework();
