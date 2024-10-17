@@ -239,6 +239,7 @@ pub mod serde_helper;
 pub mod sign_message;
 pub mod sips;
 pub mod state_store;
+pub use state_store::StateView;
 pub mod time;
 pub mod token;
 #[cfg(test)]

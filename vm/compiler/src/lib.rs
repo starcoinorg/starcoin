@@ -209,10 +209,7 @@ pub fn check_module_compat(pre_code: &[u8], new_code: &[u8]) -> VMResult<bool> {
 
     let old = Module::new(&pre_module);
     let new = Module::new(&new_module);
-    if Compatibility::new(true, true, false)
-        .check(&old, &new)
-        .is_err()
-    {
+    if Compatibility::new(true, false).check(&old, &new).is_err() {
         Ok(false)
     } else {
         Ok(true)
@@ -227,7 +224,7 @@ pub fn check_compiled_module_compat(
     let old = Module::new(pre);
     let new = Module::new(new);
 
-    Compatibility::new(true, true, false).check(&old, &new)
+    Compatibility::new(true, false).check(&old, &new)
 }
 
 /// Load bytecode file, return the bytecode bytes, and whether it's script.
