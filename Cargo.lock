@@ -12130,6 +12130,7 @@ version = "2.0.1"
 dependencies = [
  "anyhow",
  "bcs-ext",
+ "starcoin-cached-packages",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
