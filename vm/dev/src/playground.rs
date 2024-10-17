@@ -17,7 +17,7 @@ use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::identifier::{IdentStr, Identifier};
 use starcoin_vm_types::language_storage::{ModuleId, StructTag, TypeTag};
-use starcoin_vm_types::state_view::StateView;
+use starcoin_vm_types::state_store::StateView;
 use starcoin_vm_types::transaction::{DryRunTransaction, TransactionOutput, TransactionPayload};
 use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::transaction_argument::TransactionArgument;
@@ -97,7 +97,7 @@ pub fn dry_run<S: StateView>(
     txn: DryRunTransaction,
     metrics: Option<VMMetrics>,
 ) -> Result<(VMStatus, TransactionOutput)> {
-    let mut vm = StarcoinVM::new(metrics);
+    let mut vm = StarcoinVM::new(metrics, state_view);
     let state_view_cache = StateViewCache::new(state_view);
     vm.dry_run_transaction(&state_view_cache.as_move_resolver(), txn)
 }
@@ -215,7 +215,7 @@ pub fn call_contract<S: StateView>(
         }
     }
 
-    let mut vm = StarcoinVM::new(metrics);
+    let mut vm = StarcoinVM::new(metrics, state_view);
     let rets = vm.execute_readonly_function(
         state_view,
         &module_id,
