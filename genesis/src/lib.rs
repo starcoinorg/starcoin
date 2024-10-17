@@ -30,7 +30,7 @@ use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::{block::Block, transaction::Transaction};
 use starcoin_vm_types::account_config::CORE_CODE_ADDRESS;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
-use starcoin_vm_types::state_view::StateView;
+use starcoin_vm_types::state_store::StateView;
 use starcoin_vm_types::transaction::{
     RawUserTransaction, SignedUserTransaction, TransactionPayload,
 };
@@ -184,7 +184,7 @@ impl Genesis {
         Ok(sign_txn.into_inner())
     }
 
-    pub fn execute_genesis_txn<S: ChainStateWriter + StateView>(
+    pub fn execute_genesis_txn<S: ChainStateWriter + StateView + Sync>(
         chain_state: &S,
         txn: SignedUserTransaction,
     ) -> Result<(BTreeMap<TableHandle, TableInfo>, TransactionInfo)> {
