@@ -1,6 +1,6 @@
 module starcoin_framework::starcoin_account {
     use starcoin_framework::account::{Self, new_event_handle};
-    use starcoin_framework::starcoin_coin::StarcoinCoin;
+    use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::coin::{Self, Coin};
     use starcoin_framework::create_signer::create_signer;
     use starcoin_framework::event::{EventHandle, emit_event, emit};
@@ -83,10 +83,10 @@ module starcoin_framework::starcoin_account {
         } else {
             // Resource accounts can be created without registering them to receive APT.
             // This conveniently does the registration if necessary.
-            if (!coin::is_account_registered<StarcoinCoin>(to)) {
-                coin::register<StarcoinCoin>(&create_signer(to));
+            if (!coin::is_account_registered<STC>(to)) {
+                coin::register<STC>(&create_signer(to));
             };
-            coin::transfer<StarcoinCoin>(source, to, amount)
+            coin::transfer<STC>(source, to, amount)
         }
     }
 
@@ -117,8 +117,8 @@ module starcoin_framework::starcoin_account {
         if (!account::exists_at(to)) {
             create_account(to);
             spec {
-                assert coin::spec_is_account_registered<StarcoinCoin>(to);
-                assume starcoin_std::type_info::type_of<CoinType>() == starcoin_std::type_info::type_of<StarcoinCoin>() ==>
+                assert coin::spec_is_account_registered<STC>(to);
+                assume starcoin_std::type_info::type_of<CoinType>() == starcoin_std::type_info::type_of<STC>() ==>
                     coin::spec_is_account_registered<CoinType>(to);
             };
         };
@@ -138,7 +138,7 @@ module starcoin_framework::starcoin_account {
 
     public fun assert_account_is_registered_for_apt(addr: address) {
         assert_account_exists(addr);
-        assert!(coin::is_account_registered<StarcoinCoin>(addr), error::not_found(EACCOUNT_NOT_REGISTERED_FOR_APT));
+        assert!(coin::is_account_registered<STC>(addr), error::not_found(EACCOUNT_NOT_REGISTERED_FOR_APT));
     }
 
     /// Set whether `account` can receive direct transfers of coins that they have not explicitly registered to receive.
@@ -188,7 +188,7 @@ module starcoin_framework::starcoin_account {
         if (features::new_accounts_default_to_fa_apt_store_enabled()) {
             ensure_primary_fungible_store_exists(signer::address_of(account_signer));
         } else {
-            coin::register<StarcoinCoin>(account_signer);
+            coin::register<STC>(account_signer);
         }
     }
 
@@ -268,11 +268,11 @@ module starcoin_framework::starcoin_account {
         create_account(signer::address_of(alice));
         coin::deposit(signer::address_of(alice), coin::mint(10000, &mint_cap));
         transfer(alice, bob, 500);
-        assert!(coin::balance<StarcoinCoin>(bob) == 500, 0);
+        assert!(coin::balance<STC>(bob) == 500, 0);
         transfer(alice, carol, 500);
-        assert!(coin::balance<StarcoinCoin>(carol) == 500, 1);
+        assert!(coin::balance<STC>(carol) == 500, 1);
         transfer(alice, carol, 1500);
-        assert!(coin::balance<StarcoinCoin>(carol) == 2000, 2);
+        assert!(coin::balance<STC>(carol) == 2000, 2);
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
@@ -283,12 +283,12 @@ module starcoin_framework::starcoin_account {
         let (resource_account, _) = account::create_resource_account(alice, vector[]);
         let resource_acc_addr = signer::address_of(&resource_account);
         let (burn_cap, mint_cap) = starcoin_framework::starcoin_coin::initialize_for_test(core);
-        assert!(!coin::is_account_registered<StarcoinCoin>(resource_acc_addr), 0);
+        assert!(!coin::is_account_registered<STC>(resource_acc_addr), 0);
 
         create_account(signer::address_of(alice));
         coin::deposit(signer::address_of(alice), coin::mint(10000, &mint_cap));
         transfer(alice, resource_acc_addr, 500);
-        assert!(coin::balance<StarcoinCoin>(resource_acc_addr) == 500, 1);
+        assert!(coin::balance<STC>(resource_acc_addr) == 500, 1);
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
@@ -308,8 +308,8 @@ module starcoin_framework::starcoin_account {
             vector[recipient_1_addr, recipient_2_addr],
             vector[100, 500],
         );
-        assert!(coin::balance<StarcoinCoin>(recipient_1_addr) == 100, 0);
-        assert!(coin::balance<StarcoinCoin>(recipient_2_addr) == 500, 1);
+        assert!(coin::balance<STC>(recipient_1_addr) == 100, 0);
+        assert!(coin::balance<STC>(recipient_2_addr) == 500, 1);
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
     }

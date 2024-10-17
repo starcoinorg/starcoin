@@ -3,7 +3,7 @@ module starcoin_framework::block_reward {
 
     use std::error;
     use std::vector;
-    use starcoin_framework::starcoin_coin::StarcoinCoin;
+    use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::coin;
     use starcoin_framework::account;
     use starcoin_framework::event;
@@ -29,7 +29,7 @@ module starcoin_framework::block_reward {
         /// miner who mint the block.
         miner: address,
         /// store the gas fee that users consumed.
-        gas_fees: coin::Coin<StarcoinCoin>,
+        gas_fees: coin::Coin<STC>,
     }
 
     /// block reward event
@@ -69,7 +69,7 @@ module starcoin_framework::block_reward {
         current_number: u64,
         current_reward: u128,
         current_author: address, _auth_key_vec: vector<u8>,
-        previous_block_gas_fees: coin::Coin<StarcoinCoin>) acquires RewardQueue {
+        previous_block_gas_fees: coin::Coin<STC>) acquires RewardQueue {
         system_addresses::assert_starcoin_framework(account);
         if (current_number == 0) {
             coin::destroy_zero(previous_block_gas_fees);
@@ -121,7 +121,7 @@ module starcoin_framework::block_reward {
                 };
                 // distribute total.
                 if (coin::value(&total_reward) > 0) {
-                    coin::deposit<StarcoinCoin>(miner, total_reward);
+                    coin::deposit<STC>(miner, total_reward);
                 } else {
                     coin::destroy_zero(total_reward);
                 };
@@ -147,7 +147,7 @@ module starcoin_framework::block_reward {
             number: current_number,
             reward: current_reward,
             miner: current_author,
-            gas_fees: coin::zero<StarcoinCoin>(),
+            gas_fees: coin::zero<STC>(),
         };
         vector::push_back(&mut rewards.infos, current_info);
     }

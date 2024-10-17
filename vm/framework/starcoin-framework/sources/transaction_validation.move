@@ -7,7 +7,7 @@ module starcoin_framework::transaction_validation {
 
     use starcoin_framework::account;
     use starcoin_framework::starcoin_account;
-    use starcoin_framework::starcoin_coin::StarcoinCoin;
+    use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::chain_id;
     use starcoin_framework::coin;
     use starcoin_framework::system_addresses;
@@ -146,7 +146,7 @@ module starcoin_framework::transaction_validation {
                 );
             } else {
                 assert!(
-                    coin::is_balance_at_least<StarcoinCoin>(gas_payer, max_transaction_fee),
+                    coin::is_balance_at_least<STC>(gas_payer, max_transaction_fee),
                     error::invalid_argument(PROLOGUE_ECANT_PAY_GAS_DEPOSIT)
                 );
             }
@@ -457,7 +457,7 @@ module starcoin_framework::transaction_validation {
                 );
             } else {
                 assert!(
-                    coin::is_balance_at_least<StarcoinCoin>(gas_payer, transaction_fee_amount),
+                    coin::is_balance_at_least<STC>(gas_payer, transaction_fee_amount),
                     error::out_of_range(PROLOGUE_ECANT_PAY_GAS_DEPOSIT),
                 );
             };

@@ -37,7 +37,7 @@
 /// and implement the governance voting logic on top.
 module starcoin_framework::multisig_account {
     use starcoin_framework::account::{Self, SignerCapability, new_event_handle, create_resource_address};
-    use starcoin_framework::starcoin_coin::StarcoinCoin;
+    use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::chain_id;
     use starcoin_framework::create_signer::create_signer;
     use starcoin_framework::coin;
@@ -1264,8 +1264,8 @@ module starcoin_framework::multisig_account {
             account::create_resource_account(owner, create_multisig_account_seed(to_bytes(&owner_nonce)));
         // Register the account to receive APT as this is not done by default as part of the resource account creation
         // flow.
-        if (!coin::is_account_registered<StarcoinCoin>(address_of(&multisig_signer))) {
-            coin::register<StarcoinCoin>(&multisig_signer);
+        if (!coin::is_account_registered<STC>(address_of(&multisig_signer))) {
+            coin::register<STC>(&multisig_signer);
         };
 
         (multisig_signer, multisig_signer_cap)

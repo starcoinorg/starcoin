@@ -8,7 +8,7 @@ module starcoin_framework::delegation_pool_integration_tests {
     use starcoin_std::vector;
 
     use starcoin_framework::account;
-    use starcoin_framework::starcoin_coin::StarcoinCoin;
+    use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::coin;
     use starcoin_framework::reconfiguration;
     use starcoin_framework::delegation_pool as dp;
@@ -245,7 +245,7 @@ module starcoin_framework::delegation_pool_integration_tests {
         // The added stake should go to pending_active to wait for activation when next epoch starts.
         stake::mint(validator, 900 * ONE_APT);
         dp::add_stake(validator, pool_address, 100 * ONE_APT);
-        assert!(coin::balance<StarcoinCoin>(validator_address) == 800 * ONE_APT, 2);
+        assert!(coin::balance<STC>(validator_address) == 800 * ONE_APT, 2);
         stake::assert_validator_state(pool_address, 100 * ONE_APT, 0, 100 * ONE_APT, 0, 0);
 
         // Pending_active stake is activated in the new epoch.
@@ -272,10 +272,10 @@ module starcoin_framework::delegation_pool_integration_tests {
 
         // Validator withdraws from inactive stake multiple times.
         dp::withdraw(validator, pool_address, 50 * ONE_APT);
-        assert!(coin::balance<StarcoinCoin>(validator_address) == 84999999999, 6);
+        assert!(coin::balance<STC>(validator_address) == 84999999999, 6);
         stake::assert_validator_state(pool_address, 10201000001, 5099999999, 0, 0, 0);
         dp::withdraw(validator, pool_address, 51 * ONE_APT);
-        assert!(coin::balance<StarcoinCoin>(validator_address) == 90099999998, 7);
+        assert!(coin::balance<STC>(validator_address) == 90099999998, 7);
         stake::assert_validator_state(pool_address, 10201000001, 0, 0, 0, 0);
 
         // Enough time has passed again and the validator's lockup is renewed once more. Validator is still active.
@@ -560,7 +560,7 @@ module starcoin_framework::delegation_pool_integration_tests {
         dp::withdraw(validator, validator_address, 200 * ONE_APT);
 
         // Receive back all coins with an extra 1 for rewards.
-        assert!(coin::balance<StarcoinCoin>(signer::address_of(validator)) == 100100000000, 2);
+        assert!(coin::balance<STC>(signer::address_of(validator)) == 100100000000, 2);
         stake::assert_validator_state(validator_address, 0, 0, 0, 0, 0);
     }
 
@@ -846,7 +846,7 @@ module starcoin_framework::delegation_pool_integration_tests {
         // Withdraw stake + rewards.
         stake::assert_validator_state(pool_address, 0, 101 * ONE_APT, 0, 0, 0);
         dp::withdraw(validator, pool_address, 101 * ONE_APT);
-        assert!(coin::balance<StarcoinCoin>(signer::address_of(validator)) == 101 * ONE_APT, 1);
+        assert!(coin::balance<STC>(signer::address_of(validator)) == 101 * ONE_APT, 1);
         stake::assert_validator_state(pool_address, 0, 0, 0, 0, 0);
 
         // Operator can separately rotate consensus key.

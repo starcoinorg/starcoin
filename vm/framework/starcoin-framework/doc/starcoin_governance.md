@@ -1288,7 +1288,7 @@ Return proposal_id when a proposal is successfully created.
     // <b>has</b> voted. This doesn't take into subsequent inflation/deflation (rewards are issued every <a href="epoch.md#0x1_epoch">epoch</a> and gas fees
     // are burnt after every transaction), but inflation/delation is very unlikely <b>to</b> have a major impact on total
     // supply during the <a href="voting.md#0x1_voting">voting</a> period.
-    <b>let</b> total_voting_token_supply = <a href="coin.md#0x1_coin_supply">coin::supply</a>&lt;StarcoinCoin&gt;();
+    <b>let</b> total_voting_token_supply = <a href="coin.md#0x1_coin_supply">coin::supply</a>&lt;STC&gt;();
     <b>let</b> early_resolution_vote_threshold = <a href="../../move-stdlib/doc/option.md#0x1_option_none">option::none</a>&lt;u128&gt;();
     <b>if</b> (<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&total_voting_token_supply)) {
         <b>let</b> total_supply = *<a href="../../move-stdlib/doc/option.md#0x1_option_borrow">option::borrow</a>(&total_voting_token_supply);
@@ -2930,7 +2930,7 @@ Address @starcoin_framework must exist ApprovedExecutionHashes and GovernancePro
 <b>include</b> <a href="transaction_fee.md#0x1_transaction_fee_RequiresCollectedFeesPerValueLeqBlockStarcoinSupply">transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply</a>;
 <b>requires</b> <a href="chain_status.md#0x1_chain_status_is_operating">chain_status::is_operating</a>();
 <b>requires</b> <b>exists</b>&lt;<a href="stake.md#0x1_stake_ValidatorFees">stake::ValidatorFees</a>&gt;(@starcoin_framework);
-<b>requires</b> <b>exists</b>&lt;CoinInfo&lt;StarcoinCoin&gt;&gt;(@starcoin_framework);
+<b>requires</b> <b>exists</b>&lt;CoinInfo&lt;STC&gt;&gt;(@starcoin_framework);
 <b>requires</b> <b>exists</b>&lt;<a href="staking_config.md#0x1_staking_config_StakingRewardsConfig">staking_config::StakingRewardsConfig</a>&gt;(@starcoin_framework);
 <b>include</b> <a href="staking_config.md#0x1_staking_config_StakingRewardsConfigRequirement">staking_config::StakingRewardsConfigRequirement</a>;
 </code></pre>
@@ -3007,7 +3007,7 @@ Address @starcoin_framework must exist GovernanceConfig and GovernanceEvents.
 <b>include</b> <a href="transaction_fee.md#0x1_transaction_fee_RequiresCollectedFeesPerValueLeqBlockStarcoinSupply">transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply</a>;
 <b>requires</b> <a href="chain_status.md#0x1_chain_status_is_operating">chain_status::is_operating</a>();
 <b>requires</b> <b>exists</b>&lt;<a href="stake.md#0x1_stake_ValidatorFees">stake::ValidatorFees</a>&gt;(@starcoin_framework);
-<b>requires</b> <b>exists</b>&lt;CoinInfo&lt;StarcoinCoin&gt;&gt;(@starcoin_framework);
+<b>requires</b> <b>exists</b>&lt;CoinInfo&lt;STC&gt;&gt;(@starcoin_framework);
 <b>requires</b> <b>exists</b>&lt;<a href="staking_config.md#0x1_staking_config_StakingRewardsConfig">staking_config::StakingRewardsConfig</a>&gt;(@starcoin_framework);
 <b>include</b> <a href="staking_config.md#0x1_staking_config_StakingRewardsConfigRequirement">staking_config::StakingRewardsConfigRequirement</a>;
 </code></pre>

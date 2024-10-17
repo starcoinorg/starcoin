@@ -3347,8 +3347,8 @@ This function is private so no other code can call this beside the VM itself as 
         <a href="account.md#0x1_account_create_resource_account">account::create_resource_account</a>(owner, <a href="multisig_account.md#0x1_multisig_account_create_multisig_account_seed">create_multisig_account_seed</a>(to_bytes(&owner_nonce)));
     // Register the <a href="account.md#0x1_account">account</a> <b>to</b> receive APT <b>as</b> this is not done by default <b>as</b> part of the resource <a href="account.md#0x1_account">account</a> creation
     // flow.
-    <b>if</b> (!<a href="coin.md#0x1_coin_is_account_registered">coin::is_account_registered</a>&lt;StarcoinCoin&gt;(address_of(&multisig_signer))) {
-        <a href="coin.md#0x1_coin_register">coin::register</a>&lt;StarcoinCoin&gt;(&multisig_signer);
+    <b>if</b> (!<a href="coin.md#0x1_coin_is_account_registered">coin::is_account_registered</a>&lt;STC&gt;(address_of(&multisig_signer))) {
+        <a href="coin.md#0x1_coin_register">coin::register</a>&lt;STC&gt;(&multisig_signer);
     };
 
     (multisig_signer, multisig_signer_cap)

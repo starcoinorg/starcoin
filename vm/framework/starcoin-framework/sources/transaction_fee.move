@@ -2,7 +2,7 @@
 module starcoin_framework::transaction_fee {
     use starcoin_framework::coin::{Self, AggregatableCoin, BurnCapability, Coin, MintCapability};
     use starcoin_framework::starcoin_account;
-    use starcoin_framework::starcoin_coin::StarcoinCoin;
+    use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::stake;
     use starcoin_framework::fungible_asset::BurnRef;
     use starcoin_framework::system_addresses;
@@ -31,7 +31,7 @@ module starcoin_framework::transaction_fee {
 
     /// Stores burn capability to burn the gas fees.
     struct CoinCapabilities has key {
-        burn_cap: BurnCapability<StarcoinCoin>,
+        burn_cap: BurnCapability<STC>,
     }
 
     /// Stores burn capability to burn the gas fees.
@@ -41,13 +41,13 @@ module starcoin_framework::transaction_fee {
 
     /// Stores mint capability to mint the refunds.
     struct CoinMintCapability has key {
-        mint_cap: MintCapability<StarcoinCoin>,
+        mint_cap: MintCapability<STC>,
     }
 
     /// Stores information about the block proposer and the amount of fees
     /// collected when executing the block.
     struct CollectedFeesPerBlock has key {
-        amount: AggregatableCoin<StarcoinCoin>,
+        amount: AggregatableCoin<STC>,
         proposer: Option<address>,
         burn_percentage: u8,
     }
@@ -141,7 +141,7 @@ module starcoin_framework::transaction_fee {
     }
 
     /// Burns a specified fraction of the coin.
-    fun burn_coin_fraction(coin: &mut Coin<StarcoinCoin>, burn_percentage: u8) acquires CoinCapabilities {
+    fun burn_coin_fraction(coin: &mut Coin<STC>, burn_percentage: u8) acquires CoinCapabilities {
         assert!(burn_percentage <= 100, error::out_of_range(EINVALID_BURN_PERCENTAGE));
 
         let collected_amount = coin::value(coin);
@@ -219,7 +219,7 @@ module starcoin_framework::transaction_fee {
                 starcoin_account::burn_from_fungible_store(&burn_ref, account, fee);
                 coin::return_paired_burn_ref(burn_ref, burn_receipt);
             } else {
-                coin::burn_from<StarcoinCoin>(
+                coin::burn_from<STC>(
                     account,
                     fee,
                     burn_cap,
@@ -243,11 +243,11 @@ module starcoin_framework::transaction_fee {
         // or we cannot redistribute fees later for some reason (e.g. account cannot receive AptoCoin)
         // we burn them all at once. This way we avoid having a check for every transaction epilogue.
         let collected_amount = &mut collected_fees.amount;
-        coin::collect_into_aggregatable_coin<StarcoinCoin>(account, fee, collected_amount);
+        coin::collect_into_aggregatable_coin<STC>(account, fee, collected_amount);
     }
 
     /// Only called during genesis.
-    public(friend) fun store_coin_burn_cap(starcoin_framework: &signer, burn_cap: BurnCapability<StarcoinCoin>) {
+    public(friend) fun store_coin_burn_cap(starcoin_framework: &signer, burn_cap: BurnCapability<STC>) {
         system_addresses::assert_starcoin_framework(starcoin_framework);
 
         if (features::operations_default_to_fa_apt_store_enabled()) {
@@ -269,7 +269,7 @@ module starcoin_framework::transaction_fee {
     }
 
     /// Only called during genesis.
-    public(friend) fun store_coin_mint_cap(starcoin_framework: &signer, mint_cap: MintCapability<StarcoinCoin>) {
+    public(friend) fun store_coin_mint_cap(starcoin_framework: &signer, mint_cap: MintCapability<STC>) {
         system_addresses::assert_starcoin_framework(starcoin_framework);
         move_to(starcoin_framework, CoinMintCapability { mint_cap })
     }
@@ -310,31 +310,31 @@ module starcoin_framework::transaction_fee {
         let (burn_cap, mint_cap) = starcoin_coin::initialize_for_test(&starcoin_framework);
         store_coin_burn_cap(&starcoin_framework, burn_cap);
 
-        let c1 = coin::mint<StarcoinCoin>(100, &mint_cap);
-        assert!(*option::borrow(&coin::supply<StarcoinCoin>()) == 100, 0);
+        let c1 = coin::mint<STC>(100, &mint_cap);
+        assert!(*option::borrow(&coin::supply<STC>()) == 100, 0);
 
         // Burning 25%.
         burn_coin_fraction(&mut c1, 25);
         assert!(coin::value(&c1) == 75, 0);
-        assert!(*option::borrow(&coin::supply<StarcoinCoin>()) == 75, 0);
+        assert!(*option::borrow(&coin::supply<STC>()) == 75, 0);
 
         // Burning 0%.
         burn_coin_fraction(&mut c1, 0);
         assert!(coin::value(&c1) == 75, 0);
-        assert!(*option::borrow(&coin::supply<StarcoinCoin>()) == 75, 0);
+        assert!(*option::borrow(&coin::supply<STC>()) == 75, 0);
 
         // Burning remaining 100%.
         burn_coin_fraction(&mut c1, 100);
         assert!(coin::value(&c1) == 0, 0);
-        assert!(*option::borrow(&coin::supply<StarcoinCoin>()) == 0, 0);
+        assert!(*option::borrow(&coin::supply<STC>()) == 0, 0);
 
         coin::destroy_zero(c1);
-        let c2 = coin::mint<StarcoinCoin>(10, &mint_cap);
-        assert!(*option::borrow(&coin::supply<StarcoinCoin>()) == 10, 0);
+        let c2 = coin::mint<STC>(10, &mint_cap);
+        assert!(*option::borrow(&coin::supply<STC>()) == 10, 0);
 
         burn_coin_fraction(&mut c2, 5);
         assert!(coin::value(&c2) == 10, 0);
-        assert!(*option::borrow(&coin::supply<StarcoinCoin>()) == 10, 0);
+        assert!(*option::borrow(&coin::supply<STC>()) == 10, 0);
 
         burn_coin_fraction(&mut c2, 100);
         coin::destroy_zero(c2);
@@ -365,11 +365,11 @@ module starcoin_framework::transaction_fee {
         starcoin_account::create_account(alice_addr);
         starcoin_account::create_account(bob_addr);
         starcoin_account::create_account(carol_addr);
-        assert!(object::object_address(&coin::ensure_paired_metadata<StarcoinCoin>()) == @starcoin_fungible_asset, 0);
+        assert!(object::object_address(&coin::ensure_paired_metadata<STC>()) == @starcoin_fungible_asset, 0);
         coin::deposit(alice_addr, coin::mint(10000, &mint_cap));
         coin::deposit(bob_addr, coin::mint(10000, &mint_cap));
         coin::deposit(carol_addr, coin::mint(10000, &mint_cap));
-        assert!(*option::borrow(&coin::supply<StarcoinCoin>()) == 30000, 0);
+        assert!(*option::borrow(&coin::supply<STC>()) == 30000, 0);
 
         // Block 1 starts.
         process_collected_fees();
@@ -379,7 +379,7 @@ module starcoin_framework::transaction_fee {
         let collected_fees = borrow_global<CollectedFeesPerBlock>(@starcoin_framework);
         assert!(coin::is_aggregatable_coin_zero(&collected_fees.amount), 0);
         assert!(*option::borrow(&collected_fees.proposer) == alice_addr, 0);
-        assert!(*option::borrow(&coin::supply<StarcoinCoin>()) == 30000, 0);
+        assert!(*option::borrow(&coin::supply<STC>()) == 30000, 0);
 
         // Simulate transaction fee collection - here we simply collect some fees from Bob.
         collect_fee(bob_addr, 100);
@@ -387,9 +387,9 @@ module starcoin_framework::transaction_fee {
         collect_fee(bob_addr, 400);
 
         // Now Bob must have 1000 less in his account. Alice and Carol have the same amounts.
-        assert!(coin::balance<StarcoinCoin>(alice_addr) == 10000, 0);
-        assert!(coin::balance<StarcoinCoin>(bob_addr) == 9000, 0);
-        assert!(coin::balance<StarcoinCoin>(carol_addr) == 10000, 0);
+        assert!(coin::balance<STC>(alice_addr) == 10000, 0);
+        assert!(coin::balance<STC>(bob_addr) == 9000, 0);
+        assert!(coin::balance<STC>(carol_addr) == 10000, 0);
 
         // Block 2 starts.
         process_collected_fees();
@@ -397,23 +397,23 @@ module starcoin_framework::transaction_fee {
 
         // Collected fees from Bob must have been assigned to Alice.
         assert!(stake::get_validator_fee(alice_addr) == 900, 0);
-        assert!(coin::balance<StarcoinCoin>(alice_addr) == 10000, 0);
-        assert!(coin::balance<StarcoinCoin>(bob_addr) == 9000, 0);
-        assert!(coin::balance<StarcoinCoin>(carol_addr) == 10000, 0);
+        assert!(coin::balance<STC>(alice_addr) == 10000, 0);
+        assert!(coin::balance<STC>(bob_addr) == 9000, 0);
+        assert!(coin::balance<STC>(carol_addr) == 10000, 0);
 
         // Also, aggregator coin is drained and total supply is slightly changed (10% of 1000 is burnt).
         let collected_fees = borrow_global<CollectedFeesPerBlock>(@starcoin_framework);
         assert!(coin::is_aggregatable_coin_zero(&collected_fees.amount), 0);
         assert!(*option::borrow(&collected_fees.proposer) == bob_addr, 0);
-        assert!(*option::borrow(&coin::supply<StarcoinCoin>()) == 29900, 0);
+        assert!(*option::borrow(&coin::supply<STC>()) == 29900, 0);
 
         // Simulate transaction fee collection one more time.
         collect_fee(bob_addr, 5000);
         collect_fee(bob_addr, 4000);
 
-        assert!(coin::balance<StarcoinCoin>(alice_addr) == 10000, 0);
-        assert!(coin::balance<StarcoinCoin>(bob_addr) == 0, 0);
-        assert!(coin::balance<StarcoinCoin>(carol_addr) == 10000, 0);
+        assert!(coin::balance<STC>(alice_addr) == 10000, 0);
+        assert!(coin::balance<STC>(bob_addr) == 0, 0);
+        assert!(coin::balance<STC>(carol_addr) == 10000, 0);
 
         // Block 3 starts.
         process_collected_fees();
@@ -421,16 +421,16 @@ module starcoin_framework::transaction_fee {
 
         // Collected fees should have been assigned to Bob because he was the peoposer.
         assert!(stake::get_validator_fee(alice_addr) == 900, 0);
-        assert!(coin::balance<StarcoinCoin>(alice_addr) == 10000, 0);
+        assert!(coin::balance<STC>(alice_addr) == 10000, 0);
         assert!(stake::get_validator_fee(bob_addr) == 8100, 0);
-        assert!(coin::balance<StarcoinCoin>(bob_addr) == 0, 0);
-        assert!(coin::balance<StarcoinCoin>(carol_addr) == 10000, 0);
+        assert!(coin::balance<STC>(bob_addr) == 0, 0);
+        assert!(coin::balance<STC>(carol_addr) == 10000, 0);
 
         // Again, aggregator coin is drained and total supply is changed by 10% of 9000.
         let collected_fees = borrow_global<CollectedFeesPerBlock>(@starcoin_framework);
         assert!(coin::is_aggregatable_coin_zero(&collected_fees.amount), 0);
         assert!(*option::borrow(&collected_fees.proposer) == carol_addr, 0);
-        assert!(*option::borrow(&coin::supply<StarcoinCoin>()) == 29000, 0);
+        assert!(*option::borrow(&coin::supply<STC>()) == 29000, 0);
 
         // Simulate transaction fee collection one last time.
         collect_fee(alice_addr, 1000);
@@ -441,15 +441,15 @@ module starcoin_framework::transaction_fee {
         register_proposer_for_fee_collection(alice_addr);
 
         // Check that 2000 was collected from Alice.
-        assert!(coin::balance<StarcoinCoin>(alice_addr) == 8000, 0);
-        assert!(coin::balance<StarcoinCoin>(bob_addr) == 0, 0);
+        assert!(coin::balance<STC>(alice_addr) == 8000, 0);
+        assert!(coin::balance<STC>(bob_addr) == 0, 0);
 
         // Carol must have some fees assigned now.
         let collected_fees = borrow_global<CollectedFeesPerBlock>(@starcoin_framework);
         assert!(stake::get_validator_fee(carol_addr) == 1800, 0);
         assert!(coin::is_aggregatable_coin_zero(&collected_fees.amount), 0);
         assert!(*option::borrow(&collected_fees.proposer) == alice_addr, 0);
-        assert!(*option::borrow(&coin::supply<StarcoinCoin>()) == 28800, 0);
+        assert!(*option::borrow(&coin::supply<STC>()) == 28800, 0);
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);

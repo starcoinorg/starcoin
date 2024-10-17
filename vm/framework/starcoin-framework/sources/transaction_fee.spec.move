@@ -121,46 +121,46 @@ spec starcoin_framework::transaction_fee {
             option::spec_borrow(global<CollectedFeesPerBlock>(@starcoin_framework).proposer) == proposer_addr;
     }
 
-    spec burn_coin_fraction(coin: &mut Coin<StarcoinCoin>, burn_percentage: u8) {
+    spec burn_coin_fraction(coin: &mut Coin<STC>, burn_percentage: u8) {
         use starcoin_framework::coin::CoinInfo;
-        use starcoin_framework::starcoin_coin::StarcoinCoin;
+        use starcoin_framework::starcoin_coin::STC;
 
         requires burn_percentage <= 100;
         requires exists<CoinCapabilities>(@starcoin_framework);
-        requires exists<CoinInfo<StarcoinCoin>>(@starcoin_framework);
+        requires exists<CoinInfo<STC>>(@starcoin_framework);
 
         let amount_to_burn = (burn_percentage * coin::value(coin)) / 100;
         // include (amount_to_burn > 0) ==> coin::AbortsIfNotExistCoinInfo<StarcoinCoin>;
-        include amount_to_burn > 0 ==> coin::CoinSubAbortsIf<StarcoinCoin> { amount: amount_to_burn };
+        include amount_to_burn > 0 ==> coin::CoinSubAbortsIf<STC> { amount: amount_to_burn };
         ensures coin.value == old(coin).value - amount_to_burn;
     }
 
-    spec fun collectedFeesAggregator(): AggregatableCoin<StarcoinCoin> {
+    spec fun collectedFeesAggregator(): AggregatableCoin<STC> {
         global<CollectedFeesPerBlock>(@starcoin_framework).amount
     }
 
     spec schema RequiresCollectedFeesPerValueLeqBlockStarcoinSupply {
         use starcoin_framework::optional_aggregator;
         use starcoin_framework::aggregator;
-        let maybe_supply = coin::get_coin_supply_opt<StarcoinCoin>();
+        let maybe_supply = coin::get_coin_supply_opt<STC>();
         // property 6: Ensure the presence of the resource.
         requires
             (is_fees_collection_enabled() && option::is_some(maybe_supply)) ==>
                 (aggregator::spec_aggregator_get_val(global<CollectedFeesPerBlock>(@starcoin_framework).amount.value) <=
                     optional_aggregator::optional_aggregator_value(
-                        option::spec_borrow(coin::get_coin_supply_opt<StarcoinCoin>())
+                        option::spec_borrow(coin::get_coin_supply_opt<STC>())
                     ));
     }
 
     spec schema ProcessCollectedFeesRequiresAndEnsures {
         use starcoin_framework::coin::CoinInfo;
-        use starcoin_framework::starcoin_coin::StarcoinCoin;
+        use starcoin_framework::starcoin_coin::STC;
         use starcoin_framework::aggregator;
         use starcoin_std::table;
 
         requires exists<CoinCapabilities>(@starcoin_framework);
         requires exists<stake::ValidatorFees>(@starcoin_framework);
-        requires exists<CoinInfo<StarcoinCoin>>(@starcoin_framework);
+        requires exists<CoinInfo<STC>>(@starcoin_framework);
         include RequiresCollectedFeesPerValueLeqBlockStarcoinSupply;
 
         aborts_if false;
@@ -210,21 +210,21 @@ spec starcoin_framework::transaction_fee {
         let account_addr = account;
         let amount = fee;
 
-        let starcoin_addr = type_info::type_of<StarcoinCoin>().account_address;
-        let coin_store = global<CoinStore<StarcoinCoin>>(account_addr);
-        let post post_coin_store = global<CoinStore<StarcoinCoin>>(account_addr);
+        let starcoin_addr = type_info::type_of<STC>().account_address;
+        let coin_store = global<CoinStore<STC>>(account_addr);
+        let post post_coin_store = global<CoinStore<STC>>(account_addr);
 
         // modifies global<CoinStore<StarcoinCoin>>(account_addr);
 
-        aborts_if amount != 0 && !(exists<CoinInfo<StarcoinCoin>>(starcoin_addr)
-            && exists<CoinStore<StarcoinCoin>>(account_addr));
+        aborts_if amount != 0 && !(exists<CoinInfo<STC>>(starcoin_addr)
+            && exists<CoinStore<STC>>(account_addr));
         aborts_if coin_store.coin.value < amount;
 
-        let maybe_supply = global<CoinInfo<StarcoinCoin>>(starcoin_addr).supply;
+        let maybe_supply = global<CoinInfo<STC>>(starcoin_addr).supply;
         let supply_aggr = option::spec_borrow(maybe_supply);
         let value = optional_aggregator::optional_aggregator_value(supply_aggr);
 
-        let post post_maybe_supply = global<CoinInfo<StarcoinCoin>>(starcoin_addr).supply;
+        let post post_maybe_supply = global<CoinInfo<STC>>(starcoin_addr).supply;
         let post post_supply = option::spec_borrow(post_maybe_supply);
         let post post_value = optional_aggregator::optional_aggregator_value(post_supply);
 
@@ -236,30 +236,30 @@ spec starcoin_framework::transaction_fee {
         } else {
             option::spec_is_none(post_maybe_supply)
         };
-        ensures coin::supply<StarcoinCoin> == old(coin::supply<StarcoinCoin>) - amount;
+        ensures coin::supply<STC> == old(coin::supply<STC>) - amount;
     }
 
     spec mint_and_refund(account: address, refund: u64) {
         use starcoin_std::type_info;
-        use starcoin_framework::starcoin_coin::StarcoinCoin;
+        use starcoin_framework::starcoin_coin::STC;
         use starcoin_framework::coin::{CoinInfo, CoinStore};
         use starcoin_framework::coin;
         // TODO(fa_migration)
         pragma verify = false;
         // pragma opaque;
 
-        let starcoin_addr = type_info::type_of<StarcoinCoin>().account_address;
+        let starcoin_addr = type_info::type_of<STC>().account_address;
 
-        aborts_if (refund != 0) && !exists<CoinInfo<StarcoinCoin>>(starcoin_addr);
-        include coin::CoinAddAbortsIf<StarcoinCoin> { amount: refund };
+        aborts_if (refund != 0) && !exists<CoinInfo<STC>>(starcoin_addr);
+        include coin::CoinAddAbortsIf<STC> { amount: refund };
 
-        aborts_if !exists<CoinStore<StarcoinCoin>>(account);
+        aborts_if !exists<CoinStore<STC>>(account);
         // modifies global<CoinStore<StarcoinCoin>>(account);
 
         aborts_if !exists<CoinMintCapability>(@starcoin_framework);
 
-        let supply = coin::supply<StarcoinCoin>;
-        let post post_supply = coin::supply<StarcoinCoin>;
+        let supply = coin::supply<STC>;
+        let post post_supply = coin::supply<STC>;
         aborts_if [abstract] supply + refund > MAX_U128;
         ensures post_supply == supply + refund;
     }
@@ -271,16 +271,16 @@ spec starcoin_framework::transaction_fee {
 
         let collected_fees = global<CollectedFeesPerBlock>(@starcoin_framework).amount;
         let aggr = collected_fees.value;
-        let coin_store = global<coin::CoinStore<StarcoinCoin>>(account);
+        let coin_store = global<coin::CoinStore<STC>>(account);
         aborts_if !exists<CollectedFeesPerBlock>(@starcoin_framework);
-        aborts_if fee > 0 && !exists<coin::CoinStore<StarcoinCoin>>(account);
+        aborts_if fee > 0 && !exists<coin::CoinStore<STC>>(account);
         aborts_if fee > 0 && coin_store.coin.value < fee;
         aborts_if fee > 0 && aggregator::spec_aggregator_get_val(aggr)
             + fee > aggregator::spec_get_limit(aggr);
         aborts_if fee > 0 && aggregator::spec_aggregator_get_val(aggr)
             + fee > MAX_U128;
 
-        let post post_coin_store = global<coin::CoinStore<StarcoinCoin>>(account);
+        let post post_coin_store = global<coin::CoinStore<STC>>(account);
         let post post_collected_fees = global<CollectedFeesPerBlock>(@starcoin_framework).amount;
         ensures post_coin_store.coin.value == coin_store.coin.value - fee;
         ensures aggregator::spec_aggregator_get_val(post_collected_fees.value) == aggregator::spec_aggregator_get_val(
@@ -290,7 +290,7 @@ spec starcoin_framework::transaction_fee {
 
     /// Ensure caller is admin.
     /// Aborts if `StarcoinCoinCapabilities` already exists.
-    spec store_coin_burn_cap(starcoin_framework: &signer, burn_cap: BurnCapability<StarcoinCoin>) {
+    spec store_coin_burn_cap(starcoin_framework: &signer, burn_cap: BurnCapability<STC>) {
         use std::signer;
 
         // TODO(fa_migration)
@@ -307,7 +307,7 @@ spec starcoin_framework::transaction_fee {
 
     /// Ensure caller is admin.
     /// Aborts if `StarcoinCoinMintCapability` already exists.
-    spec store_coin_mint_cap(starcoin_framework: &signer, mint_cap: MintCapability<StarcoinCoin>) {
+    spec store_coin_mint_cap(starcoin_framework: &signer, mint_cap: MintCapability<STC>) {
         use std::signer;
         let addr = signer::address_of(starcoin_framework);
         aborts_if !system_addresses::is_starcoin_framework_address(addr);

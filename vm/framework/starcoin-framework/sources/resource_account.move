@@ -65,7 +65,7 @@ module starcoin_framework::resource_account {
     use std::signer;
     use std::vector;
     use starcoin_framework::account;
-    use starcoin_framework::starcoin_coin::StarcoinCoin;
+    use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::coin;
     use starcoin_std::simple_map::{Self, SimpleMap};
 
@@ -109,8 +109,8 @@ module starcoin_framework::resource_account {
         fund_amount: u64,
     ) acquires Container {
         let (resource, resource_signer_cap) = account::create_resource_account(origin, seed);
-        coin::register<StarcoinCoin>(&resource);
-        coin::transfer<StarcoinCoin>(origin, signer::address_of(&resource), fund_amount);
+        coin::register<STC>(&resource);
+        coin::transfer<STC>(origin, signer::address_of(&resource), fund_amount);
         rotate_account_authentication_key_and_store_capability(
             origin,
             resource,
@@ -234,14 +234,14 @@ module starcoin_framework::resource_account {
         let (burn, mint) = starcoin_framework::starcoin_coin::initialize_for_test(&framework);
         starcoin_framework::starcoin_account::create_account(copy user_addr);
 
-        let coin = coin::mint<StarcoinCoin>(100, &mint);
+        let coin = coin::mint<STC>(100, &mint);
         coin::deposit(copy user_addr, coin);
 
         let seed = x"01";
         create_resource_account_and_fund(&user, copy seed, vector::empty(), 10);
 
         let resource_addr = starcoin_framework::account::create_resource_address(&user_addr, seed);
-        coin::transfer<StarcoinCoin>(&user, resource_addr, 10);
+        coin::transfer<STC>(&user, resource_addr, 10);
 
         coin::destroy_burn_cap(burn);
         coin::destroy_mint_cap(mint);
@@ -258,7 +258,7 @@ module starcoin_framework::resource_account {
         create_resource_account(&user, copy seed, vector::empty());
 
         let resource_addr = starcoin_framework::account::create_resource_address(&user_addr, seed);
-        let coin = coin::mint<StarcoinCoin>(100, &mint);
+        let coin = coin::mint<STC>(100, &mint);
         coin::deposit(resource_addr, coin);
 
         coin::destroy_burn_cap(burn);

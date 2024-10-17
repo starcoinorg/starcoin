@@ -126,7 +126,7 @@ spec starcoin_framework::block {
     spec schema BlockRequirement {
         use starcoin_framework::chain_status;
         use starcoin_framework::coin::CoinInfo;
-        use starcoin_framework::starcoin_coin::StarcoinCoin;
+        use starcoin_framework::starcoin_coin::STC;
         use starcoin_framework::transaction_fee;
         use starcoin_framework::staking_config;
 
@@ -146,7 +146,7 @@ spec starcoin_framework::block {
         requires (proposer == @vm_reserved) ==> (timestamp::spec_now_microseconds() == timestamp);
         requires (proposer != @vm_reserved) ==> (timestamp::spec_now_microseconds() < timestamp);
         requires exists<stake::ValidatorFees>(@starcoin_framework);
-        requires exists<CoinInfo<StarcoinCoin>>(@starcoin_framework);
+        requires exists<CoinInfo<STC>>(@starcoin_framework);
         include transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply;
         include staking_config::StakingRewardsConfigRequirement;
     }

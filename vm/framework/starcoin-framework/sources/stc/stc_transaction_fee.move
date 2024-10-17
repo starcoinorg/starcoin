@@ -1,7 +1,7 @@
 /// `TransactionFee` collect gas fees used by transactions in blocks temporarily.
 /// Then they are distributed in `TransactionManager`.
 module starcoin_framework::stc_transaction_fee {
-    use starcoin_framework::starcoin_coin::StarcoinCoin;
+    use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::coin;
     use starcoin_framework::system_addresses;
 
@@ -23,7 +23,7 @@ module starcoin_framework::stc_transaction_fee {
         system_addresses::assert_starcoin_framework(account);
 
         // accept fees in all the currencies
-        add_txn_fee_token<coin::Coin<StarcoinCoin>>(account);
+        add_txn_fee_token<coin::Coin<STC>>(account);
     }
 
     spec initialize {
@@ -31,7 +31,7 @@ module starcoin_framework::stc_transaction_fee {
 
         // aborts_if !Timestamp::is_genesis();
         aborts_if signer::address_of(account) != system_addresses::get_starcoin_framework();
-        aborts_if exists<TransactionFee<StarcoinCoin>>(signer::address_of(account));
+        aborts_if exists<TransactionFee<STC>>(signer::address_of(account));
     }
 
     /// publishing a wrapper of the `Preburn<TokenType>` resource under `fee_account`

@@ -84,16 +84,16 @@ spec starcoin_framework::resource_account {
         pragma verify = false;
         let source_addr = signer::address_of(origin);
         let resource_addr = account::spec_create_resource_address(source_addr, seed);
-        let coin_store_resource = global<coin::CoinStore<StarcoinCoin>>(resource_addr);
+        let coin_store_resource = global<coin::CoinStore<STC>>(resource_addr);
 
-        include starcoin_account::WithdrawAbortsIf<StarcoinCoin>{from: origin, amount: fund_amount};
-        include starcoin_account::GuidAbortsIf<StarcoinCoin>{to: resource_addr};
+        include starcoin_account::WithdrawAbortsIf<STC>{from: origin, amount: fund_amount};
+        include starcoin_account::GuidAbortsIf<STC>{to: resource_addr};
         include RotateAccountAuthenticationKeyAndStoreCapabilityAbortsIfWithoutAccountLimit;
 
         //coin property
-        aborts_if coin::spec_is_account_registered<StarcoinCoin>(resource_addr) && coin_store_resource.frozen;
+        aborts_if coin::spec_is_account_registered<STC>(resource_addr) && coin_store_resource.frozen;
         /// [high-level-req-3]
-        ensures exists<starcoin_framework::coin::CoinStore<StarcoinCoin>>(resource_addr);
+        ensures exists<starcoin_framework::coin::CoinStore<STC>>(resource_addr);
     }
 
     spec create_resource_account_and_publish_package(

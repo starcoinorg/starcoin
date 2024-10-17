@@ -137,7 +137,7 @@ spec starcoin_framework::starcoin_governance {
     ) {
         use starcoin_framework::chain_status;
         use starcoin_framework::coin::CoinInfo;
-        use starcoin_framework::starcoin_coin::StarcoinCoin;
+        use starcoin_framework::starcoin_coin::STC;
         use starcoin_framework::transaction_fee;
         pragma verify = false; // TODO: set because of timeout (property proved).
         let addr = signer::address_of(starcoin_framework);
@@ -149,7 +149,7 @@ spec starcoin_framework::starcoin_governance {
         include transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply;
         requires chain_status::is_operating();
         requires exists<stake::ValidatorFees>(@starcoin_framework);
-        requires exists<CoinInfo<StarcoinCoin>>(@starcoin_framework);
+        requires exists<CoinInfo<STC>>(@starcoin_framework);
         requires exists<staking_config::StakingRewardsConfig>(@starcoin_framework);
         include staking_config::StakingRewardsConfigRequirement;
     }
@@ -256,9 +256,9 @@ spec starcoin_framework::starcoin_governance {
         // verify create_proposal_metadata
         include CreateProposalMetadataAbortsIf;
 
-        let addr = starcoin_std::type_info::type_of<StarcoinCoin>().account_address;
-        aborts_if !exists<coin::CoinInfo<StarcoinCoin>>(addr);
-        let maybe_supply = global<coin::CoinInfo<StarcoinCoin>>(addr).supply;
+        let addr = starcoin_std::type_info::type_of<STC>().account_address;
+        aborts_if !exists<coin::CoinInfo<STC>>(addr);
+        let maybe_supply = global<coin::CoinInfo<STC>>(addr).supply;
         let supply = option::spec_borrow(maybe_supply);
         let total_supply = starcoin_framework::optional_aggregator::optional_aggregator_value(supply);
         let early_resolution_vote_threshold_value = total_supply / 2 + 1;
@@ -577,7 +577,7 @@ spec starcoin_framework::starcoin_governance {
     spec reconfigure(starcoin_framework: &signer) {
         use starcoin_framework::chain_status;
         use starcoin_framework::coin::CoinInfo;
-        use starcoin_framework::starcoin_coin::StarcoinCoin;
+        use starcoin_framework::starcoin_coin::STC;
         use starcoin_framework::transaction_fee;
         pragma verify = false; // TODO: set because of timeout (property proved).
         aborts_if !system_addresses::is_starcoin_framework_address(signer::address_of(starcoin_framework));
@@ -589,7 +589,7 @@ spec starcoin_framework::starcoin_governance {
         include transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply;
         requires chain_status::is_operating();
         requires exists<stake::ValidatorFees>(@starcoin_framework);
-        requires exists<CoinInfo<StarcoinCoin>>(@starcoin_framework);
+        requires exists<CoinInfo<STC>>(@starcoin_framework);
         requires exists<staking_config::StakingRewardsConfig>(@starcoin_framework);
         include staking_config::StakingRewardsConfigRequirement;
     }

@@ -1650,7 +1650,7 @@ Staker can call this function to create a simple staking contract with a specifi
     // Optional seed used when creating the staking contract <a href="account.md#0x1_account">account</a>.
     contract_creation_seed: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
 ) <b>acquires</b> <a href="staking_contract.md#0x1_staking_contract_Store">Store</a> {
-    <b>let</b> staked_coins = <a href="coin.md#0x1_coin_withdraw">coin::withdraw</a>&lt;StarcoinCoin&gt;(staker, amount);
+    <b>let</b> staked_coins = <a href="coin.md#0x1_coin_withdraw">coin::withdraw</a>&lt;STC&gt;(staker, amount);
     <a href="staking_contract.md#0x1_staking_contract_create_staking_contract_with_coins">create_staking_contract_with_coins</a>(
         staker, operator, voter, staked_coins, commission_percentage, contract_creation_seed);
 }
@@ -1667,7 +1667,7 @@ Staker can call this function to create a simple staking contract with a specifi
 Staker can call this function to create a simple staking contract with a specified operator.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="staking_contract.md#0x1_staking_contract_create_staking_contract_with_coins">create_staking_contract_with_coins</a>(staker: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, operator: <b>address</b>, voter: <b>address</b>, coins: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;, commission_percentage: u64, contract_creation_seed: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="staking_contract.md#0x1_staking_contract_create_staking_contract_with_coins">create_staking_contract_with_coins</a>(staker: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, operator: <b>address</b>, voter: <b>address</b>, coins: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;, commission_percentage: u64, contract_creation_seed: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <b>address</b>
 </code></pre>
 
 
@@ -1680,7 +1680,7 @@ Staker can call this function to create a simple staking contract with a specifi
     staker: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     operator: <b>address</b>,
     voter: <b>address</b>,
-    coins: Coin&lt;StarcoinCoin&gt;,
+    coins: Coin&lt;STC&gt;,
     commission_percentage: u64,
     // Optional seed used when creating the staking contract <a href="account.md#0x1_account">account</a>.
     contract_creation_seed: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
@@ -1770,7 +1770,7 @@ Add more stake to an existing staking contract.
     <b>let</b> <a href="staking_contract.md#0x1_staking_contract">staking_contract</a> = <a href="../../starcoin-stdlib/doc/simple_map.md#0x1_simple_map_borrow_mut">simple_map::borrow_mut</a>(&<b>mut</b> store.staking_contracts, &operator);
 
     // Add the <a href="stake.md#0x1_stake">stake</a> <b>to</b> the <a href="stake.md#0x1_stake">stake</a> pool.
-    <b>let</b> staked_coins = <a href="coin.md#0x1_coin_withdraw">coin::withdraw</a>&lt;StarcoinCoin&gt;(staker, amount);
+    <b>let</b> staked_coins = <a href="coin.md#0x1_coin_withdraw">coin::withdraw</a>&lt;STC&gt;(staker, amount);
     <a href="stake.md#0x1_stake_add_stake_with_cap">stake::add_stake_with_cap</a>(&<a href="staking_contract.md#0x1_staking_contract">staking_contract</a>.owner_cap, staked_coins);
 
     <a href="staking_contract.md#0x1_staking_contract">staking_contract</a>.principal = <a href="staking_contract.md#0x1_staking_contract">staking_contract</a>.principal + amount;
@@ -2940,7 +2940,7 @@ Account is not frozen and sufficient to withdraw.
 <pre><code><b>pragma</b> aborts_if_is_partial;
 <b>pragma</b> verify_duration_estimate = 120;
 <b>include</b> <a href="staking_contract.md#0x1_staking_contract_PreconditionsInCreateContract">PreconditionsInCreateContract</a>;
-<b>include</b> <a href="staking_contract.md#0x1_staking_contract_WithdrawAbortsIf">WithdrawAbortsIf</a>&lt;StarcoinCoin&gt; { <a href="account.md#0x1_account">account</a>: staker };
+<b>include</b> <a href="staking_contract.md#0x1_staking_contract_WithdrawAbortsIf">WithdrawAbortsIf</a>&lt;STC&gt; { <a href="account.md#0x1_account">account</a>: staker };
 <b>include</b> <a href="staking_contract.md#0x1_staking_contract_CreateStakingContractWithCoinsAbortsIfAndEnsures">CreateStakingContractWithCoinsAbortsIfAndEnsures</a>;
 </code></pre>
 
@@ -2951,7 +2951,7 @@ Account is not frozen and sufficient to withdraw.
 ### Function `create_staking_contract_with_coins`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="staking_contract.md#0x1_staking_contract_create_staking_contract_with_coins">create_staking_contract_with_coins</a>(staker: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, operator: <b>address</b>, voter: <b>address</b>, coins: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;, commission_percentage: u64, contract_creation_seed: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="staking_contract.md#0x1_staking_contract_create_staking_contract_with_coins">create_staking_contract_with_coins</a>(staker: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, operator: <b>address</b>, voter: <b>address</b>, coins: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;, commission_percentage: u64, contract_creation_seed: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <b>address</b>
 </code></pre>
 
 
@@ -2989,9 +2989,9 @@ Staking_contract exists the stacker/operator pair.
 <b>include</b> <a href="staking_contract.md#0x1_staking_contract_ContractExistsAbortsIf">ContractExistsAbortsIf</a> { staker: staker_address };
 <b>let</b> store = <b>global</b>&lt;<a href="staking_contract.md#0x1_staking_contract_Store">Store</a>&gt;(staker_address);
 <b>let</b> <a href="staking_contract.md#0x1_staking_contract">staking_contract</a> = <a href="../../starcoin-stdlib/doc/simple_map.md#0x1_simple_map_spec_get">simple_map::spec_get</a>(store.staking_contracts, operator);
-<b>include</b> <a href="staking_contract.md#0x1_staking_contract_WithdrawAbortsIf">WithdrawAbortsIf</a>&lt;StarcoinCoin&gt; { <a href="account.md#0x1_account">account</a>: staker };
-<b>let</b> balance = <b>global</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;StarcoinCoin&gt;&gt;(staker_address).<a href="coin.md#0x1_coin">coin</a>.value;
-<b>let</b> <b>post</b> post_coin = <b>global</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;StarcoinCoin&gt;&gt;(staker_address).<a href="coin.md#0x1_coin">coin</a>.value;
+<b>include</b> <a href="staking_contract.md#0x1_staking_contract_WithdrawAbortsIf">WithdrawAbortsIf</a>&lt;STC&gt; { <a href="account.md#0x1_account">account</a>: staker };
+<b>let</b> balance = <b>global</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;STC&gt;&gt;(staker_address).<a href="coin.md#0x1_coin">coin</a>.value;
+<b>let</b> <b>post</b> post_coin = <b>global</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;STC&gt;&gt;(staker_address).<a href="coin.md#0x1_coin">coin</a>.value;
 <b>ensures</b> post_coin == balance - amount;
 <b>let</b> owner_cap = <a href="staking_contract.md#0x1_staking_contract">staking_contract</a>.owner_cap;
 <b>include</b> <a href="stake.md#0x1_stake_AddStakeWithCapAbortsIfAndEnsures">stake::AddStakeWithCapAbortsIfAndEnsures</a> { owner_cap };

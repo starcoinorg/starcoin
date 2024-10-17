@@ -2791,7 +2791,7 @@ Ownership over setting the operator/voter is granted to <code>owner</code> who h
     <b>let</b> seed = <a href="delegation_pool.md#0x1_delegation_pool_create_resource_account_seed">create_resource_account_seed</a>(delegation_pool_creation_seed);
 
     <b>let</b> (stake_pool_signer, stake_pool_signer_cap) = <a href="account.md#0x1_account_create_resource_account">account::create_resource_account</a>(owner, seed);
-    <a href="coin.md#0x1_coin_register">coin::register</a>&lt;StarcoinCoin&gt;(&stake_pool_signer);
+    <a href="coin.md#0x1_coin_register">coin::register</a>&lt;STC&gt;(&stake_pool_signer);
 
     // stake_pool_signer will be owner of the <a href="stake.md#0x1_stake">stake</a> pool and have its `<a href="stake.md#0x1_stake_OwnerCapability">stake::OwnerCapability</a>`
     <b>let</b> pool_address = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(&stake_pool_signer);

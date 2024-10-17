@@ -158,7 +158,7 @@ spec starcoin_framework::genesis {
         requires len(execution_config) > 0;
         requires exists<staking_config::StakingRewardsConfig>(@starcoin_framework);
         requires exists<stake::ValidatorFees>(@starcoin_framework);
-        requires exists<coin::CoinInfo<StarcoinCoin>>(@starcoin_framework);
+        requires exists<coin::CoinInfo<STC>>(@starcoin_framework);
         include CompareTimeRequires;
         include transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply;
     }

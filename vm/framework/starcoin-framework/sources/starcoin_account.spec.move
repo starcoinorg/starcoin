@@ -94,14 +94,14 @@ spec starcoin_framework::starcoin_account {
         requires account_addr_source != to;
 
         include CreateAccountTransferAbortsIf;
-        include GuidAbortsIf<StarcoinCoin>;
-        include WithdrawAbortsIf<StarcoinCoin>{from: source};
-        include TransferEnsures<StarcoinCoin>;
+        include GuidAbortsIf<STC>;
+        include WithdrawAbortsIf<STC>{from: source};
+        include TransferEnsures<STC>;
 
-        aborts_if exists<coin::CoinStore<StarcoinCoin>>(to) && global<coin::CoinStore<StarcoinCoin>>(to).frozen;
+        aborts_if exists<coin::CoinStore<STC>>(to) && global<coin::CoinStore<STC>>(to).frozen;
         /// [high-level-req-5]
         ensures exists<starcoin_framework::account::Account>(to);
-        ensures exists<coin::CoinStore<StarcoinCoin>>(to);
+        ensures exists<coin::CoinStore<STC>>(to);
     }
 
     spec assert_account_exists(addr: address) {
@@ -113,7 +113,7 @@ spec starcoin_framework::starcoin_account {
     spec assert_account_is_registered_for_apt(addr: address) {
         pragma aborts_if_is_partial;
         aborts_if !account::exists_at(addr);
-        aborts_if !coin::spec_is_account_registered<StarcoinCoin>(addr);
+        aborts_if !coin::spec_is_account_registered<STC>(addr);
     }
 
     spec set_allow_direct_coin_transfers(account: &signer, allow: bool) {
@@ -128,7 +128,7 @@ spec starcoin_framework::starcoin_account {
         //TODO: Can't verify the loop invariant in enumerate
         pragma verify = false;
         let account_addr_source = signer::address_of(source);
-        let coin_store_source = global<coin::CoinStore<StarcoinCoin>>(account_addr_source);
+        let coin_store_source = global<coin::CoinStore<STC>>(account_addr_source);
         let balance_source = coin_store_source.coin.value;
 
         requires forall i in 0..len(recipients):
@@ -148,21 +148,21 @@ spec starcoin_framework::starcoin_account {
 
         // coin::withdraw properties
         aborts_if exists i in 0..len(recipients):
-            !exists<coin::CoinStore<StarcoinCoin>>(account_addr_source);
+            !exists<coin::CoinStore<STC>>(account_addr_source);
         aborts_if exists i in 0..len(recipients):
             coin_store_source.frozen;
         aborts_if exists i in 0..len(recipients):
-            global<coin::CoinStore<StarcoinCoin>>(account_addr_source).coin.value < amounts[i];
+            global<coin::CoinStore<STC>>(account_addr_source).coin.value < amounts[i];
 
         // deposit properties
         aborts_if exists i in 0..len(recipients):
-            exists<coin::CoinStore<StarcoinCoin>>(recipients[i]) && global<coin::CoinStore<StarcoinCoin>>(recipients[i]).frozen;
+            exists<coin::CoinStore<STC>>(recipients[i]) && global<coin::CoinStore<STC>>(recipients[i]).frozen;
 
         // guid properties
         aborts_if exists i in 0..len(recipients):
-            account::exists_at(recipients[i]) && !exists<coin::CoinStore<StarcoinCoin>>(recipients[i]) && global<account::Account>(recipients[i]).guid_creation_num + 2 >= account::MAX_GUID_CREATION_NUM;
+            account::exists_at(recipients[i]) && !exists<coin::CoinStore<STC>>(recipients[i]) && global<account::Account>(recipients[i]).guid_creation_num + 2 >= account::MAX_GUID_CREATION_NUM;
         aborts_if exists i in 0..len(recipients):
-            account::exists_at(recipients[i]) && !exists<coin::CoinStore<StarcoinCoin>>(recipients[i]) && global<account::Account>(recipients[i]).guid_creation_num + 2 > MAX_U64;
+            account::exists_at(recipients[i]) && !exists<coin::CoinStore<STC>>(recipients[i]) && global<account::Account>(recipients[i]).guid_creation_num + 2 > MAX_U64;
     }
 
     spec can_receive_direct_coin_transfers(account: address): bool {
@@ -313,7 +313,7 @@ spec starcoin_framework::starcoin_account {
         to: address;
         aborts_if !coin::spec_is_account_registered<CoinType>(to) && !type_info::spec_is_struct<CoinType>();
         aborts_if exists<starcoin_framework::account::Account>(to);
-        aborts_if type_info::type_of<CoinType>() != type_info::type_of<StarcoinCoin>();
+        aborts_if type_info::type_of<CoinType>() != type_info::type_of<STC>();
     }
 
     spec schema TransferEnsures<CoinType> {
