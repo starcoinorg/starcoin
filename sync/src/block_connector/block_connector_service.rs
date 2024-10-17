@@ -432,12 +432,17 @@ where
             bail!("failed to get the blue blocks from the DAG");
         }
 
+        info!("try to remove the red blocks when mining, tips: {:?} and ghostdata: {:?}, pruning point: {:?}", tips, ghostdata, pruning_point);
         (tips, ghostdata) = dag.remove_bounded_merge_breaking_parents(
             tips,
             ghostdata,
             pruning_point,
             G_MERGE_DEPTH,
         )?;
+        info!(
+            "after removing the bounded merge breaking parents, tips: {:?} and ghostdata: {:?}",
+            tips, ghostdata
+        );
 
         let selected_parent = ghostdata.selected_parent;
         let time_service = self.config.net().time_service();
