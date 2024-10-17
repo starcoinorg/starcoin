@@ -64,7 +64,7 @@ impl Default for BlockExecutedData {
     }
 }
 
-pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
+pub fn block_execute<S: ChainStateReader + ChainStateWriter + Sync>(
     chain_state: &S,
     txns: Vec<Transaction>,
     block_gas_limit: u64,

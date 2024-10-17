@@ -7,10 +7,11 @@ use starcoin_vm_runtime::{metrics::VMMetrics, starcoin_vm::StarcoinVM, VMExecuto
 use starcoin_vm_types::{
     identifier::Identifier,
     language_storage::{ModuleId, TypeTag},
-    {state_view::StateView, vm_status::VMStatus},
+    vm_status::VMStatus,
+    StateView,
 };
 
-pub fn execute_transactions<S: StateView>(
+pub fn execute_transactions<S: StateView + Sync>(
     chain_state: &S,
     txns: Vec<Transaction>,
     metrics: Option<VMMetrics>,
@@ -20,7 +21,7 @@ pub fn execute_transactions<S: StateView>(
 
 /// Execute a block transactions with gas_limit,
 /// if gas is used up when executing some txn, only return the outputs of previous succeed txns.
-pub fn execute_block_transactions<S: StateView>(
+pub fn execute_block_transactions<S: StateView + Sync>(
     chain_state: &S,
     txns: Vec<Transaction>,
     block_gas_limit: u64,
@@ -29,7 +30,7 @@ pub fn execute_block_transactions<S: StateView>(
     do_execute_block_transactions(chain_state, txns, Some(block_gas_limit), metrics)
 }
 
-fn do_execute_block_transactions<S: StateView>(
+fn do_execute_block_transactions<S: StateView + Sync>(
     chain_state: &S,
     txns: Vec<Transaction>,
     block_gas_limit: Option<u64>,
@@ -46,7 +47,7 @@ pub fn validate_transaction<S: StateView>(
     txn: SignedUserTransaction,
     metrics: Option<VMMetrics>,
 ) -> Option<VMStatus> {
-    let mut vm = StarcoinVM::new(metrics);
+    let mut vm = StarcoinVM::new(metrics, chain_state);
     vm.verify_transaction(chain_state, txn)
 }
 
@@ -58,6 +59,6 @@ pub fn execute_readonly_function<S: StateView>(
     args: Vec<Vec<u8>>,
     metrics: Option<VMMetrics>,
 ) -> Result<Vec<Vec<u8>>, VMStatus> {
-    let mut vm = StarcoinVM::new(metrics);
+    let mut vm = StarcoinVM::new(metrics, chain_state);
     vm.execute_readonly_function(chain_state, module, function_name, type_params, args)
 }
