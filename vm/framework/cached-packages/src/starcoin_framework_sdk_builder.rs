@@ -158,7 +158,7 @@ pub enum EntryFunctionCall {
 
     CoinCreateCoinConversionMap {},
 
-    /// Create APT pairing by passing `StarcoinCoin`.
+    /// Create STC pairing by passing `StarcoinCoin`.
     CoinCreatePairing {
         coin_type: TypeTag,
     },
@@ -1929,7 +1929,7 @@ pub fn coin_create_coin_conversion_map() -> TransactionPayload {
     ))
 }
 
-/// Create APT pairing by passing `StarcoinCoin`.
+/// Create STC pairing by passing `StarcoinCoin`.
 pub fn coin_create_pairing(coin_type: TypeTag) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(

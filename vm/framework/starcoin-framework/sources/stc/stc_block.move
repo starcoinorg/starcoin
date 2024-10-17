@@ -1,6 +1,5 @@
 /// Block module provide metadata for generated blocks.
 module starcoin_framework::stc_block {
-
     use std::error;
     use std::hash;
     use std::option;
@@ -271,9 +270,9 @@ module starcoin_framework::stc_block {
         while (j > 0) {
             let op_checkpoint = ring::borrow_mut(&mut checkpoints.checkpoints, i - 1);
 
-            if (option::is_some(op_checkpoint) && &option::borrow(
-                op_checkpoint
-            ).block_hash == &block_hash && option::borrow<Checkpoint>(op_checkpoint).block_number == number) {
+            if (option::is_some(op_checkpoint) &&
+                &option::borrow(op_checkpoint).block_hash == &block_hash &&
+                option::borrow<Checkpoint>(op_checkpoint).block_number == number) {
                 let op_state_root = &mut option::borrow_mut<Checkpoint>(op_checkpoint).state_root;
                 if (option::is_some(op_state_root)) {
                     option::swap(op_state_root, state_root);

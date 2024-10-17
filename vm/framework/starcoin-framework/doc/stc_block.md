@@ -748,9 +748,9 @@ Call at block prologue
     <b>while</b> (j &gt; 0) {
         <b>let</b> op_checkpoint = <a href="ring.md#0x1_ring_borrow_mut">ring::borrow_mut</a>(&<b>mut</b> checkpoints.checkpoints, i - 1);
 
-        <b>if</b> (<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(op_checkpoint) && &<a href="../../move-stdlib/doc/option.md#0x1_option_borrow">option::borrow</a>(
-            op_checkpoint
-        ).block_hash == &block_hash && <a href="../../move-stdlib/doc/option.md#0x1_option_borrow">option::borrow</a>&lt;<a href="stc_block.md#0x1_stc_block_Checkpoint">Checkpoint</a>&gt;(op_checkpoint).block_number == number) {
+        <b>if</b> (<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(op_checkpoint) &&
+            &<a href="../../move-stdlib/doc/option.md#0x1_option_borrow">option::borrow</a>(op_checkpoint).block_hash == &block_hash &&
+            <a href="../../move-stdlib/doc/option.md#0x1_option_borrow">option::borrow</a>&lt;<a href="stc_block.md#0x1_stc_block_Checkpoint">Checkpoint</a>&gt;(op_checkpoint).block_number == number) {
             <b>let</b> op_state_root = &<b>mut</b> <a href="../../move-stdlib/doc/option.md#0x1_option_borrow_mut">option::borrow_mut</a>&lt;<a href="stc_block.md#0x1_stc_block_Checkpoint">Checkpoint</a>&gt;(op_checkpoint).state_root;
             <b>if</b> (<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(op_state_root)) {
                 <a href="../../move-stdlib/doc/option.md#0x1_option_swap">option::swap</a>(op_state_root, state_root);

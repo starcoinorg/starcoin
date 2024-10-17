@@ -209,9 +209,9 @@ Can only called during genesis to initialize the Starcoin coin.
 
     <b>let</b> (burn_cap, freeze_cap, mint_cap) = <a href="coin.md#0x1_coin_initialize_with_parallelizable_supply">coin::initialize_with_parallelizable_supply</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">StarcoinCoin</a>&gt;(
         starcoin_framework,
-        <a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"Starcoin Coin"),
-        <a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"APT"),
-        8, // decimals
+        <a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"STC"),
+        <a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"STC"),
+        9, // decimals
         <b>true</b>, // monitor_supply
     );
 
@@ -286,7 +286,7 @@ and accounts have been initialized during genesis.
 
 Can only be called during genesis for tests to grant mint capability to starcoin framework and core resources
 accounts.
-Expects account and APT store to be registered before calling.
+Expects account and STC store to be registered before calling.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="starcoin_coin.md#0x1_starcoin_coin_configure_accounts_for_test">configure_accounts_for_test</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, core_resources: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, mint_cap: <a href="coin.md#0x1_coin_MintCapability">coin::MintCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;)

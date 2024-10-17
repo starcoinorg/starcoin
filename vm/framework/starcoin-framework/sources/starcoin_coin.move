@@ -41,9 +41,9 @@ module starcoin_framework::starcoin_coin {
 
         let (burn_cap, freeze_cap, mint_cap) = coin::initialize_with_parallelizable_supply<StarcoinCoin>(
             starcoin_framework,
-            string::utf8(b"Starcoin Coin"),
-            string::utf8(b"APT"),
-            8, // decimals
+            string::utf8(b"STC"),
+            string::utf8(b"STC"),
+            9, // decimals
             true, // monitor_supply
         );
 
@@ -69,7 +69,7 @@ module starcoin_framework::starcoin_coin {
 
     /// Can only be called during genesis for tests to grant mint capability to starcoin framework and core resources
     /// accounts.
-    /// Expects account and APT store to be registered before calling.
+    /// Expects account and STC store to be registered before calling.
     public(friend) fun configure_accounts_for_test(
         starcoin_framework: &signer,
         core_resources: &signer,
