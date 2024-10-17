@@ -613,8 +613,13 @@ where
         // if it is not, we must pull the dag parent blocks from the peer.
         info!("now sync dag block -- ensure_dag_parent_blocks_exist");
         match self.ensure_dag_parent_blocks_exist(block.clone())? {
-            ParallelSign::NeedMoreBlocks => return Ok(CollectorState::Need),
-            ParallelSign::Continue => (),
+            ParallelSign::NeedMoreBlocks => {
+                info!("sync dag block -- ensure_dag_parent_blocks returns need");
+                return Ok(CollectorState::Need);
+            }
+            ParallelSign::Continue => {
+                info!("sync dag block -- ensure_dag_parent_blocks returns continue");
+            }
         }
         let state = self.check_enough();
         if let anyhow::Result::Ok(CollectorState::Enough) = &state {

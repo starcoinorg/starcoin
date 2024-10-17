@@ -23,7 +23,7 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: starcoin/starcoin:pruning-point
+        image: starcoin/starcoin:slow-sync
         imagePullPolicy: Always
         command:
           - bash
@@ -42,7 +42,6 @@ spec:
               echo "Node start fail, try to remove config and data.";
               rm /sc-data/halley/config.toml;
               rm /sc-data/halley/genesis_config.json;
-              rm -rf /sc-data/halley/ &>/dev/null;
             fi;
         ports:
           - containerPort: 9840
