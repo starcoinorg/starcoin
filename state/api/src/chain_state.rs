@@ -116,13 +116,13 @@ pub trait ChainStateReader: StateView {
     fn get_with_proof(&self, access_path: &AccessPath) -> Result<StateWithProof>;
 
     /// Gets account state
-    fn get_account_state(&self, address: &AccountAddress) -> Result<Option<AccountState>>;
+    fn get_account_state(&self, address: &AccountAddress) -> Result<AccountState>;
 
     /// get whole state data of some account address.
     fn get_account_state_set(&self, address: &AccountAddress) -> Result<Option<AccountStateSet>>;
 
     fn exist_account(&self, address: &AccountAddress) -> Result<bool> {
-        self.get_account_state(address).map(|state| state.is_some())
+        Ok(self.get_account_state(address).is_ok())
     }
 
     /// Gets current state root.

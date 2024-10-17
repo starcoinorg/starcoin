@@ -79,7 +79,7 @@ impl<'a> ChainStateReader for RemoteStateReader<'a> {
             .map(Into::into)
     }
 
-    fn get_account_state(&self, _address: &AccountAddress) -> Result<Option<AccountState>> {
+    fn get_account_state(&self, _address: &AccountAddress) -> Result<AccountState> {
         unimplemented!()
         //TODO implement get_account_state by root
     }

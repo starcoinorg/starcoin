@@ -82,9 +82,7 @@ impl CachedSeqNumberClient {
                 );
                 0
             }
-            Ok(account_resource) => account_resource
-                .map(|res| res.sequence_number())
-                .unwrap_or_default(),
+            Ok(account_resource) => account_resource.sequence_number(),
         }
     }
 }
