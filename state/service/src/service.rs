@@ -97,7 +97,7 @@ impl ServiceHandler<Self, StateRequest> for ChainStateService {
                 StateResponse::StateWithProof(Box::new(self.service.get_with_proof(access_path)?))
             }
             StateRequest::GetAccountState(address) => {
-                StateResponse::AccountState(self.service.get_account_state(&address)?)
+                StateResponse::AccountState(Option::from(self.service.get_account_state(&address)?))
             }
             StateRequest::StateRoot() => StateResponse::StateRoot(self.service.state_root()),
             StateRequest::GetWithProofByRoot(state_key, state_root) => {
@@ -113,10 +113,10 @@ impl ServiceHandler<Self, StateRequest> for ChainStateService {
                 ))
             }
             StateRequest::GetAccountStateByRoot(account, state_root) => {
-                StateResponse::AccountState(
+                StateResponse::AccountState(Some(
                     self.service
                         .get_account_state_by_root(account, state_root)?,
-                )
+                ))
             }
             StateRequest::GetAccountStateSet {
                 address,
@@ -207,7 +207,7 @@ impl Inner {
         &self,
         account: AccountAddress,
         state_root: HashValue,
-    ) -> Result<Option<AccountState>> {
+    ) -> Result<AccountState> {
         let reader = self.state_db.fork_at(state_root);
         reader.get_account_state(&account)
     }
@@ -234,7 +234,7 @@ impl ChainStateReader for Inner {
         self.state_db.get_with_proof(access_path)
     }
 
-    fn get_account_state(&self, address: &AccountAddress) -> Result<Option<AccountState>> {
+    fn get_account_state(&self, address: &AccountAddress) -> Result<AccountState> {
         self.state_db.get_account_state(address)
     }
     fn get_account_state_set(&self, address: &AccountAddress) -> Result<Option<AccountStateSet>> {

@@ -485,10 +485,12 @@ impl ChainStateReader for ChainStateDB {
         Ok(state_with_proof)
     }
 
-    fn get_account_state(&self, address: &AccountAddress) -> Result<Option<AccountState>> {
-        Ok(self
-            .get_account_state_object_option(address)?
-            .map(|state_object| state_object.to_state()))
+    fn get_account_state(&self, address: &AccountAddress) -> Result<AccountState> {
+        let account_state = self.get_account_state_object_option(address)?;
+        match account_state {
+            Some(account_state) => Ok(account_state.to_state()),
+            None => Err(AccountNotExist(*address).into()),
+        }
     }
 
     fn get_account_state_set(&self, address: &AccountAddress) -> Result<Option<AccountStateSet>> {

@@ -31,7 +31,7 @@ use starcoin_types::language_storage::{ModuleId, StructTag};
 use starcoin_types::transaction::{DryRunTransaction, RawUserTransaction, TransactionPayload};
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::file_format::CompiledModule;
-use starcoin_vm_types::state_view::StateView;
+use starcoin_vm_types::state_store::StateView;
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
 use std::str::FromStr;
 use std::sync::Arc;

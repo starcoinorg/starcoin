@@ -70,7 +70,7 @@ impl ChainStateReader for RemoteChainStateReader {
         Ok(state_proof)
     }
 
-    fn get_account_state(&self, account_address: &AccountAddress) -> Result<Option<AccountState>> {
+    fn get_account_state(&self, account_address: &AccountAddress) -> Result<AccountState> {
         //TODO: How to verify it
         let peer_id = self
             .peer_id
@@ -135,9 +135,8 @@ impl ChainStateReader for RemoteChainStateReader {
             .ok_or_else(|| anyhow!("peer id not set"))?;
         let req = GetTableInfo(address);
         let client = self.client.clone();
-        let table_info: Option<TableInfo> =
-            futures::executor::block_on(client.get_state_table_info(peer_id, req))?;
-        Ok(table_info)
+        let table_info = futures::executor::block_on(client.get_state_table_info(peer_id, req))?;
+        Ok(Some(table_info))
     }
 }
 

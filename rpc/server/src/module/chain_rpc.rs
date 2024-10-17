@@ -21,7 +21,7 @@ use starcoin_rpc_api::types::{
     TransactionInfoWithProofView, TransactionView,
 };
 use starcoin_rpc_api::FutureResult;
-use starcoin_state_api::StateView;
+use starcoin_vm_types::StateView;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Storage;
 use starcoin_types::access_path::AccessPath;

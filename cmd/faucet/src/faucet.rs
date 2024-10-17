@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{format_err, Result};
+use anyhow::Result;
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
@@ -63,12 +63,6 @@ impl Faucet {
                 let chain_state_reader = self.client.state_reader(StateRootOption::Latest)?;
                 chain_state_reader
                     .get_account_resource(*self.faucet_account.address())?
-                    .ok_or_else(|| {
-                        format_err!(
-                            "Can not find account on chain by address:{}",
-                            self.faucet_account.address()
-                        )
-                    })?
                     .sequence_number()
             }
         };

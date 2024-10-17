@@ -271,7 +271,7 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         &self,
         peer_id: PeerId,
         req: GetAccountState,
-    ) -> BoxFuture<Result<Option<AccountState>>>;
+    ) -> BoxFuture<Result<AccountState>>;
 
     fn get_block_ids(&self, peer_id: PeerId, req: GetBlockIds)
         -> BoxFuture<Result<Vec<HashValue>>>;
@@ -292,7 +292,7 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         &self,
         peer_id: PeerId,
         request: GetTableInfo,
-    ) -> BoxFuture<Result<Option<TableInfo>>>;
+    ) -> BoxFuture<Result<TableInfo>>;
 
     fn get_dag_block_children(
         &self,

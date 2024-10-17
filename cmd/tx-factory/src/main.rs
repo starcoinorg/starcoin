@@ -96,11 +96,11 @@ fn get_account_or_default(
 
             let addr = default_account.clone().unwrap().address;
             let state_reader = client.state_reader(StateRootOption::Latest)?;
-            let mut balance = state_reader.get_balance(addr)?;
+            let mut balance = state_reader.get_balance(addr);
             // balance resource has not been created
-            while balance.is_none() {
+            while balance.is_err() {
                 std::thread::sleep(Duration::from_millis(1000));
-                balance = state_reader.get_balance(addr)?;
+                balance = state_reader.get_balance(addr);
                 info!("account balance is null.");
             }
             default_account.unwrap()
@@ -228,8 +228,8 @@ impl TxnMocker {
     ) -> Result<Self> {
         let state_reader = client.state_reader(StateRootOption::Latest)?;
 
-        let account_resource = state_reader.get_account_resource(account_address)?;
-        if account_resource.is_none() {
+        let account_resource = state_reader.get_account_resource(account_address);
+        if account_resource.is_err() {
             bail!("account {} not exists, please faucet it", account_address);
         }
         let account_resource = account_resource.unwrap();
@@ -277,8 +277,8 @@ impl TxnMocker {
             None => {
                 let state_reader = self.client.state_reader(StateRootOption::Latest)?;
 
-                let account_resource = state_reader.get_account_resource(self.account_address)?;
-                if account_resource.is_none() {
+                let account_resource = state_reader.get_account_resource(self.account_address);
+                if account_resource.is_err() {
                     bail!(
                         "account {} not exists, please faucet it",
                         &self.account_address
