@@ -265,7 +265,8 @@ Process the given block rewards.
     current_number: u64,
     current_reward: u128,
     current_author: <b>address</b>, _auth_key_vec: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    previous_block_gas_fees: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;STC&gt;) <b>acquires</b> <a href="block_reward.md#0x1_block_reward_RewardQueue">RewardQueue</a> {
+    previous_block_gas_fees: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;STC&gt;
+) <b>acquires</b> <a href="block_reward.md#0x1_block_reward_RewardQueue">RewardQueue</a> {
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);
     <b>if</b> (current_number == 0) {
         <a href="coin.md#0x1_coin_destroy_zero">coin::destroy_zero</a>(previous_block_gas_fees);
@@ -303,13 +304,15 @@ Process the given block rewards.
             <b>let</b> total_reward = gas_fees;
             // add <a href="block.md#0x1_block">block</a> reward <b>to</b> total.
             <b>if</b> (<a href="block_reward.md#0x1_block_reward">block_reward</a> &gt; 0) {
+
+                // TODO(BobOng): [framework compatible] Trasury not implemented.
                 // <b>if</b> no STC in Treasury, BlockReward will been 0.
-                // <b>let</b> treasury_balance = Treasury::balance&lt;STC&gt;(); TODO(Bobong): Trasury not implemented.
+                // <b>let</b> treasury_balance = Treasury::balance&lt;STC&gt;();
                 <b>let</b> treasury_balance = 0;
                 <b>if</b> (treasury_balance &lt; <a href="block_reward.md#0x1_block_reward">block_reward</a>) {
                     <a href="block_reward.md#0x1_block_reward">block_reward</a> = treasury_balance;
                 };
-                // TODO(Bobong): Trasury not implemented.
+                // TODO(BobOng): [framework compatible] Trasury not implemented.
                 // <b>if</b> (<a href="block_reward.md#0x1_block_reward">block_reward</a> &gt; 0) {
                 //     <b>let</b> reward = TreasuryWithdrawDaoProposal::withdraw_for_block_reward&lt;STC&gt;(<a href="account.md#0x1_account">account</a>, <a href="block_reward.md#0x1_block_reward">block_reward</a>);
                 //     <a href="coin.md#0x1_coin_merge">coin::merge</a>(&<b>mut</b> total_reward, reward);

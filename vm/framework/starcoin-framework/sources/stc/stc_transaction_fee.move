@@ -86,8 +86,10 @@ module starcoin_framework::stc_transaction_fee {
     }
 
     spec distribute_transaction_fees {
+        use std::signer;
+
         pragma verify = false;
-        //        aborts_if Signer::address_of(account) != CoreAddresses::GENESIS_ADDRESS();
-        //        aborts_if !exists<TransactionFee<TokenType>>(CoreAddresses::GENESIS_ADDRESS());
+        aborts_if signer::address_of(account) != system_addresses::get_starcoin_framework();
+        aborts_if !exists<TransactionFee<TokenType>>(system_addresses::get_starcoin_framework());
     }
 }

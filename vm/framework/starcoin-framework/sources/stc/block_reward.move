@@ -69,7 +69,8 @@ module starcoin_framework::block_reward {
         current_number: u64,
         current_reward: u128,
         current_author: address, _auth_key_vec: vector<u8>,
-        previous_block_gas_fees: coin::Coin<STC>) acquires RewardQueue {
+        previous_block_gas_fees: coin::Coin<STC>
+    ) acquires RewardQueue {
         system_addresses::assert_starcoin_framework(account);
         if (current_number == 0) {
             coin::destroy_zero(previous_block_gas_fees);
@@ -107,13 +108,15 @@ module starcoin_framework::block_reward {
                 let total_reward = gas_fees;
                 // add block reward to total.
                 if (block_reward > 0) {
+
+                    // TODO(BobOng): [framework compatible] Trasury not implemented.
                     // if no STC in Treasury, BlockReward will been 0.
-                    // let treasury_balance = Treasury::balance<STC>(); TODO(Bobong): Trasury not implemented.
+                    // let treasury_balance = Treasury::balance<STC>();
                     let treasury_balance = 0;
                     if (treasury_balance < block_reward) {
                         block_reward = treasury_balance;
                     };
-                    // TODO(Bobong): Trasury not implemented.
+                    // TODO(BobOng): [framework compatible] Trasury not implemented.
                     // if (block_reward > 0) {
                     //     let reward = TreasuryWithdrawDaoProposal::withdraw_for_block_reward<STC>(account, block_reward);
                     //     coin::merge(&mut total_reward, reward);

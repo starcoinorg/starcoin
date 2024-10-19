@@ -258,6 +258,8 @@ underlying fiat.
 
 
 <pre><code><b>pragma</b> verify = <b>false</b>;
+<b>aborts_if</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>) != <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>();
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="stc_transaction_fee.md#0x1_stc_transaction_fee_TransactionFee">TransactionFee</a>&lt;TokenType&gt;&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>());
 </code></pre>
 
 

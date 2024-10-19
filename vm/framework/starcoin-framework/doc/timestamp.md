@@ -14,6 +14,7 @@ It interacts with the other modules in the following ways:
 -  [Function `set_time_has_started`](#0x1_timestamp_set_time_has_started)
 -  [Function `update_global_time`](#0x1_timestamp_update_global_time)
 -  [Function `now_microseconds`](#0x1_timestamp_now_microseconds)
+-  [Function `now_milliseconds`](#0x1_timestamp_now_milliseconds)
 -  [Function `now_seconds`](#0x1_timestamp_now_seconds)
 -  [Specification](#@Specification_1)
     -  [High-level Requirements](#high-level-req)
@@ -86,6 +87,16 @@ Conversion factor between seconds and microseconds
 
 
 <pre><code><b>const</b> <a href="timestamp.md#0x1_timestamp_MICRO_CONVERSION_FACTOR">MICRO_CONVERSION_FACTOR</a>: u64 = 1000000;
+</code></pre>
+
+
+
+<a id="0x1_timestamp_MILLI_CONVERSION_FACTOR"></a>
+
+Conversion factor between seconds and microseconds
+
+
+<pre><code><b>const</b> <a href="timestamp.md#0x1_timestamp_MILLI_CONVERSION_FACTOR">MILLI_CONVERSION_FACTOR</a>: u64 = 1000;
 </code></pre>
 
 
@@ -177,6 +188,32 @@ Gets the current time in microseconds.
 
 <pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x1_timestamp_now_microseconds">now_microseconds</a>(): u64 <b>acquires</b> <a href="timestamp.md#0x1_timestamp_CurrentTimeMicroseconds">CurrentTimeMicroseconds</a> {
     <b>borrow_global</b>&lt;<a href="timestamp.md#0x1_timestamp_CurrentTimeMicroseconds">CurrentTimeMicroseconds</a>&gt;(@starcoin_framework).microseconds
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_timestamp_now_milliseconds"></a>
+
+## Function `now_milliseconds`
+
+Gets the current time in milliseconds.
+
+
+<pre><code>#[view]
+<b>public</b> <b>fun</b> <a href="timestamp.md#0x1_timestamp_now_milliseconds">now_milliseconds</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x1_timestamp_now_milliseconds">now_milliseconds</a>(): u64 <b>acquires</b> <a href="timestamp.md#0x1_timestamp_CurrentTimeMicroseconds">CurrentTimeMicroseconds</a> {
+    <a href="timestamp.md#0x1_timestamp_now_microseconds">now_microseconds</a>() / <a href="timestamp.md#0x1_timestamp_MILLI_CONVERSION_FACTOR">MILLI_CONVERSION_FACTOR</a>
 }
 </code></pre>
 
