@@ -18,6 +18,7 @@ use starcoin_types::{
 };
 use starcoin_vm_types::account_config::TABLE_HANDLE_ADDRESS_LIST;
 use starcoin_vm_types::genesis_config::ChainId;
+use starcoin_vm_types::on_chain_config::FlexiDagConfigV2;
 use starcoin_vm_types::on_chain_resource::{Epoch, EpochInfo, GlobalTimeOnChain};
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::token::token_code::TokenCode;
@@ -198,6 +199,10 @@ where
 
     pub fn get_balance(&self, address: &AccountAddress) -> Result<Option<u128>> {
         self.reader.get_balance(*address)
+    }
+
+    pub fn get_dag_config(&self) -> Result<Option<FlexiDagConfigV2>> {
+        self.get_on_chain_config::<FlexiDagConfigV2>()
     }
 
     /// Get balance by address and coin type

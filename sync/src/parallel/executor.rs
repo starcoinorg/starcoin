@@ -103,7 +103,11 @@ impl DagBlockExecutor {
                                 block.header().parents_hash(),
                             ) {
                                 Ok(true) => break,
-                                Ok(false) => tokio::task::yield_now().await,
+                                Ok(false) => {
+                                    tokio::task::yield_now().await;
+                                    tokio::time::sleep(tokio::time::Duration::from_millis(100))
+                                        .await
+                                }
                                 Err(e) => {
                                     error!(
                                         "failed to check parents: {:?}, for reason: {:?}",

@@ -408,7 +408,15 @@ where
                         main_header.pruning_point(),
                     )
             };
-            dag.calc_mergeset_and_tips(pruning_point, previous_ghostdata.as_ref())?
+            let (pruning_depth, pruning_finality) =
+                self.chain_service.get_main().get_pruning_config();
+
+            dag.calc_mergeset_and_tips(
+                pruning_point,
+                previous_ghostdata.as_ref(),
+                pruning_depth,
+                pruning_finality,
+            )?
         } else {
             let genesis = ctx.get_shared::<Genesis>()?;
             let tips = dag.get_dag_state(genesis.block().id())?.tips;
