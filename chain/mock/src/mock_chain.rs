@@ -43,12 +43,8 @@ impl MockChain {
     pub fn new_with_params(
         net: ChainNetwork,
         k: KType,
-        pruning_depth: u64,
-        pruning_finality: u64,
     ) -> Result<Self> {
-        let (storage, chain_info, _, dag) =
-            Genesis::init_storage_for_test_with_param(&net, k, pruning_depth, pruning_finality)?;
-
+        let (storage, chain_info, _, dag) = Genesis::init_storage_for_test_with_param(&net, k)?;
         let chain = BlockChain::new(
             net.time_service(),
             chain_info.head().id(),
@@ -263,15 +259,16 @@ impl MockChain {
             .dag()
             .ghostdata_by_hash(previous_pruning)?
             .ok_or_else(|| format_err!("Cannot find ghostdata by hash: {:?}", previous_pruning))?;
-
+        
         let MineNewDagBlockInfo {
             tips: pruned_tips,
             blue_blocks,
             pruning_point,
-        } = self
-            .head
-            .dag()
-            .calc_mergeset_and_tips(previous_pruning, prevous_ghostdata.as_ref())?;
+        } = self.head.dag().calc_mergeset_and_tips(
+            previous_pruning,
+            prevous_ghostdata.as_ref(),
+            4,3
+        )?;
 
         debug!(
             "tips: {:?}, blue_blocks: {:?}, pruning_point: {:?}",

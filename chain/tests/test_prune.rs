@@ -6,7 +6,7 @@ use std::collections::HashSet;
 
 #[stest::test]
 fn test_block_chain_prune() -> anyhow::Result<()> {
-    let mut mock_chain = MockChain::new_with_params(ChainNetwork::new_test(), 3, 4, 3)?;
+    let mut mock_chain = MockChain::new_with_params(ChainNetwork::new_test(), 3)?;
     let genesis = mock_chain.head().status().head.clone();
 
     // blue blocks

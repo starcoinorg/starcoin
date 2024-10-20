@@ -24,7 +24,6 @@ mod genesis_gas_schedule;
 mod move_lang_version;
 mod version;
 mod vm_config;
-
 pub use self::{
     consensus_config::{consensus_config_type_tag, ConsensusConfig, G_CONSENSUS_CONFIG_IDENTIFIER},
     dao_config::DaoConfig,

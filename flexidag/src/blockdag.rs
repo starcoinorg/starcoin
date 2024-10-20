@@ -16,7 +16,6 @@ use crate::ghostdag::protocol::GhostdagManager;
 use crate::prune::pruning_point_manager::PruningPointManagerT;
 use crate::{process_key_already_error, reachability};
 use anyhow::{bail, ensure, Ok};
-use starcoin_config::genesis_config::{G_PRUNING_DEPTH, G_PRUNING_FINALITY};
 use starcoin_config::temp_dir;
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_logger::prelude::{debug, info, warn};
@@ -30,8 +29,6 @@ use std::ops::DerefMut;
 use std::sync::Arc;
 
 pub const DEFAULT_GHOSTDAG_K: KType = 8u16;
-pub const DEFAULT_PRUNING_DEPTH: u64 = 185798;
-pub const DEFAULT_FINALITY_DEPTH: u64 = 86400;
 
 pub type DbGhostdagManager = GhostdagManager<
     DbGhostdagStore,
@@ -57,15 +54,10 @@ pub struct BlockDAG {
 
 impl BlockDAG {
     pub fn create_blockdag(dag_storage: FlexiDagStorage) -> Self {
-        Self::new(
-            DEFAULT_GHOSTDAG_K,
-            dag_storage,
-            G_PRUNING_DEPTH,
-            G_PRUNING_FINALITY,
-        )
+        Self::new(DEFAULT_GHOSTDAG_K, dag_storage)
     }
 
-    pub fn new(k: KType, db: FlexiDagStorage, pruning_depth: u64, pruning_finality: u64) -> Self {
+    pub fn new(k: KType, db: FlexiDagStorage) -> Self {
         let ghostdag_store = db.ghost_dag_store.clone();
         let header_store = db.header_store.clone();
         let relations_store = db.relations_store.clone();
@@ -78,12 +70,7 @@ impl BlockDAG {
             header_store,
             reachability_service.clone(),
         );
-        let pruning_point_manager = PruningPointManager::new(
-            reachability_service,
-            ghostdag_store,
-            pruning_depth,
-            pruning_finality,
-        );
+        let pruning_point_manager = PruningPointManager::new(reachability_service, ghostdag_store);
 
         Self {
             ghostdag_manager,
@@ -101,14 +88,10 @@ impl BlockDAG {
         Ok(Self::create_blockdag(dag_storage))
     }
 
-    pub fn create_for_testing_with_parameters(
-        k: KType,
-        pruning_depth: u64,
-        pruning_finality: u64,
-    ) -> anyhow::Result<Self> {
+    pub fn create_for_testing_with_parameters(k: KType) -> anyhow::Result<Self> {
         let dag_storage =
             FlexiDagStorage::create_from_path(temp_dir(), FlexiDagStorageConfig::default())?;
-        Ok(Self::new(k, dag_storage, pruning_depth, pruning_finality))
+        Ok(Self::new(k, dag_storage))
     }
 
     pub fn has_dag_block(&self, hash: Hash) -> anyhow::Result<bool> {
@@ -492,6 +475,8 @@ impl BlockDAG {
         &self,
         previous_pruning_point: HashValue,
         previous_ghostdata: &GhostdagData,
+        pruning_depth: u64,
+        pruning_finality: u64,
     ) -> anyhow::Result<MineNewDagBlockInfo> {
         info!("start to calculate the mergeset and tips, previous pruning point: {:?}, previous ghostdata: {:?}", previous_pruning_point, previous_ghostdata);
         let dag_state = self.get_dag_state(previous_pruning_point)?;
@@ -504,6 +489,8 @@ impl BlockDAG {
             previous_pruning_point,
             previous_ghostdata,
             &next_ghostdata,
+            pruning_depth,
+            pruning_finality,
         )?;
         info!(
             "the next pruning point is: {:?}, and the previous pruning point is: {:?}",
@@ -545,11 +532,15 @@ impl BlockDAG {
         previous_ghostdata: &GhostdagData,
         next_pruning_point: HashValue,
         next_ghostdata: &GhostdagData,
+        pruning_depth: u64,
+        pruning_finality: u64,
     ) -> anyhow::Result<()> {
         let inside_next_pruning_point = self.pruning_point_manager().next_pruning_point(
             previous_pruning_point,
             previous_ghostdata,
             next_ghostdata,
+            pruning_depth,
+            pruning_finality,
         )?;
 
         if next_pruning_point != inside_next_pruning_point {
