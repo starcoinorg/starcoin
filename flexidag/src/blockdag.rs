@@ -449,6 +449,11 @@ impl BlockDAG {
         Ok(self.storage.state_store.read().get_state_by_hash(hash)?)
     }
 
+    pub fn save_dag_state_directly(&self, hash: Hash, state: DagState) -> anyhow::Result<()> {
+        self.storage.state_store.write().insert(hash, state)?;
+        anyhow::Ok(())
+    }
+
     pub fn save_dag_state(&self, hash: Hash, state: DagState) -> anyhow::Result<()> {
         let writer = self.storage.state_store.write();
         match writer.get_state_by_hash(hash) {
@@ -557,6 +562,10 @@ impl BlockDAG {
         &self,
     ) -> Arc<parking_lot::lock_api::RwLock<parking_lot::RawRwLock, DbReachabilityStore>> {
         self.storage.reachability_store.clone()
+    }
+
+    pub fn reachability_service(&self) -> MTReachabilityService<DbReachabilityStore> {
+        self.pruning_point_manager().reachability_service()
     }
 
     pub fn verify_and_ghostdata(
