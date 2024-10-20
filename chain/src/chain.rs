@@ -45,6 +45,7 @@ use starcoin_types::{
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy};
+use starcoin_vm_types::on_chain_config::FlexiDagConfigV2;
 use starcoin_vm_types::on_chain_resource::Epoch;
 use std::cmp::min;
 use std::iter::Extend;
@@ -1389,7 +1390,7 @@ impl ChainReader for BlockChain {
             .get_block_header_by_hash(header.parent_hash())?
             .ok_or_else(|| format_err!("cannot find parent block header"))?;
         let next_ghostdata = self.dag().verify_and_ghostdata(uncles, header)?;
-
+        let (pruning_depth, pruning_finality) = self.get_pruning_config();
         if self.status().head().pruning_point() != HashValue::zero() {
             let previous_ghostdata = if previous_header.pruning_point() == HashValue::zero() {
                 let genesis = self
@@ -1409,6 +1410,8 @@ impl ChainReader for BlockChain {
                 previous_ghostdata.as_ref(),
                 header.pruning_point(),
                 &next_ghostdata,
+                pruning_depth,
+                pruning_finality,
             )?;
         }
 
@@ -1421,6 +1424,18 @@ impl ChainReader for BlockChain {
 
     fn get_pruning_height(&self) -> BlockNumber {
         self.get_pruning_height()
+    }
+
+    fn get_pruning_config(&self) -> (u64, u64) {
+        let reader = AccountStateReader::new(&self.statedb);
+        let FlexiDagConfigV2 {
+            pruning_depth,
+            pruning_finality,
+        } = reader
+            .get_dag_config()
+            .unwrap_or_default()
+            .unwrap_or_default();
+        (pruning_depth, pruning_finality)
     }
 }
 

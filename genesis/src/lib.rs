@@ -373,13 +373,11 @@ impl Genesis {
     pub fn init_storage_for_test_with_param(
         net: &ChainNetwork,
         k: KType,
-        pruning_depth: u64,
-        pruning_finality: u64,
     ) -> Result<(Arc<Storage>, ChainInfo, Self, BlockDAG)> {
         debug!("init storage by genesis for test. {net:?}");
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
         let genesis = Self::load_or_build(net)?;
-        let dag = BlockDAG::create_for_testing_with_parameters(k, pruning_depth, pruning_finality)?;
+        let dag = BlockDAG::create_for_testing_with_parameters(k)?;
         let chain_info = genesis.execute_genesis_block(net, storage.clone(), dag.clone())?;
         Ok((storage, chain_info, genesis, dag))
     }

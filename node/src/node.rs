@@ -321,8 +321,6 @@ impl NodeService {
         let dag = starcoin_dag::blockdag::BlockDAG::new(
             KType::try_from(G_BASE_MAX_UNCLES_PER_BLOCK)?,
             dag_storage.clone(),
-            config.base().net().genesis_config().pruning_depth,
-            config.base().net().genesis_config().pruning_finality,
         );
         registry.put_shared(dag.clone()).await?;
         let (chain_info, genesis) = Genesis::init_and_check_storage(
