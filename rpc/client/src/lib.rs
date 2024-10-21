@@ -59,6 +59,7 @@ use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
+use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::table::TableHandle;
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::DryRunTransaction;
@@ -501,28 +502,26 @@ impl RpcClient {
         RemoteStateReader::new(self, state_root_opt)
     }
 
-    pub fn state_get(&self, access_path: AccessPath) -> anyhow::Result<Option<Vec<u8>>> {
-        self.call_rpc_blocking(|inner| inner.state_client.get(access_path))
+    pub fn state_get(&self, state_key: StateKey) -> anyhow::Result<Option<Vec<u8>>> {
+        self.call_rpc_blocking(|inner| inner.state_client.get(state_key))
             .map_err(map_err)
+            .map(|v| v.map(|s| s.to_vec()))
     }
 
-    pub fn state_get_with_proof(
-        &self,
-        access_path: AccessPath,
-    ) -> anyhow::Result<StateWithProofView> {
-        self.call_rpc_blocking(|inner| inner.state_client.get_with_proof(access_path))
+    pub fn state_get_with_proof(&self, state_key: StateKey) -> anyhow::Result<StateWithProofView> {
+        self.call_rpc_blocking(|inner| inner.state_client.get_with_proof(state_key))
             .map_err(map_err)
     }
 
     pub fn state_get_with_proof_by_root(
         &self,
-        access_path: AccessPath,
+        state_key: StateKey,
         state_root: HashValue,
     ) -> anyhow::Result<StateWithProofView> {
         self.call_rpc_blocking(|inner| {
             inner
                 .state_client
-                .get_with_proof_by_root(access_path, state_root)
+                .get_with_proof_by_root(state_key, state_root)
         })
         .map_err(map_err)
     }

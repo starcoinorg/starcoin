@@ -3,6 +3,7 @@
 
 use crate::module::map_err;
 use bcs_ext::BCSCodec;
+use bytes::Bytes;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
 use starcoin_abi_resolver::ABIResolver;
@@ -18,17 +19,16 @@ use starcoin_rpc_api::types::{
     TableInfoView,
 };
 use starcoin_rpc_api::FutureResult;
-use starcoin_state_api::{ChainStateAsyncService, StateView};
+use starcoin_state_api::ChainStateAsyncService;
 use starcoin_state_tree::StateNodeStore;
 use starcoin_statedb::{ChainStateDB, ChainStateReader};
 use starcoin_types::language_storage::ModuleId;
-use starcoin_types::{
-    access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
-};
+use starcoin_types::{account_address::AccountAddress, account_state::AccountState};
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::{struct_tag_match, StructTag};
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::table::TableHandle;
+use starcoin_vm_types::state_store::TStateView;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -56,35 +56,35 @@ impl<S> StateApi for StateRpcImpl<S>
 where
     S: ChainStateAsyncService,
 {
-    fn get(&self, access_path: AccessPath) -> FutureResult<Option<Vec<u8>>> {
-        let fut = self.service.clone().get(access_path).map_err(map_err);
+    fn get(&self, state_key: StateKey) -> FutureResult<Option<Bytes>> {
+        let fut = self.service.clone().get(state_key).map_err(map_err);
         Box::pin(fut)
     }
 
-    fn get_state_node_by_node_hash(&self, key_hash: HashValue) -> FutureResult<Option<Vec<u8>>> {
+    fn get_state_node_by_node_hash(&self, key_hash: HashValue) -> FutureResult<Option<Bytes>> {
         let state_store = self.state_store.clone();
         let f = async move {
             let node = state_store.get(&key_hash)?.map(|n| n.0);
-            Ok(node)
+            Ok(node.map(|v| Bytes::from(v)))
         };
         Box::pin(f.map_err(map_err).boxed())
     }
 
-    fn get_with_proof(&self, access_path: AccessPath) -> FutureResult<StateWithProofView> {
+    fn get_with_proof(&self, state_key: StateKey) -> FutureResult<StateWithProofView> {
         let fut = self
             .service
             .clone()
-            .get_with_proof(access_path)
+            .get_with_proof(state_key)
             .map_ok(|p| p.into())
             .map_err(map_err);
         Box::pin(fut)
     }
 
-    fn get_with_proof_raw(&self, access_path: AccessPath) -> FutureResult<StrView<Vec<u8>>> {
+    fn get_with_proof_raw(&self, state_key: StateKey) -> FutureResult<StrView<Vec<u8>>> {
         let fut = self
             .service
             .clone()
-            .get_with_proof(access_path)
+            .get_with_proof(state_key)
             .map_ok(|p| {
                 StrView(bcs_ext::to_bytes(&p).expect("Serialize StateWithProof should success."))
             })
@@ -92,7 +92,7 @@ where
         Box::pin(fut)
     }
 
-    fn get_account_state(&self, address: AccountAddress) -> FutureResult<Option<AccountState>> {
+    fn get_account_state(&self, address: AccountAddress) -> FutureResult<AccountState> {
         let fut = self
             .service
             .clone()
@@ -158,13 +158,13 @@ where
 
     fn get_with_proof_by_root(
         &self,
-        access_path: AccessPath,
+        state_key: StateKey,
         state_root: HashValue,
     ) -> FutureResult<StateWithProofView> {
         let fut = self
             .service
             .clone()
-            .get_with_proof_by_root(access_path, state_root)
+            .get_with_proof_by_root(state_key, state_root)
             .map_ok(|p| p.into())
             .map_err(map_err);
         Box::pin(fut)
@@ -172,13 +172,13 @@ where
 
     fn get_with_proof_by_root_raw(
         &self,
-        access_path: AccessPath,
+        state_key: StateKey,
         state_root: HashValue,
     ) -> FutureResult<StrView<Vec<u8>>> {
         let fut = self
             .service
             .clone()
-            .get_with_proof_by_root(access_path, state_root)
+            .get_with_proof_by_root(state_key, state_root)
             .map_ok(|p| {
                 StrView(bcs_ext::to_bytes(&p).expect("Serialize StateWithProof should success."))
             })
@@ -186,12 +186,12 @@ where
         Box::pin(fut)
     }
 
-    fn get_table_info(&self, address: AccountAddress) -> FutureResult<Option<TableInfoView>> {
+    fn get_table_info(&self, address: AccountAddress) -> FutureResult<TableInfoView> {
         let fut = self
             .service
             .clone()
             .get_table_info(address)
-            .map_ok(|v| v.map(Into::into))
+            .map_ok(|v| v.into())
             .map_err(map_err);
         Box::pin(fut)
     }
@@ -238,8 +238,8 @@ where
                 .state_root
                 .unwrap_or(service.clone().state_root().await?);
             let chain_state = ChainStateDB::new(state_store, Some(state_root));
-            let code = chain_state
-                .get_state_value(&StateKey::AccessPath(AccessPath::from(&module_id.0)))?;
+            let state_key = StateKey::module_id(&module_id.0);
+            let code = chain_state.get_state_value_bytes(&state_key)?;
             Ok(match code {
                 None => None,
                 Some(c) => {
@@ -250,7 +250,7 @@ where
                     };
 
                     Some(CodeView {
-                        code: StrView(c),
+                        code: StrView(c.to_vec()),
                         abi,
                     })
                 }
@@ -273,21 +273,21 @@ where
                 .state_root
                 .unwrap_or(service.clone().state_root().await?);
             let chain_state = ChainStateDB::new(state_store, Some(state_root));
-            let data = chain_state.get_state_value(&StateKey::AccessPath(
-                AccessPath::resource_access_path(addr, resource_type.0.clone()),
-            ))?;
+            let state_key = StateKey::resource(&addr, &resource_type.0)?;
+            let data = chain_state.get_state_value_bytes(&state_key)?;
             Ok(match data {
                 None => None,
                 Some(d) => {
                     let decoded = if option.decode {
-                        let value = view_resource(&chain_state, resource_type.0, d.as_slice())?;
+                        let value =
+                            view_resource(&chain_state, resource_type.0, d.to_vec().as_slice())?;
                         Some(value.into())
                     } else {
                         None
                     };
 
                     Some(ResourceView {
-                        raw: StrView(d),
+                        raw: StrView(d.to_vec()),
                         json: decoded,
                     })
                 }

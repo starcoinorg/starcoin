@@ -18,6 +18,7 @@ use move_core_types::{
     language_storage::StructTag,
 };
 use once_cell::sync::Lazy;
+use schemars::JsonSchema;
 use starcoin_crypto::hash::CryptoHasher;
 use starcoin_crypto::HashValue;
 use starcoin_infallible::RwLock;
@@ -27,7 +28,7 @@ use std::{
     sync::{Arc, Weak},
 };
 
-#[derive(Debug)]
+#[derive(Debug, JsonSchema)]
 pub struct Entry {
     pub deserialized: StateKeyInner,
     pub encoded: Bytes,

@@ -12,6 +12,7 @@ use move_table_extension::{TableHandle, TableResolver};
 use move_vm_runtime::native_functions::NativeFunctionTable;
 use starcoin_gas_schedule::{MiscGasParameters, NativeGasParameters, LATEST_GAS_FEATURE_VERSION};
 use starcoin_native_interface::SafeNativeBuilder;
+use starcoin_types::delayed_fields::PanicError;
 use starcoin_vm_types::{
     account_config::CORE_CODE_ADDRESS,
     on_chain_config::{Features, TimedFeatures, TimedFeaturesBuilder},
@@ -39,7 +40,6 @@ impl StarcoinBlankStorage {
     }
 }
 
-/*
 #[cfg(feature = "testing")]
 impl TAggregatorV1View for StarcoinBlankStorage {
     type Identifier = StateKey;
@@ -50,11 +50,10 @@ impl TAggregatorV1View for StarcoinBlankStorage {
     ) -> anyhow::Result<Option<StateValue>> {
         Ok(None)
     }
-} */
+}
 
-/*
 #[cfg(feature = "testing")]
-impl TDelayedFieldView for AptosBlankStorage {
+impl TDelayedFieldView for StarcoinBlankStorage {
     type Identifier = DelayedFieldID;
     type ResourceGroupTag = StructTag;
     type ResourceKey = StateKey;
@@ -108,7 +107,7 @@ impl TDelayedFieldView for AptosBlankStorage {
     ) -> Result<BTreeMap<Self::ResourceKey, (Self::ResourceValue, u64)>, PanicError> {
         unimplemented!()
     }
-} */
+}
 
 #[cfg(feature = "testing")]
 impl TableResolver for StarcoinBlankStorage {

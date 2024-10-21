@@ -4,6 +4,7 @@
 use crate::{access_path::AccessPath, state_store::table::TableHandle};
 use bytes::{BufMut, Bytes, BytesMut};
 use num_derive::{FromPrimitive, ToPrimitive};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::CryptoHasher;
 use std::{
@@ -43,18 +44,20 @@ pub enum StateKeyDecodeErr {
     AnyHow(#[from] anyhow::Error),
 }
 
-#[derive(Clone, CryptoHasher, Eq, PartialEq, Serialize, Deserialize, Ord, PartialOrd, Hash)]
+#[derive(
+    Clone, CryptoHasher, Eq, PartialEq, Serialize, Deserialize, Ord, PartialOrd, Hash, JsonSchema,
+)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(proptest_derive::Arbitrary))]
 #[serde(rename = "StateKey")]
 pub enum StateKeyInner {
     AccessPath(AccessPath),
     TableItem {
         handle: TableHandle,
-        #[serde(with = "serde_bytes")]
+        //#[serde(with = "serde_bytes")]
         key: Vec<u8>,
     },
     // Only used for testing
-    #[serde(with = "serde_bytes")]
+    // #[serde(with = "serde_bytes")]
     Raw(Vec<u8>),
 }
 

@@ -224,10 +224,12 @@ StateKey:
         STRUCT:
           - handle:
               TYPENAME: TableHandle
-          - key: BYTES
+          - key:
+              SEQ: U8
     2:
       Raw:
-        NEWTYPE: BYTES
+        NEWTYPE:
+          SEQ: U8
 StateValueMetadata:
   ENUM:
     0:
