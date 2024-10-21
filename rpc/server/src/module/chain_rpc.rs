@@ -21,13 +21,13 @@ use starcoin_rpc_api::types::{
     TransactionInfoWithProofView, TransactionView,
 };
 use starcoin_rpc_api::FutureResult;
-use starcoin_vm_types::StateView;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Storage;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::block::BlockNumber;
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainInfo;
+use starcoin_vm_types::StateView;
 use std::convert::TryInto;
 use std::sync::Arc;
 

@@ -36,6 +36,7 @@ use move_core_types::{
     move_resource::MoveResource,
 };
 use num_traits::FromPrimitive;
+use schemars::JsonSchema;
 use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     cmp::Ordering,
@@ -45,7 +46,7 @@ use std::{
     sync::Arc,
 };
 
-#[derive(Clone)]
+#[derive(Clone, JsonSchema)]
 pub struct StateKey(Arc<Entry>);
 
 impl Debug for StateKey {

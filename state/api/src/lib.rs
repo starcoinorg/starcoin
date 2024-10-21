@@ -43,16 +43,16 @@ pub static TABLE_PATH_LIST: Lazy<Vec<DataPath>> = Lazy::new(|| {
 
 #[async_trait::async_trait]
 pub trait ChainStateAsyncService: Clone + std::marker::Unpin + Send + Sync {
-    async fn get(self, state_key: &StateKey) -> Result<Option<Bytes>>;
+    async fn get(self, state_key: StateKey) -> Result<Option<Bytes>>;
 
-    async fn get_with_proof(self, state_key: &StateKey) -> Result<StateWithProof>;
+    async fn get_with_proof(self, state_key: StateKey) -> Result<StateWithProof>;
 
     async fn get_resource<R>(self, address: AccountAddress) -> Result<R>
     where
         R: MoveResource,
     {
         let rsrc_bytes = self
-            .get(&StateKey::resource_typed::<R>(&address)?)
+            .get(StateKey::resource_typed::<R>(&address)?)
             .await?
             .ok_or_else(|| {
                 format_err!(
@@ -108,8 +108,8 @@ impl<S> ChainStateAsyncService for ServiceRef<S>
 where
     S: ActorService + ServiceHandler<S, StateRequest>,
 {
-    async fn get(self, state_key: &StateKey) -> Result<Option<Bytes>> {
-        let response = self.send(StateRequest::Get(state_key.clone())).await??;
+    async fn get(self, state_key: StateKey) -> Result<Option<Bytes>> {
+        let response = self.send(StateRequest::Get(state_key)).await??;
         if let StateResponse::State(state) = response {
             Ok(state)
         } else {
@@ -117,10 +117,8 @@ where
         }
     }
 
-    async fn get_with_proof(self, state_key: &StateKey) -> Result<StateWithProof> {
-        let response = self
-            .send(StateRequest::GetWithProof(state_key.clone()))
-            .await??;
+    async fn get_with_proof(self, state_key: StateKey) -> Result<StateWithProof> {
+        let response = self.send(StateRequest::GetWithProof(state_key)).await??;
         if let StateResponse::StateWithProof(state) = response {
             Ok(*state)
         } else {
@@ -171,7 +169,10 @@ where
         state_root: HashValue,
     ) -> Result<StateWithProof> {
         let response = self
-            .send(StateRequest::GetWithProofByRoot(state_key, state_root))
+            .send(StateRequest::GetWithProofByRoot(
+                state_key.clone(),
+                state_root,
+            ))
             .await??;
         if let StateResponse::StateWithProof(state) = response {
             Ok(*state)

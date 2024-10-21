@@ -7,35 +7,35 @@ use crate::types::{
     StateWithProofView, StateWithTableItemProofView, StrView, StructTagView, TableInfoView,
 };
 use crate::FutureResult;
+use bytes::Bytes;
 use openrpc_derive::openrpc;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;
 use starcoin_crypto::HashValue;
 use starcoin_types::language_storage::{ModuleId, StructTag};
-use starcoin_types::{
-    access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
-};
+use starcoin_types::{account_address::AccountAddress, account_state::AccountState};
+use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::table::TableHandle;
 #[openrpc]
 pub trait StateApi {
     #[rpc(name = "state.get")]
-    fn get(&self, access_path: AccessPath) -> FutureResult<Option<Vec<u8>>>;
+    fn get(&self, state_key: StateKey) -> FutureResult<Option<Bytes>>;
 
     /// Return state from StateTree storage directly by tree node key.
     #[rpc(name = "state.get_state_node_by_node_hash")]
-    fn get_state_node_by_node_hash(&self, key_hash: HashValue) -> FutureResult<Option<Vec<u8>>>;
+    fn get_state_node_by_node_hash(&self, key_hash: HashValue) -> FutureResult<Option<Bytes>>;
 
     /// Return the Resource Or Code at the `access_path`, and provide a State Proof.
     #[rpc(name = "state.get_with_proof")]
-    fn get_with_proof(&self, access_path: AccessPath) -> FutureResult<StateWithProofView>;
+    fn get_with_proof(&self, state_key: StateKey) -> FutureResult<StateWithProofView>;
 
     /// Same as `state.get_with_proof` but return `StateWithProof` in BCS serialize bytes.
     #[rpc(name = "state.get_with_proof_raw")]
-    fn get_with_proof_raw(&self, access_path: AccessPath) -> FutureResult<StrView<Vec<u8>>>;
+    fn get_with_proof_raw(&self, state_key: StateKey) -> FutureResult<StrView<Vec<u8>>>;
 
     #[rpc(name = "state.get_account_state")]
-    fn get_account_state(&self, address: AccountAddress) -> FutureResult<Option<AccountState>>;
+    fn get_account_state(&self, address: AccountAddress) -> FutureResult<AccountState>;
 
     #[rpc(name = "state.get_account_state_set")]
     fn get_account_state_set(
@@ -51,7 +51,7 @@ pub trait StateApi {
     #[rpc(name = "state.get_with_proof_by_root")]
     fn get_with_proof_by_root(
         &self,
-        access_path: AccessPath,
+        state_key: StateKey,
         state_root: HashValue,
     ) -> FutureResult<StateWithProofView>;
 
@@ -59,13 +59,13 @@ pub trait StateApi {
     #[rpc(name = "state.get_with_proof_by_root_raw")]
     fn get_with_proof_by_root_raw(
         &self,
-        access_path: AccessPath,
+        state_key: StateKey,
         state_root: HashValue,
     ) -> FutureResult<StrView<Vec<u8>>>;
 
     /// Return the TableInfo according to queried AccountAddress
     #[rpc(name = "state.get_table_info")]
-    fn get_table_info(&self, address: AccountAddress) -> FutureResult<Option<TableInfoView>>;
+    fn get_table_info(&self, address: AccountAddress) -> FutureResult<TableInfoView>;
 
     /// Return the TableItem value  and provide a State Proof at `state_root`
     #[rpc(name = "state.get_with_table_item_proof")]

@@ -24,11 +24,11 @@ impl MockChainStateService {
 #[allow(clippy::diverging_sub_expression)]
 #[async_trait::async_trait]
 impl ChainStateAsyncService for MockChainStateService {
-    async fn get(self, _state_key: &StateKey) -> Result<Option<Bytes>> {
+    async fn get(self, _state_key: StateKey) -> Result<Option<Bytes>> {
         unimplemented!()
     }
 
-    async fn get_with_proof(self, _state_key: &StateKey) -> Result<StateWithProof> {
+    async fn get_with_proof(self, _state_key: StateKey) -> Result<StateWithProof> {
         unimplemented!()
     }
 
