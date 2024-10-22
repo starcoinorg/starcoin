@@ -28,19 +28,23 @@ use starcoin_types::startup_info::{ChainInfo, StartupInfo};
 use starcoin_types::transaction::Package;
 use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::{block::Block, transaction::Transaction};
-use starcoin_vm_types::account_config::CORE_CODE_ADDRESS;
-use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
-use starcoin_vm_types::state_store::StateView;
-use starcoin_vm_types::transaction::{
-    RawUserTransaction, SignedUserTransaction, TransactionPayload,
+use starcoin_vm_types::{
+    account_config::CORE_CODE_ADDRESS,
+    state_store::{
+        table::{TableHandle, TableInfo},
+        StateView,
+    },
+    transaction::{RawUserTransaction, SignedUserTransaction, TransactionPayload},
+    vm_status::KeptVMStatus,
 };
-use starcoin_vm_types::vm_status::KeptVMStatus;
-use std::collections::BTreeMap;
-use std::fmt::Display;
-use std::fs::{create_dir_all, File};
-use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::{
+    collections::BTreeMap,
+    fmt::Display,
+    fs::{create_dir_all, File},
+    io::{Read, Write},
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 pub static G_GENESIS_GENERATED_DIR: &str = "generated";
 pub const GENESIS_DIR: Dir = include_dir!("generated");
@@ -639,7 +643,7 @@ mod tests {
                     "test if the genesis config is the same as framework config({:?})",
                     net.id()
                 );
-                let mut vm = StarcoinVM::new(None);
+                let mut vm = StarcoinVM::new(None, state_db);
                 let data = vm
                     .execute_readonly_function(
                         state_db,

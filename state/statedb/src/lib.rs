@@ -24,18 +24,21 @@ use starcoin_types::{
     account_state::AccountState,
     state_set::{AccountStateSet, ChainStateSet},
 };
-use starcoin_vm_types::access_path::{DataPath, ModuleName};
 #[cfg(test)]
 use starcoin_vm_types::account_config::TABLE_ADDRESS_LIST_LEN;
-use starcoin_vm_types::account_config::TABLE_HANDLE_ADDRESS_LIST;
-use starcoin_vm_types::language_storage::StructTag;
-use starcoin_vm_types::state_store::errors::StateviewError;
-use starcoin_vm_types::state_store::state_key::inner::StateKeyInner;
-use starcoin_vm_types::state_store::state_storage_usage::StateStorageUsage;
-use starcoin_vm_types::state_store::state_value::StateValue;
-use starcoin_vm_types::state_store::table::TableInfo;
-use starcoin_vm_types::state_store::TStateView;
-use starcoin_vm_types::state_store::{state_key::StateKey, table::TableHandle};
+use starcoin_vm_types::{
+    access_path::{DataPath, ModuleName},
+    account_config::TABLE_HANDLE_ADDRESS_LIST,
+    language_storage::StructTag,
+    state_store::{
+        errors::StateviewError,
+        state_key::{inner::StateKeyInner, StateKey},
+        state_storage_usage::StateStorageUsage,
+        state_value::StateValue,
+        table::{TableHandle, TableInfo},
+        TStateView,
+    },
+};
 use std::collections::HashSet;
 use std::convert::TryInto;
 use std::sync::Arc;
