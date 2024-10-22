@@ -2,7 +2,7 @@
 anyhow = { workspace = true }
 clap = { features = ["derive"], workspace = true }
 itertools = { features = ["use_alloc"], workspace = true }
-rand = { workspace = true }
+rand_0_7_3 = { workspace = true }
 rayon = { workspace = true }
 starcoin-accumulator = {  workspace = true }
 starcoin-crypto = { workspace = true }

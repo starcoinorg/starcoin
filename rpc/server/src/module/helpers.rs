@@ -64,15 +64,12 @@ where
             .or_else(|| self.pool.next_sequence_number(sender))
         {
             Some(n) => n,
-            None => match self
+            None => self
                 .chain_state
                 .clone()
                 .get_resource::<AccountResource>(sender)
                 .await?
-            {
-                Some(r) => r.sequence_number(),
-                None => anyhow::bail!("cannot find account {} onchain", sender),
-            },
+                .sequence_number(),
         };
         let max_gas_amount = txn_request.max_gas_amount.unwrap_or(1000000); // default 10_00000
         let max_gas_price = txn_request.gas_unit_price.unwrap_or(1);

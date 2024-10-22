@@ -73,9 +73,9 @@ impl<'a> RemoteStateReader<'a> {
 }
 
 impl<'a> ChainStateReader for RemoteStateReader<'a> {
-    fn get_with_proof(&self, access_path: &AccessPath) -> Result<StateWithProof> {
+    fn get_with_proof(&self, state_key: &StateKey) -> Result<StateWithProof> {
         self.client
-            .state_get_with_proof_by_root(access_path.clone(), self.state_root)
+            .state_get_with_proof_by_root(state_key.clone(), self.state_root)
             .map(Into::into)
     }
 

@@ -29,8 +29,8 @@ use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::language_storage::{ModuleId, StructTag};
 use starcoin_types::transaction::{DryRunTransaction, RawUserTransaction, TransactionPayload};
-use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::file_format::CompiledModule;
+use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::StateView;
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
 use std::str::FromStr;
@@ -86,8 +86,9 @@ where
 {
     fn get_code(&self, module_id: StrView<ModuleId>) -> FutureResult<Option<StrView<Vec<u8>>>> {
         let service = self.chain_state.clone();
+        let state_key = StateKey::module(module_id.0.address(), module_id.0.name());
         let f = async move {
-            let code = service.get(AccessPath::from(&module_id.0)).await?;
+            let code = service.get(state_key).await?.map(|v| v.to_vec());
             Ok(code.map(StrView))
         };
         Box::pin(f.map_err(map_err).boxed())
@@ -102,17 +103,16 @@ where
         let playground = self.playground.clone();
         let f = async move {
             let state_root = service.clone().state_root().await?;
-            let data = service
-                .get(AccessPath::resource_access_path(
-                    addr,
-                    resource_type.0.clone(),
-                ))
-                .await?;
+            let state_key = StateKey::resource(&addr, &resource_type.0)?;
+            let data = service.get(state_key).await?;
             match data {
                 None => Ok(None),
                 Some(d) => {
-                    let value =
-                        playground.view_resource(state_root, &resource_type.0, d.as_slice())?;
+                    let value = playground.view_resource(
+                        state_root,
+                        &resource_type.0,
+                        d.to_vec().as_slice(),
+                    )?;
                     Ok(Some(value.into()))
                 }
             }
