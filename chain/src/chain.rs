@@ -329,6 +329,7 @@ impl BlockChain {
             .as_ref()
             .clone()
             .into_iter()
+            .skip(1)
             .map(|block| self.storage.get_block_by_hash(block))
             .collect::<Result<Vec<Option<Block>>>>()?
             .into_iter()
