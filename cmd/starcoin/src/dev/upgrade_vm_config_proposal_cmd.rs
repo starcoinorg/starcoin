@@ -47,8 +47,7 @@ impl CommandAction for UpgradeVMConfigProposalCommand {
         let onchain_vm_config = {
             let client = ctx.state().client();
             let reader = client.state_reader(StateRootOption::Latest)?;
-            let mut vm = StarcoinVM::new(None);
-            vm.load_configs(&reader)?;
+            let vm = StarcoinVM::new(None, &reader);
             VMConfig {
                 gas_schedule: vm.get_gas_schedule()?.clone(),
             }

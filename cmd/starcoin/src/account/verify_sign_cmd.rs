@@ -35,7 +35,7 @@ impl CommandAction for VerifySignMessageCmd {
         let account_resource = state.get_account_resource(signed_message.account)?;
 
         let result = signed_message.check_signature().and_then(|_| {
-            signed_message.check_account(state.net().chain_id(), account_resource.as_ref())
+            signed_message.check_account(state.net().chain_id(), Some(&account_resource))
         });
         Ok(VerifyResult {
             ok: result.is_ok(),

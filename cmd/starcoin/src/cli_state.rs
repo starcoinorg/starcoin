@@ -9,7 +9,6 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::{bail, format_err, Result};
-use serde::de::DeserializeOwned;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::multi_ed25519::multi_shard::MultiEd25519SignatureShard;
 use starcoin_crypto::multi_ed25519::MultiEd25519PublicKey;
@@ -150,7 +149,7 @@ impl CliState {
         }
     }
 
-    pub fn get_resource<R>(&self, address: AccountAddress) -> Result<Option<R>>
+    pub fn get_resource<R>(&self, address: AccountAddress) -> Result<R>
     where
         R: MoveResource,
     {
@@ -158,7 +157,7 @@ impl CliState {
         chain_state_reader.get_resource_type::<R>(address)
     }
 
-    pub fn get_account_resource(&self, address: AccountAddress) -> Result<Option<AccountResource>> {
+    pub fn get_account_resource(&self, address: AccountAddress) -> Result<AccountResource> {
         self.get_resource::<AccountResource>(address)
     }
 
@@ -238,15 +237,11 @@ impl CliState {
                     eprintln!("get sequence_number {} from txpool", sequence_number);
                     (sequence_number, true)
                 }
-                None => self
-                    .get_account_resource(*sender.address())?
-                    .map(|account| (account.sequence_number(), false))
-                    .ok_or_else(|| {
-                        format_err!(
-                            "Can not find account on chain by address:{}",
-                            sender.address()
-                        )
-                    })?,
+                None => (
+                    self.get_account_resource(*sender.address())?
+                        .sequence_number(),
+                    false,
+                ),
             },
         };
         let node_info = self.client.node_info()?;

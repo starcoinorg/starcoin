@@ -16,6 +16,7 @@ serde_json = { features = ["arbitrary_precision"], workspace = true }
 tokio = { features = ["full"], workspace = true }
 move-binary-format = { workspace = true }
 move-bytecode-verifier = { workspace = true }
+move-core-types = { workspace = true }
 starcoin-account = { workspace = true }
 starcoin-account-api = { workspace = true }
 starcoin-accumulator = { workspace = true }

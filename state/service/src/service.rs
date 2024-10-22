@@ -18,8 +18,7 @@ use starcoin_storage::{BlockStore, Storage};
 use starcoin_types::state_set::AccountStateSet;
 use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::{
-    access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
-    state_set::ChainStateSet,
+    account_address::AccountAddress, account_state::AccountState, state_set::ChainStateSet,
 };
 use starcoin_vm_types::state_store::errors::StateviewError;
 use starcoin_vm_types::state_store::state_key::inner::StateKeyInner;
@@ -88,20 +87,20 @@ impl ServiceHandler<Self, StateRequest> for ChainStateService {
                 StateResponse::State(self.service.get_state_value_bytes(&state_key)?)
             }
             StateRequest::GetWithProof(state_key) => {
-                let access_path = match state_key.inner() {
+                let _access_path = match state_key.inner() {
                     StateKeyInner::AccessPath(access_path) => access_path,
                     _ => {
                         return Err(format_err!("Invalid StateKey."));
                     }
                 };
-                StateResponse::StateWithProof(Box::new(self.service.get_with_proof(access_path)?))
+                StateResponse::StateWithProof(Box::new(self.service.get_with_proof(&state_key)?))
             }
             StateRequest::GetAccountState(address) => {
                 StateResponse::AccountState(Option::from(self.service.get_account_state(&address)?))
             }
             StateRequest::StateRoot() => StateResponse::StateRoot(self.service.state_root()),
             StateRequest::GetWithProofByRoot(state_key, state_root) => {
-                let access_path = match state_key.inner() {
+                let _access_path = match state_key.inner() {
                     StateKeyInner::AccessPath(access_path) => access_path,
                     _ => {
                         return Err(format_err!("Invalid StateKey."));
@@ -109,7 +108,7 @@ impl ServiceHandler<Self, StateRequest> for ChainStateService {
                 };
                 StateResponse::StateWithProof(Box::new(
                     self.service
-                        .get_with_proof_by_root(access_path, state_root)?,
+                        .get_with_proof_by_root(&state_key, state_root)?,
                 ))
             }
             StateRequest::GetAccountStateByRoot(account, state_root) => {
@@ -137,7 +136,7 @@ impl ServiceHandler<Self, StateRequest> for ChainStateService {
                 ))
             }
             StateRequest::GetTableInfo(address) => {
-                StateResponse::TableInfo(self.service.get_table_info(address)?)
+                StateResponse::TableInfo(Some(self.service.get_table_info(address)?))
             }
         };
         Ok(response)
@@ -186,11 +185,11 @@ impl Inner {
 
     pub(crate) fn get_with_proof_by_root(
         &self,
-        access_path: &AccessPath,
+        state_key: &StateKey,
         state_root: HashValue,
     ) -> Result<StateWithProof> {
         let reader = self.state_db.fork_at(state_root);
-        reader.get_with_proof(access_path)
+        reader.get_with_proof(state_key)
     }
 
     pub(crate) fn get_with_table_item_proof_by_root(
@@ -230,8 +229,8 @@ impl Inner {
 }
 
 impl ChainStateReader for Inner {
-    fn get_with_proof(&self, access_path: &AccessPath) -> Result<StateWithProof> {
-        self.state_db.get_with_proof(access_path)
+    fn get_with_proof(&self, state_key: &StateKey) -> Result<StateWithProof> {
+        self.state_db.get_with_proof(state_key)
     }
 
     fn get_account_state(&self, address: &AccountAddress) -> Result<AccountState> {
@@ -261,7 +260,7 @@ impl ChainStateReader for Inner {
         self.state_db.get_with_table_item_proof(handle, key)
     }
 
-    fn get_table_info(&self, address: AccountAddress) -> Result<Option<TableInfo>> {
+    fn get_table_info(&self, address: AccountAddress) -> Result<TableInfo> {
         self.state_db.get_table_info(address)
     }
 }

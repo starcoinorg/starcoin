@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use anyhow::format_err;
 use clap::Parser;
+use move_core_types::move_resource::MoveStructType;
 use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
 use starcoin_cmd::dev::dev_helper;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
@@ -22,13 +23,12 @@ use starcoin_storage::{
 use starcoin_transaction_builder::DEFAULT_MAX_GAS_AMOUNT;
 use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::{account::Account, block::BlockNumber};
+use starcoin_vm_types::state_store::TStateView;
 use starcoin_vm_types::{
     access_path::AccessPath,
     account_config::{genesis_address, ModuleUpgradeStrategy, STC_TOKEN_CODE_STR},
     genesis_config::ChainId,
-    move_resource::MoveResource,
     state_store::state_key::StateKey,
-    state_view::StateView,
     transaction::{RawUserTransaction, Transaction, TransactionPayload},
 };
 
@@ -109,25 +109,28 @@ pub fn force_deploy_output(
     )
     .expect("create block chain should success.");
 
+    let access_path =
+        AccessPath::resource_access_path(genesis_address(), ModuleUpgradeStrategy::struct_tag());
     // Write upgrade strategy resource to 0
     let upgrade_strategy_path =
-        AccessPath::resource_access_path(genesis_address(), ModuleUpgradeStrategy::struct_tag());
+        StateKey::resource(&genesis_address(), &ModuleUpgradeStrategy::struct_tag())?;
 
     let statedb = chain.chain_state();
-
     let before_ret = statedb
-        .get_state_value(&StateKey::AccessPath(upgrade_strategy_path.clone()))?
-        .unwrap();
+        .get_state_value_bytes(&upgrade_strategy_path)?
+        .unwrap()
+        .to_vec();
     assert_eq!(before_ret[0], 1, "Checking the strategy not 1");
 
     statedb
-        .set(&upgrade_strategy_path, vec![0])
+        .set(&access_path, vec![0])
         .expect("Add resource failed");
 
     // Check state is OK
     let after_ret = statedb
-        .get_state_value(&StateKey::AccessPath(upgrade_strategy_path))?
-        .unwrap();
+        .get_state_value_bytes(&upgrade_strategy_path)?
+        .unwrap()
+        .to_vec();
     assert_eq!(after_ret[0], 0, "Set to upgrade strategy failed!");
 
     let account = Account::new_association();

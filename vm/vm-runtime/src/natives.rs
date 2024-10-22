@@ -12,7 +12,6 @@ use move_table_extension::{TableHandle, TableResolver};
 use move_vm_runtime::native_functions::NativeFunctionTable;
 use starcoin_gas_schedule::{MiscGasParameters, NativeGasParameters, LATEST_GAS_FEATURE_VERSION};
 use starcoin_native_interface::SafeNativeBuilder;
-use starcoin_types::delayed_fields::PanicError;
 use starcoin_vm_types::{
     account_config::CORE_CODE_ADDRESS,
     on_chain_config::{Features, TimedFeatures, TimedFeaturesBuilder},

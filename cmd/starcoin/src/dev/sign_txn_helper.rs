@@ -10,7 +10,9 @@ use starcoin_vm_types::on_chain_config::DaoConfig;
 pub fn get_dao_config(cli_state: &CliState) -> Result<DaoConfig> {
     let client = cli_state.client();
     let chain_state_reader = client.state_reader(StateRootOption::Latest)?;
-    chain_state_reader
-        .get_on_chain_config::<DaoConfig>()?
-        .ok_or_else(|| format_err!("DaoConfig not exist on chain."))
+    Ok(chain_state_reader
+        .get_on_chain_config::<DaoConfig>()
+        .ok_or(format_err!(
+            "DaoConfig resource not exist on chain, maybe chain is not initialized yet?"
+        ))?)
 }

@@ -13,6 +13,7 @@ use starcoin_types::{
     account_state::AccountState, language_storage::StructTag, state_set::AccountStateSet,
     state_set::ChainStateSet, write_set::WriteSet,
 };
+use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::{
     account_config::TABLE_HANDLE_ADDRESS_LIST,
     genesis_config::ChainId,
@@ -113,7 +114,7 @@ impl StateWithProof {
 }
 
 pub trait ChainStateReader: StateView {
-    fn get_with_proof(&self, access_path: &AccessPath) -> Result<StateWithProof>;
+    fn get_with_proof(&self, state_key: &StateKey) -> Result<StateWithProof>;
 
     /// Gets account state
     fn get_account_state(&self, address: &AccountAddress) -> Result<AccountState>;
@@ -138,7 +139,7 @@ pub trait ChainStateReader: StateView {
         key: &[u8],
     ) -> Result<StateWithTableItemProof>;
 
-    fn get_table_info(&self, address: AccountAddress) -> Result<Option<TableInfo>>;
+    fn get_table_info(&self, address: AccountAddress) -> Result<TableInfo>;
 }
 
 pub trait ChainStateWriter {

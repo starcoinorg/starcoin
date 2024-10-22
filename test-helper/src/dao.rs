@@ -17,7 +17,7 @@ use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_executor::execute_readonly_function;
 use starcoin_logger::prelude::*;
-use starcoin_state_api::{ChainStateReader, StateView};
+use starcoin_state_api::ChainStateReader;
 use starcoin_statedb::ChainStateDB;
 use starcoin_transaction_builder::build_empty_script;
 use starcoin_transaction_builder::encode_create_account_script_function;
@@ -30,6 +30,7 @@ use starcoin_types::transaction::{EntryFunction, TransactionPayload};
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::on_chain_config::VMConfig;
 use starcoin_vm_types::value::{serialize_values, MoveValue};
+use starcoin_vm_types::StateView;
 
 //TODO transfer to enum
 pub const PENDING: u8 = 1;
@@ -97,7 +98,7 @@ pub fn on_chain_config_type_tag(params_type_tag: TypeTag) -> TypeTag {
         address: genesis_address(),
         module: Identifier::new("OnChainConfigDao").unwrap(),
         name: Identifier::new("OnChainConfigUpdate").unwrap(),
-        type_params: vec![params_type_tag],
+        type_args: vec![params_type_tag],
     }))
 }
 
@@ -106,7 +107,7 @@ pub fn reward_config_type_tag() -> TypeTag {
         address: genesis_address(),
         module: Identifier::new("RewardConfig").unwrap(),
         name: Identifier::new("RewardConfig").unwrap(),
-        type_params: vec![],
+        type_args: vec![],
     }))
 }
 
@@ -115,7 +116,7 @@ pub fn transaction_timeout_type_tag() -> TypeTag {
         address: genesis_address(),
         module: Identifier::new("TransactionTimeoutConfig").unwrap(),
         name: Identifier::new("TransactionTimeoutConfig").unwrap(),
-        type_params: vec![],
+        type_args: vec![],
     }))
 }
 
@@ -124,7 +125,7 @@ pub fn txn_publish_config_type_tag() -> TypeTag {
         address: genesis_address(),
         module: Identifier::new("TransactionPublishOption").unwrap(),
         name: Identifier::new("TransactionPublishOption").unwrap(),
-        type_params: vec![],
+        type_args: vec![],
     }))
 }
 

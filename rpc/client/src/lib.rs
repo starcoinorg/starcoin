@@ -528,13 +528,13 @@ impl RpcClient {
 
     pub fn state_get_with_proof_by_root_raw(
         &self,
-        access_path: AccessPath,
+        state_key: StateKey,
         state_root: HashValue,
     ) -> anyhow::Result<StrView<Vec<u8>>> {
         self.call_rpc_blocking(|inner| {
             inner
                 .state_client
-                .get_with_proof_by_root_raw(access_path, state_root)
+                .get_with_proof_by_root_raw(state_key, state_root)
         })
         .map_err(map_err)
     }
@@ -544,10 +544,7 @@ impl RpcClient {
             .map_err(map_err)
     }
 
-    pub fn state_get_account_state(
-        &self,
-        address: AccountAddress,
-    ) -> anyhow::Result<Option<AccountState>> {
+    pub fn state_get_account_state(&self, address: AccountAddress) -> anyhow::Result<AccountState> {
         self.call_rpc_blocking(|inner| inner.state_client.get_account_state(address))
             .map_err(map_err)
     }
@@ -656,10 +653,7 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn state_get_table_info(
-        &self,
-        address: AccountAddress,
-    ) -> anyhow::Result<Option<TableInfoView>> {
+    pub fn state_get_table_info(&self, address: AccountAddress) -> anyhow::Result<TableInfoView> {
         self.call_rpc_blocking(|inner| inner.state_client.get_table_info(address))
             .map_err(map_err)
     }
@@ -670,6 +664,10 @@ impl RpcClient {
     ) -> anyhow::Result<Option<Vec<u8>>> {
         self.call_rpc_blocking(|inner| inner.state_client.get_state_node_by_node_hash(key_hash))
             .map_err(map_err)
+            .map(|v| match v {
+                Some(bytes) => Some(bytes.to_vec()),
+                None => None,
+            })
     }
 
     pub fn contract_call(&self, call: ContractCall) -> anyhow::Result<Vec<DecodedMoveValue>> {

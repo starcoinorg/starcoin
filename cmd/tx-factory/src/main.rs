@@ -426,12 +426,9 @@ impl TxnMocker {
                     )
                     .is_ok()
                 {
-                    let balance = state_reader.get_balance(*account.address()).unwrap_or(None);
-                    if let Some(amount) = balance {
-                        if amount > 0 {
-                            available_list.push(account);
-                        }
-                    }
+                    let _ = state_reader.get_balance(*account.address())?;
+
+                    available_list.push(account);
                 }
                 index += 1;
             } else {
@@ -445,7 +442,7 @@ impl TxnMocker {
             // account has enough STC
             let start_balance = INITIAL_BALANCE * lack_len as u128;
             let mut balance = state_reader.get_balance(self.account_address)?;
-            while balance.unwrap() < start_balance {
+            while balance < start_balance {
                 std::thread::sleep(Duration::from_millis(1000));
                 balance = state_reader.get_balance(self.account_address)?;
                 info!(
@@ -457,10 +454,8 @@ impl TxnMocker {
             //TODO fix me for reuse state_reader.
             let state_reader = self.client.state_reader(StateRootOption::Latest)?;
             for account in lack {
-                let account_resource = state_reader
-                    .get_account_resource(*account.address())
-                    .unwrap_or(None);
-                if account_resource.is_some() {
+                let account_resource = state_reader.get_account_resource(*account.address());
+                if account_resource.is_ok() {
                     available_list.push(account);
                     if available_list.len() == account_num as usize {
                         break;
@@ -523,13 +518,7 @@ impl TxnMocker {
             Some(n) => Some(n),
             None => {
                 let account_resource = state_reader.get_account_resource(address)?;
-                match account_resource {
-                    None => None,
-                    Some(resource) => {
-                        info!("read from state {:?}", resource.sequence_number());
-                        Some(resource.sequence_number())
-                    }
-                }
+                Some(account_resource.sequence_number())
             }
         };
         Ok(result)

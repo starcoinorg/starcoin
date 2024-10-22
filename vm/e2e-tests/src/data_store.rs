@@ -9,13 +9,14 @@ use starcoin_vm_types::{
     access_path::AccessPath,
     language_storage::ModuleId,
     state_store::state_key::StateKey,
-    state_view::StateView,
     write_set::{WriteOp, WriteSet},
+    StateView,
 };
 
 use starcoin_crypto::HashValue;
 use starcoin_statedb::ChainStateWriter;
 use starcoin_types::state_set::ChainStateSet;
+use starcoin_vm_types::state_store::errors::StateviewError;
 use starcoin_vm_types::state_store::state_storage_usage::StateStorageUsage;
 use starcoin_vm_types::state_store::state_value::StateValue;
 use starcoin_vm_types::state_store::TStateView;
@@ -102,7 +103,7 @@ impl FakeDataStore {
 // TODO: only the "sync" get is implemented
 impl TStateView for FakeDataStore {
     type Key = StateKey;
-    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>> {
+    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>, StateviewError> {
         Ok(self
             .inner()
             .get(state_key)
