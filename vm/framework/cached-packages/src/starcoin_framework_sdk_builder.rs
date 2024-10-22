@@ -301,6 +301,26 @@ pub enum EntryFunctionCall {
         amount: u64,
     },
 
+    EasyGasScriptInitDataSource {
+        token_type: TypeTag,
+        init_value: u128,
+    },
+
+    EasyGasScriptRegister {
+        token_type: TypeTag,
+        precision: u8,
+    },
+
+    EasyGasScriptUpdate {
+        token_type: TypeTag,
+        value: u128,
+    },
+
+    EasyGasScriptWithdrawGasFeeEntry {
+        token_type: TypeTag,
+        amount: u128,
+    },
+
     /// Withdraw an `amount` of coin `CoinType` from `account` and burn it.
     ManagedCoinBurn {
         coin_type: TypeTag,
@@ -549,6 +569,36 @@ pub enum EntryFunctionCall {
     ObjectCodeDeploymentPublish {
         metadata_serialized: Vec<u8>,
         code: Vec<Vec<u8>>,
+    },
+
+    OraclePriceInitDataSourceEntry {
+        oracle_t: TypeTag,
+        init_value: u128,
+    },
+
+    OraclePriceRegisterOracleEntry {
+        oracle_t: TypeTag,
+        precision: u8,
+    },
+
+    OraclePriceUpdateEntry {
+        oracle_t: TypeTag,
+        value: u128,
+    },
+
+    OraclePriceScriptInitDataSource {
+        oracle_t: TypeTag,
+        init_value: u128,
+    },
+
+    OraclePriceScriptRegisterOracle {
+        oracle_t: TypeTag,
+        precision: u8,
+    },
+
+    OraclePriceScriptUpdate {
+        oracle_t: TypeTag,
+        value: u128,
     },
 
     /// Creates a new resource account and rotates the authentication key to either
@@ -1198,6 +1248,18 @@ impl EntryFunctionCall {
                 pool_address,
                 amount,
             } => delegation_pool_withdraw(pool_address, amount),
+            EasyGasScriptInitDataSource {
+                token_type,
+                init_value,
+            } => easy_gas_script_init_data_source(token_type, init_value),
+            EasyGasScriptRegister {
+                token_type,
+                precision,
+            } => easy_gas_script_register(token_type, precision),
+            EasyGasScriptUpdate { token_type, value } => easy_gas_script_update(token_type, value),
+            EasyGasScriptWithdrawGasFeeEntry { token_type, amount } => {
+                easy_gas_script_withdraw_gas_fee_entry(token_type, amount)
+            }
             ManagedCoinBurn { coin_type, amount } => managed_coin_burn(coin_type, amount),
             ManagedCoinInitialize {
                 coin_type,
@@ -1367,6 +1429,28 @@ impl EntryFunctionCall {
                 metadata_serialized,
                 code,
             } => object_code_deployment_publish(metadata_serialized, code),
+            OraclePriceInitDataSourceEntry {
+                oracle_t,
+                init_value,
+            } => oracle_price_init_data_source_entry(oracle_t, init_value),
+            OraclePriceRegisterOracleEntry {
+                oracle_t,
+                precision,
+            } => oracle_price_register_oracle_entry(oracle_t, precision),
+            OraclePriceUpdateEntry { oracle_t, value } => {
+                oracle_price_update_entry(oracle_t, value)
+            }
+            OraclePriceScriptInitDataSource {
+                oracle_t,
+                init_value,
+            } => oracle_price_script_init_data_source(oracle_t, init_value),
+            OraclePriceScriptRegisterOracle {
+                oracle_t,
+                precision,
+            } => oracle_price_script_register_oracle(oracle_t, precision),
+            OraclePriceScriptUpdate { oracle_t, value } => {
+                oracle_price_script_update(oracle_t, value)
+            }
             ResourceAccountCreateResourceAccount {
                 seed,
                 optional_auth_key,
@@ -2306,6 +2390,60 @@ pub fn delegation_pool_withdraw(pool_address: AccountAddress, amount: u64) -> Tr
     ))
 }
 
+pub fn easy_gas_script_init_data_source(
+    token_type: TypeTag,
+    init_value: u128,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("easy_gas_script").to_owned(),
+        ),
+        ident_str!("init_data_source").to_owned(),
+        vec![token_type],
+        vec![bcs::to_bytes(&init_value).unwrap()],
+    ))
+}
+
+pub fn easy_gas_script_register(token_type: TypeTag, precision: u8) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("easy_gas_script").to_owned(),
+        ),
+        ident_str!("register").to_owned(),
+        vec![token_type],
+        vec![bcs::to_bytes(&precision).unwrap()],
+    ))
+}
+
+pub fn easy_gas_script_update(token_type: TypeTag, value: u128) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("easy_gas_script").to_owned(),
+        ),
+        ident_str!("update").to_owned(),
+        vec![token_type],
+        vec![bcs::to_bytes(&value).unwrap()],
+    ))
+}
+
+pub fn easy_gas_script_withdraw_gas_fee_entry(
+    token_type: TypeTag,
+    amount: u128,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("easy_gas_script").to_owned(),
+        ),
+        ident_str!("withdraw_gas_fee_entry").to_owned(),
+        vec![token_type],
+        vec![bcs::to_bytes(&amount).unwrap()],
+    ))
+}
+
 /// Withdraw an `amount` of coin `CoinType` from `account` and burn it.
 pub fn managed_coin_burn(coin_type: TypeTag, amount: u64) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
@@ -2924,6 +3062,84 @@ pub fn object_code_deployment_publish(
             bcs::to_bytes(&metadata_serialized).unwrap(),
             bcs::to_bytes(&code).unwrap(),
         ],
+    ))
+}
+
+pub fn oracle_price_init_data_source_entry(
+    oracle_t: TypeTag,
+    init_value: u128,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("oracle_price").to_owned(),
+        ),
+        ident_str!("init_data_source_entry").to_owned(),
+        vec![oracle_t],
+        vec![bcs::to_bytes(&init_value).unwrap()],
+    ))
+}
+
+pub fn oracle_price_register_oracle_entry(oracle_t: TypeTag, precision: u8) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("oracle_price").to_owned(),
+        ),
+        ident_str!("register_oracle_entry").to_owned(),
+        vec![oracle_t],
+        vec![bcs::to_bytes(&precision).unwrap()],
+    ))
+}
+
+pub fn oracle_price_update_entry(oracle_t: TypeTag, value: u128) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("oracle_price").to_owned(),
+        ),
+        ident_str!("update_entry").to_owned(),
+        vec![oracle_t],
+        vec![bcs::to_bytes(&value).unwrap()],
+    ))
+}
+
+pub fn oracle_price_script_init_data_source(
+    oracle_t: TypeTag,
+    init_value: u128,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("oracle_price_script").to_owned(),
+        ),
+        ident_str!("init_data_source").to_owned(),
+        vec![oracle_t],
+        vec![bcs::to_bytes(&init_value).unwrap()],
+    ))
+}
+
+pub fn oracle_price_script_register_oracle(oracle_t: TypeTag, precision: u8) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("oracle_price_script").to_owned(),
+        ),
+        ident_str!("register_oracle").to_owned(),
+        vec![oracle_t],
+        vec![bcs::to_bytes(&precision).unwrap()],
+    ))
+}
+
+pub fn oracle_price_script_update(oracle_t: TypeTag, value: u128) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("oracle_price_script").to_owned(),
+        ),
+        ident_str!("update").to_owned(),
+        vec![oracle_t],
+        vec![bcs::to_bytes(&value).unwrap()],
     ))
 }
 
@@ -4698,6 +4914,54 @@ mod decoder {
         }
     }
 
+    pub fn easy_gas_script_init_data_source(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::EasyGasScriptInitDataSource {
+                token_type: script.ty_args().get(0)?.clone(),
+                init_value: bcs::from_bytes(script.args().get(0)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn easy_gas_script_register(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::EasyGasScriptRegister {
+                token_type: script.ty_args().get(0)?.clone(),
+                precision: bcs::from_bytes(script.args().get(0)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn easy_gas_script_update(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::EasyGasScriptUpdate {
+                token_type: script.ty_args().get(0)?.clone(),
+                value: bcs::from_bytes(script.args().get(0)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn easy_gas_script_withdraw_gas_fee_entry(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::EasyGasScriptWithdrawGasFeeEntry {
+                token_type: script.ty_args().get(0)?.clone(),
+                amount: bcs::from_bytes(script.args().get(0)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
     pub fn managed_coin_burn(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
         if let TransactionPayload::EntryFunction(script) = payload {
             Some(EntryFunctionCall::ManagedCoinBurn {
@@ -5099,6 +5363,80 @@ mod decoder {
             Some(EntryFunctionCall::ObjectCodeDeploymentPublish {
                 metadata_serialized: bcs::from_bytes(script.args().get(0)?).ok()?,
                 code: bcs::from_bytes(script.args().get(1)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn oracle_price_init_data_source_entry(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::OraclePriceInitDataSourceEntry {
+                oracle_t: script.ty_args().get(0)?.clone(),
+                init_value: bcs::from_bytes(script.args().get(0)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn oracle_price_register_oracle_entry(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::OraclePriceRegisterOracleEntry {
+                oracle_t: script.ty_args().get(0)?.clone(),
+                precision: bcs::from_bytes(script.args().get(0)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn oracle_price_update_entry(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::OraclePriceUpdateEntry {
+                oracle_t: script.ty_args().get(0)?.clone(),
+                value: bcs::from_bytes(script.args().get(0)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn oracle_price_script_init_data_source(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::OraclePriceScriptInitDataSource {
+                oracle_t: script.ty_args().get(0)?.clone(),
+                init_value: bcs::from_bytes(script.args().get(0)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn oracle_price_script_register_oracle(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::OraclePriceScriptRegisterOracle {
+                oracle_t: script.ty_args().get(0)?.clone(),
+                precision: bcs::from_bytes(script.args().get(0)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn oracle_price_script_update(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::OraclePriceScriptUpdate {
+                oracle_t: script.ty_args().get(0)?.clone(),
+                value: bcs::from_bytes(script.args().get(0)?).ok()?,
             })
         } else {
             None
@@ -6200,6 +6538,22 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
             Box::new(decoder::delegation_pool_withdraw),
         );
         map.insert(
+            "easy_gas_script_init_data_source".to_string(),
+            Box::new(decoder::easy_gas_script_init_data_source),
+        );
+        map.insert(
+            "easy_gas_script_register".to_string(),
+            Box::new(decoder::easy_gas_script_register),
+        );
+        map.insert(
+            "easy_gas_script_update".to_string(),
+            Box::new(decoder::easy_gas_script_update),
+        );
+        map.insert(
+            "easy_gas_script_withdraw_gas_fee_entry".to_string(),
+            Box::new(decoder::easy_gas_script_withdraw_gas_fee_entry),
+        );
+        map.insert(
             "managed_coin_burn".to_string(),
             Box::new(decoder::managed_coin_burn),
         );
@@ -6318,6 +6672,30 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
         map.insert(
             "object_code_deployment_publish".to_string(),
             Box::new(decoder::object_code_deployment_publish),
+        );
+        map.insert(
+            "oracle_price_init_data_source_entry".to_string(),
+            Box::new(decoder::oracle_price_init_data_source_entry),
+        );
+        map.insert(
+            "oracle_price_register_oracle_entry".to_string(),
+            Box::new(decoder::oracle_price_register_oracle_entry),
+        );
+        map.insert(
+            "oracle_price_update_entry".to_string(),
+            Box::new(decoder::oracle_price_update_entry),
+        );
+        map.insert(
+            "oracle_price_script_init_data_source".to_string(),
+            Box::new(decoder::oracle_price_script_init_data_source),
+        );
+        map.insert(
+            "oracle_price_script_register_oracle".to_string(),
+            Box::new(decoder::oracle_price_script_register_oracle),
+        );
+        map.insert(
+            "oracle_price_script_update".to_string(),
+            Box::new(decoder::oracle_price_script_update),
         );
         map.insert(
             "resource_account_create_resource_account".to_string(),

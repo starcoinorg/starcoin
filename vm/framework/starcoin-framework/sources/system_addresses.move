@@ -83,4 +83,8 @@ module starcoin_framework::system_addresses {
     public fun get_starcoin_framework(): address {
         @starcoin_framework
     }
+
+    public fun get_core_resource_address(): address {
+        @core_resources
+    }
 }

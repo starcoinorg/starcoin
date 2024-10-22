@@ -3,6 +3,7 @@ module starcoin_framework::consensus_config {
 
     use std::error;
     use std::signer;
+
     use starcoin_std::math128;
     use starcoin_framework::on_chain_config;
     use starcoin_framework::system_addresses;

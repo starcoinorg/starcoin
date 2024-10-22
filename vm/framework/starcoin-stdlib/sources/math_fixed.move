@@ -2,6 +2,8 @@
 module starcoin_std::math_fixed {
     use std::fixed_point32;
     use std::fixed_point32::FixedPoint32;
+
+    use std::vector;
     use starcoin_std::math128;
     use starcoin_std::math64;
 
@@ -89,6 +91,26 @@ module starcoin_std::math_fixed {
             x = ((((x as u256) * (x as u256)) >> 64) as u128);
         };
         ((res >> 32) as u128)
+    }
+
+    /// calculate sum of nums
+    public fun sum(nums: &vector<u128>): u128 {
+        let len = vector::length(nums);
+        let i = 0;
+        let sum = 0;
+        while (i < len){
+            sum = sum + *vector::borrow(nums, i);
+            i = i + 1;
+        };
+        sum
+    }
+
+    /// calculate average of nums
+    public fun avg(nums: &vector<u128>): u128 {
+        let len = vector::length(nums);
+
+        let sum = sum(nums);
+        sum / (len as u128)
     }
 
     #[test]

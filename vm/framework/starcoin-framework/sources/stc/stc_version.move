@@ -2,6 +2,7 @@
 module starcoin_framework::stc_version {
     use starcoin_framework::on_chain_config;
 
+
     const EMAJOR_TO_OLD: u64 = 101;
 
     spec module {
