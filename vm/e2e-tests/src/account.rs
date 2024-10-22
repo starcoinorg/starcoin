@@ -5,6 +5,7 @@
 
 use crate::gas_costs;
 use anyhow::{Error, Result};
+use move_core_types::move_resource::MoveStructType;
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_vm_types::access_path::AccessPath;
@@ -610,7 +611,7 @@ impl AccountData {
             .unwrap();
         write_set.push((
             StateKey::AccessPath(self.make_account_access_path()),
-            WriteOp::Value(account),
+            WriteOp::Creation(account),
         ));
 
         let balance = coinstore_blob

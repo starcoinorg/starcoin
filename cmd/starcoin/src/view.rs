@@ -3,6 +3,7 @@
 
 use anyhow::format_err;
 use clap::Parser;
+use move_core_types::move_resource::MoveStructType;
 use serde::{Deserialize, Serialize};
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
@@ -18,7 +19,6 @@ use starcoin_types::language_storage::TypeTag;
 use starcoin_vm_types::account_config::events::accept_token_payment::AcceptTokenEvent;
 use starcoin_vm_types::account_config::{BlockRewardEvent, ProposalCreatedEvent, VoteChangedEvent};
 use starcoin_vm_types::event::EventKey;
-use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::token::token_code::TokenCode;
 use std::collections::HashMap;
 use std::path::PathBuf;

@@ -123,10 +123,6 @@ impl CommandAction for GenerateMultisigTxnCommand {
                 let chain_state_reader = rpc_client.state_reader(StateRootOption::Latest)?;
                 let account_resource = chain_state_reader.get_account_resource(sender)?;
 
-                if account_resource.is_none() {
-                    bail!("address {} not exists on chain", &sender);
-                }
-                let account_resource = account_resource.unwrap();
                 let expiration_time = opt.expiration_time + node_info.now_seconds;
                 let raw_txn = RawUserTransaction::new(
                     sender,

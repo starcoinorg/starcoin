@@ -43,10 +43,11 @@ use starcoin_types::{
 };
 #[cfg(feature = "force-deploy")]
 use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
-use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm_types::access_path::{AccessPath, DataPath};
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy};
 use starcoin_vm_types::on_chain_resource::Epoch;
+use starcoin_vm_types::state_store::state_key::StateKey;
 use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
@@ -2106,7 +2107,16 @@ impl ChainReader for BlockChain {
             let statedb = self
                 .statedb
                 .fork_at(transaction_info.txn_info().state_root_hash());
-            Some(statedb.get_with_proof(&access_path)?)
+            let state_key = match access_path.path {
+                DataPath::Code(module_name) => StateKey::module(&access_path.address, &module_name),
+                DataPath::Resource(struct_tag) => {
+                    StateKey::resource(&access_path.address, &struct_tag)?
+                }
+                DataPath::ResourceGroup(_) => {
+                    bail!("ResourceGroup is not supported in get_transaction_proof")
+                }
+            };
+            Some(statedb.get_with_proof(&state_key)?)
         } else {
             None
         };

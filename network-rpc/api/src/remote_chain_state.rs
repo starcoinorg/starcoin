@@ -10,7 +10,6 @@ use network_p2p_types::peer_id::PeerId;
 use starcoin_crypto::HashValue;
 use starcoin_state_api::{ChainStateReader, StateWithProof, StateWithTableItemProof};
 use starcoin_state_tree::AccountStateSetIterator;
-use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
@@ -47,7 +46,13 @@ impl RemoteChainStateReader {
 }
 
 impl ChainStateReader for RemoteChainStateReader {
-    fn get_with_proof(&self, access_path: &AccessPath) -> Result<StateWithProof> {
+    fn get_with_proof(&self, state_key: &StateKey) -> Result<StateWithProof> {
+        let access_path = match state_key.inner() {
+            StateKeyInner::AccessPath(access_path) => access_path,
+            _ => {
+                return Err(anyhow!("Only support AccessPath key"));
+            }
+        };
         let peer_id = self
             .peer_id
             .clone()
@@ -128,7 +133,7 @@ impl ChainStateReader for RemoteChainStateReader {
         Ok(state_table_item_proof)
     }
 
-    fn get_table_info(&self, address: AccountAddress) -> Result<Option<TableInfo>> {
+    fn get_table_info(&self, address: AccountAddress) -> Result<TableInfo> {
         let peer_id = self
             .peer_id
             .clone()
@@ -136,7 +141,7 @@ impl ChainStateReader for RemoteChainStateReader {
         let req = GetTableInfo(address);
         let client = self.client.clone();
         let table_info = futures::executor::block_on(client.get_state_table_info(peer_id, req))?;
-        Ok(Some(table_info))
+        Ok(table_info)
     }
 }
 
@@ -144,8 +149,8 @@ impl TStateView for RemoteChainStateReader {
     type Key = StateKey;
     fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>, StateviewError> {
         match state_key.inner() {
-            StateKeyInner::AccessPath(access_path) => {
-                let state_proof = self.get_with_proof(access_path)?;
+            StateKeyInner::AccessPath(_access_path) => {
+                let state_proof = self.get_with_proof(&state_key)?;
                 Ok(state_proof.state.map(|v| StateValue::from(v)))
             }
             StateKeyInner::TableItem { handle, key } => {

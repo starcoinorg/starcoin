@@ -12,7 +12,6 @@ use serde::{Deserialize, Serialize};
 use starcoin_config::ChainNetwork;
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::HashValue;
-use starcoin_gas_algebra::InitialGasSchedule;
 use starcoin_gas_meter::{StarcoinGasMeter, StarcoinGasParameters};
 use starcoin_vm_runtime::data_cache::{AsMoveResolver, RemoteStorage};
 use starcoin_vm_runtime::move_vm_ext::{MoveVmExt, SessionId, SessionOutput};
@@ -32,11 +31,11 @@ use starcoin_vm_types::{
     move_resource::MoveResource,
     on_chain_config::{OnChainConfig, VMConfig, Version},
     state_store::state_key::StateKey,
-    state_view::StateView,
     transaction::authenticator::AuthenticationKey,
     transaction::{SignedUserTransaction, Transaction, TransactionOutput, TransactionStatus},
     vm_status::VMStatus,
     write_set::WriteSet,
+    StateView,
 };
 
 use crate::data_store::FakeDataStore;

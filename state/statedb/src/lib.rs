@@ -16,6 +16,7 @@ use starcoin_state_api::{StateWithTableItemProof, TABLE_PATH_LIST};
 use starcoin_state_tree::mock::MockStateNodeStore;
 use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_state_tree::{StateNodeStore, StateTree};
+use starcoin_types::identifier::Identifier;
 use starcoin_types::write_set::{WriteOp, WriteSet, WriteSetMut};
 use starcoin_types::{
     access_path::{AccessPath, DataType},
@@ -448,7 +449,11 @@ impl TStateView for ChainStateDB {
 }
 
 impl ChainStateReader for ChainStateDB {
-    fn get_with_proof(&self, access_path: &AccessPath) -> Result<StateWithProof> {
+    fn get_with_proof(&self, state_key: &StateKey) -> Result<StateWithProof> {
+        let access_path = match state_key.inner() {
+            StateKeyInner::AccessPath(access_path) => access_path,
+            _ => unimplemented!(),
+        };
         let account_address = &access_path.address;
         let data_path = &access_path.path;
         let (account_state, account_proof) = self.state_tree.get_with_proof(account_address)?;
@@ -561,11 +566,17 @@ impl ChainStateReader for ChainStateDB {
         let handle_address = TABLE_HANDLE_ADDRESS_LIST
             .get(idx)
             .expect("get TABLE_HANDLE_ADDRESS_LIST should always succeed");
-        let table_path = TABLE_PATH_LIST
+        let _table_path = TABLE_PATH_LIST
             .get(idx)
             .expect("get TABLE_PATH_LIST should always succeed");
-        let table_path_proof =
-            self.get_with_proof(&AccessPath::new(*handle_address, table_path.clone()))?;
+        let struct_tag = StructTag {
+            address: *handle_address,
+            module: Identifier::new("TableHandles").unwrap(),
+            name: Identifier::new("TableHandles").unwrap(),
+            type_args: vec![],
+        };
+        let state_key = StateKey::resource(handle_address, &struct_tag)?;
+        let table_path_proof = self.get_with_proof(&state_key)?;
         let state_tree_table_handle = self.get_state_tree_table_handles(idx)?;
         let table_handle_proof = state_tree_table_handle.get_with_proof(handle)?;
         let table_handle_state_object = self.get_table_handle_state_object(handle)?;
@@ -585,8 +596,13 @@ impl ChainStateReader for ChainStateDB {
         ))
     }
 
-    fn get_table_info(&self, address: AccountAddress) -> Result<Option<TableInfo>> {
-        self.store.get_table_info(address)
+    fn get_table_info(&self, address: AccountAddress) -> Result<TableInfo> {
+        let v = self.store.get_table_info(address);
+        match v {
+            Ok(Some(v)) => Ok(v),
+            Ok(None) => Err(format_err!("table info not found")),
+            Err(e) => Err(e),
+        }
     }
 }
 

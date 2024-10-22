@@ -11,6 +11,8 @@ use starcoin_crypto::HashValue;
 use starcoin_rpc_api::types::{StateWithProofView, StrView};
 use starcoin_state_api::StateWithProof;
 use starcoin_types::access_path::AccessPath;
+use starcoin_vm_types::access_path::DataPath;
+use starcoin_vm_types::state_store::state_key::StateKey;
 
 /// Get state and proof with access_path, etc: 0x1/0/Account,  0x1/1/0x1::Account::Account
 #[derive(Debug, Parser)]
@@ -65,14 +67,22 @@ impl CommandAction for GetProofCommand {
             None => client.state_get_state_root()?,
         };
         let access_path = opt.access_path.clone();
+        let state_key = match access_path.clone().path {
+            DataPath::Code(module_name) => StateKey::module(&access_path.address, &module_name),
+            DataPath::Resource(struct_tag) => {
+                StateKey::resource(&access_path.address, &struct_tag)?
+            }
+            DataPath::ResourceGroup(_) => Err(anyhow::anyhow!("ResourceGroup is not supported."))?,
+        };
+
         let (proof, result) = if opt.raw {
-            let proof = client.state_get_with_proof_by_root_raw(access_path.clone(), state_root)?;
+            let proof = client.state_get_with_proof_by_root_raw(state_key, state_root)?;
             (
                 bcs_ext::from_bytes::<StateWithProof>(proof.0.as_slice())?,
                 ViewOrRaw::Raw(proof),
             )
         } else {
-            let proof = client.state_get_with_proof_by_root(access_path.clone(), state_root)?;
+            let proof = client.state_get_with_proof_by_root(state_key, state_root)?;
             (proof.clone().into(), ViewOrRaw::View(proof))
         };
         proof.verify(state_root, access_path)?;

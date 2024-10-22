@@ -6,7 +6,6 @@ use anyhow::{format_err, Result};
 use starcoin_crypto::HashValue;
 use starcoin_state_api::{ChainStateReader, StateWithProof, StateWithTableItemProof};
 use starcoin_state_tree::AccountStateSetIterator;
-use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::block::BlockNumber;
@@ -109,10 +108,10 @@ impl<'a> ChainStateReader for RemoteStateReader<'a> {
             .state_get_with_table_item_proof_by_root(*handle, key.to_vec(), self.state_root)
             .map(Into::into)
     }
-    fn get_table_info(&self, address: AccountAddress) -> Result<Option<TableInfo>> {
+    fn get_table_info(&self, address: AccountAddress) -> Result<TableInfo> {
         self.client
             .state_get_table_info(address)
-            .map(|v| v.map(Into::into))
+            .map(|v| TableInfo::from(v))
     }
 }
 
@@ -121,9 +120,9 @@ impl<'a> TStateView for RemoteStateReader<'a> {
 
     fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>, StateviewError> {
         match state_key.inner() {
-            StateKeyInner::AccessPath(access_path) => Ok(self
+            StateKeyInner::AccessPath(_access_path) => Ok(self
                 .client
-                .state_get_with_proof_by_root(access_path.clone(), self.state_root())?
+                .state_get_with_proof_by_root(state_key.clone(), self.state_root())?
                 .state
                 .map(|v| v.0))
             .map(|v| v.map(|v| StateValue::from(v))),

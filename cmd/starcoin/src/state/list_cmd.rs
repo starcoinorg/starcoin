@@ -12,7 +12,7 @@ use starcoin_rpc_api::types::{ListCodeView, ListResourceView, StructTagView};
 use starcoin_rpc_client::StateRootOption;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::language_storage::ModuleId;
-use starcoin_vm_types::state_view::StateView;
+use starcoin_vm_types::StateView;
 
 /// List state data command
 ///  Some examples:

@@ -187,12 +187,14 @@ pub fn build_create_vote_txn(
     vote_script_function: EntryFunction,
     expire_time: u64,
 ) -> SignedUserTransaction {
-    alice.sign_txn(build_transaction(
-        *alice.address(),
-        seq_number,
-        TransactionPayload::EntryFunction(vote_script_function),
-        expire_time,
-    ))
+    alice
+        .sign_txn(build_transaction(
+            *alice.address(),
+            seq_number,
+            TransactionPayload::EntryFunction(vote_script_function),
+            expire_time,
+        ))
+        .unwrap()
 }
 
 pub fn build_cast_vote_txn(
@@ -218,12 +220,14 @@ pub fn build_cast_vote_txn(
             bcs_ext::to_bytes(&(voting_power / 2)).unwrap(),
         ],
     );
-    alice.sign_txn(build_transaction(
-        *alice.address(),
-        seq_number,
-        TransactionPayload::EntryFunction(vote_script_function),
-        expire_time,
-    ))
+    alice
+        .sign_txn(build_transaction(
+            *alice.address(),
+            seq_number,
+            TransactionPayload::EntryFunction(vote_script_function),
+            expire_time,
+        ))
+        .unwrap()
 }
 
 pub fn build_queue_txn(
@@ -242,12 +246,14 @@ pub fn build_queue_txn(
             bcs_ext::to_bytes(&0u64).unwrap(),
         ],
     );
-    alice.sign_txn(build_transaction(
-        *alice.address(),
-        seq_number,
-        TransactionPayload::EntryFunction(script_function),
-        expire_time,
-    ))
+    alice
+        .sign_txn(build_transaction(
+            *alice.address(),
+            seq_number,
+            TransactionPayload::EntryFunction(script_function),
+            expire_time,
+        ))
+        .unwrap()
 }
 
 pub fn build_execute_txn(
@@ -256,10 +262,12 @@ pub fn build_execute_txn(
     execute_script_function: EntryFunction,
     expire_time: u64,
 ) -> SignedUserTransaction {
-    alice.sign_txn(build_transaction(
-        *alice.address(),
-        seq_number,
-        TransactionPayload::EntryFunction(execute_script_function),
-        expire_time,
-    ))
+    alice
+        .sign_txn(build_transaction(
+            *alice.address(),
+            seq_number,
+            TransactionPayload::EntryFunction(execute_script_function),
+            expire_time,
+        ))
+        .unwrap()
 }

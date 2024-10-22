@@ -67,9 +67,11 @@ impl CommandAction for UpgradeModuleQueueCommand {
 
         let chain_state_reader = ctx.state().client().state_reader(StateRootOption::Latest)?;
         let stdlib_version = chain_state_reader
-            .get_on_chain_config::<Version>()?
-            .map(|version| version.major)
-            .ok_or_else(|| format_err!("on chain config stdlib version can not be empty."))?;
+            .get_on_chain_config::<Version>()
+            .ok_or(format_err!(
+                "on chain config stdlib version can not be empty."
+            ))?
+            .major;
 
         let module_upgrade_queue = build_module_upgrade_queue(
             proposer_address,

@@ -81,13 +81,9 @@ impl CommandAction for UpgradeModuleProposalCommand {
         let min_action_delay = get_dao_config(cli_state)?.min_action_delay;
         let chain_state_reader = ctx.state().client().state_reader(StateRootOption::Latest)?;
         let stdlib_version = chain_state_reader
-            .get_on_chain_config::<Version>()?
-            .map(|version| version.major)
-            .ok_or_else(|| format_err!("on chain config stdlib version can not be empty."))?;
-        eprintln!(
-            "current stdlib version {:?}",
-            StdlibVersion::new(stdlib_version)
-        );
+            .get_on_chain_config::<Version>()
+            .ok_or(format_err!("get_on_chain_config version"))?
+            .major;
         let (module_upgrade_proposal, package_hash) = build_module_upgrade_proposal(
             &upgrade_package,
             module_version,

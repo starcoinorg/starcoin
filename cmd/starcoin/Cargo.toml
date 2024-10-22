@@ -11,6 +11,7 @@ forkable-jellyfish-merkle = { workspace = true }
 futures = { workspace = true }
 hex = { features = ["serde"], workspace = true }
 itertools = { workspace = true }
+move-core-types = { workspace = true }
 move-command-line-common = { workspace = true }
 move-errmapgen = { workspace = true }
 network-api = { workspace = true }
