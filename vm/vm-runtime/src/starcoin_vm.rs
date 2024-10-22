@@ -7,16 +7,14 @@ use crate::errors::{
     convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
 };
 use crate::move_vm_ext::{MoveVmExt, SessionExt, SessionId, SessionOutput, StarcoinMoveResolver};
-use crate::vm_adapter::{
-    discard_error_output, discard_error_vm_status, PreprocessedTransaction,
-    PublishModuleBundleOption,
-};
+use crate::{discard_error_output, discard_error_vm_status, PreprocessedTransaction};
 use anyhow::{bail, format_err, Error, Result};
 use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
 use move_core_types::move_resource::MoveStructType;
 use move_core_types::vm_status::StatusCode::VALUE_SERIALIZATION_ERROR;
 use move_table_extension::NativeTableContext;
 use move_vm_runtime::module_traversal::{TraversalContext, TraversalStorage};
+use move_vm_runtime::move_vm_adapter::PublishModuleBundleOption;
 use move_vm_types::gas::GasMeter;
 use num_cpus;
 use once_cell::sync::OnceCell;

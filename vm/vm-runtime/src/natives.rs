@@ -1,14 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#[cfg(feature = "testing")]
-use bytes::Bytes;
-#[cfg(feature = "testing")]
-use move_binary_format::errors::PartialVMError;
-#[cfg(feature = "testing")]
-use move_core_types::value::MoveTypeLayout;
-#[cfg(feature = "testing")]
-use move_table_extension::{TableHandle, TableResolver};
 use move_vm_runtime::native_functions::NativeFunctionTable;
 use starcoin_gas_schedule::{MiscGasParameters, NativeGasParameters, LATEST_GAS_FEATURE_VERSION};
 use starcoin_native_interface::SafeNativeBuilder;
@@ -17,17 +9,19 @@ use starcoin_vm_types::{
     on_chain_config::{Features, TimedFeatures, TimedFeaturesBuilder},
 };
 #[cfg(feature = "testing")]
-use starcoin_vm_types::{
-    state_store::{state_key::StateKey, state_value::StateValue},
-    write_set::WriteOp,
-};
-#[cfg(feature = "testing")]
 use std::{
     collections::{BTreeMap, HashSet},
+    move_binary_format::errors::PartialVMError,
+    move_core_types::value::MoveTypeLayout,
+    move_table_extension::{TableHandle, TableResolver},
+    starcoin_vm_types::{
+        state_store::{state_key::StateKey, state_value::StateValue},
+        write_set::WriteOp,
+    },
     sync::Arc,
+    {bytes::Bytes, starcoin_types::delayed_fields::PanicError},
+    {move_vm_runtime::native_extensions::NativeContextExtensions, once_cell::sync::Lazy},
 };
-#[cfg(feature = "testing")]
-use {move_vm_runtime::native_extensions::NativeContextExtensions, once_cell::sync::Lazy};
 
 #[cfg(feature = "testing")]
 struct StarcoinBlankStorage;
