@@ -571,15 +571,14 @@ impl BlockDAG {
         pruning_point: Hash,
         merge_depth: u64,
     ) -> anyhow::Result<(Vec<Hash>, GhostdagData)> {
-        let merge_depth_root = self.block_depth_manager.calc_merge_depth_root(
-            &ghostdata,
-            pruning_point,
-            merge_depth,
-        )?;
+        let merge_depth_root = self
+            .block_depth_manager
+            .calc_merge_depth_root(&ghostdata, pruning_point, merge_depth)
+            .map_err(|e| anyhow::anyhow!("Failed to calculate merge depth root: {}", e))?;
         if merge_depth_root == Hash::zero() {
             return anyhow::Ok((parents, ghostdata));
         }
-        info!("merge depth root: {:?}", merge_depth_root);
+        debug!("merge depth root: {:?}", merge_depth_root);
         let mut kosherizing_blues: Option<Vec<Hash>> = None;
         let mut bad_reds = Vec::new();
 

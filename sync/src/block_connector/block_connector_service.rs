@@ -464,7 +464,11 @@ where
             previous_header,
             on_chain_block_gas_limit,
             tips_hash: tips,
-            blues_hash: ghostdata.mergeset_blues[1..].to_vec(),
+            blues_hash: if ghostdata.mergeset_blues.len() > 1 {
+                ghostdata.mergeset_blues[1..].to_vec()
+            } else {
+                Vec::new()
+            },
             strategy,
             next_difficulty,
             now_milliseconds,

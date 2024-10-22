@@ -320,19 +320,6 @@ impl BlockChain {
             (self.dag().ghostdata(&tips)?, tips)
         };
 
-        // let MineNewDagBlockInfo {
-        //     tips,
-        //     ghostdata,
-        //     pruning_point: _,
-        // } = {
-        //     let blue_blocks = ghostdata.mergeset_blues.clone()[1..].to_vec();
-        //     MineNewDagBlockInfo {
-        //         tips,
-        //         ghostdata,
-        //         pruning_point, // TODO: new test cases will need pass this field if they have some special requirements.
-        //     }
-        // };
-
         debug!(
             "Blue blocks:{:?} in chain/create_block_template_by_header",
             ghostdata.mergeset_blues,
@@ -1429,9 +1416,9 @@ impl ChainReader for BlockChain {
                 .collect::<HashSet<_>>()
         {
             bail!(
-                "failed to check the uncle, local: {:?} and miner: {:?}",
-                next_ghostdata.mergeset_blues,
-                uncles
+                "Uncle verification failed: Local mergeset blues ({:?}) do not match miner's uncles ({:?}).",
+                next_ghostdata.mergeset_blues.iter().skip(1).collect::<Vec<_>>(),
+                uncles.iter().map(|header| header.id()).collect::<Vec<_>>()
             );
         }
         let previous_header = self

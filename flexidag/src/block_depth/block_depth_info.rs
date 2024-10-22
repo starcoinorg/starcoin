@@ -66,7 +66,7 @@ impl<S: BlockDepthInfoReader, U: ReachabilityStoreReader, V: GhostdagStoreReader
             return anyhow::Ok(HashValue::zero());
         }
 
-        let pp_bs = self.ghostdag_store.get_blue_score(pruning_point).unwrap();
+        let pp_bs = self.ghostdag_store.get_blue_score(pruning_point)?;
 
         if ghostdag_data.blue_score < pp_bs + depth {
             return anyhow::Ok(HashValue::zero());
@@ -81,10 +81,10 @@ impl<S: BlockDepthInfoReader, U: ReachabilityStoreReader, V: GhostdagStoreReader
 
         let mut current = match self
             .depth_store
-            .get_block_depth_info(ghostdag_data.selected_parent)
+            .get_block_depth_info(ghostdag_data.selected_parent)?
         {
-            std::result::Result::Ok(block_depth_info) => block_depth_info.merge_depth_root,
-            Err(_) => HashValue::zero(),
+            Some(block_depth_info) => block_depth_info.merge_depth_root,
+            None => HashValue::zero(),
         };
 
         if current == HashValue::zero() {
@@ -98,7 +98,7 @@ impl<S: BlockDepthInfoReader, U: ReachabilityStoreReader, V: GhostdagStoreReader
             ghostdag_data.selected_parent,
             true,
         ) {
-            if self.ghostdag_store.get_blue_score(chain_block).unwrap() >= required_blue_score {
+            if self.ghostdag_store.get_blue_score(chain_block)? >= required_blue_score {
                 break;
             }
 

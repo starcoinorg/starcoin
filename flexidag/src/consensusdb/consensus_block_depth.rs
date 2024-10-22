@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
+use starcoin_logger::prelude::error;
 
 use crate::define_schema;
 use starcoin_crypto::HashValue as Hash;
@@ -33,7 +34,12 @@ impl KeyCodec<BlockDepthInfoData> for Hash {
     }
 
     fn decode_key(data: &[u8]) -> Result<Self, StoreError> {
-        Self::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+        Self::from_slice(data).map_err(|e| {
+            StoreError::DecodeError(format!(
+                "failed to decode the key for BlockDepthInfoData for error: {}",
+                e
+            ))
+        })
     }
 }
 impl ValueCodec<BlockDepthInfoData> for BlockDepthInfo {
@@ -47,7 +53,7 @@ impl ValueCodec<BlockDepthInfoData> for BlockDepthInfo {
 }
 
 pub trait BlockDepthInfoReader {
-    fn get_block_depth_info(&self, hash: Hash) -> Result<BlockDepthInfo, StoreError>;
+    fn get_block_depth_info(&self, hash: Hash) -> Result<Option<BlockDepthInfo>, StoreError>;
 }
 
 pub trait BlockDepthInfoStore: BlockDepthInfoReader {
@@ -72,8 +78,14 @@ impl DbBlockDepthInfoStore {
 }
 
 impl BlockDepthInfoReader for DbBlockDepthInfoStore {
-    fn get_block_depth_info(&self, hash: Hash) -> Result<BlockDepthInfo, StoreError> {
-        let result = self.block_depth_info_access.read(hash)?;
+    fn get_block_depth_info(&self, hash: Hash) -> Result<Option<BlockDepthInfo>, StoreError> {
+        let result = match self.block_depth_info_access.read(hash) {
+            Ok(info) => Some(info),
+            Err(e) => {
+                error!("get_block_depth_info error: {:?} for id: {:?}", e, hash);
+                None
+            }
+        };
         Ok(result)
     }
 }
