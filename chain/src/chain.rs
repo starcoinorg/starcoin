@@ -1385,14 +1385,11 @@ impl ChainReader for BlockChain {
             .get_block_header_by_hash(header.parent_hash())?
             .ok_or_else(|| format_err!("cannot find parent block header"))?;
         let next_ghostdata = self.dag().verify_and_ghostdata(uncles, header)?;
-        let (pruning_depth, pruning_finality) = self.get_pruning_config();
         if self.status().head().pruning_point() != HashValue::zero() {
             self.verify_pruning_point(
                 previous_header.pruning_point(),
                 header.pruning_point(),
                 &next_ghostdata,
-                pruning_depth,
-                pruning_finality,
             )?;
         }
 
@@ -1703,11 +1700,15 @@ impl BlockChain {
                 .get_data(previous_pruning_point)?
         };
 
+        let (pruning_depth, pruning_finality) = self.get_pruning_config();
+
         self.dag().verify_pruning_point(
             previous_pruning_point,
             previous_ghostdata.as_ref(),
             next_pruning_point,
             next_ghostdata,
+            pruning_depth,
+            pruning_finality,
         )?;
         anyhow::Ok(())
     }

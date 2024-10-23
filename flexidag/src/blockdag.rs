@@ -78,12 +78,8 @@ impl BlockDAG {
             header_store,
             reachability_service.clone(),
         );
-        let pruning_point_manager = PruningPointManager::new(
-            reachability_service.clone(),
-            ghostdag_store.clone(),
-            pruning_depth,
-            pruning_finality,
-        );
+        let pruning_point_manager =
+            PruningPointManager::new(reachability_service.clone(), ghostdag_store.clone());
         let block_depth_manager = BlockDepthManager::new(
             db.block_depth_info_store.clone(),
             reachability_service,

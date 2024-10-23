@@ -1355,8 +1355,7 @@ fn test_merge_bounded() -> anyhow::Result<()> {
     let pruning_depth = 4;
     let pruning_finality = 3;
 
-    let mut dag =
-        BlockDAG::create_for_testing_with_parameters(k, pruning_depth, pruning_finality).unwrap();
+    let mut dag = BlockDAG::create_for_testing_with_parameters(k).unwrap();
 
     let origin = BlockHeaderBuilder::random().with_number(0).build();
     let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;
@@ -1472,7 +1471,12 @@ fn test_merge_bounded() -> anyhow::Result<()> {
         tips,
         ghostdata,
         pruning_point,
-    } = dag.calc_mergeset_and_tips(previous_pruning_point, previous_ghostdata.as_ref())?;
+    } = dag.calc_mergeset_and_tips(
+        previous_pruning_point,
+        previous_ghostdata.as_ref(),
+        pruning_depth,
+        pruning_finality,
+    )?;
 
     assert_eq!(pruning_point, block_main_2.id());
     assert_eq!(tips.len(), 1);
@@ -1528,6 +1532,8 @@ fn test_merge_bounded() -> anyhow::Result<()> {
             .ghost_dag_store
             .get_data(pruning_point)?
             .as_ref(),
+        pruning_depth,
+        pruning_finality,
     )?;
 
     assert_eq!(pruning_point, block_main_2.id());
@@ -1595,6 +1601,8 @@ fn test_merge_bounded() -> anyhow::Result<()> {
             .ghost_dag_store
             .get_data(pruning_point)?
             .as_ref(),
+        pruning_depth,
+        pruning_finality,
     )?;
 
     assert_eq!(pruning_point, block_main_2.id());
