@@ -28,6 +28,7 @@ This is the reference documentation of the Starcoin framework.
 -  [`0x1::consensus_config`](consensus_config.md#0x1_consensus_config)
 -  [`0x1::consensus_strategy`](consensus_strategy.md#0x1_consensus_strategy)
 -  [`0x1::create_signer`](create_signer.md#0x1_create_signer)
+-  [`0x1::dao`](dao.md#0x1_dao)
 -  [`0x1::delegation_pool`](delegation_pool.md#0x1_delegation_pool)
 -  [`0x1::dispatchable_fungible_asset`](dispatchable_fungible_asset.md#0x1_dispatchable_fungible_asset)
 -  [`0x1::dkg`](dkg.md#0x1_dkg)
@@ -95,6 +96,7 @@ This is the reference documentation of the Starcoin framework.
 -  [`0x1::validator_consensus_info`](validator_consensus_info.md#0x1_validator_consensus_info)
 -  [`0x1::version`](version.md#0x1_version)
 -  [`0x1::vesting`](vesting.md#0x1_vesting)
+-  [`0x1::vm_config`](vm_config.md#0x1_vm_config)
 -  [`0x1::voting`](voting.md#0x1_voting)
 
 

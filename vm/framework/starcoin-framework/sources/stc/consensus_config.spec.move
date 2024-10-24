@@ -14,7 +14,7 @@ spec starcoin_framework::consensus_config {
         aborts_if base_block_difficulty_window == 0;
         aborts_if min_block_time_target == 0;
         aborts_if max_block_time_target < min_block_time_target;
-
+        
         include on_chain_config::PublishNewConfigAbortsIf<ConsensusConfig>;
         include on_chain_config::PublishNewConfigEnsures<ConsensusConfig>;
     }

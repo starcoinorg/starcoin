@@ -10,7 +10,6 @@ spec starcoin_framework::treasury {
         // invariant [abstract] balance.value <= coin::spec_abstract_total_value<TokenT>();
     }
 
-
     spec initialize {
         use std::signer;
 

@@ -359,6 +359,17 @@ Gets the current time in seconds.
 
 
 
+<a id="0x1_timestamp_spec_now_milliseconds"></a>
+
+
+<pre><code><b>fun</b> <a href="timestamp.md#0x1_timestamp_spec_now_milliseconds">spec_now_milliseconds</a>(): u64 {
+   <a href="timestamp.md#0x1_timestamp_spec_now_microseconds">spec_now_microseconds</a>() / <a href="timestamp.md#0x1_timestamp_MILLI_CONVERSION_FACTOR">MILLI_CONVERSION_FACTOR</a>
+}
+</code></pre>
+
+
+
+
 <a id="0x1_timestamp_spec_now_seconds"></a>
 
 

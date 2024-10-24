@@ -181,6 +181,22 @@ pub enum EntryFunctionCall {
         coin_type: TypeTag,
     },
 
+    /// remove terminated proposal from proposer
+    DaoDestroyTerminatedProposal {
+        token_t: TypeTag,
+        action_t: TypeTag,
+        proposer_address: AccountAddress,
+        proposal_id: u64,
+    },
+
+    /// queue agreed proposal to execute.
+    DaoQueueProposalAction {
+        token_t: TypeTag,
+        action_t: TypeTag,
+        proposer_address: AccountAddress,
+        proposal_id: u64,
+    },
+
     /// Add `amount` of coins to the delegation pool `pool_address`.
     DelegationPoolAddStake {
         pool_address: AccountAddress,
@@ -1169,6 +1185,18 @@ impl EntryFunctionCall {
                 amount,
             } => coin_transfer(coin_type, to, amount),
             CoinUpgradeSupply { coin_type } => coin_upgrade_supply(coin_type),
+            DaoDestroyTerminatedProposal {
+                token_t,
+                action_t,
+                proposer_address,
+                proposal_id,
+            } => dao_destroy_terminated_proposal(token_t, action_t, proposer_address, proposal_id),
+            DaoQueueProposalAction {
+                token_t,
+                action_t,
+                proposer_address,
+                proposal_id,
+            } => dao_queue_proposal_action(token_t, action_t, proposer_address, proposal_id),
             DelegationPoolAddStake {
                 pool_address,
                 amount,
@@ -2063,6 +2091,48 @@ pub fn coin_upgrade_supply(coin_type: TypeTag) -> TransactionPayload {
         ident_str!("upgrade_supply").to_owned(),
         vec![coin_type],
         vec![],
+    ))
+}
+
+/// remove terminated proposal from proposer
+pub fn dao_destroy_terminated_proposal(
+    token_t: TypeTag,
+    action_t: TypeTag,
+    proposer_address: AccountAddress,
+    proposal_id: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("dao").to_owned(),
+        ),
+        ident_str!("destroy_terminated_proposal").to_owned(),
+        vec![token_t, action_t],
+        vec![
+            bcs::to_bytes(&proposer_address).unwrap(),
+            bcs::to_bytes(&proposal_id).unwrap(),
+        ],
+    ))
+}
+
+/// queue agreed proposal to execute.
+pub fn dao_queue_proposal_action(
+    token_t: TypeTag,
+    action_t: TypeTag,
+    proposer_address: AccountAddress,
+    proposal_id: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("dao").to_owned(),
+        ),
+        ident_str!("queue_proposal_action").to_owned(),
+        vec![token_t, action_t],
+        vec![
+            bcs::to_bytes(&proposer_address).unwrap(),
+            bcs::to_bytes(&proposal_id).unwrap(),
+        ],
     ))
 }
 
@@ -4681,6 +4751,34 @@ mod decoder {
         }
     }
 
+    pub fn dao_destroy_terminated_proposal(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::DaoDestroyTerminatedProposal {
+                token_t: script.ty_args().get(0)?.clone(),
+                action_t: script.ty_args().get(1)?.clone(),
+                proposer_address: bcs::from_bytes(script.args().get(0)?).ok()?,
+                proposal_id: bcs::from_bytes(script.args().get(1)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn dao_queue_proposal_action(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::DaoQueueProposalAction {
+                token_t: script.ty_args().get(0)?.clone(),
+                action_t: script.ty_args().get(1)?.clone(),
+                proposer_address: bcs::from_bytes(script.args().get(0)?).ok()?,
+                proposal_id: bcs::from_bytes(script.args().get(1)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
     pub fn delegation_pool_add_stake(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
         if let TransactionPayload::EntryFunction(script) = payload {
             Some(EntryFunctionCall::DelegationPoolAddStake {
@@ -6460,6 +6558,14 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
         map.insert(
             "coin_upgrade_supply".to_string(),
             Box::new(decoder::coin_upgrade_supply),
+        );
+        map.insert(
+            "dao_destroy_terminated_proposal".to_string(),
+            Box::new(decoder::dao_destroy_terminated_proposal),
+        );
+        map.insert(
+            "dao_queue_proposal_action".to_string(),
+            Box::new(decoder::dao_queue_proposal_action),
         );
         map.insert(
             "delegation_pool_add_stake".to_string(),
