@@ -42,7 +42,7 @@
 
 
 
-<pre><code><b>struct</b> <a href="easy_gas.md#0x1_easy_gas_STCToken">STCToken</a>&lt;TokenType: store&gt; <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="easy_gas.md#0x1_easy_gas_STCToken">STCToken</a>&lt;TokenT&gt; <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -192,7 +192,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="easy_gas.md#0x1_easy_gas_register_oracle">register_oracle</a>&lt;TokenType: store&gt;(sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, precision: u8)
+<pre><code><b>public</b> <b>fun</b> <a href="easy_gas.md#0x1_easy_gas_register_oracle">register_oracle</a>&lt;TokenT&gt;(sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, precision: u8)
 </code></pre>
 
 
@@ -201,12 +201,12 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="easy_gas.md#0x1_easy_gas_register_oracle">register_oracle</a>&lt;TokenType: store&gt;(sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, precision: u8) {
-    <a href="oracle_price.md#0x1_oracle_price_register_oracle">oracle_price::register_oracle</a>&lt;<a href="easy_gas.md#0x1_easy_gas_STCToken">STCToken</a>&lt;TokenType&gt;&gt;(sender, precision);
+<pre><code><b>public</b> <b>fun</b> <a href="easy_gas.md#0x1_easy_gas_register_oracle">register_oracle</a>&lt;TokenT&gt;(sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, precision: u8) {
+    <a href="oracle_price.md#0x1_oracle_price_register_oracle">oracle_price::register_oracle</a>&lt;<a href="easy_gas.md#0x1_easy_gas_STCToken">STCToken</a>&lt;TokenT&gt;&gt;(sender, precision);
     // <b>let</b> genesis_account =
     //     <a href="reserved_accounts_signer.md#0x1_reserved_accounts_signer_get_stored_signer">reserved_accounts_signer::get_stored_signer</a>(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>());
     // // todo:check gas token entry
-    // <a href="coin.md#0x1_coin_register">coin::register</a>&lt;TokenType&gt;(&genesis_account);
+    // <a href="coin.md#0x1_coin_register">coin::register</a>&lt;TokenT&gt;(&genesis_account);
 }
 </code></pre>
 
@@ -220,7 +220,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="easy_gas.md#0x1_easy_gas_init_oracle_source">init_oracle_source</a>&lt;TokenType: store&gt;(sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, init_value: u128)
+<pre><code><b>public</b> <b>fun</b> <a href="easy_gas.md#0x1_easy_gas_init_oracle_source">init_oracle_source</a>&lt;TokenT&gt;(sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, init_value: u128)
 </code></pre>
 
 
@@ -229,8 +229,8 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="easy_gas.md#0x1_easy_gas_init_oracle_source">init_oracle_source</a>&lt;TokenType: store&gt;(sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, init_value: u128) {
-    <a href="oracle_price.md#0x1_oracle_price_init_data_source">oracle_price::init_data_source</a>&lt;<a href="easy_gas.md#0x1_easy_gas_STCToken">STCToken</a>&lt;TokenType&gt;&gt;(sender, init_value);
+<pre><code><b>public</b> <b>fun</b> <a href="easy_gas.md#0x1_easy_gas_init_oracle_source">init_oracle_source</a>&lt;TokenT&gt;(sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, init_value: u128) {
+    <a href="oracle_price.md#0x1_oracle_price_init_data_source">oracle_price::init_data_source</a>&lt;<a href="easy_gas.md#0x1_easy_gas_STCToken">STCToken</a>&lt;TokenT&gt;&gt;(sender, init_value);
 }
 </code></pre>
 
@@ -244,7 +244,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="easy_gas.md#0x1_easy_gas_update_oracle">update_oracle</a>&lt;TokenType: store&gt;(sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, value: u128)
+<pre><code><b>public</b> <b>fun</b> <a href="easy_gas.md#0x1_easy_gas_update_oracle">update_oracle</a>&lt;TokenT&gt;(sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, value: u128)
 </code></pre>
 
 
@@ -253,8 +253,8 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="easy_gas.md#0x1_easy_gas_update_oracle">update_oracle</a>&lt;TokenType: store&gt;(sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, value: u128) {
-    <a href="oracle_price.md#0x1_oracle_price_update">oracle_price::update</a>&lt;<a href="easy_gas.md#0x1_easy_gas_STCToken">STCToken</a>&lt;TokenType&gt;&gt;(sender, value);
+<pre><code><b>public</b> <b>fun</b> <a href="easy_gas.md#0x1_easy_gas_update_oracle">update_oracle</a>&lt;TokenT&gt;(sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, value: u128) {
+    <a href="oracle_price.md#0x1_oracle_price_update">oracle_price::update</a>&lt;<a href="easy_gas.md#0x1_easy_gas_STCToken">STCToken</a>&lt;TokenT&gt;&gt;(sender, value);
 }
 </code></pre>
 
@@ -268,7 +268,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="easy_gas.md#0x1_easy_gas_get_scaling_factor">get_scaling_factor</a>&lt;TokenType: store&gt;(): u128
+<pre><code><b>public</b> <b>fun</b> <a href="easy_gas.md#0x1_easy_gas_get_scaling_factor">get_scaling_factor</a>&lt;TokenT&gt;(): u128
 </code></pre>
 
 
@@ -277,8 +277,8 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="easy_gas.md#0x1_easy_gas_get_scaling_factor">get_scaling_factor</a>&lt;TokenType: store&gt;(): u128 {
-    <a href="oracle_price.md#0x1_oracle_price_get_scaling_factor">oracle_price::get_scaling_factor</a>&lt;<a href="easy_gas.md#0x1_easy_gas_STCToken">STCToken</a>&lt;TokenType&gt;&gt;()
+<pre><code><b>public</b> <b>fun</b> <a href="easy_gas.md#0x1_easy_gas_get_scaling_factor">get_scaling_factor</a>&lt;TokenT&gt;(): u128 {
+    <a href="oracle_price.md#0x1_oracle_price_get_scaling_factor">oracle_price::get_scaling_factor</a>&lt;<a href="easy_gas.md#0x1_easy_gas_STCToken">STCToken</a>&lt;TokenT&gt;&gt;()
 }
 </code></pre>
 
@@ -292,7 +292,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="easy_gas.md#0x1_easy_gas_gas_oracle_read">gas_oracle_read</a>&lt;TokenType: store&gt;(): u128
+<pre><code><b>public</b> <b>fun</b> <a href="easy_gas.md#0x1_easy_gas_gas_oracle_read">gas_oracle_read</a>&lt;TokenT&gt;(): u128
 </code></pre>
 
 
@@ -301,9 +301,9 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="easy_gas.md#0x1_easy_gas_gas_oracle_read">gas_oracle_read</a>&lt;TokenType: store&gt;(): u128 <b>acquires</b> <a href="easy_gas.md#0x1_easy_gas_GasTokenEntry">GasTokenEntry</a> {
-    <b>let</b> data_source = <a href="easy_gas.md#0x1_easy_gas_get_data_source_address">get_data_source_address</a>&lt;TokenType&gt;();
-    <a href="oracle_price.md#0x1_oracle_price_read">oracle_price::read</a>&lt;<a href="easy_gas.md#0x1_easy_gas_STCToken">STCToken</a>&lt;TokenType&gt;&gt;(data_source)
+<pre><code><b>public</b> <b>fun</b> <a href="easy_gas.md#0x1_easy_gas_gas_oracle_read">gas_oracle_read</a>&lt;TokenT&gt;(): u128 <b>acquires</b> <a href="easy_gas.md#0x1_easy_gas_GasTokenEntry">GasTokenEntry</a> {
+    <b>let</b> data_source = <a href="easy_gas.md#0x1_easy_gas_get_data_source_address">get_data_source_address</a>&lt;TokenT&gt;();
+    <a href="oracle_price.md#0x1_oracle_price_read">oracle_price::read</a>&lt;<a href="easy_gas.md#0x1_easy_gas_STCToken">STCToken</a>&lt;TokenT&gt;&gt;(data_source)
 }
 </code></pre>
 
@@ -355,7 +355,7 @@
 
 
 
-<pre><code><b>fun</b> <a href="easy_gas.md#0x1_easy_gas_get_data_source_address">get_data_source_address</a>&lt;TokenType: store&gt;(): <b>address</b>
+<pre><code><b>fun</b> <a href="easy_gas.md#0x1_easy_gas_get_data_source_address">get_data_source_address</a>&lt;TokenT&gt;(): <b>address</b>
 </code></pre>
 
 
@@ -364,8 +364,8 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="easy_gas.md#0x1_easy_gas_get_data_source_address">get_data_source_address</a>&lt;TokenType: store&gt;(): <b>address</b> <b>acquires</b> <a href="easy_gas.md#0x1_easy_gas_GasTokenEntry">GasTokenEntry</a> {
-    <b>let</b> token_type_info = <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;TokenType&gt;();
+<pre><code><b>fun</b> <a href="easy_gas.md#0x1_easy_gas_get_data_source_address">get_data_source_address</a>&lt;TokenT&gt;(): <b>address</b> <b>acquires</b> <a href="easy_gas.md#0x1_easy_gas_GasTokenEntry">GasTokenEntry</a> {
+    <b>let</b> token_type_info = <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;TokenT&gt;();
     <b>let</b> <a href="genesis.md#0x1_genesis">genesis</a> = <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>();
     <b>let</b> gas_token_entry = <b>borrow_global</b>&lt;<a href="easy_gas.md#0x1_easy_gas_GasTokenEntry">GasTokenEntry</a>&gt;(<a href="genesis.md#0x1_genesis">genesis</a>);
     <b>assert</b>!(<a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_module_name">type_info::module_name</a>(&token_type_info) == *&gas_token_entry.module_name
@@ -448,7 +448,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="easy_gas.md#0x1_easy_gas_withdraw_gas_fee">withdraw_gas_fee</a>&lt;TokenType: store&gt;(_sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, amount: u128)
+<pre><code><b>public</b> <b>fun</b> <a href="easy_gas.md#0x1_easy_gas_withdraw_gas_fee">withdraw_gas_fee</a>&lt;TokenT&gt;(_sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, amount: u128)
 </code></pre>
 
 
@@ -457,18 +457,18 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="easy_gas.md#0x1_easy_gas_withdraw_gas_fee">withdraw_gas_fee</a>&lt;TokenType: store&gt;(_sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, amount: u128) <b>acquires</b> <a href="easy_gas.md#0x1_easy_gas_GasFeeAddress">GasFeeAddress</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="easy_gas.md#0x1_easy_gas_withdraw_gas_fee">withdraw_gas_fee</a>&lt;TokenT&gt;(_sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, amount: u128) <b>acquires</b> <a href="easy_gas.md#0x1_easy_gas_GasFeeAddress">GasFeeAddress</a> {
     <b>let</b> gas_fee_address_entry =
         <b>borrow_global</b>&lt;<a href="easy_gas.md#0x1_easy_gas_GasFeeAddress">GasFeeAddress</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>());
     <b>let</b> gas_fee_signer = <a href="account.md#0x1_account_create_signer_with_capability">account::create_signer_with_capability</a>(&gas_fee_address_entry.cap);
     // <b>let</b> withdraw_cap = extract_withdraw_capability(&gas_fee_signer);
-    // <b>let</b> token = withdraw_with_capability&lt;TokenType&gt;(&withdraw_cap, amount);
+    // <b>let</b> token = withdraw_with_capability&lt;TokenT&gt;(&withdraw_cap, amount);
     // restore_withdraw_capability(withdraw_cap);
     // deposit(CoreAddresses::ASSOCIATION_ROOT_ADDRESS(), token);
 
     <a href="coin.md#0x1_coin_deposit">coin::deposit</a>(
         <a href="system_addresses.md#0x1_system_addresses_get_core_resource_address">system_addresses::get_core_resource_address</a>(),
-        <a href="coin.md#0x1_coin_withdraw">coin::withdraw</a>&lt;TokenType&gt;(&gas_fee_signer, (amount <b>as</b> u64))
+        <a href="coin.md#0x1_coin_withdraw">coin::withdraw</a>&lt;TokenT&gt;(&gas_fee_signer, (amount <b>as</b> u64))
     );
 }
 </code></pre>

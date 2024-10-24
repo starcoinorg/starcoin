@@ -24,6 +24,8 @@ The module provide block rewarding calculation logic.
 <b>use</b> <a href="event.md#0x1_event">0x1::event</a>;
 <b>use</b> <a href="starcoin_coin.md#0x1_starcoin_coin">0x1::starcoin_coin</a>;
 <b>use</b> <a href="system_addresses.md#0x1_system_addresses">0x1::system_addresses</a>;
+<b>use</b> <a href="treasury.md#0x1_treasury">0x1::treasury</a>;
+<b>use</b> <a href="treasury_withdraw_dao_proposal.md#0x1_treasury_withdraw_dao_proposal">0x1::treasury_withdraw_dao_proposal</a>;
 <b>use</b> <a href="../../move-stdlib/doc/vector.md#0x1_vector">0x1::vector</a>;
 </code></pre>
 
@@ -304,19 +306,15 @@ Process the given block rewards.
             <b>let</b> total_reward = gas_fees;
             // add <a href="block.md#0x1_block">block</a> reward <b>to</b> total.
             <b>if</b> (<a href="block_reward.md#0x1_block_reward">block_reward</a> &gt; 0) {
-
-                // TODO(BobOng): [framework compatible] Trasury not implemented.
                 // <b>if</b> no STC in Treasury, BlockReward will been 0.
-                // <b>let</b> treasury_balance = Treasury::balance&lt;STC&gt;();
-                <b>let</b> treasury_balance = 0;
+                <b>let</b> treasury_balance = <a href="treasury.md#0x1_treasury_balance">treasury::balance</a>&lt;STC&gt;();
                 <b>if</b> (treasury_balance &lt; <a href="block_reward.md#0x1_block_reward">block_reward</a>) {
                     <a href="block_reward.md#0x1_block_reward">block_reward</a> = treasury_balance;
                 };
-                // TODO(BobOng): [framework compatible] Trasury not implemented.
-                // <b>if</b> (<a href="block_reward.md#0x1_block_reward">block_reward</a> &gt; 0) {
-                //     <b>let</b> reward = TreasuryWithdrawDaoProposal::withdraw_for_block_reward&lt;STC&gt;(<a href="account.md#0x1_account">account</a>, <a href="block_reward.md#0x1_block_reward">block_reward</a>);
-                //     <a href="coin.md#0x1_coin_merge">coin::merge</a>(&<b>mut</b> total_reward, reward);
-                // };
+                <b>if</b> (<a href="block_reward.md#0x1_block_reward">block_reward</a> &gt; 0) {
+                    <b>let</b> reward = <a href="treasury_withdraw_dao_proposal.md#0x1_treasury_withdraw_dao_proposal_withdraw_for_block_reward">treasury_withdraw_dao_proposal::withdraw_for_block_reward</a>&lt;STC&gt;(<a href="account.md#0x1_account">account</a>, <a href="block_reward.md#0x1_block_reward">block_reward</a>);
+                    <a href="coin.md#0x1_coin_merge">coin::merge</a>(&<b>mut</b> total_reward, reward);
+                };
             };
             // distribute total.
             <b>if</b> (<a href="coin.md#0x1_coin_value">coin::value</a>(&total_reward) &gt; 0) {

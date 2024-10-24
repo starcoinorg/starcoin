@@ -14,7 +14,7 @@ module starcoin_framework::easy_gas {
 
     const EBAD_TRANSACTION_FEE_TOKEN: u64 = 18;
 
-    struct STCToken<phantom TokenType: store> has copy, store, drop {}
+    struct STCToken<phantom TokenT> has copy, store, drop {}
 
     struct GasTokenEntry has key, store, drop {
         account_address: address,
@@ -39,29 +39,29 @@ module starcoin_framework::easy_gas {
         create_gas_fee_address(sender);
     }
 
-    public fun register_oracle<TokenType: store>(sender: &signer, precision: u8) {
-        oracle_price::register_oracle<STCToken<TokenType>>(sender, precision);
+    public fun register_oracle<TokenT>(sender: &signer, precision: u8) {
+        oracle_price::register_oracle<STCToken<TokenT>>(sender, precision);
         // let genesis_account =
         //     reserved_accounts_signer::get_stored_signer(system_addresses::get_starcoin_framework());
         // // todo:check gas token entry
-        // coin::register<TokenType>(&genesis_account);
+        // coin::register<TokenT>(&genesis_account);
     }
 
-    public fun init_oracle_source<TokenType: store>(sender: &signer, init_value: u128) {
-        oracle_price::init_data_source<STCToken<TokenType>>(sender, init_value);
+    public fun init_oracle_source<TokenT>(sender: &signer, init_value: u128) {
+        oracle_price::init_data_source<STCToken<TokenT>>(sender, init_value);
     }
 
-    public fun update_oracle<TokenType: store>(sender: &signer, value: u128) {
-        oracle_price::update<STCToken<TokenType>>(sender, value);
+    public fun update_oracle<TokenT>(sender: &signer, value: u128) {
+        oracle_price::update<STCToken<TokenT>>(sender, value);
     }
 
-    public fun get_scaling_factor<TokenType: store>(): u128 {
-        oracle_price::get_scaling_factor<STCToken<TokenType>>()
+    public fun get_scaling_factor<TokenT>(): u128 {
+        oracle_price::get_scaling_factor<STCToken<TokenT>>()
     }
 
-    public fun gas_oracle_read<TokenType: store>(): u128 acquires GasTokenEntry {
-        let data_source = get_data_source_address<TokenType>();
-        oracle_price::read<STCToken<TokenType>>(data_source)
+    public fun gas_oracle_read<TokenT>(): u128 acquires GasTokenEntry {
+        let data_source = get_data_source_address<TokenT>();
+        oracle_price::read<STCToken<TokenT>>(data_source)
     }
 
 
@@ -83,8 +83,8 @@ module starcoin_framework::easy_gas {
         move_to(&genesis_account, gas_token_entry);
     }
 
-    fun get_data_source_address<TokenType: store>(): address acquires GasTokenEntry {
-        let token_type_info = type_info::type_of<TokenType>();
+    fun get_data_source_address<TokenT>(): address acquires GasTokenEntry {
+        let token_type_info = type_info::type_of<TokenT>();
         let genesis = system_addresses::get_starcoin_framework();
         let gas_token_entry = borrow_global<GasTokenEntry>(genesis);
         assert!(type_info::module_name(&token_type_info) == *&gas_token_entry.module_name
@@ -116,18 +116,18 @@ module starcoin_framework::easy_gas {
         borrow_global<GasFeeAddress>(system_addresses::get_starcoin_framework()).gas_fee_address
     }
 
-    public fun withdraw_gas_fee<TokenType: store>(_sender: &signer, amount: u128) acquires GasFeeAddress {
+    public fun withdraw_gas_fee<TokenT>(_sender: &signer, amount: u128) acquires GasFeeAddress {
         let gas_fee_address_entry =
             borrow_global<GasFeeAddress>(system_addresses::get_starcoin_framework());
         let gas_fee_signer = account::create_signer_with_capability(&gas_fee_address_entry.cap);
         // let withdraw_cap = extract_withdraw_capability(&gas_fee_signer);
-        // let token = withdraw_with_capability<TokenType>(&withdraw_cap, amount);
+        // let token = withdraw_with_capability<TokenT>(&withdraw_cap, amount);
         // restore_withdraw_capability(withdraw_cap);
         // deposit(CoreAddresses::ASSOCIATION_ROOT_ADDRESS(), token);
 
         coin::deposit(
             system_addresses::get_core_resource_address(),
-            coin::withdraw<TokenType>(&gas_fee_signer, (amount as u64))
+            coin::withdraw<TokenT>(&gas_fee_signer, (amount as u64))
         );
     }
 }

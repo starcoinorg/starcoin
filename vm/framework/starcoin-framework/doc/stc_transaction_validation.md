@@ -24,6 +24,7 @@
 <b>use</b> <a href="chain_id.md#0x1_chain_id">0x1::chain_id</a>;
 <b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
 <b>use</b> <a href="create_signer.md#0x1_create_signer">0x1::create_signer</a>;
+<b>use</b> <a href="easy_gas.md#0x1_easy_gas">0x1::easy_gas</a>;
 <b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
 <b>use</b> <a href="starcoin_coin.md#0x1_starcoin_coin">0x1::starcoin_coin</a>;
@@ -248,15 +249,11 @@ It verifies:
     // specified by the transaction
     <b>assert</b>!(<a href="chain_id.md#0x1_chain_id_get">chain_id::get</a>() == <a href="chain_id.md#0x1_chain_id">chain_id</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_BAD_CHAIN_ID">EPROLOGUE_BAD_CHAIN_ID</a>));
 
-    // TODO(BobOng): [framework upgrade] Easy gas
-    // <b>let</b> is_stc = <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_name">type_info::type_name</a>&lt;TokenType&gt;() == <a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="starcoin_coin.md#0x1_starcoin_coin_STC">0x1::starcoin_coin::STC</a>");
-    // <b>let</b> (stc_price, scaling_factor) = <b>if</b> (!is_stc) {
-    //     (EasyGas::gas_oracle_read&lt;TokenType&gt;(), EasyGas::get_scaling_factor&lt;TokenType&gt;())
-    // } <b>else</b> {
-    //     (1, 1)
-    // };
-    <b>let</b> stc_price = 1;
-    <b>let</b> scaling_factor = 1;
+    <b>let</b> (stc_price, scaling_factor) = <b>if</b> (!<a href="stc_util.md#0x1_stc_util_is_stc">stc_util::is_stc</a>&lt;TokenType&gt;()) {
+        (<a href="easy_gas.md#0x1_easy_gas_gas_oracle_read">easy_gas::gas_oracle_read</a>&lt;TokenType&gt;(), <a href="easy_gas.md#0x1_easy_gas_get_scaling_factor">easy_gas::get_scaling_factor</a>&lt;TokenType&gt;())
+    } <b>else</b> {
+        (1, 1)
+    };
 
     <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_txn_prologue">txn_prologue</a>&lt;TokenType&gt;(
         &<a href="account.md#0x1_account">account</a>,
@@ -337,14 +334,11 @@ It collects gas and bumps the sequence number
 ) {
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(&<a href="account.md#0x1_account">account</a>);
 
-    // TODO(BobOng): [framework upgrade] Easy gas <b>to</b> be check
-    // <b>let</b> is_stc = <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_name">type_info::type_name</a>&lt;TokenType&gt;() == <a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="starcoin_coin.md#0x1_starcoin_coin_STC">0x1::starcoin_coin::STC</a>");
-    // <b>let</b> (stc_price, scaling_factor) = <b>if</b> (is_stc) {
-    //         (EasyGas::gas_oracle_read&lt;TokenType&gt;(), EasyGas::get_scaling_factor&lt;TokenType&gt;())
-    //     }<b>else</b> {
-    //         (1, 1)
-    //     };
-    <b>let</b> (stc_price, scaling_factor) = (1, 1);
+    <b>let</b> (stc_price, scaling_factor) = <b>if</b> (<a href="stc_util.md#0x1_stc_util_is_stc">stc_util::is_stc</a>&lt;TokenType&gt;()) {
+        (<a href="easy_gas.md#0x1_easy_gas_gas_oracle_read">easy_gas::gas_oracle_read</a>&lt;TokenType&gt;(), <a href="easy_gas.md#0x1_easy_gas_get_scaling_factor">easy_gas::get_scaling_factor</a>&lt;TokenType&gt;())
+    }<b>else</b> {
+        (1, 1)
+    };
 
     <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_txn_epilogue">txn_epilogue</a>&lt;TokenType&gt;(
         &<a href="account.md#0x1_account">account</a>,
@@ -450,15 +444,14 @@ It collects gas and bumps the sequence number
             <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_CANT_PAY_GAS_DEPOSIT">EPROLOGUE_CANT_PAY_GAS_DEPOSIT</a>)
         );
 
-        // TODO(BobOng): [framework upgrade] Easygas <b>to</b> be check
-        // <b>if</b> (!<a href="stc_util.md#0x1_stc_util_is_stc">stc_util::is_stc</a>&lt;TokenType&gt;()) {
-        //     <b>let</b> gas_fee_address = EasyGas::get_gas_fee_address();
-        //     <b>let</b> balance_amount_stc = balance&lt;STC&gt;(gas_fee_address);
-        //     <b>assert</b>!(
-        //         balance_amount_stc &gt;= max_transaction_fee_stc,
-        //         <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_CANT_PAY_GAS_DEPOSIT">EPROLOGUE_CANT_PAY_GAS_DEPOSIT</a>)
-        //     );
-        // }
+        <b>if</b> (!<a href="stc_util.md#0x1_stc_util_is_stc">stc_util::is_stc</a>&lt;TokenType&gt;()) {
+            <b>let</b> gas_fee_address = <a href="easy_gas.md#0x1_easy_gas_get_gas_fee_address">easy_gas::get_gas_fee_address</a>();
+            <b>let</b> balance_amount_stc = (<a href="coin.md#0x1_coin_balance">coin::balance</a>&lt;STC&gt;(gas_fee_address) <b>as</b> u128);
+            <b>assert</b>!(
+                balance_amount_stc &gt;= max_transaction_fee_stc,
+                <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_CANT_PAY_GAS_DEPOSIT">EPROLOGUE_CANT_PAY_GAS_DEPOSIT</a>)
+            );
+        }
     };
     // Check that the transaction sequence number matches the sequence number of the <a href="account.md#0x1_account">account</a>
     <b>assert</b>!(
@@ -521,14 +514,13 @@ It collects gas and bumps the sequence number
         <a href="../../move-stdlib/doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EINSUFFICIENT_BALANCE">EINSUFFICIENT_BALANCE</a>)
     );
 
-    // TODO(BobOng): [framework upgrade] Easygas <b>to</b> be check
-    // <b>if</b> (!is_stc&lt;TokenType&gt;()) {
-    //     <b>let</b> gas_fee_address = EasyGas::get_gas_fee_address();
-    //     <b>let</b> genesis_balance_amount_stc = balance&lt;STC&gt;(gas_fee_address);
-    //     <b>assert</b>!(genesis_balance_amount_stc &gt;= transaction_fee_amount_stc,
-    //         <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_CANT_PAY_GAS_DEPOSIT">EPROLOGUE_CANT_PAY_GAS_DEPOSIT</a>)
-    //     );
-    // };
+    <b>if</b> (!<a href="stc_util.md#0x1_stc_util_is_stc">stc_util::is_stc</a>&lt;TokenType&gt;()) {
+        <b>let</b> gas_fee_address = <a href="easy_gas.md#0x1_easy_gas_get_gas_fee_address">easy_gas::get_gas_fee_address</a>();
+        <b>let</b> genesis_balance_amount_stc = (<a href="coin.md#0x1_coin_balance">coin::balance</a>&lt;STC&gt;(gas_fee_address) <b>as</b> u128);
+        <b>assert</b>!(genesis_balance_amount_stc &gt;= transaction_fee_amount_stc,
+            <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_CANT_PAY_GAS_DEPOSIT">EPROLOGUE_CANT_PAY_GAS_DEPOSIT</a>)
+        );
+    };
 
     // Bump the sequence number
     <a href="account.md#0x1_account_increment_sequence_number">account::increment_sequence_number</a>(txn_sender);
@@ -548,23 +540,15 @@ It collects gas and bumps the sequence number
         (transaction_fee_amount_token <b>as</b> u64)
     );
 
-    // TODO(BobOng): [framework upgrade] Easygas <b>to</b> be check
-    // <b>if</b> (!is_stc&lt;TokenType&gt;()) {
-    //     //<b>let</b> gas_fee_address = EasyGas::get_gas_fee_address();
-    //     Account::deposit&lt;TokenType&gt;(gas_fee_address, transaction_fee_token);
-    //     <b>let</b> stc_fee_token = Account::withdraw_from_balance_v2&lt;STC&gt;(gas_fee_address, transaction_fee_amount_stc);
-    //     TransactionFee::pay_fee(stc_fee_token);
-    // }<b>else</b> {
-    //     TransactionFee::pay_fee(transaction_fee_token);
-    // }
-
     <b>if</b> (!<a href="stc_util.md#0x1_stc_util_is_stc">stc_util::is_stc</a>&lt;TokenType&gt;()) {
-        <b>let</b> gas_fee_address = <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>();
+        <b>let</b> gas_fee_address = <a href="easy_gas.md#0x1_easy_gas_get_gas_fee_address">easy_gas::get_gas_fee_address</a>();
         <a href="coin.md#0x1_coin_deposit">coin::deposit</a>&lt;TokenType&gt;(gas_fee_address, transaction_fee_token);
-        <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_pay_fee">stc_transaction_fee::pay_fee</a>(<a href="coin.md#0x1_coin_withdraw">coin::withdraw</a>&lt;STC&gt;(
+
+        <b>let</b> stc_fee_token = <a href="coin.md#0x1_coin_withdraw">coin::withdraw</a>&lt;STC&gt;(
             &<a href="create_signer.md#0x1_create_signer_create_signer">create_signer::create_signer</a>(gas_fee_address),
             (transaction_fee_amount_stc <b>as</b> u64)
-        ));
+        );
+        <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_pay_fee">stc_transaction_fee::pay_fee</a>(stc_fee_token);
     } <b>else</b> {
         <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_pay_fee">stc_transaction_fee::pay_fee</a>(transaction_fee_token);
     };

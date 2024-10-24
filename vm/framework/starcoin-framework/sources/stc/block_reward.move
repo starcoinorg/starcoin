@@ -3,6 +3,8 @@ module starcoin_framework::block_reward {
 
     use std::error;
     use std::vector;
+    use starcoin_framework::treasury_withdraw_dao_proposal;
+    use starcoin_framework::treasury;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::coin;
     use starcoin_framework::account;
@@ -108,19 +110,15 @@ module starcoin_framework::block_reward {
                 let total_reward = gas_fees;
                 // add block reward to total.
                 if (block_reward > 0) {
-
-                    // TODO(BobOng): [framework compatible] Trasury not implemented.
                     // if no STC in Treasury, BlockReward will been 0.
-                    // let treasury_balance = Treasury::balance<STC>();
-                    let treasury_balance = 0;
+                    let treasury_balance = treasury::balance<STC>();
                     if (treasury_balance < block_reward) {
                         block_reward = treasury_balance;
                     };
-                    // TODO(BobOng): [framework compatible] Trasury not implemented.
-                    // if (block_reward > 0) {
-                    //     let reward = TreasuryWithdrawDaoProposal::withdraw_for_block_reward<STC>(account, block_reward);
-                    //     coin::merge(&mut total_reward, reward);
-                    // };
+                    if (block_reward > 0) {
+                        let reward = treasury_withdraw_dao_proposal::withdraw_for_block_reward<STC>(account, block_reward);
+                        coin::merge(&mut total_reward, reward);
+                    };
                 };
                 // distribute total.
                 if (coin::value(&total_reward) > 0) {
