@@ -25,7 +25,7 @@ spec starcoin_framework::dao {
         aborts_if exists<DaoGlobalInfo<TokenT>>(sender);
     }
 
-    spec schema RequirePluginDao<TokenT: copy + drop + store> {
+    spec schema RequirePluginDao<TokenT> {
         let token_addr = @0x2;
         aborts_if !exists<DaoGlobalInfo<TokenT>>(token_addr);
         aborts_if !exists<on_chain_config::Config<DaoConfig<TokenT>>>(token_addr);
@@ -300,7 +300,7 @@ spec starcoin_framework::dao {
             result;
     }
 
-    spec fun spec_proposal_exists<TokenT: copy + drop + store, ActionT: copy + drop + store>(
+    spec fun spec_proposal_exists<TokenT, ActionT: copy + drop + store>(
         proposer_address: address,
         proposal_id: u64,
     ): bool {
@@ -380,7 +380,7 @@ spec starcoin_framework::dao {
         include CheckQuorumVotes<TokenT>;
     }
 
-    spec fun spec_quorum_votes<TokenT: copy + drop + store>(): u128 {
+    spec fun spec_quorum_votes<TokenT>(): u128 {
         let supply = option::destroy_some(coin::supply<TokenT>()) - treasury::spec_balance<TokenT>();
         supply * spec_dao_config<TokenT>().voting_quorum_rate / 100
     }
@@ -404,7 +404,7 @@ spec starcoin_framework::dao {
     }
 
 
-    spec fun spec_dao_config<TokenT: copy + drop + store>(): DaoConfig<TokenT> {
+    spec fun spec_dao_config<TokenT>(): DaoConfig<TokenT> {
         global<on_chain_config::Config<DaoConfig<TokenT>>>((@0x2)).payload
     }
 

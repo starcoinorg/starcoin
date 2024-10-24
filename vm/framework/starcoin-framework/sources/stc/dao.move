@@ -22,7 +22,7 @@ module starcoin_framework::dao {
     const EXTRACTED: u8 = 7;
 
     /// global DAO info of the specified token type `Token`.
-    struct DaoGlobalInfo<phantom Token: store> has key {
+    struct DaoGlobalInfo<phantom Token> has key {
         /// next proposal id.
         next_proposal_id: u64,
         /// proposal creating event.
@@ -32,7 +32,7 @@ module starcoin_framework::dao {
     }
 
     /// Configuration of the `Token`'s DAO.
-    struct DaoConfig<phantom TokenT: copy + drop + store> has copy, drop, store {
+    struct DaoConfig<phantom TokenT> has copy, drop, store {
         /// after proposal created, how long use should wait before he can vote (in milliseconds)
         voting_delay: u64,
         /// how long the voting window is (in milliseconds).
@@ -68,7 +68,7 @@ module starcoin_framework::dao {
     }
 
     /// Proposal data struct.
-    struct Proposal<phantom Token: store, Action: store> has key {
+    struct Proposal<phantom Token, Action: store> has key {
         /// id of the proposal
         id: u64,
         /// creator of the proposal
@@ -92,7 +92,7 @@ module starcoin_framework::dao {
     }
 
     /// User vote info.
-    struct Vote<phantom TokenT: store> has key {
+    struct Vote<phantom TokenT> has key {
         /// vote for the proposal under the `proposer`.
         proposer: address,
         /// proposal id.
@@ -117,7 +117,7 @@ module starcoin_framework::dao {
     /// plugin function, can only be called by token issuer.
     /// Any token who wants to have gov functionality
     /// can optin this module by call this `register function`.
-    public fun plugin<TokenT: copy + drop + store>(
+    public fun plugin<TokenT>(
         signer: &signer,
         voting_delay: u64,
         voting_period: u64,
@@ -144,7 +144,7 @@ module starcoin_framework::dao {
 
 
     /// create a dao config
-    public fun new_dao_config<TokenT: copy + drop + store>(
+    public fun new_dao_config<TokenT>(
         voting_delay: u64,
         voting_period: u64,
         voting_quorum_rate: u8,
@@ -164,7 +164,7 @@ module starcoin_framework::dao {
     /// propose a proposal.
     /// `action`: the actual action to execute.
     /// `action_delay`: the delay to execute after the proposal is agreed
-    public fun propose<TokenT: copy + drop + store, ActionT: copy + drop + store>(
+    public fun propose<TokenT, ActionT: copy + drop + store>(
         signer: &signer,
         action: ActionT,
         action_delay: u64,
@@ -204,7 +204,7 @@ module starcoin_framework::dao {
     /// User can only vote once, then the stake is locked,
     /// which can only be unstaked by user after the proposal is expired, or cancelled, or executed.
     /// So think twice before casting vote.
-    public fun cast_vote<TokenT: copy + drop + store, ActionT: copy + drop + store>(
+    public fun cast_vote<TokenT, ActionT: copy + drop + store>(
         signer: &signer,
         proposer_address: address,
         proposal_id: u64,
@@ -254,7 +254,7 @@ module starcoin_framework::dao {
     }
 
 
-    fun do_cast_vote<TokenT: copy + drop + store, ActionT: copy + drop + store>(
+    fun do_cast_vote<TokenT, ActionT: copy + drop + store>(
         proposal: &mut Proposal<TokenT, ActionT>,
         vote: &mut Vote<TokenT>,
         stake: coin::Coin<TokenT>
@@ -270,7 +270,7 @@ module starcoin_framework::dao {
 
 
     /// Let user change their vote during the voting time.
-    public fun change_vote<TokenT: copy + drop + store, ActionT: copy + drop + store>(
+    public fun change_vote<TokenT, ActionT: copy + drop + store>(
         signer: &signer,
         proposer_address: address,
         proposal_id: u64,
@@ -308,7 +308,7 @@ module starcoin_framework::dao {
     }
 
 
-    fun do_flip_vote<TokenT: copy + drop + store, ActionT: copy + drop + store>(
+    fun do_flip_vote<TokenT, ActionT: copy + drop + store>(
         my_vote: &mut Vote<TokenT>,
         proposal: &mut Proposal<TokenT, ActionT>
     ): u128 {
@@ -326,7 +326,7 @@ module starcoin_framework::dao {
 
 
     /// Revoke some voting powers from vote on `proposal_id` of `proposer_address`.
-    public fun revoke_vote<TokenT: copy + drop + store, ActionT: copy + drop + store>(
+    public fun revoke_vote<TokenT, ActionT: copy + drop + store>(
         signer: &signer,
         proposer_address: address,
         proposal_id: u64,
@@ -372,7 +372,7 @@ module starcoin_framework::dao {
         reverted_stake
     }
 
-    fun do_revoke_vote<TokenT: copy + drop + store, ActionT: copy + drop + store>(
+    fun do_revoke_vote<TokenT, ActionT: copy + drop + store>(
         proposal: &mut Proposal<TokenT, ActionT>,
         vote: &mut Vote<TokenT>,
         to_revoke: u128
@@ -393,7 +393,7 @@ module starcoin_framework::dao {
     }
 
     /// Retrieve back my staked token voted for a proposal.
-    public fun unstake_votes<TokenT: copy + drop + store, ActionT: copy + drop + store>(
+    public fun unstake_votes<TokenT, ActionT: copy + drop + store>(
         signer: &signer,
         proposer_address: address,
         proposal_id: u64,
@@ -416,7 +416,7 @@ module starcoin_framework::dao {
 
 
     /// queue agreed proposal to execute.
-    public entry fun queue_proposal_action<TokenT: copy + drop + store, ActionT: copy + drop + store>(
+    public entry fun queue_proposal_action<TokenT, ActionT: copy + drop + store>(
         proposer_address: address,
         proposal_id: u64,
     ) acquires Proposal {
@@ -431,7 +431,7 @@ module starcoin_framework::dao {
 
 
     /// extract proposal action to execute.
-    public fun extract_proposal_action<TokenT: copy + drop + store, ActionT: copy + drop + store>(
+    public fun extract_proposal_action<TokenT, ActionT: copy + drop + store>(
         proposer_address: address,
         proposal_id: u64,
     ): ActionT acquires Proposal {
@@ -447,7 +447,7 @@ module starcoin_framework::dao {
 
 
     /// remove terminated proposal from proposer
-    public entry fun destroy_terminated_proposal<TokenT: copy + drop + store, ActionT: copy + drop + store>(
+    public entry fun destroy_terminated_proposal<TokenT, ActionT: copy + drop + store>(
         proposer_address: address,
         proposal_id: u64,
     ) acquires Proposal {
@@ -475,7 +475,7 @@ module starcoin_framework::dao {
     }
 
     /// check whether a proposal exists in `proposer_address` with id `proposal_id`.
-    public fun proposal_exists<TokenT: copy + drop + store, ActionT: copy + drop + store>(
+    public fun proposal_exists<TokenT, ActionT: copy + drop + store>(
         proposer_address: address,
         proposal_id: u64,
     ): bool acquires Proposal {
@@ -487,7 +487,7 @@ module starcoin_framework::dao {
     }
 
     /// Get the proposal state.
-    public fun proposal_state<TokenT: copy + drop + store, ActionT: copy + drop + store>(
+    public fun proposal_state<TokenT, ActionT: copy + drop + store>(
         proposer_address: address,
         proposal_id: u64,
     ): u8 acquires Proposal {
@@ -497,7 +497,7 @@ module starcoin_framework::dao {
         do_proposal_state(proposal, current_time)
     }
 
-    fun do_proposal_state<TokenT: copy + drop + store, ActionT: copy + drop + store>(
+    fun do_proposal_state<TokenT, ActionT: copy + drop + store>(
         proposal: &Proposal<TokenT, ActionT>,
         current_time: u64,
     ): u8 {
@@ -527,7 +527,7 @@ module starcoin_framework::dao {
 
     /// get proposal's information.
     /// return: (id, start_time, end_time, for_votes, against_votes).
-    public fun proposal_info<TokenT: copy + drop + store, ActionT: copy + drop + store>(
+    public fun proposal_info<TokenT, ActionT: copy + drop + store>(
         proposer_address: address,
     ): (u64, u64, u64, u128, u128) acquires Proposal {
         let proposal = borrow_global<Proposal<TokenT, ActionT>>(proposer_address);
@@ -535,7 +535,7 @@ module starcoin_framework::dao {
     }
 
     /// Get voter's vote info on proposal with `proposal_id` of `proposer_address`.
-    public fun vote_of<TokenT: copy + drop + store>(
+    public fun vote_of<TokenT>(
         voter: address,
         proposer_address: address,
         proposal_id: u64,
@@ -548,7 +548,7 @@ module starcoin_framework::dao {
 
 
     /// Check whether voter has voted on proposal with `proposal_id` of `proposer_address`.
-    public fun has_vote<TokenT: copy + drop + store>(
+    public fun has_vote<TokenT>(
         voter: address,
         proposer_address: address,
         proposal_id: u64,
@@ -561,7 +561,7 @@ module starcoin_framework::dao {
         vote.proposer == proposer_address && vote.id == proposal_id
     }
 
-    fun generate_next_proposal_id<TokenT: store>(): u64 acquires DaoGlobalInfo {
+    fun generate_next_proposal_id<TokenT>(): u64 acquires DaoGlobalInfo {
         let gov_info = borrow_global_mut<DaoGlobalInfo<TokenT>>(stc_util::token_issuer<TokenT>());
         let proposal_id = gov_info.next_proposal_id;
         gov_info.next_proposal_id = proposal_id + 1;
@@ -575,18 +575,18 @@ module starcoin_framework::dao {
     //// Query functions
 
     /// get default voting delay of the DAO.
-    public fun voting_delay<TokenT: copy + drop + store>(): u64 {
+    public fun voting_delay<TokenT>(): u64 {
         get_config<TokenT>().voting_delay
     }
 
     /// get the default voting period of the DAO.
-    public fun voting_period<TokenT: copy + drop + store>(): u64 {
+    public fun voting_period<TokenT>(): u64 {
         get_config<TokenT>().voting_period
     }
 
 
     /// Quorum votes to make proposal pass.
-    public fun quorum_votes<TokenT: copy + drop + store>(): u128 {
+    public fun quorum_votes<TokenT>(): u128 {
         let market_cap = option::destroy_some(coin::supply<TokenT>());
         let balance_in_treasury = treasury::balance<TokenT>();
         let supply = market_cap - balance_in_treasury;
@@ -596,16 +596,16 @@ module starcoin_framework::dao {
     }
 
     /// Get the quorum rate in percent.
-    public fun voting_quorum_rate<TokenT: copy + drop + store>(): u8 {
+    public fun voting_quorum_rate<TokenT>(): u8 {
         get_config<TokenT>().voting_quorum_rate
     }
 
     /// Get the min_action_delay of the DAO.
-    public fun min_action_delay<TokenT: copy + drop + store>(): u64 {
+    public fun min_action_delay<TokenT>(): u64 {
         get_config<TokenT>().min_action_delay
     }
 
-    fun get_config<TokenT: copy + drop + store>(): DaoConfig<TokenT> {
+    fun get_config<TokenT>(): DaoConfig<TokenT> {
         let token_issuer = stc_util::token_issuer<TokenT>();
         on_chain_config::get_by_address<DaoConfig<TokenT>>(token_issuer)
     }
@@ -613,7 +613,7 @@ module starcoin_framework::dao {
 
     /// update function, modify dao config.
     /// if any param is 0, it means no change to that param.
-    public fun modify_dao_config<TokenT: copy + drop + store>(
+    public fun modify_dao_config<TokenT>(
         cap: &mut on_chain_config::ModifyConfigCapability<DaoConfig<TokenT>>,
         voting_delay: u64,
         voting_period: u64,
@@ -643,7 +643,7 @@ module starcoin_framework::dao {
 
 
     /// set voting delay
-    public fun set_voting_delay<TokenT: copy + drop + store>(
+    public fun set_voting_delay<TokenT>(
         cap: &mut on_chain_config::ModifyConfigCapability<DaoConfig<TokenT>>,
         value: u64,
     ) {
@@ -659,7 +659,7 @@ module starcoin_framework::dao {
 
 
     /// set voting period
-    public fun set_voting_period<TokenT: copy + drop + store>(
+    public fun set_voting_period<TokenT>(
         cap: &mut on_chain_config::ModifyConfigCapability<DaoConfig<TokenT>>,
         value: u64,
     ) {
@@ -674,7 +674,7 @@ module starcoin_framework::dao {
     }
 
     /// set voting quorum rate
-    public fun set_voting_quorum_rate<TokenT: copy + drop + store>(
+    public fun set_voting_quorum_rate<TokenT>(
         cap: &mut on_chain_config::ModifyConfigCapability<DaoConfig<TokenT>>,
         value: u8,
     ) {
@@ -689,7 +689,7 @@ module starcoin_framework::dao {
     }
 
     /// set min action delay
-    public fun set_min_action_delay<TokenT: copy + drop + store>(
+    public fun set_min_action_delay<TokenT>(
         cap: &mut on_chain_config::ModifyConfigCapability<DaoConfig<TokenT>>,
         value: u64,
     ) {

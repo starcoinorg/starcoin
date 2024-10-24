@@ -7,7 +7,7 @@ module starcoin_framework::timestamp {
     use std::error;
 
     friend starcoin_framework::genesis;
-    // friend starcoin_framework::stc_genesis;
+    friend starcoin_framework::stc_genesis;
 
     /// A singleton resource holding the current Unix time in microseconds
     struct CurrentTimeMicroseconds has key {
