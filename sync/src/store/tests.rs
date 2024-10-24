@@ -1,4 +1,5 @@
 use anyhow::Ok;
+use bcs_ext::BCSCodec;
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::schema::{KeyCodec, ValueCodec};
 use starcoin_types::{
@@ -8,13 +9,13 @@ use starcoin_types::{
     transaction::{authenticator::AuthenticationKey, SignedUserTransaction},
     U256,
 };
-use std::u64;
+use std::{any, u64};
 
 use crate::store::sync_absent_ancestor::DagSyncBlockKey;
 
 use super::{
     sync_absent_ancestor::{AbsentDagBlockStoreReader, AbsentDagBlockStoreWriter, DagSyncBlock},
-    sync_dag_store::SyncDagStore,
+    sync_dag_store::SyncDagStore, sync_store_access::{SyncStoreAccess, SyncStoreAccessMemory, SyncStoreIterator},
 };
 
 fn build_body_with_uncles(uncles: Vec<BlockHeader>) -> BlockBody {
@@ -219,4 +220,29 @@ fn test_write_read_in_order() -> anyhow::Result<()> {
     assert!(iter_to_see_empty.next().is_none());
 
     Ok(())
+}
+
+fn sync_store_access_insert<'a>(
+    store: &'a mut dyn SyncStoreAccess<'a, Type = Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + 'a>>,
+) -> anyhow::Result<()> {
+    let block = Block::new(BlockHeaderBuilder::new().with_number(1001).build(), BlockBody::new_empty());
+    store.insert(block.clone())?;
+    
+    for (key, value) in store.iter() {
+        let key = DagSyncBlockKey::decode(&key)?;
+        let value = DagSyncBlock::decode(&value)?;
+        println!("key: {:?}, value: {:?}", key, value);
+    }
+
+    Ok(())
+}
+
+
+
+
+
+
+#[test]
+fn test_sync_store_trait() -> anyhow::Result<()> {
+    anyhow::Ok(())
 }
