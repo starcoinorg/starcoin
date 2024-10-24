@@ -23,7 +23,7 @@ mod verifier;
 
 use crate::metrics::VMMetrics;
 use starcoin_vm_types::block_metadata::BlockMetadata;
-use starcoin_vm_types::transaction::{SignedUserTransaction, TransactionStatus};
+use starcoin_vm_types::transaction::{SignedUserTransaction, TransactionStatus, WriteSetPayload};
 use starcoin_vm_types::write_set::WriteSet;
 use starcoin_vm_types::{
     state_store::StateView,
@@ -49,6 +49,7 @@ pub trait VMExecutor: Send + Sync {
 #[derive(Debug)]
 pub enum PreprocessedTransaction {
     UserTransaction(Box<SignedUserTransaction>),
+    GenesisTransaction(WriteSetPayload),
     BlockMetadata(BlockMetadata),
 }
 
@@ -59,6 +60,7 @@ pub fn preprocess_transaction(txn: Transaction) -> PreprocessedTransaction {
         Transaction::UserTransaction(txn) => {
             PreprocessedTransaction::UserTransaction(Box::new(txn))
         }
+        Transaction::GenesisTransaction(ws) => PreprocessedTransaction::GenesisTransaction(ws),
     }
 }
 

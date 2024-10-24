@@ -425,6 +425,29 @@ impl From<TransactionPayloadType> for u8 {
     }
 }
 
+/// Two different kinds of WriteSet transactions.
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
+pub enum WriteSetPayload {
+    /// Directly passing in the WriteSet.
+    Direct(ChangeSet),
+    /// Generate the WriteSet by running a script.
+    Script {
+        /// Execute the script as the designated signer.
+        execute_as: AccountAddress,
+        /// Script body that gets executed.
+        script: Script,
+    },
+}
+
+impl WriteSetPayload {
+    pub fn should_trigger_reconfiguration_by_default(&self) -> bool {
+        match self {
+            Self::Direct(_) => true,
+            Self::Script { .. } => false,
+        }
+    }
+}
+
 /// A transaction that has been signed.
 ///
 /// A `SignedUserTransaction` is a single transaction that can be atomically executed. Clients submit
@@ -895,6 +918,8 @@ pub enum Transaction {
     /// Transaction submitted by the user. e.g: P2P payment transaction, publishing module
     /// transaction, etc.
     UserTransaction(SignedUserTransaction),
+    /// Transaction that applies a WriteSet to the current storage.
+    GenesisTransaction(WriteSetPayload),
     /// Transaction to update the block metadata resource at the beginning of a block.
     BlockMetadata(BlockMetadata),
 }
@@ -936,6 +961,7 @@ impl Transaction {
     pub fn id(&self) -> HashValue {
         match self {
             Self::UserTransaction(signed) => signed.id(),
+            Self::GenesisTransaction(ws) => ws.crypto_hash(),
             Self::BlockMetadata(block_metadata) => block_metadata.id(),
         }
     }
