@@ -1532,6 +1532,7 @@ pub fn chunk_block_transactions(txns: Vec<Transaction>) -> Vec<TransactionBlock>
             Transaction::UserTransaction(txn) => {
                 buf.push(txn);
             }
+            Transaction::GenesisTransaction(_ws) => todo!(),
         }
     }
     if !buf.is_empty() {
@@ -1698,6 +1699,11 @@ impl StarcoinVM {
                         Err(vm_status) => discard_error_vm_status(vm_status),
                     };
                 (vm_status, output, Some("block_meta".to_string()))
+            }
+            PreprocessedTransaction::GenesisTransaction(_ws) => {
+                todo!()
+                //let (vm_status, output) = self.execute_genesis_write_set(data_cache, ws.clone());
+                //(vm_status, output, Some("genesis".to_string()))
             }
         })
     }
