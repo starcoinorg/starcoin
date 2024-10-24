@@ -1,7 +1,11 @@
 use super::reachability::{inquirer, reachability_service::MTReachabilityService};
 use super::types::ghostdata::GhostdagData;
+use crate::block_depth::block_depth_info::BlockDepthManagerT;
 use crate::consensusdb::consenses_state::{
     DagState, DagStateReader, DagStateStore, ReachabilityView,
+};
+use crate::consensusdb::consensus_block_depth::{
+    BlockDepthInfo, BlockDepthInfoStore, DbBlockDepthInfoStore,
 };
 use crate::consensusdb::prelude::{FlexiDagStorageConfig, StoreError};
 use crate::consensusdb::schemadb::{GhostdagStoreReader, ReachabilityStore, REINDEX_ROOT_KEY};
@@ -14,6 +18,7 @@ use crate::consensusdb::{
 };
 use crate::ghostdag::protocol::GhostdagManager;
 use crate::prune::pruning_point_manager::PruningPointManagerT;
+use crate::reachability::reachability_service::ReachabilityService;
 use crate::{process_key_already_error, reachability};
 use anyhow::{bail, ensure, Ok};
 use starcoin_config::temp_dir;
@@ -38,10 +43,12 @@ pub type DbGhostdagManager = GhostdagManager<
 >;
 
 pub type PruningPointManager = PruningPointManagerT<DbReachabilityStore>;
+pub type BlockDepthManager =
+    BlockDepthManagerT<DbBlockDepthInfoStore, DbReachabilityStore, DbGhostdagStore>;
 
 pub struct MineNewDagBlockInfo {
     pub tips: Vec<HashValue>,
-    pub blue_blocks: Vec<HashValue>,
+    pub ghostdata: GhostdagData,
     pub pruning_point: HashValue,
 }
 
@@ -50,6 +57,7 @@ pub struct BlockDAG {
     pub storage: FlexiDagStorage,
     ghostdag_manager: DbGhostdagManager,
     pruning_point_manager: PruningPointManager,
+    block_depth_manager: BlockDepthManager,
 }
 
 impl BlockDAG {
@@ -70,12 +78,19 @@ impl BlockDAG {
             header_store,
             reachability_service.clone(),
         );
-        let pruning_point_manager = PruningPointManager::new(reachability_service, ghostdag_store);
+        let pruning_point_manager =
+            PruningPointManager::new(reachability_service.clone(), ghostdag_store.clone());
+        let block_depth_manager = BlockDepthManager::new(
+            db.block_depth_info_store.clone(),
+            reachability_service,
+            ghostdag_store,
+        );
 
         Self {
             ghostdag_manager,
             storage: db,
             pruning_point_manager,
+            block_depth_manager,
         }
     }
 
@@ -499,7 +514,7 @@ impl BlockDAG {
         if next_pruning_point == Hash::zero() || next_pruning_point == previous_pruning_point {
             anyhow::Ok(MineNewDagBlockInfo {
                 tips: dag_state.tips,
-                blue_blocks: (*next_ghostdata.mergeset_blues).clone(),
+                ghostdata: next_ghostdata,
                 pruning_point: next_pruning_point,
             })
         } else {
@@ -508,19 +523,15 @@ impl BlockDAG {
                 previous_pruning_point,
                 next_pruning_point,
             )?;
-            let mergeset_blues = (*self
-                .ghost_dag_manager()
-                .ghostdag(&pruned_tips)?
-                .mergeset_blues)
-                .clone();
+            let ghostdata = self.ghost_dag_manager().ghostdag(&pruned_tips)?;
             info!(
-                "previous tips are: {:?}, the pruned tips are: {:?}, the mergeset blues are: {:?}, the next pruning point is: {:?}",
+                "previous tips are: {:?}, the pruned tips are: {:?}, the ghost data are: {:?}, the next pruning point is: {:?}",
                 dag_state.tips,
-                pruned_tips, mergeset_blues, next_pruning_point
+                pruned_tips, ghostdata, next_pruning_point
             );
             anyhow::Ok(MineNewDagBlockInfo {
                 tips: pruned_tips,
-                blue_blocks: mergeset_blues,
+                ghostdata,
                 pruning_point: next_pruning_point,
             })
         }
@@ -547,6 +558,118 @@ impl BlockDAG {
             bail!("pruning point is not correct, the local next pruning point is {}, but the block header pruning point is {}", next_pruning_point, inside_next_pruning_point);
         }
         anyhow::Ok(())
+    }
+
+    pub fn remove_bounded_merge_breaking_parents(
+        &self,
+        mut parents: Vec<Hash>,
+        mut ghostdata: GhostdagData,
+        pruning_point: Hash,
+        merge_depth: u64,
+    ) -> anyhow::Result<(Vec<Hash>, GhostdagData)> {
+        let merge_depth_root = self
+            .block_depth_manager
+            .calc_merge_depth_root(&ghostdata, pruning_point, merge_depth)
+            .map_err(|e| anyhow::anyhow!("Failed to calculate merge depth root: {}", e))?;
+        if merge_depth_root == Hash::zero() {
+            return anyhow::Ok((parents, ghostdata));
+        }
+        debug!("merge depth root: {:?}", merge_depth_root);
+        let mut kosherizing_blues: Option<Vec<Hash>> = None;
+        let mut bad_reds = Vec::new();
+
+        // Find red blocks violating the merge bound and which are not kosherized by any blue
+        for red in ghostdata.mergeset_reds.iter().copied() {
+            if self
+                .reachability_service()
+                .is_dag_ancestor_of(merge_depth_root, red)
+            {
+                continue;
+            }
+            // Lazy load the kosherizing blocks since this case is extremely rare
+            if kosherizing_blues.is_none() {
+                kosherizing_blues = Some(
+                    self.block_depth_manager
+                        .kosherizing_blues(&ghostdata, merge_depth_root)
+                        .collect(),
+                );
+            }
+            if !self.reachability_service().is_dag_ancestor_of_any(
+                red,
+                &mut kosherizing_blues.as_ref().unwrap().iter().copied(),
+            ) {
+                bad_reds.push(red);
+            }
+        }
+
+        if !bad_reds.is_empty() {
+            // Remove all parents which lead to merging a bad red
+            parents.retain(|&h| {
+                !self
+                    .reachability_service()
+                    .is_any_dag_ancestor(&mut bad_reds.iter().copied(), h)
+            });
+            // Recompute ghostdag data since parents changed
+            ghostdata = self.ghostdag_manager.ghostdag(&parents)?;
+        }
+
+        anyhow::Ok((parents, ghostdata))
+    }
+
+    pub fn check_bounded_merge_depth(
+        &self,
+        selected_parent: Hash,
+        pruning_point: Hash,
+        ghostdata: &GhostdagData,
+        merge_depth: u64,
+        finality_depth: u64,
+    ) -> anyhow::Result<(Hash, Hash)> {
+        let merge_depth_root = self.block_depth_manager.calc_merge_depth_root(
+            ghostdata,
+            pruning_point,
+            merge_depth,
+        )?;
+        if merge_depth_root == Hash::zero() {
+            return anyhow::Ok((Hash::zero(), Hash::zero()));
+        }
+        let finality_point = self.block_depth_manager.calc_finality_point(
+            ghostdata,
+            pruning_point,
+            finality_depth,
+        )?;
+        let mut kosherizing_blues: Option<Vec<Hash>> = None;
+
+        for red in ghostdata.mergeset_reds.iter().copied() {
+            if self
+                .reachability_service()
+                .is_dag_ancestor_of(merge_depth_root, red)
+            {
+                continue;
+            }
+            // Lazy load the kosherizing blocks since this case is extremely rare
+            if kosherizing_blues.is_none() {
+                kosherizing_blues = Some(
+                    self.block_depth_manager
+                        .kosherizing_blues(ghostdata, merge_depth_root)
+                        .collect(),
+                );
+            }
+            if !self.reachability_service().is_dag_ancestor_of_any(
+                red,
+                &mut kosherizing_blues.as_ref().unwrap().iter().copied(),
+            ) {
+                warn!("failed to verify the bounded merge depth");
+            }
+        }
+
+        self.storage.block_depth_info_store.insert(
+            selected_parent,
+            BlockDepthInfo {
+                merge_depth_root,
+                finality_point,
+            },
+        )?;
+        Ok((merge_depth_root, finality_point))
     }
 
     pub fn reachability_store(
