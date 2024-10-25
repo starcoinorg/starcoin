@@ -1,5 +1,4 @@
-use anyhow::Ok;
-use bcs_ext::BCSCodec;
+use anyhow::{format_err, Ok};
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::schema::{KeyCodec, ValueCodec};
 use starcoin_types::{
@@ -9,13 +8,17 @@ use starcoin_types::{
     transaction::{authenticator::AuthenticationKey, SignedUserTransaction},
     U256,
 };
-use std::{any, u64};
+use std::u64;
 
 use crate::store::sync_absent_ancestor::DagSyncBlockKey;
 
 use super::{
     sync_absent_ancestor::{AbsentDagBlockStoreReader, AbsentDagBlockStoreWriter, DagSyncBlock},
-    sync_dag_store::SyncDagStore, sync_store_access::{SyncStoreAccess, SyncStoreAccessMemory, SyncStoreIterator},
+    sync_dag_store::SyncDagStore,
+    sync_store_access::{
+        SyncStore, SyncStoreAccessBasic, SyncStoreAccessDB, SyncStoreAccessMemory,
+        SyncStoreIterator,
+    },
 };
 
 fn build_body_with_uncles(uncles: Vec<BlockHeader>) -> BlockBody {
@@ -222,27 +225,117 @@ fn test_write_read_in_order() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn sync_store_access_insert<'a>(
-    store: &'a mut dyn SyncStoreAccess<'a, Type = Box<dyn Iterator<Item = (Vec<u8>, Vec<u8>)> + 'a>>,
-) -> anyhow::Result<()> {
-    let block = Block::new(BlockHeaderBuilder::new().with_number(1001).build(), BlockBody::new_empty());
-    store.insert(block.clone())?;
-    
+fn sync_store_access(store: SyncStore) -> anyhow::Result<()> {
+    let body = BlockBody::new_empty();
+
+    let one = Block::new(
+        BlockHeaderBuilder::new()
+            .with_number(1002)
+            .with_parents_hash(vec![HashValue::random(), HashValue::random()])
+            .with_body_hash(body.hash())
+            .build(),
+        body.clone(),
+    );
+    store.insert(one.clone())?;
+    store.insert(Block::new(
+        BlockHeaderBuilder::new()
+            .with_number(1004)
+            .with_parents_hash(vec![HashValue::random(), HashValue::random()])
+            .with_body_hash(body.hash())
+            .build(),
+        body.clone(),
+    ))?;
+    store.insert(Block::new(
+        BlockHeaderBuilder::new()
+            .with_number(1003)
+            .with_parents_hash(vec![HashValue::random(), HashValue::random()])
+            .with_nonce(1980)
+            .with_body_hash(body.hash())
+            .build(),
+        body.clone(),
+    ))?;
+    store.insert(Block::new(
+        BlockHeaderBuilder::new()
+            .with_number(1003)
+            .with_parents_hash(vec![HashValue::random(), HashValue::random()])
+            .with_nonce(1981)
+            .with_body_hash(body.hash())
+            .build(),
+        body.clone(),
+    ))?;
+    store.insert(Block::new(
+        BlockHeaderBuilder::new()
+            .with_number(1001)
+            .with_parents_hash(vec![HashValue::random(), HashValue::random()])
+            .with_body_hash(body.hash())
+            .build(),
+        body.clone(),
+    ))?;
+
+    store.delete(one.header().number(), one.header().id())?;
+
+    assert_eq!(store.get(one.header().number(), one.header().id())?, None);
+
+    store.insert(one.clone())?;
+
+    assert_eq!(
+        store.get(one.header().number(), one.header().id())?,
+        Some(one)
+    );
+
+    let mut last_one = None;
     for (key, value) in store.iter() {
-        let key = DagSyncBlockKey::decode(&key)?;
-        let value = DagSyncBlock::decode(&value)?;
-        println!("key: {:?}, value: {:?}", key, value);
+        let key = DagSyncBlockKey::decode_key(&key)?;
+        let value = DagSyncBlock::decode_value(&value)?;
+        println!(
+            "key: {:?}, value: {:?}",
+            key,
+            value.block.as_ref().expect("the ").id()
+        );
+
+        if let Some(last) = last_one {
+            assert!(key > last);
+        }
+
+        last_one = Some(key);
+
+        let block = store.get(key.number, key.block_id)?.ok_or_else(|| {
+            format_err!(
+                "Block not found, number: {:?} and id: {:?}",
+                key.number,
+                key.block_id
+            )
+        })?;
+        assert_eq!(
+            block,
+            value
+                .block
+                .as_ref()
+                .ok_or_else(|| format_err!("the block is None"))?
+                .clone()
+        );
     }
 
     Ok(())
 }
 
-
-
-
-
-
 #[test]
 fn test_sync_store_trait() -> anyhow::Result<()> {
+    let mut store = SyncStoreAccessMemory::new();
+    sync_store_access(&mut store)?;
+    store.delete_all()?;
+    if store.iter().next().is_some() {
+        panic!("sync memory store should be empty");
+    }
+
+    println!("sync memory store test passed");
+
+    let mut store = SyncStoreAccessDB::new(SyncDagStore::create_for_testing()?);
+    sync_store_access(&mut store)?;
+    store.delete_all()?;
+    if store.iter().next().is_some() {
+        panic!("sync db store should be empty");
+    }
+
     anyhow::Ok(())
 }
