@@ -15,6 +15,8 @@ use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_config::{
     genesis_key_pair, BuiltinNetworkID, ChainNetwork, ChainNetworkID, GenesisBlockParameter,
 };
+use starcoin_crypto::hash::{CryptoHash, CryptoHasher, PlainCryptoHash};
+use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainStateWriter;
@@ -24,10 +26,13 @@ use starcoin_storage::table_info::TableInfoStore;
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_transaction_builder::build_stdlib_package_with_modules;
 use starcoin_transaction_builder::{build_stdlib_package, StdLibOptions};
+use starcoin_types::block::{BlockBody, BlockHeader};
 use starcoin_types::startup_info::{ChainInfo, StartupInfo};
 use starcoin_types::transaction::Package;
 use starcoin_types::transaction::TransactionInfo;
-use starcoin_types::{block::Block, transaction::Transaction};
+use starcoin_types::{block::Block, transaction::Transaction, U256};
+use starcoin_vm_types::genesis_config::ChainId;
+use starcoin_vm_types::transaction::WriteSetPayload;
 use starcoin_vm_types::{
     account_config::CORE_CODE_ADDRESS,
     state_store::{
@@ -51,7 +56,7 @@ pub const GENESIS_DIR: Dir = include_dir!("generated");
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Genesis {
-    block: Block,
+    block: GenesisBlock,
 }
 
 impl Display for Genesis {
@@ -72,6 +77,12 @@ impl Display for Genesis {
         write!(f, "}}")?;
         Ok(())
     }
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, CryptoHasher, CryptoHash)]
+struct GenesisBlock {
+    genesis_txn: WriteSetPayload,
+    header: BlockHeader,
 }
 
 impl Genesis {
@@ -103,13 +114,38 @@ impl Genesis {
         debug!("Init genesis for {}", net);
         let block = Self::build_genesis_block(net)?;
 
-        assert_eq!(block.header().number(), 0);
-        debug!("Genesis block id : {:?}", block.header().id());
-        let genesis = Self { block };
+        assert_eq!(block.header.number(), 0);
+        debug!("Genesis block id : {:?}", block.header.id());
+        let genesis = Genesis { block };
         Ok(genesis)
     }
 
-    fn build_genesis_block(net: &ChainNetwork) -> Result<Block> {
+    fn genesis_block(
+        chain_id: ChainId,
+        parent_hash: HashValue,
+        timestamp: u64,
+        accumulator_root: HashValue,
+        state_root: HashValue,
+        difficulty: U256,
+        genesis_txn: WriteSetPayload,
+    ) -> GenesisBlock {
+        let header = BlockHeader::genesis_block_header(
+            parent_hash,
+            timestamp,
+            accumulator_root,
+            state_root,
+            difficulty,
+            genesis_txn.crypto_hash(),
+            chain_id,
+        );
+
+        GenesisBlock {
+            genesis_txn,
+            header,
+        }
+    }
+
+    fn build_genesis_block(net: &ChainNetwork) -> Result<GenesisBlock> {
         let genesis_config = net.genesis_config();
         if let Some(GenesisBlockParameter {
             parent_hash,
@@ -137,7 +173,8 @@ impl Genesis {
             // Persist newly created table_infos to storage
             storage.save_table_infos(table_infos.into_iter().collect())?;
 
-            Ok(Block::genesis_block(
+            Ok(Self::genesis_block(
+                net.chain_id(),
                 *parent_hash,
                 *timestamp,
                 accumulator_root,
@@ -150,16 +187,8 @@ impl Genesis {
         }
     }
 
-    pub fn build_genesis_transaction(net: &ChainNetwork) -> Result<SignedUserTransaction> {
-        let package = build_stdlib_package(
-            net,
-            if net.is_test() || net.is_dag_test() {
-                StdLibOptions::Fresh
-            } else {
-                StdLibOptions::Compiled(net.stdlib_version())
-            },
-        )?;
-        Self::build_genesis_transaction_with_package(net, package)
+    pub fn build_genesis_transaction(net: &ChainNetwork) -> Result<WriteSetPayload> {
+        todo!()
     }
 
     pub fn build_genesis_transaction_with_stdlib(
@@ -190,10 +219,10 @@ impl Genesis {
 
     pub fn execute_genesis_txn<S: ChainStateWriter + StateView + Sync>(
         chain_state: &S,
-        txn: SignedUserTransaction,
+        txn: WriteSetPayload,
     ) -> Result<(BTreeMap<TableHandle, TableInfo>, TransactionInfo)> {
-        let txn = Transaction::UserTransaction(txn);
-        let txn_hash = txn.id();
+        let txn_hash = txn.crypto_hash();
+        let txn = Transaction::GenesisTransaction(txn);
 
         let output = starcoin_executor::execute_transactions(chain_state, vec![txn], None)?
             .pop()
@@ -223,8 +252,8 @@ impl Genesis {
         ))
     }
 
-    pub fn block(&self) -> &Block {
-        &self.block
+    pub fn id(&self) -> &HashValue {
+        &self.block.header.id()
     }
 
     pub fn load_from_dir<P>(data_dir: P) -> Result<Option<Self>>
@@ -262,7 +291,7 @@ impl Genesis {
         storage: Arc<dyn Store>,
         dag: BlockDAG,
     ) -> Result<ChainInfo> {
-        storage.save_genesis(self.block.id())?;
+        storage.save_genesis(*self.id())?;
         let genesis_chain = BlockChain::new_with_genesis(
             net.time_service(),
             storage.clone(),
@@ -296,7 +325,7 @@ impl Genesis {
         let genesis = match Self::load_from_dir(data_dir) {
             Ok(Some(genesis)) => {
                 let expect_genesis = Self::load_or_build(net)?;
-                if genesis.block().header().id() != expect_genesis.block().header().id() {
+                if genesis.id() != expect_genesis.id() {
                     return Err(GenesisError::GenesisVersionMismatch {
                         expect: expect_genesis.block.header.id(),
                         real: genesis.block.header.id(),

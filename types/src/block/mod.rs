@@ -813,31 +813,6 @@ impl Block {
         (self.header, self.body)
     }
 
-    pub fn genesis_block(
-        parent_hash: HashValue,
-        timestamp: u64,
-        accumulator_root: HashValue,
-        state_root: HashValue,
-        difficulty: U256,
-        genesis_txn: SignedUserTransaction,
-    ) -> Self {
-        let chain_id = genesis_txn.chain_id();
-        let block_body = BlockBody::new(vec![genesis_txn], None);
-        let header = BlockHeader::genesis_block_header(
-            parent_hash,
-            timestamp,
-            accumulator_root,
-            state_root,
-            difficulty,
-            block_body.hash(),
-            chain_id,
-        );
-        Self {
-            header,
-            body: block_body,
-        }
-    }
-
     pub fn to_metadata(&self, parent_gas_used: u64) -> BlockMetadata {
         let uncles = self
             .body

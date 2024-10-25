@@ -677,7 +677,7 @@ impl BlockChain {
         time_service: Arc<dyn TimeService>,
         storage: Arc<dyn Store>,
         genesis_epoch: Epoch,
-        genesis_block: Block,
+        genesis_block: GenesisBlock,
         mut dag: BlockDAG,
     ) -> Result<Self> {
         debug_assert!(genesis_block.header().is_genesis());

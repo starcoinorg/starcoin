@@ -14,16 +14,16 @@ use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use tokio::runtime::Runtime;
 
+use crate::fork_chain::{ForkBlockChain, MockChainApi};
+use crate::fork_state::{MockChainStateAsyncService, MockStateNodeStore};
+use crate::remote_state::RemoteRpcAsyncClient;
 use jsonrpc_client_transports::RawClient;
 use jsonrpc_core::{IoHandler, Params, Value};
 use jsonrpc_core_client::transports::local;
 use starcoin_rpc_api::chain::ChainApi;
 use starcoin_rpc_api::state::StateApi;
 use starcoin_state_tree;
-
-use crate::fork_chain::{ForkBlockChain, MockChainApi};
-use crate::fork_state::{MockChainStateAsyncService, MockStateNodeStore};
-use crate::remote_state::RemoteRpcAsyncClient;
+use starcoin_vm_types::transaction::Transaction;
 
 pub struct MockServer {
     _server_handle: JoinHandle<()>,
@@ -72,7 +72,9 @@ impl ForkContext {
         );
         let net = ChainNetwork::new_builtin(network);
         let genesis_txn = match stdlib_modules {
-            Some(module) => Genesis::build_genesis_transaction_with_stdlib(&net, module).unwrap(),
+            Some(module) => Transaction::UserTransaction(
+                Genesis::build_genesis_transaction_with_stdlib(&net, module).unwrap(),
+            ),
             None => Genesis::build_genesis_transaction(&net).unwrap(),
         };
         let data_store = Arc::new(starcoin_state_tree::mock::MockStateNodeStore::new());

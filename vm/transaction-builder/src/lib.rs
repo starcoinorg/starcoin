@@ -358,9 +358,9 @@ fn build_init_script(net: &ChainNetwork) -> EntryFunction {
     }
 }
 
-pub fn build_stdlib_package(net: &ChainNetwork, _stdlib_option: StdLibOptions) -> Result<Package> {
-    let modules = starcoin_cached_packages::head_release_bundle().legacy_copy_code();
-    build_stdlib_package_with_modules(net, modules)
+pub fn build_stdlib_package(net: &ChainNetwork, stdlib_option: StdLibOptions) -> Result<Package> {
+    let init_script = build_init_script(net);
+    stdlib_package(stdlib_option, Some(init_script))
 }
 
 pub fn build_stdlib_package_with_modules(
