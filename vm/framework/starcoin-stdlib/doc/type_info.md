@@ -218,7 +218,7 @@ Return the <code><a href="type_info.md#0x1_type_info_TypeInfo">TypeInfo</a></cod
 ## Function `type_name`
 
 Return the human readable string for the type, including the address, module name, and any type arguments.
-Example: 0x1::coin::CoinStore<0x1::starcoin_coin::StarcoinCoin>
+Example: 0x1::coin::CoinStore<0x1::starcoin_coin::STC>
 Or: 0x1::table::Table<0x1::string::String, 0x1::string::String>
 
 

@@ -58,6 +58,10 @@ spec starcoin_framework::timestamp {
         global<CurrentTimeMicroseconds>(@starcoin_framework).microseconds
     }
 
+    spec fun spec_now_milliseconds(): u64 {
+        spec_now_microseconds() / MILLI_CONVERSION_FACTOR
+    }
+
     spec fun spec_now_seconds(): u64 {
         spec_now_microseconds() / MICRO_CONVERSION_FACTOR
     }

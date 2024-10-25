@@ -34,24 +34,24 @@ spec starcoin_framework::starcoin_coin {
         pragma aborts_if_is_strict;
     }
 
-    spec initialize(starcoin_framework: &signer): (BurnCapability<StarcoinCoin>, MintCapability<StarcoinCoin>) {
+    spec initialize(starcoin_framework: &signer): (BurnCapability<STC>, MintCapability<STC>) {
         use starcoin_framework::aggregator_factory;
 
         let addr = signer::address_of(starcoin_framework);
         aborts_if addr != @starcoin_framework;
-        aborts_if !string::spec_internal_check_utf8(b"Starcoin Coin");
-        aborts_if !string::spec_internal_check_utf8(b"APT");
+        aborts_if !string::spec_internal_check_utf8(b"STC");
+        aborts_if !string::spec_internal_check_utf8(b"STC");
         aborts_if exists<MintCapStore>(addr);
-        aborts_if exists<coin::CoinInfo<StarcoinCoin>>(addr);
+        aborts_if exists<coin::CoinInfo<STC>>(addr);
         aborts_if !exists<aggregator_factory::AggregatorFactory>(addr);
         /// [high-level-req-1]
         ensures exists<MintCapStore>(addr);
         // property 3: The abilities to mint Starcoin tokens should be transferable, duplicatable, and destroyable.
         /// [high-level-req-3]
-        ensures global<MintCapStore>(addr).mint_cap ==  MintCapability<StarcoinCoin> {};
-        ensures exists<coin::CoinInfo<StarcoinCoin>>(addr);
-        ensures result_1 == BurnCapability<StarcoinCoin> {};
-        ensures result_2 == MintCapability<StarcoinCoin> {};
+        ensures global<MintCapStore>(addr).mint_cap ==  MintCapability<STC> {};
+        ensures exists<coin::CoinInfo<STC>>(addr);
+        ensures result_1 == BurnCapability<STC> {};
+        ensures result_2 == MintCapability<STC> {};
     }
 
     spec destroy_mint_cap {
@@ -89,7 +89,7 @@ spec starcoin_framework::starcoin_coin {
     }
 
     spec schema ExistsStarcoinCoin {
-        requires exists<coin::CoinInfo<StarcoinCoin>>(@starcoin_framework);
+        requires exists<coin::CoinInfo<STC>>(@starcoin_framework);
     }
 
 }

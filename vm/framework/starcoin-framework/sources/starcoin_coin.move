@@ -11,6 +11,7 @@ module starcoin_framework::starcoin_coin {
     use starcoin_framework::system_addresses;
 
     friend starcoin_framework::genesis;
+    friend starcoin_framework::stc_genesis;
 
     /// Account does not have mint capability
     const ENO_CAPABILITIES: u64 = 1;
@@ -19,10 +20,10 @@ module starcoin_framework::starcoin_coin {
     /// Cannot find delegation of mint capability to this account
     const EDELEGATION_NOT_FOUND: u64 = 3;
 
-    struct StarcoinCoin has key {}
+    struct STC has key {}
 
     struct MintCapStore has key {
-        mint_cap: MintCapability<StarcoinCoin>,
+        mint_cap: MintCapability<STC>,
     }
 
     /// Delegation token created by delegator and can be claimed by the delegatee as MintCapability.
@@ -36,14 +37,14 @@ module starcoin_framework::starcoin_coin {
     }
 
     /// Can only called during genesis to initialize the Starcoin coin.
-    public(friend) fun initialize(starcoin_framework: &signer): (BurnCapability<StarcoinCoin>, MintCapability<StarcoinCoin>) {
+    public(friend) fun initialize(starcoin_framework: &signer): (BurnCapability<STC>, MintCapability<STC>) {
         system_addresses::assert_starcoin_framework(starcoin_framework);
 
-        let (burn_cap, freeze_cap, mint_cap) = coin::initialize_with_parallelizable_supply<StarcoinCoin>(
+        let (burn_cap, freeze_cap, mint_cap) = coin::initialize_with_parallelizable_supply<STC>(
             starcoin_framework,
-            string::utf8(b"Starcoin Coin"),
-            string::utf8(b"APT"),
-            8, // decimals
+            string::utf8(b"STC"),
+            string::utf8(b"STC"),
+            9, // decimals
             true, // monitor_supply
         );
 
@@ -69,20 +70,20 @@ module starcoin_framework::starcoin_coin {
 
     /// Can only be called during genesis for tests to grant mint capability to starcoin framework and core resources
     /// accounts.
-    /// Expects account and APT store to be registered before calling.
+    /// Expects account and STC store to be registered before calling.
     public(friend) fun configure_accounts_for_test(
         starcoin_framework: &signer,
         core_resources: &signer,
-        mint_cap: MintCapability<StarcoinCoin>,
+        mint_cap: MintCapability<STC>,
     ) {
         system_addresses::assert_starcoin_framework(starcoin_framework);
 
         // Mint the core resource account StarcoinCoin for gas so it can execute system transactions.
-        let coins = coin::mint<StarcoinCoin>(
+        let coins = coin::mint<STC>(
             18446744073709551615,
             &mint_cap,
         );
-        coin::deposit<StarcoinCoin>(signer::address_of(core_resources), coins);
+        coin::deposit<STC>(signer::address_of(core_resources), coins);
 
         move_to(core_resources, MintCapStore { mint_cap });
         move_to(core_resources, Delegations { inner: vector::empty() });
@@ -103,8 +104,8 @@ module starcoin_framework::starcoin_coin {
         );
 
         let mint_cap = &borrow_global<MintCapStore>(account_addr).mint_cap;
-        let coins_minted = coin::mint<StarcoinCoin>(amount, mint_cap);
-        coin::deposit<StarcoinCoin>(dst_addr, coins_minted);
+        let coins_minted = coin::mint<STC>(amount, mint_cap);
+        coin::deposit<STC>(dst_addr, coins_minted);
     }
 
     /// Only callable in tests and testnets where the core resources account exists.
@@ -179,15 +180,15 @@ module starcoin_framework::starcoin_coin {
             coin::destroy_mint_cap(mint_cap);
         };
         coin::create_coin_conversion_map(&starcoin_framework);
-        coin::create_pairing<StarcoinCoin>(&starcoin_framework);
+        coin::create_pairing<STC>(&starcoin_framework);
     }
 
     #[test_only]
-    public fun initialize_for_test(starcoin_framework: &signer): (BurnCapability<StarcoinCoin>, MintCapability<StarcoinCoin>) {
+    public fun initialize_for_test(starcoin_framework: &signer): (BurnCapability<STC>, MintCapability<STC>) {
         aggregator_factory::initialize_aggregator_factory_for_test(starcoin_framework);
         let (burn_cap, mint_cap) = initialize(starcoin_framework);
         coin::create_coin_conversion_map(starcoin_framework);
-        coin::create_pairing<StarcoinCoin>(starcoin_framework);
+        coin::create_pairing<STC>(starcoin_framework);
         (burn_cap, mint_cap)
     }
 
@@ -195,10 +196,10 @@ module starcoin_framework::starcoin_coin {
     #[test_only]
     public fun initialize_for_test_without_aggregator_factory(
         starcoin_framework: &signer
-    ): (BurnCapability<StarcoinCoin>, MintCapability<StarcoinCoin>) {
+    ): (BurnCapability<STC>, MintCapability<STC>) {
         let (burn_cap, mint_cap) = initialize(starcoin_framework);
         coin::create_coin_conversion_map(starcoin_framework);
-        coin::create_pairing<StarcoinCoin>(starcoin_framework);
+        coin::create_pairing<STC>(starcoin_framework);
         (burn_cap, mint_cap)
     }
 }

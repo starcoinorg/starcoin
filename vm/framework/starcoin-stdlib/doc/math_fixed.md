@@ -15,6 +15,8 @@ Standard math utilities missing in the Move Language.
 -  [Function `mul_div`](#0x1_math_fixed_mul_div)
 -  [Function `exp_raw`](#0x1_math_fixed_exp_raw)
 -  [Function `pow_raw`](#0x1_math_fixed_pow_raw)
+-  [Function `sum`](#0x1_math_fixed_sum)
+-  [Function `avg`](#0x1_math_fixed_avg)
 
 
 <pre><code><b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
@@ -288,6 +290,66 @@ Specialized function for x * y / z that omits intermediate shifting
         x = ((((x <b>as</b> u256) * (x <b>as</b> u256)) &gt;&gt; 64) <b>as</b> u128);
     };
     ((res &gt;&gt; 32) <b>as</b> u128)
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_math_fixed_sum"></a>
+
+## Function `sum`
+
+calculate sum of nums
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="math_fixed.md#0x1_math_fixed_sum">sum</a>(nums: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u128&gt;): u128
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="math_fixed.md#0x1_math_fixed_sum">sum</a>(nums: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u128&gt;): u128 {
+    <b>let</b> len = <a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(nums);
+    <b>let</b> i = 0;
+    <b>let</b> sum = 0;
+    <b>while</b> (i &lt; len){
+        sum = sum + *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(nums, i);
+        i = i + 1;
+    };
+    sum
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_math_fixed_avg"></a>
+
+## Function `avg`
+
+calculate average of nums
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="math_fixed.md#0x1_math_fixed_avg">avg</a>(nums: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u128&gt;): u128
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="math_fixed.md#0x1_math_fixed_avg">avg</a>(nums: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u128&gt;): u128 {
+    <b>let</b> len = <a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(nums);
+
+    <b>let</b> sum = <a href="math_fixed.md#0x1_math_fixed_sum">sum</a>(nums);
+    sum / (len <b>as</b> u128)
 }
 </code></pre>
 

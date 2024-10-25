@@ -977,7 +977,7 @@ Can only be called as part of the Starcoin governance proposal process establish
         <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="staking_config.md#0x1_staking_config_EINVALID_REWARDS_RATE_DECREASE_RATE">EINVALID_REWARDS_RATE_DECREASE_RATE</a>)
     );
     // This field, rewards_rate_period_in_secs must be greater than 0.
-    // TODO: rewards_rate_period_in_secs should be longer than the epoch duration but reading epoch duration causes a circular dependency.
+    // TODO: rewards_rate_period_in_secs should be longer than the <a href="epoch.md#0x1_epoch">epoch</a> duration but reading <a href="epoch.md#0x1_epoch">epoch</a> duration causes a circular dependency.
     <b>assert</b>!(
         rewards_rate_period_in_secs &gt; 0,
         <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="staking_config.md#0x1_staking_config_EINVALID_REWARDS_RATE_PERIOD">EINVALID_REWARDS_RATE_PERIOD</a>),

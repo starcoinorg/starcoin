@@ -250,16 +250,16 @@ spec starcoin_framework::stake {
                     new_withdraw_amount_1 > 0 && stake_pool.inactive.value + stake_pool.pending_inactive.value < new_withdraw_amount_1;
         aborts_if !(bool_find_validator && exists<timestamp::CurrentTimeMicroseconds>(@starcoin_framework)) &&
                     new_withdraw_amount_2 > 0 && stake_pool.inactive.value < new_withdraw_amount_2;
-        aborts_if !exists<coin::CoinStore<StarcoinCoin>>(addr);
-        include coin::DepositAbortsIf<StarcoinCoin>{account_addr: addr};
+        aborts_if !exists<coin::CoinStore<STC>>(addr);
+        include coin::DepositAbortsIf<STC>{account_addr: addr};
 
-        let coin_store = global<coin::CoinStore<StarcoinCoin>>(addr);
-        let post p_coin_store = global<coin::CoinStore<StarcoinCoin>>(addr);
+        let coin_store = global<coin::CoinStore<STC>>(addr);
+        let post p_coin_store = global<coin::CoinStore<STC>>(addr);
         ensures bool_find_validator && timestamp::now_seconds() > stake_pool.locked_until_secs
-                    && exists<account::Account>(addr) && exists<coin::CoinStore<StarcoinCoin>>(addr) ==>
+                    && exists<account::Account>(addr) && exists<coin::CoinStore<STC>>(addr) ==>
                         coin_store.coin.value + new_withdraw_amount_1 == p_coin_store.coin.value;
         ensures !(bool_find_validator && exists<timestamp::CurrentTimeMicroseconds>(@starcoin_framework))
-                    && exists<account::Account>(addr) && exists<coin::CoinStore<StarcoinCoin>>(addr) ==>
+                    && exists<account::Account>(addr) && exists<coin::CoinStore<STC>>(addr) ==>
                         coin_store.coin.value + new_withdraw_amount_2 == p_coin_store.coin.value;
     }
 
@@ -526,7 +526,7 @@ spec starcoin_framework::stake {
         aborts_if !exists<ValidatorConfig>(pool_address);
         aborts_if global<ValidatorConfig>(pool_address).validator_index >= len(validator_perf.validators);
 
-        let starcoin_addr = type_info::type_of<StarcoinCoin>().account_address;
+        let starcoin_addr = type_info::type_of<STC>().account_address;
         aborts_if !exists<ValidatorFees>(starcoin_addr);
 
         let stake_pool = global<StakePool>(pool_address);
@@ -565,7 +565,7 @@ spec starcoin_framework::stake {
     spec schema DistributeRewardsAbortsIf {
         use starcoin_std::type_info;
 
-        stake: Coin<StarcoinCoin>;
+        stake: Coin<STC>;
         num_successful_proposals: num;
         num_total_proposals: num;
         rewards_rate: num;
@@ -578,10 +578,10 @@ spec starcoin_framework::stake {
             0
         };
         let amount = rewards_amount;
-        let addr = type_info::type_of<StarcoinCoin>().account_address;
-        aborts_if (rewards_amount > 0) && !exists<coin::CoinInfo<StarcoinCoin>>(addr);
-        modifies global<coin::CoinInfo<StarcoinCoin>>(addr);
-        include (rewards_amount > 0) ==> coin::CoinAddAbortsIf<StarcoinCoin> { amount: amount };
+        let addr = type_info::type_of<STC>().account_address;
+        aborts_if (rewards_amount > 0) && !exists<coin::CoinInfo<STC>>(addr);
+        modifies global<coin::CoinInfo<STC>>(addr);
+        include (rewards_amount > 0) ==> coin::CoinAddAbortsIf<STC> { amount: amount };
     }
 
     spec get_reconfig_start_time_secs(): u64 {
@@ -726,7 +726,7 @@ spec starcoin_framework::stake {
             active == initial_stake_amount;
     }
 
-    spec add_transaction_fee(validator_addr: address, fee: Coin<StarcoinCoin>) {
+    spec add_transaction_fee(validator_addr: address, fee: Coin<STC>) {
         aborts_if !exists<ValidatorFees>(@starcoin_framework);
         let fees_table = global<ValidatorFees>(@starcoin_framework).fees_table;
         let post post_fees_table = global<ValidatorFees>(@starcoin_framework).fees_table;

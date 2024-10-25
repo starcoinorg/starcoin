@@ -158,7 +158,7 @@ pub enum EntryFunctionCall {
 
     CoinCreateCoinConversionMap {},
 
-    /// Create APT pairing by passing `StarcoinCoin`.
+    /// Create STC pairing by passing `StarcoinCoin`.
     CoinCreatePairing {
         coin_type: TypeTag,
     },
@@ -179,6 +179,22 @@ pub enum EntryFunctionCall {
     /// available.
     CoinUpgradeSupply {
         coin_type: TypeTag,
+    },
+
+    /// remove terminated proposal from proposer
+    DaoDestroyTerminatedProposal {
+        token_t: TypeTag,
+        action_t: TypeTag,
+        proposer_address: AccountAddress,
+        proposal_id: u64,
+    },
+
+    /// queue agreed proposal to execute.
+    DaoQueueProposalAction {
+        token_t: TypeTag,
+        action_t: TypeTag,
+        proposer_address: AccountAddress,
+        proposal_id: u64,
     },
 
     /// Add `amount` of coins to the delegation pool `pool_address`.
@@ -299,6 +315,26 @@ pub enum EntryFunctionCall {
     DelegationPoolWithdraw {
         pool_address: AccountAddress,
         amount: u64,
+    },
+
+    EasyGasScriptInitDataSource {
+        token_type: TypeTag,
+        init_value: u128,
+    },
+
+    EasyGasScriptRegister {
+        token_type: TypeTag,
+        precision: u8,
+    },
+
+    EasyGasScriptUpdate {
+        token_type: TypeTag,
+        value: u128,
+    },
+
+    EasyGasScriptWithdrawGasFeeEntry {
+        token_type: TypeTag,
+        amount: u128,
     },
 
     /// Withdraw an `amount` of coin `CoinType` from `account` and burn it.
@@ -549,6 +585,36 @@ pub enum EntryFunctionCall {
     ObjectCodeDeploymentPublish {
         metadata_serialized: Vec<u8>,
         code: Vec<Vec<u8>>,
+    },
+
+    OraclePriceInitDataSourceEntry {
+        oracle_t: TypeTag,
+        init_value: u128,
+    },
+
+    OraclePriceRegisterOracleEntry {
+        oracle_t: TypeTag,
+        precision: u8,
+    },
+
+    OraclePriceUpdateEntry {
+        oracle_t: TypeTag,
+        value: u128,
+    },
+
+    OraclePriceScriptInitDataSource {
+        oracle_t: TypeTag,
+        init_value: u128,
+    },
+
+    OraclePriceScriptRegisterOracle {
+        oracle_t: TypeTag,
+        precision: u8,
+    },
+
+    OraclePriceScriptUpdate {
+        oracle_t: TypeTag,
+        value: u128,
     },
 
     /// Creates a new resource account and rotates the authentication key to either
@@ -921,6 +987,57 @@ pub enum EntryFunctionCall {
         should_pass: bool,
     },
 
+    StcBlockCheckpointEntry {},
+
+    StcBlockUpdateStateRootEntry {
+        header: Vec<u8>,
+    },
+
+    StcGenesisInitialize {
+        stdlib_version: u64,
+        reward_delay: u64,
+        total_stc_amount: u128,
+        pre_mine_stc_amount: u128,
+        time_mint_stc_amount: u128,
+        time_mint_stc_period: u64,
+        parent_hash: Vec<u8>,
+        association_auth_key: Vec<u8>,
+        genesis_auth_key: Vec<u8>,
+        chain_id: u8,
+        _genesis_timestamp: u64,
+        uncle_rate_target: u64,
+        epoch_block_count: u64,
+        base_block_time_target: u64,
+        base_block_difficulty_window: u64,
+        base_reward_per_block: u128,
+        base_reward_per_uncle_percent: u64,
+        min_block_time_target: u64,
+        max_block_time_target: u64,
+        base_max_uncles_per_block: u64,
+        base_block_gas_limit: u64,
+        strategy: u8,
+        script_allowed: bool,
+        module_publishing_allowed: bool,
+        instruction_schedule: Vec<u8>,
+        native_schedule: Vec<u8>,
+        global_memory_per_byte_cost: u64,
+        global_memory_per_byte_write_cost: u64,
+        min_transaction_gas_units: u64,
+        large_transaction_cutoff: u64,
+        instrinsic_gas_per_byte: u64,
+        maximum_number_of_gas_units: u64,
+        min_price_per_gas_unit: u64,
+        max_price_per_gas_unit: u64,
+        max_transaction_size_in_bytes: u64,
+        gas_unit_scaling_factor: u64,
+        default_account_size: u64,
+        voting_delay: u64,
+        voting_period: u64,
+        voting_quorum_rate: u8,
+        min_action_delay: u64,
+        transaction_timeout: u64,
+    },
+
     TransactionFeeConvertToStarcoinFaBurnRef {},
 
     /// Used in on-chain governances to update the major version for the next epoch.
@@ -1113,6 +1230,18 @@ impl EntryFunctionCall {
                 amount,
             } => coin_transfer(coin_type, to, amount),
             CoinUpgradeSupply { coin_type } => coin_upgrade_supply(coin_type),
+            DaoDestroyTerminatedProposal {
+                token_t,
+                action_t,
+                proposer_address,
+                proposal_id,
+            } => dao_destroy_terminated_proposal(token_t, action_t, proposer_address, proposal_id),
+            DaoQueueProposalAction {
+                token_t,
+                action_t,
+                proposer_address,
+                proposal_id,
+            } => dao_queue_proposal_action(token_t, action_t, proposer_address, proposal_id),
             DelegationPoolAddStake {
                 pool_address,
                 amount,
@@ -1192,6 +1321,18 @@ impl EntryFunctionCall {
                 pool_address,
                 amount,
             } => delegation_pool_withdraw(pool_address, amount),
+            EasyGasScriptInitDataSource {
+                token_type,
+                init_value,
+            } => easy_gas_script_init_data_source(token_type, init_value),
+            EasyGasScriptRegister {
+                token_type,
+                precision,
+            } => easy_gas_script_register(token_type, precision),
+            EasyGasScriptUpdate { token_type, value } => easy_gas_script_update(token_type, value),
+            EasyGasScriptWithdrawGasFeeEntry { token_type, amount } => {
+                easy_gas_script_withdraw_gas_fee_entry(token_type, amount)
+            }
             ManagedCoinBurn { coin_type, amount } => managed_coin_burn(coin_type, amount),
             ManagedCoinInitialize {
                 coin_type,
@@ -1361,6 +1502,28 @@ impl EntryFunctionCall {
                 metadata_serialized,
                 code,
             } => object_code_deployment_publish(metadata_serialized, code),
+            OraclePriceInitDataSourceEntry {
+                oracle_t,
+                init_value,
+            } => oracle_price_init_data_source_entry(oracle_t, init_value),
+            OraclePriceRegisterOracleEntry {
+                oracle_t,
+                precision,
+            } => oracle_price_register_oracle_entry(oracle_t, precision),
+            OraclePriceUpdateEntry { oracle_t, value } => {
+                oracle_price_update_entry(oracle_t, value)
+            }
+            OraclePriceScriptInitDataSource {
+                oracle_t,
+                init_value,
+            } => oracle_price_script_init_data_source(oracle_t, init_value),
+            OraclePriceScriptRegisterOracle {
+                oracle_t,
+                precision,
+            } => oracle_price_script_register_oracle(oracle_t, precision),
+            OraclePriceScriptUpdate { oracle_t, value } => {
+                oracle_price_script_update(oracle_t, value)
+            }
             ResourceAccountCreateResourceAccount {
                 seed,
                 optional_auth_key,
@@ -1591,6 +1754,95 @@ impl EntryFunctionCall {
                 proposal_id,
                 should_pass,
             } => starcoin_governance_vote(stake_pool, proposal_id, should_pass),
+            StcBlockCheckpointEntry {} => stc_block_checkpoint_entry(),
+            StcBlockUpdateStateRootEntry { header } => stc_block_update_state_root_entry(header),
+            StcGenesisInitialize {
+                stdlib_version,
+                reward_delay,
+                total_stc_amount,
+                pre_mine_stc_amount,
+                time_mint_stc_amount,
+                time_mint_stc_period,
+                parent_hash,
+                association_auth_key,
+                genesis_auth_key,
+                chain_id,
+                _genesis_timestamp,
+                uncle_rate_target,
+                epoch_block_count,
+                base_block_time_target,
+                base_block_difficulty_window,
+                base_reward_per_block,
+                base_reward_per_uncle_percent,
+                min_block_time_target,
+                max_block_time_target,
+                base_max_uncles_per_block,
+                base_block_gas_limit,
+                strategy,
+                script_allowed,
+                module_publishing_allowed,
+                instruction_schedule,
+                native_schedule,
+                global_memory_per_byte_cost,
+                global_memory_per_byte_write_cost,
+                min_transaction_gas_units,
+                large_transaction_cutoff,
+                instrinsic_gas_per_byte,
+                maximum_number_of_gas_units,
+                min_price_per_gas_unit,
+                max_price_per_gas_unit,
+                max_transaction_size_in_bytes,
+                gas_unit_scaling_factor,
+                default_account_size,
+                voting_delay,
+                voting_period,
+                voting_quorum_rate,
+                min_action_delay,
+                transaction_timeout,
+            } => stc_genesis_initialize(
+                stdlib_version,
+                reward_delay,
+                total_stc_amount,
+                pre_mine_stc_amount,
+                time_mint_stc_amount,
+                time_mint_stc_period,
+                parent_hash,
+                association_auth_key,
+                genesis_auth_key,
+                chain_id,
+                _genesis_timestamp,
+                uncle_rate_target,
+                epoch_block_count,
+                base_block_time_target,
+                base_block_difficulty_window,
+                base_reward_per_block,
+                base_reward_per_uncle_percent,
+                min_block_time_target,
+                max_block_time_target,
+                base_max_uncles_per_block,
+                base_block_gas_limit,
+                strategy,
+                script_allowed,
+                module_publishing_allowed,
+                instruction_schedule,
+                native_schedule,
+                global_memory_per_byte_cost,
+                global_memory_per_byte_write_cost,
+                min_transaction_gas_units,
+                large_transaction_cutoff,
+                instrinsic_gas_per_byte,
+                maximum_number_of_gas_units,
+                min_price_per_gas_unit,
+                max_price_per_gas_unit,
+                max_transaction_size_in_bytes,
+                gas_unit_scaling_factor,
+                default_account_size,
+                voting_delay,
+                voting_period,
+                voting_quorum_rate,
+                min_action_delay,
+                transaction_timeout,
+            ),
             TransactionFeeConvertToStarcoinFaBurnRef {} => {
                 transaction_fee_convert_to_starcoin_fa_burn_ref()
             }
@@ -1921,7 +2173,7 @@ pub fn coin_create_coin_conversion_map() -> TransactionPayload {
     ))
 }
 
-/// Create APT pairing by passing `StarcoinCoin`.
+/// Create STC pairing by passing `StarcoinCoin`.
 pub fn coin_create_pairing(coin_type: TypeTag) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
@@ -1971,6 +2223,48 @@ pub fn coin_upgrade_supply(coin_type: TypeTag) -> TransactionPayload {
         ident_str!("upgrade_supply").to_owned(),
         vec![coin_type],
         vec![],
+    ))
+}
+
+/// remove terminated proposal from proposer
+pub fn dao_destroy_terminated_proposal(
+    token_t: TypeTag,
+    action_t: TypeTag,
+    proposer_address: AccountAddress,
+    proposal_id: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("dao").to_owned(),
+        ),
+        ident_str!("destroy_terminated_proposal").to_owned(),
+        vec![token_t, action_t],
+        vec![
+            bcs::to_bytes(&proposer_address).unwrap(),
+            bcs::to_bytes(&proposal_id).unwrap(),
+        ],
+    ))
+}
+
+/// queue agreed proposal to execute.
+pub fn dao_queue_proposal_action(
+    token_t: TypeTag,
+    action_t: TypeTag,
+    proposer_address: AccountAddress,
+    proposal_id: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("dao").to_owned(),
+        ),
+        ident_str!("queue_proposal_action").to_owned(),
+        vec![token_t, action_t],
+        vec![
+            bcs::to_bytes(&proposer_address).unwrap(),
+            bcs::to_bytes(&proposal_id).unwrap(),
+        ],
     ))
 }
 
@@ -2295,6 +2589,60 @@ pub fn delegation_pool_withdraw(pool_address: AccountAddress, amount: u64) -> Tr
             bcs::to_bytes(&pool_address).unwrap(),
             bcs::to_bytes(&amount).unwrap(),
         ],
+    ))
+}
+
+pub fn easy_gas_script_init_data_source(
+    token_type: TypeTag,
+    init_value: u128,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("easy_gas_script").to_owned(),
+        ),
+        ident_str!("init_data_source").to_owned(),
+        vec![token_type],
+        vec![bcs::to_bytes(&init_value).unwrap()],
+    ))
+}
+
+pub fn easy_gas_script_register(token_type: TypeTag, precision: u8) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("easy_gas_script").to_owned(),
+        ),
+        ident_str!("register").to_owned(),
+        vec![token_type],
+        vec![bcs::to_bytes(&precision).unwrap()],
+    ))
+}
+
+pub fn easy_gas_script_update(token_type: TypeTag, value: u128) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("easy_gas_script").to_owned(),
+        ),
+        ident_str!("update").to_owned(),
+        vec![token_type],
+        vec![bcs::to_bytes(&value).unwrap()],
+    ))
+}
+
+pub fn easy_gas_script_withdraw_gas_fee_entry(
+    token_type: TypeTag,
+    amount: u128,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("easy_gas_script").to_owned(),
+        ),
+        ident_str!("withdraw_gas_fee_entry").to_owned(),
+        vec![token_type],
+        vec![bcs::to_bytes(&amount).unwrap()],
     ))
 }
 
@@ -2916,6 +3264,84 @@ pub fn object_code_deployment_publish(
             bcs::to_bytes(&metadata_serialized).unwrap(),
             bcs::to_bytes(&code).unwrap(),
         ],
+    ))
+}
+
+pub fn oracle_price_init_data_source_entry(
+    oracle_t: TypeTag,
+    init_value: u128,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("oracle_price").to_owned(),
+        ),
+        ident_str!("init_data_source_entry").to_owned(),
+        vec![oracle_t],
+        vec![bcs::to_bytes(&init_value).unwrap()],
+    ))
+}
+
+pub fn oracle_price_register_oracle_entry(oracle_t: TypeTag, precision: u8) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("oracle_price").to_owned(),
+        ),
+        ident_str!("register_oracle_entry").to_owned(),
+        vec![oracle_t],
+        vec![bcs::to_bytes(&precision).unwrap()],
+    ))
+}
+
+pub fn oracle_price_update_entry(oracle_t: TypeTag, value: u128) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("oracle_price").to_owned(),
+        ),
+        ident_str!("update_entry").to_owned(),
+        vec![oracle_t],
+        vec![bcs::to_bytes(&value).unwrap()],
+    ))
+}
+
+pub fn oracle_price_script_init_data_source(
+    oracle_t: TypeTag,
+    init_value: u128,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("oracle_price_script").to_owned(),
+        ),
+        ident_str!("init_data_source").to_owned(),
+        vec![oracle_t],
+        vec![bcs::to_bytes(&init_value).unwrap()],
+    ))
+}
+
+pub fn oracle_price_script_register_oracle(oracle_t: TypeTag, precision: u8) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("oracle_price_script").to_owned(),
+        ),
+        ident_str!("register_oracle").to_owned(),
+        vec![oracle_t],
+        vec![bcs::to_bytes(&precision).unwrap()],
+    ))
+}
+
+pub fn oracle_price_script_update(oracle_t: TypeTag, value: u128) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("oracle_price_script").to_owned(),
+        ),
+        ident_str!("update").to_owned(),
+        vec![oracle_t],
+        vec![bcs::to_bytes(&value).unwrap()],
     ))
 }
 
@@ -3920,6 +4346,128 @@ pub fn starcoin_governance_vote(
     ))
 }
 
+pub fn stc_block_checkpoint_entry() -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("stc_block").to_owned(),
+        ),
+        ident_str!("checkpoint_entry").to_owned(),
+        vec![],
+        vec![],
+    ))
+}
+
+pub fn stc_block_update_state_root_entry(header: Vec<u8>) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("stc_block").to_owned(),
+        ),
+        ident_str!("update_state_root_entry").to_owned(),
+        vec![],
+        vec![bcs::to_bytes(&header).unwrap()],
+    ))
+}
+
+pub fn stc_genesis_initialize(
+    stdlib_version: u64,
+    reward_delay: u64,
+    total_stc_amount: u128,
+    pre_mine_stc_amount: u128,
+    time_mint_stc_amount: u128,
+    time_mint_stc_period: u64,
+    parent_hash: Vec<u8>,
+    association_auth_key: Vec<u8>,
+    genesis_auth_key: Vec<u8>,
+    chain_id: u8,
+    _genesis_timestamp: u64,
+    uncle_rate_target: u64,
+    epoch_block_count: u64,
+    base_block_time_target: u64,
+    base_block_difficulty_window: u64,
+    base_reward_per_block: u128,
+    base_reward_per_uncle_percent: u64,
+    min_block_time_target: u64,
+    max_block_time_target: u64,
+    base_max_uncles_per_block: u64,
+    base_block_gas_limit: u64,
+    strategy: u8,
+    script_allowed: bool,
+    module_publishing_allowed: bool,
+    instruction_schedule: Vec<u8>,
+    native_schedule: Vec<u8>,
+    global_memory_per_byte_cost: u64,
+    global_memory_per_byte_write_cost: u64,
+    min_transaction_gas_units: u64,
+    large_transaction_cutoff: u64,
+    instrinsic_gas_per_byte: u64,
+    maximum_number_of_gas_units: u64,
+    min_price_per_gas_unit: u64,
+    max_price_per_gas_unit: u64,
+    max_transaction_size_in_bytes: u64,
+    gas_unit_scaling_factor: u64,
+    default_account_size: u64,
+    voting_delay: u64,
+    voting_period: u64,
+    voting_quorum_rate: u8,
+    min_action_delay: u64,
+    transaction_timeout: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("stc_genesis").to_owned(),
+        ),
+        ident_str!("initialize").to_owned(),
+        vec![],
+        vec![
+            bcs::to_bytes(&stdlib_version).unwrap(),
+            bcs::to_bytes(&reward_delay).unwrap(),
+            bcs::to_bytes(&total_stc_amount).unwrap(),
+            bcs::to_bytes(&pre_mine_stc_amount).unwrap(),
+            bcs::to_bytes(&time_mint_stc_amount).unwrap(),
+            bcs::to_bytes(&time_mint_stc_period).unwrap(),
+            bcs::to_bytes(&parent_hash).unwrap(),
+            bcs::to_bytes(&association_auth_key).unwrap(),
+            bcs::to_bytes(&genesis_auth_key).unwrap(),
+            bcs::to_bytes(&chain_id).unwrap(),
+            bcs::to_bytes(&_genesis_timestamp).unwrap(),
+            bcs::to_bytes(&uncle_rate_target).unwrap(),
+            bcs::to_bytes(&epoch_block_count).unwrap(),
+            bcs::to_bytes(&base_block_time_target).unwrap(),
+            bcs::to_bytes(&base_block_difficulty_window).unwrap(),
+            bcs::to_bytes(&base_reward_per_block).unwrap(),
+            bcs::to_bytes(&base_reward_per_uncle_percent).unwrap(),
+            bcs::to_bytes(&min_block_time_target).unwrap(),
+            bcs::to_bytes(&max_block_time_target).unwrap(),
+            bcs::to_bytes(&base_max_uncles_per_block).unwrap(),
+            bcs::to_bytes(&base_block_gas_limit).unwrap(),
+            bcs::to_bytes(&strategy).unwrap(),
+            bcs::to_bytes(&script_allowed).unwrap(),
+            bcs::to_bytes(&module_publishing_allowed).unwrap(),
+            bcs::to_bytes(&instruction_schedule).unwrap(),
+            bcs::to_bytes(&native_schedule).unwrap(),
+            bcs::to_bytes(&global_memory_per_byte_cost).unwrap(),
+            bcs::to_bytes(&global_memory_per_byte_write_cost).unwrap(),
+            bcs::to_bytes(&min_transaction_gas_units).unwrap(),
+            bcs::to_bytes(&large_transaction_cutoff).unwrap(),
+            bcs::to_bytes(&instrinsic_gas_per_byte).unwrap(),
+            bcs::to_bytes(&maximum_number_of_gas_units).unwrap(),
+            bcs::to_bytes(&min_price_per_gas_unit).unwrap(),
+            bcs::to_bytes(&max_price_per_gas_unit).unwrap(),
+            bcs::to_bytes(&max_transaction_size_in_bytes).unwrap(),
+            bcs::to_bytes(&gas_unit_scaling_factor).unwrap(),
+            bcs::to_bytes(&default_account_size).unwrap(),
+            bcs::to_bytes(&voting_delay).unwrap(),
+            bcs::to_bytes(&voting_period).unwrap(),
+            bcs::to_bytes(&voting_quorum_rate).unwrap(),
+            bcs::to_bytes(&min_action_delay).unwrap(),
+            bcs::to_bytes(&transaction_timeout).unwrap(),
+        ],
+    ))
+}
+
 pub fn transaction_fee_convert_to_starcoin_fa_burn_ref() -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
@@ -4433,6 +4981,34 @@ mod decoder {
         }
     }
 
+    pub fn dao_destroy_terminated_proposal(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::DaoDestroyTerminatedProposal {
+                token_t: script.ty_args().get(0)?.clone(),
+                action_t: script.ty_args().get(1)?.clone(),
+                proposer_address: bcs::from_bytes(script.args().get(0)?).ok()?,
+                proposal_id: bcs::from_bytes(script.args().get(1)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn dao_queue_proposal_action(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::DaoQueueProposalAction {
+                token_t: script.ty_args().get(0)?.clone(),
+                action_t: script.ty_args().get(1)?.clone(),
+                proposer_address: bcs::from_bytes(script.args().get(0)?).ok()?,
+                proposal_id: bcs::from_bytes(script.args().get(1)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
     pub fn delegation_pool_add_stake(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
         if let TransactionPayload::EntryFunction(script) = payload {
             Some(EntryFunctionCall::DelegationPoolAddStake {
@@ -4660,6 +5236,54 @@ mod decoder {
             Some(EntryFunctionCall::DelegationPoolWithdraw {
                 pool_address: bcs::from_bytes(script.args().get(0)?).ok()?,
                 amount: bcs::from_bytes(script.args().get(1)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn easy_gas_script_init_data_source(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::EasyGasScriptInitDataSource {
+                token_type: script.ty_args().get(0)?.clone(),
+                init_value: bcs::from_bytes(script.args().get(0)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn easy_gas_script_register(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::EasyGasScriptRegister {
+                token_type: script.ty_args().get(0)?.clone(),
+                precision: bcs::from_bytes(script.args().get(0)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn easy_gas_script_update(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::EasyGasScriptUpdate {
+                token_type: script.ty_args().get(0)?.clone(),
+                value: bcs::from_bytes(script.args().get(0)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn easy_gas_script_withdraw_gas_fee_entry(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::EasyGasScriptWithdrawGasFeeEntry {
+                token_type: script.ty_args().get(0)?.clone(),
+                amount: bcs::from_bytes(script.args().get(0)?).ok()?,
             })
         } else {
             None
@@ -5067,6 +5691,80 @@ mod decoder {
             Some(EntryFunctionCall::ObjectCodeDeploymentPublish {
                 metadata_serialized: bcs::from_bytes(script.args().get(0)?).ok()?,
                 code: bcs::from_bytes(script.args().get(1)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn oracle_price_init_data_source_entry(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::OraclePriceInitDataSourceEntry {
+                oracle_t: script.ty_args().get(0)?.clone(),
+                init_value: bcs::from_bytes(script.args().get(0)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn oracle_price_register_oracle_entry(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::OraclePriceRegisterOracleEntry {
+                oracle_t: script.ty_args().get(0)?.clone(),
+                precision: bcs::from_bytes(script.args().get(0)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn oracle_price_update_entry(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::OraclePriceUpdateEntry {
+                oracle_t: script.ty_args().get(0)?.clone(),
+                value: bcs::from_bytes(script.args().get(0)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn oracle_price_script_init_data_source(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::OraclePriceScriptInitDataSource {
+                oracle_t: script.ty_args().get(0)?.clone(),
+                init_value: bcs::from_bytes(script.args().get(0)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn oracle_price_script_register_oracle(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::OraclePriceScriptRegisterOracle {
+                oracle_t: script.ty_args().get(0)?.clone(),
+                precision: bcs::from_bytes(script.args().get(0)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn oracle_price_script_update(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::OraclePriceScriptUpdate {
+                oracle_t: script.ty_args().get(0)?.clone(),
+                value: bcs::from_bytes(script.args().get(0)?).ok()?,
             })
         } else {
             None
@@ -5767,6 +6465,77 @@ mod decoder {
         }
     }
 
+    pub fn stc_block_checkpoint_entry(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(_script) = payload {
+            Some(EntryFunctionCall::StcBlockCheckpointEntry {})
+        } else {
+            None
+        }
+    }
+
+    pub fn stc_block_update_state_root_entry(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::StcBlockUpdateStateRootEntry {
+                header: bcs::from_bytes(script.args().get(0)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn stc_genesis_initialize(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::StcGenesisInitialize {
+                stdlib_version: bcs::from_bytes(script.args().get(0)?).ok()?,
+                reward_delay: bcs::from_bytes(script.args().get(1)?).ok()?,
+                total_stc_amount: bcs::from_bytes(script.args().get(2)?).ok()?,
+                pre_mine_stc_amount: bcs::from_bytes(script.args().get(3)?).ok()?,
+                time_mint_stc_amount: bcs::from_bytes(script.args().get(4)?).ok()?,
+                time_mint_stc_period: bcs::from_bytes(script.args().get(5)?).ok()?,
+                parent_hash: bcs::from_bytes(script.args().get(6)?).ok()?,
+                association_auth_key: bcs::from_bytes(script.args().get(7)?).ok()?,
+                genesis_auth_key: bcs::from_bytes(script.args().get(8)?).ok()?,
+                chain_id: bcs::from_bytes(script.args().get(9)?).ok()?,
+                _genesis_timestamp: bcs::from_bytes(script.args().get(10)?).ok()?,
+                uncle_rate_target: bcs::from_bytes(script.args().get(11)?).ok()?,
+                epoch_block_count: bcs::from_bytes(script.args().get(12)?).ok()?,
+                base_block_time_target: bcs::from_bytes(script.args().get(13)?).ok()?,
+                base_block_difficulty_window: bcs::from_bytes(script.args().get(14)?).ok()?,
+                base_reward_per_block: bcs::from_bytes(script.args().get(15)?).ok()?,
+                base_reward_per_uncle_percent: bcs::from_bytes(script.args().get(16)?).ok()?,
+                min_block_time_target: bcs::from_bytes(script.args().get(17)?).ok()?,
+                max_block_time_target: bcs::from_bytes(script.args().get(18)?).ok()?,
+                base_max_uncles_per_block: bcs::from_bytes(script.args().get(19)?).ok()?,
+                base_block_gas_limit: bcs::from_bytes(script.args().get(20)?).ok()?,
+                strategy: bcs::from_bytes(script.args().get(21)?).ok()?,
+                script_allowed: bcs::from_bytes(script.args().get(22)?).ok()?,
+                module_publishing_allowed: bcs::from_bytes(script.args().get(23)?).ok()?,
+                instruction_schedule: bcs::from_bytes(script.args().get(24)?).ok()?,
+                native_schedule: bcs::from_bytes(script.args().get(25)?).ok()?,
+                global_memory_per_byte_cost: bcs::from_bytes(script.args().get(26)?).ok()?,
+                global_memory_per_byte_write_cost: bcs::from_bytes(script.args().get(27)?).ok()?,
+                min_transaction_gas_units: bcs::from_bytes(script.args().get(28)?).ok()?,
+                large_transaction_cutoff: bcs::from_bytes(script.args().get(29)?).ok()?,
+                instrinsic_gas_per_byte: bcs::from_bytes(script.args().get(30)?).ok()?,
+                maximum_number_of_gas_units: bcs::from_bytes(script.args().get(31)?).ok()?,
+                min_price_per_gas_unit: bcs::from_bytes(script.args().get(32)?).ok()?,
+                max_price_per_gas_unit: bcs::from_bytes(script.args().get(33)?).ok()?,
+                max_transaction_size_in_bytes: bcs::from_bytes(script.args().get(34)?).ok()?,
+                gas_unit_scaling_factor: bcs::from_bytes(script.args().get(35)?).ok()?,
+                default_account_size: bcs::from_bytes(script.args().get(36)?).ok()?,
+                voting_delay: bcs::from_bytes(script.args().get(37)?).ok()?,
+                voting_period: bcs::from_bytes(script.args().get(38)?).ok()?,
+                voting_quorum_rate: bcs::from_bytes(script.args().get(39)?).ok()?,
+                min_action_delay: bcs::from_bytes(script.args().get(40)?).ok()?,
+                transaction_timeout: bcs::from_bytes(script.args().get(41)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
     pub fn transaction_fee_convert_to_starcoin_fa_burn_ref(
         payload: &TransactionPayload,
     ) -> Option<EntryFunctionCall> {
@@ -6072,6 +6841,14 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
             Box::new(decoder::coin_upgrade_supply),
         );
         map.insert(
+            "dao_destroy_terminated_proposal".to_string(),
+            Box::new(decoder::dao_destroy_terminated_proposal),
+        );
+        map.insert(
+            "dao_queue_proposal_action".to_string(),
+            Box::new(decoder::dao_queue_proposal_action),
+        );
+        map.insert(
             "delegation_pool_add_stake".to_string(),
             Box::new(decoder::delegation_pool_add_stake),
         );
@@ -6146,6 +6923,22 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
         map.insert(
             "delegation_pool_withdraw".to_string(),
             Box::new(decoder::delegation_pool_withdraw),
+        );
+        map.insert(
+            "easy_gas_script_init_data_source".to_string(),
+            Box::new(decoder::easy_gas_script_init_data_source),
+        );
+        map.insert(
+            "easy_gas_script_register".to_string(),
+            Box::new(decoder::easy_gas_script_register),
+        );
+        map.insert(
+            "easy_gas_script_update".to_string(),
+            Box::new(decoder::easy_gas_script_update),
+        );
+        map.insert(
+            "easy_gas_script_withdraw_gas_fee_entry".to_string(),
+            Box::new(decoder::easy_gas_script_withdraw_gas_fee_entry),
         );
         map.insert(
             "managed_coin_burn".to_string(),
@@ -6266,6 +7059,30 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
         map.insert(
             "object_code_deployment_publish".to_string(),
             Box::new(decoder::object_code_deployment_publish),
+        );
+        map.insert(
+            "oracle_price_init_data_source_entry".to_string(),
+            Box::new(decoder::oracle_price_init_data_source_entry),
+        );
+        map.insert(
+            "oracle_price_register_oracle_entry".to_string(),
+            Box::new(decoder::oracle_price_register_oracle_entry),
+        );
+        map.insert(
+            "oracle_price_update_entry".to_string(),
+            Box::new(decoder::oracle_price_update_entry),
+        );
+        map.insert(
+            "oracle_price_script_init_data_source".to_string(),
+            Box::new(decoder::oracle_price_script_init_data_source),
+        );
+        map.insert(
+            "oracle_price_script_register_oracle".to_string(),
+            Box::new(decoder::oracle_price_script_register_oracle),
+        );
+        map.insert(
+            "oracle_price_script_update".to_string(),
+            Box::new(decoder::oracle_price_script_update),
         );
         map.insert(
             "resource_account_create_resource_account".to_string(),
@@ -6487,6 +7304,18 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
         map.insert(
             "starcoin_governance_vote".to_string(),
             Box::new(decoder::starcoin_governance_vote),
+        );
+        map.insert(
+            "stc_block_checkpoint_entry".to_string(),
+            Box::new(decoder::stc_block_checkpoint_entry),
+        );
+        map.insert(
+            "stc_block_update_state_root_entry".to_string(),
+            Box::new(decoder::stc_block_update_state_root_entry),
+        );
+        map.insert(
+            "stc_genesis_initialize".to_string(),
+            Box::new(decoder::stc_genesis_initialize),
         );
         map.insert(
             "transaction_fee_convert_to_starcoin_fa_burn_ref".to_string(),

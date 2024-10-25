@@ -15,6 +15,8 @@ Standard math utilities missing in the Move Language.
 -  [Function `mul_div`](#0x1_math_fixed64_mul_div)
 -  [Function `exp_raw`](#0x1_math_fixed64_exp_raw)
 -  [Function `pow_raw`](#0x1_math_fixed64_pow_raw)
+-  [Function `sum`](#0x1_math_fixed64_sum)
+-  [Function `avg`](#0x1_math_fixed64_avg)
 
 
 <pre><code><b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
@@ -283,6 +285,66 @@ Specialized function for x * y / z that omits intermediate shifting
         x = (x * x) &gt;&gt; 64;
     };
     res
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_math_fixed64_sum"></a>
+
+## Function `sum`
+
+calculate sum of nums
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="math_fixed64.md#0x1_math_fixed64_sum">sum</a>(nums: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="math_fixed64.md#0x1_math_fixed64_sum">sum</a>(nums: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;): u64 {
+    <b>let</b> len = <a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(nums);
+    <b>let</b> i = 0;
+    <b>let</b> sum = 0;
+    <b>while</b> (i &lt; len) {
+        sum = sum + *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(nums, i);
+        i = i + 1;
+    };
+    sum
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_math_fixed64_avg"></a>
+
+## Function `avg`
+
+calculate average of nums
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="math_fixed64.md#0x1_math_fixed64_avg">avg</a>(nums: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="math_fixed64.md#0x1_math_fixed64_avg">avg</a>(nums: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;): u64 {
+    <b>let</b> len = <a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(nums);
+
+    <b>let</b> sum = <a href="math_fixed64.md#0x1_math_fixed64_sum">sum</a>(nums);
+    sum / len
 }
 </code></pre>
 

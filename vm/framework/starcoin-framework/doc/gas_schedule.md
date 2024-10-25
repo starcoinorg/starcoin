@@ -526,7 +526,7 @@ Only used in reconfigurations to apply the pending <code><a href="gas_schedule.m
 
 <pre><code><b>pragma</b> verify_duration_estimate = 600;
 <b>requires</b> <b>exists</b>&lt;<a href="stake.md#0x1_stake_ValidatorFees">stake::ValidatorFees</a>&gt;(@starcoin_framework);
-<b>requires</b> <b>exists</b>&lt;CoinInfo&lt;StarcoinCoin&gt;&gt;(@starcoin_framework);
+<b>requires</b> <b>exists</b>&lt;CoinInfo&lt;STC&gt;&gt;(@starcoin_framework);
 <b>requires</b> <a href="chain_status.md#0x1_chain_status_is_genesis">chain_status::is_genesis</a>();
 <b>include</b> <a href="transaction_fee.md#0x1_transaction_fee_RequiresCollectedFeesPerValueLeqBlockStarcoinSupply">transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply</a>;
 <b>include</b> <a href="staking_config.md#0x1_staking_config_StakingRewardsConfigRequirement">staking_config::StakingRewardsConfigRequirement</a>;
@@ -622,7 +622,7 @@ Only used in reconfigurations to apply the pending <code><a href="gas_schedule.m
 
 <pre><code><b>pragma</b> verify_duration_estimate = 600;
 <b>requires</b> <b>exists</b>&lt;<a href="stake.md#0x1_stake_ValidatorFees">stake::ValidatorFees</a>&gt;(@starcoin_framework);
-<b>requires</b> <b>exists</b>&lt;CoinInfo&lt;StarcoinCoin&gt;&gt;(@starcoin_framework);
+<b>requires</b> <b>exists</b>&lt;CoinInfo&lt;STC&gt;&gt;(@starcoin_framework);
 <b>include</b> <a href="system_addresses.md#0x1_system_addresses_AbortsIfNotStarcoinFramework">system_addresses::AbortsIfNotStarcoinFramework</a>{ <a href="account.md#0x1_account">account</a>: starcoin_framework };
 <b>include</b> <a href="transaction_fee.md#0x1_transaction_fee_RequiresCollectedFeesPerValueLeqBlockStarcoinSupply">transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply</a>;
 <b>include</b> <a href="staking_config.md#0x1_staking_config_StakingRewardsConfigRequirement">staking_config::StakingRewardsConfigRequirement</a>;

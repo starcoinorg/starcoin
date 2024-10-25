@@ -40,7 +40,6 @@
 <b>use</b> <a href="chain_id.md#0x1_chain_id">0x1::chain_id</a>;
 <b>use</b> <a href="chain_status.md#0x1_chain_status">0x1::chain_status</a>;
 <b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
-<b>use</b> <a href="consensus_config.md#0x1_consensus_config">0x1::consensus_config</a>;
 <b>use</b> <a href="create_signer.md#0x1_create_signer">0x1::create_signer</a>;
 <b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="execution_config.md#0x1_execution_config">0x1::execution_config</a>;
@@ -289,7 +288,7 @@
 Genesis step 1: Initialize starcoin framework account and core modules on chain.
 
 
-<pre><code><b>fun</b> <a href="genesis.md#0x1_genesis_initialize">initialize</a>(<a href="gas_schedule.md#0x1_gas_schedule">gas_schedule</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="chain_id.md#0x1_chain_id">chain_id</a>: u8, initial_version: u64, <a href="consensus_config.md#0x1_consensus_config">consensus_config</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="execution_config.md#0x1_execution_config">execution_config</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, epoch_interval_microsecs: u64, minimum_stake: u64, maximum_stake: u64, recurring_lockup_duration_secs: u64, allow_validator_set_change: bool, rewards_rate: u64, rewards_rate_denominator: u64, voting_power_increase_limit: u64)
+<pre><code><b>fun</b> <a href="genesis.md#0x1_genesis_initialize">initialize</a>(<a href="gas_schedule.md#0x1_gas_schedule">gas_schedule</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="chain_id.md#0x1_chain_id">chain_id</a>: u8, initial_version: u64, _consensus_config: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="execution_config.md#0x1_execution_config">execution_config</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, epoch_interval_microsecs: u64, minimum_stake: u64, maximum_stake: u64, recurring_lockup_duration_secs: u64, allow_validator_set_change: bool, rewards_rate: u64, rewards_rate_denominator: u64, voting_power_increase_limit: u64)
 </code></pre>
 
 
@@ -302,7 +301,7 @@ Genesis step 1: Initialize starcoin framework account and core modules on chain.
     <a href="gas_schedule.md#0x1_gas_schedule">gas_schedule</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     <a href="chain_id.md#0x1_chain_id">chain_id</a>: u8,
     initial_version: u64,
-    <a href="consensus_config.md#0x1_consensus_config">consensus_config</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    _consensus_config: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     <a href="execution_config.md#0x1_execution_config">execution_config</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     epoch_interval_microsecs: u64,
     minimum_stake: u64,
@@ -339,7 +338,7 @@ Genesis step 1: Initialize starcoin framework account and core modules on chain.
         <a href="starcoin_governance.md#0x1_starcoin_governance_store_signer_cap">starcoin_governance::store_signer_cap</a>(&starcoin_framework_account, <b>address</b>, framework_signer_cap);
     };
 
-    <a href="consensus_config.md#0x1_consensus_config_initialize">consensus_config::initialize</a>(&starcoin_framework_account, <a href="consensus_config.md#0x1_consensus_config">consensus_config</a>);
+    // <a href="consensus_config.md#0x1_consensus_config_initialize">consensus_config::initialize</a>(&starcoin_framework_account, <a href="consensus_config.md#0x1_consensus_config">consensus_config</a>);
     <a href="execution_config.md#0x1_execution_config_set">execution_config::set</a>(&starcoin_framework_account, <a href="execution_config.md#0x1_execution_config">execution_config</a>);
     <a href="version.md#0x1_version_initialize">version::initialize</a>(&starcoin_framework_account, initial_version);
     <a href="stake.md#0x1_stake_initialize">stake::initialize</a>(&starcoin_framework_account);
@@ -392,7 +391,7 @@ Genesis step 2: Initialize Starcoin coin.
     <b>let</b> (burn_cap, mint_cap) = <a href="starcoin_coin.md#0x1_starcoin_coin_initialize">starcoin_coin::initialize</a>(starcoin_framework);
 
     <a href="coin.md#0x1_coin_create_coin_conversion_map">coin::create_coin_conversion_map</a>(starcoin_framework);
-    <a href="coin.md#0x1_coin_create_pairing">coin::create_pairing</a>&lt;StarcoinCoin&gt;(starcoin_framework);
+    <a href="coin.md#0x1_coin_create_pairing">coin::create_pairing</a>&lt;STC&gt;(starcoin_framework);
 
     // Give <a href="stake.md#0x1_stake">stake</a> <b>module</b> MintCapability&lt;StarcoinCoin&gt; so it can mint rewards.
     <a href="stake.md#0x1_stake_store_starcoin_coin_mint_cap">stake::store_starcoin_coin_mint_cap</a>(starcoin_framework, mint_cap);
@@ -430,7 +429,7 @@ Only called for testnets and e2e tests.
     <b>let</b> (burn_cap, mint_cap) = <a href="starcoin_coin.md#0x1_starcoin_coin_initialize">starcoin_coin::initialize</a>(starcoin_framework);
 
     <a href="coin.md#0x1_coin_create_coin_conversion_map">coin::create_coin_conversion_map</a>(starcoin_framework);
-    <a href="coin.md#0x1_coin_create_pairing">coin::create_pairing</a>&lt;StarcoinCoin&gt;(starcoin_framework);
+    <a href="coin.md#0x1_coin_create_pairing">coin::create_pairing</a>&lt;STC&gt;(starcoin_framework);
 
     // Give <a href="stake.md#0x1_stake">stake</a> <b>module</b> MintCapability&lt;StarcoinCoin&gt; so it can mint rewards.
     <a href="stake.md#0x1_stake_store_starcoin_coin_mint_cap">stake::store_starcoin_coin_mint_cap</a>(starcoin_framework, mint_cap);
@@ -510,7 +509,7 @@ If it exists, it just returns the signer.
         <a href="create_signer.md#0x1_create_signer">create_signer</a>(account_address)
     } <b>else</b> {
         <b>let</b> <a href="account.md#0x1_account">account</a> = <a href="account.md#0x1_account_create_account">account::create_account</a>(account_address);
-        <a href="coin.md#0x1_coin_register">coin::register</a>&lt;StarcoinCoin&gt;(&<a href="account.md#0x1_account">account</a>);
+        <a href="coin.md#0x1_coin_register">coin::register</a>&lt;STC&gt;(&<a href="account.md#0x1_account">account</a>);
         <a href="starcoin_coin.md#0x1_starcoin_coin_mint">starcoin_coin::mint</a>(starcoin_framework, account_address, balance);
         <a href="account.md#0x1_account">account</a>
     }
@@ -559,8 +558,8 @@ If it exists, it just returns the signer.
             <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> unique_accounts, *<a href="account.md#0x1_account">account</a>);
 
             <b>let</b> employee = <a href="create_signer.md#0x1_create_signer">create_signer</a>(*<a href="account.md#0x1_account">account</a>);
-            <b>let</b> total = <a href="coin.md#0x1_coin_balance">coin::balance</a>&lt;StarcoinCoin&gt;(*<a href="account.md#0x1_account">account</a>);
-            <b>let</b> coins = <a href="coin.md#0x1_coin_withdraw">coin::withdraw</a>&lt;StarcoinCoin&gt;(&employee, total);
+            <b>let</b> total = <a href="coin.md#0x1_coin_balance">coin::balance</a>&lt;STC&gt;(*<a href="account.md#0x1_account">account</a>);
+            <b>let</b> coins = <a href="coin.md#0x1_coin_withdraw">coin::withdraw</a>&lt;STC&gt;(&employee, total);
             <a href="../../starcoin-stdlib/doc/simple_map.md#0x1_simple_map_add">simple_map::add</a>(&<b>mut</b> buy_ins, *<a href="account.md#0x1_account">account</a>, coins);
 
             j = j + 1;
@@ -977,7 +976,7 @@ The last step of genesis.
 ### Function `initialize`
 
 
-<pre><code><b>fun</b> <a href="genesis.md#0x1_genesis_initialize">initialize</a>(<a href="gas_schedule.md#0x1_gas_schedule">gas_schedule</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="chain_id.md#0x1_chain_id">chain_id</a>: u8, initial_version: u64, <a href="consensus_config.md#0x1_consensus_config">consensus_config</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="execution_config.md#0x1_execution_config">execution_config</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, epoch_interval_microsecs: u64, minimum_stake: u64, maximum_stake: u64, recurring_lockup_duration_secs: u64, allow_validator_set_change: bool, rewards_rate: u64, rewards_rate_denominator: u64, voting_power_increase_limit: u64)
+<pre><code><b>fun</b> <a href="genesis.md#0x1_genesis_initialize">initialize</a>(<a href="gas_schedule.md#0x1_gas_schedule">gas_schedule</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="chain_id.md#0x1_chain_id">chain_id</a>: u8, initial_version: u64, _consensus_config: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="execution_config.md#0x1_execution_config">execution_config</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, epoch_interval_microsecs: u64, minimum_stake: u64, maximum_stake: u64, recurring_lockup_duration_secs: u64, allow_validator_set_change: bool, rewards_rate: u64, rewards_rate_denominator: u64, voting_power_increase_limit: u64)
 </code></pre>
 
 
@@ -1140,7 +1139,7 @@ The last step of genesis.
     <b>requires</b> len(<a href="execution_config.md#0x1_execution_config">execution_config</a>) &gt; 0;
     <b>requires</b> <b>exists</b>&lt;<a href="staking_config.md#0x1_staking_config_StakingRewardsConfig">staking_config::StakingRewardsConfig</a>&gt;(@starcoin_framework);
     <b>requires</b> <b>exists</b>&lt;<a href="stake.md#0x1_stake_ValidatorFees">stake::ValidatorFees</a>&gt;(@starcoin_framework);
-    <b>requires</b> <b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinInfo">coin::CoinInfo</a>&lt;StarcoinCoin&gt;&gt;(@starcoin_framework);
+    <b>requires</b> <b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinInfo">coin::CoinInfo</a>&lt;STC&gt;&gt;(@starcoin_framework);
     <b>include</b> <a href="genesis.md#0x1_genesis_CompareTimeRequires">CompareTimeRequires</a>;
     <b>include</b> <a href="transaction_fee.md#0x1_transaction_fee_RequiresCollectedFeesPerValueLeqBlockStarcoinSupply">transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply</a>;
 }

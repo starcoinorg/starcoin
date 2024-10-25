@@ -299,10 +299,10 @@ This would create the recipient account first, which also registers it to receiv
     } <b>else</b> {
         // Resource accounts can be created without registering them <b>to</b> receive APT.
         // This conveniently does the registration <b>if</b> necessary.
-        <b>if</b> (!<a href="coin.md#0x1_coin_is_account_registered">coin::is_account_registered</a>&lt;StarcoinCoin&gt;(<b>to</b>)) {
-            <a href="coin.md#0x1_coin_register">coin::register</a>&lt;StarcoinCoin&gt;(&<a href="create_signer.md#0x1_create_signer">create_signer</a>(<b>to</b>));
+        <b>if</b> (!<a href="coin.md#0x1_coin_is_account_registered">coin::is_account_registered</a>&lt;STC&gt;(<b>to</b>)) {
+            <a href="coin.md#0x1_coin_register">coin::register</a>&lt;STC&gt;(&<a href="create_signer.md#0x1_create_signer">create_signer</a>(<b>to</b>));
         };
-        <a href="coin.md#0x1_coin_transfer">coin::transfer</a>&lt;StarcoinCoin&gt;(source, <b>to</b>, amount)
+        <a href="coin.md#0x1_coin_transfer">coin::transfer</a>&lt;STC&gt;(source, <b>to</b>, amount)
     }
 }
 </code></pre>
@@ -393,8 +393,8 @@ This would create the recipient account first and register it to receive the Coi
     <b>if</b> (!<a href="account.md#0x1_account_exists_at">account::exists_at</a>(<b>to</b>)) {
         <a href="starcoin_account.md#0x1_starcoin_account_create_account">create_account</a>(<b>to</b>);
         <b>spec</b> {
-            <b>assert</b> <a href="coin.md#0x1_coin_spec_is_account_registered">coin::spec_is_account_registered</a>&lt;StarcoinCoin&gt;(<b>to</b>);
-            <b>assume</b> starcoin_std::type_info::type_of&lt;CoinType&gt;() == starcoin_std::type_info::type_of&lt;StarcoinCoin&gt;() ==&gt;
+            <b>assert</b> <a href="coin.md#0x1_coin_spec_is_account_registered">coin::spec_is_account_registered</a>&lt;STC&gt;(<b>to</b>);
+            <b>assume</b> starcoin_std::type_info::type_of&lt;CoinType&gt;() == starcoin_std::type_info::type_of&lt;STC&gt;() ==&gt;
                 <a href="coin.md#0x1_coin_spec_is_account_registered">coin::spec_is_account_registered</a>&lt;CoinType&gt;(<b>to</b>);
         };
     };
@@ -454,7 +454,7 @@ This would create the recipient account first and register it to receive the Coi
 
 <pre><code><b>public</b> <b>fun</b> <a href="starcoin_account.md#0x1_starcoin_account_assert_account_is_registered_for_apt">assert_account_is_registered_for_apt</a>(addr: <b>address</b>) {
     <a href="starcoin_account.md#0x1_starcoin_account_assert_account_exists">assert_account_exists</a>(addr);
-    <b>assert</b>!(<a href="coin.md#0x1_coin_is_account_registered">coin::is_account_registered</a>&lt;StarcoinCoin&gt;(addr), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="starcoin_account.md#0x1_starcoin_account_EACCOUNT_NOT_REGISTERED_FOR_APT">EACCOUNT_NOT_REGISTERED_FOR_APT</a>));
+    <b>assert</b>!(<a href="coin.md#0x1_coin_is_account_registered">coin::is_account_registered</a>&lt;STC&gt;(addr), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="starcoin_account.md#0x1_starcoin_account_EACCOUNT_NOT_REGISTERED_FOR_APT">EACCOUNT_NOT_REGISTERED_FOR_APT</a>));
 }
 </code></pre>
 
@@ -564,7 +564,7 @@ By default, this returns true if an account has not explicitly set whether the c
     <b>if</b> (<a href="../../move-stdlib/doc/features.md#0x1_features_new_accounts_default_to_fa_apt_store_enabled">features::new_accounts_default_to_fa_apt_store_enabled</a>()) {
         <a href="starcoin_account.md#0x1_starcoin_account_ensure_primary_fungible_store_exists">ensure_primary_fungible_store_exists</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(account_signer));
     } <b>else</b> {
-        <a href="coin.md#0x1_coin_register">coin::register</a>&lt;StarcoinCoin&gt;(account_signer);
+        <a href="coin.md#0x1_coin_register">coin::register</a>&lt;STC&gt;(account_signer);
     }
 }
 </code></pre>
@@ -877,7 +877,7 @@ Limit the address of auth_key is not @vm_reserved / @starcoin_framework / @starc
 
 <pre><code><b>pragma</b> verify = <b>false</b>;
 <b>let</b> account_addr_source = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(source);
-<b>let</b> coin_store_source = <b>global</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;StarcoinCoin&gt;&gt;(account_addr_source);
+<b>let</b> coin_store_source = <b>global</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;STC&gt;&gt;(account_addr_source);
 <b>let</b> balance_source = coin_store_source.<a href="coin.md#0x1_coin">coin</a>.value;
 <b>requires</b> <b>forall</b> i in 0..len(recipients):
     recipients[i] != account_addr_source;
@@ -892,17 +892,17 @@ Limit the address of auth_key is not @vm_reserved / @starcoin_framework / @starc
         (!<a href="account.md#0x1_account_exists_at">account::exists_at</a>(recipients[i]) ==&gt; !<a href="starcoin_account.md#0x1_starcoin_account_length_judgment">length_judgment</a>(recipients[i])) &&
             (!<a href="account.md#0x1_account_exists_at">account::exists_at</a>(recipients[i]) ==&gt; (recipients[i] != @vm_reserved && recipients[i] != @starcoin_framework && recipients[i] != @starcoin_token));
 <b>aborts_if</b> <b>exists</b> i in 0..len(recipients):
-    !<b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;StarcoinCoin&gt;&gt;(account_addr_source);
+    !<b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;STC&gt;&gt;(account_addr_source);
 <b>aborts_if</b> <b>exists</b> i in 0..len(recipients):
     coin_store_source.frozen;
 <b>aborts_if</b> <b>exists</b> i in 0..len(recipients):
-    <b>global</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;StarcoinCoin&gt;&gt;(account_addr_source).<a href="coin.md#0x1_coin">coin</a>.value &lt; amounts[i];
+    <b>global</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;STC&gt;&gt;(account_addr_source).<a href="coin.md#0x1_coin">coin</a>.value &lt; amounts[i];
 <b>aborts_if</b> <b>exists</b> i in 0..len(recipients):
-    <b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;StarcoinCoin&gt;&gt;(recipients[i]) && <b>global</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;StarcoinCoin&gt;&gt;(recipients[i]).frozen;
+    <b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;STC&gt;&gt;(recipients[i]) && <b>global</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;STC&gt;&gt;(recipients[i]).frozen;
 <b>aborts_if</b> <b>exists</b> i in 0..len(recipients):
-    <a href="account.md#0x1_account_exists_at">account::exists_at</a>(recipients[i]) && !<b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;StarcoinCoin&gt;&gt;(recipients[i]) && <b>global</b>&lt;<a href="account.md#0x1_account_Account">account::Account</a>&gt;(recipients[i]).guid_creation_num + 2 &gt;= <a href="account.md#0x1_account_MAX_GUID_CREATION_NUM">account::MAX_GUID_CREATION_NUM</a>;
+    <a href="account.md#0x1_account_exists_at">account::exists_at</a>(recipients[i]) && !<b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;STC&gt;&gt;(recipients[i]) && <b>global</b>&lt;<a href="account.md#0x1_account_Account">account::Account</a>&gt;(recipients[i]).guid_creation_num + 2 &gt;= <a href="account.md#0x1_account_MAX_GUID_CREATION_NUM">account::MAX_GUID_CREATION_NUM</a>;
 <b>aborts_if</b> <b>exists</b> i in 0..len(recipients):
-    <a href="account.md#0x1_account_exists_at">account::exists_at</a>(recipients[i]) && !<b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;StarcoinCoin&gt;&gt;(recipients[i]) && <b>global</b>&lt;<a href="account.md#0x1_account_Account">account::Account</a>&gt;(recipients[i]).guid_creation_num + 2 &gt; MAX_U64;
+    <a href="account.md#0x1_account_exists_at">account::exists_at</a>(recipients[i]) && !<b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;STC&gt;&gt;(recipients[i]) && <b>global</b>&lt;<a href="account.md#0x1_account_Account">account::Account</a>&gt;(recipients[i]).guid_creation_num + 2 &gt; MAX_U64;
 </code></pre>
 
 
@@ -922,13 +922,13 @@ Limit the address of auth_key is not @vm_reserved / @starcoin_framework / @starc
 <b>let</b> account_addr_source = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(source);
 <b>requires</b> account_addr_source != <b>to</b>;
 <b>include</b> <a href="starcoin_account.md#0x1_starcoin_account_CreateAccountTransferAbortsIf">CreateAccountTransferAbortsIf</a>;
-<b>include</b> <a href="starcoin_account.md#0x1_starcoin_account_GuidAbortsIf">GuidAbortsIf</a>&lt;StarcoinCoin&gt;;
-<b>include</b> <a href="starcoin_account.md#0x1_starcoin_account_WithdrawAbortsIf">WithdrawAbortsIf</a>&lt;StarcoinCoin&gt;{from: source};
-<b>include</b> <a href="starcoin_account.md#0x1_starcoin_account_TransferEnsures">TransferEnsures</a>&lt;StarcoinCoin&gt;;
-<b>aborts_if</b> <b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;StarcoinCoin&gt;&gt;(<b>to</b>) && <b>global</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;StarcoinCoin&gt;&gt;(<b>to</b>).frozen;
+<b>include</b> <a href="starcoin_account.md#0x1_starcoin_account_GuidAbortsIf">GuidAbortsIf</a>&lt;STC&gt;;
+<b>include</b> <a href="starcoin_account.md#0x1_starcoin_account_WithdrawAbortsIf">WithdrawAbortsIf</a>&lt;STC&gt;{from: source};
+<b>include</b> <a href="starcoin_account.md#0x1_starcoin_account_TransferEnsures">TransferEnsures</a>&lt;STC&gt;;
+<b>aborts_if</b> <b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;STC&gt;&gt;(<b>to</b>) && <b>global</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;STC&gt;&gt;(<b>to</b>).frozen;
 // This enforces <a id="high-level-req-5" href="#high-level-req">high-level requirement 5</a>:
 <b>ensures</b> <b>exists</b>&lt;starcoin_framework::account::Account&gt;(<b>to</b>);
-<b>ensures</b> <b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;StarcoinCoin&gt;&gt;(<b>to</b>);
+<b>ensures</b> <b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;STC&gt;&gt;(<b>to</b>);
 </code></pre>
 
 
@@ -1063,7 +1063,7 @@ Check if the StarcoinCoin under the address existed.
 
 <pre><code><b>pragma</b> aborts_if_is_partial;
 <b>aborts_if</b> !<a href="account.md#0x1_account_exists_at">account::exists_at</a>(addr);
-<b>aborts_if</b> !<a href="coin.md#0x1_coin_spec_is_account_registered">coin::spec_is_account_registered</a>&lt;StarcoinCoin&gt;(addr);
+<b>aborts_if</b> !<a href="coin.md#0x1_coin_spec_is_account_registered">coin::spec_is_account_registered</a>&lt;STC&gt;(addr);
 </code></pre>
 
 
@@ -1223,7 +1223,7 @@ Check if the StarcoinCoin under the address existed.
     <b>to</b>: <b>address</b>;
     <b>aborts_if</b> !<a href="coin.md#0x1_coin_spec_is_account_registered">coin::spec_is_account_registered</a>&lt;CoinType&gt;(<b>to</b>) && !<a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_spec_is_struct">type_info::spec_is_struct</a>&lt;CoinType&gt;();
     <b>aborts_if</b> <b>exists</b>&lt;starcoin_framework::account::Account&gt;(<b>to</b>);
-    <b>aborts_if</b> <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;CoinType&gt;() != <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;StarcoinCoin&gt;();
+    <b>aborts_if</b> <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;CoinType&gt;() != <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;STC&gt;();
 }
 </code></pre>
 

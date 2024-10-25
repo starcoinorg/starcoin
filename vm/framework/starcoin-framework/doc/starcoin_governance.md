@@ -101,14 +101,12 @@ on a proposal multiple times as long as the total voting power of these votes do
 
 <pre><code><b>use</b> <a href="account.md#0x1_account">0x1::account</a>;
 <b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
-<b>use</b> <a href="consensus_config.md#0x1_consensus_config">0x1::consensus_config</a>;
 <b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="event.md#0x1_event">0x1::event</a>;
 <b>use</b> <a href="../../move-stdlib/doc/features.md#0x1_features">0x1::features</a>;
 <b>use</b> <a href="governance_proposal.md#0x1_governance_proposal">0x1::governance_proposal</a>;
 <b>use</b> <a href="../../starcoin-stdlib/doc/math64.md#0x1_math64">0x1::math64</a>;
 <b>use</b> <a href="../../move-stdlib/doc/option.md#0x1_option">0x1::option</a>;
-<b>use</b> <a href="randomness_config.md#0x1_randomness_config">0x1::randomness_config</a>;
 <b>use</b> <a href="reconfiguration_with_dkg.md#0x1_reconfiguration_with_dkg">0x1::reconfiguration_with_dkg</a>;
 <b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
 <b>use</b> <a href="../../starcoin-stdlib/doc/simple_map.md#0x1_simple_map">0x1::simple_map</a>;
@@ -1287,10 +1285,10 @@ Return proposal_id when a proposal is successfully created.
     <b>let</b> proposal_metadata = <a href="starcoin_governance.md#0x1_starcoin_governance_create_proposal_metadata">create_proposal_metadata</a>(metadata_location, metadata_hash);
 
     // We want <b>to</b> allow early resolution of proposals <b>if</b> more than 50% of the total supply of the network coins
-    // <b>has</b> voted. This doesn't take into subsequent inflation/deflation (rewards are issued every epoch and gas fees
+    // <b>has</b> voted. This doesn't take into subsequent inflation/deflation (rewards are issued every <a href="epoch.md#0x1_epoch">epoch</a> and gas fees
     // are burnt after every transaction), but inflation/delation is very unlikely <b>to</b> have a major impact on total
     // supply during the <a href="voting.md#0x1_voting">voting</a> period.
-    <b>let</b> total_voting_token_supply = <a href="coin.md#0x1_coin_supply">coin::supply</a>&lt;StarcoinCoin&gt;();
+    <b>let</b> total_voting_token_supply = <a href="coin.md#0x1_coin_supply">coin::supply</a>&lt;STC&gt;();
     <b>let</b> early_resolution_vote_threshold = <a href="../../move-stdlib/doc/option.md#0x1_option_none">option::none</a>&lt;u128&gt;();
     <b>if</b> (<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&total_voting_token_supply)) {
         <b>let</b> total_supply = *<a href="../../move-stdlib/doc/option.md#0x1_option_borrow">option::borrow</a>(&total_voting_token_supply);
@@ -1768,11 +1766,11 @@ since such updates are applied whenever we enter an new epoch.
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="starcoin_governance.md#0x1_starcoin_governance_reconfigure">reconfigure</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(starcoin_framework);
-    <b>if</b> (<a href="consensus_config.md#0x1_consensus_config_validator_txn_enabled">consensus_config::validator_txn_enabled</a>() && <a href="randomness_config.md#0x1_randomness_config_enabled">randomness_config::enabled</a>()) {
-        <a href="reconfiguration_with_dkg.md#0x1_reconfiguration_with_dkg_try_start">reconfiguration_with_dkg::try_start</a>();
-    } <b>else</b> {
-        <a href="reconfiguration_with_dkg.md#0x1_reconfiguration_with_dkg_finish">reconfiguration_with_dkg::finish</a>(starcoin_framework);
-    }
+    // <b>if</b> (consensus_config::validator_txn_enabled() && <a href="randomness_config.md#0x1_randomness_config_enabled">randomness_config::enabled</a>()) {
+    //     <a href="reconfiguration_with_dkg.md#0x1_reconfiguration_with_dkg_try_start">reconfiguration_with_dkg::try_start</a>();
+    // } <b>else</b> {
+    //     <a href="reconfiguration_with_dkg.md#0x1_reconfiguration_with_dkg_finish">reconfiguration_with_dkg::finish</a>(starcoin_framework);
+    // }
 }
 </code></pre>
 
@@ -2932,7 +2930,7 @@ Address @starcoin_framework must exist ApprovedExecutionHashes and GovernancePro
 <b>include</b> <a href="transaction_fee.md#0x1_transaction_fee_RequiresCollectedFeesPerValueLeqBlockStarcoinSupply">transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply</a>;
 <b>requires</b> <a href="chain_status.md#0x1_chain_status_is_operating">chain_status::is_operating</a>();
 <b>requires</b> <b>exists</b>&lt;<a href="stake.md#0x1_stake_ValidatorFees">stake::ValidatorFees</a>&gt;(@starcoin_framework);
-<b>requires</b> <b>exists</b>&lt;CoinInfo&lt;StarcoinCoin&gt;&gt;(@starcoin_framework);
+<b>requires</b> <b>exists</b>&lt;CoinInfo&lt;STC&gt;&gt;(@starcoin_framework);
 <b>requires</b> <b>exists</b>&lt;<a href="staking_config.md#0x1_staking_config_StakingRewardsConfig">staking_config::StakingRewardsConfig</a>&gt;(@starcoin_framework);
 <b>include</b> <a href="staking_config.md#0x1_staking_config_StakingRewardsConfigRequirement">staking_config::StakingRewardsConfigRequirement</a>;
 </code></pre>
@@ -3009,7 +3007,7 @@ Address @starcoin_framework must exist GovernanceConfig and GovernanceEvents.
 <b>include</b> <a href="transaction_fee.md#0x1_transaction_fee_RequiresCollectedFeesPerValueLeqBlockStarcoinSupply">transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply</a>;
 <b>requires</b> <a href="chain_status.md#0x1_chain_status_is_operating">chain_status::is_operating</a>();
 <b>requires</b> <b>exists</b>&lt;<a href="stake.md#0x1_stake_ValidatorFees">stake::ValidatorFees</a>&gt;(@starcoin_framework);
-<b>requires</b> <b>exists</b>&lt;CoinInfo&lt;StarcoinCoin&gt;&gt;(@starcoin_framework);
+<b>requires</b> <b>exists</b>&lt;CoinInfo&lt;STC&gt;&gt;(@starcoin_framework);
 <b>requires</b> <b>exists</b>&lt;<a href="staking_config.md#0x1_staking_config_StakingRewardsConfig">staking_config::StakingRewardsConfig</a>&gt;(@starcoin_framework);
 <b>include</b> <a href="staking_config.md#0x1_staking_config_StakingRewardsConfigRequirement">staking_config::StakingRewardsConfigRequirement</a>;
 </code></pre>

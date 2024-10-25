@@ -8,7 +8,7 @@ module starcoin_framework::genesis {
     use starcoin_framework::account;
     use starcoin_framework::aggregator_factory;
     use starcoin_framework::starcoin_account;
-    use starcoin_framework::starcoin_coin::{Self, StarcoinCoin};
+    use starcoin_framework::starcoin_coin::{Self, STC};
     use starcoin_framework::starcoin_governance;
     use starcoin_framework::block;
     use starcoin_framework::chain_id;
@@ -68,7 +68,7 @@ module starcoin_framework::genesis {
         gas_schedule: vector<u8>,
         chain_id: u8,
         initial_version: u64,
-        consensus_config: vector<u8>,
+        _consensus_config: vector<u8>,
         execution_config: vector<u8>,
         epoch_interval_microsecs: u64,
         minimum_stake: u64,
@@ -105,7 +105,7 @@ module starcoin_framework::genesis {
             starcoin_governance::store_signer_cap(&starcoin_framework_account, address, framework_signer_cap);
         };
 
-        consensus_config::initialize(&starcoin_framework_account, consensus_config);
+        // consensus_config::initialize(&starcoin_framework_account, consensus_config);
         execution_config::set(&starcoin_framework_account, execution_config);
         version::initialize(&starcoin_framework_account, initial_version);
         stake::initialize(&starcoin_framework_account);
@@ -138,7 +138,7 @@ module starcoin_framework::genesis {
         let (burn_cap, mint_cap) = starcoin_coin::initialize(starcoin_framework);
 
         coin::create_coin_conversion_map(starcoin_framework);
-        coin::create_pairing<StarcoinCoin>(starcoin_framework);
+        coin::create_pairing<STC>(starcoin_framework);
 
         // Give stake module MintCapability<StarcoinCoin> so it can mint rewards.
         stake::store_starcoin_coin_mint_cap(starcoin_framework, mint_cap);
@@ -156,7 +156,7 @@ module starcoin_framework::genesis {
         let (burn_cap, mint_cap) = starcoin_coin::initialize(starcoin_framework);
 
         coin::create_coin_conversion_map(starcoin_framework);
-        coin::create_pairing<StarcoinCoin>(starcoin_framework);
+        coin::create_pairing<STC>(starcoin_framework);
 
         // Give stake module MintCapability<StarcoinCoin> so it can mint rewards.
         stake::store_starcoin_coin_mint_cap(starcoin_framework, mint_cap);
@@ -196,7 +196,7 @@ module starcoin_framework::genesis {
             create_signer(account_address)
         } else {
             let account = account::create_account(account_address);
-            coin::register<StarcoinCoin>(&account);
+            coin::register<STC>(&account);
             starcoin_coin::mint(starcoin_framework, account_address, balance);
             account
         }
@@ -225,8 +225,8 @@ module starcoin_framework::genesis {
                 vector::push_back(&mut unique_accounts, *account);
 
                 let employee = create_signer(*account);
-                let total = coin::balance<StarcoinCoin>(*account);
-                let coins = coin::withdraw<StarcoinCoin>(&employee, total);
+                let total = coin::balance<STC>(*account);
+                let coins = coin::withdraw<STC>(&employee, total);
                 simple_map::add(&mut buy_ins, *account, coins);
 
                 j = j + 1;
@@ -489,7 +489,7 @@ module starcoin_framework::genesis {
         let test_signer_before = create_account(starcoin_framework, addr, 15);
         let test_signer_after = create_account(starcoin_framework, addr, 500);
         assert!(test_signer_before == test_signer_after, 0);
-        assert!(coin::balance<StarcoinCoin>(addr) == 15, 1);
+        assert!(coin::balance<STC>(addr) == 15, 1);
     }
 
     #[test(starcoin_framework = @0x1)]
@@ -513,11 +513,11 @@ module starcoin_framework::genesis {
         ];
 
         create_accounts(starcoin_framework, accounts);
-        assert!(coin::balance<StarcoinCoin>(addr0) == 12345, 0);
-        assert!(coin::balance<StarcoinCoin>(addr1) == 67890, 1);
+        assert!(coin::balance<STC>(addr0) == 12345, 0);
+        assert!(coin::balance<STC>(addr1) == 67890, 1);
 
         create_account(starcoin_framework, addr0, 23456);
-        assert!(coin::balance<StarcoinCoin>(addr0) == 12345, 2);
+        assert!(coin::balance<STC>(addr0) == 12345, 2);
     }
 
     #[test(starcoin_framework = @0x1, root = @0xabcd)]

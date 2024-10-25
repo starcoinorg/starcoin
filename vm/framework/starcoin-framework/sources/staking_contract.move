@@ -36,7 +36,7 @@ module starcoin_framework::staking_contract {
 
     use starcoin_framework::account::{Self, SignerCapability};
     use starcoin_framework::starcoin_account;
-    use starcoin_framework::starcoin_coin::StarcoinCoin;
+    use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::coin::{Self, Coin};
     use starcoin_framework::event::{EventHandle, emit, emit_event};
     use starcoin_framework::stake::{Self, OwnerCapability};
@@ -355,7 +355,7 @@ module starcoin_framework::staking_contract {
         // Optional seed used when creating the staking contract account.
         contract_creation_seed: vector<u8>,
     ) acquires Store {
-        let staked_coins = coin::withdraw<StarcoinCoin>(staker, amount);
+        let staked_coins = coin::withdraw<STC>(staker, amount);
         create_staking_contract_with_coins(
             staker, operator, voter, staked_coins, commission_percentage, contract_creation_seed);
     }
@@ -365,7 +365,7 @@ module starcoin_framework::staking_contract {
         staker: &signer,
         operator: address,
         voter: address,
-        coins: Coin<StarcoinCoin>,
+        coins: Coin<STC>,
         commission_percentage: u64,
         // Optional seed used when creating the staking contract account.
         contract_creation_seed: vector<u8>,
@@ -435,7 +435,7 @@ module starcoin_framework::staking_contract {
         let staking_contract = simple_map::borrow_mut(&mut store.staking_contracts, &operator);
 
         // Add the stake to the stake pool.
-        let staked_coins = coin::withdraw<StarcoinCoin>(staker, amount);
+        let staked_coins = coin::withdraw<STC>(staker, amount);
         stake::add_stake_with_cap(&staking_contract.owner_cap, staked_coins);
 
         staking_contract.principal = staking_contract.principal + amount;
@@ -1053,7 +1053,7 @@ module starcoin_framework::staking_contract {
         new_balance = with_rewards(new_balance);
         stake::assert_stake_pool(pool_address, new_balance, expected_commission_1, 0, 0);
         distribute(staker_address, operator_address);
-        let operator_balance = coin::balance<StarcoinCoin>(operator_address);
+        let operator_balance = coin::balance<STC>(operator_address);
         let expected_operator_balance = INITIAL_BALANCE + expected_commission_1;
         assert!(operator_balance == expected_operator_balance, operator_balance);
         stake::assert_stake_pool(pool_address, new_balance, 0, 0, 0);
@@ -1079,7 +1079,7 @@ module starcoin_framework::staking_contract {
         stake::fast_forward_to_unlock(pool_address);
         expected_commission_2 = with_rewards(expected_commission_2);
         distribute(staker_address, operator_address);
-        operator_balance = coin::balance<StarcoinCoin>(operator_address);
+        operator_balance = coin::balance<STC>(operator_address);
         expected_operator_balance = expected_operator_balance + expected_commission_2;
         assert!(operator_balance == expected_operator_balance, operator_balance);
         assert_no_pending_distributions(staker_address, operator_address);
@@ -1110,9 +1110,9 @@ module starcoin_framework::staking_contract {
         // Distribute and verify balances.
         distribute(staker_address, operator_address);
         assert_no_pending_distributions(staker_address, operator_address);
-        operator_balance = coin::balance<StarcoinCoin>(operator_address);
+        operator_balance = coin::balance<STC>(operator_address);
         assert!(operator_balance == expected_operator_balance + unpaid_commission, operator_balance);
-        let staker_balance = coin::balance<StarcoinCoin>(staker_address);
+        let staker_balance = coin::balance<STC>(staker_address);
         // Staker receives the extra dust due to rounding error.
         assert!(staker_balance == withdrawn_amount + 1, staker_balance);
         assert_no_pending_distributions(staker_address, operator_address);
@@ -1292,7 +1292,7 @@ module starcoin_framework::staking_contract {
         new_balance = new_balance - commission_for_operator_2;
         request_commission(operator_2, staker_address, operator_2_address);
         assert_distribution(staker_address, operator_2_address, operator_2_address, commission_for_operator_2);
-        let operator_1_balance = coin::balance<StarcoinCoin>(operator_1_address);
+        let operator_1_balance = coin::balance<STC>(operator_1_address);
         assert!(operator_1_balance == INITIAL_BALANCE + commission_for_operator_1, operator_1_balance);
         stake::assert_stake_pool(pool_address, new_balance, 0, 0, commission_for_operator_2);
         assert!(last_recorded_principal(staker_address, operator_2_address) == new_balance, 0);
@@ -1300,7 +1300,7 @@ module starcoin_framework::staking_contract {
 
         // Operator 2's commission is distributed.
         distribute(staker_address, operator_2_address);
-        let operator_2_balance = coin::balance<StarcoinCoin>(operator_2_address);
+        let operator_2_balance = coin::balance<STC>(operator_2_address);
         new_balance = with_rewards(new_balance);
         commission_for_operator_2 = with_rewards(commission_for_operator_2);
         assert!(
@@ -1390,8 +1390,8 @@ module starcoin_framework::staking_contract {
         new_balance = with_rewards(new_balance);
         stake::assert_stake_pool(pool_address, new_balance, expected_commission_1, 0, 0);
         distribute(staker_address, operator1_address);
-        let operator_balance = coin::balance<StarcoinCoin>(operator1_address);
-        let beneficiary_balance = coin::balance<StarcoinCoin>(beneficiary_address);
+        let operator_balance = coin::balance<STC>(operator1_address);
+        let beneficiary_balance = coin::balance<STC>(beneficiary_address);
         let expected_operator_balance = INITIAL_BALANCE;
         let expected_beneficiary_balance = expected_commission_1;
         assert!(operator_balance == expected_operator_balance, operator_balance);
@@ -1418,8 +1418,8 @@ module starcoin_framework::staking_contract {
         distribute(staker_address, operator2_address);
 
         // Assert that the rewards go to operator2, and the balance of the operator1's beneficiay remains the same.
-        assert!(coin::balance<StarcoinCoin>(operator2_address) >= expected_commission, 1);
-        assert!(coin::balance<StarcoinCoin>(beneficiary_address) == old_beneficiay_balance, 1);
+        assert!(coin::balance<STC>(operator2_address) >= expected_commission, 1);
+        assert!(coin::balance<STC>(beneficiary_address) == old_beneficiay_balance, 1);
     }
 
     #[test(starcoin_framework = @0x1, staker = @0x123, operator = @0x234)]
@@ -1466,9 +1466,9 @@ module starcoin_framework::staking_contract {
         // Distribute and verify balances.
         distribute(staker_address, operator_address);
         assert_no_pending_distributions(staker_address, operator_address);
-        let operator_balance = coin::balance<StarcoinCoin>(operator_address);
+        let operator_balance = coin::balance<STC>(operator_address);
         assert!(operator_balance == initial_balance + unpaid_commission, operator_balance);
-        let staker_balance = coin::balance<StarcoinCoin>(staker_address);
+        let staker_balance = coin::balance<STC>(staker_address);
         assert!(staker_balance == withdrawn_stake, staker_balance);
     }
 
@@ -1498,10 +1498,10 @@ module starcoin_framework::staking_contract {
         distribute(staker_address, operator_address);
         assert_no_pending_distributions(staker_address, operator_address);
         // Operator's balance shouldn't change as there are no rewards.
-        let operator_balance = coin::balance<StarcoinCoin>(operator_address);
+        let operator_balance = coin::balance<STC>(operator_address);
         assert!(operator_balance == initial_balance, operator_balance);
         // Staker receives back the withdrawn amount (no rewards).
-        let staker_balance = coin::balance<StarcoinCoin>(staker_address);
+        let staker_balance = coin::balance<STC>(staker_address);
         assert!(staker_balance == withdrawn_stake, staker_balance);
     }
 

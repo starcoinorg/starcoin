@@ -14,6 +14,7 @@ It interacts with the other modules in the following ways:
 -  [Function `set_time_has_started`](#0x1_timestamp_set_time_has_started)
 -  [Function `update_global_time`](#0x1_timestamp_update_global_time)
 -  [Function `now_microseconds`](#0x1_timestamp_now_microseconds)
+-  [Function `now_milliseconds`](#0x1_timestamp_now_milliseconds)
 -  [Function `now_seconds`](#0x1_timestamp_now_seconds)
 -  [Specification](#@Specification_1)
     -  [High-level Requirements](#high-level-req)
@@ -86,6 +87,16 @@ Conversion factor between seconds and microseconds
 
 
 <pre><code><b>const</b> <a href="timestamp.md#0x1_timestamp_MICRO_CONVERSION_FACTOR">MICRO_CONVERSION_FACTOR</a>: u64 = 1000000;
+</code></pre>
+
+
+
+<a id="0x1_timestamp_MILLI_CONVERSION_FACTOR"></a>
+
+Conversion factor between seconds and microseconds
+
+
+<pre><code><b>const</b> <a href="timestamp.md#0x1_timestamp_MILLI_CONVERSION_FACTOR">MILLI_CONVERSION_FACTOR</a>: u64 = 1000;
 </code></pre>
 
 
@@ -184,6 +195,32 @@ Gets the current time in microseconds.
 
 </details>
 
+<a id="0x1_timestamp_now_milliseconds"></a>
+
+## Function `now_milliseconds`
+
+Gets the current time in milliseconds.
+
+
+<pre><code>#[view]
+<b>public</b> <b>fun</b> <a href="timestamp.md#0x1_timestamp_now_milliseconds">now_milliseconds</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x1_timestamp_now_milliseconds">now_milliseconds</a>(): u64 <b>acquires</b> <a href="timestamp.md#0x1_timestamp_CurrentTimeMicroseconds">CurrentTimeMicroseconds</a> {
+    <a href="timestamp.md#0x1_timestamp_now_microseconds">now_microseconds</a>() / <a href="timestamp.md#0x1_timestamp_MILLI_CONVERSION_FACTOR">MILLI_CONVERSION_FACTOR</a>
+}
+</code></pre>
+
+
+
+</details>
+
 <a id="0x1_timestamp_now_seconds"></a>
 
 ## Function `now_seconds`
@@ -274,28 +311,6 @@ Gets the current time in seconds.
 
 
 
-
-<a id="0x1_timestamp_spec_now_microseconds"></a>
-
-
-<pre><code><b>fun</b> <a href="timestamp.md#0x1_timestamp_spec_now_microseconds">spec_now_microseconds</a>(): u64 {
-   <b>global</b>&lt;<a href="timestamp.md#0x1_timestamp_CurrentTimeMicroseconds">CurrentTimeMicroseconds</a>&gt;(@starcoin_framework).microseconds
-}
-</code></pre>
-
-
-
-
-<a id="0x1_timestamp_spec_now_seconds"></a>
-
-
-<pre><code><b>fun</b> <a href="timestamp.md#0x1_timestamp_spec_now_seconds">spec_now_seconds</a>(): u64 {
-   <a href="timestamp.md#0x1_timestamp_spec_now_microseconds">spec_now_microseconds</a>() / <a href="timestamp.md#0x1_timestamp_MICRO_CONVERSION_FACTOR">MICRO_CONVERSION_FACTOR</a>
-}
-</code></pre>
-
-
-
 <a id="@Specification_1_update_global_time"></a>
 
 ### Function `update_global_time`
@@ -327,6 +342,39 @@ Gets the current time in seconds.
     // This enforces <a id="high-level-req-4" href="#high-level-req">high-level requirement 4</a>:
     <b>aborts_if</b> (proposer == @vm_reserved) && (<a href="timestamp.md#0x1_timestamp_spec_now_microseconds">spec_now_microseconds</a>() != <a href="timestamp.md#0x1_timestamp">timestamp</a>);
     <b>aborts_if</b> (proposer != @vm_reserved) && (<a href="timestamp.md#0x1_timestamp_spec_now_microseconds">spec_now_microseconds</a>() &gt;= <a href="timestamp.md#0x1_timestamp">timestamp</a>);
+}
+</code></pre>
+
+
+
+
+<a id="0x1_timestamp_spec_now_microseconds"></a>
+
+
+<pre><code><b>fun</b> <a href="timestamp.md#0x1_timestamp_spec_now_microseconds">spec_now_microseconds</a>(): u64 {
+   <b>global</b>&lt;<a href="timestamp.md#0x1_timestamp_CurrentTimeMicroseconds">CurrentTimeMicroseconds</a>&gt;(@starcoin_framework).microseconds
+}
+</code></pre>
+
+
+
+
+<a id="0x1_timestamp_spec_now_milliseconds"></a>
+
+
+<pre><code><b>fun</b> <a href="timestamp.md#0x1_timestamp_spec_now_milliseconds">spec_now_milliseconds</a>(): u64 {
+   <a href="timestamp.md#0x1_timestamp_spec_now_microseconds">spec_now_microseconds</a>() / <a href="timestamp.md#0x1_timestamp_MILLI_CONVERSION_FACTOR">MILLI_CONVERSION_FACTOR</a>
+}
+</code></pre>
+
+
+
+
+<a id="0x1_timestamp_spec_now_seconds"></a>
+
+
+<pre><code><b>fun</b> <a href="timestamp.md#0x1_timestamp_spec_now_seconds">spec_now_seconds</a>(): u64 {
+   <a href="timestamp.md#0x1_timestamp_spec_now_microseconds">spec_now_microseconds</a>() / <a href="timestamp.md#0x1_timestamp_MICRO_CONVERSION_FACTOR">MICRO_CONVERSION_FACTOR</a>
 }
 </code></pre>
 

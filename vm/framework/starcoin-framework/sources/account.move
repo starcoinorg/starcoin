@@ -22,6 +22,8 @@ module starcoin_framework::account {
     friend starcoin_framework::multisig_account;
     friend starcoin_framework::resource_account;
     friend starcoin_framework::transaction_validation;
+    friend starcoin_framework::stc_transaction_validation;
+    friend starcoin_framework::stc_genesis;
 
     #[event]
     struct KeyRotation has drop, store {

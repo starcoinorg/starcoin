@@ -29,9 +29,9 @@ module starcoin_framework::starcoin_governance {
     use starcoin_framework::stake;
     use starcoin_framework::staking_config;
     use starcoin_framework::system_addresses;
-    use starcoin_framework::starcoin_coin::{Self, StarcoinCoin};
-    use starcoin_framework::consensus_config;
-    use starcoin_framework::randomness_config;
+    use starcoin_framework::starcoin_coin::{Self, STC};
+    // use starcoin_framework::consensus_config;
+    // use starcoin_framework::randomness_config;
     use starcoin_framework::reconfiguration_with_dkg;
     use starcoin_framework::timestamp;
     use starcoin_framework::voting;
@@ -404,7 +404,7 @@ module starcoin_framework::starcoin_governance {
         // has voted. This doesn't take into subsequent inflation/deflation (rewards are issued every epoch and gas fees
         // are burnt after every transaction), but inflation/delation is very unlikely to have a major impact on total
         // supply during the voting period.
-        let total_voting_token_supply = coin::supply<StarcoinCoin>();
+        let total_voting_token_supply = coin::supply<STC>();
         let early_resolution_vote_threshold = option::none<u128>();
         if (option::is_some(&total_voting_token_supply)) {
             let total_supply = *option::borrow(&total_voting_token_supply);
@@ -662,11 +662,11 @@ module starcoin_framework::starcoin_governance {
     /// since such updates are applied whenever we enter an new epoch.
     public entry fun reconfigure(starcoin_framework: &signer) {
         system_addresses::assert_starcoin_framework(starcoin_framework);
-        if (consensus_config::validator_txn_enabled() && randomness_config::enabled()) {
-            reconfiguration_with_dkg::try_start();
-        } else {
-            reconfiguration_with_dkg::finish(starcoin_framework);
-        }
+        // if (consensus_config::validator_txn_enabled() && randomness_config::enabled()) {
+        //     reconfiguration_with_dkg::try_start();
+        // } else {
+        //     reconfiguration_with_dkg::finish(starcoin_framework);
+        // }
     }
 
     /// Change epoch immediately.
@@ -1147,8 +1147,8 @@ module starcoin_framework::starcoin_governance {
         initialize_partial_voting(&starcoin_framework);
         features::change_feature_flags_for_testing(&starcoin_framework, vector[features::get_partial_governance_voting()], vector[]);
 
-        coin::register<StarcoinCoin>(&voter_1);
-        coin::register<StarcoinCoin>(&voter_2);
+        coin::register<STC>(&voter_1);
+        coin::register<STC>(&voter_2);
         stake::add_stake(&voter_1, 20);
         stake::add_stake(&voter_2, 5);
 
@@ -1205,7 +1205,7 @@ module starcoin_framework::starcoin_governance {
         use std::vector;
         use starcoin_framework::account;
         use starcoin_framework::coin;
-        use starcoin_framework::starcoin_coin::{Self, StarcoinCoin};
+        use starcoin_framework::starcoin_coin::{Self, STC};
 
         timestamp::set_time_has_started_for_testing(starcoin_framework);
         account::create_account_for_test(signer::address_of(starcoin_framework));
@@ -1236,17 +1236,17 @@ module starcoin_framework::starcoin_governance {
         let (burn_cap, mint_cap) = starcoin_coin::initialize_for_test(starcoin_framework);
         // Spread stake among active and pending_inactive because both need to be accounted for when computing voting
         // power.
-        coin::register<StarcoinCoin>(proposer);
+        coin::register<STC>(proposer);
         coin::deposit(signer::address_of(proposer), coin::mint(100, &mint_cap));
-        coin::register<StarcoinCoin>(yes_voter);
+        coin::register<STC>(yes_voter);
         coin::deposit(signer::address_of(yes_voter), coin::mint(20, &mint_cap));
-        coin::register<StarcoinCoin>(no_voter);
+        coin::register<STC>(no_voter);
         coin::deposit(signer::address_of(no_voter), coin::mint(10, &mint_cap));
         stake::create_stake_pool(proposer, coin::mint(50, &mint_cap), coin::mint(50, &mint_cap), 10000);
         stake::create_stake_pool(yes_voter, coin::mint(10, &mint_cap), coin::mint(10, &mint_cap), 10000);
         stake::create_stake_pool(no_voter, coin::mint(5, &mint_cap), coin::mint(5, &mint_cap), 10000);
-        coin::destroy_mint_cap<StarcoinCoin>(mint_cap);
-        coin::destroy_burn_cap<StarcoinCoin>(burn_cap);
+        coin::destroy_mint_cap<STC>(mint_cap);
+        coin::destroy_burn_cap<STC>(burn_cap);
     }
 
     #[test_only]
@@ -1258,7 +1258,7 @@ module starcoin_framework::starcoin_governance {
     ) acquires GovernanceResponsbility {
         use starcoin_framework::account;
         use starcoin_framework::coin;
-        use starcoin_framework::starcoin_coin::StarcoinCoin;
+        use starcoin_framework::starcoin_coin::STC;
 
         timestamp::set_time_has_started_for_testing(starcoin_framework);
         account::create_account_for_test(signer::address_of(starcoin_framework));
@@ -1278,11 +1278,11 @@ module starcoin_framework::starcoin_governance {
         // Initialize the stake pools for proposer and voters.
         // Spread stake among active and pending_inactive because both need to be accounted for when computing voting
         // power.
-        coin::register<StarcoinCoin>(proposer);
+        coin::register<STC>(proposer);
         coin::deposit(signer::address_of(proposer), stake::mint_coins(100));
-        coin::register<StarcoinCoin>(yes_voter);
+        coin::register<STC>(yes_voter);
         coin::deposit(signer::address_of(yes_voter), stake::mint_coins(20));
-        coin::register<StarcoinCoin>(no_voter);
+        coin::register<STC>(no_voter);
         coin::deposit(signer::address_of(no_voter), stake::mint_coins(10));
 
         let (_sk_1, pk_1, pop_1) = stake::generate_identity();

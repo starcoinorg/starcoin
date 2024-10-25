@@ -249,25 +249,25 @@ Changes in stake for an inactive validator:
 
 <dl>
 <dt>
-<code>active: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;</code>
+<code>active: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>inactive: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;</code>
+<code>inactive: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>pending_active: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;</code>
+<code>pending_active: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>pending_inactive: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;</code>
+<code>pending_inactive: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;</code>
 </dt>
 <dd>
 
@@ -533,7 +533,7 @@ This allows the Stake module to mint rewards to stakers.
 
 <dl>
 <dt>
-<code>mint_cap: <a href="coin.md#0x1_coin_MintCapability">coin::MintCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;</code>
+<code>mint_cap: <a href="coin.md#0x1_coin_MintCapability">coin::MintCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;</code>
 </dt>
 <dd>
 
@@ -1462,7 +1462,7 @@ at the end of the epoch.
 
 <dl>
 <dt>
-<code>fees_table: <a href="../../starcoin-stdlib/doc/table.md#0x1_table_Table">table::Table</a>&lt;<b>address</b>, <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;&gt;</code>
+<code>fees_table: <a href="../../starcoin-stdlib/doc/table.md#0x1_table_Table">table::Table</a>&lt;<b>address</b>, <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;&gt;</code>
 </dt>
 <dd>
 
@@ -1920,7 +1920,7 @@ Used by <code><a href="transaction_fee.md#0x1_transaction_fee">transaction_fee</
 Stores the transaction fee collected to the specified validator address.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="stake.md#0x1_stake_add_transaction_fee">add_transaction_fee</a>(validator_addr: <b>address</b>, fee: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="stake.md#0x1_stake_add_transaction_fee">add_transaction_fee</a>(validator_addr: <b>address</b>, fee: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;)
 </code></pre>
 
 
@@ -1929,7 +1929,7 @@ Stores the transaction fee collected to the specified validator address.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="stake.md#0x1_stake_add_transaction_fee">add_transaction_fee</a>(validator_addr: <b>address</b>, fee: Coin&lt;StarcoinCoin&gt;) <b>acquires</b> <a href="stake.md#0x1_stake_ValidatorFees">ValidatorFees</a> {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="stake.md#0x1_stake_add_transaction_fee">add_transaction_fee</a>(validator_addr: <b>address</b>, fee: Coin&lt;STC&gt;) <b>acquires</b> <a href="stake.md#0x1_stake_ValidatorFees">ValidatorFees</a> {
     <b>let</b> fees_table = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="stake.md#0x1_stake_ValidatorFees">ValidatorFees</a>&gt;(@starcoin_framework).fees_table;
     <b>if</b> (<a href="../../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(fees_table, validator_addr)) {
         <b>let</b> collected_fee = <a href="../../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(fees_table, validator_addr);
@@ -2095,7 +2095,7 @@ This is the same as the validator's total active and pending_inactive stake.
 <pre><code><b>public</b> <b>fun</b> <a href="stake.md#0x1_stake_get_current_epoch_voting_power">get_current_epoch_voting_power</a>(pool_address: <b>address</b>): u64 <b>acquires</b> <a href="stake.md#0x1_stake_StakePool">StakePool</a>, <a href="stake.md#0x1_stake_ValidatorSet">ValidatorSet</a> {
     <a href="stake.md#0x1_stake_assert_stake_pool_exists">assert_stake_pool_exists</a>(pool_address);
     <b>let</b> validator_state = <a href="stake.md#0x1_stake_get_validator_state">get_validator_state</a>(pool_address);
-    // Both active and pending inactive validators can still vote in the current epoch.
+    // Both active and pending inactive validators can still vote in the current <a href="epoch.md#0x1_epoch">epoch</a>.
     <b>if</b> (validator_state == <a href="stake.md#0x1_stake_VALIDATOR_STATUS_ACTIVE">VALIDATOR_STATUS_ACTIVE</a> || validator_state == <a href="stake.md#0x1_stake_VALIDATOR_STATUS_PENDING_INACTIVE">VALIDATOR_STATUS_PENDING_INACTIVE</a>) {
         <b>let</b> active_stake = <a href="coin.md#0x1_coin_value">coin::value</a>(&<b>borrow_global</b>&lt;<a href="stake.md#0x1_stake_StakePool">StakePool</a>&gt;(pool_address).active);
         <b>let</b> pending_inactive_stake = <a href="coin.md#0x1_coin_value">coin::value</a>(&<b>borrow_global</b>&lt;<a href="stake.md#0x1_stake_StakePool">StakePool</a>&gt;(pool_address).pending_inactive);
@@ -2345,7 +2345,7 @@ This is only called during Genesis, which is where MintCapability<StarcoinCoin> 
 Beyond genesis, no one can create StarcoinCoin mint/burn capabilities.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="stake.md#0x1_stake_store_starcoin_coin_mint_cap">store_starcoin_coin_mint_cap</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, mint_cap: <a href="coin.md#0x1_coin_MintCapability">coin::MintCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="stake.md#0x1_stake_store_starcoin_coin_mint_cap">store_starcoin_coin_mint_cap</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, mint_cap: <a href="coin.md#0x1_coin_MintCapability">coin::MintCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;)
 </code></pre>
 
 
@@ -2354,7 +2354,7 @@ Beyond genesis, no one can create StarcoinCoin mint/burn capabilities.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="stake.md#0x1_stake_store_starcoin_coin_mint_cap">store_starcoin_coin_mint_cap</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, mint_cap: MintCapability&lt;StarcoinCoin&gt;) {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="stake.md#0x1_stake_store_starcoin_coin_mint_cap">store_starcoin_coin_mint_cap</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, mint_cap: MintCapability&lt;STC&gt;) {
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(starcoin_framework);
     <b>move_to</b>(starcoin_framework, <a href="stake.md#0x1_stake_StarcoinCoinCapabilities">StarcoinCoinCapabilities</a> { mint_cap })
 }
@@ -2542,10 +2542,10 @@ Initialize the validator account and give ownership to the signing account.
     <b>assert</b>!(!<a href="stake.md#0x1_stake_stake_pool_exists">stake_pool_exists</a>(owner_address), <a href="../../move-stdlib/doc/error.md#0x1_error_already_exists">error::already_exists</a>(<a href="stake.md#0x1_stake_EALREADY_REGISTERED">EALREADY_REGISTERED</a>));
 
     <b>move_to</b>(owner, <a href="stake.md#0x1_stake_StakePool">StakePool</a> {
-        active: <a href="coin.md#0x1_coin_zero">coin::zero</a>&lt;StarcoinCoin&gt;(),
-        pending_active: <a href="coin.md#0x1_coin_zero">coin::zero</a>&lt;StarcoinCoin&gt;(),
-        pending_inactive: <a href="coin.md#0x1_coin_zero">coin::zero</a>&lt;StarcoinCoin&gt;(),
-        inactive: <a href="coin.md#0x1_coin_zero">coin::zero</a>&lt;StarcoinCoin&gt;(),
+        active: <a href="coin.md#0x1_coin_zero">coin::zero</a>&lt;STC&gt;(),
+        pending_active: <a href="coin.md#0x1_coin_zero">coin::zero</a>&lt;STC&gt;(),
+        pending_inactive: <a href="coin.md#0x1_coin_zero">coin::zero</a>&lt;STC&gt;(),
+        inactive: <a href="coin.md#0x1_coin_zero">coin::zero</a>&lt;STC&gt;(),
         locked_until_secs: 0,
         operator_address: owner_address,
         delegated_voter: owner_address,
@@ -2805,7 +2805,7 @@ Add <code>amount</code> of coins from the <code><a href="account.md#0x1_account"
     <b>let</b> owner_address = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(owner);
     <a href="stake.md#0x1_stake_assert_owner_cap_exists">assert_owner_cap_exists</a>(owner_address);
     <b>let</b> ownership_cap = <b>borrow_global</b>&lt;<a href="stake.md#0x1_stake_OwnerCapability">OwnerCapability</a>&gt;(owner_address);
-    <a href="stake.md#0x1_stake_add_stake_with_cap">add_stake_with_cap</a>(ownership_cap, <a href="coin.md#0x1_coin_withdraw">coin::withdraw</a>&lt;StarcoinCoin&gt;(owner, amount));
+    <a href="stake.md#0x1_stake_add_stake_with_cap">add_stake_with_cap</a>(ownership_cap, <a href="coin.md#0x1_coin_withdraw">coin::withdraw</a>&lt;STC&gt;(owner, amount));
 }
 </code></pre>
 
@@ -2820,7 +2820,7 @@ Add <code>amount</code> of coins from the <code><a href="account.md#0x1_account"
 Add <code>coins</code> into <code>pool_address</code>. this requires the corresponding <code>owner_cap</code> to be passed in.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stake.md#0x1_stake_add_stake_with_cap">add_stake_with_cap</a>(owner_cap: &<a href="stake.md#0x1_stake_OwnerCapability">stake::OwnerCapability</a>, coins: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="stake.md#0x1_stake_add_stake_with_cap">add_stake_with_cap</a>(owner_cap: &<a href="stake.md#0x1_stake_OwnerCapability">stake::OwnerCapability</a>, coins: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;)
 </code></pre>
 
 
@@ -2829,7 +2829,7 @@ Add <code>coins</code> into <code>pool_address</code>. this requires the corresp
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stake.md#0x1_stake_add_stake_with_cap">add_stake_with_cap</a>(owner_cap: &<a href="stake.md#0x1_stake_OwnerCapability">OwnerCapability</a>, coins: Coin&lt;StarcoinCoin&gt;) <b>acquires</b> <a href="stake.md#0x1_stake_StakePool">StakePool</a>, <a href="stake.md#0x1_stake_ValidatorSet">ValidatorSet</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="stake.md#0x1_stake_add_stake_with_cap">add_stake_with_cap</a>(owner_cap: &<a href="stake.md#0x1_stake_OwnerCapability">OwnerCapability</a>, coins: Coin&lt;STC&gt;) <b>acquires</b> <a href="stake.md#0x1_stake_StakePool">StakePool</a>, <a href="stake.md#0x1_stake_ValidatorSet">ValidatorSet</a> {
     <a href="stake.md#0x1_stake_assert_reconfig_not_in_progress">assert_reconfig_not_in_progress</a>();
     <b>let</b> pool_address = owner_cap.pool_address;
     <a href="stake.md#0x1_stake_assert_stake_pool_exists">assert_stake_pool_exists</a>(pool_address);
@@ -2841,7 +2841,7 @@ Add <code>coins</code> into <code>pool_address</code>. this requires the corresp
     };
 
     // Only track and validate <a href="voting.md#0x1_voting">voting</a> power increase for active and pending_active validator.
-    // Pending_inactive validator will be removed from the validator set in the next epoch.
+    // Pending_inactive validator will be removed from the validator set in the next <a href="epoch.md#0x1_epoch">epoch</a>.
     // Inactive validator's total <a href="stake.md#0x1_stake">stake</a> will be tracked when they join the validator set.
     <b>let</b> validator_set = <b>borrow_global_mut</b>&lt;<a href="stake.md#0x1_stake_ValidatorSet">ValidatorSet</a>&gt;(@starcoin_framework);
     // Search directly rather using get_validator_state <b>to</b> save on unnecessary loops.
@@ -2850,13 +2850,13 @@ Add <code>coins</code> into <code>pool_address</code>. this requires the corresp
         <a href="stake.md#0x1_stake_update_voting_power_increase">update_voting_power_increase</a>(amount);
     };
 
-    // Add <b>to</b> pending_active <b>if</b> it's a current validator because the <a href="stake.md#0x1_stake">stake</a> is not counted until the next epoch.
-    // Otherwise, the delegation can be added <b>to</b> active directly <b>as</b> the validator is also activated in the epoch.
+    // Add <b>to</b> pending_active <b>if</b> it's a current validator because the <a href="stake.md#0x1_stake">stake</a> is not counted until the next <a href="epoch.md#0x1_epoch">epoch</a>.
+    // Otherwise, the delegation can be added <b>to</b> active directly <b>as</b> the validator is also activated in the <a href="epoch.md#0x1_epoch">epoch</a>.
     <b>let</b> stake_pool = <b>borrow_global_mut</b>&lt;<a href="stake.md#0x1_stake_StakePool">StakePool</a>&gt;(pool_address);
     <b>if</b> (<a href="stake.md#0x1_stake_is_current_epoch_validator">is_current_epoch_validator</a>(pool_address)) {
-        <a href="coin.md#0x1_coin_merge">coin::merge</a>&lt;StarcoinCoin&gt;(&<b>mut</b> stake_pool.pending_active, coins);
+        <a href="coin.md#0x1_coin_merge">coin::merge</a>&lt;STC&gt;(&<b>mut</b> stake_pool.pending_active, coins);
     } <b>else</b> {
-        <a href="coin.md#0x1_coin_merge">coin::merge</a>&lt;StarcoinCoin&gt;(&<b>mut</b> stake_pool.active, coins);
+        <a href="coin.md#0x1_coin_merge">coin::merge</a>&lt;STC&gt;(&<b>mut</b> stake_pool.active, coins);
     };
 
     <b>let</b> (_, maximum_stake) = <a href="staking_config.md#0x1_staking_config_get_required_stake">staking_config::get_required_stake</a>(&<a href="staking_config.md#0x1_staking_config_get">staking_config::get</a>());
@@ -2940,7 +2940,7 @@ Move <code>amount</code> of coins from pending_inactive to active.
     amount = <b>min</b>(amount, total_pending_inactive);
 
     // Since this does not count <b>as</b> a <a href="voting.md#0x1_voting">voting</a> power change (pending inactive still counts <b>as</b> <a href="voting.md#0x1_voting">voting</a> power in the
-    // current epoch), <a href="stake.md#0x1_stake">stake</a> can be immediately moved from pending inactive <b>to</b> active.
+    // current <a href="epoch.md#0x1_epoch">epoch</a>), <a href="stake.md#0x1_stake">stake</a> can be immediately moved from pending inactive <b>to</b> active.
     // We also don't need <b>to</b> check <a href="voting.md#0x1_voting">voting</a> power increase <b>as</b> there's none.
     <b>let</b> reactivated_coins = <a href="coin.md#0x1_coin_extract">coin::extract</a>(&<b>mut</b> stake_pool.pending_inactive, amount);
     <a href="coin.md#0x1_coin_merge">coin::merge</a>(&<b>mut</b> stake_pool.active, reactivated_coins);
@@ -3248,7 +3248,7 @@ This internal version can only be called by the Genesis module during Genesis.
     // Track and validate <a href="voting.md#0x1_voting">voting</a> power increase.
     <a href="stake.md#0x1_stake_update_voting_power_increase">update_voting_power_increase</a>(voting_power);
 
-    // Add validator <b>to</b> pending_active, <b>to</b> be activated in the next epoch.
+    // Add validator <b>to</b> pending_active, <b>to</b> be activated in the next <a href="epoch.md#0x1_epoch">epoch</a>.
     <b>let</b> validator_config = <b>borrow_global_mut</b>&lt;<a href="stake.md#0x1_stake_ValidatorConfig">ValidatorConfig</a>&gt;(pool_address);
     <b>assert</b>!(!<a href="../../move-stdlib/doc/vector.md#0x1_vector_is_empty">vector::is_empty</a>(&validator_config.consensus_pubkey), <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="stake.md#0x1_stake_EINVALID_PUBLIC_KEY">EINVALID_PUBLIC_KEY</a>));
 
@@ -3330,14 +3330,14 @@ Unlock <code>amount</code> from the active stake. Only possible if the lockup ha
     };
 
     // Unlocked coins are moved <b>to</b> pending_inactive. When the current lockup cycle expires, they will be moved into
-    // inactive in the earliest possible epoch transition.
+    // inactive in the earliest possible <a href="epoch.md#0x1_epoch">epoch</a> transition.
     <b>let</b> pool_address = owner_cap.pool_address;
     <a href="stake.md#0x1_stake_assert_stake_pool_exists">assert_stake_pool_exists</a>(pool_address);
     <b>let</b> stake_pool = <b>borrow_global_mut</b>&lt;<a href="stake.md#0x1_stake_StakePool">StakePool</a>&gt;(pool_address);
     // Cap amount <b>to</b> unlock by maximum active <a href="stake.md#0x1_stake">stake</a>.
     <b>let</b> amount = <b>min</b>(amount, <a href="coin.md#0x1_coin_value">coin::value</a>(&stake_pool.active));
     <b>let</b> unlocked_stake = <a href="coin.md#0x1_coin_extract">coin::extract</a>(&<b>mut</b> stake_pool.active, amount);
-    <a href="coin.md#0x1_coin_merge">coin::merge</a>&lt;StarcoinCoin&gt;(&<b>mut</b> stake_pool.pending_inactive, unlocked_stake);
+    <a href="coin.md#0x1_coin_merge">coin::merge</a>&lt;STC&gt;(&<b>mut</b> stake_pool.pending_inactive, unlocked_stake);
 
     <b>if</b> (std::features::module_event_migration_enabled()) {
         <a href="event.md#0x1_event_emit">event::emit</a>(
@@ -3385,7 +3385,7 @@ Withdraw from <code><a href="account.md#0x1_account">account</a></code>'s inacti
     <a href="stake.md#0x1_stake_assert_owner_cap_exists">assert_owner_cap_exists</a>(owner_address);
     <b>let</b> ownership_cap = <b>borrow_global</b>&lt;<a href="stake.md#0x1_stake_OwnerCapability">OwnerCapability</a>&gt;(owner_address);
     <b>let</b> coins = <a href="stake.md#0x1_stake_withdraw_with_cap">withdraw_with_cap</a>(ownership_cap, withdraw_amount);
-    <a href="coin.md#0x1_coin_deposit">coin::deposit</a>&lt;StarcoinCoin&gt;(owner_address, coins);
+    <a href="coin.md#0x1_coin_deposit">coin::deposit</a>&lt;STC&gt;(owner_address, coins);
 }
 </code></pre>
 
@@ -3400,7 +3400,7 @@ Withdraw from <code><a href="account.md#0x1_account">account</a></code>'s inacti
 Withdraw from <code>pool_address</code>'s inactive stake with the corresponding <code>owner_cap</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stake.md#0x1_stake_withdraw_with_cap">withdraw_with_cap</a>(owner_cap: &<a href="stake.md#0x1_stake_OwnerCapability">stake::OwnerCapability</a>, withdraw_amount: u64): <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="stake.md#0x1_stake_withdraw_with_cap">withdraw_with_cap</a>(owner_cap: &<a href="stake.md#0x1_stake_OwnerCapability">stake::OwnerCapability</a>, withdraw_amount: u64): <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;
 </code></pre>
 
 
@@ -3412,7 +3412,7 @@ Withdraw from <code>pool_address</code>'s inactive stake with the corresponding 
 <pre><code><b>public</b> <b>fun</b> <a href="stake.md#0x1_stake_withdraw_with_cap">withdraw_with_cap</a>(
     owner_cap: &<a href="stake.md#0x1_stake_OwnerCapability">OwnerCapability</a>,
     withdraw_amount: u64
-): Coin&lt;StarcoinCoin&gt; <b>acquires</b> <a href="stake.md#0x1_stake_StakePool">StakePool</a>, <a href="stake.md#0x1_stake_ValidatorSet">ValidatorSet</a> {
+): Coin&lt;STC&gt; <b>acquires</b> <a href="stake.md#0x1_stake_StakePool">StakePool</a>, <a href="stake.md#0x1_stake_ValidatorSet">ValidatorSet</a> {
     <a href="stake.md#0x1_stake_assert_reconfig_not_in_progress">assert_reconfig_not_in_progress</a>();
     <b>let</b> pool_address = owner_cap.pool_address;
     <a href="stake.md#0x1_stake_assert_stake_pool_exists">assert_stake_pool_exists</a>(pool_address);
@@ -3428,7 +3428,7 @@ Withdraw from <code>pool_address</code>'s inactive stake with the corresponding 
 
     // Cap withdraw amount by total inactive coins.
     withdraw_amount = <b>min</b>(withdraw_amount, <a href="coin.md#0x1_coin_value">coin::value</a>(&stake_pool.inactive));
-    <b>if</b> (withdraw_amount == 0) <b>return</b> <a href="coin.md#0x1_coin_zero">coin::zero</a>&lt;StarcoinCoin&gt;();
+    <b>if</b> (withdraw_amount == 0) <b>return</b> <a href="coin.md#0x1_coin_zero">coin::zero</a>&lt;STC&gt;();
 
     <b>if</b> (std::features::module_event_migration_enabled()) {
         <a href="event.md#0x1_event_emit">event::emit</a>(
@@ -3500,7 +3500,7 @@ Can only be called by the operator of the validator/staking pool.
 
         // Decrease the <a href="voting.md#0x1_voting">voting</a> power increase <b>as</b> the pending validator's <a href="voting.md#0x1_voting">voting</a> power was added when they requested
         // <b>to</b> join. Now that they changed their mind, their <a href="voting.md#0x1_voting">voting</a> power should not affect the joining limit of this
-        // epoch.
+        // <a href="epoch.md#0x1_epoch">epoch</a>.
         <b>let</b> validator_stake = (<a href="stake.md#0x1_stake_get_next_epoch_voting_power">get_next_epoch_voting_power</a>(stake_pool) <b>as</b> u128);
         // total_joining_power should be larger than validator_stake but just in case there <b>has</b> been a small
         // rounding <a href="../../move-stdlib/doc/error.md#0x1_error">error</a> somewhere that can lead <b>to</b> an underflow, we still want <b>to</b> allow this transaction <b>to</b>
@@ -3586,7 +3586,7 @@ This function cannot abort.
     proposer_index: Option&lt;u64&gt;,
     failed_proposer_indices: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;
 ) <b>acquires</b> <a href="stake.md#0x1_stake_ValidatorPerformance">ValidatorPerformance</a> {
-    // Validator set cannot change until the end of the epoch, so the validator index in arguments should
+    // Validator set cannot change until the end of the <a href="epoch.md#0x1_epoch">epoch</a>, so the validator index in arguments should
     // match <b>with</b> those of the validators in <a href="stake.md#0x1_stake_ValidatorPerformance">ValidatorPerformance</a> resource.
     <b>let</b> validator_perf = <b>borrow_global_mut</b>&lt;<a href="stake.md#0x1_stake_ValidatorPerformance">ValidatorPerformance</a>&gt;(@starcoin_framework);
     <b>let</b> validator_len = <a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(&validator_perf.validators);
@@ -3756,7 +3756,7 @@ power.
         });
 
         // Automatically renew a validator's lockup for validators that will still be in the validator set in the
-        // next epoch.
+        // next <a href="epoch.md#0x1_epoch">epoch</a>.
         <b>let</b> stake_pool = <b>borrow_global_mut</b>&lt;<a href="stake.md#0x1_stake_StakePool">StakePool</a>&gt;(validator_info.addr);
         <b>let</b> now_secs = <a href="timestamp.md#0x1_timestamp_now_seconds">timestamp::now_seconds</a>();
         <b>let</b> reconfig_start_secs = <b>if</b> (<a href="chain_status.md#0x1_chain_status_is_operating">chain_status::is_operating</a>()) {
@@ -4202,7 +4202,7 @@ Calculate the rewards amount.
         // The following condition must hold because
         // (1) num_successful_proposals &lt;= num_total_proposals, and
         // (2) `num_total_proposals` cannot be larger than 86400, the maximum number of proposals
-        //     in a day (1 proposal per second), and `num_total_proposals` is reset <b>to</b> 0 every epoch.
+        //     in a day (1 proposal per second), and `num_total_proposals` is reset <b>to</b> 0 every <a href="epoch.md#0x1_epoch">epoch</a>.
         <b>assume</b> num_successful_proposals * <a href="stake.md#0x1_stake_MAX_REWARDS_RATE">MAX_REWARDS_RATE</a> &lt;= <a href="stake.md#0x1_stake_MAX_U64">MAX_U64</a>;
     };
     // The rewards amount is equal <b>to</b> (<a href="stake.md#0x1_stake">stake</a> amount * rewards rate * performance multiplier).
@@ -4228,7 +4228,7 @@ Calculate the rewards amount.
 Mint rewards corresponding to current epoch's <code><a href="stake.md#0x1_stake">stake</a></code> and <code>num_successful_votes</code>.
 
 
-<pre><code><b>fun</b> <a href="stake.md#0x1_stake_distribute_rewards">distribute_rewards</a>(<a href="stake.md#0x1_stake">stake</a>: &<b>mut</b> <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;, num_successful_proposals: u64, num_total_proposals: u64, rewards_rate: u64, rewards_rate_denominator: u64): u64
+<pre><code><b>fun</b> <a href="stake.md#0x1_stake_distribute_rewards">distribute_rewards</a>(<a href="stake.md#0x1_stake">stake</a>: &<b>mut</b> <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;, num_successful_proposals: u64, num_total_proposals: u64, rewards_rate: u64, rewards_rate_denominator: u64): u64
 </code></pre>
 
 
@@ -4238,7 +4238,7 @@ Mint rewards corresponding to current epoch's <code><a href="stake.md#0x1_stake"
 
 
 <pre><code><b>fun</b> <a href="stake.md#0x1_stake_distribute_rewards">distribute_rewards</a>(
-    <a href="stake.md#0x1_stake">stake</a>: &<b>mut</b> Coin&lt;StarcoinCoin&gt;,
+    <a href="stake.md#0x1_stake">stake</a>: &<b>mut</b> Coin&lt;STC&gt;,
     num_successful_proposals: u64,
     num_total_proposals: u64,
     rewards_rate: u64,
@@ -4805,7 +4805,7 @@ Returns validator's next epoch voting power, including pending_active, active, a
 ### Function `add_transaction_fee`
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="stake.md#0x1_stake_add_transaction_fee">add_transaction_fee</a>(validator_addr: <b>address</b>, fee: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="stake.md#0x1_stake_add_transaction_fee">add_transaction_fee</a>(validator_addr: <b>address</b>, fee: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;)
 </code></pre>
 
 
@@ -5074,7 +5074,7 @@ Returns validator's next epoch voting power, including pending_active, active, a
 ### Function `add_stake_with_cap`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stake.md#0x1_stake_add_stake_with_cap">add_stake_with_cap</a>(owner_cap: &<a href="stake.md#0x1_stake_OwnerCapability">stake::OwnerCapability</a>, coins: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="stake.md#0x1_stake_add_stake_with_cap">add_stake_with_cap</a>(owner_cap: &<a href="stake.md#0x1_stake_OwnerCapability">stake::OwnerCapability</a>, coins: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;)
 </code></pre>
 
 
@@ -5306,15 +5306,15 @@ Returns validator's next epoch voting power, including pending_active, active, a
             new_withdraw_amount_1 &gt; 0 && stake_pool.inactive.value + stake_pool.pending_inactive.value &lt; new_withdraw_amount_1;
 <b>aborts_if</b> !(bool_find_validator && <b>exists</b>&lt;<a href="timestamp.md#0x1_timestamp_CurrentTimeMicroseconds">timestamp::CurrentTimeMicroseconds</a>&gt;(@starcoin_framework)) &&
             new_withdraw_amount_2 &gt; 0 && stake_pool.inactive.value &lt; new_withdraw_amount_2;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;StarcoinCoin&gt;&gt;(addr);
-<b>include</b> <a href="coin.md#0x1_coin_DepositAbortsIf">coin::DepositAbortsIf</a>&lt;StarcoinCoin&gt;{account_addr: addr};
-<b>let</b> coin_store = <b>global</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;StarcoinCoin&gt;&gt;(addr);
-<b>let</b> <b>post</b> p_coin_store = <b>global</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;StarcoinCoin&gt;&gt;(addr);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;STC&gt;&gt;(addr);
+<b>include</b> <a href="coin.md#0x1_coin_DepositAbortsIf">coin::DepositAbortsIf</a>&lt;STC&gt;{account_addr: addr};
+<b>let</b> coin_store = <b>global</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;STC&gt;&gt;(addr);
+<b>let</b> <b>post</b> p_coin_store = <b>global</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;STC&gt;&gt;(addr);
 <b>ensures</b> bool_find_validator && <a href="timestamp.md#0x1_timestamp_now_seconds">timestamp::now_seconds</a>() &gt; stake_pool.locked_until_secs
-            && <b>exists</b>&lt;<a href="account.md#0x1_account_Account">account::Account</a>&gt;(addr) && <b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;StarcoinCoin&gt;&gt;(addr) ==&gt;
+            && <b>exists</b>&lt;<a href="account.md#0x1_account_Account">account::Account</a>&gt;(addr) && <b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;STC&gt;&gt;(addr) ==&gt;
                 coin_store.<a href="coin.md#0x1_coin">coin</a>.value + new_withdraw_amount_1 == p_coin_store.<a href="coin.md#0x1_coin">coin</a>.value;
 <b>ensures</b> !(bool_find_validator && <b>exists</b>&lt;<a href="timestamp.md#0x1_timestamp_CurrentTimeMicroseconds">timestamp::CurrentTimeMicroseconds</a>&gt;(@starcoin_framework))
-            && <b>exists</b>&lt;<a href="account.md#0x1_account_Account">account::Account</a>&gt;(addr) && <b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;StarcoinCoin&gt;&gt;(addr) ==&gt;
+            && <b>exists</b>&lt;<a href="account.md#0x1_account_Account">account::Account</a>&gt;(addr) && <b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;STC&gt;&gt;(addr) ==&gt;
                 coin_store.<a href="coin.md#0x1_coin">coin</a>.value + new_withdraw_amount_2 == p_coin_store.<a href="coin.md#0x1_coin">coin</a>.value;
 </code></pre>
 
@@ -5830,7 +5830,7 @@ Returns validator's next epoch voting power, including pending_active, active, a
     <b>aborts_if</b> !<b>exists</b>&lt;<a href="stake.md#0x1_stake_StakePool">StakePool</a>&gt;(pool_address);
     <b>aborts_if</b> !<b>exists</b>&lt;<a href="stake.md#0x1_stake_ValidatorConfig">ValidatorConfig</a>&gt;(pool_address);
     <b>aborts_if</b> <b>global</b>&lt;<a href="stake.md#0x1_stake_ValidatorConfig">ValidatorConfig</a>&gt;(pool_address).validator_index &gt;= len(validator_perf.validators);
-    <b>let</b> starcoin_addr = <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;StarcoinCoin&gt;().account_address;
+    <b>let</b> starcoin_addr = <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;STC&gt;().account_address;
     <b>aborts_if</b> !<b>exists</b>&lt;<a href="stake.md#0x1_stake_ValidatorFees">ValidatorFees</a>&gt;(starcoin_addr);
     <b>let</b> stake_pool = <b>global</b>&lt;<a href="stake.md#0x1_stake_StakePool">StakePool</a>&gt;(pool_address);
     <b>include</b> <a href="stake.md#0x1_stake_DistributeRewardsAbortsIf">DistributeRewardsAbortsIf</a> {<a href="stake.md#0x1_stake">stake</a>: stake_pool.active};
@@ -5922,7 +5922,7 @@ Returns validator's next epoch voting power, including pending_active, active, a
 ### Function `distribute_rewards`
 
 
-<pre><code><b>fun</b> <a href="stake.md#0x1_stake_distribute_rewards">distribute_rewards</a>(<a href="stake.md#0x1_stake">stake</a>: &<b>mut</b> <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;, num_successful_proposals: u64, num_total_proposals: u64, rewards_rate: u64, rewards_rate_denominator: u64): u64
+<pre><code><b>fun</b> <a href="stake.md#0x1_stake_distribute_rewards">distribute_rewards</a>(<a href="stake.md#0x1_stake">stake</a>: &<b>mut</b> <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;, num_successful_proposals: u64, num_total_proposals: u64, rewards_rate: u64, rewards_rate_denominator: u64): u64
 </code></pre>
 
 
@@ -5959,7 +5959,7 @@ Returns validator's next epoch voting power, including pending_active, active, a
 
 
 <pre><code><b>schema</b> <a href="stake.md#0x1_stake_DistributeRewardsAbortsIf">DistributeRewardsAbortsIf</a> {
-    <a href="stake.md#0x1_stake">stake</a>: Coin&lt;StarcoinCoin&gt;;
+    <a href="stake.md#0x1_stake">stake</a>: Coin&lt;STC&gt;;
     num_successful_proposals: num;
     num_total_proposals: num;
     rewards_rate: num;
@@ -5971,10 +5971,10 @@ Returns validator's next epoch voting power, including pending_active, active, a
         0
     };
     <b>let</b> amount = rewards_amount;
-    <b>let</b> addr = <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;StarcoinCoin&gt;().account_address;
-    <b>aborts_if</b> (rewards_amount &gt; 0) && !<b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinInfo">coin::CoinInfo</a>&lt;StarcoinCoin&gt;&gt;(addr);
-    <b>modifies</b> <b>global</b>&lt;<a href="coin.md#0x1_coin_CoinInfo">coin::CoinInfo</a>&lt;StarcoinCoin&gt;&gt;(addr);
-    <b>include</b> (rewards_amount &gt; 0) ==&gt; <a href="coin.md#0x1_coin_CoinAddAbortsIf">coin::CoinAddAbortsIf</a>&lt;StarcoinCoin&gt; { amount: amount };
+    <b>let</b> addr = <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;STC&gt;().account_address;
+    <b>aborts_if</b> (rewards_amount &gt; 0) && !<b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinInfo">coin::CoinInfo</a>&lt;STC&gt;&gt;(addr);
+    <b>modifies</b> <b>global</b>&lt;<a href="coin.md#0x1_coin_CoinInfo">coin::CoinInfo</a>&lt;STC&gt;&gt;(addr);
+    <b>include</b> (rewards_amount &gt; 0) ==&gt; <a href="coin.md#0x1_coin_CoinAddAbortsIf">coin::CoinAddAbortsIf</a>&lt;STC&gt; { amount: amount };
 }
 </code></pre>
 

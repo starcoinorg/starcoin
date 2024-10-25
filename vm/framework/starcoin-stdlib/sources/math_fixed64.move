@@ -1,6 +1,7 @@
 /// Standard math utilities missing in the Move Language.
 
 module starcoin_std::math_fixed64 {
+    use std::vector;
     use starcoin_std::fixed_point64;
     use starcoin_std::fixed_point64::FixedPoint64;
     use starcoin_std::math128;
@@ -92,6 +93,26 @@ module starcoin_std::math_fixed64 {
             x = (x * x) >> 64;
         };
         res
+    }
+
+    /// calculate sum of nums
+    public fun sum(nums: &vector<u64>): u64 {
+        let len = vector::length(nums);
+        let i = 0;
+        let sum = 0;
+        while (i < len) {
+            sum = sum + *vector::borrow(nums, i);
+            i = i + 1;
+        };
+        sum
+    }
+
+    /// calculate average of nums
+    public fun avg(nums: &vector<u64>): u64 {
+        let len = vector::length(nums);
+
+        let sum = sum(nums);
+        sum / len
     }
 
     #[test]

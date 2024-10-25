@@ -7,7 +7,7 @@ This module defines a minimal and generic Coin and Balance.
 modified from https://github.com/move-language/move/tree/main/language/documentation/tutorial
 
 
--  [Resource `StarcoinCoin`](#0x1_starcoin_coin_StarcoinCoin)
+-  [Resource `STC`](#0x1_starcoin_coin_STC)
 -  [Resource `MintCapStore`](#0x1_starcoin_coin_MintCapStore)
 -  [Struct `DelegatedMintCapability`](#0x1_starcoin_coin_DelegatedMintCapability)
 -  [Resource `Delegations`](#0x1_starcoin_coin_Delegations)
@@ -43,13 +43,13 @@ modified from https://github.com/move-language/move/tree/main/language/documenta
 
 
 
-<a id="0x1_starcoin_coin_StarcoinCoin"></a>
+<a id="0x1_starcoin_coin_STC"></a>
 
-## Resource `StarcoinCoin`
+## Resource `STC`
 
 
 
-<pre><code><b>struct</b> <a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">StarcoinCoin</a> <b>has</b> key
+<pre><code><b>struct</b> <a href="starcoin_coin.md#0x1_starcoin_coin_STC">STC</a> <b>has</b> key
 </code></pre>
 
 
@@ -87,7 +87,7 @@ modified from https://github.com/move-language/move/tree/main/language/documenta
 
 <dl>
 <dt>
-<code>mint_cap: <a href="coin.md#0x1_coin_MintCapability">coin::MintCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;</code>
+<code>mint_cap: <a href="coin.md#0x1_coin_MintCapability">coin::MintCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;</code>
 </dt>
 <dd>
 
@@ -195,7 +195,7 @@ Account does not have mint capability
 Can only called during genesis to initialize the Starcoin coin.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="starcoin_coin.md#0x1_starcoin_coin_initialize">initialize</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>): (<a href="coin.md#0x1_coin_BurnCapability">coin::BurnCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;, <a href="coin.md#0x1_coin_MintCapability">coin::MintCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="starcoin_coin.md#0x1_starcoin_coin_initialize">initialize</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>): (<a href="coin.md#0x1_coin_BurnCapability">coin::BurnCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;, <a href="coin.md#0x1_coin_MintCapability">coin::MintCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;)
 </code></pre>
 
 
@@ -204,14 +204,14 @@ Can only called during genesis to initialize the Starcoin coin.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="starcoin_coin.md#0x1_starcoin_coin_initialize">initialize</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>): (BurnCapability&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">StarcoinCoin</a>&gt;, MintCapability&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">StarcoinCoin</a>&gt;) {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="starcoin_coin.md#0x1_starcoin_coin_initialize">initialize</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>): (BurnCapability&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">STC</a>&gt;, MintCapability&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">STC</a>&gt;) {
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(starcoin_framework);
 
-    <b>let</b> (burn_cap, freeze_cap, mint_cap) = <a href="coin.md#0x1_coin_initialize_with_parallelizable_supply">coin::initialize_with_parallelizable_supply</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">StarcoinCoin</a>&gt;(
+    <b>let</b> (burn_cap, freeze_cap, mint_cap) = <a href="coin.md#0x1_coin_initialize_with_parallelizable_supply">coin::initialize_with_parallelizable_supply</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">STC</a>&gt;(
         starcoin_framework,
-        <a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"Starcoin Coin"),
-        <a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"APT"),
-        8, // decimals
+        <a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="starcoin_coin.md#0x1_starcoin_coin_STC">STC</a>"),
+        <a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="starcoin_coin.md#0x1_starcoin_coin_STC">STC</a>"),
+        9, // decimals
         <b>true</b>, // monitor_supply
     );
 
@@ -286,10 +286,10 @@ and accounts have been initialized during genesis.
 
 Can only be called during genesis for tests to grant mint capability to starcoin framework and core resources
 accounts.
-Expects account and APT store to be registered before calling.
+Expects account and STC store to be registered before calling.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="starcoin_coin.md#0x1_starcoin_coin_configure_accounts_for_test">configure_accounts_for_test</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, core_resources: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, mint_cap: <a href="coin.md#0x1_coin_MintCapability">coin::MintCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="starcoin_coin.md#0x1_starcoin_coin_configure_accounts_for_test">configure_accounts_for_test</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, core_resources: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, mint_cap: <a href="coin.md#0x1_coin_MintCapability">coin::MintCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;)
 </code></pre>
 
 
@@ -301,16 +301,16 @@ Expects account and APT store to be registered before calling.
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="starcoin_coin.md#0x1_starcoin_coin_configure_accounts_for_test">configure_accounts_for_test</a>(
     starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     core_resources: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
-    mint_cap: MintCapability&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">StarcoinCoin</a>&gt;,
+    mint_cap: MintCapability&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">STC</a>&gt;,
 ) {
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(starcoin_framework);
 
-    // Mint the core resource <a href="account.md#0x1_account">account</a> <a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">StarcoinCoin</a> for gas so it can execute system transactions.
-    <b>let</b> coins = <a href="coin.md#0x1_coin_mint">coin::mint</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">StarcoinCoin</a>&gt;(
+    // Mint the core resource <a href="account.md#0x1_account">account</a> StarcoinCoin for gas so it can execute system transactions.
+    <b>let</b> coins = <a href="coin.md#0x1_coin_mint">coin::mint</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">STC</a>&gt;(
         18446744073709551615,
         &mint_cap,
     );
-    <a href="coin.md#0x1_coin_deposit">coin::deposit</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">StarcoinCoin</a>&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(core_resources), coins);
+    <a href="coin.md#0x1_coin_deposit">coin::deposit</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">STC</a>&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(core_resources), coins);
 
     <b>move_to</b>(core_resources, <a href="starcoin_coin.md#0x1_starcoin_coin_MintCapStore">MintCapStore</a> { mint_cap });
     <b>move_to</b>(core_resources, <a href="starcoin_coin.md#0x1_starcoin_coin_Delegations">Delegations</a> { inner: <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>() });
@@ -351,8 +351,8 @@ Create new coins and deposit them into dst_addr's account.
     );
 
     <b>let</b> mint_cap = &<b>borrow_global</b>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_MintCapStore">MintCapStore</a>&gt;(account_addr).mint_cap;
-    <b>let</b> coins_minted = <a href="coin.md#0x1_coin_mint">coin::mint</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">StarcoinCoin</a>&gt;(amount, mint_cap);
-    <a href="coin.md#0x1_coin_deposit">coin::deposit</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">StarcoinCoin</a>&gt;(dst_addr, coins_minted);
+    <b>let</b> coins_minted = <a href="coin.md#0x1_coin_mint">coin::mint</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">STC</a>&gt;(amount, mint_cap);
+    <a href="coin.md#0x1_coin_deposit">coin::deposit</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">STC</a>&gt;(dst_addr, coins_minted);
 }
 </code></pre>
 
@@ -523,7 +523,7 @@ Claim the delegated mint capability and destroy the delegated token.
 ### Function `initialize`
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="starcoin_coin.md#0x1_starcoin_coin_initialize">initialize</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>): (<a href="coin.md#0x1_coin_BurnCapability">coin::BurnCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;, <a href="coin.md#0x1_coin_MintCapability">coin::MintCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="starcoin_coin.md#0x1_starcoin_coin_initialize">initialize</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>): (<a href="coin.md#0x1_coin_BurnCapability">coin::BurnCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;, <a href="coin.md#0x1_coin_MintCapability">coin::MintCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;)
 </code></pre>
 
 
@@ -531,18 +531,18 @@ Claim the delegated mint capability and destroy the delegated token.
 
 <pre><code><b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(starcoin_framework);
 <b>aborts_if</b> addr != @starcoin_framework;
-<b>aborts_if</b> !<a href="../../move-stdlib/doc/string.md#0x1_string_spec_internal_check_utf8">string::spec_internal_check_utf8</a>(b"Starcoin Coin");
-<b>aborts_if</b> !<a href="../../move-stdlib/doc/string.md#0x1_string_spec_internal_check_utf8">string::spec_internal_check_utf8</a>(b"APT");
+<b>aborts_if</b> !<a href="../../move-stdlib/doc/string.md#0x1_string_spec_internal_check_utf8">string::spec_internal_check_utf8</a>(b"<a href="starcoin_coin.md#0x1_starcoin_coin_STC">STC</a>");
+<b>aborts_if</b> !<a href="../../move-stdlib/doc/string.md#0x1_string_spec_internal_check_utf8">string::spec_internal_check_utf8</a>(b"<a href="starcoin_coin.md#0x1_starcoin_coin_STC">STC</a>");
 <b>aborts_if</b> <b>exists</b>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_MintCapStore">MintCapStore</a>&gt;(addr);
-<b>aborts_if</b> <b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinInfo">coin::CoinInfo</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">StarcoinCoin</a>&gt;&gt;(addr);
+<b>aborts_if</b> <b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinInfo">coin::CoinInfo</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">STC</a>&gt;&gt;(addr);
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="aggregator_factory.md#0x1_aggregator_factory_AggregatorFactory">aggregator_factory::AggregatorFactory</a>&gt;(addr);
 // This enforces <a id="high-level-req-1" href="#high-level-req">high-level requirement 1</a>:
 <b>ensures</b> <b>exists</b>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_MintCapStore">MintCapStore</a>&gt;(addr);
 // This enforces <a id="high-level-req-3" href="#high-level-req">high-level requirement 3</a>:
-<b>ensures</b> <b>global</b>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_MintCapStore">MintCapStore</a>&gt;(addr).mint_cap ==  MintCapability&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">StarcoinCoin</a>&gt; {};
-<b>ensures</b> <b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinInfo">coin::CoinInfo</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">StarcoinCoin</a>&gt;&gt;(addr);
-<b>ensures</b> result_1 == BurnCapability&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">StarcoinCoin</a>&gt; {};
-<b>ensures</b> result_2 == MintCapability&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">StarcoinCoin</a>&gt; {};
+<b>ensures</b> <b>global</b>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_MintCapStore">MintCapStore</a>&gt;(addr).mint_cap ==  MintCapability&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">STC</a>&gt; {};
+<b>ensures</b> <b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinInfo">coin::CoinInfo</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">STC</a>&gt;&gt;(addr);
+<b>ensures</b> result_1 == BurnCapability&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">STC</a>&gt; {};
+<b>ensures</b> result_2 == MintCapability&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">STC</a>&gt; {};
 </code></pre>
 
 
@@ -570,7 +570,7 @@ Claim the delegated mint capability and destroy the delegated token.
 ### Function `configure_accounts_for_test`
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="starcoin_coin.md#0x1_starcoin_coin_configure_accounts_for_test">configure_accounts_for_test</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, core_resources: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, mint_cap: <a href="coin.md#0x1_coin_MintCapability">coin::MintCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">starcoin_coin::StarcoinCoin</a>&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="starcoin_coin.md#0x1_starcoin_coin_configure_accounts_for_test">configure_accounts_for_test</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, core_resources: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, mint_cap: <a href="coin.md#0x1_coin_MintCapability">coin::MintCapability</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>&gt;)
 </code></pre>
 
 
@@ -650,7 +650,7 @@ Claim the delegated mint capability and destroy the delegated token.
 
 
 <pre><code><b>schema</b> <a href="starcoin_coin.md#0x1_starcoin_coin_ExistsStarcoinCoin">ExistsStarcoinCoin</a> {
-    <b>requires</b> <b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinInfo">coin::CoinInfo</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_StarcoinCoin">StarcoinCoin</a>&gt;&gt;(@starcoin_framework);
+    <b>requires</b> <b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinInfo">coin::CoinInfo</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">STC</a>&gt;&gt;(@starcoin_framework);
 }
 </code></pre>
 

@@ -18,6 +18,8 @@
 -  [Function `is_vm`](#0x1_system_addresses_is_vm)
 -  [Function `is_vm_address`](#0x1_system_addresses_is_vm_address)
 -  [Function `is_reserved_address`](#0x1_system_addresses_is_reserved_address)
+-  [Function `get_starcoin_framework`](#0x1_system_addresses_get_starcoin_framework)
+-  [Function `get_core_resource_address`](#0x1_system_addresses_get_core_resource_address)
 -  [Specification](#@Specification_1)
     -  [High-level Requirements](#high-level-req)
     -  [Module-level Specification](#module-level-spec)
@@ -383,6 +385,54 @@ Return true if <code>addr</code> is either the VM address or an Starcoin Framewo
 
 <pre><code><b>public</b> <b>fun</b> <a href="system_addresses.md#0x1_system_addresses_is_reserved_address">is_reserved_address</a>(addr: <b>address</b>): bool {
     <a href="system_addresses.md#0x1_system_addresses_is_starcoin_framework_address">is_starcoin_framework_address</a>(addr) || <a href="system_addresses.md#0x1_system_addresses_is_vm_address">is_vm_address</a>(addr)
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_system_addresses_get_starcoin_framework"></a>
+
+## Function `get_starcoin_framework`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">get_starcoin_framework</a>(): <b>address</b>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">get_starcoin_framework</a>(): <b>address</b> {
+    @starcoin_framework
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_system_addresses_get_core_resource_address"></a>
+
+## Function `get_core_resource_address`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="system_addresses.md#0x1_system_addresses_get_core_resource_address">get_core_resource_address</a>(): <b>address</b>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="system_addresses.md#0x1_system_addresses_get_core_resource_address">get_core_resource_address</a>(): <b>address</b> {
+    @core_resources
 }
 </code></pre>
 

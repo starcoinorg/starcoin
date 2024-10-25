@@ -16,6 +16,7 @@ module starcoin_framework::create_signer {
     friend starcoin_framework::genesis;
     friend starcoin_framework::multisig_account;
     friend starcoin_framework::object;
+    friend starcoin_framework::stc_transaction_validation;
 
     public(friend) native fun create_signer(addr: address): signer;
 }

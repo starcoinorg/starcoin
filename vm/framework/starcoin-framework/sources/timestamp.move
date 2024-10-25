@@ -7,6 +7,7 @@ module starcoin_framework::timestamp {
     use std::error;
 
     friend starcoin_framework::genesis;
+    friend starcoin_framework::stc_genesis;
 
     /// A singleton resource holding the current Unix time in microseconds
     struct CurrentTimeMicroseconds has key {
@@ -15,6 +16,9 @@ module starcoin_framework::timestamp {
 
     /// Conversion factor between seconds and microseconds
     const MICRO_CONVERSION_FACTOR: u64 = 1000000;
+
+    /// Conversion factor between seconds and microseconds
+    const MILLI_CONVERSION_FACTOR: u64 = 1000;
 
     /// The blockchain is not in an operating state yet
     const ENOT_OPERATING: u64 = 1;
@@ -63,10 +67,17 @@ module starcoin_framework::timestamp {
     }
 
     #[view]
+    /// Gets the current time in milliseconds.
+    public fun now_milliseconds(): u64 acquires CurrentTimeMicroseconds {
+        now_microseconds() / MILLI_CONVERSION_FACTOR
+    }
+
+    #[view]
     /// Gets the current time in seconds.
     public fun now_seconds(): u64 acquires CurrentTimeMicroseconds {
         now_microseconds() / MICRO_CONVERSION_FACTOR
     }
+
 
     #[test_only]
     public fun update_global_time_for_test(timestamp_microsecs: u64) acquires CurrentTimeMicroseconds {

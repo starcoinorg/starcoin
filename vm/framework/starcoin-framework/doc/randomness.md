@@ -89,7 +89,7 @@ This resource is updated in every block prologue.
 
 <dl>
 <dt>
-<code>epoch: u64</code>
+<code><a href="epoch.md#0x1_epoch">epoch</a>: u64</code>
 </dt>
 <dd>
 
@@ -222,7 +222,7 @@ Must be called in tests to initialize the <code><a href="randomness.md#0x1_rando
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(framework);
     <b>if</b> (!<b>exists</b>&lt;<a href="randomness.md#0x1_randomness_PerBlockRandomness">PerBlockRandomness</a>&gt;(@starcoin_framework)) {
         <b>move_to</b>(framework, <a href="randomness.md#0x1_randomness_PerBlockRandomness">PerBlockRandomness</a> {
-            epoch: 0,
+            <a href="epoch.md#0x1_epoch">epoch</a>: 0,
             round: 0,
             seed: <a href="../../move-stdlib/doc/option.md#0x1_option_none">option::none</a>(),
         });
@@ -241,7 +241,7 @@ Must be called in tests to initialize the <code><a href="randomness.md#0x1_rando
 Invoked in block prologues to update the block-level randomness seed.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="randomness.md#0x1_randomness_on_new_block">on_new_block</a>(vm: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, epoch: u64, round: u64, seed_for_new_block: <a href="../../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="randomness.md#0x1_randomness_on_new_block">on_new_block</a>(vm: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="epoch.md#0x1_epoch">epoch</a>: u64, round: u64, seed_for_new_block: <a href="../../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;)
 </code></pre>
 
 
@@ -250,11 +250,11 @@ Invoked in block prologues to update the block-level randomness seed.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="randomness.md#0x1_randomness_on_new_block">on_new_block</a>(vm: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, epoch: u64, round: u64, seed_for_new_block: Option&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;) <b>acquires</b> <a href="randomness.md#0x1_randomness_PerBlockRandomness">PerBlockRandomness</a> {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="randomness.md#0x1_randomness_on_new_block">on_new_block</a>(vm: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="epoch.md#0x1_epoch">epoch</a>: u64, round: u64, seed_for_new_block: Option&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;) <b>acquires</b> <a href="randomness.md#0x1_randomness_PerBlockRandomness">PerBlockRandomness</a> {
     <a href="system_addresses.md#0x1_system_addresses_assert_vm">system_addresses::assert_vm</a>(vm);
     <b>if</b> (<b>exists</b>&lt;<a href="randomness.md#0x1_randomness_PerBlockRandomness">PerBlockRandomness</a>&gt;(@starcoin_framework)) {
         <b>let</b> <a href="randomness.md#0x1_randomness">randomness</a> = <b>borrow_global_mut</b>&lt;<a href="randomness.md#0x1_randomness_PerBlockRandomness">PerBlockRandomness</a>&gt;(@starcoin_framework);
-        <a href="randomness.md#0x1_randomness">randomness</a>.epoch = epoch;
+        <a href="randomness.md#0x1_randomness">randomness</a>.<a href="epoch.md#0x1_epoch">epoch</a> = <a href="epoch.md#0x1_epoch">epoch</a>;
         <a href="randomness.md#0x1_randomness">randomness</a>.round = round;
         <a href="randomness.md#0x1_randomness">randomness</a>.seed = seed_for_new_block;
     }
@@ -1042,7 +1042,7 @@ function as its payload.
 ### Function `on_new_block`
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="randomness.md#0x1_randomness_on_new_block">on_new_block</a>(vm: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, epoch: u64, round: u64, seed_for_new_block: <a href="../../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="randomness.md#0x1_randomness_on_new_block">on_new_block</a>(vm: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="epoch.md#0x1_epoch">epoch</a>: u64, round: u64, seed_for_new_block: <a href="../../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;)
 </code></pre>
 
 
@@ -1050,7 +1050,7 @@ function as its payload.
 
 <pre><code><b>aborts_if</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(vm) != @vm;
 <b>ensures</b> <b>exists</b>&lt;<a href="randomness.md#0x1_randomness_PerBlockRandomness">PerBlockRandomness</a>&gt;(@starcoin_framework) ==&gt; <b>global</b>&lt;<a href="randomness.md#0x1_randomness_PerBlockRandomness">PerBlockRandomness</a>&gt;(@starcoin_framework).seed == seed_for_new_block;
-<b>ensures</b> <b>exists</b>&lt;<a href="randomness.md#0x1_randomness_PerBlockRandomness">PerBlockRandomness</a>&gt;(@starcoin_framework) ==&gt; <b>global</b>&lt;<a href="randomness.md#0x1_randomness_PerBlockRandomness">PerBlockRandomness</a>&gt;(@starcoin_framework).epoch == epoch;
+<b>ensures</b> <b>exists</b>&lt;<a href="randomness.md#0x1_randomness_PerBlockRandomness">PerBlockRandomness</a>&gt;(@starcoin_framework) ==&gt; <b>global</b>&lt;<a href="randomness.md#0x1_randomness_PerBlockRandomness">PerBlockRandomness</a>&gt;(@starcoin_framework).<a href="epoch.md#0x1_epoch">epoch</a> == <a href="epoch.md#0x1_epoch">epoch</a>;
 <b>ensures</b> <b>exists</b>&lt;<a href="randomness.md#0x1_randomness_PerBlockRandomness">PerBlockRandomness</a>&gt;(@starcoin_framework) ==&gt; <b>global</b>&lt;<a href="randomness.md#0x1_randomness_PerBlockRandomness">PerBlockRandomness</a>&gt;(@starcoin_framework).round == round;
 </code></pre>
 

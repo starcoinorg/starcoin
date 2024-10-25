@@ -51,7 +51,7 @@ spec starcoin_framework::gas_schedule {
         use starcoin_framework::util;
         use starcoin_framework::stake;
         use starcoin_framework::coin::CoinInfo;
-        use starcoin_framework::starcoin_coin::StarcoinCoin;
+        use starcoin_framework::starcoin_coin::STC;
         use starcoin_framework::transaction_fee;
         use starcoin_framework::staking_config;
         use starcoin_framework::chain_status;
@@ -59,7 +59,7 @@ spec starcoin_framework::gas_schedule {
         // TODO: set because of timeout (property proved)
         pragma verify_duration_estimate = 600;
         requires exists<stake::ValidatorFees>(@starcoin_framework);
-        requires exists<CoinInfo<StarcoinCoin>>(@starcoin_framework);
+        requires exists<CoinInfo<STC>>(@starcoin_framework);
         requires chain_status::is_genesis();
         include transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply;
         include staking_config::StakingRewardsConfigRequirement;
@@ -79,14 +79,14 @@ spec starcoin_framework::gas_schedule {
     spec set_storage_gas_config(starcoin_framework: &signer, config: StorageGasConfig) {
         use starcoin_framework::stake;
         use starcoin_framework::coin::CoinInfo;
-        use starcoin_framework::starcoin_coin::StarcoinCoin;
+        use starcoin_framework::starcoin_coin::STC;
         use starcoin_framework::transaction_fee;
         use starcoin_framework::staking_config;
 
         // TODO: set because of timeout (property proved).
         pragma verify_duration_estimate = 600;
         requires exists<stake::ValidatorFees>(@starcoin_framework);
-        requires exists<CoinInfo<StarcoinCoin>>(@starcoin_framework);
+        requires exists<CoinInfo<STC>>(@starcoin_framework);
         include system_addresses::AbortsIfNotStarcoinFramework{ account: starcoin_framework };
         include transaction_fee::RequiresCollectedFeesPerValueLeqBlockStarcoinSupply;
         include staking_config::StakingRewardsConfigRequirement;

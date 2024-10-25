@@ -231,8 +231,8 @@ used for resource accounts that need access to <code>Coin&lt;StarcoinCoin&gt;</c
     fund_amount: u64,
 ) <b>acquires</b> <a href="resource_account.md#0x1_resource_account_Container">Container</a> {
     <b>let</b> (resource, resource_signer_cap) = <a href="account.md#0x1_account_create_resource_account">account::create_resource_account</a>(origin, seed);
-    <a href="coin.md#0x1_coin_register">coin::register</a>&lt;StarcoinCoin&gt;(&resource);
-    <a href="coin.md#0x1_coin_transfer">coin::transfer</a>&lt;StarcoinCoin&gt;(origin, <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(&resource), fund_amount);
+    <a href="coin.md#0x1_coin_register">coin::register</a>&lt;STC&gt;(&resource);
+    <a href="coin.md#0x1_coin_transfer">coin::transfer</a>&lt;STC&gt;(origin, <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(&resource), fund_amount);
     <a href="resource_account.md#0x1_resource_account_rotate_account_authentication_key_and_store_capability">rotate_account_authentication_key_and_store_capability</a>(
         origin,
         resource,
@@ -505,13 +505,13 @@ the SignerCapability.
 <pre><code><b>pragma</b> verify = <b>false</b>;
 <b>let</b> source_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(origin);
 <b>let</b> resource_addr = <a href="account.md#0x1_account_spec_create_resource_address">account::spec_create_resource_address</a>(source_addr, seed);
-<b>let</b> coin_store_resource = <b>global</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;StarcoinCoin&gt;&gt;(resource_addr);
-<b>include</b> <a href="starcoin_account.md#0x1_starcoin_account_WithdrawAbortsIf">starcoin_account::WithdrawAbortsIf</a>&lt;StarcoinCoin&gt;{from: origin, amount: fund_amount};
-<b>include</b> <a href="starcoin_account.md#0x1_starcoin_account_GuidAbortsIf">starcoin_account::GuidAbortsIf</a>&lt;StarcoinCoin&gt;{<b>to</b>: resource_addr};
+<b>let</b> coin_store_resource = <b>global</b>&lt;<a href="coin.md#0x1_coin_CoinStore">coin::CoinStore</a>&lt;STC&gt;&gt;(resource_addr);
+<b>include</b> <a href="starcoin_account.md#0x1_starcoin_account_WithdrawAbortsIf">starcoin_account::WithdrawAbortsIf</a>&lt;STC&gt;{from: origin, amount: fund_amount};
+<b>include</b> <a href="starcoin_account.md#0x1_starcoin_account_GuidAbortsIf">starcoin_account::GuidAbortsIf</a>&lt;STC&gt;{<b>to</b>: resource_addr};
 <b>include</b> <a href="resource_account.md#0x1_resource_account_RotateAccountAuthenticationKeyAndStoreCapabilityAbortsIfWithoutAccountLimit">RotateAccountAuthenticationKeyAndStoreCapabilityAbortsIfWithoutAccountLimit</a>;
-<b>aborts_if</b> <a href="coin.md#0x1_coin_spec_is_account_registered">coin::spec_is_account_registered</a>&lt;StarcoinCoin&gt;(resource_addr) && coin_store_resource.frozen;
+<b>aborts_if</b> <a href="coin.md#0x1_coin_spec_is_account_registered">coin::spec_is_account_registered</a>&lt;STC&gt;(resource_addr) && coin_store_resource.frozen;
 // This enforces <a id="high-level-req-3" href="#high-level-req">high-level requirement 3</a>:
-<b>ensures</b> <b>exists</b>&lt;starcoin_framework::coin::CoinStore&lt;StarcoinCoin&gt;&gt;(resource_addr);
+<b>ensures</b> <b>exists</b>&lt;starcoin_framework::coin::CoinStore&lt;STC&gt;&gt;(resource_addr);
 </code></pre>
 
 

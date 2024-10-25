@@ -153,7 +153,7 @@ spec starcoin_framework::staking_contract {
         pragma aborts_if_is_partial;
         pragma verify_duration_estimate = 120;
         include PreconditionsInCreateContract;
-        include WithdrawAbortsIf<StarcoinCoin> { account: staker };
+        include WithdrawAbortsIf<STC> { account: staker };
         include CreateStakingContractWithCoinsAbortsIfAndEnsures;
     }
 
@@ -164,7 +164,7 @@ spec starcoin_framework::staking_contract {
     staker: &signer,
     operator: address,
     voter: address,
-    coins: Coin<StarcoinCoin>,
+    coins: Coin<STC>,
     commission_percentage: u64,
     contract_creation_seed: vector<u8>,
     ): address {
@@ -198,9 +198,9 @@ spec starcoin_framework::staking_contract {
         let store = global<Store>(staker_address);
         let staking_contract = simple_map::spec_get(store.staking_contracts, operator);
 
-        include WithdrawAbortsIf<StarcoinCoin> { account: staker };
-        let balance = global<coin::CoinStore<StarcoinCoin>>(staker_address).coin.value;
-        let post post_coin = global<coin::CoinStore<StarcoinCoin>>(staker_address).coin.value;
+        include WithdrawAbortsIf<STC> { account: staker };
+        let balance = global<coin::CoinStore<STC>>(staker_address).coin.value;
+        let post post_coin = global<coin::CoinStore<STC>>(staker_address).coin.value;
         ensures post_coin == balance - amount;
 
         // postconditions stake::add_stake_with_cap()
