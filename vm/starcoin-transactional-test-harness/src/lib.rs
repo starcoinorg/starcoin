@@ -11,6 +11,7 @@ use move_compiler::compiled_unit::{AnnotatedCompiledUnit, CompiledUnitEnum};
 use move_compiler::shared::{NumberFormat, NumericalAddress, PackagePaths};
 use move_compiler::{construct_pre_compiled_lib, FullyCompiledProgram};
 use move_core_types::language_storage::StructTag;
+use move_core_types::move_resource::MoveStructType;
 use move_core_types::value::MoveValue;
 use move_core_types::{
     account_address::AccountAddress,
@@ -24,7 +25,7 @@ use move_transactional_test_runner::tasks::{
 use move_transactional_test_runner::{
     framework::{CompiledState, MoveTestAdapter},
     tasks::{InitCommand, SyntaxChoice, TaskInput},
-    vm_test_harness::view_resource_in_move_storage,
+    // vm_test_harness::view_resource_in_move_storage,
 };
 use once_cell::sync::Lazy;
 use serde::Deserialize;
@@ -56,7 +57,8 @@ use starcoin_vm_types::account_config::{
     association_address, core_code_address, STC_TOKEN_CODE_STR,
 };
 use starcoin_vm_types::state_store::state_key::StateKey;
-use starcoin_vm_types::state_view::StateView;
+use starcoin_vm_types::state_store::TStateView;
+use starcoin_vm_types::StateView;
 use starcoin_vm_types::transaction::authenticator::AccountPrivateKey;
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use starcoin_vm_types::write_set::{WriteOp, WriteSetMut};
@@ -71,7 +73,7 @@ use starcoin_vm_types::{
     transaction::{EntryFunction, Module, Script, Transaction, TransactionStatus},
     vm_status::KeptVMStatus,
 };
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
@@ -491,7 +493,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         let account_blob = self
             .context
             .storage
-            .get_state_value(&StateKey::AccessPath(account_access_path))?
+            .get_state_value_bytes(&StateKey::AccessPath(account_access_path))?
             .ok_or_else(|| {
                 anyhow::anyhow!(
                 "Failed to fetch account resource under address {}. Has the account been created?",
@@ -1057,6 +1059,10 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         self.default_syntax
     }
 
+    fn known_attributes(&self) -> &BTreeSet<String> {
+        todo!()
+    }
+
     fn init(
         default_syntax: SyntaxChoice,
         pre_compiled_deps: Option<&'a FullyCompiledProgram>,
@@ -1363,8 +1369,9 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         resource: &IdentStr,
         type_args: Vec<TypeTag>,
     ) -> anyhow::Result<(String, Value)> {
-        let s = RemoteStorage::new(&self.context.storage);
-        view_resource_in_move_storage(&s, address, module, resource, type_args)
+        let _s = RemoteStorage::new(&self.context.storage);
+        // view_resource_in_move_storage(&s, address, module, resource, type_args)
+        unimplemented!()
     }
 
     fn handle_subcommand(

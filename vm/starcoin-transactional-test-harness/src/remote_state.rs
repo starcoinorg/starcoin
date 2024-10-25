@@ -4,7 +4,6 @@
 use anyhow::{anyhow, Result};
 use jsonrpc_client_transports::RpcChannel;
 use move_binary_format::errors::VMError;
-use move_vm_types::resolver::{ModuleResolver, ResourceResolver};
 use starcoin_crypto::HashValue;
 
 use move_table_extension::{TableHandle, TableResolver};
@@ -20,13 +19,19 @@ use starcoin_types::state_set::ChainStateSet;
 use starcoin_types::vm_error::StatusCode;
 use starcoin_vm_types::errors::{Location, PartialVMError, PartialVMResult, VMResult};
 use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::state_storage_usage::StateStorageUsage;
 use starcoin_vm_types::state_store::state_value::StateValue;
 use starcoin_vm_types::state_store::table::TableHandle as StarcoinTableHandle;
-use starcoin_vm_types::state_view::{StateView, TStateView};
+use starcoin_vm_types::state_store::TStateView;
 use starcoin_vm_types::write_set::WriteSet;
 use std::collections::BTreeMap;
 use std::sync::Arc;
+use jsonrpc_http_server::hyper::body::Bytes;
+use move_core_types::metadata::Metadata;
+use move_core_types::resolver::{ModuleResolver, ResourceResolver};
+use move_core_types::value::MoveTypeLayout;
 use tokio::runtime::Runtime;
+use starcoin_vm_types::state_view::StateReaderExt;
 
 pub enum SelectableStateView<A, B> {
     A(A),
@@ -40,7 +45,14 @@ where
 {
     type Error = A::Error;
 
-    fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Self::Error> {
+    fn get_module_metadata(&self, module_id: &ModuleId) -> Vec<Metadata> {
+        match self {
+            Self::A(a) => a.get_module_metadata(module_id),
+            Self::B(b) => b.get_module_metadata(module_id),
+        }
+    }
+
+    fn get_module(&self, module_id: &ModuleId) -> Result<Option<Bytes>, Self::Error> {
         match self {
             Self::A(a) => a.get_module(module_id),
             Self::B(b) => b.get_module(module_id),
@@ -53,14 +65,10 @@ where
     B: ResourceResolver<Error = A::Error>,
 {
     type Error = A::Error;
-    fn get_resource(
-        &self,
-        address: &AccountAddress,
-        tag: &StructTag,
-    ) -> Result<Option<Vec<u8>>, Self::Error> {
+    fn get_resource_bytes_with_metadata_and_layout(&self, address: &AccountAddress, struct_tag: &StructTag, _metadata: &[Metadata], _layout: Option<&MoveTypeLayout>) -> std::result::Result<(Option<Bytes>, usize), Self::Error> {
         match self {
-            Self::A(v) => v.get_resource_type(address, tag),
-            Self::B(v) => v.get_resource_type(address, tag),
+            Self::A(v) => v.get_resource_type(address, struct_tag),
+            Self::B(v) => v.get_resource_type(address, struct_tag),
         }
     }
 }
@@ -76,6 +84,10 @@ where
             Self::A(a) => a.get_state_value(state_key),
             Self::B(b) => b.get_state_value(state_key),
         }
+    }
+
+    fn get_usage(&self) -> starcoin_vm_types::state_store::Result<StateStorageUsage> {
+        unimplemented!("not implemented")
     }
 
     fn is_genesis(&self) -> bool {
@@ -147,11 +159,8 @@ where
     B: ResourceResolver<Error = A::Error>,
 {
     type Error = A::Error;
-    fn get_resource(
-        &self,
-        address: &AccountAddress,
-        tag: &StructTag,
-    ) -> Result<Option<Vec<u8>>, Self::Error> {
+
+    fn get_resource_bytes_with_metadata_and_layout(&self, address: &AccountAddress, tag: &StructTag, _metadata: &[Metadata], _layout: Option<&MoveTypeLayout>) -> std::result::Result<(Option<Bytes>, usize), Self::Error> {
         match self.a.get_resource_type(address, tag)? {
             Some(d) => Ok(Some(d)),
             None => self.b.get_resource_type(address, tag),
@@ -370,20 +379,22 @@ impl ModuleResolver for RemoteViewer {
 
 impl ResourceResolver for RemoteViewer {
     type Error = PartialVMError;
-    fn get_resource(
-        &self,
-        address: &AccountAddress,
-        tag: &StructTag,
-    ) -> PartialVMResult<Option<Vec<u8>>> {
+
+    fn get_resource_bytes_with_metadata_and_layout(&self, address: &AccountAddress, tag: &StructTag, metadata: &[Metadata], layout: Option<&MoveTypeLayout>) -> std::result::Result<(Option<Bytes>, usize), Self::Error> {
         let handle = self.rt.handle().clone();
         handle.block_on(self.svc.get_resource_async(address, tag))
     }
 }
 
 impl TableResolver for RemoteViewer {
-    fn resolve_table_entry(&self, handle: &TableHandle, key: &[u8]) -> Result<Option<Vec<u8>>> {
+    fn resolve_table_entry_bytes_with_layout(&self, handle: &TableHandle, key: &[u8], _maybe_layout: Option<&MoveTypeLayout>) -> std::result::Result<Option<Bytes>, PartialVMError> {
         let h = self.rt.handle().clone();
-        h.block_on(self.svc.resolve_table_entry_async(handle, key))
+        let ret = h.block_on(self.svc.resolve_table_entry_async(handle, key));
+       match ret {
+              Ok(Some(v)) => Ok(Some(Bytes::from(v))),
+              Ok(None) => Ok(None),
+              Err(e) => Err(e.into())
+       }
     }
 }
 
@@ -409,6 +420,10 @@ impl TStateView for RemoteViewer {
                 )?
                 .map(|v| StateValue::from(v))),
         }
+    }
+
+    fn get_usage(&self) -> starcoin_vm_types::state_store::Result<StateStorageUsage> {
+        todo!()
     }
 
     fn is_genesis(&self) -> bool {

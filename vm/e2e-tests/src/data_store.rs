@@ -6,20 +6,19 @@ use crate::account::AccountData;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use starcoin_vm_types::{
-    access_path::AccessPath,
-    language_storage::ModuleId,
-    state_store::state_key::StateKey,
-    write_set::{WriteOp, WriteSet},
-    StateView,
+    access_path::AccessPath, language_storage::ModuleId, state_store::state_key::StateKey,
+    write_set::WriteSet,
 };
 
 use starcoin_crypto::HashValue;
 use starcoin_statedb::ChainStateWriter;
 use starcoin_types::state_set::ChainStateSet;
+use starcoin_vm_types::access_path::DataPath;
 use starcoin_vm_types::state_store::errors::StateviewError;
 use starcoin_vm_types::state_store::state_storage_usage::StateStorageUsage;
 use starcoin_vm_types::state_store::state_value::StateValue;
 use starcoin_vm_types::state_store::TStateView;
+use starcoin_vm_types::write_set::TransactionWrite;
 use std::collections::HashMap;
 use std::sync::{RwLock, RwLockReadGuard};
 
@@ -37,12 +36,16 @@ use std::sync::{RwLock, RwLockReadGuard};
 /// `RemoteCache` is needed.
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct FakeDataStore {
-    state_data: RwLock<HashMap<StateKey, Vec<u8>>>,
+    state_data: RwLock<HashMap<StateKey, StateValue>>,
 }
 
 impl FakeDataStore {
     /// Creates a new `FakeDataStore` with the provided initial data.
     pub fn new(data: HashMap<StateKey, Vec<u8>>) -> Self {
+        let data = data
+            .into_iter()
+            .map(|(k, v)| (k, StateValue::new_legacy(v.into())))
+            .collect();
         FakeDataStore {
             state_data: RwLock::new(data),
         }
@@ -52,11 +55,11 @@ impl FakeDataStore {
     pub fn add_write_set(&self, write_set: &WriteSet) {
         let mut write_handle = self.state_data.write().expect("Panic for lock");
         for (state_key, write_op) in write_set {
-            match write_op {
-                WriteOp::Value(blob) => {
-                    write_handle.insert(state_key.clone(), blob.clone());
+            match write_op.as_state_value() {
+                Some(blob) => {
+                    write_handle.insert(state_key.clone(), blob);
                 }
-                WriteOp::Deletion => {
+                None => {
                     write_handle.remove(state_key).expect("Panic for remove");
                 }
             }
@@ -66,15 +69,15 @@ impl FakeDataStore {
     /// Sets a (key, value) pair within this data store.
     ///
     /// Returns the previous data if the key was occupied.
-    pub fn set(&self, state_key: StateKey, data_blob: Vec<u8>) -> Option<Vec<u8>> {
+    pub fn set(&self, state_key: StateKey, data_blob: Vec<u8>) -> Option<StateValue> {
         let mut write_handle = self.state_data.write().expect("Panic for lock");
-        write_handle.insert(state_key, data_blob)
+        write_handle.insert(state_key, StateValue::new_legacy(data_blob.into()))
     }
 
     /// Deletes a key from this data store.
     ///
     /// Returns the previous data if the key was occupied.
-    pub fn remove(&self, state_key: &StateKey) -> Option<Vec<u8>> {
+    pub fn remove(&self, state_key: &StateKey) -> Option<StateValue> {
         let mut write_handle = self.state_data.write().expect("Panic for lock");
         write_handle.remove(state_key)
     }
@@ -89,12 +92,11 @@ impl FakeDataStore {
     ///
     /// Does not do any sort of verification on the module.
     pub fn add_module(&mut self, module_id: &ModuleId, blob: Vec<u8>) {
-        let access_path = AccessPath::from(module_id);
-        self.set(StateKey::AccessPath(access_path), blob);
+        self.set(StateKey::module_id(module_id), blob);
     }
 
     /// Yields a reference to the internal data structure of the global state
-    pub fn inner(&self) -> RwLockReadGuard<HashMap<StateKey, Vec<u8>>> {
+    pub fn inner(&self) -> RwLockReadGuard<HashMap<StateKey, StateValue>> {
         self.state_data.read().expect("Panic for read state data")
     }
 }
@@ -104,11 +106,7 @@ impl FakeDataStore {
 impl TStateView for FakeDataStore {
     type Key = StateKey;
     fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>, StateviewError> {
-        Ok(self
-            .inner()
-            .get(state_key)
-            .cloned()
-            .map(|v| StateValue::new(v)))
+        Ok(self.inner().get(state_key).cloned())
     }
 
     fn get_usage(&self) -> starcoin_vm_types::state_store::Result<StateStorageUsage> {
@@ -123,13 +121,31 @@ impl TStateView for FakeDataStore {
 impl ChainStateWriter for FakeDataStore {
     /// Sets state at access_path.
     fn set(&self, access_path: &AccessPath, value: Vec<u8>) -> Result<()> {
-        self.set(StateKey::AccessPath(access_path.clone()), value);
+        let state_key = {
+            match &access_path.path {
+                DataPath::Code(name) => StateKey::module(&access_path.address, name),
+                DataPath::Resource(struct_tag) => {
+                    StateKey::resource(&access_path.address, struct_tag)?
+                }
+                DataPath::ResourceGroup(_) => unimplemented!(),
+            }
+        };
+        self.set(state_key, value);
         Ok(())
     }
 
     /// Remove state at access_path
     fn remove(&self, access_path: &AccessPath) -> Result<()> {
-        self.remove(&StateKey::AccessPath(access_path.clone()));
+        let state_key = {
+            match &access_path.path {
+                DataPath::Code(name) => StateKey::module(&access_path.address, name),
+                DataPath::Resource(struct_tag) => {
+                    StateKey::resource(&access_path.address, struct_tag)?
+                }
+                DataPath::ResourceGroup(_) => unimplemented!(),
+            }
+        };
+        self.remove(&state_key);
         Ok(())
     }
 
