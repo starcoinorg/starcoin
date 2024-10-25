@@ -46,6 +46,7 @@ num_cpus = { workspace = true }
 hex = "0.4.3"
 bytes = { workspace = true }
 move-bytecode-verifier = { workspace = true }
+starcoin-aggregator = { workspace = true }
 
 [dev-dependencies]
 stdlib = { workspace = true }
@@ -53,5 +54,5 @@ stdlib = { workspace = true }
 [features]
 default = ["metrics"]
 metrics = ["starcoin-metrics"]
-testing = ["move-stdlib/testing", "starcoin-frameworks/testing"]
+testing = ["move-stdlib/testing", "starcoin-frameworks/testing", "starcoin-aggregator/testing"]
 force-deploy = []

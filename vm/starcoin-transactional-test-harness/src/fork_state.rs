@@ -8,7 +8,7 @@ use crate::HashValue;
 use anyhow::{anyhow, Result};
 use move_core_types::account_address::AccountAddress;
 use starcoin_state_api::{
-    ChainStateAsyncService, ChainStateReader, StateNodeStore, StateView, StateWithProof,
+    ChainStateAsyncService, ChainStateReader, StateNodeStore, StateWithProof,
     StateWithTableItemProof,
 };
 use starcoin_statedb::ChainStateDB;
@@ -97,7 +97,7 @@ impl MockChainStateAsyncService {
 
 #[async_trait::async_trait]
 impl ChainStateAsyncService for MockChainStateAsyncService {
-    async fn get(self, access_path: AccessPath) -> Result<Option<Vec<u8>>> {
+    async fn get(self, access_path: .AccessPath) -> Result<Option<Vec<u8>>> {
         self.state_db()
             .get_state_value(&StateKey::AccessPath(access_path))
     }

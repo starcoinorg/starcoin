@@ -9,16 +9,20 @@ use starcoin_vm_types::{
     on_chain_config::{Features, TimedFeatures, TimedFeaturesBuilder},
 };
 #[cfg(feature = "testing")]
-use std::{
-    collections::{BTreeMap, HashSet},
+use {
     move_binary_format::errors::PartialVMError,
+    move_binary_format::errors::PartialVMResult,
+    move_core_types::language_storage::StructTag,
     move_core_types::value::MoveTypeLayout,
     move_table_extension::{TableHandle, TableResolver},
-    starcoin_vm_types::{
-        state_store::{state_key::StateKey, state_value::StateValue},
-        write_set::WriteOp,
-    },
-    sync::Arc,
+    move_vm_types::delayed_values::delayed_field_id::DelayedFieldID,
+    starcoin_aggregator::bounded_math::SignedU128,
+    starcoin_aggregator::resolver::{TAggregatorV1View, TDelayedFieldView},
+    starcoin_aggregator::types::{DelayedFieldValue, DelayedFieldsSpeculativeError, PanicOr},
+    starcoin_vm_types::state_store::state_value::StateValueMetadata,
+    starcoin_vm_types::state_store::{state_key::StateKey, state_value::StateValue},
+    std::collections::{BTreeMap, HashSet},
+    std::sync::Arc,
     {bytes::Bytes, starcoin_types::delayed_fields::PanicError},
     {move_vm_runtime::native_extensions::NativeContextExtensions, once_cell::sync::Lazy},
 };
@@ -40,7 +44,7 @@ impl TAggregatorV1View for StarcoinBlankStorage {
     fn get_aggregator_v1_state_value(
         &self,
         _id: &Self::Identifier,
-    ) -> anyhow::Result<Option<StateValue>> {
+    ) -> PartialVMResult<Option<StateValue>> {
         Ok(None)
     }
 }
@@ -50,7 +54,6 @@ impl TDelayedFieldView for StarcoinBlankStorage {
     type Identifier = DelayedFieldID;
     type ResourceGroupTag = StructTag;
     type ResourceKey = StateKey;
-    type ResourceValue = WriteOp;
 
     fn is_delayed_field_optimization_capable(&self) -> bool {
         false
@@ -73,14 +76,11 @@ impl TDelayedFieldView for StarcoinBlankStorage {
         unreachable!()
     }
 
-    fn generate_delayed_field_id(&self) -> Self::Identifier {
+    fn generate_delayed_field_id(&self, _width: u32) -> Self::Identifier {
         unreachable!()
     }
 
-    fn validate_and_convert_delayed_field_id(
-        &self,
-        _id: u64,
-    ) -> Result<Self::Identifier, PanicError> {
+    fn validate_delayed_field_id(&self, _id: &Self::Identifier) -> Result<(), PanicError> {
         unreachable!()
     }
 
@@ -88,8 +88,10 @@ impl TDelayedFieldView for StarcoinBlankStorage {
         &self,
         _delayed_write_set_keys: &HashSet<Self::Identifier>,
         _skip: &HashSet<Self::ResourceKey>,
-    ) -> Result<BTreeMap<Self::ResourceKey, (Self::ResourceValue, Arc<MoveTypeLayout>)>, PanicError>
-    {
+    ) -> Result<
+        BTreeMap<Self::ResourceKey, (StateValueMetadata, u64, Arc<MoveTypeLayout>)>,
+        PanicError,
+    > {
         unreachable!()
     }
 
@@ -97,7 +99,7 @@ impl TDelayedFieldView for StarcoinBlankStorage {
         &self,
         _delayed_write_set_keys: &HashSet<Self::Identifier>,
         _skip: &HashSet<Self::ResourceKey>,
-    ) -> Result<BTreeMap<Self::ResourceKey, (Self::ResourceValue, u64)>, PanicError> {
+    ) -> PartialVMResult<BTreeMap<Self::ResourceKey, (StateValueMetadata, u64)>> {
         unimplemented!()
     }
 }

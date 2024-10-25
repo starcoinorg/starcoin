@@ -21,7 +21,6 @@ use starcoin_rpc_api::types::{
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_rpc_server::module::map_err;
-use starcoin_state_api::StateView;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::storage::StorageInstance;
@@ -32,6 +31,7 @@ use starcoin_types::block::{Block, BlockInfo, BlockNumber};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::{Transaction, TransactionInfo, TransactionOutput};
 use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm_types::StateView;
 use std::hash::Hash;
 use std::option::Option::{None, Some};
 use std::sync::{Arc, Mutex};

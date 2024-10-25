@@ -14,7 +14,6 @@ use starcoin_vm_types::account_config::{genesis_address, AccountResource, Balanc
 use starcoin_vm_types::event::EventHandle;
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::language_storage::StructTag;
-use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::transaction::{
@@ -610,8 +609,8 @@ impl AccountData {
             .simple_serialize(&AccountData::layout())
             .unwrap();
         write_set.push((
-            StateKey::AccessPath(self.make_account_access_path()),
-            WriteOp::Creation(account),
+            StateKey::resource_typed::<AccountResource>(self.address()).unwrap(),
+            WriteOp::legacy_modification(account.into()),
         ));
 
         let balance = coinstore_blob
@@ -620,8 +619,8 @@ impl AccountData {
             .simple_serialize(&CoinStore::layout())
             .unwrap();
         write_set.push((
-            StateKey::AccessPath(self.make_coin_store_access_path()),
-            WriteOp::Value(balance),
+            StateKey::resource_typed::<BalanceResource>(self.address()).unwrap(),
+            WriteOp::legacy_modification(balance.into()),
         ));
 
         WriteSetMut::new(write_set).freeze().unwrap()
