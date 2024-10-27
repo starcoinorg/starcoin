@@ -56,11 +56,6 @@ impl WarmVmCache {
             return Ok(vm.clone());
         }
 
-        let cache_locked = self.cache.write().unwrap();
-        if let Some(vm) = cache_locked.get(&id) {
-            return Ok(vm.clone());
-        }
-
         {
             #[cfg(feature = "metrics")]
             let _timer = TIMER.timer_with(&["warm_vm_cache_miss"]);

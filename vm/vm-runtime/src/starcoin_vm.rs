@@ -95,7 +95,16 @@ const FLEXI_DAG_UPGRADE_VERSION_MARK: u64 = 12;
 impl StarcoinVM {
     #[cfg(feature = "metrics")]
     pub fn new<S: StateView>(metrics: Option<VMMetrics>, state: &S) -> Self {
-        let chain_id = state.get_chain_id().unwrap().id();
+        Self::new_with_config(metrics, state, None)
+    }
+
+    #[cfg(feature = "metrics")]
+    pub fn new_with_config<S: StateView>(
+        metrics: Option<VMMetrics>,
+        state: &S,
+        chain_id: Option<u8>,
+    ) -> Self {
+        let chain_id = chain_id.unwrap_or_else(|| state.get_chain_id().unwrap().id());
         let gas_params = StarcoinGasParameters::initial();
         let native_params = gas_params.natives.clone();
         // todo: double check if it's ok to use RemoteStorage as StarcoinMoveResolver
@@ -1488,7 +1497,12 @@ impl StarcoinVM {
         block_gas_limit: Option<u64>,
         metrics: Option<VMMetrics>,
     ) -> Result<Vec<(VMStatus, TransactionOutput)>, VMStatus> {
-        let mut vm = Self::new(metrics, state_view);
+        // todo: retrieve chain_id properly
+        let chain_id = match txns.first().unwrap() {
+            Transaction::UserTransaction(txn) => txn.chain_id().id(),
+            Transaction::BlockMetadata(meta) => meta.chain_id().id(),
+        };
+        let mut vm = Self::new_with_config(metrics, state_view, Some(chain_id));
         vm.execute_block_transactions(state_view, txns, block_gas_limit)
     }
 
