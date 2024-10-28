@@ -97,13 +97,13 @@ impl MockChainStateAsyncService {
 
 #[async_trait::async_trait]
 impl ChainStateAsyncService for MockChainStateAsyncService {
-    async fn get(self, access_path: .AccessPath) -> Result<Option<Vec<u8>>> {
+    async fn get(self, state_key: StateKey) -> Result<Option<Vec<u8>>> {
         self.state_db()
-            .get_state_value(&StateKey::AccessPath(access_path))
+            .get_state_value(&state_key)
     }
 
-    async fn get_with_proof(self, access_path: AccessPath) -> Result<StateWithProof> {
-        self.state_db().get_with_proof(&access_path)
+    async fn get_with_proof(self, state_key: StateKey) -> Result<StateWithProof> {
+        self.state_db().get_with_proof(&state_key)
     }
 
     async fn get_account_state(self, address: AccountAddress) -> Result<Option<AccountState>> {

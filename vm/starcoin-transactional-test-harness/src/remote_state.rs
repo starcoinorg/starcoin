@@ -371,6 +371,10 @@ impl RemoteViewer {
 impl ModuleResolver for RemoteViewer {
     type Error = VMError;
 
+    fn get_module_metadata(&self, module_id: &ModuleId) -> Vec<Metadata> {
+        todo!()
+    }
+
     fn get_module(&self, module_id: &ModuleId) -> VMResult<Option<Vec<u8>>> {
         let handle = self.rt.handle().clone();
         handle.block_on(self.svc.get_module_async(module_id))
