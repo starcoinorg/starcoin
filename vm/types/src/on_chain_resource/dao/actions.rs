@@ -89,7 +89,7 @@ impl<C> MoveStructType for OnChainConfigUpdate<C>
 where
     C: OnChainConfig,
 {
-    const MODULE_NAME: &'static IdentStr = ident_str!("OnChainConfigDao");
+    const MODULE_NAME: &'static IdentStr = ident_str!("on_chain_config_dao");
     const STRUCT_NAME: &'static IdentStr = ident_str!("OnChainConfigUpdate");
 }
 
@@ -108,7 +108,7 @@ pub struct WithdrawToken {
 }
 
 impl MoveStructType for WithdrawToken {
-    const MODULE_NAME: &'static IdentStr = ident_str!("TreasuryWithdrawDaoProposal");
+    const MODULE_NAME: &'static IdentStr = ident_str!("treasury_withdraw_dao_proposal");
     const STRUCT_NAME: &'static IdentStr = ident_str!("WithdrawToken");
 }
 

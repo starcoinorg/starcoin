@@ -61,8 +61,8 @@ impl BalanceResource {
 }
 
 impl MoveStructType for BalanceResource {
-    const MODULE_NAME: &'static IdentStr = ident_str!(ACCOUNT_MODULE_NAME);
-    const STRUCT_NAME: &'static IdentStr = ident_str!("Balance");
+    const MODULE_NAME: &'static IdentStr = ident_str!("coin");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("CoinStore");
     fn type_args() -> Vec<TypeTag> {
         vec![stc_type_tag()]
     }

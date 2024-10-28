@@ -26,7 +26,7 @@ pub struct DaoGlobalInfo {
 }
 
 impl MoveStructType for DaoGlobalInfo {
-    const MODULE_NAME: &'static IdentStr = ident_str!("Dao");
+    const MODULE_NAME: &'static IdentStr = ident_str!("dao");
     const STRUCT_NAME: &'static IdentStr = ident_str!("DaoGlobalInfo");
 }
 
@@ -90,7 +90,7 @@ impl<A> MoveStructType for Proposal<A>
 where
     A: ProposalAction,
 {
-    const MODULE_NAME: &'static IdentStr = ident_str!("Dao");
+    const MODULE_NAME: &'static IdentStr = ident_str!("dao");
     const STRUCT_NAME: &'static IdentStr = ident_str!("Proposal");
 }
 
@@ -135,7 +135,7 @@ pub struct Vote {
 }
 
 impl MoveStructType for Vote {
-    const MODULE_NAME: &'static IdentStr = ident_str!("Dao");
+    const MODULE_NAME: &'static IdentStr = ident_str!("dao");
     const STRUCT_NAME: &'static IdentStr = ident_str!("Vote");
 }
 

@@ -207,7 +207,7 @@ pub fn build_raw_txn(
     let chain_id = state.get_chain_id().unwrap();
     let seq_number = get_sequence_number(user_address, state);
 
-    let now_seconds: u64 = state.get_timestamp().unwrap().milliseconds / 1000;
+    let now_seconds: u64 = state.get_timestamp().unwrap().microseconds / 1000000;
     let expiration_timestamp_secs = expiration_timestamp_secs.unwrap_or(now_seconds + 60 * 60);
     RawUserTransaction::new_with_default_gas_token(
         user_address,

@@ -62,6 +62,7 @@ use starcoin_vm_types::{
     vm_status::{KeptVMStatus, StatusCode, VMStatus},
 };
 use std::{borrow::Borrow, cmp::min, sync::Arc};
+use starcoin_vm_types::genesis_config::ChainId;
 
 static EXECUTION_CONCURRENCY_LEVEL: OnceCell<usize> = OnceCell::new();
 
@@ -93,7 +94,7 @@ const FLEXI_DAG_UPGRADE_VERSION_MARK: u64 = 12;
 impl StarcoinVM {
     #[cfg(feature = "metrics")]
     pub fn new<S: StateView>(metrics: Option<VMMetrics>, state: &S) -> Self {
-        let chain_id = state.get_chain_id().unwrap().id();
+        // let chain_id = state.get_chain_id().unwrap().id();
         let gas_params = StarcoinGasParameters::initial();
         let native_params = gas_params.natives.clone();
         // todo: double check if it's ok to use RemoteStorage as StarcoinMoveResolver
@@ -102,7 +103,8 @@ impl StarcoinVM {
             native_params.clone(),
             gas_params.vm.misc.clone(),
             1,
-            chain_id,
+            // chain_id,
+            ChainId::test().id(),
             Features::default(),
             TimedFeaturesBuilder::enable_all().build(),
             &resolver,
