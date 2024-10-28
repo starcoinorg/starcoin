@@ -94,7 +94,10 @@ const FLEXI_DAG_UPGRADE_VERSION_MARK: u64 = 12;
 impl StarcoinVM {
     #[cfg(feature = "metrics")]
     pub fn new<S: StateView>(metrics: Option<VMMetrics>, state: &S) -> Self {
-        // let chain_id = state.get_chain_id().unwrap().id();
+        Self::new_with_config(metrics, state, Some(state.get_chain_id().unwrap().id()))
+    }
+
+    pub fn new_with_config<S: StateView>(metrics: Option<VMMetrics>, state: &S, chain_id: Option<u8>) -> Self {
         let gas_params = StarcoinGasParameters::initial();
         let native_params = gas_params.natives.clone();
         // todo: double check if it's ok to use RemoteStorage as StarcoinMoveResolver
@@ -103,13 +106,11 @@ impl StarcoinVM {
             native_params.clone(),
             gas_params.vm.misc.clone(),
             1,
-            // chain_id,
-            ChainId::test().id(),
+            chain_id.unwrap(),
             Features::default(),
             TimedFeaturesBuilder::enable_all().build(),
             &resolver,
-        )
-        .expect("should be able to create Move VM; check if there are duplicated natives");
+        ).expect("should be able to create Move VM; check if there are duplicated natives");
         Self {
             move_vm: Arc::new(inner),
             vm_config: None,
@@ -122,6 +123,7 @@ impl StarcoinVM {
             metrics,
         }
     }
+
     #[cfg(not(feature = "metrics"))]
     pub fn new<S: StateView>(state: &S) -> Self {
         let chain_id = state.get_chain_id().id();
@@ -138,7 +140,7 @@ impl StarcoinVM {
             TimedFeaturesBuilder::enable_all().build(),
             resolver,
         )
-        .expect("should be able to create Move VM; check if there are duplicated natives");
+            .expect("should be able to create Move VM; check if there are duplicated natives");
         Self {
             move_vm: Arc::new(inner),
             vm_config: None,
@@ -175,7 +177,7 @@ impl StarcoinVM {
                     &gs.clone().to_btree_map(),
                     1,
                 )
-                .map_err(|e| format_err!("{e}"))?;
+                    .map_err(|e| format_err!("{e}"))?;
                 // TODO(simon): do double check
                 // if params.natives != self.native_params {
                 debug!("update native_params");
@@ -389,7 +391,7 @@ impl StarcoinVM {
         // NB: MIN_PRICE_PER_GAS_UNIT may equal zero, but need not in the future. Hence why
         // we turn off the clippy warning.
         #[allow(clippy::absurd_extreme_comparisons)]
-        let below_min_bound = txn_data.gas_unit_price() < txn_gas_params.min_price_per_gas_unit;
+            let below_min_bound = txn_data.gas_unit_price() < txn_gas_params.min_price_per_gas_unit;
         if below_min_bound {
             warn!(
                 "[VM] Gas unit error; min {}, submitted {}",
@@ -504,7 +506,7 @@ impl StarcoinVM {
         txn: SignedUserTransaction,
     ) -> Option<VMStatus> {
         #[cfg(feature = "metrics")]
-        let _timer = self.metrics.as_ref().map(|metrics| {
+            let _timer = self.metrics.as_ref().map(|metrics| {
             metrics
                 .vm_txn_exe_time
                 .with_label_values(&["verify_transaction"])
@@ -674,7 +676,7 @@ impl StarcoinVM {
                     gas_meter,
                     sender,
                 )
-                .map_err(|e| e.into_vm_status())?;
+                    .map_err(|e| e.into_vm_status())?;
             }
             charge_global_write_gas_usage(gas_meter, &session, &txn_data.sender())?;
 
@@ -1193,12 +1195,12 @@ impl StarcoinVM {
 
         'outer: for block in blocks {
             #[cfg(feature = "metrics")]
-            let txn_type_name = block.type_name().to_string();
+                let txn_type_name = block.type_name().to_string();
             match block {
                 TransactionBlock::UserTransaction(txns) => {
                     for transaction in txns {
                         #[cfg(feature = "metrics")]
-                        let timer = self.metrics.as_ref().map(|metrics| {
+                            let timer = self.metrics.as_ref().map(|metrics| {
                             metrics
                                 .vm_txn_exe_time
                                 .with_label_values(&[txn_type_name.as_str()])
@@ -1251,7 +1253,7 @@ impl StarcoinVM {
                 }
                 TransactionBlock::BlockPrologue(block_metadata) => {
                     #[cfg(feature = "metrics")]
-                    let timer = self.metrics.as_ref().map(|metrics| {
+                        let timer = self.metrics.as_ref().map(|metrics| {
                         metrics
                             .vm_txn_exe_time
                             .with_label_values(&[txn_type_name.as_str()])
@@ -1328,7 +1330,7 @@ impl StarcoinVM {
         check_gas: bool,
     ) -> Result<Vec<Vec<u8>>, VMStatus> {
         #[cfg(feature = "metrics")]
-        let _timer = self.metrics.as_ref().map(|metrics| {
+            let _timer = self.metrics.as_ref().map(|metrics| {
             metrics
                 .vm_txn_exe_time
                 .with_label_values(&["execute_readonly_function"])
@@ -1390,7 +1392,7 @@ impl StarcoinVM {
             change_set,
             table_change_set,
         }
-        .into_change_set(&mut ())?;
+            .into_change_set(&mut ())?;
         if !write_set.is_empty() {
             warn!("Readonly function {} changes state", function_name);
             return Err(VMStatus::error(StatusCode::REJECTED_WRITE_SET, None));
@@ -1448,7 +1450,7 @@ impl StarcoinVM {
                     txn_data.max_gas_amount,
                     status,
                 )
-                .unwrap_or_else(|e| discard_error_vm_status(e).1);
+                    .unwrap_or_else(|e| discard_error_vm_status(e).1);
                 (error_code, txn_output)
             }
             TransactionStatus::Discard(status) => {
@@ -1490,7 +1492,12 @@ impl StarcoinVM {
         block_gas_limit: Option<u64>,
         metrics: Option<VMMetrics>,
     ) -> Result<Vec<(VMStatus, TransactionOutput)>, VMStatus> {
-        let mut vm = Self::new(metrics, state_view);
+        // todo: retrieve chain_id properly
+        let chain_id = match txns.first().unwrap() {
+            Transaction::UserTransaction(txn) => txn.chain_id().id(),
+            Transaction::BlockMetadata(meta) => meta.chain_id().id(),
+        };
+        let mut vm = Self::new_with_config(metrics, state_view, Some(chain_id));
         vm.execute_block_transactions(state_view, txns, block_gas_limit)
     }
 
@@ -1581,7 +1588,7 @@ pub(crate) fn get_transaction_output<A: AccessPathCache>(
         change_set,
         table_change_set,
     }
-    .into_change_set(ap_cache)?;
+        .into_change_set(ap_cache)?;
     Ok(TransactionOutput::new(
         table_infos,
         write_set,

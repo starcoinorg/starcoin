@@ -24,11 +24,14 @@ fn main() {
         None => BuiltinNetworkID::networks(),
     };
     for id in networks {
+        info!("Start generate network: {:?}", id);
         // skip test && dev network generate.
         if id.is_test() || id.is_dev() || id.is_dag_test() {
+            info!("End generate network: {:?}, it is test network", id);
             continue;
         }
         if !id.genesis_config().is_ready() {
+            info!("End generate network: {:?}, genesis config not ready yet, please check it", id);
             continue;
         }
         let net = ChainNetwork::new_builtin(id);
