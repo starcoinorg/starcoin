@@ -248,7 +248,7 @@ where
     #[cfg(test)]
     pub fn apply_failed(&mut self, block: Block) -> Result<()> {
         use anyhow::bail;
-        use starcoin_chain::verifier::{DagVerifier, FullVerifier};
+        use starcoin_chain::verifier::{DagVerifierForMining, FullVerifier};
 
         let verified_block = match self.main.check_chain_type()? {
             ChainType::Single => {
@@ -257,7 +257,8 @@ where
             }
             ChainType::Dag => {
                 // apply but no connection
-                self.main.verify_with_verifier::<DagVerifier>(block)?
+                self.main
+                    .verify_with_verifier::<DagVerifierForMining>(block)?
             }
         };
         let _executed_block = self.main.execute(verified_block)?;
@@ -416,6 +417,7 @@ where
                             descendant
                         )
                     })?;
+
                 deleted_chain.extend(descendant_header.parents_hash());
 
                 ready_to_delete.insert(descendant);
@@ -428,6 +430,33 @@ where
                 }
                 break;
             }
+        }
+
+        if new_head_block.header().pruning_point() == HashValue::zero() {
+            let genesis = self
+                .main
+                .get_storage()
+                .get_genesis()?
+                .ok_or_else(|| format_err!("Cannot get the genesis in storage!"))?;
+            self.main.dag().save_dag_state_directly(
+                genesis,
+                DagState {
+                    tips: vec![new_head_block.header().id()],
+                },
+            )?;
+            self.main.dag().save_dag_state_directly(
+                HashValue::zero(),
+                DagState {
+                    tips: vec![new_head_block.header().id()],
+                },
+            )?;
+        } else {
+            self.main.dag().save_dag_state_directly(
+                new_head_block.header().pruning_point(),
+                DagState {
+                    tips: vec![new_head_block.header().id()],
+                },
+            )?;
         }
 
         if new_head_block.header().pruning_point() == HashValue::zero() {

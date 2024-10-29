@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use starcoin_chain::{verifier::DagVerifierWithGhostData, BlockChain, ChainReader};
+use starcoin_chain::{verifier::DagVerifierForSync, BlockChain, ChainReader};
 use starcoin_chain_api::ExecutedBlock;
 use starcoin_config::TimeService;
 use starcoin_crypto::HashValue;
@@ -172,7 +172,7 @@ impl DagBlockExecutor {
                         match chain
                             .as_mut()
                             .expect("it cannot be none!")
-                            .apply_with_verifier::<DagVerifierWithGhostData>(block)
+                            .apply_with_verifier::<DagVerifierForSync>(block)
                         {
                             Ok(executed_block) => {
                                 info!(
