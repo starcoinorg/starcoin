@@ -7,6 +7,7 @@ use crate::abstract_write_op::{
     ResourceGroupInPlaceDelayedFieldChangeOp, WriteWithDelayedFieldsOp,
 };
 use crate::check_change_set::CheckChangeSet;
+use crate::resolver::ExecutorView;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
@@ -18,7 +19,7 @@ use starcoin_aggregator::resolver::AggregatorV1Resolver;
 use starcoin_aggregator::types::code_invariant_error;
 use starcoin_aggregator::{delayed_change::DelayedChange, delta_change_set::DeltaOp};
 use starcoin_types::delayed_fields::PanicError;
-use starcoin_vm_types::errors::{Location, PartialVMError, VMResult};
+use starcoin_vm_types::errors::{Location, PartialVMError, PartialVMResult, VMResult};
 use starcoin_vm_types::state_store::state_value::StateValueMetadata;
 use starcoin_vm_types::write_set::{TransactionWrite, WriteOpSize};
 use starcoin_vm_types::{
@@ -706,6 +707,7 @@ impl VMChangeSet {
                                 metadata_op: additional_metadata_op,
                                 inner_ops: additional_inner_ops,
                                 maybe_group_op_size: additional_maybe_group_op_size,
+                                prev_group_size: _,
                             }),
                         ) => {
                             // Squashing creation and deletion is a no-op. In that case, we have to
@@ -861,6 +863,79 @@ impl VMChangeSet {
     pub fn has_creation(&self) -> bool {
         self.write_set_size_iter()
             .any(|(_key, op_size)| matches!(op_size, WriteOpSize::Creation { .. }))
+    }
+}
+
+pub struct WriteOpInfo<'a> {
+    pub key: &'a StateKey,
+    pub op_size: WriteOpSize,
+    pub prev_size: u64,
+    pub metadata_mut: &'a mut StateValueMetadata,
+}
+
+/// Represents the main functionality of any change set representation:
+///   1. It must contain write ops, and allow iterating over their sizes,
+///      as well as other information.
+///   2. it must also contain events.
+pub trait ChangeSetInterface {
+    fn num_write_ops(&self) -> usize;
+
+    fn write_set_size_iter(&self) -> impl Iterator<Item = (&StateKey, WriteOpSize)>;
+
+    fn events_iter(&self) -> impl Iterator<Item = &ContractEvent>;
+
+    fn write_op_info_iter_mut<'a>(
+        &'a mut self,
+        executor_view: &'a dyn ExecutorView,
+    ) -> impl Iterator<Item = PartialVMResult<WriteOpInfo>>;
+}
+
+impl ChangeSetInterface for VMChangeSet {
+    fn num_write_ops(&self) -> usize {
+        // Note: we only use resources and aggregators because they use write ops directly,
+        // and deltas & events are not part of these.
+        self.resource_write_set().len() + self.aggregator_v1_write_set().len()
+    }
+
+    fn write_set_size_iter(&self) -> impl Iterator<Item = (&StateKey, WriteOpSize)> {
+        self.resource_write_set()
+            .iter()
+            .map(|(k, v)| (k, v.materialized_size()))
+            .chain(
+                self.aggregator_v1_write_set()
+                    .iter()
+                    .map(|(k, v)| (k, v.write_op_size())),
+            )
+    }
+
+    fn write_op_info_iter_mut<'a>(
+        &'a mut self,
+        executor_view: &'a dyn ExecutorView,
+    ) -> impl Iterator<Item = PartialVMResult<WriteOpInfo>> {
+        let resources = self.resource_write_set.iter_mut().map(|(key, op)| {
+            Ok(WriteOpInfo {
+                key,
+                op_size: op.materialized_size(),
+                prev_size: op.prev_materialized_size(key, executor_view)?,
+                metadata_mut: op.get_metadata_mut(),
+            })
+        });
+        let v1_aggregators = self.aggregator_v1_write_set.iter_mut().map(|(key, op)| {
+            Ok(WriteOpInfo {
+                key,
+                op_size: op.write_op_size(),
+                prev_size: executor_view
+                    .get_aggregator_v1_state_value_size(key)?
+                    .unwrap_or(0),
+                metadata_mut: op.get_metadata_mut(),
+            })
+        });
+
+        resources.chain(v1_aggregators)
+    }
+
+    fn events_iter(&self) -> impl Iterator<Item = &ContractEvent> {
+        self.events().iter().map(|(e, _)| e)
     }
 }
 
