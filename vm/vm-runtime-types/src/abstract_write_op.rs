@@ -2,8 +2,11 @@
 
 // This is a ref in aptos-move/aptos-vm-types/src/abstract_write_op.rs
 
+use crate::resolver::{ExecutorView, ResourceGroupSize};
 use move_core_types::language_storage::StructTag;
 use move_core_types::value::MoveTypeLayout;
+use starcoin_vm_types::errors::PartialVMResult;
+use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::state_value::StateValueMetadata;
 use starcoin_vm_types::write_set::{TransactionWrite, WriteOp, WriteOpSize};
 use std::collections::BTreeMap;
@@ -42,15 +45,10 @@ impl AbstractResourceWriteOp {
     pub fn materialized_size(&self) -> WriteOpSize {
         use AbstractResourceWriteOp::*;
         match self {
-            Write(write) => write.into(),
+            Write(write) => write.write_op_size(),
             WriteWithDelayedFields(WriteWithDelayedFieldsOp {
                 write_op,
                 materialized_size,
-                ..
-            })
-            | WriteResourceGroup(GroupWrite {
-                metadata_op: write_op,
-                maybe_group_op_size: materialized_size,
                 ..
             }) => {
                 use WriteOp::*;
@@ -60,6 +58,24 @@ impl AbstractResourceWriteOp {
                     },
                     Modification { .. } => WriteOpSize::Modification {
                         write_len: materialized_size.expect("Modification must have size"),
+                    },
+                    Deletion { .. } => WriteOpSize::Deletion,
+                }
+            }
+            WriteResourceGroup(GroupWrite {
+                metadata_op: write_op,
+                maybe_group_op_size,
+                ..
+            }) => {
+                use WriteOp::*;
+                match write_op {
+                    Creation { .. } => WriteOpSize::Creation {
+                        write_len: maybe_group_op_size.expect("Creation must have size").get(),
+                    },
+                    Modification { .. } => WriteOpSize::Modification {
+                        write_len: maybe_group_op_size
+                            .expect("Modification must have size")
+                            .get(),
                     },
                     Deletion { .. } => WriteOpSize::Deletion,
                 }
@@ -76,6 +92,25 @@ impl AbstractResourceWriteOp {
         }
     }
 
+    pub fn prev_materialized_size(
+        &self,
+        state_key: &StateKey,
+        executor_view: &dyn ExecutorView,
+    ) -> PartialVMResult<u64> {
+        use AbstractResourceWriteOp::*;
+        match self {
+            Write(_)
+            | WriteWithDelayedFields(WriteWithDelayedFieldsOp { .. })
+            | InPlaceDelayedFieldChange(_)
+            | ResourceGroupInPlaceDelayedFieldChange(_) => Ok(executor_view
+                .get_resource_state_value_size(state_key)?
+                .unwrap_or(0)),
+            WriteResourceGroup(GroupWrite {
+                prev_group_size, ..
+            }) => Ok(*prev_group_size),
+        }
+    }
+
     /// Deposit amount is inserted into metadata at a different time than the WriteOp is created.
     /// So this method is needed to be able to update metadata generically across different variants.
     pub fn get_metadata_mut(&mut self) -> &mut StateValueMetadata {
@@ -86,12 +121,12 @@ impl AbstractResourceWriteOp {
             | WriteResourceGroup(GroupWrite {
                 metadata_op: write_op,
                 ..
-            })
-            | ResourceGroupInPlaceDelayedFieldChange(ResourceGroupInPlaceDelayedFieldChangeOp {
-                metadata_op: write_op,
-                ..
             }) => write_op.get_metadata_mut(),
-            InPlaceDelayedFieldChange(InPlaceDelayedFieldChangeOp { metadata, .. }) => metadata,
+            InPlaceDelayedFieldChange(InPlaceDelayedFieldChangeOp { metadata, .. })
+            | ResourceGroupInPlaceDelayedFieldChange(ResourceGroupInPlaceDelayedFieldChangeOp {
+                metadata,
+                ..
+            }) => metadata,
         }
     }
 
@@ -99,15 +134,16 @@ impl AbstractResourceWriteOp {
         write_op: WriteOp,
         maybe_layout: Option<Arc<MoveTypeLayout>>,
     ) -> Self {
-        if let Some(layout) = maybe_layout {
-            let materialized_size = WriteOpSize::from(&write_op).write_len();
-            Self::WriteWithDelayedFields(WriteWithDelayedFieldsOp {
-                write_op,
-                layout,
-                materialized_size,
-            })
-        } else {
-            Self::Write(write_op)
+        match maybe_layout {
+            Some(layout) => {
+                let materialized_size = write_op.write_op_size().write_len();
+                Self::WriteWithDelayedFields(WriteWithDelayedFieldsOp {
+                    write_op,
+                    layout,
+                    materialized_size,
+                })
+            }
+            None => Self::Write(write_op),
         }
     }
 }
@@ -132,8 +168,10 @@ pub struct GroupWrite {
     /// but guaranteed to fail validation and lead to correct re-execution in that case.
     pub(crate) inner_ops: BTreeMap<StructTag, (WriteOp, Option<Arc<MoveTypeLayout>>)>,
     /// Group size as used for gas charging, None if (metadata_)op is Deletion.
-    pub(crate) maybe_group_op_size: Option<u64>,
-    pub(crate) prev_group_size: Option<u64>,
+    pub(crate) maybe_group_op_size: Option<ResourceGroupSize>,
+    // TODO: consider Option<u64> to be able to represent a previously non-existent group,
+    //       if useful
+    pub(crate) prev_group_size: u64,
 }
 
 impl GroupWrite {
@@ -143,8 +181,8 @@ impl GroupWrite {
     pub fn new(
         metadata_op: WriteOp,
         inner_ops: BTreeMap<StructTag, (WriteOp, Option<Arc<MoveTypeLayout>>)>,
-        group_size: u64,
-        prev_group_size: Option<u64>,
+        group_size: ResourceGroupSize,
+        prev_group_size: u64,
     ) -> Self {
         assert!(
             metadata_op.bytes().is_none() || metadata_op.bytes().unwrap().is_empty(),
@@ -170,8 +208,12 @@ impl GroupWrite {
 
     /// Utility method that extracts the serialized group size from metadata_op. Returns
     /// None if group is being deleted, otherwise asserts on deserializing the size.
-    pub fn maybe_group_op_size(&self) -> Option<u64> {
+    pub fn maybe_group_op_size(&self) -> Option<ResourceGroupSize> {
         self.maybe_group_op_size
+    }
+
+    pub fn prev_group_size(&self) -> u64 {
+        self.prev_group_size
     }
 
     pub fn metadata_op(&self) -> &WriteOp {
@@ -184,6 +226,8 @@ impl GroupWrite {
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]
+/// Note that write_op can be a Deletion, as long as the Move type layout contains
+/// a delayed field. This simplifies squashing session outputs, in particular.
 pub struct WriteWithDelayedFieldsOp {
     pub write_op: WriteOp,
     pub layout: Arc<MoveTypeLayout>,
@@ -203,11 +247,11 @@ pub struct InPlaceDelayedFieldChangeOp {
 
 /// Actual information of which individual tag has delayed fields was read,
 /// or what those fields are unnecessary in the current implementation.
-/// That is the case, because we need to traverse and materialize all tags anyway.
+/// That is the case, because we need to traverse and materialize all tags anyways.
 ///
 /// If future implementation needs those - they can be added.
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct ResourceGroupInPlaceDelayedFieldChangeOp {
-    pub metadata_op: WriteOp,
     pub materialized_size: u64,
+    pub metadata: StateValueMetadata,
 }
