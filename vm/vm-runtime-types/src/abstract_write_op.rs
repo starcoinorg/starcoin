@@ -133,6 +133,7 @@ pub struct GroupWrite {
     pub(crate) inner_ops: BTreeMap<StructTag, (WriteOp, Option<Arc<MoveTypeLayout>>)>,
     /// Group size as used for gas charging, None if (metadata_)op is Deletion.
     pub(crate) maybe_group_op_size: Option<u64>,
+    pub(crate) prev_group_size: Option<u64>,
 }
 
 impl GroupWrite {
@@ -143,6 +144,7 @@ impl GroupWrite {
         metadata_op: WriteOp,
         inner_ops: BTreeMap<StructTag, (WriteOp, Option<Arc<MoveTypeLayout>>)>,
         group_size: u64,
+        prev_group_size: Option<u64>,
     ) -> Self {
         assert!(
             metadata_op.bytes().is_none() || metadata_op.bytes().unwrap().is_empty(),
@@ -162,6 +164,7 @@ impl GroupWrite {
             metadata_op,
             inner_ops,
             maybe_group_op_size,
+            prev_group_size,
         }
     }
 
@@ -200,7 +203,7 @@ pub struct InPlaceDelayedFieldChangeOp {
 
 /// Actual information of which individual tag has delayed fields was read,
 /// or what those fields are unnecessary in the current implementation.
-/// That is the case, because we need to traverse and materialize all tags anyways.
+/// That is the case, because we need to traverse and materialize all tags anyway.
 ///
 /// If future implementation needs those - they can be added.
 #[derive(PartialEq, Eq, Clone, Debug)]
