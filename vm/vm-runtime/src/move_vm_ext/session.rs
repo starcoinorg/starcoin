@@ -1,4 +1,3 @@
-use crate::access_path_cache::AccessPathCache;
 use crate::data_cache::get_resource_group_member_from_metadata;
 use crate::move_vm_ext::write_op_converter::WriteOpConverter;
 use crate::move_vm_ext::{resource_state_key, StarcoinMoveResolver};
@@ -15,11 +14,11 @@ use move_core_types::language_storage::StructTag;
 use move_core_types::value::MoveTypeLayout;
 use move_core_types::{
     account_address::AccountAddress,
-    effects::{ChangeSet as MoveChangeSet, Op as MoveStorageOp},
+    effects::Op as MoveStorageOp,
     identifier::IdentStr,
     language_storage::{ModuleId, TypeTag},
     value::MoveValue,
-    vm_status::{StatusCode, VMStatus},
+    vm_status::StatusCode,
 };
 use move_vm_runtime::move_vm::MoveVM;
 use move_vm_runtime::move_vm_adapter::PublishModuleBundleOption;
@@ -41,15 +40,9 @@ use starcoin_vm_runtime_types::{
     change_set::VMChangeSet, storage::change_set_configs::ChangeSetConfigs,
 };
 use starcoin_vm_types::{
-    block_metadata::BlockMetadata,
-    contract_event::ContractEvent,
-    on_chain_config::Features,
-    state_store::state_key::StateKey,
-    state_store::state_value::StateValueMetadata,
-    state_store::table::{TableHandle, TableInfo},
-    transaction::SignatureCheckedTransaction,
+    block_metadata::BlockMetadata, contract_event::ContractEvent, on_chain_config::Features,
+    state_store::state_key::StateKey, transaction::SignatureCheckedTransaction,
     transaction_metadata::TransactionMetadata,
-    write_set::{WriteOp, WriteSet, WriteSetMut},
 };
 use std::{
     borrow::Borrow,
@@ -766,119 +759,5 @@ impl<'r, 'l> SessionExt<'r, 'l> {
         self.get_move_vm().mark_loader_cache_as_invalid();
         self.get_move_vm().flush_loader_cache_if_invalidated();
         Ok(())
-    }
-}
-
-// TODO(Simon): remove following code
-
-pub struct SessionOutput {
-    pub change_set: MoveChangeSet,
-    pub table_change_set: TableChangeSet,
-}
-
-impl SessionOutput {
-    pub fn into_change_set<C: AccessPathCache>(
-        self,
-        ap_cache: &mut C,
-    ) -> Result<
-        (
-            BTreeMap<TableHandle, TableInfo>,
-            WriteSet,
-            Vec<ContractEvent>,
-        ),
-        VMStatus,
-    > {
-        let Self {
-            change_set,
-            table_change_set,
-        } = self;
-
-        // XXX FIXME YSG check write_set need upgrade? why aptos no need MoveStorageOp
-        let mut write_set_mut = WriteSetMut::new(Vec::new());
-        for (addr, account_changeset) in change_set.into_inner() {
-            let (modules, resources) = account_changeset.into_inner();
-            for (struct_tag, blob_opt) in resources {
-                let state_key = StateKey::resource(&addr, &struct_tag).unwrap();
-                let _ap = ap_cache.get_resource_path(addr, struct_tag);
-                let op = match blob_opt {
-                    MoveStorageOp::Delete => WriteOp::Deletion {
-                        metadata: StateValueMetadata::none(),
-                    },
-                    MoveStorageOp::New(data) => WriteOp::Creation {
-                        data,
-                        metadata: StateValueMetadata::none(),
-                    },
-                    MoveStorageOp::Modify(data) => WriteOp::Modification {
-                        data,
-                        metadata: StateValueMetadata::none(),
-                    },
-                };
-                write_set_mut.insert((state_key, op))
-            }
-
-            // XXX FIXME YSG check write_set need upgrade? why aptos no need MoveStorageOp
-            for (name, blob_opt) in modules {
-                let state_key = StateKey::module(&addr, &name);
-                let ap = ap_cache.get_module_path(ModuleId::new(addr, name));
-                let op = match blob_opt {
-                    MoveStorageOp::Delete => WriteOp::Deletion {
-                        metadata: StateValueMetadata::none(),
-                    },
-                    MoveStorageOp::New(data) => WriteOp::Creation {
-                        data,
-                        metadata: StateValueMetadata::none(),
-                    },
-                    MoveStorageOp::Modify(data) => WriteOp::Modification {
-                        data,
-                        metadata: StateValueMetadata::none(),
-                    },
-                };
-
-                write_set_mut.insert((state_key, op))
-            }
-        }
-
-        for (handle, change) in table_change_set.changes {
-            for (key, value_op) in change.entries {
-                let state_key = StateKey::table_item(&handle.into(), &key);
-                // XXX FIXME YSG check write_set need upgrade? why aptos no need MoveStorageOp
-                match value_op {
-                    MoveStorageOp::Delete => write_set_mut.insert((
-                        state_key,
-                        WriteOp::Deletion {
-                            metadata: StateValueMetadata::none(),
-                        },
-                    )),
-                    MoveStorageOp::New((data, _)) => write_set_mut.insert((
-                        state_key,
-                        WriteOp::Creation {
-                            data,
-                            metadata: StateValueMetadata::none(),
-                        },
-                    )),
-                    MoveStorageOp::Modify((data, _)) => write_set_mut.insert((
-                        state_key,
-                        WriteOp::Modification {
-                            data,
-                            metadata: StateValueMetadata::none(),
-                        },
-                    )),
-                }
-            }
-        }
-
-        let mut table_infos = BTreeMap::new();
-        for (key, value) in table_change_set.new_tables {
-            let handle = TableHandle(key.0);
-            let info = TableInfo::new(value.key_type, value.value_type);
-
-            table_infos.insert(handle, info);
-        }
-
-        let write_set = write_set_mut
-            .freeze()
-            .map_err(|_| VMStatus::error(StatusCode::DATA_FORMAT_ERROR, None))?;
-
-        Ok((table_infos, write_set, vec![]))
     }
 }

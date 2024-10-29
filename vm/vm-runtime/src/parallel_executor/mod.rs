@@ -16,13 +16,13 @@ use starcoin_parallel_executor::{
     executor::ParallelTransactionExecutor,
     task::{Transaction as PTransaction, TransactionOutput as PTransactionOutput},
 };
+use starcoin_vm_types::transaction::TransactionAuxiliaryData;
 use starcoin_vm_types::{
     state_store::state_key::StateKey,
     state_store::StateView,
     transaction::{Transaction, TransactionOutput, TransactionStatus},
     write_set::{WriteOp, WriteSet},
 };
-use std::collections::BTreeMap;
 
 impl PTransaction for PreprocessedTransaction {
     type Key = StateKey;
@@ -55,11 +55,11 @@ impl PTransactionOutput for StarcoinTransactionOutput {
     /// Execution output for transactions that comes after SkipRest signal.
     fn skip_output() -> Self {
         Self(TransactionOutput::new(
-            BTreeMap::new(),
             WriteSet::default(),
             vec![],
             0,
             TransactionStatus::Retry,
+            TransactionAuxiliaryData::None,
         ))
     }
 }
