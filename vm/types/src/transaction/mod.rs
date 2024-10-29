@@ -26,12 +26,10 @@ use starcoin_crypto::{
     traits::*,
     HashValue,
 };
-use std::collections::BTreeMap;
 use std::ops::Deref;
 use std::{convert::TryFrom, fmt};
 
 use crate::state_store::state_key::StateKey;
-use crate::state_store::table::{TableHandle, TableInfo};
 use crate::write_set::WriteOp;
 pub use change_set::ChangeSet;
 pub use error::CallError;
@@ -42,6 +40,7 @@ pub use pending_transaction::{Condition, PendingTransaction};
 use schemars::{self, JsonSchema};
 pub use script::Script;
 
+use move_core_types::vm_status::StatusType;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
 use starcoin_crypto::hash::SPARSE_MERKLE_PLACEHOLDER_HASH;
@@ -664,12 +663,92 @@ impl From<VMStatus> for TransactionStatus {
     }
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
+pub struct VMErrorDetail {
+    pub status_code: StatusCode,
+    pub message: Option<String>,
+}
+
+impl VMErrorDetail {
+    pub fn new(status_code: StatusCode, message: Option<String>) -> Self {
+        Self {
+            status_code,
+            message,
+        }
+    }
+
+    pub fn status_code(&self) -> StatusCode {
+        self.status_code
+    }
+
+    pub fn message(&self) -> &Option<String> {
+        &self.message
+    }
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
+pub struct TransactionAuxiliaryDataV1 {
+    pub detail_error_message: Option<VMErrorDetail>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
+pub enum TransactionAuxiliaryData {
+    None,
+    V1(TransactionAuxiliaryDataV1),
+}
+
+impl Default for TransactionAuxiliaryData {
+    fn default() -> Self {
+        Self::None
+    }
+}
+
+impl TransactionAuxiliaryData {
+    pub fn from_vm_status(vm_status: &VMStatus) -> Self {
+        let detail_error_message = match vm_status.clone().keep_or_discard() {
+            Ok(KeptVMStatus::MiscellaneousError) => {
+                let status_code = vm_status.status_code();
+                Some(VMErrorDetail::new(status_code, None))
+            }
+            Ok(KeptVMStatus::ExecutionFailure {
+                location: _,
+                function: _,
+                code_offset: _,
+                message,
+            }) => {
+                let status_code = vm_status.status_code();
+                Some(VMErrorDetail::new(status_code, message))
+            }
+            Err(status_code) => {
+                // emulate the behavior of
+                if status_code.status_type() == StatusType::InvariantViolation {
+                    Some(VMErrorDetail::new(status_code, None))
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        };
+
+        Self::V1(TransactionAuxiliaryDataV1 {
+            detail_error_message,
+        })
+    }
+
+    pub fn get_detail_error_message(&self) -> Option<&VMErrorDetail> {
+        match self {
+            Self::V1(data) => data.detail_error_message.as_ref(),
+            _ => None,
+        }
+    }
+}
+
 /// The output of executing a transaction.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TransactionOutput {
-    // XXX FIXME YSG
-    table_infos: BTreeMap<TableHandle, TableInfo>,
-
     write_set: WriteSet,
 
     /// The list of events emitted during this transaction.
@@ -680,31 +759,31 @@ pub struct TransactionOutput {
 
     /// The execution status.
     status: TransactionStatus,
+
+    /// The transaction auxiliary data that includes detail error info that is not used for calculating the hash
+    #[serde(skip)]
+    auxiliary_data: TransactionAuxiliaryData,
 }
 
 impl TransactionOutput {
     pub fn new(
-        table_infos: BTreeMap<TableHandle, TableInfo>,
         write_set: WriteSet,
         events: Vec<ContractEvent>,
         gas_used: u64,
         status: TransactionStatus,
+        auxiliary_data: TransactionAuxiliaryData,
     ) -> Self {
         Self {
-            table_infos,
             write_set,
             events,
             gas_used,
             status,
+            auxiliary_data,
         }
     }
 
     pub fn write_set(&self) -> &WriteSet {
         &self.write_set
-    }
-
-    pub fn table_infos(&self) -> &BTreeMap<TableHandle, TableInfo> {
-        &self.table_infos
     }
 
     pub fn events(&self) -> &[ContractEvent] {
@@ -719,21 +798,25 @@ impl TransactionOutput {
         &self.status
     }
 
+    pub fn auxiliary_data(&self) -> &TransactionAuxiliaryData {
+        &self.auxiliary_data
+    }
+
     pub fn into_inner(
         self,
     ) -> (
-        BTreeMap<TableHandle, TableInfo>,
         WriteSet,
         Vec<ContractEvent>,
         u64,
         TransactionStatus,
+        TransactionAuxiliaryData,
     ) {
         (
-            self.table_infos,
             self.write_set,
             self.events,
             self.gas_used,
             self.status,
+            self.auxiliary_data,
         )
     }
 

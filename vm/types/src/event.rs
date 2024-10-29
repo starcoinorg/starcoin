@@ -71,6 +71,9 @@ impl EventKey {
         rhs.copy_from_slice(addr.as_ref());
         Self(output)
     }
+    pub fn size(&self) -> usize {
+        Self::LENGTH
+    }
 }
 
 impl From<EventKey> for [u8; EventKey::LENGTH] {

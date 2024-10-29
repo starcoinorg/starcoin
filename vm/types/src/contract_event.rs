@@ -113,6 +113,9 @@ impl ContractEventV0 {
     pub fn is<EventType: MoveResource>(&self) -> bool {
         self.type_tag == TypeTag::Struct(Box::new(EventType::struct_tag()))
     }
+    pub fn size(&self) -> usize {
+        self.key.size() + 8 /* u64 */ + bcs::serialized_size(&self.type_tag).unwrap() + self.event_data.len()
+    }
 }
 
 impl std::fmt::Debug for ContractEvent {
