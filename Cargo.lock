@@ -12332,6 +12332,7 @@ dependencies = [
  "bytes 1.6.1",
  "move-core-types",
  "move-vm-types",
+ "rand 0.8.5",
  "serde",
  "starcoin-aggregator",
  "starcoin-gas-meter",
