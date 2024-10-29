@@ -473,6 +473,19 @@ pub trait TransactionWrite: Debug {
     fn convert_read_to_modification(&self) -> Option<Self>
     where
         Self: Sized;
+
+    fn write_op_size(&self) -> WriteOpSize {
+        use WriteOpKind::*;
+        match self.write_op_kind() {
+            Creation => WriteOpSize::Creation {
+                write_len: self.bytes().unwrap().len() as u64,
+            },
+            Modification => WriteOpSize::Modification {
+                write_len: self.bytes().unwrap().len() as u64,
+            },
+            Deletion { .. } => WriteOpSize::Deletion,
+        }
+    }
 }
 
 impl TransactionWrite for WriteOp {
