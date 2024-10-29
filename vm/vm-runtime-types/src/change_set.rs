@@ -40,7 +40,6 @@ use std::sync::Arc;
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct VMChangeSet {
     resource_write_set: BTreeMap<StateKey, AbstractResourceWriteOp>,
-    module_write_set: BTreeMap<StateKey, WriteOp>,
     events: Vec<(ContractEvent, Option<MoveTypeLayout>)>,
 
     // Changes separated out from the writes, for better concurrency,
@@ -72,7 +71,6 @@ impl VMChangeSet {
     pub fn empty() -> Self {
         Self {
             resource_write_set: BTreeMap::new(),
-            module_write_set: BTreeMap::new(),
             events: vec![],
             delayed_field_change_set: BTreeMap::new(),
             aggregator_v1_write_set: BTreeMap::new(),
@@ -82,44 +80,38 @@ impl VMChangeSet {
 
     pub fn new(
         resource_write_set: BTreeMap<StateKey, AbstractResourceWriteOp>,
-        module_write_set: BTreeMap<StateKey, WriteOp>,
         events: Vec<(ContractEvent, Option<MoveTypeLayout>)>,
         delayed_field_change_set: BTreeMap<DelayedFieldID, DelayedChange<DelayedFieldID>>,
         aggregator_v1_write_set: BTreeMap<StateKey, WriteOp>,
         aggregator_v1_delta_set: BTreeMap<StateKey, DeltaOp>,
-        checker: &dyn CheckChangeSet,
-    ) -> Result<Self, VMStatus> {
-        let change_set = Self {
+    ) -> Self {
+        Self {
             resource_write_set,
-            module_write_set,
             events,
             delayed_field_change_set,
             aggregator_v1_write_set,
             aggregator_v1_delta_set,
-        };
-        // Returns an error if structure of the change set is not valid,
-        // e.g. the size in bytes is too large.
-        checker.check_change_set(&change_set)?;
-        Ok(change_set)
+        }
     }
 
     // TODO[agg_v2](cleanup) see if we can remove in favor of `new`.
     pub fn new_expanded(
         resource_write_set: BTreeMap<StateKey, (WriteOp, Option<Arc<MoveTypeLayout>>)>,
         resource_group_write_set: BTreeMap<StateKey, GroupWrite>,
-        module_write_set: BTreeMap<StateKey, WriteOp>,
         aggregator_v1_write_set: BTreeMap<StateKey, WriteOp>,
         aggregator_v1_delta_set: BTreeMap<StateKey, DeltaOp>,
         delayed_field_change_set: BTreeMap<DelayedFieldID, DelayedChange<DelayedFieldID>>,
-        reads_needing_delayed_field_exchange: BTreeMap<StateKey, (WriteOp, Arc<MoveTypeLayout>)>,
-        group_reads_needing_delayed_field_exchange: BTreeMap<StateKey, (WriteOp, u64)>,
+        reads_needing_delayed_field_exchange: BTreeMap<
+            StateKey,
+            (StateValueMetadata, u64, Arc<MoveTypeLayout>),
+        >,
+        group_reads_needing_delayed_field_exchange: BTreeMap<StateKey, (StateValueMetadata, u64)>,
         events: Vec<(ContractEvent, Option<MoveTypeLayout>)>,
-        checker: &dyn CheckChangeSet,
-    ) -> Result<Self, VMStatus> {
-        Self::new(
+    ) -> PartialVMResult<Self> {
+        Ok(Self::new(
             resource_write_set
                 .into_iter()
-                .map::<Result<_, VMStatus>, _>(|(k, (w, l))| {
+                .map::<PartialVMResult<_>, _>(|(k, (w, l))| {
                     Ok((
                         k,
                         AbstractResourceWriteOp::from_resource_write_with_maybe_layout(w, l),
@@ -130,65 +122,54 @@ impl VMChangeSet {
                         .into_iter()
                         .map(|(k, w)| Ok((k, AbstractResourceWriteOp::WriteResourceGroup(w)))),
                 )
-                .chain(
-                    reads_needing_delayed_field_exchange
-                        .into_iter()
-                        .map(|(k, (w, layout))| {
-                            Ok((
-                                k,
-                                AbstractResourceWriteOp::InPlaceDelayedFieldChange(
-                                    InPlaceDelayedFieldChangeOp {
-                                        layout,
-                                        materialized_size: WriteOpSize::from(&w)
-                                            .write_len()
-                                            .ok_or_else(|| {
-                                                VMStatus::error(
-                                                    StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
-                                                    err_msg(
-                                                        "Read with exchange cannot be a delete.",
-                                                    ),
-                                                )
-                                            })?,
-                                        metadata: w.into_metadata(),
-                                    },
-                                ),
-                            ))
-                        }),
-                )
+                .chain(reads_needing_delayed_field_exchange.into_iter().map(
+                    |(k, (metadata, size, layout))| {
+                        Ok((
+                            k,
+                            AbstractResourceWriteOp::InPlaceDelayedFieldChange(
+                                InPlaceDelayedFieldChangeOp {
+                                    layout,
+                                    materialized_size: size,
+                                    metadata,
+                                },
+                            ),
+                        ))
+                    },
+                ))
                 .chain(group_reads_needing_delayed_field_exchange.into_iter().map(
-                    |(k, (metadata_op, materialized_size))| {
+                    |(k, (metadata, materialized_size))| {
                         Ok((
                             k,
                             AbstractResourceWriteOp::ResourceGroupInPlaceDelayedFieldChange(
                                 ResourceGroupInPlaceDelayedFieldChangeOp {
-                                    metadata_op,
+                                    metadata,
                                     materialized_size,
                                 },
                             ),
                         ))
                     },
                 ))
-                .try_fold::<_, _, Result<BTreeMap<_, _>, VMStatus>>(
+                .try_fold::<_, _, PartialVMResult<BTreeMap<_, _>>>(
                     BTreeMap::new(),
                     |mut acc, element| {
                         let (key, value) = element?;
                         if acc.insert(key, value).is_some() {
-                            Err(VMStatus::error(
+                            Err(PartialVMError::new(
                                 StatusCode::DELAYED_MATERIALIZATION_CODE_INVARIANT_ERROR,
-                                err_msg("Found duplicate key across resource change sets."),
+                            )
+                            .with_message(
+                                "Found duplicate key across resource change sets.".to_string(),
                             ))
                         } else {
                             Ok(acc)
                         }
                     },
                 )?,
-            module_write_set,
             events,
             delayed_field_change_set,
             aggregator_v1_write_set,
             aggregator_v1_delta_set,
-            checker,
-        )
+        ))
     }
 
     /// Builds a new change set from the storage representation.
@@ -214,7 +195,6 @@ impl VMChangeSet {
         // There should be no aggregator writes if we have a change set from
         // storage.
         let mut resource_write_set = BTreeMap::new();
-        let module_write_set = BTreeMap::new();
 
         for (state_key, write_op) in write_set {
             /* XXX FIXME YSG, need use StateKeyInner
@@ -238,7 +218,6 @@ impl VMChangeSet {
             // We should skip unpacking resource groups, as we are not in the is_delayed_field_optimization_capable
             // context (i.e. if dynamic_change_set_optimizations_enabled is disabled)
             resource_write_set,
-            module_write_set,
             delayed_field_change_set: BTreeMap::new(),
             aggregator_v1_write_set: BTreeMap::new(),
             aggregator_v1_delta_set: BTreeMap::new(),
@@ -261,7 +240,6 @@ impl VMChangeSet {
         // that knows how to deal with it.
         let Self {
             resource_write_set,
-            module_write_set,
             aggregator_v1_write_set,
             aggregator_v1_delta_set,
             delayed_field_change_set,
@@ -295,7 +273,6 @@ impl VMChangeSet {
                 })
                 .collect::<Result<Vec<_>, _>>()?,
         );
-        write_set_mut.extend(module_write_set);
         write_set_mut.extend(aggregator_v1_write_set);
 
         let events = events.into_iter().map(|(e, _)| e).collect();
@@ -344,19 +321,14 @@ impl VMChangeSet {
             .iter_mut()
             .map(|(k, v)| (k, v.materialized_size(), v.get_metadata_mut()))
             .chain(
-                self.module_write_set
+                self.aggregator_v1_write_set
                     .iter_mut()
-                    .chain(self.aggregator_v1_write_set.iter_mut())
                     .map(|(k, v)| (k, WriteOpSize::from(v as &WriteOp), v.get_metadata_mut())),
             )
     }
 
     pub fn resource_write_set(&self) -> &BTreeMap<StateKey, AbstractResourceWriteOp> {
         &self.resource_write_set
-    }
-
-    pub fn module_write_set(&self) -> &BTreeMap<StateKey, WriteOp> {
-        &self.module_write_set
     }
 
     // Called by `into_transaction_output_with_materialized_writes` only.
@@ -824,7 +796,6 @@ impl VMChangeSet {
     ) -> anyhow::Result<(), VMStatus> {
         let Self {
             resource_write_set: additional_resource_write_set,
-            module_write_set: additional_module_write_set,
             aggregator_v1_write_set: additional_aggregator_write_set,
             aggregator_v1_delta_set: additional_aggregator_delta_set,
             delayed_field_change_set: additional_delayed_field_change_set,
@@ -847,10 +818,6 @@ impl VMChangeSet {
                 err_msg(format!("Error while squashing two write ops: {:?}.", e)),
             )
         })?;
-        Self::squash_additional_module_writes(
-            &mut self.module_write_set,
-            additional_module_write_set,
-        )?;
         Self::squash_additional_delayed_field_changes(
             &mut self.delayed_field_change_set,
             additional_delayed_field_change_set,
