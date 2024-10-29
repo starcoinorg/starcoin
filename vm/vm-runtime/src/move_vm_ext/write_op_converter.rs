@@ -186,74 +186,74 @@ impl<'r> WriteOpConverter<'r> {
         Ok((write_op, layout))
     }
 
-    pub(crate) fn convert_resource_group_v1(
-        &self,
-        state_key: &StateKey,
-        group_changes: BTreeMap<StructTag, MoveStorageOp<BytesWithResourceLayout>>,
-    ) -> PartialVMResult<GroupWrite> {
-        // Resource group metadata is stored at the group StateKey, and can be obtained via the
-        // same interfaces at for a resource at a given StateKey.
-        let state_value_metadata = self
-            .remote
-            .as_executor_view()
-            .get_resource_state_value_metadata(state_key)?;
-        // Currently, due to read-before-write and a gas charge on the first read that is based
-        // on the group size, this should simply re-read a cached (speculative) group size.
-        let pre_group_size = self.remote.resource_group_size(state_key)?;
-        check_size_and_existence_match(&pre_group_size, state_value_metadata.is_some(), state_key)?;
+    //pub(crate) fn convert_resource_group_v1(
+    //    &self,
+    //    state_key: &StateKey,
+    //    group_changes: BTreeMap<StructTag, MoveStorageOp<BytesWithResourceLayout>>,
+    //) -> PartialVMResult<GroupWrite> {
+    //    // Resource group metadata is stored at the group StateKey, and can be obtained via the
+    //    // same interfaces at for a resource at a given StateKey.
+    //    let state_value_metadata = self
+    //        .remote
+    //        .as_executor_view()
+    //        .get_resource_state_value_metadata(state_key)?;
+    //    // Currently, due to read-before-write and a gas charge on the first read that is based
+    //    // on the group size, this should simply re-read a cached (speculative) group size.
+    //    let pre_group_size = self.remote.resource_group_size(state_key)?;
+    //    check_size_and_existence_match(&pre_group_size, state_value_metadata.is_some(), state_key)?;
 
-        let mut inner_ops = BTreeMap::new();
-        let mut post_group_size = pre_group_size;
+    //    let mut inner_ops = BTreeMap::new();
+    //    let mut post_group_size = pre_group_size;
 
-        for (tag, current_op) in group_changes {
-            // We take speculative group size prior to the transaction, and update it based on the change-set.
-            // For each tagged resource in the change set, we subtract the previous size tagged resource size,
-            // and then add new tagged resource size.
-            //
-            // The reason we do not instead get and add the sizes of the resources in the group,
-            // but not in the change-set, is to avoid creating unnecessary R/W conflicts (the resources
-            // in the change-set are already read, but the other resources are not).
-            if !matches!(current_op, MoveStorageOp::New(_)) {
-                let old_tagged_value_size = self.remote.resource_size_in_group(state_key, &tag)?;
-                let old_size = group_tagged_resource_size(&tag, old_tagged_value_size)?;
-                decrement_size_for_remove_tag(&mut post_group_size, old_size)?;
-            }
+    //    for (tag, current_op) in group_changes {
+    //        // We take speculative group size prior to the transaction, and update it based on the change-set.
+    //        // For each tagged resource in the change set, we subtract the previous size tagged resource size,
+    //        // and then add new tagged resource size.
+    //        //
+    //        // The reason we do not instead get and add the sizes of the resources in the group,
+    //        // but not in the change-set, is to avoid creating unnecessary R/W conflicts (the resources
+    //        // in the change-set are already read, but the other resources are not).
+    //        if !matches!(current_op, MoveStorageOp::New(_)) {
+    //            let old_tagged_value_size = self.remote.resource_size_in_group(state_key, &tag)?;
+    //            let old_size = group_tagged_resource_size(&tag, old_tagged_value_size)?;
+    //            decrement_size_for_remove_tag(&mut post_group_size, old_size)?;
+    //        }
 
-            match &current_op {
-                MoveStorageOp::Modify((data, _)) | MoveStorageOp::New((data, _)) => {
-                    let new_size = group_tagged_resource_size(&tag, data.len())?;
-                    increment_size_for_add_tag(&mut post_group_size, new_size)?;
-                }
-                MoveStorageOp::Delete => {}
-            };
+    //        match &current_op {
+    //            MoveStorageOp::Modify((data, _)) | MoveStorageOp::New((data, _)) => {
+    //                let new_size = group_tagged_resource_size(&tag, data.len())?;
+    //                increment_size_for_add_tag(&mut post_group_size, new_size)?;
+    //            }
+    //            MoveStorageOp::Delete => {}
+    //        };
 
-            let legacy_op = match current_op {
-                MoveStorageOp::Delete => (WriteOp::legacy_deletion(), None),
-                MoveStorageOp::Modify((data, maybe_layout)) => {
-                    (WriteOp::legacy_modification(data), maybe_layout)
-                }
-                MoveStorageOp::New((data, maybe_layout)) => {
-                    (WriteOp::legacy_creation(data), maybe_layout)
-                }
-            };
-            inner_ops.insert(tag, legacy_op);
-        }
+    //        let legacy_op = match current_op {
+    //            MoveStorageOp::Delete => (WriteOp::legacy_deletion(), None),
+    //            MoveStorageOp::Modify((data, maybe_layout)) => {
+    //                (WriteOp::legacy_modification(data), maybe_layout)
+    //            }
+    //            MoveStorageOp::New((data, maybe_layout)) => {
+    //                (WriteOp::legacy_creation(data), maybe_layout)
+    //            }
+    //        };
+    //        inner_ops.insert(tag, legacy_op);
+    //    }
 
-        // Create an op to encode the proper kind for resource group operation.
-        let metadata_op = if post_group_size.get() == 0 {
-            MoveStorageOp::Delete
-        } else if pre_group_size.get() == 0 {
-            MoveStorageOp::New(Bytes::new())
-        } else {
-            MoveStorageOp::Modify(Bytes::new())
-        };
-        Ok(GroupWrite::new(
-            self.convert(state_value_metadata, metadata_op, false)?,
-            inner_ops,
-            post_group_size,
-            pre_group_size.get(),
-        ))
-    }
+    //    // Create an op to encode the proper kind for resource group operation.
+    //    let metadata_op = if post_group_size.get() == 0 {
+    //        MoveStorageOp::Delete
+    //    } else if pre_group_size.get() == 0 {
+    //        MoveStorageOp::New(Bytes::new())
+    //    } else {
+    //        MoveStorageOp::Modify(Bytes::new())
+    //    };
+    //    Ok(GroupWrite::new(
+    //        self.convert(state_value_metadata, metadata_op, false)?,
+    //        inner_ops,
+    //        post_group_size,
+    //        pre_group_size.get(),
+    //    ))
+    //}
 
     fn convert(
         &self,
