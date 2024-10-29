@@ -1636,7 +1636,7 @@ impl BlockChain {
     pub fn get_pruning_height(&self) -> BlockNumber {
         let chain_id = self.status().head().chain_id();
         if chain_id.is_vega() {
-            4000000
+            3500000
         } else if chain_id.is_proxima() {
             850000
         } else if chain_id.is_halley() {
