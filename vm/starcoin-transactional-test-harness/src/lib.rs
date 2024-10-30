@@ -4,6 +4,7 @@
 use crate::context::ForkContext;
 use anyhow::{bail, format_err, Result};
 use clap::{Args, CommandFactory, Parser};
+use clap_4 as clap;
 use move_binary_format::{file_format::CompiledScript, CompiledModule};
 use move_command_line_common::address::ParsedAddress;
 use move_command_line_common::files::verify_and_create_named_address_mapping;
@@ -12,6 +13,7 @@ use move_compiler::shared::{NumberFormat, NumericalAddress, PackagePaths};
 use move_compiler::{construct_pre_compiled_lib, FullyCompiledProgram};
 use move_core_types::language_storage::StructTag;
 use move_core_types::move_resource::MoveStructType;
+use move_core_types::resolver::ResourceResolver;
 use move_core_types::value::MoveValue;
 use move_core_types::{
     account_address::AccountAddress,
@@ -22,6 +24,7 @@ use move_transactional_test_runner::framework;
 use move_transactional_test_runner::tasks::{
     PrintBytecodeCommand, PublishCommand, RunCommand, ViewCommand,
 };
+use move_transactional_test_runner::vm_test_harness::{PrecompiledFilesModules, TestRunConfig};
 use move_transactional_test_runner::{
     framework::{CompiledState, MoveTestAdapter},
     tasks::{InitCommand, SyntaxChoice, TaskInput},
@@ -42,12 +45,12 @@ use starcoin_rpc_api::types::{
 };
 use starcoin_rpc_api::Params;
 use starcoin_state_api::{ChainStateReader, StateReaderExt};
+use starcoin_statedb::ChainStateDB;
 use starcoin_types::account::{Account, AccountData};
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockHeaderExtra};
 use starcoin_types::transaction::Package;
 use starcoin_types::U256;
 use starcoin_types::{
-    access_path::AccessPath,
     account_config::{genesis_address, AccountResource},
     transaction::RawUserTransaction,
 };
@@ -57,8 +60,8 @@ use starcoin_vm_types::account_config::{
     association_address, core_code_address, STC_TOKEN_CODE_STR,
 };
 use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::state_value::StateValueMetadata;
 use starcoin_vm_types::state_store::TStateView;
-use starcoin_vm_types::StateView;
 use starcoin_vm_types::transaction::authenticator::AccountPrivateKey;
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use starcoin_vm_types::write_set::{WriteOp, WriteSetMut};
@@ -66,7 +69,6 @@ use starcoin_vm_types::{
     account_config::BalanceResource,
     block_metadata::BlockMetadata,
     genesis_config::ChainId,
-    move_resource::MoveResource,
     on_chain_config::VMConfig,
     on_chain_resource,
     token::{stc::stc_type_tag, token_code::TokenCode},
@@ -102,11 +104,9 @@ pub struct ExtraInitArgs {
     /// genesis with the network
     network: Option<BuiltinNetworkID>,
 
-    #[clap(
+    #[arg(
+        num_args(1..=100),
         long = "public-keys",
-        takes_value(true),
-        multiple_values(true),
-        multiple_occurrences(true)
     )]
     /// the `public-keys` option is deprecated, please remove it.
     public_keys: Option<Vec<String>>,
@@ -127,7 +127,7 @@ pub struct StarcoinRunArgs {}
 #[derive(Debug, Parser)]
 #[clap(name = "faucet")]
 struct FaucetSub {
-    #[clap(long="addr", parse(try_from_str=ParsedAddress::parse))]
+    #[arg(long = "addr", value_parser = ParsedAddress::parse)]
     /// faucet target address
     address: ParsedAddress,
     #[clap(long = "amount", default_value = "100000000000")]
@@ -138,7 +138,7 @@ struct FaucetSub {
 #[derive(Debug, Parser)]
 #[clap(name = "block")]
 struct BlockSub {
-    #[clap(long, parse(try_from_str=ParsedAddress::parse))]
+    #[arg(long, value_parser = ParsedAddress::parse)]
     author: Option<ParsedAddress>,
     #[clap(long)]
     timestamp: Option<u64>,
@@ -169,7 +169,7 @@ pub struct CallAPISub {
     #[clap(name = "method")]
     /// api method to call, example: node.info
     method: String,
-    #[clap(name = "params", default_value = "", parse(try_from_str=parse_params))]
+    #[arg(name = "params", default_value = "", value_parser = parse_params)]
     /// api params, should be a json array string
     params: Params,
 }
@@ -177,12 +177,10 @@ pub struct CallAPISub {
 #[derive(Debug, Parser)]
 #[clap(name = "package")]
 pub struct PackageSub {
-    #[clap(
-    long = "signers",
-    parse(try_from_str = ParsedAddress::parse),
-    takes_value(true),
-    multiple_values(true),
-    multiple_occurrences(true)
+    #[arg(
+        long = "signers",
+        value_parser = ParsedAddress::parse,
+        num_args(1..100),
     )]
     signers: Vec<ParsedAddress>,
     #[clap(long = "init-function")]
@@ -199,12 +197,10 @@ pub struct PackageSub {
 #[derive(Debug, Parser)]
 #[clap(name = "deploy")]
 pub struct DeploySub {
-    #[clap(
-    long = "signers",
-    parse(try_from_str = ParsedAddress::parse),
-    takes_value(true),
-    multiple_values(true),
-    multiple_occurrences(true)
+    #[arg(
+        long = "signers",
+        value_parser = ParsedAddress::parse,
+        num_args(1..100),
     )]
     signers: Vec<ParsedAddress>,
     /// max gas for transaction.
@@ -218,11 +214,9 @@ pub struct DeploySub {
 #[derive(Debug, Parser)]
 #[clap(name = "var")]
 pub struct VarSub {
-    #[clap(name="var",
-    parse(try_from_str = parse_var),
-    takes_value(true),
-    multiple_values(true),
-    multiple_occurrences(true)
+    #[arg(name = "var",
+    value_parser = parse_var,
+    num_args(1..100),
     )]
     /// variables with format <key1>=<value1>, <key2>=<value2>,...
     var: Vec<(String, String)>,
@@ -240,7 +234,7 @@ pub struct ReadJsonSub {
 pub enum StarcoinSubcommands {
     #[clap(name = "faucet")]
     Faucet {
-        #[clap(long="addr", parse(try_from_str=ParsedAddress::parse))]
+        #[arg(long="addr", value_parser=ParsedAddress::parse)]
         address: ParsedAddress,
         #[clap(long = "amount", default_value = "100000000000")]
         initial_balance: u128,
@@ -248,7 +242,7 @@ pub enum StarcoinSubcommands {
 
     #[clap(name = "block")]
     NewBlock {
-        #[clap(long, parse(try_from_str=ParsedAddress::parse))]
+        #[arg(long, value_parser=ParsedAddress::parse)]
         author: Option<ParsedAddress>,
         #[clap(long)]
         timestamp: Option<u64>,
@@ -271,7 +265,7 @@ pub enum StarcoinSubcommands {
         #[clap(name = "method")]
         /// api name to call, example: node.info
         method: String,
-        #[clap(name = "params", default_value = "", parse(try_from_str=parse_params))]
+        #[arg(name = "params", default_value = "", value_parser=parse_params)]
         /// api params, should be a json array string
         params: Params,
     },
@@ -288,12 +282,10 @@ pub enum StarcoinSubcommands {
     },
     #[clap(name = "deploy")]
     Deploy {
-        #[clap(
-        long = "signers",
-        parse(try_from_str = ParsedAddress::parse),
-        takes_value(true),
-        multiple_values(true),
-        multiple_occurrences(true)
+        #[arg(
+            long = "signers",
+            value_parser = ParsedAddress::parse,
+            num_args(1..100),
         )]
         signers: Vec<ParsedAddress>,
         #[clap(long = "gas-budget")]
@@ -304,17 +296,15 @@ pub enum StarcoinSubcommands {
     },
     #[clap(name = "var")]
     Var {
-        #[clap(name="var",
-        parse(try_from_str = parse_var),
-        takes_value(true),
-        multiple_values(true),
-        multiple_occurrences(true)
+        #[arg(name = "var",
+        value_parser = parse_var,
+        num_args(1..100),
         )]
         var: Vec<(String, String)>,
     },
+    /// max gas for transaction.
     #[clap(name = "read-json")]
     ReadJson {
-        /// max gas for transaction.
         #[clap(name = "file")]
         file: PathBuf,
     },
@@ -415,7 +405,7 @@ impl From<VarSub> for StarcoinSubcommands {
 }
 
 impl clap::Args for StarcoinSubcommands {
-    fn augment_args(cmd: clap::Command<'_>) -> clap::Command<'_> {
+    fn augment_args(cmd: clap::Command) -> clap::Command {
         let faucet = FaucetSub::augment_args(clap::Command::new("faucet"));
         let block = BlockSub::augment_args(clap::Command::new("block"));
         let call = CallSub::augment_args(clap::Command::new("call"));
@@ -434,7 +424,7 @@ impl clap::Args for StarcoinSubcommands {
             .subcommand(read_json)
     }
 
-    fn augment_args_for_update(_cmd: clap::Command<'_>) -> clap::Command<'_> {
+    fn augment_args_for_update(_cmd: clap::Command) -> clap::Command {
         todo!()
     }
 }
@@ -489,11 +479,11 @@ impl<'a> StarcoinTestAdapter<'a> {
     /// a few default transaction parameters.
     fn fetch_account_resource(&self, signer_addr: &AccountAddress) -> Result<AccountResource> {
         let account_access_path =
-            AccessPath::resource_access_path(*signer_addr, AccountResource::struct_tag());
+            StateKey::resource(signer_addr, &AccountResource::struct_tag()).unwrap();
         let account_blob = self
             .context
             .storage
-            .get_state_value_bytes(&StateKey::AccessPath(account_access_path))?
+            .get_state_value_bytes(&account_access_path)?
             .ok_or_else(|| {
                 anyhow::anyhow!(
                 "Failed to fetch account resource under address {}. Has the account been created?",
@@ -512,13 +502,12 @@ impl<'a> StarcoinTestAdapter<'a> {
     ) -> Result<BalanceResource> {
         let token_code = TokenCode::from_str(balance_currency_code.as_str())?;
         let balance_resource_tag = BalanceResource::struct_tag_for_token(token_code.try_into()?);
-        let balance_access_path =
-            AccessPath::resource_access_path(*signer_addr, balance_resource_tag);
+        let balance_access_key = StateKey::resource(signer_addr, &balance_resource_tag)?;
 
         let balance_blob = self
             .context
             .storage
-            .get_state_value(&StateKey::AccessPath(balance_access_path))?
+            .get_state_value_bytes(&balance_access_key)?
             .ok_or_else(|| {
                 anyhow::anyhow!(
                     "Failed to fetch balance resource under address {}.",
@@ -550,17 +539,20 @@ impl<'a> StarcoinTestAdapter<'a> {
 
         {
             let mut writes = WriteSetMut::default();
-            writes.push((
-                StateKey::AccessPath(AccessPath::resource_access_path(
-                    genesis_address(),
-                    StructTag {
+            writes.insert((
+                StateKey::resource(
+                    &genesis_address(),
+                    &StructTag {
                         address: genesis_address(),
                         module: Identifier::new("Account")?,
                         name: Identifier::new("SignerDelegated")?,
-                        type_params: vec![],
+                        type_args: vec![],
                     },
-                )),
-                WriteOp::Deletion,
+                )
+                .unwrap(),
+                WriteOp::Deletion {
+                    metadata: StateValueMetadata::none(),
+                },
             ));
             self.context.apply_write_set(writes.freeze().unwrap())?;
         }
@@ -604,8 +596,8 @@ impl<'a> StarcoinTestAdapter<'a> {
         let vmconfig = self
             .context
             .storage
-            .get_on_chain_config::<VMConfig>()?
-            .ok_or_else(|| anyhow::anyhow!("Failed to fetch onchain vm config."))?;
+            .get_on_chain_config::<VMConfig>()
+            .unwrap();
         let max_number_of_gas_units = vmconfig
             .gas_schedule
             .gas_constants
@@ -636,7 +628,7 @@ impl<'a> StarcoinTestAdapter<'a> {
     /// Should error if the transaction ends up being discarded, or having a status other than
     /// EXECUTED.
     fn run_blockmeta(&mut self, meta: BlockMetadata) -> Result<()> {
-        let mut vm = StarcoinVM::new(None);
+        let mut vm = StarcoinVM::new(None, &self.context.storage);
         let mut outputs = vm.execute_block_transactions(
             &self.context.storage,
             vec![Transaction::BlockMetadata(meta.clone())],
@@ -673,7 +665,7 @@ impl<'a> StarcoinTestAdapter<'a> {
     /// Should error if the transaction ends up being discarded, or having a status other than
     /// EXECUTED.
     fn run_transaction(&mut self, txn: RawUserTransaction) -> Result<TransactionWithOutput> {
-        let mut vm = StarcoinVM::new(None);
+        let mut vm = StarcoinVM::new(None, &self.context.storage);
         let signed_txn = self.sign(txn);
 
         let (_status, output) = vm
@@ -722,7 +714,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         )?;
 
         let move_resolver = RemoteStorage::new(&self.context.storage);
-        let annotator = move_resource_viewer::MoveValueAnnotator::new(&move_resolver);
+        let annotator = move_resource_viewer::MoveValueAnnotator::new(move_resolver);
         let rets = rets
             .into_iter()
             .map(|(ty, v)| annotator.view_value(&ty, &v))
@@ -826,17 +818,15 @@ impl<'a> StarcoinTestAdapter<'a> {
             .get_resource_type::<on_chain_resource::BlockMetadataV2>(genesis_address())?;
 
         let height = number
-            .or_else(|| last_blockmeta.as_ref().map(|b| b.number + 1))
+            .or_else(|| Some(last_blockmeta.number + 1))
             .unwrap_or(0);
 
         let author = author
             .map(|v| self.compiled_state.resolve_address(&v))
-            .or_else(|| last_blockmeta.as_ref().map(|b| b.author))
+            .or_else(|| Some(last_blockmeta.author))
             .unwrap_or_else(AccountAddress::random);
 
-        let uncles = uncles
-            .or_else(|| last_blockmeta.as_ref().map(|b| b.uncles))
-            .unwrap_or(0);
+        let uncles = uncles.or_else(|| Some(last_blockmeta.uncles)).unwrap_or(0);
         let timestamp =
             timestamp.unwrap_or(self.context.storage.get_timestamp()?.milliseconds + 10 * 1000);
         //TODO find a better way to get parent hash, we should keep to local storage.
@@ -918,7 +908,9 @@ impl<'a> StarcoinTestAdapter<'a> {
         };
         let data_path = data.path().to_str().unwrap();
         let (named_addr_opt, module, warnings_opt) = {
-            let (unit, warnings_opt) = self.compiled_state.complie(data_path)?;
+            let (unit, _opt_global, warnings_opt) =
+                self.compiled_state
+                    .complie(data_path, &BTreeSet::default(), false)?;
             match unit {
                 AnnotatedCompiledUnit::Module(annot_module) => {
                     let (named_addr_opt, _id) = annot_module.module_id();
@@ -1044,6 +1036,32 @@ impl<'a> StarcoinTestAdapter<'a> {
     }
 }
 
+fn view_resource_in_move_storage(
+    storage: RemoteStorage<ChainStateDB>,
+    address: AccountAddress,
+    module: &ModuleId,
+    resource: &IdentStr,
+    type_args: Vec<TypeTag>,
+) -> Result<String> {
+    let tag = StructTag {
+        address: *module.address(),
+        module: module.name().to_owned(),
+        name: resource.to_owned(),
+        type_args,
+    };
+    match storage
+        .get_resource_bytes_with_metadata_and_layout(&address, &tag, &vec![], None)?
+        .0
+    {
+        None => Ok("[No Resource Exists]".to_owned()),
+        Some(data) => {
+            let annotated = move_resource_viewer::MoveValueAnnotator::new(storage)
+                .view_resource(&tag, &data)?;
+            Ok(format!("{}", &annotated))
+        }
+    }
+}
+
 impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
     type ExtraPublishArgs = StarcoinPublishArgs;
     type ExtraValueArgs = ();
@@ -1065,10 +1083,13 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
 
     fn init(
         default_syntax: SyntaxChoice,
-        pre_compiled_deps: Option<&'a FullyCompiledProgram>,
-        task_opt: Option<TaskInput<(InitCommand, Self::ExtraInitArgs)>>,
+        _comparison_mode: bool,
+        _run_config: TestRunConfig,
+        pre_compiled_deps: Option<&'a (FullyCompiledProgram, Vec<PackagePaths>)>,
+        _pre_compiled_deps_v2: Option<&'a PrecompiledFilesModules>,
+        init_data: Option<TaskInput<(InitCommand, Self::ExtraInitArgs)>>,
     ) -> (Self, Option<String>) {
-        let (additional_mapping, extra_arg) = match task_opt.map(|t| t.command) {
+        let (additional_mapping, extra_arg) = match init_data.map(|t| t.command) {
             Some((InitCommand { named_addresses }, extra_arg)) => (
                 verify_and_create_named_address_mapping(named_addresses).unwrap(),
                 Some(extra_arg),
@@ -1111,7 +1132,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                     "Current project must be framework."
                 );
                 let mut modules: Vec<Vec<u8>> = vec![];
-                for c in &pre_compiled_deps.unwrap().compiled {
+                for c in &pre_compiled_deps.unwrap().0.compiled {
                     if let CompiledUnitEnum::Module(m) = c {
                         let mut buffer: Vec<u8> = vec![];
                         m.named_module.module.serialize(&mut buffer).unwrap();
@@ -1131,7 +1152,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         // add pre compiled modules
         if let Some(pre_compiled_lib) = pre_compiled_deps {
             let mut writes = WriteSetMut::default();
-            for c in &pre_compiled_lib.compiled {
+            for c in &pre_compiled_lib.0.compiled {
                 if let CompiledUnitEnum::Module(m) = c {
                     // update named_address_mapping
                     if let Some(named_address) = &m.address_name {
@@ -1152,15 +1173,13 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                         named_address_mapping.insert(name, m.named_module.address);
                     }
 
-                    writes.push((
-                        StateKey::AccessPath(AccessPath::code_access_path(
-                            m.named_module.address.into_inner(),
-                            Identifier::new(m.named_module.name.as_str()).unwrap(),
-                        )),
-                        WriteOp::Value({
+                    let state_key = StateKey::module_id(&m.named_module.module.self_id());
+                    writes.insert((
+                        state_key,
+                        WriteOp::legacy_modification({
                             let mut bytes = vec![];
                             m.named_module.module.serialize(&mut bytes).unwrap();
-                            bytes
+                            bytes.into()
                         }),
                     ));
                 }
@@ -1169,7 +1188,12 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         }
 
         let mut me = Self {
-            compiled_state: CompiledState::new(named_address_mapping, pre_compiled_deps, None),
+            compiled_state: CompiledState::new(
+                named_address_mapping,
+                pre_compiled_deps,
+                None,
+                None,
+            ),
             default_syntax,
             context,
             tempdir: TempDir::new().unwrap(),
@@ -1234,7 +1258,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         args: Vec<MoveValue>,
         gas_budget: Option<u64>,
         _extra_args: Self::ExtraRunArgs,
-    ) -> anyhow::Result<(Option<String>, SerializedReturnValues, Option<Value>)> {
+    ) -> anyhow::Result<(Option<String>, Option<Value>)> {
         assert!(!signers.is_empty());
         if signers.len() != 1 {
             panic!("Expected 1 signer, got {}.", signers.len());
@@ -1300,13 +1324,8 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             gas_used: output.output.gas_used.0,
             status: output.output.status.clone(),
         };
-        let value = SerializedReturnValues {
-            mutable_reference_outputs: vec![],
-            return_values: vec![],
-        };
         Ok((
             Some(serde_json::to_string_pretty(&result)?),
-            value,
             Some(serde_json::to_value(&output)?),
         ))
     }
@@ -1364,10 +1383,10 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
 
     fn view_data(
         &mut self,
-        address: AccountAddress,
-        module: &ModuleId,
-        resource: &IdentStr,
-        type_args: Vec<TypeTag>,
+        _address: AccountAddress,
+        _module: &ModuleId,
+        _resource: &IdentStr,
+        _type_args: Vec<TypeTag>,
     ) -> anyhow::Result<(String, Value)> {
         let _s = RemoteStorage::new(&self.context.storage);
         // view_resource_in_move_storage(&s, address, module, resource, type_args)
@@ -1437,9 +1456,15 @@ pub fn run_test(path: &Path) -> Result<(), Box<dyn std::error::Error + 'static>>
 
 pub fn run_test_impl<'a>(
     path: &Path,
-    fully_compiled_program_opt: Option<&'a FullyCompiledProgram>,
+    pre_compiled_deps_v1: Option<&'a (FullyCompiledProgram, Vec<PackagePaths>)>,
 ) -> Result<(), Box<dyn std::error::Error + 'static>> {
-    framework::run_test_impl::<StarcoinTestAdapter>(path, fully_compiled_program_opt)
+    framework::run_test_impl::<StarcoinTestAdapter>(
+        TestRunConfig::CompilerV1,
+        path,
+        pre_compiled_deps_v1,
+        None,
+        &None,
+    )
 }
 
 pub fn print_help(task_name: Option<String>) -> Result<()> {
@@ -1484,27 +1509,30 @@ pub fn print_help(task_name: Option<String>) -> Result<()> {
     }
 }
 
-pub static G_PRECOMPILED_STARCOIN_FRAMEWORK: Lazy<FullyCompiledProgram> = Lazy::new(|| {
-    let sources = stdlib_files();
-    let program_res = construct_pre_compiled_lib(
-        vec![PackagePaths {
+//TODO(simon): construct PackagePaths properly
+pub static G_PRECOMPILED_STARCOIN_FRAMEWORK: Lazy<(FullyCompiledProgram, Vec<PackagePaths>)> =
+    Lazy::new(|| {
+        let sources = stdlib_files();
+        let package_paths = vec![PackagePaths {
             name: None,
             paths: sources,
             named_address_map: starcoin_framework_named_addresses(),
-        }],
-        None,
-        move_compiler::Flags::empty(),
-    )
-    .unwrap();
-    match program_res {
-        Ok(df) => df,
-        Err((files, errors)) => {
-            eprintln!("!!!Starcoin Framework failed to compile!!!");
-            move_compiler::diagnostics::report_diagnostics(&files, errors)
-        }
-    }
-});
-
+        }];
+        let program_res = construct_pre_compiled_lib(
+            package_paths,
+            None,
+            move_compiler::Flags::empty(),
+            &BTreeSet::new(),
+        )
+        .unwrap();
+        (
+            program_res.unwrap_or_else(|(files, errors)| {
+                eprintln!("!!!Starcoin Framework failed to compile!!!");
+                move_compiler::diagnostics::report_diagnostics(&files, errors)
+            }),
+            vec![],
+        )
+    });
 fn convert_u8(val: u8) -> u8 {
     // val >= 'a' && val <= 'z'
     if (97..=122).contains(&val) {
