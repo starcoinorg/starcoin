@@ -5,7 +5,10 @@ path = "src/main.rs"
 [dependencies]
 anyhow = { workspace = true }
 bcs = { workspace = true }
-clap = { features = ["derive"], workspace = true }
+clap =  { version = "4.3.9", features = ["derive", "env", "unstable-styles"] }
+
+
+
 difference = { workspace = true }
 include_dir = { features = ["search"], workspace = true }
 itertools = { workspace = true }

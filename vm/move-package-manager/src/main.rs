@@ -24,7 +24,7 @@ use std::path::PathBuf;
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 pub struct CliOptions {
-    #[clap(flatten)]
+    #[command(flatten)]
     move_args: Move,
 
     #[clap(subcommand)]
@@ -48,7 +48,7 @@ pub enum Commands {
     Sandbox {
         /// Directory storing Move resources, events, and module bytecodes produced by module publishing
         /// and script execution.
-        #[clap(long, default_value = DEFAULT_STORAGE_DIR, parse(from_os_str))]
+        #[arg(long, default_value = DEFAULT_STORAGE_DIR, value_parser = value_parser!(std::ffi::OsString))]
         storage_dir: PathBuf,
         #[clap(subcommand)]
         cmd: sandbox::cli::SandboxCommand,
@@ -58,7 +58,7 @@ pub enum Commands {
     Experimental {
         /// Directory storing Move resources, events, and module bytecodes produced by module publishing
         /// and script execution.
-        #[clap(long, default_value = DEFAULT_STORAGE_DIR, parse(from_os_str))]
+        #[arg(long, default_value = DEFAULT_STORAGE_DIR, value_parser = value_parser!(std::ffi::OsString))]
         storage_dir: PathBuf,
         #[clap(subcommand)]
         cmd: experimental::cli::ExperimentalCommand,
