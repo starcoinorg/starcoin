@@ -6,6 +6,7 @@ use crate::move_vm_ext::AsExecutorView;
 use bytes::Bytes;
 use move_binary_format::deserializer::DeserializerConfig;
 use move_binary_format::CompiledModule;
+use move_bytecode_utils::compiled_module_viewer::CompiledModuleView;
 use move_core_types::metadata::Metadata;
 use move_core_types::resolver::{resource_size, ModuleResolver, ResourceResolver};
 use move_core_types::value::MoveTypeLayout;
@@ -49,10 +50,10 @@ pub(crate) fn get_resource_group_from_metadata(
 /// (that tie to specialized handling in block executor), or via 'standard' interfaces
 /// for (non-group) resources and subsequent handling in the StorageAdapter itself.
 pub struct StorageAdapter<'e, E> {
-    executor_view: &'e E,
-    deserializer_config: DeserializerConfig,
-    resource_group_view: ResourceGroupAdapter<'e>,
-    accessed_groups: RefCell<HashSet<StateKey>>,
+    _executor_view: &'e E,
+    _deserializer_config: DeserializerConfig,
+    _resource_group_view: ResourceGroupAdapter<'e>,
+    _accessed_groups: RefCell<HashSet<StateKey>>,
 }
 
 /// A local cache for a given a `StateView`. The cache is private to the Diem layer
@@ -237,6 +238,16 @@ impl<'a, S: StateView> TableResolver for RemoteStorage<'a, S> {
             .map_err(|e| {
                 PartialVMError::new(StatusCode::STORAGE_ERROR).with_message(format!("{:?}", e))
             })
+    }
+}
+impl<'a, S: StateView> CompiledModuleView for RemoteStorage<'a, S> {
+    type Item = CompiledModule;
+    fn view_compiled_module(&self, id: &ModuleId) -> anyhow::Result<Option<Self::Item>> {
+        let module = match self.get_module(id) {
+            Ok(Some(module)) => module,
+            _ => return Ok(None),
+        };
+        Ok(Some(CompiledModule::deserialize(&module)?))
     }
 }
 

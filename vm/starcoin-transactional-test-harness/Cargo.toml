@@ -5,7 +5,7 @@ name = "tests"
 [dependencies]
 anyhow = { workspace = true }
 bcs = { workspace = true }
-clap = { features = ["derive"], workspace = true }
+clap_4 = { features = ["derive"], workspace = true }
 dashmap = { workspace = true }
 either = { workspace = true }
 hex = { workspace = true }
@@ -62,6 +62,7 @@ starcoin-vm-runtime = { workspace = true }
 starcoin-vm-types = { workspace = true }
 stdlib = { workspace = true }
 starcoin-dag = { workspace = true }
+bytes = { workspace = true }
 
 [dev-dependencies]
 datatest-stable = { workspace = true }

@@ -95,24 +95,24 @@ impl SessionId {
 
 pub struct SessionExt<'r, 'l> {
     inner: Session<'r, 'l>,
-    remote: &'r dyn StarcoinMoveResolver,
-    features: Arc<Features>,
+    _remote: &'r dyn StarcoinMoveResolver,
+    _features: Arc<Features>,
 }
 
 impl<'r, 'l> SessionExt<'r, 'l> {
     pub fn new(
         inner: Session<'r, 'l>,
-        remote: &'r dyn StarcoinMoveResolver,
-        features: Arc<Features>,
+        _remote: &'r dyn StarcoinMoveResolver,
+        _features: Arc<Features>,
     ) -> Self {
         Self {
             inner,
-            remote,
-            features,
+            _remote,
+            _features,
         }
     }
 
-    pub fn finish(self, configs: &ChangeSetConfigs) -> VMResult<VMChangeSet> {
+    pub fn finish(self, _configs: &ChangeSetConfigs) -> VMResult<VMChangeSet> {
         // XXX FIXME YSG
         let change_set = VMChangeSet::empty();
         Ok(change_set)
@@ -439,7 +439,7 @@ impl SessionOutput {
             let (modules, resources) = account_changeset.into_inner();
             for (struct_tag, blob_opt) in resources {
                 let state_key = StateKey::resource(&addr, &struct_tag).unwrap();
-                let ap = ap_cache.get_resource_path(addr, struct_tag);
+                let _ap = ap_cache.get_resource_path(addr, struct_tag);
                 let op = match blob_opt {
                     MoveStorageOp::Delete => WriteOp::Deletion {
                         metadata: StateValueMetadata::none(),

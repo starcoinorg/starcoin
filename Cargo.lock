@@ -12081,6 +12081,63 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-transactional-test-harness"
+version = "2.0.1"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bcs 0.1.5",
+ "bcs-ext",
+ "bytes 1.6.1",
+ "clap 4.5.13",
+ "dashmap",
+ "datatest-stable",
+ "either",
+ "futures 0.3.30",
+ "hex",
+ "itertools 0.10.5",
+ "jsonrpc-client-transports 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-derive 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jsonrpc-http-server",
+ "log 0.4.22",
+ "move-binary-format",
+ "move-command-line-common",
+ "move-compiler",
+ "move-core-types",
+ "move-resource-viewer",
+ "move-table-extension",
+ "move-transactional-test-runner",
+ "move-vm-types",
+ "once_cell",
+ "serde",
+ "serde_json",
+ "starcoin-abi-decoder",
+ "starcoin-accumulator",
+ "starcoin-chain-api",
+ "starcoin-config",
+ "starcoin-crypto",
+ "starcoin-dag",
+ "starcoin-dev",
+ "starcoin-genesis",
+ "starcoin-resource-viewer",
+ "starcoin-rpc-api",
+ "starcoin-rpc-client",
+ "starcoin-rpc-server",
+ "starcoin-state-api",
+ "starcoin-state-tree",
+ "starcoin-statedb",
+ "starcoin-storage",
+ "starcoin-types",
+ "starcoin-vm-runtime",
+ "starcoin-vm-types",
+ "stdlib",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
 name = "starcoin-tx-factory"
 version = "2.0.1"
 dependencies = [
@@ -12230,6 +12287,7 @@ dependencies = [
  "bytes 1.6.1",
  "hex",
  "move-binary-format",
+ "move-bytecode-utils",
  "move-bytecode-verifier",
  "move-core-types",
  "move-stdlib",
