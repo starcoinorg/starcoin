@@ -89,6 +89,8 @@ impl GenesisMoveVM {
         let mut extensions = NativeContextExtensions::default();
         extensions.add(NativeTableContext::new(txn_hash, resolver));
 
+        self.vm.flush_loader_cache_if_invalidated();
+
         SessionExt::new(
             self.vm.new_session_with_extensions(resolver, extensions),
             resolver,

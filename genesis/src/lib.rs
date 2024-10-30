@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod errors;
+mod genesis_context;
 
+use crate::genesis_context::GenesisStateView;
 use anyhow::{bail, ensure, format_err, Result};
+use claims::assert_ok;
 pub use errors::GenesisError;
 use include_dir::include_dir;
 use include_dir::Dir;
@@ -27,7 +30,7 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::table_info::TableInfoStore;
 use starcoin_storage::{BlockStore, Storage, Store};
-use starcoin_transaction_builder::build_stdlib_package_with_modules;
+use starcoin_transaction_builder::{build_init_script, build_stdlib_package_with_modules};
 use starcoin_transaction_builder::{build_stdlib_package, StdLibOptions};
 use starcoin_types::startup_info::{ChainInfo, StartupInfo};
 use starcoin_types::transaction::Package;
@@ -40,6 +43,7 @@ use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::{ModuleId, TypeTag};
 use starcoin_vm_types::transaction::ChangeSet;
 use starcoin_vm_types::value::MoveValue;
+use starcoin_vm_types::write_set::TransactionWrite;
 use starcoin_vm_types::{
     account_config::CORE_CODE_ADDRESS,
     state_store::{
@@ -129,6 +133,7 @@ impl Genesis {
             difficulty,
         }) = genesis_config.genesis_block_parameter()
         {
+            encode_genesis_change_set(net);
             let txn = Self::build_genesis_transaction(net)?;
 
             let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
@@ -381,29 +386,62 @@ impl Genesis {
 
 const CODE_MODULE_NAME: &'static str = "code";
 
-fn encode_genesis_change_set(net: ChainNetwork) -> ChangeSet {
+fn encode_genesis_change_set(net: &ChainNetwork) -> ChangeSet {
     let framework = starcoin_cached_packages::head_release_bundle();
 
-    let storage =
-        Arc::new(Storage::new(StorageInstance::new_cache_instance()).expect("init storage fail."));
-    let chain_state_db = ChainStateDB::new(storage.clone(), None);
-    let resolver = chain_state_db.as_move_resolver();
+    let mut state = GenesisStateView::new();
+    for (module_bytes, module) in framework.code_and_compiled_modules() {
+        println!("module: {:?}", module.self_id());
+        state.add_module(&module.self_id(), module_bytes);
+    }
+    let resolver = state.as_move_resolver();
 
     let genesis_vm = GenesisMoveVM::new(net.chain_id());
     let genesis_id = HashValue::zero();
     let mut session = genesis_vm.new_genesis_session(&resolver, genesis_id);
 
+    initial_starcoin_genesis(&mut session, net);
+    let change_set_config = genesis_vm.genesis_change_set_configs();
+    let (mut change_set, module_write_set) = session
+        .finish(&change_set_config)
+        .expect("Genesis session should success.");
+    assert_ok!(
+        module_write_set.is_empty_or_invariant_violation(),
+        "Modules cannot be published in this session"
+    );
+
+    let state = GenesisStateView::new();
+    let resolver = state.as_move_resolver();
+
+    let genesis_vm = GenesisMoveVM::new(net.chain_id());
+    let mut genesis_id = [0u8; 32];
+    genesis_id[31] = 1u8;
+    let mut session = genesis_vm.new_genesis_session(&resolver, HashValue::new(genesis_id));
     publish_framework(&mut session, framework);
 
-    initial_starcoin_genesis(&mut session, &net);
-
-    let change_set_config =
-        ChangeSetConfigs::unlimited_at_gas_feature_version(LATEST_GAS_FEATURE_VERSION);
-    let (write_set, module_write_set) = session
+    let change_set_config = genesis_vm.genesis_change_set_configs();
+    let (additional_change_set, module_write_set) = session
         .finish(&change_set_config)
         .expect("Genesis session should success.");
 
-    write_set
+    change_set
+        .squash_additional_change_set(additional_change_set)
+        .expect("Squash should success.");
+
+    // Publishing stdlib should not produce any deltas around aggregators and map to write ops and
+    // not deltas. The second session only publishes the framework module bundle, which should not
+    // produce deltas either.
+    assert!(
+        change_set.aggregator_v1_delta_set().is_empty(),
+        "non-empty delta change set in genesis"
+    );
+
+    assert!(!change_set
+        .concrete_write_set_iter()
+        .any(|(_, op)| op.expect("expect only concrete write ops").is_deletion()));
+    //verify_genesis_write_set(change_set.events());
+
+    change_set
         .try_combine_into_storage_change_set(module_write_set)
         .unwrap()
 }
@@ -437,7 +475,14 @@ fn exec_function(
 }
 
 fn initial_starcoin_genesis(session: &mut SessionExt, net: &ChainNetwork) {
-    todo!()
+    let init_script = build_init_script(net);
+    exec_function(
+        session,
+        init_script.module().name.as_str(),
+        init_script.function().as_str(),
+        init_script.ty_args().to_vec(),
+        init_script.args().to_vec(),
+    );
 }
 
 /// Publish the framework release bundle.

@@ -24,9 +24,12 @@ stdlib = { workspace = true }
 stest = { workspace = true }
 thiserror = { workspace = true }
 tempfile = { workspace = true }
+bytes = { workspace = true }
+claims = { workspace = true }
 starcoin-cached-packages = { workspace = true }
 move-vm-runtime = { workspace = true }
 move-vm-types = { workspace = true }
+move-core-types = { workspace = true }
 starcoin-framework = { workspace = true }
 starcoin-vm-runtime-types = { workspace = true }
 starcoin-gas-schedule = { workspace = true }

@@ -10874,8 +10874,11 @@ version = "2.0.1"
 dependencies = [
  "anyhow",
  "bcs-ext",
+ "bytes 1.6.1",
+ "claims",
  "clap 3.2.23",
  "include_dir",
+ "move-core-types",
  "move-vm-runtime",
  "move-vm-types",
  "once_cell",
