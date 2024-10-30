@@ -85,7 +85,7 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter + Sync>(
         .zip(txn_outputs.into_iter())
     {
         let txn_hash = txn.id();
-        let (mut table_infos, write_set, events, gas_used, status) = output.into_inner();
+        let (write_set, events, gas_used, status, _) = output.into_inner();
         match status {
             TransactionStatus::Discard(status) => {
                 return Err(BlockExecutorError::BlockTransactionDiscard(
@@ -110,8 +110,6 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter + Sync>(
                     status,
                 ));
                 executed_data.txn_events.push(events);
-                // Merge more table_infos, and keep the latest TableInfo for a same TableHandle
-                executed_data.txn_table_infos.append(&mut table_infos);
                 executed_data.write_sets.push(write_set);
             }
             TransactionStatus::Retry => return Err(BlockExecutorError::BlockExecuteRetryErr),

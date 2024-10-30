@@ -298,7 +298,7 @@ impl OpenedBlock {
         // Ignore the newly created table_infos.
         // Because they are not needed to calculate state_root, or included to TransactionInfo.
         // This auxiliary function is used to create a new block for mining, nothing need to be persisted to storage.
-        let (_table_infos, write_set, events, gas_used, status) = output.into_inner();
+        let (write_set, events, gas_used, status, _) = output.into_inner();
         debug_assert!(matches!(status, TransactionStatus::Keep(_)));
         let status = status
             .status()

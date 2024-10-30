@@ -13,6 +13,21 @@ pub(crate) mod write_op_converter;
 
 pub use crate::move_vm_ext::{
     resolver::{AsExecutorView, StarcoinMoveResolver},
-    session::{SessionExt, SessionId, SessionOutput},
+    session::{SessionExt, SessionId},
     vm::MoveVmExt,
 };
+use move_binary_format::errors::{PartialVMError, PartialVMResult};
+use move_core_types::{
+    account_address::AccountAddress, language_storage::StructTag, vm_status::StatusCode,
+};
+use starcoin_vm_types::state_store::state_key::StateKey;
+
+pub(crate) fn resource_state_key(
+    address: &AccountAddress,
+    tag: &StructTag,
+) -> PartialVMResult<StateKey> {
+    StateKey::resource(address, tag).map_err(|e| {
+        PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR)
+            .with_message(format!("Failed to serialize struct tag: {}", e))
+    })
+}

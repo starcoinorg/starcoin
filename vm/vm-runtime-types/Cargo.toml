@@ -20,6 +20,7 @@ bcs = { workspace = true }
 serde = { workspace = true }
 starcoin-aggregator = { workspace = true }
 move-vm-types = { workspace = true }
+rand = { workspace = true }
 
 
 

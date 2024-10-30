@@ -5,6 +5,7 @@ use bytes::Bytes;
 use move_core_types::value::MoveTypeLayout;
 use move_vm_types::delayed_values::delayed_field_id::DelayedFieldID;
 use starcoin_aggregator::resolver::{TAggregatorV1View, TDelayedFieldView};
+use starcoin_vm_types::errors::PartialVMResult;
 use starcoin_vm_types::write_set::WriteOp;
 use starcoin_vm_types::{
     language_storage::StructTag,
@@ -30,13 +31,13 @@ pub trait TResourceView {
         &self,
         state_key: &Self::Key,
         maybe_layout: Option<&Self::Layout>,
-    ) -> anyhow::Result<Option<StateValue>>;
+    ) -> PartialVMResult<Option<StateValue>>;
 
     fn get_resource_bytes(
         &self,
         state_key: &Self::Key,
         maybe_layout: Option<&Self::Layout>,
-    ) -> anyhow::Result<Option<Bytes>> {
+    ) -> PartialVMResult<Option<Bytes>> {
         let maybe_state_value = self.get_resource_state_value(state_key, maybe_layout)?;
         Ok(maybe_state_value.map(|state_value| state_value.bytes().clone()))
     }
@@ -44,13 +45,17 @@ pub trait TResourceView {
     fn get_resource_state_value_metadata(
         &self,
         state_key: &Self::Key,
-    ) -> anyhow::Result<Option<StateValueMetadata>> {
+    ) -> PartialVMResult<Option<StateValueMetadata>> {
         // For metadata, layouts are not important.
         self.get_resource_state_value(state_key, None)
             .map(|maybe_state_value| maybe_state_value.map(StateValue::into_metadata))
     }
+    fn get_resource_state_value_size(&self, state_key: &Self::Key) -> PartialVMResult<Option<u64>> {
+        self.get_resource_state_value(state_key, None)
+            .map(|maybe_state_value| maybe_state_value.map(|state_value| state_value.size() as u64))
+    }
 
-    fn resource_exists(&self, state_key: &Self::Key) -> anyhow::Result<bool> {
+    fn resource_exists(&self, state_key: &Self::Key) -> PartialVMResult<bool> {
         // For existence, layouts are not important.
         self.get_resource_state_value(state_key, None)
             .map(|maybe_state_value| maybe_state_value.is_some())
@@ -140,9 +145,9 @@ pub trait TModuleView {
     ///   -  Ok(None)         if the module is not in storage,
     ///   -  Ok(Some(...))    if the module exists in storage,
     ///   -  Err(...)         otherwise (e.g. storage error).
-    fn get_module_state_value(&self, state_key: &Self::Key) -> anyhow::Result<Option<StateValue>>;
+    fn get_module_state_value(&self, state_key: &Self::Key) -> PartialVMResult<Option<StateValue>>;
 
-    fn get_module_bytes(&self, state_key: &Self::Key) -> anyhow::Result<Option<Bytes>> {
+    fn get_module_bytes(&self, state_key: &Self::Key) -> PartialVMResult<Option<Bytes>> {
         let maybe_state_value = self.get_module_state_value(state_key)?;
         Ok(maybe_state_value.map(|state_value| state_value.bytes().clone()))
     }
@@ -150,12 +155,17 @@ pub trait TModuleView {
     fn get_module_state_value_metadata(
         &self,
         state_key: &Self::Key,
-    ) -> anyhow::Result<Option<StateValueMetadata>> {
+    ) -> PartialVMResult<Option<StateValueMetadata>> {
         let maybe_state_value = self.get_module_state_value(state_key)?;
         Ok(maybe_state_value.map(StateValue::into_metadata))
     }
 
-    fn module_exists(&self, state_key: &Self::Key) -> anyhow::Result<bool> {
+    fn get_module_state_value_size(&self, state_key: &Self::Key) -> PartialVMResult<Option<u64>> {
+        let maybe_state_value = self.get_module_state_value(state_key)?;
+        Ok(maybe_state_value.map(|state_value| state_value.size() as u64))
+    }
+
+    fn module_exists(&self, state_key: &Self::Key) -> PartialVMResult<bool> {
         self.get_module_state_value(state_key)
             .map(|maybe_state_value| maybe_state_value.is_some())
     }
@@ -234,7 +244,7 @@ where
         &self,
         state_key: &Self::Key,
         _maybe_layout: Option<&Self::Layout>,
-    ) -> anyhow::Result<Option<StateValue>> {
+    ) -> PartialVMResult<Option<StateValue>> {
         self.get_state_value(state_key).map_err(Into::into)
     }
 }
@@ -245,7 +255,7 @@ where
 {
     type Key = StateKey;
 
-    fn get_module_state_value(&self, state_key: &Self::Key) -> anyhow::Result<Option<StateValue>> {
+    fn get_module_state_value(&self, state_key: &Self::Key) -> PartialVMResult<Option<StateValue>> {
         self.get_state_value(state_key).map_err(Into::into)
     }
 }

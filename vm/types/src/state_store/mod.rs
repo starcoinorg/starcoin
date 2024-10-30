@@ -9,8 +9,10 @@ use crate::transaction::Version;
 use arr_macro::arr;
 use bytes::Bytes;
 use move_core_types::move_resource::MoveResource;
+use move_core_types::vm_status::StatusCode;
 use starcoin_crypto::HashValue;
 use std::{collections::HashMap, ops::Deref};
+use vm::errors::PartialVMError;
 
 pub mod errors;
 pub mod in_memory_state_view;
@@ -51,6 +53,12 @@ pub trait TStateView {
     //todo: remove me after refactor
     /// Check if current state view is genesis state view.
     fn is_genesis(&self) -> bool;
+}
+
+impl From<StateviewError> for PartialVMError {
+    fn from(e: StateviewError) -> Self {
+        PartialVMError::new(StatusCode::STORAGE_ERROR).with_message(format!("{:?}", e))
+    }
 }
 
 pub trait StateView: TStateView<Key = StateKey> {}
