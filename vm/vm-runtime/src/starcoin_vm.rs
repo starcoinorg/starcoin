@@ -22,9 +22,7 @@ use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
 use starcoin_crypto::HashValue;
 use starcoin_gas_algebra::{CostTable, Gas, GasConstants, GasCost};
 use starcoin_gas_meter::StarcoinGasMeter;
-use starcoin_gas_schedule::{
-    FromOnChainGasSchedule, InitialGasSchedule, NativeGasParameters, StarcoinGasParameters,
-};
+use starcoin_gas_schedule::{FromOnChainGasSchedule, InitialGasSchedule, NativeGasParameters, StarcoinGasParameters, ToOnChainGasSchedule};
 use starcoin_logger::prelude::*;
 use starcoin_types::account_config::config_change::ConfigChangeEvent;
 use starcoin_types::{
@@ -172,12 +170,13 @@ impl StarcoinVM {
                 bail!("failed to load gas schedule!");
             }
             Some(gs) => {
-                // todo: select feature_version properly
+                // TODO(simon): select feature_version properly
+                let gas_schdule_treemap = gs.clone().to_btree_map();
                 let gas_params = StarcoinGasParameters::from_on_chain_gas_schedule(
-                    &gs.clone().to_btree_map(),
-                    1,
-                )
-                    .map_err(|e| format_err!("{e}"))?;
+                    &gas_schdule_treemap,
+                    12,
+                ).map_err(|e| format_err!("{e}"))?;
+
                 // TODO(simon): do double check
                 // if params.natives != self.native_params {
                 debug!("update native_params");
@@ -1188,7 +1187,10 @@ impl StarcoinVM {
 
         // TODO load config by config change event
         self.load_configs(&data_cache)
-            .map_err(|_err| VMStatus::error(StatusCode::STORAGE_ERROR, None))?;
+            .map_err(|err| {
+                error!("StarcoinVM::execute_block_transactions | load_configs return error: ‘{:?}’ ", err);
+                VMStatus::error(StatusCode::STORAGE_ERROR, None)
+            })?;
 
         let mut gas_left = block_gas_limit.unwrap_or(u64::MAX);
         let blocks = chunk_block_transactions(transactions);
