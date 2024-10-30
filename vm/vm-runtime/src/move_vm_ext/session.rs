@@ -70,6 +70,9 @@ pub enum SessionId {
         sender: AccountAddress,
         sequence_number: u64,
     },
+    Genesis {
+        id: HashValue,
+    },
     BlockMeta {
         id: HashValue,
     },
@@ -95,6 +98,10 @@ impl SessionId {
         Self::BlockMeta {
             id: block_meta.id(),
         }
+    }
+
+    pub fn genesis(id: HashValue) -> Self {
+        Self::Genesis { id }
     }
 
     pub fn void() -> Self {

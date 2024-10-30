@@ -7,6 +7,8 @@ use anyhow::{bail, ensure, format_err, Result};
 pub use errors::GenesisError;
 use include_dir::include_dir;
 use include_dir::Dir;
+use move_vm_runtime::module_traversal::{TraversalContext, TraversalStorage};
+use move_vm_types::gas::UnmeteredGasMeter;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::node::AccumulatorStoreType;
@@ -15,7 +17,10 @@ use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_config::{
     genesis_key_pair, BuiltinNetworkID, ChainNetwork, ChainNetworkID, GenesisBlockParameter,
 };
+use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
+use starcoin_framework::{ReleaseBundle, ReleasePackage};
+use starcoin_gas_schedule::LATEST_GAS_FEATURE_VERSION;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainStateWriter;
 use starcoin_statedb::ChainStateDB;
@@ -28,6 +33,13 @@ use starcoin_types::startup_info::{ChainInfo, StartupInfo};
 use starcoin_types::transaction::Package;
 use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::{block::Block, transaction::Transaction};
+use starcoin_vm_runtime::data_cache::AsMoveResolver;
+use starcoin_vm_runtime::move_vm_ext::{GenesisMoveVM, SessionExt};
+use starcoin_vm_runtime_types::storage::change_set_configs::ChangeSetConfigs;
+use starcoin_vm_types::identifier::Identifier;
+use starcoin_vm_types::language_storage::{ModuleId, TypeTag};
+use starcoin_vm_types::transaction::ChangeSet;
+use starcoin_vm_types::value::MoveValue;
 use starcoin_vm_types::{
     account_config::CORE_CODE_ADDRESS,
     state_store::{
@@ -365,6 +377,108 @@ impl Genesis {
         let chain_info = genesis.execute_genesis_block(net, storage.clone(), dag.clone())?;
         Ok((storage, chain_info, genesis, dag))
     }
+}
+
+const CODE_MODULE_NAME: &'static str = "code";
+
+fn encode_genesis_change_set(net: ChainNetwork) -> ChangeSet {
+    let framework = starcoin_cached_packages::head_release_bundle();
+
+    let storage =
+        Arc::new(Storage::new(StorageInstance::new_cache_instance()).expect("init storage fail."));
+    let chain_state_db = ChainStateDB::new(storage.clone(), None);
+    let resolver = chain_state_db.as_move_resolver();
+
+    let genesis_vm = GenesisMoveVM::new(net.chain_id());
+    let genesis_id = HashValue::zero();
+    let mut session = genesis_vm.new_genesis_session(&resolver, genesis_id);
+
+    publish_framework(&mut session, framework);
+
+    initial_starcoin_genesis(&mut session, &net);
+
+    let change_set_config =
+        ChangeSetConfigs::unlimited_at_gas_feature_version(LATEST_GAS_FEATURE_VERSION);
+    let (write_set, module_write_set) = session
+        .finish(&change_set_config)
+        .expect("Genesis session should success.");
+
+    write_set
+        .try_combine_into_storage_change_set(module_write_set)
+        .unwrap()
+}
+
+fn exec_function(
+    session: &mut SessionExt,
+    module_name: &str,
+    function_name: &str,
+    ty_args: Vec<TypeTag>,
+    args: Vec<Vec<u8>>,
+) {
+    let storage = TraversalStorage::new();
+    session
+        .execute_function_bypass_visibility(
+            &ModuleId::new(CORE_CODE_ADDRESS, Identifier::new(module_name).unwrap()),
+            &Identifier::new(function_name).unwrap(),
+            ty_args,
+            args,
+            &mut UnmeteredGasMeter,
+            &mut TraversalContext::new(&storage),
+        )
+        .unwrap_or_else(|e| {
+            panic!(
+                "Error calling {}.{}: ({:#x}) {}",
+                module_name,
+                function_name,
+                e.sub_status().unwrap_or_default(),
+                e,
+            )
+        });
+}
+
+fn initial_starcoin_genesis(session: &mut SessionExt, net: &ChainNetwork) {
+    todo!()
+}
+
+/// Publish the framework release bundle.
+fn publish_framework(session: &mut SessionExt, framework: &ReleaseBundle) {
+    for pack in &framework.packages {
+        publish_package(session, pack)
+    }
+}
+
+/// Publish the given package.
+fn publish_package(session: &mut SessionExt, pack: &ReleasePackage) {
+    let modules = pack.sorted_code_and_modules();
+    let addr = *modules.first().unwrap().1.self_id().address();
+    let code = modules
+        .into_iter()
+        .map(|(c, _)| c.to_vec())
+        .collect::<Vec<_>>();
+    session
+        .publish_module_bundle(code, addr, &mut UnmeteredGasMeter)
+        .unwrap_or_else(|e| {
+            panic!(
+                "Failure publishing package `{}`: {:?}",
+                pack.package_metadata().name,
+                e
+            )
+        });
+
+    // Call the initialize function with the metadata.
+    exec_function(
+        session,
+        CODE_MODULE_NAME,
+        "initialize",
+        vec![],
+        vec![
+            MoveValue::Signer(CORE_CODE_ADDRESS)
+                .simple_serialize()
+                .unwrap(),
+            MoveValue::Signer(addr).simple_serialize().unwrap(),
+            bcs_ext::to_bytes(pack.package_metadata()).unwrap(),
+        ],
+    );
 }
 
 #[cfg(test)]

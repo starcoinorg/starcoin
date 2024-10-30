@@ -5,64 +5,102 @@ use crate::move_vm_ext::session::SessionId;
 use crate::move_vm_ext::warm_vm_cache::WarmVmCache;
 use crate::move_vm_ext::{SessionExt, StarcoinMoveResolver};
 use crate::natives;
+use crate::natives::starcoin_natives_with_builder;
 use move_binary_format::deserializer::DeserializerConfig;
-use move_binary_format::{
-    errors::VMResult,
-    file_format_common,
-    file_format_common::{IDENTIFIER_SIZE_MAX, LEGACY_IDENTIFIER_SIZE_MAX},
-};
-use move_bytecode_verifier::VerifierConfig;
+use move_binary_format::errors::VMResult;
 use move_vm_runtime::config::VMConfig;
 use move_vm_runtime::move_vm::MoveVM;
 use move_vm_runtime::native_extensions::NativeContextExtensions;
 use move_vm_types::loaded_data::runtime_types::TypeBuilder;
+use starcoin_crypto::HashValue;
+use starcoin_framework::natives::aggregator_natives::NativeAggregatorContext;
 use starcoin_gas_algebra::DynamicExpression;
-use starcoin_gas_schedule::{MiscGasParameters, NativeGasParameters};
+use starcoin_gas_schedule::{MiscGasParameters, NativeGasParameters, LATEST_GAS_FEATURE_VERSION};
 use starcoin_native_interface::SafeNativeBuilder;
 use starcoin_table_natives::NativeTableContext;
+use starcoin_vm_runtime_types::storage::change_set_configs::ChangeSetConfigs;
 use starcoin_vm_types::{
     errors::PartialVMResult,
-    on_chain_config::{
-        FeatureFlag, Features, TimedFeatureFlag, TimedFeatures, TimedFeaturesBuilder,
-    },
+    genesis_config::ChainId,
+    on_chain_config::{Features, TimedFeatureFlag, TimedFeatures, TimedFeaturesBuilder},
 };
-
-use starcoin_framework::natives::aggregator_natives::NativeAggregatorContext;
 use std::ops::Deref;
 use std::sync::Arc;
 use starcoin_framework::natives::event::NativeEventContext;
 use starcoin_framework::natives::object::NativeObjectContext;
 
+/// MoveVM wrapper which is used to run genesis initializations. Designed as a
+/// stand-alone struct to ensure all genesis configurations are in one place,
+/// and are modified accordingly. The VM is initialized with default parameters,
+/// and should only be used to run genesis sessions.
+pub struct GenesisMoveVM {
+    vm: MoveVM,
+    chain_id: ChainId,
+    features: Features,
+}
+
+impl GenesisMoveVM {
+    pub fn new(chain_id: ChainId) -> Self {
+        let features = Features::default();
+        let timed_features = TimedFeaturesBuilder::enable_all().build();
+
+        let vm_config = starcoin_prod_vm_config(&features, &timed_features, TypeBuilder::Legacy);
+
+        // All genesis sessions run with unmetered gas meter, and here we set
+        // the gas parameters for natives as zeros (because they do not matter).
+        let mut native_builder = SafeNativeBuilder::new(
+            LATEST_GAS_FEATURE_VERSION,
+            NativeGasParameters::zeros(),
+            MiscGasParameters::zeros(),
+            timed_features.clone(),
+            features.clone(),
+        );
+
+        let vm = MoveVM::new_with_config(
+            starcoin_natives_with_builder(&mut native_builder),
+            vm_config.clone(),
+        )
+        .expect("creating MoveVM shouldn't failed.");
+
+        Self {
+            vm,
+            chain_id,
+            features,
+        }
+    }
+
+    pub fn genesis_change_set_configs(&self) -> ChangeSetConfigs {
+        // Because genesis sessions are not metered, there are no change set
+        // (storage) costs as well.
+        ChangeSetConfigs::unlimited_at_gas_feature_version(LATEST_GAS_FEATURE_VERSION)
+    }
+
+    pub fn new_genesis_session<'r, R: StarcoinMoveResolver>(
+        &self,
+        resolver: &'r R,
+        genesis_id: HashValue,
+    ) -> SessionExt<'r, '_> {
+        let session_id = SessionId::genesis(genesis_id);
+        let txn_hash: [u8; 32] = session_id
+            .as_uuid()
+            .to_vec()
+            .try_into()
+            .expect("HashValue should convert to [u8; 32]");
+        let mut extensions = NativeContextExtensions::default();
+        extensions.add(NativeTableContext::new(txn_hash, resolver));
+
+        SessionExt::new(
+            self.vm.new_session_with_extensions(resolver, extensions),
+            resolver,
+            Arc::new(self.features.clone()),
+        )
+    }
+}
+
 pub struct MoveVmExt {
     inner: MoveVM,
     _chain_id: u8,
     features: Arc<Features>,
-}
-
-pub fn get_max_binary_format_version(
-    features: &Features,
-    gas_feature_version_opt: Option<u64>,
-) -> u32 {
-    // For historical reasons, we support still < gas version 5, but if a new caller don't specify
-    // the gas version, we default to 5, which was introduced in late '22.
-    let gas_feature_version = gas_feature_version_opt.unwrap_or(5);
-    if gas_feature_version < 5 {
-        file_format_common::VERSION_5
-    } else if features.is_enabled(FeatureFlag::VM_BINARY_FORMAT_V7) {
-        file_format_common::VERSION_7
-    } else if features.is_enabled(FeatureFlag::VM_BINARY_FORMAT_V6) {
-        file_format_common::VERSION_6
-    } else {
-        file_format_common::VERSION_5
-    }
-}
-
-pub fn get_max_identifier_size(features: &Features) -> u64 {
-    if features.is_enabled(FeatureFlag::LIMIT_MAX_IDENTIFIER_LENGTH) {
-        IDENTIFIER_SIZE_MAX
-    } else {
-        LEGACY_IDENTIFIER_SIZE_MAX
-    }
 }
 
 impl MoveVmExt {
@@ -231,29 +269,5 @@ impl Deref for MoveVmExt {
 
     fn deref(&self) -> &Self::Target {
         &self.inner
-    }
-}
-
-pub fn verifier_config(features: &Features, _timed_features: &TimedFeatures) -> VerifierConfig {
-    VerifierConfig {
-        max_loop_depth: Some(5),
-        max_generic_instantiation_length: Some(32),
-        max_function_parameters: Some(128),
-        max_basic_blocks: Some(1024),
-        max_value_stack_size: 1024,
-        max_type_nodes: Some(256),
-        max_dependency_depth: Some(256),
-        max_push_size: Some(10000),
-        max_struct_definitions: None,
-        max_fields_in_struct: None,
-        max_function_definitions: None,
-        max_back_edges_per_function: None,
-        max_back_edges_per_module: None,
-        max_basic_blocks_in_script: None,
-        max_per_fun_meter_units: Some(1000 * 80000),
-        max_per_mod_meter_units: Some(1000 * 80000),
-        use_signature_checker_v2: features.is_enabled(FeatureFlag::SIGNATURE_CHECKER_V2),
-        sig_checker_v2_fix_script_ty_param_count: features
-            .is_enabled(FeatureFlag::SIGNATURE_CHECKER_V2_SCRIPT_FIX),
     }
 }

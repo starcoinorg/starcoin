@@ -14,7 +14,7 @@ pub(crate) mod write_op_converter;
 pub use crate::move_vm_ext::{
     resolver::{AsExecutorView, StarcoinMoveResolver},
     session::{SessionExt, SessionId},
-    vm::MoveVmExt,
+    vm::{GenesisMoveVM, MoveVmExt},
 };
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::{

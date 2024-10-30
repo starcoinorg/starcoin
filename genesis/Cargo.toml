@@ -23,7 +23,14 @@ starcoin-dag = { workspace = true }
 stdlib = { workspace = true }
 stest = { workspace = true }
 thiserror = { workspace = true }
-tempfile = {workspace = true}
+tempfile = { workspace = true }
+starcoin-cached-packages = { workspace = true }
+move-vm-runtime = { workspace = true }
+move-vm-types = { workspace = true }
+starcoin-framework = { workspace = true }
+starcoin-vm-runtime-types = { workspace = true }
+starcoin-gas-schedule = { workspace = true }
+
 [features]
 default = []
 fuzzing = ["starcoin-types/fuzzing"]
