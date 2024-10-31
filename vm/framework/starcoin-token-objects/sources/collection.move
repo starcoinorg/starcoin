@@ -28,7 +28,7 @@ module starcoin_token_objects::collection {
 
     use starcoin_token_objects::royalty::{Self, Royalty};
 
-    friend starcoin_token_objects::token;
+    friend starcoin_token_objects::object_token;
 
     /// The collection does not exist
     const ECOLLECTION_DOES_NOT_EXIST: u64 = 1;

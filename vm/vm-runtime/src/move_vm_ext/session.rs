@@ -42,7 +42,8 @@ use std::{
     ops::{Deref, DerefMut},
     sync::Arc,
 };
-use tracing::warn;
+use tracing::{info, warn};
+use starcoin_logger::prelude::error;
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub enum SessionId {
@@ -273,6 +274,7 @@ impl<'r, 'l> SessionExt<'r, 'l> {
         // publish a module under anyone's account.
         for module in &compiled_modules {
             if module.address() != &sender {
+                error!("module.address() != &sender, module name: {:?}, name: {:?} sender: {:?} ", module.address(), module.name(), sender);
                 return Err(verification_error(
                     StatusCode::MODULE_ADDRESS_DOES_NOT_MATCH_SENDER,
                     IndexKind::AddressIdentifier,
@@ -318,7 +320,9 @@ impl<'r, 'l> SessionExt<'r, 'l> {
                     .finish(Location::Undefined));
                 }
             }
+
             if !bundle_unverified.insert(module_id) {
+                error!("Duplicate module name: {:?}", module.self_id().name);
                 return Err(PartialVMError::new(StatusCode::DUPLICATE_MODULE_NAME)
                     .finish(Location::Undefined));
             }

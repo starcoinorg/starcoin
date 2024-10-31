@@ -103,7 +103,7 @@ impl StarcoinVM {
         let inner = MoveVmExt::new(
             native_params.clone(),
             gas_params.vm.misc.clone(),
-            1,
+            12,
             chain_id.unwrap(),
             Features::default(),
             TimedFeaturesBuilder::enable_all().build(),

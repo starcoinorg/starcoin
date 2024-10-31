@@ -1,123 +1,123 @@
 
-<a id="0x3_token"></a>
+<a id="0x1_token"></a>
 
-# Module `0x3::token`
+# Module `0x1::token`
 
 This module provides the foundation for Tokens.
 Checkout our developer doc on our token standard https://starcoin.org/standards
 
 
--  [Struct `Token`](#0x3_token_Token)
--  [Struct `TokenId`](#0x3_token_TokenId)
--  [Struct `TokenDataId`](#0x3_token_TokenDataId)
--  [Struct `TokenData`](#0x3_token_TokenData)
--  [Struct `Royalty`](#0x3_token_Royalty)
--  [Struct `TokenMutabilityConfig`](#0x3_token_TokenMutabilityConfig)
--  [Resource `TokenStore`](#0x3_token_TokenStore)
--  [Struct `CollectionMutabilityConfig`](#0x3_token_CollectionMutabilityConfig)
--  [Resource `Collections`](#0x3_token_Collections)
--  [Struct `CollectionData`](#0x3_token_CollectionData)
--  [Struct `WithdrawCapability`](#0x3_token_WithdrawCapability)
--  [Struct `DepositEvent`](#0x3_token_DepositEvent)
--  [Struct `Deposit`](#0x3_token_Deposit)
--  [Struct `WithdrawEvent`](#0x3_token_WithdrawEvent)
--  [Struct `Withdraw`](#0x3_token_Withdraw)
--  [Struct `CreateTokenDataEvent`](#0x3_token_CreateTokenDataEvent)
--  [Struct `CreateTokenData`](#0x3_token_CreateTokenData)
--  [Struct `MintTokenEvent`](#0x3_token_MintTokenEvent)
--  [Struct `MintToken`](#0x3_token_MintToken)
--  [Struct `BurnTokenEvent`](#0x3_token_BurnTokenEvent)
--  [Struct `BurnToken`](#0x3_token_BurnToken)
--  [Struct `MutateTokenPropertyMapEvent`](#0x3_token_MutateTokenPropertyMapEvent)
--  [Struct `MutateTokenPropertyMap`](#0x3_token_MutateTokenPropertyMap)
--  [Struct `CreateCollectionEvent`](#0x3_token_CreateCollectionEvent)
--  [Struct `CreateCollection`](#0x3_token_CreateCollection)
+-  [Struct `Token`](#0x1_token_Token)
+-  [Struct `TokenId`](#0x1_token_TokenId)
+-  [Struct `TokenDataId`](#0x1_token_TokenDataId)
+-  [Struct `TokenData`](#0x1_token_TokenData)
+-  [Struct `Royalty`](#0x1_token_Royalty)
+-  [Struct `TokenMutabilityConfig`](#0x1_token_TokenMutabilityConfig)
+-  [Resource `TokenStore`](#0x1_token_TokenStore)
+-  [Struct `CollectionMutabilityConfig`](#0x1_token_CollectionMutabilityConfig)
+-  [Resource `Collections`](#0x1_token_Collections)
+-  [Struct `CollectionData`](#0x1_token_CollectionData)
+-  [Struct `WithdrawCapability`](#0x1_token_WithdrawCapability)
+-  [Struct `DepositEvent`](#0x1_token_DepositEvent)
+-  [Struct `Deposit`](#0x1_token_Deposit)
+-  [Struct `WithdrawEvent`](#0x1_token_WithdrawEvent)
+-  [Struct `Withdraw`](#0x1_token_Withdraw)
+-  [Struct `CreateTokenDataEvent`](#0x1_token_CreateTokenDataEvent)
+-  [Struct `CreateTokenData`](#0x1_token_CreateTokenData)
+-  [Struct `MintTokenEvent`](#0x1_token_MintTokenEvent)
+-  [Struct `MintToken`](#0x1_token_MintToken)
+-  [Struct `BurnTokenEvent`](#0x1_token_BurnTokenEvent)
+-  [Struct `BurnToken`](#0x1_token_BurnToken)
+-  [Struct `MutateTokenPropertyMapEvent`](#0x1_token_MutateTokenPropertyMapEvent)
+-  [Struct `MutateTokenPropertyMap`](#0x1_token_MutateTokenPropertyMap)
+-  [Struct `CreateCollectionEvent`](#0x1_token_CreateCollectionEvent)
+-  [Struct `CreateCollection`](#0x1_token_CreateCollection)
 -  [Constants](#@Constants_0)
--  [Function `create_collection_script`](#0x3_token_create_collection_script)
--  [Function `create_token_script`](#0x3_token_create_token_script)
--  [Function `mint_script`](#0x3_token_mint_script)
--  [Function `mutate_token_properties`](#0x3_token_mutate_token_properties)
--  [Function `direct_transfer_script`](#0x3_token_direct_transfer_script)
--  [Function `opt_in_direct_transfer`](#0x3_token_opt_in_direct_transfer)
--  [Function `transfer_with_opt_in`](#0x3_token_transfer_with_opt_in)
--  [Function `burn_by_creator`](#0x3_token_burn_by_creator)
--  [Function `burn`](#0x3_token_burn)
--  [Function `mutate_collection_description`](#0x3_token_mutate_collection_description)
--  [Function `mutate_collection_uri`](#0x3_token_mutate_collection_uri)
--  [Function `mutate_collection_maximum`](#0x3_token_mutate_collection_maximum)
--  [Function `mutate_tokendata_maximum`](#0x3_token_mutate_tokendata_maximum)
--  [Function `mutate_tokendata_uri`](#0x3_token_mutate_tokendata_uri)
--  [Function `mutate_tokendata_royalty`](#0x3_token_mutate_tokendata_royalty)
--  [Function `mutate_tokendata_description`](#0x3_token_mutate_tokendata_description)
--  [Function `mutate_tokendata_property`](#0x3_token_mutate_tokendata_property)
--  [Function `mutate_one_token`](#0x3_token_mutate_one_token)
--  [Function `create_royalty`](#0x3_token_create_royalty)
--  [Function `deposit_token`](#0x3_token_deposit_token)
--  [Function `direct_deposit_with_opt_in`](#0x3_token_direct_deposit_with_opt_in)
--  [Function `direct_transfer`](#0x3_token_direct_transfer)
--  [Function `initialize_token_store`](#0x3_token_initialize_token_store)
--  [Function `merge`](#0x3_token_merge)
--  [Function `split`](#0x3_token_split)
--  [Function `token_id`](#0x3_token_token_id)
--  [Function `transfer`](#0x3_token_transfer)
--  [Function `create_withdraw_capability`](#0x3_token_create_withdraw_capability)
--  [Function `withdraw_with_capability`](#0x3_token_withdraw_with_capability)
--  [Function `partial_withdraw_with_capability`](#0x3_token_partial_withdraw_with_capability)
--  [Function `withdraw_token`](#0x3_token_withdraw_token)
--  [Function `create_collection`](#0x3_token_create_collection)
--  [Function `check_collection_exists`](#0x3_token_check_collection_exists)
--  [Function `check_tokendata_exists`](#0x3_token_check_tokendata_exists)
--  [Function `create_tokendata`](#0x3_token_create_tokendata)
--  [Function `get_collection_supply`](#0x3_token_get_collection_supply)
--  [Function `get_collection_description`](#0x3_token_get_collection_description)
--  [Function `get_collection_uri`](#0x3_token_get_collection_uri)
--  [Function `get_collection_maximum`](#0x3_token_get_collection_maximum)
--  [Function `get_token_supply`](#0x3_token_get_token_supply)
--  [Function `get_tokendata_largest_property_version`](#0x3_token_get_tokendata_largest_property_version)
--  [Function `get_token_id`](#0x3_token_get_token_id)
--  [Function `get_direct_transfer`](#0x3_token_get_direct_transfer)
--  [Function `create_token_mutability_config`](#0x3_token_create_token_mutability_config)
--  [Function `create_collection_mutability_config`](#0x3_token_create_collection_mutability_config)
--  [Function `mint_token`](#0x3_token_mint_token)
--  [Function `mint_token_to`](#0x3_token_mint_token_to)
--  [Function `create_token_id`](#0x3_token_create_token_id)
--  [Function `create_token_data_id`](#0x3_token_create_token_data_id)
--  [Function `create_token_id_raw`](#0x3_token_create_token_id_raw)
--  [Function `balance_of`](#0x3_token_balance_of)
--  [Function `has_token_store`](#0x3_token_has_token_store)
--  [Function `get_royalty`](#0x3_token_get_royalty)
--  [Function `get_royalty_numerator`](#0x3_token_get_royalty_numerator)
--  [Function `get_royalty_denominator`](#0x3_token_get_royalty_denominator)
--  [Function `get_royalty_payee`](#0x3_token_get_royalty_payee)
--  [Function `get_token_amount`](#0x3_token_get_token_amount)
--  [Function `get_token_id_fields`](#0x3_token_get_token_id_fields)
--  [Function `get_token_data_id_fields`](#0x3_token_get_token_data_id_fields)
--  [Function `get_property_map`](#0x3_token_get_property_map)
--  [Function `get_tokendata_maximum`](#0x3_token_get_tokendata_maximum)
--  [Function `get_tokendata_uri`](#0x3_token_get_tokendata_uri)
--  [Function `get_tokendata_description`](#0x3_token_get_tokendata_description)
--  [Function `get_tokendata_royalty`](#0x3_token_get_tokendata_royalty)
--  [Function `get_tokendata_id`](#0x3_token_get_tokendata_id)
--  [Function `get_tokendata_mutability_config`](#0x3_token_get_tokendata_mutability_config)
--  [Function `get_token_mutability_maximum`](#0x3_token_get_token_mutability_maximum)
--  [Function `get_token_mutability_royalty`](#0x3_token_get_token_mutability_royalty)
--  [Function `get_token_mutability_uri`](#0x3_token_get_token_mutability_uri)
--  [Function `get_token_mutability_description`](#0x3_token_get_token_mutability_description)
--  [Function `get_token_mutability_default_properties`](#0x3_token_get_token_mutability_default_properties)
--  [Function `get_collection_mutability_config`](#0x3_token_get_collection_mutability_config)
--  [Function `get_collection_mutability_description`](#0x3_token_get_collection_mutability_description)
--  [Function `get_collection_mutability_uri`](#0x3_token_get_collection_mutability_uri)
--  [Function `get_collection_mutability_maximum`](#0x3_token_get_collection_mutability_maximum)
--  [Function `destroy_token_data`](#0x3_token_destroy_token_data)
--  [Function `destroy_collection_data`](#0x3_token_destroy_collection_data)
--  [Function `withdraw_with_event_internal`](#0x3_token_withdraw_with_event_internal)
--  [Function `update_token_property_internal`](#0x3_token_update_token_property_internal)
--  [Function `direct_deposit`](#0x3_token_direct_deposit)
--  [Function `assert_collection_exists`](#0x3_token_assert_collection_exists)
--  [Function `assert_tokendata_exists`](#0x3_token_assert_tokendata_exists)
--  [Function `assert_non_standard_reserved_property`](#0x3_token_assert_non_standard_reserved_property)
--  [Function `initialize_token_script`](#0x3_token_initialize_token_script)
--  [Function `initialize_token`](#0x3_token_initialize_token)
+-  [Function `create_collection_script`](#0x1_token_create_collection_script)
+-  [Function `create_token_script`](#0x1_token_create_token_script)
+-  [Function `mint_script`](#0x1_token_mint_script)
+-  [Function `mutate_token_properties`](#0x1_token_mutate_token_properties)
+-  [Function `direct_transfer_script`](#0x1_token_direct_transfer_script)
+-  [Function `opt_in_direct_transfer`](#0x1_token_opt_in_direct_transfer)
+-  [Function `transfer_with_opt_in`](#0x1_token_transfer_with_opt_in)
+-  [Function `burn_by_creator`](#0x1_token_burn_by_creator)
+-  [Function `burn`](#0x1_token_burn)
+-  [Function `mutate_collection_description`](#0x1_token_mutate_collection_description)
+-  [Function `mutate_collection_uri`](#0x1_token_mutate_collection_uri)
+-  [Function `mutate_collection_maximum`](#0x1_token_mutate_collection_maximum)
+-  [Function `mutate_tokendata_maximum`](#0x1_token_mutate_tokendata_maximum)
+-  [Function `mutate_tokendata_uri`](#0x1_token_mutate_tokendata_uri)
+-  [Function `mutate_tokendata_royalty`](#0x1_token_mutate_tokendata_royalty)
+-  [Function `mutate_tokendata_description`](#0x1_token_mutate_tokendata_description)
+-  [Function `mutate_tokendata_property`](#0x1_token_mutate_tokendata_property)
+-  [Function `mutate_one_token`](#0x1_token_mutate_one_token)
+-  [Function `create_royalty`](#0x1_token_create_royalty)
+-  [Function `deposit_token`](#0x1_token_deposit_token)
+-  [Function `direct_deposit_with_opt_in`](#0x1_token_direct_deposit_with_opt_in)
+-  [Function `direct_transfer`](#0x1_token_direct_transfer)
+-  [Function `initialize_token_store`](#0x1_token_initialize_token_store)
+-  [Function `merge`](#0x1_token_merge)
+-  [Function `split`](#0x1_token_split)
+-  [Function `token_id`](#0x1_token_token_id)
+-  [Function `transfer`](#0x1_token_transfer)
+-  [Function `create_withdraw_capability`](#0x1_token_create_withdraw_capability)
+-  [Function `withdraw_with_capability`](#0x1_token_withdraw_with_capability)
+-  [Function `partial_withdraw_with_capability`](#0x1_token_partial_withdraw_with_capability)
+-  [Function `withdraw_token`](#0x1_token_withdraw_token)
+-  [Function `create_collection`](#0x1_token_create_collection)
+-  [Function `check_collection_exists`](#0x1_token_check_collection_exists)
+-  [Function `check_tokendata_exists`](#0x1_token_check_tokendata_exists)
+-  [Function `create_tokendata`](#0x1_token_create_tokendata)
+-  [Function `get_collection_supply`](#0x1_token_get_collection_supply)
+-  [Function `get_collection_description`](#0x1_token_get_collection_description)
+-  [Function `get_collection_uri`](#0x1_token_get_collection_uri)
+-  [Function `get_collection_maximum`](#0x1_token_get_collection_maximum)
+-  [Function `get_token_supply`](#0x1_token_get_token_supply)
+-  [Function `get_tokendata_largest_property_version`](#0x1_token_get_tokendata_largest_property_version)
+-  [Function `get_token_id`](#0x1_token_get_token_id)
+-  [Function `get_direct_transfer`](#0x1_token_get_direct_transfer)
+-  [Function `create_token_mutability_config`](#0x1_token_create_token_mutability_config)
+-  [Function `create_collection_mutability_config`](#0x1_token_create_collection_mutability_config)
+-  [Function `mint_token`](#0x1_token_mint_token)
+-  [Function `mint_token_to`](#0x1_token_mint_token_to)
+-  [Function `create_token_id`](#0x1_token_create_token_id)
+-  [Function `create_token_data_id`](#0x1_token_create_token_data_id)
+-  [Function `create_token_id_raw`](#0x1_token_create_token_id_raw)
+-  [Function `balance_of`](#0x1_token_balance_of)
+-  [Function `has_token_store`](#0x1_token_has_token_store)
+-  [Function `get_royalty`](#0x1_token_get_royalty)
+-  [Function `get_royalty_numerator`](#0x1_token_get_royalty_numerator)
+-  [Function `get_royalty_denominator`](#0x1_token_get_royalty_denominator)
+-  [Function `get_royalty_payee`](#0x1_token_get_royalty_payee)
+-  [Function `get_token_amount`](#0x1_token_get_token_amount)
+-  [Function `get_token_id_fields`](#0x1_token_get_token_id_fields)
+-  [Function `get_token_data_id_fields`](#0x1_token_get_token_data_id_fields)
+-  [Function `get_property_map`](#0x1_token_get_property_map)
+-  [Function `get_tokendata_maximum`](#0x1_token_get_tokendata_maximum)
+-  [Function `get_tokendata_uri`](#0x1_token_get_tokendata_uri)
+-  [Function `get_tokendata_description`](#0x1_token_get_tokendata_description)
+-  [Function `get_tokendata_royalty`](#0x1_token_get_tokendata_royalty)
+-  [Function `get_tokendata_id`](#0x1_token_get_tokendata_id)
+-  [Function `get_tokendata_mutability_config`](#0x1_token_get_tokendata_mutability_config)
+-  [Function `get_token_mutability_maximum`](#0x1_token_get_token_mutability_maximum)
+-  [Function `get_token_mutability_royalty`](#0x1_token_get_token_mutability_royalty)
+-  [Function `get_token_mutability_uri`](#0x1_token_get_token_mutability_uri)
+-  [Function `get_token_mutability_description`](#0x1_token_get_token_mutability_description)
+-  [Function `get_token_mutability_default_properties`](#0x1_token_get_token_mutability_default_properties)
+-  [Function `get_collection_mutability_config`](#0x1_token_get_collection_mutability_config)
+-  [Function `get_collection_mutability_description`](#0x1_token_get_collection_mutability_description)
+-  [Function `get_collection_mutability_uri`](#0x1_token_get_collection_mutability_uri)
+-  [Function `get_collection_mutability_maximum`](#0x1_token_get_collection_mutability_maximum)
+-  [Function `destroy_token_data`](#0x1_token_destroy_token_data)
+-  [Function `destroy_collection_data`](#0x1_token_destroy_collection_data)
+-  [Function `withdraw_with_event_internal`](#0x1_token_withdraw_with_event_internal)
+-  [Function `update_token_property_internal`](#0x1_token_update_token_property_internal)
+-  [Function `direct_deposit`](#0x1_token_direct_deposit)
+-  [Function `assert_collection_exists`](#0x1_token_assert_collection_exists)
+-  [Function `assert_tokendata_exists`](#0x1_token_assert_tokendata_exists)
+-  [Function `assert_non_standard_reserved_property`](#0x1_token_assert_non_standard_reserved_property)
+-  [Function `initialize_token_script`](#0x1_token_initialize_token_script)
+-  [Function `initialize_token`](#0x1_token_initialize_token)
 -  [Specification](#@Specification_1)
     -  [Function `create_collection_script`](#@Specification_1_create_collection_script)
     -  [Function `create_token_script`](#@Specification_1_create_token_script)
@@ -187,23 +187,23 @@ Checkout our developer doc on our token standard https://starcoin.org/standards
 <b>use</b> <a href="../../starcoin-framework/doc/event.md#0x1_event">0x1::event</a>;
 <b>use</b> <a href="../../move-stdlib/doc/features.md#0x1_features">0x1::features</a>;
 <b>use</b> <a href="../../move-stdlib/doc/option.md#0x1_option">0x1::option</a>;
+<b>use</b> <a href="property_map.md#0x1_property_map">0x1::property_map</a>;
 <b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
 <b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 <b>use</b> <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table">0x1::table</a>;
 <b>use</b> <a href="../../starcoin-framework/doc/timestamp.md#0x1_timestamp">0x1::timestamp</a>;
-<b>use</b> <a href="property_map.md#0x3_property_map">0x3::property_map</a>;
-<b>use</b> <a href="token_event_store.md#0x3_token_event_store">0x3::token_event_store</a>;
+<b>use</b> <a href="token_event_store.md#0x1_token_event_store">0x1::token_event_store</a>;
 </code></pre>
 
 
 
-<a id="0x3_token_Token"></a>
+<a id="0x1_token_Token"></a>
 
 ## Struct `Token`
 
 
 
-<pre><code><b>struct</b> <a href="token.md#0x3_token_Token">Token</a> <b>has</b> store
+<pre><code><b>struct</b> <a href="token.md#0x1_token_Token">Token</a> <b>has</b> store
 </code></pre>
 
 
@@ -214,7 +214,7 @@ Checkout our developer doc on our token standard https://starcoin.org/standards
 
 <dl>
 <dt>
-<code>id: <a href="token.md#0x3_token_TokenId">token::TokenId</a></code>
+<code>id: <a href="token.md#0x1_token_TokenId">token::TokenId</a></code>
 </dt>
 <dd>
 
@@ -226,7 +226,7 @@ Checkout our developer doc on our token standard https://starcoin.org/standards
  the amount of tokens. Only property_version = 0 can have a value bigger than 1.
 </dd>
 <dt>
-<code>token_properties: <a href="property_map.md#0x3_property_map_PropertyMap">property_map::PropertyMap</a></code>
+<code>token_properties: <a href="property_map.md#0x1_property_map_PropertyMap">property_map::PropertyMap</a></code>
 </dt>
 <dd>
  The properties with this token.
@@ -238,14 +238,14 @@ Checkout our developer doc on our token standard https://starcoin.org/standards
 
 </details>
 
-<a id="0x3_token_TokenId"></a>
+<a id="0x1_token_TokenId"></a>
 
 ## Struct `TokenId`
 
 global unique identifier of a token
 
 
-<pre><code><b>struct</b> <a href="token.md#0x3_token_TokenId">TokenId</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="token.md#0x1_token_TokenId">TokenId</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -256,7 +256,7 @@ global unique identifier of a token
 
 <dl>
 <dt>
-<code>token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a></code>
+<code>token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a></code>
 </dt>
 <dd>
  the id to the common token data shared by token with different property_version
@@ -272,14 +272,14 @@ global unique identifier of a token
 
 </details>
 
-<a id="0x3_token_TokenDataId"></a>
+<a id="0x1_token_TokenDataId"></a>
 
 ## Struct `TokenDataId`
 
 globally unique identifier of tokendata
 
 
-<pre><code><b>struct</b> <a href="token.md#0x3_token_TokenDataId">TokenDataId</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="token.md#0x1_token_TokenDataId">TokenDataId</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -312,14 +312,14 @@ globally unique identifier of tokendata
 
 </details>
 
-<a id="0x3_token_TokenData"></a>
+<a id="0x1_token_TokenData"></a>
 
 ## Struct `TokenData`
 
 The shared TokenData by tokens with different property_version
 
 
-<pre><code><b>struct</b> <a href="token.md#0x3_token_TokenData">TokenData</a> <b>has</b> store
+<pre><code><b>struct</b> <a href="token.md#0x1_token_TokenData">TokenData</a> <b>has</b> store
 </code></pre>
 
 
@@ -354,7 +354,7 @@ The shared TokenData by tokens with different property_version
  The Uniform Resource Identifier (uri) pointing to the JSON file stored in off-chain storage; the URL length should be less than 512 characters, eg: https://arweave.net/Fmmn4ul-7Mv6vzm7JwE69O-I-vd6Bz2QriJO1niwCh4
 </dd>
 <dt>
-<code>royalty: <a href="token.md#0x3_token_Royalty">token::Royalty</a></code>
+<code>royalty: <a href="token.md#0x1_token_Royalty">token::Royalty</a></code>
 </dt>
 <dd>
  The denominator and numerator for calculating the royalty fee; it also contains payee account address for depositing the Royalty
@@ -372,13 +372,13 @@ The shared TokenData by tokens with different property_version
  Describes this Token
 </dd>
 <dt>
-<code>default_properties: <a href="property_map.md#0x3_property_map_PropertyMap">property_map::PropertyMap</a></code>
+<code>default_properties: <a href="property_map.md#0x1_property_map_PropertyMap">property_map::PropertyMap</a></code>
 </dt>
 <dd>
  The properties are stored in the TokenData that are shared by all tokens
 </dd>
 <dt>
-<code>mutability_config: <a href="token.md#0x3_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a></code>
+<code>mutability_config: <a href="token.md#0x1_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a></code>
 </dt>
 <dd>
  Control the TokenData field mutability
@@ -388,14 +388,14 @@ The shared TokenData by tokens with different property_version
 
 </details>
 
-<a id="0x3_token_Royalty"></a>
+<a id="0x1_token_Royalty"></a>
 
 ## Struct `Royalty`
 
 The royalty of a token
 
 
-<pre><code><b>struct</b> <a href="token.md#0x3_token_Royalty">Royalty</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="token.md#0x1_token_Royalty">Royalty</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -429,14 +429,14 @@ The royalty of a token
 
 </details>
 
-<a id="0x3_token_TokenMutabilityConfig"></a>
+<a id="0x1_token_TokenMutabilityConfig"></a>
 
 ## Struct `TokenMutabilityConfig`
 
 This config specifies which fields in the TokenData are mutable
 
 
-<pre><code><b>struct</b> <a href="token.md#0x3_token_TokenMutabilityConfig">TokenMutabilityConfig</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="token.md#0x1_token_TokenMutabilityConfig">TokenMutabilityConfig</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -481,14 +481,14 @@ This config specifies which fields in the TokenData are mutable
 
 </details>
 
-<a id="0x3_token_TokenStore"></a>
+<a id="0x1_token_TokenStore"></a>
 
 ## Resource `TokenStore`
 
 Represents token resources owned by token owner
 
 
-<pre><code><b>struct</b> <a href="token.md#0x3_token_TokenStore">TokenStore</a> <b>has</b> key
+<pre><code><b>struct</b> <a href="token.md#0x1_token_TokenStore">TokenStore</a> <b>has</b> key
 </code></pre>
 
 
@@ -499,7 +499,7 @@ Represents token resources owned by token owner
 
 <dl>
 <dt>
-<code>tokens: <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_Table">table::Table</a>&lt;<a href="token.md#0x3_token_TokenId">token::TokenId</a>, <a href="token.md#0x3_token_Token">token::Token</a>&gt;</code>
+<code>tokens: <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_Table">table::Table</a>&lt;<a href="token.md#0x1_token_TokenId">token::TokenId</a>, <a href="token.md#0x1_token_Token">token::Token</a>&gt;</code>
 </dt>
 <dd>
  the tokens owned by a token owner
@@ -511,25 +511,25 @@ Represents token resources owned by token owner
 
 </dd>
 <dt>
-<code>deposit_events: <a href="../../starcoin-framework/doc/event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="token.md#0x3_token_DepositEvent">token::DepositEvent</a>&gt;</code>
+<code>deposit_events: <a href="../../starcoin-framework/doc/event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="token.md#0x1_token_DepositEvent">token::DepositEvent</a>&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>withdraw_events: <a href="../../starcoin-framework/doc/event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="token.md#0x3_token_WithdrawEvent">token::WithdrawEvent</a>&gt;</code>
+<code>withdraw_events: <a href="../../starcoin-framework/doc/event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="token.md#0x1_token_WithdrawEvent">token::WithdrawEvent</a>&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>burn_events: <a href="../../starcoin-framework/doc/event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="token.md#0x3_token_BurnTokenEvent">token::BurnTokenEvent</a>&gt;</code>
+<code>burn_events: <a href="../../starcoin-framework/doc/event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="token.md#0x1_token_BurnTokenEvent">token::BurnTokenEvent</a>&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>mutate_token_property_events: <a href="../../starcoin-framework/doc/event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="token.md#0x3_token_MutateTokenPropertyMapEvent">token::MutateTokenPropertyMapEvent</a>&gt;</code>
+<code>mutate_token_property_events: <a href="../../starcoin-framework/doc/event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="token.md#0x1_token_MutateTokenPropertyMapEvent">token::MutateTokenPropertyMapEvent</a>&gt;</code>
 </dt>
 <dd>
 
@@ -539,14 +539,14 @@ Represents token resources owned by token owner
 
 </details>
 
-<a id="0x3_token_CollectionMutabilityConfig"></a>
+<a id="0x1_token_CollectionMutabilityConfig"></a>
 
 ## Struct `CollectionMutabilityConfig`
 
 This config specifies which fields in the Collection are mutable
 
 
-<pre><code><b>struct</b> <a href="token.md#0x3_token_CollectionMutabilityConfig">CollectionMutabilityConfig</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="token.md#0x1_token_CollectionMutabilityConfig">CollectionMutabilityConfig</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -579,14 +579,14 @@ This config specifies which fields in the Collection are mutable
 
 </details>
 
-<a id="0x3_token_Collections"></a>
+<a id="0x1_token_Collections"></a>
 
 ## Resource `Collections`
 
 Represent collection and token metadata for a creator
 
 
-<pre><code><b>struct</b> <a href="token.md#0x3_token_Collections">Collections</a> <b>has</b> key
+<pre><code><b>struct</b> <a href="token.md#0x1_token_Collections">Collections</a> <b>has</b> key
 </code></pre>
 
 
@@ -597,31 +597,31 @@ Represent collection and token metadata for a creator
 
 <dl>
 <dt>
-<code>collection_data: <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_Table">table::Table</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, <a href="token.md#0x3_token_CollectionData">token::CollectionData</a>&gt;</code>
+<code>collection_data: <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_Table">table::Table</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, <a href="token.md#0x1_token_CollectionData">token::CollectionData</a>&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>token_data: <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_Table">table::Table</a>&lt;<a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>, <a href="token.md#0x3_token_TokenData">token::TokenData</a>&gt;</code>
+<code>token_data: <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_Table">table::Table</a>&lt;<a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>, <a href="token.md#0x1_token_TokenData">token::TokenData</a>&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>create_collection_events: <a href="../../starcoin-framework/doc/event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="token.md#0x3_token_CreateCollectionEvent">token::CreateCollectionEvent</a>&gt;</code>
+<code>create_collection_events: <a href="../../starcoin-framework/doc/event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="token.md#0x1_token_CreateCollectionEvent">token::CreateCollectionEvent</a>&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>create_token_data_events: <a href="../../starcoin-framework/doc/event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="token.md#0x3_token_CreateTokenDataEvent">token::CreateTokenDataEvent</a>&gt;</code>
+<code>create_token_data_events: <a href="../../starcoin-framework/doc/event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="token.md#0x1_token_CreateTokenDataEvent">token::CreateTokenDataEvent</a>&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>mint_token_events: <a href="../../starcoin-framework/doc/event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="token.md#0x3_token_MintTokenEvent">token::MintTokenEvent</a>&gt;</code>
+<code>mint_token_events: <a href="../../starcoin-framework/doc/event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="token.md#0x1_token_MintTokenEvent">token::MintTokenEvent</a>&gt;</code>
 </dt>
 <dd>
 
@@ -631,14 +631,14 @@ Represent collection and token metadata for a creator
 
 </details>
 
-<a id="0x3_token_CollectionData"></a>
+<a id="0x1_token_CollectionData"></a>
 
 ## Struct `CollectionData`
 
 Represent the collection metadata
 
 
-<pre><code><b>struct</b> <a href="token.md#0x3_token_CollectionData">CollectionData</a> <b>has</b> store
+<pre><code><b>struct</b> <a href="token.md#0x1_token_CollectionData">CollectionData</a> <b>has</b> store
 </code></pre>
 
 
@@ -680,7 +680,7 @@ Represent the collection metadata
  If maximal is 0, Starcoin doesn't track the supply of this collection, and there is no limit
 </dd>
 <dt>
-<code>mutability_config: <a href="token.md#0x3_token_CollectionMutabilityConfig">token::CollectionMutabilityConfig</a></code>
+<code>mutability_config: <a href="token.md#0x1_token_CollectionMutabilityConfig">token::CollectionMutabilityConfig</a></code>
 </dt>
 <dd>
  control which collectionData field is mutable
@@ -690,14 +690,14 @@ Represent the collection metadata
 
 </details>
 
-<a id="0x3_token_WithdrawCapability"></a>
+<a id="0x1_token_WithdrawCapability"></a>
 
 ## Struct `WithdrawCapability`
 
 capability to withdraw without signer, this struct should be non-copyable
 
 
-<pre><code><b>struct</b> <a href="token.md#0x3_token_WithdrawCapability">WithdrawCapability</a> <b>has</b> drop, store
+<pre><code><b>struct</b> <a href="token.md#0x1_token_WithdrawCapability">WithdrawCapability</a> <b>has</b> drop, store
 </code></pre>
 
 
@@ -714,7 +714,7 @@ capability to withdraw without signer, this struct should be non-copyable
 
 </dd>
 <dt>
-<code>token_id: <a href="token.md#0x3_token_TokenId">token::TokenId</a></code>
+<code>token_id: <a href="token.md#0x1_token_TokenId">token::TokenId</a></code>
 </dt>
 <dd>
 
@@ -736,14 +736,14 @@ capability to withdraw without signer, this struct should be non-copyable
 
 </details>
 
-<a id="0x3_token_DepositEvent"></a>
+<a id="0x1_token_DepositEvent"></a>
 
 ## Struct `DepositEvent`
 
 Set of data sent to the event stream during a receive
 
 
-<pre><code><b>struct</b> <a href="token.md#0x3_token_DepositEvent">DepositEvent</a> <b>has</b> drop, store
+<pre><code><b>struct</b> <a href="token.md#0x1_token_DepositEvent">DepositEvent</a> <b>has</b> drop, store
 </code></pre>
 
 
@@ -754,7 +754,7 @@ Set of data sent to the event stream during a receive
 
 <dl>
 <dt>
-<code>id: <a href="token.md#0x3_token_TokenId">token::TokenId</a></code>
+<code>id: <a href="token.md#0x1_token_TokenId">token::TokenId</a></code>
 </dt>
 <dd>
 
@@ -770,7 +770,7 @@ Set of data sent to the event stream during a receive
 
 </details>
 
-<a id="0x3_token_Deposit"></a>
+<a id="0x1_token_Deposit"></a>
 
 ## Struct `Deposit`
 
@@ -778,7 +778,7 @@ Set of data sent to the event stream during a receive
 
 
 <pre><code>#[<a href="../../starcoin-framework/doc/event.md#0x1_event">event</a>]
-<b>struct</b> <a href="token.md#0x3_token_Deposit">Deposit</a> <b>has</b> drop, store
+<b>struct</b> <a href="token.md#0x1_token_Deposit">Deposit</a> <b>has</b> drop, store
 </code></pre>
 
 
@@ -789,7 +789,7 @@ Set of data sent to the event stream during a receive
 
 <dl>
 <dt>
-<code>id: <a href="token.md#0x3_token_TokenId">token::TokenId</a></code>
+<code>id: <a href="token.md#0x1_token_TokenId">token::TokenId</a></code>
 </dt>
 <dd>
 
@@ -805,14 +805,14 @@ Set of data sent to the event stream during a receive
 
 </details>
 
-<a id="0x3_token_WithdrawEvent"></a>
+<a id="0x1_token_WithdrawEvent"></a>
 
 ## Struct `WithdrawEvent`
 
 Set of data sent to the event stream during a withdrawal
 
 
-<pre><code><b>struct</b> <a href="token.md#0x3_token_WithdrawEvent">WithdrawEvent</a> <b>has</b> drop, store
+<pre><code><b>struct</b> <a href="token.md#0x1_token_WithdrawEvent">WithdrawEvent</a> <b>has</b> drop, store
 </code></pre>
 
 
@@ -823,7 +823,7 @@ Set of data sent to the event stream during a withdrawal
 
 <dl>
 <dt>
-<code>id: <a href="token.md#0x3_token_TokenId">token::TokenId</a></code>
+<code>id: <a href="token.md#0x1_token_TokenId">token::TokenId</a></code>
 </dt>
 <dd>
 
@@ -839,7 +839,7 @@ Set of data sent to the event stream during a withdrawal
 
 </details>
 
-<a id="0x3_token_Withdraw"></a>
+<a id="0x1_token_Withdraw"></a>
 
 ## Struct `Withdraw`
 
@@ -847,7 +847,7 @@ Set of data sent to the event stream during a withdrawal
 
 
 <pre><code>#[<a href="../../starcoin-framework/doc/event.md#0x1_event">event</a>]
-<b>struct</b> <a href="token.md#0x3_token_Withdraw">Withdraw</a> <b>has</b> drop, store
+<b>struct</b> <a href="token.md#0x1_token_Withdraw">Withdraw</a> <b>has</b> drop, store
 </code></pre>
 
 
@@ -858,7 +858,7 @@ Set of data sent to the event stream during a withdrawal
 
 <dl>
 <dt>
-<code>id: <a href="token.md#0x3_token_TokenId">token::TokenId</a></code>
+<code>id: <a href="token.md#0x1_token_TokenId">token::TokenId</a></code>
 </dt>
 <dd>
 
@@ -874,14 +874,14 @@ Set of data sent to the event stream during a withdrawal
 
 </details>
 
-<a id="0x3_token_CreateTokenDataEvent"></a>
+<a id="0x1_token_CreateTokenDataEvent"></a>
 
 ## Struct `CreateTokenDataEvent`
 
 token creation event id of token created
 
 
-<pre><code><b>struct</b> <a href="token.md#0x3_token_CreateTokenDataEvent">CreateTokenDataEvent</a> <b>has</b> drop, store
+<pre><code><b>struct</b> <a href="token.md#0x1_token_CreateTokenDataEvent">CreateTokenDataEvent</a> <b>has</b> drop, store
 </code></pre>
 
 
@@ -892,7 +892,7 @@ token creation event id of token created
 
 <dl>
 <dt>
-<code>id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a></code>
+<code>id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a></code>
 </dt>
 <dd>
 
@@ -940,7 +940,7 @@ token creation event id of token created
 
 </dd>
 <dt>
-<code>mutability_config: <a href="token.md#0x3_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a></code>
+<code>mutability_config: <a href="token.md#0x1_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a></code>
 </dt>
 <dd>
 
@@ -968,14 +968,14 @@ token creation event id of token created
 
 </details>
 
-<a id="0x3_token_CreateTokenData"></a>
+<a id="0x1_token_CreateTokenData"></a>
 
 ## Struct `CreateTokenData`
 
 
 
 <pre><code>#[<a href="../../starcoin-framework/doc/event.md#0x1_event">event</a>]
-<b>struct</b> <a href="token.md#0x3_token_CreateTokenData">CreateTokenData</a> <b>has</b> drop, store
+<b>struct</b> <a href="token.md#0x1_token_CreateTokenData">CreateTokenData</a> <b>has</b> drop, store
 </code></pre>
 
 
@@ -986,7 +986,7 @@ token creation event id of token created
 
 <dl>
 <dt>
-<code>id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a></code>
+<code>id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a></code>
 </dt>
 <dd>
 
@@ -1034,7 +1034,7 @@ token creation event id of token created
 
 </dd>
 <dt>
-<code>mutability_config: <a href="token.md#0x3_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a></code>
+<code>mutability_config: <a href="token.md#0x1_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a></code>
 </dt>
 <dd>
 
@@ -1062,14 +1062,14 @@ token creation event id of token created
 
 </details>
 
-<a id="0x3_token_MintTokenEvent"></a>
+<a id="0x1_token_MintTokenEvent"></a>
 
 ## Struct `MintTokenEvent`
 
 mint token event. This event triggered when creator adds more supply to existing token
 
 
-<pre><code><b>struct</b> <a href="token.md#0x3_token_MintTokenEvent">MintTokenEvent</a> <b>has</b> drop, store
+<pre><code><b>struct</b> <a href="token.md#0x1_token_MintTokenEvent">MintTokenEvent</a> <b>has</b> drop, store
 </code></pre>
 
 
@@ -1080,7 +1080,7 @@ mint token event. This event triggered when creator adds more supply to existing
 
 <dl>
 <dt>
-<code>id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a></code>
+<code>id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a></code>
 </dt>
 <dd>
 
@@ -1096,14 +1096,14 @@ mint token event. This event triggered when creator adds more supply to existing
 
 </details>
 
-<a id="0x3_token_MintToken"></a>
+<a id="0x1_token_MintToken"></a>
 
 ## Struct `MintToken`
 
 
 
 <pre><code>#[<a href="../../starcoin-framework/doc/event.md#0x1_event">event</a>]
-<b>struct</b> <a href="token.md#0x3_token_MintToken">MintToken</a> <b>has</b> drop, store
+<b>struct</b> <a href="token.md#0x1_token_MintToken">MintToken</a> <b>has</b> drop, store
 </code></pre>
 
 
@@ -1114,7 +1114,7 @@ mint token event. This event triggered when creator adds more supply to existing
 
 <dl>
 <dt>
-<code>id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a></code>
+<code>id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a></code>
 </dt>
 <dd>
 
@@ -1130,13 +1130,13 @@ mint token event. This event triggered when creator adds more supply to existing
 
 </details>
 
-<a id="0x3_token_BurnTokenEvent"></a>
+<a id="0x1_token_BurnTokenEvent"></a>
 
 ## Struct `BurnTokenEvent`
 
 
 
-<pre><code><b>struct</b> <a href="token.md#0x3_token_BurnTokenEvent">BurnTokenEvent</a> <b>has</b> drop, store
+<pre><code><b>struct</b> <a href="token.md#0x1_token_BurnTokenEvent">BurnTokenEvent</a> <b>has</b> drop, store
 </code></pre>
 
 
@@ -1147,7 +1147,7 @@ mint token event. This event triggered when creator adds more supply to existing
 
 <dl>
 <dt>
-<code>id: <a href="token.md#0x3_token_TokenId">token::TokenId</a></code>
+<code>id: <a href="token.md#0x1_token_TokenId">token::TokenId</a></code>
 </dt>
 <dd>
 
@@ -1163,14 +1163,14 @@ mint token event. This event triggered when creator adds more supply to existing
 
 </details>
 
-<a id="0x3_token_BurnToken"></a>
+<a id="0x1_token_BurnToken"></a>
 
 ## Struct `BurnToken`
 
 
 
 <pre><code>#[<a href="../../starcoin-framework/doc/event.md#0x1_event">event</a>]
-<b>struct</b> <a href="token.md#0x3_token_BurnToken">BurnToken</a> <b>has</b> drop, store
+<b>struct</b> <a href="token.md#0x1_token_BurnToken">BurnToken</a> <b>has</b> drop, store
 </code></pre>
 
 
@@ -1181,7 +1181,7 @@ mint token event. This event triggered when creator adds more supply to existing
 
 <dl>
 <dt>
-<code>id: <a href="token.md#0x3_token_TokenId">token::TokenId</a></code>
+<code>id: <a href="token.md#0x1_token_TokenId">token::TokenId</a></code>
 </dt>
 <dd>
 
@@ -1197,13 +1197,13 @@ mint token event. This event triggered when creator adds more supply to existing
 
 </details>
 
-<a id="0x3_token_MutateTokenPropertyMapEvent"></a>
+<a id="0x1_token_MutateTokenPropertyMapEvent"></a>
 
 ## Struct `MutateTokenPropertyMapEvent`
 
 
 
-<pre><code><b>struct</b> <a href="token.md#0x3_token_MutateTokenPropertyMapEvent">MutateTokenPropertyMapEvent</a> <b>has</b> drop, store
+<pre><code><b>struct</b> <a href="token.md#0x1_token_MutateTokenPropertyMapEvent">MutateTokenPropertyMapEvent</a> <b>has</b> drop, store
 </code></pre>
 
 
@@ -1214,13 +1214,13 @@ mint token event. This event triggered when creator adds more supply to existing
 
 <dl>
 <dt>
-<code>old_id: <a href="token.md#0x3_token_TokenId">token::TokenId</a></code>
+<code>old_id: <a href="token.md#0x1_token_TokenId">token::TokenId</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>new_id: <a href="token.md#0x3_token_TokenId">token::TokenId</a></code>
+<code>new_id: <a href="token.md#0x1_token_TokenId">token::TokenId</a></code>
 </dt>
 <dd>
 
@@ -1248,14 +1248,14 @@ mint token event. This event triggered when creator adds more supply to existing
 
 </details>
 
-<a id="0x3_token_MutateTokenPropertyMap"></a>
+<a id="0x1_token_MutateTokenPropertyMap"></a>
 
 ## Struct `MutateTokenPropertyMap`
 
 
 
 <pre><code>#[<a href="../../starcoin-framework/doc/event.md#0x1_event">event</a>]
-<b>struct</b> <a href="token.md#0x3_token_MutateTokenPropertyMap">MutateTokenPropertyMap</a> <b>has</b> drop, store
+<b>struct</b> <a href="token.md#0x1_token_MutateTokenPropertyMap">MutateTokenPropertyMap</a> <b>has</b> drop, store
 </code></pre>
 
 
@@ -1266,13 +1266,13 @@ mint token event. This event triggered when creator adds more supply to existing
 
 <dl>
 <dt>
-<code>old_id: <a href="token.md#0x3_token_TokenId">token::TokenId</a></code>
+<code>old_id: <a href="token.md#0x1_token_TokenId">token::TokenId</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>new_id: <a href="token.md#0x3_token_TokenId">token::TokenId</a></code>
+<code>new_id: <a href="token.md#0x1_token_TokenId">token::TokenId</a></code>
 </dt>
 <dd>
 
@@ -1300,14 +1300,14 @@ mint token event. This event triggered when creator adds more supply to existing
 
 </details>
 
-<a id="0x3_token_CreateCollectionEvent"></a>
+<a id="0x1_token_CreateCollectionEvent"></a>
 
 ## Struct `CreateCollectionEvent`
 
 create collection event with creator address and collection name
 
 
-<pre><code><b>struct</b> <a href="token.md#0x3_token_CreateCollectionEvent">CreateCollectionEvent</a> <b>has</b> drop, store
+<pre><code><b>struct</b> <a href="token.md#0x1_token_CreateCollectionEvent">CreateCollectionEvent</a> <b>has</b> drop, store
 </code></pre>
 
 
@@ -1352,14 +1352,14 @@ create collection event with creator address and collection name
 
 </details>
 
-<a id="0x3_token_CreateCollection"></a>
+<a id="0x1_token_CreateCollection"></a>
 
 ## Struct `CreateCollection`
 
 
 
 <pre><code>#[<a href="../../starcoin-framework/doc/event.md#0x1_event">event</a>]
-<b>struct</b> <a href="token.md#0x3_token_CreateCollection">CreateCollection</a> <b>has</b> drop, store
+<b>struct</b> <a href="token.md#0x1_token_CreateCollection">CreateCollection</a> <b>has</b> drop, store
 </code></pre>
 
 
@@ -1409,510 +1409,510 @@ create collection event with creator address and collection name
 ## Constants
 
 
-<a id="0x3_token_EINSUFFICIENT_BALANCE"></a>
+<a id="0x1_token_EINSUFFICIENT_BALANCE"></a>
 
 Insufficient token balance
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_EINSUFFICIENT_BALANCE">EINSUFFICIENT_BALANCE</a>: u64 = 5;
+<pre><code><b>const</b> <a href="token.md#0x1_token_EINSUFFICIENT_BALANCE">EINSUFFICIENT_BALANCE</a>: u64 = 5;
 </code></pre>
 
 
 
-<a id="0x3_token_EURI_TOO_LONG"></a>
+<a id="0x1_token_EURI_TOO_LONG"></a>
 
 The URI is too long
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_EURI_TOO_LONG">EURI_TOO_LONG</a>: u64 = 27;
+<pre><code><b>const</b> <a href="token.md#0x1_token_EURI_TOO_LONG">EURI_TOO_LONG</a>: u64 = 27;
 </code></pre>
 
 
 
-<a id="0x3_token_MAX_URI_LENGTH"></a>
+<a id="0x1_token_MAX_URI_LENGTH"></a>
 
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_MAX_URI_LENGTH">MAX_URI_LENGTH</a>: u64 = 512;
+<pre><code><b>const</b> <a href="token.md#0x1_token_MAX_URI_LENGTH">MAX_URI_LENGTH</a>: u64 = 512;
 </code></pre>
 
 
 
-<a id="0x3_token_BURNABLE_BY_CREATOR"></a>
+<a id="0x1_token_BURNABLE_BY_CREATOR"></a>
 
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_BURNABLE_BY_CREATOR">BURNABLE_BY_CREATOR</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; = [84, 79, 75, 69, 78, 95, 66, 85, 82, 78, 65, 66, 76, 69, 95, 66, 89, 95, 67, 82, 69, 65, 84, 79, 82];
+<pre><code><b>const</b> <a href="token.md#0x1_token_BURNABLE_BY_CREATOR">BURNABLE_BY_CREATOR</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; = [84, 79, 75, 69, 78, 95, 66, 85, 82, 78, 65, 66, 76, 69, 95, 66, 89, 95, 67, 82, 69, 65, 84, 79, 82];
 </code></pre>
 
 
 
-<a id="0x3_token_BURNABLE_BY_OWNER"></a>
+<a id="0x1_token_BURNABLE_BY_OWNER"></a>
 
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_BURNABLE_BY_OWNER">BURNABLE_BY_OWNER</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; = [84, 79, 75, 69, 78, 95, 66, 85, 82, 78, 65, 66, 76, 69, 95, 66, 89, 95, 79, 87, 78, 69, 82];
+<pre><code><b>const</b> <a href="token.md#0x1_token_BURNABLE_BY_OWNER">BURNABLE_BY_OWNER</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; = [84, 79, 75, 69, 78, 95, 66, 85, 82, 78, 65, 66, 76, 69, 95, 66, 89, 95, 79, 87, 78, 69, 82];
 </code></pre>
 
 
 
-<a id="0x3_token_COLLECTION_DESCRIPTION_MUTABLE_IND"></a>
+<a id="0x1_token_COLLECTION_DESCRIPTION_MUTABLE_IND"></a>
 
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_COLLECTION_DESCRIPTION_MUTABLE_IND">COLLECTION_DESCRIPTION_MUTABLE_IND</a>: u64 = 0;
+<pre><code><b>const</b> <a href="token.md#0x1_token_COLLECTION_DESCRIPTION_MUTABLE_IND">COLLECTION_DESCRIPTION_MUTABLE_IND</a>: u64 = 0;
 </code></pre>
 
 
 
-<a id="0x3_token_COLLECTION_MAX_MUTABLE_IND"></a>
+<a id="0x1_token_COLLECTION_MAX_MUTABLE_IND"></a>
 
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_COLLECTION_MAX_MUTABLE_IND">COLLECTION_MAX_MUTABLE_IND</a>: u64 = 2;
+<pre><code><b>const</b> <a href="token.md#0x1_token_COLLECTION_MAX_MUTABLE_IND">COLLECTION_MAX_MUTABLE_IND</a>: u64 = 2;
 </code></pre>
 
 
 
-<a id="0x3_token_COLLECTION_URI_MUTABLE_IND"></a>
+<a id="0x1_token_COLLECTION_URI_MUTABLE_IND"></a>
 
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_COLLECTION_URI_MUTABLE_IND">COLLECTION_URI_MUTABLE_IND</a>: u64 = 1;
+<pre><code><b>const</b> <a href="token.md#0x1_token_COLLECTION_URI_MUTABLE_IND">COLLECTION_URI_MUTABLE_IND</a>: u64 = 1;
 </code></pre>
 
 
 
-<a id="0x3_token_EALREADY_HAS_BALANCE"></a>
+<a id="0x1_token_EALREADY_HAS_BALANCE"></a>
 
 The token has balance and cannot be initialized
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_EALREADY_HAS_BALANCE">EALREADY_HAS_BALANCE</a>: u64 = 0;
+<pre><code><b>const</b> <a href="token.md#0x1_token_EALREADY_HAS_BALANCE">EALREADY_HAS_BALANCE</a>: u64 = 0;
 </code></pre>
 
 
 
-<a id="0x3_token_ECANNOT_UPDATE_RESERVED_PROPERTY"></a>
+<a id="0x1_token_ECANNOT_UPDATE_RESERVED_PROPERTY"></a>
 
 Reserved fields for token contract
 Cannot be updated by user
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_ECANNOT_UPDATE_RESERVED_PROPERTY">ECANNOT_UPDATE_RESERVED_PROPERTY</a>: u64 = 32;
+<pre><code><b>const</b> <a href="token.md#0x1_token_ECANNOT_UPDATE_RESERVED_PROPERTY">ECANNOT_UPDATE_RESERVED_PROPERTY</a>: u64 = 32;
 </code></pre>
 
 
 
-<a id="0x3_token_ECOLLECTIONS_NOT_PUBLISHED"></a>
+<a id="0x1_token_ECOLLECTIONS_NOT_PUBLISHED"></a>
 
 There isn't any collection under this account
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>: u64 = 1;
+<pre><code><b>const</b> <a href="token.md#0x1_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>: u64 = 1;
 </code></pre>
 
 
 
-<a id="0x3_token_ECOLLECTION_ALREADY_EXISTS"></a>
+<a id="0x1_token_ECOLLECTION_ALREADY_EXISTS"></a>
 
 The collection already exists
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_ECOLLECTION_ALREADY_EXISTS">ECOLLECTION_ALREADY_EXISTS</a>: u64 = 3;
+<pre><code><b>const</b> <a href="token.md#0x1_token_ECOLLECTION_ALREADY_EXISTS">ECOLLECTION_ALREADY_EXISTS</a>: u64 = 3;
 </code></pre>
 
 
 
-<a id="0x3_token_ECOLLECTION_NAME_TOO_LONG"></a>
+<a id="0x1_token_ECOLLECTION_NAME_TOO_LONG"></a>
 
 The collection name is too long
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_ECOLLECTION_NAME_TOO_LONG">ECOLLECTION_NAME_TOO_LONG</a>: u64 = 25;
+<pre><code><b>const</b> <a href="token.md#0x1_token_ECOLLECTION_NAME_TOO_LONG">ECOLLECTION_NAME_TOO_LONG</a>: u64 = 25;
 </code></pre>
 
 
 
-<a id="0x3_token_ECOLLECTION_NOT_PUBLISHED"></a>
+<a id="0x1_token_ECOLLECTION_NOT_PUBLISHED"></a>
 
 Cannot find collection in creator's account
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_ECOLLECTION_NOT_PUBLISHED">ECOLLECTION_NOT_PUBLISHED</a>: u64 = 2;
+<pre><code><b>const</b> <a href="token.md#0x1_token_ECOLLECTION_NOT_PUBLISHED">ECOLLECTION_NOT_PUBLISHED</a>: u64 = 2;
 </code></pre>
 
 
 
-<a id="0x3_token_ECREATE_WOULD_EXCEED_COLLECTION_MAXIMUM"></a>
+<a id="0x1_token_ECREATE_WOULD_EXCEED_COLLECTION_MAXIMUM"></a>
 
 Exceeds the collection's maximal number of token_data
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_ECREATE_WOULD_EXCEED_COLLECTION_MAXIMUM">ECREATE_WOULD_EXCEED_COLLECTION_MAXIMUM</a>: u64 = 4;
+<pre><code><b>const</b> <a href="token.md#0x1_token_ECREATE_WOULD_EXCEED_COLLECTION_MAXIMUM">ECREATE_WOULD_EXCEED_COLLECTION_MAXIMUM</a>: u64 = 4;
 </code></pre>
 
 
 
-<a id="0x3_token_ECREATOR_CANNOT_BURN_TOKEN"></a>
+<a id="0x1_token_ECREATOR_CANNOT_BURN_TOKEN"></a>
 
 Token is not burnable by creator
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_ECREATOR_CANNOT_BURN_TOKEN">ECREATOR_CANNOT_BURN_TOKEN</a>: u64 = 31;
+<pre><code><b>const</b> <a href="token.md#0x1_token_ECREATOR_CANNOT_BURN_TOKEN">ECREATOR_CANNOT_BURN_TOKEN</a>: u64 = 31;
 </code></pre>
 
 
 
-<a id="0x3_token_EFIELD_NOT_MUTABLE"></a>
+<a id="0x1_token_EFIELD_NOT_MUTABLE"></a>
 
 The field is not mutable
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_EFIELD_NOT_MUTABLE">EFIELD_NOT_MUTABLE</a>: u64 = 13;
+<pre><code><b>const</b> <a href="token.md#0x1_token_EFIELD_NOT_MUTABLE">EFIELD_NOT_MUTABLE</a>: u64 = 13;
 </code></pre>
 
 
 
-<a id="0x3_token_EINSUFFICIENT_WITHDRAW_CAPABILITY_AMOUNT"></a>
+<a id="0x1_token_EINSUFFICIENT_WITHDRAW_CAPABILITY_AMOUNT"></a>
 
 Withdraw capability doesn't have sufficient amount
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_EINSUFFICIENT_WITHDRAW_CAPABILITY_AMOUNT">EINSUFFICIENT_WITHDRAW_CAPABILITY_AMOUNT</a>: u64 = 38;
+<pre><code><b>const</b> <a href="token.md#0x1_token_EINSUFFICIENT_WITHDRAW_CAPABILITY_AMOUNT">EINSUFFICIENT_WITHDRAW_CAPABILITY_AMOUNT</a>: u64 = 38;
 </code></pre>
 
 
 
-<a id="0x3_token_EINVALID_MAXIMUM"></a>
+<a id="0x1_token_EINVALID_MAXIMUM"></a>
 
 Collection or tokendata maximum must be larger than supply
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_EINVALID_MAXIMUM">EINVALID_MAXIMUM</a>: u64 = 36;
+<pre><code><b>const</b> <a href="token.md#0x1_token_EINVALID_MAXIMUM">EINVALID_MAXIMUM</a>: u64 = 36;
 </code></pre>
 
 
 
-<a id="0x3_token_EINVALID_ROYALTY_NUMERATOR_DENOMINATOR"></a>
+<a id="0x1_token_EINVALID_ROYALTY_NUMERATOR_DENOMINATOR"></a>
 
 Royalty invalid if the numerator is larger than the denominator
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_EINVALID_ROYALTY_NUMERATOR_DENOMINATOR">EINVALID_ROYALTY_NUMERATOR_DENOMINATOR</a>: u64 = 34;
+<pre><code><b>const</b> <a href="token.md#0x1_token_EINVALID_ROYALTY_NUMERATOR_DENOMINATOR">EINVALID_ROYALTY_NUMERATOR_DENOMINATOR</a>: u64 = 34;
 </code></pre>
 
 
 
-<a id="0x3_token_EINVALID_TOKEN_MERGE"></a>
+<a id="0x1_token_EINVALID_TOKEN_MERGE"></a>
 
 Cannot merge the two tokens with different token id
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_EINVALID_TOKEN_MERGE">EINVALID_TOKEN_MERGE</a>: u64 = 6;
+<pre><code><b>const</b> <a href="token.md#0x1_token_EINVALID_TOKEN_MERGE">EINVALID_TOKEN_MERGE</a>: u64 = 6;
 </code></pre>
 
 
 
-<a id="0x3_token_EMINT_WOULD_EXCEED_TOKEN_MAXIMUM"></a>
+<a id="0x1_token_EMINT_WOULD_EXCEED_TOKEN_MAXIMUM"></a>
 
 Exceed the token data maximal allowed
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_EMINT_WOULD_EXCEED_TOKEN_MAXIMUM">EMINT_WOULD_EXCEED_TOKEN_MAXIMUM</a>: u64 = 7;
+<pre><code><b>const</b> <a href="token.md#0x1_token_EMINT_WOULD_EXCEED_TOKEN_MAXIMUM">EMINT_WOULD_EXCEED_TOKEN_MAXIMUM</a>: u64 = 7;
 </code></pre>
 
 
 
-<a id="0x3_token_ENFT_NAME_TOO_LONG"></a>
+<a id="0x1_token_ENFT_NAME_TOO_LONG"></a>
 
 The NFT name is too long
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_ENFT_NAME_TOO_LONG">ENFT_NAME_TOO_LONG</a>: u64 = 26;
+<pre><code><b>const</b> <a href="token.md#0x1_token_ENFT_NAME_TOO_LONG">ENFT_NAME_TOO_LONG</a>: u64 = 26;
 </code></pre>
 
 
 
-<a id="0x3_token_ENFT_NOT_SPLITABLE"></a>
+<a id="0x1_token_ENFT_NOT_SPLITABLE"></a>
 
 Cannot split a token that only has 1 amount
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_ENFT_NOT_SPLITABLE">ENFT_NOT_SPLITABLE</a>: u64 = 18;
+<pre><code><b>const</b> <a href="token.md#0x1_token_ENFT_NOT_SPLITABLE">ENFT_NOT_SPLITABLE</a>: u64 = 18;
 </code></pre>
 
 
 
-<a id="0x3_token_ENO_BURN_CAPABILITY"></a>
+<a id="0x1_token_ENO_BURN_CAPABILITY"></a>
 
 No burn capability
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_ENO_BURN_CAPABILITY">ENO_BURN_CAPABILITY</a>: u64 = 8;
+<pre><code><b>const</b> <a href="token.md#0x1_token_ENO_BURN_CAPABILITY">ENO_BURN_CAPABILITY</a>: u64 = 8;
 </code></pre>
 
 
 
-<a id="0x3_token_ENO_BURN_TOKEN_WITH_ZERO_AMOUNT"></a>
+<a id="0x1_token_ENO_BURN_TOKEN_WITH_ZERO_AMOUNT"></a>
 
 Cannot burn 0 Token
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_ENO_BURN_TOKEN_WITH_ZERO_AMOUNT">ENO_BURN_TOKEN_WITH_ZERO_AMOUNT</a>: u64 = 29;
+<pre><code><b>const</b> <a href="token.md#0x1_token_ENO_BURN_TOKEN_WITH_ZERO_AMOUNT">ENO_BURN_TOKEN_WITH_ZERO_AMOUNT</a>: u64 = 29;
 </code></pre>
 
 
 
-<a id="0x3_token_ENO_DEPOSIT_TOKEN_WITH_ZERO_AMOUNT"></a>
+<a id="0x1_token_ENO_DEPOSIT_TOKEN_WITH_ZERO_AMOUNT"></a>
 
 Cannot deposit a Token with 0 amount
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_ENO_DEPOSIT_TOKEN_WITH_ZERO_AMOUNT">ENO_DEPOSIT_TOKEN_WITH_ZERO_AMOUNT</a>: u64 = 28;
+<pre><code><b>const</b> <a href="token.md#0x1_token_ENO_DEPOSIT_TOKEN_WITH_ZERO_AMOUNT">ENO_DEPOSIT_TOKEN_WITH_ZERO_AMOUNT</a>: u64 = 28;
 </code></pre>
 
 
 
-<a id="0x3_token_ENO_MINT_CAPABILITY"></a>
+<a id="0x1_token_ENO_MINT_CAPABILITY"></a>
 
 No mint capability
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_ENO_MINT_CAPABILITY">ENO_MINT_CAPABILITY</a>: u64 = 19;
+<pre><code><b>const</b> <a href="token.md#0x1_token_ENO_MINT_CAPABILITY">ENO_MINT_CAPABILITY</a>: u64 = 19;
 </code></pre>
 
 
 
-<a id="0x3_token_ENO_MUTATE_CAPABILITY"></a>
+<a id="0x1_token_ENO_MUTATE_CAPABILITY"></a>
 
 Not authorized to mutate
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_ENO_MUTATE_CAPABILITY">ENO_MUTATE_CAPABILITY</a>: u64 = 14;
+<pre><code><b>const</b> <a href="token.md#0x1_token_ENO_MUTATE_CAPABILITY">ENO_MUTATE_CAPABILITY</a>: u64 = 14;
 </code></pre>
 
 
 
-<a id="0x3_token_ENO_TOKEN_IN_TOKEN_STORE"></a>
+<a id="0x1_token_ENO_TOKEN_IN_TOKEN_STORE"></a>
 
 Token not in the token store
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_ENO_TOKEN_IN_TOKEN_STORE">ENO_TOKEN_IN_TOKEN_STORE</a>: u64 = 15;
+<pre><code><b>const</b> <a href="token.md#0x1_token_ENO_TOKEN_IN_TOKEN_STORE">ENO_TOKEN_IN_TOKEN_STORE</a>: u64 = 15;
 </code></pre>
 
 
 
-<a id="0x3_token_EOWNER_CANNOT_BURN_TOKEN"></a>
+<a id="0x1_token_EOWNER_CANNOT_BURN_TOKEN"></a>
 
 Token is not burnable by owner
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_EOWNER_CANNOT_BURN_TOKEN">EOWNER_CANNOT_BURN_TOKEN</a>: u64 = 30;
+<pre><code><b>const</b> <a href="token.md#0x1_token_EOWNER_CANNOT_BURN_TOKEN">EOWNER_CANNOT_BURN_TOKEN</a>: u64 = 30;
 </code></pre>
 
 
 
-<a id="0x3_token_EPROPERTY_RESERVED_BY_STANDARD"></a>
+<a id="0x1_token_EPROPERTY_RESERVED_BY_STANDARD"></a>
 
 The property is reserved by token standard
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_EPROPERTY_RESERVED_BY_STANDARD">EPROPERTY_RESERVED_BY_STANDARD</a>: u64 = 40;
+<pre><code><b>const</b> <a href="token.md#0x1_token_EPROPERTY_RESERVED_BY_STANDARD">EPROPERTY_RESERVED_BY_STANDARD</a>: u64 = 40;
 </code></pre>
 
 
 
-<a id="0x3_token_EROYALTY_PAYEE_ACCOUNT_DOES_NOT_EXIST"></a>
+<a id="0x1_token_EROYALTY_PAYEE_ACCOUNT_DOES_NOT_EXIST"></a>
 
 Royalty payee account does not exist
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_EROYALTY_PAYEE_ACCOUNT_DOES_NOT_EXIST">EROYALTY_PAYEE_ACCOUNT_DOES_NOT_EXIST</a>: u64 = 35;
+<pre><code><b>const</b> <a href="token.md#0x1_token_EROYALTY_PAYEE_ACCOUNT_DOES_NOT_EXIST">EROYALTY_PAYEE_ACCOUNT_DOES_NOT_EXIST</a>: u64 = 35;
 </code></pre>
 
 
 
-<a id="0x3_token_ETOKEN_CANNOT_HAVE_ZERO_AMOUNT"></a>
+<a id="0x1_token_ETOKEN_CANNOT_HAVE_ZERO_AMOUNT"></a>
 
 TOKEN with 0 amount is not allowed
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_ETOKEN_CANNOT_HAVE_ZERO_AMOUNT">ETOKEN_CANNOT_HAVE_ZERO_AMOUNT</a>: u64 = 33;
+<pre><code><b>const</b> <a href="token.md#0x1_token_ETOKEN_CANNOT_HAVE_ZERO_AMOUNT">ETOKEN_CANNOT_HAVE_ZERO_AMOUNT</a>: u64 = 33;
 </code></pre>
 
 
 
-<a id="0x3_token_ETOKEN_DATA_ALREADY_EXISTS"></a>
+<a id="0x1_token_ETOKEN_DATA_ALREADY_EXISTS"></a>
 
 TokenData already exists
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_ETOKEN_DATA_ALREADY_EXISTS">ETOKEN_DATA_ALREADY_EXISTS</a>: u64 = 9;
+<pre><code><b>const</b> <a href="token.md#0x1_token_ETOKEN_DATA_ALREADY_EXISTS">ETOKEN_DATA_ALREADY_EXISTS</a>: u64 = 9;
 </code></pre>
 
 
 
-<a id="0x3_token_ETOKEN_DATA_NOT_PUBLISHED"></a>
+<a id="0x1_token_ETOKEN_DATA_NOT_PUBLISHED"></a>
 
 TokenData not published
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>: u64 = 10;
+<pre><code><b>const</b> <a href="token.md#0x1_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>: u64 = 10;
 </code></pre>
 
 
 
-<a id="0x3_token_ETOKEN_PROPERTIES_COUNT_NOT_MATCH"></a>
+<a id="0x1_token_ETOKEN_PROPERTIES_COUNT_NOT_MATCH"></a>
 
 Token Properties count doesn't match
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_ETOKEN_PROPERTIES_COUNT_NOT_MATCH">ETOKEN_PROPERTIES_COUNT_NOT_MATCH</a>: u64 = 37;
+<pre><code><b>const</b> <a href="token.md#0x1_token_ETOKEN_PROPERTIES_COUNT_NOT_MATCH">ETOKEN_PROPERTIES_COUNT_NOT_MATCH</a>: u64 = 37;
 </code></pre>
 
 
 
-<a id="0x3_token_ETOKEN_SPLIT_AMOUNT_LARGER_OR_EQUAL_TO_TOKEN_AMOUNT"></a>
+<a id="0x1_token_ETOKEN_SPLIT_AMOUNT_LARGER_OR_EQUAL_TO_TOKEN_AMOUNT"></a>
 
 Cannot split token to an amount larger than its amount
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_ETOKEN_SPLIT_AMOUNT_LARGER_OR_EQUAL_TO_TOKEN_AMOUNT">ETOKEN_SPLIT_AMOUNT_LARGER_OR_EQUAL_TO_TOKEN_AMOUNT</a>: u64 = 12;
+<pre><code><b>const</b> <a href="token.md#0x1_token_ETOKEN_SPLIT_AMOUNT_LARGER_OR_EQUAL_TO_TOKEN_AMOUNT">ETOKEN_SPLIT_AMOUNT_LARGER_OR_EQUAL_TO_TOKEN_AMOUNT</a>: u64 = 12;
 </code></pre>
 
 
 
-<a id="0x3_token_ETOKEN_STORE_NOT_PUBLISHED"></a>
+<a id="0x1_token_ETOKEN_STORE_NOT_PUBLISHED"></a>
 
 TokenStore doesn't exist
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_ETOKEN_STORE_NOT_PUBLISHED">ETOKEN_STORE_NOT_PUBLISHED</a>: u64 = 11;
+<pre><code><b>const</b> <a href="token.md#0x1_token_ETOKEN_STORE_NOT_PUBLISHED">ETOKEN_STORE_NOT_PUBLISHED</a>: u64 = 11;
 </code></pre>
 
 
 
-<a id="0x3_token_EUSER_NOT_OPT_IN_DIRECT_TRANSFER"></a>
+<a id="0x1_token_EUSER_NOT_OPT_IN_DIRECT_TRANSFER"></a>
 
 User didn't opt-in direct transfer
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_EUSER_NOT_OPT_IN_DIRECT_TRANSFER">EUSER_NOT_OPT_IN_DIRECT_TRANSFER</a>: u64 = 16;
+<pre><code><b>const</b> <a href="token.md#0x1_token_EUSER_NOT_OPT_IN_DIRECT_TRANSFER">EUSER_NOT_OPT_IN_DIRECT_TRANSFER</a>: u64 = 16;
 </code></pre>
 
 
 
-<a id="0x3_token_EWITHDRAW_PROOF_EXPIRES"></a>
+<a id="0x1_token_EWITHDRAW_PROOF_EXPIRES"></a>
 
 Withdraw proof expires
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_EWITHDRAW_PROOF_EXPIRES">EWITHDRAW_PROOF_EXPIRES</a>: u64 = 39;
+<pre><code><b>const</b> <a href="token.md#0x1_token_EWITHDRAW_PROOF_EXPIRES">EWITHDRAW_PROOF_EXPIRES</a>: u64 = 39;
 </code></pre>
 
 
 
-<a id="0x3_token_EWITHDRAW_ZERO"></a>
+<a id="0x1_token_EWITHDRAW_ZERO"></a>
 
 Cannot withdraw 0 token
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_EWITHDRAW_ZERO">EWITHDRAW_ZERO</a>: u64 = 17;
+<pre><code><b>const</b> <a href="token.md#0x1_token_EWITHDRAW_ZERO">EWITHDRAW_ZERO</a>: u64 = 17;
 </code></pre>
 
 
 
-<a id="0x3_token_MAX_COLLECTION_NAME_LENGTH"></a>
+<a id="0x1_token_MAX_COLLECTION_NAME_LENGTH"></a>
 
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_MAX_COLLECTION_NAME_LENGTH">MAX_COLLECTION_NAME_LENGTH</a>: u64 = 128;
+<pre><code><b>const</b> <a href="token.md#0x1_token_MAX_COLLECTION_NAME_LENGTH">MAX_COLLECTION_NAME_LENGTH</a>: u64 = 128;
 </code></pre>
 
 
 
-<a id="0x3_token_MAX_NFT_NAME_LENGTH"></a>
+<a id="0x1_token_MAX_NFT_NAME_LENGTH"></a>
 
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_MAX_NFT_NAME_LENGTH">MAX_NFT_NAME_LENGTH</a>: u64 = 128;
+<pre><code><b>const</b> <a href="token.md#0x1_token_MAX_NFT_NAME_LENGTH">MAX_NFT_NAME_LENGTH</a>: u64 = 128;
 </code></pre>
 
 
 
-<a id="0x3_token_TOKEN_DESCRIPTION_MUTABLE_IND"></a>
+<a id="0x1_token_TOKEN_DESCRIPTION_MUTABLE_IND"></a>
 
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_TOKEN_DESCRIPTION_MUTABLE_IND">TOKEN_DESCRIPTION_MUTABLE_IND</a>: u64 = 3;
+<pre><code><b>const</b> <a href="token.md#0x1_token_TOKEN_DESCRIPTION_MUTABLE_IND">TOKEN_DESCRIPTION_MUTABLE_IND</a>: u64 = 3;
 </code></pre>
 
 
 
-<a id="0x3_token_TOKEN_MAX_MUTABLE_IND"></a>
+<a id="0x1_token_TOKEN_MAX_MUTABLE_IND"></a>
 
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_TOKEN_MAX_MUTABLE_IND">TOKEN_MAX_MUTABLE_IND</a>: u64 = 0;
+<pre><code><b>const</b> <a href="token.md#0x1_token_TOKEN_MAX_MUTABLE_IND">TOKEN_MAX_MUTABLE_IND</a>: u64 = 0;
 </code></pre>
 
 
 
-<a id="0x3_token_TOKEN_PROPERTY_MUTABLE"></a>
+<a id="0x1_token_TOKEN_PROPERTY_MUTABLE"></a>
 
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_TOKEN_PROPERTY_MUTABLE">TOKEN_PROPERTY_MUTABLE</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; = [84, 79, 75, 69, 78, 95, 80, 82, 79, 80, 69, 82, 84, 89, 95, 77, 85, 84, 65, 84, 66, 76, 69];
+<pre><code><b>const</b> <a href="token.md#0x1_token_TOKEN_PROPERTY_MUTABLE">TOKEN_PROPERTY_MUTABLE</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; = [84, 79, 75, 69, 78, 95, 80, 82, 79, 80, 69, 82, 84, 89, 95, 77, 85, 84, 65, 84, 66, 76, 69];
 </code></pre>
 
 
 
-<a id="0x3_token_TOKEN_PROPERTY_MUTABLE_IND"></a>
+<a id="0x1_token_TOKEN_PROPERTY_MUTABLE_IND"></a>
 
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_TOKEN_PROPERTY_MUTABLE_IND">TOKEN_PROPERTY_MUTABLE_IND</a>: u64 = 4;
+<pre><code><b>const</b> <a href="token.md#0x1_token_TOKEN_PROPERTY_MUTABLE_IND">TOKEN_PROPERTY_MUTABLE_IND</a>: u64 = 4;
 </code></pre>
 
 
 
-<a id="0x3_token_TOKEN_PROPERTY_VALUE_MUTABLE_IND"></a>
+<a id="0x1_token_TOKEN_PROPERTY_VALUE_MUTABLE_IND"></a>
 
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_TOKEN_PROPERTY_VALUE_MUTABLE_IND">TOKEN_PROPERTY_VALUE_MUTABLE_IND</a>: u64 = 5;
+<pre><code><b>const</b> <a href="token.md#0x1_token_TOKEN_PROPERTY_VALUE_MUTABLE_IND">TOKEN_PROPERTY_VALUE_MUTABLE_IND</a>: u64 = 5;
 </code></pre>
 
 
 
-<a id="0x3_token_TOKEN_ROYALTY_MUTABLE_IND"></a>
+<a id="0x1_token_TOKEN_ROYALTY_MUTABLE_IND"></a>
 
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_TOKEN_ROYALTY_MUTABLE_IND">TOKEN_ROYALTY_MUTABLE_IND</a>: u64 = 2;
+<pre><code><b>const</b> <a href="token.md#0x1_token_TOKEN_ROYALTY_MUTABLE_IND">TOKEN_ROYALTY_MUTABLE_IND</a>: u64 = 2;
 </code></pre>
 
 
 
-<a id="0x3_token_TOKEN_URI_MUTABLE_IND"></a>
+<a id="0x1_token_TOKEN_URI_MUTABLE_IND"></a>
 
 
 
-<pre><code><b>const</b> <a href="token.md#0x3_token_TOKEN_URI_MUTABLE_IND">TOKEN_URI_MUTABLE_IND</a>: u64 = 1;
+<pre><code><b>const</b> <a href="token.md#0x1_token_TOKEN_URI_MUTABLE_IND">TOKEN_URI_MUTABLE_IND</a>: u64 = 1;
 </code></pre>
 
 
 
-<a id="0x3_token_create_collection_script"></a>
+<a id="0x1_token_create_collection_script"></a>
 
 ## Function `create_collection_script`
 
 create a empty token collection with parameters
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_create_collection_script">create_collection_script</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, maximum: u64, mutate_setting: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_create_collection_script">create_collection_script</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, maximum: u64, mutate_setting: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;)
 </code></pre>
 
 
@@ -1921,15 +1921,15 @@ create a empty token collection with parameters
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_create_collection_script">create_collection_script</a>(
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_create_collection_script">create_collection_script</a>(
     creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     name: String,
     description: String,
     uri: String,
     maximum: u64,
     mutate_setting: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;,
-) <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
-    <a href="token.md#0x3_token_create_collection">create_collection</a>(
+) <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
+    <a href="token.md#0x1_token_create_collection">create_collection</a>(
         creator,
         name,
         description,
@@ -1944,14 +1944,14 @@ create a empty token collection with parameters
 
 </details>
 
-<a id="0x3_token_create_token_script"></a>
+<a id="0x1_token_create_token_script"></a>
 
 ## Function `create_token_script`
 
 create token with raw inputs
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_create_token_script">create_token_script</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, balance: u64, maximum: u64, uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, royalty_payee_address: <b>address</b>, royalty_points_denominator: u64, royalty_points_numerator: u64, mutate_setting: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;, property_keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, property_values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, property_types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_create_token_script">create_token_script</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, balance: u64, maximum: u64, uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, royalty_payee_address: <b>address</b>, royalty_points_denominator: u64, royalty_points_numerator: u64, mutate_setting: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;, property_keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, property_values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, property_types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;)
 </code></pre>
 
 
@@ -1960,7 +1960,7 @@ create token with raw inputs
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_create_token_script">create_token_script</a>(
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_create_token_script">create_token_script</a>(
     <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     collection: String,
     name: String,
@@ -1975,9 +1975,9 @@ create token with raw inputs
     property_keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;String&gt;,
     property_values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
     property_types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;String&gt;
-) <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a>, <a href="token.md#0x3_token_TokenStore">TokenStore</a> {
-    <b>let</b> token_mut_config = <a href="token.md#0x3_token_create_token_mutability_config">create_token_mutability_config</a>(&mutate_setting);
-    <b>let</b> tokendata_id = <a href="token.md#0x3_token_create_tokendata">create_tokendata</a>(
+) <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a>, <a href="token.md#0x1_token_TokenStore">TokenStore</a> {
+    <b>let</b> token_mut_config = <a href="token.md#0x1_token_create_token_mutability_config">create_token_mutability_config</a>(&mutate_setting);
+    <b>let</b> tokendata_id = <a href="token.md#0x1_token_create_tokendata">create_tokendata</a>(
         <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>,
         collection,
         name,
@@ -1993,7 +1993,7 @@ create token with raw inputs
         property_types
     );
 
-    <a href="token.md#0x3_token_mint_token">mint_token</a>(
+    <a href="token.md#0x1_token_mint_token">mint_token</a>(
         <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>,
         tokendata_id,
         balance,
@@ -2005,14 +2005,14 @@ create token with raw inputs
 
 </details>
 
-<a id="0x3_token_mint_script"></a>
+<a id="0x1_token_mint_script"></a>
 
 ## Function `mint_script`
 
 Mint more token from an existing token_data. Mint only adds more token to property_version 0
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_mint_script">mint_script</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_address: <b>address</b>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, amount: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_mint_script">mint_script</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_address: <b>address</b>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, amount: u64)
 </code></pre>
 
 
@@ -2021,21 +2021,21 @@ Mint more token from an existing token_data. Mint only adds more token to proper
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_mint_script">mint_script</a>(
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_mint_script">mint_script</a>(
     <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     token_data_address: <b>address</b>,
     collection: String,
     name: String,
     amount: u64,
-) <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a>, <a href="token.md#0x3_token_TokenStore">TokenStore</a> {
-    <b>let</b> token_data_id = <a href="token.md#0x3_token_create_token_data_id">create_token_data_id</a>(
+) <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a>, <a href="token.md#0x1_token_TokenStore">TokenStore</a> {
+    <b>let</b> token_data_id = <a href="token.md#0x1_token_create_token_data_id">create_token_data_id</a>(
         token_data_address,
         collection,
         name,
     );
     // only creator of the tokendata can mint more tokens for now
-    <b>assert</b>!(token_data_id.creator == <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>), <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x3_token_ENO_MINT_CAPABILITY">ENO_MINT_CAPABILITY</a>));
-    <a href="token.md#0x3_token_mint_token">mint_token</a>(
+    <b>assert</b>!(token_data_id.creator == <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>), <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x1_token_ENO_MINT_CAPABILITY">ENO_MINT_CAPABILITY</a>));
+    <a href="token.md#0x1_token_mint_token">mint_token</a>(
         <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>,
         token_data_id,
         amount,
@@ -2047,7 +2047,7 @@ Mint more token from an existing token_data. Mint only adds more token to proper
 
 </details>
 
-<a id="0x3_token_mutate_token_properties"></a>
+<a id="0x1_token_mutate_token_properties"></a>
 
 ## Function `mutate_token_properties`
 
@@ -2056,7 +2056,7 @@ if the token property_version is 0, we will create a new property_version per to
 if the token property_version is not 0, we will just update the propertyMap and use the existing token_id (property_version)
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_mutate_token_properties">mutate_token_properties</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_owner: <b>address</b>, creator: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, token_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, token_property_version: u64, amount: u64, keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_mutate_token_properties">mutate_token_properties</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_owner: <b>address</b>, creator: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, token_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, token_property_version: u64, amount: u64, keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;)
 </code></pre>
 
 
@@ -2065,7 +2065,7 @@ if the token property_version is not 0, we will just update the propertyMap and 
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_mutate_token_properties">mutate_token_properties</a>(
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_mutate_token_properties">mutate_token_properties</a>(
     <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     token_owner: <b>address</b>,
     creator: <b>address</b>,
@@ -2076,18 +2076,18 @@ if the token property_version is not 0, we will just update the propertyMap and 
     keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;String&gt;,
     values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
     types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;String&gt;,
-) <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a>, <a href="token.md#0x3_token_TokenStore">TokenStore</a> {
-    <b>assert</b>!(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>) == creator, <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ENO_MUTATE_CAPABILITY">ENO_MUTATE_CAPABILITY</a>));
+) <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a>, <a href="token.md#0x1_token_TokenStore">TokenStore</a> {
+    <b>assert</b>!(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>) == creator, <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ENO_MUTATE_CAPABILITY">ENO_MUTATE_CAPABILITY</a>));
     <b>let</b> i = 0;
-    <b>let</b> token_id = <a href="token.md#0x3_token_create_token_id_raw">create_token_id_raw</a>(
+    <b>let</b> token_id = <a href="token.md#0x1_token_create_token_id_raw">create_token_id_raw</a>(
         creator,
         collection_name,
         token_name,
         token_property_version,
     );
-    // give a new property_version for each <a href="token.md#0x3_token">token</a>
+    // give a new property_version for each <a href="token.md#0x1_token">token</a>
     <b>while</b> (i &lt; amount) {
-        <a href="token.md#0x3_token_mutate_one_token">mutate_one_token</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>, token_owner, token_id, keys, values, types);
+        <a href="token.md#0x1_token_mutate_one_token">mutate_one_token</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>, token_owner, token_id, keys, values, types);
         i = i + 1;
     };
 }
@@ -2097,13 +2097,13 @@ if the token property_version is not 0, we will just update the propertyMap and 
 
 </details>
 
-<a id="0x3_token_direct_transfer_script"></a>
+<a id="0x1_token_direct_transfer_script"></a>
 
 ## Function `direct_transfer_script`
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_direct_transfer_script">direct_transfer_script</a>(sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, receiver: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, creators_address: <b>address</b>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, property_version: u64, amount: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_direct_transfer_script">direct_transfer_script</a>(sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, receiver: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, creators_address: <b>address</b>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, property_version: u64, amount: u64)
 </code></pre>
 
 
@@ -2112,7 +2112,7 @@ if the token property_version is not 0, we will just update the propertyMap and 
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_direct_transfer_script">direct_transfer_script</a>(
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_direct_transfer_script">direct_transfer_script</a>(
     sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     receiver: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     creators_address: <b>address</b>,
@@ -2120,9 +2120,9 @@ if the token property_version is not 0, we will just update the propertyMap and 
     name: String,
     property_version: u64,
     amount: u64,
-) <b>acquires</b> <a href="token.md#0x3_token_TokenStore">TokenStore</a> {
-    <b>let</b> token_id = <a href="token.md#0x3_token_create_token_id_raw">create_token_id_raw</a>(creators_address, collection, name, property_version);
-    <a href="token.md#0x3_token_direct_transfer">direct_transfer</a>(sender, receiver, token_id, amount);
+) <b>acquires</b> <a href="token.md#0x1_token_TokenStore">TokenStore</a> {
+    <b>let</b> token_id = <a href="token.md#0x1_token_create_token_id_raw">create_token_id_raw</a>(creators_address, collection, name, property_version);
+    <a href="token.md#0x1_token_direct_transfer">direct_transfer</a>(sender, receiver, token_id, amount);
 }
 </code></pre>
 
@@ -2130,13 +2130,13 @@ if the token property_version is not 0, we will just update the propertyMap and 
 
 </details>
 
-<a id="0x3_token_opt_in_direct_transfer"></a>
+<a id="0x1_token_opt_in_direct_transfer"></a>
 
 ## Function `opt_in_direct_transfer`
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_opt_in_direct_transfer">opt_in_direct_transfer</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, opt_in: bool)
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_opt_in_direct_transfer">opt_in_direct_transfer</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, opt_in: bool)
 </code></pre>
 
 
@@ -2145,12 +2145,12 @@ if the token property_version is not 0, we will just update the propertyMap and 
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_opt_in_direct_transfer">opt_in_direct_transfer</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, opt_in: bool) <b>acquires</b> <a href="token.md#0x3_token_TokenStore">TokenStore</a> {
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_opt_in_direct_transfer">opt_in_direct_transfer</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, opt_in: bool) <b>acquires</b> <a href="token.md#0x1_token_TokenStore">TokenStore</a> {
     <b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>);
-    <a href="token.md#0x3_token_initialize_token_store">initialize_token_store</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>);
-    <b>let</b> opt_in_flag = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(addr).direct_transfer;
+    <a href="token.md#0x1_token_initialize_token_store">initialize_token_store</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>);
+    <b>let</b> opt_in_flag = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(addr).direct_transfer;
     *opt_in_flag = opt_in;
-    <a href="token_event_store.md#0x3_token_event_store_emit_token_opt_in_event">token_event_store::emit_token_opt_in_event</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>, opt_in);
+    <a href="token_event_store.md#0x1_token_event_store_emit_token_opt_in_event">token_event_store::emit_token_opt_in_event</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>, opt_in);
 }
 </code></pre>
 
@@ -2158,7 +2158,7 @@ if the token property_version is not 0, we will just update the propertyMap and 
 
 </details>
 
-<a id="0x3_token_transfer_with_opt_in"></a>
+<a id="0x1_token_transfer_with_opt_in"></a>
 
 ## Function `transfer_with_opt_in`
 
@@ -2166,7 +2166,7 @@ Transfers <code>amount</code> of tokens from <code>from</code> to <code><b>to</b
 The receiver <code><b>to</b></code> has to opt-in direct transfer first
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_transfer_with_opt_in">transfer_with_opt_in</a>(from: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, creator: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, token_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, token_property_version: u64, <b>to</b>: <b>address</b>, amount: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_transfer_with_opt_in">transfer_with_opt_in</a>(from: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, creator: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, token_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, token_property_version: u64, <b>to</b>: <b>address</b>, amount: u64)
 </code></pre>
 
 
@@ -2175,7 +2175,7 @@ The receiver <code><b>to</b></code> has to opt-in direct transfer first
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_transfer_with_opt_in">transfer_with_opt_in</a>(
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_transfer_with_opt_in">transfer_with_opt_in</a>(
     from: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     creator: <b>address</b>,
     collection_name: String,
@@ -2183,9 +2183,9 @@ The receiver <code><b>to</b></code> has to opt-in direct transfer first
     token_property_version: u64,
     <b>to</b>: <b>address</b>,
     amount: u64,
-) <b>acquires</b> <a href="token.md#0x3_token_TokenStore">TokenStore</a> {
-    <b>let</b> token_id = <a href="token.md#0x3_token_create_token_id_raw">create_token_id_raw</a>(creator, collection_name, token_name, token_property_version);
-    <a href="token.md#0x3_token_transfer">transfer</a>(from, token_id, <b>to</b>, amount);
+) <b>acquires</b> <a href="token.md#0x1_token_TokenStore">TokenStore</a> {
+    <b>let</b> token_id = <a href="token.md#0x1_token_create_token_id_raw">create_token_id_raw</a>(creator, collection_name, token_name, token_property_version);
+    <a href="token.md#0x1_token_transfer">transfer</a>(from, token_id, <b>to</b>, amount);
 }
 </code></pre>
 
@@ -2193,7 +2193,7 @@ The receiver <code><b>to</b></code> has to opt-in direct transfer first
 
 </details>
 
-<a id="0x3_token_burn_by_creator"></a>
+<a id="0x1_token_burn_by_creator"></a>
 
 ## Function `burn_by_creator`
 
@@ -2201,7 +2201,7 @@ Burn a token by creator when the token's BURNABLE_BY_CREATOR is true
 The token is owned at address owner
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_burn_by_creator">burn_by_creator</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, owner: <b>address</b>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, property_version: u64, amount: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_burn_by_creator">burn_by_creator</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, owner: <b>address</b>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, property_version: u64, amount: u64)
 </code></pre>
 
 
@@ -2210,27 +2210,27 @@ The token is owned at address owner
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_burn_by_creator">burn_by_creator</a>(
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_burn_by_creator">burn_by_creator</a>(
     creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     owner: <b>address</b>,
     collection: String,
     name: String,
     property_version: u64,
     amount: u64,
-) <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a>, <a href="token.md#0x3_token_TokenStore">TokenStore</a> {
+) <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a>, <a href="token.md#0x1_token_TokenStore">TokenStore</a> {
     <b>let</b> creator_address = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
-    <b>assert</b>!(amount &gt; 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_ENO_BURN_TOKEN_WITH_ZERO_AMOUNT">ENO_BURN_TOKEN_WITH_ZERO_AMOUNT</a>));
-    <b>let</b> token_id = <a href="token.md#0x3_token_create_token_id_raw">create_token_id_raw</a>(creator_address, collection, name, property_version);
+    <b>assert</b>!(amount &gt; 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_ENO_BURN_TOKEN_WITH_ZERO_AMOUNT">ENO_BURN_TOKEN_WITH_ZERO_AMOUNT</a>));
+    <b>let</b> token_id = <a href="token.md#0x1_token_create_token_id_raw">create_token_id_raw</a>(creator_address, collection, name, property_version);
     <b>let</b> creator_addr = token_id.token_data_id.creator;
     <b>assert</b>!(
-        <b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr),
-        <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>),
+        <b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>),
     );
 
-    <b>let</b> collections = <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address);
+    <b>let</b> collections = <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address);
     <b>assert</b>!(
         <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(&collections.token_data, token_id.token_data_id),
-        <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>),
     );
 
     <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(
@@ -2238,24 +2238,24 @@ The token is owned at address owner
         token_id.token_data_id,
     );
 
-    // The property should be explicitly set in the <a href="property_map.md#0x3_property_map">property_map</a> for creator <b>to</b> burn the <a href="token.md#0x3_token">token</a>
+    // The property should be explicitly set in the <a href="property_map.md#0x1_property_map">property_map</a> for creator <b>to</b> burn the <a href="token.md#0x1_token">token</a>
     <b>assert</b>!(
-        <a href="property_map.md#0x3_property_map_contains_key">property_map::contains_key</a>(&token_data.default_properties, &<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(<a href="token.md#0x3_token_BURNABLE_BY_CREATOR">BURNABLE_BY_CREATOR</a>)),
-        <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x3_token_ECREATOR_CANNOT_BURN_TOKEN">ECREATOR_CANNOT_BURN_TOKEN</a>)
+        <a href="property_map.md#0x1_property_map_contains_key">property_map::contains_key</a>(&token_data.default_properties, &<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(<a href="token.md#0x1_token_BURNABLE_BY_CREATOR">BURNABLE_BY_CREATOR</a>)),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x1_token_ECREATOR_CANNOT_BURN_TOKEN">ECREATOR_CANNOT_BURN_TOKEN</a>)
     );
 
-    <b>let</b> burn_by_creator_flag = <a href="property_map.md#0x3_property_map_read_bool">property_map::read_bool</a>(&token_data.default_properties, &<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(<a href="token.md#0x3_token_BURNABLE_BY_CREATOR">BURNABLE_BY_CREATOR</a>));
-    <b>assert</b>!(burn_by_creator_flag, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x3_token_ECREATOR_CANNOT_BURN_TOKEN">ECREATOR_CANNOT_BURN_TOKEN</a>));
+    <b>let</b> burn_by_creator_flag = <a href="property_map.md#0x1_property_map_read_bool">property_map::read_bool</a>(&token_data.default_properties, &<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(<a href="token.md#0x1_token_BURNABLE_BY_CREATOR">BURNABLE_BY_CREATOR</a>));
+    <b>assert</b>!(burn_by_creator_flag, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x1_token_ECREATOR_CANNOT_BURN_TOKEN">ECREATOR_CANNOT_BURN_TOKEN</a>));
 
     // Burn the tokens.
-    <b>let</b> <a href="token.md#0x3_token_Token">Token</a> { id: _, amount: burned_amount, token_properties: _ } = <a href="token.md#0x3_token_withdraw_with_event_internal">withdraw_with_event_internal</a>(owner, token_id, amount);
-    <b>let</b> token_store = <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(owner);
+    <b>let</b> <a href="token.md#0x1_token_Token">Token</a> { id: _, amount: burned_amount, token_properties: _ } = <a href="token.md#0x1_token_withdraw_with_event_internal">withdraw_with_event_internal</a>(owner, token_id, amount);
+    <b>let</b> token_store = <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(owner);
     <b>if</b> (std::features::module_event_migration_enabled()) {
-        <a href="../../starcoin-framework/doc/event.md#0x1_event_emit">event::emit</a>(<a href="token.md#0x3_token_BurnToken">BurnToken</a> { id: token_id, amount: burned_amount });
+        <a href="../../starcoin-framework/doc/event.md#0x1_event_emit">event::emit</a>(<a href="token.md#0x1_token_BurnToken">BurnToken</a> { id: token_id, amount: burned_amount });
     };
-    <a href="../../starcoin-framework/doc/event.md#0x1_event_emit_event">event::emit_event</a>&lt;<a href="token.md#0x3_token_BurnTokenEvent">BurnTokenEvent</a>&gt;(
+    <a href="../../starcoin-framework/doc/event.md#0x1_event_emit_event">event::emit_event</a>&lt;<a href="token.md#0x1_token_BurnTokenEvent">BurnTokenEvent</a>&gt;(
         &<b>mut</b> token_store.burn_events,
-        <a href="token.md#0x3_token_BurnTokenEvent">BurnTokenEvent</a> { id: token_id, amount: burned_amount }
+        <a href="token.md#0x1_token_BurnTokenEvent">BurnTokenEvent</a> { id: token_id, amount: burned_amount }
     );
 
     <b>if</b> (token_data.maximum &gt; 0) {
@@ -2263,7 +2263,7 @@ The token is owned at address owner
 
         // Delete the token_data <b>if</b> supply drops <b>to</b> 0.
         <b>if</b> (token_data.supply == 0) {
-            <a href="token.md#0x3_token_destroy_token_data">destroy_token_data</a>(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_remove">table::remove</a>(&<b>mut</b> collections.token_data, token_id.token_data_id));
+            <a href="token.md#0x1_token_destroy_token_data">destroy_token_data</a>(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_remove">table::remove</a>(&<b>mut</b> collections.token_data, token_id.token_data_id));
 
             // <b>update</b> the collection supply
             <b>let</b> collection_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(
@@ -2274,7 +2274,7 @@ The token is owned at address owner
                 collection_data.supply = collection_data.supply - 1;
                 // delete the collection data <b>if</b> the collection supply equals 0
                 <b>if</b> (collection_data.supply == 0) {
-                    <a href="token.md#0x3_token_destroy_collection_data">destroy_collection_data</a>(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_remove">table::remove</a>(&<b>mut</b> collections.collection_data, collection_data.name));
+                    <a href="token.md#0x1_token_destroy_collection_data">destroy_collection_data</a>(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_remove">table::remove</a>(&<b>mut</b> collections.collection_data, collection_data.name));
                 };
             };
         };
@@ -2286,14 +2286,14 @@ The token is owned at address owner
 
 </details>
 
-<a id="0x3_token_burn"></a>
+<a id="0x1_token_burn"></a>
 
 ## Function `burn`
 
 Burn a token by the token owner
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_burn">burn</a>(owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, creators_address: <b>address</b>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, property_version: u64, amount: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_burn">burn</a>(owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, creators_address: <b>address</b>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, property_version: u64, amount: u64)
 </code></pre>
 
 
@@ -2302,26 +2302,26 @@ Burn a token by the token owner
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_burn">burn</a>(
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_burn">burn</a>(
     owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     creators_address: <b>address</b>,
     collection: String,
     name: String,
     property_version: u64,
     amount: u64
-) <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a>, <a href="token.md#0x3_token_TokenStore">TokenStore</a> {
-    <b>assert</b>!(amount &gt; 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_ENO_BURN_TOKEN_WITH_ZERO_AMOUNT">ENO_BURN_TOKEN_WITH_ZERO_AMOUNT</a>));
-    <b>let</b> token_id = <a href="token.md#0x3_token_create_token_id_raw">create_token_id_raw</a>(creators_address, collection, name, property_version);
+) <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a>, <a href="token.md#0x1_token_TokenStore">TokenStore</a> {
+    <b>assert</b>!(amount &gt; 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_ENO_BURN_TOKEN_WITH_ZERO_AMOUNT">ENO_BURN_TOKEN_WITH_ZERO_AMOUNT</a>));
+    <b>let</b> token_id = <a href="token.md#0x1_token_create_token_id_raw">create_token_id_raw</a>(creators_address, collection, name, property_version);
     <b>let</b> creator_addr = token_id.token_data_id.creator;
     <b>assert</b>!(
-        <b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr),
-        <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>),
+        <b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>),
     );
 
-    <b>let</b> collections = <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr);
+    <b>let</b> collections = <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr);
     <b>assert</b>!(
         <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(&collections.token_data, token_id.token_data_id),
-        <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>),
     );
 
     <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(
@@ -2330,21 +2330,21 @@ Burn a token by the token owner
     );
 
     <b>assert</b>!(
-        <a href="property_map.md#0x3_property_map_contains_key">property_map::contains_key</a>(&token_data.default_properties, &<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(<a href="token.md#0x3_token_BURNABLE_BY_OWNER">BURNABLE_BY_OWNER</a>)),
-        <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x3_token_EOWNER_CANNOT_BURN_TOKEN">EOWNER_CANNOT_BURN_TOKEN</a>)
+        <a href="property_map.md#0x1_property_map_contains_key">property_map::contains_key</a>(&token_data.default_properties, &<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(<a href="token.md#0x1_token_BURNABLE_BY_OWNER">BURNABLE_BY_OWNER</a>)),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x1_token_EOWNER_CANNOT_BURN_TOKEN">EOWNER_CANNOT_BURN_TOKEN</a>)
     );
-    <b>let</b> burn_by_owner_flag = <a href="property_map.md#0x3_property_map_read_bool">property_map::read_bool</a>(&token_data.default_properties, &<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(<a href="token.md#0x3_token_BURNABLE_BY_OWNER">BURNABLE_BY_OWNER</a>));
-    <b>assert</b>!(burn_by_owner_flag, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x3_token_EOWNER_CANNOT_BURN_TOKEN">EOWNER_CANNOT_BURN_TOKEN</a>));
+    <b>let</b> burn_by_owner_flag = <a href="property_map.md#0x1_property_map_read_bool">property_map::read_bool</a>(&token_data.default_properties, &<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(<a href="token.md#0x1_token_BURNABLE_BY_OWNER">BURNABLE_BY_OWNER</a>));
+    <b>assert</b>!(burn_by_owner_flag, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x1_token_EOWNER_CANNOT_BURN_TOKEN">EOWNER_CANNOT_BURN_TOKEN</a>));
 
     // Burn the tokens.
-    <b>let</b> <a href="token.md#0x3_token_Token">Token</a> { id: _, amount: burned_amount, token_properties: _ } = <a href="token.md#0x3_token_withdraw_token">withdraw_token</a>(owner, token_id, amount);
-    <b>let</b> token_store = <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(owner));
+    <b>let</b> <a href="token.md#0x1_token_Token">Token</a> { id: _, amount: burned_amount, token_properties: _ } = <a href="token.md#0x1_token_withdraw_token">withdraw_token</a>(owner, token_id, amount);
+    <b>let</b> token_store = <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(owner));
     <b>if</b> (std::features::module_event_migration_enabled()) {
-        <a href="../../starcoin-framework/doc/event.md#0x1_event_emit">event::emit</a>(<a href="token.md#0x3_token_BurnToken">BurnToken</a> { id: token_id, amount: burned_amount });
+        <a href="../../starcoin-framework/doc/event.md#0x1_event_emit">event::emit</a>(<a href="token.md#0x1_token_BurnToken">BurnToken</a> { id: token_id, amount: burned_amount });
     };
-    <a href="../../starcoin-framework/doc/event.md#0x1_event_emit_event">event::emit_event</a>&lt;<a href="token.md#0x3_token_BurnTokenEvent">BurnTokenEvent</a>&gt;(
+    <a href="../../starcoin-framework/doc/event.md#0x1_event_emit_event">event::emit_event</a>&lt;<a href="token.md#0x1_token_BurnTokenEvent">BurnTokenEvent</a>&gt;(
         &<b>mut</b> token_store.burn_events,
-        <a href="token.md#0x3_token_BurnTokenEvent">BurnTokenEvent</a> { id: token_id, amount: burned_amount }
+        <a href="token.md#0x1_token_BurnTokenEvent">BurnTokenEvent</a> { id: token_id, amount: burned_amount }
     );
 
     // Decrease the supply correspondingly by the amount of tokens burned.
@@ -2354,13 +2354,13 @@ Burn a token by the token owner
     );
 
     // only <b>update</b> the supply <b>if</b> we tracking the supply and maximal
-    // maximal == 0 is reserved for unlimited <a href="token.md#0x3_token">token</a> and collection <b>with</b> no tracking info.
+    // maximal == 0 is reserved for unlimited <a href="token.md#0x1_token">token</a> and collection <b>with</b> no tracking info.
     <b>if</b> (token_data.maximum &gt; 0) {
         token_data.supply = token_data.supply - burned_amount;
 
         // Delete the token_data <b>if</b> supply drops <b>to</b> 0.
         <b>if</b> (token_data.supply == 0) {
-            <a href="token.md#0x3_token_destroy_token_data">destroy_token_data</a>(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_remove">table::remove</a>(&<b>mut</b> collections.token_data, token_id.token_data_id));
+            <a href="token.md#0x1_token_destroy_token_data">destroy_token_data</a>(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_remove">table::remove</a>(&<b>mut</b> collections.token_data, token_id.token_data_id));
 
             // <b>update</b> the collection supply
             <b>let</b> collection_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(
@@ -2373,7 +2373,7 @@ Burn a token by the token owner
                 collection_data.supply = collection_data.supply - 1;
                 // delete the collection data <b>if</b> the collection supply equals 0
                 <b>if</b> (collection_data.supply == 0) {
-                    <a href="token.md#0x3_token_destroy_collection_data">destroy_collection_data</a>(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_remove">table::remove</a>(&<b>mut</b> collections.collection_data, collection_data.name));
+                    <a href="token.md#0x1_token_destroy_collection_data">destroy_collection_data</a>(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_remove">table::remove</a>(&<b>mut</b> collections.collection_data, collection_data.name));
                 };
             };
         };
@@ -2385,13 +2385,13 @@ Burn a token by the token owner
 
 </details>
 
-<a id="0x3_token_mutate_collection_description"></a>
+<a id="0x1_token_mutate_collection_description"></a>
 
 ## Function `mutate_collection_description`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mutate_collection_description">mutate_collection_description</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mutate_collection_description">mutate_collection_description</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
 </code></pre>
 
 
@@ -2400,12 +2400,12 @@ Burn a token by the token owner
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mutate_collection_description">mutate_collection_description</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection_name: String, description: String) <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mutate_collection_description">mutate_collection_description</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection_name: String, description: String) <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
     <b>let</b> creator_address = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
-    <a href="token.md#0x3_token_assert_collection_exists">assert_collection_exists</a>(creator_address, collection_name);
-    <b>let</b> collection_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(&<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address).collection_data, collection_name);
-    <b>assert</b>!(collection_data.mutability_config.description, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x3_token_EFIELD_NOT_MUTABLE">EFIELD_NOT_MUTABLE</a>));
-    <a href="token_event_store.md#0x3_token_event_store_emit_collection_description_mutate_event">token_event_store::emit_collection_description_mutate_event</a>(creator, collection_name, collection_data.description, description);
+    <a href="token.md#0x1_token_assert_collection_exists">assert_collection_exists</a>(creator_address, collection_name);
+    <b>let</b> collection_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(&<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address).collection_data, collection_name);
+    <b>assert</b>!(collection_data.mutability_config.description, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x1_token_EFIELD_NOT_MUTABLE">EFIELD_NOT_MUTABLE</a>));
+    <a href="token_event_store.md#0x1_token_event_store_emit_collection_description_mutate_event">token_event_store::emit_collection_description_mutate_event</a>(creator, collection_name, collection_data.description, description);
     collection_data.description = description;
 }
 </code></pre>
@@ -2414,13 +2414,13 @@ Burn a token by the token owner
 
 </details>
 
-<a id="0x3_token_mutate_collection_uri"></a>
+<a id="0x1_token_mutate_collection_uri"></a>
 
 ## Function `mutate_collection_uri`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mutate_collection_uri">mutate_collection_uri</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mutate_collection_uri">mutate_collection_uri</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
 </code></pre>
 
 
@@ -2429,13 +2429,13 @@ Burn a token by the token owner
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mutate_collection_uri">mutate_collection_uri</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection_name: String, uri: String) <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
-    <b>assert</b>!(<a href="../../move-stdlib/doc/string.md#0x1_string_length">string::length</a>(&uri) &lt;= <a href="token.md#0x3_token_MAX_URI_LENGTH">MAX_URI_LENGTH</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_EURI_TOO_LONG">EURI_TOO_LONG</a>));
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mutate_collection_uri">mutate_collection_uri</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection_name: String, uri: String) <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
+    <b>assert</b>!(<a href="../../move-stdlib/doc/string.md#0x1_string_length">string::length</a>(&uri) &lt;= <a href="token.md#0x1_token_MAX_URI_LENGTH">MAX_URI_LENGTH</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_EURI_TOO_LONG">EURI_TOO_LONG</a>));
     <b>let</b> creator_address = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
-    <a href="token.md#0x3_token_assert_collection_exists">assert_collection_exists</a>(creator_address, collection_name);
-    <b>let</b> collection_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(&<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address).collection_data, collection_name);
-    <b>assert</b>!(collection_data.mutability_config.uri, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x3_token_EFIELD_NOT_MUTABLE">EFIELD_NOT_MUTABLE</a>));
-    <a href="token_event_store.md#0x3_token_event_store_emit_collection_uri_mutate_event">token_event_store::emit_collection_uri_mutate_event</a>(creator, collection_name, collection_data.uri , uri);
+    <a href="token.md#0x1_token_assert_collection_exists">assert_collection_exists</a>(creator_address, collection_name);
+    <b>let</b> collection_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(&<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address).collection_data, collection_name);
+    <b>assert</b>!(collection_data.mutability_config.uri, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x1_token_EFIELD_NOT_MUTABLE">EFIELD_NOT_MUTABLE</a>));
+    <a href="token_event_store.md#0x1_token_event_store_emit_collection_uri_mutate_event">token_event_store::emit_collection_uri_mutate_event</a>(creator, collection_name, collection_data.uri , uri);
     collection_data.uri = uri;
 }
 </code></pre>
@@ -2444,13 +2444,13 @@ Burn a token by the token owner
 
 </details>
 
-<a id="0x3_token_mutate_collection_maximum"></a>
+<a id="0x1_token_mutate_collection_maximum"></a>
 
 ## Function `mutate_collection_maximum`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mutate_collection_maximum">mutate_collection_maximum</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, maximum: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mutate_collection_maximum">mutate_collection_maximum</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, maximum: u64)
 </code></pre>
 
 
@@ -2459,15 +2459,15 @@ Burn a token by the token owner
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mutate_collection_maximum">mutate_collection_maximum</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection_name: String, maximum: u64) <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mutate_collection_maximum">mutate_collection_maximum</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection_name: String, maximum: u64) <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
     <b>let</b> creator_address = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
-    <a href="token.md#0x3_token_assert_collection_exists">assert_collection_exists</a>(creator_address, collection_name);
-    <b>let</b> collection_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(&<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address).collection_data, collection_name);
+    <a href="token.md#0x1_token_assert_collection_exists">assert_collection_exists</a>(creator_address, collection_name);
+    <b>let</b> collection_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(&<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address).collection_data, collection_name);
     // cannot change maximum from 0 and cannot change maximum <b>to</b> 0
-    <b>assert</b>!(collection_data.maximum != 0 && maximum != 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_EINVALID_MAXIMUM">EINVALID_MAXIMUM</a>));
-    <b>assert</b>!(maximum &gt;= collection_data.supply, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_EINVALID_MAXIMUM">EINVALID_MAXIMUM</a>));
-    <b>assert</b>!(collection_data.mutability_config.maximum, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x3_token_EFIELD_NOT_MUTABLE">EFIELD_NOT_MUTABLE</a>));
-    <a href="token_event_store.md#0x3_token_event_store_emit_collection_maximum_mutate_event">token_event_store::emit_collection_maximum_mutate_event</a>(creator, collection_name, collection_data.maximum, maximum);
+    <b>assert</b>!(collection_data.maximum != 0 && maximum != 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_EINVALID_MAXIMUM">EINVALID_MAXIMUM</a>));
+    <b>assert</b>!(maximum &gt;= collection_data.supply, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_EINVALID_MAXIMUM">EINVALID_MAXIMUM</a>));
+    <b>assert</b>!(collection_data.mutability_config.maximum, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x1_token_EFIELD_NOT_MUTABLE">EFIELD_NOT_MUTABLE</a>));
+    <a href="token_event_store.md#0x1_token_event_store_emit_collection_maximum_mutate_event">token_event_store::emit_collection_maximum_mutate_event</a>(creator, collection_name, collection_data.maximum, maximum);
     collection_data.maximum = maximum;
 }
 </code></pre>
@@ -2476,13 +2476,13 @@ Burn a token by the token owner
 
 </details>
 
-<a id="0x3_token_mutate_tokendata_maximum"></a>
+<a id="0x1_token_mutate_tokendata_maximum"></a>
 
 ## Function `mutate_tokendata_maximum`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mutate_tokendata_maximum">mutate_tokendata_maximum</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>, maximum: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mutate_tokendata_maximum">mutate_tokendata_maximum</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>, maximum: u64)
 </code></pre>
 
 
@@ -2491,15 +2491,15 @@ Burn a token by the token owner
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mutate_tokendata_maximum">mutate_tokendata_maximum</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x3_token_TokenDataId">TokenDataId</a>, maximum: u64) <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
-    <a href="token.md#0x3_token_assert_tokendata_exists">assert_tokendata_exists</a>(creator, token_data_id);
-    <b>let</b> all_token_data = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(token_data_id.creator).token_data;
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mutate_tokendata_maximum">mutate_tokendata_maximum</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x1_token_TokenDataId">TokenDataId</a>, maximum: u64) <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
+    <a href="token.md#0x1_token_assert_tokendata_exists">assert_tokendata_exists</a>(creator, token_data_id);
+    <b>let</b> all_token_data = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(token_data_id.creator).token_data;
     <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(all_token_data, token_data_id);
     // cannot change maximum from 0 and cannot change maximum <b>to</b> 0
-    <b>assert</b>!(token_data.maximum != 0 && maximum != 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_EINVALID_MAXIMUM">EINVALID_MAXIMUM</a>));
-    <b>assert</b>!(maximum &gt;= token_data.supply, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_EINVALID_MAXIMUM">EINVALID_MAXIMUM</a>));
-    <b>assert</b>!(token_data.mutability_config.maximum, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x3_token_EFIELD_NOT_MUTABLE">EFIELD_NOT_MUTABLE</a>));
-    <a href="token_event_store.md#0x3_token_event_store_emit_token_maximum_mutate_event">token_event_store::emit_token_maximum_mutate_event</a>(creator, token_data_id.collection, token_data_id.name, token_data.maximum, maximum);
+    <b>assert</b>!(token_data.maximum != 0 && maximum != 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_EINVALID_MAXIMUM">EINVALID_MAXIMUM</a>));
+    <b>assert</b>!(maximum &gt;= token_data.supply, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_EINVALID_MAXIMUM">EINVALID_MAXIMUM</a>));
+    <b>assert</b>!(token_data.mutability_config.maximum, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x1_token_EFIELD_NOT_MUTABLE">EFIELD_NOT_MUTABLE</a>));
+    <a href="token_event_store.md#0x1_token_event_store_emit_token_maximum_mutate_event">token_event_store::emit_token_maximum_mutate_event</a>(creator, token_data_id.collection, token_data_id.name, token_data.maximum, maximum);
     token_data.maximum = maximum;
 }
 </code></pre>
@@ -2508,13 +2508,13 @@ Burn a token by the token owner
 
 </details>
 
-<a id="0x3_token_mutate_tokendata_uri"></a>
+<a id="0x1_token_mutate_tokendata_uri"></a>
 
 ## Function `mutate_tokendata_uri`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mutate_tokendata_uri">mutate_tokendata_uri</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>, uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mutate_tokendata_uri">mutate_tokendata_uri</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>, uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
 </code></pre>
 
 
@@ -2523,18 +2523,18 @@ Burn a token by the token owner
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mutate_tokendata_uri">mutate_tokendata_uri</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mutate_tokendata_uri">mutate_tokendata_uri</a>(
     creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
-    token_data_id: <a href="token.md#0x3_token_TokenDataId">TokenDataId</a>,
+    token_data_id: <a href="token.md#0x1_token_TokenDataId">TokenDataId</a>,
     uri: String
-) <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
-    <b>assert</b>!(<a href="../../move-stdlib/doc/string.md#0x1_string_length">string::length</a>(&uri) &lt;= <a href="token.md#0x3_token_MAX_URI_LENGTH">MAX_URI_LENGTH</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_EURI_TOO_LONG">EURI_TOO_LONG</a>));
-    <a href="token.md#0x3_token_assert_tokendata_exists">assert_tokendata_exists</a>(creator, token_data_id);
+) <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
+    <b>assert</b>!(<a href="../../move-stdlib/doc/string.md#0x1_string_length">string::length</a>(&uri) &lt;= <a href="token.md#0x1_token_MAX_URI_LENGTH">MAX_URI_LENGTH</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_EURI_TOO_LONG">EURI_TOO_LONG</a>));
+    <a href="token.md#0x1_token_assert_tokendata_exists">assert_tokendata_exists</a>(creator, token_data_id);
 
-    <b>let</b> all_token_data = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(token_data_id.creator).token_data;
+    <b>let</b> all_token_data = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(token_data_id.creator).token_data;
     <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(all_token_data, token_data_id);
-    <b>assert</b>!(token_data.mutability_config.uri, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x3_token_EFIELD_NOT_MUTABLE">EFIELD_NOT_MUTABLE</a>));
-    <a href="token_event_store.md#0x3_token_event_store_emit_token_uri_mutate_event">token_event_store::emit_token_uri_mutate_event</a>(creator, token_data_id.collection, token_data_id.name, token_data.uri ,uri);
+    <b>assert</b>!(token_data.mutability_config.uri, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x1_token_EFIELD_NOT_MUTABLE">EFIELD_NOT_MUTABLE</a>));
+    <a href="token_event_store.md#0x1_token_event_store_emit_token_uri_mutate_event">token_event_store::emit_token_uri_mutate_event</a>(creator, token_data_id.collection, token_data_id.name, token_data.uri ,uri);
     token_data.uri = uri;
 }
 </code></pre>
@@ -2543,13 +2543,13 @@ Burn a token by the token owner
 
 </details>
 
-<a id="0x3_token_mutate_tokendata_royalty"></a>
+<a id="0x1_token_mutate_tokendata_royalty"></a>
 
 ## Function `mutate_tokendata_royalty`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mutate_tokendata_royalty">mutate_tokendata_royalty</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>, royalty: <a href="token.md#0x3_token_Royalty">token::Royalty</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mutate_tokendata_royalty">mutate_tokendata_royalty</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>, royalty: <a href="token.md#0x1_token_Royalty">token::Royalty</a>)
 </code></pre>
 
 
@@ -2558,14 +2558,14 @@ Burn a token by the token owner
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mutate_tokendata_royalty">mutate_tokendata_royalty</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x3_token_TokenDataId">TokenDataId</a>, royalty: <a href="token.md#0x3_token_Royalty">Royalty</a>) <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
-    <a href="token.md#0x3_token_assert_tokendata_exists">assert_tokendata_exists</a>(creator, token_data_id);
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mutate_tokendata_royalty">mutate_tokendata_royalty</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x1_token_TokenDataId">TokenDataId</a>, royalty: <a href="token.md#0x1_token_Royalty">Royalty</a>) <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
+    <a href="token.md#0x1_token_assert_tokendata_exists">assert_tokendata_exists</a>(creator, token_data_id);
 
-    <b>let</b> all_token_data = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(token_data_id.creator).token_data;
+    <b>let</b> all_token_data = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(token_data_id.creator).token_data;
     <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(all_token_data, token_data_id);
-    <b>assert</b>!(token_data.mutability_config.royalty, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x3_token_EFIELD_NOT_MUTABLE">EFIELD_NOT_MUTABLE</a>));
+    <b>assert</b>!(token_data.mutability_config.royalty, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x1_token_EFIELD_NOT_MUTABLE">EFIELD_NOT_MUTABLE</a>));
 
-    <a href="token_event_store.md#0x3_token_event_store_emit_token_royalty_mutate_event">token_event_store::emit_token_royalty_mutate_event</a>(
+    <a href="token_event_store.md#0x1_token_event_store_emit_token_royalty_mutate_event">token_event_store::emit_token_royalty_mutate_event</a>(
         creator,
         token_data_id.collection,
         token_data_id.name,
@@ -2584,13 +2584,13 @@ Burn a token by the token owner
 
 </details>
 
-<a id="0x3_token_mutate_tokendata_description"></a>
+<a id="0x1_token_mutate_tokendata_description"></a>
 
 ## Function `mutate_tokendata_description`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mutate_tokendata_description">mutate_tokendata_description</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>, description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mutate_tokendata_description">mutate_tokendata_description</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>, description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
 </code></pre>
 
 
@@ -2599,13 +2599,13 @@ Burn a token by the token owner
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mutate_tokendata_description">mutate_tokendata_description</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x3_token_TokenDataId">TokenDataId</a>, description: String) <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
-    <a href="token.md#0x3_token_assert_tokendata_exists">assert_tokendata_exists</a>(creator, token_data_id);
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mutate_tokendata_description">mutate_tokendata_description</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x1_token_TokenDataId">TokenDataId</a>, description: String) <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
+    <a href="token.md#0x1_token_assert_tokendata_exists">assert_tokendata_exists</a>(creator, token_data_id);
 
-    <b>let</b> all_token_data = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(token_data_id.creator).token_data;
+    <b>let</b> all_token_data = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(token_data_id.creator).token_data;
     <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(all_token_data, token_data_id);
-    <b>assert</b>!(token_data.mutability_config.description, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x3_token_EFIELD_NOT_MUTABLE">EFIELD_NOT_MUTABLE</a>));
-    <a href="token_event_store.md#0x3_token_event_store_emit_token_descrition_mutate_event">token_event_store::emit_token_descrition_mutate_event</a>(creator, token_data_id.collection, token_data_id.name, token_data.description, description);
+    <b>assert</b>!(token_data.mutability_config.description, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x1_token_EFIELD_NOT_MUTABLE">EFIELD_NOT_MUTABLE</a>));
+    <a href="token_event_store.md#0x1_token_event_store_emit_token_descrition_mutate_event">token_event_store::emit_token_descrition_mutate_event</a>(creator, token_data_id.collection, token_data_id.name, token_data.description, description);
     token_data.description = description;
 }
 </code></pre>
@@ -2614,14 +2614,14 @@ Burn a token by the token owner
 
 </details>
 
-<a id="0x3_token_mutate_tokendata_property"></a>
+<a id="0x1_token_mutate_tokendata_property"></a>
 
 ## Function `mutate_tokendata_property`
 
 Allow creator to mutate the default properties in TokenData
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mutate_tokendata_property">mutate_tokendata_property</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>, keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mutate_tokendata_property">mutate_tokendata_property</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>, keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;)
 </code></pre>
 
 
@@ -2630,45 +2630,45 @@ Allow creator to mutate the default properties in TokenData
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mutate_tokendata_property">mutate_tokendata_property</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mutate_tokendata_property">mutate_tokendata_property</a>(
     creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
-    token_data_id: <a href="token.md#0x3_token_TokenDataId">TokenDataId</a>,
+    token_data_id: <a href="token.md#0x1_token_TokenDataId">TokenDataId</a>,
     keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;String&gt;,
     values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
     types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;String&gt;,
-) <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
-    <a href="token.md#0x3_token_assert_tokendata_exists">assert_tokendata_exists</a>(creator, token_data_id);
+) <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
+    <a href="token.md#0x1_token_assert_tokendata_exists">assert_tokendata_exists</a>(creator, token_data_id);
     <b>let</b> key_len = <a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(&keys);
     <b>let</b> val_len = <a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(&values);
     <b>let</b> typ_len = <a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(&types);
-    <b>assert</b>!(key_len == val_len, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="token.md#0x3_token_ETOKEN_PROPERTIES_COUNT_NOT_MATCH">ETOKEN_PROPERTIES_COUNT_NOT_MATCH</a>));
-    <b>assert</b>!(key_len == typ_len, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="token.md#0x3_token_ETOKEN_PROPERTIES_COUNT_NOT_MATCH">ETOKEN_PROPERTIES_COUNT_NOT_MATCH</a>));
+    <b>assert</b>!(key_len == val_len, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="token.md#0x1_token_ETOKEN_PROPERTIES_COUNT_NOT_MATCH">ETOKEN_PROPERTIES_COUNT_NOT_MATCH</a>));
+    <b>assert</b>!(key_len == typ_len, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="token.md#0x1_token_ETOKEN_PROPERTIES_COUNT_NOT_MATCH">ETOKEN_PROPERTIES_COUNT_NOT_MATCH</a>));
 
-    <b>let</b> all_token_data = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(token_data_id.creator).token_data;
+    <b>let</b> all_token_data = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(token_data_id.creator).token_data;
     <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(all_token_data, token_data_id);
-    <b>assert</b>!(token_data.mutability_config.properties, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x3_token_EFIELD_NOT_MUTABLE">EFIELD_NOT_MUTABLE</a>));
+    <b>assert</b>!(token_data.mutability_config.properties, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x1_token_EFIELD_NOT_MUTABLE">EFIELD_NOT_MUTABLE</a>));
     <b>let</b> i: u64 = 0;
     <b>let</b> old_values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;Option&lt;PropertyValue&gt;&gt; = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>();
     <b>let</b> new_values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;PropertyValue&gt; = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>();
-    <a href="token.md#0x3_token_assert_non_standard_reserved_property">assert_non_standard_reserved_property</a>(&keys);
+    <a href="token.md#0x1_token_assert_non_standard_reserved_property">assert_non_standard_reserved_property</a>(&keys);
     <b>while</b> (i &lt; <a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(&keys)){
         <b>let</b> key = <a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(&keys, i);
-        <b>let</b> old_pv = <b>if</b> (<a href="property_map.md#0x3_property_map_contains_key">property_map::contains_key</a>(&token_data.default_properties, key)) {
-            <a href="../../move-stdlib/doc/option.md#0x1_option_some">option::some</a>(*<a href="property_map.md#0x3_property_map_borrow">property_map::borrow</a>(&token_data.default_properties, key))
+        <b>let</b> old_pv = <b>if</b> (<a href="property_map.md#0x1_property_map_contains_key">property_map::contains_key</a>(&token_data.default_properties, key)) {
+            <a href="../../move-stdlib/doc/option.md#0x1_option_some">option::some</a>(*<a href="property_map.md#0x1_property_map_borrow">property_map::borrow</a>(&token_data.default_properties, key))
         } <b>else</b> {
             <a href="../../move-stdlib/doc/option.md#0x1_option_none">option::none</a>&lt;PropertyValue&gt;()
         };
         <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> old_values, old_pv);
-        <b>let</b> new_pv = <a href="property_map.md#0x3_property_map_create_property_value_raw">property_map::create_property_value_raw</a>(*<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(&values, i), *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(&types, i));
+        <b>let</b> new_pv = <a href="property_map.md#0x1_property_map_create_property_value_raw">property_map::create_property_value_raw</a>(*<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(&values, i), *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(&types, i));
         <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> new_values, new_pv);
         <b>if</b> (<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&old_pv)) {
-            <a href="property_map.md#0x3_property_map_update_property_value">property_map::update_property_value</a>(&<b>mut</b> token_data.default_properties, key, new_pv);
+            <a href="property_map.md#0x1_property_map_update_property_value">property_map::update_property_value</a>(&<b>mut</b> token_data.default_properties, key, new_pv);
         } <b>else</b> {
-            <a href="property_map.md#0x3_property_map_add">property_map::add</a>(&<b>mut</b> token_data.default_properties, *key, new_pv);
+            <a href="property_map.md#0x1_property_map_add">property_map::add</a>(&<b>mut</b> token_data.default_properties, *key, new_pv);
         };
         i = i + 1;
     };
-    <a href="token_event_store.md#0x3_token_event_store_emit_default_property_mutate_event">token_event_store::emit_default_property_mutate_event</a>(creator, token_data_id.collection, token_data_id.name, keys, old_values, new_values);
+    <a href="token_event_store.md#0x1_token_event_store_emit_default_property_mutate_event">token_event_store::emit_default_property_mutate_event</a>(creator, token_data_id.collection, token_data_id.name, keys, old_values, new_values);
 }
 </code></pre>
 
@@ -2676,14 +2676,14 @@ Allow creator to mutate the default properties in TokenData
 
 </details>
 
-<a id="0x3_token_mutate_one_token"></a>
+<a id="0x1_token_mutate_one_token"></a>
 
 ## Function `mutate_one_token`
 
 Mutate the token_properties of one token.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mutate_one_token">mutate_one_token</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_owner: <b>address</b>, token_id: <a href="token.md#0x3_token_TokenId">token::TokenId</a>, keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;): <a href="token.md#0x3_token_TokenId">token::TokenId</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mutate_one_token">mutate_one_token</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_owner: <b>address</b>, token_id: <a href="token.md#0x1_token_TokenId">token::TokenId</a>, keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;): <a href="token.md#0x1_token_TokenId">token::TokenId</a>
 </code></pre>
 
 
@@ -2692,52 +2692,52 @@ Mutate the token_properties of one token.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mutate_one_token">mutate_one_token</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mutate_one_token">mutate_one_token</a>(
     <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     token_owner: <b>address</b>,
-    token_id: <a href="token.md#0x3_token_TokenId">TokenId</a>,
+    token_id: <a href="token.md#0x1_token_TokenId">TokenId</a>,
     keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;String&gt;,
     values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
     types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;String&gt;,
-): <a href="token.md#0x3_token_TokenId">TokenId</a> <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a>, <a href="token.md#0x3_token_TokenStore">TokenStore</a> {
+): <a href="token.md#0x1_token_TokenId">TokenId</a> <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a>, <a href="token.md#0x1_token_TokenStore">TokenStore</a> {
     <b>let</b> creator = token_id.token_data_id.creator;
-    <b>assert</b>!(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>) == creator, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x3_token_ENO_MUTATE_CAPABILITY">ENO_MUTATE_CAPABILITY</a>));
+    <b>assert</b>!(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>) == creator, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x1_token_ENO_MUTATE_CAPABILITY">ENO_MUTATE_CAPABILITY</a>));
     // validate <b>if</b> the properties is mutable
-    <b>assert</b>!(<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>));
-    <b>let</b> all_token_data = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(
+    <b>assert</b>!(<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>));
+    <b>let</b> all_token_data = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(
         creator
     ).token_data;
 
-    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_token_data, token_id.token_data_id), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>));
+    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_token_data, token_id.token_data_id), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>));
     <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(all_token_data, token_id.token_data_id);
 
-    // <b>if</b> default property is mutatable, <a href="token.md#0x3_token">token</a> property is alwasy mutable
-    // we only need <b>to</b> check <a href="token.md#0x3_token_TOKEN_PROPERTY_MUTABLE">TOKEN_PROPERTY_MUTABLE</a> when default property is immutable
+    // <b>if</b> default property is mutatable, <a href="token.md#0x1_token">token</a> property is alwasy mutable
+    // we only need <b>to</b> check <a href="token.md#0x1_token_TOKEN_PROPERTY_MUTABLE">TOKEN_PROPERTY_MUTABLE</a> when default property is immutable
     <b>if</b> (!token_data.mutability_config.properties) {
         <b>assert</b>!(
-            <a href="property_map.md#0x3_property_map_contains_key">property_map::contains_key</a>(&token_data.default_properties, &<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(<a href="token.md#0x3_token_TOKEN_PROPERTY_MUTABLE">TOKEN_PROPERTY_MUTABLE</a>)),
-            <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x3_token_EFIELD_NOT_MUTABLE">EFIELD_NOT_MUTABLE</a>)
+            <a href="property_map.md#0x1_property_map_contains_key">property_map::contains_key</a>(&token_data.default_properties, &<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(<a href="token.md#0x1_token_TOKEN_PROPERTY_MUTABLE">TOKEN_PROPERTY_MUTABLE</a>)),
+            <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x1_token_EFIELD_NOT_MUTABLE">EFIELD_NOT_MUTABLE</a>)
         );
 
-        <b>let</b> token_prop_mutable = <a href="property_map.md#0x3_property_map_read_bool">property_map::read_bool</a>(&token_data.default_properties, &<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(<a href="token.md#0x3_token_TOKEN_PROPERTY_MUTABLE">TOKEN_PROPERTY_MUTABLE</a>));
-        <b>assert</b>!(token_prop_mutable, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x3_token_EFIELD_NOT_MUTABLE">EFIELD_NOT_MUTABLE</a>));
+        <b>let</b> token_prop_mutable = <a href="property_map.md#0x1_property_map_read_bool">property_map::read_bool</a>(&token_data.default_properties, &<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(<a href="token.md#0x1_token_TOKEN_PROPERTY_MUTABLE">TOKEN_PROPERTY_MUTABLE</a>));
+        <b>assert</b>!(token_prop_mutable, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x1_token_EFIELD_NOT_MUTABLE">EFIELD_NOT_MUTABLE</a>));
     };
 
     // check <b>if</b> the property_version is 0 <b>to</b> determine <b>if</b> we need <b>to</b> <b>update</b> the property_version
     <b>if</b> (token_id.property_version == 0) {
-        <b>let</b> <a href="token.md#0x3_token">token</a> = <a href="token.md#0x3_token_withdraw_with_event_internal">withdraw_with_event_internal</a>(token_owner, token_id, 1);
-        // give a new property_version for each <a href="token.md#0x3_token">token</a>
+        <b>let</b> <a href="token.md#0x1_token">token</a> = <a href="token.md#0x1_token_withdraw_with_event_internal">withdraw_with_event_internal</a>(token_owner, token_id, 1);
+        // give a new property_version for each <a href="token.md#0x1_token">token</a>
         <b>let</b> cur_property_version = token_data.largest_property_version + 1;
-        <b>let</b> new_token_id = <a href="token.md#0x3_token_create_token_id">create_token_id</a>(token_id.token_data_id, cur_property_version);
-        <b>let</b> new_token = <a href="token.md#0x3_token_Token">Token</a> {
+        <b>let</b> new_token_id = <a href="token.md#0x1_token_create_token_id">create_token_id</a>(token_id.token_data_id, cur_property_version);
+        <b>let</b> new_token = <a href="token.md#0x1_token_Token">Token</a> {
             id: new_token_id,
             amount: 1,
             token_properties: token_data.default_properties,
         };
-        <a href="token.md#0x3_token_direct_deposit">direct_deposit</a>(token_owner, new_token);
-        <a href="token.md#0x3_token_update_token_property_internal">update_token_property_internal</a>(token_owner, new_token_id, keys, values, types);
+        <a href="token.md#0x1_token_direct_deposit">direct_deposit</a>(token_owner, new_token);
+        <a href="token.md#0x1_token_update_token_property_internal">update_token_property_internal</a>(token_owner, new_token_id, keys, values, types);
         <b>if</b> (std::features::module_event_migration_enabled()) {
-            <a href="../../starcoin-framework/doc/event.md#0x1_event_emit">event::emit</a>(<a href="token.md#0x3_token_MutateTokenPropertyMap">MutateTokenPropertyMap</a> {
+            <a href="../../starcoin-framework/doc/event.md#0x1_event_emit">event::emit</a>(<a href="token.md#0x1_token_MutateTokenPropertyMap">MutateTokenPropertyMap</a> {
                 old_id: token_id,
                 new_id: new_token_id,
                 keys,
@@ -2745,9 +2745,9 @@ Mutate the token_properties of one token.
                 types
             });
         };
-        <a href="../../starcoin-framework/doc/event.md#0x1_event_emit_event">event::emit_event</a>&lt;<a href="token.md#0x3_token_MutateTokenPropertyMapEvent">MutateTokenPropertyMapEvent</a>&gt;(
-            &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(token_owner).mutate_token_property_events,
-            <a href="token.md#0x3_token_MutateTokenPropertyMapEvent">MutateTokenPropertyMapEvent</a> {
+        <a href="../../starcoin-framework/doc/event.md#0x1_event_emit_event">event::emit_event</a>&lt;<a href="token.md#0x1_token_MutateTokenPropertyMapEvent">MutateTokenPropertyMapEvent</a>&gt;(
+            &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(token_owner).mutate_token_property_events,
+            <a href="token.md#0x1_token_MutateTokenPropertyMapEvent">MutateTokenPropertyMapEvent</a> {
                 old_id: token_id,
                 new_id: new_token_id,
                 keys,
@@ -2757,14 +2757,14 @@ Mutate the token_properties of one token.
         );
 
         token_data.largest_property_version = cur_property_version;
-        // burn the orignial property_version 0 <a href="token.md#0x3_token">token</a> after mutation
-        <b>let</b> <a href="token.md#0x3_token_Token">Token</a> { id: _, amount: _, token_properties: _ } = <a href="token.md#0x3_token">token</a>;
+        // burn the orignial property_version 0 <a href="token.md#0x1_token">token</a> after mutation
+        <b>let</b> <a href="token.md#0x1_token_Token">Token</a> { id: _, amount: _, token_properties: _ } = <a href="token.md#0x1_token">token</a>;
         new_token_id
     } <b>else</b> {
-        // only 1 <b>copy</b> for the <a href="token.md#0x3_token">token</a> <b>with</b> property verion bigger than 0
-        <a href="token.md#0x3_token_update_token_property_internal">update_token_property_internal</a>(token_owner, token_id, keys, values, types);
+        // only 1 <b>copy</b> for the <a href="token.md#0x1_token">token</a> <b>with</b> property verion bigger than 0
+        <a href="token.md#0x1_token_update_token_property_internal">update_token_property_internal</a>(token_owner, token_id, keys, values, types);
         <b>if</b> (std::features::module_event_migration_enabled()) {
-            <a href="../../starcoin-framework/doc/event.md#0x1_event_emit">event::emit</a>(<a href="token.md#0x3_token_MutateTokenPropertyMap">MutateTokenPropertyMap</a> {
+            <a href="../../starcoin-framework/doc/event.md#0x1_event_emit">event::emit</a>(<a href="token.md#0x1_token_MutateTokenPropertyMap">MutateTokenPropertyMap</a> {
                 old_id: token_id,
                 new_id: token_id,
                 keys,
@@ -2772,9 +2772,9 @@ Mutate the token_properties of one token.
                 types
             });
         };
-        <a href="../../starcoin-framework/doc/event.md#0x1_event_emit_event">event::emit_event</a>&lt;<a href="token.md#0x3_token_MutateTokenPropertyMapEvent">MutateTokenPropertyMapEvent</a>&gt;(
-            &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(token_owner).mutate_token_property_events,
-            <a href="token.md#0x3_token_MutateTokenPropertyMapEvent">MutateTokenPropertyMapEvent</a> {
+        <a href="../../starcoin-framework/doc/event.md#0x1_event_emit_event">event::emit_event</a>&lt;<a href="token.md#0x1_token_MutateTokenPropertyMapEvent">MutateTokenPropertyMapEvent</a>&gt;(
+            &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(token_owner).mutate_token_property_events,
+            <a href="token.md#0x1_token_MutateTokenPropertyMapEvent">MutateTokenPropertyMapEvent</a> {
                 old_id: token_id,
                 new_id: token_id,
                 keys,
@@ -2791,13 +2791,13 @@ Mutate the token_properties of one token.
 
 </details>
 
-<a id="0x3_token_create_royalty"></a>
+<a id="0x1_token_create_royalty"></a>
 
 ## Function `create_royalty`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_create_royalty">create_royalty</a>(royalty_points_numerator: u64, royalty_points_denominator: u64, payee_address: <b>address</b>): <a href="token.md#0x3_token_Royalty">token::Royalty</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_create_royalty">create_royalty</a>(royalty_points_numerator: u64, royalty_points_denominator: u64, payee_address: <b>address</b>): <a href="token.md#0x1_token_Royalty">token::Royalty</a>
 </code></pre>
 
 
@@ -2806,10 +2806,10 @@ Mutate the token_properties of one token.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_create_royalty">create_royalty</a>(royalty_points_numerator: u64, royalty_points_denominator: u64, payee_address: <b>address</b>): <a href="token.md#0x3_token_Royalty">Royalty</a> {
-    <b>assert</b>!(royalty_points_numerator &lt;= royalty_points_denominator, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_EINVALID_ROYALTY_NUMERATOR_DENOMINATOR">EINVALID_ROYALTY_NUMERATOR_DENOMINATOR</a>));
-    <b>assert</b>!(<a href="../../starcoin-framework/doc/account.md#0x1_account_exists_at">account::exists_at</a>(payee_address), <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_EROYALTY_PAYEE_ACCOUNT_DOES_NOT_EXIST">EROYALTY_PAYEE_ACCOUNT_DOES_NOT_EXIST</a>));
-    <a href="token.md#0x3_token_Royalty">Royalty</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_create_royalty">create_royalty</a>(royalty_points_numerator: u64, royalty_points_denominator: u64, payee_address: <b>address</b>): <a href="token.md#0x1_token_Royalty">Royalty</a> {
+    <b>assert</b>!(royalty_points_numerator &lt;= royalty_points_denominator, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_EINVALID_ROYALTY_NUMERATOR_DENOMINATOR">EINVALID_ROYALTY_NUMERATOR_DENOMINATOR</a>));
+    <b>assert</b>!(<a href="../../starcoin-framework/doc/account.md#0x1_account_exists_at">account::exists_at</a>(payee_address), <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_EROYALTY_PAYEE_ACCOUNT_DOES_NOT_EXIST">EROYALTY_PAYEE_ACCOUNT_DOES_NOT_EXIST</a>));
+    <a href="token.md#0x1_token_Royalty">Royalty</a> {
         royalty_points_numerator,
         royalty_points_denominator,
         payee_address
@@ -2821,14 +2821,14 @@ Mutate the token_properties of one token.
 
 </details>
 
-<a id="0x3_token_deposit_token"></a>
+<a id="0x1_token_deposit_token"></a>
 
 ## Function `deposit_token`
 
 Deposit the token balance into the owner's account and emit an event.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_deposit_token">deposit_token</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="token.md#0x3_token">token</a>: <a href="token.md#0x3_token_Token">token::Token</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_deposit_token">deposit_token</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="token.md#0x1_token">token</a>: <a href="token.md#0x1_token_Token">token::Token</a>)
 </code></pre>
 
 
@@ -2837,10 +2837,10 @@ Deposit the token balance into the owner's account and emit an event.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_deposit_token">deposit_token</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="token.md#0x3_token">token</a>: <a href="token.md#0x3_token_Token">Token</a>) <b>acquires</b> <a href="token.md#0x3_token_TokenStore">TokenStore</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_deposit_token">deposit_token</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="token.md#0x1_token">token</a>: <a href="token.md#0x1_token_Token">Token</a>) <b>acquires</b> <a href="token.md#0x1_token_TokenStore">TokenStore</a> {
     <b>let</b> account_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>);
-    <a href="token.md#0x3_token_initialize_token_store">initialize_token_store</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>);
-    <a href="token.md#0x3_token_direct_deposit">direct_deposit</a>(account_addr, <a href="token.md#0x3_token">token</a>)
+    <a href="token.md#0x1_token_initialize_token_store">initialize_token_store</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>);
+    <a href="token.md#0x1_token_direct_deposit">direct_deposit</a>(account_addr, <a href="token.md#0x1_token">token</a>)
 }
 </code></pre>
 
@@ -2848,14 +2848,14 @@ Deposit the token balance into the owner's account and emit an event.
 
 </details>
 
-<a id="0x3_token_direct_deposit_with_opt_in"></a>
+<a id="0x1_token_direct_deposit_with_opt_in"></a>
 
 ## Function `direct_deposit_with_opt_in`
 
 direct deposit if user opt in direct transfer
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_direct_deposit_with_opt_in">direct_deposit_with_opt_in</a>(account_addr: <b>address</b>, <a href="token.md#0x3_token">token</a>: <a href="token.md#0x3_token_Token">token::Token</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_direct_deposit_with_opt_in">direct_deposit_with_opt_in</a>(account_addr: <b>address</b>, <a href="token.md#0x1_token">token</a>: <a href="token.md#0x1_token_Token">token::Token</a>)
 </code></pre>
 
 
@@ -2864,10 +2864,10 @@ direct deposit if user opt in direct transfer
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_direct_deposit_with_opt_in">direct_deposit_with_opt_in</a>(account_addr: <b>address</b>, <a href="token.md#0x3_token">token</a>: <a href="token.md#0x3_token_Token">Token</a>) <b>acquires</b> <a href="token.md#0x3_token_TokenStore">TokenStore</a> {
-    <b>let</b> opt_in_transfer = <b>borrow_global</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(account_addr).direct_transfer;
-    <b>assert</b>!(opt_in_transfer, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x3_token_EUSER_NOT_OPT_IN_DIRECT_TRANSFER">EUSER_NOT_OPT_IN_DIRECT_TRANSFER</a>));
-    <a href="token.md#0x3_token_direct_deposit">direct_deposit</a>(account_addr, <a href="token.md#0x3_token">token</a>);
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_direct_deposit_with_opt_in">direct_deposit_with_opt_in</a>(account_addr: <b>address</b>, <a href="token.md#0x1_token">token</a>: <a href="token.md#0x1_token_Token">Token</a>) <b>acquires</b> <a href="token.md#0x1_token_TokenStore">TokenStore</a> {
+    <b>let</b> opt_in_transfer = <b>borrow_global</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(account_addr).direct_transfer;
+    <b>assert</b>!(opt_in_transfer, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x1_token_EUSER_NOT_OPT_IN_DIRECT_TRANSFER">EUSER_NOT_OPT_IN_DIRECT_TRANSFER</a>));
+    <a href="token.md#0x1_token_direct_deposit">direct_deposit</a>(account_addr, <a href="token.md#0x1_token">token</a>);
 }
 </code></pre>
 
@@ -2875,13 +2875,13 @@ direct deposit if user opt in direct transfer
 
 </details>
 
-<a id="0x3_token_direct_transfer"></a>
+<a id="0x1_token_direct_transfer"></a>
 
 ## Function `direct_transfer`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_direct_transfer">direct_transfer</a>(sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, receiver: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_id: <a href="token.md#0x3_token_TokenId">token::TokenId</a>, amount: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_direct_transfer">direct_transfer</a>(sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, receiver: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_id: <a href="token.md#0x1_token_TokenId">token::TokenId</a>, amount: u64)
 </code></pre>
 
 
@@ -2890,14 +2890,14 @@ direct deposit if user opt in direct transfer
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_direct_transfer">direct_transfer</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_direct_transfer">direct_transfer</a>(
     sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     receiver: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
-    token_id: <a href="token.md#0x3_token_TokenId">TokenId</a>,
+    token_id: <a href="token.md#0x1_token_TokenId">TokenId</a>,
     amount: u64,
-) <b>acquires</b> <a href="token.md#0x3_token_TokenStore">TokenStore</a> {
-    <b>let</b> <a href="token.md#0x3_token">token</a> = <a href="token.md#0x3_token_withdraw_token">withdraw_token</a>(sender, token_id, amount);
-    <a href="token.md#0x3_token_deposit_token">deposit_token</a>(receiver, <a href="token.md#0x3_token">token</a>);
+) <b>acquires</b> <a href="token.md#0x1_token_TokenStore">TokenStore</a> {
+    <b>let</b> <a href="token.md#0x1_token">token</a> = <a href="token.md#0x1_token_withdraw_token">withdraw_token</a>(sender, token_id, amount);
+    <a href="token.md#0x1_token_deposit_token">deposit_token</a>(receiver, <a href="token.md#0x1_token">token</a>);
 }
 </code></pre>
 
@@ -2905,13 +2905,13 @@ direct deposit if user opt in direct transfer
 
 </details>
 
-<a id="0x3_token_initialize_token_store"></a>
+<a id="0x1_token_initialize_token_store"></a>
 
 ## Function `initialize_token_store`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_initialize_token_store">initialize_token_store</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_initialize_token_store">initialize_token_store</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -2920,17 +2920,17 @@ direct deposit if user opt in direct transfer
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_initialize_token_store">initialize_token_store</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
-    <b>if</b> (!<b>exists</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>))) {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_initialize_token_store">initialize_token_store</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
+    <b>if</b> (!<b>exists</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>))) {
         <b>move_to</b>(
             <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>,
-            <a href="token.md#0x3_token_TokenStore">TokenStore</a> {
+            <a href="token.md#0x1_token_TokenStore">TokenStore</a> {
                 tokens: <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_new">table::new</a>(),
                 direct_transfer: <b>false</b>,
-                deposit_events: <a href="../../starcoin-framework/doc/account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="token.md#0x3_token_DepositEvent">DepositEvent</a>&gt;(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>),
-                withdraw_events: <a href="../../starcoin-framework/doc/account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="token.md#0x3_token_WithdrawEvent">WithdrawEvent</a>&gt;(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>),
-                burn_events: <a href="../../starcoin-framework/doc/account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="token.md#0x3_token_BurnTokenEvent">BurnTokenEvent</a>&gt;(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>),
-                mutate_token_property_events: <a href="../../starcoin-framework/doc/account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="token.md#0x3_token_MutateTokenPropertyMapEvent">MutateTokenPropertyMapEvent</a>&gt;(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>),
+                deposit_events: <a href="../../starcoin-framework/doc/account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="token.md#0x1_token_DepositEvent">DepositEvent</a>&gt;(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>),
+                withdraw_events: <a href="../../starcoin-framework/doc/account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="token.md#0x1_token_WithdrawEvent">WithdrawEvent</a>&gt;(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>),
+                burn_events: <a href="../../starcoin-framework/doc/account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="token.md#0x1_token_BurnTokenEvent">BurnTokenEvent</a>&gt;(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>),
+                mutate_token_property_events: <a href="../../starcoin-framework/doc/account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="token.md#0x1_token_MutateTokenPropertyMapEvent">MutateTokenPropertyMapEvent</a>&gt;(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>),
             },
         );
     }
@@ -2941,13 +2941,13 @@ direct deposit if user opt in direct transfer
 
 </details>
 
-<a id="0x3_token_merge"></a>
+<a id="0x1_token_merge"></a>
 
 ## Function `merge`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_merge">merge</a>(dst_token: &<b>mut</b> <a href="token.md#0x3_token_Token">token::Token</a>, source_token: <a href="token.md#0x3_token_Token">token::Token</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_merge">merge</a>(dst_token: &<b>mut</b> <a href="token.md#0x1_token_Token">token::Token</a>, source_token: <a href="token.md#0x1_token_Token">token::Token</a>)
 </code></pre>
 
 
@@ -2956,10 +2956,10 @@ direct deposit if user opt in direct transfer
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_merge">merge</a>(dst_token: &<b>mut</b> <a href="token.md#0x3_token_Token">Token</a>, source_token: <a href="token.md#0x3_token_Token">Token</a>) {
-    <b>assert</b>!(&dst_token.id == &source_token.id, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_EINVALID_TOKEN_MERGE">EINVALID_TOKEN_MERGE</a>));
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_merge">merge</a>(dst_token: &<b>mut</b> <a href="token.md#0x1_token_Token">Token</a>, source_token: <a href="token.md#0x1_token_Token">Token</a>) {
+    <b>assert</b>!(&dst_token.id == &source_token.id, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_EINVALID_TOKEN_MERGE">EINVALID_TOKEN_MERGE</a>));
     dst_token.amount = dst_token.amount + source_token.amount;
-    <b>let</b> <a href="token.md#0x3_token_Token">Token</a> { id: _, amount: _, token_properties: _ } = source_token;
+    <b>let</b> <a href="token.md#0x1_token_Token">Token</a> { id: _, amount: _, token_properties: _ } = source_token;
 }
 </code></pre>
 
@@ -2967,13 +2967,13 @@ direct deposit if user opt in direct transfer
 
 </details>
 
-<a id="0x3_token_split"></a>
+<a id="0x1_token_split"></a>
 
 ## Function `split`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_split">split</a>(dst_token: &<b>mut</b> <a href="token.md#0x3_token_Token">token::Token</a>, amount: u64): <a href="token.md#0x3_token_Token">token::Token</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_split">split</a>(dst_token: &<b>mut</b> <a href="token.md#0x1_token_Token">token::Token</a>, amount: u64): <a href="token.md#0x1_token_Token">token::Token</a>
 </code></pre>
 
 
@@ -2982,15 +2982,15 @@ direct deposit if user opt in direct transfer
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_split">split</a>(dst_token: &<b>mut</b> <a href="token.md#0x3_token_Token">Token</a>, amount: u64): <a href="token.md#0x3_token_Token">Token</a> {
-    <b>assert</b>!(dst_token.id.property_version == 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="token.md#0x3_token_ENFT_NOT_SPLITABLE">ENFT_NOT_SPLITABLE</a>));
-    <b>assert</b>!(dst_token.amount &gt; amount, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_ETOKEN_SPLIT_AMOUNT_LARGER_OR_EQUAL_TO_TOKEN_AMOUNT">ETOKEN_SPLIT_AMOUNT_LARGER_OR_EQUAL_TO_TOKEN_AMOUNT</a>));
-    <b>assert</b>!(amount &gt; 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_ETOKEN_CANNOT_HAVE_ZERO_AMOUNT">ETOKEN_CANNOT_HAVE_ZERO_AMOUNT</a>));
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_split">split</a>(dst_token: &<b>mut</b> <a href="token.md#0x1_token_Token">Token</a>, amount: u64): <a href="token.md#0x1_token_Token">Token</a> {
+    <b>assert</b>!(dst_token.id.property_version == 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="token.md#0x1_token_ENFT_NOT_SPLITABLE">ENFT_NOT_SPLITABLE</a>));
+    <b>assert</b>!(dst_token.amount &gt; amount, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_ETOKEN_SPLIT_AMOUNT_LARGER_OR_EQUAL_TO_TOKEN_AMOUNT">ETOKEN_SPLIT_AMOUNT_LARGER_OR_EQUAL_TO_TOKEN_AMOUNT</a>));
+    <b>assert</b>!(amount &gt; 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_ETOKEN_CANNOT_HAVE_ZERO_AMOUNT">ETOKEN_CANNOT_HAVE_ZERO_AMOUNT</a>));
     dst_token.amount = dst_token.amount - amount;
-    <a href="token.md#0x3_token_Token">Token</a> {
+    <a href="token.md#0x1_token_Token">Token</a> {
         id: dst_token.id,
         amount,
-        token_properties: <a href="property_map.md#0x3_property_map_empty">property_map::empty</a>(),
+        token_properties: <a href="property_map.md#0x1_property_map_empty">property_map::empty</a>(),
     }
 }
 </code></pre>
@@ -2999,13 +2999,13 @@ direct deposit if user opt in direct transfer
 
 </details>
 
-<a id="0x3_token_token_id"></a>
+<a id="0x1_token_token_id"></a>
 
 ## Function `token_id`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_token_id">token_id</a>(<a href="token.md#0x3_token">token</a>: &<a href="token.md#0x3_token_Token">token::Token</a>): &<a href="token.md#0x3_token_TokenId">token::TokenId</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_token_id">token_id</a>(<a href="token.md#0x1_token">token</a>: &<a href="token.md#0x1_token_Token">token::Token</a>): &<a href="token.md#0x1_token_TokenId">token::TokenId</a>
 </code></pre>
 
 
@@ -3014,8 +3014,8 @@ direct deposit if user opt in direct transfer
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_token_id">token_id</a>(<a href="token.md#0x3_token">token</a>: &<a href="token.md#0x3_token_Token">Token</a>): &<a href="token.md#0x3_token_TokenId">TokenId</a> {
-    &<a href="token.md#0x3_token">token</a>.id
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_token_id">token_id</a>(<a href="token.md#0x1_token">token</a>: &<a href="token.md#0x1_token_Token">Token</a>): &<a href="token.md#0x1_token_TokenId">TokenId</a> {
+    &<a href="token.md#0x1_token">token</a>.id
 }
 </code></pre>
 
@@ -3023,14 +3023,14 @@ direct deposit if user opt in direct transfer
 
 </details>
 
-<a id="0x3_token_transfer"></a>
+<a id="0x1_token_transfer"></a>
 
 ## Function `transfer`
 
 Transfers <code>amount</code> of tokens from <code>from</code> to <code><b>to</b></code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_transfer">transfer</a>(from: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, id: <a href="token.md#0x3_token_TokenId">token::TokenId</a>, <b>to</b>: <b>address</b>, amount: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_transfer">transfer</a>(from: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, id: <a href="token.md#0x1_token_TokenId">token::TokenId</a>, <b>to</b>: <b>address</b>, amount: u64)
 </code></pre>
 
 
@@ -3039,16 +3039,16 @@ Transfers <code>amount</code> of tokens from <code>from</code> to <code><b>to</b
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_transfer">transfer</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_transfer">transfer</a>(
     from: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
-    id: <a href="token.md#0x3_token_TokenId">TokenId</a>,
+    id: <a href="token.md#0x1_token_TokenId">TokenId</a>,
     <b>to</b>: <b>address</b>,
     amount: u64,
-) <b>acquires</b> <a href="token.md#0x3_token_TokenStore">TokenStore</a> {
-    <b>let</b> opt_in_transfer = <b>borrow_global</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(<b>to</b>).direct_transfer;
-    <b>assert</b>!(opt_in_transfer, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x3_token_EUSER_NOT_OPT_IN_DIRECT_TRANSFER">EUSER_NOT_OPT_IN_DIRECT_TRANSFER</a>));
-    <b>let</b> <a href="token.md#0x3_token">token</a> = <a href="token.md#0x3_token_withdraw_token">withdraw_token</a>(from, id, amount);
-    <a href="token.md#0x3_token_direct_deposit">direct_deposit</a>(<b>to</b>, <a href="token.md#0x3_token">token</a>);
+) <b>acquires</b> <a href="token.md#0x1_token_TokenStore">TokenStore</a> {
+    <b>let</b> opt_in_transfer = <b>borrow_global</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(<b>to</b>).direct_transfer;
+    <b>assert</b>!(opt_in_transfer, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x1_token_EUSER_NOT_OPT_IN_DIRECT_TRANSFER">EUSER_NOT_OPT_IN_DIRECT_TRANSFER</a>));
+    <b>let</b> <a href="token.md#0x1_token">token</a> = <a href="token.md#0x1_token_withdraw_token">withdraw_token</a>(from, id, amount);
+    <a href="token.md#0x1_token_direct_deposit">direct_deposit</a>(<b>to</b>, <a href="token.md#0x1_token">token</a>);
 }
 </code></pre>
 
@@ -3056,14 +3056,14 @@ Transfers <code>amount</code> of tokens from <code>from</code> to <code><b>to</b
 
 </details>
 
-<a id="0x3_token_create_withdraw_capability"></a>
+<a id="0x1_token_create_withdraw_capability"></a>
 
 ## Function `create_withdraw_capability`
 
 Token owner can create this one-time withdraw capability with an expiration time
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_create_withdraw_capability">create_withdraw_capability</a>(owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_id: <a href="token.md#0x3_token_TokenId">token::TokenId</a>, amount: u64, expiration_sec: u64): <a href="token.md#0x3_token_WithdrawCapability">token::WithdrawCapability</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_create_withdraw_capability">create_withdraw_capability</a>(owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_id: <a href="token.md#0x1_token_TokenId">token::TokenId</a>, amount: u64, expiration_sec: u64): <a href="token.md#0x1_token_WithdrawCapability">token::WithdrawCapability</a>
 </code></pre>
 
 
@@ -3072,13 +3072,13 @@ Token owner can create this one-time withdraw capability with an expiration time
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_create_withdraw_capability">create_withdraw_capability</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_create_withdraw_capability">create_withdraw_capability</a>(
     owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
-    token_id: <a href="token.md#0x3_token_TokenId">TokenId</a>,
+    token_id: <a href="token.md#0x1_token_TokenId">TokenId</a>,
     amount: u64,
     expiration_sec: u64,
-): <a href="token.md#0x3_token_WithdrawCapability">WithdrawCapability</a> {
-    <a href="token.md#0x3_token_WithdrawCapability">WithdrawCapability</a> {
+): <a href="token.md#0x1_token_WithdrawCapability">WithdrawCapability</a> {
+    <a href="token.md#0x1_token_WithdrawCapability">WithdrawCapability</a> {
         token_owner: <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(owner),
         token_id,
         amount,
@@ -3091,14 +3091,14 @@ Token owner can create this one-time withdraw capability with an expiration time
 
 </details>
 
-<a id="0x3_token_withdraw_with_capability"></a>
+<a id="0x1_token_withdraw_with_capability"></a>
 
 ## Function `withdraw_with_capability`
 
 Withdraw the token with a capability
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_withdraw_with_capability">withdraw_with_capability</a>(withdraw_proof: <a href="token.md#0x3_token_WithdrawCapability">token::WithdrawCapability</a>): <a href="token.md#0x3_token_Token">token::Token</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_withdraw_with_capability">withdraw_with_capability</a>(withdraw_proof: <a href="token.md#0x1_token_WithdrawCapability">token::WithdrawCapability</a>): <a href="token.md#0x1_token_Token">token::Token</a>
 </code></pre>
 
 
@@ -3107,13 +3107,13 @@ Withdraw the token with a capability
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_withdraw_with_capability">withdraw_with_capability</a>(
-    withdraw_proof: <a href="token.md#0x3_token_WithdrawCapability">WithdrawCapability</a>,
-): <a href="token.md#0x3_token_Token">Token</a> <b>acquires</b> <a href="token.md#0x3_token_TokenStore">TokenStore</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_withdraw_with_capability">withdraw_with_capability</a>(
+    withdraw_proof: <a href="token.md#0x1_token_WithdrawCapability">WithdrawCapability</a>,
+): <a href="token.md#0x1_token_Token">Token</a> <b>acquires</b> <a href="token.md#0x1_token_TokenStore">TokenStore</a> {
     // verify the delegation hasn't expired yet
-    <b>assert</b>!(<a href="../../starcoin-framework/doc/timestamp.md#0x1_timestamp_now_seconds">timestamp::now_seconds</a>() &lt;= withdraw_proof.expiration_sec, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_EWITHDRAW_PROOF_EXPIRES">EWITHDRAW_PROOF_EXPIRES</a>));
+    <b>assert</b>!(<a href="../../starcoin-framework/doc/timestamp.md#0x1_timestamp_now_seconds">timestamp::now_seconds</a>() &lt;= withdraw_proof.expiration_sec, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_EWITHDRAW_PROOF_EXPIRES">EWITHDRAW_PROOF_EXPIRES</a>));
 
-    <a href="token.md#0x3_token_withdraw_with_event_internal">withdraw_with_event_internal</a>(
+    <a href="token.md#0x1_token_withdraw_with_event_internal">withdraw_with_event_internal</a>(
         withdraw_proof.token_owner,
         withdraw_proof.token_id,
         withdraw_proof.amount,
@@ -3125,14 +3125,14 @@ Withdraw the token with a capability
 
 </details>
 
-<a id="0x3_token_partial_withdraw_with_capability"></a>
+<a id="0x1_token_partial_withdraw_with_capability"></a>
 
 ## Function `partial_withdraw_with_capability`
 
 Withdraw the token with a capability.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_partial_withdraw_with_capability">partial_withdraw_with_capability</a>(withdraw_proof: <a href="token.md#0x3_token_WithdrawCapability">token::WithdrawCapability</a>, withdraw_amount: u64): (<a href="token.md#0x3_token_Token">token::Token</a>, <a href="../../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="token.md#0x3_token_WithdrawCapability">token::WithdrawCapability</a>&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_partial_withdraw_with_capability">partial_withdraw_with_capability</a>(withdraw_proof: <a href="token.md#0x1_token_WithdrawCapability">token::WithdrawCapability</a>, withdraw_amount: u64): (<a href="token.md#0x1_token_Token">token::Token</a>, <a href="../../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="token.md#0x1_token_WithdrawCapability">token::WithdrawCapability</a>&gt;)
 </code></pre>
 
 
@@ -3141,20 +3141,20 @@ Withdraw the token with a capability.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_partial_withdraw_with_capability">partial_withdraw_with_capability</a>(
-    withdraw_proof: <a href="token.md#0x3_token_WithdrawCapability">WithdrawCapability</a>,
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_partial_withdraw_with_capability">partial_withdraw_with_capability</a>(
+    withdraw_proof: <a href="token.md#0x1_token_WithdrawCapability">WithdrawCapability</a>,
     withdraw_amount: u64,
-): (<a href="token.md#0x3_token_Token">Token</a>, Option&lt;<a href="token.md#0x3_token_WithdrawCapability">WithdrawCapability</a>&gt;) <b>acquires</b> <a href="token.md#0x3_token_TokenStore">TokenStore</a> {
+): (<a href="token.md#0x1_token_Token">Token</a>, Option&lt;<a href="token.md#0x1_token_WithdrawCapability">WithdrawCapability</a>&gt;) <b>acquires</b> <a href="token.md#0x1_token_TokenStore">TokenStore</a> {
     // verify the delegation hasn't expired yet
-    <b>assert</b>!(<a href="../../starcoin-framework/doc/timestamp.md#0x1_timestamp_now_seconds">timestamp::now_seconds</a>() &lt;= withdraw_proof.expiration_sec, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_EWITHDRAW_PROOF_EXPIRES">EWITHDRAW_PROOF_EXPIRES</a>));
+    <b>assert</b>!(<a href="../../starcoin-framework/doc/timestamp.md#0x1_timestamp_now_seconds">timestamp::now_seconds</a>() &lt;= withdraw_proof.expiration_sec, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_EWITHDRAW_PROOF_EXPIRES">EWITHDRAW_PROOF_EXPIRES</a>));
 
-    <b>assert</b>!(withdraw_amount &lt;= withdraw_proof.amount, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_EINSUFFICIENT_WITHDRAW_CAPABILITY_AMOUNT">EINSUFFICIENT_WITHDRAW_CAPABILITY_AMOUNT</a>));
+    <b>assert</b>!(withdraw_amount &lt;= withdraw_proof.amount, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_EINSUFFICIENT_WITHDRAW_CAPABILITY_AMOUNT">EINSUFFICIENT_WITHDRAW_CAPABILITY_AMOUNT</a>));
 
-    <b>let</b> res: Option&lt;<a href="token.md#0x3_token_WithdrawCapability">WithdrawCapability</a>&gt; = <b>if</b> (withdraw_amount == withdraw_proof.amount) {
-        <a href="../../move-stdlib/doc/option.md#0x1_option_none">option::none</a>&lt;<a href="token.md#0x3_token_WithdrawCapability">WithdrawCapability</a>&gt;()
+    <b>let</b> res: Option&lt;<a href="token.md#0x1_token_WithdrawCapability">WithdrawCapability</a>&gt; = <b>if</b> (withdraw_amount == withdraw_proof.amount) {
+        <a href="../../move-stdlib/doc/option.md#0x1_option_none">option::none</a>&lt;<a href="token.md#0x1_token_WithdrawCapability">WithdrawCapability</a>&gt;()
     } <b>else</b> {
         <a href="../../move-stdlib/doc/option.md#0x1_option_some">option::some</a>(
-            <a href="token.md#0x3_token_WithdrawCapability">WithdrawCapability</a> {
+            <a href="token.md#0x1_token_WithdrawCapability">WithdrawCapability</a> {
                 token_owner: withdraw_proof.token_owner,
                 token_id: withdraw_proof.token_id,
                 amount: withdraw_proof.amount - withdraw_amount,
@@ -3164,7 +3164,7 @@ Withdraw the token with a capability.
     };
 
     (
-        <a href="token.md#0x3_token_withdraw_with_event_internal">withdraw_with_event_internal</a>(
+        <a href="token.md#0x1_token_withdraw_with_event_internal">withdraw_with_event_internal</a>(
             withdraw_proof.token_owner,
             withdraw_proof.token_id,
             withdraw_amount,
@@ -3179,13 +3179,13 @@ Withdraw the token with a capability.
 
 </details>
 
-<a id="0x3_token_withdraw_token"></a>
+<a id="0x1_token_withdraw_token"></a>
 
 ## Function `withdraw_token`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_withdraw_token">withdraw_token</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, id: <a href="token.md#0x3_token_TokenId">token::TokenId</a>, amount: u64): <a href="token.md#0x3_token_Token">token::Token</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_withdraw_token">withdraw_token</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, id: <a href="token.md#0x1_token_TokenId">token::TokenId</a>, amount: u64): <a href="token.md#0x1_token_Token">token::Token</a>
 </code></pre>
 
 
@@ -3194,13 +3194,13 @@ Withdraw the token with a capability.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_withdraw_token">withdraw_token</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_withdraw_token">withdraw_token</a>(
     <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
-    id: <a href="token.md#0x3_token_TokenId">TokenId</a>,
+    id: <a href="token.md#0x1_token_TokenId">TokenId</a>,
     amount: u64,
-): <a href="token.md#0x3_token_Token">Token</a> <b>acquires</b> <a href="token.md#0x3_token_TokenStore">TokenStore</a> {
+): <a href="token.md#0x1_token_Token">Token</a> <b>acquires</b> <a href="token.md#0x1_token_TokenStore">TokenStore</a> {
     <b>let</b> account_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>);
-    <a href="token.md#0x3_token_withdraw_with_event_internal">withdraw_with_event_internal</a>(account_addr, id, amount)
+    <a href="token.md#0x1_token_withdraw_with_event_internal">withdraw_with_event_internal</a>(account_addr, id, amount)
 }
 </code></pre>
 
@@ -3208,14 +3208,14 @@ Withdraw the token with a capability.
 
 </details>
 
-<a id="0x3_token_create_collection"></a>
+<a id="0x1_token_create_collection"></a>
 
 ## Function `create_collection`
 
 Create a new collection to hold tokens
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_create_collection">create_collection</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, maximum: u64, mutate_setting: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_create_collection">create_collection</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, maximum: u64, mutate_setting: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;)
 </code></pre>
 
 
@@ -3224,39 +3224,39 @@ Create a new collection to hold tokens
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_create_collection">create_collection</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_create_collection">create_collection</a>(
     creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     name: String,
     description: String,
     uri: String,
     maximum: u64,
     mutate_setting: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;
-) <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
-    <b>assert</b>!(<a href="../../move-stdlib/doc/string.md#0x1_string_length">string::length</a>(&name) &lt;= <a href="token.md#0x3_token_MAX_COLLECTION_NAME_LENGTH">MAX_COLLECTION_NAME_LENGTH</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_ECOLLECTION_NAME_TOO_LONG">ECOLLECTION_NAME_TOO_LONG</a>));
-    <b>assert</b>!(<a href="../../move-stdlib/doc/string.md#0x1_string_length">string::length</a>(&uri) &lt;= <a href="token.md#0x3_token_MAX_URI_LENGTH">MAX_URI_LENGTH</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_EURI_TOO_LONG">EURI_TOO_LONG</a>));
+) <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
+    <b>assert</b>!(<a href="../../move-stdlib/doc/string.md#0x1_string_length">string::length</a>(&name) &lt;= <a href="token.md#0x1_token_MAX_COLLECTION_NAME_LENGTH">MAX_COLLECTION_NAME_LENGTH</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_ECOLLECTION_NAME_TOO_LONG">ECOLLECTION_NAME_TOO_LONG</a>));
+    <b>assert</b>!(<a href="../../move-stdlib/doc/string.md#0x1_string_length">string::length</a>(&uri) &lt;= <a href="token.md#0x1_token_MAX_URI_LENGTH">MAX_URI_LENGTH</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_EURI_TOO_LONG">EURI_TOO_LONG</a>));
     <b>let</b> account_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
-    <b>if</b> (!<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(account_addr)) {
+    <b>if</b> (!<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(account_addr)) {
         <b>move_to</b>(
             creator,
-            <a href="token.md#0x3_token_Collections">Collections</a> {
+            <a href="token.md#0x1_token_Collections">Collections</a> {
                 collection_data: <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_new">table::new</a>(),
                 token_data: <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_new">table::new</a>(),
-                create_collection_events: <a href="../../starcoin-framework/doc/account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="token.md#0x3_token_CreateCollectionEvent">CreateCollectionEvent</a>&gt;(creator),
-                create_token_data_events: <a href="../../starcoin-framework/doc/account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="token.md#0x3_token_CreateTokenDataEvent">CreateTokenDataEvent</a>&gt;(creator),
-                mint_token_events: <a href="../../starcoin-framework/doc/account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="token.md#0x3_token_MintTokenEvent">MintTokenEvent</a>&gt;(creator),
+                create_collection_events: <a href="../../starcoin-framework/doc/account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="token.md#0x1_token_CreateCollectionEvent">CreateCollectionEvent</a>&gt;(creator),
+                create_token_data_events: <a href="../../starcoin-framework/doc/account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="token.md#0x1_token_CreateTokenDataEvent">CreateTokenDataEvent</a>&gt;(creator),
+                mint_token_events: <a href="../../starcoin-framework/doc/account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="token.md#0x1_token_MintTokenEvent">MintTokenEvent</a>&gt;(creator),
             },
         )
     };
 
-    <b>let</b> collection_data = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(account_addr).collection_data;
+    <b>let</b> collection_data = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(account_addr).collection_data;
 
     <b>assert</b>!(
         !<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(collection_data, name),
-        <a href="../../move-stdlib/doc/error.md#0x1_error_already_exists">error::already_exists</a>(<a href="token.md#0x3_token_ECOLLECTION_ALREADY_EXISTS">ECOLLECTION_ALREADY_EXISTS</a>),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_already_exists">error::already_exists</a>(<a href="token.md#0x1_token_ECOLLECTION_ALREADY_EXISTS">ECOLLECTION_ALREADY_EXISTS</a>),
     );
 
-    <b>let</b> mutability_config = <a href="token.md#0x3_token_create_collection_mutability_config">create_collection_mutability_config</a>(&mutate_setting);
-    <b>let</b> collection = <a href="token.md#0x3_token_CollectionData">CollectionData</a> {
+    <b>let</b> mutability_config = <a href="token.md#0x1_token_create_collection_mutability_config">create_collection_mutability_config</a>(&mutate_setting);
+    <b>let</b> collection = <a href="token.md#0x1_token_CollectionData">CollectionData</a> {
         description,
         name: name,
         uri,
@@ -3266,10 +3266,10 @@ Create a new collection to hold tokens
     };
 
     <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_add">table::add</a>(collection_data, name, collection);
-    <b>let</b> collection_handle = <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(account_addr);
+    <b>let</b> collection_handle = <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(account_addr);
     <b>if</b> (std::features::module_event_migration_enabled()) {
         <a href="../../starcoin-framework/doc/event.md#0x1_event_emit">event::emit</a>(
-            <a href="token.md#0x3_token_CreateCollection">CreateCollection</a> {
+            <a href="token.md#0x1_token_CreateCollection">CreateCollection</a> {
                 creator: account_addr,
                 collection_name: name,
                 uri,
@@ -3278,9 +3278,9 @@ Create a new collection to hold tokens
             }
         );
     };
-    <a href="../../starcoin-framework/doc/event.md#0x1_event_emit_event">event::emit_event</a>&lt;<a href="token.md#0x3_token_CreateCollectionEvent">CreateCollectionEvent</a>&gt;(
+    <a href="../../starcoin-framework/doc/event.md#0x1_event_emit_event">event::emit_event</a>&lt;<a href="token.md#0x1_token_CreateCollectionEvent">CreateCollectionEvent</a>&gt;(
         &<b>mut</b> collection_handle.create_collection_events,
-        <a href="token.md#0x3_token_CreateCollectionEvent">CreateCollectionEvent</a> {
+        <a href="token.md#0x1_token_CreateCollectionEvent">CreateCollectionEvent</a> {
             creator: account_addr,
             collection_name: name,
             uri,
@@ -3295,13 +3295,13 @@ Create a new collection to hold tokens
 
 </details>
 
-<a id="0x3_token_check_collection_exists"></a>
+<a id="0x1_token_check_collection_exists"></a>
 
 ## Function `check_collection_exists`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_check_collection_exists">check_collection_exists</a>(creator: <b>address</b>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_check_collection_exists">check_collection_exists</a>(creator: <b>address</b>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): bool
 </code></pre>
 
 
@@ -3310,13 +3310,13 @@ Create a new collection to hold tokens
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_check_collection_exists">check_collection_exists</a>(creator: <b>address</b>, name: String): bool <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_check_collection_exists">check_collection_exists</a>(creator: <b>address</b>, name: String): bool <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
     <b>assert</b>!(
-        <b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator),
-        <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>),
+        <b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>),
     );
 
-    <b>let</b> collection_data = &<b>borrow_global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator).collection_data;
+    <b>let</b> collection_data = &<b>borrow_global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator).collection_data;
     <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(collection_data, name)
 }
 </code></pre>
@@ -3325,13 +3325,13 @@ Create a new collection to hold tokens
 
 </details>
 
-<a id="0x3_token_check_tokendata_exists"></a>
+<a id="0x1_token_check_tokendata_exists"></a>
 
 ## Function `check_tokendata_exists`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_check_tokendata_exists">check_tokendata_exists</a>(creator: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, token_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_check_tokendata_exists">check_tokendata_exists</a>(creator: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, token_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): bool
 </code></pre>
 
 
@@ -3340,14 +3340,14 @@ Create a new collection to hold tokens
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_check_tokendata_exists">check_tokendata_exists</a>(creator: <b>address</b>, collection_name: String, token_name: String): bool <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_check_tokendata_exists">check_tokendata_exists</a>(creator: <b>address</b>, collection_name: String, token_name: String): bool <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
     <b>assert</b>!(
-        <b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator),
-        <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>),
+        <b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>),
     );
 
-    <b>let</b> token_data = &<b>borrow_global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator).token_data;
-    <b>let</b> token_data_id = <a href="token.md#0x3_token_create_token_data_id">create_token_data_id</a>(creator, collection_name, token_name);
+    <b>let</b> token_data = &<b>borrow_global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator).token_data;
+    <b>let</b> token_data_id = <a href="token.md#0x1_token_create_token_data_id">create_token_data_id</a>(creator, collection_name, token_name);
     <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(token_data, token_data_id)
 }
 </code></pre>
@@ -3356,13 +3356,13 @@ Create a new collection to hold tokens
 
 </details>
 
-<a id="0x3_token_create_tokendata"></a>
+<a id="0x1_token_create_tokendata"></a>
 
 ## Function `create_tokendata`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_create_tokendata">create_tokendata</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, maximum: u64, uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, royalty_payee_address: <b>address</b>, royalty_points_denominator: u64, royalty_points_numerator: u64, token_mutate_config: <a href="token.md#0x3_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a>, property_keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, property_values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, property_types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;): <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_create_tokendata">create_tokendata</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, maximum: u64, uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, royalty_payee_address: <b>address</b>, royalty_points_denominator: u64, royalty_points_numerator: u64, token_mutate_config: <a href="token.md#0x1_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a>, property_keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, property_values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, property_types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;): <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>
 </code></pre>
 
 
@@ -3371,7 +3371,7 @@ Create a new collection to hold tokens
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_create_tokendata">create_tokendata</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_create_tokendata">create_tokendata</a>(
     <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     collection: String,
     name: String,
@@ -3381,62 +3381,62 @@ Create a new collection to hold tokens
     royalty_payee_address: <b>address</b>,
     royalty_points_denominator: u64,
     royalty_points_numerator: u64,
-    token_mutate_config: <a href="token.md#0x3_token_TokenMutabilityConfig">TokenMutabilityConfig</a>,
+    token_mutate_config: <a href="token.md#0x1_token_TokenMutabilityConfig">TokenMutabilityConfig</a>,
     property_keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;String&gt;,
     property_values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
     property_types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;String&gt;
-): <a href="token.md#0x3_token_TokenDataId">TokenDataId</a> <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
-    <b>assert</b>!(<a href="../../move-stdlib/doc/string.md#0x1_string_length">string::length</a>(&name) &lt;= <a href="token.md#0x3_token_MAX_NFT_NAME_LENGTH">MAX_NFT_NAME_LENGTH</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_ENFT_NAME_TOO_LONG">ENFT_NAME_TOO_LONG</a>));
-    <b>assert</b>!(<a href="../../move-stdlib/doc/string.md#0x1_string_length">string::length</a>(&collection) &lt;= <a href="token.md#0x3_token_MAX_COLLECTION_NAME_LENGTH">MAX_COLLECTION_NAME_LENGTH</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_ECOLLECTION_NAME_TOO_LONG">ECOLLECTION_NAME_TOO_LONG</a>));
-    <b>assert</b>!(<a href="../../move-stdlib/doc/string.md#0x1_string_length">string::length</a>(&uri) &lt;= <a href="token.md#0x3_token_MAX_URI_LENGTH">MAX_URI_LENGTH</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_EURI_TOO_LONG">EURI_TOO_LONG</a>));
-    <b>assert</b>!(royalty_points_numerator &lt;= royalty_points_denominator, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_EINVALID_ROYALTY_NUMERATOR_DENOMINATOR">EINVALID_ROYALTY_NUMERATOR_DENOMINATOR</a>));
+): <a href="token.md#0x1_token_TokenDataId">TokenDataId</a> <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
+    <b>assert</b>!(<a href="../../move-stdlib/doc/string.md#0x1_string_length">string::length</a>(&name) &lt;= <a href="token.md#0x1_token_MAX_NFT_NAME_LENGTH">MAX_NFT_NAME_LENGTH</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_ENFT_NAME_TOO_LONG">ENFT_NAME_TOO_LONG</a>));
+    <b>assert</b>!(<a href="../../move-stdlib/doc/string.md#0x1_string_length">string::length</a>(&collection) &lt;= <a href="token.md#0x1_token_MAX_COLLECTION_NAME_LENGTH">MAX_COLLECTION_NAME_LENGTH</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_ECOLLECTION_NAME_TOO_LONG">ECOLLECTION_NAME_TOO_LONG</a>));
+    <b>assert</b>!(<a href="../../move-stdlib/doc/string.md#0x1_string_length">string::length</a>(&uri) &lt;= <a href="token.md#0x1_token_MAX_URI_LENGTH">MAX_URI_LENGTH</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_EURI_TOO_LONG">EURI_TOO_LONG</a>));
+    <b>assert</b>!(royalty_points_numerator &lt;= royalty_points_denominator, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_EINVALID_ROYALTY_NUMERATOR_DENOMINATOR">EINVALID_ROYALTY_NUMERATOR_DENOMINATOR</a>));
 
     <b>let</b> account_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>);
     <b>assert</b>!(
-        <b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(account_addr),
-        <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>),
+        <b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(account_addr),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>),
     );
-    <b>let</b> collections = <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(account_addr);
+    <b>let</b> collections = <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(account_addr);
 
-    <b>let</b> token_data_id = <a href="token.md#0x3_token_create_token_data_id">create_token_data_id</a>(account_addr, collection, name);
+    <b>let</b> token_data_id = <a href="token.md#0x1_token_create_token_data_id">create_token_data_id</a>(account_addr, collection, name);
 
     <b>assert</b>!(
         <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(&collections.collection_data, token_data_id.collection),
-        <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ECOLLECTION_NOT_PUBLISHED">ECOLLECTION_NOT_PUBLISHED</a>),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ECOLLECTION_NOT_PUBLISHED">ECOLLECTION_NOT_PUBLISHED</a>),
     );
     <b>assert</b>!(
         !<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(&collections.token_data, token_data_id),
-        <a href="../../move-stdlib/doc/error.md#0x1_error_already_exists">error::already_exists</a>(<a href="token.md#0x3_token_ETOKEN_DATA_ALREADY_EXISTS">ETOKEN_DATA_ALREADY_EXISTS</a>),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_already_exists">error::already_exists</a>(<a href="token.md#0x1_token_ETOKEN_DATA_ALREADY_EXISTS">ETOKEN_DATA_ALREADY_EXISTS</a>),
     );
 
     <b>let</b> collection = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(&<b>mut</b> collections.collection_data, token_data_id.collection);
 
     // <b>if</b> collection maximum == 0, user don't want <b>to</b> enforce supply constraint.
-    // we don't track supply <b>to</b> make <a href="token.md#0x3_token">token</a> creation parallelizable
+    // we don't track supply <b>to</b> make <a href="token.md#0x1_token">token</a> creation parallelizable
     <b>if</b> (collection.maximum &gt; 0) {
         collection.supply = collection.supply + 1;
         <b>assert</b>!(
             collection.maximum &gt;= collection.supply,
-            <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_ECREATE_WOULD_EXCEED_COLLECTION_MAXIMUM">ECREATE_WOULD_EXCEED_COLLECTION_MAXIMUM</a>),
+            <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_ECREATE_WOULD_EXCEED_COLLECTION_MAXIMUM">ECREATE_WOULD_EXCEED_COLLECTION_MAXIMUM</a>),
         );
     };
 
-    <b>let</b> token_data = <a href="token.md#0x3_token_TokenData">TokenData</a> {
+    <b>let</b> token_data = <a href="token.md#0x1_token_TokenData">TokenData</a> {
         maximum,
         largest_property_version: 0,
         supply: 0,
         uri,
-        royalty: <a href="token.md#0x3_token_create_royalty">create_royalty</a>(royalty_points_numerator, royalty_points_denominator, royalty_payee_address),
+        royalty: <a href="token.md#0x1_token_create_royalty">create_royalty</a>(royalty_points_numerator, royalty_points_denominator, royalty_payee_address),
         name,
         description,
-        default_properties: <a href="property_map.md#0x3_property_map_new">property_map::new</a>(property_keys, property_values, property_types),
+        default_properties: <a href="property_map.md#0x1_property_map_new">property_map::new</a>(property_keys, property_values, property_types),
         mutability_config: token_mutate_config,
     };
 
     <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_add">table::add</a>(&<b>mut</b> collections.token_data, token_data_id, token_data);
     <b>if</b> (std::features::module_event_migration_enabled()) {
         <a href="../../starcoin-framework/doc/event.md#0x1_event_emit">event::emit</a>(
-            <a href="token.md#0x3_token_CreateTokenData">CreateTokenData</a> {
+            <a href="token.md#0x1_token_CreateTokenData">CreateTokenData</a> {
                 id: token_data_id,
                 description,
                 maximum,
@@ -3453,9 +3453,9 @@ Create a new collection to hold tokens
         );
     };
 
-    <a href="../../starcoin-framework/doc/event.md#0x1_event_emit_event">event::emit_event</a>&lt;<a href="token.md#0x3_token_CreateTokenDataEvent">CreateTokenDataEvent</a>&gt;(
+    <a href="../../starcoin-framework/doc/event.md#0x1_event_emit_event">event::emit_event</a>&lt;<a href="token.md#0x1_token_CreateTokenDataEvent">CreateTokenDataEvent</a>&gt;(
         &<b>mut</b> collections.create_token_data_events,
-        <a href="token.md#0x3_token_CreateTokenDataEvent">CreateTokenDataEvent</a> {
+        <a href="token.md#0x1_token_CreateTokenDataEvent">CreateTokenDataEvent</a> {
             id: token_data_id,
             description,
             maximum,
@@ -3478,14 +3478,14 @@ Create a new collection to hold tokens
 
 </details>
 
-<a id="0x3_token_get_collection_supply"></a>
+<a id="0x1_token_get_collection_supply"></a>
 
 ## Function `get_collection_supply`
 
 return the number of distinct token_data_id created under this collection
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_collection_supply">get_collection_supply</a>(creator_address: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): <a href="../../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;u64&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_collection_supply">get_collection_supply</a>(creator_address: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): <a href="../../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;u64&gt;
 </code></pre>
 
 
@@ -3494,9 +3494,9 @@ return the number of distinct token_data_id created under this collection
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_collection_supply">get_collection_supply</a>(creator_address: <b>address</b>, collection_name: String): Option&lt;u64&gt; <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
-    <a href="token.md#0x3_token_assert_collection_exists">assert_collection_exists</a>(creator_address, collection_name);
-    <b>let</b> collection_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(&<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address).collection_data, collection_name);
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_collection_supply">get_collection_supply</a>(creator_address: <b>address</b>, collection_name: String): Option&lt;u64&gt; <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
+    <a href="token.md#0x1_token_assert_collection_exists">assert_collection_exists</a>(creator_address, collection_name);
+    <b>let</b> collection_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(&<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address).collection_data, collection_name);
 
     <b>if</b> (collection_data.maximum &gt; 0) {
         <a href="../../move-stdlib/doc/option.md#0x1_option_some">option::some</a>(collection_data.supply)
@@ -3510,13 +3510,13 @@ return the number of distinct token_data_id created under this collection
 
 </details>
 
-<a id="0x3_token_get_collection_description"></a>
+<a id="0x1_token_get_collection_description"></a>
 
 ## Function `get_collection_description`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_collection_description">get_collection_description</a>(creator_address: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_collection_description">get_collection_description</a>(creator_address: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>
 </code></pre>
 
 
@@ -3525,9 +3525,9 @@ return the number of distinct token_data_id created under this collection
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_collection_description">get_collection_description</a>(creator_address: <b>address</b>, collection_name: String): String <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
-    <a href="token.md#0x3_token_assert_collection_exists">assert_collection_exists</a>(creator_address, collection_name);
-    <b>let</b> collection_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(&<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address).collection_data, collection_name);
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_collection_description">get_collection_description</a>(creator_address: <b>address</b>, collection_name: String): String <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
+    <a href="token.md#0x1_token_assert_collection_exists">assert_collection_exists</a>(creator_address, collection_name);
+    <b>let</b> collection_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(&<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address).collection_data, collection_name);
     collection_data.description
 }
 </code></pre>
@@ -3536,13 +3536,13 @@ return the number of distinct token_data_id created under this collection
 
 </details>
 
-<a id="0x3_token_get_collection_uri"></a>
+<a id="0x1_token_get_collection_uri"></a>
 
 ## Function `get_collection_uri`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_collection_uri">get_collection_uri</a>(creator_address: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_collection_uri">get_collection_uri</a>(creator_address: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>
 </code></pre>
 
 
@@ -3551,9 +3551,9 @@ return the number of distinct token_data_id created under this collection
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_collection_uri">get_collection_uri</a>(creator_address: <b>address</b>, collection_name: String): String <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
-    <a href="token.md#0x3_token_assert_collection_exists">assert_collection_exists</a>(creator_address, collection_name);
-    <b>let</b> collection_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(&<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address).collection_data, collection_name);
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_collection_uri">get_collection_uri</a>(creator_address: <b>address</b>, collection_name: String): String <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
+    <a href="token.md#0x1_token_assert_collection_exists">assert_collection_exists</a>(creator_address, collection_name);
+    <b>let</b> collection_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(&<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address).collection_data, collection_name);
     collection_data.uri
 }
 </code></pre>
@@ -3562,13 +3562,13 @@ return the number of distinct token_data_id created under this collection
 
 </details>
 
-<a id="0x3_token_get_collection_maximum"></a>
+<a id="0x1_token_get_collection_maximum"></a>
 
 ## Function `get_collection_maximum`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_collection_maximum">get_collection_maximum</a>(creator_address: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_collection_maximum">get_collection_maximum</a>(creator_address: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): u64
 </code></pre>
 
 
@@ -3577,9 +3577,9 @@ return the number of distinct token_data_id created under this collection
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_collection_maximum">get_collection_maximum</a>(creator_address: <b>address</b>, collection_name: String): u64 <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
-    <a href="token.md#0x3_token_assert_collection_exists">assert_collection_exists</a>(creator_address, collection_name);
-    <b>let</b> collection_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(&<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address).collection_data, collection_name);
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_collection_maximum">get_collection_maximum</a>(creator_address: <b>address</b>, collection_name: String): u64 <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
+    <a href="token.md#0x1_token_assert_collection_exists">assert_collection_exists</a>(creator_address, collection_name);
+    <b>let</b> collection_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(&<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address).collection_data, collection_name);
     collection_data.maximum
 }
 </code></pre>
@@ -3588,14 +3588,14 @@ return the number of distinct token_data_id created under this collection
 
 </details>
 
-<a id="0x3_token_get_token_supply"></a>
+<a id="0x1_token_get_token_supply"></a>
 
 ## Function `get_token_supply`
 
 return the number of distinct token_id created under this TokenData
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_token_supply">get_token_supply</a>(creator_address: <b>address</b>, token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>): <a href="../../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;u64&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_token_supply">get_token_supply</a>(creator_address: <b>address</b>, token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>): <a href="../../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;u64&gt;
 </code></pre>
 
 
@@ -3604,10 +3604,10 @@ return the number of distinct token_id created under this TokenData
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_token_supply">get_token_supply</a>(creator_address: <b>address</b>, token_data_id: <a href="token.md#0x3_token_TokenDataId">TokenDataId</a>): Option&lt;u64&gt; <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
-    <b>assert</b>!(<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>));
-    <b>let</b> all_token_data = &<b>borrow_global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address).token_data;
-    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_token_data, token_data_id), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>));
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_token_supply">get_token_supply</a>(creator_address: <b>address</b>, token_data_id: <a href="token.md#0x1_token_TokenDataId">TokenDataId</a>): Option&lt;u64&gt; <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
+    <b>assert</b>!(<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>));
+    <b>let</b> all_token_data = &<b>borrow_global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address).token_data;
+    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_token_data, token_data_id), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>));
     <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow">table::borrow</a>(all_token_data, token_data_id);
 
     <b>if</b> (token_data.maximum &gt; 0) {
@@ -3622,14 +3622,14 @@ return the number of distinct token_id created under this TokenData
 
 </details>
 
-<a id="0x3_token_get_tokendata_largest_property_version"></a>
+<a id="0x1_token_get_tokendata_largest_property_version"></a>
 
 ## Function `get_tokendata_largest_property_version`
 
 return the largest_property_version of this TokenData
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_tokendata_largest_property_version">get_tokendata_largest_property_version</a>(creator_address: <b>address</b>, token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_tokendata_largest_property_version">get_tokendata_largest_property_version</a>(creator_address: <b>address</b>, token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>): u64
 </code></pre>
 
 
@@ -3638,10 +3638,10 @@ return the largest_property_version of this TokenData
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_tokendata_largest_property_version">get_tokendata_largest_property_version</a>(creator_address: <b>address</b>, token_data_id: <a href="token.md#0x3_token_TokenDataId">TokenDataId</a>): u64 <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
-    <b>assert</b>!(<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>));
-    <b>let</b> all_token_data = &<b>borrow_global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address).token_data;
-    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_token_data, token_data_id), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>));
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_tokendata_largest_property_version">get_tokendata_largest_property_version</a>(creator_address: <b>address</b>, token_data_id: <a href="token.md#0x1_token_TokenDataId">TokenDataId</a>): u64 <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
+    <b>assert</b>!(<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>));
+    <b>let</b> all_token_data = &<b>borrow_global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address).token_data;
+    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_token_data, token_data_id), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>));
     <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow">table::borrow</a>(all_token_data, token_data_id).largest_property_version
 }
 </code></pre>
@@ -3650,14 +3650,14 @@ return the largest_property_version of this TokenData
 
 </details>
 
-<a id="0x3_token_get_token_id"></a>
+<a id="0x1_token_get_token_id"></a>
 
 ## Function `get_token_id`
 
 return the TokenId for a given Token
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_token_id">get_token_id</a>(<a href="token.md#0x3_token">token</a>: &<a href="token.md#0x3_token_Token">token::Token</a>): <a href="token.md#0x3_token_TokenId">token::TokenId</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_token_id">get_token_id</a>(<a href="token.md#0x1_token">token</a>: &<a href="token.md#0x1_token_Token">token::Token</a>): <a href="token.md#0x1_token_TokenId">token::TokenId</a>
 </code></pre>
 
 
@@ -3666,8 +3666,8 @@ return the TokenId for a given Token
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_token_id">get_token_id</a>(<a href="token.md#0x3_token">token</a>: &<a href="token.md#0x3_token_Token">Token</a>): <a href="token.md#0x3_token_TokenId">TokenId</a> {
-    <a href="token.md#0x3_token">token</a>.id
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_token_id">get_token_id</a>(<a href="token.md#0x1_token">token</a>: &<a href="token.md#0x1_token_Token">Token</a>): <a href="token.md#0x1_token_TokenId">TokenId</a> {
+    <a href="token.md#0x1_token">token</a>.id
 }
 </code></pre>
 
@@ -3675,13 +3675,13 @@ return the TokenId for a given Token
 
 </details>
 
-<a id="0x3_token_get_direct_transfer"></a>
+<a id="0x1_token_get_direct_transfer"></a>
 
 ## Function `get_direct_transfer`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_direct_transfer">get_direct_transfer</a>(receiver: <b>address</b>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_direct_transfer">get_direct_transfer</a>(receiver: <b>address</b>): bool
 </code></pre>
 
 
@@ -3690,12 +3690,12 @@ return the TokenId for a given Token
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_direct_transfer">get_direct_transfer</a>(receiver: <b>address</b>): bool <b>acquires</b> <a href="token.md#0x3_token_TokenStore">TokenStore</a> {
-    <b>if</b> (!<b>exists</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(receiver)) {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_direct_transfer">get_direct_transfer</a>(receiver: <b>address</b>): bool <b>acquires</b> <a href="token.md#0x1_token_TokenStore">TokenStore</a> {
+    <b>if</b> (!<b>exists</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(receiver)) {
         <b>return</b> <b>false</b>
     };
 
-    <b>borrow_global</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(receiver).direct_transfer
+    <b>borrow_global</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(receiver).direct_transfer
 }
 </code></pre>
 
@@ -3703,13 +3703,13 @@ return the TokenId for a given Token
 
 </details>
 
-<a id="0x3_token_create_token_mutability_config"></a>
+<a id="0x1_token_create_token_mutability_config"></a>
 
 ## Function `create_token_mutability_config`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_create_token_mutability_config">create_token_mutability_config</a>(mutate_setting: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;): <a href="token.md#0x3_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_create_token_mutability_config">create_token_mutability_config</a>(mutate_setting: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;): <a href="token.md#0x1_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a>
 </code></pre>
 
 
@@ -3718,13 +3718,13 @@ return the TokenId for a given Token
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_create_token_mutability_config">create_token_mutability_config</a>(mutate_setting: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;): <a href="token.md#0x3_token_TokenMutabilityConfig">TokenMutabilityConfig</a> {
-    <a href="token.md#0x3_token_TokenMutabilityConfig">TokenMutabilityConfig</a> {
-        maximum: *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(mutate_setting, <a href="token.md#0x3_token_TOKEN_MAX_MUTABLE_IND">TOKEN_MAX_MUTABLE_IND</a>),
-        uri: *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(mutate_setting, <a href="token.md#0x3_token_TOKEN_URI_MUTABLE_IND">TOKEN_URI_MUTABLE_IND</a>),
-        royalty: *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(mutate_setting, <a href="token.md#0x3_token_TOKEN_ROYALTY_MUTABLE_IND">TOKEN_ROYALTY_MUTABLE_IND</a>),
-        description: *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(mutate_setting, <a href="token.md#0x3_token_TOKEN_DESCRIPTION_MUTABLE_IND">TOKEN_DESCRIPTION_MUTABLE_IND</a>),
-        properties: *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(mutate_setting, <a href="token.md#0x3_token_TOKEN_PROPERTY_MUTABLE_IND">TOKEN_PROPERTY_MUTABLE_IND</a>),
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_create_token_mutability_config">create_token_mutability_config</a>(mutate_setting: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;): <a href="token.md#0x1_token_TokenMutabilityConfig">TokenMutabilityConfig</a> {
+    <a href="token.md#0x1_token_TokenMutabilityConfig">TokenMutabilityConfig</a> {
+        maximum: *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(mutate_setting, <a href="token.md#0x1_token_TOKEN_MAX_MUTABLE_IND">TOKEN_MAX_MUTABLE_IND</a>),
+        uri: *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(mutate_setting, <a href="token.md#0x1_token_TOKEN_URI_MUTABLE_IND">TOKEN_URI_MUTABLE_IND</a>),
+        royalty: *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(mutate_setting, <a href="token.md#0x1_token_TOKEN_ROYALTY_MUTABLE_IND">TOKEN_ROYALTY_MUTABLE_IND</a>),
+        description: *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(mutate_setting, <a href="token.md#0x1_token_TOKEN_DESCRIPTION_MUTABLE_IND">TOKEN_DESCRIPTION_MUTABLE_IND</a>),
+        properties: *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(mutate_setting, <a href="token.md#0x1_token_TOKEN_PROPERTY_MUTABLE_IND">TOKEN_PROPERTY_MUTABLE_IND</a>),
     }
 }
 </code></pre>
@@ -3733,13 +3733,13 @@ return the TokenId for a given Token
 
 </details>
 
-<a id="0x3_token_create_collection_mutability_config"></a>
+<a id="0x1_token_create_collection_mutability_config"></a>
 
 ## Function `create_collection_mutability_config`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_create_collection_mutability_config">create_collection_mutability_config</a>(mutate_setting: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;): <a href="token.md#0x3_token_CollectionMutabilityConfig">token::CollectionMutabilityConfig</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_create_collection_mutability_config">create_collection_mutability_config</a>(mutate_setting: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;): <a href="token.md#0x1_token_CollectionMutabilityConfig">token::CollectionMutabilityConfig</a>
 </code></pre>
 
 
@@ -3748,11 +3748,11 @@ return the TokenId for a given Token
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_create_collection_mutability_config">create_collection_mutability_config</a>(mutate_setting: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;): <a href="token.md#0x3_token_CollectionMutabilityConfig">CollectionMutabilityConfig</a> {
-    <a href="token.md#0x3_token_CollectionMutabilityConfig">CollectionMutabilityConfig</a> {
-        description: *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(mutate_setting, <a href="token.md#0x3_token_COLLECTION_DESCRIPTION_MUTABLE_IND">COLLECTION_DESCRIPTION_MUTABLE_IND</a>),
-        uri: *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(mutate_setting, <a href="token.md#0x3_token_COLLECTION_URI_MUTABLE_IND">COLLECTION_URI_MUTABLE_IND</a>),
-        maximum: *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(mutate_setting, <a href="token.md#0x3_token_COLLECTION_MAX_MUTABLE_IND">COLLECTION_MAX_MUTABLE_IND</a>),
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_create_collection_mutability_config">create_collection_mutability_config</a>(mutate_setting: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;): <a href="token.md#0x1_token_CollectionMutabilityConfig">CollectionMutabilityConfig</a> {
+    <a href="token.md#0x1_token_CollectionMutabilityConfig">CollectionMutabilityConfig</a> {
+        description: *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(mutate_setting, <a href="token.md#0x1_token_COLLECTION_DESCRIPTION_MUTABLE_IND">COLLECTION_DESCRIPTION_MUTABLE_IND</a>),
+        uri: *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(mutate_setting, <a href="token.md#0x1_token_COLLECTION_URI_MUTABLE_IND">COLLECTION_URI_MUTABLE_IND</a>),
+        maximum: *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(mutate_setting, <a href="token.md#0x1_token_COLLECTION_MAX_MUTABLE_IND">COLLECTION_MAX_MUTABLE_IND</a>),
     }
 }
 </code></pre>
@@ -3761,13 +3761,13 @@ return the TokenId for a given Token
 
 </details>
 
-<a id="0x3_token_mint_token"></a>
+<a id="0x1_token_mint_token"></a>
 
 ## Function `mint_token`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mint_token">mint_token</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>, amount: u64): <a href="token.md#0x3_token_TokenId">token::TokenId</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mint_token">mint_token</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>, amount: u64): <a href="token.md#0x1_token_TokenId">token::TokenId</a>
 </code></pre>
 
 
@@ -3776,40 +3776,40 @@ return the TokenId for a given Token
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mint_token">mint_token</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mint_token">mint_token</a>(
     <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
-    token_data_id: <a href="token.md#0x3_token_TokenDataId">TokenDataId</a>,
+    token_data_id: <a href="token.md#0x1_token_TokenDataId">TokenDataId</a>,
     amount: u64,
-): <a href="token.md#0x3_token_TokenId">TokenId</a> <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a>, <a href="token.md#0x3_token_TokenStore">TokenStore</a> {
-    <b>assert</b>!(token_data_id.creator == <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>), <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x3_token_ENO_MINT_CAPABILITY">ENO_MINT_CAPABILITY</a>));
+): <a href="token.md#0x1_token_TokenId">TokenId</a> <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a>, <a href="token.md#0x1_token_TokenStore">TokenStore</a> {
+    <b>assert</b>!(token_data_id.creator == <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>), <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x1_token_ENO_MINT_CAPABILITY">ENO_MINT_CAPABILITY</a>));
     <b>let</b> creator_addr = token_data_id.creator;
-    <b>let</b> all_token_data = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr).token_data;
-    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_token_data, token_data_id), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>));
+    <b>let</b> all_token_data = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr).token_data;
+    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_token_data, token_data_id), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>));
     <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(all_token_data, token_data_id);
 
     <b>if</b> (token_data.maximum &gt; 0) {
-        <b>assert</b>!(token_data.supply + amount &lt;= token_data.maximum, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_EMINT_WOULD_EXCEED_TOKEN_MAXIMUM">EMINT_WOULD_EXCEED_TOKEN_MAXIMUM</a>));
+        <b>assert</b>!(token_data.supply + amount &lt;= token_data.maximum, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_EMINT_WOULD_EXCEED_TOKEN_MAXIMUM">EMINT_WOULD_EXCEED_TOKEN_MAXIMUM</a>));
         token_data.supply = token_data.supply + amount;
     };
 
     // we add more tokens <b>with</b> property_version 0
-    <b>let</b> token_id = <a href="token.md#0x3_token_create_token_id">create_token_id</a>(token_data_id, 0);
+    <b>let</b> token_id = <a href="token.md#0x1_token_create_token_id">create_token_id</a>(token_data_id, 0);
     <b>if</b> (std::features::module_event_migration_enabled()) {
-        <a href="../../starcoin-framework/doc/event.md#0x1_event_emit">event::emit</a>(<a href="token.md#0x3_token_MintToken">MintToken</a> { id: token_data_id, amount })
+        <a href="../../starcoin-framework/doc/event.md#0x1_event_emit">event::emit</a>(<a href="token.md#0x1_token_MintToken">MintToken</a> { id: token_data_id, amount })
     };
-    <a href="../../starcoin-framework/doc/event.md#0x1_event_emit_event">event::emit_event</a>&lt;<a href="token.md#0x3_token_MintTokenEvent">MintTokenEvent</a>&gt;(
-        &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr).mint_token_events,
-        <a href="token.md#0x3_token_MintTokenEvent">MintTokenEvent</a> {
+    <a href="../../starcoin-framework/doc/event.md#0x1_event_emit_event">event::emit_event</a>&lt;<a href="token.md#0x1_token_MintTokenEvent">MintTokenEvent</a>&gt;(
+        &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr).mint_token_events,
+        <a href="token.md#0x1_token_MintTokenEvent">MintTokenEvent</a> {
             id: token_data_id,
             amount,
         }
     );
 
-    <a href="token.md#0x3_token_deposit_token">deposit_token</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>,
-        <a href="token.md#0x3_token_Token">Token</a> {
+    <a href="token.md#0x1_token_deposit_token">deposit_token</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>,
+        <a href="token.md#0x1_token_Token">Token</a> {
             id: token_id,
             amount,
-            token_properties: <a href="property_map.md#0x3_property_map_empty">property_map::empty</a>(), // same <b>as</b> default properties no need <b>to</b> store
+            token_properties: <a href="property_map.md#0x1_property_map_empty">property_map::empty</a>(), // same <b>as</b> default properties no need <b>to</b> store
         }
     );
 
@@ -3821,14 +3821,14 @@ return the TokenId for a given Token
 
 </details>
 
-<a id="0x3_token_mint_token_to"></a>
+<a id="0x1_token_mint_token_to"></a>
 
 ## Function `mint_token_to`
 
 create tokens and directly deposite to receiver's address. The receiver should opt-in direct transfer
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mint_token_to">mint_token_to</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, receiver: <b>address</b>, token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>, amount: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mint_token_to">mint_token_to</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, receiver: <b>address</b>, token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>, amount: u64)
 </code></pre>
 
 
@@ -3837,46 +3837,46 @@ create tokens and directly deposite to receiver's address. The receiver should o
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mint_token_to">mint_token_to</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mint_token_to">mint_token_to</a>(
     <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     receiver: <b>address</b>,
-    token_data_id: <a href="token.md#0x3_token_TokenDataId">TokenDataId</a>,
+    token_data_id: <a href="token.md#0x1_token_TokenDataId">TokenDataId</a>,
     amount: u64,
-) <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a>, <a href="token.md#0x3_token_TokenStore">TokenStore</a> {
-    <b>assert</b>!(<b>exists</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(receiver), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ETOKEN_STORE_NOT_PUBLISHED">ETOKEN_STORE_NOT_PUBLISHED</a>));
-    <b>let</b> opt_in_transfer = <b>borrow_global</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(receiver).direct_transfer;
-    <b>assert</b>!(opt_in_transfer, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x3_token_EUSER_NOT_OPT_IN_DIRECT_TRANSFER">EUSER_NOT_OPT_IN_DIRECT_TRANSFER</a>));
+) <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a>, <a href="token.md#0x1_token_TokenStore">TokenStore</a> {
+    <b>assert</b>!(<b>exists</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(receiver), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ETOKEN_STORE_NOT_PUBLISHED">ETOKEN_STORE_NOT_PUBLISHED</a>));
+    <b>let</b> opt_in_transfer = <b>borrow_global</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(receiver).direct_transfer;
+    <b>assert</b>!(opt_in_transfer, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x1_token_EUSER_NOT_OPT_IN_DIRECT_TRANSFER">EUSER_NOT_OPT_IN_DIRECT_TRANSFER</a>));
 
-    <b>assert</b>!(token_data_id.creator == <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>), <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x3_token_ENO_MINT_CAPABILITY">ENO_MINT_CAPABILITY</a>));
+    <b>assert</b>!(token_data_id.creator == <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>), <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x1_token_ENO_MINT_CAPABILITY">ENO_MINT_CAPABILITY</a>));
     <b>let</b> creator_addr = token_data_id.creator;
-    <b>let</b> all_token_data = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr).token_data;
-    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_token_data, token_data_id), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>));
+    <b>let</b> all_token_data = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr).token_data;
+    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_token_data, token_data_id), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>));
     <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(all_token_data, token_data_id);
 
     <b>if</b> (token_data.maximum &gt; 0) {
-        <b>assert</b>!(token_data.supply + amount &lt;= token_data.maximum, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_EMINT_WOULD_EXCEED_TOKEN_MAXIMUM">EMINT_WOULD_EXCEED_TOKEN_MAXIMUM</a>));
+        <b>assert</b>!(token_data.supply + amount &lt;= token_data.maximum, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_EMINT_WOULD_EXCEED_TOKEN_MAXIMUM">EMINT_WOULD_EXCEED_TOKEN_MAXIMUM</a>));
         token_data.supply = token_data.supply + amount;
     };
 
     // we add more tokens <b>with</b> property_version 0
-    <b>let</b> token_id = <a href="token.md#0x3_token_create_token_id">create_token_id</a>(token_data_id, 0);
+    <b>let</b> token_id = <a href="token.md#0x1_token_create_token_id">create_token_id</a>(token_data_id, 0);
 
     <b>if</b> (std::features::module_event_migration_enabled()) {
-        <a href="../../starcoin-framework/doc/event.md#0x1_event_emit">event::emit</a>(<a href="token.md#0x3_token_MintToken">MintToken</a> { id: token_data_id, amount })
+        <a href="../../starcoin-framework/doc/event.md#0x1_event_emit">event::emit</a>(<a href="token.md#0x1_token_MintToken">MintToken</a> { id: token_data_id, amount })
     };
-    <a href="../../starcoin-framework/doc/event.md#0x1_event_emit_event">event::emit_event</a>&lt;<a href="token.md#0x3_token_MintTokenEvent">MintTokenEvent</a>&gt;(
-        &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr).mint_token_events,
-        <a href="token.md#0x3_token_MintTokenEvent">MintTokenEvent</a> {
+    <a href="../../starcoin-framework/doc/event.md#0x1_event_emit_event">event::emit_event</a>&lt;<a href="token.md#0x1_token_MintTokenEvent">MintTokenEvent</a>&gt;(
+        &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr).mint_token_events,
+        <a href="token.md#0x1_token_MintTokenEvent">MintTokenEvent</a> {
             id: token_data_id,
             amount,
         }
     );
 
-    <a href="token.md#0x3_token_direct_deposit">direct_deposit</a>(receiver,
-        <a href="token.md#0x3_token_Token">Token</a> {
+    <a href="token.md#0x1_token_direct_deposit">direct_deposit</a>(receiver,
+        <a href="token.md#0x1_token_Token">Token</a> {
             id: token_id,
             amount,
-            token_properties: <a href="property_map.md#0x3_property_map_empty">property_map::empty</a>(), // same <b>as</b> default properties no need <b>to</b> store
+            token_properties: <a href="property_map.md#0x1_property_map_empty">property_map::empty</a>(), // same <b>as</b> default properties no need <b>to</b> store
         }
     );
 }
@@ -3886,13 +3886,13 @@ create tokens and directly deposite to receiver's address. The receiver should o
 
 </details>
 
-<a id="0x3_token_create_token_id"></a>
+<a id="0x1_token_create_token_id"></a>
 
 ## Function `create_token_id`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_create_token_id">create_token_id</a>(token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>, property_version: u64): <a href="token.md#0x3_token_TokenId">token::TokenId</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_create_token_id">create_token_id</a>(token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>, property_version: u64): <a href="token.md#0x1_token_TokenId">token::TokenId</a>
 </code></pre>
 
 
@@ -3901,8 +3901,8 @@ create tokens and directly deposite to receiver's address. The receiver should o
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_create_token_id">create_token_id</a>(token_data_id: <a href="token.md#0x3_token_TokenDataId">TokenDataId</a>, property_version: u64): <a href="token.md#0x3_token_TokenId">TokenId</a> {
-    <a href="token.md#0x3_token_TokenId">TokenId</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_create_token_id">create_token_id</a>(token_data_id: <a href="token.md#0x1_token_TokenDataId">TokenDataId</a>, property_version: u64): <a href="token.md#0x1_token_TokenId">TokenId</a> {
+    <a href="token.md#0x1_token_TokenId">TokenId</a> {
         token_data_id,
         property_version,
     }
@@ -3913,13 +3913,13 @@ create tokens and directly deposite to receiver's address. The receiver should o
 
 </details>
 
-<a id="0x3_token_create_token_data_id"></a>
+<a id="0x1_token_create_token_data_id"></a>
 
 ## Function `create_token_data_id`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_create_token_data_id">create_token_data_id</a>(creator: <b>address</b>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_create_token_data_id">create_token_data_id</a>(creator: <b>address</b>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>
 </code></pre>
 
 
@@ -3928,14 +3928,14 @@ create tokens and directly deposite to receiver's address. The receiver should o
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_create_token_data_id">create_token_data_id</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_create_token_data_id">create_token_data_id</a>(
     creator: <b>address</b>,
     collection: String,
     name: String,
-): <a href="token.md#0x3_token_TokenDataId">TokenDataId</a> {
-    <b>assert</b>!(<a href="../../move-stdlib/doc/string.md#0x1_string_length">string::length</a>(&collection) &lt;= <a href="token.md#0x3_token_MAX_COLLECTION_NAME_LENGTH">MAX_COLLECTION_NAME_LENGTH</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_ECOLLECTION_NAME_TOO_LONG">ECOLLECTION_NAME_TOO_LONG</a>));
-    <b>assert</b>!(<a href="../../move-stdlib/doc/string.md#0x1_string_length">string::length</a>(&name) &lt;= <a href="token.md#0x3_token_MAX_NFT_NAME_LENGTH">MAX_NFT_NAME_LENGTH</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_ENFT_NAME_TOO_LONG">ENFT_NAME_TOO_LONG</a>));
-    <a href="token.md#0x3_token_TokenDataId">TokenDataId</a> { creator, collection, name }
+): <a href="token.md#0x1_token_TokenDataId">TokenDataId</a> {
+    <b>assert</b>!(<a href="../../move-stdlib/doc/string.md#0x1_string_length">string::length</a>(&collection) &lt;= <a href="token.md#0x1_token_MAX_COLLECTION_NAME_LENGTH">MAX_COLLECTION_NAME_LENGTH</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_ECOLLECTION_NAME_TOO_LONG">ECOLLECTION_NAME_TOO_LONG</a>));
+    <b>assert</b>!(<a href="../../move-stdlib/doc/string.md#0x1_string_length">string::length</a>(&name) &lt;= <a href="token.md#0x1_token_MAX_NFT_NAME_LENGTH">MAX_NFT_NAME_LENGTH</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_ENFT_NAME_TOO_LONG">ENFT_NAME_TOO_LONG</a>));
+    <a href="token.md#0x1_token_TokenDataId">TokenDataId</a> { creator, collection, name }
 }
 </code></pre>
 
@@ -3943,13 +3943,13 @@ create tokens and directly deposite to receiver's address. The receiver should o
 
 </details>
 
-<a id="0x3_token_create_token_id_raw"></a>
+<a id="0x1_token_create_token_id_raw"></a>
 
 ## Function `create_token_id_raw`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_create_token_id_raw">create_token_id_raw</a>(creator: <b>address</b>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, property_version: u64): <a href="token.md#0x3_token_TokenId">token::TokenId</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_create_token_id_raw">create_token_id_raw</a>(creator: <b>address</b>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, property_version: u64): <a href="token.md#0x1_token_TokenId">token::TokenId</a>
 </code></pre>
 
 
@@ -3958,14 +3958,14 @@ create tokens and directly deposite to receiver's address. The receiver should o
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_create_token_id_raw">create_token_id_raw</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_create_token_id_raw">create_token_id_raw</a>(
     creator: <b>address</b>,
     collection: String,
     name: String,
     property_version: u64,
-): <a href="token.md#0x3_token_TokenId">TokenId</a> {
-    <a href="token.md#0x3_token_TokenId">TokenId</a> {
-        token_data_id: <a href="token.md#0x3_token_create_token_data_id">create_token_data_id</a>(creator, collection, name),
+): <a href="token.md#0x1_token_TokenId">TokenId</a> {
+    <a href="token.md#0x1_token_TokenId">TokenId</a> {
+        token_data_id: <a href="token.md#0x1_token_create_token_data_id">create_token_data_id</a>(creator, collection, name),
         property_version,
     }
 }
@@ -3975,13 +3975,13 @@ create tokens and directly deposite to receiver's address. The receiver should o
 
 </details>
 
-<a id="0x3_token_balance_of"></a>
+<a id="0x1_token_balance_of"></a>
 
 ## Function `balance_of`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_balance_of">balance_of</a>(owner: <b>address</b>, id: <a href="token.md#0x3_token_TokenId">token::TokenId</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_balance_of">balance_of</a>(owner: <b>address</b>, id: <a href="token.md#0x1_token_TokenId">token::TokenId</a>): u64
 </code></pre>
 
 
@@ -3990,11 +3990,11 @@ create tokens and directly deposite to receiver's address. The receiver should o
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_balance_of">balance_of</a>(owner: <b>address</b>, id: <a href="token.md#0x3_token_TokenId">TokenId</a>): u64 <b>acquires</b> <a href="token.md#0x3_token_TokenStore">TokenStore</a> {
-    <b>if</b> (!<b>exists</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(owner)) {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_balance_of">balance_of</a>(owner: <b>address</b>, id: <a href="token.md#0x1_token_TokenId">TokenId</a>): u64 <b>acquires</b> <a href="token.md#0x1_token_TokenStore">TokenStore</a> {
+    <b>if</b> (!<b>exists</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(owner)) {
         <b>return</b> 0
     };
-    <b>let</b> token_store = <b>borrow_global</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(owner);
+    <b>let</b> token_store = <b>borrow_global</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(owner);
     <b>if</b> (<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(&token_store.tokens, id)) {
         <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow">table::borrow</a>(&token_store.tokens, id).amount
     } <b>else</b> {
@@ -4007,13 +4007,13 @@ create tokens and directly deposite to receiver's address. The receiver should o
 
 </details>
 
-<a id="0x3_token_has_token_store"></a>
+<a id="0x1_token_has_token_store"></a>
 
 ## Function `has_token_store`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_has_token_store">has_token_store</a>(owner: <b>address</b>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_has_token_store">has_token_store</a>(owner: <b>address</b>): bool
 </code></pre>
 
 
@@ -4022,8 +4022,8 @@ create tokens and directly deposite to receiver's address. The receiver should o
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_has_token_store">has_token_store</a>(owner: <b>address</b>): bool {
-    <b>exists</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(owner)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_has_token_store">has_token_store</a>(owner: <b>address</b>): bool {
+    <b>exists</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(owner)
 }
 </code></pre>
 
@@ -4031,13 +4031,13 @@ create tokens and directly deposite to receiver's address. The receiver should o
 
 </details>
 
-<a id="0x3_token_get_royalty"></a>
+<a id="0x1_token_get_royalty"></a>
 
 ## Function `get_royalty`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_royalty">get_royalty</a>(token_id: <a href="token.md#0x3_token_TokenId">token::TokenId</a>): <a href="token.md#0x3_token_Royalty">token::Royalty</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_royalty">get_royalty</a>(token_id: <a href="token.md#0x1_token_TokenId">token::TokenId</a>): <a href="token.md#0x1_token_Royalty">token::Royalty</a>
 </code></pre>
 
 
@@ -4046,9 +4046,9 @@ create tokens and directly deposite to receiver's address. The receiver should o
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_royalty">get_royalty</a>(token_id: <a href="token.md#0x3_token_TokenId">TokenId</a>): <a href="token.md#0x3_token_Royalty">Royalty</a> <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_royalty">get_royalty</a>(token_id: <a href="token.md#0x1_token_TokenId">TokenId</a>): <a href="token.md#0x1_token_Royalty">Royalty</a> <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
     <b>let</b> token_data_id = token_id.token_data_id;
-    <a href="token.md#0x3_token_get_tokendata_royalty">get_tokendata_royalty</a>(token_data_id)
+    <a href="token.md#0x1_token_get_tokendata_royalty">get_tokendata_royalty</a>(token_data_id)
 }
 </code></pre>
 
@@ -4056,13 +4056,13 @@ create tokens and directly deposite to receiver's address. The receiver should o
 
 </details>
 
-<a id="0x3_token_get_royalty_numerator"></a>
+<a id="0x1_token_get_royalty_numerator"></a>
 
 ## Function `get_royalty_numerator`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_royalty_numerator">get_royalty_numerator</a>(royalty: &<a href="token.md#0x3_token_Royalty">token::Royalty</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_royalty_numerator">get_royalty_numerator</a>(royalty: &<a href="token.md#0x1_token_Royalty">token::Royalty</a>): u64
 </code></pre>
 
 
@@ -4071,7 +4071,7 @@ create tokens and directly deposite to receiver's address. The receiver should o
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_royalty_numerator">get_royalty_numerator</a>(royalty: &<a href="token.md#0x3_token_Royalty">Royalty</a>): u64 {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_royalty_numerator">get_royalty_numerator</a>(royalty: &<a href="token.md#0x1_token_Royalty">Royalty</a>): u64 {
     royalty.royalty_points_numerator
 }
 </code></pre>
@@ -4080,13 +4080,13 @@ create tokens and directly deposite to receiver's address. The receiver should o
 
 </details>
 
-<a id="0x3_token_get_royalty_denominator"></a>
+<a id="0x1_token_get_royalty_denominator"></a>
 
 ## Function `get_royalty_denominator`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_royalty_denominator">get_royalty_denominator</a>(royalty: &<a href="token.md#0x3_token_Royalty">token::Royalty</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_royalty_denominator">get_royalty_denominator</a>(royalty: &<a href="token.md#0x1_token_Royalty">token::Royalty</a>): u64
 </code></pre>
 
 
@@ -4095,7 +4095,7 @@ create tokens and directly deposite to receiver's address. The receiver should o
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_royalty_denominator">get_royalty_denominator</a>(royalty: &<a href="token.md#0x3_token_Royalty">Royalty</a>): u64 {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_royalty_denominator">get_royalty_denominator</a>(royalty: &<a href="token.md#0x1_token_Royalty">Royalty</a>): u64 {
     royalty.royalty_points_denominator
 }
 </code></pre>
@@ -4104,13 +4104,13 @@ create tokens and directly deposite to receiver's address. The receiver should o
 
 </details>
 
-<a id="0x3_token_get_royalty_payee"></a>
+<a id="0x1_token_get_royalty_payee"></a>
 
 ## Function `get_royalty_payee`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_royalty_payee">get_royalty_payee</a>(royalty: &<a href="token.md#0x3_token_Royalty">token::Royalty</a>): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_royalty_payee">get_royalty_payee</a>(royalty: &<a href="token.md#0x1_token_Royalty">token::Royalty</a>): <b>address</b>
 </code></pre>
 
 
@@ -4119,7 +4119,7 @@ create tokens and directly deposite to receiver's address. The receiver should o
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_royalty_payee">get_royalty_payee</a>(royalty: &<a href="token.md#0x3_token_Royalty">Royalty</a>): <b>address</b> {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_royalty_payee">get_royalty_payee</a>(royalty: &<a href="token.md#0x1_token_Royalty">Royalty</a>): <b>address</b> {
     royalty.payee_address
 }
 </code></pre>
@@ -4128,13 +4128,13 @@ create tokens and directly deposite to receiver's address. The receiver should o
 
 </details>
 
-<a id="0x3_token_get_token_amount"></a>
+<a id="0x1_token_get_token_amount"></a>
 
 ## Function `get_token_amount`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_token_amount">get_token_amount</a>(<a href="token.md#0x3_token">token</a>: &<a href="token.md#0x3_token_Token">token::Token</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_token_amount">get_token_amount</a>(<a href="token.md#0x1_token">token</a>: &<a href="token.md#0x1_token_Token">token::Token</a>): u64
 </code></pre>
 
 
@@ -4143,8 +4143,8 @@ create tokens and directly deposite to receiver's address. The receiver should o
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_token_amount">get_token_amount</a>(<a href="token.md#0x3_token">token</a>: &<a href="token.md#0x3_token_Token">Token</a>): u64 {
-    <a href="token.md#0x3_token">token</a>.amount
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_token_amount">get_token_amount</a>(<a href="token.md#0x1_token">token</a>: &<a href="token.md#0x1_token_Token">Token</a>): u64 {
+    <a href="token.md#0x1_token">token</a>.amount
 }
 </code></pre>
 
@@ -4152,14 +4152,14 @@ create tokens and directly deposite to receiver's address. The receiver should o
 
 </details>
 
-<a id="0x3_token_get_token_id_fields"></a>
+<a id="0x1_token_get_token_id_fields"></a>
 
 ## Function `get_token_id_fields`
 
 return the creator address, collection name, token name and property_version
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_token_id_fields">get_token_id_fields</a>(token_id: &<a href="token.md#0x3_token_TokenId">token::TokenId</a>): (<b>address</b>, <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, u64)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_token_id_fields">get_token_id_fields</a>(token_id: &<a href="token.md#0x1_token_TokenId">token::TokenId</a>): (<b>address</b>, <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, u64)
 </code></pre>
 
 
@@ -4168,7 +4168,7 @@ return the creator address, collection name, token name and property_version
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_token_id_fields">get_token_id_fields</a>(token_id: &<a href="token.md#0x3_token_TokenId">TokenId</a>): (<b>address</b>, String, String, u64) {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_token_id_fields">get_token_id_fields</a>(token_id: &<a href="token.md#0x1_token_TokenId">TokenId</a>): (<b>address</b>, String, String, u64) {
     (
         token_id.token_data_id.creator,
         token_id.token_data_id.collection,
@@ -4182,13 +4182,13 @@ return the creator address, collection name, token name and property_version
 
 </details>
 
-<a id="0x3_token_get_token_data_id_fields"></a>
+<a id="0x1_token_get_token_data_id_fields"></a>
 
 ## Function `get_token_data_id_fields`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_token_data_id_fields">get_token_data_id_fields</a>(token_data_id: &<a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>): (<b>address</b>, <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_token_data_id_fields">get_token_data_id_fields</a>(token_data_id: &<a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>): (<b>address</b>, <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
 </code></pre>
 
 
@@ -4197,7 +4197,7 @@ return the creator address, collection name, token name and property_version
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_token_data_id_fields">get_token_data_id_fields</a>(token_data_id: &<a href="token.md#0x3_token_TokenDataId">TokenDataId</a>): (<b>address</b>, String, String) {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_token_data_id_fields">get_token_data_id_fields</a>(token_data_id: &<a href="token.md#0x1_token_TokenDataId">TokenDataId</a>): (<b>address</b>, String, String) {
     (
         token_data_id.creator,
         token_data_id.collection,
@@ -4210,7 +4210,7 @@ return the creator address, collection name, token name and property_version
 
 </details>
 
-<a id="0x3_token_get_property_map"></a>
+<a id="0x1_token_get_property_map"></a>
 
 ## Function `get_property_map`
 
@@ -4219,7 +4219,7 @@ if property_version = 0, return the default property map
 if property_version > 0, return the property value stored at owner's token store
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_property_map">get_property_map</a>(owner: <b>address</b>, token_id: <a href="token.md#0x3_token_TokenId">token::TokenId</a>): <a href="property_map.md#0x3_property_map_PropertyMap">property_map::PropertyMap</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_property_map">get_property_map</a>(owner: <b>address</b>, token_id: <a href="token.md#0x1_token_TokenId">token::TokenId</a>): <a href="property_map.md#0x1_property_map_PropertyMap">property_map::PropertyMap</a>
 </code></pre>
 
 
@@ -4228,17 +4228,17 @@ if property_version > 0, return the property value stored at owner's token store
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_property_map">get_property_map</a>(owner: <b>address</b>, token_id: <a href="token.md#0x3_token_TokenId">TokenId</a>): PropertyMap <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a>, <a href="token.md#0x3_token_TokenStore">TokenStore</a> {
-    <b>assert</b>!(<a href="token.md#0x3_token_balance_of">balance_of</a>(owner, token_id) &gt; 0, <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_EINSUFFICIENT_BALANCE">EINSUFFICIENT_BALANCE</a>));
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_property_map">get_property_map</a>(owner: <b>address</b>, token_id: <a href="token.md#0x1_token_TokenId">TokenId</a>): PropertyMap <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a>, <a href="token.md#0x1_token_TokenStore">TokenStore</a> {
+    <b>assert</b>!(<a href="token.md#0x1_token_balance_of">balance_of</a>(owner, token_id) &gt; 0, <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_EINSUFFICIENT_BALANCE">EINSUFFICIENT_BALANCE</a>));
     // <b>if</b> property_version = 0, <b>return</b> default property map
     <b>if</b> (token_id.property_version == 0) {
         <b>let</b> creator_addr = token_id.token_data_id.creator;
-        <b>let</b> all_token_data = &<b>borrow_global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr).token_data;
-        <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_token_data, token_id.token_data_id), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>));
+        <b>let</b> all_token_data = &<b>borrow_global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr).token_data;
+        <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_token_data, token_id.token_data_id), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>));
         <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow">table::borrow</a>(all_token_data, token_id.token_data_id);
         token_data.default_properties
     } <b>else</b> {
-        <b>let</b> tokens = &<b>borrow_global</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(owner).tokens;
+        <b>let</b> tokens = &<b>borrow_global</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(owner).tokens;
         <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow">table::borrow</a>(tokens, token_id).token_properties
     }
 }
@@ -4248,13 +4248,13 @@ if property_version > 0, return the property value stored at owner's token store
 
 </details>
 
-<a id="0x3_token_get_tokendata_maximum"></a>
+<a id="0x1_token_get_tokendata_maximum"></a>
 
 ## Function `get_tokendata_maximum`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_tokendata_maximum">get_tokendata_maximum</a>(token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_tokendata_maximum">get_tokendata_maximum</a>(token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>): u64
 </code></pre>
 
 
@@ -4263,11 +4263,11 @@ if property_version > 0, return the property value stored at owner's token store
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_tokendata_maximum">get_tokendata_maximum</a>(token_data_id: <a href="token.md#0x3_token_TokenDataId">TokenDataId</a>): u64 <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_tokendata_maximum">get_tokendata_maximum</a>(token_data_id: <a href="token.md#0x1_token_TokenDataId">TokenDataId</a>): u64 <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
     <b>let</b> creator_address = token_data_id.creator;
-    <b>assert</b>!(<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>));
-    <b>let</b> all_token_data = &<b>borrow_global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address).token_data;
-    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_token_data, token_data_id), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>));
+    <b>assert</b>!(<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>));
+    <b>let</b> all_token_data = &<b>borrow_global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address).token_data;
+    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_token_data, token_data_id), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>));
 
     <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow">table::borrow</a>(all_token_data, token_data_id);
     token_data.maximum
@@ -4278,13 +4278,13 @@ if property_version > 0, return the property value stored at owner's token store
 
 </details>
 
-<a id="0x3_token_get_tokendata_uri"></a>
+<a id="0x1_token_get_tokendata_uri"></a>
 
 ## Function `get_tokendata_uri`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_tokendata_uri">get_tokendata_uri</a>(creator: <b>address</b>, token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>): <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_tokendata_uri">get_tokendata_uri</a>(creator: <b>address</b>, token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>): <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>
 </code></pre>
 
 
@@ -4293,10 +4293,10 @@ if property_version > 0, return the property value stored at owner's token store
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_tokendata_uri">get_tokendata_uri</a>(creator: <b>address</b>, token_data_id: <a href="token.md#0x3_token_TokenDataId">TokenDataId</a>): String <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
-    <b>assert</b>!(<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>));
-    <b>let</b> all_token_data = &<b>borrow_global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator).token_data;
-    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_token_data, token_data_id), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>));
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_tokendata_uri">get_tokendata_uri</a>(creator: <b>address</b>, token_data_id: <a href="token.md#0x1_token_TokenDataId">TokenDataId</a>): String <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
+    <b>assert</b>!(<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>));
+    <b>let</b> all_token_data = &<b>borrow_global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator).token_data;
+    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_token_data, token_data_id), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>));
 
     <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow">table::borrow</a>(all_token_data, token_data_id);
     token_data.uri
@@ -4307,13 +4307,13 @@ if property_version > 0, return the property value stored at owner's token store
 
 </details>
 
-<a id="0x3_token_get_tokendata_description"></a>
+<a id="0x1_token_get_tokendata_description"></a>
 
 ## Function `get_tokendata_description`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_tokendata_description">get_tokendata_description</a>(token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>): <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_tokendata_description">get_tokendata_description</a>(token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>): <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>
 </code></pre>
 
 
@@ -4322,11 +4322,11 @@ if property_version > 0, return the property value stored at owner's token store
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_tokendata_description">get_tokendata_description</a>(token_data_id: <a href="token.md#0x3_token_TokenDataId">TokenDataId</a>): String <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_tokendata_description">get_tokendata_description</a>(token_data_id: <a href="token.md#0x1_token_TokenDataId">TokenDataId</a>): String <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
     <b>let</b> creator_address = token_data_id.creator;
-    <b>assert</b>!(<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>));
-    <b>let</b> all_token_data = &<b>borrow_global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address).token_data;
-    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_token_data, token_data_id), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>));
+    <b>assert</b>!(<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>));
+    <b>let</b> all_token_data = &<b>borrow_global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address).token_data;
+    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_token_data, token_data_id), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>));
 
     <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow">table::borrow</a>(all_token_data, token_data_id);
     token_data.description
@@ -4337,13 +4337,13 @@ if property_version > 0, return the property value stored at owner's token store
 
 </details>
 
-<a id="0x3_token_get_tokendata_royalty"></a>
+<a id="0x1_token_get_tokendata_royalty"></a>
 
 ## Function `get_tokendata_royalty`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_tokendata_royalty">get_tokendata_royalty</a>(token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>): <a href="token.md#0x3_token_Royalty">token::Royalty</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_tokendata_royalty">get_tokendata_royalty</a>(token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>): <a href="token.md#0x1_token_Royalty">token::Royalty</a>
 </code></pre>
 
 
@@ -4352,11 +4352,11 @@ if property_version > 0, return the property value stored at owner's token store
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_tokendata_royalty">get_tokendata_royalty</a>(token_data_id: <a href="token.md#0x3_token_TokenDataId">TokenDataId</a>): <a href="token.md#0x3_token_Royalty">Royalty</a> <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_tokendata_royalty">get_tokendata_royalty</a>(token_data_id: <a href="token.md#0x1_token_TokenDataId">TokenDataId</a>): <a href="token.md#0x1_token_Royalty">Royalty</a> <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
     <b>let</b> creator_address = token_data_id.creator;
-    <b>assert</b>!(<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>));
-    <b>let</b> all_token_data = &<b>borrow_global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address).token_data;
-    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_token_data, token_data_id), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>));
+    <b>assert</b>!(<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>));
+    <b>let</b> all_token_data = &<b>borrow_global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address).token_data;
+    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_token_data, token_data_id), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>));
 
     <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow">table::borrow</a>(all_token_data, token_data_id);
     token_data.royalty
@@ -4367,14 +4367,14 @@ if property_version > 0, return the property value stored at owner's token store
 
 </details>
 
-<a id="0x3_token_get_tokendata_id"></a>
+<a id="0x1_token_get_tokendata_id"></a>
 
 ## Function `get_tokendata_id`
 
 return the token_data_id from the token_id
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_tokendata_id">get_tokendata_id</a>(token_id: <a href="token.md#0x3_token_TokenId">token::TokenId</a>): <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_tokendata_id">get_tokendata_id</a>(token_id: <a href="token.md#0x1_token_TokenId">token::TokenId</a>): <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>
 </code></pre>
 
 
@@ -4383,7 +4383,7 @@ return the token_data_id from the token_id
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_tokendata_id">get_tokendata_id</a>(token_id: <a href="token.md#0x3_token_TokenId">TokenId</a>): <a href="token.md#0x3_token_TokenDataId">TokenDataId</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_tokendata_id">get_tokendata_id</a>(token_id: <a href="token.md#0x1_token_TokenId">TokenId</a>): <a href="token.md#0x1_token_TokenDataId">TokenDataId</a> {
     token_id.token_data_id
 }
 </code></pre>
@@ -4392,14 +4392,14 @@ return the token_data_id from the token_id
 
 </details>
 
-<a id="0x3_token_get_tokendata_mutability_config"></a>
+<a id="0x1_token_get_tokendata_mutability_config"></a>
 
 ## Function `get_tokendata_mutability_config`
 
 return the mutation setting of the token
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_tokendata_mutability_config">get_tokendata_mutability_config</a>(token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>): <a href="token.md#0x3_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_tokendata_mutability_config">get_tokendata_mutability_config</a>(token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>): <a href="token.md#0x1_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a>
 </code></pre>
 
 
@@ -4408,11 +4408,11 @@ return the mutation setting of the token
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_tokendata_mutability_config">get_tokendata_mutability_config</a>(token_data_id: <a href="token.md#0x3_token_TokenDataId">TokenDataId</a>): <a href="token.md#0x3_token_TokenMutabilityConfig">TokenMutabilityConfig</a> <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_tokendata_mutability_config">get_tokendata_mutability_config</a>(token_data_id: <a href="token.md#0x1_token_TokenDataId">TokenDataId</a>): <a href="token.md#0x1_token_TokenMutabilityConfig">TokenMutabilityConfig</a> <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
     <b>let</b> creator_addr = token_data_id.creator;
-    <b>assert</b>!(<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>));
-    <b>let</b> all_token_data = &<b>borrow_global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr).token_data;
-    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_token_data, token_data_id), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>));
+    <b>assert</b>!(<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>));
+    <b>let</b> all_token_data = &<b>borrow_global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr).token_data;
+    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_token_data, token_data_id), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>));
     <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow">table::borrow</a>(all_token_data, token_data_id).mutability_config
 }
 </code></pre>
@@ -4421,14 +4421,14 @@ return the mutation setting of the token
 
 </details>
 
-<a id="0x3_token_get_token_mutability_maximum"></a>
+<a id="0x1_token_get_token_mutability_maximum"></a>
 
 ## Function `get_token_mutability_maximum`
 
 return if the token's maximum is mutable
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_token_mutability_maximum">get_token_mutability_maximum</a>(config: &<a href="token.md#0x3_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_token_mutability_maximum">get_token_mutability_maximum</a>(config: &<a href="token.md#0x1_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a>): bool
 </code></pre>
 
 
@@ -4437,7 +4437,7 @@ return if the token's maximum is mutable
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_token_mutability_maximum">get_token_mutability_maximum</a>(config: &<a href="token.md#0x3_token_TokenMutabilityConfig">TokenMutabilityConfig</a>): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_token_mutability_maximum">get_token_mutability_maximum</a>(config: &<a href="token.md#0x1_token_TokenMutabilityConfig">TokenMutabilityConfig</a>): bool {
     config.maximum
 }
 </code></pre>
@@ -4446,14 +4446,14 @@ return if the token's maximum is mutable
 
 </details>
 
-<a id="0x3_token_get_token_mutability_royalty"></a>
+<a id="0x1_token_get_token_mutability_royalty"></a>
 
 ## Function `get_token_mutability_royalty`
 
 return if the token royalty is mutable with a token mutability config
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_token_mutability_royalty">get_token_mutability_royalty</a>(config: &<a href="token.md#0x3_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_token_mutability_royalty">get_token_mutability_royalty</a>(config: &<a href="token.md#0x1_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a>): bool
 </code></pre>
 
 
@@ -4462,7 +4462,7 @@ return if the token royalty is mutable with a token mutability config
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_token_mutability_royalty">get_token_mutability_royalty</a>(config: &<a href="token.md#0x3_token_TokenMutabilityConfig">TokenMutabilityConfig</a>): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_token_mutability_royalty">get_token_mutability_royalty</a>(config: &<a href="token.md#0x1_token_TokenMutabilityConfig">TokenMutabilityConfig</a>): bool {
     config.royalty
 }
 </code></pre>
@@ -4471,14 +4471,14 @@ return if the token royalty is mutable with a token mutability config
 
 </details>
 
-<a id="0x3_token_get_token_mutability_uri"></a>
+<a id="0x1_token_get_token_mutability_uri"></a>
 
 ## Function `get_token_mutability_uri`
 
 return if the token uri is mutable with a token mutability config
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_token_mutability_uri">get_token_mutability_uri</a>(config: &<a href="token.md#0x3_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_token_mutability_uri">get_token_mutability_uri</a>(config: &<a href="token.md#0x1_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a>): bool
 </code></pre>
 
 
@@ -4487,7 +4487,7 @@ return if the token uri is mutable with a token mutability config
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_token_mutability_uri">get_token_mutability_uri</a>(config: &<a href="token.md#0x3_token_TokenMutabilityConfig">TokenMutabilityConfig</a>): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_token_mutability_uri">get_token_mutability_uri</a>(config: &<a href="token.md#0x1_token_TokenMutabilityConfig">TokenMutabilityConfig</a>): bool {
     config.uri
 }
 </code></pre>
@@ -4496,14 +4496,14 @@ return if the token uri is mutable with a token mutability config
 
 </details>
 
-<a id="0x3_token_get_token_mutability_description"></a>
+<a id="0x1_token_get_token_mutability_description"></a>
 
 ## Function `get_token_mutability_description`
 
 return if the token description is mutable with a token mutability config
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_token_mutability_description">get_token_mutability_description</a>(config: &<a href="token.md#0x3_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_token_mutability_description">get_token_mutability_description</a>(config: &<a href="token.md#0x1_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a>): bool
 </code></pre>
 
 
@@ -4512,7 +4512,7 @@ return if the token description is mutable with a token mutability config
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_token_mutability_description">get_token_mutability_description</a>(config: &<a href="token.md#0x3_token_TokenMutabilityConfig">TokenMutabilityConfig</a>): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_token_mutability_description">get_token_mutability_description</a>(config: &<a href="token.md#0x1_token_TokenMutabilityConfig">TokenMutabilityConfig</a>): bool {
     config.description
 }
 </code></pre>
@@ -4521,14 +4521,14 @@ return if the token description is mutable with a token mutability config
 
 </details>
 
-<a id="0x3_token_get_token_mutability_default_properties"></a>
+<a id="0x1_token_get_token_mutability_default_properties"></a>
 
 ## Function `get_token_mutability_default_properties`
 
 return if the tokendata's default properties is mutable with a token mutability config
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_token_mutability_default_properties">get_token_mutability_default_properties</a>(config: &<a href="token.md#0x3_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_token_mutability_default_properties">get_token_mutability_default_properties</a>(config: &<a href="token.md#0x1_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a>): bool
 </code></pre>
 
 
@@ -4537,7 +4537,7 @@ return if the tokendata's default properties is mutable with a token mutability 
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_token_mutability_default_properties">get_token_mutability_default_properties</a>(config: &<a href="token.md#0x3_token_TokenMutabilityConfig">TokenMutabilityConfig</a>): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_token_mutability_default_properties">get_token_mutability_default_properties</a>(config: &<a href="token.md#0x1_token_TokenMutabilityConfig">TokenMutabilityConfig</a>): bool {
     config.properties
 }
 </code></pre>
@@ -4546,7 +4546,7 @@ return if the tokendata's default properties is mutable with a token mutability 
 
 </details>
 
-<a id="0x3_token_get_collection_mutability_config"></a>
+<a id="0x1_token_get_collection_mutability_config"></a>
 
 ## Function `get_collection_mutability_config`
 
@@ -4554,7 +4554,7 @@ return the collection mutation setting
 
 
 <pre><code>#[view]
-<b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_collection_mutability_config">get_collection_mutability_config</a>(creator: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): <a href="token.md#0x3_token_CollectionMutabilityConfig">token::CollectionMutabilityConfig</a>
+<b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_collection_mutability_config">get_collection_mutability_config</a>(creator: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): <a href="token.md#0x1_token_CollectionMutabilityConfig">token::CollectionMutabilityConfig</a>
 </code></pre>
 
 
@@ -4563,13 +4563,13 @@ return the collection mutation setting
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_collection_mutability_config">get_collection_mutability_config</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_collection_mutability_config">get_collection_mutability_config</a>(
     creator: <b>address</b>,
     collection_name: String
-): <a href="token.md#0x3_token_CollectionMutabilityConfig">CollectionMutabilityConfig</a> <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
-    <b>assert</b>!(<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>));
-    <b>let</b> all_collection_data = &<b>borrow_global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator).collection_data;
-    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_collection_data, collection_name), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ECOLLECTION_NOT_PUBLISHED">ECOLLECTION_NOT_PUBLISHED</a>));
+): <a href="token.md#0x1_token_CollectionMutabilityConfig">CollectionMutabilityConfig</a> <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
+    <b>assert</b>!(<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>));
+    <b>let</b> all_collection_data = &<b>borrow_global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator).collection_data;
+    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_collection_data, collection_name), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ECOLLECTION_NOT_PUBLISHED">ECOLLECTION_NOT_PUBLISHED</a>));
     <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow">table::borrow</a>(all_collection_data, collection_name).mutability_config
 }
 </code></pre>
@@ -4578,14 +4578,14 @@ return the collection mutation setting
 
 </details>
 
-<a id="0x3_token_get_collection_mutability_description"></a>
+<a id="0x1_token_get_collection_mutability_description"></a>
 
 ## Function `get_collection_mutability_description`
 
 return if the collection description is mutable with a collection mutability config
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_collection_mutability_description">get_collection_mutability_description</a>(config: &<a href="token.md#0x3_token_CollectionMutabilityConfig">token::CollectionMutabilityConfig</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_collection_mutability_description">get_collection_mutability_description</a>(config: &<a href="token.md#0x1_token_CollectionMutabilityConfig">token::CollectionMutabilityConfig</a>): bool
 </code></pre>
 
 
@@ -4594,7 +4594,7 @@ return if the collection description is mutable with a collection mutability con
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_collection_mutability_description">get_collection_mutability_description</a>(config: &<a href="token.md#0x3_token_CollectionMutabilityConfig">CollectionMutabilityConfig</a>): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_collection_mutability_description">get_collection_mutability_description</a>(config: &<a href="token.md#0x1_token_CollectionMutabilityConfig">CollectionMutabilityConfig</a>): bool {
     config.description
 }
 </code></pre>
@@ -4603,14 +4603,14 @@ return if the collection description is mutable with a collection mutability con
 
 </details>
 
-<a id="0x3_token_get_collection_mutability_uri"></a>
+<a id="0x1_token_get_collection_mutability_uri"></a>
 
 ## Function `get_collection_mutability_uri`
 
 return if the collection uri is mutable with a collection mutability config
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_collection_mutability_uri">get_collection_mutability_uri</a>(config: &<a href="token.md#0x3_token_CollectionMutabilityConfig">token::CollectionMutabilityConfig</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_collection_mutability_uri">get_collection_mutability_uri</a>(config: &<a href="token.md#0x1_token_CollectionMutabilityConfig">token::CollectionMutabilityConfig</a>): bool
 </code></pre>
 
 
@@ -4619,7 +4619,7 @@ return if the collection uri is mutable with a collection mutability config
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_collection_mutability_uri">get_collection_mutability_uri</a>(config: &<a href="token.md#0x3_token_CollectionMutabilityConfig">CollectionMutabilityConfig</a>): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_collection_mutability_uri">get_collection_mutability_uri</a>(config: &<a href="token.md#0x1_token_CollectionMutabilityConfig">CollectionMutabilityConfig</a>): bool {
     config.uri
 }
 </code></pre>
@@ -4628,14 +4628,14 @@ return if the collection uri is mutable with a collection mutability config
 
 </details>
 
-<a id="0x3_token_get_collection_mutability_maximum"></a>
+<a id="0x1_token_get_collection_mutability_maximum"></a>
 
 ## Function `get_collection_mutability_maximum`
 
 return if the collection maximum is mutable with collection mutability config
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_collection_mutability_maximum">get_collection_mutability_maximum</a>(config: &<a href="token.md#0x3_token_CollectionMutabilityConfig">token::CollectionMutabilityConfig</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_collection_mutability_maximum">get_collection_mutability_maximum</a>(config: &<a href="token.md#0x1_token_CollectionMutabilityConfig">token::CollectionMutabilityConfig</a>): bool
 </code></pre>
 
 
@@ -4644,7 +4644,7 @@ return if the collection maximum is mutable with collection mutability config
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_collection_mutability_maximum">get_collection_mutability_maximum</a>(config: &<a href="token.md#0x3_token_CollectionMutabilityConfig">CollectionMutabilityConfig</a>): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_collection_mutability_maximum">get_collection_mutability_maximum</a>(config: &<a href="token.md#0x1_token_CollectionMutabilityConfig">CollectionMutabilityConfig</a>): bool {
     config.maximum
 }
 </code></pre>
@@ -4653,13 +4653,13 @@ return if the collection maximum is mutable with collection mutability config
 
 </details>
 
-<a id="0x3_token_destroy_token_data"></a>
+<a id="0x1_token_destroy_token_data"></a>
 
 ## Function `destroy_token_data`
 
 
 
-<pre><code><b>fun</b> <a href="token.md#0x3_token_destroy_token_data">destroy_token_data</a>(token_data: <a href="token.md#0x3_token_TokenData">token::TokenData</a>)
+<pre><code><b>fun</b> <a href="token.md#0x1_token_destroy_token_data">destroy_token_data</a>(token_data: <a href="token.md#0x1_token_TokenData">token::TokenData</a>)
 </code></pre>
 
 
@@ -4668,8 +4668,8 @@ return if the collection maximum is mutable with collection mutability config
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="token.md#0x3_token_destroy_token_data">destroy_token_data</a>(token_data: <a href="token.md#0x3_token_TokenData">TokenData</a>) {
-    <b>let</b> <a href="token.md#0x3_token_TokenData">TokenData</a> {
+<pre><code><b>fun</b> <a href="token.md#0x1_token_destroy_token_data">destroy_token_data</a>(token_data: <a href="token.md#0x1_token_TokenData">TokenData</a>) {
+    <b>let</b> <a href="token.md#0x1_token_TokenData">TokenData</a> {
         maximum: _,
         largest_property_version: _,
         supply: _,
@@ -4687,13 +4687,13 @@ return if the collection maximum is mutable with collection mutability config
 
 </details>
 
-<a id="0x3_token_destroy_collection_data"></a>
+<a id="0x1_token_destroy_collection_data"></a>
 
 ## Function `destroy_collection_data`
 
 
 
-<pre><code><b>fun</b> <a href="token.md#0x3_token_destroy_collection_data">destroy_collection_data</a>(collection_data: <a href="token.md#0x3_token_CollectionData">token::CollectionData</a>)
+<pre><code><b>fun</b> <a href="token.md#0x1_token_destroy_collection_data">destroy_collection_data</a>(collection_data: <a href="token.md#0x1_token_CollectionData">token::CollectionData</a>)
 </code></pre>
 
 
@@ -4702,8 +4702,8 @@ return if the collection maximum is mutable with collection mutability config
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="token.md#0x3_token_destroy_collection_data">destroy_collection_data</a>(collection_data: <a href="token.md#0x3_token_CollectionData">CollectionData</a>) {
-    <b>let</b> <a href="token.md#0x3_token_CollectionData">CollectionData</a> {
+<pre><code><b>fun</b> <a href="token.md#0x1_token_destroy_collection_data">destroy_collection_data</a>(collection_data: <a href="token.md#0x1_token_CollectionData">CollectionData</a>) {
+    <b>let</b> <a href="token.md#0x1_token_CollectionData">CollectionData</a> {
         description: _,
         name: _,
         uri: _,
@@ -4718,13 +4718,13 @@ return if the collection maximum is mutable with collection mutability config
 
 </details>
 
-<a id="0x3_token_withdraw_with_event_internal"></a>
+<a id="0x1_token_withdraw_with_event_internal"></a>
 
 ## Function `withdraw_with_event_internal`
 
 
 
-<pre><code><b>fun</b> <a href="token.md#0x3_token_withdraw_with_event_internal">withdraw_with_event_internal</a>(account_addr: <b>address</b>, id: <a href="token.md#0x3_token_TokenId">token::TokenId</a>, amount: u64): <a href="token.md#0x3_token_Token">token::Token</a>
+<pre><code><b>fun</b> <a href="token.md#0x1_token_withdraw_with_event_internal">withdraw_with_event_internal</a>(account_addr: <b>address</b>, id: <a href="token.md#0x1_token_TokenId">token::TokenId</a>, amount: u64): <a href="token.md#0x1_token_Token">token::Token</a>
 </code></pre>
 
 
@@ -4733,39 +4733,39 @@ return if the collection maximum is mutable with collection mutability config
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="token.md#0x3_token_withdraw_with_event_internal">withdraw_with_event_internal</a>(
+<pre><code><b>fun</b> <a href="token.md#0x1_token_withdraw_with_event_internal">withdraw_with_event_internal</a>(
     account_addr: <b>address</b>,
-    id: <a href="token.md#0x3_token_TokenId">TokenId</a>,
+    id: <a href="token.md#0x1_token_TokenId">TokenId</a>,
     amount: u64,
-): <a href="token.md#0x3_token_Token">Token</a> <b>acquires</b> <a href="token.md#0x3_token_TokenStore">TokenStore</a> {
+): <a href="token.md#0x1_token_Token">Token</a> <b>acquires</b> <a href="token.md#0x1_token_TokenStore">TokenStore</a> {
     // It does not make sense <b>to</b> withdraw 0 tokens.
-    <b>assert</b>!(amount &gt; 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_EWITHDRAW_ZERO">EWITHDRAW_ZERO</a>));
+    <b>assert</b>!(amount &gt; 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_EWITHDRAW_ZERO">EWITHDRAW_ZERO</a>));
     // Make sure the <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a> <b>has</b> sufficient tokens <b>to</b> withdraw.
-    <b>assert</b>!(<a href="token.md#0x3_token_balance_of">balance_of</a>(account_addr, id) &gt;= amount, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_EINSUFFICIENT_BALANCE">EINSUFFICIENT_BALANCE</a>));
+    <b>assert</b>!(<a href="token.md#0x1_token_balance_of">balance_of</a>(account_addr, id) &gt;= amount, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_EINSUFFICIENT_BALANCE">EINSUFFICIENT_BALANCE</a>));
 
     <b>assert</b>!(
-        <b>exists</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(account_addr),
-        <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ETOKEN_STORE_NOT_PUBLISHED">ETOKEN_STORE_NOT_PUBLISHED</a>),
+        <b>exists</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(account_addr),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ETOKEN_STORE_NOT_PUBLISHED">ETOKEN_STORE_NOT_PUBLISHED</a>),
     );
 
-    <b>let</b> token_store = <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(account_addr);
+    <b>let</b> token_store = <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(account_addr);
     <b>if</b> (std::features::module_event_migration_enabled()) {
-        <a href="../../starcoin-framework/doc/event.md#0x1_event_emit">event::emit</a>(<a href="token.md#0x3_token_Withdraw">Withdraw</a> { id, amount })
+        <a href="../../starcoin-framework/doc/event.md#0x1_event_emit">event::emit</a>(<a href="token.md#0x1_token_Withdraw">Withdraw</a> { id, amount })
     };
-    <a href="../../starcoin-framework/doc/event.md#0x1_event_emit_event">event::emit_event</a>&lt;<a href="token.md#0x3_token_WithdrawEvent">WithdrawEvent</a>&gt;(
+    <a href="../../starcoin-framework/doc/event.md#0x1_event_emit_event">event::emit_event</a>&lt;<a href="token.md#0x1_token_WithdrawEvent">WithdrawEvent</a>&gt;(
         &<b>mut</b> token_store.withdraw_events,
-        <a href="token.md#0x3_token_WithdrawEvent">WithdrawEvent</a> { id, amount }
+        <a href="token.md#0x1_token_WithdrawEvent">WithdrawEvent</a> { id, amount }
     );
-    <b>let</b> tokens = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(account_addr).tokens;
+    <b>let</b> tokens = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(account_addr).tokens;
     <b>assert</b>!(
         <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(tokens, id),
-        <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ENO_TOKEN_IN_TOKEN_STORE">ENO_TOKEN_IN_TOKEN_STORE</a>),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ENO_TOKEN_IN_TOKEN_STORE">ENO_TOKEN_IN_TOKEN_STORE</a>),
     );
     // balance &gt; amount and amount &gt; 0 indirectly asserted that balance &gt; 0.
     <b>let</b> balance = &<b>mut</b> <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(tokens, id).amount;
     <b>if</b> (*balance &gt; amount) {
         *balance = *balance - amount;
-        <a href="token.md#0x3_token_Token">Token</a> { id, amount, token_properties: <a href="property_map.md#0x3_property_map_empty">property_map::empty</a>() }
+        <a href="token.md#0x1_token_Token">Token</a> { id, amount, token_properties: <a href="property_map.md#0x1_property_map_empty">property_map::empty</a>() }
     } <b>else</b> {
         <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_remove">table::remove</a>(tokens, id)
     }
@@ -4776,13 +4776,13 @@ return if the collection maximum is mutable with collection mutability config
 
 </details>
 
-<a id="0x3_token_update_token_property_internal"></a>
+<a id="0x1_token_update_token_property_internal"></a>
 
 ## Function `update_token_property_internal`
 
 
 
-<pre><code><b>fun</b> <a href="token.md#0x3_token_update_token_property_internal">update_token_property_internal</a>(token_owner: <b>address</b>, token_id: <a href="token.md#0x3_token_TokenId">token::TokenId</a>, keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;)
+<pre><code><b>fun</b> <a href="token.md#0x1_token_update_token_property_internal">update_token_property_internal</a>(token_owner: <b>address</b>, token_id: <a href="token.md#0x1_token_TokenId">token::TokenId</a>, keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;)
 </code></pre>
 
 
@@ -4791,19 +4791,19 @@ return if the collection maximum is mutable with collection mutability config
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="token.md#0x3_token_update_token_property_internal">update_token_property_internal</a>(
+<pre><code><b>fun</b> <a href="token.md#0x1_token_update_token_property_internal">update_token_property_internal</a>(
     token_owner: <b>address</b>,
-    token_id: <a href="token.md#0x3_token_TokenId">TokenId</a>,
+    token_id: <a href="token.md#0x1_token_TokenId">TokenId</a>,
     keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;String&gt;,
     values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
     types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;String&gt;,
-) <b>acquires</b> <a href="token.md#0x3_token_TokenStore">TokenStore</a> {
-    <b>let</b> tokens = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(token_owner).tokens;
-    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(tokens, token_id), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ENO_TOKEN_IN_TOKEN_STORE">ENO_TOKEN_IN_TOKEN_STORE</a>));
+) <b>acquires</b> <a href="token.md#0x1_token_TokenStore">TokenStore</a> {
+    <b>let</b> tokens = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(token_owner).tokens;
+    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(tokens, token_id), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ENO_TOKEN_IN_TOKEN_STORE">ENO_TOKEN_IN_TOKEN_STORE</a>));
 
     <b>let</b> value = &<b>mut</b> <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(tokens, token_id).token_properties;
-    <a href="token.md#0x3_token_assert_non_standard_reserved_property">assert_non_standard_reserved_property</a>(&keys);
-    <a href="property_map.md#0x3_property_map_update_property_map">property_map::update_property_map</a>(value, keys, values, types);
+    <a href="token.md#0x1_token_assert_non_standard_reserved_property">assert_non_standard_reserved_property</a>(&keys);
+    <a href="property_map.md#0x1_property_map_update_property_map">property_map::update_property_map</a>(value, keys, values, types);
 }
 </code></pre>
 
@@ -4811,14 +4811,14 @@ return if the collection maximum is mutable with collection mutability config
 
 </details>
 
-<a id="0x3_token_direct_deposit"></a>
+<a id="0x1_token_direct_deposit"></a>
 
 ## Function `direct_deposit`
 
 Deposit the token balance into the recipients account and emit an event.
 
 
-<pre><code><b>fun</b> <a href="token.md#0x3_token_direct_deposit">direct_deposit</a>(account_addr: <b>address</b>, <a href="token.md#0x3_token">token</a>: <a href="token.md#0x3_token_Token">token::Token</a>)
+<pre><code><b>fun</b> <a href="token.md#0x1_token_direct_deposit">direct_deposit</a>(account_addr: <b>address</b>, <a href="token.md#0x1_token">token</a>: <a href="token.md#0x1_token_Token">token::Token</a>)
 </code></pre>
 
 
@@ -4827,28 +4827,28 @@ Deposit the token balance into the recipients account and emit an event.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="token.md#0x3_token_direct_deposit">direct_deposit</a>(account_addr: <b>address</b>, <a href="token.md#0x3_token">token</a>: <a href="token.md#0x3_token_Token">Token</a>) <b>acquires</b> <a href="token.md#0x3_token_TokenStore">TokenStore</a> {
-    <b>assert</b>!(<a href="token.md#0x3_token">token</a>.amount &gt; 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x3_token_ETOKEN_CANNOT_HAVE_ZERO_AMOUNT">ETOKEN_CANNOT_HAVE_ZERO_AMOUNT</a>));
-    <b>let</b> token_store = <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(account_addr);
+<pre><code><b>fun</b> <a href="token.md#0x1_token_direct_deposit">direct_deposit</a>(account_addr: <b>address</b>, <a href="token.md#0x1_token">token</a>: <a href="token.md#0x1_token_Token">Token</a>) <b>acquires</b> <a href="token.md#0x1_token_TokenStore">TokenStore</a> {
+    <b>assert</b>!(<a href="token.md#0x1_token">token</a>.amount &gt; 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="token.md#0x1_token_ETOKEN_CANNOT_HAVE_ZERO_AMOUNT">ETOKEN_CANNOT_HAVE_ZERO_AMOUNT</a>));
+    <b>let</b> token_store = <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(account_addr);
 
     <b>if</b> (std::features::module_event_migration_enabled()) {
-        <a href="../../starcoin-framework/doc/event.md#0x1_event_emit">event::emit</a>(<a href="token.md#0x3_token_Deposit">Deposit</a> { id: <a href="token.md#0x3_token">token</a>.id, amount: <a href="token.md#0x3_token">token</a>.amount });
+        <a href="../../starcoin-framework/doc/event.md#0x1_event_emit">event::emit</a>(<a href="token.md#0x1_token_Deposit">Deposit</a> { id: <a href="token.md#0x1_token">token</a>.id, amount: <a href="token.md#0x1_token">token</a>.amount });
     };
-    <a href="../../starcoin-framework/doc/event.md#0x1_event_emit_event">event::emit_event</a>&lt;<a href="token.md#0x3_token_DepositEvent">DepositEvent</a>&gt;(
+    <a href="../../starcoin-framework/doc/event.md#0x1_event_emit_event">event::emit_event</a>&lt;<a href="token.md#0x1_token_DepositEvent">DepositEvent</a>&gt;(
         &<b>mut</b> token_store.deposit_events,
-        <a href="token.md#0x3_token_DepositEvent">DepositEvent</a> { id: <a href="token.md#0x3_token">token</a>.id, amount: <a href="token.md#0x3_token">token</a>.amount },
+        <a href="token.md#0x1_token_DepositEvent">DepositEvent</a> { id: <a href="token.md#0x1_token">token</a>.id, amount: <a href="token.md#0x1_token">token</a>.amount },
     );
 
     <b>assert</b>!(
-        <b>exists</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(account_addr),
-        <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ETOKEN_STORE_NOT_PUBLISHED">ETOKEN_STORE_NOT_PUBLISHED</a>),
+        <b>exists</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(account_addr),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ETOKEN_STORE_NOT_PUBLISHED">ETOKEN_STORE_NOT_PUBLISHED</a>),
     );
 
-    <b>if</b> (!<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(&token_store.tokens, <a href="token.md#0x3_token">token</a>.id)) {
-        <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_add">table::add</a>(&<b>mut</b> token_store.tokens, <a href="token.md#0x3_token">token</a>.id, <a href="token.md#0x3_token">token</a>);
+    <b>if</b> (!<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(&token_store.tokens, <a href="token.md#0x1_token">token</a>.id)) {
+        <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_add">table::add</a>(&<b>mut</b> token_store.tokens, <a href="token.md#0x1_token">token</a>.id, <a href="token.md#0x1_token">token</a>);
     } <b>else</b> {
-        <b>let</b> recipient_token = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(&<b>mut</b> token_store.tokens, <a href="token.md#0x3_token">token</a>.id);
-        <a href="token.md#0x3_token_merge">merge</a>(recipient_token, <a href="token.md#0x3_token">token</a>);
+        <b>let</b> recipient_token = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_borrow_mut">table::borrow_mut</a>(&<b>mut</b> token_store.tokens, <a href="token.md#0x1_token">token</a>.id);
+        <a href="token.md#0x1_token_merge">merge</a>(recipient_token, <a href="token.md#0x1_token">token</a>);
     };
 }
 </code></pre>
@@ -4857,13 +4857,13 @@ Deposit the token balance into the recipients account and emit an event.
 
 </details>
 
-<a id="0x3_token_assert_collection_exists"></a>
+<a id="0x1_token_assert_collection_exists"></a>
 
 ## Function `assert_collection_exists`
 
 
 
-<pre><code><b>fun</b> <a href="token.md#0x3_token_assert_collection_exists">assert_collection_exists</a>(creator_address: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
+<pre><code><b>fun</b> <a href="token.md#0x1_token_assert_collection_exists">assert_collection_exists</a>(creator_address: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
 </code></pre>
 
 
@@ -4872,10 +4872,10 @@ Deposit the token balance into the recipients account and emit an event.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="token.md#0x3_token_assert_collection_exists">assert_collection_exists</a>(creator_address: <b>address</b>, collection_name: String) <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
-    <b>assert</b>!(<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>));
-    <b>let</b> all_collection_data = &<b>borrow_global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address).collection_data;
-    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_collection_data, collection_name), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ECOLLECTION_NOT_PUBLISHED">ECOLLECTION_NOT_PUBLISHED</a>));
+<pre><code><b>fun</b> <a href="token.md#0x1_token_assert_collection_exists">assert_collection_exists</a>(creator_address: <b>address</b>, collection_name: String) <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
+    <b>assert</b>!(<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>));
+    <b>let</b> all_collection_data = &<b>borrow_global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address).collection_data;
+    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_collection_data, collection_name), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ECOLLECTION_NOT_PUBLISHED">ECOLLECTION_NOT_PUBLISHED</a>));
 }
 </code></pre>
 
@@ -4883,13 +4883,13 @@ Deposit the token balance into the recipients account and emit an event.
 
 </details>
 
-<a id="0x3_token_assert_tokendata_exists"></a>
+<a id="0x1_token_assert_tokendata_exists"></a>
 
 ## Function `assert_tokendata_exists`
 
 
 
-<pre><code><b>fun</b> <a href="token.md#0x3_token_assert_tokendata_exists">assert_tokendata_exists</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>)
+<pre><code><b>fun</b> <a href="token.md#0x1_token_assert_tokendata_exists">assert_tokendata_exists</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>)
 </code></pre>
 
 
@@ -4898,12 +4898,12 @@ Deposit the token balance into the recipients account and emit an event.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="token.md#0x3_token_assert_tokendata_exists">assert_tokendata_exists</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x3_token_TokenDataId">TokenDataId</a>) <b>acquires</b> <a href="token.md#0x3_token_Collections">Collections</a> {
+<pre><code><b>fun</b> <a href="token.md#0x1_token_assert_tokendata_exists">assert_tokendata_exists</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x1_token_TokenDataId">TokenDataId</a>) <b>acquires</b> <a href="token.md#0x1_token_Collections">Collections</a> {
     <b>let</b> creator_addr = token_data_id.creator;
-    <b>assert</b>!(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator) == creator_addr, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x3_token_ENO_MUTATE_CAPABILITY">ENO_MUTATE_CAPABILITY</a>));
-    <b>assert</b>!(<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>));
-    <b>let</b> all_token_data = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr).token_data;
-    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_token_data, token_data_id), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x3_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>));
+    <b>assert</b>!(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator) == creator_addr, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x1_token_ENO_MUTATE_CAPABILITY">ENO_MUTATE_CAPABILITY</a>));
+    <b>assert</b>!(<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ECOLLECTIONS_NOT_PUBLISHED">ECOLLECTIONS_NOT_PUBLISHED</a>));
+    <b>let</b> all_token_data = &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr).token_data;
+    <b>assert</b>!(<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(all_token_data, token_data_id), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="token.md#0x1_token_ETOKEN_DATA_NOT_PUBLISHED">ETOKEN_DATA_NOT_PUBLISHED</a>));
 }
 </code></pre>
 
@@ -4911,13 +4911,13 @@ Deposit the token balance into the recipients account and emit an event.
 
 </details>
 
-<a id="0x3_token_assert_non_standard_reserved_property"></a>
+<a id="0x1_token_assert_non_standard_reserved_property"></a>
 
 ## Function `assert_non_standard_reserved_property`
 
 
 
-<pre><code><b>fun</b> <a href="token.md#0x3_token_assert_non_standard_reserved_property">assert_non_standard_reserved_property</a>(keys: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;)
+<pre><code><b>fun</b> <a href="token.md#0x1_token_assert_non_standard_reserved_property">assert_non_standard_reserved_property</a>(keys: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;)
 </code></pre>
 
 
@@ -4926,13 +4926,13 @@ Deposit the token balance into the recipients account and emit an event.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="token.md#0x3_token_assert_non_standard_reserved_property">assert_non_standard_reserved_property</a>(keys: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;String&gt;) {
+<pre><code><b>fun</b> <a href="token.md#0x1_token_assert_non_standard_reserved_property">assert_non_standard_reserved_property</a>(keys: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;String&gt;) {
     <a href="../../move-stdlib/doc/vector.md#0x1_vector_for_each_ref">vector::for_each_ref</a>(keys, |key| {
         <b>let</b> key: &String = key;
         <b>let</b> length = <a href="../../move-stdlib/doc/string.md#0x1_string_length">string::length</a>(key);
         <b>if</b> (length &gt;= 6) {
             <b>let</b> prefix = <a href="../../move-stdlib/doc/string.md#0x1_string_sub_string">string::sub_string</a>(&*key, 0, 6);
-            <b>assert</b>!(prefix != <a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"TOKEN_"), <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x3_token_EPROPERTY_RESERVED_BY_STANDARD">EPROPERTY_RESERVED_BY_STANDARD</a>));
+            <b>assert</b>!(prefix != <a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"TOKEN_"), <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="token.md#0x1_token_EPROPERTY_RESERVED_BY_STANDARD">EPROPERTY_RESERVED_BY_STANDARD</a>));
         };
     });
 }
@@ -4942,13 +4942,13 @@ Deposit the token balance into the recipients account and emit an event.
 
 </details>
 
-<a id="0x3_token_initialize_token_script"></a>
+<a id="0x1_token_initialize_token_script"></a>
 
 ## Function `initialize_token_script`
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_initialize_token_script">initialize_token_script</a>(_account: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_initialize_token_script">initialize_token_script</a>(_account: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -4957,7 +4957,7 @@ Deposit the token balance into the recipients account and emit an event.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_initialize_token_script">initialize_token_script</a>(_account: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_initialize_token_script">initialize_token_script</a>(_account: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
     <b>abort</b> 0
 }
 </code></pre>
@@ -4966,13 +4966,13 @@ Deposit the token balance into the recipients account and emit an event.
 
 </details>
 
-<a id="0x3_token_initialize_token"></a>
+<a id="0x1_token_initialize_token"></a>
 
 ## Function `initialize_token`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_initialize_token">initialize_token</a>(_account: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, _token_id: <a href="token.md#0x3_token_TokenId">token::TokenId</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_initialize_token">initialize_token</a>(_account: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, _token_id: <a href="token.md#0x1_token_TokenId">token::TokenId</a>)
 </code></pre>
 
 
@@ -4981,7 +4981,7 @@ Deposit the token balance into the recipients account and emit an event.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_initialize_token">initialize_token</a>(_account: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, _token_id: <a href="token.md#0x3_token_TokenId">TokenId</a>) {
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_initialize_token">initialize_token</a>(_account: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, _token_id: <a href="token.md#0x1_token_TokenId">TokenId</a>) {
     <b>abort</b> 0
 }
 </code></pre>
@@ -5007,7 +5007,7 @@ Deposit the token balance into the recipients account and emit an event.
 ### Function `create_collection_script`
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_create_collection_script">create_collection_script</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, maximum: u64, mutate_setting: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_create_collection_script">create_collection_script</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, maximum: u64, mutate_setting: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;)
 </code></pre>
 
 
@@ -5016,7 +5016,7 @@ The length of the uri is up to MAX_URI_LENGTH;
 
 
 <pre><code><b>pragma</b> aborts_if_is_partial;
-<b>include</b> <a href="token.md#0x3_token_CreateCollectionAbortsIf">CreateCollectionAbortsIf</a>;
+<b>include</b> <a href="token.md#0x1_token_CreateCollectionAbortsIf">CreateCollectionAbortsIf</a>;
 </code></pre>
 
 
@@ -5026,7 +5026,7 @@ The length of the uri is up to MAX_URI_LENGTH;
 ### Function `create_token_script`
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_create_token_script">create_token_script</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, balance: u64, maximum: u64, uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, royalty_payee_address: <b>address</b>, royalty_points_denominator: u64, royalty_points_numerator: u64, mutate_setting: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;, property_keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, property_values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, property_types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_create_token_script">create_token_script</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, balance: u64, maximum: u64, uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, royalty_payee_address: <b>address</b>, royalty_points_denominator: u64, royalty_points_numerator: u64, mutate_setting: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;, property_keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, property_values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, property_types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;)
 </code></pre>
 
 
@@ -5038,28 +5038,28 @@ The sum of supply and mint Token is less than maximum.
 
 <pre><code><b>pragma</b> aborts_if_is_partial;
 <b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>);
-<b>let</b> token_data_id = <a href="token.md#0x3_token_spec_create_tokendata">spec_create_tokendata</a>(addr, collection, name);
+<b>let</b> token_data_id = <a href="token.md#0x1_token_spec_create_tokendata">spec_create_tokendata</a>(addr, collection, name);
 <b>let</b> creator_addr = token_data_id.creator;
-<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr).token_data;
+<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr).token_data;
 <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_get">table::spec_get</a>(all_token_data, token_data_id);
 <b>aborts_if</b> token_data_id.creator != addr;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr);
 <b>aborts_if</b> balance &lt;= 0;
-<b>include</b> <a href="token.md#0x3_token_CreateTokenMutabilityConfigAbortsIf">CreateTokenMutabilityConfigAbortsIf</a>;
-<b>include</b> <a href="token.md#0x3_token_CreateTokenMutabilityConfigAbortsIf">CreateTokenMutabilityConfigAbortsIf</a>;
+<b>include</b> <a href="token.md#0x1_token_CreateTokenMutabilityConfigAbortsIf">CreateTokenMutabilityConfigAbortsIf</a>;
+<b>include</b> <a href="token.md#0x1_token_CreateTokenMutabilityConfigAbortsIf">CreateTokenMutabilityConfigAbortsIf</a>;
 </code></pre>
 
 
 
 
-<a id="0x3_token_spec_create_tokendata"></a>
+<a id="0x1_token_spec_create_tokendata"></a>
 
 
-<pre><code><b>fun</b> <a href="token.md#0x3_token_spec_create_tokendata">spec_create_tokendata</a>(
+<pre><code><b>fun</b> <a href="token.md#0x1_token_spec_create_tokendata">spec_create_tokendata</a>(
    creator: <b>address</b>,
    collection: String,
-   name: String): <a href="token.md#0x3_token_TokenDataId">TokenDataId</a> {
-   <a href="token.md#0x3_token_TokenDataId">TokenDataId</a> { creator, collection, name }
+   name: String): <a href="token.md#0x1_token_TokenDataId">TokenDataId</a> {
+   <a href="token.md#0x1_token_TokenDataId">TokenDataId</a> { creator, collection, name }
 }
 </code></pre>
 
@@ -5070,7 +5070,7 @@ The sum of supply and mint Token is less than maximum.
 ### Function `mint_script`
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_mint_script">mint_script</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_address: <b>address</b>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, amount: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_mint_script">mint_script</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_address: <b>address</b>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, amount: u64)
 </code></pre>
 
 
@@ -5078,22 +5078,22 @@ only creator of the tokendata can mint tokens
 
 
 <pre><code><b>pragma</b> aborts_if_is_partial;
-<b>let</b> token_data_id = <a href="token.md#0x3_token_spec_create_token_data_id">spec_create_token_data_id</a>(
+<b>let</b> token_data_id = <a href="token.md#0x1_token_spec_create_token_data_id">spec_create_token_data_id</a>(
     token_data_address,
     collection,
     name,
 );
 <b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>);
 <b>let</b> creator_addr = token_data_id.creator;
-<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr).token_data;
+<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr).token_data;
 <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_get">table::spec_get</a>(all_token_data, token_data_id);
 <b>aborts_if</b> token_data_id.creator != <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>);
-<b>include</b> <a href="token.md#0x3_token_CreateTokenDataIdAbortsIf">CreateTokenDataIdAbortsIf</a>{
+<b>include</b> <a href="token.md#0x1_token_CreateTokenDataIdAbortsIf">CreateTokenDataIdAbortsIf</a>{
 creator: token_data_address,
 collection: collection,
 name: name
 };
-<b>include</b> <a href="token.md#0x3_token_MintTokenAbortsIf">MintTokenAbortsIf</a> {
+<b>include</b> <a href="token.md#0x1_token_MintTokenAbortsIf">MintTokenAbortsIf</a> {
 token_data_id: token_data_id
 };
 </code></pre>
@@ -5105,7 +5105,7 @@ token_data_id: token_data_id
 ### Function `mutate_token_properties`
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_mutate_token_properties">mutate_token_properties</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_owner: <b>address</b>, creator: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, token_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, token_property_version: u64, amount: u64, keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_mutate_token_properties">mutate_token_properties</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_owner: <b>address</b>, creator: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, token_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, token_property_version: u64, amount: u64, keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;)
 </code></pre>
 
 
@@ -5115,7 +5115,7 @@ The signer is creator.
 <pre><code><b>pragma</b> aborts_if_is_partial;
 <b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>);
 <b>aborts_if</b> addr != creator;
-<b>include</b> <a href="token.md#0x3_token_CreateTokenDataIdAbortsIf">CreateTokenDataIdAbortsIf</a> {
+<b>include</b> <a href="token.md#0x1_token_CreateTokenDataIdAbortsIf">CreateTokenDataIdAbortsIf</a> {
     creator: creator,
     collection: collection_name,
     name: token_name
@@ -5129,14 +5129,14 @@ The signer is creator.
 ### Function `direct_transfer_script`
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_direct_transfer_script">direct_transfer_script</a>(sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, receiver: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, creators_address: <b>address</b>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, property_version: u64, amount: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_direct_transfer_script">direct_transfer_script</a>(sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, receiver: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, creators_address: <b>address</b>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, property_version: u64, amount: u64)
 </code></pre>
 
 
 
 
 <pre><code><b>pragma</b> aborts_if_is_partial;
-<b>include</b> <a href="token.md#0x3_token_CreateTokenDataIdAbortsIf">CreateTokenDataIdAbortsIf</a>{
+<b>include</b> <a href="token.md#0x1_token_CreateTokenDataIdAbortsIf">CreateTokenDataIdAbortsIf</a>{
     creator: creators_address,
     collection: collection,
     name: name
@@ -5150,7 +5150,7 @@ The signer is creator.
 ### Function `opt_in_direct_transfer`
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_opt_in_direct_transfer">opt_in_direct_transfer</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, opt_in: bool)
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_opt_in_direct_transfer">opt_in_direct_transfer</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, opt_in: bool)
 </code></pre>
 
 
@@ -5159,12 +5159,12 @@ The signer is creator.
 <pre><code><b>pragma</b> aborts_if_is_partial;
 <b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>);
 <b>let</b> account_addr = <b>global</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(addr) && !<b>exists</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(addr) && account_addr.guid_creation_num + 4 &gt;= <a href="../../starcoin-framework/doc/account.md#0x1_account_MAX_GUID_CREATION_NUM">account::MAX_GUID_CREATION_NUM</a>;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(addr) && account_addr.guid_creation_num + 4 &gt; MAX_U64;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && account_addr.guid_creation_num + 9 &gt; <a href="../../starcoin-framework/doc/account.md#0x1_account_MAX_GUID_CREATION_NUM">account::MAX_GUID_CREATION_NUM</a>;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && account_addr.guid_creation_num + 9 &gt; MAX_U64;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && !<b>exists</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(addr) && !<b>exists</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(addr) && account_addr.guid_creation_num + 4 &gt;= <a href="../../starcoin-framework/doc/account.md#0x1_account_MAX_GUID_CREATION_NUM">account::MAX_GUID_CREATION_NUM</a>;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(addr) && account_addr.guid_creation_num + 4 &gt; MAX_U64;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x1_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && account_addr.guid_creation_num + 9 &gt; <a href="../../starcoin-framework/doc/account.md#0x1_account_MAX_GUID_CREATION_NUM">account::MAX_GUID_CREATION_NUM</a>;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x1_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && account_addr.guid_creation_num + 9 &gt; MAX_U64;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x1_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && !<b>exists</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
 </code></pre>
 
 
@@ -5174,14 +5174,14 @@ The signer is creator.
 ### Function `transfer_with_opt_in`
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_transfer_with_opt_in">transfer_with_opt_in</a>(from: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, creator: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, token_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, token_property_version: u64, <b>to</b>: <b>address</b>, amount: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_transfer_with_opt_in">transfer_with_opt_in</a>(from: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, creator: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, token_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, token_property_version: u64, <b>to</b>: <b>address</b>, amount: u64)
 </code></pre>
 
 
 
 
 <pre><code><b>pragma</b> aborts_if_is_partial;
-<b>include</b> <a href="token.md#0x3_token_CreateTokenDataIdAbortsIf">CreateTokenDataIdAbortsIf</a>{
+<b>include</b> <a href="token.md#0x1_token_CreateTokenDataIdAbortsIf">CreateTokenDataIdAbortsIf</a>{
     creator: creator,
     collection: collection_name,
     name: token_name
@@ -5195,7 +5195,7 @@ The signer is creator.
 ### Function `burn_by_creator`
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_burn_by_creator">burn_by_creator</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, owner: <b>address</b>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, property_version: u64, amount: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_burn_by_creator">burn_by_creator</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, owner: <b>address</b>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, property_version: u64, amount: u64)
 </code></pre>
 
 
@@ -5203,17 +5203,17 @@ The signer is creator.
 
 <pre><code><b>pragma</b> aborts_if_is_partial;
 <b>let</b> creator_address = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
-<b>let</b> token_id = <a href="token.md#0x3_token_spec_create_token_id_raw">spec_create_token_id_raw</a>(creator_address, collection, name, property_version);
+<b>let</b> token_id = <a href="token.md#0x1_token_spec_create_token_id_raw">spec_create_token_id_raw</a>(creator_address, collection, name, property_version);
 <b>let</b> creator_addr = token_id.token_data_id.creator;
-<b>let</b> collections = <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address);
+<b>let</b> collections = <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address);
 <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_get">table::spec_get</a>(
     collections.token_data,
     token_id.token_data_id,
 );
 <b>aborts_if</b> amount &lt;= 0;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr);
 <b>aborts_if</b> !<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_contains">table::spec_contains</a>(collections.token_data, token_id.token_data_id);
-<b>aborts_if</b> !<a href="../../starcoin-framework/../starcoin-stdlib/doc/simple_map.md#0x1_simple_map_spec_contains_key">simple_map::spec_contains_key</a>(token_data.default_properties.map, std::string::spec_utf8(<a href="token.md#0x3_token_BURNABLE_BY_CREATOR">BURNABLE_BY_CREATOR</a>));
+<b>aborts_if</b> !<a href="../../starcoin-framework/../starcoin-stdlib/doc/simple_map.md#0x1_simple_map_spec_contains_key">simple_map::spec_contains_key</a>(token_data.default_properties.map, std::string::spec_utf8(<a href="token.md#0x1_token_BURNABLE_BY_CREATOR">BURNABLE_BY_CREATOR</a>));
 </code></pre>
 
 
@@ -5223,7 +5223,7 @@ The signer is creator.
 ### Function `burn`
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_burn">burn</a>(owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, creators_address: <b>address</b>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, property_version: u64, amount: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_burn">burn</a>(owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, creators_address: <b>address</b>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, property_version: u64, amount: u64)
 </code></pre>
 
 
@@ -5231,37 +5231,37 @@ The token_data_id should exist in token_data.
 
 
 <pre><code><b>pragma</b> aborts_if_is_partial;
-<b>let</b> token_id = <a href="token.md#0x3_token_spec_create_token_id_raw">spec_create_token_id_raw</a>(creators_address, collection, name, property_version);
+<b>let</b> token_id = <a href="token.md#0x1_token_spec_create_token_id_raw">spec_create_token_id_raw</a>(creators_address, collection, name, property_version);
 <b>let</b> creator_addr = token_id.token_data_id.creator;
-<b>let</b> collections = <b>borrow_global_mut</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr);
+<b>let</b> collections = <b>borrow_global_mut</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr);
 <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_get">table::spec_get</a>(
     collections.token_data,
     token_id.token_data_id,
 );
-<b>include</b> <a href="token.md#0x3_token_CreateTokenDataIdAbortsIf">CreateTokenDataIdAbortsIf</a> {
+<b>include</b> <a href="token.md#0x1_token_CreateTokenDataIdAbortsIf">CreateTokenDataIdAbortsIf</a> {
 creator: creators_address
 };
 <b>aborts_if</b> amount &lt;= 0;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr);
 <b>aborts_if</b> !<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_contains">table::spec_contains</a>(collections.token_data, token_id.token_data_id);
-<b>aborts_if</b> !<a href="../../starcoin-framework/../starcoin-stdlib/doc/simple_map.md#0x1_simple_map_spec_contains_key">simple_map::spec_contains_key</a>(token_data.default_properties.map, std::string::spec_utf8(<a href="token.md#0x3_token_BURNABLE_BY_OWNER">BURNABLE_BY_OWNER</a>));
-<b>aborts_if</b> !<a href="../../move-stdlib/doc/string.md#0x1_string_spec_internal_check_utf8">string::spec_internal_check_utf8</a>(<a href="token.md#0x3_token_BURNABLE_BY_OWNER">BURNABLE_BY_OWNER</a>);
+<b>aborts_if</b> !<a href="../../starcoin-framework/../starcoin-stdlib/doc/simple_map.md#0x1_simple_map_spec_contains_key">simple_map::spec_contains_key</a>(token_data.default_properties.map, std::string::spec_utf8(<a href="token.md#0x1_token_BURNABLE_BY_OWNER">BURNABLE_BY_OWNER</a>));
+<b>aborts_if</b> !<a href="../../move-stdlib/doc/string.md#0x1_string_spec_internal_check_utf8">string::spec_internal_check_utf8</a>(<a href="token.md#0x1_token_BURNABLE_BY_OWNER">BURNABLE_BY_OWNER</a>);
 </code></pre>
 
 
 
 
-<a id="0x3_token_spec_create_token_id_raw"></a>
+<a id="0x1_token_spec_create_token_id_raw"></a>
 
 
-<pre><code><b>fun</b> <a href="token.md#0x3_token_spec_create_token_id_raw">spec_create_token_id_raw</a>(
+<pre><code><b>fun</b> <a href="token.md#0x1_token_spec_create_token_id_raw">spec_create_token_id_raw</a>(
    creator: <b>address</b>,
    collection: String,
    name: String,
    property_version: u64,
-): <a href="token.md#0x3_token_TokenId">TokenId</a> {
-   <b>let</b> token_data_id = <a href="token.md#0x3_token_TokenDataId">TokenDataId</a> { creator, collection, name };
-   <a href="token.md#0x3_token_TokenId">TokenId</a> {
+): <a href="token.md#0x1_token_TokenId">TokenId</a> {
+   <b>let</b> token_data_id = <a href="token.md#0x1_token_TokenDataId">TokenDataId</a> { creator, collection, name };
+   <a href="token.md#0x1_token_TokenId">TokenId</a> {
        token_data_id,
        property_version
    }
@@ -5275,7 +5275,7 @@ creator: creators_address
 ### Function `mutate_collection_description`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mutate_collection_description">mutate_collection_description</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mutate_collection_description">mutate_collection_description</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
 </code></pre>
 
 
@@ -5284,15 +5284,15 @@ The description of Collection is mutable.
 
 <pre><code><b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
 <b>let</b> <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a> = <b>global</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
-<b>let</b> collection_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_get">table::spec_get</a>(<b>global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(addr).collection_data, collection_name);
-<b>include</b> <a href="token.md#0x3_token_AssertCollectionExistsAbortsIf">AssertCollectionExistsAbortsIf</a> {
+<b>let</b> collection_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_get">table::spec_get</a>(<b>global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(addr).collection_data, collection_name);
+<b>include</b> <a href="token.md#0x1_token_AssertCollectionExistsAbortsIf">AssertCollectionExistsAbortsIf</a> {
     creator_address: addr,
     collection_name: collection_name
 };
 <b>aborts_if</b> !collection_data.mutability_config.description;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && !<b>exists</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt;= <a href="../../starcoin-framework/doc/account.md#0x1_account_MAX_GUID_CREATION_NUM">account::MAX_GUID_CREATION_NUM</a>;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt; MAX_U64;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x1_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && !<b>exists</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x1_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt;= <a href="../../starcoin-framework/doc/account.md#0x1_account_MAX_GUID_CREATION_NUM">account::MAX_GUID_CREATION_NUM</a>;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x1_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt; MAX_U64;
 </code></pre>
 
 
@@ -5302,7 +5302,7 @@ The description of Collection is mutable.
 ### Function `mutate_collection_uri`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mutate_collection_uri">mutate_collection_uri</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mutate_collection_uri">mutate_collection_uri</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
 </code></pre>
 
 
@@ -5311,16 +5311,16 @@ The uri of Collection is mutable.
 
 <pre><code><b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
 <b>let</b> <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a> = <b>global</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
-<b>let</b> collection_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_get">table::spec_get</a>(<b>global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(addr).collection_data, collection_name);
-<b>aborts_if</b> len(uri.bytes) &gt; <a href="token.md#0x3_token_MAX_URI_LENGTH">MAX_URI_LENGTH</a>;
-<b>include</b> <a href="token.md#0x3_token_AssertCollectionExistsAbortsIf">AssertCollectionExistsAbortsIf</a> {
+<b>let</b> collection_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_get">table::spec_get</a>(<b>global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(addr).collection_data, collection_name);
+<b>aborts_if</b> len(uri.bytes) &gt; <a href="token.md#0x1_token_MAX_URI_LENGTH">MAX_URI_LENGTH</a>;
+<b>include</b> <a href="token.md#0x1_token_AssertCollectionExistsAbortsIf">AssertCollectionExistsAbortsIf</a> {
     creator_address: addr,
     collection_name: collection_name
 };
 <b>aborts_if</b> !collection_data.mutability_config.uri;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && !<b>exists</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt;= <a href="../../starcoin-framework/doc/account.md#0x1_account_MAX_GUID_CREATION_NUM">account::MAX_GUID_CREATION_NUM</a>;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt; MAX_U64;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x1_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && !<b>exists</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x1_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt;= <a href="../../starcoin-framework/doc/account.md#0x1_account_MAX_GUID_CREATION_NUM">account::MAX_GUID_CREATION_NUM</a>;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x1_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt; MAX_U64;
 </code></pre>
 
 
@@ -5330,7 +5330,7 @@ The uri of Collection is mutable.
 ### Function `mutate_collection_maximum`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mutate_collection_maximum">mutate_collection_maximum</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, maximum: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mutate_collection_maximum">mutate_collection_maximum</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, maximum: u64)
 </code></pre>
 
 
@@ -5341,17 +5341,17 @@ The maxium of Collection is mutable.
 
 <pre><code><b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
 <b>let</b> <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a> = <b>global</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
-<b>let</b> collection_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_get">table::spec_get</a>(<b>global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(addr).collection_data, collection_name);
-<b>include</b> <a href="token.md#0x3_token_AssertCollectionExistsAbortsIf">AssertCollectionExistsAbortsIf</a> {
+<b>let</b> collection_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_get">table::spec_get</a>(<b>global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(addr).collection_data, collection_name);
+<b>include</b> <a href="token.md#0x1_token_AssertCollectionExistsAbortsIf">AssertCollectionExistsAbortsIf</a> {
     creator_address: addr,
     collection_name: collection_name
 };
 <b>aborts_if</b> collection_data.maximum == 0 || maximum == 0;
 <b>aborts_if</b> maximum &lt; collection_data.supply;
 <b>aborts_if</b> !collection_data.mutability_config.maximum;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && !<b>exists</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt;= <a href="../../starcoin-framework/doc/account.md#0x1_account_MAX_GUID_CREATION_NUM">account::MAX_GUID_CREATION_NUM</a>;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt; MAX_U64;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x1_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && !<b>exists</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x1_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt;= <a href="../../starcoin-framework/doc/account.md#0x1_account_MAX_GUID_CREATION_NUM">account::MAX_GUID_CREATION_NUM</a>;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x1_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt; MAX_U64;
 </code></pre>
 
 
@@ -5361,7 +5361,7 @@ The maxium of Collection is mutable.
 ### Function `mutate_tokendata_maximum`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mutate_tokendata_maximum">mutate_tokendata_maximum</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>, maximum: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mutate_tokendata_maximum">mutate_tokendata_maximum</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>, maximum: u64)
 </code></pre>
 
 
@@ -5372,15 +5372,15 @@ The token maximum is mutable
 
 <pre><code><b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
 <b>let</b> <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a> = <b>global</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
-<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(token_data_id.creator).token_data;
+<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(token_data_id.creator).token_data;
 <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_get">table::spec_get</a>(all_token_data, token_data_id);
-<b>include</b> <a href="token.md#0x3_token_AssertTokendataExistsAbortsIf">AssertTokendataExistsAbortsIf</a>;
+<b>include</b> <a href="token.md#0x1_token_AssertTokendataExistsAbortsIf">AssertTokendataExistsAbortsIf</a>;
 <b>aborts_if</b> token_data.maximum == 0 || maximum == 0;
 <b>aborts_if</b> maximum &lt; token_data.supply;
 <b>aborts_if</b> !token_data.mutability_config.maximum;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && !<b>exists</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt;= <a href="../../starcoin-framework/doc/account.md#0x1_account_MAX_GUID_CREATION_NUM">account::MAX_GUID_CREATION_NUM</a>;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt; MAX_U64;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x1_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && !<b>exists</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x1_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt;= <a href="../../starcoin-framework/doc/account.md#0x1_account_MAX_GUID_CREATION_NUM">account::MAX_GUID_CREATION_NUM</a>;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x1_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt; MAX_U64;
 </code></pre>
 
 
@@ -5390,7 +5390,7 @@ The token maximum is mutable
 ### Function `mutate_tokendata_uri`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mutate_tokendata_uri">mutate_tokendata_uri</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>, uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mutate_tokendata_uri">mutate_tokendata_uri</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>, uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
 </code></pre>
 
 
@@ -5401,14 +5401,14 @@ The token uri is mutable
 
 <pre><code><b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
 <b>let</b> <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a> = <b>global</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
-<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(token_data_id.creator).token_data;
+<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(token_data_id.creator).token_data;
 <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_get">table::spec_get</a>(all_token_data, token_data_id);
-<b>include</b> <a href="token.md#0x3_token_AssertTokendataExistsAbortsIf">AssertTokendataExistsAbortsIf</a>;
-<b>aborts_if</b> len(uri.bytes) &gt; <a href="token.md#0x3_token_MAX_URI_LENGTH">MAX_URI_LENGTH</a>;
+<b>include</b> <a href="token.md#0x1_token_AssertTokendataExistsAbortsIf">AssertTokendataExistsAbortsIf</a>;
+<b>aborts_if</b> len(uri.bytes) &gt; <a href="token.md#0x1_token_MAX_URI_LENGTH">MAX_URI_LENGTH</a>;
 <b>aborts_if</b> !token_data.mutability_config.uri;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && !<b>exists</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt;= <a href="../../starcoin-framework/doc/account.md#0x1_account_MAX_GUID_CREATION_NUM">account::MAX_GUID_CREATION_NUM</a>;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt; MAX_U64;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x1_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && !<b>exists</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x1_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt;= <a href="../../starcoin-framework/doc/account.md#0x1_account_MAX_GUID_CREATION_NUM">account::MAX_GUID_CREATION_NUM</a>;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x1_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt; MAX_U64;
 </code></pre>
 
 
@@ -5418,22 +5418,22 @@ The token uri is mutable
 ### Function `mutate_tokendata_royalty`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mutate_tokendata_royalty">mutate_tokendata_royalty</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>, royalty: <a href="token.md#0x3_token_Royalty">token::Royalty</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mutate_tokendata_royalty">mutate_tokendata_royalty</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>, royalty: <a href="token.md#0x1_token_Royalty">token::Royalty</a>)
 </code></pre>
 
 
 The token royalty is mutable
 
 
-<pre><code><b>include</b> <a href="token.md#0x3_token_AssertTokendataExistsAbortsIf">AssertTokendataExistsAbortsIf</a>;
+<pre><code><b>include</b> <a href="token.md#0x1_token_AssertTokendataExistsAbortsIf">AssertTokendataExistsAbortsIf</a>;
 <b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
 <b>let</b> <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a> = <b>global</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
-<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(token_data_id.creator).token_data;
+<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(token_data_id.creator).token_data;
 <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_get">table::spec_get</a>(all_token_data, token_data_id);
 <b>aborts_if</b> !token_data.mutability_config.royalty;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && !<b>exists</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt;= <a href="../../starcoin-framework/doc/account.md#0x1_account_MAX_GUID_CREATION_NUM">account::MAX_GUID_CREATION_NUM</a>;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt; MAX_U64;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x1_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && !<b>exists</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x1_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt;= <a href="../../starcoin-framework/doc/account.md#0x1_account_MAX_GUID_CREATION_NUM">account::MAX_GUID_CREATION_NUM</a>;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x1_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt; MAX_U64;
 </code></pre>
 
 
@@ -5443,22 +5443,22 @@ The token royalty is mutable
 ### Function `mutate_tokendata_description`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mutate_tokendata_description">mutate_tokendata_description</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>, description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mutate_tokendata_description">mutate_tokendata_description</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>, description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
 </code></pre>
 
 
 The token description is mutable
 
 
-<pre><code><b>include</b> <a href="token.md#0x3_token_AssertTokendataExistsAbortsIf">AssertTokendataExistsAbortsIf</a>;
+<pre><code><b>include</b> <a href="token.md#0x1_token_AssertTokendataExistsAbortsIf">AssertTokendataExistsAbortsIf</a>;
 <b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
 <b>let</b> <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a> = <b>global</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
-<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(token_data_id.creator).token_data;
+<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(token_data_id.creator).token_data;
 <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_get">table::spec_get</a>(all_token_data, token_data_id);
 <b>aborts_if</b> !token_data.mutability_config.description;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && !<b>exists</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt;= <a href="../../starcoin-framework/doc/account.md#0x1_account_MAX_GUID_CREATION_NUM">account::MAX_GUID_CREATION_NUM</a>;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x3_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt; MAX_U64;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x1_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && !<b>exists</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x1_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt;= <a href="../../starcoin-framework/doc/account.md#0x1_account_MAX_GUID_CREATION_NUM">account::MAX_GUID_CREATION_NUM</a>;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token_event_store.md#0x1_token_event_store_TokenEventStoreV1">token_event_store::TokenEventStoreV1</a>&gt;(addr) && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 9 &gt; MAX_U64;
 </code></pre>
 
 
@@ -5468,7 +5468,7 @@ The token description is mutable
 ### Function `mutate_tokendata_property`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mutate_tokendata_property">mutate_tokendata_property</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>, keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mutate_tokendata_property">mutate_tokendata_property</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>, keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;)
 </code></pre>
 
 
@@ -5476,9 +5476,9 @@ The property map is mutable
 
 
 <pre><code><b>pragma</b> aborts_if_is_partial;
-<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(token_data_id.creator).token_data;
+<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(token_data_id.creator).token_data;
 <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_get">table::spec_get</a>(all_token_data, token_data_id);
-<b>include</b> <a href="token.md#0x3_token_AssertTokendataExistsAbortsIf">AssertTokendataExistsAbortsIf</a>;
+<b>include</b> <a href="token.md#0x1_token_AssertTokendataExistsAbortsIf">AssertTokendataExistsAbortsIf</a>;
 <b>aborts_if</b> len(keys) != len(values);
 <b>aborts_if</b> len(keys) != len(types);
 <b>aborts_if</b> !token_data.mutability_config.properties;
@@ -5491,7 +5491,7 @@ The property map is mutable
 ### Function `mutate_one_token`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mutate_one_token">mutate_one_token</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_owner: <b>address</b>, token_id: <a href="token.md#0x3_token_TokenId">token::TokenId</a>, keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;): <a href="token.md#0x3_token_TokenId">token::TokenId</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mutate_one_token">mutate_one_token</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_owner: <b>address</b>, token_id: <a href="token.md#0x1_token_TokenId">token::TokenId</a>, keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;): <a href="token.md#0x1_token_TokenId">token::TokenId</a>
 </code></pre>
 
 
@@ -5503,12 +5503,12 @@ The property map is mutable.
 <pre><code><b>pragma</b> aborts_if_is_partial;
 <b>let</b> creator = token_id.token_data_id.creator;
 <b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>);
-<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator).token_data;
+<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator).token_data;
 <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_get">table::spec_get</a>(all_token_data, token_id.token_data_id);
 <b>aborts_if</b> addr != creator;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator);
 <b>aborts_if</b> !<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_contains">table::spec_contains</a>(all_token_data, token_id.token_data_id);
-<b>aborts_if</b> !token_data.mutability_config.properties && !<a href="../../starcoin-framework/../starcoin-stdlib/doc/simple_map.md#0x1_simple_map_spec_contains_key">simple_map::spec_contains_key</a>(token_data.default_properties.map, std::string::spec_utf8(<a href="token.md#0x3_token_TOKEN_PROPERTY_MUTABLE">TOKEN_PROPERTY_MUTABLE</a>));
+<b>aborts_if</b> !token_data.mutability_config.properties && !<a href="../../starcoin-framework/../starcoin-stdlib/doc/simple_map.md#0x1_simple_map_spec_contains_key">simple_map::spec_contains_key</a>(token_data.default_properties.map, std::string::spec_utf8(<a href="token.md#0x1_token_TOKEN_PROPERTY_MUTABLE">TOKEN_PROPERTY_MUTABLE</a>));
 </code></pre>
 
 
@@ -5518,23 +5518,23 @@ The property map is mutable.
 ### Function `create_royalty`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_create_royalty">create_royalty</a>(royalty_points_numerator: u64, royalty_points_denominator: u64, payee_address: <b>address</b>): <a href="token.md#0x3_token_Royalty">token::Royalty</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_create_royalty">create_royalty</a>(royalty_points_numerator: u64, royalty_points_denominator: u64, payee_address: <b>address</b>): <a href="token.md#0x1_token_Royalty">token::Royalty</a>
 </code></pre>
 
 
 
 
-<pre><code><b>include</b> <a href="token.md#0x3_token_CreateRoyaltyAbortsIf">CreateRoyaltyAbortsIf</a>;
+<pre><code><b>include</b> <a href="token.md#0x1_token_CreateRoyaltyAbortsIf">CreateRoyaltyAbortsIf</a>;
 </code></pre>
 
 
 The royalty_points_numerator should less than royalty_points_denominator.
 
 
-<a id="0x3_token_CreateRoyaltyAbortsIf"></a>
+<a id="0x1_token_CreateRoyaltyAbortsIf"></a>
 
 
-<pre><code><b>schema</b> <a href="token.md#0x3_token_CreateRoyaltyAbortsIf">CreateRoyaltyAbortsIf</a> {
+<pre><code><b>schema</b> <a href="token.md#0x1_token_CreateRoyaltyAbortsIf">CreateRoyaltyAbortsIf</a> {
     royalty_points_numerator: u64;
     royalty_points_denominator: u64;
     payee_address: <b>address</b>;
@@ -5550,7 +5550,7 @@ The royalty_points_numerator should less than royalty_points_denominator.
 ### Function `deposit_token`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_deposit_token">deposit_token</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="token.md#0x3_token">token</a>: <a href="token.md#0x3_token_Token">token::Token</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_deposit_token">deposit_token</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="token.md#0x1_token">token</a>: <a href="token.md#0x1_token_Token">token::Token</a>)
 </code></pre>
 
 
@@ -5559,10 +5559,10 @@ The royalty_points_numerator should less than royalty_points_denominator.
 <pre><code><b>pragma</b> verify = <b>false</b>;
 <b>pragma</b> aborts_if_is_partial;
 <b>let</b> account_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>);
-<b>include</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(account_addr) ==&gt; <a href="token.md#0x3_token_InitializeTokenStore">InitializeTokenStore</a>;
-<b>let</b> token_id = <a href="token.md#0x3_token">token</a>.id;
-<b>let</b> token_amount = <a href="token.md#0x3_token">token</a>.amount;
-<b>include</b> <a href="token.md#0x3_token_DirectDepositAbortsIf">DirectDepositAbortsIf</a>;
+<b>include</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(account_addr) ==&gt; <a href="token.md#0x1_token_InitializeTokenStore">InitializeTokenStore</a>;
+<b>let</b> token_id = <a href="token.md#0x1_token">token</a>.id;
+<b>let</b> token_amount = <a href="token.md#0x1_token">token</a>.amount;
+<b>include</b> <a href="token.md#0x1_token_DirectDepositAbortsIf">DirectDepositAbortsIf</a>;
 </code></pre>
 
 
@@ -5572,19 +5572,19 @@ The royalty_points_numerator should less than royalty_points_denominator.
 ### Function `direct_deposit_with_opt_in`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_direct_deposit_with_opt_in">direct_deposit_with_opt_in</a>(account_addr: <b>address</b>, <a href="token.md#0x3_token">token</a>: <a href="token.md#0x3_token_Token">token::Token</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_direct_deposit_with_opt_in">direct_deposit_with_opt_in</a>(account_addr: <b>address</b>, <a href="token.md#0x1_token">token</a>: <a href="token.md#0x1_token_Token">token::Token</a>)
 </code></pre>
 
 
 The token can direct_transfer.
 
 
-<pre><code><b>let</b> opt_in_transfer = <b>global</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(account_addr).direct_transfer;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(account_addr);
+<pre><code><b>let</b> opt_in_transfer = <b>global</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(account_addr).direct_transfer;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(account_addr);
 <b>aborts_if</b> !opt_in_transfer;
-<b>let</b> token_id = <a href="token.md#0x3_token">token</a>.id;
-<b>let</b> token_amount = <a href="token.md#0x3_token">token</a>.amount;
-<b>include</b> <a href="token.md#0x3_token_DirectDepositAbortsIf">DirectDepositAbortsIf</a>;
+<b>let</b> token_id = <a href="token.md#0x1_token">token</a>.id;
+<b>let</b> token_amount = <a href="token.md#0x1_token">token</a>.amount;
+<b>include</b> <a href="token.md#0x1_token_DirectDepositAbortsIf">DirectDepositAbortsIf</a>;
 </code></pre>
 
 
@@ -5594,7 +5594,7 @@ The token can direct_transfer.
 ### Function `direct_transfer`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_direct_transfer">direct_transfer</a>(sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, receiver: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_id: <a href="token.md#0x3_token_TokenId">token::TokenId</a>, amount: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_direct_transfer">direct_transfer</a>(sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, receiver: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_id: <a href="token.md#0x1_token_TokenId">token::TokenId</a>, amount: u64)
 </code></pre>
 
 
@@ -5612,28 +5612,28 @@ Make sure the account has sufficient tokens to withdraw.
 ### Function `initialize_token_store`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_initialize_token_store">initialize_token_store</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_initialize_token_store">initialize_token_store</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
 
 
-<pre><code><b>include</b> <a href="token.md#0x3_token_InitializeTokenStore">InitializeTokenStore</a>;
+<pre><code><b>include</b> <a href="token.md#0x1_token_InitializeTokenStore">InitializeTokenStore</a>;
 </code></pre>
 
 
 
 
-<a id="0x3_token_InitializeTokenStore"></a>
+<a id="0x1_token_InitializeTokenStore"></a>
 
 
-<pre><code><b>schema</b> <a href="token.md#0x3_token_InitializeTokenStore">InitializeTokenStore</a> {
+<pre><code><b>schema</b> <a href="token.md#0x1_token_InitializeTokenStore">InitializeTokenStore</a> {
     <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>;
     <b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>);
     <b>let</b> account_addr = <b>global</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
-    <b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(addr) && !<b>exists</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
-    <b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(addr) && account_addr.guid_creation_num + 4 &gt;= <a href="../../starcoin-framework/doc/account.md#0x1_account_MAX_GUID_CREATION_NUM">account::MAX_GUID_CREATION_NUM</a>;
-    <b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(addr) && account_addr.guid_creation_num + 4 &gt; MAX_U64;
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(addr) && !<b>exists</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(addr) && account_addr.guid_creation_num + 4 &gt;= <a href="../../starcoin-framework/doc/account.md#0x1_account_MAX_GUID_CREATION_NUM">account::MAX_GUID_CREATION_NUM</a>;
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(addr) && account_addr.guid_creation_num + 4 &gt; MAX_U64;
 }
 </code></pre>
 
@@ -5644,7 +5644,7 @@ Make sure the account has sufficient tokens to withdraw.
 ### Function `merge`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_merge">merge</a>(dst_token: &<b>mut</b> <a href="token.md#0x3_token_Token">token::Token</a>, source_token: <a href="token.md#0x3_token_Token">token::Token</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_merge">merge</a>(dst_token: &<b>mut</b> <a href="token.md#0x1_token_Token">token::Token</a>, source_token: <a href="token.md#0x1_token_Token">token::Token</a>)
 </code></pre>
 
 
@@ -5661,7 +5661,7 @@ Make sure the account has sufficient tokens to withdraw.
 ### Function `split`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_split">split</a>(dst_token: &<b>mut</b> <a href="token.md#0x3_token_Token">token::Token</a>, amount: u64): <a href="token.md#0x3_token_Token">token::Token</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_split">split</a>(dst_token: &<b>mut</b> <a href="token.md#0x1_token_Token">token::Token</a>, amount: u64): <a href="token.md#0x1_token_Token">token::Token</a>
 </code></pre>
 
 
@@ -5679,17 +5679,17 @@ Make sure the account has sufficient tokens to withdraw.
 ### Function `transfer`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_transfer">transfer</a>(from: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, id: <a href="token.md#0x3_token_TokenId">token::TokenId</a>, <b>to</b>: <b>address</b>, amount: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_transfer">transfer</a>(from: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, id: <a href="token.md#0x1_token_TokenId">token::TokenId</a>, <b>to</b>: <b>address</b>, amount: u64)
 </code></pre>
 
 
 
 
-<pre><code><b>let</b> opt_in_transfer = <b>global</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(<b>to</b>).direct_transfer;
+<pre><code><b>let</b> opt_in_transfer = <b>global</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(<b>to</b>).direct_transfer;
 <b>let</b> account_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(from);
 <b>aborts_if</b> !opt_in_transfer;
 <b>pragma</b> aborts_if_is_partial;
-<b>include</b> <a href="token.md#0x3_token_WithdrawWithEventInternalAbortsIf">WithdrawWithEventInternalAbortsIf</a>;
+<b>include</b> <a href="token.md#0x1_token_WithdrawWithEventInternalAbortsIf">WithdrawWithEventInternalAbortsIf</a>;
 </code></pre>
 
 
@@ -5699,7 +5699,7 @@ Make sure the account has sufficient tokens to withdraw.
 ### Function `withdraw_with_capability`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_withdraw_with_capability">withdraw_with_capability</a>(withdraw_proof: <a href="token.md#0x3_token_WithdrawCapability">token::WithdrawCapability</a>): <a href="token.md#0x3_token_Token">token::Token</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_withdraw_with_capability">withdraw_with_capability</a>(withdraw_proof: <a href="token.md#0x1_token_WithdrawCapability">token::WithdrawCapability</a>): <a href="token.md#0x1_token_Token">token::Token</a>
 </code></pre>
 
 
@@ -5708,7 +5708,7 @@ Make sure the account has sufficient tokens to withdraw.
 <pre><code><b>let</b> now_seconds = <b>global</b>&lt;<a href="../../starcoin-framework/doc/timestamp.md#0x1_timestamp_CurrentTimeMicroseconds">timestamp::CurrentTimeMicroseconds</a>&gt;(@starcoin_framework).microseconds;
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="../../starcoin-framework/doc/timestamp.md#0x1_timestamp_CurrentTimeMicroseconds">timestamp::CurrentTimeMicroseconds</a>&gt;(@starcoin_framework);
 <b>aborts_if</b> now_seconds / <a href="../../starcoin-framework/doc/timestamp.md#0x1_timestamp_MICRO_CONVERSION_FACTOR">timestamp::MICRO_CONVERSION_FACTOR</a> &gt; withdraw_proof.expiration_sec;
-<b>include</b> <a href="token.md#0x3_token_WithdrawWithEventInternalAbortsIf">WithdrawWithEventInternalAbortsIf</a>{
+<b>include</b> <a href="token.md#0x1_token_WithdrawWithEventInternalAbortsIf">WithdrawWithEventInternalAbortsIf</a>{
 account_addr: withdraw_proof.token_owner,
 id: withdraw_proof.token_id,
 amount: withdraw_proof.amount};
@@ -5721,7 +5721,7 @@ amount: withdraw_proof.amount};
 ### Function `partial_withdraw_with_capability`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_partial_withdraw_with_capability">partial_withdraw_with_capability</a>(withdraw_proof: <a href="token.md#0x3_token_WithdrawCapability">token::WithdrawCapability</a>, withdraw_amount: u64): (<a href="token.md#0x3_token_Token">token::Token</a>, <a href="../../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="token.md#0x3_token_WithdrawCapability">token::WithdrawCapability</a>&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_partial_withdraw_with_capability">partial_withdraw_with_capability</a>(withdraw_proof: <a href="token.md#0x1_token_WithdrawCapability">token::WithdrawCapability</a>, withdraw_amount: u64): (<a href="token.md#0x1_token_Token">token::Token</a>, <a href="../../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;<a href="token.md#0x1_token_WithdrawCapability">token::WithdrawCapability</a>&gt;)
 </code></pre>
 
 
@@ -5731,7 +5731,7 @@ amount: withdraw_proof.amount};
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="../../starcoin-framework/doc/timestamp.md#0x1_timestamp_CurrentTimeMicroseconds">timestamp::CurrentTimeMicroseconds</a>&gt;(@starcoin_framework);
 <b>aborts_if</b> now_seconds / <a href="../../starcoin-framework/doc/timestamp.md#0x1_timestamp_MICRO_CONVERSION_FACTOR">timestamp::MICRO_CONVERSION_FACTOR</a> &gt; withdraw_proof.expiration_sec;
 <b>aborts_if</b> withdraw_amount &gt; withdraw_proof.amount;
-<b>include</b> <a href="token.md#0x3_token_WithdrawWithEventInternalAbortsIf">WithdrawWithEventInternalAbortsIf</a>{
+<b>include</b> <a href="token.md#0x1_token_WithdrawWithEventInternalAbortsIf">WithdrawWithEventInternalAbortsIf</a>{
     account_addr: withdraw_proof.token_owner,
     id: withdraw_proof.token_id,
     amount: withdraw_amount
@@ -5745,7 +5745,7 @@ amount: withdraw_proof.amount};
 ### Function `withdraw_token`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_withdraw_token">withdraw_token</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, id: <a href="token.md#0x3_token_TokenId">token::TokenId</a>, amount: u64): <a href="token.md#0x3_token_Token">token::Token</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_withdraw_token">withdraw_token</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, id: <a href="token.md#0x1_token_TokenId">token::TokenId</a>, amount: u64): <a href="token.md#0x1_token_Token">token::Token</a>
 </code></pre>
 
 
@@ -5754,7 +5754,7 @@ Make sure the account has sufficient tokens to withdraw.
 
 
 <pre><code><b>let</b> account_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>);
-<b>include</b> <a href="token.md#0x3_token_WithdrawWithEventInternalAbortsIf">WithdrawWithEventInternalAbortsIf</a>;
+<b>include</b> <a href="token.md#0x1_token_WithdrawWithEventInternalAbortsIf">WithdrawWithEventInternalAbortsIf</a>;
 </code></pre>
 
 
@@ -5764,7 +5764,7 @@ Make sure the account has sufficient tokens to withdraw.
 ### Function `create_collection`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_create_collection">create_collection</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, maximum: u64, mutate_setting: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_create_collection">create_collection</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, maximum: u64, mutate_setting: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;)
 </code></pre>
 
 
@@ -5777,16 +5777,16 @@ The collection_data should not exist before you create it.
 <b>let</b> account_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
 <b>aborts_if</b> len(name.bytes) &gt; 128;
 <b>aborts_if</b> len(uri.bytes) &gt; 512;
-<b>include</b> <a href="token.md#0x3_token_CreateCollectionAbortsIf">CreateCollectionAbortsIf</a>;
+<b>include</b> <a href="token.md#0x1_token_CreateCollectionAbortsIf">CreateCollectionAbortsIf</a>;
 </code></pre>
 
 
 
 
-<a id="0x3_token_CreateCollectionAbortsIf"></a>
+<a id="0x1_token_CreateCollectionAbortsIf"></a>
 
 
-<pre><code><b>schema</b> <a href="token.md#0x3_token_CreateCollectionAbortsIf">CreateCollectionAbortsIf</a> {
+<pre><code><b>schema</b> <a href="token.md#0x1_token_CreateCollectionAbortsIf">CreateCollectionAbortsIf</a> {
     creator: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>;
     name: String;
     description: String;
@@ -5795,15 +5795,15 @@ The collection_data should not exist before you create it.
     mutate_setting: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;;
     <b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
     <b>let</b> <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a> = <b>global</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
-    <b>let</b> collection = <b>global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(addr);
-    <b>let</b> b = !<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(addr);
-    <b>let</b> collection_data = <b>global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(addr).collection_data;
+    <b>let</b> collection = <b>global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(addr);
+    <b>let</b> b = !<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(addr);
+    <b>let</b> collection_data = <b>global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(addr).collection_data;
     <b>aborts_if</b> b && !<b>exists</b>&lt;<a href="../../starcoin-framework/doc/account.md#0x1_account_Account">account::Account</a>&gt;(addr);
-    <b>aborts_if</b> len(name.bytes) &gt; <a href="token.md#0x3_token_MAX_COLLECTION_NAME_LENGTH">MAX_COLLECTION_NAME_LENGTH</a>;
-    <b>aborts_if</b> len(uri.bytes) &gt; <a href="token.md#0x3_token_MAX_URI_LENGTH">MAX_URI_LENGTH</a>;
+    <b>aborts_if</b> len(name.bytes) &gt; <a href="token.md#0x1_token_MAX_COLLECTION_NAME_LENGTH">MAX_COLLECTION_NAME_LENGTH</a>;
+    <b>aborts_if</b> len(uri.bytes) &gt; <a href="token.md#0x1_token_MAX_URI_LENGTH">MAX_URI_LENGTH</a>;
     <b>aborts_if</b> b && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 3 &gt;= <a href="../../starcoin-framework/doc/account.md#0x1_account_MAX_GUID_CREATION_NUM">account::MAX_GUID_CREATION_NUM</a>;
     <b>aborts_if</b> b && <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>.guid_creation_num + 3 &gt; MAX_U64;
-    <b>include</b> <a href="token.md#0x3_token_CreateCollectionMutabilityConfigAbortsIf">CreateCollectionMutabilityConfigAbortsIf</a>;
+    <b>include</b> <a href="token.md#0x1_token_CreateCollectionMutabilityConfigAbortsIf">CreateCollectionMutabilityConfigAbortsIf</a>;
 }
 </code></pre>
 
@@ -5814,13 +5814,13 @@ The collection_data should not exist before you create it.
 ### Function `check_collection_exists`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_check_collection_exists">check_collection_exists</a>(creator: <b>address</b>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_check_collection_exists">check_collection_exists</a>(creator: <b>address</b>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): bool
 </code></pre>
 
 
 
 
-<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator);
+<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator);
 </code></pre>
 
 
@@ -5830,7 +5830,7 @@ The collection_data should not exist before you create it.
 ### Function `check_tokendata_exists`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_check_tokendata_exists">check_tokendata_exists</a>(creator: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, token_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_check_tokendata_exists">check_tokendata_exists</a>(creator: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, token_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): bool
 </code></pre>
 
 
@@ -5838,8 +5838,8 @@ The length of collection should less than MAX_COLLECTION_NAME_LENGTH
 The length of name should less than MAX_NFT_NAME_LENGTH
 
 
-<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator);
-<b>include</b> <a href="token.md#0x3_token_CreateTokenDataIdAbortsIf">CreateTokenDataIdAbortsIf</a> {
+<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator);
+<b>include</b> <a href="token.md#0x1_token_CreateTokenDataIdAbortsIf">CreateTokenDataIdAbortsIf</a> {
     creator: creator,
     collection: collection_name,
     name: token_name
@@ -5853,7 +5853,7 @@ The length of name should less than MAX_NFT_NAME_LENGTH
 ### Function `create_tokendata`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_create_tokendata">create_tokendata</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, maximum: u64, uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, royalty_payee_address: <b>address</b>, royalty_points_denominator: u64, royalty_points_numerator: u64, token_mutate_config: <a href="token.md#0x3_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a>, property_keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, property_values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, property_types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;): <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_create_tokendata">create_tokendata</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, description: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, maximum: u64, uri: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, royalty_payee_address: <b>address</b>, royalty_points_denominator: u64, royalty_points_numerator: u64, token_mutate_config: <a href="token.md#0x1_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a>, property_keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, property_values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, property_types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;): <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>
 </code></pre>
 
 
@@ -5864,16 +5864,16 @@ The length of name should less than MAX_NFT_NAME_LENGTH
 <pre><code><b>pragma</b> verify = <b>false</b>;
 <b>pragma</b> aborts_if_is_partial;
 <b>let</b> account_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>);
-<b>let</b> collections = <b>global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(account_addr);
-<b>let</b> token_data_id = <a href="token.md#0x3_token_spec_create_token_data_id">spec_create_token_data_id</a>(account_addr, collection, name);
+<b>let</b> collections = <b>global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(account_addr);
+<b>let</b> token_data_id = <a href="token.md#0x1_token_spec_create_token_data_id">spec_create_token_data_id</a>(account_addr, collection, name);
 <b>let</b> Collection = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_get">table::spec_get</a>(collections.collection_data, token_data_id.collection);
 <b>let</b> length = len(property_keys);
-<b>aborts_if</b> len(name.bytes) &gt; <a href="token.md#0x3_token_MAX_NFT_NAME_LENGTH">MAX_NFT_NAME_LENGTH</a>;
-<b>aborts_if</b> len(collection.bytes) &gt; <a href="token.md#0x3_token_MAX_COLLECTION_NAME_LENGTH">MAX_COLLECTION_NAME_LENGTH</a>;
-<b>aborts_if</b> len(uri.bytes) &gt; <a href="token.md#0x3_token_MAX_URI_LENGTH">MAX_URI_LENGTH</a>;
+<b>aborts_if</b> len(name.bytes) &gt; <a href="token.md#0x1_token_MAX_NFT_NAME_LENGTH">MAX_NFT_NAME_LENGTH</a>;
+<b>aborts_if</b> len(collection.bytes) &gt; <a href="token.md#0x1_token_MAX_COLLECTION_NAME_LENGTH">MAX_COLLECTION_NAME_LENGTH</a>;
+<b>aborts_if</b> len(uri.bytes) &gt; <a href="token.md#0x1_token_MAX_URI_LENGTH">MAX_URI_LENGTH</a>;
 <b>aborts_if</b> royalty_points_numerator &gt; royalty_points_denominator;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(account_addr);
-<b>include</b> <a href="token.md#0x3_token_CreateTokenDataIdAbortsIf">CreateTokenDataIdAbortsIf</a> {
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(account_addr);
+<b>include</b> <a href="token.md#0x1_token_CreateTokenDataIdAbortsIf">CreateTokenDataIdAbortsIf</a> {
     creator: account_addr,
     collection: collection,
     name: name
@@ -5882,10 +5882,10 @@ The length of name should less than MAX_NFT_NAME_LENGTH
 <b>aborts_if</b> <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_contains">table::spec_contains</a>(collections.token_data, token_data_id);
 <b>aborts_if</b> Collection.maximum &gt; 0 && Collection.supply + 1 &gt; MAX_U64;
 <b>aborts_if</b> Collection.maximum &gt; 0 && Collection.maximum &lt; Collection.supply + 1;
-<b>include</b> <a href="token.md#0x3_token_CreateRoyaltyAbortsIf">CreateRoyaltyAbortsIf</a> {
+<b>include</b> <a href="token.md#0x1_token_CreateRoyaltyAbortsIf">CreateRoyaltyAbortsIf</a> {
     payee_address: royalty_payee_address
 };
-<b>aborts_if</b> length &gt; <a href="property_map.md#0x3_property_map_MAX_PROPERTY_MAP_SIZE">property_map::MAX_PROPERTY_MAP_SIZE</a>;
+<b>aborts_if</b> length &gt; <a href="property_map.md#0x1_property_map_MAX_PROPERTY_MAP_SIZE">property_map::MAX_PROPERTY_MAP_SIZE</a>;
 <b>aborts_if</b> length != len(property_values);
 <b>aborts_if</b> length != len(property_types);
 </code></pre>
@@ -5893,15 +5893,15 @@ The length of name should less than MAX_NFT_NAME_LENGTH
 
 
 
-<a id="0x3_token_spec_create_token_data_id"></a>
+<a id="0x1_token_spec_create_token_data_id"></a>
 
 
-<pre><code><b>fun</b> <a href="token.md#0x3_token_spec_create_token_data_id">spec_create_token_data_id</a>(
+<pre><code><b>fun</b> <a href="token.md#0x1_token_spec_create_token_data_id">spec_create_token_data_id</a>(
    creator: <b>address</b>,
    collection: String,
    name: String,
-): <a href="token.md#0x3_token_TokenDataId">TokenDataId</a> {
-   <a href="token.md#0x3_token_TokenDataId">TokenDataId</a> { creator, collection, name }
+): <a href="token.md#0x1_token_TokenDataId">TokenDataId</a> {
+   <a href="token.md#0x1_token_TokenDataId">TokenDataId</a> { creator, collection, name }
 }
 </code></pre>
 
@@ -5912,13 +5912,13 @@ The length of name should less than MAX_NFT_NAME_LENGTH
 ### Function `get_collection_supply`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_collection_supply">get_collection_supply</a>(creator_address: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): <a href="../../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;u64&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_collection_supply">get_collection_supply</a>(creator_address: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): <a href="../../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;u64&gt;
 </code></pre>
 
 
 
 
-<pre><code><b>include</b> <a href="token.md#0x3_token_AssertCollectionExistsAbortsIf">AssertCollectionExistsAbortsIf</a>;
+<pre><code><b>include</b> <a href="token.md#0x1_token_AssertCollectionExistsAbortsIf">AssertCollectionExistsAbortsIf</a>;
 </code></pre>
 
 
@@ -5928,13 +5928,13 @@ The length of name should less than MAX_NFT_NAME_LENGTH
 ### Function `get_collection_description`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_collection_description">get_collection_description</a>(creator_address: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_collection_description">get_collection_description</a>(creator_address: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>
 </code></pre>
 
 
 
 
-<pre><code><b>include</b> <a href="token.md#0x3_token_AssertCollectionExistsAbortsIf">AssertCollectionExistsAbortsIf</a>;
+<pre><code><b>include</b> <a href="token.md#0x1_token_AssertCollectionExistsAbortsIf">AssertCollectionExistsAbortsIf</a>;
 </code></pre>
 
 
@@ -5944,13 +5944,13 @@ The length of name should less than MAX_NFT_NAME_LENGTH
 ### Function `get_collection_uri`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_collection_uri">get_collection_uri</a>(creator_address: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_collection_uri">get_collection_uri</a>(creator_address: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>
 </code></pre>
 
 
 
 
-<pre><code><b>include</b> <a href="token.md#0x3_token_AssertCollectionExistsAbortsIf">AssertCollectionExistsAbortsIf</a>;
+<pre><code><b>include</b> <a href="token.md#0x1_token_AssertCollectionExistsAbortsIf">AssertCollectionExistsAbortsIf</a>;
 </code></pre>
 
 
@@ -5960,13 +5960,13 @@ The length of name should less than MAX_NFT_NAME_LENGTH
 ### Function `get_collection_maximum`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_collection_maximum">get_collection_maximum</a>(creator_address: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_collection_maximum">get_collection_maximum</a>(creator_address: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): u64
 </code></pre>
 
 
 
 
-<pre><code><b>include</b> <a href="token.md#0x3_token_AssertCollectionExistsAbortsIf">AssertCollectionExistsAbortsIf</a>;
+<pre><code><b>include</b> <a href="token.md#0x1_token_AssertCollectionExistsAbortsIf">AssertCollectionExistsAbortsIf</a>;
 </code></pre>
 
 
@@ -5976,14 +5976,14 @@ The length of name should less than MAX_NFT_NAME_LENGTH
 ### Function `get_token_supply`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_token_supply">get_token_supply</a>(creator_address: <b>address</b>, token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>): <a href="../../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;u64&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_token_supply">get_token_supply</a>(creator_address: <b>address</b>, token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>): <a href="../../move-stdlib/doc/option.md#0x1_option_Option">option::Option</a>&lt;u64&gt;
 </code></pre>
 
 
 
 
-<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address);
-<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address).token_data;
+<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address);
+<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address).token_data;
 <b>aborts_if</b> !<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_contains">table::spec_contains</a>(all_token_data, token_data_id);
 </code></pre>
 
@@ -5994,14 +5994,14 @@ The length of name should less than MAX_NFT_NAME_LENGTH
 ### Function `get_tokendata_largest_property_version`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_tokendata_largest_property_version">get_tokendata_largest_property_version</a>(creator_address: <b>address</b>, token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_tokendata_largest_property_version">get_tokendata_largest_property_version</a>(creator_address: <b>address</b>, token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>): u64
 </code></pre>
 
 
 
 
-<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address);
-<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address).token_data;
+<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address);
+<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address).token_data;
 <b>aborts_if</b> !<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_contains">table::spec_contains</a>(all_token_data, token_data_id);
 </code></pre>
 
@@ -6012,7 +6012,7 @@ The length of name should less than MAX_NFT_NAME_LENGTH
 ### Function `create_token_mutability_config`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_create_token_mutability_config">create_token_mutability_config</a>(mutate_setting: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;): <a href="token.md#0x3_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_create_token_mutability_config">create_token_mutability_config</a>(mutate_setting: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;): <a href="token.md#0x1_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a>
 </code></pre>
 
 
@@ -6020,23 +6020,23 @@ The length of 'mutate_setting' should more than five.
 The mutate_setting shuold have a value.
 
 
-<pre><code><b>include</b> <a href="token.md#0x3_token_CreateTokenMutabilityConfigAbortsIf">CreateTokenMutabilityConfigAbortsIf</a>;
+<pre><code><b>include</b> <a href="token.md#0x1_token_CreateTokenMutabilityConfigAbortsIf">CreateTokenMutabilityConfigAbortsIf</a>;
 </code></pre>
 
 
 
 
-<a id="0x3_token_CreateTokenMutabilityConfigAbortsIf"></a>
+<a id="0x1_token_CreateTokenMutabilityConfigAbortsIf"></a>
 
 
-<pre><code><b>schema</b> <a href="token.md#0x3_token_CreateTokenMutabilityConfigAbortsIf">CreateTokenMutabilityConfigAbortsIf</a> {
+<pre><code><b>schema</b> <a href="token.md#0x1_token_CreateTokenMutabilityConfigAbortsIf">CreateTokenMutabilityConfigAbortsIf</a> {
     mutate_setting: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;;
     <b>aborts_if</b> len(mutate_setting) &lt; 5;
-    <b>aborts_if</b> !<a href="../../move-stdlib/doc/vector.md#0x1_vector_spec_contains">vector::spec_contains</a>(mutate_setting, mutate_setting[<a href="token.md#0x3_token_TOKEN_MAX_MUTABLE_IND">TOKEN_MAX_MUTABLE_IND</a>]);
-    <b>aborts_if</b> !<a href="../../move-stdlib/doc/vector.md#0x1_vector_spec_contains">vector::spec_contains</a>(mutate_setting, mutate_setting[<a href="token.md#0x3_token_TOKEN_URI_MUTABLE_IND">TOKEN_URI_MUTABLE_IND</a>]);
-    <b>aborts_if</b> !<a href="../../move-stdlib/doc/vector.md#0x1_vector_spec_contains">vector::spec_contains</a>(mutate_setting, mutate_setting[<a href="token.md#0x3_token_TOKEN_ROYALTY_MUTABLE_IND">TOKEN_ROYALTY_MUTABLE_IND</a>]);
-    <b>aborts_if</b> !<a href="../../move-stdlib/doc/vector.md#0x1_vector_spec_contains">vector::spec_contains</a>(mutate_setting, mutate_setting[<a href="token.md#0x3_token_TOKEN_DESCRIPTION_MUTABLE_IND">TOKEN_DESCRIPTION_MUTABLE_IND</a>]);
-    <b>aborts_if</b> !<a href="../../move-stdlib/doc/vector.md#0x1_vector_spec_contains">vector::spec_contains</a>(mutate_setting, mutate_setting[<a href="token.md#0x3_token_TOKEN_PROPERTY_MUTABLE_IND">TOKEN_PROPERTY_MUTABLE_IND</a>]);
+    <b>aborts_if</b> !<a href="../../move-stdlib/doc/vector.md#0x1_vector_spec_contains">vector::spec_contains</a>(mutate_setting, mutate_setting[<a href="token.md#0x1_token_TOKEN_MAX_MUTABLE_IND">TOKEN_MAX_MUTABLE_IND</a>]);
+    <b>aborts_if</b> !<a href="../../move-stdlib/doc/vector.md#0x1_vector_spec_contains">vector::spec_contains</a>(mutate_setting, mutate_setting[<a href="token.md#0x1_token_TOKEN_URI_MUTABLE_IND">TOKEN_URI_MUTABLE_IND</a>]);
+    <b>aborts_if</b> !<a href="../../move-stdlib/doc/vector.md#0x1_vector_spec_contains">vector::spec_contains</a>(mutate_setting, mutate_setting[<a href="token.md#0x1_token_TOKEN_ROYALTY_MUTABLE_IND">TOKEN_ROYALTY_MUTABLE_IND</a>]);
+    <b>aborts_if</b> !<a href="../../move-stdlib/doc/vector.md#0x1_vector_spec_contains">vector::spec_contains</a>(mutate_setting, mutate_setting[<a href="token.md#0x1_token_TOKEN_DESCRIPTION_MUTABLE_IND">TOKEN_DESCRIPTION_MUTABLE_IND</a>]);
+    <b>aborts_if</b> !<a href="../../move-stdlib/doc/vector.md#0x1_vector_spec_contains">vector::spec_contains</a>(mutate_setting, mutate_setting[<a href="token.md#0x1_token_TOKEN_PROPERTY_MUTABLE_IND">TOKEN_PROPERTY_MUTABLE_IND</a>]);
 }
 </code></pre>
 
@@ -6047,27 +6047,27 @@ The mutate_setting shuold have a value.
 ### Function `create_collection_mutability_config`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_create_collection_mutability_config">create_collection_mutability_config</a>(mutate_setting: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;): <a href="token.md#0x3_token_CollectionMutabilityConfig">token::CollectionMutabilityConfig</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_create_collection_mutability_config">create_collection_mutability_config</a>(mutate_setting: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;): <a href="token.md#0x1_token_CollectionMutabilityConfig">token::CollectionMutabilityConfig</a>
 </code></pre>
 
 
 
 
-<pre><code><b>include</b> <a href="token.md#0x3_token_CreateCollectionMutabilityConfigAbortsIf">CreateCollectionMutabilityConfigAbortsIf</a>;
+<pre><code><b>include</b> <a href="token.md#0x1_token_CreateCollectionMutabilityConfigAbortsIf">CreateCollectionMutabilityConfigAbortsIf</a>;
 </code></pre>
 
 
 
 
-<a id="0x3_token_CreateCollectionMutabilityConfigAbortsIf"></a>
+<a id="0x1_token_CreateCollectionMutabilityConfigAbortsIf"></a>
 
 
-<pre><code><b>schema</b> <a href="token.md#0x3_token_CreateCollectionMutabilityConfigAbortsIf">CreateCollectionMutabilityConfigAbortsIf</a> {
+<pre><code><b>schema</b> <a href="token.md#0x1_token_CreateCollectionMutabilityConfigAbortsIf">CreateCollectionMutabilityConfigAbortsIf</a> {
     mutate_setting: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;;
     <b>aborts_if</b> len(mutate_setting) &lt; 3;
-    <b>aborts_if</b> !<a href="../../move-stdlib/doc/vector.md#0x1_vector_spec_contains">vector::spec_contains</a>(mutate_setting, mutate_setting[<a href="token.md#0x3_token_COLLECTION_DESCRIPTION_MUTABLE_IND">COLLECTION_DESCRIPTION_MUTABLE_IND</a>]);
-    <b>aborts_if</b> !<a href="../../move-stdlib/doc/vector.md#0x1_vector_spec_contains">vector::spec_contains</a>(mutate_setting, mutate_setting[<a href="token.md#0x3_token_COLLECTION_URI_MUTABLE_IND">COLLECTION_URI_MUTABLE_IND</a>]);
-    <b>aborts_if</b> !<a href="../../move-stdlib/doc/vector.md#0x1_vector_spec_contains">vector::spec_contains</a>(mutate_setting, mutate_setting[<a href="token.md#0x3_token_COLLECTION_MAX_MUTABLE_IND">COLLECTION_MAX_MUTABLE_IND</a>]);
+    <b>aborts_if</b> !<a href="../../move-stdlib/doc/vector.md#0x1_vector_spec_contains">vector::spec_contains</a>(mutate_setting, mutate_setting[<a href="token.md#0x1_token_COLLECTION_DESCRIPTION_MUTABLE_IND">COLLECTION_DESCRIPTION_MUTABLE_IND</a>]);
+    <b>aborts_if</b> !<a href="../../move-stdlib/doc/vector.md#0x1_vector_spec_contains">vector::spec_contains</a>(mutate_setting, mutate_setting[<a href="token.md#0x1_token_COLLECTION_URI_MUTABLE_IND">COLLECTION_URI_MUTABLE_IND</a>]);
+    <b>aborts_if</b> !<a href="../../move-stdlib/doc/vector.md#0x1_vector_spec_contains">vector::spec_contains</a>(mutate_setting, mutate_setting[<a href="token.md#0x1_token_COLLECTION_MAX_MUTABLE_IND">COLLECTION_MAX_MUTABLE_IND</a>]);
 }
 </code></pre>
 
@@ -6078,7 +6078,7 @@ The mutate_setting shuold have a value.
 ### Function `mint_token`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mint_token">mint_token</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>, amount: u64): <a href="token.md#0x3_token_TokenId">token::TokenId</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mint_token">mint_token</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>, amount: u64): <a href="token.md#0x1_token_TokenId">token::TokenId</a>
 </code></pre>
 
 
@@ -6093,24 +6093,24 @@ The sum of supply and the amount of mint Token is less than maximum.
 
 
 
-<a id="0x3_token_MintTokenAbortsIf"></a>
+<a id="0x1_token_MintTokenAbortsIf"></a>
 
 
-<pre><code><b>schema</b> <a href="token.md#0x3_token_MintTokenAbortsIf">MintTokenAbortsIf</a> {
+<pre><code><b>schema</b> <a href="token.md#0x1_token_MintTokenAbortsIf">MintTokenAbortsIf</a> {
     <a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>;
-    token_data_id: <a href="token.md#0x3_token_TokenDataId">TokenDataId</a>;
+    token_data_id: <a href="token.md#0x1_token_TokenDataId">TokenDataId</a>;
     amount: u64;
     <b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>);
     <b>let</b> creator_addr = token_data_id.creator;
-    <b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr).token_data;
+    <b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr).token_data;
     <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_get">table::spec_get</a>(all_token_data, token_data_id);
     <b>aborts_if</b> token_data_id.creator != addr;
     <b>aborts_if</b> !<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_contains">table::spec_contains</a>(all_token_data, token_data_id);
     <b>aborts_if</b> token_data.maximum &gt; 0 && token_data.supply + amount &gt; token_data.maximum;
-    <b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr);
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr);
     <b>aborts_if</b> amount &lt;= 0;
-    <b>include</b> <a href="token.md#0x3_token_InitializeTokenStore">InitializeTokenStore</a>;
-    <b>let</b> token_id = <a href="token.md#0x3_token_create_token_id">create_token_id</a>(token_data_id, 0);
+    <b>include</b> <a href="token.md#0x1_token_InitializeTokenStore">InitializeTokenStore</a>;
+    <b>let</b> token_id = <a href="token.md#0x1_token_create_token_id">create_token_id</a>(token_data_id, 0);
 }
 </code></pre>
 
@@ -6121,26 +6121,26 @@ The sum of supply and the amount of mint Token is less than maximum.
 ### Function `mint_token_to`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_mint_token_to">mint_token_to</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, receiver: <b>address</b>, token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>, amount: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_mint_token_to">mint_token_to</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, receiver: <b>address</b>, token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>, amount: u64)
 </code></pre>
 
 
 
 
 <pre><code><b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../starcoin-framework/doc/account.md#0x1_account">account</a>);
-<b>let</b> opt_in_transfer = <b>global</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(receiver).direct_transfer;
+<b>let</b> opt_in_transfer = <b>global</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(receiver).direct_transfer;
 <b>let</b> creator_addr = token_data_id.creator;
-<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr).token_data;
+<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr).token_data;
 <b>let</b> token_data = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_get">table::spec_get</a>(all_token_data, token_data_id);
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(receiver);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(receiver);
 <b>aborts_if</b> !opt_in_transfer;
 <b>aborts_if</b> token_data_id.creator != addr;
 <b>aborts_if</b> !<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_contains">table::spec_contains</a>(all_token_data, token_data_id);
 <b>aborts_if</b> token_data.maximum &gt; 0 && token_data.supply + amount &gt; token_data.maximum;
 <b>aborts_if</b> amount &lt;= 0;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr);
-<b>let</b> token_id = <a href="token.md#0x3_token_create_token_id">create_token_id</a>(token_data_id, 0);
-<b>include</b> <a href="token.md#0x3_token_DirectDepositAbortsIf">DirectDepositAbortsIf</a> {
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr);
+<b>let</b> token_id = <a href="token.md#0x1_token_create_token_id">create_token_id</a>(token_data_id, 0);
+<b>include</b> <a href="token.md#0x1_token_DirectDepositAbortsIf">DirectDepositAbortsIf</a> {
     account_addr: receiver,
     token_id: token_id,
     token_amount: amount,
@@ -6154,7 +6154,7 @@ The sum of supply and the amount of mint Token is less than maximum.
 ### Function `create_token_data_id`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_create_token_data_id">create_token_data_id</a>(creator: <b>address</b>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_create_token_data_id">create_token_data_id</a>(creator: <b>address</b>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>
 </code></pre>
 
 
@@ -6162,21 +6162,21 @@ The length of collection should less than MAX_COLLECTION_NAME_LENGTH
 The length of name should less than MAX_NFT_NAME_LENGTH
 
 
-<pre><code><b>include</b> <a href="token.md#0x3_token_CreateTokenDataIdAbortsIf">CreateTokenDataIdAbortsIf</a>;
+<pre><code><b>include</b> <a href="token.md#0x1_token_CreateTokenDataIdAbortsIf">CreateTokenDataIdAbortsIf</a>;
 </code></pre>
 
 
 
 
-<a id="0x3_token_CreateTokenDataIdAbortsIf"></a>
+<a id="0x1_token_CreateTokenDataIdAbortsIf"></a>
 
 
-<pre><code><b>schema</b> <a href="token.md#0x3_token_CreateTokenDataIdAbortsIf">CreateTokenDataIdAbortsIf</a> {
+<pre><code><b>schema</b> <a href="token.md#0x1_token_CreateTokenDataIdAbortsIf">CreateTokenDataIdAbortsIf</a> {
     creator: <b>address</b>;
     collection: String;
     name: String;
-    <b>aborts_if</b> len(collection.bytes) &gt; <a href="token.md#0x3_token_MAX_COLLECTION_NAME_LENGTH">MAX_COLLECTION_NAME_LENGTH</a>;
-    <b>aborts_if</b> len(name.bytes) &gt; <a href="token.md#0x3_token_MAX_NFT_NAME_LENGTH">MAX_NFT_NAME_LENGTH</a>;
+    <b>aborts_if</b> len(collection.bytes) &gt; <a href="token.md#0x1_token_MAX_COLLECTION_NAME_LENGTH">MAX_COLLECTION_NAME_LENGTH</a>;
+    <b>aborts_if</b> len(name.bytes) &gt; <a href="token.md#0x1_token_MAX_NFT_NAME_LENGTH">MAX_NFT_NAME_LENGTH</a>;
 }
 </code></pre>
 
@@ -6187,7 +6187,7 @@ The length of name should less than MAX_NFT_NAME_LENGTH
 ### Function `create_token_id_raw`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_create_token_id_raw">create_token_id_raw</a>(creator: <b>address</b>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, property_version: u64): <a href="token.md#0x3_token_TokenId">token::TokenId</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_create_token_id_raw">create_token_id_raw</a>(creator: <b>address</b>, collection: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>, property_version: u64): <a href="token.md#0x1_token_TokenId">token::TokenId</a>
 </code></pre>
 
 
@@ -6195,18 +6195,18 @@ The length of collection should less than MAX_COLLECTION_NAME_LENGTH
 The length of name should less than MAX_NFT_NAME_LENGTH
 
 
-<pre><code><b>include</b> <a href="token.md#0x3_token_CreateTokenDataIdAbortsIf">CreateTokenDataIdAbortsIf</a>;
+<pre><code><b>include</b> <a href="token.md#0x1_token_CreateTokenDataIdAbortsIf">CreateTokenDataIdAbortsIf</a>;
 </code></pre>
 
 
 
 
-<a id="0x3_token_spec_balance_of"></a>
+<a id="0x1_token_spec_balance_of"></a>
 
 
-<pre><code><b>fun</b> <a href="token.md#0x3_token_spec_balance_of">spec_balance_of</a>(owner: <b>address</b>, id: <a href="token.md#0x3_token_TokenId">TokenId</a>): u64 {
-   <b>let</b> token_store = <b>borrow_global</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(owner);
-   <b>if</b> (!<b>exists</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(owner)) {
+<pre><code><b>fun</b> <a href="token.md#0x1_token_spec_balance_of">spec_balance_of</a>(owner: <b>address</b>, id: <a href="token.md#0x1_token_TokenId">TokenId</a>): u64 {
+   <b>let</b> token_store = <b>borrow_global</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(owner);
+   <b>if</b> (!<b>exists</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(owner)) {
        0
    }
    <b>else</b> <b>if</b> (<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_contains">table::spec_contains</a>(token_store.tokens, id)) {
@@ -6224,13 +6224,13 @@ The length of name should less than MAX_NFT_NAME_LENGTH
 ### Function `get_royalty`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_royalty">get_royalty</a>(token_id: <a href="token.md#0x3_token_TokenId">token::TokenId</a>): <a href="token.md#0x3_token_Royalty">token::Royalty</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_royalty">get_royalty</a>(token_id: <a href="token.md#0x1_token_TokenId">token::TokenId</a>): <a href="token.md#0x1_token_Royalty">token::Royalty</a>
 </code></pre>
 
 
 
 
-<pre><code><b>include</b> <a href="token.md#0x3_token_GetTokendataRoyaltyAbortsIf">GetTokendataRoyaltyAbortsIf</a> {
+<pre><code><b>include</b> <a href="token.md#0x1_token_GetTokendataRoyaltyAbortsIf">GetTokendataRoyaltyAbortsIf</a> {
     token_data_id: token_id.token_data_id
 };
 </code></pre>
@@ -6242,17 +6242,17 @@ The length of name should less than MAX_NFT_NAME_LENGTH
 ### Function `get_property_map`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_property_map">get_property_map</a>(owner: <b>address</b>, token_id: <a href="token.md#0x3_token_TokenId">token::TokenId</a>): <a href="property_map.md#0x3_property_map_PropertyMap">property_map::PropertyMap</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_property_map">get_property_map</a>(owner: <b>address</b>, token_id: <a href="token.md#0x1_token_TokenId">token::TokenId</a>): <a href="property_map.md#0x1_property_map_PropertyMap">property_map::PropertyMap</a>
 </code></pre>
 
 
 
 
 <pre><code><b>let</b> creator_addr = token_id.token_data_id.creator;
-<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr).token_data;
-<b>aborts_if</b> <a href="token.md#0x3_token_spec_balance_of">spec_balance_of</a>(owner, token_id) &lt;= 0;
+<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr).token_data;
+<b>aborts_if</b> <a href="token.md#0x1_token_spec_balance_of">spec_balance_of</a>(owner, token_id) &lt;= 0;
 <b>aborts_if</b> token_id.property_version == 0 && !<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_contains">table::spec_contains</a>(all_token_data, token_id.token_data_id);
-<b>aborts_if</b> token_id.property_version == 0 && !<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr);
+<b>aborts_if</b> token_id.property_version == 0 && !<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr);
 </code></pre>
 
 
@@ -6262,15 +6262,15 @@ The length of name should less than MAX_NFT_NAME_LENGTH
 ### Function `get_tokendata_maximum`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_tokendata_maximum">get_tokendata_maximum</a>(token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_tokendata_maximum">get_tokendata_maximum</a>(token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>): u64
 </code></pre>
 
 
 
 
 <pre><code><b>let</b> creator_address = token_data_id.creator;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address);
-<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address).token_data;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address);
+<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address).token_data;
 <b>aborts_if</b> !<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_contains">table::spec_contains</a>(all_token_data, token_data_id);
 </code></pre>
 
@@ -6281,14 +6281,14 @@ The length of name should less than MAX_NFT_NAME_LENGTH
 ### Function `get_tokendata_uri`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_tokendata_uri">get_tokendata_uri</a>(creator: <b>address</b>, token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>): <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_tokendata_uri">get_tokendata_uri</a>(creator: <b>address</b>, token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>): <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>
 </code></pre>
 
 
 
 
-<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator);
-<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator).token_data;
+<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator);
+<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator).token_data;
 <b>aborts_if</b> !<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_contains">table::spec_contains</a>(all_token_data, token_data_id);
 </code></pre>
 
@@ -6299,15 +6299,15 @@ The length of name should less than MAX_NFT_NAME_LENGTH
 ### Function `get_tokendata_description`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_tokendata_description">get_tokendata_description</a>(token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>): <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_tokendata_description">get_tokendata_description</a>(token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>): <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>
 </code></pre>
 
 
 
 
 <pre><code><b>let</b> creator_address = token_data_id.creator;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address);
-<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address).token_data;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address);
+<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address).token_data;
 <b>aborts_if</b> !<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_contains">table::spec_contains</a>(all_token_data, token_data_id);
 </code></pre>
 
@@ -6318,26 +6318,26 @@ The length of name should less than MAX_NFT_NAME_LENGTH
 ### Function `get_tokendata_royalty`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_tokendata_royalty">get_tokendata_royalty</a>(token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>): <a href="token.md#0x3_token_Royalty">token::Royalty</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_tokendata_royalty">get_tokendata_royalty</a>(token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>): <a href="token.md#0x1_token_Royalty">token::Royalty</a>
 </code></pre>
 
 
 
 
-<pre><code><b>include</b> <a href="token.md#0x3_token_GetTokendataRoyaltyAbortsIf">GetTokendataRoyaltyAbortsIf</a>;
+<pre><code><b>include</b> <a href="token.md#0x1_token_GetTokendataRoyaltyAbortsIf">GetTokendataRoyaltyAbortsIf</a>;
 </code></pre>
 
 
 
 
-<a id="0x3_token_GetTokendataRoyaltyAbortsIf"></a>
+<a id="0x1_token_GetTokendataRoyaltyAbortsIf"></a>
 
 
-<pre><code><b>schema</b> <a href="token.md#0x3_token_GetTokendataRoyaltyAbortsIf">GetTokendataRoyaltyAbortsIf</a> {
-    token_data_id: <a href="token.md#0x3_token_TokenDataId">TokenDataId</a>;
+<pre><code><b>schema</b> <a href="token.md#0x1_token_GetTokendataRoyaltyAbortsIf">GetTokendataRoyaltyAbortsIf</a> {
+    token_data_id: <a href="token.md#0x1_token_TokenDataId">TokenDataId</a>;
     <b>let</b> creator_address = token_data_id.creator;
-    <b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address).token_data;
-    <b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address);
+    <b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address).token_data;
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address);
     <b>aborts_if</b> !<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_contains">table::spec_contains</a>(all_token_data, token_data_id);
 }
 </code></pre>
@@ -6349,15 +6349,15 @@ The length of name should less than MAX_NFT_NAME_LENGTH
 ### Function `get_tokendata_mutability_config`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_tokendata_mutability_config">get_tokendata_mutability_config</a>(token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>): <a href="token.md#0x3_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a>
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_tokendata_mutability_config">get_tokendata_mutability_config</a>(token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>): <a href="token.md#0x1_token_TokenMutabilityConfig">token::TokenMutabilityConfig</a>
 </code></pre>
 
 
 
 
 <pre><code><b>let</b> creator_addr = token_data_id.creator;
-<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr).token_data;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr);
+<b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr).token_data;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr);
 <b>aborts_if</b> !<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_contains">table::spec_contains</a>(all_token_data, token_data_id);
 </code></pre>
 
@@ -6369,14 +6369,14 @@ The length of name should less than MAX_NFT_NAME_LENGTH
 
 
 <pre><code>#[view]
-<b>public</b> <b>fun</b> <a href="token.md#0x3_token_get_collection_mutability_config">get_collection_mutability_config</a>(creator: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): <a href="token.md#0x3_token_CollectionMutabilityConfig">token::CollectionMutabilityConfig</a>
+<b>public</b> <b>fun</b> <a href="token.md#0x1_token_get_collection_mutability_config">get_collection_mutability_config</a>(creator: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>): <a href="token.md#0x1_token_CollectionMutabilityConfig">token::CollectionMutabilityConfig</a>
 </code></pre>
 
 
 
 
-<pre><code><b>let</b> all_collection_data = <b>global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator).collection_data;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator);
+<pre><code><b>let</b> all_collection_data = <b>global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator).collection_data;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator);
 <b>aborts_if</b> !<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_contains">table::spec_contains</a>(all_collection_data, collection_name);
 </code></pre>
 
@@ -6387,29 +6387,29 @@ The length of name should less than MAX_NFT_NAME_LENGTH
 ### Function `withdraw_with_event_internal`
 
 
-<pre><code><b>fun</b> <a href="token.md#0x3_token_withdraw_with_event_internal">withdraw_with_event_internal</a>(account_addr: <b>address</b>, id: <a href="token.md#0x3_token_TokenId">token::TokenId</a>, amount: u64): <a href="token.md#0x3_token_Token">token::Token</a>
+<pre><code><b>fun</b> <a href="token.md#0x1_token_withdraw_with_event_internal">withdraw_with_event_internal</a>(account_addr: <b>address</b>, id: <a href="token.md#0x1_token_TokenId">token::TokenId</a>, amount: u64): <a href="token.md#0x1_token_Token">token::Token</a>
 </code></pre>
 
 
 
 
-<pre><code><b>include</b> <a href="token.md#0x3_token_WithdrawWithEventInternalAbortsIf">WithdrawWithEventInternalAbortsIf</a>;
+<pre><code><b>include</b> <a href="token.md#0x1_token_WithdrawWithEventInternalAbortsIf">WithdrawWithEventInternalAbortsIf</a>;
 </code></pre>
 
 
 
 
-<a id="0x3_token_WithdrawWithEventInternalAbortsIf"></a>
+<a id="0x1_token_WithdrawWithEventInternalAbortsIf"></a>
 
 
-<pre><code><b>schema</b> <a href="token.md#0x3_token_WithdrawWithEventInternalAbortsIf">WithdrawWithEventInternalAbortsIf</a> {
+<pre><code><b>schema</b> <a href="token.md#0x1_token_WithdrawWithEventInternalAbortsIf">WithdrawWithEventInternalAbortsIf</a> {
     account_addr: <b>address</b>;
-    id: <a href="token.md#0x3_token_TokenId">TokenId</a>;
+    id: <a href="token.md#0x1_token_TokenId">TokenId</a>;
     amount: u64;
-    <b>let</b> tokens = <b>global</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(account_addr).tokens;
+    <b>let</b> tokens = <b>global</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(account_addr).tokens;
     <b>aborts_if</b> amount &lt;= 0;
-    <b>aborts_if</b> <a href="token.md#0x3_token_spec_balance_of">spec_balance_of</a>(account_addr, id) &lt; amount;
-    <b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(account_addr);
+    <b>aborts_if</b> <a href="token.md#0x1_token_spec_balance_of">spec_balance_of</a>(account_addr, id) &lt; amount;
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(account_addr);
     <b>aborts_if</b> !<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_contains">table::spec_contains</a>(tokens, id);
 }
 </code></pre>
@@ -6421,15 +6421,15 @@ The length of name should less than MAX_NFT_NAME_LENGTH
 ### Function `update_token_property_internal`
 
 
-<pre><code><b>fun</b> <a href="token.md#0x3_token_update_token_property_internal">update_token_property_internal</a>(token_owner: <b>address</b>, token_id: <a href="token.md#0x3_token_TokenId">token::TokenId</a>, keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;)
+<pre><code><b>fun</b> <a href="token.md#0x1_token_update_token_property_internal">update_token_property_internal</a>(token_owner: <b>address</b>, token_id: <a href="token.md#0x1_token_TokenId">token::TokenId</a>, keys: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;, values: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, types: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;)
 </code></pre>
 
 
 
 
 <pre><code><b>pragma</b> aborts_if_is_partial;
-<b>let</b> tokens = <b>global</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(token_owner).tokens;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(token_owner);
+<b>let</b> tokens = <b>global</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(token_owner).tokens;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(token_owner);
 <b>aborts_if</b> !<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_contains">table::spec_contains</a>(tokens, token_id);
 </code></pre>
 
@@ -6440,32 +6440,32 @@ The length of name should less than MAX_NFT_NAME_LENGTH
 ### Function `direct_deposit`
 
 
-<pre><code><b>fun</b> <a href="token.md#0x3_token_direct_deposit">direct_deposit</a>(account_addr: <b>address</b>, <a href="token.md#0x3_token">token</a>: <a href="token.md#0x3_token_Token">token::Token</a>)
+<pre><code><b>fun</b> <a href="token.md#0x1_token_direct_deposit">direct_deposit</a>(account_addr: <b>address</b>, <a href="token.md#0x1_token">token</a>: <a href="token.md#0x1_token_Token">token::Token</a>)
 </code></pre>
 
 
 
 
-<pre><code><b>let</b> token_id = <a href="token.md#0x3_token">token</a>.id;
-<b>let</b> token_amount = <a href="token.md#0x3_token">token</a>.amount;
-<b>include</b> <a href="token.md#0x3_token_DirectDepositAbortsIf">DirectDepositAbortsIf</a>;
+<pre><code><b>let</b> token_id = <a href="token.md#0x1_token">token</a>.id;
+<b>let</b> token_amount = <a href="token.md#0x1_token">token</a>.amount;
+<b>include</b> <a href="token.md#0x1_token_DirectDepositAbortsIf">DirectDepositAbortsIf</a>;
 </code></pre>
 
 
 
 
-<a id="0x3_token_DirectDepositAbortsIf"></a>
+<a id="0x1_token_DirectDepositAbortsIf"></a>
 
 
-<pre><code><b>schema</b> <a href="token.md#0x3_token_DirectDepositAbortsIf">DirectDepositAbortsIf</a> {
+<pre><code><b>schema</b> <a href="token.md#0x1_token_DirectDepositAbortsIf">DirectDepositAbortsIf</a> {
     account_addr: <b>address</b>;
-    token_id: <a href="token.md#0x3_token_TokenId">TokenId</a>;
+    token_id: <a href="token.md#0x1_token_TokenId">TokenId</a>;
     token_amount: u64;
-    <b>let</b> token_store = <b>global</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(account_addr);
+    <b>let</b> token_store = <b>global</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(account_addr);
     <b>let</b> recipient_token = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_get">table::spec_get</a>(token_store.tokens, token_id);
     <b>let</b> b = <a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_contains">table::spec_contains</a>(token_store.tokens, token_id);
     <b>aborts_if</b> token_amount &lt;= 0;
-    <b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_TokenStore">TokenStore</a>&gt;(account_addr);
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_TokenStore">TokenStore</a>&gt;(account_addr);
     <b>aborts_if</b> b && recipient_token.id != token_id;
     <b>aborts_if</b> b && recipient_token.amount + token_amount &gt; MAX_U64;
 }
@@ -6478,27 +6478,27 @@ The length of name should less than MAX_NFT_NAME_LENGTH
 ### Function `assert_collection_exists`
 
 
-<pre><code><b>fun</b> <a href="token.md#0x3_token_assert_collection_exists">assert_collection_exists</a>(creator_address: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
+<pre><code><b>fun</b> <a href="token.md#0x1_token_assert_collection_exists">assert_collection_exists</a>(creator_address: <b>address</b>, collection_name: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>)
 </code></pre>
 
 
 The collection_name should exist in collection_data of the creator_address's Collections.
 
 
-<pre><code><b>include</b> <a href="token.md#0x3_token_AssertCollectionExistsAbortsIf">AssertCollectionExistsAbortsIf</a>;
+<pre><code><b>include</b> <a href="token.md#0x1_token_AssertCollectionExistsAbortsIf">AssertCollectionExistsAbortsIf</a>;
 </code></pre>
 
 
 
 
-<a id="0x3_token_AssertCollectionExistsAbortsIf"></a>
+<a id="0x1_token_AssertCollectionExistsAbortsIf"></a>
 
 
-<pre><code><b>schema</b> <a href="token.md#0x3_token_AssertCollectionExistsAbortsIf">AssertCollectionExistsAbortsIf</a> {
+<pre><code><b>schema</b> <a href="token.md#0x1_token_AssertCollectionExistsAbortsIf">AssertCollectionExistsAbortsIf</a> {
     creator_address: <b>address</b>;
     collection_name: String;
-    <b>let</b> all_collection_data = <b>global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address).collection_data;
-    <b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_address);
+    <b>let</b> all_collection_data = <b>global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address).collection_data;
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_address);
     <b>aborts_if</b> !<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_contains">table::spec_contains</a>(all_collection_data, collection_name);
 }
 </code></pre>
@@ -6510,7 +6510,7 @@ The collection_name should exist in collection_data of the creator_address's Col
 ### Function `assert_tokendata_exists`
 
 
-<pre><code><b>fun</b> <a href="token.md#0x3_token_assert_tokendata_exists">assert_tokendata_exists</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x3_token_TokenDataId">token::TokenDataId</a>)
+<pre><code><b>fun</b> <a href="token.md#0x1_token_assert_tokendata_exists">assert_tokendata_exists</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, token_data_id: <a href="token.md#0x1_token_TokenDataId">token::TokenDataId</a>)
 </code></pre>
 
 
@@ -6519,23 +6519,23 @@ The  creator of token_data_id exists in Collections.
 The token_data_id is in the all_token_data.
 
 
-<pre><code><b>include</b> <a href="token.md#0x3_token_AssertTokendataExistsAbortsIf">AssertTokendataExistsAbortsIf</a>;
+<pre><code><b>include</b> <a href="token.md#0x1_token_AssertTokendataExistsAbortsIf">AssertTokendataExistsAbortsIf</a>;
 </code></pre>
 
 
 
 
-<a id="0x3_token_AssertTokendataExistsAbortsIf"></a>
+<a id="0x1_token_AssertTokendataExistsAbortsIf"></a>
 
 
-<pre><code><b>schema</b> <a href="token.md#0x3_token_AssertTokendataExistsAbortsIf">AssertTokendataExistsAbortsIf</a> {
+<pre><code><b>schema</b> <a href="token.md#0x1_token_AssertTokendataExistsAbortsIf">AssertTokendataExistsAbortsIf</a> {
     creator: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>;
-    token_data_id: <a href="token.md#0x3_token_TokenDataId">TokenDataId</a>;
+    token_data_id: <a href="token.md#0x1_token_TokenDataId">TokenDataId</a>;
     <b>let</b> creator_addr = token_data_id.creator;
     <b>let</b> addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
     <b>aborts_if</b> addr != creator_addr;
-    <b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr);
-    <b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x3_token_Collections">Collections</a>&gt;(creator_addr).token_data;
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr);
+    <b>let</b> all_token_data = <b>global</b>&lt;<a href="token.md#0x1_token_Collections">Collections</a>&gt;(creator_addr).token_data;
     <b>aborts_if</b> !<a href="../../starcoin-framework/../starcoin-stdlib/doc/table.md#0x1_table_spec_contains">table::spec_contains</a>(all_token_data, token_data_id);
 }
 </code></pre>
@@ -6547,7 +6547,7 @@ The token_data_id is in the all_token_data.
 ### Function `assert_non_standard_reserved_property`
 
 
-<pre><code><b>fun</b> <a href="token.md#0x3_token_assert_non_standard_reserved_property">assert_non_standard_reserved_property</a>(keys: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;)
+<pre><code><b>fun</b> <a href="token.md#0x1_token_assert_non_standard_reserved_property">assert_non_standard_reserved_property</a>(keys: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a>&gt;)
 </code></pre>
 
 
@@ -6563,7 +6563,7 @@ The token_data_id is in the all_token_data.
 ### Function `initialize_token_script`
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x3_token_initialize_token_script">initialize_token_script</a>(_account: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="token.md#0x1_token_initialize_token_script">initialize_token_script</a>(_account: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -6580,7 +6580,7 @@ Deprecated function
 ### Function `initialize_token`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x3_token_initialize_token">initialize_token</a>(_account: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, _token_id: <a href="token.md#0x3_token_TokenId">token::TokenId</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="token.md#0x1_token_initialize_token">initialize_token</a>(_account: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, _token_id: <a href="token.md#0x1_token_TokenId">token::TokenId</a>)
 </code></pre>
 
 

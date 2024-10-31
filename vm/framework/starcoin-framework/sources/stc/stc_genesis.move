@@ -85,6 +85,7 @@ module starcoin_framework::stc_genesis {
         min_action_delay: u64,
         // transaction timeout config
         transaction_timeout: u64,
+        _dag_effective_height: u64,
     ) {
         // create genesis account
         let (genesis_account, _genesis_signer_cap) =
@@ -389,6 +390,7 @@ module starcoin_framework::stc_genesis {
             voting_quorum_rate,
             min_action_delay,
             transaction_timeout,
+            0,
         );
     }
 }

@@ -1036,6 +1036,7 @@ pub enum EntryFunctionCall {
         voting_quorum_rate: u8,
         min_action_delay: u64,
         transaction_timeout: u64,
+        _dag_effective_height: u64,
     },
 
     TransactionFeeConvertToStarcoinFaBurnRef {},
@@ -1799,6 +1800,7 @@ impl EntryFunctionCall {
                 voting_quorum_rate,
                 min_action_delay,
                 transaction_timeout,
+                _dag_effective_height,
             } => stc_genesis_initialize(
                 stdlib_version,
                 reward_delay,
@@ -1842,6 +1844,7 @@ impl EntryFunctionCall {
                 voting_quorum_rate,
                 min_action_delay,
                 transaction_timeout,
+                _dag_effective_height,
             ),
             TransactionFeeConvertToStarcoinFaBurnRef {} => {
                 transaction_fee_convert_to_starcoin_fa_burn_ref()
@@ -4413,6 +4416,7 @@ pub fn stc_genesis_initialize(
     voting_quorum_rate: u8,
     min_action_delay: u64,
     transaction_timeout: u64,
+    _dag_effective_height: u64,
 ) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
@@ -4464,6 +4468,7 @@ pub fn stc_genesis_initialize(
             bcs::to_bytes(&voting_quorum_rate).unwrap(),
             bcs::to_bytes(&min_action_delay).unwrap(),
             bcs::to_bytes(&transaction_timeout).unwrap(),
+            bcs::to_bytes(&_dag_effective_height).unwrap(),
         ],
     ))
 }
@@ -6530,6 +6535,7 @@ mod decoder {
                 voting_quorum_rate: bcs::from_bytes(script.args().get(39)?).ok()?,
                 min_action_delay: bcs::from_bytes(script.args().get(40)?).ok()?,
                 transaction_timeout: bcs::from_bytes(script.args().get(41)?).ok()?,
+                _dag_effective_height: bcs::from_bytes(script.args().get(42)?).ok()?,
             })
         } else {
             None

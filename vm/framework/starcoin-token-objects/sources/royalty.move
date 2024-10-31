@@ -6,7 +6,7 @@ module starcoin_token_objects::royalty {
     use std::option::{Self, Option};
     use starcoin_framework::object::{Self, ConstructorRef, ExtendRef, Object};
 
-    friend starcoin_token_objects::token;
+    friend starcoin_token_objects::object_token;
 
     /// Royalty does not exist
     const EROYALTY_DOES_NOT_EXIST: u64 = 1;
