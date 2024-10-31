@@ -39,6 +39,8 @@ use stream_task::{
     TaskHandle,
 };
 
+pub const ASYNC_BLOCK_COUNT: u64 = 10000;
+
 pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoFetcher {
     fn get_best_target(&self, min_difficulty: U256) -> Result<Option<SyncTarget>> {
         if let Some(best_peers) = self.peer_selector().bests(min_difficulty) {
@@ -118,7 +120,7 @@ pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoF
                     match target.as_ref() {
                         None => {
                             let maybe_target_number = std::cmp::min(
-                                begin_number.saturating_add(100000),
+                                begin_number.saturating_add(ASYNC_BLOCK_COUNT),
                                 better_peer.block_number(),
                             );
                             if maybe_target_number == better_peer.block_number()

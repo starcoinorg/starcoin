@@ -5,7 +5,10 @@ use crate::parallel::sender::DagBlockSender;
 use crate::store::sync_absent_ancestor::DagSyncBlock;
 use crate::store::sync_dag_store::SyncDagStore;
 use crate::tasks::continue_execute_absent_block::ContinueExecuteAbsentBlock;
-use crate::tasks::{BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
+use crate::tasks::{
+    BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore,
+    ASYNC_BLOCK_COUNT,
+};
 use crate::verified_rpc_client::RpcVerifyError;
 use anyhow::{format_err, Context, Result};
 use futures::future::BoxFuture;
@@ -31,8 +34,6 @@ use stream_task::{CollectorState, TaskError, TaskResultCollector, TaskState};
 
 use super::continue_execute_absent_block::ContinueChainOperator;
 use super::{BlockConnectAction, BlockConnectedFinishEvent};
-
-const ASYNC_BLOCK_COUNT: u64 = 100000;
 
 enum ParallelSign {
     NeedMoreBlocks,
