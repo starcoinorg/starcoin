@@ -18,6 +18,10 @@ use starcoin_gas_algebra::DynamicExpression;
 use starcoin_gas_schedule::{MiscGasParameters, NativeGasParameters, LATEST_GAS_FEATURE_VERSION};
 use starcoin_native_interface::SafeNativeBuilder;
 use starcoin_table_natives::NativeTableContext;
+use starcoin_types::vm::config::{
+    get_max_binary_format_version, get_max_identifier_size, starcoin_prod_vm_config,
+    verifier_config,
+};
 use starcoin_vm_runtime_types::storage::change_set_configs::ChangeSetConfigs;
 use starcoin_vm_types::{
     errors::PartialVMResult,

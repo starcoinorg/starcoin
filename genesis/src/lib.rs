@@ -30,7 +30,7 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::table_info::TableInfoStore;
 use starcoin_storage::{BlockStore, Storage, Store};
-use starcoin_transaction_builder::{build_init_script, build_stdlib_package_with_modules};
+use starcoin_transaction_builder::{build_init_script_v3, build_stdlib_package_with_modules};
 use starcoin_transaction_builder::{build_stdlib_package, StdLibOptions};
 use starcoin_types::startup_info::{ChainInfo, StartupInfo};
 use starcoin_types::transaction::Package;
@@ -391,7 +391,6 @@ fn encode_genesis_change_set(net: &ChainNetwork) -> ChangeSet {
 
     let mut state = GenesisStateView::new();
     for (module_bytes, module) in framework.code_and_compiled_modules() {
-        println!("module: {:?}", module.self_id());
         state.add_module(&module.self_id(), module_bytes);
     }
     let resolver = state.as_move_resolver();
@@ -400,7 +399,7 @@ fn encode_genesis_change_set(net: &ChainNetwork) -> ChangeSet {
     let genesis_id = HashValue::zero();
     let mut session = genesis_vm.new_genesis_session(&resolver, genesis_id);
 
-    initial_starcoin_genesis(&mut session, net);
+    initialize_starcoin_genesis(&mut session, net);
     let change_set_config = genesis_vm.genesis_change_set_configs();
     let (mut change_set, module_write_set) = session
         .finish(&change_set_config)
@@ -474,12 +473,14 @@ fn exec_function(
         });
 }
 
-fn initial_starcoin_genesis(session: &mut SessionExt, net: &ChainNetwork) {
-    let init_script = build_init_script(net);
+fn initialize_starcoin_genesis(session: &mut SessionExt, net: &ChainNetwork) {
+    let init_script = build_init_script_v3(net);
     exec_function(
         session,
-        init_script.module().name.as_str(),
-        init_script.function().as_str(),
+        //init_script.module().name.as_str(),
+        "stc_genesis",
+        //init_script.function().as_str(),
+        "initialize",
         init_script.ty_args().to_vec(),
         init_script.args().to_vec(),
     );
