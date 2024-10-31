@@ -32,7 +32,7 @@ use stream_task::{CollectorState, TaskError, TaskResultCollector, TaskState};
 use super::continue_execute_absent_block::ContinueChainOperator;
 use super::{BlockConnectAction, BlockConnectedFinishEvent};
 
-const ASYNC_BLOCK_COUNT: u64 = 1000;
+const ASYNC_BLOCK_COUNT: u64 = 100000;
 
 enum ParallelSign {
     NeedMoreBlocks,
