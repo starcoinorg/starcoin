@@ -22,7 +22,7 @@ pub struct Treasury {
 }
 
 impl MoveStructType for Treasury {
-    const MODULE_NAME: &'static IdentStr = ident_str!("Treasury");
+    const MODULE_NAME: &'static IdentStr = ident_str!("treasury");
     const STRUCT_NAME: &'static IdentStr = ident_str!("Treasury");
 }
 
@@ -55,7 +55,7 @@ pub struct LinearWithdrawCapability {
 }
 
 impl MoveStructType for LinearWithdrawCapability {
-    const MODULE_NAME: &'static IdentStr = ident_str!("Treasury");
+    const MODULE_NAME: &'static IdentStr = ident_str!("treasury");
     const STRUCT_NAME: &'static IdentStr = ident_str!("LinearWithdrawCapability");
 }
 

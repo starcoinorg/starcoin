@@ -196,7 +196,7 @@ pub fn starcoin_token_create_collection(
 ) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
-            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("starcoin_token").to_owned(),
         ),
         ident_str!("create_collection").to_owned(),
@@ -233,7 +233,7 @@ pub fn starcoin_token_mint(
 ) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
-            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("starcoin_token").to_owned(),
         ),
         ident_str!("mint").to_owned(),
@@ -263,7 +263,7 @@ pub fn starcoin_token_mint_soul_bound(
 ) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
-            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4]),
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("starcoin_token").to_owned(),
         ),
         ident_str!("mint_soul_bound").to_owned(),

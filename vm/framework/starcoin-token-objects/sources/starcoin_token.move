@@ -13,9 +13,9 @@ module starcoin_token_objects::starcoin_token {
     use std::signer;
     use starcoin_framework::object::{Self, ConstructorRef, Object};
     use starcoin_token_objects::collection;
-    use starcoin_token_objects::property_map;
+    use starcoin_token_objects::object_property_map;
     use starcoin_token_objects::royalty;
-    use starcoin_token_objects::token;
+    use starcoin_token_objects::object_token;
 
     /// The collection does not exist
     const ECOLLECTION_DOES_NOT_EXIST: u64 = 1;
@@ -59,13 +59,13 @@ module starcoin_token_objects::starcoin_token {
     /// Storage state for managing the no-code Token.
     struct StarcoinToken has key {
         /// Used to burn.
-        burn_ref: Option<token::BurnRef>,
+        burn_ref: Option<object_token::BurnRef>,
         /// Used to control freeze.
         transfer_ref: Option<object::TransferRef>,
         /// Used to mutate fields
-        mutator_ref: Option<token::MutatorRef>,
+        mutator_ref: Option<object_token::MutatorRef>,
         /// Used to mutate properties
-        property_mutator_ref: property_map::MutatorRef,
+        property_mutator_ref: object_property_map::MutatorRef,
     }
 
     /// Create a new collection
@@ -281,7 +281,7 @@ module starcoin_token_objects::starcoin_token {
         property_types: vector<String>,
         property_values: vector<vector<u8>>,
     ): ConstructorRef acquires StarcoinCollection {
-        let constructor_ref = token::create(creator, collection, description, name, option::none(), uri);
+        let constructor_ref = object_token::create(creator, collection, description, name, option::none(), uri);
 
         let object_signer = object::generate_signer(&constructor_ref);
 
@@ -293,13 +293,13 @@ module starcoin_token_objects::starcoin_token {
                 || collection.mutable_token_name
                 || collection.mutable_token_uri
         ) {
-            option::some(token::generate_mutator_ref(&constructor_ref))
+            option::some(object_token::generate_mutator_ref(&constructor_ref))
         } else {
             option::none()
         };
 
         let burn_ref = if (collection.tokens_burnable_by_creator) {
-            option::some(token::generate_burn_ref(&constructor_ref))
+            option::some(object_token::generate_burn_ref(&constructor_ref))
         } else {
             option::none()
         };
@@ -308,12 +308,12 @@ module starcoin_token_objects::starcoin_token {
             burn_ref,
             transfer_ref: option::none(),
             mutator_ref,
-            property_mutator_ref: property_map::generate_mutator_ref(&constructor_ref),
+            property_mutator_ref: object_property_map::generate_mutator_ref(&constructor_ref),
         };
         move_to(&object_signer, starcoin_token);
 
-        let properties = property_map::prepare_input(property_keys, property_types, property_values);
-        property_map::init(&constructor_ref, properties);
+        let properties = object_property_map::prepare_input(property_keys, property_types, property_values);
+        object_property_map::init(&constructor_ref, properties);
 
         constructor_ref
     }
@@ -331,7 +331,7 @@ module starcoin_token_objects::starcoin_token {
 
     #[view]
     public fun are_properties_mutable<T: key>(token: Object<T>): bool acquires StarcoinCollection {
-        let collection = token::collection_object(token);
+        let collection = object_token::collection_object(token);
         borrow_collection(&collection).mutable_token_properties
     }
 
@@ -342,22 +342,22 @@ module starcoin_token_objects::starcoin_token {
 
     #[view]
     public fun is_freezable_by_creator<T: key>(token: Object<T>): bool acquires StarcoinCollection {
-        are_collection_tokens_freezable(token::collection_object(token))
+        are_collection_tokens_freezable(object_token::collection_object(token))
     }
 
     #[view]
     public fun is_mutable_description<T: key>(token: Object<T>): bool acquires StarcoinCollection {
-        is_mutable_collection_token_description(token::collection_object(token))
+        is_mutable_collection_token_description(object_token::collection_object(token))
     }
 
     #[view]
     public fun is_mutable_name<T: key>(token: Object<T>): bool acquires StarcoinCollection {
-        is_mutable_collection_token_name(token::collection_object(token))
+        is_mutable_collection_token_name(object_token::collection_object(token))
     }
 
     #[view]
     public fun is_mutable_uri<T: key>(token: Object<T>): bool acquires StarcoinCollection {
-        is_mutable_collection_token_uri(token::collection_object(token))
+        is_mutable_collection_token_uri(object_token::collection_object(token))
     }
 
     // Token mutators
@@ -370,7 +370,7 @@ module starcoin_token_objects::starcoin_token {
         );
 
         assert!(
-            token::creator(*token) == signer::address_of(creator),
+            object_token::creator(*token) == signer::address_of(creator),
             error::permission_denied(ENOT_CREATOR),
         );
         borrow_global<StarcoinToken>(token_address)
@@ -390,14 +390,14 @@ module starcoin_token_objects::starcoin_token {
             mutator_ref: _,
             property_mutator_ref,
         } = starcoin_token;
-        property_map::burn(property_mutator_ref);
-        token::burn(option::extract(&mut burn_ref));
+        object_property_map::burn(property_mutator_ref);
+        object_token::burn(option::extract(&mut burn_ref));
     }
 
     public entry fun freeze_transfer<T: key>(creator: &signer, token: Object<T>) acquires StarcoinCollection, StarcoinToken {
         let starcoin_token = authorized_borrow(&token, creator);
         assert!(
-            are_collection_tokens_freezable(token::collection_object(token))
+            are_collection_tokens_freezable(object_token::collection_object(token))
                 && option::is_some(&starcoin_token.transfer_ref),
             error::permission_denied(EFIELD_NOT_MUTABLE),
         );
@@ -410,7 +410,7 @@ module starcoin_token_objects::starcoin_token {
     ) acquires StarcoinCollection, StarcoinToken {
         let starcoin_token = authorized_borrow(&token, creator);
         assert!(
-            are_collection_tokens_freezable(token::collection_object(token))
+            are_collection_tokens_freezable(object_token::collection_object(token))
                 && option::is_some(&starcoin_token.transfer_ref),
             error::permission_denied(EFIELD_NOT_MUTABLE),
         );
@@ -427,7 +427,7 @@ module starcoin_token_objects::starcoin_token {
             error::permission_denied(EFIELD_NOT_MUTABLE),
         );
         let starcoin_token = authorized_borrow(&token, creator);
-        token::set_description(option::borrow(&starcoin_token.mutator_ref), description);
+        object_token::set_description(option::borrow(&starcoin_token.mutator_ref), description);
     }
 
     public entry fun set_name<T: key>(
@@ -440,7 +440,7 @@ module starcoin_token_objects::starcoin_token {
             error::permission_denied(EFIELD_NOT_MUTABLE),
         );
         let starcoin_token = authorized_borrow(&token, creator);
-        token::set_name(option::borrow(&starcoin_token.mutator_ref), name);
+        object_token::set_name(option::borrow(&starcoin_token.mutator_ref), name);
     }
 
     public entry fun set_uri<T: key>(
@@ -453,7 +453,7 @@ module starcoin_token_objects::starcoin_token {
             error::permission_denied(EFIELD_NOT_MUTABLE),
         );
         let starcoin_token = authorized_borrow(&token, creator);
-        token::set_uri(option::borrow(&starcoin_token.mutator_ref), uri);
+        object_token::set_uri(option::borrow(&starcoin_token.mutator_ref), uri);
     }
 
     public entry fun add_property<T: key>(
@@ -469,7 +469,7 @@ module starcoin_token_objects::starcoin_token {
             error::permission_denied(EPROPERTIES_NOT_MUTABLE),
         );
 
-        property_map::add(&starcoin_token.property_mutator_ref, key, type, value);
+        object_property_map::add(&starcoin_token.property_mutator_ref, key, type, value);
     }
 
     public entry fun add_typed_property<T: key, V: drop>(
@@ -484,7 +484,7 @@ module starcoin_token_objects::starcoin_token {
             error::permission_denied(EPROPERTIES_NOT_MUTABLE),
         );
 
-        property_map::add_typed(&starcoin_token.property_mutator_ref, key, value);
+        object_property_map::add_typed(&starcoin_token.property_mutator_ref, key, value);
     }
 
     public entry fun remove_property<T: key>(
@@ -498,7 +498,7 @@ module starcoin_token_objects::starcoin_token {
             error::permission_denied(EPROPERTIES_NOT_MUTABLE),
         );
 
-        property_map::remove(&starcoin_token.property_mutator_ref, &key);
+        object_property_map::remove(&starcoin_token.property_mutator_ref, &key);
     }
 
     public entry fun update_property<T: key>(
@@ -514,7 +514,7 @@ module starcoin_token_objects::starcoin_token {
             error::permission_denied(EPROPERTIES_NOT_MUTABLE),
         );
 
-        property_map::update(&starcoin_token.property_mutator_ref, &key, type, value);
+        object_property_map::update(&starcoin_token.property_mutator_ref, &key, type, value);
     }
 
     public entry fun update_typed_property<T: key, V: drop>(
@@ -529,7 +529,7 @@ module starcoin_token_objects::starcoin_token {
             error::permission_denied(EPROPERTIES_NOT_MUTABLE),
         );
 
-        property_map::update_typed(&starcoin_token.property_mutator_ref, &key, value);
+        object_property_map::update_typed(&starcoin_token.property_mutator_ref, &key, value);
     }
 
     // Collection accessors
@@ -769,9 +769,9 @@ module starcoin_token_objects::starcoin_token {
         let token = mint_helper(creator, collection_name, token_name);
 
         let description = string::utf8(b"not");
-        assert!(token::description(token) != description, 0);
+        assert!(object_token::description(token) != description, 0);
         set_description(creator, token, description);
-        assert!(token::description(token) == description, 1);
+        assert!(object_token::description(token) == description, 1);
     }
 
     #[test(creator = @0x123)]
@@ -811,9 +811,9 @@ module starcoin_token_objects::starcoin_token {
         let token = mint_helper(creator, collection_name, token_name);
 
         let name = string::utf8(b"not");
-        assert!(token::name(token) != name, 0);
+        assert!(object_token::name(token) != name, 0);
         set_name(creator, token, name);
-        assert!(token::name(token) == name, 1);
+        assert!(object_token::name(token) == name, 1);
     }
 
     #[test(creator = @0x123)]
@@ -853,9 +853,9 @@ module starcoin_token_objects::starcoin_token {
         let token = mint_helper(creator, collection_name, token_name);
 
         let uri = string::utf8(b"not");
-        assert!(token::uri(token) != uri, 0);
+        assert!(object_token::uri(token) != uri, 0);
         set_uri(creator, token, uri);
-        assert!(token::uri(token) == uri, 1);
+        assert!(object_token::uri(token) == uri, 1);
     }
 
     #[test(creator = @0x123)]
@@ -996,7 +996,7 @@ module starcoin_token_objects::starcoin_token {
         let token = mint_helper(creator, collection_name, token_name);
         add_property(creator, token, property_name, property_type, vector [ 0x08 ]);
 
-        assert!(property_map::read_u8(&token, &property_name) == 0x8, 0);
+        assert!(object_property_map::read_u8(&token, &property_name) == 0x8, 0);
     }
 
     #[test(creator = @0x123)]
@@ -1009,7 +1009,7 @@ module starcoin_token_objects::starcoin_token {
         let token = mint_helper(creator, collection_name, token_name);
         add_typed_property<StarcoinToken, u8>(creator, token, property_name, 0x8);
 
-        assert!(property_map::read_u8(&token, &property_name) == 0x8, 0);
+        assert!(object_property_map::read_u8(&token, &property_name) == 0x8, 0);
     }
 
     #[test(creator = @0x123)]
@@ -1023,7 +1023,7 @@ module starcoin_token_objects::starcoin_token {
         let token = mint_helper(creator, collection_name, token_name);
         update_property(creator, token, property_name, property_type, vector [ 0x00 ]);
 
-        assert!(!property_map::read_bool(&token, &property_name), 0);
+        assert!(!object_property_map::read_bool(&token, &property_name), 0);
     }
 
     #[test(creator = @0x123)]
@@ -1036,7 +1036,7 @@ module starcoin_token_objects::starcoin_token {
         let token = mint_helper(creator, collection_name, token_name);
         update_typed_property<StarcoinToken, bool>(creator, token, property_name, false);
 
-        assert!(!property_map::read_bool(&token, &property_name), 0);
+        assert!(!object_property_map::read_bool(&token, &property_name), 0);
     }
 
     #[test(creator = @0x123)]
@@ -1058,9 +1058,9 @@ module starcoin_token_objects::starcoin_token {
         let collection = create_collection_helper(creator, collection_name, true);
         let token = mint_helper(creator, collection_name, token_name);
 
-        let royalty_before = option::extract(&mut token::royalty(token));
+        let royalty_before = option::extract(&mut object_token::royalty(token));
         set_collection_royalties_call(creator, collection, 2, 3, @0x444);
-        let royalty_after = option::extract(&mut token::royalty(token));
+        let royalty_after = option::extract(&mut object_token::royalty(token));
         assert!(royalty_before != royalty_after, 0);
     }
 

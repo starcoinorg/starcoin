@@ -13,45 +13,45 @@ use starcoin_gas_algebra::{InternalGas, InternalGasPerAbstractValueUnit, Interna
 crate::gas_schedule::macros::define_gas_parameters!(StarcoinFrameworkGasParameters, "starcoin_framework",
     NativeGasParameters => .starcoin_framework,
     [
-    [signature_ed25519_pubkey_base: InternalGas,  "signature.ed25519.pubkey.base", 0 * MUL],
-    [signature_ed25519_pubkey_per_byte: InternalGasPerByte,  "signature.ed25519.pubkey.per_byte", (61 + 1)* MUL],
-     [signature_ed25519_verify_base : InternalGas,  "signature.ed25519.verify.base", 0 * MUL],
-    [signature_ed25519_verify_per_byte: InternalGasPerByte,  "signature.ed25519.verify.per_byte",(26 + 1) * MUL],
+      [signature_ed25519_pubkey_base: InternalGas,  "signature.ed25519.pubkey.base", 0 * MUL],
+      [signature_ed25519_pubkey_per_byte: InternalGasPerByte,  "signature.ed25519.pubkey.per_byte", (61 + 1)* MUL],
+      [signature_ed25519_verify_base : InternalGas,  "signature.ed25519.verify.base", 0 * MUL],
+      [signature_ed25519_verify_per_byte: InternalGasPerByte,  "signature.ed25519.verify.per_byte",(26 + 1) * MUL],
 
-    [account_create_signer_base: InternalGas, "account.create_signer.base", (24 + 1) * MUL],
-    [account_destroy_signer_base: InternalGas, "account.destroy_signer.base", (212 + 1)* MUL],
+      [account_create_signer_base: InternalGas, "account.create_signer.base", (24 + 1) * MUL],
+      [account_destroy_signer_base: InternalGas, "account.destroy_signer.base", (212 + 1)* MUL],
 
-    [token_name_of_base: InternalGas,  "token.name_of.base", (2002 + 1) * MUL],
+      [token_name_of_base: InternalGas,  "token.name_of.base", (2002 + 1) * MUL],
 
-    //[hash_keccak256_base: InternalGas, "hash.keccak256.base",  0 * MUL],
-    //[hash_keccak256_per_byte: InternalGasPerByte, "hash.keccak256.per_byte",  (64 + 1) *MUL],
-    //[hash_ripemd160_base:InternalGas ,   "hash.ripemd160.base", 0 * MUL],
-    //[hash_ripemd160_per_byte: InternalGasPerByte,  "hash.ripemd160.per_byte", (64 + 1) * MUL],
-    [signature_ec_recover_base: InternalGas,   "signature.ec_recover.base",  0 * MUL],
-    [signature_ec_recover_per_byte: InternalGasPerByte,   "signature.ec_recover.per_byte", (128 + 1) * MUL],
+      //[hash_keccak256_base: InternalGas, "hash.keccak256.base",  0 * MUL],
+      //[hash_keccak256_per_byte: InternalGasPerByte, "hash.keccak256.per_byte",  (64 + 1) *MUL],
+      //[hash_ripemd160_base:InternalGas ,   "hash.ripemd160.base", 0 * MUL],
+      //[hash_ripemd160_per_byte: InternalGasPerByte,  "hash.ripemd160.per_byte", (64 + 1) * MUL],
+      [signature_ec_recover_base: InternalGas,   "signature.ec_recover.base",  0 * MUL],
+      [signature_ec_recover_per_byte: InternalGasPerByte,   "signature.ec_recover.per_byte", (128 + 1) * MUL],
 
-       // XXX FIXME YSG, need to remove?
-    //[u256_from_bytes_base,   "u256.from_bytes.base",  0 * MUL],
-    [u256_from_bytes_per_byte: InternalGasPerByte,   "u256.from_bytes.per_byte", (2 + 1) * MUL],
-    [u256_add_base: InternalGas,   "u256.add.base", (4 + 1) * MUL],
-    [u256_sub_base: InternalGas,   "u256.sub.base",  (4 + 1) * MUL],
-    [u256_mul_base: InternalGas,   "u256.mul.base",  (4 + 1) * MUL],
-    [u256_div_base: InternalGas,   "u256.div.base",  (10 + 1) * MUL],
-    [u256_rem_base: InternalGas,   "u256.rem.base",  (4 + 1) * MUL],
-    [u256_pow_base: InternalGas,   "u256.pow.base",  (8 + 1) * MUL],
-        // XXX FIXME YSG, need to remove?
+      // XXX FIXME YSG, need to remove?
+      //[u256_from_bytes_base,   "u256.from_bytes.base",  0 * MUL],
+      [u256_from_bytes_per_byte: InternalGasPerByte,   "u256.from_bytes.per_byte", (2 + 1) * MUL],
+      [u256_add_base: InternalGas,   "u256.add.base", (4 + 1) * MUL],
+      [u256_sub_base: InternalGas,   "u256.sub.base",  (4 + 1) * MUL],
+      [u256_mul_base: InternalGas,   "u256.mul.base",  (4 + 1) * MUL],
+      [u256_div_base: InternalGas,   "u256.div.base",  (10 + 1) * MUL],
+      [u256_rem_base: InternalGas,   "u256.rem.base",  (4 + 1) * MUL],
+      [u256_pow_base: InternalGas,   "u256.pow.base",  (8 + 1) * MUL],
 
-    //[util_from_bytes_base: InternalGas,  "util.from_bytes.base", (4 + 1)  * MUL],
-    // [util_from_bytes_per_byte: InternalGasPerByte, "util.from_bytes.per_byte", 0],
-    //[secp256k1_base: InternalGas,  "secp256k1.base", (4 + 1)  * MUL],
-    //[secp256k1_ecdsa_recover: InternalGasPerArg, "secp256k1.ecdsa_recover", 5918360],
+      // XXX FIXME YSG, need to remove?
+      //[util_from_bytes_base: InternalGas,  "util.from_bytes.base", (4 + 1)  * MUL],
+      // [util_from_bytes_per_byte: InternalGasPerByte, "util.from_bytes.per_byte", 0],
+      //[secp256k1_base: InternalGas,  "secp256k1.base", (4 + 1)  * MUL],
+      //[secp256k1_ecdsa_recover: InternalGasPerArg, "secp256k1.ecdsa_recover", 5918360],
 
-    //[code_request_publish_base: InternalGas, "code.request_publish.base", 1838],
-    //[code_request_publish_per_byte: InternalGasPerByte, "code.request_publish.per_byte", 7],
+      //[code_request_publish_base: InternalGas, "code.request_publish.base", 1838],
+      //[code_request_publish_per_byte: InternalGasPerByte, "code.request_publish.per_byte", 7],
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    // New gas table for framework v2
-    //
+      ////////////////////////////////////////////////////////////////////////////////////////////////
+      // New gas table for framework v2
+      //
       [account_create_address_base: InternalGas, "account.create_address.base", 1102],
       //[account_create_signer_base: InternalGas, "account.create_signer.base", 1102],
 
@@ -177,185 +177,185 @@ crate::gas_schedule::macros::define_gas_parameters!(StarcoinFrameworkGasParamete
       [algebra_ark_bls12_381_g2_affine_deser_comp: InternalGas, { 8.. => "algebra.ark_bls12_381_g2_affine_deser_comp" }, 7572809],
       [algebra_ark_bls12_381_g2_affine_deser_uncomp: InternalGas, { 8.. => "algebra.ark_bls12_381_g2_affine_deser_uncomp" }, 3742090],
       [algebra_ark_bls12_381_g2_affine_serialize_comp: InternalGas, { 8.. => "algebra.ark_bls12_381_g2_affine_serialize_comp" }, 12417],
-        [algebra_ark_bls12_381_g2_affine_serialize_uncomp: InternalGas, { 8.. => "algebra.ark_bls12_381_g2_affine_serialize_uncomp" }, 15501],
-        [algebra_ark_bls12_381_g2_proj_add: InternalGas, { 8.. => "algebra.ark_bls12_381_g2_proj_add" }, 119106],
-        [algebra_ark_bls12_381_g2_proj_double: InternalGas, { 8.. => "algebra.ark_bls12_381_g2_proj_double" }, 54548],
-        [algebra_ark_bls12_381_g2_proj_eq: InternalGas, { 8.. => "algebra.ark_bls12_381_g2_proj_eq" }, 55709],
-        [algebra_ark_bls12_381_g2_proj_generator: InternalGas, { 8.. => "algebra.ark_bls12_381_g2_proj_generator" }, 40],
-        [algebra_ark_bls12_381_g2_proj_infinity: InternalGas, { 8.. => "algebra.ark_bls12_381_g2_proj_infinity" }, 40],
-        [algebra_ark_bls12_381_g2_proj_neg: InternalGas, { 8.. => "algebra.ark_bls12_381_g2_proj_neg" }, 40],
-        [algebra_ark_bls12_381_g2_proj_scalar_mul: InternalGas, { 8.. => "algebra.ark_bls12_381_g2_proj_scalar_mul" }, 27667443],
-        [algebra_ark_bls12_381_g2_proj_sub: InternalGas, { 8.. => "algebra.ark_bls12_381_g2_proj_sub" }, 120826],
-        [algebra_ark_bls12_381_g2_proj_to_affine: InternalGas, { 8.. => "algebra.ark_bls12_381_g2_proj_to_affine" }, 473678],
-        [algebra_ark_bls12_381_multi_pairing_base: InternalGas, { 8.. => "algebra.ark_bls12_381_multi_pairing_base" }, 33079033],
-        [algebra_ark_bls12_381_multi_pairing_per_pair: InternalGasPerArg, { 8.. => "algebra.ark_bls12_381_multi_pairing_per_pair" }, 16919311],
-        [algebra_ark_bls12_381_pairing: InternalGas, { 8.. => "algebra.ark_bls12_381_pairing" }, 54523240],
-        [algebra_ark_h2c_bls12381g1_xmd_sha256_sswu_base: InternalGas, { 8.. => "algebra.ark_h2c_bls12381g1_xmd_sha256_sswu_base" }, 11954142],
-        [algebra_ark_h2c_bls12381g1_xmd_sha256_sswu_per_msg_byte: InternalGasPerByte, { 8.. => "algebra.ark_h2c_bls12381g1_xmd_sha256_sswu_per_msg_byte" }, 176],
-        [algebra_ark_h2c_bls12381g2_xmd_sha256_sswu_base: InternalGas, { 8.. => "algebra.ark_h2c_bls12381g2_xmd_sha256_sswu_base" }, 24897555],
-        [algebra_ark_h2c_bls12381g2_xmd_sha256_sswu_per_msg_byte: InternalGasPerByte, { 8.. => "algebra.ark_h2c_bls12381g2_xmd_sha256_sswu_per_msg_byte" }, 176],
+      [algebra_ark_bls12_381_g2_affine_serialize_uncomp: InternalGas, { 8.. => "algebra.ark_bls12_381_g2_affine_serialize_uncomp" }, 15501],
+      [algebra_ark_bls12_381_g2_proj_add: InternalGas, { 8.. => "algebra.ark_bls12_381_g2_proj_add" }, 119106],
+      [algebra_ark_bls12_381_g2_proj_double: InternalGas, { 8.. => "algebra.ark_bls12_381_g2_proj_double" }, 54548],
+      [algebra_ark_bls12_381_g2_proj_eq: InternalGas, { 8.. => "algebra.ark_bls12_381_g2_proj_eq" }, 55709],
+      [algebra_ark_bls12_381_g2_proj_generator: InternalGas, { 8.. => "algebra.ark_bls12_381_g2_proj_generator" }, 40],
+      [algebra_ark_bls12_381_g2_proj_infinity: InternalGas, { 8.. => "algebra.ark_bls12_381_g2_proj_infinity" }, 40],
+      [algebra_ark_bls12_381_g2_proj_neg: InternalGas, { 8.. => "algebra.ark_bls12_381_g2_proj_neg" }, 40],
+      [algebra_ark_bls12_381_g2_proj_scalar_mul: InternalGas, { 8.. => "algebra.ark_bls12_381_g2_proj_scalar_mul" }, 27667443],
+      [algebra_ark_bls12_381_g2_proj_sub: InternalGas, { 8.. => "algebra.ark_bls12_381_g2_proj_sub" }, 120826],
+      [algebra_ark_bls12_381_g2_proj_to_affine: InternalGas, { 8.. => "algebra.ark_bls12_381_g2_proj_to_affine" }, 473678],
+      [algebra_ark_bls12_381_multi_pairing_base: InternalGas, { 8.. => "algebra.ark_bls12_381_multi_pairing_base" }, 33079033],
+      [algebra_ark_bls12_381_multi_pairing_per_pair: InternalGasPerArg, { 8.. => "algebra.ark_bls12_381_multi_pairing_per_pair" }, 16919311],
+      [algebra_ark_bls12_381_pairing: InternalGas, { 8.. => "algebra.ark_bls12_381_pairing" }, 54523240],
+      [algebra_ark_h2c_bls12381g1_xmd_sha256_sswu_base: InternalGas, { 8.. => "algebra.ark_h2c_bls12381g1_xmd_sha256_sswu_base" }, 11954142],
+      [algebra_ark_h2c_bls12381g1_xmd_sha256_sswu_per_msg_byte: InternalGasPerByte, { 8.. => "algebra.ark_h2c_bls12381g1_xmd_sha256_sswu_per_msg_byte" }, 176],
+      [algebra_ark_h2c_bls12381g2_xmd_sha256_sswu_base: InternalGas, { 8.. => "algebra.ark_h2c_bls12381g2_xmd_sha256_sswu_base" }, 24897555],
+      [algebra_ark_h2c_bls12381g2_xmd_sha256_sswu_per_msg_byte: InternalGasPerByte, { 8.. => "algebra.ark_h2c_bls12381g2_xmd_sha256_sswu_per_msg_byte" }, 176],
         // BLS12-381 algebra gas parameters end.
 
-        [bls12381_base: InternalGas, "bls12381.base", 551],
+      [bls12381_base: InternalGas, "bls12381.base", 551],
 
-        [bls12381_per_pubkey_deserialize: InternalGasPerArg, "bls12381.per_pubkey_deserialize", 400684],
-        [bls12381_per_pubkey_aggregate: InternalGasPerArg, "bls12381.per_pubkey_aggregate", 15439],
-        [bls12381_per_pubkey_subgroup_check: InternalGasPerArg, "bls12381.per_pubkey_subgroup_check", 1360120],
+      [bls12381_per_pubkey_deserialize: InternalGasPerArg, "bls12381.per_pubkey_deserialize", 400684],
+      [bls12381_per_pubkey_aggregate: InternalGasPerArg, "bls12381.per_pubkey_aggregate", 15439],
+      [bls12381_per_pubkey_subgroup_check: InternalGasPerArg, "bls12381.per_pubkey_subgroup_check", 1360120],
 
-        [bls12381_per_sig_deserialize: InternalGasPerArg, "bls12381.per_sig_deserialize", 816072],
-        [bls12381_per_sig_aggregate: InternalGasPerArg, "bls12381.per_sig_aggregate", 42825],
-        [bls12381_per_sig_subgroup_check: InternalGasPerArg, "bls12381.per_sig_subgroup_check", 1692798],
+      [bls12381_per_sig_deserialize: InternalGasPerArg, "bls12381.per_sig_deserialize", 816072],
+      [bls12381_per_sig_aggregate: InternalGasPerArg, "bls12381.per_sig_aggregate", 42825],
+      [bls12381_per_sig_subgroup_check: InternalGasPerArg, "bls12381.per_sig_subgroup_check", 1692798],
 
-        [bls12381_per_sig_verify: InternalGasPerArg, "bls12381.per_sig_verify", 31190860],
-        [bls12381_per_pop_verify: InternalGasPerArg, "bls12381.per_pop_verify", 37862800],
+      [bls12381_per_sig_verify: InternalGasPerArg, "bls12381.per_sig_verify", 31190860],
+      [bls12381_per_pop_verify: InternalGasPerArg, "bls12381.per_pop_verify", 37862800],
 
-        [bls12381_per_pairing: InternalGasPerArg, "bls12381.per_pairing", 14751788],
+      [bls12381_per_pairing: InternalGasPerArg, "bls12381.per_pairing", 14751788],
 
-        [bls12381_per_msg_hashing: InternalGasPerArg, "bls12381.per_msg_hashing", 5661040],
-        [bls12381_per_byte_hashing: InternalGasPerByte, "bls12381.per_byte_hashing", 183],
+      [bls12381_per_msg_hashing: InternalGasPerArg, "bls12381.per_msg_hashing", 5661040],
+      [bls12381_per_byte_hashing: InternalGasPerByte, "bls12381.per_byte_hashing", 183],
 
-        [ed25519_base: InternalGas, "signature.base", 551],
-        [ed25519_per_pubkey_deserialize: InternalGasPerArg, "signature.per_pubkey_deserialize", 139688],
-        [ed25519_per_pubkey_small_order_check: InternalGasPerArg, "signature.per_pubkey_small_order_check", 23342],
-        [ed25519_per_sig_deserialize: InternalGasPerArg, "signature.per_sig_deserialize", 1378],
-        [ed25519_per_sig_strict_verify: InternalGasPerArg, "signature.per_sig_strict_verify", 981492],
-        [ed25519_per_msg_hashing_base: InternalGasPerArg, "signature.per_msg_hashing_base", 11910],
-        [ed25519_per_msg_byte_hashing: InternalGasPerByte, "signature.per_msg_byte_hashing", 220],
+      [ed25519_base: InternalGas, "signature.base", 551],
+      [ed25519_per_pubkey_deserialize: InternalGasPerArg, "signature.per_pubkey_deserialize", 139688],
+      [ed25519_per_pubkey_small_order_check: InternalGasPerArg, "signature.per_pubkey_small_order_check", 23342],
+      [ed25519_per_sig_deserialize: InternalGasPerArg, "signature.per_sig_deserialize", 1378],
+      [ed25519_per_sig_strict_verify: InternalGasPerArg, "signature.per_sig_strict_verify", 981492],
+      [ed25519_per_msg_hashing_base: InternalGasPerArg, "signature.per_msg_hashing_base", 11910],
+      [ed25519_per_msg_byte_hashing: InternalGasPerByte, "signature.per_msg_byte_hashing", 220],
 
-        [secp256k1_base: InternalGas, "secp256k1.base", 551],
-        [secp256k1_ecdsa_recover: InternalGasPerArg, "secp256k1.ecdsa_recover", 5918360],
+      [secp256k1_base: InternalGas, "secp256k1.base", 551],
+      [secp256k1_ecdsa_recover: InternalGasPerArg, "secp256k1.ecdsa_recover", 5918360],
 
-        [ristretto255_basepoint_mul: InternalGasPerArg, "ristretto255.basepoint_mul", 470528],
-        [ristretto255_basepoint_double_mul: InternalGasPerArg, "ristretto255.basepoint_double_mul", 1617440],
+      [ristretto255_basepoint_mul: InternalGasPerArg, "ristretto255.basepoint_mul", 470528],
+      [ristretto255_basepoint_double_mul: InternalGasPerArg, "ristretto255.basepoint_double_mul", 1617440],
 
-        [ristretto255_point_add: InternalGasPerArg, "ristretto255.point_add", 7848],
-        [ristretto255_point_clone: InternalGasPerArg, { 11.. => "ristretto255.point_clone" }, 551],
-        [ristretto255_point_compress: InternalGasPerArg, "ristretto255.point_compress", 147040],
-        [ristretto255_point_decompress: InternalGasPerArg, "ristretto255.point_decompress", 148878],
-        [ristretto255_point_equals: InternalGasPerArg, "ristretto255.point_equals", 8454],
-        [ristretto255_point_from_64_uniform_bytes: InternalGasPerArg, "ristretto255.point_from_64_uniform_bytes", 299594],
-        [ristretto255_point_identity: InternalGasPerArg, "ristretto255.point_identity", 551],
-        [ristretto255_point_mul: InternalGasPerArg, "ristretto255.point_mul", 1731396],
-        [ristretto255_point_double_mul: InternalGasPerArg, { 11.. => "ristretto255.point_double_mul" }, 1869907],
-        [ristretto255_point_neg: InternalGasPerArg, "ristretto255.point_neg", 1323],
-        [ristretto255_point_sub: InternalGasPerArg, "ristretto255.point_sub", 7829],
-        [ristretto255_point_parse_arg: InternalGasPerArg, "ristretto255.point_parse_arg", 551],
-
-
-        // TODO(Alin): These SHA512 gas costs could be unified with the costs in our future SHA512 module
-        // (assuming same implementation complexity, which might not be the case
-        [ristretto255_sha512_per_byte: InternalGasPerByte, "ristretto255.scalar_sha512_per_byte", 220],
-        [ristretto255_sha512_per_hash: InternalGasPerArg, "ristretto255.scalar_sha512_per_hash", 11910],
-
-        [ristretto255_scalar_add: InternalGasPerArg, "ristretto255.scalar_add", 2830],
-        [ristretto255_scalar_reduced_from_32_bytes: InternalGasPerArg, "ristretto255.scalar_reduced_from_32_bytes", 2609],
-        [ristretto255_scalar_uniform_from_64_bytes: InternalGasPerArg, "ristretto255.scalar_uniform_from_64_bytes", 4576],
-        [ristretto255_scalar_from_u128: InternalGasPerArg, "ristretto255.scalar_from_u128", 643],
-        [ristretto255_scalar_from_u64: InternalGasPerArg, "ristretto255.scalar_from_u64", 643],
-        [ristretto255_scalar_invert: InternalGasPerArg, "ristretto255.scalar_invert", 404360],
-        [ristretto255_scalar_is_canonical: InternalGasPerArg, "ristretto255.scalar_is_canonical", 4227],
-        [ristretto255_scalar_mul: InternalGasPerArg, "ristretto255.scalar_mul", 3914],
-        [ristretto255_scalar_neg: InternalGasPerArg, "ristretto255.scalar_neg", 2665],
-        [ristretto255_scalar_sub: InternalGasPerArg, "ristretto255.scalar_sub", 3896],
-        [ristretto255_scalar_parse_arg: InternalGasPerArg, "ristretto255.scalar_parse_arg", 551],
-
-        [hash_sip_hash_base: InternalGas, "hash.sip_hash.base", 3676],
-        [hash_sip_hash_per_byte: InternalGasPerByte, "hash.sip_hash.per_byte", 73],
-
-        [hash_keccak256_base: InternalGas, { 1.. => "hash.keccak256.base" }, 14704],
-        [hash_keccak256_per_byte: InternalGasPerByte, { 1.. => "hash.keccak256.per_byte" }, 165],
-
-        // Bulletproofs gas parameters begin.
-        // Generated at time 1683148919.0628748 by `scripts/algebra-gas/update_bulletproofs_gas_params.py` with gas_per_ns=10.0.
-        [bulletproofs_base: InternalGas, { 11.. => "bulletproofs.base" }, 11794651],
-        [bulletproofs_per_bit_rangeproof_verify: InternalGasPerArg, { 11.. => "bulletproofs.per_bit_rangeproof_verify" }, 1004253],
-        [bulletproofs_per_byte_rangeproof_deserialize: InternalGasPerByte, { 11.. => "bulletproofs.per_byte_rangeproof_deserialize" }, 121],
-        // Bulletproofs gas parameters end.
-
-        [type_info_type_of_base: InternalGas, "type_info.type_of.base", 1102],
-        // TODO(Gas): the on-chain name is wrong...
-        [type_info_type_of_per_byte_in_str: InternalGasPerByte, "type_info.type_of.per_abstract_memory_unit", 18],
-        [type_info_type_name_base: InternalGas, "type_info.type_name.base", 1102],
-        // TODO(Gas): the on-chain name is wrong...
-        [type_info_type_name_per_byte_in_str: InternalGasPerByte, "type_info.type_name.per_abstract_memory_unit", 18],
-        [type_info_chain_id_base: InternalGas, { 4.. => "type_info.chain_id.base" }, 551],
-
-        // TODO(Gas): Fix my cost
-        [function_info_check_is_identifier_base: InternalGas, { RELEASE_V1_13.. => "function_info.is_identifier.base" }, 551],
-        [function_info_check_is_identifier_per_byte: InternalGasPerByte, { RELEASE_V1_13.. => "function_info.is_identifier.per_byte" }, 3],
-        [function_info_check_dispatch_type_compatibility_impl_base: InternalGas, { RELEASE_V1_13.. => "function_info.check_dispatch_type_compatibility_impl.base" }, 1002],
-        [function_info_load_function_base: InternalGas, { RELEASE_V1_13.. => "function_info.load_function.base" }, 551],
-        [dispatchable_fungible_asset_dispatch_base: InternalGas, { RELEASE_V1_13.. => "dispatchable_fungible_asset.dispatch.base" }, 551],
-
-        // Reusing SHA2-512's cost from Ristretto
-        [hash_sha2_512_base: InternalGas, { 4.. => "hash.sha2_512.base" }, 11910],  // 3_240 * 20
-        [hash_sha2_512_per_byte: InternalGasPerByte, { 4.. => "hash.sha2_512.per_byte" }, 220], // 60 * 20
-        // Back-of-the-envelope approximation from SHA3-256's costs (4000 base, 45 per-byte)
-        [hash_sha3_512_base: InternalGas, { 4.. => "hash.sha3_512.base" }, 16542], // 4_500 * 20
-        [hash_sha3_512_per_byte: InternalGasPerByte, { 4.. => "hash.sha3_512.per_byte" }, 183], // 50 * 20
-        // Using SHA2-256's cost
-        [hash_ripemd160_base: InternalGas, { 4.. => "hash.ripemd160.base" }, 11028], // 3000 * 20
-        [hash_ripemd160_per_byte: InternalGasPerByte, { 4.. => "hash.ripemd160.per_byte" }, 183], // 50 * 20
-        [hash_blake2b_256_base: InternalGas, { 6.. => "hash.blake2b_256.base" }, 6433], // 1750 * 20
-        [hash_blake2b_256_per_byte: InternalGasPerByte, { 6.. => "hash.blake2b_256.per_byte" }, 55], // 15 * 20
-
-        [util_from_bytes_base: InternalGas, "util.from_bytes.base", 1102],
-        [util_from_bytes_per_byte: InternalGasPerByte, "util.from_bytes.per_byte", 18],
-
-        [transaction_context_get_txn_hash_base: InternalGas, { 10.. => "transaction_context.get_txn_hash.base" }, 735],
-        [transaction_context_get_script_hash_base: InternalGas, "transaction_context.get_script_hash.base", 735],
-        // Based on SHA3-256's cost
-        [transaction_context_generate_unique_address_base: InternalGas, { 10.. => "transaction_context.generate_unique_address.base" }, 14704],
-        [transaction_context_sender_base: InternalGas, {RELEASE_V1_12.. => "transaction_context.sender.base"}, 735],
-        [transaction_context_secondary_signers_base: InternalGas, {RELEASE_V1_12.. => "transaction_context.secondary_signers.base"}, 735],
-        [transaction_context_secondary_signers_per_signer: InternalGasPerArg, {RELEASE_V1_12.. => "transaction_context.secondary_signers.per_signer"}, 576], // 18 * 32
-        [transaction_context_fee_payer_base: InternalGas, {RELEASE_V1_12.. => "transaction_context.fee_payer.base"}, 735],
-        [transaction_context_max_gas_amount_base: InternalGas, {RELEASE_V1_12.. => "transaction_context.max_gas_amount.base"}, 735],
-        [transaction_context_gas_unit_price_base: InternalGas, {RELEASE_V1_12.. => "transaction_context.gas_unit_price.base"}, 735],
-        [transaction_context_chain_id_base: InternalGas, {RELEASE_V1_12.. => "transaction_context.chain_id.base"}, 735],
-        [transaction_context_entry_function_payload_base: InternalGas, {RELEASE_V1_12.. => "transaction_context.entry_function_payload.base"}, 735],
-        [transaction_context_entry_function_payload_per_byte_in_str: InternalGasPerByte, {RELEASE_V1_12.. => "transaction_context.entry_function_payload.per_abstract_memory_unit"}, 18],
-        [transaction_context_multisig_payload_base: InternalGas, {RELEASE_V1_12.. => "transaction_context.multisig_payload.base"}, 735],
-        [transaction_context_multisig_payload_per_byte_in_str: InternalGasPerByte, {RELEASE_V1_12.. => "transaction_context.multisig_payload.per_abstract_memory_unit"}, 18],
+      [ristretto255_point_add: InternalGasPerArg, "ristretto255.point_add", 7848],
+      [ristretto255_point_clone: InternalGasPerArg, { 11.. => "ristretto255.point_clone" }, 551],
+      [ristretto255_point_compress: InternalGasPerArg, "ristretto255.point_compress", 147040],
+      [ristretto255_point_decompress: InternalGasPerArg, "ristretto255.point_decompress", 148878],
+      [ristretto255_point_equals: InternalGasPerArg, "ristretto255.point_equals", 8454],
+      [ristretto255_point_from_64_uniform_bytes: InternalGasPerArg, "ristretto255.point_from_64_uniform_bytes", 299594],
+      [ristretto255_point_identity: InternalGasPerArg, "ristretto255.point_identity", 551],
+      [ristretto255_point_mul: InternalGasPerArg, "ristretto255.point_mul", 1731396],
+      [ristretto255_point_double_mul: InternalGasPerArg, { 11.. => "ristretto255.point_double_mul" }, 1869907],
+      [ristretto255_point_neg: InternalGasPerArg, "ristretto255.point_neg", 1323],
+      [ristretto255_point_sub: InternalGasPerArg, "ristretto255.point_sub", 7829],
+      [ristretto255_point_parse_arg: InternalGasPerArg, "ristretto255.point_parse_arg", 551],
 
 
-        [code_request_publish_base: InternalGas, "code.request_publish.base", 1838],
-        [code_request_publish_per_byte: InternalGasPerByte, "code.request_publish.per_byte", 7],
+      // TODO(Alin): These SHA512 gas costs could be unified with the costs in our future SHA512 module
+      // (assuming same implementation complexity, which might not be the case
+      [ristretto255_sha512_per_byte: InternalGasPerByte, "ristretto255.scalar_sha512_per_byte", 220],
+      [ristretto255_sha512_per_hash: InternalGasPerArg, "ristretto255.scalar_sha512_per_hash", 11910],
 
-        [event_write_to_event_store_base: InternalGas, "event.write_to_event_store.base", 20006],
-        // TODO(Gas): the on-chain name is wrong...
-        [event_write_to_event_store_per_abstract_value_unit: InternalGasPerAbstractValueUnit, "event.write_to_event_store.per_abstract_memory_unit", 61],
+      [ristretto255_scalar_add: InternalGasPerArg, "ristretto255.scalar_add", 2830],
+      [ristretto255_scalar_reduced_from_32_bytes: InternalGasPerArg, "ristretto255.scalar_reduced_from_32_bytes", 2609],
+      [ristretto255_scalar_uniform_from_64_bytes: InternalGasPerArg, "ristretto255.scalar_uniform_from_64_bytes", 4576],
+      [ristretto255_scalar_from_u128: InternalGasPerArg, "ristretto255.scalar_from_u128", 643],
+      [ristretto255_scalar_from_u64: InternalGasPerArg, "ristretto255.scalar_from_u64", 643],
+      [ristretto255_scalar_invert: InternalGasPerArg, "ristretto255.scalar_invert", 404360],
+      [ristretto255_scalar_is_canonical: InternalGasPerArg, "ristretto255.scalar_is_canonical", 4227],
+      [ristretto255_scalar_mul: InternalGasPerArg, "ristretto255.scalar_mul", 3914],
+      [ristretto255_scalar_neg: InternalGasPerArg, "ristretto255.scalar_neg", 2665],
+      [ristretto255_scalar_sub: InternalGasPerArg, "ristretto255.scalar_sub", 3896],
+      [ristretto255_scalar_parse_arg: InternalGasPerArg, "ristretto255.scalar_parse_arg", 551],
 
-        [state_storage_get_usage_base_cost: InternalGas, "state_storage.get_usage.base", 1838],
+      [hash_sip_hash_base: InternalGas, "hash.sip_hash.base", 3676],
+      [hash_sip_hash_per_byte: InternalGasPerByte, "hash.sip_hash.per_byte", 73],
 
-        [aggregator_add_base: InternalGas, "aggregator.add.base", 1102],
-        [aggregator_read_base: InternalGas, "aggregator.read.base", 1102],
-        [aggregator_sub_base: InternalGas, "aggregator.sub.base", 1102],
-        [aggregator_destroy_base: InternalGas, "aggregator.destroy.base", 1838],
-        [aggregator_factory_new_aggregator_base: InternalGas, "aggregator_factory.new_aggregator.base", 1838],
+      [hash_keccak256_base: InternalGas, { 1.. => "hash.keccak256.base" }, 14704],
+      [hash_keccak256_per_byte: InternalGasPerByte, { 1.. => "hash.keccak256.per_byte" }, 165],
 
-        [aggregator_v2_create_aggregator_base: InternalGas, {RELEASE_V1_9_SKIPPED.. => "aggregator_v2.create_aggregator.base"}, 1838],
-        [aggregator_v2_try_add_base: InternalGas, {RELEASE_V1_9_SKIPPED.. => "aggregator_v2.try_add.base"}, 1102],
-        [aggregator_v2_try_sub_base: InternalGas, {RELEASE_V1_9_SKIPPED.. => "aggregator_v2.try_sub.base"}, 1102],
-        [aggregator_v2_is_at_least_base: InternalGas, {RELEASE_V1_14.. => "aggregator_v2.is_at_least.base"}, 500],
+      // Bulletproofs gas parameters begin.
+      // Generated at time 1683148919.0628748 by `scripts/algebra-gas/update_bulletproofs_gas_params.py` with gas_per_ns=10.0.
+      [bulletproofs_base: InternalGas, { 11.. => "bulletproofs.base" }, 11794651],
+      [bulletproofs_per_bit_rangeproof_verify: InternalGasPerArg, { 11.. => "bulletproofs.per_bit_rangeproof_verify" }, 1004253],
+      [bulletproofs_per_byte_rangeproof_deserialize: InternalGasPerByte, { 11.. => "bulletproofs.per_byte_rangeproof_deserialize" }, 121],
+      // Bulletproofs gas parameters end.
+      [type_info_type_of_base: InternalGas, "type_info.type_of.base", 1102],
+      // TODO(Gas): the on-chain name is wrong...
+      [type_info_type_of_per_byte_in_str: InternalGasPerByte, "type_info.type_of.per_abstract_memory_unit", 18],
+      [type_info_type_name_base: InternalGas, "type_info.type_name.base", 1102],
+      // TODO(Gas): the on-chain name is wrong...
+      [type_info_type_name_per_byte_in_str: InternalGasPerByte, "type_info.type_name.per_abstract_memory_unit", 18],
+      [type_info_chain_id_base: InternalGas, { 4.. => "type_info.chain_id.base" }, 551],
 
-        [aggregator_v2_read_base: InternalGas, {RELEASE_V1_9_SKIPPED.. => "aggregator_v2.read.base"}, 2205],
-        [aggregator_v2_snapshot_base: InternalGas, {RELEASE_V1_9_SKIPPED.. => "aggregator_v2.snapshot.base"}, 1102],
+      // TODO(Gas): Fix my cost
+      [function_info_check_is_identifier_base: InternalGas, { RELEASE_V1_13.. => "function_info.is_identifier.base" }, 551],
+      [function_info_check_is_identifier_per_byte: InternalGasPerByte, { RELEASE_V1_13.. => "function_info.is_identifier.per_byte" }, 3],
+      [function_info_check_dispatch_type_compatibility_impl_base: InternalGas, { RELEASE_V1_13.. => "function_info.check_dispatch_type_compatibility_impl.base" }, 1002],
+      [function_info_load_function_base: InternalGas, { RELEASE_V1_13.. => "function_info.load_function.base" }, 551],
+      [dispatchable_fungible_asset_dispatch_base: InternalGas, { RELEASE_V1_13.. => "dispatchable_fungible_asset.dispatch.base" }, 551],
 
-        [aggregator_v2_create_snapshot_base: InternalGas, {RELEASE_V1_8.. => "aggregator_v2.create_snapshot.base"}, 1102],
-        [aggregator_v2_create_snapshot_per_byte: InternalGasPerByte, { RELEASE_V1_9_SKIPPED.. =>"aggregator_v2.create_snapshot.per_byte" }, 3],
-        [aggregator_v2_copy_snapshot_base: InternalGas, {RELEASE_V1_8.. => "aggregator_v2.copy_snapshot.base"}, 1102],
-        [aggregator_v2_read_snapshot_base: InternalGas, {RELEASE_V1_8.. => "aggregator_v2.read_snapshot.base"}, 2205],
-        [aggregator_v2_string_concat_base: InternalGas, {RELEASE_V1_8.. => "aggregator_v2.string_concat.base"}, 1102],
-        [aggregator_v2_string_concat_per_byte: InternalGasPerByte, { RELEASE_V1_9_SKIPPED.. =>"aggregator_v2.string_concat.per_byte" }, 3],
+      // Reusing SHA2-512's cost from Ristretto
+      [hash_sha2_512_base: InternalGas, { 4.. => "hash.sha2_512.base" }, 11910],  // 3_240 * 20
+      [hash_sha2_512_per_byte: InternalGasPerByte, { 4.. => "hash.sha2_512.per_byte" }, 220], // 60 * 20
+      // Back-of-the-envelope approximation from SHA3-256's costs (4000 base, 45 per-byte)
+      [hash_sha3_512_base: InternalGas, { 4.. => "hash.sha3_512.base" }, 16542], // 4_500 * 20
+      [hash_sha3_512_per_byte: InternalGasPerByte, { 4.. => "hash.sha3_512.per_byte" }, 183], // 50 * 20
+      // Using SHA2-256's cost
+      [hash_ripemd160_base: InternalGas, { 4.. => "hash.ripemd160.base" }, 11028], // 3000 * 20
+      [hash_ripemd160_per_byte: InternalGasPerByte, { 4.. => "hash.ripemd160.per_byte" }, 183], // 50 * 20
+      [hash_blake2b_256_base: InternalGas, { 6.. => "hash.blake2b_256.base" }, 6433], // 1750 * 20
+      [hash_blake2b_256_per_byte: InternalGasPerByte, { 6.. => "hash.blake2b_256.per_byte" }, 55], // 15 * 20
 
-        [object_exists_at_base: InternalGas, { 7.. => "object.exists_at.base" }, 919],
-        // Based on SHA3-256's cost
-        [object_user_derived_address_base: InternalGas, { RELEASE_V1_12.. => "object.user_derived_address.base" }, 14704],
+      [util_from_bytes_base: InternalGas, "util.from_bytes.base", 1102],
+      [util_from_bytes_per_byte: InternalGasPerByte, "util.from_bytes.per_byte", 18],
 
-        // These are dummy value, they copied from storage gas in aptos-core/aptos-vm/src/aptos_vm_impl.rs
-        [object_exists_at_per_byte_loaded: InternalGasPerByte, { 7.. => "object.exists_at.per_byte_loaded" }, 183],
-        [object_exists_at_per_item_loaded: InternalGas, { 7.. => "object.exists_at.per_item_loaded" }, 1470],
-        [string_utils_base: InternalGas, { 8.. => "string_utils.format.base" }, 1102],
-        [string_utils_per_byte: InternalGasPerByte, { 8.. =>"string_utils.format.per_byte" }, 3],
-]);
+      [transaction_context_get_txn_hash_base: InternalGas, { 10.. => "transaction_context.get_txn_hash.base" }, 735],
+      [transaction_context_get_script_hash_base: InternalGas, "transaction_context.get_script_hash.base", 735],
+      // Based on SHA3-256's cost
+      [transaction_context_generate_unique_address_base: InternalGas, { 10.. => "transaction_context.generate_unique_address.base" }, 14704],
+      [transaction_context_sender_base: InternalGas, {RELEASE_V1_12.. => "transaction_context.sender.base"}, 735],
+      [transaction_context_secondary_signers_base: InternalGas, {RELEASE_V1_12.. => "transaction_context.secondary_signers.base"}, 735],
+      [transaction_context_secondary_signers_per_signer: InternalGasPerArg, {RELEASE_V1_12.. => "transaction_context.secondary_signers.per_signer"}, 576], // 18 * 32
+      [transaction_context_fee_payer_base: InternalGas, {RELEASE_V1_12.. => "transaction_context.fee_payer.base"}, 735],
+      [transaction_context_max_gas_amount_base: InternalGas, {RELEASE_V1_12.. => "transaction_context.max_gas_amount.base"}, 735],
+      [transaction_context_gas_unit_price_base: InternalGas, {RELEASE_V1_12.. => "transaction_context.gas_unit_price.base"}, 735],
+      [transaction_context_chain_id_base: InternalGas, {RELEASE_V1_12.. => "transaction_context.chain_id.base"}, 735],
+      [transaction_context_entry_function_payload_base: InternalGas, {RELEASE_V1_12.. => "transaction_context.entry_function_payload.base"}, 735],
+      [transaction_context_entry_function_payload_per_byte_in_str: InternalGasPerByte, {RELEASE_V1_12.. => "transaction_context.entry_function_payload.per_abstract_memory_unit"}, 18],
+      [transaction_context_multisig_payload_base: InternalGas, {RELEASE_V1_12.. => "transaction_context.multisig_payload.base"}, 735],
+      [transaction_context_multisig_payload_per_byte_in_str: InternalGasPerByte, {RELEASE_V1_12.. => "transaction_context.multisig_payload.per_abstract_memory_unit"}, 18],
+
+
+      [code_request_publish_base: InternalGas, "code.request_publish.base", 1838],
+      [code_request_publish_per_byte: InternalGasPerByte, "code.request_publish.per_byte", 7],
+
+      [event_write_to_event_store_base: InternalGas, "event.write_to_event_store.base", 20006],
+      // TODO(Gas): the on-chain name is wrong...
+      [event_write_to_event_store_per_abstract_value_unit: InternalGasPerAbstractValueUnit, "event.write_to_event_store.per_abstract_memory_unit", 61],
+
+      [state_storage_get_usage_base_cost: InternalGas, "state_storage.get_usage.base", 1838],
+
+      [aggregator_add_base: InternalGas, "aggregator.add.base", 1102],
+      [aggregator_read_base: InternalGas, "aggregator.read.base", 1102],
+      [aggregator_sub_base: InternalGas, "aggregator.sub.base", 1102],
+      [aggregator_destroy_base: InternalGas, "aggregator.destroy.base", 1838],
+      [aggregator_factory_new_aggregator_base: InternalGas, "aggregator_factory.new_aggregator.base", 1838],
+
+      [aggregator_v2_create_aggregator_base: InternalGas, {RELEASE_V1_9_SKIPPED.. => "aggregator_v2.create_aggregator.base"}, 1838],
+      [aggregator_v2_try_add_base: InternalGas, {RELEASE_V1_9_SKIPPED.. => "aggregator_v2.try_add.base"}, 1102],
+      [aggregator_v2_try_sub_base: InternalGas, {RELEASE_V1_9_SKIPPED.. => "aggregator_v2.try_sub.base"}, 1102],
+      [aggregator_v2_is_at_least_base: InternalGas, {RELEASE_V1_14.. => "aggregator_v2.is_at_least.base"}, 500],
+
+      [aggregator_v2_read_base: InternalGas, {RELEASE_V1_9_SKIPPED.. => "aggregator_v2.read.base"}, 2205],
+      [aggregator_v2_snapshot_base: InternalGas, {RELEASE_V1_9_SKIPPED.. => "aggregator_v2.snapshot.base"}, 1102],
+
+      [aggregator_v2_create_snapshot_base: InternalGas, {RELEASE_V1_8.. => "aggregator_v2.create_snapshot.base"}, 1102],
+      [aggregator_v2_create_snapshot_per_byte: InternalGasPerByte, { RELEASE_V1_9_SKIPPED.. =>"aggregator_v2.create_snapshot.per_byte" }, 3],
+      [aggregator_v2_copy_snapshot_base: InternalGas, {RELEASE_V1_8.. => "aggregator_v2.copy_snapshot.base"}, 1102],
+      [aggregator_v2_read_snapshot_base: InternalGas, {RELEASE_V1_8.. => "aggregator_v2.read_snapshot.base"}, 2205],
+      [aggregator_v2_string_concat_base: InternalGas, {RELEASE_V1_8.. => "aggregator_v2.string_concat.base"}, 1102],
+      [aggregator_v2_string_concat_per_byte: InternalGasPerByte, { RELEASE_V1_9_SKIPPED.. =>"aggregator_v2.string_concat.per_byte" }, 3],
+
+      [object_exists_at_base: InternalGas, { 7.. => "object.exists_at.base" }, 919],
+      // Based on SHA3-256's cost
+      [object_user_derived_address_base: InternalGas, { RELEASE_V1_12.. => "object.user_derived_address.base" }, 14704],
+
+      // These are dummy value, they copied from storage gas in aptos-core/aptos-vm/src/aptos_vm_impl.rs
+      [object_exists_at_per_byte_loaded: InternalGasPerByte, { 7.. => "object.exists_at.per_byte_loaded" }, 183],
+      [object_exists_at_per_item_loaded: InternalGas, { 7.. => "object.exists_at.per_item_loaded" }, 1470],
+      [string_utils_base: InternalGas, { 8.. => "string_utils.format.base" }, 1102],
+      [string_utils_per_byte: InternalGasPerByte, { 8.. =>"string_utils.format.per_byte" }, 3],
+    ]
+);

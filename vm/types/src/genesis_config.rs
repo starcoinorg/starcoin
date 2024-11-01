@@ -233,7 +233,7 @@ impl Into<u8> for ChainId {
 }
 
 impl MoveStructType for ChainId {
-    const MODULE_NAME: &'static IdentStr = ident_str!("ChainId");
+    const MODULE_NAME: &'static IdentStr = ident_str!("chain_id");
     const STRUCT_NAME: &'static IdentStr = ident_str!("ChainId");
 }
 

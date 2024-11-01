@@ -213,7 +213,7 @@ module starcoin_framework::account {
         let new_account = create_signer(new_address);
         let authentication_key = bcs::to_bytes(&new_address);
         assert!(
-            vector::length(&authentication_key) == 32,
+            vector::length(&authentication_key) == 16,
             error::invalid_argument(EMALFORMED_AUTHENTICATION_KEY)
         );
 

@@ -721,8 +721,8 @@ pub fn build_init_script_v3(net: &ChainNetwork) -> EntryFunction {
         .expect("Cannot serialize gas schedule");
 
     EntryFunction::new(
-        ModuleId::new(core_code_address(), Identifier::new("Genesis").unwrap()),
-        Identifier::new("initialize_v3").unwrap(),
+        ModuleId::new(core_code_address(), Identifier::new("stc_genesis").unwrap()),
+        Identifier::new("initialize").unwrap(),
         vec![],
         vec![
             bcs_ext::to_bytes(&net.genesis_config().stdlib_version.version()).unwrap(),

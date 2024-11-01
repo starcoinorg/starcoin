@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::account_config::genesis_address;
+use crate::account_config::{genesis_address, reserved_address};
 use crate::transaction::EntryFunction;
 use crate::{
     access::ModuleAccess, account_address::AccountAddress, file_format::CompiledModule,
@@ -13,6 +13,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::{CryptoHash, CryptoHasher};
 use vm::errors::Location;
+
 #[derive(
     Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash, JsonSchema,
 )]
@@ -30,7 +31,11 @@ impl Package {
         let package_address = Self::parse_module_address(&modules[0])?;
         for m in &modules[1..] {
             let module_address = Self::parse_module_address(m)?;
-            Self::check_module_address(&package_address, &module_address)?;
+            if !Self::is_reversed_address(&package_address)?
+                || !Self::is_reversed_address(&module_address)?
+            {
+                Self::check_module_address(&package_address, &module_address)?;
+            }
         }
         Ok(Self {
             package_address,
@@ -72,6 +77,10 @@ impl Package {
         //    package_address,
         //);
         Ok(())
+    }
+
+    fn is_reversed_address(addr: &AccountAddress) -> Result<bool> {
+        Ok(reserved_address().contains(addr))
     }
 
     pub fn add_module(&mut self, module: Module) -> Result<()> {

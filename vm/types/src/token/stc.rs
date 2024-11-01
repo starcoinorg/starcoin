@@ -13,7 +13,7 @@ use once_cell::sync::Lazy;
 use std::str::FromStr;
 
 pub const STC_NAME: &str = "STC";
-pub const STC_TOKEN_CODE_STR: &str = "0x1::STC::STC";
+pub const STC_TOKEN_CODE_STR: &str = "0x1::starcoin_coin::STC";
 
 pub static G_STC_TOKEN_CODE: Lazy<TokenCode> = Lazy::new(|| {
     TokenCode::from_str(STC_TOKEN_CODE_STR).expect("Parse STC token code should success.")

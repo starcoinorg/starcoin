@@ -6,7 +6,7 @@ version = "1.0.0"
 std = "0x1"
 starcoin_std = "0x1"
 starcoin_framework = "0x1"
-starcoin_token_objects = "0x4"
+starcoin_token_objects = "0x1"
 
 [dependencies]
 MoveStdlib = { local = "../move-stdlib" }

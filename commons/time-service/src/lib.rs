@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #![forbid(unsafe_code)]
+
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::any::Any;
@@ -32,6 +33,8 @@ pub trait TimeService: Send + Sync + Debug {
     fn now_secs(&self) -> u64;
     /// Returns the current time since the UNIX_EPOCH in milliseconds as a u64.
     fn now_millis(&self) -> u64;
+    /// Returns the current time since the UNIX_EPOCH in microseconds as a u64.
+    fn now_micros(&self) -> u64;
     /// Sleeps the calling thread for (at least) the specified number of milliseconds. This call may
     /// sleep longer than specified, never less.
     fn sleep(&self, millis: u64);
@@ -88,6 +91,10 @@ impl TimeService for RealTimeService {
 
     fn now_millis(&self) -> u64 {
         duration_since_epoch().as_millis() as u64
+    }
+
+    fn now_micros(&self) -> u64 {
+        duration_since_epoch().as_micros() as u64
     }
 
     fn sleep(&self, millis: u64) {
@@ -152,6 +159,10 @@ impl TimeService for MockTimeService {
 
     fn now_millis(&self) -> u64 {
         self.now.load(Ordering::Relaxed)
+    }
+
+    fn now_micros(&self) -> u64 {
+        self.now_millis() * 1000
     }
 
     fn sleep(&self, millis: u64) {

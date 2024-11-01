@@ -828,7 +828,7 @@ impl<'a> StarcoinTestAdapter<'a> {
 
         let uncles = uncles.or_else(|| Some(last_blockmeta.uncles)).unwrap_or(0);
         let timestamp =
-            timestamp.unwrap_or(self.context.storage.get_timestamp()?.milliseconds + 10 * 1000);
+            timestamp.unwrap_or(self.context.storage.get_timestamp()?.microseconds + 10 * 1000);
         //TODO find a better way to get parent hash, we should keep to local storage.
         let parent_hash = self.context.chain.lock().unwrap().head_block_hash();
 

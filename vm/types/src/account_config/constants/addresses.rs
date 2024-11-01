@@ -9,12 +9,23 @@ pub fn association_address() -> AccountAddress {
     AccountAddress::from_hex_literal("0xA550C18")
         .expect("Parsing valid hex literal should always succeed")
 }
+
 pub fn core_code_address() -> AccountAddress {
     CORE_CODE_ADDRESS
 }
 
 pub fn genesis_address() -> AccountAddress {
     CORE_CODE_ADDRESS
+}
+
+pub fn reserved_address() -> Vec<AccountAddress> {
+    vec![
+        association_address(),
+        AccountAddress::ONE,
+        AccountAddress::TWO,
+        AccountAddress::THREE,
+        AccountAddress::FOUR,
+    ]
 }
 
 pub const TABLE_ADDRESS_LIST_LEN: usize = 32;

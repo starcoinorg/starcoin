@@ -143,11 +143,15 @@ pub fn starcoin_natives_with_builder(builder: &mut SafeNativeBuilder) -> NativeF
     starcoin_move_stdlib::natives::all_natives(CORE_CODE_ADDRESS, builder)
         .into_iter()
         .filter(|(_, name, _, _)| name.as_str() != "vector")
-        .chain(starcoin_frameworks::natives::all_natives(
+        // .chain(starcoin_frameworks::natives::all_natives(
+        //     CORE_CODE_ADDRESS,
+        //     builder,
+        // ))
+        .chain(starcoin_table_natives::table_natives(
             CORE_CODE_ADDRESS,
             builder,
         ))
-        .chain(starcoin_table_natives::table_natives(
+        .chain(starcoin_framework::natives::all_natives(
             CORE_CODE_ADDRESS,
             builder,
         ))
@@ -213,7 +217,6 @@ fn unit_test_extensions_hook(exts: &mut NativeContextExtensions) {
     exts.add(NativeAggregatorContext::new(
         [0; 32],
         &*DUMMY_RESOLVER,
-        true,
         &*DUMMY_RESOLVER,
     ));
     exts.add(NativeRistrettoPointContext::new());

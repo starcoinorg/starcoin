@@ -26,7 +26,7 @@ use aggregator_natives::{aggregator, aggregator_factory, aggregator_v2};
 use cryptography::ed25519;
 use move_core_types::account_address::AccountAddress;
 use move_vm_runtime::native_functions::{make_table_from_iter, NativeFunctionTable};
-use starcoin_native_interface::{RawSafeNative, SafeNativeBuilder};
+use starcoin_native_interface::SafeNativeBuilder;
 
 pub mod status {
     // Failure in parsing a struct type tag
@@ -38,7 +38,6 @@ pub mod status {
 pub fn all_natives(
     framework_addr: AccountAddress,
     builder: &SafeNativeBuilder,
-    inject_create_signer_for_gov_sim: bool,
 ) -> NativeFunctionTable {
     let mut natives = vec![];
 
@@ -89,16 +88,6 @@ pub fn all_natives(
         "dispatchable_fungible_asset",
         dispatchable_fungible_asset::make_all(builder)
     );
-
-    if inject_create_signer_for_gov_sim {
-        add_natives_from_module!(
-            "starcoin_governance",
-            builder.make_named_natives([(
-                "create_signer",
-                create_signer::native_create_signer as RawSafeNative
-            )])
-        );
-    }
 
     make_table_from_iter(framework_addr, natives)
 }

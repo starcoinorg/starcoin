@@ -12,7 +12,7 @@ pub static STARCOIN_COIN_TYPE: Lazy<TypeTag> = Lazy::new(|| {
     TypeTag::Struct(Box::new(StructTag {
         address: AccountAddress::ONE,
         module: ident_str!("starcoin_coin").to_owned(),
-        name: ident_str!("StarcoinCoin").to_owned(),
+        name: ident_str!("STC").to_owned(),
         type_args: vec![],
     }))
 });

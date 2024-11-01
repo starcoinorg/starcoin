@@ -3,9 +3,9 @@ module starcoin_framework::stc_genesis {
 
     use std::option;
     use std::vector;
-    use starcoin_framework::treasury_withdraw_dao_proposal;
 
     use starcoin_framework::account;
+    use starcoin_framework::aggregator_factory;
     use starcoin_framework::block_reward;
     use starcoin_framework::block_reward_config;
     use starcoin_framework::chain_id;
@@ -28,6 +28,7 @@ module starcoin_framework::stc_genesis {
     use starcoin_framework::timestamp;
     use starcoin_framework::transaction_publish_option;
     use starcoin_framework::treasury;
+    use starcoin_framework::treasury_withdraw_dao_proposal;
     use starcoin_framework::vm_config;
 
     spec module {
@@ -85,26 +86,30 @@ module starcoin_framework::stc_genesis {
         min_action_delay: u64,
         // transaction timeout config
         transaction_timeout: u64,
+        _dag_effective_height: u64,
     ) {
         // create genesis account
-        let (genesis_account, _genesis_signer_cap) =
+        let (starcoin_framework_account, _genesis_signer_cap) =
             account::create_framework_reserved_account(@starcoin_framework);
 
+        /*
+        aggregator_factory::initialize_aggregator_factory(&starcoin_framework_account);
+
         // Init global time
-        timestamp::set_time_has_started(&genesis_account);
-        chain_id::initialize(&genesis_account, chain_id);
-        consensus_strategy::initialize(&genesis_account, strategy);
-        stc_block::initialize(&genesis_account, parent_hash);
+        timestamp::set_time_has_started(&starcoin_framework_account);
+        chain_id::initialize(&starcoin_framework_account, chain_id);
+        consensus_strategy::initialize(&starcoin_framework_account, strategy);
+        stc_block::initialize(&starcoin_framework_account, parent_hash);
 
         transaction_publish_option::initialize(
-            &genesis_account,
+            &starcoin_framework_account,
             script_allowed,
             module_publishing_allowed,
         );
 
         // init config
         vm_config::initialize(
-            &genesis_account,
+            &starcoin_framework_account,
             instruction_schedule,
             native_schedule,
             global_memory_per_byte_cost,
@@ -120,9 +125,9 @@ module starcoin_framework::stc_genesis {
             default_account_size,
         );
 
-        stc_transaction_timeout_config::initialize(&genesis_account, transaction_timeout);
+        stc_transaction_timeout_config::initialize(&starcoin_framework_account, transaction_timeout);
         consensus_config::initialize(
-            &genesis_account,
+            &starcoin_framework_account,
             uncle_rate_target,
             epoch_block_count,
             base_block_time_target,
@@ -135,20 +140,20 @@ module starcoin_framework::stc_genesis {
             base_block_gas_limit,
             strategy,
         );
-        epoch::initialize(&genesis_account);
+        epoch::initialize(&starcoin_framework_account);
 
         on_chain_config::publish_new_config<stc_version::Version>(
-            &genesis_account,
+            &starcoin_framework_account,
             stc_version::new_version(stdlib_version)
         );
         // stdlib use two phase upgrade strategy.
         stc_transaction_package_validation::update_module_upgrade_strategy(
-            &genesis_account,
+            &starcoin_framework_account,
             stc_transaction_package_validation::get_strategy_two_phase(),
             option::some(0u64),
         );
 
-        block_reward::initialize(&genesis_account, reward_delay);
+        block_reward::initialize(&starcoin_framework_account, reward_delay);
 
         // stc should be initialized after genesis_account's module upgrade strategy set and all on chain config init.
         // let withdraw_cap = STC::initialize_v2(&genesis_account, total_stc_amount, voting_delay, voting_period, voting_quorum_rate, min_action_delay);
@@ -163,7 +168,7 @@ module starcoin_framework::stc_genesis {
 
         // Initliaze STC
         let total_supply_coin = Self::initialize_stc(
-            &genesis_account,
+            &starcoin_framework_account,
             total_stc_amount,
             voting_delay,
             voting_period,
@@ -174,7 +179,7 @@ module starcoin_framework::stc_genesis {
         // Init goverances
         let core_resource_account = account::create_account(@core_resources);
         Self::initialize_stc_governance_allocation(
-            &genesis_account,
+            &starcoin_framework_account,
             &core_resource_account,
             total_supply_coin,
             pre_mine_stc_amount,
@@ -182,11 +187,11 @@ module starcoin_framework::stc_genesis {
             time_mint_stc_period,
         );
 
-        stc_transaction_fee::initialize(&genesis_account);
+        stc_transaction_fee::initialize(&starcoin_framework_account);
 
         // Only test/dev network set genesis auth key.
         if (!vector::is_empty(&genesis_auth_key) && (stc_util::is_net_dev() || stc_util::is_net_test())) {
-            account::rotate_authentication_key_internal(&genesis_account, genesis_auth_key);
+            account::rotate_authentication_key_internal(&starcoin_framework_account, genesis_auth_key);
         };
         account::rotate_authentication_key_internal(&core_resource_account, association_auth_key);
 
@@ -206,8 +211,10 @@ module starcoin_framework::stc_genesis {
         // };
         // StdlibUpgradeScripts::do_upgrade_from_v6_to_v7_with_language_version(&genesis_account, 6);
         // StdlibUpgradeScripts::do_upgrade_from_v11_to_v12(&genesis_account);
+        */
+
         // //Start time, Timestamp::is_genesis() will return false. this call should at the end of genesis init.
-        timestamp::set_time_has_started(&genesis_account);
+        timestamp::set_time_has_started(&starcoin_framework_account);
         // account::release_genesis_signer(genesis_account);
         // account::release_genesis_signer(association);
     }
@@ -389,6 +396,7 @@ module starcoin_framework::stc_genesis {
             voting_quorum_rate,
             min_action_delay,
             transaction_timeout,
+            0,
         );
     }
 }

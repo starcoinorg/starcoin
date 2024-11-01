@@ -193,7 +193,7 @@ pub struct EpochData {
 }
 
 impl MoveStructType for EpochData {
-    const MODULE_NAME: &'static IdentStr = ident_str!("Epoch");
+    const MODULE_NAME: &'static IdentStr = ident_str!("epoch");
     const STRUCT_NAME: &'static IdentStr = ident_str!("EpochData");
 }
 
