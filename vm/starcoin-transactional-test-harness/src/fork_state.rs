@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
 use crate::HashValue;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, format_err, Result};
 use move_core_types::account_address::AccountAddress;
 use starcoin_state_api::{
     ChainStateAsyncService, ChainStateReader, StateNodeStore, StateWithProof,
@@ -15,13 +15,14 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_storage::state_node::StateStorage;
 use starcoin_storage::storage::{CodecKVStore, CodecWriteBatch, StorageInstance};
 
+use bytes::Bytes;
 use starcoin_rpc_api::state::StateApiClient;
 use starcoin_state_tree::StateNode;
-use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::state_set::AccountStateSet;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use starcoin_vm_types::state_store::TStateView;
 use tokio::runtime::Runtime;
 
 pub struct MockStateNodeStore {
@@ -53,7 +54,7 @@ impl StateNodeStore for MockStateNodeStore {
                 let hash = *hash;
                 let blob = handle
                     .block_on(client.get_state_node_by_node_hash(hash))
-                    .map(|res| res.map(StateNode))
+                    .map(|res| res.map(|val| StateNode(val.to_vec())))
                     .map_err(|e| anyhow!("{}", e))?;
 
                 if let Some(node) = blob.clone() {
@@ -97,29 +98,38 @@ impl MockChainStateAsyncService {
 
 #[async_trait::async_trait]
 impl ChainStateAsyncService for MockChainStateAsyncService {
-    async fn get(self, access_path: .AccessPath) -> Result<Option<Vec<u8>>> {
+    async fn get(self, state_key: StateKey) -> Result<Option<Bytes>> {
         self.state_db()
-            .get_state_value(&StateKey::AccessPath(access_path))
+            .get_state_value_bytes(&state_key)
+            .map_err(|e| format_err!("get state value by key: {:?} error: {:?}", state_key, e))
     }
 
-    async fn get_with_proof(self, access_path: AccessPath) -> Result<StateWithProof> {
-        self.state_db().get_with_proof(&access_path)
+    async fn get_with_proof(self, state_key: StateKey) -> Result<StateWithProof> {
+        self.state_db().get_with_proof(&state_key)
     }
 
-    async fn get_account_state(self, address: AccountAddress) -> Result<Option<AccountState>> {
+    async fn get_account_state(self, address: AccountAddress) -> Result<AccountState> {
         self.state_db().get_account_state(&address)
     }
     async fn get_account_state_set(
         self,
         address: AccountAddress,
         state_root: Option<HashValue>,
-    ) -> Result<Option<AccountStateSet>> {
-        match state_root {
+    ) -> Result<AccountStateSet> {
+        let res = match state_root {
             Some(root) => {
                 let reader = self.state_db().fork_at(root);
                 reader.get_account_state_set(&address)
             }
             None => self.state_db().get_account_state_set(&address),
+        };
+        match res {
+            Ok(Some(set)) => Ok(set),
+            Ok(None) => Err(format_err!(
+                "Can not find account state set by address: {}",
+                address
+            )),
+            Err(e) => Err(e),
         }
     }
     async fn state_root(self) -> Result<HashValue> {
@@ -128,18 +138,18 @@ impl ChainStateAsyncService for MockChainStateAsyncService {
 
     async fn get_with_proof_by_root(
         self,
-        access_path: AccessPath,
+        state_key: StateKey,
         state_root: HashValue,
     ) -> Result<StateWithProof> {
         let reader = self.state_db().fork_at(state_root);
-        reader.get_with_proof(&access_path)
+        reader.get_with_proof(&state_key)
     }
 
     async fn get_account_state_by_root(
         self,
         account_address: AccountAddress,
         state_root: HashValue,
-    ) -> Result<Option<AccountState>> {
+    ) -> Result<AccountState> {
         let reader = self.state_db().fork_at(state_root);
         reader.get_account_state(&account_address)
     }
@@ -163,7 +173,7 @@ impl ChainStateAsyncService for MockChainStateAsyncService {
         reader.get_with_table_item_proof(&handle, &key)
     }
 
-    async fn get_table_info(self, address: AccountAddress) -> Result<Option<TableInfo>> {
+    async fn get_table_info(self, address: AccountAddress) -> Result<TableInfo> {
         let reader = self.state_db().fork();
         reader.get_table_info(address)
     }

@@ -47,6 +47,7 @@ hex = "0.4.3"
 bytes = { workspace = true }
 move-bytecode-verifier = { workspace = true }
 starcoin-aggregator = { workspace = true }
+move-bytecode-utils = { workspace = true }
 
 [dev-dependencies]
 stdlib = { workspace = true }

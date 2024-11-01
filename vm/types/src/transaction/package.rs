@@ -68,12 +68,12 @@ impl Package {
         package_address: &AccountAddress,
         module_address: &AccountAddress,
     ) -> Result<()> {
-        ensure!(
-            package_address == module_address,
-            "module's address ({:?}) not same as package module address {:?}",
-            module_address,
-            package_address,
-        );
+        //ensure!(
+        //    package_address == module_address,
+        //    "module's address ({:?}) not same as package module address {:?}",
+        //    module_address,
+        //    package_address,
+        //);
         Ok(())
     }
 

@@ -12,7 +12,6 @@ pub mod counters;
 
 use move_core_types::vm_status::{StatusCode, VMStatus};
 pub use move_vm_runtime::{move_vm, session};
-use std::collections::BTreeMap;
 mod access_path_cache;
 mod errors;
 #[cfg(feature = "force-deploy")]
@@ -23,7 +22,9 @@ mod verifier;
 
 use crate::metrics::VMMetrics;
 use starcoin_vm_types::block_metadata::BlockMetadata;
-use starcoin_vm_types::transaction::{SignedUserTransaction, TransactionStatus};
+use starcoin_vm_types::transaction::{
+    SignedUserTransaction, TransactionAuxiliaryData, TransactionStatus,
+};
 use starcoin_vm_types::write_set::WriteSet;
 use starcoin_vm_types::{
     state_store::StateView,
@@ -77,10 +78,10 @@ pub(crate) fn discard_error_vm_status(err: VMStatus) -> (VMStatus, TransactionOu
 pub(crate) fn discard_error_output(err: StatusCode) -> TransactionOutput {
     // Since this transaction will be discarded, no writeset will be included.
     TransactionOutput::new(
-        BTreeMap::new(),
         WriteSet::default(),
         vec![],
         0,
         TransactionStatus::Discard(err),
+        TransactionAuxiliaryData::None,
     )
 }

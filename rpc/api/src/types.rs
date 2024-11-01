@@ -1211,7 +1211,7 @@ pub struct TransactionOutputView {
 
 impl From<TransactionOutput> for TransactionOutputView {
     fn from(txn_output: TransactionOutput) -> Self {
-        let (_, write_set, events, gas_used, status) = txn_output.into_inner();
+        let (write_set, events, gas_used, status, _) = txn_output.into_inner();
         let mut access_write_set = vec![];
         let mut table_item_write_set = vec![];
         for (state_key, op) in write_set {

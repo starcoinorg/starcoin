@@ -35,7 +35,7 @@ use starcoin_framework::natives::aggregator_natives::NativeAggregatorContext;
 
 pub struct MoveVmExt {
     inner: MoveVM,
-    chain_id: u8,
+    _chain_id: u8,
     features: Arc<Features>,
 }
 
@@ -70,7 +70,7 @@ impl MoveVmExt {
         native_gas_parameters: NativeGasParameters,
         misc_gas_parameters: MiscGasParameters,
         gas_feature_version: u64,
-        chain_id: u8,
+        _chain_id: u8,
         features: Features,
         timed_features: TimedFeatures,
         gas_hook: Option<F>,
@@ -132,7 +132,7 @@ impl MoveVmExt {
                 },
                 resolver,
             )?,
-            chain_id,
+            _chain_id,
             features: Arc::new(features),
         })
     }

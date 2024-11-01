@@ -12,7 +12,6 @@ use starcoin_rpc_api::types::{ResourceView, TransactionInfoView, TransactionStat
 use starcoin_rpc_api::{
     chain::ChainClient, node::NodeClient, state::StateClient, txpool::TxPoolClient,
 };
-use starcoin_types::access_path::{AccessPath, DataPath};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::{account_struct_tag, genesis_address, AccountResource};
 use starcoin_types::genesis_config::ChainId;
@@ -23,6 +22,7 @@ use starcoin_types::transaction::{EntryFunction, RawUserTransaction};
 use starcoin_vm_types::account_config::auto_accept_token::AutoAcceptToken;
 use starcoin_vm_types::account_config::{stc_type_tag, BalanceResource, G_STC_TOKEN_CODE};
 use starcoin_vm_types::language_storage::{StructTag, TypeTag};
+use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use starcoin_vm_types::value::MoveValue;
@@ -218,8 +218,12 @@ async fn main() -> Result<()> {
 
     // read from onchain
     let account_sequence_number = {
-        let ap = AccessPath::new(sender, DataPath::Resource(account_struct_tag()));
-        let account_data: Option<Vec<u8>> = state_client.get(ap).await.map_err(map_rpc_error)?;
+        let state_key = StateKey::resource(&sender, &account_struct_tag())?;
+        let account_data: Option<Vec<u8>> = state_client
+            .get(state_key)
+            .await
+            .map_err(map_rpc_error)?
+            .map(|v| v.to_vec());
         account_data
             .map(|account_data| AccountResource::decode(&account_data))
             .transpose()?

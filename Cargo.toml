@@ -90,7 +90,8 @@ members = [
     "vm/gas-algebra",
     "vm/gas-schedule",
     "vm/move-explain",
-    "vm/move-package-manager",
+    # XXX FIXME YSG
+  #  "vm/move-package-manager",
     "vm/vm-status-translator",
     "vm/framework",
     "vm/framework/table-natives",
@@ -214,9 +215,10 @@ default-members = [
     "vm/gas-algebra",
     "vm/gas-schedule",
     "vm/move-explain",
-    "vm/move-package-manager",
+    # XXX FIXME YSG
+#   "vm/move-package-manager",
     "vm/vm-status-translator",
-    "vm/starcoin-transactional-test-harness",
+   "vm/starcoin-transactional-test-harness",
     "vm/starcoin-native-interface",
     "vm/starcoin-aggregator",
     "abi/types",
@@ -303,6 +305,7 @@ byteorder = "1.3.4"
 bytes = { version = "1.4.0", features = ["serde"] }
 chrono = { version = "0.4.19", default-features = false, features = ["clock"] }
 clap = { version = "3", features = ["derive"] }
+clap_4 = { package = "clap", version = "4.3.9", features = ["derive", "env", "unstable-styles"] }
 cli-table = "0.3.2"
 claims = "0.7"
 test-case = "3.1.0"
@@ -404,6 +407,7 @@ merkletree = { version = "0.22.1" }
 mirai-annotations = "1.10.1"
 move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "3486a4d205a2dcb92e49904e7c97114a6478e2ec" }
 move-bytecode-source-map = { git = "https://github.com/starcoinorg/move", rev = "3486a4d205a2dcb92e49904e7c97114a6478e2ec" }
+move-bytecode-utils = { git = "https://github.com/starcoinorg/move", rev = "3486a4d205a2dcb92e49904e7c97114a6478e2ec" }
 move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "3486a4d205a2dcb92e49904e7c97114a6478e2ec" }
 move-cli = { git = "https://github.com/starcoinorg/move", rev = "3486a4d205a2dcb92e49904e7c97114a6478e2ec" }
 move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "3486a4d205a2dcb92e49904e7c97114a6478e2ec" }

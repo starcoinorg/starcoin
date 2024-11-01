@@ -6,7 +6,7 @@ use crate::data_cache::{AsMoveResolver, RemoteStorage, StateViewCache};
 use crate::errors::{
     convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
 };
-use crate::move_vm_ext::{MoveVmExt, SessionExt, SessionId, SessionOutput, StarcoinMoveResolver};
+use crate::move_vm_ext::{MoveVmExt, SessionExt, SessionId, StarcoinMoveResolver};
 use crate::{discard_error_output, discard_error_vm_status, PreprocessedTransaction};
 use anyhow::{bail, format_err, Error, Result};
 use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
@@ -21,7 +21,10 @@ use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
 use starcoin_crypto::HashValue;
 use starcoin_gas_algebra::{CostTable, Gas, GasConstants, GasCost};
 use starcoin_gas_meter::StarcoinGasMeter;
-use starcoin_gas_schedule::{FromOnChainGasSchedule, InitialGasSchedule, NativeGasParameters, StarcoinGasParameters, ToOnChainGasSchedule};
+use starcoin_gas_schedule::{
+    FromOnChainGasSchedule, InitialGasSchedule, NativeGasParameters, StarcoinGasParameters, ToOnChainGasSchedule
+    LATEST_GAS_FEATURE_VERSION,
+};
 use starcoin_logger::prelude::*;
 use starcoin_types::account_config::config_change::ConfigChangeEvent;
 use starcoin_types::{
@@ -32,7 +35,9 @@ use starcoin_types::{
         TransactionPayload, TransactionStatus,
     },
 };
+use starcoin_vm_runtime_types::storage::change_set_configs::ChangeSetConfigs;
 use starcoin_vm_types::on_chain_config::{Features, TimedFeaturesBuilder};
+use starcoin_vm_types::transaction::TransactionAuxiliaryData;
 use starcoin_vm_types::{
     access::{ModuleAccess, ScriptAccess},
     account_address::AccountAddress,
@@ -40,7 +45,7 @@ use starcoin_vm_types::{
         core_code_address, genesis_address, upgrade::UpgradeEvent, ModuleUpgradeStrategy,
         TwoPhaseUpgradeV2Resource, G_EPILOGUE_NAME, G_PROLOGUE_NAME,
     },
-    errors::{Location, VMResult},
+    errors::{Location, PartialVMError, VMResult},
     file_format::{CompiledModule, CompiledScript},
     gas_schedule::G_LATEST_GAS_COST_TABLE,
     genesis_config::StdlibVersion,
@@ -93,10 +98,16 @@ const FLEXI_DAG_UPGRADE_VERSION_MARK: u64 = 12;
 impl StarcoinVM {
     #[cfg(feature = "metrics")]
     pub fn new<S: StateView>(metrics: Option<VMMetrics>, state: &S) -> Self {
-        Self::new_with_config(metrics, state, Some(state.get_chain_id().unwrap().id()))
+        Self::new_with_config(metrics, state, None)
     }
 
-    pub fn new_with_config<S: StateView>(metrics: Option<VMMetrics>, state: &S, chain_id: Option<u8>) -> Self {
+    #[cfg(feature = "metrics")]
+    pub fn new_with_config<S: StateView>(
+        metrics: Option<VMMetrics>,
+        state: &S,
+        chain_id: Option<u8>,
+    ) -> Self {
+        let chain_id = chain_id.unwrap_or_else(|| state.get_chain_id().unwrap().id());
         let gas_params = StarcoinGasParameters::initial();
         let native_params = gas_params.natives.clone();
         // todo: double check if it's ok to use RemoteStorage as StarcoinMoveResolver
@@ -1403,21 +1414,19 @@ impl StarcoinVM {
             .map(|(a, _)| a)
             .collect();
 
-        let (change_set, mut extensions) = session
-            .into_inner()
-            .finish_with_extensions()
+        let change_set_config =
+            ChangeSetConfigs::unlimited_at_gas_feature_version(LATEST_GAS_FEATURE_VERSION);
+        let (change_set, module_write_set) = session
+            .finish(&change_set_config)
             .map_err(|e| e.into_vm_status())?;
-        let table_context: NativeTableContext = extensions.remove();
-        let table_change_set = table_context
-            .into_change_set()
-            .map_err(|e| e.finish(Location::Undefined))?;
-        // Ignore new table infos.
-        // No table infos should be produced in readonly function.
-        let (_table_infos, write_set, _events) = SessionOutput {
-            change_set,
-            table_change_set,
-        }
-            .into_change_set(&mut ())?;
+        let (write_set, _events) = change_set
+            .try_combine_into_storage_change_set(module_write_set)
+            .map_err(|e| {
+                PartialVMError::from(e)
+                    .finish(Location::Undefined)
+                    .into_vm_status()
+            })?
+            .into_inner();
         if !write_set.is_empty() {
             warn!("Readonly function {} changes state", function_name);
             return Err(VMStatus::error(StatusCode::REJECTED_WRITE_SET, None));
@@ -1604,26 +1613,23 @@ pub(crate) fn get_transaction_output<A: AccessPathCache>(
     let gas_used = max_gas_amount
         .checked_sub(gas_left)
         .expect("Balance should always be less than or equal to max gas amount");
-    let (change_set, mut extensions) = session.into_inner().finish_with_extensions()?;
-    let table_context: NativeTableContext = extensions.remove();
-
-    // TODO(BobOng): [framework compatible] to fix aggregators context
-    // let aggregator_context: NativeAggregatorContext = extensions.remove();
-    // ...
-
-    let table_change_set = table_context
-        .into_change_set()
-        .map_err(|e| e.finish(Location::Undefined))?;
-    let (table_infos, write_set, events) = SessionOutput {
-        change_set,
-        table_change_set,
-    }.into_change_set(ap_cache)?;
+    let change_set_config =
+        ChangeSetConfigs::unlimited_at_gas_feature_version(LATEST_GAS_FEATURE_VERSION);
+    let (change_set, module_write_set) = session.finish(&change_set_config)?;
+    let (write_set, events) = change_set
+        .try_combine_into_storage_change_set(module_write_set)
+        .map_err(|e| {
+            PartialVMError::from(e)
+                .finish(Location::Undefined)
+                .into_vm_status()
+        })?
+        .into_inner();
     Ok(TransactionOutput::new(
-        table_infos,
         write_set,
         events,
         u64::from(gas_used),
         TransactionStatus::Keep(status),
+        TransactionAuxiliaryData::None,
     ))
 }
 
