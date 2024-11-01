@@ -142,11 +142,6 @@ pub fn starcoin_natives_with_builder(builder: &mut SafeNativeBuilder) -> NativeF
     #[allow(unreachable_code)]
     starcoin_move_stdlib::natives::all_natives(CORE_CODE_ADDRESS, builder)
         .into_iter()
-        .filter(|(_, name, _, _)| name.as_str() != "vector")
-        // .chain(starcoin_frameworks::natives::all_natives(
-        //     CORE_CODE_ADDRESS,
-        //     builder,
-        // ))
         .chain(starcoin_table_natives::table_natives(
             CORE_CODE_ADDRESS,
             builder,
