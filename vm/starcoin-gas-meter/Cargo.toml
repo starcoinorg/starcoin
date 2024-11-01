@@ -6,7 +6,6 @@ move-core-types = { workspace = true }
 move-stdlib = { workspace = true }
 move-table-extension = { workspace = true }
 move-vm-types = { workspace = true }
-starcoin-frameworks = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-gas-algebra = { workspace = true }
 

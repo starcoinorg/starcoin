@@ -22,7 +22,6 @@ num_enum = { workspace = true }
 rand = { workspace = true }
 rand_core = { default-features = false, workspace = true }
 starcoin-logger = { workspace = true }
-starcoin-frameworks = { workspace = true }
 starcoin-framework = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
@@ -55,5 +54,5 @@ stdlib = { workspace = true }
 [features]
 default = ["metrics"]
 metrics = ["starcoin-metrics"]
-testing = ["move-stdlib/testing", "starcoin-frameworks/testing", "starcoin-aggregator/testing"]
+testing = ["move-stdlib/testing", "starcoin-framework/testing", "starcoin-aggregator/testing"]
 force-deploy = []
