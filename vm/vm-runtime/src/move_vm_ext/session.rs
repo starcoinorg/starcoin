@@ -15,7 +15,6 @@ use move_core_types::{
     value::MoveValue,
     vm_status::{StatusCode, VMStatus},
 };
-use move_table_extension::TableChangeSet;
 use move_vm_runtime::move_vm_adapter::PublishModuleBundleOption;
 use move_vm_runtime::{session::Session, LoadedFunction};
 use move_vm_types::{gas::GasMeter, loaded_data::runtime_types::Type};
@@ -44,6 +43,7 @@ use std::{
 };
 use tracing::{info, warn};
 use starcoin_logger::prelude::error;
+use starcoin_table_natives::TableChangeSet;
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub enum SessionId {
@@ -493,14 +493,14 @@ impl SessionOutput {
                             metadata: StateValueMetadata::none(),
                         },
                     )),
-                    MoveStorageOp::New(data) => write_set_mut.insert((
+                    MoveStorageOp::New((data, _layout)) => write_set_mut.insert((
                         state_key,
                         WriteOp::Creation {
                             data,
                             metadata: StateValueMetadata::none(),
                         },
                     )),
-                    MoveStorageOp::Modify(data) => write_set_mut.insert((
+                    MoveStorageOp::Modify((data, _layout)) => write_set_mut.insert((
                         state_key,
                         WriteOp::Modification {
                             data,

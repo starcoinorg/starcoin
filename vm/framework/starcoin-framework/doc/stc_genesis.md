@@ -14,30 +14,18 @@ The module for init Genesis
 
 
 <pre><code><b>use</b> <a href="account.md#0x1_account">0x1::account</a>;
-<b>use</b> <a href="block_reward.md#0x1_block_reward">0x1::block_reward</a>;
 <b>use</b> <a href="block_reward_config.md#0x1_block_reward_config">0x1::block_reward_config</a>;
-<b>use</b> <a href="chain_id.md#0x1_chain_id">0x1::chain_id</a>;
 <b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
 <b>use</b> <a href="consensus_config.md#0x1_consensus_config">0x1::consensus_config</a>;
-<b>use</b> <a href="consensus_strategy.md#0x1_consensus_strategy">0x1::consensus_strategy</a>;
 <b>use</b> <a href="dao.md#0x1_dao">0x1::dao</a>;
-<b>use</b> <a href="epoch.md#0x1_epoch">0x1::epoch</a>;
-<b>use</b> <a href="on_chain_config.md#0x1_on_chain_config">0x1::on_chain_config</a>;
 <b>use</b> <a href="on_chain_config_dao.md#0x1_on_chain_config_dao">0x1::on_chain_config_dao</a>;
-<b>use</b> <a href="../../move-stdlib/doc/option.md#0x1_option">0x1::option</a>;
 <b>use</b> <a href="starcoin_coin.md#0x1_starcoin_coin">0x1::starcoin_coin</a>;
-<b>use</b> <a href="stc_block.md#0x1_stc_block">0x1::stc_block</a>;
-<b>use</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee">0x1::stc_transaction_fee</a>;
-<b>use</b> <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation">0x1::stc_transaction_package_validation</a>;
 <b>use</b> <a href="stc_transaction_timeout_config.md#0x1_stc_transaction_timeout_config">0x1::stc_transaction_timeout_config</a>;
-<b>use</b> <a href="stc_util.md#0x1_stc_util">0x1::stc_util</a>;
-<b>use</b> <a href="stc_version.md#0x1_stc_version">0x1::stc_version</a>;
 <b>use</b> <a href="system_addresses.md#0x1_system_addresses">0x1::system_addresses</a>;
 <b>use</b> <a href="timestamp.md#0x1_timestamp">0x1::timestamp</a>;
 <b>use</b> <a href="stc_transaction_publish_option.md#0x1_transaction_publish_option">0x1::transaction_publish_option</a>;
 <b>use</b> <a href="treasury.md#0x1_treasury">0x1::treasury</a>;
 <b>use</b> <a href="treasury_withdraw_dao_proposal.md#0x1_treasury_withdraw_dao_proposal">0x1::treasury_withdraw_dao_proposal</a>;
-<b>use</b> <a href="../../move-stdlib/doc/vector.md#0x1_vector">0x1::vector</a>;
 <b>use</b> <a href="vm_config.md#0x1_vm_config">0x1::vm_config</a>;
 </code></pre>
 
@@ -110,24 +98,27 @@ The module for init Genesis
     _dag_effective_height: u64,
 ) {
     // create <a href="genesis.md#0x1_genesis">genesis</a> <a href="account.md#0x1_account">account</a>
-    <b>let</b> (genesis_account, _genesis_signer_cap) =
+    <b>let</b> (starcoin_framework_account, _genesis_signer_cap) =
         <a href="account.md#0x1_account_create_framework_reserved_account">account::create_framework_reserved_account</a>(@starcoin_framework);
 
+    /*
+    <a href="aggregator_factory.md#0x1_aggregator_factory_initialize_aggregator_factory">aggregator_factory::initialize_aggregator_factory</a>(&starcoin_framework_account);
+
     // Init <b>global</b> time
-    <a href="timestamp.md#0x1_timestamp_set_time_has_started">timestamp::set_time_has_started</a>(&genesis_account);
-    <a href="chain_id.md#0x1_chain_id_initialize">chain_id::initialize</a>(&genesis_account, <a href="chain_id.md#0x1_chain_id">chain_id</a>);
-    <a href="consensus_strategy.md#0x1_consensus_strategy_initialize">consensus_strategy::initialize</a>(&genesis_account, strategy);
-    <a href="stc_block.md#0x1_stc_block_initialize">stc_block::initialize</a>(&genesis_account, parent_hash);
+    <a href="timestamp.md#0x1_timestamp_set_time_has_started">timestamp::set_time_has_started</a>(&starcoin_framework_account);
+    <a href="chain_id.md#0x1_chain_id_initialize">chain_id::initialize</a>(&starcoin_framework_account, <a href="chain_id.md#0x1_chain_id">chain_id</a>);
+    <a href="consensus_strategy.md#0x1_consensus_strategy_initialize">consensus_strategy::initialize</a>(&starcoin_framework_account, strategy);
+    <a href="stc_block.md#0x1_stc_block_initialize">stc_block::initialize</a>(&starcoin_framework_account, parent_hash);
 
     <a href="stc_transaction_publish_option.md#0x1_transaction_publish_option_initialize">transaction_publish_option::initialize</a>(
-        &genesis_account,
+        &starcoin_framework_account,
         script_allowed,
         module_publishing_allowed,
     );
 
     // init config
     <a href="vm_config.md#0x1_vm_config_initialize">vm_config::initialize</a>(
-        &genesis_account,
+        &starcoin_framework_account,
         instruction_schedule,
         native_schedule,
         global_memory_per_byte_cost,
@@ -143,9 +134,9 @@ The module for init Genesis
         default_account_size,
     );
 
-    <a href="stc_transaction_timeout_config.md#0x1_stc_transaction_timeout_config_initialize">stc_transaction_timeout_config::initialize</a>(&genesis_account, transaction_timeout);
+    <a href="stc_transaction_timeout_config.md#0x1_stc_transaction_timeout_config_initialize">stc_transaction_timeout_config::initialize</a>(&starcoin_framework_account, transaction_timeout);
     <a href="consensus_config.md#0x1_consensus_config_initialize">consensus_config::initialize</a>(
-        &genesis_account,
+        &starcoin_framework_account,
         uncle_rate_target,
         epoch_block_count,
         base_block_time_target,
@@ -158,20 +149,20 @@ The module for init Genesis
         base_block_gas_limit,
         strategy,
     );
-    <a href="epoch.md#0x1_epoch_initialize">epoch::initialize</a>(&genesis_account);
+    <a href="epoch.md#0x1_epoch_initialize">epoch::initialize</a>(&starcoin_framework_account);
 
     <a href="on_chain_config.md#0x1_on_chain_config_publish_new_config">on_chain_config::publish_new_config</a>&lt;<a href="stc_version.md#0x1_stc_version_Version">stc_version::Version</a>&gt;(
-        &genesis_account,
+        &starcoin_framework_account,
         <a href="stc_version.md#0x1_stc_version_new_version">stc_version::new_version</a>(stdlib_version)
     );
     // stdlib <b>use</b> two phase upgrade strategy.
     <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_update_module_upgrade_strategy">stc_transaction_package_validation::update_module_upgrade_strategy</a>(
-        &genesis_account,
+        &starcoin_framework_account,
         <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_get_strategy_two_phase">stc_transaction_package_validation::get_strategy_two_phase</a>(),
         <a href="../../move-stdlib/doc/option.md#0x1_option_some">option::some</a>(0u64),
     );
 
-    <a href="block_reward.md#0x1_block_reward_initialize">block_reward::initialize</a>(&genesis_account, reward_delay);
+    <a href="block_reward.md#0x1_block_reward_initialize">block_reward::initialize</a>(&starcoin_framework_account, reward_delay);
 
     // stc should be initialized after genesis_account's <b>module</b> upgrade strategy set and all on chain config init.
     // <b>let</b> withdraw_cap = STC::initialize_v2(&genesis_account, total_stc_amount, voting_delay, voting_period, voting_quorum_rate, min_action_delay);
@@ -186,7 +177,7 @@ The module for init Genesis
 
     // Initliaze STC
     <b>let</b> total_supply_coin = <a href="stc_genesis.md#0x1_stc_genesis_initialize_stc">Self::initialize_stc</a>(
-        &genesis_account,
+        &starcoin_framework_account,
         total_stc_amount,
         voting_delay,
         voting_period,
@@ -197,7 +188,7 @@ The module for init Genesis
     // Init goverances
     <b>let</b> core_resource_account = <a href="account.md#0x1_account_create_account">account::create_account</a>(@core_resources);
     <a href="stc_genesis.md#0x1_stc_genesis_initialize_stc_governance_allocation">Self::initialize_stc_governance_allocation</a>(
-        &genesis_account,
+        &starcoin_framework_account,
         &core_resource_account,
         total_supply_coin,
         pre_mine_stc_amount,
@@ -205,11 +196,11 @@ The module for init Genesis
         time_mint_stc_period,
     );
 
-    <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_initialize">stc_transaction_fee::initialize</a>(&genesis_account);
+    <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_initialize">stc_transaction_fee::initialize</a>(&starcoin_framework_account);
 
     // Only test/dev network set <a href="genesis.md#0x1_genesis">genesis</a> auth key.
     <b>if</b> (!<a href="../../move-stdlib/doc/vector.md#0x1_vector_is_empty">vector::is_empty</a>(&genesis_auth_key) && (<a href="stc_util.md#0x1_stc_util_is_net_dev">stc_util::is_net_dev</a>() || <a href="stc_util.md#0x1_stc_util_is_net_test">stc_util::is_net_test</a>())) {
-        <a href="account.md#0x1_account_rotate_authentication_key_internal">account::rotate_authentication_key_internal</a>(&genesis_account, genesis_auth_key);
+        <a href="account.md#0x1_account_rotate_authentication_key_internal">account::rotate_authentication_key_internal</a>(&starcoin_framework_account, genesis_auth_key);
     };
     <a href="account.md#0x1_account_rotate_authentication_key_internal">account::rotate_authentication_key_internal</a>(&core_resource_account, association_auth_key);
 
@@ -229,8 +220,10 @@ The module for init Genesis
     // };
     // StdlibUpgradeScripts::do_upgrade_from_v6_to_v7_with_language_version(&genesis_account, 6);
     // StdlibUpgradeScripts::do_upgrade_from_v11_to_v12(&genesis_account);
+    */
+
     // //Start time, Timestamp::is_genesis() will <b>return</b> <b>false</b>. this call should at the end of <a href="genesis.md#0x1_genesis">genesis</a> init.
-    <a href="timestamp.md#0x1_timestamp_set_time_has_started">timestamp::set_time_has_started</a>(&genesis_account);
+    <a href="timestamp.md#0x1_timestamp_set_time_has_started">timestamp::set_time_has_started</a>(&starcoin_framework_account);
     // account::release_genesis_signer(genesis_account);
     // account::release_genesis_signer(association);
 }

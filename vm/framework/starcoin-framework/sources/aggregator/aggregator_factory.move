@@ -12,6 +12,7 @@ module starcoin_framework::aggregator_factory {
 
     friend starcoin_framework::genesis;
     friend starcoin_framework::optional_aggregator;
+    friend starcoin_framework::stc_genesis;
 
     /// Aggregator factory is not published yet.
     const EAGGREGATOR_FACTORY_NOT_FOUND: u64 = 1;

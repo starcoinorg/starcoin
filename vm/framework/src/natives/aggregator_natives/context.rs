@@ -49,7 +49,6 @@ pub struct NativeAggregatorContext<'a> {
     txn_hash: [u8; 32],
     pub(crate) aggregator_v1_resolver: &'a dyn AggregatorV1Resolver,
     pub(crate) aggregator_v1_data: RefCell<AggregatorData>,
-    pub(crate) delayed_field_optimization_enabled: bool,
     pub(crate) delayed_field_resolver: &'a dyn DelayedFieldResolver,
     pub(crate) delayed_field_data: RefCell<DelayedFieldData>,
 }
@@ -60,7 +59,6 @@ impl<'a> NativeAggregatorContext<'a> {
     pub fn new(
         txn_hash: [u8; 32],
         aggregator_v1_resolver: &'a dyn AggregatorV1Resolver,
-        delayed_field_optimization_enabled: bool,
         delayed_field_resolver: &'a dyn DelayedFieldResolver,
     ) -> Self {
         Self {
@@ -68,7 +66,6 @@ impl<'a> NativeAggregatorContext<'a> {
             aggregator_v1_resolver,
             aggregator_v1_data: Default::default(),
             delayed_field_resolver,
-            delayed_field_optimization_enabled,
             delayed_field_data: Default::default(),
         }
     }
@@ -101,13 +98,13 @@ impl<'a> NativeAggregatorContext<'a> {
                     let plus = SignedU128::Positive(value);
                     let delta_op = DeltaOp::new(plus, limit, history);
                     AggregatorChangeV1::Merge(delta_op)
-                }
+                },
                 AggregatorState::NegativeDelta => {
                     let history = history.unwrap();
                     let minus = SignedU128::Negative(value);
                     let delta_op = DeltaOp::new(minus, limit, history);
                     AggregatorChangeV1::Merge(delta_op)
-                }
+                },
             };
             aggregator_v1_changes.insert(id.0, change);
         }
@@ -223,7 +220,7 @@ mod test {
     #[test]
     fn test_v1_into_change_set() {
         let resolver = get_test_resolver_v1();
-        let context = NativeAggregatorContext::new([0; 32], &resolver, true, &resolver);
+        let context = NativeAggregatorContext::new([0; 32], &resolver, &resolver);
         test_set_up_v1(&context);
 
         let AggregatorChangeSet {
@@ -469,7 +466,7 @@ mod test {
     #[test]
     fn test_v2_into_change_set() {
         let resolver = get_test_resolver_v2();
-        let context = NativeAggregatorContext::new([0; 32], &resolver, true, &resolver);
+        let context = NativeAggregatorContext::new([0; 32], &resolver, &resolver);
         test_set_up_v2(&context);
         let delayed_field_changes = context.into_delayed_fields();
         assert!(!delayed_field_changes.contains_key(&DelayedFieldID::new_with_width(1000, 8)));

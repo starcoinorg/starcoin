@@ -12,7 +12,6 @@ use anyhow::{bail, format_err, Error, Result};
 use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
 use move_core_types::move_resource::MoveStructType;
 use move_core_types::vm_status::StatusCode::VALUE_SERIALIZATION_ERROR;
-use move_table_extension::NativeTableContext;
 use move_vm_runtime::module_traversal::{TraversalContext, TraversalStorage};
 use move_vm_runtime::move_vm_adapter::PublishModuleBundleOption;
 use move_vm_types::gas::GasMeter;
@@ -39,7 +38,7 @@ use starcoin_vm_types::{
     account_address::AccountAddress,
     account_config::{
         core_code_address, genesis_address, upgrade::UpgradeEvent, ModuleUpgradeStrategy,
-        TwoPhaseUpgradeV2Resource, G_EPILOGUE_NAME, G_EPILOGUE_V2_NAME, G_PROLOGUE_NAME,
+        TwoPhaseUpgradeV2Resource, G_EPILOGUE_NAME, G_PROLOGUE_NAME,
     },
     errors::{Location, VMResult},
     file_format::{CompiledModule, CompiledScript},
@@ -60,6 +59,8 @@ use starcoin_vm_types::{
     vm_status::{KeptVMStatus, StatusCode, VMStatus},
 };
 use std::{borrow::Borrow, cmp::min, sync::Arc};
+use starcoin_framework::natives::aggregator_natives::NativeAggregatorContext;
+use starcoin_table_natives::NativeTableContext;
 use starcoin_vm_types::genesis_config::ChainId;
 
 static EXECUTION_CONCURRENCY_LEVEL: OnceCell<usize> = OnceCell::new();
@@ -827,6 +828,8 @@ impl StarcoinVM {
             TypeTag::Struct(Box::new(txn_data.gas_token_code().try_into().map_err(
                 |_e| VMStatus::error(StatusCode::BAD_TRANSACTION_FEE_CURRENCY, None),
             )?));
+        info!("StarcoinVM::run_prologue | Gas token data: {:?}", gas_token_ty);
+
         let txn_sequence_number = txn_data.sequence_number();
         let authentication_key_preimage = txn_data.authentication_key_preimage().to_vec();
         let txn_gas_price = u64::from(txn_data.gas_unit_price());
@@ -851,7 +854,7 @@ impl StarcoinVM {
         // Run prologue by genesis account
         session
             .execute_function_bypass_visibility(
-                &account_config::G_TRANSACTION_MANAGER_MODULE,
+                &account_config::G_TRANSACTION_VALIDATION_MODULE,
                 &G_PROLOGUE_NAME,
                 vec![gas_token_ty],
                 serialize_values(&vec![
@@ -888,6 +891,9 @@ impl StarcoinVM {
             TypeTag::Struct(Box::new(txn_data.gas_token_code().try_into().map_err(
                 |_e| VMStatus::error(StatusCode::BAD_TRANSACTION_FEE_CURRENCY, None),
             )?));
+
+        info!("StarcoinVM::run_epilogue | Gas token data: {:?}", gas_token_ty);
+
         let txn_sequence_number = txn_data.sequence_number();
         let txn_authentication_key_preimage = txn_data.authentication_key_preimage().to_vec();
         let txn_gas_price = u64::from(txn_data.gas_unit_price());
@@ -906,47 +912,64 @@ impl StarcoinVM {
                 AccountAddress::ZERO,
             ),
         };
-        let stdlib_version = self.get_version()?.into_stdlib_version();
+        //let stdlib_version = self.get_version()?.into_stdlib_version();
         // Run epilogue by genesis account, second arg is txn sender.
         // From stdlib v5, the epilogue function add `txn_authentication_key_preimage` argument, change to epilogue_v2
-        let (function_name, args) = if stdlib_version > StdlibVersion::Version(4) {
-            (
-                &G_EPILOGUE_V2_NAME,
-                serialize_values(&vec![
-                    MoveValue::Signer(genesis_address),
-                    MoveValue::Address(txn_data.sender),
-                    MoveValue::U64(txn_sequence_number),
-                    MoveValue::vector_u8(txn_authentication_key_preimage),
-                    MoveValue::U64(txn_gas_price),
-                    MoveValue::U64(txn_max_gas_amount),
-                    MoveValue::U64(gas_remaining),
-                    MoveValue::U8(payload_type.into()),
-                    MoveValue::vector_u8(script_or_package_hash.to_vec()),
-                    MoveValue::Address(package_address),
-                    MoveValue::Bool(success),
-                ]),
-            )
-        } else {
-            (
-                &G_EPILOGUE_NAME,
-                serialize_values(&vec![
-                    MoveValue::Signer(genesis_address),
-                    MoveValue::Address(txn_data.sender),
-                    MoveValue::U64(txn_sequence_number),
-                    MoveValue::U64(txn_gas_price),
-                    MoveValue::U64(txn_max_gas_amount),
-                    MoveValue::U64(gas_remaining),
-                    MoveValue::U8(payload_type.into()),
-                    MoveValue::vector_u8(script_or_package_hash.to_vec()),
-                    MoveValue::Address(package_address),
-                    MoveValue::Bool(success),
-                ]),
-            )
-        };
+        // let (function_name, args) = if stdlib_version > StdlibVersion::Version(4) {
+        //     (
+        //         &G_EPILOGUE_NAME,
+        //         serialize_values(&vec![
+        //             MoveValue::Signer(genesis_address),
+        //             MoveValue::Address(txn_data.sender),
+        //             MoveValue::U64(txn_sequence_number),
+        //             MoveValue::vector_u8(txn_authentication_key_preimage),
+        //             MoveValue::U64(txn_gas_price),
+        //             MoveValue::U64(txn_max_gas_amount),
+        //             MoveValue::U64(gas_remaining),
+        //             MoveValue::U8(payload_type.into()),
+        //             MoveValue::vector_u8(script_or_package_hash.to_vec()),
+        //             MoveValue::Address(package_address),
+        //             MoveValue::Bool(success),
+        //         ]),
+        //     )
+        // } else {
+        //     (
+        //         &G_EPILOGUE_NAME,
+        //         serialize_values(&vec![
+        //             MoveValue::Signer(genesis_address),
+        //             MoveValue::Address(txn_data.sender),
+        //             MoveValue::U64(txn_sequence_number),
+        //             MoveValue::U64(txn_gas_price),
+        //             MoveValue::U64(txn_max_gas_amount),
+        //             MoveValue::U64(gas_remaining),
+        //             MoveValue::U8(payload_type.into()),
+        //             MoveValue::vector_u8(script_or_package_hash.to_vec()),
+        //             MoveValue::Address(package_address),
+        //             MoveValue::Bool(success),
+        //         ]),
+        //     )
+        // };
+        let (function_name, args) = (
+            &G_EPILOGUE_NAME,
+            serialize_values(&vec![
+                MoveValue::Signer(genesis_address),
+                MoveValue::Address(txn_data.sender),
+                MoveValue::U64(txn_sequence_number),
+                MoveValue::vector_u8(txn_authentication_key_preimage),
+                MoveValue::U64(txn_gas_price),
+                MoveValue::U64(txn_max_gas_amount),
+                MoveValue::U64(gas_remaining),
+                MoveValue::U8(payload_type.into()),
+                MoveValue::vector_u8(script_or_package_hash.to_vec()),
+                MoveValue::Address(package_address),
+                MoveValue::Bool(success),
+            ]),
+        );
+
         let traversal_storage = TraversalStorage::new();
         session
             .execute_function_bypass_visibility(
-                &account_config::G_TRANSACTION_MANAGER_MODULE,
+                &account_config::G_TRANSACTION_VALIDATION_MODULE,
                 function_name,
                 vec![gas_token_ty],
                 args,
@@ -1005,7 +1028,7 @@ impl StarcoinVM {
                     bcs_ext::to_bytes(&parents_hash.unwrap_or_default())
                         .or(Err(VMStatus::error(VALUE_SERIALIZATION_ERROR, None)))?,
                 ));
-                function_name = &account_config::G_BLOCK_PROLOGUE_V2_NAME;
+                function_name = &account_config::G_BLOCK_PROLOGUE_NAME;
             }
         }
         let args = serialize_values(&args_vec);
@@ -1013,7 +1036,7 @@ impl StarcoinVM {
         let traverse_storage = TraversalStorage::new();
         session
             .execute_function_bypass_visibility(
-                &account_config::G_TRANSACTION_MANAGER_MODULE,
+                &account_config::G_BLOCK_MODULE,
                 function_name,
                 vec![],
                 args,
@@ -1055,7 +1078,7 @@ impl StarcoinVM {
             }
         };
 
-        let session = self
+    let session = self
             .move_vm
             .new_session(storage, SessionId::txn_meta(&txn_data));
         let mut gas_meter = StarcoinGasMeter::new(gas_params.clone(), txn_data.max_gas_amount());
@@ -1583,14 +1606,18 @@ pub(crate) fn get_transaction_output<A: AccessPathCache>(
         .expect("Balance should always be less than or equal to max gas amount");
     let (change_set, mut extensions) = session.into_inner().finish_with_extensions()?;
     let table_context: NativeTableContext = extensions.remove();
+
+    // TODO(BobOng): [framework compatible] to fix aggregators context
+    // let aggregator_context: NativeAggregatorContext = extensions.remove();
+    // ...
+
     let table_change_set = table_context
         .into_change_set()
         .map_err(|e| e.finish(Location::Undefined))?;
     let (table_infos, write_set, events) = SessionOutput {
         change_set,
         table_change_set,
-    }
-        .into_change_set(ap_cache)?;
+    }.into_change_set(ap_cache)?;
     Ok(TransactionOutput::new(
         table_infos,
         write_set,
@@ -1658,7 +1685,7 @@ impl VMExecutor for StarcoinVM {
                 block_gas_limit,
                 metrics,
             )?;
-            // debug!("TurboSTM executor concurrency_level {}", concurrency_level);
+            // debug!("TurboSTM executor concurrency_level {}", concurrency_level);1
             Ok(result)
         } else {
             let output = Self::execute_block_and_keep_vm_status(

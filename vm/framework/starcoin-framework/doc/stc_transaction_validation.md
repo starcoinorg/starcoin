@@ -309,7 +309,7 @@ The epilogue is invoked at the end of transactions.
 It collects gas and bumps the sequence number
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_epilogue">epilogue</a>&lt;TokenType: store&gt;(<a href="account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, txn_sender: <b>address</b>, txn_sequence_number: u64, txn_authentication_key_preimage: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64, txn_payload_type: u8, _txn_script_or_package_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, txn_package_address: <b>address</b>, success: bool)
+<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_epilogue">epilogue</a>&lt;TokenType&gt;(<a href="account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, txn_sender: <b>address</b>, txn_sequence_number: u64, txn_authentication_key_preimage: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64, txn_payload_type: u8, _txn_script_or_package_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, txn_package_address: <b>address</b>, success: bool)
 </code></pre>
 
 
@@ -318,7 +318,7 @@ It collects gas and bumps the sequence number
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_epilogue">epilogue</a>&lt;TokenType: store&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_epilogue">epilogue</a>&lt;TokenType&gt;(
     <a href="account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     txn_sender: <b>address</b>,
     txn_sequence_number: u64,
@@ -334,6 +334,7 @@ It collects gas and bumps the sequence number
 ) {
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(&<a href="account.md#0x1_account">account</a>);
 
+    /*
     <b>let</b> (stc_price, scaling_factor) = <b>if</b> (<a href="stc_util.md#0x1_stc_util_is_stc">stc_util::is_stc</a>&lt;TokenType&gt;()) {
         (<a href="easy_gas.md#0x1_easy_gas_gas_oracle_read">easy_gas::gas_oracle_read</a>&lt;TokenType&gt;(), <a href="easy_gas.md#0x1_easy_gas_get_scaling_factor">easy_gas::get_scaling_factor</a>&lt;TokenType&gt;())
     }<b>else</b> {
@@ -359,6 +360,7 @@ It collects gas and bumps the sequence number
             success,
         );
     }
+    */
 }
 </code></pre>
 
@@ -477,7 +479,7 @@ The epilogue is invoked at the end of transactions.
 It collects gas and bumps the sequence number
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_txn_epilogue">txn_epilogue</a>&lt;TokenType: store&gt;(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, txn_sender: <b>address</b>, _txn_sequence_number: u64, _txn_authentication_key_preimage: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64, stc_price: u128, stc_price_scaling: u128)
+<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_txn_epilogue">txn_epilogue</a>&lt;TokenType&gt;(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, txn_sender: <b>address</b>, _txn_sequence_number: u64, _txn_authentication_key_preimage: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64, stc_price: u128, stc_price_scaling: u128)
 </code></pre>
 
 
@@ -486,7 +488,7 @@ It collects gas and bumps the sequence number
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_txn_epilogue">txn_epilogue</a>&lt;TokenType: store&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_txn_epilogue">txn_epilogue</a>&lt;TokenType&gt;(
     <a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     txn_sender: <b>address</b>,
     _txn_sequence_number: u64,
@@ -658,7 +660,7 @@ Simulate the transaction fee
 ### Function `epilogue`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_epilogue">epilogue</a>&lt;TokenType: store&gt;(<a href="account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, txn_sender: <b>address</b>, txn_sequence_number: u64, txn_authentication_key_preimage: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64, txn_payload_type: u8, _txn_script_or_package_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, txn_package_address: <b>address</b>, success: bool)
+<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_epilogue">epilogue</a>&lt;TokenType&gt;(<a href="account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, txn_sender: <b>address</b>, txn_sequence_number: u64, txn_authentication_key_preimage: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64, txn_payload_type: u8, _txn_script_or_package_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, txn_package_address: <b>address</b>, success: bool)
 </code></pre>
 
 
@@ -685,7 +687,7 @@ Simulate the transaction fee
 ### Function `txn_epilogue`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_txn_epilogue">txn_epilogue</a>&lt;TokenType: store&gt;(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, txn_sender: <b>address</b>, _txn_sequence_number: u64, _txn_authentication_key_preimage: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64, stc_price: u128, stc_price_scaling: u128)
+<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_txn_epilogue">txn_epilogue</a>&lt;TokenType&gt;(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, txn_sender: <b>address</b>, _txn_sequence_number: u64, _txn_authentication_key_preimage: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64, stc_price: u128, stc_price_scaling: u128)
 </code></pre>
 
 

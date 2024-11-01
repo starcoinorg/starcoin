@@ -4,6 +4,7 @@
 use move_binary_format::errors::PartialVMError;
 use move_core_types::resolver::MoveResolver;
 use move_table_extension::TableResolver;
+use starcoin_aggregator::resolver::{AggregatorV1Resolver, DelayedFieldResolver};
 use starcoin_vm_runtime_types::resolver::ExecutorView;
 use starcoin_vm_types::on_chain_config::ConfigStorage;
 
@@ -11,13 +12,18 @@ use starcoin_vm_types::on_chain_config::ConfigStorage;
 /// top of storage, e.g. get resources from resource groups, etc.
 /// MoveResolver implements ResourceResolver and ModuleResolver
 pub trait StarcoinMoveResolver:
-    ConfigStorage + MoveResolver<PartialVMError> + TableResolver + AsExecutorView
-{
+    AggregatorV1Resolver
+    + DelayedFieldResolver
+    + ConfigStorage
+    + MoveResolver<PartialVMError>
+    + TableResolver
+    + AsExecutorView {
+
 }
 
-impl<S: ConfigStorage + MoveResolver<PartialVMError> + TableResolver + AsExecutorView>
-    StarcoinMoveResolver for S
-{
+impl<S: AggregatorV1Resolver + ConfigStorage + DelayedFieldResolver + MoveResolver<PartialVMError> + TableResolver + AsExecutorView>
+StarcoinMoveResolver for S {
+
 }
 
 pub trait AsExecutorView {

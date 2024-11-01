@@ -111,7 +111,7 @@ module starcoin_framework::stc_transaction_validation {
 
     /// The epilogue is invoked at the end of transactions.
     /// It collects gas and bumps the sequence number
-    public fun epilogue<TokenType: store>(
+    public fun epilogue<TokenType>(
         account: signer,
         txn_sender: address,
         txn_sequence_number: u64,
@@ -127,6 +127,7 @@ module starcoin_framework::stc_transaction_validation {
     ) {
         system_addresses::assert_starcoin_framework(&account);
 
+        /*
         let (stc_price, scaling_factor) = if (stc_util::is_stc<TokenType>()) {
             (easy_gas::gas_oracle_read<TokenType>(), easy_gas::get_scaling_factor<TokenType>())
         }else {
@@ -152,6 +153,7 @@ module starcoin_framework::stc_transaction_validation {
                 success,
             );
         }
+        */
     }
 
     const MAX_U64: u128 = 18446744073709551615;
@@ -250,7 +252,7 @@ module starcoin_framework::stc_transaction_validation {
 
     /// The epilogue is invoked at the end of transactions.
     /// It collects gas and bumps the sequence number
-    public fun txn_epilogue<TokenType: store>(
+    public fun txn_epilogue<TokenType>(
         account: &signer,
         txn_sender: address,
         _txn_sequence_number: u64,
