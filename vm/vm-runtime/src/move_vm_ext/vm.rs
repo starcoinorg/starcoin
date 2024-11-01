@@ -30,6 +30,8 @@ use starcoin_vm_types::{
 use starcoin_framework::natives::aggregator_natives::NativeAggregatorContext;
 use std::ops::Deref;
 use std::sync::Arc;
+use starcoin_framework::natives::event::NativeEventContext;
+use starcoin_framework::natives::object::NativeObjectContext;
 
 pub struct MoveVmExt {
     inner: MoveVM,
@@ -194,6 +196,8 @@ impl MoveVmExt {
 
         extensions.add(NativeTableContext::new(txn_hash, resolver));
         extensions.add(NativeAggregatorContext::new(txn_hash, resolver, resolver));
+        extensions.add(NativeEventContext::default());
+        extensions.add(NativeObjectContext::default());
 
         // The VM code loader has bugs around module upgrade. After a module upgrade, the internal
         // cache needs to be flushed to work around those bugs.
