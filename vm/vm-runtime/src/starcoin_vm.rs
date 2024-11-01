@@ -116,7 +116,7 @@ impl StarcoinVM {
             native_params.clone(),
             gas_params.vm.misc.clone(),
             12,
-            chain_id.unwrap(),
+            chain_id,
             Features::default(),
             TimedFeaturesBuilder::enable_all().build(),
             &resolver,

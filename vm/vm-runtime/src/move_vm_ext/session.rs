@@ -37,7 +37,6 @@ use starcoin_framework::natives::event::NativeEventContext;
 use starcoin_logger::prelude::error;
 use starcoin_table_natives::NativeTableContext;
 use starcoin_table_natives::TableChangeSet;
-use starcoin_table_natives::TableChangeSet;
 use starcoin_vm_runtime_types::module_write_set::ModuleWriteSet;
 use starcoin_vm_runtime_types::{
     change_set::VMChangeSet, storage::change_set_configs::ChangeSetConfigs,
