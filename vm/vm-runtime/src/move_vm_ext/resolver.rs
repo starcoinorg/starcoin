@@ -21,13 +21,19 @@ pub trait StarcoinMoveResolver:
     + ConfigStorage
     + MoveResolver<PartialVMError>
     + TableResolver
-    + AsExecutorView {
-
+    + AsExecutorView
+{
 }
 
-impl<S: AggregatorV1Resolver + ConfigStorage + DelayedFieldResolver + MoveResolver<PartialVMError> + TableResolver + AsExecutorView>
-StarcoinMoveResolver for S {
-
+impl<
+        S: AggregatorV1Resolver
+            + ConfigStorage
+            + DelayedFieldResolver
+            + MoveResolver<PartialVMError>
+            + TableResolver
+            + AsExecutorView,
+    > StarcoinMoveResolver for S
+{
 }
 
 //pub trait ResourceGroupResolver {

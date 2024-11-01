@@ -31,7 +31,9 @@ impl Package {
         let package_address = Self::parse_module_address(&modules[0])?;
         for m in &modules[1..] {
             let module_address = Self::parse_module_address(m)?;
-            if !Self::is_reversed_address(&package_address)? || !Self::is_reversed_address(&module_address)? {
+            if !Self::is_reversed_address(&package_address)?
+                || !Self::is_reversed_address(&module_address)?
+            {
                 Self::check_module_address(&package_address, &module_address)?;
             }
         }

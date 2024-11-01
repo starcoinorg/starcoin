@@ -23,15 +23,13 @@ use starcoin_table_natives::NativeTableContext;
 use starcoin_vm_types::{
     errors::PartialVMResult,
     on_chain_config::{
-        Features,
-        FeatureFlag, TimedFeatureFlag, TimedFeatures, TimedFeaturesBuilder,
-    }
+        FeatureFlag, Features, TimedFeatureFlag, TimedFeatures, TimedFeaturesBuilder,
+    },
 };
 
+use starcoin_framework::natives::aggregator_natives::NativeAggregatorContext;
 use std::ops::Deref;
 use std::sync::Arc;
-use starcoin_framework::natives::aggregator_natives::NativeAggregatorContext;
-
 
 pub struct MoveVmExt {
     inner: MoveVM,

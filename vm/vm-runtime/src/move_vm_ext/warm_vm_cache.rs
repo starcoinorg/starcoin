@@ -56,7 +56,6 @@ impl WarmVmCache {
             return Ok(vm.clone());
         }
 
-
         {
             #[cfg(feature = "metrics")]
             let _timer = TIMER.timer_with(&["warm_vm_cache_miss"]);

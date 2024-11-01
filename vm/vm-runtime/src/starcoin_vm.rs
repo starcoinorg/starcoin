@@ -19,13 +19,15 @@ use num_cpus;
 use once_cell::sync::OnceCell;
 use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
 use starcoin_crypto::HashValue;
+use starcoin_framework::natives::aggregator_natives::NativeAggregatorContext;
 use starcoin_gas_algebra::{CostTable, Gas, GasConstants, GasCost};
 use starcoin_gas_meter::StarcoinGasMeter;
 use starcoin_gas_schedule::{
-    FromOnChainGasSchedule, InitialGasSchedule, NativeGasParameters, StarcoinGasParameters, ToOnChainGasSchedule
-    LATEST_GAS_FEATURE_VERSION,
+    FromOnChainGasSchedule, InitialGasSchedule, NativeGasParameters, StarcoinGasParameters,
+    ToOnChainGasSchedule, LATEST_GAS_FEATURE_VERSION,
 };
 use starcoin_logger::prelude::*;
+use starcoin_table_natives::NativeTableContext;
 use starcoin_types::account_config::config_change::ConfigChangeEvent;
 use starcoin_types::{
     account_config,
@@ -36,6 +38,7 @@ use starcoin_types::{
     },
 };
 use starcoin_vm_runtime_types::storage::change_set_configs::ChangeSetConfigs;
+use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::on_chain_config::{Features, TimedFeaturesBuilder};
 use starcoin_vm_types::transaction::TransactionAuxiliaryData;
 use starcoin_vm_types::{
@@ -64,9 +67,6 @@ use starcoin_vm_types::{
     vm_status::{KeptVMStatus, StatusCode, VMStatus},
 };
 use std::{borrow::Borrow, cmp::min, sync::Arc};
-use starcoin_framework::natives::aggregator_natives::NativeAggregatorContext;
-use starcoin_table_natives::NativeTableContext;
-use starcoin_vm_types::genesis_config::ChainId;
 
 static EXECUTION_CONCURRENCY_LEVEL: OnceCell<usize> = OnceCell::new();
 
@@ -120,7 +120,8 @@ impl StarcoinVM {
             Features::default(),
             TimedFeaturesBuilder::enable_all().build(),
             &resolver,
-        ).expect("should be able to create Move VM; check if there are duplicated natives");
+        )
+        .expect("should be able to create Move VM; check if there are duplicated natives");
         Self {
             move_vm: Arc::new(inner),
             vm_config: None,
@@ -150,7 +151,7 @@ impl StarcoinVM {
             TimedFeaturesBuilder::enable_all().build(),
             resolver,
         )
-            .expect("should be able to create Move VM; check if there are duplicated natives");
+        .expect("should be able to create Move VM; check if there are duplicated natives");
         Self {
             move_vm: Arc::new(inner),
             vm_config: None,
@@ -184,10 +185,9 @@ impl StarcoinVM {
             Some(gs) => {
                 // TODO(simon): select feature_version properly
                 let gas_schdule_treemap = gs.clone().to_btree_map();
-                let gas_params = StarcoinGasParameters::from_on_chain_gas_schedule(
-                    &gas_schdule_treemap,
-                    12,
-                ).map_err(|e| format_err!("{e}"))?;
+                let gas_params =
+                    StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schdule_treemap, 12)
+                        .map_err(|e| format_err!("{e}"))?;
 
                 // TODO(simon): do double check
                 // if params.natives != self.native_params {
@@ -402,7 +402,7 @@ impl StarcoinVM {
         // NB: MIN_PRICE_PER_GAS_UNIT may equal zero, but need not in the future. Hence why
         // we turn off the clippy warning.
         #[allow(clippy::absurd_extreme_comparisons)]
-            let below_min_bound = txn_data.gas_unit_price() < txn_gas_params.min_price_per_gas_unit;
+        let below_min_bound = txn_data.gas_unit_price() < txn_gas_params.min_price_per_gas_unit;
         if below_min_bound {
             warn!(
                 "[VM] Gas unit error; min {}, submitted {}",
@@ -517,7 +517,7 @@ impl StarcoinVM {
         txn: SignedUserTransaction,
     ) -> Option<VMStatus> {
         #[cfg(feature = "metrics")]
-            let _timer = self.metrics.as_ref().map(|metrics| {
+        let _timer = self.metrics.as_ref().map(|metrics| {
             metrics
                 .vm_txn_exe_time
                 .with_label_values(&["verify_transaction"])
@@ -687,7 +687,7 @@ impl StarcoinVM {
                     gas_meter,
                     sender,
                 )
-                    .map_err(|e| e.into_vm_status())?;
+                .map_err(|e| e.into_vm_status())?;
             }
             charge_global_write_gas_usage(gas_meter, &session, &txn_data.sender())?;
 
@@ -839,7 +839,10 @@ impl StarcoinVM {
             TypeTag::Struct(Box::new(txn_data.gas_token_code().try_into().map_err(
                 |_e| VMStatus::error(StatusCode::BAD_TRANSACTION_FEE_CURRENCY, None),
             )?));
-        info!("StarcoinVM::run_prologue | Gas token data: {:?}", gas_token_ty);
+        info!(
+            "StarcoinVM::run_prologue | Gas token data: {:?}",
+            gas_token_ty
+        );
 
         let txn_sequence_number = txn_data.sequence_number();
         let authentication_key_preimage = txn_data.authentication_key_preimage().to_vec();
@@ -903,7 +906,10 @@ impl StarcoinVM {
                 |_e| VMStatus::error(StatusCode::BAD_TRANSACTION_FEE_CURRENCY, None),
             )?));
 
-        info!("StarcoinVM::run_epilogue | Gas token data: {:?}", gas_token_ty);
+        info!(
+            "StarcoinVM::run_epilogue | Gas token data: {:?}",
+            gas_token_ty
+        );
 
         let txn_sequence_number = txn_data.sequence_number();
         let txn_authentication_key_preimage = txn_data.authentication_key_preimage().to_vec();
@@ -1089,7 +1095,7 @@ impl StarcoinVM {
             }
         };
 
-    let session = self
+        let session = self
             .move_vm
             .new_session(storage, SessionId::txn_meta(&txn_data));
         let mut gas_meter = StarcoinGasMeter::new(gas_params.clone(), txn_data.max_gas_amount());
@@ -1220,23 +1226,25 @@ impl StarcoinVM {
         let mut result = vec![];
 
         // TODO load config by config change event
-        self.load_configs(&data_cache)
-            .map_err(|err| {
-                error!("StarcoinVM::execute_block_transactions | load_configs return error: ‘{:?}’ ", err);
-                VMStatus::error(StatusCode::STORAGE_ERROR, None)
-            })?;
+        self.load_configs(&data_cache).map_err(|err| {
+            error!(
+                "StarcoinVM::execute_block_transactions | load_configs return error: ‘{:?}’ ",
+                err
+            );
+            VMStatus::error(StatusCode::STORAGE_ERROR, None)
+        })?;
 
         let mut gas_left = block_gas_limit.unwrap_or(u64::MAX);
         let blocks = chunk_block_transactions(transactions);
 
         'outer: for block in blocks {
             #[cfg(feature = "metrics")]
-                let txn_type_name = block.type_name().to_string();
+            let txn_type_name = block.type_name().to_string();
             match block {
                 TransactionBlock::UserTransaction(txns) => {
                     for transaction in txns {
                         #[cfg(feature = "metrics")]
-                            let timer = self.metrics.as_ref().map(|metrics| {
+                        let timer = self.metrics.as_ref().map(|metrics| {
                             metrics
                                 .vm_txn_exe_time
                                 .with_label_values(&[txn_type_name.as_str()])
@@ -1289,7 +1297,7 @@ impl StarcoinVM {
                 }
                 TransactionBlock::BlockPrologue(block_metadata) => {
                     #[cfg(feature = "metrics")]
-                        let timer = self.metrics.as_ref().map(|metrics| {
+                    let timer = self.metrics.as_ref().map(|metrics| {
                         metrics
                             .vm_txn_exe_time
                             .with_label_values(&[txn_type_name.as_str()])
@@ -1366,7 +1374,7 @@ impl StarcoinVM {
         check_gas: bool,
     ) -> Result<Vec<Vec<u8>>, VMStatus> {
         #[cfg(feature = "metrics")]
-            let _timer = self.metrics.as_ref().map(|metrics| {
+        let _timer = self.metrics.as_ref().map(|metrics| {
             metrics
                 .vm_txn_exe_time
                 .with_label_values(&["execute_readonly_function"])
@@ -1484,7 +1492,7 @@ impl StarcoinVM {
                     txn_data.max_gas_amount,
                     status,
                 )
-                    .unwrap_or_else(|e| discard_error_vm_status(e).1);
+                .unwrap_or_else(|e| discard_error_vm_status(e).1);
                 (error_code, txn_output)
             }
             TransactionStatus::Discard(status) => {

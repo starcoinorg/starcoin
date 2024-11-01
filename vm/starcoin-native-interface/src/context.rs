@@ -59,7 +59,7 @@ impl<'a, 'b, 'c, 'd> SafeNativeContext<'a, 'b, 'c, 'd> {
     #[must_use = "must always propagate the error returned by this function to the native function that called it using the ? operator"]
     pub fn charge(
         &mut self,
-        abstract_amount: impl GasExpression<NativeGasParameters, Unit=InternalGasUnit>,
+        abstract_amount: impl GasExpression<NativeGasParameters, Unit = InternalGasUnit>,
     ) -> SafeNativeResult<()> {
         let amount = abstract_amount.evaluate(self.gas_feature_version, self.native_gas_params);
 
@@ -81,8 +81,8 @@ impl<'a, 'b, 'c, 'd> SafeNativeContext<'a, 'b, 'c, 'd> {
     ///
     /// This can be useful if you have branch conditions depending on gas parameters.
     pub fn eval_gas<E>(&self, abstract_amount: E) -> GasQuantity<E::Unit>
-        where
-            E: GasExpression<NativeGasParameters>,
+    where
+        E: GasExpression<NativeGasParameters>,
     {
         abstract_amount.evaluate(self.gas_feature_version, self.native_gas_params)
     }

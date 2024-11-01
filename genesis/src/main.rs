@@ -31,7 +31,10 @@ fn main() {
             continue;
         }
         if !id.genesis_config().is_ready() {
-            info!("End generate network: {:?}, genesis config not ready yet, please check it", id);
+            info!(
+                "End generate network: {:?}, genesis config not ready yet, please check it",
+                id
+            );
             continue;
         }
         let net = ChainNetwork::new_builtin(id);

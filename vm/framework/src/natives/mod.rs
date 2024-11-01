@@ -26,7 +26,7 @@ use aggregator_natives::{aggregator, aggregator_factory, aggregator_v2};
 use cryptography::ed25519;
 use move_core_types::account_address::AccountAddress;
 use move_vm_runtime::native_functions::{make_table_from_iter, NativeFunctionTable};
-use starcoin_native_interface::{SafeNativeBuilder};
+use starcoin_native_interface::SafeNativeBuilder;
 
 pub mod status {
     // Failure in parsing a struct type tag

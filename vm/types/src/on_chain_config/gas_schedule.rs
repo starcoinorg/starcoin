@@ -654,7 +654,6 @@ static G_NATIVE_STRS: Lazy<Vec<&str>> = Lazy::new(|| {
     ]
 });
 
-
 // https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move
 impl From<&CostTable> for GasSchedule {
     fn from(cost_table: &CostTable) -> Self {
@@ -714,7 +713,10 @@ fn append_extra_gas_cost_for_move_stdlib(entries: &mut Vec<(String, u64)>) {
     ));
 }
 
-fn append_extra_gas_cost_for_txn_gas_constants(entries: &mut Vec<(String, u64)>, txn: &GasConstants) {
+fn append_extra_gas_cost_for_txn_gas_constants(
+    entries: &mut Vec<(String, u64)>,
+    txn: &GasConstants,
+) {
     entries.push((
         "txn.global_memory_per_byte_cost".to_string(),
         txn.global_memory_per_byte_cost,
@@ -791,12 +793,10 @@ static G_MOVE_FRAMEWORK_UPGRADE_STRS: Lazy<Vec<&str>> = Lazy::new(|| {
         "move_stdlib.bcs.to_bytes.per_byte_serialized",
         "move_stdlib.bcs.to_bytes.failure",
         "move_stdlib.bcs.to_bytes.legacy_min_output_size",
-
         // Note(Gas): this initial value is guesswork.
         "move_stdlib.signer.borrow_address.base",
         "move_stdlib.bcs.to_address.base",
         "move_stdlib.bcs.to_address.per_byte",
-
         // Note(Gas): these initial values are guesswork.
         "move_stdlib.string.check_utf8.base",
         "move_stdlib.string.check_utf8.per_byte",
@@ -807,7 +807,6 @@ static G_MOVE_FRAMEWORK_UPGRADE_STRS: Lazy<Vec<&str>> = Lazy::new(|| {
         "move_stdlib.string.index_of.per_byte_pattern",
         "move_stdlib.string.index_of.per_byte_searched",
         "move_stdlib.vector.spawn_from.base",
-
         /////////////////////////////////
         "table.new_table_handle.base",
         "table.add_box.per_byte_serialized",
@@ -824,7 +823,6 @@ static G_MOVE_FRAMEWORK_UPGRADE_STRS: Lazy<Vec<&str>> = Lazy::new(|| {
         "table.borrow_box.base",
         "table.contains_box.base",
         "table.remove_box.base",
-
         ////////////////////////////////
         // starcoin framework
         "starcoin_framework.account.create_signer.base",

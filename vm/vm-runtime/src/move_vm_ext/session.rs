@@ -34,7 +34,9 @@ use starcoin_framework::natives::aggregator_natives::{
     AggregatorChangeSet, AggregatorChangeV1, NativeAggregatorContext,
 };
 use starcoin_framework::natives::event::NativeEventContext;
+use starcoin_logger::prelude::error;
 use starcoin_table_natives::NativeTableContext;
+use starcoin_table_natives::TableChangeSet;
 use starcoin_table_natives::TableChangeSet;
 use starcoin_vm_runtime_types::module_write_set::ModuleWriteSet;
 use starcoin_vm_runtime_types::{
@@ -52,8 +54,6 @@ use std::{
     sync::Arc,
 };
 use tracing::{info, warn};
-use starcoin_logger::prelude::error;
-use starcoin_table_natives::TableChangeSet;
 
 pub(crate) enum ResourceGroupChangeSet {
     // Merged resource groups op.
@@ -632,7 +632,12 @@ impl<'r, 'l> SessionExt<'r, 'l> {
         // publish a module under anyone's account.
         for module in &compiled_modules {
             if module.address() != &sender {
-                error!("module.address() != &sender, module name: {:?}, name: {:?} sender: {:?} ", module.address(), module.name(), sender);
+                error!(
+                    "module.address() != &sender, module name: {:?}, name: {:?} sender: {:?} ",
+                    module.address(),
+                    module.name(),
+                    sender
+                );
                 return Err(verification_error(
                     StatusCode::MODULE_ADDRESS_DOES_NOT_MATCH_SENDER,
                     IndexKind::AddressIdentifier,

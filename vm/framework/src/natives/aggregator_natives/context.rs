@@ -98,13 +98,13 @@ impl<'a> NativeAggregatorContext<'a> {
                     let plus = SignedU128::Positive(value);
                     let delta_op = DeltaOp::new(plus, limit, history);
                     AggregatorChangeV1::Merge(delta_op)
-                },
+                }
                 AggregatorState::NegativeDelta => {
                     let history = history.unwrap();
                     let minus = SignedU128::Negative(value);
                     let delta_op = DeltaOp::new(minus, limit, history);
                     AggregatorChangeV1::Merge(delta_op)
-                },
+                }
             };
             aggregator_v1_changes.insert(id.0, change);
         }

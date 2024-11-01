@@ -225,7 +225,7 @@ fn native_try_add(
                 )?;
                 set_aggregator_value(&aggregator, new_value)?;
                 true
-            },
+            }
             Err(_) => false,
         }
     };
@@ -273,7 +273,7 @@ fn native_try_sub(
                 )?;
                 set_aggregator_value(&aggregator, new_value)?;
                 true
-            },
+            }
             Err(_) => false,
         }
     };
