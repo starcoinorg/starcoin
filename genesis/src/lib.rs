@@ -409,10 +409,10 @@ fn encode_genesis_change_set(net: &ChainNetwork) -> ChangeSet {
         "Modules cannot be published in this session"
     );
 
-    let state = GenesisStateView::new();
-    let resolver = state.as_move_resolver();
+    //let state = GenesisStateView::new();
+    //let resolver = state.as_move_resolver();
 
-    let genesis_vm = GenesisMoveVM::new(net.chain_id());
+    //let genesis_vm = GenesisMoveVM::new(net.chain_id());
     let mut genesis_id = [0u8; 32];
     genesis_id[31] = 1u8;
     let mut session = genesis_vm.new_genesis_session(&resolver, HashValue::new(genesis_id));

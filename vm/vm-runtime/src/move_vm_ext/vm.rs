@@ -14,6 +14,8 @@ use move_vm_runtime::native_extensions::NativeContextExtensions;
 use move_vm_types::loaded_data::runtime_types::TypeBuilder;
 use starcoin_crypto::HashValue;
 use starcoin_framework::natives::aggregator_natives::NativeAggregatorContext;
+use starcoin_framework::natives::event::NativeEventContext;
+use starcoin_framework::natives::object::NativeObjectContext;
 use starcoin_gas_algebra::DynamicExpression;
 use starcoin_gas_schedule::{MiscGasParameters, NativeGasParameters, LATEST_GAS_FEATURE_VERSION};
 use starcoin_native_interface::SafeNativeBuilder;
@@ -30,8 +32,6 @@ use starcoin_vm_types::{
 };
 use std::ops::Deref;
 use std::sync::Arc;
-use starcoin_framework::natives::event::NativeEventContext;
-use starcoin_framework::natives::object::NativeObjectContext;
 
 /// MoveVM wrapper which is used to run genesis initializations. Designed as a
 /// stand-alone struct to ensure all genesis configurations are in one place,
@@ -92,6 +92,9 @@ impl GenesisMoveVM {
             .expect("HashValue should convert to [u8; 32]");
         let mut extensions = NativeContextExtensions::default();
         extensions.add(NativeTableContext::new(txn_hash, resolver));
+        extensions.add(NativeAggregatorContext::new(txn_hash, resolver, resolver));
+        extensions.add(NativeEventContext::default());
+        extensions.add(NativeObjectContext::default());
 
         self.vm.flush_loader_cache_if_invalidated();
 
