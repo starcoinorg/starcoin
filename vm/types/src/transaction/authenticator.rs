@@ -62,7 +62,7 @@ impl fmt::Display for Scheme {
         write!(f, "Scheme::{}", display)
     }
 }
-//TODO should rename TransactionAuthenticator to Authenticator
+
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
 pub enum TransactionAuthenticator {
     /// Single signature
