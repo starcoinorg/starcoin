@@ -3,6 +3,8 @@ module starcoin_framework::stc_genesis {
 
     use std::option;
     use std::vector;
+    use starcoin_std::debug;
+    use starcoin_std::debug::print;
 
     use starcoin_framework::account;
     use starcoin_framework::aggregator_factory;
@@ -88,11 +90,12 @@ module starcoin_framework::stc_genesis {
         transaction_timeout: u64,
         _dag_effective_height: u64,
     ) {
+        // debug::print(&std::string::utf8(b"stc_genesis::initialize Entered"));
+
         // create genesis account
         let (starcoin_framework_account, _genesis_signer_cap) =
             account::create_framework_reserved_account(@starcoin_framework);
 
-        /*
         aggregator_factory::initialize_aggregator_factory(&starcoin_framework_account);
 
         // Init global time
@@ -155,13 +158,6 @@ module starcoin_framework::stc_genesis {
 
         block_reward::initialize(&starcoin_framework_account, reward_delay);
 
-        // stc should be initialized after genesis_account's module upgrade strategy set and all on chain config init.
-        // let withdraw_cap = STC::initialize_v2(&genesis_account, total_stc_amount, voting_delay, voting_period, voting_quorum_rate, min_action_delay);
-        // Account::do_accept_token<STC>(&genesis_account);
-        // Account::do_accept_token<STC>(&association);
-
-        // DummyToken::initialize(&genesis_account);
-
         // TODO(BobOng): [framework compatible] treasury_withdraw_dao_proposal not implemented.
         // Lock the TreasuryWithdrawCapability to Dao
         // treasury_withdraw_dao_proposal::plugin(&genesis_account, withdraw_cap);
@@ -176,8 +172,9 @@ module starcoin_framework::stc_genesis {
             min_action_delay
         );
 
-        // Init goverances
+        // Init goverances account
         let core_resource_account = account::create_account(@core_resources);
+        coin::register<STC>(&core_resource_account);
         Self::initialize_stc_governance_allocation(
             &starcoin_framework_account,
             &core_resource_account,
@@ -211,10 +208,9 @@ module starcoin_framework::stc_genesis {
         // };
         // StdlibUpgradeScripts::do_upgrade_from_v6_to_v7_with_language_version(&genesis_account, 6);
         // StdlibUpgradeScripts::do_upgrade_from_v11_to_v12(&genesis_account);
-        */
 
         // //Start time, Timestamp::is_genesis() will return false. this call should at the end of genesis init.
-        timestamp::set_time_has_started(&starcoin_framework_account);
+        // timestamp::set_time_has_started(&starcoin_framework_account);
         // account::release_genesis_signer(genesis_account);
         // account::release_genesis_signer(association);
     }
@@ -230,10 +226,16 @@ module starcoin_framework::stc_genesis {
         voting_quorum_rate: u8,
         min_action_delay: u64
     ): coin::Coin<STC> {
+
+        // debug::print(&std::string::utf8(b"initialize_stc | Entered"));
+
         let (burn_cap, mint_cap) = starcoin_coin::initialize(starcoin_framework);
+        coin::register<STC>(starcoin_framework);
 
         coin::create_coin_conversion_map(starcoin_framework);
         coin::create_pairing<STC>(starcoin_framework);
+
+        // debug::print(&std::string::utf8(b"initialize_stc | coin::create_coin_conversion_map"));
 
         let total_stc_coin = coin::mint((total_stc_amount as u64), &mint_cap);
 
@@ -264,6 +266,8 @@ module starcoin_framework::stc_genesis {
         on_chain_config_dao::plugin<STC, block_reward_config::RewardConfig>(starcoin_framework);
         on_chain_config_dao::plugin<STC, stc_transaction_timeout_config::TransactionTimeoutConfig>(starcoin_framework);
 
+        // debug::print(&std::string::utf8(b"initialize_stc | Exited"));
+
         total_stc_coin
     }
 
@@ -281,8 +285,12 @@ module starcoin_framework::stc_genesis {
         let treasury_withdraw_cap = treasury::initialize(starcoin_framework, total_supply_stc);
 
         if (pre_mine_stc_amount > 0) {
-            let stc = treasury::withdraw_with_capability<STC>(&mut treasury_withdraw_cap, pre_mine_stc_amount);
-            coin::deposit(system_addresses::get_core_resource_address(), stc);
+            let core_resource_address = system_addresses::get_core_resource_address();
+            let stc = treasury::withdraw_with_capability<STC>(
+                &mut treasury_withdraw_cap,
+                pre_mine_stc_amount
+            );
+            coin::deposit(core_resource_address, stc);
         };
         if (time_mint_stc_amount > 0) {
             let liner_withdraw_cap = treasury::issue_linear_withdraw_capability<STC>(

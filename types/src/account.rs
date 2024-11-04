@@ -35,6 +35,7 @@ use std::collections::BTreeMap;
 use std::convert::TryInto;
 use std::str::FromStr;
 use std::sync::Arc;
+use starcoin_vm_types::event::EventKey;
 
 /// Details about a Starcoin account.
 ///
@@ -432,12 +433,9 @@ impl AccountData {
             sequence_number,
             key_rotation_capability,
             withdrawal_capability,
-            withdraw_events: EventHandle::new_from_address(&account_address, withdraw_events_count),
-            deposit_events: EventHandle::new_from_address(&account_address, deposit_events_count),
-            accept_token_events: EventHandle::new_from_address(
-                &account_address,
-                accept_token_events_count,
-            ),
+            withdraw_events: EventHandle::new(EventKey::new(0, account_address.clone()), withdraw_events_count),
+            deposit_events: EventHandle::new(EventKey::new(1, account_address.clone()), deposit_events_count),
+            accept_token_events: EventHandle::new(EventKey::new(2, account_address.clone()), accept_token_events_count),
         }
     }
 
@@ -513,15 +511,15 @@ impl AccountData {
                 .unwrap_or_else(|| Value::vector_for_testing_only(vec![])),
             Value::struct_(Struct::pack(vec![
                 Value::u64(self.withdraw_events.count()),
-                Value::vector_u8(self.withdraw_events.key().to_vec()),
+                Value::vector_u8(self.withdraw_events.key().to_bytes()),
             ])),
             Value::struct_(Struct::pack(vec![
                 Value::u64(self.deposit_events.count()),
-                Value::vector_u8(self.deposit_events.key().to_vec()),
+                Value::vector_u8(self.deposit_events.key().to_bytes()),
             ])),
             Value::struct_(Struct::pack(vec![
                 Value::u64(self.accept_token_events.count()),
-                Value::vector_u8(self.accept_token_events.key().to_vec()),
+                Value::vector_u8(self.accept_token_events.key().to_bytes()),
             ])),
             Value::u64(self.sequence_number),
         ]));
@@ -632,19 +630,10 @@ impl AccountData {
         self.sequence_number
     }
 
-    /// Returns the unique key for this withdraw events stream.
-    pub fn withdraw_events_key(&self) -> &[u8] {
-        self.withdraw_events.key().as_bytes()
-    }
 
     /// Returns the initial withdraw events count.
     pub fn withdraw_events_count(&self) -> u64 {
         self.withdraw_events.count()
-    }
-
-    /// Returns the unique key for this deposit events stream.
-    pub fn deposit_events_key(&self) -> &[u8] {
-        self.deposit_events.key().as_bytes()
     }
 
     /// Returns the initial deposit count.
@@ -657,10 +646,6 @@ impl AccountData {
         self.accept_token_events.count()
     }
 
-    /// Returns the unique key for this accept_token events stream.
-    pub fn accept_token_events_key(&self) -> &[u8] {
-        self.accept_token_events.key().as_bytes()
-    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

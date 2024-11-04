@@ -3,7 +3,7 @@
 #![allow(clippy::unit_arg)]
 use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
-use crate::event::EventHandle;
+use crate::event::{EventHandle, EventKey};
 use crate::genesis_config::ChainId;
 use crate::identifier::Identifier;
 use crate::language_storage::ModuleId;
@@ -110,8 +110,8 @@ impl AccountInfo {
             address,
             key_pair: KeyPairHolder::new(Arc::new(private_key), public_key),
             sequence_number: 0,
-            sent_event_handle: EventHandle::new_from_address(&address, 0),
-            received_event_handle: EventHandle::new_from_address(&address, 1),
+            sent_event_handle: EventHandle::new(EventKey::new(0, address.clone()), 0),
+            received_event_handle: EventHandle::new(EventKey::new(1, address.clone()), 1),
         }
     }
     pub fn new_with_address(
@@ -123,8 +123,8 @@ impl AccountInfo {
             address,
             key_pair: KeyPairHolder::new(Arc::new(private_key), public_key),
             sequence_number: 0,
-            sent_event_handle: EventHandle::new_from_address(&address, 0),
-            received_event_handle: EventHandle::new_from_address(&address, 1),
+            sent_event_handle: EventHandle::new(EventKey::new(0, address.clone()), 0),
+            received_event_handle: EventHandle::new(EventKey::new(1, address.clone()), 1),
         }
     }
 
@@ -137,8 +137,8 @@ impl AccountInfo {
             address,
             key_pair: KeyPairHolder::new_multi(private_key, public_key),
             sequence_number: 0,
-            sent_event_handle: EventHandle::new_from_address(&address, 0),
-            received_event_handle: EventHandle::new_from_address(&address, 1),
+            sent_event_handle: EventHandle::new(EventKey::new(0, address.clone()), 0),
+            received_event_handle: EventHandle::new(EventKey::new(1, address.clone()), 1),
         }
     }
 }

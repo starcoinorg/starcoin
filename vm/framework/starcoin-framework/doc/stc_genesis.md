@@ -14,18 +14,33 @@ The module for init Genesis
 
 
 <pre><code><b>use</b> <a href="account.md#0x1_account">0x1::account</a>;
+<b>use</b> <a href="aggregator_factory.md#0x1_aggregator_factory">0x1::aggregator_factory</a>;
+<b>use</b> <a href="block_reward.md#0x1_block_reward">0x1::block_reward</a>;
 <b>use</b> <a href="block_reward_config.md#0x1_block_reward_config">0x1::block_reward_config</a>;
+<b>use</b> <a href="chain_id.md#0x1_chain_id">0x1::chain_id</a>;
 <b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
 <b>use</b> <a href="consensus_config.md#0x1_consensus_config">0x1::consensus_config</a>;
+<b>use</b> <a href="consensus_strategy.md#0x1_consensus_strategy">0x1::consensus_strategy</a>;
 <b>use</b> <a href="dao.md#0x1_dao">0x1::dao</a>;
+<b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
+<b>use</b> <a href="epoch.md#0x1_epoch">0x1::epoch</a>;
+<b>use</b> <a href="on_chain_config.md#0x1_on_chain_config">0x1::on_chain_config</a>;
 <b>use</b> <a href="on_chain_config_dao.md#0x1_on_chain_config_dao">0x1::on_chain_config_dao</a>;
+<b>use</b> <a href="../../move-stdlib/doc/option.md#0x1_option">0x1::option</a>;
 <b>use</b> <a href="starcoin_coin.md#0x1_starcoin_coin">0x1::starcoin_coin</a>;
+<b>use</b> <a href="stc_block.md#0x1_stc_block">0x1::stc_block</a>;
+<b>use</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee">0x1::stc_transaction_fee</a>;
+<b>use</b> <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation">0x1::stc_transaction_package_validation</a>;
 <b>use</b> <a href="stc_transaction_timeout_config.md#0x1_stc_transaction_timeout_config">0x1::stc_transaction_timeout_config</a>;
+<b>use</b> <a href="stc_util.md#0x1_stc_util">0x1::stc_util</a>;
+<b>use</b> <a href="stc_version.md#0x1_stc_version">0x1::stc_version</a>;
+<b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 <b>use</b> <a href="system_addresses.md#0x1_system_addresses">0x1::system_addresses</a>;
 <b>use</b> <a href="timestamp.md#0x1_timestamp">0x1::timestamp</a>;
 <b>use</b> <a href="stc_transaction_publish_option.md#0x1_transaction_publish_option">0x1::transaction_publish_option</a>;
 <b>use</b> <a href="treasury.md#0x1_treasury">0x1::treasury</a>;
 <b>use</b> <a href="treasury_withdraw_dao_proposal.md#0x1_treasury_withdraw_dao_proposal">0x1::treasury_withdraw_dao_proposal</a>;
+<b>use</b> <a href="../../move-stdlib/doc/vector.md#0x1_vector">0x1::vector</a>;
 <b>use</b> <a href="vm_config.md#0x1_vm_config">0x1::vm_config</a>;
 </code></pre>
 
@@ -97,11 +112,12 @@ The module for init Genesis
     transaction_timeout: u64,
     _dag_effective_height: u64,
 ) {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> Entered"));
+
     // create <a href="genesis.md#0x1_genesis">genesis</a> <a href="account.md#0x1_account">account</a>
     <b>let</b> (starcoin_framework_account, _genesis_signer_cap) =
         <a href="account.md#0x1_account_create_framework_reserved_account">account::create_framework_reserved_account</a>(@starcoin_framework);
 
-    /*
     <a href="aggregator_factory.md#0x1_aggregator_factory_initialize_aggregator_factory">aggregator_factory::initialize_aggregator_factory</a>(&starcoin_framework_account);
 
     // Init <b>global</b> time
@@ -164,13 +180,6 @@ The module for init Genesis
 
     <a href="block_reward.md#0x1_block_reward_initialize">block_reward::initialize</a>(&starcoin_framework_account, reward_delay);
 
-    // stc should be initialized after genesis_account's <b>module</b> upgrade strategy set and all on chain config init.
-    // <b>let</b> withdraw_cap = STC::initialize_v2(&genesis_account, total_stc_amount, voting_delay, voting_period, voting_quorum_rate, min_action_delay);
-    // Account::do_accept_token&lt;STC&gt;(&genesis_account);
-    // Account::do_accept_token&lt;STC&gt;(&association);
-
-    // DummyToken::initialize(&genesis_account);
-
     // TODO(BobOng): [framework compatible] <a href="treasury_withdraw_dao_proposal.md#0x1_treasury_withdraw_dao_proposal">treasury_withdraw_dao_proposal</a> not implemented.
     // Lock the TreasuryWithdrawCapability <b>to</b> Dao
     // <a href="treasury_withdraw_dao_proposal.md#0x1_treasury_withdraw_dao_proposal_plugin">treasury_withdraw_dao_proposal::plugin</a>(&genesis_account, withdraw_cap);
@@ -185,8 +194,9 @@ The module for init Genesis
         min_action_delay
     );
 
-    // Init goverances
+    // Init goverances <a href="account.md#0x1_account">account</a>
     <b>let</b> core_resource_account = <a href="account.md#0x1_account_create_account">account::create_account</a>(@core_resources);
+    <a href="coin.md#0x1_coin_register">coin::register</a>&lt;STC&gt;(&core_resource_account);
     <a href="stc_genesis.md#0x1_stc_genesis_initialize_stc_governance_allocation">Self::initialize_stc_governance_allocation</a>(
         &starcoin_framework_account,
         &core_resource_account,
@@ -220,10 +230,9 @@ The module for init Genesis
     // };
     // StdlibUpgradeScripts::do_upgrade_from_v6_to_v7_with_language_version(&genesis_account, 6);
     // StdlibUpgradeScripts::do_upgrade_from_v11_to_v12(&genesis_account);
-    */
 
     // //Start time, Timestamp::is_genesis() will <b>return</b> <b>false</b>. this call should at the end of <a href="genesis.md#0x1_genesis">genesis</a> init.
-    <a href="timestamp.md#0x1_timestamp_set_time_has_started">timestamp::set_time_has_started</a>(&starcoin_framework_account);
+    // <a href="timestamp.md#0x1_timestamp_set_time_has_started">timestamp::set_time_has_started</a>(&starcoin_framework_account);
     // account::release_genesis_signer(genesis_account);
     // account::release_genesis_signer(association);
 }
@@ -259,10 +268,16 @@ The treasury will mint the total_stc_amount to the treasury.
     voting_quorum_rate: u8,
     min_action_delay: u64
 ): <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;STC&gt; {
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"initialize_stc | Entered"));
+
     <b>let</b> (burn_cap, mint_cap) = <a href="starcoin_coin.md#0x1_starcoin_coin_initialize">starcoin_coin::initialize</a>(starcoin_framework);
+    <a href="coin.md#0x1_coin_register">coin::register</a>&lt;STC&gt;(starcoin_framework);
 
     <a href="coin.md#0x1_coin_create_coin_conversion_map">coin::create_coin_conversion_map</a>(starcoin_framework);
     <a href="coin.md#0x1_coin_create_pairing">coin::create_pairing</a>&lt;STC&gt;(starcoin_framework);
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"initialize_stc | <a href="coin.md#0x1_coin_create_coin_conversion_map">coin::create_coin_conversion_map</a>"));
 
     <b>let</b> total_stc_coin = <a href="coin.md#0x1_coin_mint">coin::mint</a>((total_stc_amount <b>as</b> u64), &mint_cap);
 
@@ -292,6 +307,8 @@ The treasury will mint the total_stc_amount to the treasury.
     <a href="on_chain_config_dao.md#0x1_on_chain_config_dao_plugin">on_chain_config_dao::plugin</a>&lt;STC, <a href="consensus_config.md#0x1_consensus_config_ConsensusConfig">consensus_config::ConsensusConfig</a>&gt;(starcoin_framework);
     <a href="on_chain_config_dao.md#0x1_on_chain_config_dao_plugin">on_chain_config_dao::plugin</a>&lt;STC, <a href="block_reward_config.md#0x1_block_reward_config_RewardConfig">block_reward_config::RewardConfig</a>&gt;(starcoin_framework);
     <a href="on_chain_config_dao.md#0x1_on_chain_config_dao_plugin">on_chain_config_dao::plugin</a>&lt;STC, <a href="stc_transaction_timeout_config.md#0x1_stc_transaction_timeout_config_TransactionTimeoutConfig">stc_transaction_timeout_config::TransactionTimeoutConfig</a>&gt;(starcoin_framework);
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"initialize_stc | Exited"));
 
     total_stc_coin
 }
@@ -330,8 +347,12 @@ Overall governance allocation strategy:
     <b>let</b> treasury_withdraw_cap = <a href="treasury.md#0x1_treasury_initialize">treasury::initialize</a>(starcoin_framework, total_supply_stc);
 
     <b>if</b> (pre_mine_stc_amount &gt; 0) {
-        <b>let</b> stc = <a href="treasury.md#0x1_treasury_withdraw_with_capability">treasury::withdraw_with_capability</a>&lt;STC&gt;(&<b>mut</b> treasury_withdraw_cap, pre_mine_stc_amount);
-        <a href="coin.md#0x1_coin_deposit">coin::deposit</a>(<a href="system_addresses.md#0x1_system_addresses_get_core_resource_address">system_addresses::get_core_resource_address</a>(), stc);
+        <b>let</b> core_resource_address = <a href="system_addresses.md#0x1_system_addresses_get_core_resource_address">system_addresses::get_core_resource_address</a>();
+        <b>let</b> stc = <a href="treasury.md#0x1_treasury_withdraw_with_capability">treasury::withdraw_with_capability</a>&lt;STC&gt;(
+            &<b>mut</b> treasury_withdraw_cap,
+            pre_mine_stc_amount
+        );
+        <a href="coin.md#0x1_coin_deposit">coin::deposit</a>(core_resource_address, stc);
     };
     <b>if</b> (time_mint_stc_amount &gt; 0) {
         <b>let</b> liner_withdraw_cap = <a href="treasury.md#0x1_treasury_issue_linear_withdraw_capability">treasury::issue_linear_withdraw_capability</a>&lt;STC&gt;(

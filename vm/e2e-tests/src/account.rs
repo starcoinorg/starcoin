@@ -11,7 +11,7 @@ use starcoin_crypto::keygen::KeyGen;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::{genesis_address, AccountResource, BalanceResource};
-use starcoin_vm_types::event::EventHandle;
+use starcoin_vm_types::event::{EventHandle, EventKey};
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::language_storage::StructTag;
 use starcoin_vm_types::state_store::state_key::StateKey;
@@ -465,7 +465,7 @@ pub struct AccountData {
 }
 
 fn new_event_handle(count: u64, address: AccountAddress) -> EventHandle {
-    EventHandle::new_from_address(&address, count)
+    EventHandle::new(EventKey::new(count, address.clone()), count)
 }
 
 impl AccountData {

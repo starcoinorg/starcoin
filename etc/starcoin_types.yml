@@ -113,7 +113,10 @@ EventHandle:
     - key:
         TYPENAME: EventKey
 EventKey:
-  NEWTYPESTRUCT: BYTES
+  STRUCT:
+    - creation_number: U64
+    - account_address:
+        TYPENAME: AccountAddress
 HashValue:
   STRUCT:
     - hash:
