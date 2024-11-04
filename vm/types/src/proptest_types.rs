@@ -533,7 +533,6 @@ impl Arbitrary for BlockMetadata {
                         parent_hash,
                         timestamp,
                         addresses,
-                        Some(AuthenticationKey::ed25519(&author_public_key)),
                         uncles,
                         number,
                         ChainId::test(),

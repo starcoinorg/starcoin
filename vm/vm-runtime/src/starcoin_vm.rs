@@ -1010,27 +1010,15 @@ impl StarcoinVM {
         let mut gas_meter = StarcoinGasMeter::new(StarcoinGasParameters::zeros(), max_gas_amount);
         gas_meter.set_metering(false);
         let session_id = SessionId::block_meta(&block_metadata);
-        let (
-            parent_id,
-            timestamp,
-            author,
-            author_auth_key,
-            uncles,
-            number,
-            chain_id,
-            parent_gas_used,
-            parents_hash,
-        ) = block_metadata.into_inner();
+        let (parent_id, timestamp, author, uncles, number, chain_id, parent_gas_used, parents_hash) =
+            block_metadata.into_inner();
         let mut function_name = &account_config::G_BLOCK_PROLOGUE_NAME;
         let mut args_vec = vec![
             MoveValue::Signer(txn_sender),
             MoveValue::vector_u8(parent_id.to_vec()),
             MoveValue::U64(timestamp),
             MoveValue::Address(author),
-            match author_auth_key {
-                Some(author_auth_key) => MoveValue::vector_u8(author_auth_key.to_vec()),
-                None => MoveValue::vector_u8(Vec::new()),
-            },
+            MoveValue::vector_u8(Vec::new()),
             MoveValue::U64(uncles),
             MoveValue::U64(number),
             MoveValue::U8(chain_id.id()),
