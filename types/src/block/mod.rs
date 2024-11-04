@@ -167,9 +167,6 @@ pub struct BlockHeader {
     number: BlockNumber,
     /// Block author.
     author: AccountAddress,
-    /// Block author auth key.
-    /// this field is deprecated
-    author_auth_key: Option<AuthenticationKey>,
     /// The transaction accumulator root hash after executing this block.
     txn_accumulator_root: HashValue,
     /// The parent block info's block accumulator root hash.
@@ -215,7 +212,6 @@ impl BlockHeader {
             timestamp,
             number,
             author,
-            None,
             txn_accumulator_root,
             block_accumulator_root,
             state_root,
@@ -235,7 +231,6 @@ impl BlockHeader {
         timestamp: u64,
         number: BlockNumber,
         author: AccountAddress,
-        author_auth_key: Option<AuthenticationKey>,
         txn_accumulator_root: HashValue,
         block_accumulator_root: HashValue,
         state_root: HashValue,
@@ -254,7 +249,6 @@ impl BlockHeader {
             number,
             timestamp,
             author,
-            author_auth_key,
             txn_accumulator_root,
             state_root,
             gas_used,
@@ -307,10 +301,6 @@ impl BlockHeader {
 
     pub fn author(&self) -> AccountAddress {
         self.author
-    }
-
-    pub fn author_auth_key(&self) -> Option<AuthenticationKey> {
-        self.author_auth_key
     }
 
     pub fn txn_accumulator_root(&self) -> HashValue {
@@ -473,7 +463,6 @@ impl<'de> Deserialize<'de> for BlockHeader {
             timestamp: u64,
             number: BlockNumber,
             author: AccountAddress,
-            author_auth_key: Option<AuthenticationKey>,
             txn_accumulator_root: HashValue,
             block_accumulator_root: HashValue,
             state_root: HashValue,
@@ -492,7 +481,6 @@ impl<'de> Deserialize<'de> for BlockHeader {
             header_data.timestamp,
             header_data.number,
             header_data.author,
-            header_data.author_auth_key,
             header_data.txn_accumulator_root,
             header_data.block_accumulator_root,
             header_data.state_root,
@@ -558,7 +546,6 @@ impl Into<RawBlockHeader> for BlockHeader {
             timestamp: self.timestamp,
             number: self.number,
             author: self.author,
-            author_auth_key: self.author_auth_key,
             accumulator_root: self.txn_accumulator_root,
             parent_block_accumulator_root: self.block_accumulator_root,
             state_root: self.state_root,
@@ -580,9 +567,6 @@ pub struct RawBlockHeader {
     pub number: BlockNumber,
     /// Block author.
     pub author: AccountAddress,
-    /// Block author auth key.
-    /// this field is deprecated
-    pub author_auth_key: Option<AuthenticationKey>,
     /// The transaction accumulator root hash after executing this block.
     pub accumulator_root: HashValue,
     /// The parent block accumulator root hash.
@@ -640,11 +624,6 @@ impl BlockHeaderBuilder {
 
     pub fn with_author(mut self, author: AccountAddress) -> Self {
         self.buffer.author = author;
-        self
-    }
-
-    pub fn with_author_auth_key(mut self, author_auth_key: Option<AuthenticationKey>) -> Self {
-        self.buffer.author_auth_key = author_auth_key;
         self
     }
 
@@ -850,7 +829,6 @@ impl Block {
             self.header.parent_hash(),
             self.header.timestamp,
             self.header.author,
-            self.header.author_auth_key,
             uncles,
             self.header.number,
             self.header.chain_id,
@@ -1011,7 +989,7 @@ impl BlockTemplate {
         strategy: ConsensusStrategy,
         block_metadata: BlockMetadata,
     ) -> Self {
-        let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _, parents_hash) =
+        let (parent_hash, timestamp, author, _, number, _, _, parents_hash) =
             block_metadata.into_inner();
         Self {
             parent_hash,
@@ -1062,7 +1040,6 @@ impl BlockTemplate {
             timestamp: self.timestamp,
             number: self.number,
             author: self.author,
-            author_auth_key: None,
             accumulator_root: self.txn_accumulator_root,
             parent_block_accumulator_root: self.block_accumulator_root,
             state_root: self.state_root,
