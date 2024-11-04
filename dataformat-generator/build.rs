@@ -75,7 +75,7 @@ fn generate() -> Result<(), Error> {
 
     tracer.trace_value(
         &mut samples,
-        &EventKey::new_from_address(&AccountAddress::random(), 0),
+        &EventKey::new(0, AccountAddress::random()),
     )?;
     tracer.trace_type::<ContractEventV0>(&samples)?;
     tracer.trace_type::<ContractEvent>(&samples)?;

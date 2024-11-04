@@ -210,7 +210,7 @@ impl<S: StateView> ConfigStorage for S {
 
 pub fn new_epoch_event_key() -> EventKey {
     // XXX FIXME YSG
-    EventKey::new_from_address(&genesis_address(), 0)
+    EventKey::new(0, genesis_address().clone())
 }
 
 pub fn access_path_for_config(config_id: ConfigID) -> AccessPath {

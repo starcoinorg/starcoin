@@ -25,6 +25,7 @@ use starcoin_types::contract_event::ContractEvent;
 #[cfg(feature = "testing")]
 use starcoin_types::event::EventKey;
 use std::collections::VecDeque;
+use log::info;
 
 /// Cached emitted module events.
 #[derive(Default, Tid)]
@@ -97,7 +98,8 @@ fn native_write_to_event_store(
             StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR,
         ))
     })?;
-    let key = bcs::from_bytes(guid.as_slice()).map_err(|_| {
+    let key = bcs::from_bytes(guid.as_slice()).map_err(|err| {
+        info!("native_write_to_event_store | event key parse error: {:?}", err);
         SafeNativeError::InvariantViolation(PartialVMError::new(StatusCode::EVENT_KEY_MISMATCH))
     })?;
 
@@ -144,7 +146,7 @@ fn native_emitted_events_by_handle(
             ))
         })?
         .value_as::<AccountAddress>()?;
-    let key = EventKey::new_from_address(&addr, creation_num);
+    let key = EventKey::new(creation_num, addr);
     let ty_tag = context.type_to_type_tag(&ty)?;
     let ty_layout = context.type_to_type_layout(&ty)?;
     let ctx = context.extensions_mut().get_mut::<NativeEventContext>();

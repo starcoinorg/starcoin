@@ -20,7 +20,7 @@ use starcoin_gas_schedule::FromOnChainGasSchedule;
 use starcoin_time_service::{TimeService, TimeServiceType};
 use starcoin_uint::U256;
 use starcoin_vm_types::account_config::genesis_address;
-use starcoin_vm_types::event::EventHandle;
+use starcoin_vm_types::event::{EventHandle, EventKey};
 use starcoin_vm_types::gas_schedule::{
     latest_cost_table, G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_GAS_CONSTANTS_V3,
     G_LATEST_GAS_COST_TABLE, G_TEST_GAS_CONSTANTS,
@@ -580,7 +580,7 @@ impl ChainNetwork {
             self.genesis_config.consensus_config.base_block_gas_limit,
             self.genesis_config.consensus_config.strategy,
             //TODO conform new Epoch events salt value.
-            EventHandle::new_from_address(&genesis_address(), 0),
+            EventHandle::new(EventKey::new(0, genesis_address()), 0),
         )
     }
 

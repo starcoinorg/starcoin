@@ -52,7 +52,7 @@ fn native_new_aggregator(
     hasher.update(&(aggregator_data.num_aggregators() as u32).to_be_bytes());
     let hash = hasher.finish().to_vec();
 
-    if let Ok(key) = AccountAddress::from_bytes(hash) {
+    if let Ok(key) = AccountAddress::from_bytes(&hash[..16]) {
         let id = AggregatorID::new(handle, key);
         aggregator_data.create_new_aggregator(id, limit);
 

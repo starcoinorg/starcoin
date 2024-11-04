@@ -689,8 +689,10 @@ module std::features {
     #[view]
     /// Check whether the feature is enabled.
     public fun is_enabled(feature: u64): bool acquires Features {
-        exists<Features>(@std) &&
-            contains(&borrow_global<Features>(@std).features, feature)
+        let _ret = exists<Features>(@std) &&
+             contains(&borrow_global<Features>(@std).features, feature);
+        // TODO(BobOng): [framework-upgrade] To initialize this feature
+        true
     }
 
     /// Helper to include or exclude a feature flag.
