@@ -454,6 +454,7 @@ where
             if block_header.number() % ASYNC_BLOCK_COUNT == 0
                 || block_header.number() >= self.target.target_id.number()
             {
+                self.sync_dag_store.delete_all_dag_sync_block()?;
                 self.find_absent_ancestor(vec![block_header.clone()])
                     .await?;
 
@@ -474,7 +475,6 @@ where
                         block: block.clone(),
                         children: vec![],
                     })?;
-                self.sync_dag_store.save_block(block)?;
                 anyhow::Ok(ParallelSign::NeedMoreBlocks)
             }
         };
