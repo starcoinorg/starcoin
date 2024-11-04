@@ -122,7 +122,7 @@ impl Epoch {
 }
 
 impl MoveStructType for Epoch {
-    const MODULE_NAME: &'static IdentStr = ident_str!("Epoch");
+    const MODULE_NAME: &'static IdentStr = ident_str!("epoch");
     const STRUCT_NAME: &'static IdentStr = ident_str!("Epoch");
 }
 
