@@ -146,10 +146,10 @@ impl MoveVmExt {
         &mut self,
         native_gas_params: NativeGasParameters,
         misc_gas_parameters: MiscGasParameters,
+        gas_feature_version: u64,
     ) -> PartialVMResult<()> {
-        //todo: select featrure version properly
         let native_functions = natives::starcoin_natives(
-            1,
+            gas_feature_version,
             native_gas_params,
             misc_gas_parameters,
             TimedFeaturesBuilder::enable_all().build(),
