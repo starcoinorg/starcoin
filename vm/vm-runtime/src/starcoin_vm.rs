@@ -112,7 +112,7 @@ impl StarcoinVM {
         let inner = MoveVmExt::new(
             native_params.clone(),
             gas_params.vm.misc.clone(),
-            12,
+            LATEST_GAS_FEATURE_VERSION,
             chain_id,
             Features::default(),
             TimedFeaturesBuilder::enable_all().build(),
@@ -181,10 +181,13 @@ impl StarcoinVM {
             }
             Some(gs) => {
                 // TODO(simon): select feature_version properly
+                let gas_feature_version = LATEST_GAS_FEATURE_VERSION;
                 let gas_schdule_treemap = gs.clone().to_btree_map();
-                let gas_params =
-                    StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schdule_treemap, 12)
-                        .map_err(|e| format_err!("{e}"))?;
+                let gas_params = StarcoinGasParameters::from_on_chain_gas_schedule(
+                    &gas_schdule_treemap,
+                    gas_feature_version,
+                )
+                .map_err(|e| format_err!("{e}"))?;
 
                 // TODO(simon): do double check
                 // if params.natives != self.native_params {
@@ -195,7 +198,11 @@ impl StarcoinVM {
                     }
                     Some(mv) => {
                         let gas_params = gas_params.clone();
-                        mv.update_native_functions(gas_params.natives, gas_params.vm.misc)?;
+                        mv.update_native_functions(
+                            gas_params.natives,
+                            gas_params.vm.misc,
+                            gas_feature_version,
+                        )?;
                     }
                 }
                 self.native_params = gas_params.natives.clone();
