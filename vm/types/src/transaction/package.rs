@@ -67,8 +67,8 @@ impl Package {
     }
 
     fn check_module_address(
-        package_address: &AccountAddress,
-        module_address: &AccountAddress,
+        _package_address: &AccountAddress,
+        _module_address: &AccountAddress,
     ) -> Result<()> {
         //ensure!(
         //    package_address == module_address,

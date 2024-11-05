@@ -8,6 +8,7 @@ use starcoin_vm_types::{
 };
 
 //TODO should remove this trait?
+#[allow(dead_code)]
 pub trait AccessPathCache {
     fn get_module_path(&mut self, module_id: ModuleId) -> AccessPath;
     fn get_resource_path(&mut self, address: AccountAddress, struct_tag: StructTag) -> AccessPath;

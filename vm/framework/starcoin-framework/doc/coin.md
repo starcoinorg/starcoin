@@ -150,7 +150,6 @@ This module provides the foundation for typesafe Coins.
 <b>use</b> <a href="aggregator.md#0x1_aggregator">0x1::aggregator</a>;
 <b>use</b> <a href="aggregator_factory.md#0x1_aggregator_factory">0x1::aggregator_factory</a>;
 <b>use</b> <a href="create_signer.md#0x1_create_signer">0x1::create_signer</a>;
-<b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
 <b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="event.md#0x1_event">0x1::event</a>;
 <b>use</b> <a href="../../move-stdlib/doc/features.md#0x1_features">0x1::features</a>;
@@ -1420,7 +1419,7 @@ Create STC pairing by passing <code>StarcoinCoin</code>.
 
 
 <pre><code>inline <b>fun</b> <a href="coin.md#0x1_coin_create_and_return_paired_metadata_if_not_exist">create_and_return_paired_metadata_if_not_exist</a>&lt;CoinType&gt;(allow_apt_creation: bool): Object&lt;Metadata&gt; {
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="coin.md#0x1_coin_create_and_return_paired_metadata_if_not_exist">coin::create_and_return_paired_metadata_if_not_exist</a> | Entered"));
+    // debug::print(&std::string::utf8(b"<a href="coin.md#0x1_coin_create_and_return_paired_metadata_if_not_exist">coin::create_and_return_paired_metadata_if_not_exist</a> | Entered"));
 
     <b>assert</b>!(
         <a href="../../move-stdlib/doc/features.md#0x1_features_coin_to_fungible_asset_migration_feature_enabled">features::coin_to_fungible_asset_migration_feature_enabled</a>(),
@@ -1474,7 +1473,7 @@ Create STC pairing by passing <code>StarcoinCoin</code>.
             }
         );
     };
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="coin.md#0x1_coin_create_and_return_paired_metadata_if_not_exist">coin::create_and_return_paired_metadata_if_not_exist</a> | Exited"));
+    // debug::print(&std::string::utf8(b"<a href="coin.md#0x1_coin_create_and_return_paired_metadata_if_not_exist">coin::create_and_return_paired_metadata_if_not_exist</a> | Exited"));
     *<a href="../../starcoin-stdlib/doc/table.md#0x1_table_borrow">table::borrow</a>(&map.coin_to_fungible_asset_map, type)
 }
 </code></pre>
@@ -2269,7 +2268,7 @@ Collects a specified amount of coin form an account into aggregatable coin.
 
 
 <pre><code><b>fun</b> <a href="coin.md#0x1_coin_maybe_convert_to_fungible_store">maybe_convert_to_fungible_store</a>&lt;CoinType&gt;(<a href="account.md#0x1_account">account</a>: <b>address</b>) <b>acquires</b> <a href="coin.md#0x1_coin_CoinStore">CoinStore</a>, <a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a>, <a href="coin.md#0x1_coin_CoinInfo">CoinInfo</a> {
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="coin.md#0x1_coin_maybe_convert_to_fungible_store">coin::maybe_convert_to_fungible_store</a> | Entered"));
+    // debug::print(&std::string::utf8(b"<a href="coin.md#0x1_coin_maybe_convert_to_fungible_store">coin::maybe_convert_to_fungible_store</a> | Entered"));
 
     <b>if</b> (!<a href="../../move-stdlib/doc/features.md#0x1_features_coin_to_fungible_asset_migration_feature_enabled">features::coin_to_fungible_asset_migration_feature_enabled</a>()) {
         <b>abort</b> <a href="../../move-stdlib/doc/error.md#0x1_error_unavailable">error::unavailable</a>(<a href="coin.md#0x1_coin_ECOIN_TO_FUNGIBLE_ASSET_FEATURE_NOT_ENABLED">ECOIN_TO_FUNGIBLE_ASSET_FEATURE_NOT_ENABLED</a>)
@@ -2308,7 +2307,7 @@ Collects a specified amount of coin form an account into aggregatable coin.
             <a href="fungible_asset.md#0x1_fungible_asset_set_frozen_flag_internal">fungible_asset::set_frozen_flag_internal</a>(store, frozen);
         }
     };
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="coin.md#0x1_coin_maybe_convert_to_fungible_store">coin::maybe_convert_to_fungible_store</a> | Exited"));
+    // debug::print(&std::string::utf8(b"<a href="coin.md#0x1_coin_maybe_convert_to_fungible_store">coin::maybe_convert_to_fungible_store</a> | Exited"));
 
     <b>if</b> (!<b>exists</b>&lt;<a href="coin.md#0x1_coin_MigrationFlag">MigrationFlag</a>&gt;(store_address)) {
         <b>move_to</b>(&<a href="create_signer.md#0x1_create_signer_create_signer">create_signer::create_signer</a>(store_address), <a href="coin.md#0x1_coin_MigrationFlag">MigrationFlag</a> {});
@@ -2813,7 +2812,7 @@ Deposit the coin balance into the recipient's account and emit an event.
     account_addr: <b>address</b>,
     <a href="coin.md#0x1_coin">coin</a>: <a href="coin.md#0x1_coin_Coin">Coin</a>&lt;CoinType&gt;
 ) <b>acquires</b> <a href="coin.md#0x1_coin_CoinStore">CoinStore</a>, <a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a>, <a href="coin.md#0x1_coin_CoinInfo">CoinInfo</a> {
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="coin.md#0x1_coin_deposit">coin::deposit</a> | Entered"));
+    // debug::print(&std::string::utf8(b"<a href="coin.md#0x1_coin_deposit">coin::deposit</a> | Entered"));
 
     <b>if</b> (<b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinStore">CoinStore</a>&lt;CoinType&gt;&gt;(account_addr)) {
         <b>let</b> coin_store = <b>borrow_global_mut</b>&lt;<a href="coin.md#0x1_coin_CoinStore">CoinStore</a>&lt;CoinType&gt;&gt;(account_addr);
@@ -3335,11 +3334,11 @@ Returns minted <code><a href="coin.md#0x1_coin_Coin">Coin</a></code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x1_coin_register">register</a>&lt;CoinType&gt;(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) <b>acquires</b> <a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a> {
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="coin.md#0x1_coin_register">coin::register</a> | Entered"));
+    // debug::print(&std::string::utf8(b"<a href="coin.md#0x1_coin_register">coin::register</a> | Entered"));
     <b>let</b> account_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>);
     // Short-circuit and do nothing <b>if</b> <a href="account.md#0x1_account">account</a> is already registered for CoinType.
     <b>if</b> (<a href="coin.md#0x1_coin_is_account_registered">is_account_registered</a>&lt;CoinType&gt;(account_addr)) {
-        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="coin.md#0x1_coin_register">coin::register</a> | Exited, Account <b>has</b> registered"));
+        // debug::print(&std::string::utf8(b"<a href="coin.md#0x1_coin_register">coin::register</a> | Exited, Account <b>has</b> registered"));
         <b>return</b>
     };
 
@@ -3351,7 +3350,7 @@ Returns minted <code><a href="coin.md#0x1_coin_Coin">Coin</a></code>.
         withdraw_events: <a href="account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="coin.md#0x1_coin_WithdrawEvent">WithdrawEvent</a>&gt;(<a href="account.md#0x1_account">account</a>),
     };
     <b>move_to</b>(<a href="account.md#0x1_account">account</a>, coin_store);
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="coin.md#0x1_coin_register">coin::register</a> | Exited"));
+    // debug::print(&std::string::utf8(b"<a href="coin.md#0x1_coin_register">coin::register</a> | Exited"));
 }
 </code></pre>
 
@@ -4779,26 +4778,6 @@ Account is not frozen and sufficient balance.
 <b>let</b> <b>post</b> coin_post = <b>global</b>&lt;<a href="coin.md#0x1_coin_CoinStore">CoinStore</a>&lt;CoinType&gt;&gt;(account_addr).<a href="coin.md#0x1_coin">coin</a>.value;
 <b>ensures</b> coin_post == balance - amount;
 <b>ensures</b> result == <a href="coin.md#0x1_coin_Coin">Coin</a>&lt;CoinType&gt; { value: amount };
-</code></pre>
-
-
-
-
-<a id="0x1_coin_WithdrawAbortsIf"></a>
-
-
-<pre><code><b>schema</b> <a href="coin.md#0x1_coin_WithdrawAbortsIf">WithdrawAbortsIf</a>&lt;CoinType&gt; {
-    <a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>;
-    amount: u64;
-    <b>let</b> account_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>);
-    <b>let</b> coin_store = <b>global</b>&lt;<a href="coin.md#0x1_coin_CoinStore">CoinStore</a>&lt;CoinType&gt;&gt;(account_addr);
-    <b>let</b> balance = coin_store.<a href="coin.md#0x1_coin">coin</a>.value;
-    // This enforces <a id="high-level-req-6.6" href="#high-level-req">high-level requirement 6</a>:
-    <b>aborts_if</b> !<b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinStore">CoinStore</a>&lt;CoinType&gt;&gt;(account_addr);
-    // This enforces <a id="high-level-req-8.1" href="#high-level-req">high-level requirement 8</a>:
-    <b>aborts_if</b> coin_store.frozen;
-    <b>aborts_if</b> <a href="coin.md#0x1_coin_balance">balance</a> &lt; amount;
-}
 </code></pre>
 
 

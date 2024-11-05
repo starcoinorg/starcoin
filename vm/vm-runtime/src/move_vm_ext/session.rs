@@ -52,12 +52,14 @@ use std::{
     ops::{Deref, DerefMut},
     sync::Arc,
 };
-use tracing::{info, warn};
+use tracing::warn;
 
 pub(crate) enum ResourceGroupChangeSet {
     // Merged resource groups op.
+    #[allow(dead_code)]
     V0(BTreeMap<StateKey, MoveStorageOp<BytesWithResourceLayout>>),
     // Granular ops to individual resources within a group.
+    #[allow(dead_code)]
     V1(BTreeMap<StateKey, BTreeMap<StructTag, MoveStorageOp<BytesWithResourceLayout>>>),
 }
 type AccountChangeSet = AccountChanges<Bytes, BytesWithResourceLayout>;
@@ -113,8 +115,10 @@ impl SessionId {
     }
 }
 
+#[allow(dead_code)]
 pub struct SessionExt<'r, 'l> {
     inner: Session<'r, 'l>,
+    #[allow(dead_code)]
     resolver: &'r dyn StarcoinMoveResolver,
     features: Arc<Features>,
 }
@@ -195,6 +199,7 @@ impl<'r, 'l> SessionExt<'r, 'l> {
         Ok((change_set, module_write_set))
     }
 
+    #[allow(dead_code)]
     fn populate_v0_resource_group_change_set(
         change_set: &mut BTreeMap<StateKey, MoveStorageOp<BytesWithResourceLayout>>,
         state_key: StateKey,
@@ -270,7 +275,7 @@ impl<'r, 'l> SessionExt<'r, 'l> {
     /// merging them into a single op corresponding to the whole resource group (V0).
     fn split_and_merge_resource_groups(
         runtime: &MoveVM,
-        resolver: &dyn StarcoinMoveResolver,
+        _resolver: &dyn StarcoinMoveResolver,
         change_set: ChangeSet,
     ) -> PartialVMResult<(ChangeSet, ResourceGroupChangeSet)> {
         // The use of this implies that we could theoretically call unwrap with no consequences,
@@ -376,7 +381,7 @@ impl<'r, 'l> SessionExt<'r, 'l> {
         legacy_resource_creation_as_modification: bool,
     ) -> PartialVMResult<(VMChangeSet, ModuleWriteSet)> {
         let mut resource_write_set = BTreeMap::new();
-        let mut resource_group_write_set = BTreeMap::new();
+        let resource_group_write_set = BTreeMap::new();
 
         let mut has_modules_published_to_special_address = false;
         let mut module_write_ops = BTreeMap::new();

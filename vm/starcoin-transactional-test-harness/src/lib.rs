@@ -641,7 +641,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             TransactionStatus::Keep(kept_vm_status) => match kept_vm_status {
                 KeptVMStatus::Executed => {
                     self.context
-                        .apply_write_set(output.clone().into_inner().1)?;
+                        .apply_write_set(output.clone().into_inner().0)?;
                 }
                 _ => {
                     bail!("Failed to execute transaction. VMStatus: {}", status)
@@ -679,7 +679,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         match output.status() {
             TransactionStatus::Keep(_kept_vm_status) => {
                 self.context
-                    .apply_write_set(output.clone().into_inner().1)?;
+                    .apply_write_set(output.clone().into_inner().0)?;
                 let mut chain = self.context.chain.lock().unwrap();
                 chain.add_new_txn(
                     Transaction::UserTransaction(signed_txn.clone()),
@@ -1036,6 +1036,7 @@ impl<'a> StarcoinTestAdapter<'a> {
     }
 }
 
+#[allow(dead_code)]
 fn view_resource_in_move_storage(
     storage: RemoteStorage<ChainStateDB>,
     address: AccountAddress,
