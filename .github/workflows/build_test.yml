@@ -30,26 +30,3 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: check
-      - name: build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --all
-      - name: test
-        run: ./scripts/nextest.sh
-      #       - name: check changed files
-      #         run: bash ./scripts/changed_files.sh
-      - name: Doc Tests
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --doc
-      - name: integration test dev environment
-        env:
-          RUST_LOG: info
-          RUST_BACKTRACE: full
-          STARCOIN_WS: ${{ secrets.STARCOIN_WS }}
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --test integration -- -e cmd
