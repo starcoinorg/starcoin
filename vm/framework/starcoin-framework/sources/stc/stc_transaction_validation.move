@@ -62,7 +62,9 @@ module starcoin_framework::stc_transaction_validation {
         assert!(chain_id::get() == chain_id, error::invalid_argument(EPROLOGUE_BAD_CHAIN_ID));
 
         let (stc_price, scaling_factor) = if (!stc_util::is_stc<TokenType>()) {
-            (easy_gas::gas_oracle_read<TokenType>(), easy_gas::get_scaling_factor<TokenType>())
+            // TODO(BobOng): [framework compatible] to debug easy gas oracle
+            // (easy_gas::gas_oracle_read<TokenType>(), easy_gas::get_scaling_factor<TokenType>())
+            (1, 1)
         } else {
             (1, 1)
         };
@@ -127,9 +129,10 @@ module starcoin_framework::stc_transaction_validation {
     ) {
         system_addresses::assert_starcoin_framework(&account);
 
-        /*
         let (stc_price, scaling_factor) = if (stc_util::is_stc<TokenType>()) {
-            (easy_gas::gas_oracle_read<TokenType>(), easy_gas::get_scaling_factor<TokenType>())
+            // TODO(BobOng): [framework compatible] to debug easy gas oracle
+           // (easy_gas::gas_oracle_read<TokenType>(), easy_gas::get_scaling_factor<TokenType>())
+            (1, 1)
         }else {
             (1, 1)
         };
@@ -153,7 +156,6 @@ module starcoin_framework::stc_transaction_validation {
                 success,
             );
         }
-        */
     }
 
     const MAX_U64: u128 = 18446744073709551615;

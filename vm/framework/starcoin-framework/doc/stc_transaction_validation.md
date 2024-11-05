@@ -250,7 +250,9 @@ It verifies:
     <b>assert</b>!(<a href="chain_id.md#0x1_chain_id_get">chain_id::get</a>() == <a href="chain_id.md#0x1_chain_id">chain_id</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_BAD_CHAIN_ID">EPROLOGUE_BAD_CHAIN_ID</a>));
 
     <b>let</b> (stc_price, scaling_factor) = <b>if</b> (!<a href="stc_util.md#0x1_stc_util_is_stc">stc_util::is_stc</a>&lt;TokenType&gt;()) {
-        (<a href="easy_gas.md#0x1_easy_gas_gas_oracle_read">easy_gas::gas_oracle_read</a>&lt;TokenType&gt;(), <a href="easy_gas.md#0x1_easy_gas_get_scaling_factor">easy_gas::get_scaling_factor</a>&lt;TokenType&gt;())
+        // TODO(BobOng): [framework compatible] <b>to</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">debug</a> easy gas <a href="oracle.md#0x1_oracle">oracle</a>
+        // (<a href="easy_gas.md#0x1_easy_gas_gas_oracle_read">easy_gas::gas_oracle_read</a>&lt;TokenType&gt;(), <a href="easy_gas.md#0x1_easy_gas_get_scaling_factor">easy_gas::get_scaling_factor</a>&lt;TokenType&gt;())
+        (1, 1)
     } <b>else</b> {
         (1, 1)
     };
@@ -334,9 +336,10 @@ It collects gas and bumps the sequence number
 ) {
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(&<a href="account.md#0x1_account">account</a>);
 
-    /*
     <b>let</b> (stc_price, scaling_factor) = <b>if</b> (<a href="stc_util.md#0x1_stc_util_is_stc">stc_util::is_stc</a>&lt;TokenType&gt;()) {
-        (<a href="easy_gas.md#0x1_easy_gas_gas_oracle_read">easy_gas::gas_oracle_read</a>&lt;TokenType&gt;(), <a href="easy_gas.md#0x1_easy_gas_get_scaling_factor">easy_gas::get_scaling_factor</a>&lt;TokenType&gt;())
+        // TODO(BobOng): [framework compatible] <b>to</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">debug</a> easy gas <a href="oracle.md#0x1_oracle">oracle</a>
+       // (<a href="easy_gas.md#0x1_easy_gas_gas_oracle_read">easy_gas::gas_oracle_read</a>&lt;TokenType&gt;(), <a href="easy_gas.md#0x1_easy_gas_get_scaling_factor">easy_gas::get_scaling_factor</a>&lt;TokenType&gt;())
+        (1, 1)
     }<b>else</b> {
         (1, 1)
     };
@@ -360,7 +363,6 @@ It collects gas and bumps the sequence number
             success,
         );
     }
-    */
 }
 </code></pre>
 
