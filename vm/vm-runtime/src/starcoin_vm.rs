@@ -910,11 +910,6 @@ impl StarcoinVM {
                 |_e| VMStatus::error(StatusCode::BAD_TRANSACTION_FEE_CURRENCY, None),
             )?));
 
-        info!(
-            "StarcoinVM::run_epilogue | Gas token data: {:?}",
-            gas_token_ty
-        );
-
         let txn_sequence_number = txn_data.sequence_number();
         let txn_authentication_key_preimage = txn_data.authentication_key_preimage().to_vec();
         let txn_gas_price = u64::from(txn_data.gas_unit_price());
