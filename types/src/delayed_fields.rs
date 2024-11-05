@@ -18,7 +18,7 @@ use once_cell::sync::Lazy;
 pub enum PanicError {
     CodeInvariantError(String),
 }
-
+#[allow(clippy::to_string_trait_impl)]
 impl ToString for PanicError {
     fn to_string(&self) -> String {
         match self {
@@ -41,6 +41,7 @@ impl From<PanicError> for PartialVMError {
 static U64_MAX_DIGITS: Lazy<usize> = Lazy::new(|| u64::MAX.to_string().len());
 static U128_MAX_DIGITS: Lazy<usize> = Lazy::new(|| u128::MAX.to_string().len());
 
+#[allow(clippy::arithmetic_side_effects)]
 pub fn calculate_width_for_constant_string(byte_len: usize) -> usize {
     // we need to be able to store it both raw, as well as when it is exchanged with u64 DelayedFieldID.
     // so the width needs to be larger of the two options
@@ -48,6 +49,7 @@ pub fn calculate_width_for_constant_string(byte_len: usize) -> usize {
         .max(*U64_MAX_DIGITS + 2) // largest exchanged u64 DelayedFieldID is u64 max digits, plus 1 for each of the value and padding serialized length
 }
 
+#[allow(clippy::arithmetic_side_effects)]
 pub fn calculate_width_for_integer_embedded_string(
     rest_byte_len: usize,
     snapshot_id: DelayedFieldID,
@@ -72,6 +74,7 @@ pub enum SnapshotToStringFormula {
 }
 
 impl SnapshotToStringFormula {
+    #[allow(clippy::arithmetic_side_effects)]
     pub fn apply_to(&self, base: u128) -> Vec<u8> {
         match self {
             SnapshotToStringFormula::Concat { prefix, suffix } => {

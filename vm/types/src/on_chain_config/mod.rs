@@ -202,7 +202,7 @@ pub trait OnChainConfig: Send + Sync + DeserializeOwned {
 
 impl<S: StateView> ConfigStorage for S {
     fn fetch_config_bytes(&self, state_key: &StateKey) -> Option<Bytes> {
-        self.get_state_value(&state_key)
+        self.get_state_value(state_key)
             .ok()?
             .map(|s| s.bytes().clone())
     }
@@ -210,7 +210,7 @@ impl<S: StateView> ConfigStorage for S {
 
 pub fn new_epoch_event_key() -> EventKey {
     // XXX FIXME YSG
-    EventKey::new(0, genesis_address().clone())
+    EventKey::new(0, genesis_address())
 }
 
 pub fn access_path_for_config(config_id: ConfigID) -> AccessPath {

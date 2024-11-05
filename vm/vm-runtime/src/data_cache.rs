@@ -88,18 +88,18 @@ impl<'a, S: StateView> StateViewCache<'a, S> {
     // The effect is to build a layer in front of the `StateView` which keeps
     // track of the data as if the changes were applied immediately.
     pub(crate) fn push_write_set(&mut self, write_set: &WriteSet) {
-        for (ref ap, ref write_op) in write_set.iter() {
+        for (ap, ref write_op) in write_set.iter() {
             // todo: handle WriteOp properly
             match write_op {
                 WriteOp::Creation { data, metadata: _ } => {
-                    self.data_map.insert((*ap).clone(), Some(data.to_vec()));
+                    self.data_map.insert(ap.clone(), Some(data.to_vec()));
                 }
                 WriteOp::Modification { data, metadata: _ } => {
-                    self.data_map.insert((*ap).clone(), Some(data.to_vec()));
+                    self.data_map.insert(ap.clone(), Some(data.to_vec()));
                 }
                 WriteOp::Deletion { metadata: _ } => {
                     self.data_map.remove(ap);
-                    self.data_map.insert((*ap).clone(), None);
+                    self.data_map.insert(ap.clone(), None);
                 }
             }
         }
@@ -112,7 +112,7 @@ impl<'block, S: StateView> TStateView for StateViewCache<'block, S> {
     // Get some data either through the cache or the `StateView` on a cache miss.
     fn get_state_value(&self, state_key: &Self::Key) -> Result<Option<StateValue>, StateviewError> {
         match self.data_map.get(state_key) {
-            Some(opt_data) => Ok(opt_data.clone().map(|v| StateValue::from(v))),
+            Some(opt_data) => Ok(opt_data.clone().map(StateValue::from)),
             None => match self.data_view.get_state_value(state_key) {
                 Ok(remote_data) => Ok(remote_data),
                 // TODO: should we forward some error info?

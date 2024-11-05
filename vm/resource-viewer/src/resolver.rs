@@ -56,7 +56,7 @@ impl<'a> Resolver<'a> {
             .get_state_value_bytes(&StateKey::module_id(&module_id))?
             .ok_or_else(|| anyhow!("Module {:?} can't be found", module_id))?;
         let blob = binding.as_ref();
-        let compiled_module = CompiledModule::deserialize(&blob).map_err(|status| {
+        let compiled_module = CompiledModule::deserialize(blob).map_err(|status| {
             anyhow!(
                 "Module {:?} deserialize with error code {:?}",
                 module_id,

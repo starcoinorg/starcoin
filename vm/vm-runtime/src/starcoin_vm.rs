@@ -572,7 +572,7 @@ impl StarcoinVM {
                 StateKey::resource(&package_address, &TwoPhaseUpgradeV2Resource::struct_tag())?;
             if let Some(data) = remote_cache.get_state_value(&key)? {
                 let enforced =
-                    bcs_ext::from_bytes::<TwoPhaseUpgradeV2Resource>(&data.bytes())?.enforced();
+                    bcs_ext::from_bytes::<TwoPhaseUpgradeV2Resource>(data.bytes())?.enforced();
                 Ok(enforced)
             } else {
                 Ok(false)

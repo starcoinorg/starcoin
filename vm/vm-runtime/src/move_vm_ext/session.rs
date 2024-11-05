@@ -677,7 +677,7 @@ impl<'r, 'l> SessionExt<'r, 'l> {
                     .map_err(|e| e.finish(Location::Undefined))?;
                 //todo: Remove Module, use CompiledModule directly
                 if Compatibility::new(true, false)
-                    .check(&Module::new(&old_module), &Module::new(&module))
+                    .check(&Module::new(&old_module), &Module::new(module))
                     .is_err()
                     && !option.force_publish
                 {

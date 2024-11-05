@@ -156,10 +156,8 @@ pub trait StateReaderExt: StateView {
 
     fn get_token_info(&self, token_code: TokenCode) -> Result<TokenInfo> {
         let type_tag: StructTag = token_code.clone().try_into()?;
-        let rsrc_bytes = self.get_resource(
-            token_code.address.clone(),
-            &TokenInfo::struct_tag_for(type_tag),
-        )?;
+        let rsrc_bytes =
+            self.get_resource(token_code.address, &TokenInfo::struct_tag_for(type_tag))?;
         let rsrc = bcs_ext::from_bytes::<TokenInfo>(&rsrc_bytes)?;
         Ok(rsrc)
     }
@@ -170,10 +168,8 @@ pub trait StateReaderExt: StateView {
 
     fn get_treasury(&self, token_code: TokenCode) -> Result<Treasury> {
         let type_tag: StructTag = token_code.clone().try_into()?;
-        let rsrc_bytes = self.get_resource(
-            token_code.address.clone(),
-            &Treasury::struct_tag_for(type_tag),
-        )?;
+        let rsrc_bytes =
+            self.get_resource(token_code.address, &Treasury::struct_tag_for(type_tag))?;
         let rsrc = bcs_ext::from_bytes::<Treasury>(&rsrc_bytes)?;
         Ok(rsrc)
     }
@@ -188,10 +184,8 @@ pub trait StateReaderExt: StateView {
         A: ProposalAction,
     {
         let type_tag: StructTag = token_code.clone().try_into()?;
-        let rsrc_bytes = self.get_resource(
-            token_code.address.clone(),
-            &Proposal::<A>::struct_tag_for(type_tag),
-        )?;
+        let rsrc_bytes =
+            self.get_resource(token_code.address, &Proposal::<A>::struct_tag_for(type_tag))?;
         let rsrc = bcs_ext::from_bytes::<Proposal<A>>(&rsrc_bytes)?;
         Ok(rsrc)
     }

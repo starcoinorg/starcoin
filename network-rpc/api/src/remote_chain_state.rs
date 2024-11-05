@@ -150,7 +150,7 @@ impl TStateView for RemoteChainStateReader {
     fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>, StateviewError> {
         match state_key.inner() {
             StateKeyInner::AccessPath(_access_path) => {
-                let state_proof = self.get_with_proof(&state_key)?;
+                let state_proof = self.get_with_proof(state_key)?;
                 Ok(state_proof.state.map(|v| StateValue::from(v)))
             }
             StateKeyInner::TableItem { handle, key } => {

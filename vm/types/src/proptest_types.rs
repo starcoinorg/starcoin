@@ -110,8 +110,8 @@ impl AccountInfo {
             address,
             key_pair: KeyPairHolder::new(Arc::new(private_key), public_key),
             sequence_number: 0,
-            sent_event_handle: EventHandle::new(EventKey::new(0, address.clone()), 0),
-            received_event_handle: EventHandle::new(EventKey::new(1, address.clone()), 1),
+            sent_event_handle: EventHandle::new(EventKey::new(0, address), 0),
+            received_event_handle: EventHandle::new(EventKey::new(1, address), 1),
         }
     }
     pub fn new_with_address(
@@ -123,8 +123,8 @@ impl AccountInfo {
             address,
             key_pair: KeyPairHolder::new(Arc::new(private_key), public_key),
             sequence_number: 0,
-            sent_event_handle: EventHandle::new(EventKey::new(0, address.clone()), 0),
-            received_event_handle: EventHandle::new(EventKey::new(1, address.clone()), 1),
+            sent_event_handle: EventHandle::new(EventKey::new(0, address), 0),
+            received_event_handle: EventHandle::new(EventKey::new(1, address), 1),
         }
     }
 
@@ -137,8 +137,8 @@ impl AccountInfo {
             address,
             key_pair: KeyPairHolder::new_multi(private_key, public_key),
             sequence_number: 0,
-            sent_event_handle: EventHandle::new(EventKey::new(0, address.clone()), 0),
-            received_event_handle: EventHandle::new(EventKey::new(1, address.clone()), 1),
+            sent_event_handle: EventHandle::new(EventKey::new(0, address), 0),
+            received_event_handle: EventHandle::new(EventKey::new(1, address), 1),
         }
     }
 }

@@ -434,15 +434,15 @@ impl AccountData {
             key_rotation_capability,
             withdrawal_capability,
             withdraw_events: EventHandle::new(
-                EventKey::new(0, account_address.clone()),
+                EventKey::new(0, account_address),
                 withdraw_events_count,
             ),
             deposit_events: EventHandle::new(
-                EventKey::new(1, account_address.clone()),
+                EventKey::new(1, account_address),
                 deposit_events_count,
             ),
             accept_token_events: EventHandle::new(
-                EventKey::new(2, account_address.clone()),
+                EventKey::new(2, account_address),
                 accept_token_events_count,
             ),
         }
