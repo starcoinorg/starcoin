@@ -54,7 +54,7 @@ impl Drop for Entry {
                 match path {
                     DataPath::Code(module_name) => REGISTRY
                         .module(address, module_name)
-                        .maybe_remove(&address, module_name),
+                        .maybe_remove(address, module_name),
                     DataPath::Resource(struct_tag) => REGISTRY
                         .resource(struct_tag, address)
                         .maybe_remove(struct_tag, address),

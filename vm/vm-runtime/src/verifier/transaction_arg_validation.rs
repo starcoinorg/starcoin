@@ -156,7 +156,7 @@ pub(crate) fn validate_combine_singer_and_args(
         session,
         &func.param_tys()[signer_param_cnt..],
         args,
-        &func.ty_args(),
+        func.ty_args(),
         allowed_structs,
         false,
     )?;

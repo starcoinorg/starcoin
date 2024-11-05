@@ -167,7 +167,7 @@ impl StateKey {
                 .module(address, name)
                 .get_or_add(address, name, || {
                     Ok(StateKeyInner::AccessPath(AccessPath::code_access_path(
-                        address.clone(),
+                        *address,
                         name.to_owned(),
                         //ModuleId::new(*address, name.to_owned()),
                     )))

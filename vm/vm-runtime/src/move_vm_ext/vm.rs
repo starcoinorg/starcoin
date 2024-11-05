@@ -28,10 +28,10 @@ use starcoin_vm_types::{
 };
 
 use starcoin_framework::natives::aggregator_natives::NativeAggregatorContext;
-use std::ops::Deref;
-use std::sync::Arc;
 use starcoin_framework::natives::event::NativeEventContext;
 use starcoin_framework::natives::object::NativeObjectContext;
+use std::ops::Deref;
+use std::sync::Arc;
 
 pub struct MoveVmExt {
     inner: MoveVM,

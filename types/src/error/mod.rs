@@ -9,6 +9,7 @@ pub use block_executor::*;
 pub const INVALID_STATE: u64 = 0x3;
 
 /// Construct a canonical error code from a category and a reason.
+#[allow(clippy::arithmetic_side_effects)]
 pub fn canonical(category: u64, reason: u64) -> u64 {
     (category << 16) + reason
 }

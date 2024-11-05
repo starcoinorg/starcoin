@@ -100,7 +100,7 @@ impl FromStr for Format {
 
 #[derive(Args, Debug)]
 pub struct IntegrationTestCommand {
-    #[clap(flatten)]
+    #[command(flatten)]
     test_opts: TestOpts,
     #[clap(long = "ub")]
     /// update test baseline.

@@ -187,7 +187,7 @@ impl RawUserTransaction {
         Self {
             sender,
             sequence_number,
-            payload: TransactionPayload::EntryFunction(script_function.into()),
+            payload: TransactionPayload::EntryFunction(script_function),
             max_gas_amount,
             gas_unit_price,
             gas_token_code: STC_TOKEN_CODE_STR.to_string(),

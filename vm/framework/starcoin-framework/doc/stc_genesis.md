@@ -22,7 +22,6 @@ The module for init Genesis
 <b>use</b> <a href="consensus_config.md#0x1_consensus_config">0x1::consensus_config</a>;
 <b>use</b> <a href="consensus_strategy.md#0x1_consensus_strategy">0x1::consensus_strategy</a>;
 <b>use</b> <a href="dao.md#0x1_dao">0x1::dao</a>;
-<b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
 <b>use</b> <a href="epoch.md#0x1_epoch">0x1::epoch</a>;
 <b>use</b> <a href="on_chain_config.md#0x1_on_chain_config">0x1::on_chain_config</a>;
 <b>use</b> <a href="on_chain_config_dao.md#0x1_on_chain_config_dao">0x1::on_chain_config_dao</a>;
@@ -34,7 +33,6 @@ The module for init Genesis
 <b>use</b> <a href="stc_transaction_timeout_config.md#0x1_stc_transaction_timeout_config">0x1::stc_transaction_timeout_config</a>;
 <b>use</b> <a href="stc_util.md#0x1_stc_util">0x1::stc_util</a>;
 <b>use</b> <a href="stc_version.md#0x1_stc_version">0x1::stc_version</a>;
-<b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 <b>use</b> <a href="system_addresses.md#0x1_system_addresses">0x1::system_addresses</a>;
 <b>use</b> <a href="timestamp.md#0x1_timestamp">0x1::timestamp</a>;
 <b>use</b> <a href="stc_transaction_publish_option.md#0x1_transaction_publish_option">0x1::transaction_publish_option</a>;
@@ -112,7 +110,7 @@ The module for init Genesis
     transaction_timeout: u64,
     _dag_effective_height: u64,
 ) {
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> Entered"));
+    // debug::print(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> Entered"));
 
     // create <a href="genesis.md#0x1_genesis">genesis</a> <a href="account.md#0x1_account">account</a>
     <b>let</b> (starcoin_framework_account, _genesis_signer_cap) =
@@ -269,7 +267,7 @@ The treasury will mint the total_stc_amount to the treasury.
     min_action_delay: u64
 ): <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;STC&gt; {
 
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"initialize_stc | Entered"));
+    // debug::print(&std::string::utf8(b"initialize_stc | Entered"));
 
     <b>let</b> (burn_cap, mint_cap) = <a href="starcoin_coin.md#0x1_starcoin_coin_initialize">starcoin_coin::initialize</a>(starcoin_framework);
     <a href="coin.md#0x1_coin_register">coin::register</a>&lt;STC&gt;(starcoin_framework);
@@ -277,7 +275,7 @@ The treasury will mint the total_stc_amount to the treasury.
     <a href="coin.md#0x1_coin_create_coin_conversion_map">coin::create_coin_conversion_map</a>(starcoin_framework);
     <a href="coin.md#0x1_coin_create_pairing">coin::create_pairing</a>&lt;STC&gt;(starcoin_framework);
 
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"initialize_stc | <a href="coin.md#0x1_coin_create_coin_conversion_map">coin::create_coin_conversion_map</a>"));
+    // debug::print(&std::string::utf8(b"initialize_stc | <a href="coin.md#0x1_coin_create_coin_conversion_map">coin::create_coin_conversion_map</a>"));
 
     <b>let</b> total_stc_coin = <a href="coin.md#0x1_coin_mint">coin::mint</a>((total_stc_amount <b>as</b> u64), &mint_cap);
 
@@ -308,7 +306,7 @@ The treasury will mint the total_stc_amount to the treasury.
     <a href="on_chain_config_dao.md#0x1_on_chain_config_dao_plugin">on_chain_config_dao::plugin</a>&lt;STC, <a href="block_reward_config.md#0x1_block_reward_config_RewardConfig">block_reward_config::RewardConfig</a>&gt;(starcoin_framework);
     <a href="on_chain_config_dao.md#0x1_on_chain_config_dao_plugin">on_chain_config_dao::plugin</a>&lt;STC, <a href="stc_transaction_timeout_config.md#0x1_stc_transaction_timeout_config_TransactionTimeoutConfig">stc_transaction_timeout_config::TransactionTimeoutConfig</a>&gt;(starcoin_framework);
 
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"initialize_stc | Exited"));
+    // debug::print(&std::string::utf8(b"initialize_stc | Exited"));
 
     total_stc_coin
 }

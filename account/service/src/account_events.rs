@@ -44,7 +44,7 @@ impl EventHandler<Self, ContractEventNotification> for AccountEventService {
         };
         let watched_keys: HashSet<_> = addrs
             .into_iter()
-            .map(|addr| EventKey::new(2, addr.clone()))
+            .map(|addr| EventKey::new(2, addr))
             .collect();
 
         // short circuit

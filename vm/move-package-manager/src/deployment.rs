@@ -22,13 +22,13 @@ pub struct DeploymentCommand {
     /// use remote starcoin rpc as initial state.
     rpc: String,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     pub account_provider: AccountProviderConfig,
 
     #[clap(long = "password")]
     pub account_passwd: Option<String>,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     txn_opts: TransactionOptions,
 
     #[clap(name = "mv-or-package-file")]

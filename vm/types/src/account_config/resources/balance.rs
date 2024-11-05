@@ -5,7 +5,7 @@ use crate::access_path::DataPath;
 use crate::token::token_code::TokenCode;
 use crate::{
     access_path::AccessPath,
-    account_config::constants::{stc_type_tag, ACCOUNT_MODULE_NAME, CORE_CODE_ADDRESS},
+    account_config::constants::{stc_type_tag, CORE_CODE_ADDRESS},
 };
 use move_core_types::ident_str;
 use move_core_types::identifier::{IdentStr, Identifier};

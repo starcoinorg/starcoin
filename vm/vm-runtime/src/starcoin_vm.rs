@@ -19,15 +19,13 @@ use num_cpus;
 use once_cell::sync::OnceCell;
 use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
 use starcoin_crypto::HashValue;
-use starcoin_framework::natives::aggregator_natives::NativeAggregatorContext;
 use starcoin_gas_algebra::{CostTable, Gas, GasConstants, GasCost};
 use starcoin_gas_meter::StarcoinGasMeter;
 use starcoin_gas_schedule::{
     FromOnChainGasSchedule, InitialGasSchedule, NativeGasParameters, StarcoinGasParameters,
-    ToOnChainGasSchedule, LATEST_GAS_FEATURE_VERSION,
+    LATEST_GAS_FEATURE_VERSION,
 };
 use starcoin_logger::prelude::*;
-use starcoin_table_natives::NativeTableContext;
 use starcoin_types::account_config::config_change::ConfigChangeEvent;
 use starcoin_types::{
     account_config,
@@ -38,7 +36,6 @@ use starcoin_types::{
     },
 };
 use starcoin_vm_runtime_types::storage::change_set_configs::ChangeSetConfigs;
-use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::on_chain_config::{Features, TimedFeaturesBuilder};
 use starcoin_vm_types::transaction::TransactionAuxiliaryData;
 use starcoin_vm_types::{
@@ -575,7 +572,7 @@ impl StarcoinVM {
                 StateKey::resource(&package_address, &TwoPhaseUpgradeV2Resource::struct_tag())?;
             if let Some(data) = remote_cache.get_state_value(&key)? {
                 let enforced =
-                    bcs_ext::from_bytes::<TwoPhaseUpgradeV2Resource>(&data.bytes())?.enforced();
+                    bcs_ext::from_bytes::<TwoPhaseUpgradeV2Resource>(data.bytes())?.enforced();
                 Ok(enforced)
             } else {
                 Ok(false)
@@ -1611,7 +1608,7 @@ pub(crate) fn charge_global_write_gas_usage(
 }
 
 pub(crate) fn get_transaction_output<A: AccessPathCache>(
-    ap_cache: &mut A,
+    _ap_cache: &mut A,
     session: SessionExt,
     gas_left: Gas,
     max_gas_amount: Gas,

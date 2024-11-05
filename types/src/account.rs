@@ -18,6 +18,7 @@ use starcoin_crypto::ed25519::*;
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::multi_ed25519::genesis_multi_key_pair;
 use starcoin_vm_types::account_config::{core_code_address, stc_type_tag, STC_TOKEN_CODE_STR};
+use starcoin_vm_types::event::EventKey;
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
@@ -35,7 +36,6 @@ use std::collections::BTreeMap;
 use std::convert::TryInto;
 use std::str::FromStr;
 use std::sync::Arc;
-use starcoin_vm_types::event::EventKey;
 
 /// Details about a Starcoin account.
 ///
@@ -433,9 +433,18 @@ impl AccountData {
             sequence_number,
             key_rotation_capability,
             withdrawal_capability,
-            withdraw_events: EventHandle::new(EventKey::new(0, account_address.clone()), withdraw_events_count),
-            deposit_events: EventHandle::new(EventKey::new(1, account_address.clone()), deposit_events_count),
-            accept_token_events: EventHandle::new(EventKey::new(2, account_address.clone()), accept_token_events_count),
+            withdraw_events: EventHandle::new(
+                EventKey::new(0, account_address),
+                withdraw_events_count,
+            ),
+            deposit_events: EventHandle::new(
+                EventKey::new(1, account_address),
+                deposit_events_count,
+            ),
+            accept_token_events: EventHandle::new(
+                EventKey::new(2, account_address),
+                accept_token_events_count,
+            ),
         }
     }
 
@@ -630,7 +639,6 @@ impl AccountData {
         self.sequence_number
     }
 
-
     /// Returns the initial withdraw events count.
     pub fn withdraw_events_count(&self) -> u64 {
         self.withdraw_events.count()
@@ -645,7 +653,6 @@ impl AccountData {
     pub fn accept_token_events_count(&self) -> u64 {
         self.accept_token_events.count()
     }
-
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

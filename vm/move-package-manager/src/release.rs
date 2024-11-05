@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::extended_checks;
-use clap::Parser;
+use clap::{value_parser, Parser};
 use codespan_reporting::diagnostic::Severity;
 use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use move_binary_format::file_format_common::VERSION_4;
@@ -30,7 +30,7 @@ pub struct Release {
     /// currently, only v6 are supported.
     language_version: u8,
 
-    #[clap(name="release-dir", long, parse(from_os_str), default_value=DEFAULT_RELEASE_DIR)]
+    #[arg(name="release-dir", long, value_parser = value_parser!(std::ffi::OsString), default_value=DEFAULT_RELEASE_DIR)]
     /// dir to store released blob
     release_dir: PathBuf,
 
@@ -38,16 +38,16 @@ pub struct Release {
     /// init script function to execute, example: 0x123::MyScripts::init_script
     init_script: Option<FunctionId>,
 
-    #[clap(
+    #[arg(
     short = 't',
     long = "type_tag",
     name = "type-tag",
-    parse(try_from_str = parse_type_tag)
+    value_parser = parse_type_tag
     )]
     /// type tags for the init script function
     type_tags: Option<Vec<TypeTag>>,
 
-    #[clap(long = "arg", name = "transaction-args", parse(try_from_str = parse_transaction_argument))]
+    #[arg(long = "arg", name = "transaction-args", value_parser = parse_transaction_argument)]
     /// args for the init script function
     args: Option<Vec<TransactionArgument>>,
 }

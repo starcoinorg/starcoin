@@ -4,23 +4,16 @@
 use crate::move_vm_ext::{session::BytesWithResourceLayout, StarcoinMoveResolver};
 use bytes::Bytes;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
-use move_core_types::{
-    effects::Op as MoveStorageOp, language_storage::StructTag, value::MoveTypeLayout,
-    vm_status::StatusCode,
-};
+use move_core_types::{effects::Op as MoveStorageOp, value::MoveTypeLayout, vm_status::StatusCode};
 use move_vm_types::delayed_values::error::code_invariant_error;
 use starcoin_aggregator::delta_change_set::serialize;
-use starcoin_aggregator::resolver::TAggregatorV1View;
-use starcoin_vm_runtime_types::{
-    abstract_write_op::GroupWrite, resolver::ResourceGroupSize,
-    resource_group_adapter::group_tagged_resource_size,
-};
+use starcoin_vm_runtime_types::resolver::ResourceGroupSize;
 use starcoin_vm_types::{
     on_chain_config::{CurrentTimeMicroseconds, OnChainConfig},
     state_store::{state_key::StateKey, state_value::StateValueMetadata},
     write_set::WriteOp,
 };
-use std::{collections::BTreeMap, sync::Arc};
+use std::sync::Arc;
 
 pub(crate) struct WriteOpConverter<'r> {
     remote: &'r dyn StarcoinMoveResolver,
@@ -52,11 +45,13 @@ macro_rules! convert_impl {
 // speculative reads (and in a non-speculative context, e.g. during commit, it
 // is a more serious error and block execution must abort).
 // BlockExecutor is responsible with handling this error.
+#[allow(dead_code)]
 fn group_size_arithmetics_error() -> PartialVMError {
     PartialVMError::new(StatusCode::SPECULATIVE_EXECUTION_ABORT_ERROR)
         .with_message("Group size arithmetics error while applying updates".to_string())
 }
 
+#[allow(dead_code)]
 fn decrement_size_for_remove_tag(
     size: &mut ResourceGroupSize,
     old_tagged_resource_size: u64,
@@ -80,6 +75,7 @@ fn decrement_size_for_remove_tag(
     }
 }
 
+#[allow(dead_code)]
 fn increment_size_for_add_tag(
     size: &mut ResourceGroupSize,
     new_tagged_resource_size: u64,
@@ -106,6 +102,7 @@ fn increment_size_for_add_tag(
     }
 }
 
+#[allow(dead_code)]
 fn check_size_and_existence_match(
     size: &ResourceGroupSize,
     exists: bool,

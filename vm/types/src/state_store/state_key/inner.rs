@@ -4,6 +4,8 @@
 use crate::{access_path::AccessPath, state_store::table::TableHandle};
 use bytes::{BufMut, Bytes, BytesMut};
 use num_derive::{FromPrimitive, ToPrimitive};
+use schemars::gen::SchemaGenerator;
+use schemars::schema::{Schema, SchemaObject};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::CryptoHasher;
@@ -53,12 +55,20 @@ pub enum StateKeyInner {
     AccessPath(AccessPath),
     TableItem {
         handle: TableHandle,
-        //#[serde(with = "serde_bytes")]
+        #[serde(with = "serde_bytes")]
+        #[schemars(schema_with = "make_bytes_schema")]
         key: Vec<u8>,
     },
     // Only used for testing
-    // #[serde(with = "serde_bytes")]
+    #[serde(with = "serde_bytes")]
+    #[schemars(schema_with = "make_bytes_schema")]
     Raw(Vec<u8>),
+}
+
+fn make_bytes_schema(gen: &mut SchemaGenerator) -> Schema {
+    let mut schema: SchemaObject = <String>::json_schema(gen).into();
+    schema.format = Some("bytes".to_owned());
+    schema.into()
 }
 
 impl StateKeyInner {

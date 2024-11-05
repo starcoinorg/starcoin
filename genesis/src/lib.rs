@@ -20,7 +20,6 @@ use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainStateWriter;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::table_info::TableInfoStore;
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_transaction_builder::build_stdlib_package_with_modules;
 use starcoin_transaction_builder::{build_stdlib_package, StdLibOptions};
@@ -30,15 +29,11 @@ use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::{block::Block, transaction::Transaction};
 use starcoin_vm_types::{
     account_config::CORE_CODE_ADDRESS,
-    state_store::{
-        table::{TableHandle, TableInfo},
-        StateView,
-    },
+    state_store::StateView,
     transaction::{RawUserTransaction, SignedUserTransaction, TransactionPayload},
     vm_status::KeptVMStatus,
 };
 use std::{
-    collections::BTreeMap,
     fmt::Display,
     fs::{create_dir_all, File},
     io::{Read, Write},

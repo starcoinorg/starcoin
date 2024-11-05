@@ -22,7 +22,7 @@ pub fn locate_execution_failure(
             let state_key = StateKey::module_id(&module_id);
 
             match state.get_state_value_bytes(&state_key)? {
-                Some(bytes) => CompiledModule::deserialize(&bytes.as_ref()).ok(),
+                Some(bytes) => CompiledModule::deserialize(bytes.as_ref()).ok(),
                 None => None,
             }
         }

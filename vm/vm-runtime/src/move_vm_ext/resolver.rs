@@ -1,16 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use bytes::Bytes;
-use move_binary_format::errors::{PartialVMError, PartialVMResult};
-use move_core_types::language_storage::StructTag;
+use move_binary_format::errors::PartialVMError;
 use move_core_types::resolver::MoveResolver;
 use move_table_extension::TableResolver;
 use starcoin_aggregator::resolver::{AggregatorV1Resolver, DelayedFieldResolver};
 use starcoin_vm_runtime_types::resolver::ExecutorView;
 use starcoin_vm_types::on_chain_config::ConfigStorage;
-use starcoin_vm_types::state_store::state_key::StateKey;
-use std::collections::{BTreeMap, HashMap};
 
 /// A general resolver used by StarcoinVM. Allows to implement custom hooks on
 /// top of storage, e.g. get resources from resource groups, etc.

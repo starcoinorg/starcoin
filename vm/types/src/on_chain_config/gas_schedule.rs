@@ -1102,7 +1102,7 @@ static G_MOVE_FRAMEWORK_UPGRADE_STRS: Lazy<Vec<&str>> = Lazy::new(|| {
 });
 
 fn append_extra_gas_cost_framework_upgrade(entries: &mut Vec<(String, u64)>) {
-    for (_idx, cost) in G_MOVE_FRAMEWORK_UPGRADE_STRS.iter().enumerate() {
+    for cost in G_MOVE_FRAMEWORK_UPGRADE_STRS.iter() {
         entries.push((cost.to_string(), 1));
     }
 }

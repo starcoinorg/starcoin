@@ -5,31 +5,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account_address::AccountAddress;
+use anyhow::ensure;
 #[cfg(any(test, feature = "fuzzing"))]
 use rand::{rngs::OsRng, RngCore};
 use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
-use std::{
-    convert::{TryFrom, TryInto},
-    fmt,
-};
-use anyhow::ensure;
+use std::{convert::TryFrom, fmt};
 
 /// A struct that represents a globally unique id for an Event stream that a user can listen to.
 /// By design, the lower part of EventKey is the same as account address.
 #[derive(
-    Clone,
-    Copy,
-    Debug,
-    Deserialize,
-    Eq,
-    Hash,
-    Ord,
-    PartialEq,
-    PartialOrd,
-    Serialize,
-    JsonSchema
+    Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, JsonSchema,
 )]
 pub struct EventKey {
     creation_number: u64,
@@ -158,7 +145,10 @@ impl TryFrom<&[u8]> for EventKey {
         );
         let mut addr = [0u8; Self::LENGTH];
         addr.copy_from_slice(bytes);
-        Ok(Self::new(0, AccountAddress::try_from(&addr[0..AccountAddress::LENGTH])?))
+        Ok(Self::new(
+            0,
+            AccountAddress::try_from(&addr[0..AccountAddress::LENGTH])?,
+        ))
     }
 }
 

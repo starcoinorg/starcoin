@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use better_any::{Tid, TidAble};
+use log::info;
 use move_binary_format::errors::PartialVMError;
 use move_core_types::{language_storage::TypeTag, value::MoveTypeLayout, vm_status::StatusCode};
 use move_vm_runtime::native_functions::NativeFunction;
@@ -25,7 +26,6 @@ use starcoin_types::contract_event::ContractEvent;
 #[cfg(feature = "testing")]
 use starcoin_types::event::EventKey;
 use std::collections::VecDeque;
-use log::info;
 
 /// Cached emitted module events.
 #[derive(Default, Tid)]
@@ -99,7 +99,10 @@ fn native_write_to_event_store(
         ))
     })?;
     let key = bcs::from_bytes(guid.as_slice()).map_err(|err| {
-        info!("native_write_to_event_store | event key parse error: {:?}", err);
+        info!(
+            "native_write_to_event_store | event key parse error: {:?}",
+            err
+        );
         SafeNativeError::InvariantViolation(PartialVMError::new(StatusCode::EVENT_KEY_MISMATCH))
     })?;
 
