@@ -4,7 +4,6 @@ module starcoin_framework::on_chain_config {
     use std::error;
     use std::option;
     use std::signer;
-    use starcoin_std::debug;
 
     use starcoin_framework::account;
     use starcoin_framework::event;
@@ -50,8 +49,6 @@ module starcoin_framework::on_chain_config {
         payload: ConfigValue,
     ) acquires Config, ModifyConfigCapabilityHolder {
         let signer_address = signer::address_of(account);
-        debug::print(&std::string::utf8(b"on_chain_config::get "));
-        debug::print(&payload);
         assert!(
             exists<ModifyConfigCapabilityHolder<ConfigValue>>(signer_address),
             error::resource_exhausted(ECAPABILITY_HOLDER_NOT_EXISTS),
@@ -102,10 +99,6 @@ module starcoin_framework::on_chain_config {
     public fun extract_modify_config_capability<ConfigValue: copy + drop + store>(
         account: &signer,
     ): ModifyConfigCapability<ConfigValue> acquires ModifyConfigCapabilityHolder {
-
-        debug::print(&std::string::utf8(b"on_chain_config::extract_modify_config_capability "));
-        debug::print_stack_trace();
-
         let signer_address = signer::address_of(account);
         assert!(
             exists<ModifyConfigCapabilityHolder<ConfigValue>>(signer_address),
