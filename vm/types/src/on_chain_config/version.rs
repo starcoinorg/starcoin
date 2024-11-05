@@ -10,7 +10,7 @@ use move_core_types::move_resource::{MoveResource, MoveStructType};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-const VERSION_CONFIG_MODULE_NAME: &str = "Version";
+const VERSION_CONFIG_MODULE_NAME: &str = "stc_version";
 pub static G_VERSION_CONFIG_IDENTIFIER: Lazy<Identifier> =
     Lazy::new(|| Identifier::new(VERSION_CONFIG_MODULE_NAME).unwrap());
 

@@ -37,10 +37,12 @@ The module provides a general implmentation of configuration for onchain contrac
 
 
 <pre><code><b>use</b> <a href="account.md#0x1_account">0x1::account</a>;
+<b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
 <b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="event.md#0x1_event">0x1::event</a>;
 <b>use</b> <a href="../../move-stdlib/doc/option.md#0x1_option">0x1::option</a>;
 <b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
+<b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 </code></pre>
 
 
@@ -264,6 +266,8 @@ Set a config item to a new value with capability stored under signer
     payload: ConfigValue,
 ) <b>acquires</b> <a href="on_chain_config.md#0x1_on_chain_config_Config">Config</a>, <a href="on_chain_config.md#0x1_on_chain_config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a> {
     <b>let</b> signer_address = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>);
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"on_chain_config::get "));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&payload);
     <b>assert</b>!(
         <b>exists</b>&lt;<a href="on_chain_config.md#0x1_on_chain_config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(signer_address),
         <a href="../../move-stdlib/doc/error.md#0x1_error_resource_exhausted">error::resource_exhausted</a>(<a href="on_chain_config.md#0x1_on_chain_config_ECAPABILITY_HOLDER_NOT_EXISTS">ECAPABILITY_HOLDER_NOT_EXISTS</a>),
@@ -392,6 +396,10 @@ Extract account's ModifyConfigCapability for ConfigValue type
 <pre><code><b>public</b> <b>fun</b> <a href="on_chain_config.md#0x1_on_chain_config_extract_modify_config_capability">extract_modify_config_capability</a>&lt;ConfigValue: <b>copy</b> + drop + store&gt;(
     <a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
 ): <a href="on_chain_config.md#0x1_on_chain_config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt; <b>acquires</b> <a href="on_chain_config.md#0x1_on_chain_config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a> {
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="on_chain_config.md#0x1_on_chain_config_extract_modify_config_capability">on_chain_config::extract_modify_config_capability</a> "));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print_stack_trace">debug::print_stack_trace</a>();
+
     <b>let</b> signer_address = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>);
     <b>assert</b>!(
         <b>exists</b>&lt;<a href="on_chain_config.md#0x1_on_chain_config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(signer_address),
