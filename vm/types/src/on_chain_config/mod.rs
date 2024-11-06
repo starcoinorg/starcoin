@@ -214,12 +214,15 @@ pub fn new_epoch_event_key() -> EventKey {
 }
 
 pub fn access_path_for_config(config_struct_tag: StructTag) -> AccessPath {
-    AccessPath::resource_access_path(CORE_CODE_ADDRESS, StructTag {
-        address: CORE_CODE_ADDRESS,
-        module: Identifier::new("on_chain_config").unwrap(),
-        name: Identifier::new("Config").unwrap(),
-        type_args: vec![TypeTag::Struct(Box::new(config_struct_tag))],
-    })
+    AccessPath::resource_access_path(
+        CORE_CODE_ADDRESS,
+        StructTag {
+            address: CORE_CODE_ADDRESS,
+            module: Identifier::new("on_chain_config").unwrap(),
+            name: Identifier::new("Config").unwrap(),
+            type_args: vec![TypeTag::Struct(Box::new(config_struct_tag))],
+        },
+    )
 }
 
 pub fn struct_tag_for_config(config_struct_tag: StructTag) -> StructTag {
