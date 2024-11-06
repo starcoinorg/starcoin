@@ -1,8 +1,7 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
-use super::super::utils::bytes_to_string;
-use crate::types::{DelayedFieldID, DelayedFieldValue, TryFromMoveValue, TryIntoMoveValue};
+use crate::types::DelayedFieldValue;
 use claims::{assert_err, assert_ok};
 use move_core_types::value::{
     IdentifierMappingKind,
@@ -10,6 +9,8 @@ use move_core_types::value::{
     MoveTypeLayout,
     MoveTypeLayout::{Address, Bool, Struct, Vector, U128, U64, U8},
 };
+use move_vm_types::delayed_values::delayed_field_id::DelayedFieldID;
+use move_vm_types::delayed_values::derived_string_snapshot::bytes_to_string;
 use move_vm_types::values::Value;
 use once_cell::sync::Lazy;
 use test_case::test_case;

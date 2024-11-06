@@ -823,10 +823,10 @@ impl<'a> StarcoinTestAdapter<'a> {
 
         let author = author
             .map(|v| self.compiled_state.resolve_address(&v))
-            .or_else(|| Some(last_blockmeta.author))
+            .or(Some(last_blockmeta.author))
             .unwrap_or_else(AccountAddress::random);
 
-        let uncles = uncles.or_else(|| Some(last_blockmeta.uncles)).unwrap_or(0);
+        let uncles = uncles.or(Some(last_blockmeta.uncles)).unwrap_or(0);
         let timestamp =
             timestamp.unwrap_or(self.context.storage.get_timestamp()?.microseconds + 10 * 1000);
         //TODO find a better way to get parent hash, we should keep to local storage.
@@ -1051,7 +1051,7 @@ fn view_resource_in_move_storage(
         type_args,
     };
     match storage
-        .get_resource_bytes_with_metadata_and_layout(&address, &tag, &vec![], None)?
+        .get_resource_bytes_with_metadata_and_layout(&address, &tag, &[], None)?
         .0
     {
         None => Ok("[No Resource Exists]".to_owned()),

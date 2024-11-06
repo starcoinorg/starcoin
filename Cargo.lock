@@ -3484,7 +3484,7 @@ dependencies = [
  "num-traits",
  "proptest",
  "proptest-derive 0.3.0",
- "rand 0.8.5",
+ "rand 0.7.3",
  "rand_core 0.6.4",
  "serde",
  "serde_bytes",

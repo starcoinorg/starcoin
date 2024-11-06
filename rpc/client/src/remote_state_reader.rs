@@ -111,7 +111,7 @@ impl<'a> ChainStateReader for RemoteStateReader<'a> {
     fn get_table_info(&self, address: AccountAddress) -> Result<TableInfo> {
         self.client
             .state_get_table_info(address)
-            .map(|v| TableInfo::from(v))
+            .map(TableInfo::from)
     }
 }
 
@@ -125,18 +125,14 @@ impl<'a> TStateView for RemoteStateReader<'a> {
                 .state_get_with_proof_by_root(state_key.clone(), self.state_root())?
                 .state
                 .map(|v| v.0))
-            .map(|v| v.map(|v| StateValue::from(v))),
+            .map(|v| v.map(StateValue::from)),
             StateKeyInner::TableItem { handle, key } => Ok(self
                 .client
-                .state_get_with_table_item_proof_by_root(
-                    handle.clone(),
-                    key.clone(),
-                    self.state_root(),
-                )?
+                .state_get_with_table_item_proof_by_root(*handle, key.clone(), self.state_root())?
                 .key_proof
                 .0
                 .map(|v| v.0)
-                .map(|v| StateValue::from(v))),
+                .map(StateValue::from)),
             StateKeyInner::Raw(_) => Err(format_err!("Can not get raw state value.").into()),
         }
     }
