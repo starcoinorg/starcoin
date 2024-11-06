@@ -2,7 +2,7 @@ use super::util::Refs;
 use crate::consensusdb::schemadb::{GhostdagStoreReader, HeaderStoreReader, RelationsStoreReader};
 use crate::reachability::reachability_service::ReachabilityService;
 use crate::types::{ghostdata::GhostdagData, ordering::*};
-use anyhow::{bail, ensure, Context, Result};
+use anyhow::{ensure, Context, Result};
 use parking_lot::RwLock;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_logger::prelude::*;
@@ -171,7 +171,7 @@ impl<
         Ok(new_block_data)
     }
 
-    pub(crate) fn _verify_and_ghostdata(
+    pub(crate) fn verify_and_ghostdata(
         &self,
         blue_blocks: &[BlockHeader],
         header: &BlockHeader,
@@ -221,12 +221,8 @@ impl<
                 .map(|header| header.id())
                 .collect::<HashSet<_>>()
         {
-            if header.number() < 10000000 {
-                // no bail before 10000000
-                warn!("The data of blue set is not equal when executing the block: {:?}, for {:?}, checking data: {:?}", header.id(), blue_blocks.iter().map(|header| header.id()).collect::<Vec<_>>(), new_block_data.mergeset_blues);
-            } else {
-                bail!("The data of blue set is not equal when executing the block: {:?}, for {:?}, checking data: {:?}", header.id(), blue_blocks.iter().map(|header| header.id()).collect::<Vec<_>>(), new_block_data.mergeset_blues);
-            }
+            warn!("The data of blue set is not equal when executing the block: {:?}, for {:?}, checking data: {:?}", header.id(), blue_blocks.iter().map(|header| header.id()).collect::<Vec<_>>(), new_block_data.mergeset_blues);
+            return self.ghostdag(&header.parents_hash());
         }
 
         let blue_score = self
