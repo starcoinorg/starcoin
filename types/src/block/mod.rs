@@ -27,7 +27,6 @@ use starcoin_crypto::{
     HashValue,
 };
 use starcoin_vm_types::account_config::genesis_address;
-use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use std::fmt::Formatter;
 use std::hash::Hash;
 use std::sync::Mutex;

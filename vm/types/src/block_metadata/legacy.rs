@@ -1,5 +1,4 @@
 use crate::genesis_config::ChainId;
-use crate::transaction::authenticator::AuthenticationKey;
 use move_core_types::account_address::AccountAddress;
 use serde::{Deserialize, Deserializer, Serialize};
 use starcoin_crypto::hash::{CryptoHash, CryptoHasher, PlainCryptoHash};
@@ -36,7 +35,6 @@ impl<'de> Deserialize<'de> for BlockMetadata {
             parent_hash: HashValue,
             timestamp: u64,
             author: AccountAddress,
-            author_auth_key: Option<AuthenticationKey>,
             uncles: u64,
             number: u64,
             chain_id: ChainId,
