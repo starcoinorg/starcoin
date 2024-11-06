@@ -49,7 +49,7 @@ pub use self::{
     starcoin_features::*,
     timed_features::*,
     timestamp::CurrentTimeMicroseconds,
-    version::{version_config_type_tag, Version, G_VERSION_CONFIG_IDENTIFIER},
+    version::{Version, G_VERSION_CONFIG_IDENTIFIER},
     vm_config::*,
 };
 pub use crate::on_chain_resource::GlobalTimeOnChain;
@@ -68,12 +68,12 @@ impl ConfigID {
         self.2.to_string()
     }
     pub fn struct_tag(self) -> StructTag {
-        StructTag {
+        struct_tag_for_config(StructTag {
             address: AccountAddress::from_hex_literal(self.0).expect("failed to get address"),
             module: Identifier::new(self.1).expect("failed to get Identifier"),
             name: Identifier::new(self.2).expect("failed to get Identifier"),
             type_args: self.3,
-        }
+        })
     }
 }
 
@@ -213,16 +213,20 @@ pub fn new_epoch_event_key() -> EventKey {
     EventKey::new(0, genesis_address())
 }
 
-pub fn access_path_for_config(config_id: ConfigID) -> AccessPath {
-    let struct_tag = struct_tag_for_config(config_id);
-    AccessPath::resource_access_path(CORE_CODE_ADDRESS, struct_tag)
+pub fn access_path_for_config(config_struct_tag: StructTag) -> AccessPath {
+    AccessPath::resource_access_path(CORE_CODE_ADDRESS, StructTag {
+        address: CORE_CODE_ADDRESS,
+        module: Identifier::new("on_chain_config").unwrap(),
+        name: Identifier::new("Config").unwrap(),
+        type_args: vec![TypeTag::Struct(Box::new(config_struct_tag))],
+    })
 }
 
-pub fn struct_tag_for_config(config_id: ConfigID) -> StructTag {
+pub fn struct_tag_for_config(config_struct_tag: StructTag) -> StructTag {
     StructTag {
         address: CORE_CODE_ADDRESS,
-        module: Identifier::new(config_id.1).expect("fail to make identifier"),
-        name: Identifier::new(config_id.2).expect("fail to make identifier"),
-        type_args: config_id.3,
+        module: Identifier::new("on_chain_config").unwrap(),
+        name: Identifier::new("Config").unwrap(),
+        type_args: vec![TypeTag::Struct(Box::new(config_struct_tag))],
     }
 }
