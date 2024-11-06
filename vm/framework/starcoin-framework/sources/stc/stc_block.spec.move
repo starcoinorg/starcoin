@@ -32,39 +32,5 @@ spec starcoin_framework::stc_block {
         aborts_if !exists<BlockMetadata>(system_addresses::get_starcoin_framework());
     }
 
-    spec checkpoints_init {
-        pragma verify = false;
-    }
 
-    spec checkpoint_entry {
-        pragma verify = false;
-    }
-
-    spec checkpoint {
-        pragma verify = false;
-    }
-
-    spec base_checkpoint {
-        pragma verify = false;
-    }
-
-    spec latest_state_root {
-        pragma verify = false;
-    }
-
-    spec base_latest_state_root {
-        pragma verify = false;
-    }
-
-    spec update_state_root_entry {
-        pragma verify = false;
-    }
-
-    spec update_state_root {
-        pragma verify = false;
-    }
-
-    spec base_update_state_root {
-        pragma verify = false;
-    }
 }
