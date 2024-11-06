@@ -7,7 +7,7 @@ use move_core_types::identifier::IdentStr;
 use move_core_types::move_resource::{MoveResource, MoveStructType};
 use serde::{Deserialize, Serialize};
 
-const MV_LANG_VERSION_MODULE_NAME: &str = "LanguageVersion";
+const MV_LANG_VERSION_MODULE_NAME: &str = "stc_language_version";
 const MV_LANG_VERSION_STRUCT_NAME: &str = "LanguageVersion";
 
 /// Defines the move language version.

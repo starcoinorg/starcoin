@@ -987,12 +987,6 @@ pub enum EntryFunctionCall {
         should_pass: bool,
     },
 
-    StcBlockCheckpointEntry {},
-
-    StcBlockUpdateStateRootEntry {
-        header: Vec<u8>,
-    },
-
     StcGenesisInitialize {
         stdlib_version: u64,
         reward_delay: u64,
@@ -1755,8 +1749,6 @@ impl EntryFunctionCall {
                 proposal_id,
                 should_pass,
             } => starcoin_governance_vote(stake_pool, proposal_id, should_pass),
-            StcBlockCheckpointEntry {} => stc_block_checkpoint_entry(),
-            StcBlockUpdateStateRootEntry { header } => stc_block_update_state_root_entry(header),
             StcGenesisInitialize {
                 stdlib_version,
                 reward_delay,
@@ -4349,30 +4341,6 @@ pub fn starcoin_governance_vote(
     ))
 }
 
-pub fn stc_block_checkpoint_entry() -> TransactionPayload {
-    TransactionPayload::EntryFunction(EntryFunction::new(
-        ModuleId::new(
-            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
-            ident_str!("stc_block").to_owned(),
-        ),
-        ident_str!("checkpoint_entry").to_owned(),
-        vec![],
-        vec![],
-    ))
-}
-
-pub fn stc_block_update_state_root_entry(header: Vec<u8>) -> TransactionPayload {
-    TransactionPayload::EntryFunction(EntryFunction::new(
-        ModuleId::new(
-            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
-            ident_str!("stc_block").to_owned(),
-        ),
-        ident_str!("update_state_root_entry").to_owned(),
-        vec![],
-        vec![bcs::to_bytes(&header).unwrap()],
-    ))
-}
-
 pub fn stc_genesis_initialize(
     stdlib_version: u64,
     reward_delay: u64,
@@ -6470,26 +6438,6 @@ mod decoder {
         }
     }
 
-    pub fn stc_block_checkpoint_entry(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
-        if let TransactionPayload::EntryFunction(_script) = payload {
-            Some(EntryFunctionCall::StcBlockCheckpointEntry {})
-        } else {
-            None
-        }
-    }
-
-    pub fn stc_block_update_state_root_entry(
-        payload: &TransactionPayload,
-    ) -> Option<EntryFunctionCall> {
-        if let TransactionPayload::EntryFunction(script) = payload {
-            Some(EntryFunctionCall::StcBlockUpdateStateRootEntry {
-                header: bcs::from_bytes(script.args().get(0)?).ok()?,
-            })
-        } else {
-            None
-        }
-    }
-
     pub fn stc_genesis_initialize(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
         if let TransactionPayload::EntryFunction(script) = payload {
             Some(EntryFunctionCall::StcGenesisInitialize {
@@ -7310,14 +7258,6 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
         map.insert(
             "starcoin_governance_vote".to_string(),
             Box::new(decoder::starcoin_governance_vote),
-        );
-        map.insert(
-            "stc_block_checkpoint_entry".to_string(),
-            Box::new(decoder::stc_block_checkpoint_entry),
-        );
-        map.insert(
-            "stc_block_update_state_root_entry".to_string(),
-            Box::new(decoder::stc_block_update_state_root_entry),
         );
         map.insert(
             "stc_genesis_initialize".to_string(),

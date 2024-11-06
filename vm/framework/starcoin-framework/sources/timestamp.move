@@ -5,6 +5,7 @@
 module starcoin_framework::timestamp {
     use starcoin_framework::system_addresses;
     use std::error;
+    use starcoin_std::debug;
 
     friend starcoin_framework::genesis;
     friend starcoin_framework::stc_genesis;
@@ -38,19 +39,24 @@ module starcoin_framework::timestamp {
         proposer: address,
         timestamp: u64
     ) acquires CurrentTimeMicroseconds {
+        debug::print(&std::string::utf8(b"timestamp::update_global_time | Entered"));
+
         // Can only be invoked by StarcoinVM signer.
-        system_addresses::assert_vm(account);
+        // system_addresses::assert_vm(account);
+        system_addresses::assert_starcoin_framework(account);
 
         let global_timer = borrow_global_mut<CurrentTimeMicroseconds>(@starcoin_framework);
-        let now = global_timer.microseconds;
-        if (proposer == @vm_reserved) {
-            // NIL block with null address as proposer. Timestamp must be equal.
-            assert!(now == timestamp, error::invalid_argument(EINVALID_TIMESTAMP));
-        } else {
-            // Normal block. Time must advance
-            assert!(now < timestamp, error::invalid_argument(EINVALID_TIMESTAMP));
-            global_timer.microseconds = timestamp;
-        };
+        //let now = global_timer.microseconds;
+        // if (proposer == @starcoin_framework) {
+        //     // NIL block with null address as proposer. Timestamp must be equal.
+        //     assert!(now == timestamp, error::invalid_argument(EINVALID_TIMESTAMP));
+        // } else {
+        // Normal block. Time must advance
+        assert!(global_timer.microseconds < timestamp, error::invalid_argument(EINVALID_TIMESTAMP));
+        global_timer.microseconds = timestamp;
+        //};
+
+        debug::print(&std::string::utf8(b"timestamp::update_global_time | Exited"));
     }
 
     #[test_only]

@@ -1,8 +1,6 @@
 /// Block module provide metadata for generated blocks.
 module starcoin_framework::stc_block {
     use std::error;
-    use std::hash;
-    use std::option;
     use std::signer;
     use std::vector;
 
@@ -13,10 +11,8 @@ module starcoin_framework::stc_block {
     use starcoin_framework::stc_transaction_fee;
 
     use starcoin_framework::chain_id;
-    use starcoin_framework::bcs_util;
     use starcoin_framework::account;
     use starcoin_framework::system_addresses;
-    use starcoin_framework::ring;
     use starcoin_framework::event;
 
     const EPROLOGUE_BAD_CHAIN_ID: u64 = 6;
@@ -33,6 +29,8 @@ module starcoin_framework::stc_block {
         uncles: u64,
         /// Handle of events when new blocks are emitted
         new_block_events: event::EventHandle<Self::NewBlockEvent>,
+        /// An Array of the parents hash for a Dag block.
+        parents_hash: vector<u8>,
     }
 
     /// Events emitted when new block generated.
@@ -41,24 +39,7 @@ module starcoin_framework::stc_block {
         author: address,
         timestamp: u64,
         uncles: u64,
-    }
-
-    //
-    struct Checkpoint has copy, drop, store {
-        //number of the  block
-        block_number: u64,
-        //Hash of the block
-        block_hash: vector<u8>,
-        //State root of the block
-        state_root: option::Option<vector<u8>>,
-    }
-
-    //
-    struct Checkpoints has key, store {
-        //all checkpoints
-        checkpoints: ring::Ring<Checkpoint>,
-        index: u64,
-        last_number: u64,
+        parents_hash: vector<u8>,
     }
 
     const EBLOCK_NUMBER_MISMATCH: u64 = 17;
@@ -82,6 +63,7 @@ module starcoin_framework::stc_block {
                 parent_hash,
                 author: system_addresses::get_starcoin_framework(),
                 uncles: 0,
+                parents_hash: vector::empty<u8>(),
                 new_block_events: account::new_event_handle<Self::NewBlockEvent>(account),
             });
     }
@@ -125,7 +107,10 @@ module starcoin_framework::stc_block {
         number: u64,
         chain_id: u8,
         parent_gas_used: u64,
+        parents_hash: vector<u8>,
     ) acquires BlockMetadata {
+        debug::print(&std::string::utf8(b"stc_block::block_prologue | Entered"));
+
         // Can only be invoked by genesis account
         system_addresses::assert_starcoin_framework(&account);
 
@@ -136,8 +121,12 @@ module starcoin_framework::stc_block {
         // deal with previous block first.
         let txn_fee = stc_transaction_fee::distribute_transaction_fees<STC>(&account);
 
+        debug::print(&std::string::utf8(b"stc_block::block_prologue | txn_fee"));
+        debug::print(&coin::value(&txn_fee));
+
         // then deal with current block.
-        timestamp::update_global_time(&account, signer::address_of(&account), timestamp);
+        timestamp::update_global_time(&account, signer::address_of(&account), timestamp * 1000);
+
         process_block_metadata(
             &account,
             parent_hash,
@@ -145,11 +134,18 @@ module starcoin_framework::stc_block {
             timestamp,
             uncles,
             number,
+            parents_hash,
         );
 
         let reward = epoch::adjust_epoch(&account, number, timestamp, uncles, parent_gas_used);
+
+        debug::print(&std::string::utf8(b"stc_block::block_prologue | timestamp::update_global_time"));
+        debug::print(&timestamp);
+
         // pass in previous block gas fees.
         block_reward::process_block_reward(&account, number, reward, author, auth_key_vec, txn_fee);
+
+        debug::print(&std::string::utf8(b"stc_block::block_prologue | Exited"));
     }
 
     /// Call at block prologue
@@ -159,188 +155,48 @@ module starcoin_framework::stc_block {
         author: address,
         timestamp: u64,
         uncles: u64,
-        number: u64
+        number: u64,
+        parents_hash: vector<u8>,
     ) acquires BlockMetadata {
+
+        debug::print(&std::string::utf8(b"stc_block::process_block_metadata | Entered"));
+
         system_addresses::assert_starcoin_framework(account);
 
         let block_metadata_ref = borrow_global_mut<BlockMetadata>(system_addresses::get_starcoin_framework());
+
+        debug::print(&std::string::utf8(b"stc_block::process_block_metadata | to check block number"));
+
         assert!(number == (block_metadata_ref.number + 1), error::invalid_argument(EBLOCK_NUMBER_MISMATCH));
         block_metadata_ref.number = number;
         block_metadata_ref.author = author;
         block_metadata_ref.parent_hash = parent_hash;
         block_metadata_ref.uncles = uncles;
+        block_metadata_ref.parents_hash = parents_hash;
+
+        debug::print(&std::string::utf8(b"stc_block::process_block_metadata | to emit NewBlockEvent  "));
 
         event::emit_event<NewBlockEvent>(
             &mut block_metadata_ref.new_block_events,
             NewBlockEvent {
-                number: number,
-                author: author,
-                timestamp: timestamp,
-                uncles: uncles,
+                number,
+                author,
+                timestamp,
+                parents_hash,
+                uncles,
             }
         );
+        debug::print(&std::string::utf8(b"stc_block::process_block_metadata | Exited"));
     }
 
-    public fun checkpoints_init(account: &signer) {
-        system_addresses::assert_starcoin_framework(account);
-
-        let checkpoints = ring::create_with_capacity<Checkpoint>(CHECKPOINT_LENGTH);
-        move_to<Checkpoints>(
-            account,
-            Checkpoints {
-                checkpoints,
-                index: 0,
-                last_number: 0,
-            });
-    }
-
-    public entry fun checkpoint_entry(_account: signer) acquires BlockMetadata, Checkpoints {
-        checkpoint();
-    }
-
-    spec checkpoint_entry {
-        pragma verify = false;
-    }
-
-    public fun checkpoint() acquires BlockMetadata, Checkpoints {
-        let parent_block_number = get_current_block_number() - 1;
-        let parent_block_hash = get_parent_hash();
-
-        let checkpoints = borrow_global_mut<Checkpoints>(system_addresses::get_starcoin_framework());
-        base_checkpoint(checkpoints, parent_block_number, parent_block_hash);
-    }
-
-
-    fun base_checkpoint(checkpoints: &mut Checkpoints, parent_block_number: u64, parent_block_hash: vector<u8>) {
-        assert!(
-            checkpoints.last_number + BLOCK_INTERVAL_NUMBER <= parent_block_number || checkpoints.last_number == 0,
-            error::invalid_argument(ERROR_INTERVAL_TOO_LITTLE)
-        );
-
-        checkpoints.index = checkpoints.index + 1;
-        checkpoints.last_number = parent_block_number;
-        let op_checkpoint = ring::push<Checkpoint>(&mut checkpoints.checkpoints, Checkpoint {
-            block_number: parent_block_number,
-            block_hash: parent_block_hash,
-            state_root: option::none<vector<u8>>(),
-        });
-        if (option::is_some(&op_checkpoint)) {
-            option::destroy_some(op_checkpoint);
-        }else {
-            option::destroy_none(op_checkpoint);
-        }
-    }
-
-    spec base_checkpoint {
-        pragma verify = false;
-    }
-
-    public fun latest_state_root(): (u64, vector<u8>) acquires Checkpoints {
-        let checkpoints = borrow_global<Checkpoints>(system_addresses::get_starcoin_framework());
-        base_latest_state_root(checkpoints)
-    }
-
-    spec latest_state_root {
-        pragma verify = false;
-    }
-
-    fun base_latest_state_root(checkpoints: &Checkpoints): (u64, vector<u8>) {
-        let len = ring::capacity<Checkpoint>(&checkpoints.checkpoints);
-        let j = if (checkpoints.index < len - 1) {
-            checkpoints.index
-        }else {
-            len
-        };
-        let i = checkpoints.index;
-        while (j > 0) {
-            let op_checkpoint = ring::borrow(&checkpoints.checkpoints, i - 1);
-            if (option::is_some(op_checkpoint) && option::is_some(&option::borrow(op_checkpoint).state_root)) {
-                let state_root = option::borrow(&option::borrow(op_checkpoint).state_root);
-                return (option::borrow(op_checkpoint).block_number, *state_root)
-            };
-            j = j - 1;
-            i = i - 1;
-        };
-
-        abort error::invalid_state(ERROR_NO_HAVE_CHECKPOINT)
-    }
-
-    spec base_latest_state_root {
-        pragma verify = false;
-    }
-
-    public entry fun update_state_root_entry(_account: signer, header: vector<u8>)
-    acquires Checkpoints {
-        update_state_root(header);
-    }
-
-    spec update_state_root_entry {
-        pragma verify = false;
-    }
-
-    public fun update_state_root(header: vector<u8>) acquires Checkpoints {
-        let checkpoints = borrow_global_mut<Checkpoints>(system_addresses::get_starcoin_framework());
-        base_update_state_root(checkpoints, header);
-    }
-
-    spec update_state_root {
-        pragma verify = false;
-    }
-
-    fun base_update_state_root(checkpoints: &mut Checkpoints, header: vector<u8>) {
-        let prefix = hash::sha3_256(b"STARCOIN::BlockHeader");
-
-        //parent_hash
-        let new_offset = bcs_util::skip_bytes(&header, 0);
-        //timestamp
-        let new_offset = bcs_util::skip_u64(&header, new_offset);
-        //number
-        let (number, new_offset) = bcs_util::deserialize_u64(&header, new_offset);
-        //author
-        new_offset = bcs_util::skip_address(&header, new_offset);
-        //author_auth_key
-        new_offset = bcs_util::skip_option_bytes(&header, new_offset);
-        //txn_accumulator_root
-        new_offset = bcs_util::skip_bytes(&header, new_offset);
-        //block_accumulator_root
-        new_offset = bcs_util::skip_bytes(&header, new_offset);
-        //state_root
-        let (state_root, _new_offset) = bcs_util::deserialize_bytes(&header, new_offset);
-
-        vector::append(&mut prefix, header);
-        let block_hash = hash::sha3_256(prefix);
-
-        let len = ring::capacity<Checkpoint>(&checkpoints.checkpoints);
-        let j = if (checkpoints.index < len - 1) {
-            checkpoints.index
-        }else {
-            len
-        };
-        let i = checkpoints.index;
-        while (j > 0) {
-            let op_checkpoint = ring::borrow_mut(&mut checkpoints.checkpoints, i - 1);
-
-            if (option::is_some(op_checkpoint) &&
-                &option::borrow(op_checkpoint).block_hash == &block_hash &&
-                option::borrow<Checkpoint>(op_checkpoint).block_number == number) {
-                let op_state_root = &mut option::borrow_mut<Checkpoint>(op_checkpoint).state_root;
-                if (option::is_some(op_state_root)) {
-                    option::swap(op_state_root, state_root);
-                }else {
-                    option::fill(op_state_root, state_root);
-                };
-                return
-            };
-            j = j - 1;
-            i = i - 1;
-        };
-
-        abort error::invalid_state(ERROR_NO_HAVE_CHECKPOINT)
-    }
-
-    spec base_update_state_root {
-        pragma verify = false;
-    }
+    #[test]
+    use starcoin_framework::bcs_util;
+    #[test]
+    use std::hash;
+    #[test]
+    use std::option;
+    use starcoin_framework::coin;
+    use starcoin_std::debug;
 
     #[test]
     fun test_header() {
@@ -429,52 +285,5 @@ module starcoin_framework::stc_block {
         assert!(block_hash == x"9433bb7b56333dfc33e012f3b22b67277a3026448eb5043747d59284f648343d", 1001);
         assert!(number == 2, 1002);
         assert!(state_root == x"d2df4c8c579f9e05b0adf14b53785379fb245465d703834eb19fba74d9114a9a", 1003);
-    }
-
-    #[test]
-    fun test_checkpoint() {
-        let checkpoints = Checkpoints {
-            checkpoints: ring::create_with_capacity<Checkpoint>(3),
-            index: 0,
-            last_number: 0
-        };
-
-        base_checkpoint(&mut checkpoints, 0, x"80848150abee7e9a3bfe9542a019eb0b8b01f124b63b011f9c338fdb935c417d");
-
-        let Checkpoints {
-            checkpoints: ring,
-            index: index,
-            last_number: last_number
-        } = checkpoints;
-        assert!(index == 1 && last_number == 0, 10020);
-        ring::destroy(ring);
-    }
-
-    #[test]
-    fun test_latest_state_root() {
-        let header = x"20b82a2c11f2df62bf87c2933d0281e5fe47ea94d5f0049eec1485b682df29529abf17ac7d79010000000000000000000000000000000000000000000000000001002043609d52fdf8e4a253c62dfe127d33c77e1fb4afdefb306d46ec42e21b9103ae20414343554d554c41544f525f504c414345484f4c4445525f48415348000000002061125a3ab755b993d72accfea741f8537104db8e022098154f3a66d5c23e828d00000000000000000000000000000000000000000000000000000000000000000000000000b1ec37207564db97ee270a6c1f2f73fbf517dc0777a6119b7460b7eae2890d1ce504537b010000000000000000";
-
-        let checkpoints = Checkpoints {
-            checkpoints: ring::create_with_capacity<Checkpoint>(3),
-            index: 0,
-            last_number: 0
-        };
-
-        base_checkpoint(&mut checkpoints, 0, x"80848150abee7e9a3bfe9542a019eb0b8b01f124b63b011f9c338fdb935c417d");
-
-        base_update_state_root(&mut checkpoints, copy header);
-
-        let (number, state_root) = base_latest_state_root(&checkpoints);
-        let Checkpoints {
-            checkpoints: ring,
-            index: index,
-            last_number: last_number
-        } = checkpoints;
-        assert!(index == 1 && last_number == 0, 10020);
-        assert!(
-            number == 0 && state_root == x"61125a3ab755b993d72accfea741f8537104db8e022098154f3a66d5c23e828d",
-            10020
-        );
-        ring::destroy(ring);
     }
 }

@@ -110,3 +110,4 @@ pub mod consensus_header;
 pub mod serde_helper;
 
 pub mod delayed_fields;
+pub mod vm;

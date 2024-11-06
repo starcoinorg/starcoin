@@ -20,7 +20,9 @@ Then they are distributed in <code>TransactionManager</code>.
 
 
 <pre><code><b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
+<b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
 <b>use</b> <a href="starcoin_coin.md#0x1_starcoin_coin">0x1::starcoin_coin</a>;
+<b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 <b>use</b> <a href="system_addresses.md#0x1_system_addresses">0x1::system_addresses</a>;
 </code></pre>
 
@@ -77,7 +79,7 @@ Called in genesis. Sets up the needed resources to collect transaction fees from
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);
 
     // accept fees in all the currencies
-    <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_add_txn_fee_token">add_txn_fee_token</a>&lt;<a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;STC&gt;&gt;(<a href="account.md#0x1_account">account</a>);
+    <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_add_txn_fee_token">add_txn_fee_token</a>&lt;STC&gt;(<a href="account.md#0x1_account">account</a>);
 }
 </code></pre>
 
@@ -164,15 +166,20 @@ underlying fiat.
 <pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_distribute_transaction_fees">distribute_transaction_fees</a>&lt;TokenType&gt;(
     <a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
 ): <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenType&gt; <b>acquires</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_TransactionFee">TransactionFee</a> {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"stc_block::distribute_transaction_fees | Entered"));
+
     <b>let</b> fee_address = <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>();
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);
 
     // extract fees
     <b>let</b> txn_fees = <b>borrow_global_mut</b>&lt;<a href="stc_transaction_fee.md#0x1_stc_transaction_fee_TransactionFee">TransactionFee</a>&lt;TokenType&gt;&gt;(fee_address);
     <b>let</b> value = <a href="coin.md#0x1_coin_value">coin::value</a>&lt;TokenType&gt;(&txn_fees.fee);
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"stc_block::distribute_transaction_fees | value : "));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&value);
+
     <b>if</b> (value &gt; 0) {
         <a href="coin.md#0x1_coin_extract">coin::extract</a>(&<b>mut</b> txn_fees.fee, value)
-    }<b>else</b> {
+    } <b>else</b> {
         <a href="coin.md#0x1_coin_zero">coin::zero</a>&lt;TokenType&gt;()
     }
 }

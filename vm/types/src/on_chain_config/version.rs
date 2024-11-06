@@ -5,12 +5,13 @@ use crate::genesis_config::StdlibVersion;
 use crate::on_chain_config::OnChainConfig;
 use move_core_types::ident_str;
 use move_core_types::identifier::{IdentStr, Identifier};
-use move_core_types::language_storage::{StructTag, TypeTag, CORE_CODE_ADDRESS};
-use move_core_types::move_resource::{MoveResource, MoveStructType};
+use move_core_types::move_resource::MoveStructType;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-const VERSION_CONFIG_MODULE_NAME: &str = "Version";
+const VERSION_CONFIG_MODULE_NAME: &str = "stc_version";
+const VERSION_CONFIG_STRUCT_NAME: &str = "Version";
+
 pub static G_VERSION_CONFIG_IDENTIFIER: Lazy<Identifier> =
     Lazy::new(|| Identifier::new(VERSION_CONFIG_MODULE_NAME).unwrap());
 
@@ -32,19 +33,9 @@ impl Version {
 
 impl OnChainConfig for Version {
     const MODULE_IDENTIFIER: &'static str = VERSION_CONFIG_MODULE_NAME;
-    const TYPE_IDENTIFIER: &'static str = VERSION_CONFIG_MODULE_NAME;
+    const TYPE_IDENTIFIER: &'static str = VERSION_CONFIG_STRUCT_NAME;
 }
 impl MoveStructType for Version {
     const MODULE_NAME: &'static IdentStr = ident_str!(VERSION_CONFIG_MODULE_NAME);
-    const STRUCT_NAME: &'static IdentStr = ident_str!("Version");
-}
-
-impl MoveResource for Version {}
-pub fn version_config_type_tag() -> TypeTag {
-    TypeTag::Struct(Box::new(StructTag {
-        address: CORE_CODE_ADDRESS,
-        module: G_VERSION_CONFIG_IDENTIFIER.clone(),
-        name: G_VERSION_CONFIG_IDENTIFIER.clone(),
-        type_args: vec![],
-    }))
+    const STRUCT_NAME: &'static IdentStr = ident_str!(VERSION_CONFIG_STRUCT_NAME);
 }

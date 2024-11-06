@@ -145,7 +145,6 @@ prop_compose! {
         p_header.parent_hash(),
         account.time_service().now_millis(),
         p_header.author(),
-        p_header.author_auth_key(),
         0,
         p_header.number() + 1,
         account.chain_id(),

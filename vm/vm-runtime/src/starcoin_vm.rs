@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::access_path_cache::AccessPathCache;
-use crate::data_cache::{AsMoveResolver, RemoteStorage, StateViewCache};
+use crate::data_cache::{AsMoveResolver, StateViewCache, StorageAdapter};
 use crate::errors::{
     convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
 };
@@ -104,15 +104,20 @@ impl StarcoinVM {
         state: &S,
         chain_id: Option<u8>,
     ) -> Self {
-        let chain_id = chain_id.unwrap_or_else(|| state.get_chain_id().unwrap().id());
+        let chain_id = chain_id.unwrap_or_else(|| {
+            state
+                .get_chain_id()
+                .expect("Failed to get chain id, please check statedb")
+                .id()
+        });
         let gas_params = StarcoinGasParameters::initial();
         let native_params = gas_params.natives.clone();
         // todo: double check if it's ok to use RemoteStorage as StarcoinMoveResolver
-        let resolver = RemoteStorage::new(state);
+        let resolver = StorageAdapter::new(state);
         let inner = MoveVmExt::new(
             native_params.clone(),
             gas_params.vm.misc.clone(),
-            12,
+            LATEST_GAS_FEATURE_VERSION,
             chain_id,
             Features::default(),
             TimedFeaturesBuilder::enable_all().build(),
@@ -138,7 +143,7 @@ impl StarcoinVM {
         let gas_params = StarcoinGasParameters::initial();
         let native_params = gas_params.natives.clone();
         // todo: double check if it's ok to use RemoteStorage as StarcoinMoveResolver
-        let resolver = RemoteStorage::new(state);
+        let resolver = StorageAdapter::new(state);
         let inner = MoveVmExt::new(
             native_params.clone(),
             gas_params.vm.misc.clone(),
@@ -181,10 +186,13 @@ impl StarcoinVM {
             }
             Some(gs) => {
                 // TODO(simon): select feature_version properly
+                let gas_feature_version = LATEST_GAS_FEATURE_VERSION;
                 let gas_schdule_treemap = gs.clone().to_btree_map();
-                let gas_params =
-                    StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schdule_treemap, 12)
-                        .map_err(|e| format_err!("{e}"))?;
+                let gas_params = StarcoinGasParameters::from_on_chain_gas_schedule(
+                    &gas_schdule_treemap,
+                    gas_feature_version,
+                )
+                .map_err(|e| format_err!("{e}"))?;
 
                 // TODO(simon): do double check
                 // if params.natives != self.native_params {
@@ -195,7 +203,11 @@ impl StarcoinVM {
                     }
                     Some(mv) => {
                         let gas_params = gas_params.clone();
-                        mv.update_native_functions(gas_params.natives, gas_params.vm.misc)?;
+                        mv.update_native_functions(
+                            gas_params.natives,
+                            gas_params.vm.misc,
+                            gas_feature_version,
+                        )?;
                     }
                 }
                 self.native_params = gas_params.natives.clone();
@@ -206,7 +218,7 @@ impl StarcoinVM {
     }
 
     fn load_configs_impl<S: StateView>(&mut self, state: &S) -> Result<(), Error> {
-        let remote_storage = RemoteStorage::new(state);
+        let remote_storage = StorageAdapter::new(state);
         self.version = Version::fetch_config(&remote_storage);
         // move version can be none.
         self.move_version = MoveLanguageVersion::fetch_config(&remote_storage);
@@ -903,11 +915,6 @@ impl StarcoinVM {
                 |_e| VMStatus::error(StatusCode::BAD_TRANSACTION_FEE_CURRENCY, None),
             )?));
 
-        info!(
-            "StarcoinVM::run_epilogue | Gas token data: {:?}",
-            gas_token_ty
-        );
-
         let txn_sequence_number = txn_data.sequence_number();
         let txn_authentication_key_preimage = txn_data.authentication_key_preimage().to_vec();
         let txn_gas_price = u64::from(txn_data.gas_unit_price());
@@ -1010,27 +1017,15 @@ impl StarcoinVM {
         let mut gas_meter = StarcoinGasMeter::new(StarcoinGasParameters::zeros(), max_gas_amount);
         gas_meter.set_metering(false);
         let session_id = SessionId::block_meta(&block_metadata);
-        let (
-            parent_id,
-            timestamp,
-            author,
-            author_auth_key,
-            uncles,
-            number,
-            chain_id,
-            parent_gas_used,
-            parents_hash,
-        ) = block_metadata.into_inner();
+        let (parent_id, timestamp, author, uncles, number, chain_id, parent_gas_used, parents_hash) =
+            block_metadata.into_inner();
         let mut function_name = &account_config::G_BLOCK_PROLOGUE_NAME;
         let mut args_vec = vec![
             MoveValue::Signer(txn_sender),
             MoveValue::vector_u8(parent_id.to_vec()),
             MoveValue::U64(timestamp),
             MoveValue::Address(author),
-            match author_auth_key {
-                Some(author_auth_key) => MoveValue::vector_u8(author_auth_key.to_vec()),
-                None => MoveValue::vector_u8(Vec::new()),
-            },
+            MoveValue::vector_u8(Vec::new()),
             MoveValue::U64(uncles),
             MoveValue::U64(number),
             MoveValue::U8(chain_id.id()),
@@ -1532,11 +1527,15 @@ impl StarcoinVM {
         metrics: Option<VMMetrics>,
     ) -> Result<Vec<(VMStatus, TransactionOutput)>, VMStatus> {
         // todo: retrieve chain_id properly
-        let chain_id = match txns.first().unwrap() {
-            Transaction::UserTransaction(txn) => txn.chain_id().id(),
-            Transaction::BlockMetadata(meta) => meta.chain_id().id(),
+        let chain_id = if state_view.is_genesis() {
+            Some(match txns.first().unwrap() {
+                Transaction::UserTransaction(txn) => txn.chain_id().id(),
+                Transaction::BlockMetadata(meta) => meta.chain_id().id(),
+            })
+        } else {
+            None
         };
-        let mut vm = Self::new_with_config(metrics, state_view, Some(chain_id));
+        let mut vm = Self::new_with_config(metrics, state_view, chain_id);
         vm.execute_block_transactions(state_view, txns, block_gas_limit)
     }
 

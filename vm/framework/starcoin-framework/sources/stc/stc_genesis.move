@@ -4,7 +4,7 @@ module starcoin_framework::stc_genesis {
     use std::option;
     use std::vector;
     use starcoin_std::debug;
-    use starcoin_std::debug::print;
+    use starcoin_framework::stc_language_version;
 
     use starcoin_framework::account;
     use starcoin_framework::aggregator_factory;
@@ -90,17 +90,24 @@ module starcoin_framework::stc_genesis {
         transaction_timeout: u64,
         _dag_effective_height: u64,
     ) {
-        // debug::print(&std::string::utf8(b"stc_genesis::initialize Entered"));
+        debug::print(&std::string::utf8(b"stc_genesis::initialize Entered"));
+
 
         // create genesis account
         let (starcoin_framework_account, _genesis_signer_cap) =
             account::create_framework_reserved_account(@starcoin_framework);
 
+        initialize_versions(&starcoin_framework_account, stdlib_version);
+
         aggregator_factory::initialize_aggregator_factory(&starcoin_framework_account);
 
         // Init global time
         timestamp::set_time_has_started(&starcoin_framework_account);
+
+        debug::print(&std::string::utf8(b"stc_genesis::initialize | chain_id: "));
+        debug::print(&chain_id);
         chain_id::initialize(&starcoin_framework_account, chain_id);
+
         consensus_strategy::initialize(&starcoin_framework_account, strategy);
         stc_block::initialize(&starcoin_framework_account, parent_hash);
 
@@ -145,10 +152,6 @@ module starcoin_framework::stc_genesis {
         );
         epoch::initialize(&starcoin_framework_account);
 
-        on_chain_config::publish_new_config<stc_version::Version>(
-            &starcoin_framework_account,
-            stc_version::new_version(stdlib_version)
-        );
         // stdlib use two phase upgrade strategy.
         stc_transaction_package_validation::update_module_upgrade_strategy(
             &starcoin_framework_account,
@@ -213,6 +216,20 @@ module starcoin_framework::stc_genesis {
         // timestamp::set_time_has_started(&starcoin_framework_account);
         // account::release_genesis_signer(genesis_account);
         // account::release_genesis_signer(association);
+
+        debug::print(&std::string::utf8(b"stc_genesis::initialize | Exited"));
+    }
+
+    fun initialize_versions(starcoin_framework_account: &signer, stdlib_version: u64) {
+        // Version initialization
+        on_chain_config::publish_new_config<stc_version::Version>(
+            starcoin_framework_account,
+            stc_version::new_version(stdlib_version)
+        );
+        on_chain_config::publish_new_config<stc_language_version::LanguageVersion>(
+            starcoin_framework_account,
+            stc_language_version::new(13),
+        );
     }
 
     /// First we need to initialize the STC token.

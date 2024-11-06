@@ -92,7 +92,6 @@ impl OpenedBlock {
             previous_block_id,
             block_timestamp,
             author,
-            None,
             uncles.len() as u64,
             previous_header.number() + 1,
             chain_id,

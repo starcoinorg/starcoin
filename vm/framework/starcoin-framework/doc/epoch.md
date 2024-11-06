@@ -47,9 +47,11 @@ The module provide epoch functionality for starcoin.
 
 <pre><code><b>use</b> <a href="account.md#0x1_account">0x1::account</a>;
 <b>use</b> <a href="consensus_config.md#0x1_consensus_config">0x1::consensus_config</a>;
+<b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
 <b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="event.md#0x1_event">0x1::event</a>;
 <b>use</b> <a href="../../move-stdlib/doc/option.md#0x1_option">0x1::option</a>;
+<b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 <b>use</b> <a href="system_addresses.md#0x1_system_addresses">0x1::system_addresses</a>;
 <b>use</b> <a href="timestamp.md#0x1_timestamp">0x1::timestamp</a>;
 </code></pre>
@@ -331,7 +333,7 @@ Initialization of the module.
         <a href="account.md#0x1_account">account</a>,
         <a href="epoch.md#0x1_epoch_Epoch">Epoch</a> {
             number: 0,
-            start_time: <a href="timestamp.md#0x1_timestamp_now_microseconds">timestamp::now_microseconds</a>() / 1000,
+            start_time: <a href="timestamp.md#0x1_timestamp_now_milliseconds">timestamp::now_milliseconds</a>(),
             start_block_number: 0,
             end_block_number: <a href="consensus_config.md#0x1_consensus_config_epoch_block_count">consensus_config::epoch_block_count</a>(&config),
             block_time_target: <a href="consensus_config.md#0x1_consensus_config_base_block_time_target">consensus_config::base_block_time_target</a>(&config),
@@ -429,6 +431,8 @@ adjust_epoch try to advance to next epoch if current epoch ends.
     parent_gas_used: u64
 ): u128
 <b>acquires</b> <a href="epoch.md#0x1_epoch_Epoch">Epoch</a>, <a href="epoch.md#0x1_epoch_EpochData">EpochData</a> {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="epoch.md#0x1_epoch_adjust_epoch">epoch::adjust_epoch</a> | Entered"));
+
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);
 
     <b>let</b> epoch_ref = <b>borrow_global_mut</b>&lt;<a href="epoch.md#0x1_epoch_Epoch">Epoch</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>());
@@ -489,6 +493,9 @@ adjust_epoch try to advance to next epoch if current epoch ends.
     <b>let</b> reward = reward_per_block +
         reward_per_block * (epoch_ref.reward_per_uncle_percent <b>as</b> u128) * (uncles <b>as</b> u128) / (<a href="epoch.md#0x1_epoch_HUNDRED">HUNDRED</a> <b>as</b> u128);
     <a href="epoch.md#0x1_epoch_update_epoch_data">update_epoch_data</a>(epoch_data, new_epoch, reward, uncles, parent_gas_used);
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="epoch.md#0x1_epoch_adjust_epoch">epoch::adjust_epoch</a> | Exited, reward: "));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&reward);
     reward
 }
 </code></pre>

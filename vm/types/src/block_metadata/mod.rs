@@ -9,7 +9,6 @@ mod legacy;
 use crate::account_address::AccountAddress;
 use crate::account_config::genesis_address;
 use crate::genesis_config::ChainId;
-use crate::transaction::authenticator::AuthenticationKey;
 use bcs_ext::Sample;
 pub use legacy::BlockMetadata as LegacyBlockMetadata;
 use serde::{Deserialize, Deserializer, Serialize};
@@ -39,7 +38,6 @@ pub struct BlockMetadata {
     parent_hash: HashValue,
     timestamp: u64,
     author: AccountAddress,
-    author_auth_key: Option<AuthenticationKey>,
     uncles: u64,
     number: u64,
     chain_id: ChainId,
@@ -52,7 +50,6 @@ impl BlockMetadata {
         parent_hash: HashValue,
         timestamp: u64,
         author: AccountAddress,
-        author_auth_key: Option<AuthenticationKey>,
         uncles: u64,
         number: u64,
         chain_id: ChainId,
@@ -63,7 +60,6 @@ impl BlockMetadata {
             parent_hash,
             timestamp,
             author,
-            author_auth_key,
             uncles,
             number,
             chain_id,
@@ -77,7 +73,6 @@ impl BlockMetadata {
         parent_hash: HashValue,
         timestamp: u64,
         author: AccountAddress,
-        author_auth_key: Option<AuthenticationKey>,
         uncles: u64,
         number: u64,
         chain_id: ChainId,
@@ -89,7 +84,6 @@ impl BlockMetadata {
             parent_hash,
             timestamp,
             author,
-            author_auth_key,
             uncles,
             number,
             chain_id,
@@ -106,7 +100,6 @@ impl BlockMetadata {
         HashValue,
         u64,
         AccountAddress,
-        Option<AuthenticationKey>,
         u64,
         u64,
         ChainId,
@@ -117,7 +110,6 @@ impl BlockMetadata {
             self.parent_hash,
             self.timestamp,
             self.author,
-            self.author_auth_key,
             self.uncles,
             self.number,
             self.chain_id,
@@ -163,7 +155,6 @@ impl<'de> Deserialize<'de> for BlockMetadata {
             parent_hash: HashValue,
             timestamp: u64,
             author: AccountAddress,
-            author_auth_key: Option<AuthenticationKey>,
             uncles: u64,
             number: u64,
             chain_id: ChainId,
@@ -176,7 +167,6 @@ impl<'de> Deserialize<'de> for BlockMetadata {
                 data.parent_hash,
                 data.timestamp,
                 data.author,
-                data.author_auth_key,
                 data.uncles,
                 data.number,
                 data.chain_id,
@@ -188,7 +178,6 @@ impl<'de> Deserialize<'de> for BlockMetadata {
                 data.parent_hash,
                 data.timestamp,
                 data.author,
-                data.author_auth_key,
                 data.uncles,
                 data.number,
                 data.chain_id,
@@ -204,7 +193,6 @@ impl Sample for BlockMetadata {
             HashValue::zero(),
             0,
             genesis_address(),
-            None,
             0,
             0,
             ChainId::test(),

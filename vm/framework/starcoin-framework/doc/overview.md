@@ -79,6 +79,7 @@ This is the reference documentation of the Starcoin framework.
 -  [`0x1::state_storage`](state_storage.md#0x1_state_storage)
 -  [`0x1::stc_block`](stc_block.md#0x1_stc_block)
 -  [`0x1::stc_genesis`](stc_genesis.md#0x1_stc_genesis)
+-  [`0x1::stc_language_version`](stc_language_version.md#0x1_stc_language_version)
 -  [`0x1::stc_transaction_fee`](stc_transaction_fee.md#0x1_stc_transaction_fee)
 -  [`0x1::stc_transaction_package_validation`](stc_transaction_package_validation.md#0x1_stc_transaction_package_validation)
 -  [`0x1::stc_transaction_timeout`](stc_transaction_timeout.md#0x1_stc_transaction_timeout)

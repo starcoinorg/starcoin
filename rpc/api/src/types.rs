@@ -412,8 +412,6 @@ pub struct BlockHeaderView {
     pub number: StrView<BlockNumber>,
     /// Block author.
     pub author: AccountAddress,
-    /// Block author auth key.
-    pub author_auth_key: Option<AuthenticationKey>,
     /// The transaction accumulator root hash after executing this block.
     pub txn_accumulator_root: HashValue,
     /// The block accumulator root hash.
@@ -445,7 +443,6 @@ impl From<BlockHeader> for BlockHeaderView {
             timestamp: origin.timestamp().into(),
             number: origin.number().into(),
             author: origin.author(),
-            author_auth_key: origin.author_auth_key(),
             txn_accumulator_root: origin.txn_accumulator_root(),
             block_accumulator_root: origin.block_accumulator_root(),
             state_root: origin.state_root(),
@@ -675,7 +672,6 @@ impl From<BlockMetadata> for BlockMetadataView {
             parent_hash,
             timestamp,
             author,
-            author_auth_key,
             uncles,
             number,
             chain_id,
@@ -686,7 +682,7 @@ impl From<BlockMetadata> for BlockMetadataView {
             parent_hash,
             timestamp: timestamp.into(),
             author,
-            author_auth_key,
+            author_auth_key: None,
             uncles: uncles.into(),
             number: number.into(),
             chain_id: chain_id.id(),
@@ -703,7 +699,7 @@ impl Into<BlockMetadata> for BlockMetadataView {
             parent_hash,
             timestamp,
             author,
-            author_auth_key,
+            author_auth_key: _,
             uncles,
             number,
             chain_id,
@@ -714,7 +710,6 @@ impl Into<BlockMetadata> for BlockMetadataView {
             parent_hash,
             timestamp.0,
             author,
-            author_auth_key,
             uncles.0,
             number.0,
             genesis_config::ChainId::new(chain_id),

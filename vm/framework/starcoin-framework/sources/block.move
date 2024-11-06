@@ -6,6 +6,7 @@ module starcoin_framework::block {
     use std::option;
     use starcoin_std::table_with_length::{Self, TableWithLength};
     use std::option::Option;
+    use starcoin_std::debug;
     use starcoin_framework::randomness;
 
     use starcoin_framework::account;
@@ -218,7 +219,6 @@ module starcoin_framework::block {
 
         block_metadata_ref.epoch_interval
     }
-
     /// Set the metadata for the current block.
     /// The runtime always runs this before executing the transactions in a block.
     fun block_prologue(
@@ -231,11 +231,14 @@ module starcoin_framework::block {
         previous_block_votes_bitvec: vector<u8>,
         timestamp: u64
     ) acquires BlockResource, CommitHistory {
+        debug::print(&std::string::utf8(b"block::block_prologue | Entered"));
+
         let epoch_interval = block_prologue_common(&vm, hash, epoch, round, proposer, failed_proposer_indices, previous_block_votes_bitvec, timestamp);
         randomness::on_new_block(&vm, epoch, round, option::none());
         if (timestamp - reconfiguration::last_reconfiguration_time() >= epoch_interval) {
             reconfiguration::reconfigure();
         };
+        debug::print(&std::string::utf8(b"block::block_prologue | Exited"));
     }
 
     /// `block_prologue()` but trigger reconfiguration with DKG after epoch timed out.

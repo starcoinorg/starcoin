@@ -3,6 +3,7 @@ module starcoin_framework::epoch {
 
     use std::error;
     use std::option;
+    use starcoin_std::debug;
 
     use starcoin_std::math128;
     use starcoin_framework::event;
@@ -86,7 +87,7 @@ module starcoin_framework::epoch {
             account,
             Epoch {
                 number: 0,
-                start_time: timestamp::now_microseconds() / 1000,
+                start_time: timestamp::now_milliseconds(),
                 start_block_number: 0,
                 end_block_number: consensus_config::epoch_block_count(&config),
                 block_time_target: consensus_config::base_block_time_target(&config),
@@ -144,6 +145,8 @@ module starcoin_framework::epoch {
         parent_gas_used: u64
     ): u128
     acquires Epoch, EpochData {
+        debug::print(&std::string::utf8(b"epoch::adjust_epoch | Entered"));
+
         system_addresses::assert_starcoin_framework(account);
 
         let epoch_ref = borrow_global_mut<Epoch>(system_addresses::get_starcoin_framework());
@@ -204,6 +207,9 @@ module starcoin_framework::epoch {
         let reward = reward_per_block +
             reward_per_block * (epoch_ref.reward_per_uncle_percent as u128) * (uncles as u128) / (HUNDRED as u128);
         update_epoch_data(epoch_data, new_epoch, reward, uncles, parent_gas_used);
+
+        debug::print(&std::string::utf8(b"epoch::adjust_epoch | Exited, reward: "));
+        debug::print(&reward);
         reward
     }
 

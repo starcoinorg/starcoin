@@ -3,6 +3,8 @@ module starcoin_framework::block_reward {
 
     use std::error;
     use std::vector;
+    use starcoin_framework::create_signer;
+    use starcoin_std::debug;
     use starcoin_framework::treasury_withdraw_dao_proposal;
     use starcoin_framework::treasury;
     use starcoin_framework::starcoin_coin::STC;
@@ -70,17 +72,26 @@ module starcoin_framework::block_reward {
         account: &signer,
         current_number: u64,
         current_reward: u128,
-        current_author: address, _auth_key_vec: vector<u8>,
+        current_author: address,
+        _auth_key_vec: vector<u8>,
         previous_block_gas_fees: coin::Coin<STC>
     ) acquires RewardQueue {
+        debug::print(&std::string::utf8(b"block_reward::process_block_reward | Entered"));
+
         system_addresses::assert_starcoin_framework(account);
+
         if (current_number == 0) {
             coin::destroy_zero(previous_block_gas_fees);
+            debug::print(&std::string::utf8(b"block_reward::process_block_reward | Exited, current_number is 0"));
             return
         };
 
         let rewards = borrow_global_mut<RewardQueue>(system_addresses::get_starcoin_framework());
         let len = vector::length(&rewards.infos);
+
+        debug::print(&std::string::utf8(b"block_reward::process_block_reward | rewards info len: "));
+        debug::print(&len);
+
         assert!(
             (current_number == (rewards.reward_number + len + 1)),
             error::invalid_argument(ECURRENT_NUMBER_IS_WRONG)
@@ -97,17 +108,27 @@ module starcoin_framework::block_reward {
         };
 
         let reward_delay = block_reward_config::reward_delay();
+        debug::print(&std::string::utf8(b"block_reward::process_block_reward | rewards delay: "));
+        debug::print(&reward_delay);
         if (len >= reward_delay) {
             //pay and remove
             let i = len;
             while (i > 0 && i >= reward_delay) {
-                let RewardInfo { number: reward_block_number, reward: block_reward, gas_fees, miner } = vector::remove(
+                let RewardInfo {
+                    number: reward_block_number,
+                    reward: block_reward,
+                    gas_fees,
+                    miner
+                } = vector::remove(
                     &mut rewards.infos,
                     0
                 );
 
                 let gas_fee_value = (coin::value(&gas_fees) as u128);
                 let total_reward = gas_fees;
+                debug::print(&std::string::utf8(b"block_reward::process_block_reward | total_reward: "));
+                debug::print(&coin::value(&total_reward));
+
                 // add block reward to total.
                 if (block_reward > 0) {
                     // if no STC in Treasury, BlockReward will been 0.
@@ -115,27 +136,39 @@ module starcoin_framework::block_reward {
                     if (treasury_balance < block_reward) {
                         block_reward = treasury_balance;
                     };
+                    debug::print(&std::string::utf8(b"block_reward::process_block_reward | treasury_balance: "));
+                    debug::print(&treasury_balance);
                     if (block_reward > 0) {
                         let reward = treasury_withdraw_dao_proposal::withdraw_for_block_reward<STC>(account, block_reward);
                         coin::merge(&mut total_reward, reward);
                     };
                 };
+
                 // distribute total.
+                debug::print(&std::string::utf8(b"block_reward::process_block_reward | distribute total reward: "));
+                debug::print(&coin::value(&total_reward));
+                debug::print(&miner);
+
                 if (coin::value(&total_reward) > 0) {
                     coin::deposit<STC>(miner, total_reward);
                 } else {
                     coin::destroy_zero(total_reward);
                 };
+
+                debug::print(&std::string::utf8(b"block_reward::process_block_reward | before emit reward event"));
+
                 // emit reward event.
                 event::emit_event<BlockRewardEvent>(
                     &mut rewards.reward_events,
                     BlockRewardEvent {
                         block_number: reward_block_number,
-                        block_reward: block_reward,
+                        block_reward,
                         gas_fees: gas_fee_value,
                         miner,
                     }
                 );
+
+                debug::print(&std::string::utf8(b"block_reward::process_block_reward | after emit reward event"));
 
                 rewards.reward_number = rewards.reward_number + 1;
                 i = i - 1;
@@ -143,6 +176,9 @@ module starcoin_framework::block_reward {
         };
 
         account::create_account_if_does_not_exist(current_author);
+        if (!coin::is_account_registered<STC>(current_author)) {
+            coin::register<STC>(&create_signer::create_signer(current_author));
+        };
 
         let current_info = RewardInfo {
             number: current_number,
@@ -151,5 +187,7 @@ module starcoin_framework::block_reward {
             gas_fees: coin::zero<STC>(),
         };
         vector::push_back(&mut rewards.infos, current_info);
+
+        debug::print(&std::string::utf8(b"block_reward::process_block_reward | Exited"));
     }
 }

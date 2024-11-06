@@ -1,5 +1,4 @@
 use crate::genesis_config::ChainId;
-use crate::transaction::authenticator::AuthenticationKey;
 use move_core_types::account_address::AccountAddress;
 use serde::{Deserialize, Deserializer, Serialize};
 use starcoin_crypto::hash::{CryptoHash, CryptoHasher, PlainCryptoHash};
@@ -13,7 +12,6 @@ pub struct BlockMetadata {
     pub(super) parent_hash: HashValue,
     pub(super) timestamp: u64,
     pub(super) author: AccountAddress,
-    pub(super) author_auth_key: Option<AuthenticationKey>,
     pub(super) uncles: u64,
     pub(super) number: u64,
     pub(super) chain_id: ChainId,
@@ -37,7 +35,6 @@ impl<'de> Deserialize<'de> for BlockMetadata {
             parent_hash: HashValue,
             timestamp: u64,
             author: AccountAddress,
-            author_auth_key: Option<AuthenticationKey>,
             uncles: u64,
             number: u64,
             chain_id: ChainId,
@@ -49,7 +46,6 @@ impl<'de> Deserialize<'de> for BlockMetadata {
             parent_hash: data.parent_hash,
             timestamp: data.timestamp,
             author: data.author,
-            author_auth_key: data.author_auth_key,
             uncles: data.uncles,
             number: data.number,
             chain_id: data.chain_id,
@@ -67,7 +63,6 @@ impl From<BlockMetadata> for super::BlockMetadata {
             parent_hash: value.parent_hash,
             timestamp: value.timestamp,
             author: value.author,
-            author_auth_key: value.author_auth_key,
             uncles: value.uncles,
             number: value.number,
             chain_id: value.chain_id,
@@ -84,7 +79,6 @@ impl From<super::BlockMetadata> for BlockMetadata {
             parent_hash: value.parent_hash,
             timestamp: value.timestamp,
             author: value.author,
-            author_auth_key: value.author_auth_key,
             uncles: value.uncles,
             number: value.number,
             chain_id: value.chain_id,

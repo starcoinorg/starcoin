@@ -5,7 +5,6 @@ use starcoin_crypto::{
     hash::{CryptoHash, CryptoHasher, PlainCryptoHash},
     HashValue,
 };
-use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, CryptoHasher, CryptoHash, JsonSchema)]
 #[serde(rename = "BlockHeader")]
@@ -20,9 +19,6 @@ pub struct BlockHeader {
     number: BlockNumber,
     /// Block author.
     author: AccountAddress,
-    /// Block author auth key.
-    /// this field is deprecated
-    author_auth_key: Option<AuthenticationKey>,
     /// The transaction accumulator root hash after executing this block.
     txn_accumulator_root: HashValue,
     /// The parent block info's block accumulator root hash.
@@ -51,7 +47,6 @@ impl BlockHeader {
         timestamp: u64,
         number: BlockNumber,
         author: AccountAddress,
-        author_auth_key: Option<AuthenticationKey>,
         txn_accumulator_root: HashValue,
         block_accumulator_root: HashValue,
         state_root: HashValue,
@@ -69,7 +64,6 @@ impl BlockHeader {
             number,
             timestamp,
             author,
-            author_auth_key,
             txn_accumulator_root,
             state_root,
             gas_used,
@@ -100,7 +94,6 @@ impl From<crate::block::BlockHeader> for BlockHeader {
             timestamp: v.timestamp,
             number: v.number,
             author: v.author,
-            author_auth_key: v.author_auth_key,
             txn_accumulator_root: v.txn_accumulator_root,
             block_accumulator_root: v.block_accumulator_root,
             state_root: v.state_root,
@@ -123,7 +116,6 @@ impl From<BlockHeader> for crate::block::BlockHeader {
             timestamp: v.timestamp,
             number: v.number,
             author: v.author,
-            author_auth_key: v.author_auth_key,
             txn_accumulator_root: v.txn_accumulator_root,
             block_accumulator_root: v.block_accumulator_root,
             state_root: v.state_root,
@@ -149,7 +141,6 @@ impl<'de> Deserialize<'de> for BlockHeader {
             timestamp: u64,
             number: BlockNumber,
             author: AccountAddress,
-            author_auth_key: Option<AuthenticationKey>,
             txn_accumulator_root: HashValue,
             block_accumulator_root: HashValue,
             state_root: HashValue,
@@ -167,7 +158,6 @@ impl<'de> Deserialize<'de> for BlockHeader {
             header_data.timestamp,
             header_data.number,
             header_data.author,
-            header_data.author_auth_key,
             header_data.txn_accumulator_root,
             header_data.block_accumulator_root,
             header_data.state_root,
