@@ -6,7 +6,7 @@ use move_core_types::gas_algebra::{NumArgs, NumBytes};
 use move_vm_runtime::native_functions::NativeFunction;
 use move_vm_types::{loaded_data::runtime_types::Type, values::Value};
 #[cfg(feature = "testing")]
-use rand_core::OsRng;
+use rand_core_0_5_1::OsRng;
 use smallvec::{smallvec, SmallVec};
 #[cfg(feature = "testing")]
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};

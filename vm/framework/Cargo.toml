@@ -67,7 +67,7 @@ move-vm-types = { workspace = true }
 num-traits = { workspace = true }
 once_cell = { workspace = true }
 rand = { workspace = true }
-rand_core = { workspace = true }
+rand_core_0_5_1 = { workspace = true }
 ripemd = { workspace = true }
 serde = { workspace = true }
 serde_bytes = { workspace = true }
@@ -89,6 +89,7 @@ claims = { workspace = true }
 move-cli = { workspace = true }
 move-prover = { workspace = true }
 move-unit-test = { workspace = true }
+rand_0_7_3 = { workspace = true }
 
 [features]
 default = []

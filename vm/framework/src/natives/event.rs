@@ -7,8 +7,6 @@ use move_binary_format::errors::PartialVMError;
 use move_core_types::{language_storage::TypeTag, value::MoveTypeLayout, vm_status::StatusCode};
 use move_vm_runtime::native_functions::NativeFunction;
 #[cfg(feature = "testing")]
-use move_vm_types::value_serde::deserialize_and_allow_delayed_values;
-#[cfg(feature = "testing")]
 use move_vm_types::values::{Reference, Struct, StructRef};
 use move_vm_types::{
     loaded_data::runtime_types::Type, value_serde::serialize_and_allow_delayed_values,
@@ -51,6 +49,7 @@ impl NativeEventContext {
         events
     }
 
+    /*
     #[cfg(feature = "testing")]
     fn emitted_v2_events(&self, ty_tag: &TypeTag) -> Vec<&[u8]> {
         let mut events = vec![];
@@ -62,7 +61,7 @@ impl NativeEventContext {
             }
         }
         events
-    }
+    } */
 }
 
 /***************************************************************************************************
