@@ -5,6 +5,7 @@ module starcoin_framework::stc_transaction_validation {
 
     use std::error;
     use std::signer;
+    use starcoin_std::debug;
 
     use starcoin_framework::account;
     use starcoin_framework::chain_id;
@@ -47,6 +48,8 @@ module starcoin_framework::stc_transaction_validation {
         txn_script_or_package_hash: vector<u8>,
         txn_package_address: address,
     ) {
+        debug::print(&std::string::utf8(b"transaction_validation::prologue | Entered"));
+
         // Can only be invoked by genesis account
         // assert!(
         //     signer::address_of(&account) == system_addresses::get_starcoin_framework(),
@@ -92,6 +95,7 @@ module starcoin_framework::stc_transaction_validation {
                 error::invalid_argument(EPROLOGUE_SCRIPT_NOT_ALLOWED),
             );
         };
+        debug::print(&std::string::utf8(b"transaction_validation::prologue | Exited"));
         // do nothing for TXN_PAYLOAD_TYPE_SCRIPT_FUNCTION
     }
 
@@ -112,6 +116,8 @@ module starcoin_framework::stc_transaction_validation {
         // txn execute success or fail.
         success: bool,
     ) {
+        debug::print(&std::string::utf8(b"transaction_validation::epilogue | Entered"));
+
         system_addresses::assert_starcoin_framework(&account);
         txn_epilogue<TokenType>(
             &account,
@@ -129,7 +135,9 @@ module starcoin_framework::stc_transaction_validation {
                 txn_package_address,
                 success,
             );
-        }
+        };
+
+        debug::print(&std::string::utf8(b"transaction_validation::epilogue | Exited"));
     }
 
     const MAX_U64: u128 = 18446744073709551615;

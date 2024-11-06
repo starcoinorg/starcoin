@@ -1,6 +1,7 @@
 /// `TransactionFee` collect gas fees used by transactions in blocks temporarily.
 /// Then they are distributed in `TransactionManager`.
 module starcoin_framework::stc_transaction_fee {
+    use starcoin_std::debug;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::coin;
     use starcoin_framework::system_addresses;
@@ -23,7 +24,7 @@ module starcoin_framework::stc_transaction_fee {
         system_addresses::assert_starcoin_framework(account);
 
         // accept fees in all the currencies
-        add_txn_fee_token<coin::Coin<STC>>(account);
+        add_txn_fee_token<STC>(account);
     }
 
     spec initialize {
@@ -72,15 +73,20 @@ module starcoin_framework::stc_transaction_fee {
     public fun distribute_transaction_fees<TokenType>(
         account: &signer,
     ): coin::Coin<TokenType> acquires TransactionFee {
+        debug::print(&std::string::utf8(b"stc_block::distribute_transaction_fees | Entered"));
+
         let fee_address = system_addresses::get_starcoin_framework();
         system_addresses::assert_starcoin_framework(account);
 
         // extract fees
         let txn_fees = borrow_global_mut<TransactionFee<TokenType>>(fee_address);
         let value = coin::value<TokenType>(&txn_fees.fee);
+        debug::print(&std::string::utf8(b"stc_block::distribute_transaction_fees | value : "));
+        debug::print(&value);
+
         if (value > 0) {
             coin::extract(&mut txn_fees.fee, value)
-        }else {
+        } else {
             coin::zero<TokenType>()
         }
     }

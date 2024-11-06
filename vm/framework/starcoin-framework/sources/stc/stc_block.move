@@ -109,6 +109,8 @@ module starcoin_framework::stc_block {
         parent_gas_used: u64,
         parents_hash: vector<u8>,
     ) acquires BlockMetadata {
+        debug::print(&std::string::utf8(b"stc_block::block_prologue | Entered"));
+
         // Can only be invoked by genesis account
         system_addresses::assert_starcoin_framework(&account);
 
@@ -119,8 +121,12 @@ module starcoin_framework::stc_block {
         // deal with previous block first.
         let txn_fee = stc_transaction_fee::distribute_transaction_fees<STC>(&account);
 
+        debug::print(&std::string::utf8(b"stc_block::block_prologue | txn_fee"));
+        debug::print(&coin::value(&txn_fee));
+
         // then deal with current block.
-        timestamp::update_global_time(&account, signer::address_of(&account), timestamp);
+        timestamp::update_global_time(&account, signer::address_of(&account), timestamp * 1000);
+
         process_block_metadata(
             &account,
             parent_hash,
@@ -132,8 +138,14 @@ module starcoin_framework::stc_block {
         );
 
         let reward = epoch::adjust_epoch(&account, number, timestamp, uncles, parent_gas_used);
+
+        debug::print(&std::string::utf8(b"stc_block::block_prologue | timestamp::update_global_time"));
+        debug::print(&timestamp);
+
         // pass in previous block gas fees.
         block_reward::process_block_reward(&account, number, reward, author, auth_key_vec, txn_fee);
+
+        debug::print(&std::string::utf8(b"stc_block::block_prologue | Exited"));
     }
 
     /// Call at block prologue
@@ -146,9 +158,15 @@ module starcoin_framework::stc_block {
         number: u64,
         parents_hash: vector<u8>,
     ) acquires BlockMetadata {
+
+        debug::print(&std::string::utf8(b"stc_block::process_block_metadata | Entered"));
+
         system_addresses::assert_starcoin_framework(account);
 
         let block_metadata_ref = borrow_global_mut<BlockMetadata>(system_addresses::get_starcoin_framework());
+
+        debug::print(&std::string::utf8(b"stc_block::process_block_metadata | to check block number"));
+
         assert!(number == (block_metadata_ref.number + 1), error::invalid_argument(EBLOCK_NUMBER_MISMATCH));
         block_metadata_ref.number = number;
         block_metadata_ref.author = author;
@@ -156,16 +174,19 @@ module starcoin_framework::stc_block {
         block_metadata_ref.uncles = uncles;
         block_metadata_ref.parents_hash = parents_hash;
 
+        debug::print(&std::string::utf8(b"stc_block::process_block_metadata | to emit NewBlockEvent  "));
+
         event::emit_event<NewBlockEvent>(
             &mut block_metadata_ref.new_block_events,
             NewBlockEvent {
-                number: number,
-                author: author,
-                timestamp: timestamp,
+                number,
+                author,
+                timestamp,
                 parents_hash,
-                uncles: uncles,
+                uncles,
             }
         );
+        debug::print(&std::string::utf8(b"stc_block::process_block_metadata | Exited"));
     }
 
     #[test]
@@ -174,6 +195,8 @@ module starcoin_framework::stc_block {
     use std::hash;
     #[test]
     use std::option;
+    use starcoin_framework::coin;
+    use starcoin_std::debug;
 
     #[test]
     fun test_header() {
