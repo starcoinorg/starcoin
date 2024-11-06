@@ -104,11 +104,12 @@ impl StarcoinVM {
         state: &S,
         chain_id: Option<u8>,
     ) -> Self {
-        let chain_id = chain_id.unwrap_or_else(
-            || state.get_chain_id()
+        let chain_id = chain_id.unwrap_or_else(|| {
+            state
+                .get_chain_id()
                 .expect("Failed to get chain id, please check statedb")
                 .id()
-        );
+        });
         let gas_params = StarcoinGasParameters::initial();
         let native_params = gas_params.natives.clone();
         // todo: double check if it's ok to use RemoteStorage as StarcoinMoveResolver
