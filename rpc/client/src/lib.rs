@@ -664,10 +664,7 @@ impl RpcClient {
     ) -> anyhow::Result<Option<Vec<u8>>> {
         self.call_rpc_blocking(|inner| inner.state_client.get_state_node_by_node_hash(key_hash))
             .map_err(map_err)
-            .map(|v| match v {
-                Some(bytes) => Some(bytes.to_vec()),
-                None => None,
-            })
+            .map(|v| v.map(|bytes| bytes.to_vec()))
     }
 
     pub fn contract_call(&self, call: ContractCall) -> anyhow::Result<Vec<DecodedMoveValue>> {

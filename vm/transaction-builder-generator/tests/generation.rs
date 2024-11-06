@@ -1,10 +1,10 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use move_core_types::abi::ScriptABI;
 use serde_generate as serdegen;
 use serde_generate::SourceInstaller as _;
 use serde_reflection::Registry;
-use starcoin_vm_types::transaction::ScriptABI;
 use std::{io::Write, path::Path, process::Command};
 use tempfile::tempdir;
 use transaction_builder_generator as buildgen;

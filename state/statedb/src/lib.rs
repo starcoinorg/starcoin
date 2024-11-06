@@ -430,13 +430,13 @@ impl TStateView for ChainStateDB {
                         Some(account_state) => account_state.get(data_path),
                         None => Ok(None),
                     })
-                    .map(|v| v.map(|v| StateValue::from(v)))?)
+                    .map(|v| v.map(StateValue::from))?)
             }
             StateKeyInner::TableItem { handle, key } => {
                 let table_handle_state_object = self.get_table_handle_state_object(handle)?;
                 Ok(table_handle_state_object
                     .get(key)
-                    .map(|v| v.map(|v| StateValue::from(v)))?)
+                    .map(|v| v.map(StateValue::from))?)
             }
             StateKeyInner::Raw(_) => unimplemented!(),
         }
