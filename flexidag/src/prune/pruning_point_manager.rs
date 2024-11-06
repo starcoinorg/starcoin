@@ -75,6 +75,11 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
             min_required_blue_score_for_next_pruning_point
         );
 
+        debug!("previous_pruning_point: {:?}, previous_ghostdata: {:?}, next_ghostdata: {:?}, pruning_depth: {:?}, pruning_finality: {:?}", 
+            previous_pruning_point, previous_ghostdata, next_ghostdata,
+            pruning_depth, pruning_finality,
+        );
+
         let mut latest_pruning_ghost_data = previous_ghostdata.to_compact();
         if min_required_blue_score_for_next_pruning_point + pruning_depth
             <= next_ghostdata.blue_score

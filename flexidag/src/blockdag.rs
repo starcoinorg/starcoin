@@ -561,11 +561,12 @@ impl BlockDAG {
 
     pub fn verify_and_ghostdata(
         &self,
-        blue_blocks: &[BlockHeader],
+        _blue_blocks: &[BlockHeader],
         header: &BlockHeader,
     ) -> Result<GhostdagData, anyhow::Error> {
-        self.ghost_dag_manager()
-            .verify_and_ghostdata(blue_blocks, header)
+        self.ghost_dag_manager().ghostdag(&header.parents())
+        // self.ghost_dag_manager()
+        //     .verify_and_ghostdata(blue_blocks, header)
     }
     pub fn check_upgrade(&self, main: &BlockHeader, genesis_id: HashValue) -> anyhow::Result<()> {
         // set the state with key 0
