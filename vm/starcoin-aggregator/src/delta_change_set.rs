@@ -226,19 +226,18 @@ mod test {
         types::DelayedFieldValue,
         FakeAggregatorView,
     };
-    use aptos_types::{
-        delayed_fields::PanicError,
+    use claims::{assert_err, assert_none, assert_ok, assert_ok_eq, assert_some_eq};
+    use move_binary_format::errors::{PartialVMError, PartialVMResult};
+    use move_core_types::{value::MoveTypeLayout, vm_status::StatusCode};
+    use once_cell::sync::Lazy;
+    use starcoin_types::delayed_fields::PanicError;
+    use starcoin_vm_types::{
         state_store::{
             state_key::StateKey,
             state_value::{StateValue, StateValueMetadata},
         },
         write_set::WriteOp,
     };
-    use claims::{assert_err, assert_none, assert_ok, assert_ok_eq, assert_some_eq};
-    use move_binary_format::errors::{PartialVMError, PartialVMResult};
-    use move_core_types::{value::MoveTypeLayout, vm_status::StatusCode};
-    use once_cell::sync::Lazy;
-    use starcoin_vm_types::write_set::WriteOp;
     use std::{
         collections::{BTreeMap, HashSet},
         sync::Arc,

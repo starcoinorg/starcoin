@@ -1221,7 +1221,7 @@ impl From<TransactionOutput> for TransactionOutputView {
                 }
                 StateKeyInner::TableItem { handle, key } => {
                     let table_item = TableItemView {
-                        handle: handle.clone(),
+                        handle: *handle,
                         key: StrView::from(key.to_vec()),
                     };
                     table_item_write_set.push((table_item, op));
@@ -1936,7 +1936,7 @@ impl From<StateKey> for StateKeyView {
         match state_key.inner() {
             StateKeyInner::AccessPath(access_path) => Self::AccessPath(access_path.clone()),
             StateKeyInner::TableItem { handle, key } => Self::TableItem(TableItemView {
-                handle: handle.clone(),
+                handle: *handle,
                 key: StrView::from(key.to_vec()),
             }),
             StateKeyInner::Raw(_) => todo!("not support raw key"),

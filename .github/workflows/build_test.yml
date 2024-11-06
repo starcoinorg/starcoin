@@ -29,4 +29,4 @@ jobs:
       - name: run cargo check
         uses: actions-rs/cargo@v1
         with:
-          command: check
+          command: clippy

@@ -13,7 +13,7 @@ use proptest::{
     collection::{btree_map, hash_map, vec},
     prelude::*,
 };
-use rand::{rngs::StdRng, Rng, SeedableRng};
+use rand_0_7_3::{rngs::StdRng, Rng, SeedableRng};
 use starcoin_crypto::hash::{HashValue, *};
 use std::collections::HashMap;
 use std::ops::Bound;

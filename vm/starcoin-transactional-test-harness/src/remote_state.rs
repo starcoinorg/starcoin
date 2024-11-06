@@ -302,7 +302,7 @@ impl RemoteRpcAsyncClient {
     }
 
     pub async fn get_module_async(&self, module_id: &ModuleId) -> VMResult<Option<Vec<u8>>> {
-        let state_key = StateKey::module_id(&module_id);
+        let state_key = StateKey::module_id(module_id);
         let state_with_proof: StateWithProofView = self
             .state_client
             .get_with_proof_by_root(state_key, self.state_root)
@@ -454,19 +454,19 @@ impl TStateView for RemoteViewer {
                 DataPath::Code(m) => Ok(self
                     .get_module(&ModuleId::new(access_path.address, m.clone()))
                     .map_err(|_| StateviewError::Other("get_module error".to_string()))?
-                    .map(|v| StateValue::from(v))),
+                    .map(StateValue::from)),
                 DataPath::Resource(s) => {
                     let ret = self
-                        .get_resource(*&access_path.address, s)
+                        .get_resource(access_path.address, s)
                         .map_err(|_| StateviewError::Other("get_resource error".to_string()))?;
                     Ok(Some(StateValue::from(ret)))
                 }
                 _ => unimplemented!("todo"),
             },
             StateKeyInner::TableItem { handle, key } => Ok(self
-                .resolve_table_entry_bytes_with_layout(&TableHandle(handle.0), &key, None)
+                .resolve_table_entry_bytes_with_layout(&TableHandle(handle.0), key, None)
                 .map_err(|_| StateviewError::Other("table_item".to_string()))?
-                .map(|v| StateValue::from(v))),
+                .map(StateValue::from)),
             _ => todo!(),
         }
     }

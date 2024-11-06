@@ -151,11 +151,11 @@ impl TStateView for RemoteChainStateReader {
         match state_key.inner() {
             StateKeyInner::AccessPath(_access_path) => {
                 let state_proof = self.get_with_proof(state_key)?;
-                Ok(state_proof.state.map(|v| StateValue::from(v)))
+                Ok(state_proof.state.map(StateValue::from))
             }
             StateKeyInner::TableItem { handle, key } => {
                 let state_proof = self.get_with_table_item_proof(handle, key)?;
-                Ok(state_proof.key_proof.0.map(|v| StateValue::from(v)))
+                Ok(state_proof.key_proof.0.map(StateValue::from))
             }
             StateKeyInner::Raw(_) => unimplemented!(),
         }
