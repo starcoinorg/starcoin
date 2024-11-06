@@ -103,7 +103,11 @@ module starcoin_framework::stc_genesis {
 
         // Init global time
         timestamp::set_time_has_started(&starcoin_framework_account);
+
+        debug::print(&std::string::utf8(b"stc_genesis::initialize | chain_id: "));
+        debug::print(&chain_id);
         chain_id::initialize(&starcoin_framework_account, chain_id);
+
         consensus_strategy::initialize(&starcoin_framework_account, strategy);
         stc_block::initialize(&starcoin_framework_account, parent_hash);
 

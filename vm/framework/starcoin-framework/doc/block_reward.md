@@ -20,9 +20,12 @@ The module provide block rewarding calculation logic.
 <pre><code><b>use</b> <a href="account.md#0x1_account">0x1::account</a>;
 <b>use</b> <a href="block_reward_config.md#0x1_block_reward_config">0x1::block_reward_config</a>;
 <b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
+<b>use</b> <a href="create_signer.md#0x1_create_signer">0x1::create_signer</a>;
+<b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
 <b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="event.md#0x1_event">0x1::event</a>;
 <b>use</b> <a href="starcoin_coin.md#0x1_starcoin_coin">0x1::starcoin_coin</a>;
+<b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 <b>use</b> <a href="system_addresses.md#0x1_system_addresses">0x1::system_addresses</a>;
 <b>use</b> <a href="treasury.md#0x1_treasury">0x1::treasury</a>;
 <b>use</b> <a href="treasury_withdraw_dao_proposal.md#0x1_treasury_withdraw_dao_proposal">0x1::treasury_withdraw_dao_proposal</a>;
@@ -266,17 +269,26 @@ Process the given block rewards.
     <a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     current_number: u64,
     current_reward: u128,
-    current_author: <b>address</b>, _auth_key_vec: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    current_author: <b>address</b>,
+    _auth_key_vec: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     previous_block_gas_fees: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;STC&gt;
 ) <b>acquires</b> <a href="block_reward.md#0x1_block_reward_RewardQueue">RewardQueue</a> {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="block_reward.md#0x1_block_reward_process_block_reward">block_reward::process_block_reward</a> | Entered"));
+
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);
+
     <b>if</b> (current_number == 0) {
         <a href="coin.md#0x1_coin_destroy_zero">coin::destroy_zero</a>(previous_block_gas_fees);
+        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="block_reward.md#0x1_block_reward_process_block_reward">block_reward::process_block_reward</a> | Exited, current_number is 0"));
         <b>return</b>
     };
 
     <b>let</b> rewards = <b>borrow_global_mut</b>&lt;<a href="block_reward.md#0x1_block_reward_RewardQueue">RewardQueue</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>());
     <b>let</b> len = <a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(&rewards.infos);
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="block_reward.md#0x1_block_reward_process_block_reward">block_reward::process_block_reward</a> | rewards info len: "));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&len);
+
     <b>assert</b>!(
         (current_number == (rewards.reward_number + len + 1)),
         <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="block_reward.md#0x1_block_reward_ECURRENT_NUMBER_IS_WRONG">ECURRENT_NUMBER_IS_WRONG</a>)
@@ -293,17 +305,27 @@ Process the given block rewards.
     };
 
     <b>let</b> reward_delay = <a href="block_reward_config.md#0x1_block_reward_config_reward_delay">block_reward_config::reward_delay</a>();
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="block_reward.md#0x1_block_reward_process_block_reward">block_reward::process_block_reward</a> | rewards delay: "));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&reward_delay);
     <b>if</b> (len &gt;= reward_delay) {
         //pay and remove
         <b>let</b> i = len;
         <b>while</b> (i &gt; 0 && i &gt;= reward_delay) {
-            <b>let</b> <a href="block_reward.md#0x1_block_reward_RewardInfo">RewardInfo</a> { number: reward_block_number, reward: <a href="block_reward.md#0x1_block_reward">block_reward</a>, gas_fees, miner } = <a href="../../move-stdlib/doc/vector.md#0x1_vector_remove">vector::remove</a>(
+            <b>let</b> <a href="block_reward.md#0x1_block_reward_RewardInfo">RewardInfo</a> {
+                number: reward_block_number,
+                reward: <a href="block_reward.md#0x1_block_reward">block_reward</a>,
+                gas_fees,
+                miner
+            } = <a href="../../move-stdlib/doc/vector.md#0x1_vector_remove">vector::remove</a>(
                 &<b>mut</b> rewards.infos,
                 0
             );
 
             <b>let</b> gas_fee_value = (<a href="coin.md#0x1_coin_value">coin::value</a>(&gas_fees) <b>as</b> u128);
             <b>let</b> total_reward = gas_fees;
+            <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="block_reward.md#0x1_block_reward_process_block_reward">block_reward::process_block_reward</a> | total_reward: "));
+            <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="coin.md#0x1_coin_value">coin::value</a>(&total_reward));
+
             // add <a href="block.md#0x1_block">block</a> reward <b>to</b> total.
             <b>if</b> (<a href="block_reward.md#0x1_block_reward">block_reward</a> &gt; 0) {
                 // <b>if</b> no STC in Treasury, BlockReward will been 0.
@@ -311,27 +333,39 @@ Process the given block rewards.
                 <b>if</b> (treasury_balance &lt; <a href="block_reward.md#0x1_block_reward">block_reward</a>) {
                     <a href="block_reward.md#0x1_block_reward">block_reward</a> = treasury_balance;
                 };
+                <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="block_reward.md#0x1_block_reward_process_block_reward">block_reward::process_block_reward</a> | treasury_balance: "));
+                <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&treasury_balance);
                 <b>if</b> (<a href="block_reward.md#0x1_block_reward">block_reward</a> &gt; 0) {
                     <b>let</b> reward = <a href="treasury_withdraw_dao_proposal.md#0x1_treasury_withdraw_dao_proposal_withdraw_for_block_reward">treasury_withdraw_dao_proposal::withdraw_for_block_reward</a>&lt;STC&gt;(<a href="account.md#0x1_account">account</a>, <a href="block_reward.md#0x1_block_reward">block_reward</a>);
                     <a href="coin.md#0x1_coin_merge">coin::merge</a>(&<b>mut</b> total_reward, reward);
                 };
             };
+
             // distribute total.
+            <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="block_reward.md#0x1_block_reward_process_block_reward">block_reward::process_block_reward</a> | distribute total reward: "));
+            <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="coin.md#0x1_coin_value">coin::value</a>(&total_reward));
+            <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&miner);
+
             <b>if</b> (<a href="coin.md#0x1_coin_value">coin::value</a>(&total_reward) &gt; 0) {
                 <a href="coin.md#0x1_coin_deposit">coin::deposit</a>&lt;STC&gt;(miner, total_reward);
             } <b>else</b> {
                 <a href="coin.md#0x1_coin_destroy_zero">coin::destroy_zero</a>(total_reward);
             };
+
+            <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="block_reward.md#0x1_block_reward_process_block_reward">block_reward::process_block_reward</a> | before emit reward <a href="event.md#0x1_event">event</a>"));
+
             // emit reward <a href="event.md#0x1_event">event</a>.
             <a href="event.md#0x1_event_emit_event">event::emit_event</a>&lt;<a href="block_reward.md#0x1_block_reward_BlockRewardEvent">BlockRewardEvent</a>&gt;(
                 &<b>mut</b> rewards.reward_events,
                 <a href="block_reward.md#0x1_block_reward_BlockRewardEvent">BlockRewardEvent</a> {
                     block_number: reward_block_number,
-                    <a href="block_reward.md#0x1_block_reward">block_reward</a>: <a href="block_reward.md#0x1_block_reward">block_reward</a>,
+                    <a href="block_reward.md#0x1_block_reward">block_reward</a>,
                     gas_fees: gas_fee_value,
                     miner,
                 }
             );
+
+            <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="block_reward.md#0x1_block_reward_process_block_reward">block_reward::process_block_reward</a> | after emit reward <a href="event.md#0x1_event">event</a>"));
 
             rewards.reward_number = rewards.reward_number + 1;
             i = i - 1;
@@ -339,6 +373,9 @@ Process the given block rewards.
     };
 
     <a href="account.md#0x1_account_create_account_if_does_not_exist">account::create_account_if_does_not_exist</a>(current_author);
+    <b>if</b> (!<a href="coin.md#0x1_coin_is_account_registered">coin::is_account_registered</a>&lt;STC&gt;(current_author)) {
+        <a href="coin.md#0x1_coin_register">coin::register</a>&lt;STC&gt;(&<a href="create_signer.md#0x1_create_signer_create_signer">create_signer::create_signer</a>(current_author));
+    };
 
     <b>let</b> current_info = <a href="block_reward.md#0x1_block_reward_RewardInfo">RewardInfo</a> {
         number: current_number,
@@ -347,6 +384,8 @@ Process the given block rewards.
         gas_fees: <a href="coin.md#0x1_coin_zero">coin::zero</a>&lt;STC&gt;(),
     };
     <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> rewards.infos, current_info);
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="block_reward.md#0x1_block_reward_process_block_reward">block_reward::process_block_reward</a> | Exited"));
 }
 </code></pre>
 
