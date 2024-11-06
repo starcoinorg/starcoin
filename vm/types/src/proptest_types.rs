@@ -524,7 +524,7 @@ impl Arbitrary for BlockMetadata {
                     parent_hash,
                     timestamp,
                     addresses,
-                    author_public_key,
+                    _author_public_key,
                     uncles,
                     number,
                     parent_gas_used,

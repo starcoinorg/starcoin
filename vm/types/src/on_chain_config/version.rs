@@ -5,8 +5,7 @@ use crate::genesis_config::StdlibVersion;
 use crate::on_chain_config::OnChainConfig;
 use move_core_types::ident_str;
 use move_core_types::identifier::{IdentStr, Identifier};
-use move_core_types::language_storage::{StructTag, TypeTag, CORE_CODE_ADDRESS};
-use move_core_types::move_resource::{MoveResource, MoveStructType};
+use move_core_types::move_resource::MoveStructType;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
