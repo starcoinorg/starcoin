@@ -11,6 +11,7 @@ use move_core_types::metadata::Metadata;
 use move_core_types::resolver::{resource_size, ModuleResolver, ResourceResolver};
 use move_core_types::value::MoveTypeLayout;
 use move_table_extension::{TableHandle, TableResolver};
+use starcoin_gas_meter::LATEST_GAS_FEATURE_VERSION;
 use starcoin_logger::prelude::*;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_runtime_types::resolver::ExecutorView;
@@ -50,7 +51,7 @@ pub fn get_resource_group_member_from_metadata(
 /// (that tie to specialized handling in block executor), or via 'standard' interfaces
 /// for (non-group) resources and subsequent handling in the StorageAdapter itself.
 pub struct StorageAdapter<'e, E> {
-    _executor_view: &'e E,
+    executor_view: &'e E,
     _deserializer_config: DeserializerConfig,
     _resource_group_view: ResourceGroupAdapter<'e>,
     _accessed_groups: RefCell<HashSet<StateKey>>,
@@ -137,11 +138,11 @@ impl<'block, S: StateView> ModuleResolver for StateViewCache<'block, S> {
     type Error = PartialVMError;
 
     fn get_module_metadata(&self, module_id: &ModuleId) -> Vec<Metadata> {
-        RemoteStorage::new(self).get_module_metadata(module_id)
+        StorageAdapter::new(self).get_module_metadata(module_id)
     }
 
     fn get_module(&self, module_id: &ModuleId) -> Result<Option<Bytes>, Self::Error> {
-        RemoteStorage::new(self).get_module(module_id)
+        StorageAdapter::new(self).get_module(module_id)
     }
 }
 impl<'block, S: StateView> ResourceResolver for StateViewCache<'block, S> {
@@ -154,27 +155,34 @@ impl<'block, S: StateView> ResourceResolver for StateViewCache<'block, S> {
         metadata: &[Metadata],
         layout: Option<&MoveTypeLayout>,
     ) -> Result<(Option<Bytes>, usize), Self::Error> {
-        RemoteStorage::new(self)
+        StorageAdapter::new(self)
             .get_resource_bytes_with_metadata_and_layout(address, struct_tag, metadata, layout)
     }
 }
 
-// Adapter to convert a `StateView` into a `RemoteCache`.
-pub struct RemoteStorage<'a, S>(&'a S);
-
-impl<'a, S: StateView> RemoteStorage<'a, S> {
+impl<'a, S: StateView> StorageAdapter<'a, S> {
     pub fn new(state_store: &'a S) -> Self {
-        Self(state_store)
+        Self {
+            executor_view: state_store,
+            _deserializer_config: DeserializerConfig::new(0, 0),
+            _resource_group_view: ResourceGroupAdapter::new(
+                None,
+                state_store,
+                LATEST_GAS_FEATURE_VERSION,
+                false,
+            ),
+            _accessed_groups: RefCell::new(HashSet::new()),
+        }
     }
 
     pub fn get(&self, key: &StateKey) -> Result<Option<StateValue>, PartialVMError> {
-        self.0
+        self.executor_view
             .get_state_value(key)
             .map_err(|_| PartialVMError::new(StatusCode::STORAGE_ERROR))
     }
 }
 
-impl<'a, S: StateView> ModuleResolver for RemoteStorage<'a, S> {
+impl<'a, S: StateView> ModuleResolver for StorageAdapter<'a, S> {
     type Error = PartialVMError;
 
     fn get_module_metadata(&self, module_id: &ModuleId) -> Vec<Metadata> {
@@ -197,7 +205,7 @@ impl<'a, S: StateView> ModuleResolver for RemoteStorage<'a, S> {
         self.get(&key).map(|r| r.map(|v| v.bytes().clone()))
     }
 }
-impl<'a, S: StateView> ResourceResolver for RemoteStorage<'a, S> {
+impl<'a, S: StateView> ResourceResolver for StorageAdapter<'a, S> {
     type Error = PartialVMError;
 
     // TODO(simon): don't ignore metadata and layout
@@ -216,15 +224,15 @@ impl<'a, S: StateView> ResourceResolver for RemoteStorage<'a, S> {
     }
 }
 
-impl<'a, S> Deref for RemoteStorage<'a, S> {
+impl<'a, S> Deref for StorageAdapter<'a, S> {
     type Target = S;
 
     fn deref(&self) -> &Self::Target {
-        self.0
+        self.executor_view
     }
 }
 
-impl<'a, S: StateView> TableResolver for RemoteStorage<'a, S> {
+impl<'a, S: StateView> TableResolver for StorageAdapter<'a, S> {
     // TODO(simon): don't ignore maybe_layout
     fn resolve_table_entry_bytes_with_layout(
         &self,
@@ -232,7 +240,7 @@ impl<'a, S: StateView> TableResolver for RemoteStorage<'a, S> {
         key: &[u8],
         _maybe_layout: Option<&MoveTypeLayout>,
     ) -> Result<Option<Bytes>, PartialVMError> {
-        self.0
+        self.executor_view
             .get_state_value(&StateKey::table_item(&(*handle).into(), key))
             .map(|r| r.map(|v| v.bytes().clone()))
             .map_err(|e| {
@@ -240,7 +248,7 @@ impl<'a, S: StateView> TableResolver for RemoteStorage<'a, S> {
             })
     }
 }
-impl<'a, S: StateView> CompiledModuleView for RemoteStorage<'a, S> {
+impl<'a, S: StateView> CompiledModuleView for StorageAdapter<'a, S> {
     type Item = CompiledModule;
     fn view_compiled_module(&self, id: &ModuleId) -> anyhow::Result<Option<Self::Item>> {
         let module = match self.get_module(id) {
@@ -252,18 +260,18 @@ impl<'a, S: StateView> CompiledModuleView for RemoteStorage<'a, S> {
 }
 
 pub trait AsMoveResolver<S> {
-    fn as_move_resolver(&self) -> RemoteStorage<S>;
+    fn as_move_resolver(&self) -> StorageAdapter<S>;
 }
 
 impl<S: StateView> AsMoveResolver<S> for S {
-    fn as_move_resolver(&self) -> RemoteStorage<S> {
-        RemoteStorage::new(self)
+    fn as_move_resolver(&self) -> StorageAdapter<S> {
+        StorageAdapter::new(self)
     }
 }
 
-impl<'a, S: StateView> AsExecutorView for RemoteStorage<'a, S> {
+impl<'a, S: StateView> AsExecutorView for StorageAdapter<'a, S> {
     fn as_executor_view(&self) -> &dyn ExecutorView {
-        self.0
+        self.executor_view
     }
 }
 

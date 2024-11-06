@@ -55,7 +55,7 @@ use starcoin_types::{
     transaction::RawUserTransaction,
 };
 use starcoin_vm_runtime::session::SerializedReturnValues;
-use starcoin_vm_runtime::{data_cache::RemoteStorage, starcoin_vm::StarcoinVM};
+use starcoin_vm_runtime::{data_cache::StorageAdapter, starcoin_vm::StarcoinVM};
 use starcoin_vm_types::account_config::{
     association_address, core_code_address, STC_TOKEN_CODE_STR,
 };
@@ -713,7 +713,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             None,
         )?;
 
-        let move_resolver = RemoteStorage::new(&self.context.storage);
+        let move_resolver = StorageAdapter::new(&self.context.storage);
         let annotator = move_resource_viewer::MoveValueAnnotator::new(move_resolver);
         let rets = rets
             .into_iter()
@@ -1038,7 +1038,7 @@ impl<'a> StarcoinTestAdapter<'a> {
 
 #[allow(dead_code)]
 fn view_resource_in_move_storage(
-    storage: RemoteStorage<ChainStateDB>,
+    storage: StorageAdapter<ChainStateDB>,
     address: AccountAddress,
     module: &ModuleId,
     resource: &IdentStr,
@@ -1389,7 +1389,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         _resource: &IdentStr,
         _type_args: Vec<TypeTag>,
     ) -> anyhow::Result<(String, Value)> {
-        let _s = RemoteStorage::new(&self.context.storage);
+        let _s = StorageAdapter::new(&self.context.storage);
         // view_resource_in_move_storage(&s, address, module, resource, type_args)
         unimplemented!()
     }

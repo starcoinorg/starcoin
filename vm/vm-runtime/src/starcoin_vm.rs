@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::access_path_cache::AccessPathCache;
-use crate::data_cache::{AsMoveResolver, RemoteStorage, StateViewCache};
+use crate::data_cache::{AsMoveResolver, StateViewCache, StorageAdapter};
 use crate::errors::{
     convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
 };
@@ -108,7 +108,7 @@ impl StarcoinVM {
         let gas_params = StarcoinGasParameters::initial();
         let native_params = gas_params.natives.clone();
         // todo: double check if it's ok to use RemoteStorage as StarcoinMoveResolver
-        let resolver = RemoteStorage::new(state);
+        let resolver = StorageAdapter::new(state);
         let inner = MoveVmExt::new(
             native_params.clone(),
             gas_params.vm.misc.clone(),
@@ -138,7 +138,7 @@ impl StarcoinVM {
         let gas_params = StarcoinGasParameters::initial();
         let native_params = gas_params.natives.clone();
         // todo: double check if it's ok to use RemoteStorage as StarcoinMoveResolver
-        let resolver = RemoteStorage::new(state);
+        let resolver = StorageAdapter::new(state);
         let inner = MoveVmExt::new(
             native_params.clone(),
             gas_params.vm.misc.clone(),
@@ -213,7 +213,7 @@ impl StarcoinVM {
     }
 
     fn load_configs_impl<S: StateView>(&mut self, state: &S) -> Result<(), Error> {
-        let remote_storage = RemoteStorage::new(state);
+        let remote_storage = StorageAdapter::new(state);
         self.version = Version::fetch_config(&remote_storage);
         // move version can be none.
         self.move_version = MoveLanguageVersion::fetch_config(&remote_storage);
