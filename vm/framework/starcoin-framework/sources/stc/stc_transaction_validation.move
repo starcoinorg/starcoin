@@ -5,21 +5,18 @@ module starcoin_framework::stc_transaction_validation {
 
     use std::error;
     use std::signer;
-    use starcoin_framework::easy_gas;
+
+    use starcoin_framework::account;
+    use starcoin_framework::chain_id;
+    use starcoin_framework::coin;
+    use starcoin_framework::create_signer;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::stc_transaction_fee;
-    use starcoin_framework::create_signer;
-    use starcoin_std::math128;
-    use starcoin_framework::stc_util;
-    use starcoin_framework::coin;
-    use starcoin_framework::account;
-
     use starcoin_framework::stc_transaction_package_validation;
-    use starcoin_framework::transaction_publish_option;
     use starcoin_framework::stc_transaction_timeout;
-
-    use starcoin_framework::chain_id;
+    use starcoin_framework::stc_util;
     use starcoin_framework::system_addresses;
+    use starcoin_framework::transaction_publish_option;
 
     const TXN_PAYLOAD_TYPE_SCRIPT: u8 = 0;
     const TXN_PAYLOAD_TYPE_PACKAGE: u8 = 1;
@@ -61,14 +58,6 @@ module starcoin_framework::stc_transaction_validation {
         // specified by the transaction
         assert!(chain_id::get() == chain_id, error::invalid_argument(EPROLOGUE_BAD_CHAIN_ID));
 
-        let (stc_price, scaling_factor) = if (!stc_util::is_stc<TokenType>()) {
-            // TODO(BobOng): [framework compatible] to debug easy gas oracle
-            // (easy_gas::gas_oracle_read<TokenType>(), easy_gas::get_scaling_factor<TokenType>())
-            (1, 1)
-        } else {
-            (1, 1)
-        };
-
         txn_prologue<TokenType>(
             &account,
             txn_sender,
@@ -76,8 +65,6 @@ module starcoin_framework::stc_transaction_validation {
             txn_authentication_key_preimage,
             txn_gas_price,
             txn_max_gas_units,
-            stc_price,
-            scaling_factor,
         );
 
         assert!(
@@ -101,16 +88,14 @@ module starcoin_framework::stc_transaction_validation {
             );
         } else if (txn_payload_type == TXN_PAYLOAD_TYPE_SCRIPT) {
             assert!(
-                transaction_publish_option::is_script_allowed(
-                    signer::address_of(&account),
-                ),
+                transaction_publish_option::is_script_allowed(signer::address_of(&account), ),
                 error::invalid_argument(EPROLOGUE_SCRIPT_NOT_ALLOWED),
             );
         };
         // do nothing for TXN_PAYLOAD_TYPE_SCRIPT_FUNCTION
     }
 
-
+    /// Migration from old StarcoinFramework TransactionManager::epilogue
     /// The epilogue is invoked at the end of transactions.
     /// It collects gas and bumps the sequence number
     public fun epilogue<TokenType>(
@@ -128,15 +113,6 @@ module starcoin_framework::stc_transaction_validation {
         success: bool,
     ) {
         system_addresses::assert_starcoin_framework(&account);
-
-        let (stc_price, scaling_factor) = if (stc_util::is_stc<TokenType>()) {
-            // TODO(BobOng): [framework compatible] to debug easy gas oracle
-           // (easy_gas::gas_oracle_read<TokenType>(), easy_gas::get_scaling_factor<TokenType>())
-            (1, 1)
-        }else {
-            (1, 1)
-        };
-
         txn_epilogue<TokenType>(
             &account,
             txn_sender,
@@ -145,8 +121,6 @@ module starcoin_framework::stc_transaction_validation {
             txn_gas_price,
             txn_max_gas_units,
             gas_units_remaining,
-            stc_price,
-            scaling_factor
         );
         if (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE) {
             stc_transaction_package_validation::package_txn_epilogue(
@@ -167,8 +141,10 @@ module starcoin_framework::stc_transaction_validation {
     const EINSUFFICIENT_BALANCE: u64 = 10;
     const ECOIN_DEPOSIT_IS_ZERO: u64 = 15;
     const EDEPRECATED_FUNCTION: u64 = 19;
+    const EBAD_TRANSACTION_FEE_TOKEN: u64 = 18;
     const EPROLOGUE_SIGNER_ALREADY_DELEGATED: u64 = 200;
 
+    /// Migration from old StarcoinFramework Account::txn_prologue
     public fun txn_prologue<TokenType>(
         account: &signer,
         txn_sender: address,
@@ -176,8 +152,6 @@ module starcoin_framework::stc_transaction_validation {
         _txn_authentication_key_preimage: vector<u8>,
         txn_gas_price: u64,
         txn_max_gas_units: u64,
-        stc_price: u128,
-        stc_price_scaling: u128
     ) {
         system_addresses::assert_starcoin_framework(account);
 
@@ -191,55 +165,40 @@ module starcoin_framework::stc_transaction_validation {
 
         // TODO(BobOng): [framework upgrade] txn_authentication_key_preimage to be check
         // // Load the transaction sender's account
-        // //let sender_account = borrow_global_mut<Account>(txn_sender);
-        // if (account::is_dummy_auth_key_v2(txn_sender)) {
+        // if (is_dummy_auth_key(sender_account)){
         //     // if sender's auth key is empty, use address as auth key for check transaction.
         //     assert!(
         //         Authenticator::derived_address(Hash::sha3_256(txn_authentication_key_preimage)) == txn_sender,
-        //         error::invalid_argument(EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY)
+        //         Errors::invalid_argument(EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY)
         //     );
-        // } else {
+        // }else{
         //     // Check that the hash of the transaction's public key matches the account's auth key
         //     assert!(
-        //         hash::sha3_256(txn_authentication_key_preimage) == account::authentication_key(txn_sender),
-        //         error::invalid_argument(EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY)
+        //         Hash::sha3_256(txn_authentication_key_preimage) == *&sender_account.authentication_key,
+        //         Errors::invalid_argument(EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY)
         //     );
         // };
 
-        // Check that the account has enough balance for all of the gas
-        let (max_transaction_fee_stc, max_transaction_fee_token) =
-            transaction_fee_simulate(
-                txn_gas_price,
-                txn_max_gas_units,
-                0,
-                stc_price,
-                stc_price_scaling
-            );
 
         assert!(
-            max_transaction_fee_stc <= MAX_U64,
+            (txn_gas_price as u128) * (txn_max_gas_units as u128) <= MAX_U64,
             error::invalid_argument(EPROLOGUE_CANT_PAY_GAS_DEPOSIT),
         );
 
-        if (max_transaction_fee_stc > 0) {
+        let max_transaction_fee = txn_gas_price * txn_max_gas_units;
+        if (max_transaction_fee > 0) {
+            assert!(
+                stc_util::is_stc<TokenType>(),
+                error::invalid_argument(EBAD_TRANSACTION_FEE_TOKEN)
+            );
+
+            let balance_amount = coin::balance<TokenType>(txn_sender);
+            assert!(balance_amount >= max_transaction_fee, error::invalid_argument(EPROLOGUE_CANT_PAY_GAS_DEPOSIT));
+
             assert!(
                 (txn_sequence_number as u128) < MAX_U64,
                 error::out_of_range(EPROLOGUE_SEQUENCE_NUMBER_TOO_BIG)
             );
-            let balance_amount_token = coin::balance<TokenType>(txn_sender);
-            assert!(
-                balance_amount_token >= (max_transaction_fee_token as u64),
-                error::invalid_argument(EPROLOGUE_CANT_PAY_GAS_DEPOSIT)
-            );
-
-            if (!stc_util::is_stc<TokenType>()) {
-                let gas_fee_address = easy_gas::get_gas_fee_address();
-                let balance_amount_stc = (coin::balance<STC>(gas_fee_address) as u128);
-                assert!(
-                    balance_amount_stc >= max_transaction_fee_stc,
-                    error::invalid_argument(EPROLOGUE_CANT_PAY_GAS_DEPOSIT)
-                );
-            }
         };
         // Check that the transaction sequence number matches the sequence number of the account
         assert!(
@@ -252,6 +211,7 @@ module starcoin_framework::stc_transaction_validation {
         );
     }
 
+    /// Migration from old StarcoinFramework Account::txn_eiplogue
     /// The epilogue is invoked at the end of transactions.
     /// It collects gas and bumps the sequence number
     public fun txn_epilogue<TokenType>(
@@ -262,82 +222,32 @@ module starcoin_framework::stc_transaction_validation {
         txn_gas_price: u64,
         txn_max_gas_units: u64,
         gas_units_remaining: u64,
-        stc_price: u128,
-        stc_price_scaling: u128,
     ) {
         system_addresses::assert_starcoin_framework(account);
 
 
         // Charge for gas
-        let (transaction_fee_amount_stc, transaction_fee_amount_token) =
-            transaction_fee_simulate(
-                txn_gas_price,
-                txn_max_gas_units,
-                gas_units_remaining,
-                stc_price,
-                stc_price_scaling
-            );
+        let transaction_fee_amount =(txn_gas_price * (txn_max_gas_units - gas_units_remaining) as u128);
         assert!(
-            coin::balance<TokenType>(txn_sender) >= (transaction_fee_amount_token as u64),
+            coin::balance<STC>(txn_sender) >= (transaction_fee_amount as u64),
             error::out_of_range(EINSUFFICIENT_BALANCE)
         );
-
-        if (!stc_util::is_stc<TokenType>()) {
-            let gas_fee_address = easy_gas::get_gas_fee_address();
-            let genesis_balance_amount_stc = (coin::balance<STC>(gas_fee_address) as u128);
-            assert!(genesis_balance_amount_stc >= transaction_fee_amount_stc,
-                error::invalid_argument(EPROLOGUE_CANT_PAY_GAS_DEPOSIT)
-            );
-        };
 
         // Bump the sequence number
         account::increment_sequence_number(txn_sender);
 
         // TODO(BobOng): [framework upgrade] txn_authentication_key_preimage to be check
         // Set auth key when user send transaction first.
-        // if (Account::is_dummy_auth_key_v2(txn_sender) && !Vector::is_empty(&txn_authentication_key_preimage)) {
-        //     Account::set_authentication_key(txn_sender, Hash::sha3_256(txn_authentication_key_preimage));
+        // if (is_dummy_auth_key(sender_account) && !vector::is_empty(&txn_authentication_key_preimage)){
+        //     sender_account.authentication_key = Hash::sha3_256(txn_authentication_key_preimage);
         // };
 
-        if (transaction_fee_amount_stc <= 0) {
-            return
-        };
-
-        let transaction_fee_token = coin::withdraw<TokenType>(
-            &create_signer::create_signer(txn_sender),
-            (transaction_fee_amount_token as u64)
-        );
-
-        if (!stc_util::is_stc<TokenType>()) {
-            let gas_fee_address = easy_gas::get_gas_fee_address();
-            coin::deposit<TokenType>(gas_fee_address, transaction_fee_token);
-
-            let stc_fee_token = coin::withdraw<STC>(
-                &create_signer::create_signer(gas_fee_address),
-                (transaction_fee_amount_stc as u64)
+        if (transaction_fee_amount > 0) {
+            let transaction_fee = coin::withdraw<STC>(
+                &create_signer::create_signer(txn_sender),
+                (transaction_fee_amount as u64)
             );
-            stc_transaction_fee::pay_fee(stc_fee_token);
-        } else {
-            stc_transaction_fee::pay_fee(transaction_fee_token);
+            stc_transaction_fee::pay_fee(transaction_fee);
         };
-    }
-
-    /// Simulate the transaction fee
-    ///
-    public fun transaction_fee_simulate(
-        txn_gas_price: u64,
-        txn_max_gas_units: u64,
-        gas_units_remaining: u64,
-        stc_price: u128,
-        stc_price_scaling: u128,
-    ): (u128, u128) {
-        let transaction_fee_stc = (txn_gas_price * (txn_max_gas_units - gas_units_remaining) as u128);
-        let transaction_fee_token = math128::mul_div(transaction_fee_stc, stc_price, stc_price_scaling);
-        transaction_fee_token = if (transaction_fee_token == 0 && transaction_fee_stc > 0) {
-            1
-        } else {
-            transaction_fee_token
-        };
-        (transaction_fee_stc, transaction_fee_token)
     }
 }

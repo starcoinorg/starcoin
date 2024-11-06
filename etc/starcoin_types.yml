@@ -39,9 +39,6 @@ BlockMetadata:
     - timestamp: U64
     - author:
         TYPENAME: AccountAddress
-    - author_auth_key:
-        OPTION:
-          TYPENAME: AuthenticationKey
     - uncles: U64
     - number: U64
     - chain_id:

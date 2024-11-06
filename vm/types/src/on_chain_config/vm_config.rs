@@ -11,7 +11,7 @@ use starcoin_crypto::HashValue;
 use starcoin_gas_algebra::{CostTable, GasConstants};
 
 pub const SCRIPT_HASH_LENGTH: usize = HashValue::LENGTH;
-const VM_CONFIG_MODULE_NAME: &str = "VMConfig";
+const VM_CONFIG_MODULE_NAME: &str = "vm_config";
 pub static G_VM_CONFIG_IDENTIFIER: Lazy<Identifier> =
     Lazy::new(|| Identifier::new(VM_CONFIG_MODULE_NAME).unwrap());
 pub static G_INSTRUCTION_SCHEDULE_IDENTIFIER: Lazy<Identifier> =
