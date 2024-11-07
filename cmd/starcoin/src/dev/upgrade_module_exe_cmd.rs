@@ -6,7 +6,7 @@ use crate::dev::dev_helper;
 use crate::view::{ExecuteResultView, TransactionOptions};
 use crate::StarcoinOpt;
 use anyhow::Result;
-use clap::Parser;
+use clap::{value_parser, Parser};
 use scmd::{CommandAction, ExecContext};
 use starcoin_vm_types::transaction::TransactionPayload;
 use std::path::PathBuf;
@@ -18,11 +18,11 @@ pub struct UpgradeModuleExeOpt {
     #[clap(flatten)]
     transaction_opts: TransactionOptions,
 
-    #[clap(
+    #[arg(
         short = 'm',
         name = "mv-or-package-file",
         long = "mv-or-package-file",
-        parse(from_os_str)
+        value_parser = value_parser!(std::ffi::OsString)
     )]
     /// path for module or package file.
     mv_or_package_file: PathBuf,

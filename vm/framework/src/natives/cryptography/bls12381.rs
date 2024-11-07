@@ -12,7 +12,7 @@ use move_vm_types::{
     values::{Struct, Value},
 };
 #[cfg(feature = "testing")]
-use rand_core::OsRng;
+use rand_core_0_5_1::OsRng;
 use smallvec::{smallvec, SmallVec};
 use starcoin_crypto::{bls12381, traits};
 #[cfg(feature = "testing")]

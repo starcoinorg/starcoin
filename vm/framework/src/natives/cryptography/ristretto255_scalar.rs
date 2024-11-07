@@ -8,9 +8,7 @@ use curve25519_dalek::scalar::Scalar;
 use move_core_types::gas_algebra::{NumArgs, NumBytes};
 use move_vm_types::{loaded_data::runtime_types::Type, values::Value};
 #[cfg(feature = "testing")]
-use rand::thread_rng;
-#[cfg(feature = "testing")]
-use rand_core::RngCore;
+use rand::{thread_rng, RngCore};
 use sha2::Sha512;
 use smallvec::{smallvec, SmallVec};
 use starcoin_gas_schedule::gas_params::natives::starcoin_framework::*;

@@ -46,16 +46,17 @@ pub struct GenerateMultisigTxnOpt {
     /// script function to execute, example: 0x1::TransferScripts::peer_to_peer_v2
     script_function: Option<FunctionIdView>,
 
-    #[clap(
+    #[arg(
     short = 't',
     long = "type_tag",
     name = "type-tag",
     help = "can specify multi type_tag",
-    parse(try_from_str = parse_type_tag)
+    value_parser = parse_type_tag
     )]
     type_tags: Option<Vec<TypeTag>>,
 
-    #[clap(long = "arg", name = "transaction-arg", parse(try_from_str = parse_transaction_argument_advance))]
+    #[arg(long = "arg", name = "transaction-arg", value_parser = parse_transaction_argument_advance
+    )]
     /// transaction arguments
     args: Option<Vec<TransactionArgument>>,
 

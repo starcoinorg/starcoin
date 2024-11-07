@@ -29,7 +29,7 @@ where
         arg_matches: &ArgMatches,
     ) -> Result<(HistoryOp, Value)>;
 
-    fn get_command(&mut self) -> &mut Command<'static>;
+    fn get_command(&mut self) -> &mut Command;
 }
 
 pub struct ExecContext<State, GlobalOpt, Opt>
@@ -77,7 +77,7 @@ where
     Action: CommandAction<State = State, GlobalOpt = GlobalOpt, Opt = Opt, ReturnItem = ReturnItem>
         + 'static,
 {
-    app: Command<'static>,
+    app: Command,
     action: Option<Action>,
     subcommands: HashMap<String, Box<dyn CommandExec<State, GlobalOpt>>>,
     global_opt: PhantomData<GlobalOpt>,
@@ -88,7 +88,7 @@ impl<State, GlobalOpt> CustomCommand<State, GlobalOpt, EmptyOpt, (), NoneAction<
 where
     GlobalOpt: Parser,
 {
-    pub fn with_name(name: &str) -> Self {
+    pub fn with_name(name: &'static str) -> Self {
         Self {
             app: Command::new(name),
             action: None,
@@ -163,7 +163,7 @@ where
         self.app.get_name()
     }
 
-    pub fn app(&self) -> &Command<'static> {
+    pub fn app(&self) -> &Command {
         &self.app
     }
 
@@ -272,7 +272,7 @@ where
         Ok(value)
     }
 
-    fn get_command(&mut self) -> &mut Command<'static> {
+    fn get_command(&mut self) -> &mut Command {
         &mut self.app
     }
 }

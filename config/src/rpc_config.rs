@@ -30,22 +30,22 @@ const DEFAULT_TXN_INFO_QUEYR_MAX_RANGE: u64 = 32;
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Parser)]
 pub struct HttpConfiguration {
     #[serde(skip)]
-    #[clap(name = "disable-http-rpc", long)]
+    #[arg(name = "disable-http-rpc", long)]
     ///disable http jsonrpc endpoint
     pub disable: bool,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(name = "http-apis", long)]
+    #[arg(name = "http-apis", long)]
     ///rpc apiset to serve
     pub apis: Option<ApiSet>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(name = "http-port", long)]
+    #[arg(name = "http-port", long)]
     /// Default http port is 9850
     pub port: Option<u16>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(
+    #[arg(
         name = "http-max-request-body",
         long,
         help = "max request body in bytes"
@@ -54,17 +54,17 @@ pub struct HttpConfiguration {
     pub max_request_body_size: Option<usize>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(name = "http-threads", long)]
+    #[arg(name = "http-threads", long)]
     /// How many thread to use for http service.
     pub threads: Option<usize>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(name = "http-ip-headers", long, use_value_delimiter = true)]
+    #[arg(name = "http-ip-headers", long, use_value_delimiter = true)]
     /// list of http header which identify a ip, Default: X-Real-IP,X-Forwarded-For
     pub ip_headers: Option<Vec<String>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(name = "unsupported-rpc-protocols", long, use_value_delimiter = true)]
+    #[arg(name = "unsupported-rpc-protocols", long, use_value_delimiter = true)]
     unsupported_rpc_protocols: Option<Vec<String>>,
 }
 
@@ -255,20 +255,19 @@ pub struct ApiQuotaConfiguration {
     )]
     pub default_global_api_quota: Option<ApiQuotaConfig>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(
-    name = "jsonrpc-custom-global-api-quota",
-    long,
-    help = "customize api quota, eg: node.info=100/s",
-    number_of_values = 1,
-    parse(try_from_str = parse_key_val)
+    #[arg(
+        name = "jsonrpc-custom-global-api-quota",
+        long,
+        help = "customize api quota, eg: node.info=100/s",
+        number_of_values = 1,
+        value_parser = parse_key_val::<String, ApiQuotaConfig>
     )]
     /// number_of_values = 1 forces the user to repeat the -D option for each key-value pair:
     /// my_program -D a=1 -D b=2
     pub custom_global_api_quota: Option<Vec<(String, ApiQuotaConfig)>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(
+    #[arg(
         name = "jsonrpc-default-user-api-quota",
         long,
         help = "default api quota of user, eg: 1000/s"
@@ -276,12 +275,12 @@ pub struct ApiQuotaConfiguration {
     pub default_user_api_quota: Option<ApiQuotaConfig>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(
-    name = "jsonrpc-custom-user-api-quota",
-    long,
-    help = "customize api quota of user, eg: node.info=100/s",
-    number_of_values = 1,
-    parse(try_from_str = parse_key_val)
+    #[arg(
+        name = "jsonrpc-custom-user-api-quota",
+        long,
+        help = "customize api quota of user, eg: node.info=100/s",
+        number_of_values = 1,
+        value_parser = parse_key_val::<String, ApiQuotaConfig>
     )]
     pub custom_user_api_quota: Option<Vec<(String, ApiQuotaConfig)>>,
 }

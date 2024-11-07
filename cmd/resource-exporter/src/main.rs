@@ -1,4 +1,4 @@
-use clap::Parser;
+use clap::{value_parser, Parser};
 use serde::{ser::SerializeMap, Serialize, Serializer};
 use starcoin_crypto::HashValue;
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
@@ -152,10 +152,10 @@ impl serde::Serialize for MoveValue {
 #[derive(Debug, Clone, Parser)]
 #[clap(name = "resource-exporter", about = "onchain resource exporter")]
 pub struct ExporterOptions {
-    #[clap(long, short = 'o', parse(from_os_str))]
+    #[clap(long, short = 'o', value_parser = value_parser!(std::ffi::OsString))]
     /// output file, like accounts.csv
     pub output: PathBuf,
-    #[clap(long, short = 'i', parse(from_os_str))]
+    #[clap(long, short = 'i', value_parser = value_parser!(std::ffi::OsString))]
     /// starcoin node db path. like ~/.starcoin/barnard/starcoindb/db/starcoindb
     pub db_path: PathBuf,
 
@@ -166,12 +166,12 @@ pub struct ExporterOptions {
     #[clap(
         short='r',
         default_value = "0x1::Account::Balance<0x1::STC::STC>",
-        parse(try_from_str=parse_struct_tag)
+        value_parser=parse_struct_tag
     )]
     /// resource struct tag.
     resource_type: StructTag,
 
-    #[clap(min_values = 1, required = true)]
+    #[arg(num_args(1..), required = true)]
     /// fields of the struct to output. it use pointer syntax of serde_json.
     /// like: /authentication_key /sequence_number /deposit_events/counter
     pub fields: Vec<String>,

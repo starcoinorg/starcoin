@@ -5,7 +5,7 @@ name = "tests"
 [dependencies]
 anyhow = { workspace = true }
 bcs = { workspace = true }
-clap_4 = { features = ["derive"], workspace = true }
+clap = { features = ["derive"], workspace = true }
 dashmap = { workspace = true }
 either = { workspace = true }
 hex = { workspace = true }

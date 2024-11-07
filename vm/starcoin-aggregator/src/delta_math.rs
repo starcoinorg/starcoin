@@ -244,7 +244,6 @@ impl DeltaHistory {
         )
     }
 
-    #[allow(clippy::incompatible_msrv)]
     pub fn offset_and_merge_history(
         &self,
         prev_delta: &SignedU128,

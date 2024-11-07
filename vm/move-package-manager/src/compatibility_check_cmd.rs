@@ -6,7 +6,6 @@ use anyhow::{ensure, Ok};
 use clap::Parser;
 use itertools::Itertools;
 use move_binary_format::CompiledModule;
-use move_cli::sandbox::utils::PackageContext;
 use move_cli::Move;
 use move_core_types::resolver::ModuleResolver;
 use move_package::compilation::compiled_package::CompiledUnitWithSource;
@@ -39,8 +38,14 @@ pub fn handle_compatibility_check(
     move_args: &Move,
     cmd: CompatibilityCheckCommand,
 ) -> anyhow::Result<()> {
-    let pkg_ctx = PackageContext::new(&move_args.package_path, &move_args.build_config)?;
-    let pkg = pkg_ctx.package();
+    let package_path = match move_args.package_path {
+        Some(_) => move_args.package_path.clone(),
+        None => Some(std::env::current_dir()?),
+    };
+    let pkg = move_args
+        .build_config
+        .clone()
+        .compile_package(package_path.as_ref().unwrap(), &mut std::io::stdout())?;
 
     let rpc = cmd.rpc.unwrap_or_else(|| {
         format!(

@@ -7,7 +7,6 @@ use codespan_reporting::diagnostic::Severity;
 use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use move_binary_format::file_format_common::VERSION_4;
 use move_binary_format::CompiledModule;
-use move_cli::sandbox::utils::PackageContext;
 use move_cli::Move;
 use move_compiler::compiled_unit::{CompiledUnit, NamedCompiledModule};
 use move_core_types::language_storage::TypeTag;
@@ -25,7 +24,7 @@ pub const DEFAULT_RELEASE_DIR: &str = "release";
 
 #[derive(Parser)]
 pub struct Release {
-    #[clap(name = "move-version", long = "move-version", default_value="6", possible_values=&["5", "6"])]
+    #[arg(name = "move-version", long = "move-version", default_value="6", value_parser = clap::builder::PossibleValuesParser::new(["5", "6"]))]
     /// specify the move lang version for the release.
     /// currently, only v6 are supported.
     language_version: u8,
@@ -67,8 +66,10 @@ pub fn handle_release(
         Some(_) => move_args.package_path.clone(),
         None => Some(std::env::current_dir()?),
     };
-    let pkg_ctx = PackageContext::new(&package_path, &move_args.build_config)?;
-    let pkg = pkg_ctx.package();
+    let pkg = move_args
+        .build_config
+        .clone()
+        .compile_package(package_path.as_ref().unwrap(), &mut std::io::stdout())?;
     let resolved_graph = move_args
         .build_config
         .clone()
@@ -83,6 +84,8 @@ pub fn handle_release(
             ModelConfig {
                 all_files_as_targets: false,
                 target_filter: None,
+                compiler_version: Default::default(),
+                language_version: Default::default(),
             },
         )
         .unwrap();

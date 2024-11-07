@@ -212,9 +212,9 @@ default-members = [
     "vm/gas-algebra",
     "vm/gas-schedule",
     "vm/move-explain",
-   #"vm/move-package-manager",
+    #"vm/move-package-manager",
     "vm/vm-status-translator",
-   "vm/starcoin-transactional-test-harness",
+    "vm/starcoin-transactional-test-harness",
     "vm/starcoin-native-interface",
     "vm/starcoin-aggregator",
     "abi/types",
@@ -259,7 +259,7 @@ homepage = "https://starcoin.org"
 license = "Apache-2.0"
 publish = false
 repository = "https://github.com/starcoinorg/starcoin"
-rust-version = "1.64"
+rust-version = "1.78.0"
 
 [workspace.dependencies]
 actix = "0.13"
@@ -300,8 +300,11 @@ bs58 = "0.3.1"
 byteorder = "1.3.4"
 bytes = { version = "1.4.0", features = ["serde"] }
 chrono = { version = "0.4.19", default-features = false, features = ["clock"] }
-clap = { version = "3", features = ["derive"] }
-clap_4 = { package = "clap", version = "4.3.9", features = ["derive", "env", "unstable-styles"] }
+clap = { version = "4.5", features = [
+    "derive",
+    "env",
+    "unstable-styles",
+] }
 cli-table = "0.3.2"
 claims = "0.7"
 test-case = "3.1.0"
@@ -465,6 +468,7 @@ quote = "1.0.16"
 rand = "0.8.5"
 rand_0_7_3 = { package = "rand", version = "0.7.3" }
 rand_core = { version = "0.6.3", default-features = false }
+rand_core_0_5_1 = { package = "rand_core", version = "0.5.1" }
 rayon = "1.6.1"
 regex = "1.6.0"
 ripemd160 = "0.9.1"
@@ -481,7 +485,7 @@ rustyline-derive = "0.6.0"
 sc-peerset = { path = "network-p2p/peerset" }
 schemars = { git = "https://github.com/starcoinorg/schemars", rev = "a64c6ddf7ca4796e090208b1476de2e53772042f" }
 scmd = { path = "commons/scmd" }
-serde = {  version = "1.0.130", features = ["derive"] }
+serde = { version = "1.0.130", features = ["derive"] }
 serde-generate = { git = "https://github.com/starcoinorg/serde-reflection", rev = "eb95fd4e3b67e08d71432b522c53833a0b855d80" }
 serde-helpers = { path = "commons/serde-helpers" }
 serde-reflection = { git = "https://github.com/starcoinorg/serde-reflection", rev = "eb95fd4e3b67e08d71432b522c53833a0b855d80" }
@@ -523,7 +527,7 @@ starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev 
 starcoin-decrypt = { path = "commons/decrypt" }
 starcoin-dev = { path = "vm/dev" }
 starcoin-executor = { path = "executor" }
-starcoin-framework-legacy = { git = "https://github.com/starcoinorg/starcoin-framework", rev = "94bcd77e80232b169cf95754ef4e87775645afcd" , package = "starcoin-framework" }
+starcoin-framework-legacy = { git = "https://github.com/starcoinorg/starcoin-framework", rev = "94bcd77e80232b169cf95754ef4e87775645afcd", package = "starcoin-framework" }
 starcoin-framework = { path = "vm/framework" }
 starcoin-sdk-builder = { path = "vm/starcoin-sdk-builder" }
 starcoin-genesis = { path = "genesis" }

@@ -1,4 +1,4 @@
-use clap::Parser;
+use clap::{value_parser, Parser};
 use move_binary_format::errors::Location;
 use starcoin_crypto::HashValue;
 use starcoin_types::{block::Block, transaction::TransactionPayload};
@@ -13,7 +13,7 @@ use crate::cmd_batch_execution::{BatchCmdExec, CmdBatchExecution};
     about = "fast verify all modules, do not execute the transactions"
 )]
 pub struct VerifyModuleOptions {
-    #[clap(long, short = 'i', parse(from_os_str))]
+    #[arg(long, short = 'i',value_parser = value_parser!(std::ffi::OsString))]
     /// input file, like accounts.csv
     pub input_path: PathBuf,
 }

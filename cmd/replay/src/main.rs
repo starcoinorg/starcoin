@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use clap::Parser;
+use clap::{value_parser, Parser};
 use sp_utils::stop_watch::start_watch;
 use starcoin_chain::verifier::Verifier;
 use starcoin_chain::verifier::{BasicVerifier, ConsensusVerifier, FullVerifier, NoneVerifier};
@@ -24,10 +24,10 @@ pub struct ReplayOpt {
     #[clap(long, short = 'n')]
     /// Chain Network to replay.
     pub net: Option<BuiltinNetworkID>,
-    #[clap(short = 'f', long, parse(from_os_str))]
+    #[clap(short = 'f', long, value_parser = value_parser!(std::ffi::OsString))]
     /// Replay data dir.
     pub from: PathBuf,
-    #[clap(short = 't', long, parse(from_os_str))]
+    #[clap(short = 't', long,value_parser = value_parser!(std::ffi::OsString))]
     /// Target dir.
     pub to: PathBuf,
     #[clap(long)]
@@ -36,7 +36,7 @@ pub struct ReplayOpt {
     #[clap(long, short = 'c', default_value = "20000")]
     /// Number of block.
     pub block_num: u64,
-    #[clap(possible_values = Verifier::variants(), ignore_case = true)]
+    #[clap(value_enum, ignore_case = true)]
     /// Verify type:  Basic, Consensus, Full, None, eg.
     pub verifier: Verifier,
     #[clap(long, short = 'w')]
