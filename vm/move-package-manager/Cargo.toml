@@ -5,8 +5,8 @@ path = "src/main.rs"
 [dependencies]
 anyhow = { workspace = true }
 bcs = { workspace = true }
-clap =  { version = "4.3.9", features = ["derive", "env", "unstable-styles"] }
-
+clap =  { workspace = true }
+clap_3 = {  package = "clap", version = "3", features = ["derive"] }
 
 
 difference = { workspace = true }
