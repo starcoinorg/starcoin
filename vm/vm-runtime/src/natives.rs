@@ -28,6 +28,7 @@ use {
 };
 
 #[cfg(feature = "testing")]
+#[allow(dead_code)]
 struct StarcoinBlankStorage;
 
 #[cfg(feature = "testing")]
@@ -117,7 +118,7 @@ impl TableResolver for StarcoinBlankStorage {
 }
 
 #[cfg(feature = "testing")]
-#[allow(clippy::redundant_closure)]
+#[allow(clippy::redundant_closure, dead_code)]
 static DUMMY_RESOLVER: Lazy<StarcoinBlankStorage> = Lazy::new(|| StarcoinBlankStorage::new());
 
 pub fn starcoin_natives(
@@ -191,6 +192,7 @@ pub fn assert_no_test_natives(err_msg: &str) {
 //}
 
 #[cfg(feature = "testing")]
+#[allow(dead_code)]
 fn unit_test_extensions_hook(exts: &mut NativeContextExtensions) {
     use starcoin_framework::natives::aggregator_natives::NativeAggregatorContext;
     use starcoin_framework::natives::code::NativeCodeContext;

@@ -66,11 +66,11 @@ pub fn starcoin_prod_vm_config(
     //       the gas schedule hasn't been updated yet.
     // todo: select gas_feature_version properly. Currently it is set to 5 by default, but the
     //  default features has VM_BINARY_FORMAT_V6 enabled.
-    let max_binary_format_version = get_max_binary_format_version(&features, None);
+    let max_binary_format_version = get_max_binary_format_version(features, None);
 
-    let max_identifier_size = get_max_identifier_size(&features);
+    let max_identifier_size = get_max_identifier_size(features);
 
-    let verifier_config = verifier_config(&features, &timed_features);
+    let verifier_config = verifier_config(features, timed_features);
 
     let mut type_max_cost = 0;
     let mut type_base_cost = 0;

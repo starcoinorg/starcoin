@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{format_err, Result};
-use clap::Parser;
+use clap::{value_parser, Parser};
 use futures::executor;
 use starcoin_faucet::{faucet::Faucet, web};
 use starcoin_rpc_client::RpcClient;
@@ -15,7 +15,7 @@ use tiny_http::Server;
 #[derive(Debug, Clone, Parser)]
 #[clap(name = "starcoin-faucet", about = "Starcoin")]
 pub struct FaucetOpt {
-    #[clap(long, short = 'i', parse(from_os_str))]
+    #[clap(long, short = 'i', value_parser = value_parser!(std::ffi::OsString))]
     pub ipc_path: PathBuf,
     #[clap(long, short = 'a', default_value = "0.0.0.0:8000")]
     pub server_addr: String,

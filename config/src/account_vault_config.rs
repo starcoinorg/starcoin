@@ -3,7 +3,7 @@
 
 use crate::{BaseConfig, ConfigModule, StarcoinOpt};
 use anyhow::Result;
-use clap::Parser;
+use clap::{value_parser, Parser};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -15,13 +15,13 @@ static G_DEFAULT_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("account_vaults
 #[serde(deny_unknown_fields)]
 pub struct AccountVaultConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long = "vault-dir", parse(from_os_str))]
+    #[arg(long = "vault-dir", value_parser = value_parser!(std::ffi::OsString))]
     /// Account vault dir config.
     /// Default: account_vaults in data_dir
     dir: Option<PathBuf>,
 
     #[serde(skip)]
-    #[clap(skip)]
+    #[arg(skip)]
     base: Option<Arc<BaseConfig>>,
 }
 

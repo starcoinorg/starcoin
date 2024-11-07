@@ -5,7 +5,7 @@ use crate::account_vault_config::AccountVaultConfig;
 use crate::helper::{load_config, save_config};
 use crate::sync_config::SyncConfig;
 use anyhow::{ensure, format_err, Result};
-use clap::Parser;
+use clap::{value_parser, Parser};
 use git_version::git_version;
 use once_cell::sync::Lazy;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -177,52 +177,52 @@ static G_OPT_NET_HELP: &str = r#"Chain Network
 #[clap(name = "starcoin", about = "Starcoin")]
 pub struct StarcoinOpt {
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long, short = 'c')]
+    #[arg(long, short = 'c')]
     /// Connect and attach to a node
     pub connect: Option<Connect>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long = "data-dir", short = 'd', parse(from_os_str))]
+    #[arg(long = "data-dir", short = 'd', value_parser = value_parser!(std::ffi::OsString))]
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
     pub base_data_dir: Option<PathBuf>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long, short = 'n', help = G_OPT_NET_HELP)]
+    #[arg(long, short = 'n', help = G_OPT_NET_HELP)]
     pub net: Option<ChainNetworkID>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long = "watch-timeout")]
+    #[arg(long = "watch-timeout")]
     /// Watch timeout in seconds
     pub watch_timeout: Option<u64>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long = "genesis-config")]
+    #[arg(long = "genesis-config")]
     /// Init chain by a custom genesis config. if want to reuse builtin network config, just pass a builtin network name.
     /// This option only work for node init start.
     pub genesis_config: Option<String>,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     pub rpc: RpcConfig,
-    #[clap(flatten)]
+    #[command(flatten)]
     pub logger: LoggerConfig,
-    #[clap(flatten)]
+    #[command(flatten)]
     pub metrics: MetricsConfig,
-    #[clap(flatten)]
+    #[command(flatten)]
     pub miner: MinerConfig,
-    #[clap(flatten)]
+    #[command(flatten)]
     pub network: NetworkConfig,
-    #[clap(flatten)]
+    #[command(flatten)]
     pub txpool: TxPoolConfig,
-    #[clap(flatten)]
+    #[command(flatten)]
     pub storage: StorageConfig,
-    #[clap(flatten)]
+    #[command(flatten)]
     pub sync: SyncConfig,
-    #[clap(flatten)]
+    #[command(flatten)]
     pub vault: AccountVaultConfig,
     #[serde(default)]
-    #[clap(flatten)]
+    #[command(flatten)]
     pub stratum: StratumConfig,
-    #[clap(flatten)]
+    #[command(flatten)]
     pub account_provider: AccountProviderConfig,
 }
 

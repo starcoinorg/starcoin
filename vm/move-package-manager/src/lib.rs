@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use clap::{Args, Parser};
+use clap::{Args, Parser, ValueEnum};
 use move_cli::Move;
 use move_command_line_common::testing::UPDATE_BASELINE;
 use move_compiler::command_line::compiler::construct_pre_compiled_lib_from_compiler;
 use move_compiler::diagnostics::report_diagnostics;
 use move_compiler::shared::unique_map::UniqueMap;
-use move_compiler::shared::NamedAddressMaps;
+use move_compiler::shared::{NamedAddressMaps, PackagePaths};
 use move_compiler::{
     cfgir, expansion, hlir, naming, parser, typing, Compiler, FullyCompiledProgram,
 };
@@ -30,7 +30,7 @@ pub mod release;
 // use `integration-tests` rather than `tests`, for avoid conflict with `mpm package test`
 pub const INTEGRATION_TESTS_DIR: &str = "integration-tests";
 
-#[derive(Debug, Args)]
+#[derive(Debug, Parser)]
 pub struct TestOpts {
     /// The FILTER string is tested against the name of all tests, and only those tests whose names
     /// contain the filter are run.
@@ -57,11 +57,11 @@ pub struct TestOpts {
     ///   pretty = Print verbose output;
     ///   terse = Display one character per test;
     ///   (json is unsupported, exists for compatibility with the default test harness)
-    #[clap(possible_values = Format::variants(), default_value_t, ignore_case = true)]
+    #[clap(value_enum, default_value = "pretty", ignore_case = true)]
     format: Format,
 }
 
-#[derive(Debug, Eq, PartialEq, Default)]
+#[derive(Clone, Debug, Eq, PartialEq, Default, ValueEnum)]
 enum Format {
     #[default]
     Pretty,
@@ -120,7 +120,7 @@ pub struct IntegrationTestCommand {
     current_as_stdlib: bool,
 }
 
-static G_PRE_COMPILED_LIB: Lazy<Mutex<Option<FullyCompiledProgram>>> =
+static G_PRE_COMPILED_LIB: Lazy<Mutex<Option<(FullyCompiledProgram, Vec<PackagePaths>)>>> =
     Lazy::new(|| Mutex::new(None));
 pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Result<()> {
     if cmd.task_help {
@@ -250,7 +250,7 @@ pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Resu
 
     {
         // update the global
-        *G_PRE_COMPILED_LIB.lock().unwrap() = Some(pre_compiled_lib);
+        *G_PRE_COMPILED_LIB.lock().unwrap() = Some((pre_compiled_lib, vec![]));
     }
 
     let spectests_dir = rerooted_path.join("spectests");

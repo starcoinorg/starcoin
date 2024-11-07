@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, Result};
-use clap::Parser;
+use clap::{value_parser, Parser};
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
@@ -23,7 +23,7 @@ use std::time::{Duration, Instant};
 #[derive(Debug, Clone, Parser, Default)]
 #[clap(name = "txfactory", about = "tx generator for starcoin")]
 pub struct TxFactoryOpt {
-    #[clap(long, parse(from_os_str))]
+    #[clap(long, value_parser = value_parser!(std::ffi::OsString))]
     pub ipc_path: PathBuf,
     #[clap(
         long,

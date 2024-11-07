@@ -3,7 +3,7 @@
 
 use anyhow::{bail, format_err, Result};
 use bcs_ext::{BCSCodec, Sample};
-use clap::{IntoApp, Parser};
+use clap::{value_parser, CommandFactory, Parser};
 use csv::Writer;
 use db_exporter::force_deploy_output::{force_deploy_output, ForceDeployOutput};
 use db_exporter::{
@@ -253,10 +253,10 @@ enum Cmd {
 #[derive(Debug, Clone, Parser)]
 #[clap(name = "db-exporter", about = "starcoin db exporter")]
 pub struct ExporterOptions {
-    #[clap(long, short = 'o', parse(from_os_str))]
+    #[arg(long, short = 'o', value_parser = value_parser!(std::ffi::OsString))]
     /// output file, like accounts.csv, default is stdout.
     pub output: Option<PathBuf>,
-    #[clap(long, short = 'i', parse(from_os_str))]
+    #[arg(long, short = 'i', value_parser = value_parser!(std::ffi::OsString))]
     /// starcoin node db path. like ~/.starcoin/barnard/starcoindb/db/starcoindb
     pub db_path: PathBuf,
 
@@ -268,11 +268,11 @@ pub struct ExporterOptions {
 #[derive(Debug, Clone, Parser)]
 #[clap(name = "checkkey", about = "starcoin db check key")]
 pub struct CheckKeyOptions {
-    #[clap(long, short = 'i', parse(from_os_str))]
+    #[arg(long, short = 'i', value_parser = value_parser!(std::ffi::OsString))]
     /// starcoin node db path. like ~/.starcoin/barnard/starcoindb/db/starcoindb
     pub db_path: PathBuf,
-    #[clap(long, short = 'n',
-    possible_values=&["block", "block_header"],)]
+    #[arg(long, short = 'n',
+    value_parser=clap::builder::PossibleValuesParser::new(["block", "block_header"]),)]
     pub cf_name: String,
     #[clap(long, short = 'b')]
     pub block_hash: HashValue,
@@ -284,10 +284,10 @@ pub struct ExportBlockRangeOptions {
     #[clap(long, short = 'n')]
     /// Chain Network, like main, proxima
     pub net: BuiltinNetworkID,
-    #[clap(long, short = 'o', parse(from_os_str))]
+    #[arg(long, short = 'o', value_parser = value_parser!(std::ffi::OsString))]
     /// output dir, like ~/, output filename like ~/block_start_end.csv
     pub output: PathBuf,
-    #[clap(long, short = 'i', parse(from_os_str))]
+    #[arg(long, short = 'i', value_parser = value_parser!(std::ffi::OsString))]
     /// starcoin node db path. like ~/.starcoin/main
     pub db_path: PathBuf,
     #[clap(long, short = 's')]
@@ -302,13 +302,13 @@ pub struct ApplyBlockOptions {
     #[clap(long, short = 'n')]
     /// Chain Network
     pub net: BuiltinNetworkID,
-    #[clap(long, short = 'o', parse(from_os_str))]
+    #[arg(long, short = 'o', value_parser = value_parser!(std::ffi::OsString))]
     /// starcoin node db path. like ~/.starcoin/main
     pub to_path: PathBuf,
-    #[clap(long, short = 'i', parse(from_os_str))]
+    #[arg(long, short = 'i', value_parser = value_parser!(std::ffi::OsString))]
     /// input file, like accounts.csv
     pub input_path: PathBuf,
-    #[clap(possible_values = Verifier::variants(), ignore_case = true)]
+    #[clap(value_enum, ignore_case = true)]
     /// Verify type:  Basic, Consensus, Full, None, eg.
     pub verifier: Option<Verifier>,
     #[clap(long, short = 'w')]
@@ -322,7 +322,7 @@ pub struct StartupInfoBackOptions {
     #[clap(long, short = 'n')]
     /// Chain Network
     pub net: BuiltinNetworkID,
-    #[clap(long, short = 'o', parse(from_os_str))]
+    #[arg(long, short = 'o', value_parser = value_parser!(std::ffi::OsString))]
     /// starcoin node db path. like ~/.starcoin/main
     pub to_path: PathBuf,
     /// startupinfo BlockNumber back off size
@@ -356,14 +356,14 @@ impl FromStr for Txntype {
 #[derive(Debug, Parser)]
 #[clap(name = "gen_block_transactions", about = "gen block transactions")]
 pub struct GenBlockTransactionsOptions {
-    #[clap(long, short = 'o', parse(from_os_str))]
+    #[arg(long, short = 'o', value_parser = value_parser!(std::ffi::OsString))]
     /// starcoin node db path. like ~/.starcoin/halley
     pub to_path: PathBuf,
     #[clap(long, short = 'b')]
     pub block_num: Option<u64>,
     #[clap(long, short = 't')]
     pub trans_num: Option<u64>,
-    #[clap(long, short = 'p', possible_values=&["CreateAccount", "FixAccount", "EmptyTxn"],)]
+    #[clap(long, short = 'p', value_parser = clap::builder::PossibleValuesParser::new(["CreateAccount", "FixAccount", "EmptyTxn"]),)]
     /// txn type
     pub txn_type: Txntype,
 }
@@ -374,10 +374,10 @@ pub struct ExportSnapshotOptions {
     #[clap(long, short = 'n')]
     /// Chain Network, like main, proxima
     pub net: BuiltinNetworkID,
-    #[clap(long, short = 'o', parse(from_os_str))]
+    #[arg(long, short = 'o', value_parser = value_parser!(std::ffi::OsString))]
     /// output dir, like ~/, manifest.csv will write in output dir
     pub output: PathBuf,
-    #[clap(long, short = 'i', parse(from_os_str))]
+    #[arg(long, short = 'i',value_parser = value_parser!(std::ffi::OsString))]
     /// starcoin node db path. like ~/.starcoin/main
     pub db_path: PathBuf,
     #[clap(long, short = 't')]
@@ -394,10 +394,10 @@ pub struct ApplySnapshotOptions {
     #[clap(long, short = 'n')]
     /// Chain Network
     pub net: BuiltinNetworkID,
-    #[clap(long, short = 'o', parse(from_os_str))]
+    #[arg(long, short = 'o', value_parser = value_parser!(std::ffi::OsString))]
     /// starcoin node db path. like ~/.starcoin/main
     pub to_path: PathBuf,
-    #[clap(long, short = 'i', parse(from_os_str))]
+    #[arg(long, short = 'i',value_parser = value_parser!(std::ffi::OsString))]
     /// input_path, manifest.csv in this dir
     pub input_path: PathBuf,
 }
@@ -405,10 +405,10 @@ pub struct ApplySnapshotOptions {
 #[derive(Debug, Clone, Parser)]
 #[clap(name = "export-resource", about = "onchain resource exporter")]
 pub struct ExportResourceOptions {
-    #[clap(long, short = 'o', parse(from_os_str))]
+    #[arg(long, short = 'o', value_parser = value_parser!(std::ffi::OsString))]
     /// output file, like accounts.csv
     pub output: PathBuf,
-    #[clap(long, short = 'i', parse(from_os_str))]
+    #[arg(long, short = 'i', value_parser = value_parser!(std::ffi::OsString))]
     /// starcoin node db path. like ~/.starcoin/barnard/starcoindb/db/starcoindb
     pub db_path: PathBuf,
 
@@ -416,15 +416,15 @@ pub struct ExportResourceOptions {
     /// block hash of the snapshot.
     pub block_hash: HashValue,
 
-    #[clap(
+    #[arg(
         short='r',
         default_value = "0x1::Account::Balance<0x1::STC::STC>",
-        parse(try_from_str=parse_struct_tag)
+        value_parser=parse_struct_tag
     )]
     /// resource struct tag.
     resource_type: StructTag,
 
-    #[clap(min_values = 1, required = true)]
+    #[clap(num_args(1..), required = true)]
     /// fields of the struct to output. it use pointer syntax of serde_json.
     /// like: /authentication_key /sequence_number /deposit_events/counter /token/value
     pub fields: Vec<String>,
@@ -436,7 +436,7 @@ pub struct ExportResourceOptions {
     about = "gen turbo stm transactions"
 )]
 pub struct GenTurboSTMTransactionsOptions {
-    #[clap(long, short = 'o', parse(from_os_str))]
+    #[arg(long, short = 'o', value_parser = value_parser!(std::ffi::OsString))]
     /// starcoin node db path. like ~/.starcoin/halley
     pub to_path: PathBuf,
     #[clap(long, short = 'b')]
@@ -446,13 +446,13 @@ pub struct GenTurboSTMTransactionsOptions {
 #[derive(Debug, Parser)]
 #[clap(name = "apply turbo stm block", about = "apply turbo stm block")]
 pub struct ApplyTurboSTMBlockOptions {
-    #[clap(long, short = 'o', parse(from_os_str))]
+    #[arg(long, short = 'o',value_parser = value_parser!(std::ffi::OsString))]
     /// starcoin node db path. like ~/.starcoin/test
     pub to_path: PathBuf,
-    #[clap(long, short = 't', parse(from_os_str))]
+    #[arg(long, short = 't', value_parser = value_parser!(std::ffi::OsString))]
     /// starcoin node db path. like ~/.starcoin/test_stm
     pub turbo_stm_to_path: PathBuf,
-    #[clap(long, short = 'i', parse(from_os_str))]
+    #[arg(long, short = 'i', value_parser = value_parser!(std::ffi::OsString))]
     /// input file, like accounts.csv
     pub input_path: PathBuf,
 }
@@ -463,10 +463,10 @@ pub struct VerifyBlockOptions {
     #[clap(long, short = 'n')]
     /// Chain Network
     pub net: BuiltinNetworkID,
-    #[clap(long, short = 'i', parse(from_os_str))]
+    #[arg(long, short = 'i', value_parser = value_parser!(std::ffi::OsString))]
     /// starcoin node db path. like ~/.starcoin/main
     pub from_path: PathBuf,
-    #[clap(possible_values = Verifier::variants(), ignore_case = true)]
+    #[clap(value_enum, ignore_case = true)]
     /// Verify type:  Basic, Consensus, Full, None, eg.
     pub verifier: Option<Verifier>,
     #[clap(long, short = 's')]
@@ -481,7 +481,7 @@ pub struct BlockOutputOptions {
     #[clap(long, short = 'n')]
     /// Chain Network
     pub net: BuiltinNetworkID,
-    #[clap(long, short = 'i', parse(from_os_str))]
+    #[arg(long, short = 'i', value_parser = value_parser!(std::ffi::OsString))]
     /// starcoin node db path. like ~/.starcoin/main
     pub from_path: PathBuf,
     #[clap(long, short = 's')]
@@ -494,10 +494,10 @@ pub struct ApplyBlockOutputOptions {
     #[clap(long, short = 'n')]
     /// Chain Network
     pub net: BuiltinNetworkID,
-    #[clap(long, short = 'o', parse(from_os_str))]
+    #[arg(long, short = 'o', value_parser = value_parser!(std::ffi::OsString))]
     /// starcoin node db path. like ~/.starcoin/main
     pub to_path: PathBuf,
-    #[clap(long, short = 'i', parse(from_os_str))]
+    #[arg(long, short = 'i', value_parser = value_parser!(std::ffi::OsString))]
     /// input file, like accounts.csv
     pub input_path: PathBuf,
 }
@@ -508,7 +508,7 @@ pub struct SaveStartupInfoOptions {
     #[clap(long, short = 'n')]
     /// Chain Network
     pub net: BuiltinNetworkID,
-    #[clap(long, short = 'o', parse(from_os_str))]
+    #[arg(long, short = 'o', value_parser = value_parser!(std::ffi::OsString))]
     /// starcoin node db path. like ~/.starcoin/main
     pub to_path: PathBuf,
     /// startupinfo BlockNumber back off size
@@ -522,10 +522,10 @@ pub struct TokenSupplyOptions {
     #[clap(long, short = 'n')]
     /// Chain Network, like main, barnard
     pub net: BuiltinNetworkID,
-    #[clap(long, short = 'o', parse(from_os_str))]
+    #[arg(long, short = 'o', value_parser = value_parser!(std::ffi::OsString))]
     /// output file, like balance.csv
     pub output: PathBuf,
-    #[clap(long, short = 'i', parse(from_os_str))]
+    #[arg(long, short = 'i', value_parser = value_parser!(std::ffi::OsString))]
     /// starcoin node db path. like ~/.starcoin/main
     pub db_path: PathBuf,
 

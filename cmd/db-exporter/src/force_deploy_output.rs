@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::format_err;
-use clap::Parser;
+use clap::{value_parser, Parser};
 use move_core_types::move_resource::MoveStructType;
 use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
 use starcoin_cmd::dev::dev_helper;
@@ -42,11 +42,11 @@ pub struct ForceDeployOutput {
     /// Chain Network, like main, proxima
     pub net: BuiltinNetworkID,
 
-    #[clap(long, short = 'i', parse(from_os_str))]
+    #[arg(long, short = 'i', value_parser = value_parser!(std::ffi::OsString))]
     /// starcoin node db path. like ~/.starcoin/barnard/starcoindb/db/starcoindb
     pub input_path: PathBuf,
 
-    #[clap(long, short = 'p', parse(from_os_str))]
+    #[arg(long, short = 'p', value_parser = value_parser!(std::ffi::OsString))]
     /// Package path which
     pub package_path: PathBuf,
 

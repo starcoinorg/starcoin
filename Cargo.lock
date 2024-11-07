@@ -274,7 +274,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bcs-ext",
- "clap 3.2.23",
+ "clap 4.5.13",
  "csv",
  "elasticsearch",
  "futures-retry",
@@ -2716,17 +2716,6 @@ dependencies = [
 
 [[package]]
 name = "datatest-stable"
-version = "0.1.1"
-source = "git+https://github.com/starcoinorg/diem-devtools?branch=feature/pub-test-opts#9931fdfc97c80d9c58d6349cf7bae89343f24b06"
-dependencies = [
- "clap 3.2.23",
- "regex",
- "termcolor",
- "walkdir",
-]
-
-[[package]]
-name = "datatest-stable"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4eaf86e44e9f0a21f6e42d8e7f83c9ee049f081745eeed1c6f47a613c76e5977"
@@ -2743,7 +2732,7 @@ dependencies = [
  "anyhow",
  "atomic-counter",
  "bcs-ext",
- "clap 3.2.23",
+ "clap 4.5.13",
  "csv",
  "futures 0.3.30",
  "hex",
@@ -3755,7 +3744,7 @@ version = "2.0.1"
 dependencies = [
  "anyhow",
  "bcs-ext",
- "clap 3.2.23",
+ "clap 4.5.13",
  "hex",
  "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rpassword",
@@ -5704,7 +5693,7 @@ version = "2.0.1"
 dependencies = [
  "anyhow",
  "bcs-ext",
- "clap 3.2.23",
+ "clap 4.5.13",
  "csv",
  "hex",
  "merkletree",
@@ -6103,7 +6092,7 @@ version = "2.0.1"
 dependencies = [
  "anyhow",
  "bcs 0.1.5",
- "clap 3.2.23",
+ "clap 4.5.13",
  "codespan 0.8.0",
  "colored",
  "move-binary-format",
@@ -6280,56 +6269,6 @@ dependencies = [
  "toml 0.7.8",
  "walkdir",
  "whoami",
-]
-
-[[package]]
-name = "move-package-manager"
-version = "2.0.1"
-dependencies = [
- "anyhow",
- "bcs 0.1.5",
- "bcs-ext",
- "clap 4.5.13",
- "codespan-reporting",
- "datatest-stable 0.1.1",
- "difference",
- "futures 0.3.30",
- "include_dir",
- "itertools 0.10.5",
- "jsonrpc-client-transports 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "move-binary-format",
- "move-bytecode-verifier",
- "move-cli",
- "move-command-line-common",
- "move-compiler",
- "move-core-types",
- "move-coverage 0.1.0",
- "move-disassembler",
- "move-errmapgen",
- "move-model",
- "move-package",
- "move-unit-test",
- "move-vm-runtime",
- "move-vm-test-utils",
- "once_cell",
- "starcoin-account-provider",
- "starcoin-cmd",
- "starcoin-config",
- "starcoin-crypto",
- "starcoin-logger",
- "starcoin-move-compiler",
- "starcoin-rpc-api",
- "starcoin-rpc-client",
- "starcoin-transactional-test-harness",
- "starcoin-types",
- "starcoin-vm-runtime",
- "starcoin-vm-types",
- "stdlib",
- "tempfile",
- "tokio",
- "vm-status-translator",
- "walkdir",
 ]
 
 [[package]]
@@ -8910,7 +8849,7 @@ version = "2.0.1"
 dependencies = [
  "anyhow",
  "bcs-ext",
- "clap 3.2.23",
+ "clap 4.5.13",
  "csv",
  "hex",
  "pprof",
@@ -9341,7 +9280,7 @@ name = "scmd"
 version = "2.0.1"
 dependencies = [
  "anyhow",
- "clap 3.2.23",
+ "clap 4.5.13",
  "cli-table",
  "ctrlc",
  "jpst",
@@ -10281,7 +10220,7 @@ dependencies = [
  "anyhow",
  "async-std",
  "bcs-ext",
- "clap 3.2.23",
+ "clap 4.5.13",
  "once_cell",
  "proptest",
  "proptest-derive 0.3.0",
@@ -10426,7 +10365,7 @@ version = "2.0.1"
 dependencies = [
  "anyhow",
  "bcs-ext",
- "clap 3.2.23",
+ "clap 4.5.13",
  "crossbeam-channel",
  "forkable-jellyfish-merkle",
  "futures 0.3.30",
@@ -10485,7 +10424,7 @@ name = "starcoin-config"
 version = "2.0.1"
 dependencies = [
  "anyhow",
- "clap 3.2.23",
+ "clap 4.5.13",
  "dirs-next",
  "git-version",
  "hex",
@@ -10703,7 +10642,7 @@ name = "starcoin-executor-benchmark"
 version = "2.0.1"
 dependencies = [
  "anyhow",
- "clap 3.2.23",
+ "clap 4.5.13",
  "itertools 0.10.5",
  "rand 0.7.3",
  "rayon",
@@ -10728,7 +10667,7 @@ version = "2.0.1"
 dependencies = [
  "anyhow",
  "ascii",
- "clap 3.2.23",
+ "clap 4.5.13",
  "futures 0.3.30",
  "futures-timer",
  "hex",
@@ -10792,7 +10731,7 @@ dependencies = [
  "bulletproofs",
  "byteorder",
  "claims",
- "clap 3.2.23",
+ "clap 4.5.13",
  "codespan-reporting",
  "curve25519-dalek-ng",
  "either",
@@ -10879,7 +10818,7 @@ dependencies = [
 name = "starcoin-gas-meter"
 version = "2.0.1"
 dependencies = [
- "clap 3.2.23",
+ "clap 4.5.13",
  "move-binary-format",
  "move-core-types",
  "move-stdlib",
@@ -10910,7 +10849,7 @@ name = "starcoin-generator"
 version = "2.0.1"
 dependencies = [
  "anyhow",
- "clap 3.2.23",
+ "clap 4.5.13",
  "futures 0.3.30",
  "futures-timer",
  "hex",
@@ -10936,7 +10875,7 @@ version = "2.0.1"
 dependencies = [
  "anyhow",
  "bcs-ext",
- "clap 3.2.23",
+ "clap 4.5.13",
  "include_dir",
  "once_cell",
  "serde",
@@ -10967,7 +10906,7 @@ version = "2.0.1"
 dependencies = [
  "anyhow",
  "async-trait",
- "clap 3.2.23",
+ "clap 4.5.13",
  "elasticsearch",
  "futures-retry",
  "futures-util",
@@ -11111,7 +11050,7 @@ dependencies = [
  "async-std",
  "async-trait",
  "byteorder",
- "clap 3.2.23",
+ "clap 4.5.13",
  "dyn-clone",
  "futures 0.3.30",
  "futures-channel",
@@ -11179,7 +11118,7 @@ name = "starcoin-move-explain"
 version = "2.0.1"
 dependencies = [
  "bcs-ext",
- "clap 3.2.23",
+ "clap 4.5.13",
  "move-core-types",
  "stdlib",
 ]
@@ -11190,9 +11129,9 @@ version = "2.0.1"
 dependencies = [
  "anyhow",
  "atty",
- "clap 3.2.23",
+ "clap 4.5.13",
  "codespan-reporting",
- "datatest-stable 0.1.3",
+ "datatest-stable",
  "hex",
  "itertools 0.10.5",
  "log 0.4.22",
@@ -11514,7 +11453,7 @@ dependencies = [
  "anyhow",
  "async-std",
  "bcs-ext",
- "clap 3.2.23",
+ "clap 4.5.13",
  "futures 0.3.30",
  "network-p2p",
  "network-p2p-types",
@@ -11543,7 +11482,7 @@ name = "starcoin-replay"
 version = "2.0.1"
 dependencies = [
  "anyhow",
- "clap 3.2.23",
+ "clap 4.5.13",
  "sp-utils",
  "starcoin-chain",
  "starcoin-config",
@@ -11576,7 +11515,7 @@ dependencies = [
  "async-trait",
  "bcs-ext",
  "bytes 1.6.1",
- "clap 3.2.23",
+ "clap 4.5.13",
  "futures 0.3.30",
  "hex",
  "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -11764,7 +11703,7 @@ version = "0.2.0"
 dependencies = [
  "anyhow",
  "bcs 0.1.5",
- "clap 3.2.23",
+ "clap 4.5.13",
  "heck 0.5.0",
  "move-core-types",
  "once_cell",
@@ -12105,7 +12044,7 @@ dependencies = [
  "bytes 1.6.1",
  "clap 4.5.13",
  "dashmap",
- "datatest-stable 0.1.3",
+ "datatest-stable",
  "either",
  "futures 0.3.30",
  "hex",
@@ -12156,7 +12095,7 @@ name = "starcoin-tx-factory"
 version = "2.0.1"
 dependencies = [
  "anyhow",
- "clap 3.2.23",
+ "clap 4.5.13",
  "ctrlc",
  "futures 0.3.30",
  "starcoin-account-api",
@@ -12411,8 +12350,8 @@ version = "2.0.1"
 dependencies = [
  "anyhow",
  "bcs-ext",
- "clap 3.2.23",
- "datatest-stable 0.1.3",
+ "clap 4.5.13",
+ "datatest-stable",
  "fs_extra",
  "include_dir",
  "itertools 0.10.5",
@@ -12918,7 +12857,7 @@ name = "testsuite"
 version = "2.0.1"
 dependencies = [
  "anyhow",
- "clap 3.2.23",
+ "clap 4.5.13",
  "cucumber_rust",
  "jpst",
  "jsonpath",
@@ -13446,7 +13385,7 @@ version = "2.0.1"
 dependencies = [
  "anyhow",
  "bcs 0.1.5",
- "clap 3.2.23",
+ "clap 4.5.13",
  "heck 0.5.0",
  "move-core-types",
  "regex",

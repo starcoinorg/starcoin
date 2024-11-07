@@ -4,6 +4,7 @@
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
 };
+use move_model::ty::ReferenceKind;
 use move_model::{
     ast::Attribute,
     model::{FunctionEnv, GlobalEnv, Loc, ModuleEnv, QualifiedId, StructId},
@@ -73,7 +74,7 @@ impl<'a> ExtendedChecker<'a> {
     #[allow(unused)]
     fn get_runtime_module_id(&self, module: &ModuleEnv<'_>) -> ModuleId {
         let name = module.get_name();
-        let addr = AccountAddress::from_hex_literal(&format!("0x{:x}", name.addr())).unwrap();
+        let addr = name.addr().expect_numerical();
         let name = Identifier::new(self.name_string(name.name()).to_string()).unwrap();
         ModuleId::new(addr, name)
     }
@@ -128,7 +129,9 @@ impl<'a> ExtendedChecker<'a> {
                 // Any primitive type allowed, any parameter expected to instantiate with primitive
             }
             //todo(simon): give it a try to change me to Reference(ReferenceKind::Immutable, bt)
-            Reference(false, bt) if matches!(bt.as_ref(), Primitive(PrimitiveType::Signer)) => {
+            Reference(ReferenceKind::Immutable, bt)
+                if matches!(bt.as_ref(), Primitive(PrimitiveType::Signer)) =>
+            {
                 // Reference to signer allowed
             }
             Vector(ety) => {

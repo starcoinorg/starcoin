@@ -37,6 +37,7 @@ impl NativeEventContext {
     }
 
     #[cfg(feature = "testing")]
+    #[allow(irrefutable_let_patterns)]
     fn emitted_events(&self, event_key: &EventKey, ty_tag: &TypeTag) -> Vec<&[u8]> {
         let mut events = vec![];
         for event in self.events.iter() {

@@ -4,7 +4,7 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
-use clap::Parser;
+use clap::{value_parser, Parser};
 use scmd::{CommandAction, ExecContext};
 use starcoin_account_api::{AccountInfo, AccountPrivateKey};
 use starcoin_crypto::{ValidCryptoMaterial, ValidCryptoMaterialStringExt};
@@ -21,10 +21,10 @@ pub struct ImportOpt {
     #[clap(name = "input", short = 'i', help = "input of private key")]
     from_input: Option<String>,
 
-    #[clap(
+    #[arg(
         short = 'f',
         help = "file path of private key",
-        parse(from_os_str),
+        value_parser = value_parser!(std::ffi::OsString),
         conflicts_with("input")
     )]
     from_file: Option<PathBuf>,

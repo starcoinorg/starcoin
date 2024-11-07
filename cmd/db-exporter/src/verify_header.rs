@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use clap::Parser;
+use clap::{value_parser, Parser};
 use starcoin_consensus::{Consensus, G_CRYPTONIGHT};
 use std::path::PathBuf;
 
@@ -11,7 +11,7 @@ use starcoin_types::block::Block;
 #[derive(Debug, Parser)]
 #[clap(name = "verify-head", about = "verify head")]
 pub struct VerifyHeaderOptions {
-    #[clap(long, short = 'i', parse(from_os_str))]
+    #[arg(long, short = 'i', value_parser = value_parser!(std::ffi::OsString))]
     /// input file, like accounts.csv
     pub input_path: PathBuf,
 

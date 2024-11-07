@@ -1,6 +1,6 @@
 [dependencies]
 starcoin-gas-schedule = { workspace = true }
-clap = { version = "3", features = ["derive"] }
+clap = { workspace = true }
 move-binary-format = { workspace = true }
 move-core-types = { workspace = true }
 move-stdlib = { workspace = true }

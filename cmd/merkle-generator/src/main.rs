@@ -1,4 +1,4 @@
-use clap::Parser;
+use clap::{value_parser, Parser};
 use merkle_generator::{encode, DataProof, Sha3Algorithm};
 use merkletree::merkle::{next_pow2, MerkleTree};
 use merkletree::store::VecStore;
@@ -10,11 +10,11 @@ use std::path::PathBuf;
 #[derive(Debug, Clone, Parser)]
 #[clap(name = "merkle-generator", about = "merkle proof generator")]
 pub struct ExporterOptions {
-    #[clap(long, short, parse(from_os_str))]
+    #[arg(long, short, value_parser=value_parser!(std::ffi::OsString))]
     /// input csv without header, like rewards.csv
     pub input: PathBuf,
 
-    #[clap(parse(from_os_str))]
+    #[clap(value_parser=value_parser!(std::ffi::OsString))]
     /// merkle output json file, like merkle.json
     pub output: PathBuf,
 }

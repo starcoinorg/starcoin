@@ -4,7 +4,7 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, ensure, format_err, Result};
-use clap::Parser;
+use clap::{value_parser, Parser};
 use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::PlainCryptoHash;
@@ -27,10 +27,10 @@ use std::path::{Path, PathBuf};
 #[derive(Debug, Parser)]
 #[clap(name = "package")]
 pub struct PackageOpt {
-    #[clap(
+    #[arg(
         name = "mv-file-or-dir",
         help = "path for move bytecode file, can be a folder.",
-        parse(from_os_str)
+        value_parser = value_parser!(std::ffi::OsString)
     )]
     mv_file_or_dir: PathBuf,
 
@@ -41,20 +41,26 @@ pub struct PackageOpt {
     )]
     init_script: Option<FunctionIdView>,
 
-    #[clap(
-    short = 't',
-    long = "type_tag",
-    name = "type-tag",
-    parse(try_from_str = parse_type_tag)
+    #[arg(
+        short = 't',
+        long = "type_tag",
+        name = "type-tag",
+        value_parser = parse_type_tag
     )]
     /// type tags for the script
     type_tags: Option<Vec<TypeTag>>,
 
-    #[clap(long = "arg", name = "transaction-args", parse(try_from_str = parse_transaction_argument_advance))]
+    #[arg(long = "arg", name = "transaction-args", value_parser = parse_transaction_argument_advance
+    )]
     /// args for the script.
     args: Option<Vec<TransactionArgument>>,
 
-    #[clap(short = 'o', name = "out-dir", help = "out dir", parse(from_os_str))]
+    #[arg(
+        short = 'o',
+        name = "out-dir",
+        help = "out dir",
+        value_parser = value_parser!(std::ffi::OsString)
+    )]
     out_dir: Option<PathBuf>,
 
     #[clap(short = 'n', name = "package-name", long = "name")]

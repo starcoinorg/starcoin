@@ -4,7 +4,7 @@
 use std::path::PathBuf;
 
 use anyhow::{bail, Result};
-use clap::Parser;
+use clap::{value_parser, Parser};
 
 use scmd::{CommandAction, ExecContext};
 use starcoin_move_compiler::load_bytecode_file;
@@ -22,22 +22,22 @@ use crate::StarcoinOpt;
 #[derive(Debug, Parser)]
 #[clap(name = "execute-script")]
 pub struct ExecuteScriptOpt {
-    #[clap(
+    #[arg(
     short = 't',
     long = "type_tag",
     name = "type-tag",
     help = "can specify multi type_tag",
-    parse(try_from_str = parse_type_tag)
+    value_parser = parse_type_tag
     )]
     type_tags: Option<Vec<TypeTag>>,
 
-    #[clap(long = "arg", name = "transaction-args", help = "can specify multi arg", parse(try_from_str = parse_transaction_argument_advance))]
+    #[arg(long = "arg", name = "transaction-args", help = "can specify multi arg", value_parser = parse_transaction_argument_advance)]
     args: Option<Vec<TransactionArgument>>,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     transaction_opts: TransactionOptions,
 
-    #[clap(name = "mv_file", parse(from_os_str))]
+    #[arg(name = "mv_file", value_parser = value_parser!(std::ffi::OsString))]
     /// bytecode file of the script to execute.
     mv_file: PathBuf,
 }

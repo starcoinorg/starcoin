@@ -7,7 +7,7 @@
 //! cargo run -p transaction-builder-generator -- --help
 //! '''
 
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use serde_generate as serdegen;
 use serde_reflection::Registry;
 use std::path::PathBuf;
@@ -15,7 +15,7 @@ use std::str::FromStr;
 use transaction_builder_generator as buildgen;
 use transaction_builder_generator::is_supported_abi;
 
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone, ValueEnum)]
 enum Language {
     Python3,
     Rust,
@@ -23,11 +23,7 @@ enum Language {
     Java,
     Dart,
 }
-impl Language {
-    fn variants() -> [&'static str; 5] {
-        ["python3", "rust", "cpp", "java", "dart"]
-    }
-}
+
 impl FromStr for Language {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -52,7 +48,7 @@ struct Options {
     abi_directory: PathBuf,
 
     /// Language for code generation.
-    #[clap(long, possible_values = Language::variants(), default_value = "python3")]
+    #[clap(long, value_enum, default_value = "python3")]
     language: Language,
 
     /// Directory where to write generated modules (otherwise print code on stdout).

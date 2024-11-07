@@ -43,16 +43,7 @@ pub enum Commands {
     /// Release the package.
     #[clap(name = "release")]
     Release(Release),
-    /// Execute a sandbox command.
-    #[clap(name = "sandbox")]
-    Sandbox {
-        /// Directory storing Move resources, events, and module bytecodes produced by module publishing
-        /// and script execution.
-        #[arg(long, default_value = DEFAULT_STORAGE_DIR, value_parser = value_parser!(std::ffi::OsString))]
-        storage_dir: PathBuf,
-        #[clap(subcommand)]
-        cmd: sandbox::cli::SandboxCommand,
-    },
+
     /// (Experimental) Run static analyses on Move source or bytecode.
     #[clap(name = "experimental")]
     Experimental {

@@ -4,7 +4,6 @@
 use crate::context::ForkContext;
 use anyhow::{bail, format_err, Result};
 use clap::{Args, CommandFactory, Parser};
-use clap_4 as clap;
 use move_binary_format::{file_format::CompiledScript, CompiledModule};
 use move_command_line_common::address::ParsedAddress;
 use move_command_line_common::files::verify_and_create_named_address_mapping;
