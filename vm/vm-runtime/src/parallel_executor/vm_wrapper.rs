@@ -29,11 +29,8 @@ impl<'a, S: 'a + StateView + Sync> ExecutorTask for StarcoinVMWrapper<'a, S> {
     type Error = VMStatus;
     type Argument = &'a S;
 
-    // XXX FIXME YSG
     fn init(argument: &'a S) -> Self {
-        // XXX FIXME YSG
         let mut vm = StarcoinVM::new(None, argument);
-        // XXX FIXME YSG
         vm.load_configs(argument)
             .expect("load configs should always success");
 

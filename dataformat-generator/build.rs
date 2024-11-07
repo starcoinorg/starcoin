@@ -109,9 +109,7 @@ fn generate() -> Result<(), Error> {
     tracer.trace_type::<SigningMessage>(&samples)?;
     tracer.trace_type::<SignedMessage>(&samples)?;
     tracer.ignore_aliases("StructTag", &["type_params"])?;
-    println!("YSG after");
     let registry = tracer.registry()?;
-    println!("YSG before");
     let data = serde_yaml::to_string(&registry).unwrap();
     std::fs::write("../etc/starcoin_types.yml", data).unwrap();
     {

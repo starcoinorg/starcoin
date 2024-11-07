@@ -1714,7 +1714,6 @@ impl VMExecutor for StarcoinVM {
 
 impl StarcoinVM {
     pub(crate) fn should_restart_execution(output: &TransactionOutput) -> bool {
-        // XXX FIXME YSG if GasSchedule.move UpgradeEvent
         for event in output.events() {
             if event.key().get_creator_address() == genesis_address()
                 && (event.is::<UpgradeEvent>() || event.is::<ConfigChangeEvent<Version>>())
