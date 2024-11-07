@@ -234,7 +234,7 @@ impl SyncService {
         let dag = ctx.get_shared::<BlockDAG>()?;
 
         let fut = async move {
-            worker_scheduler.tell_worker_to_start().await;
+            worker_scheduler.tell_worker_to_stop().await;
             worker_scheduler.wait_for_worker().await;
 
             let sync_dag_store = SyncDagStore::create_from_path(
