@@ -35,7 +35,7 @@ static G_NETWORK_KEY_FILE: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("network_k
 #[derive(Debug, Default, Clone, PartialEq, Eq, Deserialize, Serialize, Parser)]
 pub struct NetworkRpcQuotaConfiguration {
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[arg(
+    #[clap(
         name = "p2prpc-default-global-api-quota",
         long,
         help = "default global p2p rpc quota, eg: 1000/s"
@@ -43,7 +43,7 @@ pub struct NetworkRpcQuotaConfiguration {
     pub default_global_api_quota: Option<ApiQuotaConfig>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[arg(
+    #[clap(
         name = "p2prpc-custom-global-api-quota",
         long,
         number_of_values = 1,
@@ -63,7 +63,7 @@ pub struct NetworkRpcQuotaConfiguration {
     pub default_user_api_quota: Option<ApiQuotaConfig>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[arg(
+    #[clap(
         name = "p2prpc-custom-user-api-quota",
         long,
         help = "customize p2p rpc quota of a peer, eg: get_block=10/s",
@@ -169,7 +169,7 @@ impl From<Vec<MultiaddrWithPeerId>> for Seeds {
 #[serde(deny_unknown_fields)]
 pub struct NetworkConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[arg(long = "node-name")]
+    #[clap(long = "node-name")]
     /// Node network name, just for display, if absent will generate a random name.
     pub node_name: Option<String>,
 
@@ -180,24 +180,24 @@ pub struct NetworkConfig {
     pub node_key: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[arg(
+    #[clap(
         long = "node-key-file",
-        value_parser = value_parser!(std::ffi::OsString),
-        conflicts_with("node-key")
+        value_parser = value_parser!(PathBuf),
+        conflicts_with("node_key")
     )]
     /// Node network private key file, default is network_key under the data dir.
     pub node_key_file: Option<PathBuf>,
 
     #[serde(skip_serializing_if = "Seeds::is_empty")]
     #[serde(default)]
-    #[arg(long = "seed", default_value = "")]
+    #[clap(long = "seed", default_value = "")]
     /// P2P network seed, multi seed should use ',' as delimiter.
     pub seeds: Seeds,
 
     /// Enable peer discovery on local networks.
     /// By default this option is `false`. only support cli option.
     #[serde(skip)]
-    #[arg(long = "discover-local")]
+    #[clap(long = "discover-local")]
     pub discover_local: Option<bool>,
 
     #[serde(skip)]
@@ -210,37 +210,37 @@ pub struct NetworkConfig {
     pub network_rpc_quotas: NetworkRpcQuotaConfiguration,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[arg(long)]
+    #[clap(long)]
     /// min peers to propagate new block and new transactions. Default 8.
     min_peers_to_propagate: Option<u32>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[arg(long)]
+    #[clap(long)]
     ///max peers to propagate new block and new transactions. Default 128.
     max_peers_to_propagate: Option<u32>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[arg(long)]
+    #[clap(long)]
     ///max count for incoming peers. Default 25.
     max_incoming_peers: Option<u32>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[arg(long)]
+    #[clap(long)]
     ///max count for outgoing connected peers. Default 75.
     /// max peers = max_incoming_peers + max_outgoing_peers
     max_outgoing_peers: Option<u32>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[arg(long)]
+    #[clap(long)]
     /// p2p network listen address, Default is /ip4/0.0.0.0/tcp/9840
     listen: Option<Multiaddr>,
 
     #[serde(skip)]
-    #[arg(skip)]
+    #[clap(skip)]
     base: Option<Arc<BaseConfig>>,
 
     #[serde(skip)]
-    #[arg(skip)]
+    #[clap(skip)]
     network_keypair: Option<(Ed25519PrivateKey, Ed25519PublicKey)>,
 
     #[serde(skip)]
@@ -248,7 +248,7 @@ pub struct NetworkConfig {
     generate_listen: Option<Multiaddr>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[arg(name = "unsupported-protocols", long, use_value_delimiter = true)]
+    #[clap(name = "unsupported-protocols", long, use_value_delimiter = true)]
     pub unsupported_protocols: Option<Vec<String>>,
 }
 
