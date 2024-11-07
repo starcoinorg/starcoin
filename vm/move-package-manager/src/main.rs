@@ -3,9 +3,7 @@
 
 use anyhow::Result;
 use clap::Parser;
-// use move_cli::package::cli::handle_package_commands;
 use move_cli::Move;
-use move_core_types::errmap::ErrorMapping;
 use move_package_manager::compatibility_check_cmd::{
     handle_compatibility_check, CompatibilityCheckCommand,
 };
@@ -54,8 +52,8 @@ pub enum Commands {
 }
 
 fn main() -> Result<()> {
-    let _error_descriptions: ErrorMapping =
-        bcs_ext::from_bytes(stdlib::ERROR_DESCRIPTIONS).expect("Decode err map failed");
+    // let _error_descriptions: ErrorMapping =
+    //     bcs_ext::from_bytes(stdlib::ERROR_DESCRIPTIONS).expect("Decode err map failed");
     let args: CliOptions = CliOptions::parse();
 
     let move_args = &args.move_args;

@@ -24,12 +24,12 @@ pub const DEFAULT_RELEASE_DIR: &str = "release";
 
 #[derive(Parser)]
 pub struct Release {
-    #[arg(name = "move-version", long = "move-version", default_value="6", value_parser = clap::builder::PossibleValuesParser::new(["5", "6"]))]
+    #[arg(name = "move-version", long = "move-version", default_value_t = 6)]
     /// specify the move lang version for the release.
     /// currently, only v6 are supported.
     language_version: u8,
 
-    #[arg(name="release-dir", long, value_parser = value_parser!(std::ffi::OsString), default_value=DEFAULT_RELEASE_DIR)]
+    #[arg(name="release-dir", long, value_parser = value_parser!(std::path::PathBuf), default_value=DEFAULT_RELEASE_DIR)]
     /// dir to store released blob
     release_dir: PathBuf,
 
