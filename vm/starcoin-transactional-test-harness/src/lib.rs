@@ -836,7 +836,6 @@ impl<'a> StarcoinTestAdapter<'a> {
             parent_hash,
             timestamp,
             author,
-            None,
             uncles,
             height,
             self.context.storage.get_chain_id()?,
@@ -847,7 +846,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             e
         })?;
 
-        let (parent_hash, timestamp, author, _author_auth_key, _, number, _, _, parents_hash) =
+        let (parent_hash, timestamp, author, _, number, _, _, parents_hash) =
             new_block_meta.clone().into_inner();
         let block_body = BlockBody::new(vec![], None);
         let block_header = BlockHeader::new(
