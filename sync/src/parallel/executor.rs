@@ -14,7 +14,9 @@ use tokio::{
     task::JoinHandle,
 };
 
-#[derive(Debug)]
+use super::worker_scheduler::WorkerScheduler;
+
+#[derive(Debug, Clone)]
 pub enum ExecuteState {
     Executing(HashValue),
     Executed(Box<ExecutedBlock>),
@@ -29,6 +31,13 @@ pub struct DagBlockExecutor {
     storage: Arc<dyn Store>,
     vm_metrics: Option<VMMetrics>,
     dag: BlockDAG,
+    worker_scheduler: Arc<WorkerScheduler>,
+}
+
+impl Drop for DagBlockExecutor {
+    fn drop(&mut self) {
+        self.worker_scheduler.worker_exits();
+    }
 }
 
 impl DagBlockExecutor {
@@ -39,8 +48,10 @@ impl DagBlockExecutor {
         storage: Arc<dyn Store>,
         vm_metrics: Option<VMMetrics>,
         dag: BlockDAG,
+        worker_scheduler: Arc<WorkerScheduler>,
     ) -> anyhow::Result<(Sender<Option<Block>>, Self)> {
         let (sender_for_main, receiver) = mpsc::channel::<Option<Block>>(buffer_size);
+        worker_scheduler.worker_start();
         let executor = Self {
             sender: sender_to_main,
             receiver,
@@ -48,6 +59,7 @@ impl DagBlockExecutor {
             storage,
             vm_metrics,
             dag,
+            worker_scheduler,
         };
         anyhow::Ok((sender_for_main, executor))
     }
@@ -84,7 +96,6 @@ impl DagBlockExecutor {
                             Some(block) => block,
                             None => {
                                 info!("sync worker channel closed");
-                                drop(self.sender);
                                 return;
                             }
                         };
@@ -220,7 +231,6 @@ impl DagBlockExecutor {
                     }
                     None => {
                         info!("sync worker channel closed");
-                        drop(self.sender);
                         return;
                     }
                 }

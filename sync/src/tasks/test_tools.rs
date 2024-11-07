@@ -126,6 +126,8 @@ impl SyncTestSystem {
 
 #[cfg(test)]
 pub async fn full_sync_new_node() -> Result<()> {
+    use crate::parallel::worker_scheduler::WorkerScheduler;
+
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::DagTest);
     let mut node1 = SyncNodeMocker::new(net1, 300, 0)?;
     node1.produce_block(10)?;
@@ -143,6 +145,8 @@ pub async fn full_sync_new_node() -> Result<()> {
     let dag = node2.chain().dag();
     let (sender_1, receiver_1) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
+    let worker_scheduler = Arc::new(WorkerScheduler::new());
+    worker_scheduler.tell_worker_to_stop().await;
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
@@ -158,7 +162,9 @@ pub async fn full_sync_new_node() -> Result<()> {
         None,
         dag.clone(),
         node2.sync_dag_store.clone(),
+        worker_scheduler.clone(),
     )?;
+    worker_scheduler.tell_worker_to_start().await;
     let join_handle = node2.process_block_connect_event(receiver_1).await;
     let branch = sync_task.await?;
     let node2 = join_handle.await;
@@ -175,6 +181,7 @@ pub async fn full_sync_new_node() -> Result<()> {
     let (sender_2, _receiver_2) = unbounded();
     //sync again
     let target = arc_node1.sync_target();
+    worker_scheduler.tell_worker_to_stop().await;
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
@@ -190,8 +197,10 @@ pub async fn full_sync_new_node() -> Result<()> {
         None,
         dag,
         node2.sync_dag_store.clone(),
+        worker_scheduler.clone(),
     )?;
     let join_handle = node2.process_block_connect_event(receiver_1).await;
+    worker_scheduler.tell_worker_to_start().await;
     let branch = sync_task.await?;
     let node2 = join_handle.await;
     let current_block_header = node2.chain().current_header();
