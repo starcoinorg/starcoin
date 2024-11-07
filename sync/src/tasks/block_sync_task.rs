@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::parallel::sender::DagBlockSender;
+use crate::parallel::worker_scheduler::WorkerScheduler;
 use crate::store::sync_absent_ancestor::DagSyncBlock;
 use crate::store::sync_dag_store::SyncDagStore;
 use crate::tasks::continue_execute_absent_block::ContinueExecuteAbsentBlock;
@@ -215,6 +216,7 @@ pub struct BlockCollector<N, H> {
     fetcher: Arc<dyn BlockFetcher>,
     latest_block_id: HashValue,
     sync_dag_store: SyncDagStore,
+    worker_scheduler: Arc<WorkerScheduler>,
 }
 
 impl<N, H> ContinueChainOperator for BlockCollector<N, H>
@@ -265,6 +267,7 @@ where
         local_store: Arc<dyn Store>,
         fetcher: Arc<dyn BlockFetcher>,
         sync_dag_store: SyncDagStore,
+        worker_scheduler: Arc<WorkerScheduler>,
     ) -> Self {
         let latest_block_id = chain.current_header().id();
         Self {
@@ -278,6 +281,7 @@ where
             fetcher,
             latest_block_id,
             sync_dag_store,
+            worker_scheduler,
         }
     }
 
@@ -458,6 +462,7 @@ where
                 self.find_absent_ancestor(vec![block_header.clone()])
                     .await?;
 
+                let worker_scheduler = self.worker_scheduler.clone();
                 let parallel_execute = DagBlockSender::new(
                     self.sync_dag_store.clone(),
                     100000,
@@ -466,6 +471,7 @@ where
                     None,
                     self.chain.dag(),
                     self,
+                    worker_scheduler,
                 );
                 parallel_execute.process_absent_blocks().await?;
                 anyhow::Ok(ParallelSign::Continue)

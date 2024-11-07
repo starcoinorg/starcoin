@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::BlockConnectorService;
+use crate::parallel::worker_scheduler::WorkerScheduler;
 use crate::store::sync_dag_store::{SyncDagStore, SyncDagStoreConfig};
 use crate::sync_metrics::SyncMetrics;
 use crate::tasks::{full_sync_task, AncestorEvent, SyncFetcher};
@@ -65,6 +66,7 @@ pub struct SyncService {
     metrics: Option<SyncMetrics>,
     peer_score_metrics: Option<PeerScoreMetrics>,
     vm_metrics: Option<VMMetrics>,
+    worker_scheduler: Arc<WorkerScheduler>,
 }
 
 impl SyncService {
@@ -92,6 +94,7 @@ impl SyncService {
             .metrics
             .registry()
             .and_then(|registry| PeerScoreMetrics::register(registry).ok());
+        let worker_scheduler = Arc::new(WorkerScheduler::new());
         Ok(Self {
             sync_status: SyncStatus::new(ChainStatus::new(head_block.header, head_block_info)),
             stage: SyncStage::NotStart,
@@ -100,6 +103,7 @@ impl SyncService {
             metrics,
             peer_score_metrics,
             vm_metrics,
+            worker_scheduler,
         })
     }
 
@@ -215,6 +219,8 @@ impl SyncService {
             }
         }
 
+        let worker_scheduler = self.worker_scheduler.clone();
+
         let network = ctx.get_shared::<NetworkServiceRef>()?;
         let storage = self.storage.clone();
         let self_ref = ctx.self_ref();
@@ -226,14 +232,18 @@ impl SyncService {
         let sync_metrics = self.metrics.clone();
         let vm_metrics = self.vm_metrics.clone();
         let dag = ctx.get_shared::<BlockDAG>()?;
-        let sync_dag_store = SyncDagStore::create_from_path(
-            config.storage.sync_dir(),
-            SyncDagStoreConfig::create_with_params(
-                config.storage.cache_size(),
-                RocksdbConfig::default(),
-            ),
-        )?;
+
         let fut = async move {
+            worker_scheduler.tell_worker_to_start().await;
+            worker_scheduler.wait_for_worker().await;
+
+            let sync_dag_store = SyncDagStore::create_from_path(
+                config.storage.sync_dir(),
+                SyncDagStoreConfig::create_with_params(
+                    config.storage.cache_size(),
+                    RocksdbConfig::default(),
+                ),
+            )?;
             let startup_info = storage
                 .get_startup_info()?
                 .ok_or_else(|| format_err!("Startup info should exist."))?;
@@ -270,6 +280,7 @@ impl SyncService {
                     vm_metrics.clone(),
                     dag,
                     sync_dag_store,
+                    worker_scheduler.clone(),
                 )?;
 
                 self_ref.notify(SyncBeginEvent {
@@ -281,6 +292,7 @@ impl SyncService {
                 if let Some(sync_task_total) = sync_task_total.as_ref() {
                     sync_task_total.with_label_values(&["start"]).inc();
                 }
+                worker_scheduler.tell_worker_to_start().await;
                 Ok(Some(fut.await?))
             } else {
                 info!("[sync]No best peer to request, current is best.");

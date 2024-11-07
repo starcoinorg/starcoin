@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::parallel::worker_scheduler::WorkerScheduler;
 use crate::store::sync_dag_store::SyncDagStore;
 use crate::tasks::{
     BlockConnectedEvent, BlockFetcher, BlockIdFetcher, BlockInfoFetcher, PeerOperator, SyncFetcher,
@@ -137,6 +138,7 @@ pub struct SyncNodeMocker {
     pub err_mocker: ErrorMocker,
     pub sync_dag_store: SyncDagStore,
     peer_selector: PeerSelector,
+    pub worker_scheduler: Arc<WorkerScheduler>,
 }
 
 impl SyncNodeMocker {
@@ -157,6 +159,7 @@ impl SyncNodeMocker {
         let peer_selector = PeerSelector::new(vec![peer_info], PeerStrategy::default(), None);
         let sync_dag_store = SyncDagStore::create_for_testing()
             .context("Failed to create SyncDagStore for testing")?;
+        let worker_scheduler = Arc::new(WorkerScheduler::new());
         Ok(Self::new_inner(
             peer_id,
             chain,
@@ -164,6 +167,7 @@ impl SyncNodeMocker {
             random_error_percent,
             peer_selector,
             sync_dag_store,
+            worker_scheduler,
         ))
     }
 
@@ -194,6 +198,7 @@ impl SyncNodeMocker {
             random_error_percent,
             peer_selector,
             sync_dag_store,
+            Arc::new(WorkerScheduler::new()),
         ))
     }
 
@@ -214,6 +219,7 @@ impl SyncNodeMocker {
             random_error_percent,
             peer_selector,
             sync_dag_store,
+            Arc::new(WorkerScheduler::new()),
         ))
     }
 
@@ -232,6 +238,7 @@ impl SyncNodeMocker {
             random_error_percent,
             peer_selector,
             sync_dag_store,
+            Arc::new(WorkerScheduler::new()),
         )
     }
 
@@ -242,6 +249,7 @@ impl SyncNodeMocker {
         random_error_percent: u32,
         peer_selector: PeerSelector,
         sync_dag_store: SyncDagStore,
+        worker_scheduler: Arc<WorkerScheduler>,
     ) -> Self {
         Self {
             peer_id: peer_id.clone(),
@@ -249,6 +257,7 @@ impl SyncNodeMocker {
             err_mocker: ErrorMocker::new(error_strategy, random_error_percent, peer_id),
             peer_selector,
             sync_dag_store,
+            worker_scheduler,
         }
     }
 
