@@ -2,7 +2,7 @@ use super::util::Refs;
 use crate::consensusdb::schemadb::{GhostdagStoreReader, HeaderStoreReader, RelationsStoreReader};
 use crate::reachability::reachability_service::ReachabilityService;
 use crate::types::{ghostdata::GhostdagData, ordering::*};
-use anyhow::{ensure, Context, Result};
+use anyhow::{bail, ensure, Context, Result};
 use parking_lot::RwLock;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_logger::prelude::*;
@@ -210,19 +210,30 @@ impl<
             }
         }
 
+        let remote_blue_set = blue_blocks
+            .iter()
+            .map(|header| header.id())
+            .collect::<HashSet<_>>();
         if new_block_data
             .mergeset_blues
             .iter()
             .skip(1)
             .cloned()
             .collect::<HashSet<_>>()
-            != blue_blocks
-                .iter()
-                .map(|header| header.id())
-                .collect::<HashSet<_>>()
+            != remote_blue_set
         {
             warn!("The data of blue set is not equal when executing the block: {:?}, for {:?}, checking data: {:?}", header.id(), blue_blocks.iter().map(|header| header.id()).collect::<Vec<_>>(), new_block_data.mergeset_blues);
-            return self.ghostdag(&header.parents_hash());
+            let ghostdata = self.ghostdag(&header.parents_hash())?;
+            if ghostdata
+                .mergeset_blues
+                .iter()
+                .skip(1)
+                .cloned()
+                .collect::<HashSet<_>>()
+                != remote_blue_set
+            {
+                bail!("The ghost data of blue set is not equal when executing the block: {:?}, for {:?}, checking data: {:?}", header.id(), blue_blocks.iter().map(|header| header.id()).collect::<Vec<_>>(), ghostdata.mergeset_blues);
+            }
         }
 
         let blue_score = self
