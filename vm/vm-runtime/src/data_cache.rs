@@ -72,7 +72,7 @@ pub struct StorageAdapter<'e, E> {
 /// track of incremental changes is vital to the consistency of the data store and the system.
 pub struct StateViewCache<'a, S> {
     data_view: &'a S,
-    data_map: BTreeMap<StateKey, Option<Vec<u8>>>,
+    data_map: BTreeMap<StateKey, Option<StateValue>>,
 }
 
 impl<'a, S: StateView> StateViewCache<'a, S> {
@@ -90,13 +90,14 @@ impl<'a, S: StateView> StateViewCache<'a, S> {
     // track of the data as if the changes were applied immediately.
     pub(crate) fn push_write_set(&mut self, write_set: &WriteSet) {
         for (ap, ref write_op) in write_set.iter() {
-            // todo: handle WriteOp properly
             match write_op {
-                WriteOp::Creation { data, metadata: _ } => {
-                    self.data_map.insert(ap.clone(), Some(data.to_vec()));
+                WriteOp::Creation { data, metadata } => {
+                    let value = StateValue::new_with_metadata(data.clone(), metadata.clone());
+                    self.data_map.insert(ap.clone(), Some(value));
                 }
-                WriteOp::Modification { data, metadata: _ } => {
-                    self.data_map.insert(ap.clone(), Some(data.to_vec()));
+                WriteOp::Modification { data, metadata } => {
+                    let value = StateValue::new_with_metadata(data.clone(), metadata.clone());
+                    self.data_map.insert(ap.clone(), Some(value));
                 }
                 WriteOp::Deletion { metadata: _ } => {
                     self.data_map.remove(ap);
@@ -113,7 +114,7 @@ impl<'block, S: StateView> TStateView for StateViewCache<'block, S> {
     // Get some data either through the cache or the `StateView` on a cache miss.
     fn get_state_value(&self, state_key: &Self::Key) -> Result<Option<StateValue>, StateviewError> {
         match self.data_map.get(state_key) {
-            Some(opt_data) => Ok(opt_data.clone().map(StateValue::from)),
+            Some(opt_data) => Ok(opt_data.clone()),
             None => match self.data_view.get_state_value(state_key) {
                 Ok(remote_data) => Ok(remote_data),
                 // TODO: should we forward some error info?

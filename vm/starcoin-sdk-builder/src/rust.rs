@@ -227,7 +227,8 @@ impl EntryFunctionCall {
 
         let custom_derive_block = if self.local_types {
             Some(
-                r#"#[cfg_attr(feature = "fuzzing", derive(proptest_derive::Arbitrary))]
+                r#"#[allow(clippy::large_enum_variant)]
+#[cfg_attr(feature = "fuzzing", derive(proptest_derive::Arbitrary))]
 #[cfg_attr(feature = "fuzzing", proptest(no_params))]"#
                     .to_string(),
             )
