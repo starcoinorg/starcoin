@@ -12,20 +12,33 @@ use move_core_types::identifier::{IdentStr, Identifier};
 use move_core_types::language_storage::{StructTag, TypeTag};
 use move_core_types::move_resource::{MoveResource, MoveStructType};
 use serde::{Deserialize, Serialize};
+use crate::event::EventHandle;
 
 /// The balance resource held under an account.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct BalanceResource {
-    token: u128,
+    coin: u64,
+    frozen: bool,
+    deposit_events: EventHandle,
+    withdraw_events: EventHandle,
 }
 
 impl BalanceResource {
-    pub fn new(token: u128) -> Self {
-        Self { token }
+    pub fn new(
+        coin: u128,
+        deposit_events: EventHandle,
+        withdraw_events: EventHandle,
+    ) -> Self {
+        Self {
+            coin: coin as u64,
+            frozen:false,
+            deposit_events,
+            withdraw_events,
+        }
     }
 
     pub fn token(&self) -> u128 {
-        self.token
+        self.coin as u128
     }
 
     // TODO/XXX: remove this once the MoveResource trait allows type arguments to `struct_tag`.

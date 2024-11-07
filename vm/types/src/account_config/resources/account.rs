@@ -1,15 +1,18 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use move_core_types::account_address::AccountAddress;
 use crate::{
     account_config::{
-        constants::ACCOUNT_MODULE_NAME, KeyRotationCapabilityResource, WithdrawCapabilityResource,
+        constants::ACCOUNT_MODULE_NAME
     },
     event::EventHandle,
 };
-use move_core_types::ident_str;
-use move_core_types::identifier::IdentStr;
-use move_core_types::move_resource::{MoveResource, MoveStructType};
+use move_core_types::{
+    ident_str,
+    identifier::IdentStr,
+    move_resource::{MoveResource, MoveStructType},
+};
 use serde::{Deserialize, Serialize};
 
 /// A Rust representation of an Account resource.
@@ -17,12 +20,12 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccountResource {
     authentication_key: Vec<u8>,
-    withdrawal_capability: Option<WithdrawCapabilityResource>,
-    key_rotation_capability: Option<KeyRotationCapabilityResource>,
-    withdraw_events: EventHandle,
-    deposit_events: EventHandle,
-    accept_token_events: EventHandle,
     sequence_number: u64,
+    guid_creation_num: u64,
+    coin_register_events: EventHandle,
+    key_rotation_events: EventHandle,
+    rotation_capability_offer: Option<AccountAddress>,
+    signer_capability_offer: Option<AccountAddress>,
 }
 
 impl AccountResource {
@@ -32,24 +35,20 @@ impl AccountResource {
         k[31] = 1u8;
         k
     };
-    /// Constructs an Account resource.
     pub fn new(
         sequence_number: u64,
         authentication_key: Vec<u8>,
-        withdrawal_capability: Option<WithdrawCapabilityResource>,
-        key_rotation_capability: Option<KeyRotationCapabilityResource>,
-        deposit_events: EventHandle,
-        withdraw_events: EventHandle,
-        accept_token_events: EventHandle,
+        coin_register_events: EventHandle,
+        key_rotation_events: EventHandle,
     ) -> Self {
-        Self {
-            sequence_number,
-            withdrawal_capability,
-            key_rotation_capability,
+        AccountResource {
             authentication_key,
-            deposit_events,
-            withdraw_events,
-            accept_token_events,
+            sequence_number,
+            guid_creation_num: 0,
+            coin_register_events,
+            key_rotation_events,
+            rotation_capability_offer: None,
+            signer_capability_offer: None,
         }
     }
 
@@ -58,34 +57,59 @@ impl AccountResource {
         self.sequence_number
     }
 
-    /// Returns if this account has delegated its withdrawal capability
-    pub fn has_delegated_withdrawal_capability(&self) -> bool {
-        self.withdrawal_capability.is_none()
-    }
-
-    /// Returns if this account has delegated its key rotation capability
-    pub fn has_delegated_key_rotation_capability(&self) -> bool {
-        self.key_rotation_capability.is_none()
-    }
-
     /// Return the authentication_key field for the given AccountResource
     pub fn authentication_key(&self) -> &[u8] {
         &self.authentication_key
     }
 
+    pub fn coin_register_events(&self) -> &EventHandle {
+        &self.coin_register_events
+    }
+
+    pub fn key_rotation_events(&self) -> &EventHandle {
+        &self.key_rotation_events
+    }
+
+    pub fn guid_creation_num(&self) -> u64 {
+        self.guid_creation_num
+    }
+
+    pub fn rotation_capability_offer(&self) -> Option<AccountAddress> {
+        self.rotation_capability_offer
+    }
+
+    pub fn signer_capability_offer(&self) -> Option<AccountAddress> {
+        self.signer_capability_offer
+    }
+
+    /// Returns if this account has delegated its withdrawal capability
+    pub fn has_delegated_withdrawal_capability(&self) -> bool {
+        // TODO(BobOng): [framework-upgrade] to remove this function, this function for compatible with old code
+        false
+    }
+
+    /// Returns if this account has delegated its key rotation capability
+    pub fn has_delegated_key_rotation_capability(&self) -> bool {
+        // TODO(BobOng): [framework-upgrade] to remove this function, this function for compatible with old code
+        self.rotation_capability_offer.is_none()
+    }
+
     /// Return the deposit_events handle for the given AccountResource
     pub fn deposit_events(&self) -> &EventHandle {
-        &self.deposit_events
+        // TODO(BobOng): [framework-upgrade] to remove this function, this function for compatible with old code
+        &self.coin_register_events
     }
 
     /// Return the withdraw_events handle for the given AccountResource
     pub fn withdraw_events(&self) -> &EventHandle {
-        &self.withdraw_events
+        // TODO(BobOng): [framework-upgrade] to remove this function, this function for compatible with old code
+        &self.coin_register_events
     }
 
     /// Return the accept_token_events handle for the given AccountResource
     pub fn accept_token_events(&self) -> &EventHandle {
-        &self.accept_token_events
+        // TODO(BobOng): [framework-upgrade] to remove this function, this function for compatible with old code
+        &self.coin_register_events
     }
 }
 
