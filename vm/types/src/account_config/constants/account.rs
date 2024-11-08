@@ -23,7 +23,6 @@ static G_ACCOUNT_BALANCE_STRUCT_NAME: Lazy<Identifier> =
 pub static G_ACCOUNT_MODULE: Lazy<ModuleId> =
     Lazy::new(|| ModuleId::new(CORE_CODE_ADDRESS, G_ACCOUNT_MODULE_IDENTIFIER.clone()));
 
-
 pub fn account_struct_tag() -> StructTag {
     StructTag {
         address: CORE_CODE_ADDRESS,

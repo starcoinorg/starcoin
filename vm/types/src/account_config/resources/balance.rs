@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::access_path::DataPath;
+use crate::event::EventHandle;
 use crate::token::token_code::TokenCode;
 use crate::{
     access_path::AccessPath,
@@ -12,7 +13,6 @@ use move_core_types::identifier::{IdentStr, Identifier};
 use move_core_types::language_storage::{StructTag, TypeTag};
 use move_core_types::move_resource::{MoveResource, MoveStructType};
 use serde::{Deserialize, Serialize};
-use crate::event::EventHandle;
 
 /// The balance resource held under an account.
 #[derive(Debug, Serialize, Deserialize)]
@@ -24,14 +24,10 @@ pub struct BalanceResource {
 }
 
 impl BalanceResource {
-    pub fn new(
-        coin: u128,
-        deposit_events: EventHandle,
-        withdraw_events: EventHandle,
-    ) -> Self {
+    pub fn new(coin: u128, deposit_events: EventHandle, withdraw_events: EventHandle) -> Self {
         Self {
             coin: coin as u64,
-            frozen:false,
+            frozen: false,
             deposit_events,
             withdraw_events,
         }
