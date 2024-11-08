@@ -12,19 +12,18 @@ AccountResource:
   STRUCT:
     - authentication_key:
         SEQ: U8
-    - withdrawal_capability:
-        OPTION:
-          TYPENAME: WithdrawCapabilityResource
-    - key_rotation_capability:
-        OPTION:
-          TYPENAME: KeyRotationCapabilityResource
-    - withdraw_events:
-        TYPENAME: EventHandle
-    - deposit_events:
-        TYPENAME: EventHandle
-    - accept_token_events:
-        TYPENAME: EventHandle
     - sequence_number: U64
+    - guid_creation_num: U64
+    - coin_register_events:
+        TYPENAME: EventHandle
+    - key_rotation_events:
+        TYPENAME: EventHandle
+    - rotation_capability_offer:
+        OPTION:
+          TYPENAME: AccountAddress
+    - signer_capability_offer:
+        OPTION:
+          TYPENAME: AccountAddress
 ArgumentABI:
   STRUCT:
     - name: STR
@@ -122,10 +121,6 @@ HashValue:
           SIZE: 32
 Identifier:
   NEWTYPESTRUCT: STR
-KeyRotationCapabilityResource:
-  STRUCT:
-    - account_address:
-        TYPENAME: AccountAddress
 Module:
   STRUCT:
     - code: BYTES
@@ -370,10 +365,6 @@ TypeTag:
       u32: UNIT
     10:
       u256: UNIT
-WithdrawCapabilityResource:
-  STRUCT:
-    - account_address:
-        TYPENAME: AccountAddress
 WriteOp:
   ENUM:
     0:
