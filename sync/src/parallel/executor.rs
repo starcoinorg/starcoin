@@ -34,7 +34,18 @@ pub struct DagBlockExecutor {
     worker_scheduler: Arc<WorkerScheduler>,
 }
 
-impl Drop for DagBlockExecutor {
+struct ExecutorDeconstructor {
+    worker_scheduler: Arc<WorkerScheduler>,
+}
+
+impl ExecutorDeconstructor {
+    pub fn new(worker_scheduler: Arc<WorkerScheduler>) -> Self {
+        worker_scheduler.worker_start();
+        Self { worker_scheduler }
+    }
+}
+
+impl Drop for ExecutorDeconstructor {
     fn drop(&mut self) {
         self.worker_scheduler.worker_exits();
     }
@@ -51,7 +62,6 @@ impl DagBlockExecutor {
         worker_scheduler: Arc<WorkerScheduler>,
     ) -> anyhow::Result<(Sender<Option<Block>>, Self)> {
         let (sender_for_main, receiver) = mpsc::channel::<Option<Block>>(buffer_size);
-        worker_scheduler.worker_start();
         let executor = Self {
             sender: sender_to_main,
             receiver,
@@ -88,6 +98,7 @@ impl DagBlockExecutor {
 
     pub fn start_to_execute(mut self) -> anyhow::Result<JoinHandle<()>> {
         let handle = tokio::spawn(async move {
+            let _ = ExecutorDeconstructor::new(self.worker_scheduler.clone());
             let mut chain = None;
             loop {
                 if self.worker_scheduler.check_if_stop().await {
@@ -100,6 +111,7 @@ impl DagBlockExecutor {
                             Some(block) => block,
                             None => {
                                 info!("sync worker channel closed");
+                                drop(self.sender);
                                 return;
                             }
                         };
@@ -239,6 +251,7 @@ impl DagBlockExecutor {
                     }
                     None => {
                         info!("sync worker channel closed");
+                        drop(self.sender);
                         return;
                     }
                 }
