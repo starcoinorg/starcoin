@@ -52,8 +52,6 @@ pub enum Commands {
 }
 
 fn main() -> Result<()> {
-    // let _error_descriptions: ErrorMapping =
-    //     bcs_ext::from_bytes(stdlib::ERROR_DESCRIPTIONS).expect("Decode err map failed");
     let args: CliOptions = CliOptions::parse();
 
     let move_args = &args.move_args;
