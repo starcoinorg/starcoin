@@ -90,6 +90,10 @@ impl DagBlockExecutor {
         let handle = tokio::spawn(async move {
             let mut chain = None;
             loop {
+                if self.worker_scheduler.check_if_stop().await {
+                    info!("sync worker scheduler stopped");
+                    return;
+                }
                 match self.receiver.recv().await {
                     Some(op_block) => {
                         let block = match op_block {
@@ -108,6 +112,10 @@ impl DagBlockExecutor {
                         );
 
                         loop {
+                            if self.worker_scheduler.check_if_stop().await {
+                                info!("sync worker scheduler stopped");
+                                return;
+                            }
                             match Self::waiting_for_parents(
                                 &self.dag,
                                 self.storage.clone(),
