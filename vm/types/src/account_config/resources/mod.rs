@@ -4,10 +4,10 @@
 mod account;
 pub mod auto_accept_token;
 mod balance;
+mod coin_store;
 mod key_rotation_capability;
 mod module_upgrade_strategy;
 mod withdraw_capability;
-mod coin_store;
 
 pub use crate::token::token_info::*;
 pub use account::*;

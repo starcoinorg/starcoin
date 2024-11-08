@@ -3,7 +3,7 @@
 
 use crate::{
     account_config::constants::CORE_CODE_ADDRESS,
-    identifier::{Identifier},
+    identifier::Identifier,
     language_storage::{ModuleId, StructTag},
 };
 use once_cell::sync::Lazy;
