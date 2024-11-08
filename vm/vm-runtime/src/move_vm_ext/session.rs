@@ -712,7 +712,12 @@ impl<'r, 'l> SessionExt<'r, 'l> {
 
         Self::check_script_return(ty_args.as_slice())?;
 
-        self.check_script_signer_and_build_args(&function, function.ty_args().to_vec(), args, sender)?;
+        self.check_script_signer_and_build_args(
+            &function,
+            function.ty_args().to_vec(),
+            args,
+            sender,
+        )?;
 
         Ok(())
     }
