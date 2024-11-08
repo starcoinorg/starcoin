@@ -482,8 +482,8 @@ impl BlockDAG {
         let dag_state = self.get_dag_state(previous_pruning_point)?;
         let next_ghostdata = self.ghostdata(&dag_state.tips)?;
         info!(
-            "start to calculate the mergeset and tips for tips: {:?}, and last pruning point: {:?} and next ghostdata: {:?}",
-            dag_state.tips, previous_pruning_point, next_ghostdata,
+            "start to calculate the mergeset and tips for tips: {:?}, and last pruning point: {:?} and next ghostdata's selected parents: {:?} and blues set are {:?}",
+            dag_state.tips, previous_pruning_point, next_ghostdata.selected_parent, next_ghostdata.mergeset_blues,
         );
         let next_pruning_point = self.pruning_point_manager().next_pruning_point(
             previous_pruning_point,
