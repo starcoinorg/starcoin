@@ -16,10 +16,7 @@ static G_ACCOUNT_MODULE_IDENTIFIER: Lazy<Identifier> =
 
 static G_ACCOUNT_STRUCT_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("Account").unwrap());
 
-static G_ACCOUNT_BALANCE_STRUCT_NAME: Lazy<Identifier> =
-    Lazy::new(|| Identifier::new("Balance").unwrap());
-
-/// The ModuleId for the Account module.
+ /// The ModuleId for the Account module.
 pub static G_ACCOUNT_MODULE: Lazy<ModuleId> =
     Lazy::new(|| ModuleId::new(CORE_CODE_ADDRESS, G_ACCOUNT_MODULE_IDENTIFIER.clone()));
 

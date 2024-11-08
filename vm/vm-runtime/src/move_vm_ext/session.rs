@@ -712,7 +712,7 @@ impl<'r, 'l> SessionExt<'r, 'l> {
 
         Self::check_script_return(ty_args.as_slice())?;
 
-        self.check_script_signer_and_build_args(&function, ty_args, args, sender)?;
+        self.check_script_signer_and_build_args(&function, function.ty_args().to_vec(), args, sender)?;
 
         Ok(())
     }
@@ -726,10 +726,11 @@ impl<'r, 'l> SessionExt<'r, 'l> {
         sender: AccountAddress,
     ) -> VMResult<()> {
         let func = self.load_function(module, function_name, &ty_args)?;
+        let param_tys = func.param_tys().to_owned();
 
         Self::check_script_return(func.ty_args())?;
 
-        self.check_script_signer_and_build_args(&func, ty_args, args, sender)?;
+        self.check_script_signer_and_build_args(&func, param_tys, args, sender)?;
 
         Ok(())
     }
@@ -752,19 +753,19 @@ impl<'r, 'l> SessionExt<'r, 'l> {
     fn check_script_signer_and_build_args(
         &mut self,
         func: &LoadedFunction,
-        arg_tys: Vec<TypeTag>,
+        arg_tys: Vec<Type>,
         args: Vec<Vec<u8>>,
         sender: AccountAddress,
     ) -> VMResult<()> {
         let final_args = Self::check_and_rearrange_args_by_signer_position(func, args, sender)?;
-        let arg_tys =
-            arg_tys
-                .into_iter()
-                .map(|tt| self.load_type(&tt))
-                .try_fold(vec![], |mut acc, ty| {
-                    acc.push(ty?);
-                    Ok(acc)
-                })?;
+        // let arg_tys =
+        //     arg_tys
+        //         .into_iter()
+        //         .map(|tt| self.load_type(&tt))
+        //         .try_fold(vec![], |mut acc, ty| {
+        //             acc.push(ty?);
+        //             Ok(acc)
+        //         })?;
         let (_, _) = self
             .deserialize_args(arg_tys, final_args)
             .map_err(|e| e.finish(Location::Undefined))?;
