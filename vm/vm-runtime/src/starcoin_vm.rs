@@ -787,7 +787,7 @@ impl StarcoinVM {
             &loaded_func,
         )?;
 
-        let _final_args = SessionExt::check_and_rearrange_args_by_signer_position(
+        let final_args = SessionExt::check_and_rearrange_args_by_signer_position(
             loaded_func.borrow(),
             args.iter().map(|b| b.borrow().to_vec()).collect(),
             sender,
@@ -796,7 +796,7 @@ impl StarcoinVM {
         let tranversal_storage = TraversalStorage::new();
         session.execute_entry_function(
             loaded_func,
-            args,
+            final_args,
             gas_meter,
             &mut TraversalContext::new(&tranversal_storage),
         )
