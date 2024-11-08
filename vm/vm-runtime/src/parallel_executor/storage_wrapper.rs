@@ -33,12 +33,9 @@ impl<'a, S: StateView> TStateView for VersionedView<'a, S> {
     // Get some data either through the cache or the `StateView` on a cache miss.
     fn get_state_value(&self, state_key: &Self::Key) -> Result<Option<StateValue>, StateviewError> {
         match self.hashmap_view.read(state_key) {
-            // todo: handle WriteOp proplerly
-            Some(v) => Ok(match v.as_ref() {
-                WriteOp::Creation { data, metadata: _ } => Some(StateValue::from(data.clone())),
-                WriteOp::Modification { data, metadata: _ } => Some(StateValue::from(data.clone())),
-                WriteOp::Deletion { metadata: _ } => None,
-            }),
+            Some(v) => Ok(v
+                .bytes()
+                .map(|bytes| StateValue::new_with_metadata(bytes.clone(), v.metadata().clone()))),
             None => self.base_view.get_state_value(state_key),
         }
     }

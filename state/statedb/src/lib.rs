@@ -679,6 +679,7 @@ impl ChainStateWriter for ChainStateDB {
                 StateKeyInner::AccessPath(access_path) => {
                     locks.insert(access_path.address);
                     let (account_address, data_path) = access_path.clone().into_inner();
+                    // todo: squash write_set?
                     match write_op {
                         WriteOp::Creation { data, .. } | WriteOp::Modification { data, .. } => {
                             let account_state_object =
