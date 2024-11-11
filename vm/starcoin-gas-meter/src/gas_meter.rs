@@ -177,6 +177,9 @@ fn simple_instr_to_opcode(instr: SimpleInstruction) -> Opcodes {
 
 impl GasMeter for StarcoinGasMeter {
     fn balance_internal(&self) -> InternalGas {
+        if !self.charge {
+            return u64::MAX.into();
+        }
         self.balance
     }
 

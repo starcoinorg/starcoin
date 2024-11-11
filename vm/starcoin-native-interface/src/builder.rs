@@ -55,7 +55,7 @@ impl SafeNativeBuilder {
                 features,
             }),
             // TODO(BobOng): [framework upgrade] disable gas calculate for genesis execution
-            enable_incremental_gas_charging: false,
+            enable_incremental_gas_charging: true,
             gas_hook: None,
         }
     }
