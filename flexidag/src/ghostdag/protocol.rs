@@ -181,7 +181,8 @@ impl<
             !parents.is_empty(),
             "genesis must be added via a call to init"
         );
-        let selected_parent = self.find_selected_parent(header.parents_hash().into_iter())?;
+        // let selected_parent = self.find_selected_parent(header.parents_hash().into_iter())?; 
+        let selected_parent = header.parent_hash();
         // Initialize new GHOSTDAG block data with the selected parent
         let mut new_block_data = GhostdagData::new_with_selected_parent(selected_parent, self.k);
         let ordered_mergeset = self.sort_blocks(
