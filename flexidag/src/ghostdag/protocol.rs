@@ -384,6 +384,10 @@ impl<
             *candidate_blue_anticone_size = (*candidate_blue_anticone_size).checked_add(1).unwrap();
             if *candidate_blue_anticone_size > self.k {
                 // k-cluster violation: The candidate's blue anticone exceeded k
+                info!(
+                    "Checking blue candidate: {} failed, blue anticone exceeded k",
+                    blue_candidate
+                );
                 return Ok(ColoringState::Red);
             }
 
