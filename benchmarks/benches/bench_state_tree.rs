@@ -6,7 +6,7 @@ use forkable_jellyfish_merkle::blob::Blob;
 use forkable_jellyfish_merkle::HashValueKey;
 #[cfg(target_os = "linux")]
 use pprof::criterion::{Output, PProfProfiler};
-use rand::{rngs::StdRng, SeedableRng};
+use rand_0_7_3::{prelude::StdRng, SeedableRng};
 use starcoin_config::RocksdbConfig;
 use starcoin_crypto::hash::*;
 use starcoin_state_store_api::StateNodeStore;

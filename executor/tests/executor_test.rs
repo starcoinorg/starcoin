@@ -23,7 +23,7 @@ use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::account_config::AccountResource;
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::on_chain_config::{ConsensusConfig, OnChainConfig};
-use starcoin_vm_types::state_view::{StateView, TStateView};
+use starcoin_vm_types::state_store::TStateView;
 use starcoin_vm_types::token::stc::{stc_type_tag, STCUnit};
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::{transaction::Package, vm_status::StatusCode};
@@ -52,12 +52,23 @@ pub struct NullStateView;
 
 impl TStateView for NullStateView {
     type Key = StateKey;
-    fn get_state_value(&self, _state_key: &StateKey) -> Result<Option<StateValue>> {
-        Err(anyhow!("No data"))
+    fn get_state_value(
+        &self,
+        _state_key: &StateKey,
+    ) -> starcoin_vm_types::state_store::Result<Option<StateValue>> {
+        Err(anyhow!("No data").into())
     }
 
     fn is_genesis(&self) -> bool {
         false
+    }
+
+    fn get_usage(
+        &self,
+    ) -> starcoin_vm_types::state_store::Result<
+        starcoin_vm_types::state_store::state_storage_usage::StateStorageUsage,
+    > {
+        unimplemented!("get_usage not implemented")
     }
 }
 
@@ -78,7 +89,7 @@ fn test_vm_version() {
 
     let readed_version: u64 = bcs_ext::from_bytes(&value.pop().unwrap().1).unwrap();
     let version = {
-        let mut vm = StarcoinVM::new(None);
+        let mut vm = StarcoinVM::new(None, &chain_state);
         vm.load_configs(&chain_state).unwrap();
         vm.get_version().unwrap().major
     };
@@ -106,7 +117,7 @@ fn test_flexidag_config_get() {
 
     let read_version: u64 = bcs_ext::from_bytes(&value.pop().unwrap().1).unwrap();
     let version = {
-        let mut vm = StarcoinVM::new(None);
+        let mut vm = StarcoinVM::new(None, &chain_state);
         vm.load_configs(&chain_state).unwrap();
         vm.get_flexidag_config().unwrap().effective_height
     };
@@ -120,7 +131,7 @@ fn test_flexidag_config_get_for_halley() {
         prepare_customized_genesis(&ChainNetwork::new_builtin(BuiltinNetworkID::Halley));
 
     let version = {
-        let mut vm = StarcoinVM::new(None);
+        let mut vm = StarcoinVM::new(None, &chain_state);
         vm.load_configs(&chain_state).unwrap();
         vm.get_flexidag_config().unwrap().effective_height
     };
@@ -134,7 +145,7 @@ fn test_flexidag_config_get_for_proxima() {
         prepare_customized_genesis(&ChainNetwork::new_builtin(BuiltinNetworkID::Proxima));
 
     let version = {
-        let mut vm = StarcoinVM::new(None);
+        let mut vm = StarcoinVM::new(None, &chain_state);
         vm.load_configs(&chain_state).unwrap();
         vm.get_flexidag_config().unwrap().effective_height
     };
@@ -188,8 +199,8 @@ fn test_batch_transfer() -> Result<()> {
 
 #[stest::test]
 fn test_txn_verify_err_case() -> Result<()> {
-    let (_chain_state, net) = prepare_genesis();
-    let mut vm = StarcoinVM::new(None);
+    let (chain_state, net) = prepare_genesis();
+    let mut vm = StarcoinVM::new(None, &chain_state);
     let alice = Account::new();
     let bob = Account::new();
     let script_function = encode_create_account_script_function(
@@ -209,7 +220,7 @@ fn test_txn_verify_err_case() -> Result<()> {
         ChainId::test(),
     );
 
-    let signed_by_bob = bob.sign_txn(txn);
+    let signed_by_bob = bob.sign_txn(txn).unwrap();
     let verify_result = vm.verify_transaction(&NullStateView, signed_by_bob);
     assert!(verify_result.is_some());
     assert_eq!(
@@ -263,13 +274,15 @@ fn test_package_txn() -> Result<()> {
         let package = Package::new_with_module(module)?;
         // let package_hash = package.crypto_hash();
 
-        let mut vm = StarcoinVM::new(None);
-        let txn = alice.sign_txn(build_raw_txn(
-            *alice.address(),
-            &chain_state,
-            TransactionPayload::Package(package.clone()),
-            None,
-        ));
+        let mut vm = StarcoinVM::new(None, &chain_state);
+        let txn = alice
+            .sign_txn(build_raw_txn(
+                *alice.address(),
+                &chain_state,
+                TransactionPayload::Package(package.clone()),
+                None,
+            ))
+            .unwrap();
         let verify_result = vm.verify_transaction(&chain_state, txn);
         assert!(verify_result.is_none());
         // execute the package txn
@@ -283,13 +296,15 @@ fn test_package_txn() -> Result<()> {
             .pop()
             .unwrap();
         let package = Package::new_with_module(module)?;
-        let mut vm = StarcoinVM::new(None);
-        let txn = alice.sign_txn(build_raw_txn(
-            *alice.address(),
-            &chain_state,
-            TransactionPayload::Package(package),
-            None,
-        ));
+        let mut vm = StarcoinVM::new(None, &chain_state);
+        let txn = alice
+            .sign_txn(build_raw_txn(
+                *alice.address(),
+                &chain_state,
+                TransactionPayload::Package(package),
+                None,
+            ))
+            .unwrap();
         let verify_result = vm.verify_transaction(&chain_state, txn);
         assert!(verify_result.is_some());
         assert_eq!(
@@ -304,13 +319,15 @@ fn test_package_txn() -> Result<()> {
             .pop()
             .unwrap();
         let package = Package::new_with_module(module)?;
-        let mut vm = StarcoinVM::new(None);
-        let txn = alice.sign_txn(build_raw_txn(
-            *alice.address(),
-            &chain_state,
-            TransactionPayload::Package(package.clone()),
-            None,
-        ));
+        let mut vm = StarcoinVM::new(None, &chain_state);
+        let txn = alice
+            .sign_txn(build_raw_txn(
+                *alice.address(),
+                &chain_state,
+                TransactionPayload::Package(package.clone()),
+                None,
+            ))
+            .unwrap();
         let verify_result = vm.verify_transaction(&chain_state, txn);
         assert!(verify_result.is_none());
         // execute the package txn
@@ -390,7 +407,6 @@ fn test_block_execute_gas_limit() -> Result<()> {
             starcoin_crypto::HashValue::random(),
             net.time_service().now_millis(),
             *miner.address(),
-            Some(miner.auth_key()),
             0,
             current_block_number(&chain_state) + 1,
             net.chain_id(),
@@ -437,7 +453,6 @@ fn test_block_execute_gas_limit() -> Result<()> {
         starcoin_crypto::HashValue::random(),
         net.time_service().now_millis(),
         *account1.address(),
-        Some(account1.auth_key()),
         0,
         current_block_number(&chain_state) + 1,
         net.chain_id(),
@@ -483,7 +498,6 @@ fn test_block_execute_gas_limit() -> Result<()> {
         starcoin_crypto::HashValue::random(),
         net.time_service().now_millis(),
         *account1.address(),
-        Some(account1.auth_key()),
         0,
         current_block_number(&chain_state) + 1,
         net.chain_id(),
@@ -581,7 +595,8 @@ fn test_validate_txn_args() -> Result<()> {
             None,
         );
         account1.sign_txn(txn)
-    };
+    }
+    .unwrap();
     assert!(validate_transaction(&chain_state, txn, None).is_some());
 
     let txn = {
@@ -601,7 +616,8 @@ fn test_validate_txn_args() -> Result<()> {
             None,
         );
         account1.sign_txn(txn)
-    };
+    }
+    .unwrap();
     assert!(validate_transaction(&chain_state, txn, None).is_some());
 
     let txn = {
@@ -621,7 +637,8 @@ fn test_validate_txn_args() -> Result<()> {
             None,
         );
         account1.sign_txn(txn)
-    };
+    }
+    .unwrap();
     assert!(validate_transaction(&chain_state, txn, None).is_some());
     Ok(())
 }
@@ -649,7 +666,7 @@ fn test_validate_txn() -> Result<()> {
         net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
         net.chain_id(),
     );
-    let txn2 = account1.sign_txn(raw_txn);
+    let txn2 = account1.sign_txn(raw_txn).unwrap();
     let output = validate_transaction(&chain_state, txn2, None);
     assert_eq!(output, None);
     Ok(())
@@ -678,7 +695,7 @@ fn test_validate_txn_chain_id() -> Result<()> {
         net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
         ChainId::new(123), //wrong chain id
     );
-    let txn2 = Transaction::UserTransaction(account1.sign_txn(raw_txn));
+    let txn2 = Transaction::UserTransaction(account1.sign_txn(raw_txn).unwrap());
     let output2 = execute_and_apply(&chain_state, txn2);
     assert_eq!(
         TransactionStatus::Discard(StatusCode::BAD_CHAIN_ID),
@@ -818,12 +835,10 @@ fn test_execute_transfer_txn() -> Result<()> {
         net.chain_id(),
     );
 
-    let txn2 = Transaction::UserTransaction(account1.sign_txn(raw_txn));
+    let txn2 = Transaction::UserTransaction(account1.sign_txn(raw_txn).unwrap());
     let output = execute_and_apply(&chain_state, txn2);
     assert_eq!(KeptVMStatus::Executed, output.status().status().unwrap());
-    let account_resource = chain_state
-        .get_account_resource(*account2.address())?
-        .expect("account resource should exist.");
+    let account_resource = chain_state.get_account_resource(*account2.address())?;
 
     // auth_key is empty when account create.
     assert_eq!(
@@ -844,19 +859,19 @@ fn test_execute_transfer_txn() -> Result<()> {
     );
 
     // account1 try to transfer stc from account2, will discard.
-    let txn3 = Transaction::UserTransaction(account1.sign_txn(raw_txn.clone()));
+    let txn3 = Transaction::UserTransaction(account1.sign_txn(raw_txn.clone()).unwrap());
     let output = execute_and_apply(&chain_state, txn3);
     assert_eq!(
         StatusCode::INVALID_AUTH_KEY,
         output.status().status().err().unwrap()
     );
 
-    let txn4 = Transaction::UserTransaction(account2.sign_txn(raw_txn));
+    let txn4 = Transaction::UserTransaction(account2.sign_txn(raw_txn).unwrap());
     let output = execute_and_apply(&chain_state, txn4);
     assert_eq!(KeptVMStatus::Executed, output.status().status().unwrap());
 
     let account_resource = chain_state
-        .get_account_resource(*account2.address())?
+        .get_account_resource(*account2.address())
         .expect("account resource should exist.");
 
     // account2's auth_key will set in txn epilogue_v2 when execute first transaction.
@@ -881,31 +896,35 @@ fn test_execute_multi_txn_with_same_account() -> Result<()> {
 
     let account2 = Account::new();
 
-    let txn2 = Transaction::UserTransaction(account1.sign_txn(
-        starcoin_transaction_builder::build_transfer_txn(
-            *account1.address(),
-            *account2.address(),
-            0,
-            1000,
-            1,
-            DEFAULT_MAX_GAS_AMOUNT,
-            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
-            net.chain_id(),
-        ),
-    ));
+    let txn2 = Transaction::UserTransaction(
+        account1
+            .sign_txn(starcoin_transaction_builder::build_transfer_txn(
+                *account1.address(),
+                *account2.address(),
+                0,
+                1000,
+                1,
+                DEFAULT_MAX_GAS_AMOUNT,
+                net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+                net.chain_id(),
+            ))
+            .unwrap(),
+    );
 
-    let txn3 = Transaction::UserTransaction(account1.sign_txn(
-        starcoin_transaction_builder::build_transfer_txn(
-            *account1.address(),
-            *account2.address(),
-            1,
-            1000,
-            1,
-            DEFAULT_MAX_GAS_AMOUNT,
-            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
-            net.chain_id(),
-        ),
-    ));
+    let txn3 = Transaction::UserTransaction(
+        account1
+            .sign_txn(starcoin_transaction_builder::build_transfer_txn(
+                *account1.address(),
+                *account2.address(),
+                1,
+                1000,
+                1,
+                DEFAULT_MAX_GAS_AMOUNT,
+                net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+                net.chain_id(),
+            ))
+            .unwrap(),
+    );
 
     let output =
         starcoin_executor::execute_transactions(&chain_state, vec![txn2, txn3], None).unwrap();
@@ -1041,7 +1060,6 @@ fn test_block_metadata() -> Result<()> {
             starcoin_crypto::HashValue::random(),
             net.time_service().now_millis(),
             *account1.address(),
-            Some(account1.auth_key()),
             0,
             i + 1,
             net.chain_id(),
@@ -1085,7 +1103,7 @@ fn test_insufficient_balance_for_transaction_fee() -> Result<()> {
         net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
         net.chain_id(),
     );
-    let txn2 = Transaction::UserTransaction(alice.sign_txn(raw_txn1));
+    let txn2 = Transaction::UserTransaction(alice.sign_txn(raw_txn1).unwrap());
     let output2 = execute_and_apply(&chain_state, txn2);
     assert_eq!(
         TransactionStatus::Discard(StatusCode::INSUFFICIENT_BALANCE_FOR_TRANSACTION_FEE),
@@ -1103,7 +1121,7 @@ fn test_insufficient_balance_for_transaction_fee() -> Result<()> {
         net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
         net.chain_id(),
     );
-    let txn3 = Transaction::UserTransaction(alice.sign_txn(raw_txn2));
+    let txn3 = Transaction::UserTransaction(alice.sign_txn(raw_txn2).unwrap());
     let output3 = execute_and_apply(&chain_state, txn3);
     assert_eq!(KeptVMStatus::Executed, output3.status().status().unwrap());
     assert!(output3.gas_used() > 0);
@@ -1124,7 +1142,6 @@ fn test_chunk_block_transactions() -> Result<()> {
         starcoin_crypto::HashValue::random(),
         net.time_service().now_millis(),
         *account1.address(),
-        Some(account1.auth_key()),
         0,
         1,
         net.chain_id(),

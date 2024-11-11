@@ -49,7 +49,6 @@ fn test_block_metadata_error_code() -> Result<()> {
         starcoin_crypto::HashValue::random(),
         net.time_service().now_millis(),
         *account1.address(),
-        Some(account1.auth_key()),
         0,
         1,
         net.chain_id(),
@@ -66,7 +65,6 @@ fn test_block_metadata_error_code() -> Result<()> {
         starcoin_crypto::HashValue::random(),
         net.time_service().now_millis(),
         *account1.address(),
-        Some(account1.auth_key()),
         0,
         3, //EBLOCK_NUMBER_MISMATCH
         net.chain_id(),
@@ -83,7 +81,6 @@ fn test_block_metadata_error_code() -> Result<()> {
         starcoin_crypto::HashValue::random(),
         0, //EINVALID_TIMESTAMP
         *account1.address(),
-        Some(account1.auth_key()),
         0,
         2,
         net.chain_id(),
@@ -144,7 +141,7 @@ fn test_execute_transfer_txn_with_wrong_token_code() -> Result<()> {
         net.chain_id(),
     );
 
-    let txn2 = Transaction::UserTransaction(account1.sign_txn(raw_txn));
+    let txn2 = Transaction::UserTransaction(account1.sign_txn(raw_txn)?);
     let output = starcoin_executor::execute_transactions(&chain_state, vec![txn2], None).unwrap();
     assert_eq!(
         KeptVMStatus::MiscellaneousError,
@@ -179,7 +176,7 @@ fn test_execute_transfer_txn_with_dummy_gas_token_code() -> Result<()> {
         net.chain_id(),
     );
 
-    let txn2 = Transaction::UserTransaction(account1.sign_txn(raw_txn));
+    let txn2 = Transaction::UserTransaction(account1.sign_txn(raw_txn)?);
     let output = execute_and_apply(&chain_state, txn2);
     assert_eq!(
         TransactionStatus::Discard(StatusCode::BAD_TRANSACTION_FEE_CURRENCY),

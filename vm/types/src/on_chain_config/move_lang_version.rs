@@ -1,9 +1,9 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::on_chain_config::OnChainConfig;
+use crate::on_chain_config::{OnChainConfig, StructTag, TypeTag, CORE_CODE_ADDRESS};
 use move_core_types::ident_str;
-use move_core_types::identifier::IdentStr;
+use move_core_types::identifier::{IdentStr, Identifier};
 use move_core_types::move_resource::{MoveResource, MoveStructType};
 use serde::{Deserialize, Serialize};
 
@@ -26,3 +26,14 @@ impl MoveStructType for MoveLanguageVersion {
 }
 
 impl MoveResource for MoveLanguageVersion {}
+
+impl MoveLanguageVersion {
+    pub fn type_tag() -> TypeTag {
+        TypeTag::Struct(Box::new(StructTag {
+            address: CORE_CODE_ADDRESS,
+            module: Identifier::new(MV_LANG_VERSION_MODULE_NAME).unwrap(),
+            name: Identifier::new(MV_LANG_VERSION_STRUCT_NAME).unwrap(),
+            type_args: vec![],
+        }))
+    }
+}
