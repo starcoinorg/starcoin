@@ -11878,6 +11878,7 @@ version = "2.0.1"
 dependencies = [
  "anyhow",
  "bcs-ext",
+ "bytes 1.6.1",
  "forkable-jellyfish-merkle",
  "lru 0.7.8",
  "parking_lot 0.12.1",

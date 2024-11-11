@@ -135,7 +135,7 @@ impl AccountStateObject {
         }
     }
 
-    pub fn set(&self, data_path: DataPath, value: Vec<u8>) {
+    pub fn set(&self, data_path: DataPath, value: WriteOp) {
         match data_path {
             DataPath::Code(module_name) => {
                 if self.code_tree.lock().is_none() {
@@ -679,30 +679,19 @@ impl ChainStateWriter for ChainStateDB {
                 StateKeyInner::AccessPath(access_path) => {
                     locks.insert(access_path.address);
                     let (account_address, data_path) = access_path.clone().into_inner();
-                    match write_op {
-                        WriteOp::Creation { data, .. } | WriteOp::Modification { data, .. } => {
-                            let account_state_object =
-                                self.get_account_state_object(&account_address, true)?;
-                            account_state_object.set(data_path, data.into());
-                        }
-                        WriteOp::Deletion { .. } => {
-                            let account_state_object =
-                                self.get_account_state_object(&account_address, false)?;
-                            account_state_object.remove(&data_path)?;
-                        }
-                    }
+                    // todo: double check the creation flag for the Modification case
+                    let create_flag = match write_op {
+                        WriteOp::Creation { .. } | WriteOp::Modification { .. } => true,
+                        WriteOp::Deletion { .. } => false,
+                    };
+                    let account_state_object =
+                        self.get_account_state_object(&account_address, create_flag)?;
+                    account_state_object.set(data_path, write_op.clone());
                 }
                 StateKeyInner::TableItem { handle, key } => {
                     lock_table_handle.insert(*handle);
                     let table_handle_state_object = self.get_table_handle_state_object(handle)?;
-                    match write_op {
-                        WriteOp::Creation { data, .. } | WriteOp::Modification { data, .. } => {
-                            table_handle_state_object.set(key.clone(), data.into());
-                        }
-                        WriteOp::Deletion { .. } => {
-                            table_handle_state_object.remove(key);
-                        }
-                    }
+                    table_handle_state_object.set(key.clone(), write_op.clone());
                 }
                 StateKeyInner::Raw(_) => unimplemented!(),
             }
@@ -718,8 +707,12 @@ impl ChainStateWriter for ChainStateDB {
             let idx = handle.get_idx()?;
             self.update_table_handle_idx_list.lock().insert(idx);
             // put table_handle_state_object commit
-            self.get_state_tree_table_handles(idx)?
-                .put(*handle, table_handle_state_object.root_hash().to_vec());
+            self.get_state_tree_table_handles(idx)?.put(
+                *handle,
+                WriteOp::legacy_creation(bytes::Bytes::from(
+                    table_handle_state_object.root_hash().as_slice(),
+                )),
+            );
         }
         for idx in self.update_table_handle_idx_list.lock().iter() {
             let state_tree_table_handle = self
@@ -742,7 +735,9 @@ impl ChainStateWriter for ChainStateDB {
                 self.get_account_state_object(handle_address, true)?;
             table_handle_account_state_object.set(
                 table_path.clone(),
-                state_tree_table_handle.root_hash().to_vec(),
+                WriteOp::legacy_creation(bytes::Bytes::from(
+                    state_tree_table_handle.root_hash().as_slice(),
+                )),
             );
         }
 
@@ -798,12 +793,8 @@ impl TableHandleStateObject {
         }
     }
 
-    pub fn set(&self, key: Vec<u8>, value: Vec<u8>) {
-        self.state_tree.lock().put(key, value)
-    }
-
-    pub fn remove(&self, key: &Vec<u8>) {
-        self.state_tree.lock().remove(key)
+    pub fn set(&self, key: Vec<u8>, op: WriteOp) {
+        self.state_tree.lock().put(key, op)
     }
 
     pub fn commit(&self) -> Result<()> {

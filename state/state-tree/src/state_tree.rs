@@ -16,8 +16,10 @@ use starcoin_types::account_state::AccountState;
 use starcoin_types::language_storage::StructTag;
 use starcoin_types::state_set::{AccountStateSet, StateSet};
 use starcoin_vm_types::access_path::ModuleName;
+use starcoin_vm_types::write_set::{TransactionWrite, WriteOp};
 use std::collections::BTreeMap;
 use std::convert::TryInto;
+use std::hash::Hash;
 use std::ops::DerefMut;
 use std::sync::Arc;
 
@@ -86,7 +88,7 @@ where
 pub struct StateTree<K: RawKey> {
     storage: Arc<dyn StateNodeStore>,
     storage_root_hash: RwLock<HashValue>,
-    updates: RwLock<BTreeMap<K, Option<Blob>>>,
+    updates: RwLock<BTreeMap<K, WriteOp>>,
     cache: Mutex<StateCache<K>>,
 }
 
@@ -126,15 +128,16 @@ where
     /// and use it as the `key_hash`.
     /// this will not compute new root hash,
     /// Use `commit` to recompute the root hash.
-    pub fn put(&self, key: K, value: Vec<u8>) {
-        self.updates.write().insert(key, Some(value.into()));
+    pub fn put(&self, key: K, op: WriteOp) {
+        self.updates.write().insert(key, op);
     }
 
     /// Remove key_hash's data.
     /// this will not compute new root hash,
     /// Use `commit` to recompute the root hash.
     pub fn remove(&self, key: &K) {
-        self.updates.write().insert(key.clone(), None);
+        let op = WriteOp::legacy_deletion();
+        self.updates.write().insert(key.clone(), op);
     }
 
     /// use a key's hash `key_hash` to read a value.
@@ -266,7 +269,7 @@ where
     }
 
     /// passing None value with a key means delete the key
-    fn updates(&self, updates: Vec<(K, Option<Blob>)>) -> Result<HashValue> {
+    fn updates(&self, updates: Vec<(K, Option<Blob>, WriteOp)>) -> Result<HashValue> {
         let cur_root_hash = self.root_hash();
         //TODO should throw a error?
         if updates.is_empty() {
@@ -279,6 +282,11 @@ where
             cache,
         };
         let tree = JellyfishMerkleTree::new(&reader);
+        let updates = updates
+            .into_iter()
+            .map(|(k, v)| (k, v.as_state_value()))
+            .map(|(k, op)| (k, op.map(|v| Blob::from(v.to_vec()))))
+            .collect();
         let (new_state_root, change_set) = tree.updates(Some(cur_root_hash), updates)?;
         cache.add_changeset(new_state_root, change_set);
         Ok(new_state_root)
