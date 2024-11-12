@@ -20,6 +20,7 @@ futures-timer = { workspace = true }
 starcoin-logger = { workspace = true }
 parking_lot = { workspace = true }
 proptest = { workspace = true }
+rand_0_7_3 = { workspace = true }
 rand = { workspace = true }
 rand_core = { default-features = false, workspace = true }
 starcoin-account-api = { workspace = true }

@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{format_err, Result};
-use clap::{Args, Parser, ValueEnum};
+use clap::{Args, ValueEnum};
+use clap_3::Parser;
 use move_cli::Move;
 use move_command_line_common::testing::UPDATE_BASELINE;
 use move_compiler::command_line::compiler::construct_pre_compiled_lib_from_compiler;
@@ -30,7 +31,7 @@ pub mod release;
 // use `integration-tests` rather than `tests`, for avoid conflict with `mpm package test`
 pub const INTEGRATION_TESTS_DIR: &str = "integration-tests";
 
-#[derive(Debug, Parser)]
+#[derive(Debug, clap::Parser)]
 pub struct TestOpts {
     /// The FILTER string is tested against the name of all tests, and only those tests whose names
     /// contain the filter are run.
@@ -275,7 +276,7 @@ pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Resu
     *starcoin_transactional_test_harness::G_FLAG_RELOAD_STDLIB
         .lock()
         .unwrap() = cmd.current_as_stdlib;
-    let _requirements = datatest_stable::Requirements::new(
+    let requirements = datatest_stable::Requirements::new(
         move |path| {
             starcoin_transactional_test_harness::run_test_impl(
                 path,
@@ -312,9 +313,7 @@ pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Resu
         test_args.push(filter);
     }
 
-    // XXX FIXME YSG TODO clap v3 -> clap v4
-
-    // let test_opts = datatest_stable::TestOpts::try_parse_from(test_args.as_slice())?;
-    //datatest_stable::runner_with_opts(&[requirements], test_opts);
+    let test_opts = datatest_stable::TestOpts::try_parse_from(test_args.as_slice())?;
+    datatest_stable::runner_with_opts(&[requirements], test_opts);
     Ok(())
 }

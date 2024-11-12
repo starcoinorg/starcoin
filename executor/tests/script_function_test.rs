@@ -432,7 +432,7 @@ fn test_transaction_arg_verify() -> Result<()> {
     );
 
     let balance = chain_state.get_balance(*account1.address())?;
-    assert_eq!(balance, Some(initial_amount.sub(u128::from(gas_amount))));
+    assert_eq!(balance, initial_amount.sub(u128::from(gas_amount)));
 
     let money = 100_000;
     let num: u128 = 50_000_000;

@@ -3,29 +3,25 @@ use starcoin_config::genesis_config::G_TOTAL_STC_AMOUNT;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_logger::prelude::*;
-use starcoin_state_api::{ChainStateReader, StateReaderExt, StateView};
+use starcoin_state_api::{ChainStateReader, StateReaderExt};
 use starcoin_statedb::ChainStateDB;
 use starcoin_transaction_builder::{build_package_with_stdlib_module, StdLibOptions};
-use starcoin_types::access_path::DataPath;
 use starcoin_types::account_config::config_change::ConfigChangeEvent;
 use starcoin_types::account_config::TwoPhaseUpgradeV2Resource;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::{ModuleId, StructTag, TypeTag};
 use starcoin_types::transaction::EntryFunction;
-use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::upgrade::UpgradeEvent;
 use starcoin_vm_types::account_config::{association_address, core_code_address, AccountResource};
 use starcoin_vm_types::account_config::{genesis_address, stc_type_tag};
 use starcoin_vm_types::genesis_config::{ChainId, StdlibVersion};
-use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::on_chain_config::{
     FlexiDagConfig, MoveLanguageVersion, TransactionPublishOption, Version,
 };
 use starcoin_vm_types::on_chain_resource::LinearWithdrawCapability;
 use starcoin_vm_types::state_store::state_key::StateKey;
-use starcoin_vm_types::token::stc::G_STC_TOKEN_CODE;
+use starcoin_vm_types::state_store::TStateView;
 use starcoin_vm_types::transaction::{Package, TransactionPayload};
-use std::convert::TryInto;
 use std::fs::File;
 use std::io::Read;
 use stdlib::{load_upgrade_package, StdlibCompat, G_STDLIB_VERSIONS};
@@ -52,7 +48,7 @@ fn test_init_script() -> Result<()> {
         address: genesis_address(),
         module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
         name: Identifier::new("UpgradeModule").unwrap(),
-        type_params: vec![],
+        type_args: vec![],
     }));
 
     let init_script = EntryFunction::new(
@@ -130,7 +126,7 @@ fn test_stdlib_upgrade_with_incremental_package() -> Result<()> {
         address: genesis_address(),
         module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
         name: Identifier::new("UpgradeModule").unwrap(),
-        type_params: vec![],
+        type_args: vec![],
     }));
     let path = std::path::PathBuf::from("../vm/stdlib/compiled/2/1-2/stdlib.blob")
         .canonicalize()
@@ -342,19 +338,19 @@ fn ext_execute_after_upgrade(
             )?;
         }
         StdlibVersion::Version(6) => {
-            let resource = chain_state.get_state_value(&StateKey::AccessPath(AccessPath::new(
-                genesis_address(),
-                DataPath::Resource(StructTag {
+            let state_key = StateKey::resource(
+                &genesis_address(),
+                &StructTag {
                     address: genesis_address(),
                     module: Identifier::new("Account").unwrap(),
                     name: Identifier::new("SignerDelegated").unwrap(),
-                    type_params: vec![],
-                }),
-            )))?;
+                    type_args: vec![],
+                },
+            )
+            .unwrap();
+            let resource = chain_state.get_state_value(&state_key)?;
             assert!(resource.is_some());
-            let genesis_account = chain_state
-                .get_account_resource(genesis_address())?
-                .unwrap();
+            let genesis_account = chain_state.get_account_resource(genesis_address())?;
             assert!(
                 genesis_account.has_delegated_key_rotation_capability(),
                 "expect 0x1 has no key rotation capability"
@@ -366,27 +362,28 @@ fn ext_execute_after_upgrade(
             );
         }
         StdlibVersion::Version(7) => {
-            let version_resource = chain_state.get_on_chain_config::<MoveLanguageVersion>()?;
+            let version_resource = chain_state.get_on_chain_config::<MoveLanguageVersion>();
             assert!(version_resource.is_some());
             let version = version_resource.unwrap();
             assert_eq!(version.major, 2, "expect language version is 2");
-            let genesis_nft_info =
-                chain_state.get_state_value(&StateKey::AccessPath(AccessPath::new(
-                    genesis_address(),
-                    DataPath::Resource(StructTag {
-                        address: genesis_address(),
-                        module: Identifier::new("GenesisNFT").unwrap(),
-                        name: Identifier::new("GenesisNFTInfo").unwrap(),
-                        type_params: vec![],
-                    }),
-                )))?;
+            let state_key = StateKey::resource(
+                &genesis_address(),
+                &StructTag {
+                    address: genesis_address(),
+                    module: Identifier::new("Account").unwrap(),
+                    name: Identifier::new("SignerDelegated").unwrap(),
+                    type_args: vec![],
+                },
+            )
+            .unwrap();
+            let genesis_nft_info = chain_state.get_state_value(&state_key)?;
             assert!(
                 genesis_nft_info.is_some(),
                 "expect 0x1::GenesisNFT::GenesisNFTInfo in global storage, but go none."
             );
         }
         StdlibVersion::Version(12) => {
-            let version_resource = chain_state.get_on_chain_config::<MoveLanguageVersion>()?;
+            let version_resource = chain_state.get_on_chain_config::<MoveLanguageVersion>();
             assert!(version_resource.is_some());
             let version = version_resource.unwrap();
             assert_eq!(version.major, 6, "expect language version is 6");
@@ -449,7 +446,7 @@ fn ext_execute_after_upgrade(
         //             address: genesis_address(),
         //             module: Identifier::new(name).unwrap(),
         //             name: Identifier::new(name).unwrap(),
-        //             type_params: vec![],
+        //             type_args: vec![],
         //         });
         //         assert_genesis_resouce_exist(
         //             chain_state,
@@ -485,7 +482,7 @@ fn ext_execute_after_upgrade(
         //                 address: genesis_address(),
         //                 module: Identifier::new(name).unwrap(),
         //                 name: Identifier::new(name).unwrap(),
-        //                 type_params: vec![],
+        //                 type_args: vec![],
         //             })],
         //         )
         //     });
@@ -497,7 +494,7 @@ fn ext_execute_after_upgrade(
         //             address: genesis_address(),
         //             module: Identifier::new("STC").unwrap(),
         //             name: Identifier::new("STC").unwrap(),
-        //             type_params: vec![],
+        //             type_args: vec![],
         //         })],
         //     );
         //
@@ -521,13 +518,13 @@ fn ext_execute_after_upgrade(
         //                     address: genesis_address(),
         //                     module: Identifier::new("StarcoinDAO").unwrap(),
         //                     name: Identifier::new("StarcoinDAO").unwrap(),
-        //                     type_params: vec![],
+        //                     type_args: vec![],
         //                 }),
         //                 TypeTag::Struct(StructTag {
         //                     address: genesis_address(),
         //                     module: Identifier::new(name).unwrap(),
         //                     name: Identifier::new(name).unwrap(),
-        //                     type_params: vec![],
+        //                     type_args: vec![],
         //                 }),
         //             ],
         //         );
@@ -549,7 +546,7 @@ fn ext_execute_after_upgrade(
         //                 address: genesis_address(),
         //                 module: Identifier::new("STC").unwrap(),
         //                 name: Identifier::new("STC").unwrap(),
-        //                 type_params: vec![],
+        //                 type_args: vec![],
         //             })],
         //         )
         //     });
@@ -573,13 +570,13 @@ fn ext_execute_after_upgrade(
         //                     address: genesis_address(),
         //                     module: Identifier::new("STC").unwrap(),
         //                     name: Identifier::new("STC").unwrap(),
-        //                     type_params: vec![],
+        //                     type_args: vec![],
         //                 }),
         //                 TypeTag::Struct(StructTag {
         //                     address: genesis_address(),
         //                     module: Identifier::new(name).unwrap(),
         //                     name: Identifier::new(name).unwrap(),
-        //                     type_params: vec![],
+        //                     type_args: vec![],
         //                 }),
         //             ],
         //         );
@@ -602,34 +599,29 @@ where
         }
         StdlibVersion::Version(2) => {
             assert!(
-                chain_state.get_stc_treasury()?.is_none(),
+                chain_state.get_stc_treasury().is_err(),
                 "expect treasury is none."
             );
             assert!(!read_two_phase_upgrade_v2_resource(chain_state)?);
         }
         StdlibVersion::Version(3) => {
             assert!(
-                chain_state.get_stc_treasury()?.is_some(),
+                chain_state.get_stc_treasury().is_err(),
                 "expect treasury is some."
             );
             assert_eq!(
-                chain_state.get_stc_info().unwrap().unwrap().total_value,
+                chain_state.get_stc_info().unwrap().total_value,
                 G_TOTAL_STC_AMOUNT.scaling()
             );
-            let withdraw_cap = chain_state
-                .get_resource_by_access_path::<LinearWithdrawCapability>(
-                    LinearWithdrawCapability::resource_path_for(
-                        association_address(),
-                        G_STC_TOKEN_CODE.clone().try_into()?,
-                    ),
-                )?;
+            let withdraw_cap =
+                chain_state.get_resource_type::<LinearWithdrawCapability>(association_address());
             assert!(
-                withdraw_cap.is_some(),
+                withdraw_cap.is_ok(),
                 "expect LinearWithdrawCapability exist at association_address"
             );
         }
         StdlibVersion::Version(12) => {
-            let config = chain_state.get_on_chain_config::<FlexiDagConfig>()?;
+            let config = chain_state.get_on_chain_config::<FlexiDagConfig>();
             assert!(config.is_some());
             assert_eq!(
                 config.unwrap().effective_height,
@@ -666,8 +658,7 @@ where
 {
     Ok(state_reader
         .get_resource_type::<TwoPhaseUpgradeV2Resource>(genesis_address())?
-        .map(|tpu| tpu.enforced())
-        .unwrap_or(false))
+        .enforced())
 }
 
 #[allow(dead_code)]
@@ -675,19 +666,19 @@ fn assert_genesis_resouce_exist(
     chain_state: &ChainStateDB,
     module: &str,
     name: &str,
-    type_params: Vec<TypeTag>,
+    type_args: Vec<TypeTag>,
 ) {
-    let checkpoint = chain_state
-        .get_state_value(&StateKey::AccessPath(AccessPath::new(
-            genesis_address(),
-            DataPath::Resource(StructTag {
-                address: genesis_address(),
-                module: Identifier::new(module).unwrap(),
-                name: Identifier::new(name).unwrap(),
-                type_params,
-            }),
-        )))
-        .unwrap();
+    let state_key = StateKey::resource(
+        &genesis_address(),
+        &StructTag {
+            address: genesis_address(),
+            module: Identifier::new(module).unwrap(),
+            name: Identifier::new(name).unwrap(),
+            type_args,
+        },
+    )
+    .unwrap();
+    let checkpoint = chain_state.get_state_value(&state_key).unwrap();
     assert!(
         checkpoint.is_some(),
         "expect genesis_account has resource 0x1::{:?}::{:?}, but got none.",
@@ -701,19 +692,19 @@ fn assert_genesis_resouce_not_exist(
     chain_state: &ChainStateDB,
     module: &str,
     name: &str,
-    type_params: Vec<TypeTag>,
+    type_args: Vec<TypeTag>,
 ) {
-    let checkpoint = chain_state
-        .get_state_value(&StateKey::AccessPath(AccessPath::new(
-            genesis_address(),
-            DataPath::Resource(StructTag {
-                address: genesis_address(),
-                module: Identifier::new(module).unwrap(),
-                name: Identifier::new(name).unwrap(),
-                type_params,
-            }),
-        )))
-        .unwrap();
+    let state_key = StateKey::resource(
+        &genesis_address(),
+        &StructTag {
+            address: genesis_address(),
+            module: Identifier::new(module).unwrap(),
+            name: Identifier::new(name).unwrap(),
+            type_args,
+        },
+    )
+    .unwrap();
+    let checkpoint = chain_state.get_state_value(&state_key).unwrap();
     assert!(
         checkpoint.is_none(),
         "expect genesis_account has no resource 0x1::{:?}::{:?}, but got it.",

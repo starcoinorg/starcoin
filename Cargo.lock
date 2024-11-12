@@ -1147,6 +1147,7 @@ dependencies = [
  "parking_lot 0.12.1",
  "pprof",
  "proptest",
+ "rand 0.7.3",
  "rand 0.8.5",
  "rand_core 0.6.4",
  "starcoin-account-api",

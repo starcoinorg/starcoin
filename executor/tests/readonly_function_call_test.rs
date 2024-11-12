@@ -93,7 +93,7 @@ fn test_readonly_function_call() -> Result<()> {
         address: *account1.address(),
         module: Identifier::new("A").unwrap(),
         name: Identifier::new("S").unwrap(),
-        type_params: vec![],
+        type_args: vec![],
     }));
     assert_eq!(result[0].0, ty);
     #[derive(Serialize, Deserialize)]
