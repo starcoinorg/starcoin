@@ -15,6 +15,7 @@ use std::str::FromStr;
 pub const STC_NAME: &str = "STC";
 pub const STC_TOKEN_CODE_STR: &str = "0x1::starcoin_coin::STC";
 
+
 pub static G_STC_TOKEN_CODE: Lazy<TokenCode> = Lazy::new(|| {
     TokenCode::from_str(STC_TOKEN_CODE_STR).expect("Parse STC token code should success.")
 });
@@ -24,7 +25,7 @@ static G_STC_IDENTIFIER: Lazy<Identifier> = Lazy::new(|| Identifier::new(STC_NAM
 pub fn stc_type_tag() -> TypeTag {
     TypeTag::Struct(Box::new(StructTag {
         address: CORE_CODE_ADDRESS,
-        module: G_STC_IDENTIFIER.clone(),
+        module: Identifier::new("starcoin_coin").unwrap(),
         name: G_STC_IDENTIFIER.clone(),
         type_args: vec![],
     }))

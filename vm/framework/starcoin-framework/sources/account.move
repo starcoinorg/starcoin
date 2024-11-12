@@ -5,6 +5,7 @@ module starcoin_framework::account {
     use std::option::{Self, Option};
     use std::signer;
     use std::vector;
+    use starcoin_std::debug;
     use starcoin_framework::chain_id;
     use starcoin_framework::create_signer::create_signer;
     use starcoin_framework::event::{Self, EventHandle};
@@ -188,15 +189,18 @@ module starcoin_framework::account {
     }
 
     public fun create_account_if_does_not_exist(account_address: address) {
+        debug::print(&std::string::utf8(b"account::create_account_if_does_not_exist | Entered"));
         if (!exists<Account>(account_address)) {
             create_account(account_address);
-        }
+        };
+        debug::print(&std::string::utf8(b"account::create_account_if_does_not_exist | Exited"));
     }
 
     /// Publishes a new `Account` resource under `new_address`. A signer representing `new_address`
     /// is returned. This way, the caller of this function can publish additional resources under
     /// `new_address`.
     public(friend) fun create_account(new_address: address): signer {
+        debug::print(&std::string::utf8(b"account::create_account | Entered"));
         // there cannot be an Account resource under new_addr already.
         assert!(!exists<Account>(new_address), error::already_exists(EACCOUNT_ALREADY_EXISTS));
 
@@ -206,7 +210,11 @@ module starcoin_framework::account {
             error::invalid_argument(ECANNOT_RESERVED_ADDRESS)
         );
 
-        create_account_unchecked(new_address)
+        let signer = create_account_unchecked(new_address);
+
+        debug::print(&std::string::utf8(b"account::create_account | Exited"));
+
+        signer
     }
 
     fun create_account_unchecked(new_address: address): signer {

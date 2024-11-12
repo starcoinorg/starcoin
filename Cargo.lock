@@ -13913,6 +13913,7 @@ name = "vm-status-translator"
 version = "2.0.1"
 dependencies = [
  "anyhow",
+ "move-core-types",
  "schemars",
  "serde",
  "starcoin-move-explain",

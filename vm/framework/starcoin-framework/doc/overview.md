@@ -94,6 +94,7 @@ This is the reference documentation of the Starcoin framework.
 -  [`0x1::transaction_fee`](transaction_fee.md#0x1_transaction_fee)
 -  [`0x1::transaction_publish_option`](stc_transaction_publish_option.md#0x1_transaction_publish_option)
 -  [`0x1::transaction_validation`](transaction_validation.md#0x1_transaction_validation)
+-  [`0x1::transfer_scripts`](transfer_scripts.md#0x1_transfer_scripts)
 -  [`0x1::treasury`](treasury.md#0x1_treasury)
 -  [`0x1::treasury_withdraw_dao_proposal`](treasury_withdraw_dao_proposal.md#0x1_treasury_withdraw_dao_proposal)
 -  [`0x1::util`](util.md#0x1_util)

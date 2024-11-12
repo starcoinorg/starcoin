@@ -2,15 +2,18 @@ use anyhow::Result;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;
-use starcoin_vm_types::access::ModuleAccess;
-use starcoin_vm_types::file_format::{CompiledModule, FunctionDefinitionIndex};
-use starcoin_vm_types::identifier::Identifier;
-use starcoin_vm_types::language_storage::ModuleId;
-use starcoin_vm_types::state_store::state_key::StateKey;
-use starcoin_vm_types::state_store::StateView;
-use starcoin_vm_types::vm_status::{AbortLocation, StatusCode, VMStatus};
+use starcoin_vm_types::{
+    access::ModuleAccess,
+    file_format::{CompiledModule, FunctionDefinitionIndex},
+    identifier::Identifier,
+    language_storage::ModuleId,
+    state_store::state_key::StateKey,
+    state_store::StateView,
+    vm_status::{AbortLocation, StatusCode, VMStatus},
+};
 use std::convert::TryFrom;
 use std::fmt;
+use move_core_types::errmap;
 
 pub fn locate_execution_failure(
     state: &dyn StateView,
@@ -49,12 +52,17 @@ pub struct MoveAbortExplain {
 }
 
 pub fn explain_move_abort(abort_location: AbortLocation, abort_code: u64) -> MoveAbortExplain {
-    let category = abort_code & 0xFFu64;
-    let reason_code = abort_code >> 8;
+    let category = abort_code & 0xFFFFu64;
+    let reason_code = abort_code >> 16;
 
     let err_description = match abort_location {
         AbortLocation::Module(module_id) => {
-            starcoin_move_explain::get_explanation(module_id.name().as_str(), abort_code)
+            // TODO(BobOng): [framework-upgrade] to build the errmap file
+            // starcoin_move_explain::get_explanation(module_id.name().as_str(), abort_code)
+            Some(errmap::ErrorDescription {
+                code_name: module_id.to_string(),
+                code_description: format!("category: {}, reason_code: {}", category, reason_code),
+            })
         }
         AbortLocation::Script => None,
     };

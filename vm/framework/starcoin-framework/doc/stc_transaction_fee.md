@@ -174,12 +174,13 @@ underlying fiat.
     // extract fees
     <b>let</b> txn_fees = <b>borrow_global_mut</b>&lt;<a href="stc_transaction_fee.md#0x1_stc_transaction_fee_TransactionFee">TransactionFee</a>&lt;TokenType&gt;&gt;(fee_address);
     <b>let</b> value = <a href="coin.md#0x1_coin_value">coin::value</a>&lt;TokenType&gt;(&txn_fees.fee);
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"stc_block::distribute_transaction_fees | value : "));
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&value);
 
     <b>if</b> (value &gt; 0) {
+        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"stc_block::distribute_transaction_fees | Exit <b>with</b> value: "));
+        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&value);
         <a href="coin.md#0x1_coin_extract">coin::extract</a>(&<b>mut</b> txn_fees.fee, value)
     } <b>else</b> {
+        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"stc_block::distribute_transaction_fees | Exit <b>with</b> zero"));
         <a href="coin.md#0x1_coin_zero">coin::zero</a>&lt;TokenType&gt;()
     }
 }

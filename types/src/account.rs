@@ -261,7 +261,7 @@ pub fn peer_to_peer_txn(
         TransactionPayload::EntryFunction(EntryFunction::new(
             ModuleId::new(
                 core_code_address(),
-                Identifier::new("TransferScripts").unwrap(),
+                Identifier::new("transafer_scripts").unwrap(),
             ),
             Identifier::new("peer_to_peer_v2").unwrap(),
             vec![stc_type_tag()],
