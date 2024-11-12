@@ -4,6 +4,7 @@
 use move_compiler::construct_pre_compiled_lib;
 use move_compiler::shared::PackagePaths;
 use starcoin_move_compiler::starcoin_framework_named_addresses;
+use std::collections::BTreeSet;
 use std::path::PathBuf;
 use std::process::Command;
 use stdlib::stdlib_files;
@@ -58,6 +59,7 @@ fn test_stdlib_pre_compiled() {
         }],
         None,
         move_compiler::Flags::empty(),
+        &BTreeSet::new(),
     )
     .unwrap();
     assert!(program_res.is_ok());

@@ -7,6 +7,7 @@ use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::association_address;
+use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::transaction::{EntryFunction, Package, TransactionPayload};
 use starcoin_vm_types::value::MoveValue;
 use test_helper::executor::{
@@ -15,8 +16,9 @@ use test_helper::executor::{
 #[stest::test]
 fn test_starcoin_merkle() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
+    let state_key = StateKey::resource(&association_address(), &account_struct_tag())?;
     let ap = AccessPath::resource_access_path(association_address(), account_struct_tag());
-    let state_with_proof = chain_state.get_with_proof(&ap)?;
+    let state_with_proof = chain_state.get_with_proof(&state_key)?;
     state_with_proof.proof.verify(
         chain_state.state_root(),
         ap,
@@ -66,7 +68,7 @@ fn test_starcoin_merkle() -> Result<()> {
         // let state_root = chain_state.state_root();
         let _expected_root = MoveValue::vector_u8(state_root.to_vec());
 
-        let ap = AccessPath::resource_access_path(association_address(), account_struct_tag());
+        let ap = StateKey::resource(&association_address(), &account_struct_tag())?;
         let state_with_proof = old_chain_state.get_with_proof(&ap)?;
         let account_address = MoveValue::vector_u8(association_address().to_vec());
         let account_state_hash = MoveValue::vector_u8(
