@@ -1,4 +1,5 @@
 use anyhow::Result;
+use move_core_types::errmap;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;
@@ -13,7 +14,6 @@ use starcoin_vm_types::{
 };
 use std::convert::TryFrom;
 use std::fmt;
-use move_core_types::errmap;
 
 pub fn locate_execution_failure(
     state: &dyn StateView,
