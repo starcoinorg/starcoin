@@ -4,20 +4,17 @@ use starcoin_types::access_path::AccessPath;
 use starcoin_types::write_set::{WriteOp, WriteSet, WriteSetMut};
 use starcoin_vm_types::account_config::AccountResource;
 use starcoin_vm_types::move_resource::MoveResource;
-use starcoin_vm_types::state_store::state_key::{StateKey, TableItem};
+use starcoin_vm_types::state_store::state_key::StateKey;
 use std::collections::HashMap;
 
 fn random_bytes() -> Vec<u8> {
     HashValue::random().to_vec()
 }
 
-fn to_write_set(access_path: AccessPath, value: Vec<u8>) -> WriteSet {
-    WriteSetMut::new(vec![(
-        StateKey::AccessPath(access_path),
-        WriteOp::Value(value),
-    )])
-    .freeze()
-    .expect("freeze write_set must success.")
+fn to_write_set(state_key: StateKey, value: Vec<u8>) -> WriteSet {
+    WriteSetMut::new(vec![(state_key, WriteOp::Value(value))])
+        .freeze()
+        .expect("freeze write_set must success.")
 }
 
 fn state_keys_to_write_set(state_keys: Vec<StateKey>, values: Vec<Vec<u8>>) -> WriteSet {

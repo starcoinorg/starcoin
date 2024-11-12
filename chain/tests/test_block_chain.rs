@@ -36,7 +36,7 @@ fn test_chain_filter_events() {
         address: genesis_address(),
         module: Identifier::from_str("Block").unwrap(),
         name: Identifier::from_str("NewBlockEventV2").unwrap(),
-        type_params: vec![],
+        type_args: vec![],
     }));
 
     // Origin block event index is 4, after https://github.com/starcoinorg/starcoin-framework/pull/42 , Genesis account create more event_handles, so the block event index is 7.
@@ -558,10 +558,11 @@ fn test_gen_dag_chain() -> Result<()> {
 
     let effective_height = chain
         .chain_state()
-        .get_on_chain_config::<FlexiDagConfig>()?
-        .map(|c| c.effective_height);
+        .get_on_chain_config::<FlexiDagConfig>()
+        .unwrap()
+        .effective_height;
 
-    assert_eq!(effective_height, Some(fork_number));
+    assert_eq!(effective_height, fork_number);
     assert_eq!(chain.current_header().number(), 9);
 
     let fork_number = thread_rng().gen_range(0..=9);

@@ -1212,8 +1212,9 @@ pub static G_VEGA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
 
 #[cfg(test)]
 mod tests {
-    use starcoin_gas_algebra::{CostTable, FromOnChainGasSchedule};
+    use starcoin_gas_algebra::CostTable;
     use starcoin_gas_meter::StarcoinGasParameters;
+    use starcoin_gas_schedule::FromOnChainGasSchedule;
     use starcoin_vm_types::gas_schedule::{
         latest_cost_table, G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_LATEST_GAS_COST_TABLE,
         G_TEST_GAS_CONSTANTS,
@@ -1272,9 +1273,9 @@ mod tests {
         let gas_schedule = GasSchedule::from(&latest_cost_table(G_TEST_GAS_CONSTANTS.clone()));
         assert_eq!(entries, gas_schedule.entries);
         let gas_params =
-            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
+            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map(), 6);
         assert_eq!(
-            gas_params.unwrap().natives.nursery.debug.print.base_cost,
+            gas_params.unwrap().natives.nursery.debug_print_base_cost,
             1.into()
         );
     }
@@ -1290,9 +1291,9 @@ mod tests {
         let gas_schedule = GasSchedule::from(&G_LATEST_GAS_COST_TABLE.clone());
         assert_eq!(entries, gas_schedule.entries);
         let gas_params =
-            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
+            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map(), 6);
         assert_eq!(
-            gas_params.unwrap().natives.nursery.debug.print.base_cost,
+            gas_params.unwrap().natives.nursery.debug_print_base_cost,
             1.into()
         );
     }
@@ -1307,9 +1308,9 @@ mod tests {
         let gas_schedule = GasSchedule::from(&G_LATEST_GAS_COST_TABLE.clone());
         assert_eq!(entries, gas_schedule.entries);
         let gas_params =
-            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
+            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map(), 6);
         assert_eq!(
-            gas_params.unwrap().natives.nursery.debug.print.base_cost,
+            gas_params.unwrap().natives.nursery.debug_print_base_cost,
             1.into()
         );
     }
@@ -1328,9 +1329,9 @@ mod tests {
         });
         assert_eq!(entries, gas_schedule.entries);
         let gas_params =
-            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
+            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map(), 6);
         assert_eq!(
-            gas_params.unwrap().natives.nursery.debug.print.base_cost,
+            gas_params.unwrap().natives.nursery.debug_print_base_cost,
             1.into()
         );
     }
@@ -1350,9 +1351,9 @@ mod tests {
         });
         assert_eq!(entries, gas_schedule.entries);
         let gas_params =
-            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map());
+            StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map(), 6);
         assert_eq!(
-            gas_params.unwrap().natives.nursery.debug.print.base_cost,
+            gas_params.unwrap().natives.nursery.debug_print_base_cost,
             1.into()
         );
     }

@@ -8,8 +8,6 @@ linked-hash-map = { workspace = true }
 log = { workspace = true }
 network-api = { workspace = true }
 parking_lot = { workspace = true }
-rand = { workspace = true }
-rand_core = { default-features = false, workspace = true }
 serde = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }
@@ -33,6 +31,7 @@ proptest-derive = { optional = true, workspace = true }
 [dev-dependencies]
 proptest = { workspace = true }
 proptest-derive = { workspace = true }
+rand_0_7_3 = { workspace = true }
 starcoin-genesis = { workspace = true }
 starcoin-open-block = { workspace = true }
 starcoin-transaction-builder = { workspace = true }

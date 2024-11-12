@@ -57,9 +57,9 @@ pub fn test_open_block() -> Result<()> {
     {
         let account_reader = opened_block.state_reader();
         let account_balance = account_reader.get_balance(receiver)?;
-        assert_eq!(account_balance, Some(50_000_000));
+        assert_eq!(account_balance, 50_000_000);
 
-        let account_resource = account_reader.get_account_resource(receiver)?.unwrap();
+        let account_resource = account_reader.get_account_resource(receiver)?;
         assert_eq!(account_resource.sequence_number(), 0);
     }
 
