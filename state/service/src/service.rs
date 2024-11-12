@@ -297,8 +297,8 @@ mod tests {
         registry.put_shared(config).await?;
         registry.put_shared(storage).await?;
         let service_ref = registry.register::<ChainStateService>().await?;
-        let account_state = service_ref.get_account_state(genesis_address()).await?;
-        assert!(account_state.is_some());
+        let account_state = service_ref.get_account_state(genesis_address()).await;
+        assert!(account_state.is_ok());
         Ok(())
     }
 }

@@ -239,7 +239,7 @@ pub fn test_wallet_account() -> Result<()> {
         address: CORE_CODE_ADDRESS,
         module: Identifier::from(IdentStr::new("Account")?),
         name: Identifier::from(IdentStr::new("Account")?),
-        type_params: vec![],
+        type_args: vec![],
     };
     let access_path = AccessPath::resource_access_path(address, struct_tag);
     println!("access path is {:?}", access_path);

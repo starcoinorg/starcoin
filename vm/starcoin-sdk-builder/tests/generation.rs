@@ -6,7 +6,7 @@ use serde_generate as serdegen;
 use serde_generate::SourceInstaller as _;
 use serde_reflection::Registry;
 use starcoin_sdk_builder as buildgen;
-use starcoin_types::transaction::EntryABI;
+use starcoin_vm_types::transaction::EntryABI;
 use std::{io::Write, process::Command};
 use tempfile::tempdir;
 

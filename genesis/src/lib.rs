@@ -466,29 +466,29 @@ mod tests {
             "chain id in Move resource should equals ChainNetwork's chain_id."
         );
         let genesis_account_resource =
-            account_state_reader.get_account_resource(&genesis_address())?;
+            account_state_reader.get_account_resource(&genesis_address());
         assert!(
-            genesis_account_resource.is_some(),
+            genesis_account_resource.is_ok(),
             "genesis account must exist in genesis state."
         );
 
-        let genesis_balance = account_state_reader.get_balance(&genesis_address())?;
+        let genesis_balance = account_state_reader.get_balance(&genesis_address());
         assert!(
-            genesis_balance.is_some(),
+            genesis_balance.is_ok(),
             "genesis account balance must exist in genesis state."
         );
 
         let association_account_resource =
-            account_state_reader.get_account_resource(&association_address())?;
+            account_state_reader.get_account_resource(&association_address());
         assert!(
-            association_account_resource.is_some(),
+            association_account_resource.is_ok(),
             "association account must exist in genesis state."
         );
 
-        let association_balance = account_state_reader.get_balance(&association_address())?;
+        let association_balance = account_state_reader.get_balance(&association_address());
 
         assert!(
-            association_balance.is_some(),
+            association_balance.is_ok(),
             "association account balance must exist in genesis state."
         );
 
@@ -500,7 +500,7 @@ mod tests {
         // assert_eq!(vm_config.as_ref().unwrap(), &net.genesis_config().vm_config);
 
         let vm_publish_option =
-            account_state_reader.get_on_chain_config::<TransactionPublishOption>()?;
+            account_state_reader.get_on_chain_config::<TransactionPublishOption>();
         assert!(
             vm_publish_option.is_some(),
             "vm_publish_option on_chain_config should exist."
@@ -510,7 +510,7 @@ mod tests {
             &net.genesis_config().publishing_option
         );
 
-        let consensus_config = account_state_reader.get_on_chain_config::<ConsensusConfig>()?;
+        let consensus_config = account_state_reader.get_on_chain_config::<ConsensusConfig>();
         assert!(
             consensus_config.is_some(),
             "ConsensusConfig on_chain_config should exist."
@@ -527,7 +527,7 @@ mod tests {
         //     "DaoConfig on_chain_config should exist."
         // );
 
-        let version = account_state_reader.get_on_chain_config::<Version>()?;
+        let version = account_state_reader.get_on_chain_config::<Version>();
         assert!(version.is_some(), "Version on_chain_config should exist.");
         assert_eq!(
             version.as_ref().unwrap().major,
@@ -535,9 +535,9 @@ mod tests {
         );
 
         let module_upgrade_strategy =
-            account_state_reader.get_resource::<ModuleUpgradeStrategy>(genesis_address())?;
+            account_state_reader.get_resource::<ModuleUpgradeStrategy>(genesis_address());
         assert!(
-            module_upgrade_strategy.is_some(),
+            module_upgrade_strategy.is_ok(),
             "ModuleUpgradeStrategy should exist."
         );
         assert!(
@@ -581,8 +581,8 @@ mod tests {
         block_accumulator.append(&[HashValue::random()])?;
         block_accumulator.flush()?;
 
-        let epoch = account_state_reader.get_resource::<Epoch>(genesis_address())?;
-        assert!(epoch.is_some(), "Epoch resource should exist.");
+        let epoch = account_state_reader.get_resource::<Epoch>(genesis_address());
+        assert!(epoch.is_ok(), "Epoch resource should exist.");
 
         // test_gas_schedule_in_genesis(net, &state_db)?;
 
@@ -604,7 +604,7 @@ mod tests {
                 );
                 let account_state_reader = AccountStateReader::new(state_db);
                 let genesis_gas_schedule =
-                    account_state_reader.get_on_chain_config::<GasSchedule>()?;
+                    account_state_reader.get_on_chain_config::<GasSchedule>();
                 assert!(
                     genesis_gas_schedule.is_some(),
                     "GasSchedule config should exist."
