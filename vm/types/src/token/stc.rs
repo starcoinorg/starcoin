@@ -24,7 +24,7 @@ static G_STC_IDENTIFIER: Lazy<Identifier> = Lazy::new(|| Identifier::new(STC_NAM
 pub fn stc_type_tag() -> TypeTag {
     TypeTag::Struct(Box::new(StructTag {
         address: CORE_CODE_ADDRESS,
-        module: G_STC_IDENTIFIER.clone(),
+        module: Identifier::new("starcoin_coin").unwrap(),
         name: G_STC_IDENTIFIER.clone(),
         type_args: vec![],
     }))

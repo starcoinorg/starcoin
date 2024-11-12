@@ -1036,6 +1036,34 @@ pub enum EntryFunctionCall {
 
     TransactionFeeConvertToStarcoinFaBurnRef {},
 
+    /// Batch transfer token to others.
+    TransferScriptsBatchPeerToPeer {
+        token_type: TypeTag,
+        payeees: Vec<AccountAddress>,
+        _payee_auth_keys: Vec<Vec<u8>>,
+        amounts: Vec<u128>,
+    },
+
+    /// Batch transfer token to others.
+    TransferScriptsBatchPeerToPeerV2 {
+        token_type: TypeTag,
+        payeees: Vec<AccountAddress>,
+        amounts: Vec<u128>,
+    },
+
+    TransferScriptsPeerToPeer {
+        token_type: TypeTag,
+        payee: AccountAddress,
+        _payee_auth_key: Vec<u8>,
+        amount: u128,
+    },
+
+    TransferScriptsPeerToPeerV2 {
+        token_type: TypeTag,
+        payee: AccountAddress,
+        amount: u128,
+    },
+
     /// Used in on-chain governances to update the major version for the next epoch.
     /// Example usage:
     /// - `starcoin_framework::version::set_for_next_epoch(&framework_signer, new_version);`
@@ -1842,6 +1870,30 @@ impl EntryFunctionCall {
             TransactionFeeConvertToStarcoinFaBurnRef {} => {
                 transaction_fee_convert_to_starcoin_fa_burn_ref()
             }
+            TransferScriptsBatchPeerToPeer {
+                token_type,
+                payeees,
+                _payee_auth_keys,
+                amounts,
+            } => {
+                transfer_scripts_batch_peer_to_peer(token_type, payeees, _payee_auth_keys, amounts)
+            }
+            TransferScriptsBatchPeerToPeerV2 {
+                token_type,
+                payeees,
+                amounts,
+            } => transfer_scripts_batch_peer_to_peer_v2(token_type, payeees, amounts),
+            TransferScriptsPeerToPeer {
+                token_type,
+                payee,
+                _payee_auth_key,
+                amount,
+            } => transfer_scripts_peer_to_peer(token_type, payee, _payee_auth_key, amount),
+            TransferScriptsPeerToPeerV2 {
+                token_type,
+                payee,
+                amount,
+            } => transfer_scripts_peer_to_peer_v2(token_type, payee, amount),
             VersionSetForNextEpoch { major } => version_set_for_next_epoch(major),
             VersionSetVersion { major } => version_set_version(major),
             VestingAdminWithdraw { contract_address } => vesting_admin_withdraw(contract_address),
@@ -4454,6 +4506,88 @@ pub fn transaction_fee_convert_to_starcoin_fa_burn_ref() -> TransactionPayload {
     ))
 }
 
+/// Batch transfer token to others.
+pub fn transfer_scripts_batch_peer_to_peer(
+    token_type: TypeTag,
+    payeees: Vec<AccountAddress>,
+    _payee_auth_keys: Vec<Vec<u8>>,
+    amounts: Vec<u128>,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("transfer_scripts").to_owned(),
+        ),
+        ident_str!("batch_peer_to_peer").to_owned(),
+        vec![token_type],
+        vec![
+            bcs::to_bytes(&payeees).unwrap(),
+            bcs::to_bytes(&_payee_auth_keys).unwrap(),
+            bcs::to_bytes(&amounts).unwrap(),
+        ],
+    ))
+}
+
+/// Batch transfer token to others.
+pub fn transfer_scripts_batch_peer_to_peer_v2(
+    token_type: TypeTag,
+    payeees: Vec<AccountAddress>,
+    amounts: Vec<u128>,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("transfer_scripts").to_owned(),
+        ),
+        ident_str!("batch_peer_to_peer_v2").to_owned(),
+        vec![token_type],
+        vec![
+            bcs::to_bytes(&payeees).unwrap(),
+            bcs::to_bytes(&amounts).unwrap(),
+        ],
+    ))
+}
+
+pub fn transfer_scripts_peer_to_peer(
+    token_type: TypeTag,
+    payee: AccountAddress,
+    _payee_auth_key: Vec<u8>,
+    amount: u128,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("transfer_scripts").to_owned(),
+        ),
+        ident_str!("peer_to_peer").to_owned(),
+        vec![token_type],
+        vec![
+            bcs::to_bytes(&payee).unwrap(),
+            bcs::to_bytes(&_payee_auth_key).unwrap(),
+            bcs::to_bytes(&amount).unwrap(),
+        ],
+    ))
+}
+
+pub fn transfer_scripts_peer_to_peer_v2(
+    token_type: TypeTag,
+    payee: AccountAddress,
+    amount: u128,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("transfer_scripts").to_owned(),
+        ),
+        ident_str!("peer_to_peer_v2").to_owned(),
+        vec![token_type],
+        vec![
+            bcs::to_bytes(&payee).unwrap(),
+            bcs::to_bytes(&amount).unwrap(),
+        ],
+    ))
+}
+
 /// Used in on-chain governances to update the major version for the next epoch.
 /// Example usage:
 /// - `starcoin_framework::version::set_for_next_epoch(&framework_signer, new_version);`
@@ -6501,6 +6635,64 @@ mod decoder {
         }
     }
 
+    pub fn transfer_scripts_batch_peer_to_peer(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::TransferScriptsBatchPeerToPeer {
+                token_type: script.ty_args().get(0)?.clone(),
+                payeees: bcs::from_bytes(script.args().get(0)?).ok()?,
+                _payee_auth_keys: bcs::from_bytes(script.args().get(1)?).ok()?,
+                amounts: bcs::from_bytes(script.args().get(2)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn transfer_scripts_batch_peer_to_peer_v2(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::TransferScriptsBatchPeerToPeerV2 {
+                token_type: script.ty_args().get(0)?.clone(),
+                payeees: bcs::from_bytes(script.args().get(0)?).ok()?,
+                amounts: bcs::from_bytes(script.args().get(1)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn transfer_scripts_peer_to_peer(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::TransferScriptsPeerToPeer {
+                token_type: script.ty_args().get(0)?.clone(),
+                payee: bcs::from_bytes(script.args().get(0)?).ok()?,
+                _payee_auth_key: bcs::from_bytes(script.args().get(1)?).ok()?,
+                amount: bcs::from_bytes(script.args().get(2)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn transfer_scripts_peer_to_peer_v2(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::TransferScriptsPeerToPeerV2 {
+                token_type: script.ty_args().get(0)?.clone(),
+                payee: bcs::from_bytes(script.args().get(0)?).ok()?,
+                amount: bcs::from_bytes(script.args().get(1)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
     pub fn version_set_for_next_epoch(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
         if let TransactionPayload::EntryFunction(script) = payload {
             Some(EntryFunctionCall::VersionSetForNextEpoch {
@@ -7267,6 +7459,22 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
         map.insert(
             "transaction_fee_convert_to_starcoin_fa_burn_ref".to_string(),
             Box::new(decoder::transaction_fee_convert_to_starcoin_fa_burn_ref),
+        );
+        map.insert(
+            "transfer_scripts_batch_peer_to_peer".to_string(),
+            Box::new(decoder::transfer_scripts_batch_peer_to_peer),
+        );
+        map.insert(
+            "transfer_scripts_batch_peer_to_peer_v2".to_string(),
+            Box::new(decoder::transfer_scripts_batch_peer_to_peer_v2),
+        );
+        map.insert(
+            "transfer_scripts_peer_to_peer".to_string(),
+            Box::new(decoder::transfer_scripts_peer_to_peer),
+        );
+        map.insert(
+            "transfer_scripts_peer_to_peer_v2".to_string(),
+            Box::new(decoder::transfer_scripts_peer_to_peer_v2),
         );
         map.insert(
             "version_set_for_next_epoch".to_string(),

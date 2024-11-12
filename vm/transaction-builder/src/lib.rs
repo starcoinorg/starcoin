@@ -80,7 +80,7 @@ pub fn build_batch_script_function(
     EntryFunction::new(
         ModuleId::new(
             core_code_address(),
-            Identifier::new("TransferScripts").unwrap(),
+            Identifier::new("transfer_scripts").unwrap(),
         ),
         Identifier::new("batch_peer_to_peer_v2").unwrap(),
         vec![stc_type_tag()],
@@ -252,7 +252,7 @@ pub fn encode_transfer_script_by_token_code(
     EntryFunction::new(
         ModuleId::new(
             core_code_address(),
-            Identifier::new("TransferScripts").unwrap(),
+            Identifier::new("transfer_scripts").unwrap(),
         ),
         Identifier::new("peer_to_peer_v2").unwrap(),
         vec![TypeTag::Struct(Box::new(token_code.try_into().unwrap()))],
@@ -310,7 +310,7 @@ pub fn peer_to_peer_v2(
             TransactionPayload::EntryFunction(EntryFunction::new(
                 ModuleId::new(
                     core_code_address(),
-                    Identifier::new("TransferScripts").unwrap(),
+                    Identifier::new("transfer_scripts").unwrap(),
                 ),
                 Identifier::new("peer_to_peer_v2").unwrap(),
                 vec![stc_type_tag()],

@@ -81,12 +81,13 @@ module starcoin_framework::stc_transaction_fee {
         // extract fees
         let txn_fees = borrow_global_mut<TransactionFee<TokenType>>(fee_address);
         let value = coin::value<TokenType>(&txn_fees.fee);
-        debug::print(&std::string::utf8(b"stc_block::distribute_transaction_fees | value : "));
-        debug::print(&value);
 
         if (value > 0) {
+            debug::print(&std::string::utf8(b"stc_block::distribute_transaction_fees | Exit with value: "));
+            debug::print(&value);
             coin::extract(&mut txn_fees.fee, value)
         } else {
+            debug::print(&std::string::utf8(b"stc_block::distribute_transaction_fees | Exit with zero"));
             coin::zero<TokenType>()
         }
     }

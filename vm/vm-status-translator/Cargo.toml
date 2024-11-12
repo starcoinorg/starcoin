@@ -4,6 +4,7 @@ schemars = { workspace = true }
 serde = { workspace = true }
 starcoin-move-explain = { workspace = true }
 starcoin-vm-types = { workspace = true }
+move-core-types = { workspace = true }
 
 [package]
 authors = { workspace = true }

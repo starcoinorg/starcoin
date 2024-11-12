@@ -707,10 +707,10 @@ impl<'r, 'l> SessionExt<'r, 'l> {
         args: Vec<Vec<u8>>,
         sender: AccountAddress,
     ) -> VMResult<()> {
-        //load the script, perform verification
+        // load the script, perform verification
         let function = self.load_script(script.borrow(), ty_args.as_slice())?;
 
-        Self::check_script_return(ty_args.as_slice())?;
+        Self::check_script_return(function.return_tys())?;
 
         self.check_script_signer_and_build_args(
             &function,
@@ -733,7 +733,7 @@ impl<'r, 'l> SessionExt<'r, 'l> {
         let func = self.load_function(module, function_name, &ty_args)?;
         let param_tys = func.param_tys().to_owned();
 
-        Self::check_script_return(func.ty_args())?;
+        Self::check_script_return(func.return_tys())?;
 
         self.check_script_signer_and_build_args(&func, param_tys, args, sender)?;
 

@@ -652,22 +652,31 @@ module starcoin_framework::coin {
         amount: u64
     ): (u64, u64) {
         let coin_balance = coin_balance<CoinType>(account_addr);
+        debug::print(&std::string::utf8(b"coin::calculate_amount_to_withdraw | Entered, coin balance: "));
+        debug::print(&coin_balance);
+        debug::print(&account_addr);
+
         if (coin_balance >= amount) {
+            debug::print(&std::string::utf8(b"coin::calculate_amount_to_withdraw | Exited with enough coin balance"));
             (amount, 0)
         } else {
+            debug::print(&std::string::utf8(b"coin::calculate_amount_to_withdraw | withdraw from fungible asset"));
             let metadata = paired_metadata<CoinType>();
             if (option::is_some(&metadata) && primary_fungible_store::primary_store_exists(
                 account_addr,
                 option::destroy_some(metadata)
-            ))
+            )) {
+                debug::print(&std::string::utf8(b"coin::calculate_amount_to_withdraw | Exited with enough coin balance"));
                 (coin_balance, amount - coin_balance)
-            else
+            } else {
+                debug::print(&std::string::utf8(b"coin::calculate_amount_to_withdraw | Abort with primary_fungible_store check not valid"));
                 abort error::invalid_argument(EINSUFFICIENT_BALANCE)
+            }
         }
     }
 
     fun maybe_convert_to_fungible_store<CoinType>(account: address) acquires CoinStore, CoinConversionMap, CoinInfo {
-        // debug::print(&std::string::utf8(b"coin::maybe_convert_to_fungible_store | Entered"));
+        debug::print(&std::string::utf8(b"coin::maybe_convert_to_fungible_store | Entered"));
 
         if (!features::coin_to_fungible_asset_migration_feature_enabled()) {
             abort error::unavailable(ECOIN_TO_FUNGIBLE_ASSET_FEATURE_NOT_ENABLED)
@@ -706,11 +715,12 @@ module starcoin_framework::coin {
                 fungible_asset::set_frozen_flag_internal(store, frozen);
             }
         };
-        // debug::print(&std::string::utf8(b"coin::maybe_convert_to_fungible_store | Exited"));
 
         if (!exists<MigrationFlag>(store_address)) {
             move_to(&create_signer::create_signer(store_address), MigrationFlag {});
-        }
+        };
+
+        debug::print(&std::string::utf8(b"coin::maybe_convert_to_fungible_store | Exited"));
     }
 
     /// Voluntarily migrate to fungible store for `CoinType` if not yet.
@@ -898,7 +908,9 @@ module starcoin_framework::coin {
         account_addr: address,
         coin: Coin<CoinType>
     ) acquires CoinStore, CoinConversionMap, CoinInfo {
-        // debug::print(&std::string::utf8(b"coin::deposit | Entered"));
+        debug::print(&std::string::utf8(b"coin::deposit | Entered"));
+        debug::print(&account_addr);
+        debug::print(&value(&coin));
 
         if (exists<CoinStore<CoinType>>(account_addr)) {
             let coin_store = borrow_global_mut<CoinStore<CoinType>>(account_addr);
@@ -915,6 +927,7 @@ module starcoin_framework::coin {
                 &mut coin_store.deposit_events,
                 DepositEvent { amount: coin.value },
             );
+            debug::print(&std::string::utf8(b"coin::deposit | merge coin to store"));
             merge(&mut coin_store.coin, coin);
         } else {
             let metadata = paired_metadata<CoinType>();
@@ -924,9 +937,11 @@ module starcoin_framework::coin {
             )) {
                 primary_fungible_store::deposit(account_addr, coin_to_fungible_asset(coin));
             } else {
+                debug::print(&std::string::utf8(b"coin::deposit | abort with coin metadata not exists"));
                 abort error::not_found(ECOIN_STORE_NOT_PUBLISHED)
             };
-        }
+        };
+        debug::print(&std::string::utf8(b"coin::deposit | Exited"));
     }
 
     inline fun migrated_primary_fungible_store_exists(
@@ -978,6 +993,9 @@ module starcoin_framework::coin {
 
     /// Extracts `amount` from the passed-in `coin`, where the original token is modified in place.
     public fun extract<CoinType>(coin: &mut Coin<CoinType>, amount: u64): Coin<CoinType> {
+        debug::print(&std::string::utf8(b"coin::extract | Entered"));
+        debug::print(&amount);
+
         assert!(coin.value >= amount, error::invalid_argument(EINSUFFICIENT_BALANCE));
         spec {
             update supply<CoinType> = supply<CoinType> - amount;
@@ -986,6 +1004,7 @@ module starcoin_framework::coin {
         spec {
             update supply<CoinType> = supply<CoinType> + amount;
         };
+        debug::print(&std::string::utf8(b"coin::extract | Exited"));
         Coin { value: amount }
     }
 
@@ -1140,11 +1159,11 @@ module starcoin_framework::coin {
     }
 
     public fun register<CoinType>(account: &signer) acquires CoinConversionMap {
-        // debug::print(&std::string::utf8(b"coin::register | Entered"));
+        debug::print(&std::string::utf8(b"coin::register | Entered"));
         let account_addr = signer::address_of(account);
         // Short-circuit and do nothing if account is already registered for CoinType.
         if (is_account_registered<CoinType>(account_addr)) {
-            // debug::print(&std::string::utf8(b"coin::register | Exited, Account has registered"));
+            debug::print(&std::string::utf8(b"coin::register | Exited, Account has registered"));
             return
         };
 
@@ -1156,7 +1175,7 @@ module starcoin_framework::coin {
             withdraw_events: account::new_event_handle<WithdrawEvent>(account),
         };
         move_to(account, coin_store);
-        // debug::print(&std::string::utf8(b"coin::register | Exited"));
+        debug::print(&std::string::utf8(b"coin::register | Exited normally"));
     }
 
     /// Transfers `amount` of coins `CoinType` from `from` to `to`.
@@ -1165,8 +1184,10 @@ module starcoin_framework::coin {
         to: address,
         amount: u64,
     ) acquires CoinStore, CoinConversionMap, CoinInfo, PairedCoinType {
+        debug::print(&std::string::utf8(b"coin::transfer | Entered"));
         let coin = withdraw<CoinType>(from, amount);
         deposit(to, coin);
+        debug::print(&std::string::utf8(b"coin::transfer | Exited"));
     }
 
     /// Returns the `value` passed in `coin`.
@@ -1181,10 +1202,20 @@ module starcoin_framework::coin {
     ): Coin<CoinType> acquires CoinStore, CoinConversionMap, CoinInfo, PairedCoinType {
         let account_addr = signer::address_of(account);
 
+        debug::print(&std::string::utf8(b"coin::withdraw | Entered"));
+        debug::print(&account_addr);
+        debug::print(&amount);
+
         let (coin_amount_to_withdraw, fa_amount_to_withdraw) = calculate_amount_to_withdraw<CoinType>(
             account_addr,
             amount
         );
+
+        debug::print(&std::string::utf8(b"coin::withdraw | coin_amount_to_withdraw"));
+        debug::print(&coin_amount_to_withdraw);
+        debug::print(&std::string::utf8(b"coin::withdraw | fa_amount_to_withdraw"));
+        debug::print(&fa_amount_to_withdraw);
+
         let withdrawn_coin = if (coin_amount_to_withdraw > 0) {
             let coin_store = borrow_global_mut<CoinStore<CoinType>>(account_addr);
             assert!(
@@ -1214,6 +1245,9 @@ module starcoin_framework::coin {
             );
             merge(&mut withdrawn_coin, fungible_asset_to_coin(fa));
         };
+        debug::print(&std::string::utf8(b"coin::withdraw | Exit, withdraw amount:"));
+        debug::print(&value(&withdrawn_coin));
+
         withdrawn_coin
     }
 
