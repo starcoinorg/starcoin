@@ -1091,7 +1091,6 @@ impl StarcoinVM {
             .move_vm
             .new_session(storage, SessionId::txn_meta(&txn_data));
         let mut gas_meter = StarcoinGasMeter::new(gas_params.clone(), txn_data.max_gas_amount());
-        gas_meter.set_metering(false);
         // check signature
         let signature_checked_txn = match txn.check_signature() {
             Ok(t) => Ok(t),
