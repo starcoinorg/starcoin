@@ -12924,6 +12924,7 @@ dependencies = [
  "cucumber_rust",
  "jpst",
  "jsonpath",
+ "move-core-types",
  "regex",
  "scmd",
  "serde",

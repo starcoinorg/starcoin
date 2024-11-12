@@ -53,12 +53,9 @@ fn transfer_txn(
     amount: Option<u128>,
 ) -> Result<HashValue, Error> {
     let chain_state_reader = client.state_reader(StateRootOption::Latest)?;
-    let account_resource = chain_state_reader
-        .get_account_resource(from)
-        .unwrap()
-        .unwrap();
+    let account_resource = chain_state_reader.get_account_resource(from)?;
     let node_info = client.node_info()?;
-    let balance = chain_state_reader.get_balance(from).unwrap().unwrap();
+    let balance = chain_state_reader.get_balance(from)?;
     let amount = amount.unwrap_or(balance * 20 / 100);
     let raw_txn = build_transfer_txn(
         from,
