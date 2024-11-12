@@ -1,5 +1,5 @@
 use super::*;
-use rand::SeedableRng;
+use rand_0_7_3::SeedableRng;
 use starcoin_crypto::{ed25519, Uniform};
 
 use starcoin_types::genesis_config::ChainId;
@@ -88,7 +88,7 @@ fn new_tx() -> Arc<Transaction> {
         get_current_timestamp() + 60,
         ChainId::test(),
     );
-    let mut rng = rand::rngs::StdRng::from_seed([0; 32]);
+    let mut rng = rand_0_7_3::rngs::StdRng::from_seed([0; 32]);
     let private_key = ed25519::Ed25519PrivateKey::generate(&mut rng);
     let public_key = (&private_key).into();
 

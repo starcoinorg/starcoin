@@ -1,4 +1,5 @@
 use anyhow::{format_err, Result};
+use move_core_types::move_resource::MoveStructType;
 use rand::Rng;
 use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::Accumulator;
@@ -12,7 +13,6 @@ use starcoin_types::account_config;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::AccountResource;
-use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::state_view::StateReaderExt;
 use starcoin_vm_types::transaction::{SignedUserTransaction, Transaction};
 use std::collections::HashMap;

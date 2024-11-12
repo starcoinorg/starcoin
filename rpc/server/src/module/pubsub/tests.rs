@@ -72,7 +72,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
 
     let reader = block_chain.chain_state_reader();
     let balance = reader.get_balance(account_address)?;
-    assert_eq!(balance, Some(10000));
+    assert_eq!(balance, 10000);
 
     // now block is applied, we can emit events.
 
