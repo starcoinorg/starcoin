@@ -761,6 +761,7 @@ fn append_extra_gas_cost_for_txn_gas_constants(
         "txn.default_account_size".to_string(),
         txn.default_account_size,
     ));
+    entries.push(("txn.max_execution_gas".to_string(), 920_000_000));
 }
 
 static G_MOVE_FRAMEWORK_UPGRADE_STRS: Lazy<Vec<&str>> = Lazy::new(|| {

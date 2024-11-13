@@ -4,27 +4,29 @@
 //! This module contains the official gas meter implementation, along with some top-level gas
 //! parameters and traits to help manipulate them.
 
-use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
-use move_binary_format::file_format::CodeOffset;
-use move_core_types::gas_algebra::{
-    AbstractMemorySize, InternalGasPerAbstractMemoryUnit, InternalGasPerArg, InternalGasPerByte,
-    NumArgs, NumTypeNodes,
+use crate::LATEST_GAS_FEATURE_VERSION;
+use move_binary_format::{
+    errors::{Location, PartialVMError, PartialVMResult, VMResult},
+    file_format::CodeOffset,
 };
-use move_core_types::language_storage::ModuleId;
 use move_core_types::{
-    gas_algebra::{InternalGas, NumBytes},
+    account_address::AccountAddress,
+    gas_algebra::{
+        AbstractMemorySize, InternalGas, InternalGasPerAbstractMemoryUnit, InternalGasPerArg,
+        InternalGasPerByte, InternalGasUnit, NumArgs, NumBytes, NumTypeNodes,
+    },
+    identifier::IdentStr,
+    language_storage::ModuleId,
     vm_status::StatusCode,
 };
-use move_vm_types::gas::{GasMeter, SimpleInstruction};
-use move_vm_types::views::{TypeView, ValueView};
-use starcoin_gas_algebra::Gas;
+use move_vm_types::{
+    gas::{GasMeter, SimpleInstruction},
+    views::{TypeView, ValueView},
+};
+use starcoin_gas_algebra::{Gas, GasExpression};
+use starcoin_gas_schedule::{gas_params::instr::*, StarcoinGasParameters, VMGasParameters};
 #[cfg(testing)]
 use starcoin_logger::prelude::*;
-
-use move_binary_format::file_format_common::Opcodes;
-use move_core_types::account_address::AccountAddress;
-use move_core_types::identifier::IdentStr;
-use starcoin_gas_schedule::StarcoinGasParameters;
 
 /// The size in bytes for a reference on the stack
 const REFERENCE_SIZE: AbstractMemorySize = AbstractMemorySize::new(8);
@@ -36,17 +38,28 @@ const MIN_EXISTS_DATA_SIZE: AbstractMemorySize = AbstractMemorySize::new(100);
 /// It maintains an internal gas counter, measured in internal gas units, and carries an environment
 /// consisting all the gas parameters, which it can lookup when performing gas calculations.
 pub struct StarcoinGasMeter {
+    feature_version: u64,
     gas_params: StarcoinGasParameters,
+
     balance: InternalGas,
+
+    max_execution_gas: InternalGas,
+    execution_gas_used: InternalGas,
+
     charge: bool,
 }
 
 impl StarcoinGasMeter {
+    // todo: set feature_version
     pub fn new(gas_params: StarcoinGasParameters, balance: impl Into<Gas>) -> Self {
         let balance = balance.into().to_unit_with_params(&gas_params.vm.txn);
+        let max_execution_gas = gas_params.vm.txn.max_execution_gas.clone();
         Self {
+            feature_version: LATEST_GAS_FEATURE_VERSION,
             gas_params,
             balance,
+            max_execution_gas,
+            execution_gas_used: 0.into(),
             charge: true,
         }
     }
@@ -56,6 +69,7 @@ impl StarcoinGasMeter {
             .to_unit_round_down_with_params(&self.gas_params.vm.txn)
     }
 
+    // todo: remove me and use charge instead
     pub fn deduct_gas(&mut self, amount: InternalGas) -> PartialVMResult<()> {
         if !self.charge {
             return Ok(());
@@ -94,6 +108,53 @@ impl StarcoinGasMeter {
     pub fn cal_write_set_gas(&self) -> InternalGas {
         self.gas_params.vm.txn.cal_write_set_gas()
     }
+
+    fn charge(&mut self, amount: InternalGas) -> (InternalGas, PartialVMResult<()>) {
+        if !self.charge {
+            return (amount, Ok(()));
+        }
+
+        match self.balance.checked_sub(amount) {
+            Some(new_balance) => {
+                self.balance = new_balance;
+                (amount, Ok(()))
+            }
+            None => {
+                let old_balance = self.balance;
+                self.balance = 0.into();
+                (
+                    old_balance,
+                    Err(PartialVMError::new(StatusCode::OUT_OF_GAS)),
+                )
+            }
+        }
+    }
+}
+
+// implement partial functions from Trait GasAlgebra. see in aptos-move/aptos-gas-meter/src/algebra.rs
+impl StarcoinGasMeter {
+    #[allow(unused)]
+    fn feature_version(&self) -> u64 {
+        self.feature_version
+    }
+
+    fn charge_execution(
+        &mut self,
+        abstract_amount: impl GasExpression<VMGasParameters, Unit = InternalGasUnit>,
+    ) -> PartialVMResult<()> {
+        let amount = abstract_amount.evaluate(self.feature_version, &self.gas_params.vm);
+        let (actual, res) = self.charge(amount);
+        // Currently only feature version 13 or above is supported.
+        assert!(self.feature_version >= 13);
+        res?;
+
+        self.execution_gas_used += actual;
+
+        if self.execution_gas_used > self.max_execution_gas {
+            return Err(PartialVMError::new(StatusCode::OUT_OF_GAS));
+        }
+        Ok(())
+    }
 }
 
 #[inline]
@@ -117,64 +178,6 @@ fn cal_instr_with_byte(per_arg: InternalGasPerByte, size: NumBytes) -> InternalG
     per_arg * size
 }
 
-#[allow(dead_code)]
-#[inline]
-fn simple_instr_to_opcode(instr: SimpleInstruction) -> Opcodes {
-    match instr {
-        SimpleInstruction::Nop => Opcodes::NOP,
-        SimpleInstruction::Ret => Opcodes::RET,
-
-        SimpleInstruction::LdU8 => Opcodes::LD_U8,
-        SimpleInstruction::LdU64 => Opcodes::LD_U64,
-        SimpleInstruction::LdU128 => Opcodes::LD_U128,
-        SimpleInstruction::LdTrue => Opcodes::LD_TRUE,
-        SimpleInstruction::LdFalse => Opcodes::LD_FALSE,
-
-        SimpleInstruction::FreezeRef => Opcodes::FREEZE_REF,
-        SimpleInstruction::MutBorrowLoc => Opcodes::MUT_BORROW_LOC,
-        SimpleInstruction::ImmBorrowLoc => Opcodes::IMM_BORROW_LOC,
-        SimpleInstruction::ImmBorrowField => Opcodes::IMM_BORROW_FIELD,
-        SimpleInstruction::MutBorrowField => Opcodes::MUT_BORROW_FIELD,
-        SimpleInstruction::ImmBorrowFieldGeneric => Opcodes::IMM_BORROW_FIELD_GENERIC,
-        SimpleInstruction::MutBorrowFieldGeneric => Opcodes::MUT_BORROW_FIELD_GENERIC,
-
-        SimpleInstruction::CastU8 => Opcodes::CAST_U8,
-        SimpleInstruction::CastU64 => Opcodes::CAST_U64,
-        SimpleInstruction::CastU128 => Opcodes::CAST_U128,
-
-        SimpleInstruction::Add => Opcodes::ADD,
-        SimpleInstruction::Sub => Opcodes::SUB,
-        SimpleInstruction::Mul => Opcodes::MUL,
-        SimpleInstruction::Mod => Opcodes::MOD,
-        SimpleInstruction::Div => Opcodes::DIV,
-
-        SimpleInstruction::BitOr => Opcodes::BIT_OR,
-        SimpleInstruction::BitAnd => Opcodes::BIT_AND,
-        SimpleInstruction::Xor => Opcodes::XOR,
-        SimpleInstruction::Shl => Opcodes::SHL,
-        SimpleInstruction::Shr => Opcodes::SHR,
-
-        SimpleInstruction::Or => Opcodes::OR,
-        SimpleInstruction::And => Opcodes::AND,
-        SimpleInstruction::Not => Opcodes::NOT,
-
-        SimpleInstruction::Lt => Opcodes::LT,
-        SimpleInstruction::Gt => Opcodes::GT,
-        SimpleInstruction::Le => Opcodes::LE,
-        SimpleInstruction::Ge => Opcodes::GE,
-
-        SimpleInstruction::Abort => Opcodes::ABORT,
-
-        SimpleInstruction::LdU16 => Opcodes::LD_U16,
-        SimpleInstruction::LdU32 => Opcodes::LD_U32,
-        SimpleInstruction::LdU256 => Opcodes::LD_U256,
-
-        SimpleInstruction::CastU16 => Opcodes::CAST_U16,
-        SimpleInstruction::CastU32 => Opcodes::CAST_U32,
-        SimpleInstruction::CastU256 => Opcodes::CAST_U256,
-    }
-}
-
 impl GasMeter for StarcoinGasMeter {
     fn balance_internal(&self) -> InternalGas {
         if !self.charge {
@@ -184,32 +187,89 @@ impl GasMeter for StarcoinGasMeter {
     }
 
     #[inline]
-    fn charge_simple_instr(&mut self, _nstr: SimpleInstruction) -> PartialVMResult<()> {
+    fn charge_simple_instr(&mut self, instr: SimpleInstruction) -> PartialVMResult<()> {
         // ref https://github.com/aptos-labs/aptos-core/blob/3af88bc872221c4958e6163660c60bc07bf53d38/aptos-move/aptos-gas-meter/src/meter.rs#L58-L143
-        Ok(())
+        macro_rules! dispatch {
+            ($($name: ident => $cost: expr),* $(,)?) => {
+                match instr {
+                    $(SimpleInstruction::$name => self.charge_execution($cost)),*
+                }
+            };
+        }
+
+        dispatch! {
+            Nop=>NOP,
+            Ret=>RET,
+
+            LdU8=>LD_U8,
+            LdU64=>LD_U64,
+            LdU128=>LD_U128,
+            LdTrue=>LD_TRUE,
+            LdFalse=>LD_FALSE,
+
+            FreezeRef=>FREEZE_REF,
+            MutBorrowLoc=>MUT_BORROW_LOC,
+            ImmBorrowLoc=>IMM_BORROW_LOC,
+            ImmBorrowField=>IMM_BORROW_FIELD,
+            MutBorrowField=>MUT_BORROW_FIELD,
+            ImmBorrowFieldGeneric=>IMM_BORROW_FIELD_GENERIC,
+            MutBorrowFieldGeneric=>MUT_BORROW_FIELD_GENERIC,
+
+            CastU8=>CAST_U8,
+            CastU64=>CAST_U64,
+            CastU128=>CAST_U128,
+
+            Add=>ADD,
+            Sub=>SUB,
+            Mul=>MUL,
+            Mod=>MOD_,
+            Div=>DIV,
+
+            BitOr=>BIT_OR,
+            BitAnd=>BIT_AND,
+            Xor=>XOR,
+            Shl=>SHL,
+            Shr=>SHR,
+
+            Or=>OR,
+            And=>AND,
+            Not=>NOT,
+
+            Lt=>LT,
+            Gt=>GT,
+            Le=>LE,
+            Ge=>GE,
+
+            Abort=>ABORT,
+
+            LdU16=>LD_U16,
+            LdU32=>LD_U32,
+            LdU256=>LD_U256,
+            CastU16=>CAST_U16,
+            CastU32=>CAST_U32,
+            CastU256=>CAST_U256,
+        }
     }
 
     fn charge_br_true(&mut self, _target_offset: Option<CodeOffset>) -> PartialVMResult<()> {
-        Ok(())
+        self.charge_execution(BR_TRUE)
     }
 
     fn charge_br_false(&mut self, _target_offset: Option<CodeOffset>) -> PartialVMResult<()> {
-        Ok(())
+        self.charge_execution(BR_FALSE)
     }
 
     fn charge_branch(&mut self, _target_offset: CodeOffset) -> PartialVMResult<()> {
-        Ok(())
+        self.charge_execution(BRANCH)
     }
 
     fn charge_pop(&mut self, _popped_val: impl ValueView) -> PartialVMResult<()> {
-        let params = &self.gas_params.vm.instr;
-        let cost = params.pop;
         #[cfg(testing)]
         info!(
             "simple_instr pop cost InternalGasUnits({}) {}",
             cost, self.charge
         );
-        self.deduct_gas(cost)
+        self.charge_execution(POP)
     }
 
     #[inline]
