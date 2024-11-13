@@ -339,19 +339,20 @@ mod tests {
         data_cache::tests::as_resolver_with_group_size_kind,
         move_vm_ext::resolver::ResourceGroupResolver,
     };
-    use aptos_types::{
+    use claims::{assert_none, assert_some_eq};
+    use move_core_types::{
+        identifier::Identifier,
+        language_storage::{StructTag, TypeTag},
+    };
+    use starcoin_vm_types::resource_group_adapter::{group_size_as_sum, GroupSizeKind};
+    use starcoin_vm_types::{
         account_address::AccountAddress,
         state_store::{
             errors::StateviewError, state_storage_usage::StateStorageUsage,
             state_value::StateValue, TStateView,
         },
     };
-    use aptos_vm_types::resource_group_adapter::{group_size_as_sum, GroupSizeKind};
-    use claims::{assert_none, assert_some_eq};
-    use move_core_types::{
-        identifier::Identifier,
-        language_storage::{StructTag, TypeTag},
-    };
+    use std::collections::BTreeMap;
 
     fn raw_metadata(v: u64) -> StateValueMetadata {
         StateValueMetadata::legacy(v, &CurrentTimeMicroseconds { microseconds: v })
