@@ -17,7 +17,10 @@ use starcoin_dag::{
 };
 use starcoin_logger::prelude::debug;
 use starcoin_types::{
-    block::{BlockHeader, BlockHeaderBuilder, BlockNumber}, blockhash::{BlockHashMap, HashKTypeMap, KType}, consensus_header::ConsensusHeader, U256
+    block::{BlockHeader, BlockHeaderBuilder, BlockNumber},
+    blockhash::{BlockHashMap, HashKTypeMap, KType},
+    consensus_header::ConsensusHeader,
+    U256,
 };
 
 use std::{
@@ -740,9 +743,7 @@ fn add_and_print_with_difficulty(
     number: BlockNumber,
     parent: Hash,
     parents: Vec<Hash>,
-    origin: Hash,
     difficulty: U256,
-    dag: &mut BlockDAG,
 ) -> anyhow::Result<BlockHeader> {
     let header_builder = BlockHeaderBuilder::random();
     let header = header_builder
@@ -752,7 +753,6 @@ fn add_and_print_with_difficulty(
         .with_difficulty(difficulty)
         .build();
     let start = Instant::now();
-    // dag.commit(header.to_owned(), origin)?;
     let duration = start.elapsed();
     println!(
         "commit header: {:?}, number: {:?}, duration: {:?}",
@@ -760,12 +760,7 @@ fn add_and_print_with_difficulty(
         header.number(),
         duration
     );
-    // let ghostdata = dag.ghostdata(&[header.id()])?;
-    // let ghostdata = dag.ghostdata_by_hash(header.id())?.unwrap();
-    // println!(
-    //     "add a header: {:?}, selected_parent: {:?}, blue set: {:?}, red set: {:?}, blue anticone size: {:?}",
-    //     header, ghostdata.selected_parent, ghostdata.mergeset_blues, ghostdata.mergeset_reds, ghostdata.blues_anticone_sizes
-    // );
+
     Ok(header)
 }
 
@@ -1122,35 +1117,49 @@ fn loop_to_blue() -> anyhow::Result<()> {
 
     let mut storage = HashMap::new();
 
-    let block1 = add_and_print_with_difficulty(
-        1,
-        genesis.id(),
-        vec![genesis.id()],
-        genesis.parent_hash(),
-        U256::from(10),
-        &mut dag,
-    )?;
+    let block1 =
+        add_and_print_with_difficulty(1, genesis.id(), vec![genesis.id()], U256::from(10))?;
     storage.insert(block1.id(), block1.clone());
     let ghost = dag.ghostdata(&block1.parents())?;
-    let verified_ghost = dag.verify_and_ghostdata(&ghost.mergeset_blues.iter().skip(1).cloned().map(|x| storage.get(&x).unwrap().clone()).collect::<Vec<_>>(), &block1)?;
-    dag.commit_trusted_block(block1.clone(), genesis.parent_hash(), Arc::new(verified_ghost))?;
+    let verified_ghost = dag.verify_and_ghostdata(
+        &ghost
+            .mergeset_blues
+            .iter()
+            .skip(1)
+            .cloned()
+            .map(|x| storage.get(&x).unwrap().clone())
+            .collect::<Vec<_>>(),
+        &block1,
+    )?;
+    dag.commit_trusted_block(
+        block1.clone(),
+        genesis.parent_hash(),
+        Arc::new(verified_ghost),
+    )?;
 
     let mut bottom = vec![];
     let mut last = block1.clone();
     for i in 0..500 {
-        let block2 = add_and_print_with_difficulty(
-            1 + i,
-            last.id(),
-            vec![last.id()],
-            genesis.parent_hash(),
-            U256::from(10),
-            &mut dag,
-        )?;
+        let block2 =
+            add_and_print_with_difficulty(1 + i, last.id(), vec![last.id()], U256::from(10))?;
         last = block2.clone();
         storage.insert(block2.id(), block2.clone());
         let ghost = dag.ghostdata(&block2.parents())?;
-        let verified_ghost = dag.verify_and_ghostdata(&ghost.mergeset_blues.iter().skip(1).cloned().map(|x| storage.get(&x).unwrap().clone()).collect::<Vec<_>>(), &block2)?;
-        dag.commit_trusted_block(block2.clone(), genesis.parent_hash(), Arc::new(verified_ghost))?;
+        let verified_ghost = dag.verify_and_ghostdata(
+            &ghost
+                .mergeset_blues
+                .iter()
+                .skip(1)
+                .cloned()
+                .map(|x| storage.get(&x).unwrap().clone())
+                .collect::<Vec<_>>(),
+            &block2,
+        )?;
+        dag.commit_trusted_block(
+            block2.clone(),
+            genesis.parent_hash(),
+            Arc::new(verified_ghost),
+        )?;
         bottom.push(block2);
     }
 
@@ -1162,14 +1171,25 @@ fn loop_to_blue() -> anyhow::Result<()> {
                 3,
                 first.id(),
                 vec![first.id(), second.id()],
-                genesis.parent_hash(),
                 U256::from(10),
-                &mut dag,
             )?;
             storage.insert(block.id(), block.clone());
             let ghost = dag.ghostdata(&block.parents())?;
-            let verified_ghost = dag.verify_and_ghostdata(&ghost.mergeset_blues.iter().skip(1).cloned().map(|x| storage.get(&x).unwrap().clone()).collect::<Vec<_>>(), &block)?;
-            dag.commit_trusted_block(block.clone(), genesis.parent_hash(), Arc::new(verified_ghost))?;
+            let verified_ghost = dag.verify_and_ghostdata(
+                &ghost
+                    .mergeset_blues
+                    .iter()
+                    .skip(1)
+                    .cloned()
+                    .map(|x| storage.get(&x).unwrap().clone())
+                    .collect::<Vec<_>>(),
+                &block,
+            )?;
+            dag.commit_trusted_block(
+                block.clone(),
+                genesis.parent_hash(),
+                Arc::new(verified_ghost),
+            )?;
 
             last = block.clone();
             top.push(block);
@@ -1178,49 +1198,67 @@ fn loop_to_blue() -> anyhow::Result<()> {
                 3,
                 first.id(),
                 vec![first.id(), last.id()],
-                genesis.parent_hash(),
                 U256::from(10),
-                &mut dag,
             )?;
             storage.insert(block.id(), block.clone());
             let ghost = dag.ghostdata(&block.parents())?;
-            let verified_ghost = dag.verify_and_ghostdata(&ghost.mergeset_blues.iter().skip(1).cloned().map(|x| storage.get(&x).unwrap().clone()).collect::<Vec<_>>(), &block)?;
-            dag.commit_trusted_block(block.clone(), genesis.parent_hash(), Arc::new(verified_ghost))?;
-
-
+            let verified_ghost = dag.verify_and_ghostdata(
+                &ghost
+                    .mergeset_blues
+                    .iter()
+                    .skip(1)
+                    .cloned()
+                    .map(|x| storage.get(&x).unwrap().clone())
+                    .collect::<Vec<_>>(),
+                &block,
+            )?;
+            dag.commit_trusted_block(
+                block.clone(),
+                genesis.parent_hash(),
+                Arc::new(verified_ghost),
+            )?;
 
             top.push(block);
             if top.len() == 1 {
                 last = top[0].clone();
                 break;
             } else {
-                bottom = top.clone();
+                bottom.clone_from(&top);
                 iter = bottom.iter().peekable();
                 top.clear();
             }
         }
-    } 
+    }
 
     let block1_1 = add_and_print_with_difficulty(
         1,
         genesis.id(),
         vec![last.id(), block1.id()],
-        genesis.parent_hash(),
         U256::from(99999999),
-        &mut dag,
     )?;
     storage.insert(block1_1.id(), block1_1.clone());
     let ghost = dag.ghostdata(&block1_1.parents())?;
-    let verified_ghost = dag.verify_and_ghostdata(&ghost.mergeset_blues.iter().skip(1).cloned().map(|x| storage.get(&x).unwrap().clone()).collect::<Vec<_>>(), &block1_1)?;
-    dag.commit_trusted_block(block1_1.clone(), genesis.parent_hash(), Arc::new(verified_ghost))?;
+    let verified_ghost = dag.verify_and_ghostdata(
+        &ghost
+            .mergeset_blues
+            .iter()
+            .skip(1)
+            .cloned()
+            .map(|x| storage.get(&x).unwrap().clone())
+            .collect::<Vec<_>>(),
+        &block1_1,
+    )?;
+    dag.commit_trusted_block(
+        block1_1.clone(),
+        genesis.parent_hash(),
+        Arc::new(verified_ghost),
+    )?;
 
     let block3 = add_and_print_with_difficulty(
         3,
         block1_1.id(),
         vec![block1_1.id(), last.id()],
-        genesis.parent_hash(),
         U256::from(10),
-        &mut dag,
     )?;
 
     let ghostdata = dag.ghostdata(&block3.parents())?;

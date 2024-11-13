@@ -181,7 +181,7 @@ impl<
             !parents.is_empty(),
             "genesis must be added via a call to init"
         );
-        let selected_parent = self.find_selected_parent(header.parents_hash().into_iter())?; 
+        let selected_parent = self.find_selected_parent(header.parents_hash().into_iter())?;
         // Initialize new GHOSTDAG block data with the selected parent
         let mut new_block_data = GhostdagData::new_with_selected_parent(selected_parent, self.k);
         let ordered_mergeset = self.sort_blocks(
@@ -446,7 +446,10 @@ impl<
         // The maximum length of new_block_data.mergeset_blues can be K+1 because
         // it contains the selected parent.
         if new_block_data.mergeset_blues.len() as KType == self.k.checked_add(1).unwrap() {
-            info!("Checking blue candidate: {} failed, mergeset blues size is K+1", blue_candidate);
+            info!(
+                "Checking blue candidate: {} failed, mergeset blues size is K+1",
+                blue_candidate
+            );
             return Ok(ColoringOutput::Red);
         }
 
