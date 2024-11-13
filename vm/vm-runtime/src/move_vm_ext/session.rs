@@ -545,10 +545,11 @@ impl<'r, 'l> SessionExt<'r, 'l> {
         args: Vec<Vec<u8>>,
         sender: AccountAddress,
     ) -> VMResult<Vec<Vec<u8>>> {
+        let signer_ref = Type::Reference(Box::new(Type::Signer));
         let has_signer = func
             .param_tys()
             .iter()
-            .position(|i| matches!(i, &Type::Signer))
+            .position(|i| i == &Type::Signer || i == &signer_ref)
             .map(|pos| {
                 if pos != 0 {
                     Err(

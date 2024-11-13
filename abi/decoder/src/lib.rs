@@ -206,7 +206,11 @@ fn decode_script_function_inner(
         let arg_abis = func_abi.args();
         let first_arg_is_signer = arg_abis
             .first()
-            .filter(|abi| abi.type_abi() == &TypeInstantiation::Signer)
+            .filter(|abi| {
+                abi.type_abi() == &TypeInstantiation::Signer
+                    || abi.type_abi()
+                        == &TypeInstantiation::Reference(false, Box::new(TypeInstantiation::Signer))
+            })
             .is_some();
         if first_arg_is_signer {
             &arg_abis[1..]
