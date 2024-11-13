@@ -99,7 +99,9 @@ pub(crate) fn validate_combine_singer_and_args(
         match ty {
             Type::Signer => signer_param_cnt += 1,
             Type::Reference(inner_type) => {
-                if matches!(&**inner_type, Type::Signer) {
+                let signer_ref_type = Type::Reference(Box::new(Type::Signer));
+                if matches!(&**inner_type, Type::Signer) || matches!(&**inner_type, signer_ref_type)
+                {
                     signer_param_cnt += 1;
                 }
             }
