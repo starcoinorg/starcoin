@@ -443,8 +443,18 @@ fn test_reachability_check_ancestor() -> anyhow::Result<()> {
         reachability_store.write().deref_mut(),
         child,
         parent,
-        &mut vec![parent].into_iter(),
+        &mut vec![].into_iter(),
     )?;
+    // mergetset
+    let uncle1 = Hash::random();
+    let selected_parent_uncle1 = Hash::random();
+    inquirer::add_block(
+        reachability_store.write().deref_mut(),
+        selected_parent_uncle1,
+        parent,
+        &mut vec![].into_iter(),
+    )?;
+    let uncle2 = Hash::random();
 
     let mut target = child;
     let mut target_parent = parent;
@@ -457,17 +467,37 @@ fn test_reachability_check_ancestor() -> anyhow::Result<()> {
                 reachability_store.write().deref_mut(),
                 child,
                 parent,
-                &mut vec![parent].into_iter(),
+                &mut vec![uncle2, uncle1].into_iter(),
             )?;
 
             target = child;
             target_parent = parent;
+        } else if i == 46 {
+            inquirer::add_block(
+                reachability_store.write().deref_mut(),
+                child,
+                parent,
+                &mut vec![].into_iter(),
+            )?;
+            inquirer::add_block(
+                reachability_store.write().deref_mut(),
+                uncle1,
+                selected_parent_uncle1,
+                &mut vec![].into_iter(),
+            )?;
+
+            inquirer::add_block(
+                reachability_store.write().deref_mut(),
+                uncle2,
+                parent,
+                &mut vec![].into_iter(),
+            )?;
         } else {
             inquirer::add_block(
                 reachability_store.write().deref_mut(),
                 child,
                 parent,
-                &mut vec![parent].into_iter(),
+                &mut vec![].into_iter(),
             )?;
         }
     }
@@ -475,6 +505,18 @@ fn test_reachability_check_ancestor() -> anyhow::Result<()> {
     // the relationship
     // origin.....target_parent-target.....parent-child
     // ancestor
+    assert!(
+        dag.check_ancestor_of(selected_parent_uncle1, vec![parent, child])?,
+        "failed to check target is the ancestor of its descendant"
+    );
+    assert!(
+        dag.check_ancestor_of(uncle1, vec![parent, child])?,
+        "failed to check target is the ancestor of its descendant"
+    );
+    assert!(
+        dag.check_ancestor_of(uncle2, vec![parent, child])?,
+        "failed to check target is the ancestor of its descendant"
+    );
     assert!(
         dag.check_ancestor_of(target, vec![parent, child])?,
         "failed to check target is the ancestor of its descendant"
