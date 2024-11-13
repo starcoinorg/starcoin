@@ -334,19 +334,20 @@ impl<'r> WriteOpConverter<'r> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
     use super::*;
     use crate::{
         data_cache::tests::as_resolver_with_group_size_kind,
         move_vm_ext::resolver::ResourceGroupResolver,
     };
-    use aptos_types::{
+    use starcoin_vm_types::{
         account_address::AccountAddress,
         state_store::{
             errors::StateviewError, state_storage_usage::StateStorageUsage,
             state_value::StateValue, TStateView,
         },
     };
-    use aptos_vm_types::resource_group_adapter::{group_size_as_sum, GroupSizeKind};
+    use starcoin_vm_types::resource_group_adapter::{group_size_as_sum, GroupSizeKind};
     use claims::{assert_none, assert_some_eq};
     use move_core_types::{
         identifier::Identifier,

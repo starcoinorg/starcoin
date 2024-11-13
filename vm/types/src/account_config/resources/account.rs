@@ -1,10 +1,8 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::account_config::genesis_address;
 use crate::{account_config::constants::ACCOUNT_MODULE_NAME, event::EventHandle};
 use move_core_types::account_address::AccountAddress;
-use move_core_types::language_storage::{StructTag, CORE_CODE_ADDRESS};
 use move_core_types::{
     ident_str,
     identifier::IdentStr,
