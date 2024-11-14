@@ -61,7 +61,6 @@ use starcoin_vm_types::account_config::{
     association_address, core_code_address, STC_TOKEN_CODE_STR,
 };
 use starcoin_vm_types::state_store::state_key::StateKey;
-use starcoin_vm_types::state_store::state_value::StateValueMetadata;
 use starcoin_vm_types::state_store::TStateView;
 use starcoin_vm_types::transaction::authenticator::AccountPrivateKey;
 use starcoin_vm_types::transaction::SignedUserTransaction;
@@ -84,7 +83,6 @@ use std::sync::Mutex;
 use std::{collections::BTreeMap, convert::TryInto, path::Path, str::FromStr};
 use stdlib::{starcoin_framework_named_addresses, stdlib_files};
 use tempfile::{NamedTempFile, TempDir};
-use starcoin_vm_types::account_config::coin_store::CoinStoreResource;
 
 pub mod context;
 pub mod fork_chain;

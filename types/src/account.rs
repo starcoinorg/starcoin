@@ -19,23 +19,21 @@ use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::multi_ed25519::genesis_multi_key_pair;
 
 use starcoin_vm_types::{
-    account_config::{self, AccountResource, BalanceResource, coin_store, core_code_address, stc_type_tag, STC_TOKEN_CODE_STR},
-    language_storage::StructTag,
-    transaction::authenticator::{AccountPrivateKey, AccountPublicKey},
-    values::{Struct, Value},
+    account_config::{
+        self, coin_store::CoinStoreResource, core_code_address, stc_type_tag, AccountResource,
+    },
+    event::EventKey,
     genesis_config::ChainId,
     identifier::Identifier,
     language_storage::ModuleId,
+    language_storage::StructTag,
     state_store::state_key::StateKey,
-    token::token_code::TokenCode,
+    transaction::authenticator::{AccountPrivateKey, AccountPublicKey},
     transaction::EntryFunction,
     value::{MoveStructLayout, MoveTypeLayout},
+    values::{Struct, Value},
 };
-use std::convert::TryInto;
-use std::str::FromStr;
 use std::sync::Arc;
-use starcoin_vm_types::account_config::coin_store::CoinStoreResource;
-use starcoin_vm_types::event::EventKey;
 
 /// Details about a Starcoin account.
 ///
@@ -169,7 +167,6 @@ impl Account {
     pub fn rotate_key(&mut self, privkey: AccountPrivateKey) {
         self.private_key = Arc::new(privkey);
     }
-
 
     /// Returns a [`SignedUserTransaction`] with the arguments defined in `args` and this account as
     /// the sender.
@@ -322,7 +319,6 @@ impl Balance {
     }
 }
 
-
 //---------------------------------------------------------------------------
 // CoinStore resource representation
 //---------------------------------------------------------------------------
@@ -363,7 +359,6 @@ impl CoinStore {
         bcs_ext::to_bytes(&coin_store).unwrap()
     }
 }
-
 
 /// Represents an account along with initial state about it.
 ///
@@ -476,14 +471,12 @@ impl AccountData {
         bcs_ext::to_bytes(&account).unwrap()
     }
 
-
     pub fn event_handle_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![
             MoveTypeLayout::U64,
             MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
         ])
     }
-
 
     /// Returns the AccessPath that describes the Account resource instance.
     ///
@@ -510,7 +503,6 @@ impl AccountData {
     //         .expect("token code to type tag should be ok");
     //     BalanceResource::struct_tag_for_token(token_type_tag)
     // }
-
 
     //TODO create account by Move, avoid serialize data in rust.
     /// Creates a writeset that contains the account data and can be patched to the storage

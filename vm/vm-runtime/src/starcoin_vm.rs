@@ -248,7 +248,10 @@ impl StarcoinVM {
                     let data = self
                         .execute_readonly_function_internal(
                             state,
-                            &ModuleId::new(core_code_address(), G_VM_CONFIG_MODULE_IDENTIFIER.to_owned()),
+                            &ModuleId::new(
+                                core_code_address(),
+                                G_VM_CONFIG_MODULE_IDENTIFIER.to_owned(),
+                            ),
                             G_INSTRUCTION_SCHEDULE_IDENTIFIER.as_ident_str(),
                             vec![],
                             vec![],
@@ -266,7 +269,10 @@ impl StarcoinVM {
                     let data = self
                         .execute_readonly_function_internal(
                             state,
-                            &ModuleId::new(core_code_address(), G_VM_CONFIG_MODULE_IDENTIFIER.to_owned()),
+                            &ModuleId::new(
+                                core_code_address(),
+                                G_VM_CONFIG_MODULE_IDENTIFIER.to_owned(),
+                            ),
                             G_NATIVE_SCHEDULE_IDENTIFIER.as_ident_str(),
                             vec![],
                             vec![],
@@ -282,7 +288,10 @@ impl StarcoinVM {
                     let data = self
                         .execute_readonly_function_internal(
                             state,
-                            &ModuleId::new(core_code_address(), G_VM_CONFIG_MODULE_IDENTIFIER.to_owned()),
+                            &ModuleId::new(
+                                core_code_address(),
+                                G_VM_CONFIG_MODULE_IDENTIFIER.to_owned(),
+                            ),
                             G_GAS_CONSTANTS_IDENTIFIER.as_ident_str(),
                             vec![],
                             vec![],

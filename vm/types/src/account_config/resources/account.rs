@@ -1,10 +1,8 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::account_config::genesis_address;
 use crate::{account_config::constants::ACCOUNT_MODULE_NAME, event::EventHandle};
 use move_core_types::account_address::AccountAddress;
-use move_core_types::language_storage::{StructTag, CORE_CODE_ADDRESS};
 use move_core_types::{
     ident_str,
     identifier::IdentStr,
@@ -77,25 +75,6 @@ impl AccountResource {
 
     pub fn signer_capability_offer(&self) -> Option<AccountAddress> {
         self.signer_capability_offer
-    }
-
-    /// Returns if this account has delegated its withdrawal capability
-    pub fn has_delegated_withdrawal_capability(&self) -> bool {
-        // TODO(BobOng): [framework-upgrade] to remove this function, this function for compatible with old code
-        false
-    }
-
-    /// Returns if this account has delegated its key rotation capability
-    pub fn has_delegated_key_rotation_capability(&self) -> bool {
-        // TODO(BobOng): [framework-upgrade] to remove this function, this function for compatible with old code
-        self.rotation_capability_offer.is_none()
-    }
-
-
-    /// Return the accept_token_events handle for the given AccountResource
-    pub fn accept_token_events(&self) -> &EventHandle {
-        // TODO(BobOng): [framework-upgrade] to remove this function, this function for compatible with old code
-        &self.coin_register_events
     }
 }
 
