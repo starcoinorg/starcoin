@@ -15,8 +15,8 @@ use starcoin_crypto::{
     HashValue, ValidCryptoMaterialStringExt,
 };
 use starcoin_gas_algebra::CostTable;
-use starcoin_gas_meter::{StarcoinGasParameters, LATEST_GAS_FEATURE_VERSION};
-use starcoin_gas_schedule::{InitialGasSchedule, ToOnChainGasSchedule};
+use starcoin_gas_meter::StarcoinGasParameters;
+use starcoin_gas_schedule::{InitialGasSchedule, ToOnChainGasSchedule, LATEST_GAS_FEATURE_VERSION};
 use starcoin_time_service::{TimeService, TimeServiceType};
 use starcoin_uint::U256;
 use starcoin_vm_types::account_config::genesis_address;

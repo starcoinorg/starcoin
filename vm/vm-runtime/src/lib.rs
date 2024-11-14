@@ -12,8 +12,9 @@ pub mod counters;
 
 use move_core_types::vm_status::{StatusCode, VMStatus};
 pub use move_vm_runtime::{move_vm, session};
-use starcoin_gas_meter::LATEST_GAS_FEATURE_VERSION;
-use starcoin_gas_schedule::{InitialGasSchedule, StarcoinGasParameters, ToOnChainGasSchedule};
+use starcoin_gas_schedule::{
+    InitialGasSchedule, StarcoinGasParameters, ToOnChainGasSchedule, LATEST_GAS_FEATURE_VERSION,
+};
 
 mod access_path_cache;
 mod errors;

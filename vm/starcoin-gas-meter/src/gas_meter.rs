@@ -4,7 +4,6 @@
 //! This module contains the official gas meter implementation, along with some top-level gas
 //! parameters and traits to help manipulate them.
 
-use crate::LATEST_GAS_FEATURE_VERSION;
 use move_binary_format::{
     errors::{Location, PartialVMError, PartialVMResult, VMResult},
     file_format::CodeOffset,
@@ -24,7 +23,9 @@ use move_vm_types::{
     views::{TypeView, ValueView},
 };
 use starcoin_gas_algebra::{Gas, GasExpression};
-use starcoin_gas_schedule::{gas_params::instr::*, StarcoinGasParameters, VMGasParameters};
+use starcoin_gas_schedule::{
+    gas_params::instr::*, StarcoinGasParameters, VMGasParameters, LATEST_GAS_FEATURE_VERSION,
+};
 #[cfg(testing)]
 use starcoin_logger::prelude::*;
 

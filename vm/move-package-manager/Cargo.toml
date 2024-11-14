@@ -5,8 +5,8 @@ path = "src/main.rs"
 [dependencies]
 anyhow = { workspace = true }
 bcs = { workspace = true }
-clap =  { workspace = true }
-clap_3 = {  package = "clap", version = "3", features = ["derive"] }
+clap = { workspace = true }
+clap_3 = { package = "clap", version = "3", features = ["derive"] }
 
 
 difference = { workspace = true }
@@ -56,6 +56,7 @@ starcoin-transactional-test-harness = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-runtime = { features = ["testing"], workspace = true }
 starcoin-vm-types = { workspace = true }
+starcoin-gas-schedule = { workspace = true }
 stdlib = { workspace = true }
 vm-status-translator = { workspace = true }
 move-vm-test-utils = { workspace = true }
