@@ -58,7 +58,7 @@ fn main() -> Result<()> {
     let gas_params = G_LATEST_GAS_PARAMS.clone();
     // todo: select feature_version properly
     let natives = starcoin_natives(
-        1,
+        13,
         gas_params.natives,
         gas_params.vm.misc,
         TimedFeaturesBuilder::enable_all().build(),

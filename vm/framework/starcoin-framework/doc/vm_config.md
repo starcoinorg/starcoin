@@ -12,10 +12,10 @@
     -  [Function `initialize`](#@Specification_0_initialize)
 
 
-<pre><code><b>use</b> <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs">0x1::from_bcs</a>;
-<b>use</b> <a href="gas_schedule.md#0x1_gas_schedule">0x1::gas_schedule</a>;
+<pre><code><b>use</b> <a href="gas_schedule.md#0x1_gas_schedule">0x1::gas_schedule</a>;
 <b>use</b> <a href="on_chain_config.md#0x1_on_chain_config">0x1::on_chain_config</a>;
 <b>use</b> <a href="system_addresses.md#0x1_system_addresses">0x1::system_addresses</a>;
+<b>use</b> <a href="util.md#0x1_util">0x1::util</a>;
 </code></pre>
 
 
@@ -71,7 +71,7 @@ Initialize the table under the genesis account
 ) {
     // CoreAddresses::assert_genesis_address(<a href="account.md#0x1_account">account</a>);
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);
-    <b>let</b> <a href="gas_schedule.md#0x1_gas_schedule">gas_schedule</a>: GasScheduleV2 = <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_from_bytes">from_bcs::from_bytes</a>(gas_schedule_blob);
+    <b>let</b> <a href="gas_schedule.md#0x1_gas_schedule">gas_schedule</a>: GasScheduleV2 = <a href="util.md#0x1_util_from_bytes">util::from_bytes</a>(gas_schedule_blob);
     <a href="on_chain_config.md#0x1_on_chain_config_publish_new_config">on_chain_config::publish_new_config</a>&lt;<a href="vm_config.md#0x1_vm_config_VMConfig">VMConfig</a>&gt;(
         <a href="account.md#0x1_account">account</a>,
         <a href="vm_config.md#0x1_vm_config_VMConfig">VMConfig</a> {

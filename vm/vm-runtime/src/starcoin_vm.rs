@@ -170,11 +170,12 @@ impl StarcoinVM {
 
     pub fn load_configs<S: StateView>(&mut self, state: &S) -> Result<(), Error> {
         if state.is_genesis() {
+            let gas_schedule = default_gas_schedule();
             self.vm_config = Some(VMConfig {
-                gas_schedule: G_LATEST_GAS_COST_TABLE.clone(),
+                gas_schedule: gas_schedule.clone(),
             });
             self.version = Some(Version { major: 1 });
-            self.gas_schedule = Some(default_gas_schedule());
+            self.gas_schedule = Some(gas_schedule);
 
             #[cfg(feature = "print_gas_info")]
             self.gas_schedule.as_ref().unwrap().info("from is_genesis");
@@ -229,93 +230,14 @@ impl StarcoinVM {
         if let Some(v) = &self.version {
             // if version is 0, it represent latest version. we should consider it.
             let stdlib_version = v.clone().into_stdlib_version();
-            let _message;
-            (self.gas_schedule, _message) = if stdlib_version
-                < StdlibVersion::Version(VMCONFIG_UPGRADE_VERSION_MARK)
-            {
+            self.gas_schedule = {
                 debug!(
                     "stdlib version: {}, fetch VMConfig from onchain resource",
                     stdlib_version
                 );
-                (
-                    VMConfig::fetch_config(&remote_storage)
-                        .map(|v| GasSchedule::from(&v.gas_schedule)),
-                    "gas schedule from VMConfig",
-                )
-            } else {
-                debug!(
-                    "stdlib version: {}, fetch VMConfig from onchain module",
-                    stdlib_version
-                );
-                let instruction_schedule = {
-                    let data = self
-                        .execute_readonly_function_internal(
-                            state,
-                            &ModuleId::new(
-                                core_code_address(),
-                                G_VM_CONFIG_MODULE_IDENTIFIER.to_owned(),
-                            ),
-                            G_INSTRUCTION_SCHEDULE_IDENTIFIER.as_ident_str(),
-                            vec![],
-                            vec![],
-                            false,
-                        )?
-                        .pop()
-                        .ok_or_else(|| {
-                            anyhow::anyhow!(
-                                "Expect 0x1::VMConfig::instruction_schedule() return value"
-                            )
-                        })?;
-                    bcs_ext::from_bytes::<Vec<GasCost>>(&data)?
-                };
-                let native_schedule = {
-                    let data = self
-                        .execute_readonly_function_internal(
-                            state,
-                            &ModuleId::new(
-                                core_code_address(),
-                                G_VM_CONFIG_MODULE_IDENTIFIER.to_owned(),
-                            ),
-                            G_NATIVE_SCHEDULE_IDENTIFIER.as_ident_str(),
-                            vec![],
-                            vec![],
-                            false,
-                        )?
-                        .pop()
-                        .ok_or_else(|| {
-                            anyhow::anyhow!("Expect 0x1::VMConfig::native_schedule() return value")
-                        })?;
-                    bcs_ext::from_bytes::<Vec<GasCost>>(&data)?
-                };
-                let gas_constants = {
-                    let data = self
-                        .execute_readonly_function_internal(
-                            state,
-                            &ModuleId::new(
-                                core_code_address(),
-                                G_VM_CONFIG_MODULE_IDENTIFIER.to_owned(),
-                            ),
-                            G_GAS_CONSTANTS_IDENTIFIER.as_ident_str(),
-                            vec![],
-                            vec![],
-                            false,
-                        )?
-                        .pop()
-                        .ok_or_else(|| {
-                            anyhow::anyhow!("Expect 0x1::VMConfig::gas_constants() return value")
-                        })?;
-                    bcs_ext::from_bytes::<GasConstants>(&data)?
-                };
-                let cost_table = CostTable {
-                    instruction_table: instruction_schedule,
-                    native_table: native_schedule,
-                    gas_constants,
-                };
-                (
-                    Some(GasSchedule::from(&cost_table)),
-                    "gas schedule from VMConfig",
-                )
+                VMConfig::fetch_config(&remote_storage).map(|v| v.gas_schedule)
             };
+
             if stdlib_version >= StdlibVersion::Version(FLEXI_DAG_UPGRADE_VERSION_MARK) {
                 self.flexi_dag_config = FlexiDagConfig::fetch_config(&remote_storage);
                 debug!(
@@ -341,7 +263,7 @@ impl StarcoinVM {
             .ok_or(VMStatus::error(StatusCode::VM_STARTUP_FAILURE, None))
     }
 
-    pub fn get_gas_schedule(&self) -> Result<&CostTable, VMStatus> {
+    pub fn get_gas_schedule(&self) -> Result<&GasSchedule, VMStatus> {
         self.vm_config
             .as_ref()
             .map(|config| &config.gas_schedule)

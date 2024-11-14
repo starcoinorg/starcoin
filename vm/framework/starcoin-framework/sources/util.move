@@ -8,7 +8,7 @@ module starcoin_framework::util {
     /// Note that this function does not put any constraint on `T`. If code uses this function to
     /// deserialized a linear value, its their responsibility that the data they deserialize is
     /// owned.
-    public(friend) native fun from_bytes<T>(bytes: vector<u8>): T;
+    public native fun from_bytes<T>(bytes: vector<u8>): T;
 
     public fun address_from_bytes(bytes: vector<u8>): address {
         from_bytes(bytes)

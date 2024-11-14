@@ -430,6 +430,7 @@ Init the genesis for unit tests
     <b>let</b> script_allowed: bool = <b>true</b>;
     <b>let</b> module_publishing_allowed: bool = <b>true</b>;
 
+    // todo: initialize gas_schedule_blob properly
     <b>let</b> gas_schedule_blob: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>&lt;u8&gt;();
 
     // <a href="dao.md#0x1_dao">dao</a> config

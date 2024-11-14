@@ -3,7 +3,7 @@ module starcoin_framework::vm_config {
     use starcoin_framework::gas_schedule::GasScheduleV2;
     use starcoin_framework::system_addresses;
     use starcoin_framework::on_chain_config;
-    use starcoin_framework::from_bcs;
+    use starcoin_framework::util;
 
     spec module {
         pragma verify = false;
@@ -23,7 +23,7 @@ module starcoin_framework::vm_config {
     ) {
         // CoreAddresses::assert_genesis_address(account);
         system_addresses::assert_starcoin_framework(account);
-        let gas_schedule: GasScheduleV2 = from_bcs::from_bytes(gas_schedule_blob);
+        let gas_schedule: GasScheduleV2 = util::from_bytes(gas_schedule_blob);
         on_chain_config::publish_new_config<VMConfig>(
             account,
             VMConfig {
