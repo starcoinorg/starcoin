@@ -489,10 +489,6 @@ impl<'a> StarcoinTestAdapter<'a> {
                 signer_addr
             )
             })?;
-        println!(
-            "StarcoinTestAdapter::fetch_account_resource | signer_addr: {:?}, bcs blob: {:?}",
-            signer_addr, account_blob
-        );
         Ok(bcs::from_bytes(&account_blob).unwrap())
     }
 
