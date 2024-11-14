@@ -16,14 +16,13 @@ use starcoin_crypto::{
 };
 use starcoin_gas_algebra::CostTable;
 use starcoin_gas_meter::{StarcoinGasParameters, LATEST_GAS_FEATURE_VERSION};
-use starcoin_gas_schedule::{FromOnChainGasSchedule, InitialGasSchedule, ToOnChainGasSchedule};
+use starcoin_gas_schedule::{InitialGasSchedule, ToOnChainGasSchedule};
 use starcoin_time_service::{TimeService, TimeServiceType};
 use starcoin_uint::U256;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::event::{EventHandle, EventKey};
 use starcoin_vm_types::gas_schedule::{
-    latest_cost_table, G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_GAS_CONSTANTS_V3,
-    G_LATEST_GAS_COST_TABLE, G_TEST_GAS_CONSTANTS,
+    G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_GAS_CONSTANTS_V3, G_TEST_GAS_CONSTANTS,
 };
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy, StdlibVersion};
 use starcoin_vm_types::on_chain_config::{

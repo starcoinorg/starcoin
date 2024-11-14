@@ -21,7 +21,7 @@ use num_cpus;
 use once_cell::sync::OnceCell;
 use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
 use starcoin_crypto::HashValue;
-use starcoin_gas_algebra::{CostTable, Gas, GasConstants, GasCost};
+use starcoin_gas_algebra::Gas;
 use starcoin_gas_meter::StarcoinGasMeter;
 use starcoin_gas_schedule::{
     FromOnChainGasSchedule, InitialGasSchedule, NativeGasParameters, StarcoinGasParameters,
@@ -44,19 +44,16 @@ use starcoin_vm_types::{
     access::{ModuleAccess, ScriptAccess},
     account_address::AccountAddress,
     account_config::{
-        core_code_address, genesis_address, upgrade::UpgradeEvent, ModuleUpgradeStrategy,
-        TwoPhaseUpgradeV2Resource, G_EPILOGUE_NAME, G_PROLOGUE_NAME,
+        genesis_address, upgrade::UpgradeEvent, ModuleUpgradeStrategy, TwoPhaseUpgradeV2Resource,
+        G_EPILOGUE_NAME, G_PROLOGUE_NAME,
     },
     errors::{Location, PartialVMError, VMResult},
     file_format::{CompiledModule, CompiledScript},
-    gas_schedule::G_LATEST_GAS_COST_TABLE,
     genesis_config::StdlibVersion,
     identifier::IdentStr,
     language_storage::{ModuleId, TypeTag},
     on_chain_config::{
         FlexiDagConfig, GasSchedule, MoveLanguageVersion, OnChainConfig, VMConfig, Version,
-        G_GAS_CONSTANTS_IDENTIFIER, G_INSTRUCTION_SCHEDULE_IDENTIFIER,
-        G_NATIVE_SCHEDULE_IDENTIFIER, G_VM_CONFIG_MODULE_IDENTIFIER,
     },
     state_store::{state_key::StateKey, StateView, TStateView},
     state_view::StateReaderExt,
@@ -67,11 +64,11 @@ use starcoin_vm_types::{
 };
 use std::{borrow::Borrow, cmp::min, sync::Arc};
 
-static EXECUTION_CONCURRENCY_LEVEL: OnceCell<usize> = OnceCell::new();
-
 #[cfg(feature = "metrics")]
 use crate::metrics::VMMetrics;
 use crate::{verifier, VMExecutor};
+
+static EXECUTION_CONCURRENCY_LEVEL: OnceCell<usize> = OnceCell::new();
 
 #[derive(Clone)]
 #[allow(clippy::upper_case_acronyms)]
@@ -90,7 +87,6 @@ pub struct StarcoinVM {
 }
 
 /// marking of stdlib version which includes vmconfig upgrades.
-const VMCONFIG_UPGRADE_VERSION_MARK: u64 = 10;
 const FLEXI_DAG_UPGRADE_VERSION_MARK: u64 = 12;
 // const GAS_SCHEDULE_UPGRADE_VERSION_MARK: u64 = 12;
 
