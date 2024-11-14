@@ -31,11 +31,16 @@ pub fn test_native_function_matches() -> Result<()> {
         })
         .collect();
 
-    let mut native_function_table =
-        starcoin_vm_runtime::natives::starcoin_natives(G_LATEST_GAS_PARAMS.clone().natives)
-            .iter()
-            .map(|(addr, m_name, f_name, _)| (*addr, m_name.to_string(), f_name.to_string()))
-            .collect::<HashSet<_>>();
+    let mut native_function_table = starcoin_vm_runtime::natives::starcoin_natives(
+        6,
+        G_LATEST_GAS_PARAMS.clone().natives,
+        G_LATEST_GAS_PARAMS.clone().vm.misc,
+        starcoin_vm_types::on_chain_config::TimedFeaturesBuilder::enable_all().build(),
+        starcoin_vm_types::on_chain_config::Features::default(),
+    )
+    .iter()
+    .map(|(addr, m_name, f_name, _)| (*addr, m_name.to_string(), f_name.to_string()))
+    .collect::<HashSet<_>>();
 
     for f in native_functions {
         assert!(

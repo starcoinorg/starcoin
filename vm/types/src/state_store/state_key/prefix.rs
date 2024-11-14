@@ -45,7 +45,7 @@ impl From<AccountAddress> for StateKeyPrefix {
 #[cfg(test)]
 mod tests {
     use crate::{
-        account_config::AccountResource,
+        account_config::{AccountResource, CoinStoreResource},
         state_store::state_key::{inner::StateKeyTag, prefix::StateKeyPrefix, StateKey},
     };
     use move_core_types::account_address::AccountAddress;

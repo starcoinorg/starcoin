@@ -263,13 +263,43 @@ impl TResourceGroupView for ResourceGroupAdapter<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tests::utils::{mock_tag_0, mock_tag_1, mock_tag_2};
-    use aptos_types::state_store::{
-        state_storage_usage::StateStorageUsage, state_value::StateValue, TStateView,
-    };
     use claims::{assert_gt, assert_none, assert_ok_eq, assert_some, assert_some_eq};
+    use move_core_types::account_address::AccountAddress;
+    use move_core_types::identifier::Identifier;
+    use move_core_types::language_storage::TypeTag;
+    use starcoin_vm_types::state_store::{
+        errors::StateviewError, state_storage_usage::StateStorageUsage, state_value::StateValue,
+        TStateView,
+    };
     use std::cmp::max;
     use test_case::test_case;
+
+    fn mock_tag_0() -> StructTag {
+        StructTag {
+            address: AccountAddress::ONE,
+            module: Identifier::new("a").unwrap(),
+            name: Identifier::new("a").unwrap(),
+            type_args: vec![TypeTag::U8],
+        }
+    }
+
+    fn mock_tag_1() -> StructTag {
+        StructTag {
+            address: AccountAddress::ONE,
+            module: Identifier::new("abcde").unwrap(),
+            name: Identifier::new("fgh").unwrap(),
+            type_args: vec![TypeTag::U64],
+        }
+    }
+
+    fn mock_tag_2() -> StructTag {
+        StructTag {
+            address: AccountAddress::ONE,
+            module: Identifier::new("abcdex").unwrap(),
+            name: Identifier::new("fghx").unwrap(),
+            type_args: vec![TypeTag::U128],
+        }
+    }
 
     struct MockGroup {
         blob: Vec<u8>,
@@ -327,15 +357,22 @@ mod tests {
     impl TStateView for MockStateView {
         type Key = StateKey;
 
-        fn get_state_value(&self, state_key: &Self::Key) -> anyhow::Result<Option<StateValue>> {
+        fn get_state_value(
+            &self,
+            state_key: &Self::Key,
+        ) -> anyhow::Result<Option<StateValue>, StateviewError> {
             Ok(self
                 .group
                 .get(state_key)
                 .map(|entry| StateValue::new_legacy(entry.blob.clone().into())))
         }
 
-        fn get_usage(&self) -> anyhow::Result<StateStorageUsage> {
+        fn get_usage(&self) -> anyhow::Result<StateStorageUsage, StateviewError> {
             unimplemented!();
+        }
+
+        fn is_genesis(&self) -> bool {
+            todo!()
         }
     }
 
