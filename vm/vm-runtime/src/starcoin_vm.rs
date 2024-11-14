@@ -110,7 +110,6 @@ impl StarcoinVM {
         });
         let gas_params = StarcoinGasParameters::initial();
         let native_params = gas_params.natives.clone();
-        // todo: double check if it's ok to use RemoteStorage as StarcoinMoveResolver
         let resolver = StorageAdapter::new(state);
         let inner = MoveVmExt::new(
             native_params.clone(),

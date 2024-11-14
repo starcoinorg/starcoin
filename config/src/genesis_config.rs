@@ -1033,7 +1033,6 @@ pub static G_PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 1000, // 1 minute
         },
         transaction_timeout: ONE_DAY,
-        // todo: rollback it to zero and initialize BlockDag properly
         dag_effective_height: 0u64,
     }
 });
