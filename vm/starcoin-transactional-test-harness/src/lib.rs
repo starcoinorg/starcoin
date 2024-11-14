@@ -4,10 +4,12 @@
 use crate::context::ForkContext;
 use anyhow::{bail, format_err, Result};
 use clap::{Args, CommandFactory, Parser};
+use log::info;
 use move_binary_format::{file_format::CompiledScript, CompiledModule};
 use move_command_line_common::address::ParsedAddress;
 use move_command_line_common::files::verify_and_create_named_address_mapping;
 use move_compiler::compiled_unit::{AnnotatedCompiledUnit, CompiledUnitEnum};
+use move_compiler::shared::known_attributes::KnownAttribute;
 use move_compiler::shared::{NumberFormat, NumericalAddress, PackagePaths};
 use move_compiler::{construct_pre_compiled_lib, FullyCompiledProgram};
 use move_core_types::language_storage::StructTag;
@@ -59,7 +61,6 @@ use starcoin_vm_types::account_config::{
     association_address, core_code_address, STC_TOKEN_CODE_STR,
 };
 use starcoin_vm_types::state_store::state_key::StateKey;
-use starcoin_vm_types::state_store::state_value::StateValueMetadata;
 use starcoin_vm_types::state_store::TStateView;
 use starcoin_vm_types::transaction::authenticator::AccountPrivateKey;
 use starcoin_vm_types::transaction::SignedUserTransaction;
@@ -477,14 +478,13 @@ impl<'a> StarcoinTestAdapter<'a> {
     /// Obtain a Rust representation of the account resource from storage, which is used to derive
     /// a few default transaction parameters.
     fn fetch_account_resource(&self, signer_addr: &AccountAddress) -> Result<AccountResource> {
-        let account_access_path =
-            StateKey::resource(signer_addr, &AccountResource::struct_tag()).unwrap();
         let account_blob = self
             .context
             .storage
-            .get_state_value_bytes(&account_access_path)?
+            .get_state_value_bytes(&StateKey::resource_typed::<AccountResource>(signer_addr)?)
+            .unwrap()
             .ok_or_else(|| {
-                anyhow::anyhow!(
+                format_err!(
                 "Failed to fetch account resource under address {}. Has the account been created?",
                 signer_addr
             )
@@ -525,36 +525,32 @@ impl<'a> StarcoinTestAdapter<'a> {
         let genesis_account_data = AccountData::with_account_and_event_counts(
             Account::new_genesis_account(genesis_address()),
             balance.token(),
-            STC_TOKEN_CODE_STR,
             genesis_account.sequence_number(),
-            genesis_account.withdraw_events().count(),
-            genesis_account.deposit_events().count(),
-            genesis_account.accept_token_events().count(),
-            genesis_account.has_delegated_key_rotation_capability(),
-            genesis_account.has_delegated_withdrawal_capability(),
+            0,
+            0,
         );
         self.context
             .apply_write_set(genesis_account_data.to_writeset())?;
 
-        {
-            let mut writes = WriteSetMut::default();
-            writes.insert((
-                StateKey::resource(
-                    &genesis_address(),
-                    &StructTag {
-                        address: genesis_address(),
-                        module: Identifier::new("Account")?,
-                        name: Identifier::new("SignerDelegated")?,
-                        type_args: vec![],
-                    },
-                )
-                .unwrap(),
-                WriteOp::Deletion {
-                    metadata: StateValueMetadata::none(),
-                },
-            ));
-            self.context.apply_write_set(writes.freeze().unwrap())?;
-        }
+        // {
+        //     let mut writes = WriteSetMut::default();
+        //     writes.insert((
+        //         StateKey::resource(
+        //             &genesis_address(),
+        //             &StructTag {
+        //                 address: genesis_address(),
+        //                 module: Identifier::new("Account")?,
+        //                 name: Identifier::new("SignerDelegated")?,
+        //                 type_args: vec![],
+        //             },
+        //         )
+        //         .unwrap(),
+        //         WriteOp::Deletion {
+        //             metadata: StateValueMetadata::none(),
+        //         },
+        //     ));
+        //     self.context.apply_write_set(writes.freeze().unwrap())?;
+        // }
         Ok(())
     }
 
@@ -569,13 +565,9 @@ impl<'a> StarcoinTestAdapter<'a> {
         let account_data = AccountData::with_account_and_event_counts(
             Account::new_genesis_account(address),
             balance.token(),
-            STC_TOKEN_CODE_STR,
             account.sequence_number(),
-            account.withdraw_events().count(),
-            account.deposit_events().count(),
-            account.accept_token_events().count(),
-            account.has_delegated_key_rotation_capability(),
-            account.has_delegated_withdrawal_capability(),
+            0,
+            0,
         );
         self.context.apply_write_set(account_data.to_writeset())?;
         Ok(())
@@ -772,7 +764,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             EntryFunction::new(
                 ModuleId::new(
                     core_code_address(),
-                    Identifier::new("TransferScripts").unwrap(),
+                    Identifier::new("transfer_scripts").unwrap(),
                 ),
                 Identifier::new("peer_to_peer_v2").unwrap(),
                 vec![stc_type_tag()],
@@ -814,7 +806,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         let last_blockmeta = self
             .context
             .storage
-            .get_resource_type::<on_chain_resource::BlockMetadataV2>(genesis_address())?;
+            .get_resource_type::<on_chain_resource::BlockMetadata>(genesis_address())?;
 
         let height = number
             .or_else(|| Some(last_blockmeta.number + 1))
@@ -1077,7 +1069,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
     }
 
     fn known_attributes(&self) -> &BTreeSet<String> {
-        todo!()
+        KnownAttribute::get_all_attribute_names()
     }
 
     fn init(
@@ -1203,8 +1195,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
 
         me.hack_account(association_address()).unwrap();
 
-        if fork_flag {
-        } else {
+        if !fork_flag {
             // auto start from a new block based on existed state.
             me.handle_new_block(None, None, None, None)
                 .expect("init test adapter failed");

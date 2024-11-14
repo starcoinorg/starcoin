@@ -8,7 +8,7 @@ mod global_time;
 pub mod nft;
 mod treasury;
 
-pub use block_metadata::{BlockMetadata, BlockMetadataV2};
+pub use block_metadata::BlockMetadata;
 pub use epoch::{Epoch, EpochData, EpochInfo};
 pub use global_time::GlobalTimeOnChain;
 pub use treasury::{LinearWithdrawCapability, Treasury};

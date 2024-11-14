@@ -76,36 +76,6 @@ impl AccountResource {
     pub fn signer_capability_offer(&self) -> Option<AccountAddress> {
         self.signer_capability_offer
     }
-
-    /// Returns if this account has delegated its withdrawal capability
-    pub fn has_delegated_withdrawal_capability(&self) -> bool {
-        // TODO(BobOng): [framework-upgrade] to remove this function, this function for compatible with old code
-        false
-    }
-
-    /// Returns if this account has delegated its key rotation capability
-    pub fn has_delegated_key_rotation_capability(&self) -> bool {
-        // TODO(BobOng): [framework-upgrade] to remove this function, this function for compatible with old code
-        self.rotation_capability_offer.is_none()
-    }
-
-    /// Return the deposit_events handle for the given AccountResource
-    pub fn deposit_events(&self) -> &EventHandle {
-        // TODO(BobOng): [framework-upgrade] to remove this function, this function for compatible with old code
-        &self.coin_register_events
-    }
-
-    /// Return the withdraw_events handle for the given AccountResource
-    pub fn withdraw_events(&self) -> &EventHandle {
-        // TODO(BobOng): [framework-upgrade] to remove this function, this function for compatible with old code
-        &self.coin_register_events
-    }
-
-    /// Return the accept_token_events handle for the given AccountResource
-    pub fn accept_token_events(&self) -> &EventHandle {
-        // TODO(BobOng): [framework-upgrade] to remove this function, this function for compatible with old code
-        &self.coin_register_events
-    }
 }
 
 impl MoveStructType for AccountResource {
