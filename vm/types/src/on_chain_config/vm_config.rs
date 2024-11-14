@@ -1,7 +1,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::on_chain_config::OnChainConfig;
+use crate::on_chain_config::{GasSchedule, OnChainConfig};
 use anyhow::{format_err, Result};
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::{StructTag, TypeTag, CORE_CODE_ADDRESS};
@@ -88,7 +88,7 @@ impl OnChainConfig for TransactionPublishOption {
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct VMConfig {
-    pub gas_schedule: CostTable,
+    pub gas_schedule: GasSchedule,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -119,17 +119,6 @@ impl CostTableInner {
 impl OnChainConfig for VMConfig {
     const MODULE_IDENTIFIER: &'static str = VM_CONFIG_MODULE_NAME;
     const TYPE_IDENTIFIER: &'static str = VM_CONFIG_STRUCT_NAME;
-
-    fn deserialize_into_config(bytes: &[u8]) -> Result<Self> {
-        let raw_vm_config = bcs_ext::from_bytes::<VMConfigInner>(bytes).map_err(|e| {
-            format_err!(
-                "Failed first round of deserialization for VMConfigInner: {}",
-                e
-            )
-        })?;
-        let gas_schedule = raw_vm_config.gas_schedule.as_cost_table()?;
-        Ok(Self { gas_schedule })
-    }
 }
 
 pub fn vm_config_type_tag() -> TypeTag {

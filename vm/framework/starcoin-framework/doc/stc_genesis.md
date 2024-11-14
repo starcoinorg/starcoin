@@ -54,7 +54,7 @@ The module for init Genesis
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="stc_genesis.md#0x1_stc_genesis_initialize">initialize</a>(stdlib_version: u64, reward_delay: u64, total_stc_amount: u128, pre_mine_stc_amount: u128, time_mint_stc_amount: u128, time_mint_stc_period: u64, parent_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, association_auth_key: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, genesis_auth_key: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="chain_id.md#0x1_chain_id">chain_id</a>: u8, _genesis_timestamp: u64, uncle_rate_target: u64, epoch_block_count: u64, base_block_time_target: u64, base_block_difficulty_window: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8, script_allowed: bool, module_publishing_allowed: bool, instruction_schedule: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, native_schedule: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, global_memory_per_byte_cost: u64, global_memory_per_byte_write_cost: u64, min_transaction_gas_units: u64, large_transaction_cutoff: u64, instrinsic_gas_per_byte: u64, maximum_number_of_gas_units: u64, min_price_per_gas_unit: u64, max_price_per_gas_unit: u64, max_transaction_size_in_bytes: u64, gas_unit_scaling_factor: u64, default_account_size: u64, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64, transaction_timeout: u64, _dag_effective_height: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="stc_genesis.md#0x1_stc_genesis_initialize">initialize</a>(stdlib_version: u64, reward_delay: u64, total_stc_amount: u128, pre_mine_stc_amount: u128, time_mint_stc_amount: u128, time_mint_stc_period: u64, parent_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, association_auth_key: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, genesis_auth_key: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="chain_id.md#0x1_chain_id">chain_id</a>: u8, _genesis_timestamp: u64, uncle_rate_target: u64, epoch_block_count: u64, base_block_time_target: u64, base_block_difficulty_window: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8, script_allowed: bool, module_publishing_allowed: bool, gas_schedule_blob: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64, transaction_timeout: u64, _dag_effective_height: u64)
 </code></pre>
 
 
@@ -91,20 +91,7 @@ The module for init Genesis
     //vm config
     script_allowed: bool,
     module_publishing_allowed: bool,
-    instruction_schedule: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    native_schedule: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    //gas constants
-    global_memory_per_byte_cost: u64,
-    global_memory_per_byte_write_cost: u64,
-    min_transaction_gas_units: u64,
-    large_transaction_cutoff: u64,
-    instrinsic_gas_per_byte: u64,
-    maximum_number_of_gas_units: u64,
-    min_price_per_gas_unit: u64,
-    max_price_per_gas_unit: u64,
-    max_transaction_size_in_bytes: u64,
-    gas_unit_scaling_factor: u64,
-    default_account_size: u64,
+    gas_schedule_blob: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     // <a href="dao.md#0x1_dao">dao</a> config
     voting_delay: u64,
     voting_period: u64,
@@ -144,19 +131,7 @@ The module for init Genesis
     // init config
     <a href="vm_config.md#0x1_vm_config_initialize">vm_config::initialize</a>(
         &starcoin_framework_account,
-        instruction_schedule,
-        native_schedule,
-        global_memory_per_byte_cost,
-        global_memory_per_byte_write_cost,
-        min_transaction_gas_units,
-        large_transaction_cutoff,
-        instrinsic_gas_per_byte,
-        maximum_number_of_gas_units,
-        min_price_per_gas_unit,
-        max_price_per_gas_unit,
-        max_transaction_size_in_bytes,
-        gas_unit_scaling_factor,
-        default_account_size,
+        gas_schedule_blob,
     );
 
     <a href="stc_transaction_timeout_config.md#0x1_stc_transaction_timeout_config_initialize">stc_transaction_timeout_config::initialize</a>(&starcoin_framework_account, transaction_timeout);
@@ -307,7 +282,6 @@ The treasury will mint the total_stc_amount to the treasury.
     voting_quorum_rate: u8,
     min_action_delay: u64
 ): <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;STC&gt; {
-
     // <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"initialize_stc | Entered"));
 
     <b>let</b> (burn_cap, mint_cap) = <a href="starcoin_coin.md#0x1_starcoin_coin_initialize">starcoin_coin::initialize</a>(starcoin_framework);
@@ -456,22 +430,7 @@ Init the genesis for unit tests
     <b>let</b> script_allowed: bool = <b>true</b>;
     <b>let</b> module_publishing_allowed: bool = <b>true</b>;
 
-    //TODO init the gas <a href="../../starcoin-stdlib/doc/table.md#0x1_table">table</a>.
-    <b>let</b> instruction_schedule: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>();
-    <b>let</b> native_schedule: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>();
-
-    //gas constants
-    <b>let</b> global_memory_per_byte_cost: u64 = 1;
-    <b>let</b> global_memory_per_byte_write_cost: u64 = 1;
-    <b>let</b> min_transaction_gas_units: u64 = 1;
-    <b>let</b> large_transaction_cutoff: u64 = 1;
-    <b>let</b> instrinsic_gas_per_byte: u64 = 1;
-    <b>let</b> maximum_number_of_gas_units: u64 = 1;
-    <b>let</b> min_price_per_gas_unit: u64 = 1;
-    <b>let</b> max_price_per_gas_unit: u64 = 10000;
-    <b>let</b> max_transaction_size_in_bytes: u64 = 1024 * 1024;
-    <b>let</b> gas_unit_scaling_factor: u64 = 1;
-    <b>let</b> default_account_size: u64 = 600;
+    <b>let</b> gas_schedule_blob: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>&lt;u8&gt;();
 
     // <a href="dao.md#0x1_dao">dao</a> config
     <b>let</b> voting_delay: u64 = 1000;
@@ -507,19 +466,7 @@ Init the genesis for unit tests
         strategy,
         script_allowed,
         module_publishing_allowed,
-        instruction_schedule,
-        native_schedule,
-        global_memory_per_byte_cost,
-        global_memory_per_byte_write_cost,
-        min_transaction_gas_units,
-        large_transaction_cutoff,
-        instrinsic_gas_per_byte,
-        maximum_number_of_gas_units,
-        min_price_per_gas_unit,
-        max_price_per_gas_unit,
-        max_transaction_size_in_bytes,
-        gas_unit_scaling_factor,
-        default_account_size,
+        gas_schedule_blob,
         voting_delay,
         voting_period,
         voting_quorum_rate,
