@@ -1,8 +1,10 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::account_config::ObjectGroupResource;
 use crate::{account_config::AccountResource, state_store::state_key::StateKey};
-use move_core_types::{account_address::AccountAddress, ident_str, move_resource::MoveStructType};
+use move_core_types::move_resource::MoveStructType;
+use move_core_types::{account_address::AccountAddress, ident_str};
 use starcoin_crypto::hash::CryptoHash;
 
 fn assert_crypto_hash(key: &StateKey, expected_hash: &str) {

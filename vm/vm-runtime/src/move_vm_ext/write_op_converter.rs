@@ -335,16 +335,13 @@ impl<'r> WriteOpConverter<'r> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        data_cache::tests::as_resolver_with_group_size_kind,
-        move_vm_ext::resolver::ResourceGroupResolver,
-    };
+    use crate::data_cache::tests::as_resolver_with_group_size_kind;
     use claims::{assert_none, assert_some_eq};
     use move_core_types::{
         identifier::Identifier,
         language_storage::{StructTag, TypeTag},
     };
-    use starcoin_vm_types::resource_group_adapter::{group_size_as_sum, GroupSizeKind};
+    use starcoin_vm_runtime_types::resource_group_adapter::{group_size_as_sum, GroupSizeKind};
     use starcoin_vm_types::{
         account_address::AccountAddress,
         state_store::{
@@ -409,6 +406,10 @@ mod tests {
         fn get_usage(&self) -> Result<StateStorageUsage, StateviewError> {
             unimplemented!();
         }
+
+        fn is_genesis(&self) -> bool {
+            todo!()
+        }
     }
 
     // TODO[agg_v2](test) make as_resolver_with_group_size_kind support AsSum
@@ -425,7 +426,10 @@ mod tests {
 
         let data = BTreeMap::from([(
             key.clone(),
-            StateValue::new_with_metadata(bcs::to_bytes(&group).unwrap().into(), metadata.clone()),
+            StateValue::new_with_metadata(
+                bcs_ext::to_bytes(&group).unwrap().into(),
+                metadata.clone(),
+            ),
         )]);
 
         let expected_size = group_size_as_sum(
@@ -481,7 +485,10 @@ mod tests {
 
         let data = BTreeMap::from([(
             key.clone(),
-            StateValue::new_with_metadata(bcs::to_bytes(&group).unwrap().into(), metadata.clone()),
+            StateValue::new_with_metadata(
+                bcs_ext::to_bytes(&group).unwrap().into(),
+                metadata.clone(),
+            ),
         )]);
 
         let s = MockStateView::new(data);
@@ -548,7 +555,10 @@ mod tests {
 
         let data = BTreeMap::from([(
             key.clone(),
-            StateValue::new_with_metadata(bcs::to_bytes(&group).unwrap().into(), metadata.clone()),
+            StateValue::new_with_metadata(
+                bcs_ext::to_bytes(&group).unwrap().into(),
+                metadata.clone(),
+            ),
         )]);
 
         let s = MockStateView::new(data);

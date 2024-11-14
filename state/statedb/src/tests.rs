@@ -2,8 +2,7 @@ use super::*;
 use starcoin_state_tree::mock::MockStateNodeStore;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::write_set::{WriteOp, WriteSet, WriteSetMut};
-use starcoin_vm_types::account_config::AccountResource;
-use starcoin_vm_types::move_resource::MoveResource;
+use starcoin_vm_types::access_path::random_identity;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use std::collections::HashMap;
 
@@ -12,9 +11,12 @@ fn random_bytes() -> Vec<u8> {
 }
 
 fn to_write_set(state_key: StateKey, value: Vec<u8>) -> WriteSet {
-    WriteSetMut::new(vec![(state_key, WriteOp::Value(value))])
-        .freeze()
-        .expect("freeze write_set must success.")
+    WriteSetMut::new(vec![(
+        state_key,
+        WriteOp::legacy_modification(value.into()),
+    )])
+    .freeze()
+    .expect("freeze write_set must success.")
 }
 
 fn state_keys_to_write_set(state_keys: Vec<StateKey>, values: Vec<Vec<u8>>) -> WriteSet {
@@ -22,7 +24,7 @@ fn state_keys_to_write_set(state_keys: Vec<StateKey>, values: Vec<Vec<u8>>) -> W
         state_keys
             .into_iter()
             .zip(values)
-            .map(|(key, val)| (key, WriteOp::Value(val)))
+            .map(|(key, val)| (key, WriteOp::legacy_modification(val.into())))
             .collect::<Vec<_>>(),
     )
     .freeze()
@@ -33,17 +35,25 @@ fn state_keys_to_write_set(state_keys: Vec<StateKey>, values: Vec<Vec<u8>>) -> W
 fn test_state_proof() -> Result<()> {
     let storage = MockStateNodeStore::new();
     let chain_state_db = ChainStateDB::new(Arc::new(storage), None);
-    let access_path = AccessPath::random_resource();
+    let account_address = AccountAddress::random();
+    let struct_tag = StructTag {
+        address: account_address,
+        module: random_identity(),
+        name: random_identity(),
+        type_args: vec![],
+    };
+    let access_path = AccessPath::new(account_address, DataPath::Resource(struct_tag.clone()));
+    let state_key = StateKey::resource(&account_address, &struct_tag)?;
     let state0 = random_bytes();
-    chain_state_db.apply_write_set(to_write_set(access_path.clone(), state0.clone()))?;
+    chain_state_db.apply_write_set(to_write_set(state_key.clone(), state0.clone()))?;
 
     let state_root = chain_state_db.commit()?;
-    let state1 = chain_state_db.get_state_value(&StateKey::AccessPath(access_path.clone()))?;
+    let state1 = chain_state_db.get_state_value_bytes(&state_key)?;
     assert!(state1.is_some());
-    assert_eq!(state0, state1.unwrap());
-    println!("{}", access_path.address.key_hash());
-    println!("{}", access_path.key_hash());
-    let state_with_proof = chain_state_db.get_with_proof(&access_path)?;
+    assert_eq!(state0, state1.unwrap().to_vec());
+    println!("{}", account_address.key_hash());
+    println!("{}", state_key.key_hash());
+    let state_with_proof = chain_state_db.get_with_proof(&state_key)?;
     println!("{:?}", state_with_proof);
     state_with_proof
         .proof
@@ -55,14 +65,20 @@ fn test_state_proof() -> Result<()> {
 fn test_state_db() -> Result<()> {
     let storage = MockStateNodeStore::new();
     let chain_state_db = ChainStateDB::new(Arc::new(storage), None);
-    let access_path = AccessPath::random_resource();
-
+    let account_address = AccountAddress::random();
+    let struct_tag = StructTag {
+        address: account_address,
+        module: random_identity(),
+        name: random_identity(),
+        type_args: vec![],
+    };
+    let state_key = StateKey::resource(&account_address, &struct_tag)?;
     let state0 = random_bytes();
-    chain_state_db.apply_write_set(to_write_set(access_path.clone(), state0))?;
+    chain_state_db.apply_write_set(to_write_set(state_key.clone(), state0))?;
     let state_root = chain_state_db.commit()?;
 
     let state1 = random_bytes();
-    chain_state_db.apply_write_set(to_write_set(access_path, state1))?;
+    chain_state_db.apply_write_set(to_write_set(state_key, state1))?;
     let new_state_root = chain_state_db.commit()?;
     assert_ne!(state_root, new_state_root);
     Ok(())
@@ -72,9 +88,17 @@ fn test_state_db() -> Result<()> {
 fn test_state_db_dump_and_apply() -> Result<()> {
     let storage = MockStateNodeStore::new();
     let chain_state_db = ChainStateDB::new(Arc::new(storage), None);
-    let access_path = AccessPath::random_resource();
+    let account_address = AccountAddress::random();
+    let struct_tag = StructTag {
+        address: account_address,
+        module: random_identity(),
+        name: random_identity(),
+        type_args: vec![],
+    };
+    let state_key = StateKey::resource(&account_address, &struct_tag)?;
+
     let state0 = random_bytes();
-    chain_state_db.apply_write_set(to_write_set(access_path, state0))?;
+    chain_state_db.apply_write_set(to_write_set(state_key, state0))?;
     chain_state_db.commit()?;
     chain_state_db.flush()?;
 
@@ -100,21 +124,27 @@ fn test_state_version() -> Result<()> {
     let storage = Arc::new(MockStateNodeStore::new());
     let chain_state_db = ChainStateDB::new(storage.clone(), None);
     let account_address = AccountAddress::random();
-    let access_path = AccessPath::new(account_address, AccountResource::resource_path());
+    let struct_tag = StructTag {
+        address: account_address,
+        module: random_identity(),
+        name: random_identity(),
+        type_args: vec![],
+    };
+    let state_key = StateKey::resource(&account_address, &struct_tag)?;
     let old_state = random_bytes();
-    chain_state_db.apply_write_set(to_write_set(access_path.clone(), old_state.clone()))?;
+    chain_state_db.apply_write_set(to_write_set(state_key.clone(), old_state.clone()))?;
     chain_state_db.commit()?;
     chain_state_db.flush()?;
     let old_root = chain_state_db.state_root();
 
     let new_state = random_bytes();
-    chain_state_db.apply_write_set(to_write_set(access_path.clone(), new_state))?;
+    chain_state_db.apply_write_set(to_write_set(state_key.clone(), new_state))?;
 
     let chain_state_db_ori = ChainStateDB::new(storage, Some(old_root));
     let old_state2 = chain_state_db_ori
-        .get_state_value(&StateKey::AccessPath(access_path))?
+        .get_state_value_bytes(&state_key)?
         .unwrap();
-    assert_eq!(old_state, old_state2);
+    assert_eq!(old_state, old_state2.to_vec());
 
     Ok(())
 }
@@ -123,12 +153,26 @@ fn test_state_version() -> Result<()> {
 fn test_state_db_dump_iter() -> Result<()> {
     let storage = MockStateNodeStore::new();
     let chain_state_db = ChainStateDB::new(Arc::new(storage), None);
-    let access_path1 = AccessPath::random_resource();
+    let account_address = AccountAddress::random();
+    let struct_tag = StructTag {
+        address: account_address,
+        module: random_identity(),
+        name: random_identity(),
+        type_args: vec![],
+    };
+    let state_key1 = StateKey::resource(&account_address, &struct_tag)?;
     let state1 = random_bytes();
-    chain_state_db.apply_write_set(to_write_set(access_path1, state1))?;
-    let access_path2 = AccessPath::random_resource();
+    chain_state_db.apply_write_set(to_write_set(state_key1, state1))?;
     let state2 = random_bytes();
-    chain_state_db.apply_write_set(to_write_set(access_path2, state2))?;
+    let account_address2 = AccountAddress::random();
+    let struct_tag2 = StructTag {
+        address: account_address2,
+        module: random_identity(),
+        name: random_identity(),
+        type_args: vec![],
+    };
+    let state_key2 = StateKey::resource(&account_address2, &struct_tag2)?;
+    chain_state_db.apply_write_set(to_write_set(state_key2, state2))?;
     chain_state_db.commit()?;
     chain_state_db.flush()?;
 
@@ -153,9 +197,9 @@ fn test_state_db_dump_iter() -> Result<()> {
 
 fn check_write_set(chain_state_db: &ChainStateDB, write_set: &WriteSet) -> Result<()> {
     for (state_key, value) in write_set.iter() {
-        let val = chain_state_db.get_state_value(state_key)?;
+        let val = chain_state_db.get_state_value_bytes(state_key)?;
         assert!(val.is_some());
-        assert_eq!(WriteOp::Value(val.unwrap()), *value);
+        assert_eq!(WriteOp::legacy_modification(val.unwrap()), *value);
     }
     Ok(())
 }
@@ -206,73 +250,37 @@ fn test_state_db_with_table_item_once() -> Result<()> {
     let key44 = random_bytes();
     let val44 = random_bytes();
 
+    let account_address1 = AccountAddress::random();
+    let module1 = random_identity();
+    let state_key1 = StateKey::module(&account_address1, &module1);
+    let account_address2 = AccountAddress::random();
+    let struct_tag2 = StructTag {
+        address: account_address2,
+        module: random_identity(),
+        name: random_identity(),
+        type_args: vec![],
+    };
+    let state_key2 = StateKey::resource(&account_address2, &struct_tag2)?;
+
     let state_keys = vec![
-        StateKey::AccessPath(AccessPath::random_code()),
-        StateKey::AccessPath(AccessPath::random_resource()),
-        StateKey::TableItem(TableItem {
-            handle: handle11,
-            key: key11.clone(),
-        }),
-        StateKey::TableItem(TableItem {
-            handle: handle11,
-            key: key13.clone(),
-        }),
-        StateKey::TableItem(TableItem {
-            handle: handle12,
-            key: key12.clone(),
-        }),
-        StateKey::TableItem(TableItem {
-            handle: handle12,
-            key: key14.clone(),
-        }),
-        StateKey::TableItem(TableItem {
-            handle: handle21,
-            key: key21.clone(),
-        }),
-        StateKey::TableItem(TableItem {
-            handle: handle21,
-            key: key23.clone(),
-        }),
-        StateKey::TableItem(TableItem {
-            handle: handle22,
-            key: key22.clone(),
-        }),
-        StateKey::TableItem(TableItem {
-            handle: handle22,
-            key: key24.clone(),
-        }),
-        StateKey::TableItem(TableItem {
-            handle: handle31,
-            key: key31.clone(),
-        }),
-        StateKey::TableItem(TableItem {
-            handle: handle31,
-            key: key33.clone(),
-        }),
-        StateKey::TableItem(TableItem {
-            handle: handle32,
-            key: key32.clone(),
-        }),
-        StateKey::TableItem(TableItem {
-            handle: handle32,
-            key: key34.clone(),
-        }),
-        StateKey::TableItem(TableItem {
-            handle: handle41,
-            key: key41.clone(),
-        }),
-        StateKey::TableItem(TableItem {
-            handle: handle41,
-            key: key43.clone(),
-        }),
-        StateKey::TableItem(TableItem {
-            handle: handle42,
-            key: key42.clone(),
-        }),
-        StateKey::TableItem(TableItem {
-            handle: handle42,
-            key: key44.clone(),
-        }),
+        state_key1,
+        state_key2,
+        StateKey::table_item(&handle11, key11.as_slice()),
+        StateKey::table_item(&handle11, key13.as_slice()),
+        StateKey::table_item(&handle12, key12.as_slice()),
+        StateKey::table_item(&handle12, key14.as_slice()),
+        StateKey::table_item(&handle21, key21.as_slice()),
+        StateKey::table_item(&handle21, key23.as_slice()),
+        StateKey::table_item(&handle22, key22.as_slice()),
+        StateKey::table_item(&handle22, key24.as_slice()),
+        StateKey::table_item(&handle31, key31.as_slice()),
+        StateKey::table_item(&handle31, key33.as_slice()),
+        StateKey::table_item(&handle32, key32.as_slice()),
+        StateKey::table_item(&handle32, key34.as_slice()),
+        StateKey::table_item(&handle41, key41.as_slice()),
+        StateKey::table_item(&handle41, key43.as_slice()),
+        StateKey::table_item(&handle42, key42.as_slice()),
+        StateKey::table_item(&handle42, key44.as_slice()),
     ];
     let values = vec![
         random_bytes(),
@@ -462,21 +470,23 @@ fn test_state_with_table_item_proof() -> Result<()> {
     let val2 = random_bytes();
     let key3 = random_bytes();
     let val3 = random_bytes();
+    let account_address1 = AccountAddress::random();
+    let module1 = random_identity();
+    let state_key1 = StateKey::module(&account_address1, &module1);
+    let account_address2 = AccountAddress::random();
+    let struct_tag2 = StructTag {
+        address: account_address2,
+        module: random_identity(),
+        name: random_identity(),
+        type_args: vec![],
+    };
+    let state_key2 = StateKey::resource(&account_address2, &struct_tag2)?;
     let state_keys = vec![
-        StateKey::AccessPath(AccessPath::random_code()),
-        StateKey::AccessPath(AccessPath::random_resource()),
-        StateKey::TableItem(TableItem {
-            handle: handle1,
-            key: key1.clone(),
-        }),
-        StateKey::TableItem(TableItem {
-            handle: handle1,
-            key: key2.clone(),
-        }),
-        StateKey::TableItem(TableItem {
-            handle: handle2,
-            key: key3.clone(),
-        }),
+        state_key1,
+        state_key2,
+        StateKey::table_item(&handle1, key1.as_slice()),
+        StateKey::table_item(&handle1, key2.as_slice()),
+        StateKey::table_item(&handle2, key3.as_slice()),
     ];
     let values = vec![random_bytes(), random_bytes(), val1, val2, val3];
     let write_set = state_keys_to_write_set(state_keys, values);

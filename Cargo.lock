@@ -12345,6 +12345,7 @@ dependencies = [
  "anyhow",
  "bcs 0.1.5",
  "bytes 1.6.1",
+ "claims",
  "move-core-types",
  "move-vm-types",
  "rand 0.8.5",
@@ -12354,6 +12355,7 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-types",
  "stdlib",
+ "test-case",
 ]
 
 [[package]]

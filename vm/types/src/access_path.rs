@@ -173,7 +173,7 @@ impl Distribution<char> for IdentifierSymbols {
     }
 }
 
-fn random_identity() -> Identifier {
+pub fn random_identity() -> Identifier {
     let rng = OsRng;
     let id: String = rng.sample_iter(&IdentifierSymbols).take(7).collect();
     Identifier::new(id).expect("random identity should valid.")
