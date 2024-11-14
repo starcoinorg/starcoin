@@ -4,7 +4,6 @@
 use crate::context::ForkContext;
 use anyhow::{bail, format_err, Result};
 use clap::{Args, CommandFactory, Parser};
-use log::info;
 use move_binary_format::{file_format::CompiledScript, CompiledModule};
 use move_command_line_common::address::ParsedAddress;
 use move_command_line_common::files::verify_and_create_named_address_mapping;
@@ -13,7 +12,6 @@ use move_compiler::shared::known_attributes::KnownAttribute;
 use move_compiler::shared::{NumberFormat, NumericalAddress, PackagePaths};
 use move_compiler::{construct_pre_compiled_lib, FullyCompiledProgram};
 use move_core_types::language_storage::StructTag;
-use move_core_types::move_resource::MoveStructType;
 use move_core_types::resolver::ResourceResolver;
 use move_core_types::value::MoveValue;
 use move_core_types::{
@@ -40,6 +38,8 @@ use starcoin_config::{genesis_key_pair, BuiltinNetworkID};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_dev::playground::call_contract;
+use starcoin_gas_meter::StarcoinGasParameters;
+use starcoin_gas_schedule::FromOnChainGasSchedule;
 use starcoin_rpc_api::types::{
     ContractCall, FunctionIdView, SignedUserTransactionView, TransactionArgumentView,
     TransactionOutputView, TransactionStatusView, TypeTagView,
@@ -584,15 +584,18 @@ impl<'a> StarcoinTestAdapter<'a> {
 
         let sequence_number = account_resource.sequence_number();
         // let gas_currency_code = stc_type_tag().to_string();
-        let vmconfig = self
+        let gs = self
             .context
             .storage
             .get_on_chain_config::<VMConfig>()
-            .unwrap();
-        let max_number_of_gas_units = vmconfig
-            .gas_schedule
-            .gas_constants
-            .maximum_number_of_gas_units;
+            .unwrap()
+            .gas_schedule;
+        let gas_parameters = StarcoinGasParameters::from_on_chain_gas_schedule(
+            &gs.clone().to_btree_map(),
+            gs.feature_vesion,
+        )
+        .unwrap();
+        let max_number_of_gas_units = gas_parameters.vm.txn.maximum_number_of_gas_units;
         let gas_unit_price = 1;
         let max_gas_amount = if gas_unit_price == 0 {
             max_number_of_gas_units
@@ -601,14 +604,14 @@ impl<'a> StarcoinTestAdapter<'a> {
                 self.fetch_balance_resource(signer_addr, stc_type_tag().to_string())?;
             std::cmp::min(
                 max_number_of_gas_units,
-                (account_balance.token() / gas_unit_price as u128) as u64,
+                ((account_balance.token() / gas_unit_price as u128) as u64).into(),
             )
         };
         let chain_id = self.context.storage.get_chain_id()?;
         Ok(TransactionParameters {
             sequence_number,
             gas_unit_price,
-            max_gas_amount,
+            max_gas_amount: max_gas_amount.into(),
             expiration_timestamp_secs: self.context.storage.get_timestamp()?.seconds() + 60 * 60,
             chainid: chain_id,
         })

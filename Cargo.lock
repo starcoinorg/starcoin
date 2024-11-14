@@ -12138,6 +12138,8 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-dag",
  "starcoin-dev",
+ "starcoin-gas-meter",
+ "starcoin-gas-schedule",
  "starcoin-genesis",
  "starcoin-resource-viewer",
  "starcoin-rpc-api",
