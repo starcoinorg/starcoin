@@ -16,7 +16,7 @@ use move_core_types::move_resource::MoveStructType;
 use move_core_types::vm_status::StatusCode::VALUE_SERIALIZATION_ERROR;
 use move_vm_runtime::module_traversal::{TraversalContext, TraversalStorage};
 use move_vm_runtime::move_vm_adapter::PublishModuleBundleOption;
-use move_vm_types::gas::GasMeter;
+use move_vm_types::gas::{GasMeter, UnmeteredGasMeter};
 use num_cpus;
 use once_cell::sync::OnceCell;
 use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
@@ -49,7 +49,6 @@ use starcoin_vm_types::{
     },
     errors::{Location, PartialVMError, VMResult},
     file_format::{CompiledModule, CompiledScript},
-    genesis_config::StdlibVersion,
     identifier::IdentStr,
     language_storage::{ModuleId, TypeTag},
     on_chain_config::{
@@ -931,19 +930,13 @@ impl StarcoinVM {
     ) -> Result<TransactionOutput, VMStatus> {
         #[cfg(testing)]
         info!("process_block_meta begin");
-        let stdlib_version = self.version.clone().map(|v| v.into_stdlib_version());
         let txn_sender = account_config::genesis_address();
-        // always use 0 gas for system.
-        let max_gas_amount: Gas = 0.into();
-        // let mut gas_meter = UnmeteredGasMeter;
-        // for debug
-        let mut gas_meter = StarcoinGasMeter::new(StarcoinGasParameters::zeros(), max_gas_amount);
-        gas_meter.set_metering(false);
+        let mut gas_meter = UnmeteredGasMeter;
         let session_id = SessionId::block_meta(&block_metadata);
         let (parent_id, timestamp, author, uncles, number, chain_id, parent_gas_used, parents_hash) =
             block_metadata.into_inner();
-        let mut function_name = &account_config::G_BLOCK_PROLOGUE_NAME;
-        let mut args_vec = vec![
+        let function_name = &account_config::G_BLOCK_PROLOGUE_NAME;
+        let args_vec = vec![
             MoveValue::Signer(txn_sender),
             MoveValue::vector_u8(parent_id.to_vec()),
             MoveValue::U64(timestamp),
@@ -953,16 +946,11 @@ impl StarcoinVM {
             MoveValue::U64(number),
             MoveValue::U8(chain_id.id()),
             MoveValue::U64(parent_gas_used),
+            MoveValue::vector_u8(
+                bcs_ext::to_bytes(&parents_hash.unwrap_or_default())
+                    .or(Err(VMStatus::error(VALUE_SERIALIZATION_ERROR, None)))?,
+            ),
         ];
-        if let Some(version) = stdlib_version {
-            if version >= StdlibVersion::Version(FLEXI_DAG_UPGRADE_VERSION_MARK) {
-                args_vec.push(MoveValue::vector_u8(
-                    bcs_ext::to_bytes(&parents_hash.unwrap_or_default())
-                        .or(Err(VMStatus::error(VALUE_SERIALIZATION_ERROR, None)))?,
-                ));
-                function_name = &account_config::G_BLOCK_PROLOGUE_NAME;
-            }
-        }
         let args = serialize_values(&args_vec);
         let mut session = self.move_vm.new_session(storage, session_id);
         let traverse_storage = TraversalStorage::new();
@@ -979,13 +967,7 @@ impl StarcoinVM {
             .or_else(convert_prologue_runtime_error)?;
         #[cfg(testing)]
         info!("process_block_meta end");
-        get_transaction_output(
-            &mut (),
-            session,
-            0.into(),
-            max_gas_amount,
-            KeptVMStatus::Executed,
-        )
+        get_transaction_output(&mut (), session, 0.into(), 0.into(), KeptVMStatus::Executed)
     }
 
     fn execute_user_transaction<S: StarcoinMoveResolver + StateView>(
