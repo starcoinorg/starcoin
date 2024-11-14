@@ -570,7 +570,7 @@ impl StarcoinVM {
         package_address: AccountAddress,
     ) -> Result<bool> {
         let chain_id = remote_cache.get_chain_id()?;
-        let block_number = match remote_cache.get_block_metadata_v2().map(|v2| v2.number) {
+        let block_number = match remote_cache.get_block_metadata().map(|data| data.number) {
             Ok(n) => n,
             Err(_) => remote_cache.get_block_metadata().map(|v| v.number)?,
         };

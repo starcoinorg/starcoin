@@ -3,16 +3,17 @@ module starcoin_framework::block_reward {
 
     use std::error;
     use std::vector;
-    use starcoin_framework::create_signer;
-    use starcoin_std::debug;
-    use starcoin_framework::treasury_withdraw_dao_proposal;
-    use starcoin_framework::treasury;
-    use starcoin_framework::starcoin_coin::STC;
-    use starcoin_framework::coin;
+
     use starcoin_framework::account;
-    use starcoin_framework::event;
     use starcoin_framework::block_reward_config;
+    use starcoin_framework::coin;
+    use starcoin_framework::create_signer;
+    use starcoin_framework::event;
+    use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::system_addresses;
+    use starcoin_framework::treasury;
+    use starcoin_framework::treasury_withdraw_dao_proposal;
+    use starcoin_std::debug;
 
     /// Queue of rewards distributed to miners.
     struct RewardQueue has key {

@@ -20,7 +20,7 @@ use crate::{
     on_chain_config::{GlobalTimeOnChain, OnChainConfig},
     on_chain_resource::{
         dao::{Proposal, ProposalAction},
-        BlockMetadata, BlockMetadataV2, Epoch, EpochData, EpochInfo, Treasury,
+        BlockMetadata, Epoch, EpochData, EpochInfo, Treasury,
     },
     sips::SIP,
 };
@@ -137,11 +137,6 @@ pub trait StateReaderExt: StateView {
     // Get BlockMetadata on chain (stdlib version <= 11)
     fn get_block_metadata(&self) -> Result<BlockMetadata> {
         self.get_resource_type::<BlockMetadata>(genesis_address())
-    }
-
-    // Get latest BlockMetadataV2 on chain, since stdlib version(12)
-    fn get_block_metadata_v2(&self) -> Result<BlockMetadataV2> {
-        self.get_resource_type::<BlockMetadataV2>(genesis_address())
     }
 
     fn get_code(&self, module_id: ModuleId) -> Result<Bytes> {

@@ -12,7 +12,7 @@ pub const ACCOUNT_MODULE_NAME: &str = "account";
 
 // Account
 static G_ACCOUNT_MODULE_IDENTIFIER: Lazy<Identifier> =
-    Lazy::new(|| Identifier::new("Account").unwrap());
+    Lazy::new(|| Identifier::new(ACCOUNT_MODULE_NAME).unwrap());
 
 static G_ACCOUNT_STRUCT_NAME: Lazy<Identifier> = Lazy::new(|| Identifier::new("Account").unwrap());
 

@@ -3,14 +3,14 @@ module starcoin_framework::dao {
     use std::error;
     use std::option;
     use std::signer;
-    use starcoin_framework::treasury;
 
-    use starcoin_framework::stc_util;
-    use starcoin_framework::timestamp;
-    use starcoin_framework::on_chain_config;
     use starcoin_framework::account;
     use starcoin_framework::coin;
     use starcoin_framework::event;
+    use starcoin_framework::on_chain_config;
+    use starcoin_framework::stc_util;
+    use starcoin_framework::timestamp;
+    use starcoin_framework::treasury;
 
     /// Proposal state
     const PENDING: u8 = 1;

@@ -5,12 +5,13 @@ module starcoin_framework::account {
     use std::option::{Self, Option};
     use std::signer;
     use std::vector;
-    use starcoin_std::debug;
+
     use starcoin_framework::chain_id;
     use starcoin_framework::create_signer::create_signer;
     use starcoin_framework::event::{Self, EventHandle};
     use starcoin_framework::guid;
     use starcoin_framework::system_addresses;
+    use starcoin_std::debug;
     use starcoin_std::ed25519;
     use starcoin_std::from_bcs;
     use starcoin_std::multi_ed25519;
@@ -201,6 +202,7 @@ module starcoin_framework::account {
     /// `new_address`.
     public(friend) fun create_account(new_address: address): signer {
         debug::print(&std::string::utf8(b"account::create_account | Entered"));
+        debug::print(&new_address);
         // there cannot be an Account resource under new_addr already.
         assert!(!exists<Account>(new_address), error::already_exists(EACCOUNT_ALREADY_EXISTS));
 
