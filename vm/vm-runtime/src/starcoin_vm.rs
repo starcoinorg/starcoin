@@ -86,10 +86,6 @@ pub struct StarcoinVM {
     metrics: Option<VMMetrics>,
 }
 
-/// marking of stdlib version which includes vmconfig upgrades.
-const FLEXI_DAG_UPGRADE_VERSION_MARK: u64 = 12;
-// const GAS_SCHEDULE_UPGRADE_VERSION_MARK: u64 = 12;
-
 impl StarcoinVM {
     #[cfg(feature = "metrics")]
     pub fn new<S: StateView>(metrics: Option<VMMetrics>, state: &S) -> Self {
@@ -184,8 +180,7 @@ impl StarcoinVM {
                 bail!("failed to load gas schedule!");
             }
             Some(gs) => {
-                // TODO(simon): retrive gas_feature_version from chain.
-                let gas_feature_version = LATEST_GAS_FEATURE_VERSION;
+                let gas_feature_version = gs.feature_vesion;
                 let gas_schdule_treemap = gs.clone().to_btree_map();
                 let gas_params = StarcoinGasParameters::from_on_chain_gas_schedule(
                     &gas_schdule_treemap,
@@ -230,16 +225,15 @@ impl StarcoinVM {
                     "stdlib version: {}, fetch VMConfig from onchain resource",
                     stdlib_version
                 );
+                // todo: fetch gas schedule from GasSchedule Config on chain
                 VMConfig::fetch_config(&remote_storage).map(|v| v.gas_schedule)
             };
 
-            if stdlib_version >= StdlibVersion::Version(FLEXI_DAG_UPGRADE_VERSION_MARK) {
-                self.flexi_dag_config = FlexiDagConfig::fetch_config(&remote_storage);
-                debug!(
-                    "stdlib version: {}, fetch flexi_dag_config {:?} from FlexiDagConfig module",
-                    stdlib_version, self.flexi_dag_config,
-                );
-            }
+            self.flexi_dag_config = FlexiDagConfig::fetch_config(&remote_storage);
+            debug!(
+                "stdlib version: {}, fetch flexi_dag_config {:?} from FlexiDagConfig module",
+                stdlib_version, self.flexi_dag_config,
+            );
             #[cfg(feature = "print_gas_info")]
             match self.gas_schedule.as_ref() {
                 None => {
