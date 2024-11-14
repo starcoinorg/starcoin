@@ -230,17 +230,6 @@ impl BlockDAG {
                 &header.parents(),
             )
             .into_iter();
-        // let mut merge_set = ghostdata
-        //     .unordered_mergeset_without_selected_parent()
-        //     .filter(|hash| self.storage.reachability_store.read().has(*hash).unwrap())
-        //     .chain(
-        //         header
-        //             .parents_hash()
-        //             .into_iter()
-        //             .filter(|parent_id| *parent_id != ghostdata.selected_parent),
-        //     )
-        //     .collect::<HashSet<_>>()
-        //     .into_iter();
         let add_block_result = {
             let mut reachability_writer = reachability_store.write();
             inquirer::add_block(
