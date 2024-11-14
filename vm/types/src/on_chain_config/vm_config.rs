@@ -12,8 +12,13 @@ use starcoin_gas_algebra::{CostTable, GasConstants};
 
 pub const SCRIPT_HASH_LENGTH: usize = HashValue::LENGTH;
 const VM_CONFIG_MODULE_NAME: &str = "vm_config";
-pub static G_VM_CONFIG_IDENTIFIER: Lazy<Identifier> =
+const VM_CONFIG_STRUCT_NAME: &str = "VMConfig";
+
+pub static G_VM_CONFIG_MODULE_IDENTIFIER: Lazy<Identifier> =
     Lazy::new(|| Identifier::new(VM_CONFIG_MODULE_NAME).unwrap());
+pub static G_VM_CONFIG_STRUCT_IDENTIFIER: Lazy<Identifier> =
+    Lazy::new(|| Identifier::new(VM_CONFIG_STRUCT_NAME).unwrap());
+
 pub static G_INSTRUCTION_SCHEDULE_IDENTIFIER: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("instruction_schedule").unwrap());
 pub static G_NATIVE_SCHEDULE_IDENTIFIER: Lazy<Identifier> =
@@ -113,7 +118,7 @@ impl CostTableInner {
 
 impl OnChainConfig for VMConfig {
     const MODULE_IDENTIFIER: &'static str = VM_CONFIG_MODULE_NAME;
-    const TYPE_IDENTIFIER: &'static str = VM_CONFIG_MODULE_NAME;
+    const TYPE_IDENTIFIER: &'static str = VM_CONFIG_STRUCT_NAME;
 
     fn deserialize_into_config(bytes: &[u8]) -> Result<Self> {
         let raw_vm_config = bcs_ext::from_bytes::<VMConfigInner>(bytes).map_err(|e| {
@@ -130,8 +135,8 @@ impl OnChainConfig for VMConfig {
 pub fn vm_config_type_tag() -> TypeTag {
     TypeTag::Struct(Box::new(StructTag {
         address: CORE_CODE_ADDRESS,
-        module: G_VM_CONFIG_IDENTIFIER.clone(),
-        name: G_VM_CONFIG_IDENTIFIER.clone(),
+        module: G_VM_CONFIG_MODULE_IDENTIFIER.clone(),
+        name: G_VM_CONFIG_STRUCT_IDENTIFIER.clone(),
         type_args: vec![],
     }))
 }

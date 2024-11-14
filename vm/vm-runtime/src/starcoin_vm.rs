@@ -54,7 +54,7 @@ use starcoin_vm_types::{
     on_chain_config::{
         FlexiDagConfig, GasSchedule, MoveLanguageVersion, OnChainConfig, VMConfig, Version,
         G_GAS_CONSTANTS_IDENTIFIER, G_INSTRUCTION_SCHEDULE_IDENTIFIER,
-        G_NATIVE_SCHEDULE_IDENTIFIER, G_VM_CONFIG_IDENTIFIER,
+        G_NATIVE_SCHEDULE_IDENTIFIER, G_VM_CONFIG_MODULE_IDENTIFIER,
     },
     state_store::{state_key::StateKey, StateView, TStateView},
     state_view::StateReaderExt,
@@ -248,7 +248,7 @@ impl StarcoinVM {
                     let data = self
                         .execute_readonly_function_internal(
                             state,
-                            &ModuleId::new(core_code_address(), G_VM_CONFIG_IDENTIFIER.to_owned()),
+                            &ModuleId::new(core_code_address(), G_VM_CONFIG_MODULE_IDENTIFIER.to_owned()),
                             G_INSTRUCTION_SCHEDULE_IDENTIFIER.as_ident_str(),
                             vec![],
                             vec![],
@@ -266,7 +266,7 @@ impl StarcoinVM {
                     let data = self
                         .execute_readonly_function_internal(
                             state,
-                            &ModuleId::new(core_code_address(), G_VM_CONFIG_IDENTIFIER.to_owned()),
+                            &ModuleId::new(core_code_address(), G_VM_CONFIG_MODULE_IDENTIFIER.to_owned()),
                             G_NATIVE_SCHEDULE_IDENTIFIER.as_ident_str(),
                             vec![],
                             vec![],
@@ -282,7 +282,7 @@ impl StarcoinVM {
                     let data = self
                         .execute_readonly_function_internal(
                             state,
-                            &ModuleId::new(core_code_address(), G_VM_CONFIG_IDENTIFIER.to_owned()),
+                            &ModuleId::new(core_code_address(), G_VM_CONFIG_MODULE_IDENTIFIER.to_owned()),
                             G_GAS_CONSTANTS_IDENTIFIER.as_ident_str(),
                             vec![],
                             vec![],
@@ -819,7 +819,7 @@ impl StarcoinVM {
             &loaded_func,
         )?;
 
-        let _final_args = SessionExt::check_and_rearrange_args_by_signer_position(
+        let final_args = SessionExt::check_and_rearrange_args_by_signer_position(
             loaded_func.borrow(),
             args.iter().map(|b| b.borrow().to_vec()).collect(),
             sender,
@@ -829,7 +829,7 @@ impl StarcoinVM {
         session.execute_script(
             script,
             ty_args,
-            args,
+            final_args,
             gas_meter,
             &mut TraversalContext::new(&traversal_storage),
         )
