@@ -467,7 +467,7 @@ fn test_reachability_check_ancestor() -> anyhow::Result<()> {
                 reachability_store.write().deref_mut(),
                 child,
                 parent,
-                &mut vec![uncle2, uncle1].into_iter(),
+                &mut vec![uncle2, uncle1, selected_parent_uncle1].into_iter(),
             )?;
 
             target = child;
