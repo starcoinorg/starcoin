@@ -7,7 +7,9 @@ use crate::errors::{
     convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
 };
 use crate::move_vm_ext::{MoveVmExt, SessionExt, SessionId, StarcoinMoveResolver};
-use crate::{discard_error_output, discard_error_vm_status, PreprocessedTransaction};
+use crate::{
+    default_gas_schedule, discard_error_output, discard_error_vm_status, PreprocessedTransaction,
+};
 use anyhow::{bail, format_err, Error, Result};
 use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
 use move_core_types::move_resource::MoveStructType;
@@ -172,20 +174,21 @@ impl StarcoinVM {
                 gas_schedule: G_LATEST_GAS_COST_TABLE.clone(),
             });
             self.version = Some(Version { major: 1 });
-            self.gas_schedule = Some(GasSchedule::from(&G_LATEST_GAS_COST_TABLE.clone()));
+            self.gas_schedule = Some(default_gas_schedule());
 
             #[cfg(feature = "print_gas_info")]
             self.gas_schedule.as_ref().unwrap().info("from is_genesis");
-        } else {
-            self.load_configs_impl(state)?;
+            return Ok(());
         }
+
+        self.load_configs_impl(state)?;
 
         match self.gas_schedule.as_ref() {
             None => {
                 bail!("failed to load gas schedule!");
             }
             Some(gs) => {
-                // TODO(simon): select feature_version properly
+                // TODO(simon): retrive gas_feature_version from chain.
                 let gas_feature_version = LATEST_GAS_FEATURE_VERSION;
                 let gas_schdule_treemap = gs.clone().to_btree_map();
                 let gas_params = StarcoinGasParameters::from_on_chain_gas_schedule(
