@@ -12,6 +12,10 @@ pub mod counters;
 
 use move_core_types::vm_status::{StatusCode, VMStatus};
 pub use move_vm_runtime::{move_vm, session};
+use starcoin_gas_schedule::{
+    InitialGasSchedule, StarcoinGasParameters, ToOnChainGasSchedule, LATEST_GAS_FEATURE_VERSION,
+};
+
 mod access_path_cache;
 mod errors;
 #[cfg(feature = "force-deploy")]
@@ -22,6 +26,7 @@ mod verifier;
 
 use crate::metrics::VMMetrics;
 use starcoin_vm_types::block_metadata::BlockMetadata;
+use starcoin_vm_types::on_chain_config::GasSchedule;
 use starcoin_vm_types::transaction::{
     SignedUserTransaction, TransactionAuxiliaryData, TransactionStatus,
 };
@@ -84,4 +89,12 @@ pub(crate) fn discard_error_output(err: StatusCode) -> TransactionOutput {
         TransactionStatus::Discard(err),
         TransactionAuxiliaryData::None,
     )
+}
+
+pub(crate) fn default_gas_schedule() -> GasSchedule {
+    GasSchedule {
+        feature_vesion: LATEST_GAS_FEATURE_VERSION,
+        entries: StarcoinGasParameters::initial()
+            .to_on_chain_gas_schedule(LATEST_GAS_FEATURE_VERSION),
+    }
 }

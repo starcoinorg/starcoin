@@ -82,6 +82,11 @@ crate::gas_schedule::macros::define_gas_parameters!(
         ],
         // For V1 all accounts will be ~800 bytes
         [default_account_size: NumBytes, "default_account_size", 800],
+        [
+            max_execution_gas: InternalGas,
+            {7.. => "max_execution_gas"},
+            920_000_000, // 92ms of execution at 10k gas per ms
+        ],
     ]
 );
 

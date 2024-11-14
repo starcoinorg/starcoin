@@ -16,14 +16,13 @@ use starcoin_crypto::{
 };
 use starcoin_gas_algebra::CostTable;
 use starcoin_gas_meter::StarcoinGasParameters;
-use starcoin_gas_schedule::FromOnChainGasSchedule;
+use starcoin_gas_schedule::{InitialGasSchedule, ToOnChainGasSchedule, LATEST_GAS_FEATURE_VERSION};
 use starcoin_time_service::{TimeService, TimeServiceType};
 use starcoin_uint::U256;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::event::{EventHandle, EventKey};
 use starcoin_vm_types::gas_schedule::{
-    latest_cost_table, G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_GAS_CONSTANTS_V3,
-    G_LATEST_GAS_COST_TABLE, G_TEST_GAS_CONSTANTS,
+    G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_GAS_CONSTANTS_V3, G_TEST_GAS_CONSTANTS,
 };
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy, StdlibVersion};
 use starcoin_vm_types::on_chain_config::{
@@ -765,7 +764,11 @@ pub static G_DAG_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: G_DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: G_DEFAULT_TIME_LOCKED_PERIOD,
         vm_config: VMConfig {
-            gas_schedule: latest_cost_table(G_TEST_GAS_CONSTANTS.clone()),
+            gas_schedule: GasSchedule {
+                feature_vesion: LATEST_GAS_FEATURE_VERSION,
+                entries: StarcoinGasParameters::initial()
+                    .to_on_chain_gas_schedule(LATEST_GAS_FEATURE_VERSION),
+            },
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
@@ -816,7 +819,11 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: G_DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: G_DEFAULT_TIME_LOCKED_PERIOD,
         vm_config: VMConfig {
-            gas_schedule: latest_cost_table(G_TEST_GAS_CONSTANTS.clone()),
+            gas_schedule: GasSchedule {
+                feature_vesion: LATEST_GAS_FEATURE_VERSION,
+                entries: StarcoinGasParameters::initial()
+                    .to_on_chain_gas_schedule(LATEST_GAS_FEATURE_VERSION),
+            },
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
@@ -870,7 +877,11 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: G_DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: 3600 * 24,
         vm_config: VMConfig {
-            gas_schedule: latest_cost_table(gas_constant),
+            gas_schedule: GasSchedule {
+                feature_vesion: LATEST_GAS_FEATURE_VERSION,
+                entries: StarcoinGasParameters::initial()
+                    .to_on_chain_gas_schedule(LATEST_GAS_FEATURE_VERSION),
+            },
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
@@ -928,7 +939,11 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: G_DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: 3600 * 24 * 31,
         vm_config: VMConfig {
-            gas_schedule: latest_cost_table(gas_constant),
+            gas_schedule: GasSchedule {
+                feature_vesion: LATEST_GAS_FEATURE_VERSION,
+                entries: StarcoinGasParameters::initial()
+                    .to_on_chain_gas_schedule(LATEST_GAS_FEATURE_VERSION),
+            },
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
@@ -983,11 +998,11 @@ pub static G_PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: G_DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: G_DEFAULT_TIME_LOCKED_PERIOD / 12,
         vm_config: VMConfig {
-            gas_schedule: CostTable {
+            gas_schedule: GasSchedule::from(&CostTable {
                 instruction_table: instruction_table_v2(),
                 native_table: v4_native_table(),
                 gas_constants: G_GAS_CONSTANTS_V3.clone(),
-            },
+            }),
         },
         publishing_option: TransactionPublishOption::open(),
         consensus_config: ConsensusConfig {
@@ -1018,7 +1033,6 @@ pub static G_PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             min_action_delay: 60 * 1000, // 1 minute
         },
         transaction_timeout: ONE_DAY,
-        // todo: rollback it to zero and initialize BlockDag properly
         dag_effective_height: 0u64,
     }
 });
@@ -1045,11 +1059,11 @@ pub static G_BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: STCUnit::STC.value_of(47777040).scaling(),
         time_mint_period: G_DEFAULT_TIME_LOCKED_PERIOD,
         vm_config: VMConfig {
-            gas_schedule: CostTable {
+            gas_schedule: GasSchedule::from(&CostTable {
                 instruction_table: instruction_table_v1(),
                 native_table: native_table_v1(),
                 gas_constants: G_GAS_CONSTANTS_V1.clone(),
-            },
+            }),
         },
         publishing_option: TransactionPublishOption::locked(),
         consensus_config: ConsensusConfig {
@@ -1117,11 +1131,11 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: G_DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: G_DEFAULT_TIME_LOCKED_PERIOD,
         vm_config: VMConfig {
-            gas_schedule: CostTable {
+            gas_schedule: GasSchedule::from(&CostTable {
                 instruction_table: instruction_table_v1(),
                 native_table: native_table_v2(),
                 gas_constants: G_GAS_CONSTANTS_V2.clone(),
-            },
+            }),
         },
         publishing_option,
         consensus_config: ConsensusConfig {
@@ -1153,11 +1167,8 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     }
 });
 
-pub static G_LATEST_GAS_PARAMS: Lazy<StarcoinGasParameters> = Lazy::new(|| {
-    let gas_schedule = GasSchedule::from(&G_LATEST_GAS_COST_TABLE.clone());
-    // XXX FIXME YSG
-    StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map(), 1).unwrap()
-});
+pub static G_LATEST_GAS_PARAMS: Lazy<StarcoinGasParameters> =
+    Lazy::new(|| StarcoinGasParameters::initial());
 
 pub static G_VEGA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let stdlib_version = StdlibVersion::Version(12);
@@ -1174,11 +1185,11 @@ pub static G_VEGA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_amount: G_DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_mint_period: G_DEFAULT_TIME_LOCKED_PERIOD,
         vm_config: VMConfig {
-            gas_schedule: CostTable {
+            gas_schedule: GasSchedule::from(&CostTable {
                 instruction_table: instruction_table_v1(),
                 native_table: native_table_v2(),
                 gas_constants: G_GAS_CONSTANTS_V2.clone(),
-            },
+            }),
         },
         publishing_option,
         consensus_config: ConsensusConfig {

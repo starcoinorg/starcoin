@@ -378,7 +378,6 @@ pub fn vote_txn_publish_option_script(
 
 /// vote vm config scripts
 pub fn vote_vm_config_script(_net: &ChainNetwork, vm_config: VMConfig) -> EntryFunction {
-    let gas_constants = &vm_config.gas_schedule.gas_constants;
     EntryFunction::new(
         ModuleId::new(
             core_code_address(),
@@ -387,23 +386,7 @@ pub fn vote_vm_config_script(_net: &ChainNetwork, vm_config: VMConfig) -> EntryF
         Identifier::new("propose_update_vm_config").unwrap(),
         vec![],
         vec![
-            bcs_ext::to_bytes(
-                &bcs_ext::to_bytes(&vm_config.gas_schedule.instruction_table).unwrap(),
-            )
-            .unwrap(),
-            bcs_ext::to_bytes(&bcs_ext::to_bytes(&vm_config.gas_schedule.native_table).unwrap())
-                .unwrap(),
-            bcs_ext::to_bytes(&gas_constants.global_memory_per_byte_cost).unwrap(),
-            bcs_ext::to_bytes(&gas_constants.global_memory_per_byte_write_cost).unwrap(),
-            bcs_ext::to_bytes(&gas_constants.min_transaction_gas_units).unwrap(),
-            bcs_ext::to_bytes(&gas_constants.large_transaction_cutoff).unwrap(),
-            bcs_ext::to_bytes(&gas_constants.intrinsic_gas_per_byte).unwrap(),
-            bcs_ext::to_bytes(&gas_constants.maximum_number_of_gas_units).unwrap(),
-            bcs_ext::to_bytes(&gas_constants.min_price_per_gas_unit).unwrap(),
-            bcs_ext::to_bytes(&gas_constants.max_price_per_gas_unit).unwrap(),
-            bcs_ext::to_bytes(&gas_constants.max_transaction_size_in_bytes).unwrap(),
-            bcs_ext::to_bytes(&gas_constants.gas_unit_scaling_factor).unwrap(),
-            bcs_ext::to_bytes(&gas_constants.default_account_size).unwrap(),
+            bcs_ext::to_bytes(&bcs_ext::to_bytes(&vm_config.gas_schedule).unwrap()).unwrap(),
             bcs_ext::to_bytes(&0u64).unwrap(),
         ],
     )

@@ -21,6 +21,7 @@ pub static G_GAS_SCHEDULE_GAS_SCHEDULE: Lazy<Identifier> =
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct GasSchedule {
+    pub feature_vesion: u64,
     pub entries: Vec<(String, u64)>,
 }
 
@@ -687,7 +688,10 @@ impl From<&CostTable> for GasSchedule {
         append_extra_gas_cost_for_txn_gas_constants(&mut entries, &cost_table.gas_constants);
         append_extra_gas_cost_framework_upgrade(&mut entries);
 
-        Self { entries }
+        Self {
+            feature_vesion: 13,
+            entries,
+        }
     }
 }
 
@@ -761,6 +765,8 @@ fn append_extra_gas_cost_for_txn_gas_constants(
         "txn.default_account_size".to_string(),
         txn.default_account_size,
     ));
+    // todo: retrieve the value from txn gas constants
+    entries.push(("txn.max_execution_gas".to_string(), 920_000_000));
 }
 
 static G_MOVE_FRAMEWORK_UPGRADE_STRS: Lazy<Vec<&str>> = Lazy::new(|| {

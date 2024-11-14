@@ -67,20 +67,7 @@ module starcoin_framework::stc_genesis {
         //vm config
         script_allowed: bool,
         module_publishing_allowed: bool,
-        instruction_schedule: vector<u8>,
-        native_schedule: vector<u8>,
-        //gas constants
-        global_memory_per_byte_cost: u64,
-        global_memory_per_byte_write_cost: u64,
-        min_transaction_gas_units: u64,
-        large_transaction_cutoff: u64,
-        instrinsic_gas_per_byte: u64,
-        maximum_number_of_gas_units: u64,
-        min_price_per_gas_unit: u64,
-        max_price_per_gas_unit: u64,
-        max_transaction_size_in_bytes: u64,
-        gas_unit_scaling_factor: u64,
-        default_account_size: u64,
+        gas_schedule_blob: vector<u8>,
         // dao config
         voting_delay: u64,
         voting_period: u64,
@@ -120,19 +107,7 @@ module starcoin_framework::stc_genesis {
         // init config
         vm_config::initialize(
             &starcoin_framework_account,
-            instruction_schedule,
-            native_schedule,
-            global_memory_per_byte_cost,
-            global_memory_per_byte_write_cost,
-            min_transaction_gas_units,
-            large_transaction_cutoff,
-            instrinsic_gas_per_byte,
-            maximum_number_of_gas_units,
-            min_price_per_gas_unit,
-            max_price_per_gas_unit,
-            max_transaction_size_in_bytes,
-            gas_unit_scaling_factor,
-            default_account_size,
+            gas_schedule_blob,
         );
 
         stc_transaction_timeout_config::initialize(&starcoin_framework_account, transaction_timeout);
@@ -243,7 +218,6 @@ module starcoin_framework::stc_genesis {
         voting_quorum_rate: u8,
         min_action_delay: u64
     ): coin::Coin<STC> {
-
         // debug::print(&std::string::utf8(b"initialize_stc | Entered"));
 
         let (burn_cap, mint_cap) = starcoin_coin::initialize(starcoin_framework);
@@ -352,22 +326,8 @@ module starcoin_framework::stc_genesis {
         let script_allowed: bool = true;
         let module_publishing_allowed: bool = true;
 
-        //TODO init the gas table.
-        let instruction_schedule: vector<u8> = vector::empty();
-        let native_schedule: vector<u8> = vector::empty();
-
-        //gas constants
-        let global_memory_per_byte_cost: u64 = 1;
-        let global_memory_per_byte_write_cost: u64 = 1;
-        let min_transaction_gas_units: u64 = 1;
-        let large_transaction_cutoff: u64 = 1;
-        let instrinsic_gas_per_byte: u64 = 1;
-        let maximum_number_of_gas_units: u64 = 1;
-        let min_price_per_gas_unit: u64 = 1;
-        let max_price_per_gas_unit: u64 = 10000;
-        let max_transaction_size_in_bytes: u64 = 1024 * 1024;
-        let gas_unit_scaling_factor: u64 = 1;
-        let default_account_size: u64 = 600;
+        // todo: initialize gas_schedule_blob properly
+        let gas_schedule_blob: vector<u8> = vector::empty<u8>();
 
         // dao config
         let voting_delay: u64 = 1000;
@@ -403,19 +363,7 @@ module starcoin_framework::stc_genesis {
             strategy,
             script_allowed,
             module_publishing_allowed,
-            instruction_schedule,
-            native_schedule,
-            global_memory_per_byte_cost,
-            global_memory_per_byte_write_cost,
-            min_transaction_gas_units,
-            large_transaction_cutoff,
-            instrinsic_gas_per_byte,
-            maximum_number_of_gas_units,
-            min_price_per_gas_unit,
-            max_price_per_gas_unit,
-            max_transaction_size_in_bytes,
-            gas_unit_scaling_factor,
-            default_account_size,
+            gas_schedule_blob,
             voting_delay,
             voting_period,
             voting_quorum_rate,

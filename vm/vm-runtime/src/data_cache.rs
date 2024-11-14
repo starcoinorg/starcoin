@@ -11,7 +11,7 @@ use move_core_types::metadata::Metadata;
 use move_core_types::resolver::{resource_size, ModuleResolver, ResourceResolver};
 use move_core_types::value::MoveTypeLayout;
 use move_table_extension::{TableHandle, TableResolver};
-use starcoin_gas_meter::LATEST_GAS_FEATURE_VERSION;
+use starcoin_gas_schedule::LATEST_GAS_FEATURE_VERSION;
 use starcoin_logger::prelude::*;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_runtime_types::resolver::ExecutorView;

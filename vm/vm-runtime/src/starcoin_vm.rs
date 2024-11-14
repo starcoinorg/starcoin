@@ -7,19 +7,21 @@ use crate::errors::{
     convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
 };
 use crate::move_vm_ext::{MoveVmExt, SessionExt, SessionId, StarcoinMoveResolver};
-use crate::{discard_error_output, discard_error_vm_status, PreprocessedTransaction};
+use crate::{
+    default_gas_schedule, discard_error_output, discard_error_vm_status, PreprocessedTransaction,
+};
 use anyhow::{bail, format_err, Error, Result};
 use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
 use move_core_types::move_resource::MoveStructType;
 use move_core_types::vm_status::StatusCode::VALUE_SERIALIZATION_ERROR;
 use move_vm_runtime::module_traversal::{TraversalContext, TraversalStorage};
 use move_vm_runtime::move_vm_adapter::PublishModuleBundleOption;
-use move_vm_types::gas::GasMeter;
+use move_vm_types::gas::{GasMeter, UnmeteredGasMeter};
 use num_cpus;
 use once_cell::sync::OnceCell;
 use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
 use starcoin_crypto::HashValue;
-use starcoin_gas_algebra::{CostTable, Gas, GasConstants, GasCost};
+use starcoin_gas_algebra::Gas;
 use starcoin_gas_meter::StarcoinGasMeter;
 use starcoin_gas_schedule::{
     FromOnChainGasSchedule, InitialGasSchedule, NativeGasParameters, StarcoinGasParameters,
@@ -42,19 +44,15 @@ use starcoin_vm_types::{
     access::{ModuleAccess, ScriptAccess},
     account_address::AccountAddress,
     account_config::{
-        core_code_address, genesis_address, upgrade::UpgradeEvent, ModuleUpgradeStrategy,
-        TwoPhaseUpgradeV2Resource, G_EPILOGUE_NAME, G_PROLOGUE_NAME,
+        genesis_address, upgrade::UpgradeEvent, ModuleUpgradeStrategy, TwoPhaseUpgradeV2Resource,
+        G_EPILOGUE_NAME, G_PROLOGUE_NAME,
     },
     errors::{Location, PartialVMError, VMResult},
     file_format::{CompiledModule, CompiledScript},
-    gas_schedule::G_LATEST_GAS_COST_TABLE,
-    genesis_config::StdlibVersion,
     identifier::IdentStr,
     language_storage::{ModuleId, TypeTag},
     on_chain_config::{
         FlexiDagConfig, GasSchedule, MoveLanguageVersion, OnChainConfig, VMConfig, Version,
-        G_GAS_CONSTANTS_IDENTIFIER, G_INSTRUCTION_SCHEDULE_IDENTIFIER,
-        G_NATIVE_SCHEDULE_IDENTIFIER, G_VM_CONFIG_MODULE_IDENTIFIER,
     },
     state_store::{state_key::StateKey, StateView, TStateView},
     state_view::StateReaderExt,
@@ -65,11 +63,11 @@ use starcoin_vm_types::{
 };
 use std::{borrow::Borrow, cmp::min, sync::Arc};
 
-static EXECUTION_CONCURRENCY_LEVEL: OnceCell<usize> = OnceCell::new();
-
 #[cfg(feature = "metrics")]
 use crate::metrics::VMMetrics;
 use crate::{verifier, VMExecutor};
+
+static EXECUTION_CONCURRENCY_LEVEL: OnceCell<usize> = OnceCell::new();
 
 #[derive(Clone)]
 #[allow(clippy::upper_case_acronyms)]
@@ -86,11 +84,6 @@ pub struct StarcoinVM {
     #[cfg(feature = "metrics")]
     metrics: Option<VMMetrics>,
 }
-
-/// marking of stdlib version which includes vmconfig upgrades.
-const VMCONFIG_UPGRADE_VERSION_MARK: u64 = 10;
-const FLEXI_DAG_UPGRADE_VERSION_MARK: u64 = 12;
-// const GAS_SCHEDULE_UPGRADE_VERSION_MARK: u64 = 12;
 
 impl StarcoinVM {
     #[cfg(feature = "metrics")]
@@ -112,7 +105,6 @@ impl StarcoinVM {
         });
         let gas_params = StarcoinGasParameters::initial();
         let native_params = gas_params.natives.clone();
-        // todo: double check if it's ok to use RemoteStorage as StarcoinMoveResolver
         let resolver = StorageAdapter::new(state);
         let inner = MoveVmExt::new(
             native_params.clone(),
@@ -168,25 +160,26 @@ impl StarcoinVM {
 
     pub fn load_configs<S: StateView>(&mut self, state: &S) -> Result<(), Error> {
         if state.is_genesis() {
+            let gas_schedule = default_gas_schedule();
             self.vm_config = Some(VMConfig {
-                gas_schedule: G_LATEST_GAS_COST_TABLE.clone(),
+                gas_schedule: gas_schedule.clone(),
             });
             self.version = Some(Version { major: 1 });
-            self.gas_schedule = Some(GasSchedule::from(&G_LATEST_GAS_COST_TABLE.clone()));
+            self.gas_schedule = Some(gas_schedule);
 
             #[cfg(feature = "print_gas_info")]
             self.gas_schedule.as_ref().unwrap().info("from is_genesis");
-        } else {
-            self.load_configs_impl(state)?;
+            return Ok(());
         }
+
+        self.load_configs_impl(state)?;
 
         match self.gas_schedule.as_ref() {
             None => {
                 bail!("failed to load gas schedule!");
             }
             Some(gs) => {
-                // TODO(simon): select feature_version properly
-                let gas_feature_version = LATEST_GAS_FEATURE_VERSION;
+                let gas_feature_version = gs.feature_vesion;
                 let gas_schdule_treemap = gs.clone().to_btree_map();
                 let gas_params = StarcoinGasParameters::from_on_chain_gas_schedule(
                     &gas_schdule_treemap,
@@ -226,100 +219,20 @@ impl StarcoinVM {
         if let Some(v) = &self.version {
             // if version is 0, it represent latest version. we should consider it.
             let stdlib_version = v.clone().into_stdlib_version();
-            let _message;
-            (self.gas_schedule, _message) = if stdlib_version
-                < StdlibVersion::Version(VMCONFIG_UPGRADE_VERSION_MARK)
-            {
+            self.gas_schedule = {
                 debug!(
                     "stdlib version: {}, fetch VMConfig from onchain resource",
                     stdlib_version
                 );
-                (
-                    VMConfig::fetch_config(&remote_storage)
-                        .map(|v| GasSchedule::from(&v.gas_schedule)),
-                    "gas schedule from VMConfig",
-                )
-            } else {
-                debug!(
-                    "stdlib version: {}, fetch VMConfig from onchain module",
-                    stdlib_version
-                );
-                let instruction_schedule = {
-                    let data = self
-                        .execute_readonly_function_internal(
-                            state,
-                            &ModuleId::new(
-                                core_code_address(),
-                                G_VM_CONFIG_MODULE_IDENTIFIER.to_owned(),
-                            ),
-                            G_INSTRUCTION_SCHEDULE_IDENTIFIER.as_ident_str(),
-                            vec![],
-                            vec![],
-                            false,
-                        )?
-                        .pop()
-                        .ok_or_else(|| {
-                            anyhow::anyhow!(
-                                "Expect 0x1::VMConfig::instruction_schedule() return value"
-                            )
-                        })?;
-                    bcs_ext::from_bytes::<Vec<GasCost>>(&data)?
-                };
-                let native_schedule = {
-                    let data = self
-                        .execute_readonly_function_internal(
-                            state,
-                            &ModuleId::new(
-                                core_code_address(),
-                                G_VM_CONFIG_MODULE_IDENTIFIER.to_owned(),
-                            ),
-                            G_NATIVE_SCHEDULE_IDENTIFIER.as_ident_str(),
-                            vec![],
-                            vec![],
-                            false,
-                        )?
-                        .pop()
-                        .ok_or_else(|| {
-                            anyhow::anyhow!("Expect 0x1::VMConfig::native_schedule() return value")
-                        })?;
-                    bcs_ext::from_bytes::<Vec<GasCost>>(&data)?
-                };
-                let gas_constants = {
-                    let data = self
-                        .execute_readonly_function_internal(
-                            state,
-                            &ModuleId::new(
-                                core_code_address(),
-                                G_VM_CONFIG_MODULE_IDENTIFIER.to_owned(),
-                            ),
-                            G_GAS_CONSTANTS_IDENTIFIER.as_ident_str(),
-                            vec![],
-                            vec![],
-                            false,
-                        )?
-                        .pop()
-                        .ok_or_else(|| {
-                            anyhow::anyhow!("Expect 0x1::VMConfig::gas_constants() return value")
-                        })?;
-                    bcs_ext::from_bytes::<GasConstants>(&data)?
-                };
-                let cost_table = CostTable {
-                    instruction_table: instruction_schedule,
-                    native_table: native_schedule,
-                    gas_constants,
-                };
-                (
-                    Some(GasSchedule::from(&cost_table)),
-                    "gas schedule from VMConfig",
-                )
+                // todo: fetch gas schedule from GasSchedule Config on chain
+                VMConfig::fetch_config(&remote_storage).map(|v| v.gas_schedule)
             };
-            if stdlib_version >= StdlibVersion::Version(FLEXI_DAG_UPGRADE_VERSION_MARK) {
-                self.flexi_dag_config = FlexiDagConfig::fetch_config(&remote_storage);
-                debug!(
-                    "stdlib version: {}, fetch flexi_dag_config {:?} from FlexiDagConfig module",
-                    stdlib_version, self.flexi_dag_config,
-                );
-            }
+
+            self.flexi_dag_config = FlexiDagConfig::fetch_config(&remote_storage);
+            debug!(
+                "stdlib version: {}, fetch flexi_dag_config {:?} from FlexiDagConfig module",
+                stdlib_version, self.flexi_dag_config,
+            );
             #[cfg(feature = "print_gas_info")]
             match self.gas_schedule.as_ref() {
                 None => {
@@ -338,7 +251,7 @@ impl StarcoinVM {
             .ok_or(VMStatus::error(StatusCode::VM_STARTUP_FAILURE, None))
     }
 
-    pub fn get_gas_schedule(&self) -> Result<&CostTable, VMStatus> {
+    pub fn get_gas_schedule(&self) -> Result<&GasSchedule, VMStatus> {
         self.vm_config
             .as_ref()
             .map(|config| &config.gas_schedule)
@@ -1017,19 +930,13 @@ impl StarcoinVM {
     ) -> Result<TransactionOutput, VMStatus> {
         #[cfg(testing)]
         info!("process_block_meta begin");
-        let stdlib_version = self.version.clone().map(|v| v.into_stdlib_version());
         let txn_sender = account_config::genesis_address();
-        // always use 0 gas for system.
-        let max_gas_amount: Gas = 0.into();
-        // let mut gas_meter = UnmeteredGasMeter;
-        // for debug
-        let mut gas_meter = StarcoinGasMeter::new(StarcoinGasParameters::zeros(), max_gas_amount);
-        gas_meter.set_metering(false);
+        let mut gas_meter = UnmeteredGasMeter;
         let session_id = SessionId::block_meta(&block_metadata);
         let (parent_id, timestamp, author, uncles, number, chain_id, parent_gas_used, parents_hash) =
             block_metadata.into_inner();
-        let mut function_name = &account_config::G_BLOCK_PROLOGUE_NAME;
-        let mut args_vec = vec![
+        let function_name = &account_config::G_BLOCK_PROLOGUE_NAME;
+        let args_vec = vec![
             MoveValue::Signer(txn_sender),
             MoveValue::vector_u8(parent_id.to_vec()),
             MoveValue::U64(timestamp),
@@ -1039,16 +946,11 @@ impl StarcoinVM {
             MoveValue::U64(number),
             MoveValue::U8(chain_id.id()),
             MoveValue::U64(parent_gas_used),
+            MoveValue::vector_u8(
+                bcs_ext::to_bytes(&parents_hash.unwrap_or_default())
+                    .or(Err(VMStatus::error(VALUE_SERIALIZATION_ERROR, None)))?,
+            ),
         ];
-        if let Some(version) = stdlib_version {
-            if version >= StdlibVersion::Version(FLEXI_DAG_UPGRADE_VERSION_MARK) {
-                args_vec.push(MoveValue::vector_u8(
-                    bcs_ext::to_bytes(&parents_hash.unwrap_or_default())
-                        .or(Err(VMStatus::error(VALUE_SERIALIZATION_ERROR, None)))?,
-                ));
-                function_name = &account_config::G_BLOCK_PROLOGUE_NAME;
-            }
-        }
         let args = serialize_values(&args_vec);
         let mut session = self.move_vm.new_session(storage, session_id);
         let traverse_storage = TraversalStorage::new();
@@ -1065,13 +967,7 @@ impl StarcoinVM {
             .or_else(convert_prologue_runtime_error)?;
         #[cfg(testing)]
         info!("process_block_meta end");
-        get_transaction_output(
-            &mut (),
-            session,
-            0.into(),
-            max_gas_amount,
-            KeptVMStatus::Executed,
-        )
+        get_transaction_output(&mut (), session, 0.into(), 0.into(), KeptVMStatus::Executed)
     }
 
     fn execute_user_transaction<S: StarcoinMoveResolver + StateView>(
