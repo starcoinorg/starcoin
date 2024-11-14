@@ -1,0 +1,195 @@
+processed 18 tasks
+
+task 4 'run'. lines 52-65:
+{
+  "gas_used": 1340635,
+  "status": "Executed"
+}
+
+task 5 'run'. lines 68-89:
+{
+  "gas_used": 348942,
+  "status": "Executed"
+}
+
+task 6 'run'. lines 92-107:
+{
+  "gas_used": 31595,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "abort_code": "66943"
+    }
+  }
+}
+
+task 7 'run'. lines 110-126:
+{
+  "gas_used": 31595,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "abort_code": "66943"
+    }
+  }
+}
+
+task 8 'run'. lines 129-144:
+{
+  "gas_used": 31691,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "abort_code": "66942"
+    }
+  }
+}
+
+task 9 'run'. lines 147-163:
+{
+  "gas_used": 31595,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "abort_code": "66943"
+    }
+  }
+}
+
+task 10 'run'. lines 166-176:
+{
+  "gas_used": 21132,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao_modify_config_proposal"
+        }
+      },
+      "abort_code": "262545"
+    }
+  }
+}
+
+task 11 'run'. lines 181-221:
+{
+  "gas_used": 193974,
+  "status": "Executed"
+}
+
+task 12 'run'. lines 224-250:
+{
+  "gas_used": 45696,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "abort_code": "66942"
+    }
+  }
+}
+
+task 13 'run'. lines 253-273:
+{
+  "gas_used": 9923,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "abort_code": "66943"
+    }
+  }
+}
+
+task 14 'run'. lines 276-296:
+{
+  "gas_used": 9955,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "abort_code": "66943"
+    }
+  }
+}
+
+task 15 'run'. lines 299-319:
+{
+  "gas_used": 10051,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "abort_code": "66943"
+    }
+  }
+}
+
+task 16 'run'. lines 322-342:
+{
+  "gas_used": 10083,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "abort_code": "66943"
+    }
+  }
+}
+
+task 17 'run'. lines 345-365:
+{
+  "gas_used": 10115,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "abort_code": "66943"
+    }
+  }
+}

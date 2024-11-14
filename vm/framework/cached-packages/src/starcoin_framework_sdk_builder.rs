@@ -198,6 +198,23 @@ pub enum EntryFunctionCall {
         proposal_id: u64,
     },
 
+    /// Once the proposal is agreed, anyone can call the method to make the proposal happen.
+    DaoModifyConfigProposalExecute {
+        token_t: TypeTag,
+        proposer_address: AccountAddress,
+        proposal_id: u64,
+    },
+
+    /// Entrypoint for the proposal.
+    DaoModifyConfigProposalPropose {
+        token_t: TypeTag,
+        voting_delay: u64,
+        voting_period: u64,
+        voting_quorum_rate: u8,
+        min_action_delay: u64,
+        exec_delay: u64,
+    },
+
     /// Add `amount` of coins to the delegation pool `pool_address`.
     DelegationPoolAddStake {
         pool_address: AccountAddress,
@@ -1254,6 +1271,26 @@ impl EntryFunctionCall {
                 proposer_address,
                 proposal_id,
             } => dao_queue_proposal_action(token_t, action_t, proposer_address, proposal_id),
+            DaoModifyConfigProposalExecute {
+                token_t,
+                proposer_address,
+                proposal_id,
+            } => dao_modify_config_proposal_execute(token_t, proposer_address, proposal_id),
+            DaoModifyConfigProposalPropose {
+                token_t,
+                voting_delay,
+                voting_period,
+                voting_quorum_rate,
+                min_action_delay,
+                exec_delay,
+            } => dao_modify_config_proposal_propose(
+                token_t,
+                voting_delay,
+                voting_period,
+                voting_quorum_rate,
+                min_action_delay,
+                exec_delay,
+            ),
             DelegationPoolAddStake {
                 pool_address,
                 amount,
@@ -2276,6 +2313,52 @@ pub fn dao_queue_proposal_action(
         vec![
             bcs::to_bytes(&proposer_address).unwrap(),
             bcs::to_bytes(&proposal_id).unwrap(),
+        ],
+    ))
+}
+
+/// Once the proposal is agreed, anyone can call the method to make the proposal happen.
+pub fn dao_modify_config_proposal_execute(
+    token_t: TypeTag,
+    proposer_address: AccountAddress,
+    proposal_id: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("dao_modify_config_proposal").to_owned(),
+        ),
+        ident_str!("execute").to_owned(),
+        vec![token_t],
+        vec![
+            bcs::to_bytes(&proposer_address).unwrap(),
+            bcs::to_bytes(&proposal_id).unwrap(),
+        ],
+    ))
+}
+
+/// Entrypoint for the proposal.
+pub fn dao_modify_config_proposal_propose(
+    token_t: TypeTag,
+    voting_delay: u64,
+    voting_period: u64,
+    voting_quorum_rate: u8,
+    min_action_delay: u64,
+    exec_delay: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("dao_modify_config_proposal").to_owned(),
+        ),
+        ident_str!("propose").to_owned(),
+        vec![token_t],
+        vec![
+            bcs::to_bytes(&voting_delay).unwrap(),
+            bcs::to_bytes(&voting_period).unwrap(),
+            bcs::to_bytes(&voting_quorum_rate).unwrap(),
+            bcs::to_bytes(&min_action_delay).unwrap(),
+            bcs::to_bytes(&exec_delay).unwrap(),
         ],
     ))
 }
@@ -5057,6 +5140,37 @@ mod decoder {
         }
     }
 
+    pub fn dao_modify_config_proposal_execute(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::DaoModifyConfigProposalExecute {
+                token_t: script.ty_args().get(0)?.clone(),
+                proposer_address: bcs::from_bytes(script.args().get(0)?).ok()?,
+                proposal_id: bcs::from_bytes(script.args().get(1)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn dao_modify_config_proposal_propose(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::DaoModifyConfigProposalPropose {
+                token_t: script.ty_args().get(0)?.clone(),
+                voting_delay: bcs::from_bytes(script.args().get(0)?).ok()?,
+                voting_period: bcs::from_bytes(script.args().get(1)?).ok()?,
+                voting_quorum_rate: bcs::from_bytes(script.args().get(2)?).ok()?,
+                min_action_delay: bcs::from_bytes(script.args().get(3)?).ok()?,
+                exec_delay: bcs::from_bytes(script.args().get(4)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
     pub fn delegation_pool_add_stake(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
         if let TransactionPayload::EntryFunction(script) = payload {
             Some(EntryFunctionCall::DelegationPoolAddStake {
@@ -6922,6 +7036,14 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
         map.insert(
             "dao_queue_proposal_action".to_string(),
             Box::new(decoder::dao_queue_proposal_action),
+        );
+        map.insert(
+            "dao_modify_config_proposal_execute".to_string(),
+            Box::new(decoder::dao_modify_config_proposal_execute),
+        );
+        map.insert(
+            "dao_modify_config_proposal_propose".to_string(),
+            Box::new(decoder::dao_modify_config_proposal_propose),
         );
         map.insert(
             "delegation_pool_add_stake".to_string(),
