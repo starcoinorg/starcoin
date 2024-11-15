@@ -1,0 +1,550 @@
+processed 43 tasks
+
+task 4 'block'. lines 9-9:
+Error: remaining input
+
+task 5 'run'. lines 11-27:
+{
+  "gas_used": 2285521,
+  "status": "Executed"
+}
+
+task 6 'run'. lines 29-45:
+{
+  "gas_used": 11125,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao_modify_config_proposal"
+        }
+      },
+      "abort_code": "65938"
+    }
+  }
+}
+
+task 7 'run'. lines 48-64:
+{
+  "gas_used": 787790,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "option"
+        }
+      },
+      "abort_code": "262145"
+    }
+  }
+}
+
+task 8 'run'. lines 67-83:
+{
+  "gas_used": 787790,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "option"
+        }
+      },
+      "abort_code": "262145"
+    }
+  }
+}
+
+task 9 'run'. lines 86-101:
+{
+  "gas_used": 787790,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "option"
+        }
+      },
+      "abort_code": "262145"
+    }
+  }
+}
+
+task 10 'block'. lines 104-104:
+Error: remaining input
+
+task 11 'run'. lines 106-132:
+{
+  "gas_used": 3579,
+  "status": {
+    "ExecutionFailure": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "function": 17,
+      "code_offset": 1
+    }
+  }
+}
+
+task 12 'run'. lines 135-162:
+{
+  "gas_used": 3579,
+  "status": {
+    "ExecutionFailure": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "function": 17,
+      "code_offset": 1
+    }
+  }
+}
+
+task 13 'run'. lines 165-190:
+{
+  "gas_used": 7724,
+  "status": {
+    "ExecutionFailure": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "function": 17,
+      "code_offset": 1
+    }
+  }
+}
+
+task 14 'run'. lines 193-212:
+{
+  "gas_used": 1036031,
+  "status": {
+    "ExecutionFailure": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "function": 17,
+      "code_offset": 1
+    }
+  }
+}
+
+task 15 'run'. lines 215-238:
+{
+  "gas_used": 1036031,
+  "status": {
+    "ExecutionFailure": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "function": 17,
+      "code_offset": 1
+    }
+  }
+}
+
+task 16 'run'. lines 241-269:
+{
+  "gas_used": 3579,
+  "status": {
+    "ExecutionFailure": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "function": 17,
+      "code_offset": 1
+    }
+  }
+}
+
+task 17 'run'. lines 272-296:
+{
+  "gas_used": 3579,
+  "status": {
+    "ExecutionFailure": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "function": 17,
+      "code_offset": 1
+    }
+  }
+}
+
+task 18 'run'. lines 299-313:
+{
+  "gas_used": 7724,
+  "status": {
+    "ExecutionFailure": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "function": 17,
+      "code_offset": 1
+    }
+  }
+}
+
+task 19 'run'. lines 316-330:
+{
+  "gas_used": 7724,
+  "status": {
+    "ExecutionFailure": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "function": 17,
+      "code_offset": 1
+    }
+  }
+}
+
+task 20 'run'. lines 333-347:
+{
+  "gas_used": 7724,
+  "status": {
+    "ExecutionFailure": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "function": 17,
+      "code_offset": 1
+    }
+  }
+}
+
+task 21 'run'. lines 350-366:
+{
+  "gas_used": 15591,
+  "status": {
+    "ExecutionFailure": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "function": 26,
+      "code_offset": 18
+    }
+  }
+}
+
+task 22 'block'. lines 369-369:
+Error: remaining input
+
+task 23 'run'. lines 371-393:
+{
+  "gas_used": 3579,
+  "status": {
+    "ExecutionFailure": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "function": 17,
+      "code_offset": 1
+    }
+  }
+}
+
+task 24 'run'. lines 396-412:
+{
+  "gas_used": 15591,
+  "status": {
+    "ExecutionFailure": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "function": 26,
+      "code_offset": 18
+    }
+  }
+}
+
+task 25 'run'. lines 415-437:
+{
+  "gas_used": 3579,
+  "status": {
+    "ExecutionFailure": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "function": 17,
+      "code_offset": 1
+    }
+  }
+}
+
+task 26 'run'. lines 440-455:
+{
+  "gas_used": 3579,
+  "status": {
+    "ExecutionFailure": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "function": 17,
+      "code_offset": 1
+    }
+  }
+}
+
+task 27 'run'. lines 458-476:
+{
+  "gas_used": 3579,
+  "status": {
+    "ExecutionFailure": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "function": 17,
+      "code_offset": 1
+    }
+  }
+}
+
+task 28 'run'. lines 479-497:
+{
+  "gas_used": 3579,
+  "status": {
+    "ExecutionFailure": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "function": 17,
+      "code_offset": 1
+    }
+  }
+}
+
+task 29 'block'. lines 500-500:
+Error: remaining input
+
+task 30 'run'. lines 502-524:
+{
+  "gas_used": 3579,
+  "status": {
+    "ExecutionFailure": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "function": 17,
+      "code_offset": 1
+    }
+  }
+}
+
+task 31 'block'. lines 526-526:
+Error: remaining input
+
+task 32 'run'. lines 528-542:
+{
+  "gas_used": 3579,
+  "status": {
+    "ExecutionFailure": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "function": 17,
+      "code_offset": 1
+    }
+  }
+}
+
+task 33 'run'. lines 545-560:
+{
+  "gas_used": 3579,
+  "status": {
+    "ExecutionFailure": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "function": 17,
+      "code_offset": 1
+    }
+  }
+}
+
+task 34 'run'. lines 563-577:
+{
+  "gas_used": 3579,
+  "status": {
+    "ExecutionFailure": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "function": 17,
+      "code_offset": 1
+    }
+  }
+}
+
+task 35 'run'. lines 580-593:
+{
+  "gas_used": 787790,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "option"
+        }
+      },
+      "abort_code": "262145"
+    }
+  }
+}
+
+task 36 'block'. lines 595-595:
+Error: remaining input
+
+task 37 'run'. lines 598-620:
+{
+  "gas_used": 3579,
+  "status": {
+    "ExecutionFailure": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "function": 17,
+      "code_offset": 1
+    }
+  }
+}
+
+task 38 'run'. lines 623-642:
+{
+  "gas_used": 3579,
+  "status": {
+    "ExecutionFailure": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "function": 17,
+      "code_offset": 1
+    }
+  }
+}
+
+task 39 'run'. lines 645-660:
+{
+  "gas_used": 7724,
+  "status": {
+    "ExecutionFailure": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "function": 17,
+      "code_offset": 1
+    }
+  }
+}
+
+task 40 'run'. lines 663-685:
+{
+  "gas_used": 3579,
+  "status": {
+    "ExecutionFailure": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "function": 17,
+      "code_offset": 1
+    }
+  }
+}
+
+task 41 'block'. lines 687-687:
+Error: remaining input
+
+task 42 'run'. lines 690-713:
+{
+  "gas_used": 3579,
+  "status": {
+    "ExecutionFailure": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "dao"
+        }
+      },
+      "function": 17,
+      "code_offset": 1
+    }
+  }
+}

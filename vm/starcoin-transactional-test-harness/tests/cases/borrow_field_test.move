@@ -28,7 +28,7 @@ script {
     use creator::test;
 
     fun main(s: signer) {
-        let addr = Signer::address_of(&s);
+        let addr = signer::address_of(&s);
         test::test_borrow_field(addr);
     }
 }
