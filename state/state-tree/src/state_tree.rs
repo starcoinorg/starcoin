@@ -86,6 +86,7 @@ where
 pub struct StateTree<K: RawKey> {
     storage: Arc<dyn StateNodeStore>,
     storage_root_hash: RwLock<HashValue>,
+    // todo: cache WriteOp instead of Option<Blob>, check AccountState Tree first
     updates: RwLock<BTreeMap<K, Option<Blob>>>,
     cache: Mutex<StateCache<K>>,
 }

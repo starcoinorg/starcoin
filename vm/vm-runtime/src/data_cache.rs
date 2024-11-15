@@ -72,7 +72,7 @@ pub struct StorageAdapter<'e, E> {
 /// track of incremental changes is vital to the consistency of the data store and the system.
 pub struct StateViewCache<'a, S> {
     data_view: &'a S,
-    data_map: BTreeMap<StateKey, Option<StateValue>>,
+    data_map: BTreeMap<StateKey, WriteOp>,
 }
 
 impl<'a, S: StateView> StateViewCache<'a, S> {
@@ -88,23 +88,21 @@ impl<'a, S: StateView> StateViewCache<'a, S> {
     // Publishes a `WriteSet` computed at the end of a transaction.
     // The effect is to build a layer in front of the `StateView` which keeps
     // track of the data as if the changes were applied immediately.
-    pub(crate) fn push_write_set(&mut self, write_set: &WriteSet) {
-        for (ap, ref write_op) in write_set.iter() {
-            match write_op {
-                WriteOp::Creation { data, metadata } => {
-                    let value = StateValue::new_with_metadata(data.clone(), metadata.clone());
-                    self.data_map.insert(ap.clone(), Some(value));
+    pub(crate) fn push_write_set(&mut self, write_set: &WriteSet) -> Result<(), StateviewError> {
+        for (key, write_op) in write_set.iter() {
+            use std::collections::btree_map::Entry::*;
+            match self.data_map.entry(key.clone()) {
+                Vacant(entry) => {
+                    entry.insert(write_op.clone());
                 }
-                WriteOp::Modification { data, metadata } => {
-                    let value = StateValue::new_with_metadata(data.clone(), metadata.clone());
-                    self.data_map.insert(ap.clone(), Some(value));
-                }
-                WriteOp::Deletion { metadata: _ } => {
-                    self.data_map.remove(ap);
-                    self.data_map.insert(ap.clone(), None);
+                Occupied(mut entry) => {
+                    if !WriteOp::squash(entry.get_mut(), write_op.clone())? {
+                        entry.remove();
+                    }
                 }
             }
         }
+        Ok(())
     }
 }
 
@@ -114,7 +112,9 @@ impl<'block, S: StateView> TStateView for StateViewCache<'block, S> {
     // Get some data either through the cache or the `StateView` on a cache miss.
     fn get_state_value(&self, state_key: &Self::Key) -> Result<Option<StateValue>, StateviewError> {
         match self.data_map.get(state_key) {
-            Some(opt_data) => Ok(opt_data.clone()),
+            Some(opt_data) => Ok(opt_data.bytes().map(|bytes| {
+                StateValue::new_with_metadata(bytes.clone(), opt_data.metadata().clone())
+            })),
             None => match self.data_view.get_state_value(state_key) {
                 Ok(remote_data) => Ok(remote_data),
                 // TODO: should we forward some error info?
