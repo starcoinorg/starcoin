@@ -1,0 +1,17 @@
+processed 3 tasks
+
+task 2 'run'. lines 6-22:
+{
+  "gas_used": 72855,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "MerkleNFTDistributor"
+        }
+      },
+      "abort_code": "256511"
+    }
+  }
+}
