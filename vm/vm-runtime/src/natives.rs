@@ -186,10 +186,10 @@ pub fn assert_no_test_natives(err_msg: &str) {
     )
 }
 
-//#[cfg(feature = "testing")]
-//pub fn configure_for_unit_test() {
-//    move_unit_test::extensions::set_extension_hook(Box::new(unit_test_extensions_hook))
-//}
+#[cfg(feature = "testing")]
+pub fn configure_for_unit_test() {
+    move_unit_test::extensions::set_extension_hook(Box::new(unit_test_extensions_hook))
+}
 
 #[cfg(feature = "testing")]
 #[allow(dead_code)]

@@ -23,7 +23,7 @@ fn test_group_size_same_as_bcs() {
 
     for i in [1, 2, 3, 5, 15, 100, 1000, 10000, 20000] {
         assert_eq!(
-            bcs::serialized_size(&reused_vec.slice(0..i)).unwrap(),
+            bcs_ext::serialized_size(&reused_vec.slice(0..i)).unwrap(),
             bcs_size_of_byte_array(i)
         );
     }

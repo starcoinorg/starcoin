@@ -84,7 +84,7 @@ tiny-keccak = { workspace = true }
 starcoin-aggregator = { workspace = true, features = ["testing"] }
 starcoin-crypto = { workspace = true, features = ["fuzzing"] }
 # starcoin-gas-meter = { workspace = true }
-# starcoin-vm = { workspace = true, features = ["testing"] }
+starcoin-vm-runtime = { workspace = true, features = ["testing"] }
 claims = { workspace = true }
 move-cli = { workspace = true }
 move-prover = { workspace = true }

@@ -54,7 +54,7 @@ impl StarcoinGasMeter {
     // todo: set feature_version
     pub fn new(gas_params: StarcoinGasParameters, balance: impl Into<Gas>) -> Self {
         let balance = balance.into().to_unit_with_params(&gas_params.vm.txn);
-        let max_execution_gas = gas_params.vm.txn.max_execution_gas.clone();
+        let max_execution_gas = gas_params.vm.txn.max_execution_gas;
         Self {
             feature_version: LATEST_GAS_FEATURE_VERSION,
             gas_params,

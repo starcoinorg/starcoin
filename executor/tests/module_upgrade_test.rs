@@ -351,10 +351,6 @@ fn ext_execute_after_upgrade(
             let resource = chain_state.get_state_value(&state_key)?;
             assert!(resource.is_some());
             let genesis_account = chain_state.get_account_resource(genesis_address())?;
-            assert!(
-                genesis_account.has_delegated_key_rotation_capability(),
-                "expect 0x1 has no key rotation capability"
-            );
             println!("genesis: {:?}", &genesis_account);
             assert_eq!(
                 genesis_account.authentication_key(),

@@ -32,6 +32,9 @@ serde_yaml = { workspace = true }
 strum = { workspace = true }
 strum_macros = { workspace = true }
 
+[dev-dependencies]
+claims = { workspace = true }
+
 [features]
 default = []
 fuzzing = ["proptest", "proptest-derive", "starcoin-vm-types/fuzzing"]

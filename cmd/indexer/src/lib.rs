@@ -276,7 +276,7 @@ mod tests {
             data: StrView(vec![0]),
             type_tag: StrView(TypeTag::Bool),
             event_index: Some(0),
-            event_key: EventKey::new(0, AccountAddress::ZERO.clone()),
+            event_key: EventKey::new(0, AccountAddress::ZERO),
             event_seq_number: StrView(0),
         };
         let event_view = TransactionEventEsView::from(v);
