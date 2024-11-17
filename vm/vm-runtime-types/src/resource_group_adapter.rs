@@ -337,8 +337,8 @@ mod tests {
         fn new() -> Self {
             let mut group = HashMap::new();
 
-            let key_0 = StateKey::raw(&vec![0]);
-            let key_1 = StateKey::raw(&vec![1]);
+            let key_0 = StateKey::raw(&[0]);
+            let key_1 = StateKey::raw(&[1]);
 
             // for testing purposes, o.w. state view should never contain an empty map.
             group.insert(key_0, MockGroup::new(BTreeMap::new()));
@@ -462,7 +462,7 @@ mod tests {
         let adapter = ResourceGroupAdapter::new(None, &state_view, 3, false);
         assert_eq!(adapter.group_size_kind, GroupSizeKind::None);
 
-        let key_1 = StateKey::raw(&vec![1]);
+        let key_1 = StateKey::raw(&[1]);
         let tag_0 = mock_tag_0();
 
         assert_ok_eq!(adapter.load_to_cache(&key_1), false);
@@ -476,9 +476,9 @@ mod tests {
         let adapter = ResourceGroupAdapter::new(None, &state_view, 5, false);
         assert_eq!(adapter.group_size_kind, GroupSizeKind::None);
 
-        let key_0 = StateKey::raw(&vec![0]);
-        let key_1 = StateKey::raw(&vec![1]);
-        let key_2 = StateKey::raw(&vec![2]);
+        let key_0 = StateKey::raw(&[0]);
+        let key_1 = StateKey::raw(&[1]);
+        let key_2 = StateKey::raw(&[2]);
         let tag_0 = mock_tag_0();
         let tag_1 = mock_tag_1();
         let tag_2 = mock_tag_2();
@@ -539,9 +539,9 @@ mod tests {
         );
         assert_eq!(adapter.group_size_kind, GroupSizeKind::AsBlob);
 
-        let key_0 = StateKey::raw(&vec![0]);
-        let key_1 = StateKey::raw(&vec![1]);
-        let key_2 = StateKey::raw(&vec![2]);
+        let key_0 = StateKey::raw(&[0]);
+        let key_1 = StateKey::raw(&[1]);
+        let key_2 = StateKey::raw(&[2]);
 
         let key_0_blob_len =
             ResourceGroupSize::Concrete(state_view.group.get(&key_0).unwrap().blob.len() as u64);
@@ -585,9 +585,9 @@ mod tests {
         let adapter = ResourceGroupAdapter::new(Some(&state_view), &state_view, 12, true);
         assert_eq!(adapter.group_size_kind, GroupSizeKind::AsSum);
 
-        let key_0 = StateKey::raw(&vec![0]);
-        let key_1 = StateKey::raw(&vec![1]);
-        let key_2 = StateKey::raw(&vec![2]);
+        let key_0 = StateKey::raw(&[0]);
+        let key_1 = StateKey::raw(&[1]);
+        let key_2 = StateKey::raw(&[2]);
 
         let key_0_size_as_sum = state_view.group.get(&key_0).unwrap().size_as_sum;
         let key_1_size_as_sum = state_view.group.get(&key_1).unwrap().size_as_sum;
@@ -625,9 +625,9 @@ mod tests {
         let adapter = ResourceGroupAdapter::new(None, &state_view, 8, false);
         assert_eq!(adapter.group_size_kind, GroupSizeKind::None);
 
-        let key_0 = StateKey::raw(&vec![0]);
-        let key_1 = StateKey::raw(&vec![1]);
-        let key_2 = StateKey::raw(&vec![2]);
+        let key_0 = StateKey::raw(&[0]);
+        let key_1 = StateKey::raw(&[1]);
+        let key_2 = StateKey::raw(&[2]);
 
         assert_ok_eq!(
             adapter.resource_group_size(&key_1),
@@ -661,9 +661,9 @@ mod tests {
         let adapter = ResourceGroupAdapter::new(None, &state_view, 0, false);
         assert_eq!(adapter.group_size_kind, GroupSizeKind::None);
 
-        let key_0 = StateKey::raw(&vec![0]);
-        let key_1 = StateKey::raw(&vec![1]);
-        let key_2 = StateKey::raw(&vec![2]);
+        let key_0 = StateKey::raw(&[0]);
+        let key_1 = StateKey::raw(&[1]);
+        let key_2 = StateKey::raw(&[2]);
         let tag_0 = mock_tag_0();
         let tag_1 = mock_tag_1();
         let tag_2 = mock_tag_2();
@@ -692,9 +692,9 @@ mod tests {
         let adapter = ResourceGroupAdapter::new(None, &state_view, 3, false);
         assert_eq!(adapter.group_size_kind, GroupSizeKind::None);
 
-        let key_0 = StateKey::raw(&vec![0]);
-        let key_1 = StateKey::raw(&vec![1]);
-        let key_2 = StateKey::raw(&vec![2]);
+        let key_0 = StateKey::raw(&[0]);
+        let key_1 = StateKey::raw(&[1]);
+        let key_2 = StateKey::raw(&[2]);
         let tag_0 = mock_tag_0();
         let tag_1 = mock_tag_1();
         let tag_2 = mock_tag_2();

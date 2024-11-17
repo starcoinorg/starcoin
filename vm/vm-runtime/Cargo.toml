@@ -47,12 +47,15 @@ bytes = { workspace = true }
 move-bytecode-verifier = { workspace = true }
 starcoin-aggregator = { workspace = true }
 move-bytecode-utils = { workspace = true }
+move-unit-test = { workspace = true, optional = true }
 
 [dev-dependencies]
 stdlib = { workspace = true }
+claims = { workspace = true }
+
 
 [features]
 default = ["metrics"]
 metrics = ["starcoin-metrics"]
-testing = ["move-stdlib/testing", "starcoin-framework/testing", "starcoin-aggregator/testing"]
+testing = ["move-stdlib/testing", "starcoin-framework/testing", "starcoin-aggregator/testing", "move-unit-test"]
 force-deploy = []

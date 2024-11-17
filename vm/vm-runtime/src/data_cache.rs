@@ -348,3 +348,38 @@ impl<S: StateView> IntoMoveResolver<S> for S {
         RemoteStorageOwned { state_view: self }
     }
 }
+
+#[cfg(test)]
+pub(crate) mod tests {
+    use super::*;
+    use starcoin_vm_runtime_types::resource_group_adapter::GroupSizeKind;
+    //use starcoin_vm_types::on_chain_config::{Features, OnChainConfig};
+
+    // Expose a method to create a storage adapter with a provided group size kind.
+    #[allow(dead_code)]
+    pub(crate) fn as_resolver_with_group_size_kind<S: StateView>(
+        state_view: &S,
+        group_size_kind: GroupSizeKind,
+    ) -> StorageAdapter<S> {
+        assert_ne!(group_size_kind, GroupSizeKind::AsSum, "not yet supported");
+
+        let (gas_feature_version, resource_groups_split_in_vm_change_set_enabled) =
+            match group_size_kind {
+                GroupSizeKind::AsSum => (12, true),
+                GroupSizeKind::AsBlob => (10, false),
+                GroupSizeKind::None => (1, false),
+            };
+
+        let _group_adapter = ResourceGroupAdapter::new(
+            // TODO[agg_v2](test) add a converter for StateView for tests that implements ResourceGroupView
+            None,
+            state_view,
+            gas_feature_version,
+            resource_groups_split_in_vm_change_set_enabled,
+        );
+
+        // let features = Features::fetch_config(state_view).unwrap_or_default();
+        //  let deserializer_config = aptos_prod_deserializer_config(&features);
+        StorageAdapter::new(state_view)
+    }
+}

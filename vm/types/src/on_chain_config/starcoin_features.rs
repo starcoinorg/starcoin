@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::on_chain_config::OnChainConfig;
+use move_core_types::effects::{ChangeSet, Op};
+use move_core_types::language_storage::CORE_CODE_ADDRESS;
 use serde::{Deserialize, Serialize};
 
 /// The feature flags define in the Move source. This must stay aligned with the constants there.
@@ -150,4 +152,20 @@ impl Features {
     pub fn is_resource_group_charge_as_size_sum_enabled(&self) -> bool {
         self.is_enabled(FeatureFlag::RESOURCE_GROUPS_CHARGE_AS_SIZE_SUM)
     }
+}
+
+pub fn starcoin_test_feature_flags_genesis() -> ChangeSet {
+    let features_value = bcs::to_bytes(&Features::default()).unwrap();
+
+    let mut change_set = ChangeSet::new();
+    // we need to initialize features to their defaults.
+    change_set
+        .add_resource_op(
+            CORE_CODE_ADDRESS,
+            Features::struct_tag(),
+            Op::New(features_value.into()),
+        )
+        .expect("adding genesis Feature resource must succeed");
+
+    change_set
 }

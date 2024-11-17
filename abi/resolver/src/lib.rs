@@ -368,9 +368,12 @@ mod tests {
     use starcoin_vm_types::language_storage::ModuleId;
     use starcoin_vm_types::normalized::Module;
     use starcoin_vm_types::parser::parse_struct_tag;
+    use starcoin_vm_types::state_store::errors::StateviewError;
+    use starcoin_vm_types::state_store::state_key::inner::StateKeyInner;
     use starcoin_vm_types::state_store::state_key::StateKey;
+    use starcoin_vm_types::state_store::state_storage_usage::StateStorageUsage;
     use starcoin_vm_types::state_store::state_value::StateValue;
-    use starcoin_vm_types::state_view::StateView;
+    use starcoin_vm_types::state_store::TStateView;
     use std::collections::BTreeMap;
 
     pub struct InMemoryStateView {
@@ -385,12 +388,15 @@ mod tests {
     }
     impl TStateView for InMemoryStateView {
         type Key = StateKey;
-        fn get_state_value(&self, state_key: &StateKey) -> Result<Option<StateValue>> {
-            match state_key {
-                StateKey::AccessPath(access_path) => {
+        fn get_state_value(
+            &self,
+            state_key: &StateKey,
+        ) -> Result<Option<StateValue>, StateviewError> {
+            match state_key.inner() {
+                StateKeyInner::AccessPath(access_path) => {
                     let module_id = match &access_path.path {
                         DataPath::Code(name) => ModuleId::new(access_path.address, name.clone()),
-                        _ => anyhow::bail!("no data"),
+                        _ => return Err(StateviewError::Other("no data".to_string())),
                     };
                     Ok(self
                         .modules
@@ -400,12 +406,17 @@ mod tests {
                             m.serialize(&mut data).unwrap();
                             data
                         })
-                        .map(|v| StateView::from(v)))
+                        .map(StateValue::from))
                 }
-                StateKey::TableItem(_table_item) => {
-                    anyhow::bail!("no need table_item")
+                StateKeyInner::TableItem { .. } => {
+                    Err(StateviewError::Other("no need table_item".to_string()))
                 }
+                StateKeyInner::Raw(_) => Err(StateviewError::Other("no need raw".to_string())),
             }
+        }
+
+        fn get_usage(&self) -> starcoin_vm_types::state_store::Result<StateStorageUsage> {
+            todo!()
         }
 
         fn is_genesis(&self) -> bool {

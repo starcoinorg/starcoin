@@ -12,7 +12,7 @@ use starcoin_network_rpc_api::{
 use starcoin_node::NodeHandle;
 use starcoin_state_api::StateWithProof;
 use starcoin_types::{access_path, account_config::genesis_address, block::BlockHeader};
-use starcoin_vm_types::move_resource::MoveResource;
+use starcoin_vm_types::access_path::DataPath;
 use starcoin_vm_types::on_chain_resource::Epoch;
 use std::sync::Arc;
 
@@ -39,7 +39,10 @@ fn test_network_rpc() {
     // network rpc client for chain 1
     let client = starcoin_gen_client::NetworkRpcClient::new(network_1);
 
-    let access_path = access_path::AccessPath::new(genesis_address(), Epoch::resource_path());
+    let access_path = access_path::AccessPath::new(
+        genesis_address(),
+        DataPath::Resource(Epoch::struct_tag_for_epoch()),
+    );
 
     //ping ok
     let req = Ping {

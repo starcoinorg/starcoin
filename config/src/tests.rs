@@ -3,6 +3,7 @@
 
 use super::*;
 use crate::helper::to_toml;
+use std::collections::BTreeMap;
 
 #[test]
 fn test_generate_and_load() -> Result<()> {
@@ -163,22 +164,19 @@ fn test_genesis_config_security() {
         }
         let genesis_config = net.genesis_config().clone();
         // min_price_per_gas_unit must be great than 0
-        assert!(
-            genesis_config
-                .vm_config
-                .gas_schedule
-                .gas_constants
-                .min_price_per_gas_unit
-                > 0
-        );
+        let gas_constant = genesis_config
+            .vm_config
+            .gas_schedule
+            .entries
+            .into_iter()
+            .collect::<BTreeMap<String, u64>>();
+        let min_price_per_gas_unit = gas_constant.get("tx.min_price_per_gas_unit").unwrap();
+        assert!(*min_price_per_gas_unit > 0);
         // maximum_number_of_gas_units must be less than base_block_gas_limit
+        let maximum_number_of_gas_units =
+            gas_constant.get("txn.maximum_number_of_gas_units").unwrap();
         assert!(
-            genesis_config
-                .vm_config
-                .gas_schedule
-                .gas_constants
-                .maximum_number_of_gas_units
-                < genesis_config.consensus_config.base_block_gas_limit
+            *maximum_number_of_gas_units < genesis_config.consensus_config.base_block_gas_limit
         );
     }
 }
