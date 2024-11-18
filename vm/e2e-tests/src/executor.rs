@@ -14,7 +14,7 @@ use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::HashValue;
 use starcoin_gas_meter::{StarcoinGasMeter, StarcoinGasParameters};
 use starcoin_vm_runtime::data_cache::{AsMoveResolver, StorageAdapter};
-use starcoin_vm_runtime::move_vm_ext::{MoveVmExt, SessionId, SessionOutput};
+use starcoin_vm_runtime::move_vm_ext::{MoveVmExt, SessionId};
 use starcoin_vm_runtime::parallel_executor::ParallelStarcoinVM;
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm_runtime::VMExecutor;
@@ -479,7 +479,6 @@ impl FakeExecutor {
             HashValue::zero(),
             self.block_time,
             minter_account.address().clone(),
-            Some(AuthenticationKey::ed25519(&minter_account.account().pubkey)),
             0,
             0,
             ChainId::test(),
