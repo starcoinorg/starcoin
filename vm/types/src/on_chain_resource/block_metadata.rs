@@ -2,15 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::event::EventHandle;
-use move_core_types::account_address::AccountAddress;
-use move_core_types::ident_str;
-use move_core_types::identifier::IdentStr;
-use move_core_types::move_resource::{MoveResource, MoveStructType};
+use move_core_types::{
+    account_address::AccountAddress,
+    ident_str,
+    identifier::IdentStr,
+    move_resource::{MoveResource, MoveStructType},
+};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 
 /// On chain resource BlockMetadata mapping for FlexiDag block
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlockMetadata {
     // number of the current block
     pub number: u64,
@@ -18,11 +20,12 @@ pub struct BlockMetadata {
     pub parent_hash: HashValue,
     // Author of the current block.
     pub author: AccountAddress,
+    // Uncle blocks number
     pub uncles: u64,
+    // Parents hash for DAG
+    pub parents_hash: Vec<u8>,
     // Handle where events with the time of new blocks are emitted
     pub new_block_events: EventHandle,
-    // An Array of the parents hash for a Dag block.
-    pub parents_hash: Vec<u8>,
 }
 
 impl BlockMetadata {
