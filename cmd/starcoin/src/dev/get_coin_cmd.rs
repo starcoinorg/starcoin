@@ -25,12 +25,13 @@ pub struct GetCoinOpt {
     #[clap(short = 'v', default_value = "1STC")]
     /// the amount of stc, eg: 1STC
     amount: TokenValue<STCUnit>,
-    #[clap(
+    #[arg(
         name = "no-blocking-mode",
         long = "no-blocking",
-        help = "not blocking wait transaction(txn) mined"
+        help = "not blocking wait transaction(txn) mined",
+        default_value_t = false
     )]
-    no_blocking: bool,
+    no_blocking: std::primitive::bool,
 
     #[clap(name = "address_or_receipt")]
     /// The account's address or receipt to send coin, if absent, send to the default account.
