@@ -341,11 +341,11 @@ impl CoinStore {
             Value::u64(self.coin),
             Value::struct_(Struct::pack(vec![
                 Value::u64(self.withdraw_events.count()),
-                Value::vector_u8(self.withdraw_events.key().to_vec()),
+                Value::vector_u8(self.withdraw_events.key().to_bytes()),
             ])),
             Value::struct_(Struct::pack(vec![
                 Value::u64(self.deposit_events.count()),
-                Value::vector_u8(self.deposit_events.key().to_vec()),
+                Value::vector_u8(self.deposit_events.key().to_bytes()),
             ])),
         ]))
     }
@@ -654,19 +654,9 @@ impl AccountData {
         self.sequence_number
     }
 
-    /// Returns the unique key for this sent events stream.
-    pub fn sent_events_key(&self) -> &[u8] {
-        self.coin_store.withdraw_events.key().as_bytes()
-    }
-
     /// Returns the initial sent events count.
     pub fn sent_events_count(&self) -> u64 {
         self.coin_store.withdraw_events.count()
-    }
-
-    /// Returns the unique key for this received events stream.
-    pub fn received_events_key(&self) -> &[u8] {
-        self.coin_store.deposit_events.key().as_bytes()
     }
 
     /// Returns the initial received events count.

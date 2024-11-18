@@ -22,7 +22,6 @@ use starcoin_vm_runtime::{
     parallel_executor::ParallelStarcoinVM, starcoin_vm::StarcoinVM, VMExecutor,
 };
 use starcoin_vm_types::genesis_config::ChainId;
-use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 
 /// Benchmarking support for transactions.
 #[derive(Clone, Debug)]
@@ -144,7 +143,6 @@ impl TransactionBenchState {
             HashValue::zero(),
             0,
             minter_account.address().clone(),
-            Some(AuthenticationKey::ed25519(&minter_account.account().pubkey)),
             0,
             0,
             ChainId::test(),
