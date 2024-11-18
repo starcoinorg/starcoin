@@ -39,6 +39,8 @@ move-table-extension = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-state-tree = { workspace = true }
 move-vm-runtime = { workspace = true }
+starcoin-gas-schedule = { workspace = true }
+starcoin-vm-runtime-types = { workspace = true }
 
 #aptos-keygen = { path = "../../crates/aptos-keygen" }
 #aptos-proptest-helpers = { path = "../../crates/aptos-proptest-helpers" }

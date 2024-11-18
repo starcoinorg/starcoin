@@ -6,7 +6,6 @@
 use crate::account::{Account, AccountData};
 use crate::golden_outputs::GoldenOutputs;
 use move_core_types::vm_status::KeptVMStatus;
-use move_table_extension::NativeTableContext;
 use num_cpus;
 use serde::Serialize;
 use starcoin_config::ChainNetwork;
@@ -30,7 +29,6 @@ use starcoin_vm_types::{
     move_resource::MoveResource,
     on_chain_config::{OnChainConfig, VMConfig, Version},
     state_store::state_key::StateKey,
-    transaction::authenticator::AuthenticationKey,
     transaction::{SignedUserTransaction, Transaction, TransactionOutput, TransactionStatus},
     vm_status::VMStatus,
     write_set::WriteSet,
@@ -39,12 +37,15 @@ use starcoin_vm_types::{
 use crate::data_store::FakeDataStore;
 use move_vm_runtime::module_traversal::{TraversalContext, TraversalStorage};
 use starcoin_statedb::ChainStateWriter;
+use starcoin_vm_runtime_types::storage::change_set_configs::ChangeSetConfigs;
+use starcoin_vm_types::errors::PartialVMError;
 use starcoin_vm_types::on_chain_config::{Features, TimedFeaturesBuilder};
 use starcoin_vm_types::state_store::TStateView;
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::{env, fs};
+use starcoin_gas_schedule::LATEST_GAS_FEATURE_VERSION;
 use test_helper::Genesis;
 
 static RNG_SEED: [u8; 32] = [9u8; 32];
@@ -560,22 +561,22 @@ impl FakeExecutor {
                     )
                 });
 
-            let (change_set, mut extensions) = session
-                .into_inner()
-                .finish_with_extensions()
-                .expect("Failed to generate txn effects");
-            let table_context: NativeTableContext = extensions.remove();
-            let table_change_set = table_context
-                .into_change_set()
-                .map_err(|e| e.finish(Location::Undefined))?;
+            let change_set_config =
+                ChangeSetConfigs::unlimited_at_gas_feature_version(LATEST_GAS_FEATURE_VERSION);
 
+            let (change_set, module_write_set) = session
+                .finish(&change_set_config)
+                .map_err(|e| e.into_vm_status())?;
             // Ignore new table infos.
             // No table infos should be produced in readonly function.
-            let (_table_infos, write_set, _events) = SessionOutput {
-                change_set,
-                table_change_set,
-            }
-            .into_change_set(&mut ())?;
+            let (write_set, _events) = change_set
+                .try_combine_into_storage_change_set(module_write_set)
+                .map_err(|e| {
+                    PartialVMError::from(e)
+                        .finish(Location::Undefined)
+                        .into_vm_status()
+                })?
+                .into_inner();
             // let (write_set, _events) = session_out
             //     .into_change_set(&mut ())
             //     .expect("Failed to generate writeset")
@@ -626,20 +627,22 @@ impl FakeExecutor {
             )
             .map_err(|e| e.into_vm_status())?;
 
-        let (change_set, mut extensions) = session
-            .into_inner()
-            .finish_with_extensions()
-            .expect("Failed to generate txn effects");
+        let change_set_config =
+            ChangeSetConfigs::unlimited_at_gas_feature_version(LATEST_GAS_FEATURE_VERSION);
 
-        let table_context: NativeTableContext = extensions.remove();
-        let table_change_set = table_context
-            .into_change_set()
-            .map_err(|e| e.finish(Location::Undefined))?;
-        let (_table_infos, write_set, _events) = SessionOutput {
-            change_set,
-            table_change_set,
-        }
-        .into_change_set(&mut ())?;
+        let (change_set, module_write_set) = session
+            .finish(&change_set_config)
+            .map_err(|e| e.into_vm_status())?;
+        // Ignore new table infos.
+        // No table infos should be produced in readonly function.
+        let (write_set, _events) = change_set
+            .try_combine_into_storage_change_set(module_write_set)
+            .map_err(|e| {
+                PartialVMError::from(e)
+                    .finish(Location::Undefined)
+                    .into_vm_status()
+            })?
+            .into_inner();
 
         // let (writeset, _events) = session_out
         //     .into_change_set(&mut ())
