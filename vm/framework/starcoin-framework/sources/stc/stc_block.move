@@ -1,5 +1,6 @@
 /// Block module provide metadata for generated blocks.
 module starcoin_framework::stc_block {
+    use std::bcs::to_bytes;
     use std::error;
     use std::signer;
     use std::vector;
@@ -27,10 +28,10 @@ module starcoin_framework::stc_block {
         author: address,
         /// number of uncles.
         uncles: u64,
-        /// Handle of events when new blocks are emitted
-        new_block_events: event::EventHandle<Self::NewBlockEvent>,
         /// An Array of the parents hash for a Dag block.
         parents_hash: vector<u8>,
+        /// Handle of events when new blocks are emitted
+        new_block_events: event::EventHandle<NewBlockEvent>,
     }
 
     /// Events emitted when new block generated.
@@ -53,19 +54,23 @@ module starcoin_framework::stc_block {
 
     /// This can only be invoked by the GENESIS_ACCOUNT at genesis
     public fun initialize(account: &signer, parent_hash: vector<u8>) {
-        // Timestamp::assert_genesis();
         system_addresses::assert_starcoin_framework(account);
 
-        move_to<BlockMetadata>(
-            account,
-            BlockMetadata {
-                number: 0,
-                parent_hash,
-                author: system_addresses::get_starcoin_framework(),
-                uncles: 0,
-                parents_hash: vector::empty<u8>(),
-                new_block_events: account::new_event_handle<Self::NewBlockEvent>(account),
-            });
+        let block_metadata = BlockMetadata {
+            number: 0,
+            parent_hash,
+            author: system_addresses::get_starcoin_framework(),
+            uncles: 0,
+            parents_hash: vector::empty<u8>(),
+            new_block_events: account::new_event_handle<NewBlockEvent>(account),
+        };
+
+        let bcs = to_bytes(&block_metadata);
+        debug::print(&std::string::utf8(b"stc_block::initialize | bcs"));
+        debug::print(&vector::length(&bcs));
+        debug::print(&bcs);
+
+        move_to<BlockMetadata>(account, block_metadata);
     }
 
     spec initialize {
@@ -88,6 +93,11 @@ module starcoin_framework::stc_block {
 
     spec get_parent_hash {
         aborts_if !exists<BlockMetadata>(system_addresses::get_starcoin_framework());
+    }
+
+    /// Get the hash of the parents block, used for DAG
+    public fun get_parents_hash(): vector<u8> acquires BlockMetadata {
+        *&borrow_global<BlockMetadata>(system_addresses::get_starcoin_framework()).parent_hash
     }
 
     /// Gets the address of the author of the current block
@@ -125,6 +135,8 @@ module starcoin_framework::stc_block {
         debug::print(&coin::value(&txn_fee));
 
         // then deal with current block.
+        debug::print(&std::string::utf8(b"stc_block::block_prologue | timestamp::update_global_time"));
+        debug::print(&timestamp);
         timestamp::update_global_time(&account, signer::address_of(&account), timestamp * 1000);
 
         process_block_metadata(
@@ -138,9 +150,6 @@ module starcoin_framework::stc_block {
         );
 
         let reward = epoch::adjust_epoch(&account, number, timestamp, uncles, parent_gas_used);
-
-        debug::print(&std::string::utf8(b"stc_block::block_prologue | timestamp::update_global_time"));
-        debug::print(&timestamp);
 
         // pass in previous block gas fees.
         block_reward::process_block_reward(&account, number, reward, author, auth_key_vec, txn_fee);

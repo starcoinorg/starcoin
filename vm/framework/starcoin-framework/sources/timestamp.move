@@ -40,6 +40,7 @@ module starcoin_framework::timestamp {
         timestamp: u64
     ) acquires CurrentTimeMicroseconds {
         debug::print(&std::string::utf8(b"timestamp::update_global_time | Entered"));
+        debug::print(&timestamp);
 
         // Can only be invoked by StarcoinVM signer.
         // system_addresses::assert_vm(account);

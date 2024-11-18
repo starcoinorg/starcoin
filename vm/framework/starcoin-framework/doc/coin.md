@@ -2673,15 +2673,25 @@ Returns the amount of coin in existence.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x1_coin_supply">supply</a>&lt;CoinType&gt;(): Option&lt;u128&gt; <b>acquires</b> <a href="coin.md#0x1_coin_CoinInfo">CoinInfo</a>, <a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a> {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"dao::supply | entered"));
+
     <b>let</b> coin_supply = <a href="coin.md#0x1_coin_coin_supply">coin_supply</a>&lt;CoinType&gt;();
     <b>let</b> metadata = <a href="coin.md#0x1_coin_paired_metadata">paired_metadata</a>&lt;CoinType&gt;();
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"dao::supply | metadata"));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&metadata);
+
     <b>if</b> (<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&metadata)) {
-        <b>let</b> fungible_asset_supply = <a href="fungible_asset.md#0x1_fungible_asset_supply">fungible_asset::supply</a>(<a href="../../move-stdlib/doc/option.md#0x1_option_extract">option::extract</a>(&<b>mut</b> metadata));
-        <b>if</b> (<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&coin_supply)) {
+        <b>let</b> fungible_asset_supply =
+            <a href="fungible_asset.md#0x1_fungible_asset_supply">fungible_asset::supply</a>(<a href="../../move-stdlib/doc/option.md#0x1_option_extract">option::extract</a>(&<b>mut</b> metadata));
+        <b>if</b> (<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&coin_supply) &&
+            <a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&fungible_asset_supply)) {
             <b>let</b> <a href="coin.md#0x1_coin_supply">supply</a> = <a href="../../move-stdlib/doc/option.md#0x1_option_borrow_mut">option::borrow_mut</a>(&<b>mut</b> coin_supply);
             *<a href="coin.md#0x1_coin_supply">supply</a> = *<a href="coin.md#0x1_coin_supply">supply</a> + <a href="../../move-stdlib/doc/option.md#0x1_option_destroy_some">option::destroy_some</a>(fungible_asset_supply);
         };
     };
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"dao::supply | exit, <a href="coin.md#0x1_coin">coin</a> <a href="coin.md#0x1_coin_supply">supply</a>"));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&coin_supply);
     coin_supply
 }
 </code></pre>

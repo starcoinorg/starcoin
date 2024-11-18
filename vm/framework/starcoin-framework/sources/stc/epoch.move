@@ -76,9 +76,7 @@ module starcoin_framework::epoch {
     const EINVALID_UNCLES_COUNT: u64 = 101;
 
     /// Initialization of the module.
-    public fun initialize(
-        account: &signer,
-    ) {
+    public fun initialize(account: &signer) {
         // Timestamp::assert_genesis();
         system_addresses::assert_starcoin_framework(account);
 

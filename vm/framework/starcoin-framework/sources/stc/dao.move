@@ -3,6 +3,7 @@ module starcoin_framework::dao {
     use std::error;
     use std::option;
     use std::signer;
+    use starcoin_std::debug;
 
     use starcoin_framework::account;
     use starcoin_framework::coin;
@@ -113,6 +114,7 @@ module starcoin_framework::dao {
     const ERR_VOTE_STATE_MISMATCH: u64 = 1408;
     const ERR_ACTION_MUST_EXIST: u64 = 1409;
     const ERR_VOTED_OTHERS_ALREADY: u64 = 1410;
+    const ERR_TOKEN_NOT_REGISTER: u64 = 1411;
 
     /// plugin function, can only be called by token issuer.
     /// Any token who wants to have gov functionality
@@ -169,6 +171,8 @@ module starcoin_framework::dao {
         action: ActionT,
         action_delay: u64,
     ) acquires DaoGlobalInfo {
+        debug::print(&std::string::utf8(b"dao::proposal | Entered"));
+
         if (action_delay == 0) {
             action_delay = min_action_delay<TokenT>();
         } else {
@@ -178,6 +182,9 @@ module starcoin_framework::dao {
         let proposer = signer::address_of(signer);
         let start_time = timestamp::now_milliseconds() + voting_delay<TokenT>();
         let quorum_votes = quorum_votes<TokenT>();
+
+        debug::print(&std::string::utf8(b"dao::proposal | Proposal {"));
+
         let proposal = Proposal<TokenT, ActionT> {
             id: proposal_id,
             proposer,
@@ -193,10 +200,15 @@ module starcoin_framework::dao {
         move_to(signer, proposal);
         // emit event
         let gov_info = borrow_global_mut<DaoGlobalInfo<TokenT>>(stc_util::token_issuer<TokenT>());
+
+        debug::print(&std::string::utf8(b"dao::proposal | emit event"));
+
         event::emit_event(
             &mut gov_info.proposal_create_event,
             ProposalCreatedEvent { proposal_id, proposer },
         );
+
+        debug::print(&std::string::utf8(b"dao::proposal | Exited"));
     }
 
 
@@ -587,11 +599,20 @@ module starcoin_framework::dao {
 
     /// Quorum votes to make proposal pass.
     public fun quorum_votes<TokenT>(): u128 {
-        let market_cap = option::destroy_some(coin::supply<TokenT>());
+        debug::print(&std::string::utf8(b"dao::quorum_votes | entered "));
+
+        let supply = coin::supply<TokenT>();
+        debug::print(&std::string::utf8(b"dao::quorum_votes | supply "));
+        debug::print(&supply);
+
+        assert!(option::is_some(&supply), error::invalid_state(ERR_TOKEN_NOT_REGISTER));
+
+        let market_cap = option::destroy_some(supply);
         let balance_in_treasury = treasury::balance<TokenT>();
         let supply = market_cap - balance_in_treasury;
         let rate = voting_quorum_rate<TokenT>();
         let rate = (rate as u128);
+        debug::print(&std::string::utf8(b"dao::quorum_votes | exited "));
         supply * rate / 100
     }
 

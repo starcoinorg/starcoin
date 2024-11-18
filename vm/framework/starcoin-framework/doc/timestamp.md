@@ -152,6 +152,7 @@ Updates the wall clock time by consensus. Requires VM privilege and will be invo
     <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64
 ) <b>acquires</b> <a href="timestamp.md#0x1_timestamp_CurrentTimeMicroseconds">CurrentTimeMicroseconds</a> {
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="timestamp.md#0x1_timestamp_update_global_time">timestamp::update_global_time</a> | Entered"));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="timestamp.md#0x1_timestamp">timestamp</a>);
 
     // Can only be invoked by StarcoinVM <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>.
     // <a href="system_addresses.md#0x1_system_addresses_assert_vm">system_addresses::assert_vm</a>(<a href="account.md#0x1_account">account</a>);
