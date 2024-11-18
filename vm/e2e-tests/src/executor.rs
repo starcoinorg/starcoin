@@ -36,6 +36,7 @@ use starcoin_vm_types::{
 
 use crate::data_store::FakeDataStore;
 use move_vm_runtime::module_traversal::{TraversalContext, TraversalStorage};
+use starcoin_gas_schedule::LATEST_GAS_FEATURE_VERSION;
 use starcoin_statedb::ChainStateWriter;
 use starcoin_vm_runtime_types::storage::change_set_configs::ChangeSetConfigs;
 use starcoin_vm_types::errors::PartialVMError;
@@ -45,7 +46,6 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::{env, fs};
-use starcoin_gas_schedule::LATEST_GAS_FEATURE_VERSION;
 use test_helper::Genesis;
 
 static RNG_SEED: [u8; 32] = [9u8; 32];
