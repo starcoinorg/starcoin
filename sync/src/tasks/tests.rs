@@ -390,12 +390,18 @@ pub async fn test_full_sync_cancel() -> Result<()> {
         node2.worker_scheduler.clone(),
     )?;
     node2.worker_scheduler.tell_worker_to_start().await;
+    let node2_worker_handle = node2.worker_scheduler.clone();
     let join_handle = node2.process_block_connect_event(receiver).await;
     let sync_join_handle = tokio::task::spawn(sync_task);
 
     Delay::new(Duration::from_millis(100)).await;
 
     task_handle.cancel();
+    node2_worker_handle.tell_worker_to_stop().await;
+    while !node2_worker_handle.check_if_stop().await {
+        println!("wait for worker stop.");
+    }
+
     let sync_result = sync_join_handle.await?;
     assert!(sync_result.is_err());
     assert!(sync_result.err().unwrap().is_canceled());

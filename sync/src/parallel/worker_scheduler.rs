@@ -2,11 +2,13 @@ use std::{sync::atomic::AtomicU64, time::Duration};
 
 use tokio::sync::RwLock;
 
+#[derive(Debug)]
 enum WorkerSchedulerState {
     Inactive,
     Active,
 }
 
+#[derive(Debug)]
 pub struct WorkerScheduler {
     state: RwLock<WorkerSchedulerState>,
     worker_count: AtomicU64,

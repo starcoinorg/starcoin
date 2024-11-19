@@ -278,6 +278,7 @@ impl TaskEventHandle for TaskEventCounterHandle {
     }
 
     fn on_error(&self) {
+        println!("jacktest: on_error()");
         if let Some(counter) = self.current_counter.lock().as_ref() {
             counter.error_counter.fetch_add(1, Ordering::Release);
         }

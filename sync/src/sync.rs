@@ -291,6 +291,7 @@ impl SyncService {
                     task_handle,
                     task_event_handle,
                     peer_selector: rpc_client.selector().clone(),
+                    worker_scheduler: worker_scheduler.clone(),
                 })?;
                 if let Some(sync_task_total) = sync_task_total.as_ref() {
                     sync_task_total.with_label_values(&["start"]).inc();
@@ -402,7 +403,14 @@ impl SyncService {
 
     fn cancel_task(&mut self) {
         match std::mem::replace(&mut self.stage, SyncStage::Canceling) {
-            SyncStage::Synchronizing(handle) => handle.task_handle.cancel(),
+            SyncStage::Synchronizing(handle) => {
+                handle.task_handle.cancel();
+                tokio::task::block_in_place(|| {
+                    tokio::runtime::Handle::current().block_on(async {
+                        self.worker_scheduler.tell_worker_to_stop().await;
+                    });
+                });
+            }
             stage => {
                 //restore state machine state.
                 self.stage = stage;
@@ -487,6 +495,7 @@ pub struct SyncBeginEvent {
     task_handle: TaskHandle,
     task_event_handle: Arc<TaskEventCounterHandle>,
     peer_selector: PeerSelector,
+    worker_scheduler: Arc<WorkerScheduler>,
 }
 
 impl EventHandler<Self, SyncBeginEvent> for SyncService {
@@ -497,6 +506,7 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService {
             msg.task_event_handle,
             msg.peer_selector,
         );
+        let worker_scheduler = msg.worker_scheduler.clone();
         let sync_task_handle = SyncTaskHandle {
             target: target.clone(),
             task_begin: None,
@@ -522,6 +532,11 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService {
                 if target_total_difficulty <= current_total_difficulty {
                     info!("[sync] target block({})'s total_difficulty({}) is <= current's total_difficulty({}), cancel sync task.", target.target_id.number(), target_total_difficulty, current_total_difficulty);
                     task_handle.cancel();
+                    tokio::task::block_in_place(|| {
+                        tokio::runtime::Handle::current().block_on(async {
+                            worker_scheduler.tell_worker_to_stop().await;
+                        });
+                    });
                 } else {
                     let target_id_number =
                         BlockIdAndNumber::new(target.target_id.id(), target.target_id.number());
@@ -543,6 +558,11 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService {
             SyncStage::Canceling => {
                 self.stage = SyncStage::Canceling;
                 task_handle.cancel();
+                tokio::task::block_in_place(|| {
+                    tokio::runtime::Handle::current().block_on(async {
+                        worker_scheduler.tell_worker_to_stop().await;
+                    });
+                });
             }
         }
     }
