@@ -4,9 +4,9 @@
 
 //# run --signers alice
 script {
-    use starcoin_framework::ChainId;
+    use starcoin_framework::chain_id;
 
     fun main() {
-        assert!(ChainId::get() == 255, 1000);
+        assert!(chain_id::get() == 255, 1000);
     }
 }
