@@ -58,8 +58,9 @@ impl CommandAction for ShowCommand {
 
         let chain_state_reader = rpc_client.state_reader(opt.state_root.unwrap_or_default())?;
         let sequence_number = chain_state_reader
-            .get_account_resource(*account.address())?
-            .sequence_number();
+            .get_account_resource(*account.address())
+            .map(|r| r.sequence_number())
+            .ok();
 
         let resources = rpc_client.state_list_resource(
             *account.address(),
@@ -89,7 +90,7 @@ impl CommandAction for ShowCommand {
         Ok(AccountWithStateView {
             auth_key: auth_key.to_encoded_string()?,
             account,
-            sequence_number: Some(sequence_number),
+            sequence_number,
             balances,
         })
     }
