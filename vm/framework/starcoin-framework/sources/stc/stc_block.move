@@ -1,20 +1,31 @@
 /// Block module provide metadata for generated blocks.
 module starcoin_framework::stc_block {
-    use std::bcs::to_bytes;
     use std::error;
     use std::signer;
     use std::vector;
 
-    use starcoin_framework::epoch;
+    use starcoin_framework::account;
     use starcoin_framework::block_reward;
-    use starcoin_framework::timestamp;
+    use starcoin_framework::chain_id;
+    use starcoin_framework::coin;
+    use starcoin_framework::epoch;
+    use starcoin_framework::event;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::stc_transaction_fee;
-
-    use starcoin_framework::chain_id;
-    use starcoin_framework::account;
     use starcoin_framework::system_addresses;
-    use starcoin_framework::event;
+    use starcoin_framework::timestamp;
+    use starcoin_std::debug;
+
+    #[test_only]
+    use std::bcs;
+    #[test_only]
+    use std::hash;
+    #[test_only]
+    use starcoin_framework::account::create_signer_for_test;
+    #[test_only]
+    use starcoin_framework::bcs_util;
+    #[test_only]
+    use starcoin_framework::create_signer;
 
     const EPROLOGUE_BAD_CHAIN_ID: u64 = 6;
 
@@ -30,7 +41,7 @@ module starcoin_framework::stc_block {
         uncles: u64,
         /// An Array of the parents hash for a Dag block.
         parents_hash: vector<u8>,
-        /// Handle of events when new blocks are emitted
+        // Handle of events when new blocks are emitted
         new_block_events: event::EventHandle<NewBlockEvent>,
     }
 
@@ -65,11 +76,6 @@ module starcoin_framework::stc_block {
             new_block_events: account::new_event_handle<NewBlockEvent>(account),
         };
 
-        let bcs = to_bytes(&block_metadata);
-        debug::print(&std::string::utf8(b"stc_block::initialize | bcs"));
-        debug::print(&vector::length(&bcs));
-        debug::print(&bcs);
-
         move_to<BlockMetadata>(account, block_metadata);
     }
 
@@ -96,13 +102,15 @@ module starcoin_framework::stc_block {
     }
 
     /// Get the hash of the parents block, used for DAG
-    public fun get_parents_hash(): vector<u8> acquires BlockMetadata {
-        *&borrow_global<BlockMetadata>(system_addresses::get_starcoin_framework()).parent_hash
+    public fun get_parents_hash(): vector<u8> {
+        // *&borrow_global<BlockMetadata>(system_addresses::get_starcoin_framework()).parent_hash
+        vector::empty()
     }
 
     /// Gets the address of the author of the current block
-    public fun get_current_author(): address acquires BlockMetadata {
-        borrow_global<BlockMetadata>(system_addresses::get_starcoin_framework()).author
+    public fun get_current_author(): address {
+        // borrow_global<BlockMetadata>(system_addresses::get_starcoin_framework()).author
+        @0x1
     }
 
     /// Set the metadata for the current block and distribute transaction fees and block rewards.
@@ -199,15 +207,6 @@ module starcoin_framework::stc_block {
     }
 
     #[test]
-    use starcoin_framework::bcs_util;
-    #[test]
-    use std::hash;
-    #[test]
-    use std::option;
-    use starcoin_framework::coin;
-    use starcoin_std::debug;
-
-    #[test]
     fun test_header() {
         // Block header Unit test
         // Use Main Genesis BlockHeader in Rust
@@ -295,4 +294,27 @@ module starcoin_framework::stc_block {
         assert!(number == 2, 1002);
         assert!(state_root == x"d2df4c8c579f9e05b0adf14b53785379fb245465d703834eb19fba74d9114a9a", 1003);
     }
+
+    #[test]
+    fun test_block_metadata_bcs() {
+        let test_framework = create_signer_for_test(system_addresses::get_starcoin_framework());
+        let block_metadata = BlockMetadata {
+            number: 0,
+            parent_hash: vector::empty<u8>(),
+            author: system_addresses::get_starcoin_framework(),
+            uncles: 0,
+            parents_hash: vector::empty<u8>(),
+            new_block_events: account::new_event_handle<NewBlockEvent>(&test_framework),
+        };
+        let bcs = bcs::to_bytes(&block_metadata);
+        debug::print(&std::string::utf8(b"test_block_metadata_bcs | bcs"));
+        debug::print(&vector::length(&bcs));
+        debug::print(&bcs);
+
+        let BlockMetadata {
+            number: _, parent_hash: _, author: _, uncles: _, parents_hash: _, new_block_events: event
+        } = block_metadata;
+        event::destroy_handle(event);
+    }
+
 }

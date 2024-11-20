@@ -1,5 +1,6 @@
 /// A proposal module which is used to modify Token's DAO configuration.
 module starcoin_framework::dao_modify_config_proposal {
+    use starcoin_std::debug;
     use starcoin_framework::stc_util;
     use starcoin_framework::signer;
     use starcoin_framework::on_chain_config;
@@ -35,7 +36,7 @@ module starcoin_framework::dao_modify_config_proposal {
 
     /// Plugin method of the module.
     /// Should be called by token issuer.
-    public fun plugin<TokenT: copy + drop + store>(signer: &signer) {
+    public fun plugin<TokenT>(signer: &signer) {
         let token_issuer = stc_util::token_issuer<TokenT>();
         assert!(signer::address_of(signer) == token_issuer, error::unauthenticated(ERR_NOT_AUTHORIZED));
         let dao_config_modify_cap = on_chain_config::extract_modify_config_capability<
@@ -104,17 +105,25 @@ module starcoin_framework::dao_modify_config_proposal {
     }
 
     /// Once the proposal is agreed, anyone can call the method to make the proposal happen.
-    public entry fun execute<TokenT>(proposer_address: address, proposal_id: u64)
-    acquires DaoConfigModifyCapability {
+    public entry fun execute<TokenT>(proposer_address: address, proposal_id: u64) acquires DaoConfigModifyCapability {
         let DaoConfigUpdate {
             voting_delay,
             voting_period,
             voting_quorum_rate,
             min_action_delay,
         } = dao::extract_proposal_action<TokenT, DaoConfigUpdate>(proposer_address, proposal_id);
+
+        debug::print(&std::string::utf8(b"dao_modify_config_proposal::execute | entered"));
+
         let cap = borrow_global_mut<DaoConfigModifyCapability<TokenT>>(
             stc_util::token_issuer<TokenT>(),
         );
+        debug::print(
+            &std::string::utf8(
+                b"dao_modify_config_proposal::execute | borrow_global_mut<DaoConfigModifyCapability<TokenT>>"
+            )
+        );
+
         dao::modify_dao_config(
             &mut cap.cap,
             voting_delay,
@@ -122,6 +131,8 @@ module starcoin_framework::dao_modify_config_proposal {
             voting_quorum_rate,
             min_action_delay,
         );
+
+        debug::print(&std::string::utf8(b"dao_modify_config_proposal::execute | exited"));
     }
     spec execute {
         pragma aborts_if_is_partial = true;

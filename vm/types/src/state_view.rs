@@ -54,8 +54,8 @@ pub trait StateReaderExt: StateView {
     }
 
     fn get_resource_type_bytes<R>(&self, address: AccountAddress) -> Result<Bytes>
-        where
-            R: MoveResource,
+    where
+        R: MoveResource,
     {
         Ok(self
             .get_state_value_bytes(&StateKey::resource_typed::<R>(&address)?)?

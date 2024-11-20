@@ -19,10 +19,12 @@ A proposal module which is used to modify Token's DAO configuration.
 
 
 <pre><code><b>use</b> <a href="dao.md#0x1_dao">0x1::dao</a>;
+<b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
 <b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="on_chain_config.md#0x1_on_chain_config">0x1::on_chain_config</a>;
 <b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
 <b>use</b> <a href="stc_util.md#0x1_stc_util">0x1::stc_util</a>;
+<b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 </code></pre>
 
 
@@ -133,7 +135,7 @@ Plugin method of the module.
 Should be called by token issuer.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dao_modify_config_proposal.md#0x1_dao_modify_config_proposal_plugin">plugin</a>&lt;TokenT: <b>copy</b>, drop, store&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="dao_modify_config_proposal.md#0x1_dao_modify_config_proposal_plugin">plugin</a>&lt;TokenT&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -142,7 +144,7 @@ Should be called by token issuer.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dao_modify_config_proposal.md#0x1_dao_modify_config_proposal_plugin">plugin</a>&lt;TokenT: <b>copy</b> + drop + store&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
+<pre><code><b>public</b> <b>fun</b> <a href="dao_modify_config_proposal.md#0x1_dao_modify_config_proposal_plugin">plugin</a>&lt;TokenT&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
     <b>let</b> token_issuer = <a href="stc_util.md#0x1_stc_util_token_issuer">stc_util::token_issuer</a>&lt;TokenT&gt;();
     <b>assert</b>!(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) == token_issuer, <a href="../../move-stdlib/doc/error.md#0x1_error_unauthenticated">error::unauthenticated</a>(<a href="dao_modify_config_proposal.md#0x1_dao_modify_config_proposal_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>));
     <b>let</b> dao_config_modify_cap = <a href="on_chain_config.md#0x1_on_chain_config_extract_modify_config_capability">on_chain_config::extract_modify_config_capability</a>&lt;
@@ -216,17 +218,25 @@ Once the proposal is agreed, anyone can call the method to make the proposal hap
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="dao_modify_config_proposal.md#0x1_dao_modify_config_proposal_execute">execute</a>&lt;TokenT&gt;(proposer_address: <b>address</b>, proposal_id: u64)
-<b>acquires</b> <a href="dao_modify_config_proposal.md#0x1_dao_modify_config_proposal_DaoConfigModifyCapability">DaoConfigModifyCapability</a> {
+<pre><code><b>public</b> entry <b>fun</b> <a href="dao_modify_config_proposal.md#0x1_dao_modify_config_proposal_execute">execute</a>&lt;TokenT&gt;(proposer_address: <b>address</b>, proposal_id: u64) <b>acquires</b> <a href="dao_modify_config_proposal.md#0x1_dao_modify_config_proposal_DaoConfigModifyCapability">DaoConfigModifyCapability</a> {
     <b>let</b> <a href="dao_modify_config_proposal.md#0x1_dao_modify_config_proposal_DaoConfigUpdate">DaoConfigUpdate</a> {
         voting_delay,
         voting_period,
         voting_quorum_rate,
         min_action_delay,
     } = <a href="dao.md#0x1_dao_extract_proposal_action">dao::extract_proposal_action</a>&lt;TokenT, <a href="dao_modify_config_proposal.md#0x1_dao_modify_config_proposal_DaoConfigUpdate">DaoConfigUpdate</a>&gt;(proposer_address, proposal_id);
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="dao_modify_config_proposal.md#0x1_dao_modify_config_proposal_execute">dao_modify_config_proposal::execute</a> | entered"));
+
     <b>let</b> cap = <b>borrow_global_mut</b>&lt;<a href="dao_modify_config_proposal.md#0x1_dao_modify_config_proposal_DaoConfigModifyCapability">DaoConfigModifyCapability</a>&lt;TokenT&gt;&gt;(
         <a href="stc_util.md#0x1_stc_util_token_issuer">stc_util::token_issuer</a>&lt;TokenT&gt;(),
     );
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(
+        &std::string::utf8(
+            b"<a href="dao_modify_config_proposal.md#0x1_dao_modify_config_proposal_execute">dao_modify_config_proposal::execute</a> | <b>borrow_global_mut</b>&lt;<a href="dao_modify_config_proposal.md#0x1_dao_modify_config_proposal_DaoConfigModifyCapability">DaoConfigModifyCapability</a>&lt;TokenT&gt;&gt;"
+        )
+    );
+
     <a href="dao.md#0x1_dao_modify_dao_config">dao::modify_dao_config</a>(
         &<b>mut</b> cap.cap,
         voting_delay,
@@ -234,6 +244,8 @@ Once the proposal is agreed, anyone can call the method to make the proposal hap
         voting_quorum_rate,
         min_action_delay,
     );
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="dao_modify_config_proposal.md#0x1_dao_modify_config_proposal_execute">dao_modify_config_proposal::execute</a> | exited"));
 }
 </code></pre>
 
@@ -259,7 +271,7 @@ Once the proposal is agreed, anyone can call the method to make the proposal hap
 ### Function `plugin`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dao_modify_config_proposal.md#0x1_dao_modify_config_proposal_plugin">plugin</a>&lt;TokenT: <b>copy</b>, drop, store&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="dao_modify_config_proposal.md#0x1_dao_modify_config_proposal_plugin">plugin</a>&lt;TokenT&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 

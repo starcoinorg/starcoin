@@ -12,7 +12,7 @@ module starcoin_framework::block_reward {
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::system_addresses;
     use starcoin_framework::treasury;
-    use starcoin_framework::treasury_withdraw_dao_proposal;
+    use starcoin_framework::dao_treasury_withdraw_proposal;
     use starcoin_std::debug;
 
     /// Queue of rewards distributed to miners.
@@ -140,7 +140,7 @@ module starcoin_framework::block_reward {
                     debug::print(&std::string::utf8(b"block_reward::process_block_reward | treasury_balance: "));
                     debug::print(&treasury_balance);
                     if (block_reward > 0) {
-                        let reward = treasury_withdraw_dao_proposal::withdraw_for_block_reward<STC>(account, block_reward);
+                        let reward = dao_treasury_withdraw_proposal::withdraw_for_block_reward<STC>(account, block_reward);
                         coin::merge(&mut total_reward, reward);
                     };
                 };

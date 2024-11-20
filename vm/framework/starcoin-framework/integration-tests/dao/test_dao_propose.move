@@ -6,7 +6,6 @@
 
 //# block --author 0x1 --timestamp 86400000
 
-
 //# run --signers StarcoinAssociation
 script {
     use starcoin_framework::coin;
@@ -23,23 +22,20 @@ script {
 
 
 //# run --signers alice
-
-
 script {
     use starcoin_framework::dao_modify_config_proposal;
     use starcoin_framework::starcoin_coin::STC;
 
-    fun propose(signer: signer) {
-        dao_modify_config_proposal::propose<STC>(signer, 60 * 60 * 24 * 1000, 0, 50, 0, 0);
+    fun propose(account: signer) {
+        dao_modify_config_proposal::propose<STC>(account, 60 * 60 * 24 * 1000, 0, 50, 0, 0);
     }
 }
 // check: EXECUTED
 
 
 //# run --signers alice
-
-
 script {
+    use starcoin_std::debug;
     use starcoin_framework::dao;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::dao_modify_config_proposal;
@@ -52,6 +48,8 @@ script {
             = dao::proposal_info<STC, dao_modify_config_proposal::DaoConfigUpdate>(@alice);
 
         assert!(id == 0, 101);
+        debug::print(&std::string::utf8(b"test_dao_proposal::proposal_info | Start time:"));
+        debug::print(&start_time);
         assert!(start_time == 86460000, 102); // be consistent with genesis config
         assert!(end_time == 90060000, 103); // be consistent with genesis config
         assert!(for_votes == 0, 104);
@@ -68,6 +66,7 @@ script {
 
 
 script {
+    use std::signer;
     use starcoin_framework::dao;
     use starcoin_framework::coin;
     use starcoin_framework::dao_modify_config_proposal;
@@ -76,7 +75,8 @@ script {
     fun vote(signer: signer) {
         let balance = coin::balance<STC>(signer::address_of(&signer));
         let balance = coin::withdraw<STC>(&signer, balance / 2);
-        dao::cast_vote<STC, dao_modify_config_proposal::DaoConfigUpdate>(&signer, @alice, 0, balance, true);
+        dao::cast_vote<STC, dao_modify_config_proposal::DaoConfigUpdate>(
+            &signer, @alice, 0, balance, true);
     }
 }
 // check: EXECUTED
@@ -87,6 +87,7 @@ script {
 
 
 script {
+    use starcoin_framework::coin;
     use starcoin_framework::dao_modify_config_proposal;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::signer;
@@ -129,6 +130,7 @@ script {
 
 
 script {
+    use starcoin_framework::coin;
     use starcoin_framework::dao_modify_config_proposal;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::dao;
@@ -152,6 +154,7 @@ script {
 
 
 script {
+    use std::signer;
     use starcoin_framework::dao;
     use starcoin_framework::coin;
     use starcoin_framework::dao_modify_config_proposal;
@@ -174,7 +177,7 @@ script {
                 0,
                 pow / 10
             );
-            coin::deposit(&account, token);
+            coin::deposit(signer::address_of(&account), token);
         };
         // flip back
         dao::change_vote<STC, dao_modify_config_proposal::DaoConfigUpdate>(&account, @alice, 0, true);
@@ -193,19 +196,19 @@ script {
 
 //# run --signers bob
 
-
 script {
+    use std::signer;
     use starcoin_framework::dao;
     use starcoin_framework::coin;
     use starcoin_framework::dao_modify_config_proposal;
     use starcoin_framework::starcoin_coin::STC;
 
-    fun queue_proposal(signer: signer) {
+    fun queue_proposal(account: signer) {
         let state = dao::proposal_state<STC, dao_modify_config_proposal::DaoConfigUpdate>(@alice, 0);
         assert!(state == 4, (state as u64));
         {
-            let token = dao::unstake_votes<STC, dao_modify_config_proposal::DaoConfigUpdate>(&signer, @alice, 0);
-            coin::deposit(&signer, token);
+            let token = dao::unstake_votes<STC, dao_modify_config_proposal::DaoConfigUpdate>(&account, @alice, 0);
+            coin::deposit(signer::address_of(&account), token);
         };
         dao::queue_proposal_action<STC, dao_modify_config_proposal::DaoConfigUpdate>(@alice, 0);
         // ModifyDaoConfigProposal::execute<STC>(@alice, 0);
@@ -220,33 +223,45 @@ script {
 
 
 //# run --signers bob
-
-
 script {
+    use starcoin_std::debug;
     use starcoin_framework::dao_modify_config_proposal;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::dao;
 
     fun cleanup_proposal_should_fail(_signer: signer) {
+        debug::print(&std::string::utf8(b"cleanup_proposal_should_fail | entered"));
+
         dao::destroy_terminated_proposal<STC, dao_modify_config_proposal::DaoConfigUpdate>(@alice, 0);
+
+        debug::print(&std::string::utf8(b"cleanup_proposal_should_fail | exited"));
     }
 }
 // check: "Keep(ABORTED { code: 359169"
 
 
 //# run --signers bob
-
 script {
+    use starcoin_std::debug;
     use starcoin_framework::dao_modify_config_proposal;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::dao;
 
     fun execute_proposal_action(_signer: signer) {
+        debug::print(&std::string::utf8(b"execute_proposal_action | entered"));
         let state = dao::proposal_state<STC, dao_modify_config_proposal::DaoConfigUpdate>(@alice, 0);
+
+        debug::print(&std::string::utf8(b"execute_proposal_action | state = "));
+        debug::print(&state);
         assert!(state == 6, (state as u64));
         dao_modify_config_proposal::execute<STC>(@alice, 0);
+
+        debug::print(&std::string::utf8(b"execute_proposal_action | after dao_modify_config_proposal::execute "));
+
         assert!(dao::voting_delay<STC>() == 3600 * 24 * 1000, dao::voting_delay<STC>());
         assert!(dao::voting_quorum_rate<STC>() == 50, 1000);
+
+        debug::print(&std::string::utf8(b"execute_proposal_action | exited "));
     }
 }
 // check: EXECUTED

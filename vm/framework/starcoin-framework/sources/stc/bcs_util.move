@@ -48,7 +48,7 @@ module starcoin_framework::bcs_util {
         pragma verify = false;
     }
 
-    #[test] use std::bcs;
+    #[test_only] use std::bcs;
 
     #[test]
     public fun test_deserialize_bytes_array() {
@@ -398,7 +398,7 @@ module starcoin_framework::bcs_util {
     }
 
     #[test]
-    #[expected_failure(abort_code = 206, location= StarcoinFramework::BCS)]
+    #[expected_failure(abort_code = 206, location= starcoin_framework::bcs)]
     public fun test_deserialize_uleb128_as_u32_exceeded_max_int() {
         let max_int: u64 = 2147483647;
         let exceeded_max_int: u64 = max_int + 1;

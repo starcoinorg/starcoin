@@ -3,8 +3,7 @@ module starcoin_framework::stc_genesis {
 
     use std::option;
     use std::vector;
-    use starcoin_std::debug;
-    use starcoin_framework::stc_language_version;
+    use starcoin_framework::dao_modify_config_proposal;
 
     use starcoin_framework::account;
     use starcoin_framework::aggregator_factory;
@@ -21,6 +20,7 @@ module starcoin_framework::stc_genesis {
     use starcoin_framework::starcoin_coin;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::stc_block;
+    use starcoin_framework::stc_language_version;
     use starcoin_framework::stc_transaction_fee;
     use starcoin_framework::stc_transaction_package_validation;
     use starcoin_framework::stc_transaction_timeout_config;
@@ -30,8 +30,9 @@ module starcoin_framework::stc_genesis {
     use starcoin_framework::timestamp;
     use starcoin_framework::transaction_publish_option;
     use starcoin_framework::treasury;
-    use starcoin_framework::treasury_withdraw_dao_proposal;
+    use starcoin_framework::dao_treasury_withdraw_proposal;
     use starcoin_framework::vm_config;
+    use starcoin_std::debug;
 
     spec module {
         pragma verify = false; // break after enabling v2 compilation scheme
@@ -291,7 +292,8 @@ module starcoin_framework::stc_genesis {
             );
             treasury::add_linear_withdraw_capability(core_resource_account, liner_withdraw_cap);
         };
-        treasury_withdraw_dao_proposal::plugin<STC>(starcoin_framework, treasury_withdraw_cap);
+        dao_treasury_withdraw_proposal::plugin<STC>(starcoin_framework, treasury_withdraw_cap);
+        dao_modify_config_proposal::plugin<STC>(starcoin_framework);
     }
 
     /// Init the genesis for unit tests

@@ -6,10 +6,7 @@ use move_core_types::{
     identifier::IdentStr,
     move_resource::{MoveResource, MoveStructType},
 };
-use serde::{
-    Deserialize,
-    Serialize,
-};
+use serde::{Deserialize, Serialize};
 
 use schemars::JsonSchema;
 

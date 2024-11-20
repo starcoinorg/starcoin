@@ -25,7 +25,6 @@ Block module provide metadata for generated blocks.
 
 
 <pre><code><b>use</b> <a href="account.md#0x1_account">0x1::account</a>;
-<b>use</b> <a href="../../move-stdlib/doc/bcs.md#0x1_bcs">0x1::bcs</a>;
 <b>use</b> <a href="block_reward.md#0x1_block_reward">0x1::block_reward</a>;
 <b>use</b> <a href="chain_id.md#0x1_chain_id">0x1::chain_id</a>;
 <b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
@@ -94,7 +93,7 @@ Block metadata struct.
 <code>new_block_events: <a href="event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="stc_block.md#0x1_stc_block_NewBlockEvent">stc_block::NewBlockEvent</a>&gt;</code>
 </dt>
 <dd>
- Handle of events when new blocks are emitted
+
 </dd>
 </dl>
 
@@ -258,11 +257,6 @@ This can only be invoked by the GENESIS_ACCOUNT at genesis
         new_block_events: <a href="account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="stc_block.md#0x1_stc_block_NewBlockEvent">NewBlockEvent</a>&gt;(<a href="account.md#0x1_account">account</a>),
     };
 
-    <b>let</b> <a href="../../move-stdlib/doc/bcs.md#0x1_bcs">bcs</a> = to_bytes(&block_metadata);
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_block.md#0x1_stc_block_initialize">stc_block::initialize</a> | <a href="../../move-stdlib/doc/bcs.md#0x1_bcs">bcs</a>"));
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(&<a href="../../move-stdlib/doc/bcs.md#0x1_bcs">bcs</a>));
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/bcs.md#0x1_bcs">bcs</a>);
-
     <b>move_to</b>&lt;<a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a>&gt;(<a href="account.md#0x1_account">account</a>, block_metadata);
 }
 </code></pre>
@@ -337,8 +331,9 @@ Get the hash of the parents block, used for DAG
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_get_parents_hash">get_parents_hash</a>(): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; <b>acquires</b> <a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a> {
-    *&<b>borrow_global</b>&lt;<a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()).parent_hash
+<pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_get_parents_hash">get_parents_hash</a>(): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
+    // *&<b>borrow_global</b>&lt;<a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()).parent_hash
+    <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>()
 }
 </code></pre>
 
@@ -362,8 +357,9 @@ Gets the address of the author of the current block
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_get_current_author">get_current_author</a>(): <b>address</b> <b>acquires</b> <a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a> {
-    <b>borrow_global</b>&lt;<a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()).author
+<pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_get_current_author">get_current_author</a>(): <b>address</b> {
+    // <b>borrow_global</b>&lt;<a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()).author
+    @0x1
 }
 </code></pre>
 

@@ -23,6 +23,8 @@ The module for init Genesis
 <b>use</b> <a href="consensus_config.md#0x1_consensus_config">0x1::consensus_config</a>;
 <b>use</b> <a href="consensus_strategy.md#0x1_consensus_strategy">0x1::consensus_strategy</a>;
 <b>use</b> <a href="dao.md#0x1_dao">0x1::dao</a>;
+<b>use</b> <a href="dao_modify_config_proposal.md#0x1_dao_modify_config_proposal">0x1::dao_modify_config_proposal</a>;
+<b>use</b> <a href="dao_treasury_withdraw_proposal.md#0x1_dao_treasury_withdraw_proposal">0x1::dao_treasury_withdraw_proposal</a>;
 <b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
 <b>use</b> <a href="epoch.md#0x1_epoch">0x1::epoch</a>;
 <b>use</b> <a href="on_chain_config.md#0x1_on_chain_config">0x1::on_chain_config</a>;
@@ -41,7 +43,6 @@ The module for init Genesis
 <b>use</b> <a href="timestamp.md#0x1_timestamp">0x1::timestamp</a>;
 <b>use</b> <a href="stc_transaction_publish_option.md#0x1_transaction_publish_option">0x1::transaction_publish_option</a>;
 <b>use</b> <a href="treasury.md#0x1_treasury">0x1::treasury</a>;
-<b>use</b> <a href="treasury_withdraw_dao_proposal.md#0x1_treasury_withdraw_dao_proposal">0x1::treasury_withdraw_dao_proposal</a>;
 <b>use</b> <a href="../../move-stdlib/doc/vector.md#0x1_vector">0x1::vector</a>;
 <b>use</b> <a href="vm_config.md#0x1_vm_config">0x1::vm_config</a>;
 </code></pre>
@@ -160,9 +161,9 @@ The module for init Genesis
 
     <a href="block_reward.md#0x1_block_reward_initialize">block_reward::initialize</a>(&starcoin_framework_account, reward_delay);
 
-    // TODO(BobOng): [framework compatible] <a href="treasury_withdraw_dao_proposal.md#0x1_treasury_withdraw_dao_proposal">treasury_withdraw_dao_proposal</a> not implemented.
+    // TODO(BobOng): [framework compatible] treasury_withdraw_dao_proposal not implemented.
     // Lock the TreasuryWithdrawCapability <b>to</b> Dao
-    // <a href="treasury_withdraw_dao_proposal.md#0x1_treasury_withdraw_dao_proposal_plugin">treasury_withdraw_dao_proposal::plugin</a>(&genesis_account, withdraw_cap);
+    // treasury_withdraw_dao_proposal::plugin(&genesis_account, withdraw_cap);
 
     // Initliaze STC
     <b>let</b> total_supply_coin = <a href="stc_genesis.md#0x1_stc_genesis_initialize_stc">Self::initialize_stc</a>(
@@ -375,7 +376,8 @@ Overall governance allocation strategy:
         );
         <a href="treasury.md#0x1_treasury_add_linear_withdraw_capability">treasury::add_linear_withdraw_capability</a>(core_resource_account, liner_withdraw_cap);
     };
-    <a href="treasury_withdraw_dao_proposal.md#0x1_treasury_withdraw_dao_proposal_plugin">treasury_withdraw_dao_proposal::plugin</a>&lt;STC&gt;(starcoin_framework, treasury_withdraw_cap);
+    <a href="dao_treasury_withdraw_proposal.md#0x1_dao_treasury_withdraw_proposal_plugin">dao_treasury_withdraw_proposal::plugin</a>&lt;STC&gt;(starcoin_framework, treasury_withdraw_cap);
+    <a href="dao_modify_config_proposal.md#0x1_dao_modify_config_proposal_plugin">dao_modify_config_proposal::plugin</a>&lt;STC&gt;(starcoin_framework);
 }
 </code></pre>
 

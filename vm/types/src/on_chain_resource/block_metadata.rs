@@ -17,7 +17,7 @@ pub struct BlockMetadata {
     // number of the current block
     pub number: u64,
     // Hash of the parent block.
-    pub parent_hash: HashValue,
+    pub parent_hash: Vec<u8>,
     // Author of the current block.
     pub author: AccountAddress,
     // Uncle blocks number
