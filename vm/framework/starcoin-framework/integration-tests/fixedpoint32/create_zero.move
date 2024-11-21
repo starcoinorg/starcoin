@@ -4,10 +4,11 @@
 
 //# run --signers alice
 script {
-use starcoin_framework::FixedPoint32;
-fun main() {
-    let x = FixedPoint32::create_from_rational(0, 1);
-    assert!(FixedPoint32::get_raw_value(x) == 0, 0);
-}
+    use std::fixed_point32;
+
+    fun main() {
+        let x = fixed_point32::create_from_rational(0, 1);
+        assert!(fixed_point32::get_raw_value(x) == 0, 0);
+    }
 }
 // check: "Keep(EXECUTED)"

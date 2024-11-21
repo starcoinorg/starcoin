@@ -4,29 +4,29 @@
 
 //# run --signers alice
 script {
-use starcoin_framework::FixedPoint32;
+    use std::fixed_point32;
 
-fun main() {
-    let f1 = FixedPoint32::create_from_rational(3, 4); // 0.75
-    let nine = FixedPoint32::multiply_u64(12, copy f1); // 12 * 0.75
-    assert!(nine == 9, nine);
-    let twelve = FixedPoint32::divide_u64(9, copy f1); // 9 / 0.75
-    assert!(twelve == 12, twelve);
+    fun main() {
+        let f1 = fixed_point32::create_from_rational(3, 4); // 0.75
+        let nine = fixed_point32::multiply_u64(12, copy f1); // 12 * 0.75
+        assert!(nine == 9, nine);
+        let twelve = fixed_point32::divide_u64(9, copy f1); // 9 / 0.75
+        assert!(twelve == 12, twelve);
 
-    let f2 = FixedPoint32::create_from_rational(1, 3); // 0.333...
-    let not_three = FixedPoint32::multiply_u64(9, copy f2); // 9 * 0.333...
-    // multiply_u64 does NOT round -- it truncates -- so values that
-    // are not perfectly representable in binary may be off by one.
-    assert!(not_three == 2, not_three);
+        let f2 = fixed_point32::create_from_rational(1, 3); // 0.333...
+        let not_three = fixed_point32::multiply_u64(9, copy f2); // 9 * 0.333...
+        // multiply_u64 does NOT round -- it truncates -- so values that
+        // are not perfectly representable in binary may be off by one.
+        assert!(not_three == 2, not_three);
 
-    // Try again with a fraction slightly larger than 1/3.
-    let f3 = FixedPoint32::create_from_raw_value(FixedPoint32::get_raw_value(copy f2) + 1);
-    let three = FixedPoint32::multiply_u64(9, copy f3);
-    assert!(three == 3, three);
+        // Try again with a fraction slightly larger than 1/3.
+        let f3 = fixed_point32::create_from_raw_value(fixed_point32::get_raw_value(copy f2) + 1);
+        let three = fixed_point32::multiply_u64(9, copy f3);
+        assert!(three == 3, three);
 
-    // Test creating a 1.0 fraction from the maximum u64 value.
-    let f4 = FixedPoint32::create_from_rational(18446744073709551615, 18446744073709551615);
-    let one = FixedPoint32::get_raw_value(copy f4);
-    assert!(one == 4294967296, 4); // 0x1.00000000
-}
+        // Test creating a 1.0 fraction from the maximum u64 value.
+        let f4 = fixed_point32::create_from_rational(18446744073709551615, 18446744073709551615);
+        let one = fixed_point32::get_raw_value(copy f4);
+        assert!(one == 4294967296, 4); // 0x1.00000000
+    }
 }
