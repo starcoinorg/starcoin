@@ -12,7 +12,7 @@ use starcoin_dag::{
             RelationsStore, RelationsStoreReader,
         },
     },
-    reachability::{inquirer, ReachabilityError},
+    reachability::{inquirer, reachability_service::ReachabilityService, ReachabilityError},
     types::{ghostdata::GhostdagData, interval::Interval},
 };
 use starcoin_logger::prelude::debug;
@@ -600,6 +600,69 @@ fn test_reachability_not_ancestor() -> anyhow::Result<()> {
     println!("dag.check_ancestor_of() result = {:?}", result);
 
     Ok(())
+}
+
+#[test]
+fn test_reachability_chain_ancestor() -> anyhow::Result<()> {
+    let dag = BlockDAG::create_for_testing().unwrap();
+    let reachability_store = dag.storage.reachability_store.clone();
+
+    let origin = Hash::random();
+
+    inquirer::init_for_test(
+        reachability_store.write().deref_mut(),
+        origin,
+        Interval::new(1, 32),
+    )?;
+
+    let child1 = Hash::random();
+    inquirer::add_block(
+        reachability_store.write().deref_mut(),
+        child1,
+        origin,
+        &mut vec![].into_iter(),
+    )?;
+
+    let child2 = Hash::random();
+    inquirer::add_block(
+        reachability_store.write().deref_mut(),
+        child2,
+        child1,
+        &mut vec![].into_iter(),
+    )?;
+
+    let child3 = Hash::random();
+    inquirer::add_block(
+        reachability_store.write().deref_mut(),
+        child3,
+        child1,
+        &mut vec![].into_iter(),
+    )?;
+
+    let child4 = Hash::random();
+    inquirer::add_block(
+        reachability_store.write().deref_mut(),
+        child4,
+        child2,
+        &mut vec![child3].into_iter(),
+    )?;
+
+    let child5 = Hash::random();
+    inquirer::add_block(
+        reachability_store.write().deref_mut(),
+        child5,
+        child4,
+        &mut vec![].into_iter(),
+    )?;
+
+    assert!(!dag
+        .reachability_service()
+        .is_chain_ancestor_of(child3, child5));
+    assert!(dag
+        .reachability_service()
+        .is_chain_ancestor_of(child2, child5));
+
+    anyhow::Ok(())
 }
 
 #[test]

@@ -14,8 +14,10 @@ use crate::consensusdb::{
 };
 use crate::ghostdag::protocol::GhostdagManager;
 use crate::prune::pruning_point_manager::PruningPointManagerT;
+use crate::reachability::reachability_service::ReachabilityService;
+use crate::types::ordering::SortableBlockWithWorkType;
 use crate::{process_key_already_error, reachability};
-use anyhow::{bail, ensure, Ok};
+use anyhow::{bail, ensure, format_err, Ok};
 use starcoin_config::temp_dir;
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_logger::prelude::{debug, info, warn};
@@ -24,7 +26,7 @@ use starcoin_types::{
     blockhash::{BlockHashes, KType},
     consensus_header::ConsensusHeader,
 };
-use std::collections::HashSet;
+use std::collections::{BinaryHeap, HashSet};
 use std::ops::DerefMut;
 use std::sync::Arc;
 
@@ -223,10 +225,13 @@ impl BlockDAG {
         );
         let reachability_store = self.storage.reachability_store.clone();
 
-        let mut merge_set = ghostdata
-            .unordered_mergeset_without_selected_parent()
-            .filter(|hash| self.storage.reachability_store.read().has(*hash).unwrap())
-            .collect::<Vec<_>>()
+        // let mut merge_set = ghostdata
+        //     .unordered_mergeset_without_selected_parent()
+        //     .filter(|hash| self.storage.reachability_store.read().has(*hash).unwrap())
+        //     .collect::<Vec<_>>()
+        //     .into_iter();
+        let mut merge_set = self
+            .produce_mergeset(&header, ghostdata.selected_parent)?
             .into_iter();
         let add_block_result = {
             let mut reachability_writer = reachability_store.write();
@@ -293,6 +298,91 @@ impl BlockDAG {
             1,
         ))?;
         Ok(())
+    }
+
+    fn produce_mergeset(
+        &self,
+        header: &BlockHeader,
+        selected_parent: HashValue,
+    ) -> anyhow::Result<Vec<HashValue>> {
+        // initialize the mergeset without the selected parent of the header's parents
+        let result_mergetset: anyhow::Result<Vec<SortableBlockWithWorkType>> = header
+            .parents_hash()
+            .into_iter()
+            .filter(|parent_id| *parent_id != selected_parent)
+            .map(|parent_id| {
+                let blue_work = self.storage.ghost_dag_store.get_blue_work(parent_id)?;
+                anyhow::Ok(SortableBlockWithWorkType::new(parent_id, blue_work))
+            })
+            .collect();
+        let mut mergeset = result_mergetset?;
+
+        // Perform a breadth-first search (BFS) on the DAG and insert the discovered blocks into a priority queue.
+        // The queue is a binary heap where the top element has the maximum blue work type.
+        let candidate_queue: anyhow::Result<Vec<_>> = mergeset
+            .clone()
+            .into_iter()
+            .flat_map(|block| {
+                let parents = self
+                    .storage
+                    .relations_store
+                    .read()
+                    .get_parents(block.hash)
+                    .map_err(|e| {
+                        format_err!(
+                            "failed to find the parents in dag releationship for {:?}",
+                            e
+                        )
+                    })?;
+                anyhow::Ok(parents.as_ref().clone())
+            })
+            .flatten()
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .map(|parent_id| {
+                let blue_work = self.storage.ghost_dag_store.get_blue_work(parent_id)?;
+                anyhow::Ok(SortableBlockWithWorkType::new(parent_id, blue_work))
+            })
+            .collect();
+        let mut visited_set = mergeset
+            .iter()
+            .cloned()
+            .map(|block| block.hash)
+            .collect::<HashSet<_>>();
+
+        let mut queue: BinaryHeap<SortableBlockWithWorkType> =
+            candidate_queue?.into_iter().collect();
+        while let Some(block) = queue.pop() {
+            if self
+                .reachability_service()
+                .is_chain_ancestor_of(block.hash, selected_parent)
+            {
+                continue;
+            }
+            if visited_set.contains(&block.hash) {
+                continue;
+            }
+            visited_set.insert(block.hash);
+            mergeset.push(block.clone());
+            if mergeset.len() > (self.ghost_dag_manager().k() * 10) as usize {
+                break;
+            }
+            let result_parents: anyhow::Result<Vec<SortableBlockWithWorkType>> = self
+                .storage
+                .relations_store
+                .read()
+                .get_parents(block.hash)?
+                .as_ref()
+                .iter()
+                .map(|parent_id| {
+                    let blue_work = self.storage.ghost_dag_store.get_blue_work(*parent_id)?;
+                    anyhow::Ok(SortableBlockWithWorkType::new(*parent_id, blue_work))
+                })
+                .collect();
+            queue.extend(result_parents?);
+        }
+
+        anyhow::Ok(mergeset.into_iter().map(|block| block.hash).collect())
     }
 
     pub fn commit(&mut self, header: BlockHeader, origin: HashValue) -> anyhow::Result<()> {

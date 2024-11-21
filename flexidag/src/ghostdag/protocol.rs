@@ -48,6 +48,10 @@ impl<
         }
     }
 
+    pub fn k(&self) -> KType {
+        self.k
+    }
+
     pub fn genesis_ghostdag_data(&self, genesis: &BlockHeader) -> GhostdagData {
         GhostdagData::new(
             0,
