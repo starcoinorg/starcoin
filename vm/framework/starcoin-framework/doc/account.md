@@ -984,9 +984,10 @@ is returned. This way, the caller of this function can publish additional resour
 
 <pre><code><b>fun</b> <a href="account.md#0x1_account_create_account_unchecked">create_account_unchecked</a>(new_address: <b>address</b>): <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a> {
     <b>let</b> new_account = <a href="create_signer.md#0x1_create_signer">create_signer</a>(new_address);
-    <b>let</b> authentication_key = <a href="../../move-stdlib/doc/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a>(&new_address);
+    // fixme: create authentication key from <b>address</b>.
+    <b>let</b> authentication_key = <a href="account.md#0x1_account_ZERO_AUTH_KEY">ZERO_AUTH_KEY</a>;
     <b>assert</b>!(
-        <a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(&authentication_key) == 16,
+        <a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(&authentication_key) == 32,
         <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="account.md#0x1_account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>)
     );
 
