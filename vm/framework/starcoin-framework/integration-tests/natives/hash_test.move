@@ -5,12 +5,12 @@
 //# run --signers creator
 // Test for Hash function in Move
 script {
-    use starcoin_framework::Hash;
+    use std::hash;
 
     fun test_sha2_256() {
         let input = x"616263";
         let expected_output = x"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad";
-        assert!(Hash::sha2_256(input) == expected_output, 0);
+        assert!(hash::sha2_256(input) == expected_output, 0);
     }
 }
 
@@ -20,12 +20,12 @@ script {
 
 //# run --signers creator
 script {
-    use starcoin_framework::Hash;
+    use starcoin_framework::hash;
 
     fun test_sha3_256() {
         let input = x"616263";
         let expected_output = x"3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532";
-        assert!(Hash::sha3_256(input) == expected_output, 0);
+        assert!(hash::sha3_256(input) == expected_output, 0);
     }
 }
 // check: gas_used
@@ -33,12 +33,12 @@ script {
 
 //# run --signers creator
 script {
-    use starcoin_framework::Hash;
+    use starcoin_std::starcoin_hash;
 
     fun test_keccak_256() {
         let input = x"616263";
         let expected_output = x"4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45";
-        assert!(Hash::keccak_256(input) == expected_output, 0);
+        assert!(starcoin_hash::keccak256(input) == expected_output, 0);
     }
 }
 // check: gas_used
@@ -46,12 +46,12 @@ script {
 
 //# run --signers creator
 script {
-    use starcoin_framework::Hash;
+    use starcoin_std::starcoin_hash;
 
     fun test_ripemd160() {
         let input = x"616263";
         let expected_output = x"8eb208f7e05d987a9b044a8e98c6b087f15a0bfc";
-        assert!(Hash::ripemd160(input) == expected_output, 0);
+        assert!(starcoin_hash::ripemd160(input) == expected_output, 0);
     }
 }
 // check: gas_used
