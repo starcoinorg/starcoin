@@ -58,7 +58,6 @@ This is the reference documentation of the Starcoin framework.
 -  [`0x1::oracle`](oracle.md#0x1_oracle)
 -  [`0x1::oracle_aggregator`](oracle_aggregator.md#0x1_oracle_aggregator)
 -  [`0x1::oracle_price`](oracle_price.md#0x1_oracle_price)
--  [`0x1::oracle_price_script`](oracle_price_script.md#0x1_oracle_price_script)
 -  [`0x1::oracle_stc_usd`](oracle_stc_usd.md#0x1_oracle_stc_usd)
 -  [`0x1::primary_fungible_store`](primary_fungible_store.md#0x1_primary_fungible_store)
 -  [`0x1::randomness`](randomness.md#0x1_randomness)

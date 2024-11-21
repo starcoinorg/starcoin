@@ -3,6 +3,7 @@ module starcoin_framework::stc_genesis {
 
     use std::option;
     use std::vector;
+    use starcoin_framework::oracle_stc_usd;
     use starcoin_framework::dao_modify_config_proposal;
 
     use starcoin_framework::account;
@@ -192,6 +193,9 @@ module starcoin_framework::stc_genesis {
         // timestamp::set_time_has_started(&starcoin_framework_account);
         // account::release_genesis_signer(genesis_account);
         // account::release_genesis_signer(association);
+
+        // Register oracle
+        oracle_stc_usd::register(&starcoin_framework_account);
 
         debug::print(&std::string::utf8(b"stc_genesis::initialize | Exited"));
     }

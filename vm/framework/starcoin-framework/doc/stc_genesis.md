@@ -30,6 +30,7 @@ The module for init Genesis
 <b>use</b> <a href="on_chain_config.md#0x1_on_chain_config">0x1::on_chain_config</a>;
 <b>use</b> <a href="on_chain_config_dao.md#0x1_on_chain_config_dao">0x1::on_chain_config_dao</a>;
 <b>use</b> <a href="../../move-stdlib/doc/option.md#0x1_option">0x1::option</a>;
+<b>use</b> <a href="oracle_stc_usd.md#0x1_oracle_stc_usd">0x1::oracle_stc_usd</a>;
 <b>use</b> <a href="starcoin_coin.md#0x1_starcoin_coin">0x1::starcoin_coin</a>;
 <b>use</b> <a href="stc_block.md#0x1_stc_block">0x1::stc_block</a>;
 <b>use</b> <a href="stc_language_version.md#0x1_stc_language_version">0x1::stc_language_version</a>;
@@ -216,6 +217,9 @@ The module for init Genesis
     // <a href="timestamp.md#0x1_timestamp_set_time_has_started">timestamp::set_time_has_started</a>(&starcoin_framework_account);
     // account::release_genesis_signer(genesis_account);
     // account::release_genesis_signer(association);
+
+    // Register <a href="oracle.md#0x1_oracle">oracle</a>
+    <a href="oracle_stc_usd.md#0x1_oracle_stc_usd_register">oracle_stc_usd::register</a>(&starcoin_framework_account);
 
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> | Exited"));
 }

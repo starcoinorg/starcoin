@@ -71,9 +71,9 @@ module starcoin_framework::oracle {
 
     /// Register `OracleT` as an oracle type.
     public fun register_oracle<OracleT: copy+store+drop, Info: copy+store+drop>(sender: &signer, info: Info) {
-        let genesis_account =
-            reserved_accounts_signer::get_stored_signer(signer::address_of(sender));
-        move_to(&genesis_account, OracleInfo<OracleT, Info> {
+        // let genesis_account =
+        //     reserved_accounts_signer::get_stored_signer(signer::address_of(sender));
+        move_to(sender, OracleInfo<OracleT, Info> {
             counter: 0,
             info,
         });
