@@ -4,8 +4,8 @@
 
 //# run --signers alice
 script {
-    use starcoin_framework::ConsensusConfig;
-    use starcoin_framework::Epoch;
+    use starcoin_framework::epoch;
+    use starcoin_framework::consensus_config;
 
     fun compute_next_block_time_target() {
         let uncle_rate_target = 80;
@@ -20,7 +20,7 @@ script {
         let base_block_gas_limit = 10000;
         let strategy = 1;
 
-        let config = ConsensusConfig::new_consensus_config(
+        let config = consensus_config::new_consensus_config(
             uncle_rate_target,
             base_block_time_target,
             base_reward_per_block,
@@ -34,34 +34,88 @@ script {
             strategy);
 
         let total_uncles = 0;
-        let now_milli_seconds = epoch_block_count*base_block_time_target;
+        let now_milli_seconds = epoch_block_count * base_block_time_target;
         let last_block_time_target = base_block_time_target;
-        assert!(Epoch::compute_next_block_time_target(&config, last_block_time_target, 0, now_milli_seconds,  0, epoch_block_count, total_uncles) < base_block_time_target, 101);
+        assert!(
+            epoch::compute_next_block_time_target(
+                &config,
+                last_block_time_target,
+                0,
+                now_milli_seconds,
+                0,
+                epoch_block_count,
+                total_uncles
+            ) < base_block_time_target,
+            101
+        );
 
-        let total_uncles = epoch_block_count * uncle_rate_target /1000;
-        let new_block_time_target = Epoch::compute_next_block_time_target(&config, last_block_time_target, 0, now_milli_seconds,  0, epoch_block_count, total_uncles);
-        assert!(new_block_time_target >= base_block_time_target -1 || new_block_time_target <= base_block_time_target +1, 102);
+        let total_uncles = epoch_block_count * uncle_rate_target / 1000;
+        let new_block_time_target = epoch::compute_next_block_time_target(
+            &config,
+            last_block_time_target,
+            0,
+            now_milli_seconds,
+            0,
+            epoch_block_count,
+            total_uncles
+        );
+        assert!(
+            new_block_time_target >= base_block_time_target - 1 || new_block_time_target <= base_block_time_target + 1,
+            102
+        );
 
-        let total_uncles = epoch_block_count * uncle_rate_target /1000;
-        let now_milli_seconds = epoch_block_count*base_block_time_target/2;
-        let new_block_time_target = Epoch::compute_next_block_time_target(&config, last_block_time_target, 0, now_milli_seconds,  0, epoch_block_count, total_uncles);
-        assert!(new_block_time_target == last_block_time_target/2, 103);
+        let total_uncles = epoch_block_count * uncle_rate_target / 1000;
+        let now_milli_seconds = epoch_block_count * base_block_time_target / 2;
+        let new_block_time_target = epoch::compute_next_block_time_target(
+            &config,
+            last_block_time_target,
+            0,
+            now_milli_seconds,
+            0,
+            epoch_block_count,
+            total_uncles
+        );
+        assert!(new_block_time_target == last_block_time_target / 2, 103);
 
-        let total_uncles = epoch_block_count*2-1;
-        let now_milli_seconds = epoch_block_count*base_block_time_target;
-        let new_block_time_target = Epoch::compute_next_block_time_target(&config, last_block_time_target, 0, now_milli_seconds,  0, epoch_block_count, total_uncles);
-        assert!(new_block_time_target == last_block_time_target*2, 104);
+        let total_uncles = epoch_block_count * 2 - 1;
+        let now_milli_seconds = epoch_block_count * base_block_time_target;
+        let new_block_time_target = epoch::compute_next_block_time_target(
+            &config,
+            last_block_time_target,
+            0,
+            now_milli_seconds,
+            0,
+            epoch_block_count,
+            total_uncles
+        );
+        assert!(new_block_time_target == last_block_time_target * 2, 104);
 
         let last_block_time_target = max_block_time_target - 1;
-        let total_uncles = epoch_block_count*2-1;
-        let now_milli_seconds = epoch_block_count*last_block_time_target;
-        let new_block_time_target = Epoch::compute_next_block_time_target(&config, last_block_time_target , 0, now_milli_seconds,  0, epoch_block_count, total_uncles);
+        let total_uncles = epoch_block_count * 2 - 1;
+        let now_milli_seconds = epoch_block_count * last_block_time_target;
+        let new_block_time_target = epoch::compute_next_block_time_target(
+            &config,
+            last_block_time_target,
+            0,
+            now_milli_seconds,
+            0,
+            epoch_block_count,
+            total_uncles
+        );
         assert!(new_block_time_target == max_block_time_target, 105);
 
         let last_block_time_target = min_block_time_target;
         let total_uncles = 0;
-        let now_milli_seconds = epoch_block_count*min_block_time_target;
-        let new_block_time_target = Epoch::compute_next_block_time_target(&config, last_block_time_target , 0, now_milli_seconds,  0, epoch_block_count, total_uncles);
+        let now_milli_seconds = epoch_block_count * min_block_time_target;
+        let new_block_time_target = epoch::compute_next_block_time_target(
+            &config,
+            last_block_time_target,
+            0,
+            now_milli_seconds,
+            0,
+            epoch_block_count,
+            total_uncles
+        );
         assert!(new_block_time_target == min_block_time_target, 105);
     }
 }
