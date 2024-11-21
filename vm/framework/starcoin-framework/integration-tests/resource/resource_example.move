@@ -8,6 +8,7 @@
 //# publish
 module alice::Example {
     use starcoin_framework::signer;
+
     public fun new(): R {
         R { x: true }
     }
@@ -18,7 +19,7 @@ module alice::Example {
 
     struct R has key, store { x: bool }
 
-    public fun save(account: &signer, r: R){
+    public fun save(account: &signer, r: R) {
         move_to(account, r);
     }
 
@@ -32,19 +33,21 @@ module alice::Example {
 
 //# run --signers alice
 script {
-use alice::Example;
-fun main() {
-    let r = Example::new();
-    Example::destroy(r);
-}
+    use alice::Example;
+
+    fun main() {
+        let r = Example::new();
+        Example::destroy(r);
+    }
 }
 
 //# run --signers bob
 script {
-use alice::Example;
-fun main(account: signer) {
-    let r = Example::new();
-    Example::save(&account, r);
-    assert!(Example::get_x(&account), 1);
-}
+    use alice::Example;
+
+    fun main(account: signer) {
+        let r = Example::new();
+        Example::save(&account, r);
+        assert!(Example::get_x(&account), 1);
+    }
 }
