@@ -348,6 +348,9 @@ impl BlockDAG {
         let mut queue: BinaryHeap<SortableBlockWithWorkType> =
             candidate_queue?.into_iter().collect();
         while let Some(block) = queue.pop() {
+            if block.hash == selected_parent {
+                continue;
+            }
             if visited_set.contains(&block.hash) {
                 continue;
             }
