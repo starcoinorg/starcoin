@@ -4,23 +4,24 @@
 
 //# publish
 module default::Swapper {
-    use starcoin_framework::Vector;
+    use std::vector;
+
     public fun call(x: u64) {
         swap_it_up(x)
     }
     public fun swap_it_up(vec_len: u64) {
-        let v = Vector::empty();
+        let v = vector::empty();
 
         let i = 0;
         while (i < vec_len) {
-          Vector::push_back(&mut v, i);
+          vector::push_back(&mut v, i);
           i = i + 1;
         };
 
         i = 0;
 
         while (i < vec_len / 2) {
-            Vector::swap(&mut v, i, vec_len - i - 1);
+            vector::swap(&mut v, i, vec_len - i - 1);
             i = i + 1;
         };
     }
