@@ -12,21 +12,24 @@
 
 //# run --signers ds1
 script {
-    use starcoin_framework::PriceOracle;
-    use starcoin_framework::STCUSDOracle::STCUSD;
-    fun main(signer: signer) {
-        PriceOracle::init_data_source<STCUSD>(&signer, 100000);
+    use starcoin_framework::oracle_price;
+    use starcoin_framework::oracle_stc_usd::STCUSD;
+
+    fun main(account: signer) {
+        oracle_price::init_data_source<STCUSD>(&account, 100000);
     }
 }
-
 // check: EXECUTED
+
+
 
 //# run --signers ds2
 script {
-    use starcoin_framework::PriceOracle;
-    use starcoin_framework::STCUSDOracle::STCUSD;
-    fun main(signer: signer) {
-        PriceOracle::init_data_source<STCUSD>(&signer, 110000);
+    use starcoin_framework::oracle_price;
+    use starcoin_framework::oracle_stc_usd::STCUSD;
+
+    fun main(account: signer) {
+        oracle_price::init_data_source<STCUSD>(&account, 110000);
     }
 }
 
@@ -35,12 +38,13 @@ script {
 
 //# run --signers alice
 script {
-    use starcoin_framework::PriceOracle;
-    use starcoin_framework::STCUSDOracle::{STCUSD};
+    use starcoin_framework::oracle_price;
+    use starcoin_framework::oracle_stc_usd::{STCUSD};
+
     fun test_is_data_source_initiailzed(_signer: signer) {
-        assert!(!PriceOracle::is_data_source_initialized<STCUSD>(@alice), 997);
-        assert!(PriceOracle::is_data_source_initialized<STCUSD>(@ds1), 998);
-        assert!(PriceOracle::is_data_source_initialized<STCUSD>(@ds2), 999);
+        assert!(!oracle_price::is_data_source_initialized<STCUSD>(@alice), 997);
+        assert!(oracle_price::is_data_source_initialized<STCUSD>(@ds1), 998);
+        assert!(oracle_price::is_data_source_initialized<STCUSD>(@ds2), 999);
     }
 }
 
@@ -48,14 +52,15 @@ script {
 
 //# run --signers alice
 script {
-    use starcoin_framework::PriceOracle;
-    use starcoin_framework::STCUSDOracle::{Self,STCUSD};
+    use starcoin_framework::oracle_price;
+    use starcoin_framework::oracle_stc_usd::{Self, STCUSD};
+
     fun test_read_price(_signer: signer) {
-        assert!(PriceOracle::read<STCUSD>(@ds1) == 100000, 1000);
-        assert!(STCUSDOracle::read(@ds1) == 100000, 2000);
-        assert!(PriceOracle::read<STCUSD>(@ds2) == 110000, 1001);
-        assert!(STCUSDOracle::read(@ds2) == 110000, 2001);
-}
+        assert!(oracle_price::read<STCUSD>(@ds1) == 100000, 1000);
+        assert!(oracle_stc_usd::read(@ds1) == 100000, 2000);
+        assert!(oracle_price::read<STCUSD>(@ds2) == 110000, 1001);
+        assert!(oracle_stc_usd::read(@ds2) == 110000, 2001);
+    }
 }
 
 // check: EXECUTED
@@ -65,21 +70,23 @@ script {
 
 //# run --signers ds1
 script {
-    use starcoin_framework::PriceOracle;
-    use starcoin_framework::STCUSDOracle::STCUSD;
-    fun update_price(signer: signer) {
-        PriceOracle::update<STCUSD>(&signer, 200000);
+    use starcoin_framework::oracle_price;
+    use starcoin_framework::oracle_stc_usd::STCUSD;
+
+    fun update_price(account: signer) {
+        oracle_price::update<STCUSD>(&account, 200000);
     }
 }
 
 
 //# run --signers alice
 script {
-    use starcoin_framework::PriceOracle;
-    use starcoin_framework::STCUSDOracle::STCUSD;
+    use starcoin_framework::oracle_price;
+    use starcoin_framework::oracle_stc_usd::STCUSD;
+
     fun test_read_price(_signer: signer) {
-        assert!(PriceOracle::read<STCUSD>(@ds1) == 200000, 1002);
-        assert!(PriceOracle::read<STCUSD>(@ds2) == 110000, 1003);
+        assert!(oracle_price::read<STCUSD>(@ds1) == 200000, 1002);
+        assert!(oracle_price::read<STCUSD>(@ds2) == 110000, 1003);
     }
 }
 
@@ -88,15 +95,19 @@ script {
 
 //# run --signers alice
 script {
-    use starcoin_framework::PriceOracleAggregator;
-    use starcoin_framework::STCUSDOracle::STCUSD;
-    use starcoin_framework::Vector;
+    use starcoin_framework::oracle_aggregator;
+    use starcoin_framework::oracle_stc_usd::STCUSD;
+    use std::vector;
+
     fun test_aggregator_price(_signer: signer) {
-        let ds = Vector::empty();
-        Vector::push_back(&mut ds, @ds1);
-        Vector::push_back(&mut ds, @ds2);
-        assert!(PriceOracleAggregator::latest_price_average_aggregator<STCUSD>(&ds, 2000) == ((200000+110000)/2), 1004);
-        assert!(PriceOracleAggregator::latest_price_average_aggregator<STCUSD>(&ds, 1000) == 200000, 1005);
+        let ds = vector::empty();
+        vector::push_back(&mut ds, @ds1);
+        vector::push_back(&mut ds, @ds2);
+        assert!(
+            oracle_aggregator::latest_price_average_aggregator<STCUSD>(&ds, 2000) == ((200000 + 110000) / 2),
+            1004
+        );
+        assert!(oracle_aggregator::latest_price_average_aggregator<STCUSD>(&ds, 1000) == 200000, 1005);
     }
 }
 
@@ -105,14 +116,15 @@ script {
 
 //# run --signers alice
 script {
-    use starcoin_framework::PriceOracleAggregator;
-    use starcoin_framework::STCUSDOracle::STCUSD;
-    use starcoin_framework::Vector;
+    use starcoin_framework::oracle_aggregator;
+    use starcoin_framework::oracle_stc_usd::STCUSD;
+    use std::vector;
+
     fun test_aggregator_price(_signer: signer) {
-        let ds = Vector::empty();
-        Vector::push_back(&mut ds, @ds1);
-        Vector::push_back(&mut ds, @ds2);
-        PriceOracleAggregator::latest_price_average_aggregator<STCUSD>(&ds, 100);
+        let ds = vector::empty();
+        vector::push_back(&mut ds, @ds1);
+        vector::push_back(&mut ds, @ds2);
+        oracle_aggregator::latest_price_average_aggregator<STCUSD>(&ds, 100);
     }
 }
 
@@ -120,24 +132,28 @@ script {
 // check: "Keep(ABORTED { code: 25857"
 
 //# publish
-module bob::DelegateOracleDS{
-    use starcoin_framework::Oracle::{Self,UpdateCapability};
-    use starcoin_framework::PriceOracle;
+module bob::DelegateOracleDS {
+    use starcoin_framework::oracle::{Self, UpdateCapability};
+    use starcoin_framework::oracle_price;
 
-    struct DelegateUpdateOracleCapability<phantom OracleT: copy+store+drop> has key{
+    struct DelegateUpdateOracleCapability<phantom OracleT: copy+store+drop> has key {
         cap: UpdateCapability<OracleT>,
     }
 
-    public fun delegate<OracleT: copy+store+drop>(signer: &signer){
-        let cap = Oracle::remove_update_capability<OracleT>(signer);
-        move_to(signer, DelegateUpdateOracleCapability{
+    public fun delegate<OracleT: copy+store+drop>(account: &signer) {
+        let cap = oracle::remove_update_capability<OracleT>(account);
+        move_to(account, DelegateUpdateOracleCapability {
             cap,
         });
     }
+
     //any one can update the ds in ds_addr
-    public fun update_price_any<OracleT: copy+store+drop>(ds_addr: address, price: u128) acquires DelegateUpdateOracleCapability{
+    public fun update_price_any<OracleT: copy+store+drop>(
+        ds_addr: address,
+        price: u128
+    ) acquires DelegateUpdateOracleCapability {
         let cap = borrow_global_mut<DelegateUpdateOracleCapability<OracleT>>(ds_addr);
-        PriceOracle::update_with_cap(&mut cap.cap, price);
+        oracle_price::update_with_cap(&mut cap.cap, price);
     }
 }
 
@@ -146,9 +162,10 @@ module bob::DelegateOracleDS{
 //# run --signers ds2
 script {
     use bob::DelegateOracleDS;
-    use starcoin_framework::STCUSDOracle::STCUSD;
-    fun main(signer: signer) {
-        DelegateOracleDS::delegate<STCUSD>(&signer);
+    use starcoin_framework::oracle_stc_usd::STCUSD;
+
+    fun main(account: signer) {
+        DelegateOracleDS::delegate<STCUSD>(&account);
     }
 }
 
@@ -157,10 +174,11 @@ script {
 
 //# run --signers ds2
 script {
-    use starcoin_framework::PriceOracle;
-    use starcoin_framework::STCUSDOracle::STCUSD;
-    fun update_price(signer: signer) {
-        PriceOracle::update<STCUSD>(&signer, 0);
+    use starcoin_framework::oracle_price;
+    use starcoin_framework::oracle_stc_usd::STCUSD;
+
+    fun update_price(account: signer) {
+        oracle_price::update<STCUSD>(&account, 0);
     }
 }
 // ds2 can not update ds2 datasource price
@@ -168,8 +186,9 @@ script {
 
 //# run --signers alice
 script {
-    use starcoin_framework::STCUSDOracle::STCUSD;
+    use starcoin_framework::oracle_stc_usd::STCUSD;
     use bob::DelegateOracleDS;
+
     fun update_price(_signer: signer) {
         DelegateOracleDS::update_price_any<STCUSD>(@ds2, 0);
     }
@@ -179,10 +198,11 @@ script {
 
 //# run --signers alice
 script {
-    use starcoin_framework::PriceOracle;
-    use starcoin_framework::STCUSDOracle::STCUSD;
+    use starcoin_framework::oracle_price;
+    use starcoin_framework::oracle_stc_usd::STCUSD;
+
     fun test_read_price(_signer: signer) {
-        assert!(PriceOracle::read<STCUSD>(@ds2) == 0, 1004);
+        assert!(oracle_price::read<STCUSD>(@ds2) == 0, 1004);
     }
 }
 

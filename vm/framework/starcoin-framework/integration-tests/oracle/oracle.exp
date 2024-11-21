@@ -2,102 +2,102 @@ processed 20 tasks
 
 task 5 'run'. lines 13-22:
 {
-  "gas_used": 71566,
+  "gas_used": 56358,
   "status": "Executed"
 }
 
-task 6 'run'. lines 24-33:
+task 6 'run'. lines 26-36:
 {
-  "gas_used": 71566,
+  "gas_used": 56358,
   "status": "Executed"
 }
 
-task 7 'run'. lines 36-47:
+task 7 'run'. lines 39-51:
 {
-  "gas_used": 28878,
+  "gas_used": 24391,
   "status": "Executed"
 }
 
-task 8 'run'. lines 49-61:
+task 8 'run'. lines 53-66:
 {
-  "gas_used": 37069,
+  "gas_used": 30000,
   "status": "Executed"
 }
 
-task 10 'run'. lines 66-73:
+task 10 'run'. lines 71-79:
 {
-  "gas_used": 42143,
+  "gas_used": 74102,
   "status": "Executed"
 }
 
-task 11 'run'. lines 76-84:
+task 11 'run'. lines 82-91:
 {
-  "gas_used": 19817,
+  "gas_used": 16602,
   "status": "Executed"
 }
 
-task 13 'run'. lines 89-103:
+task 13 'run'. lines 96-114:
 {
-  "gas_used": 48457,
+  "gas_used": 41317,
   "status": {
     "MoveAbort": {
       "location": {
         "Module": {
           "address": "0x00000000000000000000000000000001",
-          "name": "PriceOracleAggregator"
+          "name": "oracle_aggregator"
         }
       },
-      "abort_code": "25857"
+      "abort_code": "196709"
     }
   }
 }
 
-task 14 'run'. lines 106-120:
+task 14 'run'. lines 117-132:
 {
-  "gas_used": 48457,
+  "gas_used": 41317,
   "status": {
     "MoveAbort": {
       "location": {
         "Module": {
           "address": "0x00000000000000000000000000000001",
-          "name": "PriceOracleAggregator"
+          "name": "oracle_aggregator"
         }
       },
-      "abort_code": "25857"
+      "abort_code": "196709"
     }
   }
 }
 
-task 16 'run'. lines 146-155:
+task 16 'run'. lines 162-172:
 {
-  "gas_used": 20159,
+  "gas_used": 17597,
   "status": "Executed"
 }
 
-task 17 'run'. lines 158-167:
+task 17 'run'. lines 175-185:
 {
-  "gas_used": 22122,
+  "gas_used": 20202,
   "status": {
     "MoveAbort": {
       "location": {
         "Module": {
           "address": "0x00000000000000000000000000000001",
-          "name": "Oracle"
+          "name": "oracle"
         }
       },
-      "abort_code": "26116"
+      "abort_code": "589926"
     }
   }
 }
 
-task 18 'run'. lines 169-178:
+task 18 'run'. lines 187-197:
 {
-  "gas_used": 42855,
+  "gas_used": 75457,
   "status": "Executed"
 }
 
-task 19 'run'. lines 180-189:
+task 19 'run'. lines 199-209:
 {
-  "gas_used": 14128,
+  "gas_used": 12201,
   "status": "Executed"
 }
