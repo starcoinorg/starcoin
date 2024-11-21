@@ -4,7 +4,7 @@
 
 //# run --signers alice
 script {
-    use starcoin_framework::ConsensusConfig;
+    use starcoin_framework::consensus_config;
 
     // test do_compute_reward_per_block()
     fun compute_reward_per_block() {
@@ -20,7 +20,7 @@ script {
         let base_block_gas_limit = 10000;
         let strategy = 1;
 
-        let config = ConsensusConfig::new_consensus_config(
+        let config = consensus_config::new_consensus_config(
             uncle_rate_target,
             base_block_time_target,
             base_reward_per_block,
@@ -33,29 +33,53 @@ script {
             base_block_gas_limit,
             strategy);
 
-        assert!(ConsensusConfig::do_compute_reward_per_block(&config, base_block_time_target * 2) == base_reward_per_block * 2, 101);
-        assert!(ConsensusConfig::do_compute_reward_per_block(&config, base_block_time_target / 2) == base_reward_per_block / 2, 102);
-        assert!(ConsensusConfig::do_compute_reward_per_block(&config, base_block_time_target / 5) == base_reward_per_block / 5, 103);
-        assert!(ConsensusConfig::do_compute_reward_per_block(&config, base_block_time_target / base_block_time_target) == base_reward_per_block / (base_block_time_target as u128), 104);
+        assert!(
+            consensus_config::do_compute_reward_per_block(
+                &config,
+                base_block_time_target * 2
+            ) == base_reward_per_block * 2,
+            101
+        );
+        assert!(
+            consensus_config::do_compute_reward_per_block(
+                &config,
+                base_block_time_target / 2
+            ) == base_reward_per_block / 2,
+            102
+        );
+        assert!(
+            consensus_config::do_compute_reward_per_block(
+                &config,
+                base_block_time_target / 5
+            ) == base_reward_per_block / 5,
+            103
+        );
+        assert!(
+            consensus_config::do_compute_reward_per_block(
+                &config,
+                base_block_time_target / base_block_time_target
+            ) == base_reward_per_block / (base_block_time_target as u128),
+            104
+        );
     }
 }
 
 //# run --signers alice
 // test compute_reward_per_block
 script {
-    use starcoin_framework::ConsensusConfig;
+    use starcoin_framework::consensus_config;
 
     fun compute_reward_per_block() {
         let block_time_target = 10000; // equal to default block_time_target
         let default_reward_per_block = 10000000000; // should be consistent with genesis config
-        let reward_per_block = ConsensusConfig::compute_reward_per_block(block_time_target);
+        let reward_per_block = consensus_config::compute_reward_per_block(block_time_target);
         assert!(reward_per_block == default_reward_per_block, 102);
     }
 }
 
 //# run --signers alice
 script {
-    use starcoin_framework::ConsensusConfig;
+    use starcoin_framework::consensus_config;
 
     fun incorrect_uncle_rate_target() {
         let uncle_rate_target = 0; // should large than 0
@@ -70,7 +94,7 @@ script {
         let base_block_gas_limit = 10000;
         let strategy = 1;
 
-        ConsensusConfig::new_consensus_config(
+        consensus_config::new_consensus_config(
             uncle_rate_target,
             base_block_time_target,
             base_reward_per_block,
@@ -82,13 +106,12 @@ script {
             base_max_uncles_per_block,
             base_block_gas_limit,
             strategy);
-
     }
 }
 
 //# run --signers alice
 script {
-    use starcoin_framework::ConsensusConfig;
+    use starcoin_framework::consensus_config;
 
     fun incorrect_uncle_rate_target() {
         let uncle_rate_target = 80;
@@ -103,7 +126,7 @@ script {
         let base_block_gas_limit = 10000;
         let strategy = 1;
 
-        ConsensusConfig::new_consensus_config(
+        consensus_config::new_consensus_config(
             uncle_rate_target,
             base_block_time_target,
             base_reward_per_block,
@@ -115,13 +138,12 @@ script {
             base_max_uncles_per_block,
             base_block_gas_limit,
             strategy);
-
     }
 }
 
 //# run --signers alice
 script {
-    use starcoin_framework::ConsensusConfig;
+    use starcoin_framework::consensus_config;
 
     fun incorrect_uncle_rate_target() {
         let uncle_rate_target = 80;
@@ -136,7 +158,7 @@ script {
         let base_block_gas_limit = 10000;
         let strategy = 1;
 
-        ConsensusConfig::new_consensus_config(
+        consensus_config::new_consensus_config(
             uncle_rate_target,
             base_block_time_target,
             base_reward_per_block,
@@ -148,13 +170,12 @@ script {
             base_max_uncles_per_block,
             base_block_gas_limit,
             strategy);
-
     }
 }
 
 //# run --signers alice
 script {
-    use starcoin_framework::ConsensusConfig;
+    use starcoin_framework::consensus_config;
 
     fun incorrect_uncle_rate_target() {
         let uncle_rate_target = 80;
@@ -169,7 +190,7 @@ script {
         let base_block_gas_limit = 10000;
         let strategy = 1;
 
-        ConsensusConfig::new_consensus_config(
+        consensus_config::new_consensus_config(
             uncle_rate_target,
             base_block_time_target,
             base_reward_per_block,
@@ -181,14 +202,13 @@ script {
             base_max_uncles_per_block,
             base_block_gas_limit,
             strategy);
-
     }
 }
 // check: "Keep(ABORTED { code: 4615"
 
 //# run --signers alice
 script {
-    use starcoin_framework::ConsensusConfig;
+    use starcoin_framework::consensus_config;
 
     fun incorrect_uncle_rate_target() {
         let uncle_rate_target = 80;
@@ -203,7 +223,7 @@ script {
         let base_block_gas_limit = 10000;
         let strategy = 1;
 
-        ConsensusConfig::new_consensus_config(
+        consensus_config::new_consensus_config(
             uncle_rate_target,
             base_block_time_target,
             base_reward_per_block,
@@ -215,14 +235,13 @@ script {
             base_max_uncles_per_block,
             base_block_gas_limit,
             strategy);
-
     }
 }
 // check: "Keep(ABORTED { code: 4615"
 
 //# run --signers alice
 script {
-    use starcoin_framework::ConsensusConfig;
+    use starcoin_framework::consensus_config;
 
     fun incorrect_uncle_rate_target() {
         let uncle_rate_target = 80;
@@ -237,7 +256,7 @@ script {
         let base_block_gas_limit = 10000;
         let strategy = 1;
 
-        ConsensusConfig::new_consensus_config(
+        consensus_config::new_consensus_config(
             uncle_rate_target,
             base_block_time_target,
             base_reward_per_block,
@@ -249,14 +268,13 @@ script {
             base_max_uncles_per_block,
             base_block_gas_limit,
             strategy);
-
     }
 }
 // check: "Keep(ABORTED { code: 4615"
 
 //# run --signers alice
 script {
-    use starcoin_framework::ConsensusConfig;
+    use starcoin_framework::consensus_config;
 
     fun incorrect_uncle_rate_target() {
         let uncle_rate_target = 80;
@@ -271,7 +289,7 @@ script {
         let base_block_gas_limit = 10000;
         let strategy = 1;
 
-        ConsensusConfig::new_consensus_config(
+        consensus_config::new_consensus_config(
             uncle_rate_target,
             base_block_time_target,
             base_reward_per_block,
@@ -283,7 +301,6 @@ script {
             base_max_uncles_per_block,
             base_block_gas_limit,
             strategy);
-
     }
 }
 // check: "Keep(ABORTED { code: 4615"
