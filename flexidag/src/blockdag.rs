@@ -225,11 +225,6 @@ impl BlockDAG {
         );
         let reachability_store = self.storage.reachability_store.clone();
 
-        // let mut merge_set = ghostdata
-        //     .unordered_mergeset_without_selected_parent()
-        //     .filter(|hash| self.storage.reachability_store.read().has(*hash).unwrap())
-        //     .collect::<Vec<_>>()
-        //     .into_iter();
         let mut merge_set = self
             .produce_mergeset(&header, ghostdata.selected_parent)?
             .into_iter();
@@ -320,8 +315,8 @@ impl BlockDAG {
         // Perform a breadth-first search (BFS) on the DAG and insert the discovered blocks into a priority queue.
         // The queue is a binary heap where the top element has the maximum blue work type.
         let candidate_queue: anyhow::Result<Vec<_>> = mergeset
-            .clone()
-            .into_iter()
+            .iter()
+            .cloned()
             .flat_map(|block| {
                 let parents = self
                     .storage
@@ -353,12 +348,6 @@ impl BlockDAG {
         let mut queue: BinaryHeap<SortableBlockWithWorkType> =
             candidate_queue?.into_iter().collect();
         while let Some(block) = queue.pop() {
-            if self
-                .reachability_service()
-                .is_chain_ancestor_of(block.hash, selected_parent)
-            {
-                continue;
-            }
             if visited_set.contains(&block.hash) {
                 continue;
             }
@@ -366,6 +355,12 @@ impl BlockDAG {
             mergeset.push(block.clone());
             if mergeset.len() > (self.ghost_dag_manager().k() * 10) as usize {
                 break;
+            }
+            if self
+                .reachability_service()
+                .is_chain_ancestor_of(block.hash, selected_parent)
+            {
+                continue;
             }
             let result_parents: anyhow::Result<Vec<SortableBlockWithWorkType>> = self
                 .storage
