@@ -10,14 +10,14 @@ module alice::MyToken {
     use starcoin_framework::Token;
     use starcoin_framework::signer;
 
-    struct MyToken has copy, drop, store { }
+    struct MyToken has copy, drop, store {}
 
     public fun init(account: &signer, precision: u8) {
         assert!(signer::address_of(account) == @alice, 8000);
 
         Token::register_token<MyToken>(
-                    account,
-                    precision,
+            account,
+            precision,
         );
     }
 }
@@ -26,35 +26,35 @@ module alice::MyToken {
 
 //# run --signers alice
 script {
-use alice::MyToken;
+    use alice::MyToken;
 
-fun main(account: signer) {
-    MyToken::init(&account, 39); // EPRECISION_TOO_LARGE
-}
+    fun main(account: signer) {
+        MyToken::init(&account, 39); // EPRECISION_TOO_LARGE
+    }
 }
 
 // check: "Keep(ABORTED { code: 26887"
 
 //# run --signers alice
 script {
-use alice::MyToken;
+    use alice::MyToken;
 
-fun main(account: signer) {
-MyToken::init(&account, 3);
-}
+    fun main(account: signer) {
+        MyToken::init(&account, 3);
+    }
 }
 
 // check: EXECUTED
 
 //# run --signers alice
 script {
-use alice::MyToken::MyToken;
-use starcoin_framework::Token;
+    use alice::MyToken::MyToken;
+    use starcoin_framework::Token;
 
-fun main(_account: signer) {
-    let sf = Token::scaling_factor<MyToken>();
-    assert!(sf == 1000, 101);
-}
+    fun main(_account: signer) {
+        let sf = Token::scaling_factor<MyToken>();
+        assert!(sf == 1000, 101);
+    }
 }
 
 // check: EXECUTED

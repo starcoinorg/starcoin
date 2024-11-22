@@ -6,7 +6,7 @@
 
 //# run --signers alice
 script {
-    use starcoin_framework::account;
+    use starcoin_framework::coin;
 
     fun main(account: signer) {
         coin::transfer<starcoin_framework::starcoin_coin::STC>(&account, @bob, 10);
@@ -19,11 +19,11 @@ script {
 
 //# run --signers bob
 script {
-    use starcoin_framework::account;
+    use starcoin_framework::coin;
 
     fun main() {
         // check the state is unchanged
-        assert!(account::balance<starcoin_framework::starcoin_coin::STC>(@bob) == 1000000, 42);
+        assert!(coin::balance<starcoin_framework::starcoin_coin::STC>(@bob) == 1000000, 42);
     }
 }
 

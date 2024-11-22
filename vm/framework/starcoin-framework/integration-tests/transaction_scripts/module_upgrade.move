@@ -41,13 +41,13 @@ script {
 //# run --signers alice
 script {
     use starcoin_framework::on_chain_config;
-    use starcoin_framework::Version;
+    use starcoin_framework::stc_version::Version;
     use starcoin_framework::PackageTxnManager;
-    use starcoin_framework::Option;
+    use std::option;
 
     fun update_module_upgrade_strategy(account: signer) {
         Config::publish_new_config<Version::Version>(&account, Version::new_version(1));
-        PackageTxnManager::update_module_upgrade_strategy(&account, PackageTxnManager::get_strategy_two_phase(), Option::some<u64>(1));
+        PackageTxnManager::update_module_upgrade_strategy(&account, PackageTxnManager::get_strategy_two_phase(), option::some<u64>(1));
     }
 }
 

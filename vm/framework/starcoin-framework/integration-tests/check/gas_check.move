@@ -4,9 +4,9 @@
 
 //# run --signers alice --gas-budget 1000
 script {
-fun main() {
-    while (true) {}
-}
+    fun main() {
+        while (true) {}
+    }
 }
 
 // check: OUT_OF_GAS

@@ -29,13 +29,13 @@ script {
     use starcoin_framework::account;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::Authenticator;
-    use starcoin_framework::Vector;
+    use std::vector;
 
     fun main(account: signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
         let auth_key_vec = Authenticator::ed25519_authentication_key(copy txn_public_key);
         let txn_sender = Authenticator::derived_address(copy auth_key_vec);
-        Vector::push_back(&mut txn_public_key, 0u8); //create preimage
+        vector::push_back(&mut txn_public_key, 0u8); //create preimage
 
         let seq = account::sequence_number(txn_sender);
         assert!(seq == 0, 1001);
@@ -65,13 +65,13 @@ script {
     use starcoin_framework::account;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::Authenticator;
-    use starcoin_framework::Vector;
+    use std::vector;
 
     fun main(account: signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
         let auth_key_vec = Authenticator::ed25519_authentication_key(copy txn_public_key);
         let txn_sender = Authenticator::derived_address(copy auth_key_vec);
-        Vector::push_back(&mut txn_public_key, 0u8); //create preimage
+        vector::push_back(&mut txn_public_key, 0u8); //create preimage
 
         let txn_sequence_number = 0;
         let txn_gas_price = 1;
@@ -96,13 +96,13 @@ script {
     use starcoin_framework::account;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::Authenticator;
-    use starcoin_framework::Vector;
+    use std::vector;
 
     fun main(account: signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
         let auth_key_vec = Authenticator::ed25519_authentication_key(copy txn_public_key);
         let txn_sender = Authenticator::derived_address(copy auth_key_vec);
-        Vector::push_back(&mut txn_public_key, 0u8); //create preimage
+        vector::push_back(&mut txn_public_key, 0u8); //create preimage
 
         let wrong_txn_public_key = x"c48b687a";
         let txn_sequence_number = 0;
@@ -128,13 +128,13 @@ script {
     use starcoin_framework::account;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::Authenticator;
-    use starcoin_framework::Vector;
+    use std::vector;
 
     fun main(account: signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
         let auth_key_vec = Authenticator::ed25519_authentication_key(copy txn_public_key);
         let txn_sender = Authenticator::derived_address(copy auth_key_vec);
-        Vector::push_back(&mut txn_public_key, 0u8); //create preimage
+        vector::push_back(&mut txn_public_key, 0u8); //create preimage
 
         let seq = account::sequence_number(txn_sender);
         assert!(seq == 0, 1005);
@@ -162,13 +162,13 @@ script {
     use starcoin_framework::account;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::Authenticator;
-    use starcoin_framework::Vector;
+    use std::vector;
 
     fun main(account: signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
         let auth_key_vec = Authenticator::ed25519_authentication_key(copy txn_public_key);
         let txn_sender = Authenticator::derived_address(copy auth_key_vec);
-        Vector::push_back(&mut txn_public_key, 0u8); //create preimage
+        vector::push_back(&mut txn_public_key, 0u8); //create preimage
 
         let seq = account::sequence_number(txn_sender);
         assert!(seq == 0, 1005);
@@ -211,13 +211,13 @@ script {
     use starcoin_framework::account;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::Authenticator;
-    use starcoin_framework::Vector;
+    use std::vector;
 
     fun main(account: signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
         let auth_key_vec = Authenticator::ed25519_authentication_key(copy txn_public_key);
         let txn_sender = Authenticator::derived_address(copy auth_key_vec);
-        Vector::push_back(&mut txn_public_key, 0u8); //create preimage
+        vector::push_back(&mut txn_public_key, 0u8); //create preimage
 
         let seq = account::sequence_number(txn_sender);
         assert!(seq == 1, 1005);
@@ -245,13 +245,13 @@ script {
     use starcoin_framework::account;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::Authenticator;
-    use starcoin_framework::Vector;
+    use std::vector;
 
     fun main(account: signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
         let auth_key_vec = Authenticator::ed25519_authentication_key(copy txn_public_key);
         let txn_sender = Authenticator::derived_address(copy auth_key_vec);
-        Vector::push_back(&mut txn_public_key, 0u8); //create preimage
+        vector::push_back(&mut txn_public_key, 0u8); //create preimage
 
         let seq = account::sequence_number(txn_sender);
         assert!(seq == 1, 1007);
@@ -280,13 +280,13 @@ script {
     use starcoin_framework::account;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::Authenticator;
-    use starcoin_framework::Vector;
+    use std::vector;
 
     fun main(account: signer) {
         let txn_public_key = x"c48b687a1dd8265101b33df6ae0b6825234e3f28df9ecb38fb286cf76dae919d";
         let auth_key_vec = Authenticator::ed25519_authentication_key(copy txn_public_key);
         let txn_sender = Authenticator::derived_address(copy auth_key_vec);
-        Vector::push_back(&mut txn_public_key, 0u8); //create preimage
+        vector::push_back(&mut txn_public_key, 0u8); //create preimage
 
         let seq = account::sequence_number(txn_sender);
         assert!(seq == 1, 1007);

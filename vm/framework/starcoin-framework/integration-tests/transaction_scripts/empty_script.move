@@ -4,5 +4,5 @@
 
 //# run --signers alice
 script {
-fun empty_script() { }
+    fun empty_script() {}
 }

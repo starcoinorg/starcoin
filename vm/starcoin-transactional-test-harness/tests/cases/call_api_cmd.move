@@ -13,8 +13,8 @@ script{
      use StarcoinFramework::Vector;
      fun main(_sender: signer, block_number: u64, block_hash: vector<u8>, state_proof: vector<u8>){
          assert!(block_number == 1, 1000);
-         assert!(Vector::length(&block_hash) == 32, 1001);
-         assert!(Vector::length(&state_proof) > 32, 1002);
+         assert!(vector::length(&block_hash) == 32, 1001);
+         assert!(vector::length(&state_proof) > 32, 1002);
      }
 }
 

@@ -14,15 +14,17 @@ module alice::M {
     struct Cup has key, store {
         a: u64,
     }
+
     public fun new(): Cup {
-      Cup { a: 1 }
+        Cup { a: 1 }
     }
+
     public fun get_a(this: &Cup): u64 {
         this.a
     }
 
     public fun publish(cup: Cup, account: &signer) {
-      move_to(account, cup);
+        move_to(account, cup);
     }
 
     public fun get_cup(account: &signer): Cup acquires Cup {
@@ -41,47 +43,47 @@ module alice::M {
 }
 
 
-
 //# run --signers bob
 
 script {
-use alice::M;
-fun main(account: signer) {
-  let cup = M::new();
-  M::publish(cup, &account);
-}
+    use alice::M;
+
+    fun main(account: signer) {
+        let cup = M::new();
+        M::publish(cup, &account);
+    }
 }
 
 // check: EXECUTED
 //// check: delta_size 8
 
 
-
 //# run --signers bob
 
 script {
-use alice::M;
-fun main(account: signer) {
-  let y = M::destroy(&account);
-  assert!(y == 1, 41)
-}
+    use alice::M;
+
+    fun main(account: signer) {
+        let y = M::destroy(&account);
+        assert!(y == 1, 41)
+    }
 }
 
 // check: EXECUTED
 //// check: delta_size -8
 
 
-
 //# run --signers bob
 
 script {
-use alice::M;
-fun main(account: signer) {
-    let cup = M::new();
-    M::publish(cup, &account);
-    let y = M::destroy(&account);
-    assert!(y == 1, 41);
-}
+    use alice::M;
+
+    fun main(account: signer) {
+        let cup = M::new();
+        M::publish(cup, &account);
+        let y = M::destroy(&account);
+        assert!(y == 1, 41);
+    }
 }
 
 // check: EXECUTED
@@ -91,13 +93,14 @@ fun main(account: signer) {
 //# run --signers bob
 
 script {
-use alice::M;
-fun main(account: signer) {
-    let cup = M::new();
-    M::publish(cup, &account);
-    let cup = M::get_cup(&account);
-    M::destroy_x(cup)
-}
+    use alice::M;
+
+    fun main(account: signer) {
+        let cup = M::new();
+        M::publish(cup, &account);
+        let cup = M::get_cup(&account);
+        M::destroy_x(cup)
+    }
 }
 
 // check: EXECUTED

@@ -12,7 +12,7 @@
 //     use StarcoinFramework::Vector;
 //     fun main(_sender: signer, block_number: u64, block_hash: vector<u8>){
 //         assert!(block_number == 6487000, 1000);
-//         assert!(Vector::length(&block_hash) == 32, 1001);
+//         assert!(vector::length(&block_hash) == 32, 1001);
 //         assert!(x"58d3b6aa35ba1f52c809382b876950b6038c4ce9fa078358c0fcf0b072e5ae3d" == block_hash, 1002);
 //     }
 // }

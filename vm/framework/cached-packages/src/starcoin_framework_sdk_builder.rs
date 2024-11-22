@@ -620,21 +620,6 @@ pub enum EntryFunctionCall {
         value: u128,
     },
 
-    OraclePriceScriptInitDataSource {
-        oracle_t: TypeTag,
-        init_value: u128,
-    },
-
-    OraclePriceScriptRegisterOracle {
-        oracle_t: TypeTag,
-        precision: u8,
-    },
-
-    OraclePriceScriptUpdate {
-        oracle_t: TypeTag,
-        value: u128,
-    },
-
     /// Creates a new resource account and rotates the authentication key to either
     /// the optional auth key if it is non-empty (though auth keys are 32-bytes)
     /// or the source accounts current auth key.
@@ -1561,17 +1546,6 @@ impl EntryFunctionCall {
             } => oracle_price_register_oracle_entry(oracle_t, precision),
             OraclePriceUpdateEntry { oracle_t, value } => {
                 oracle_price_update_entry(oracle_t, value)
-            }
-            OraclePriceScriptInitDataSource {
-                oracle_t,
-                init_value,
-            } => oracle_price_script_init_data_source(oracle_t, init_value),
-            OraclePriceScriptRegisterOracle {
-                oracle_t,
-                precision,
-            } => oracle_price_script_register_oracle(oracle_t, precision),
-            OraclePriceScriptUpdate { oracle_t, value } => {
-                oracle_price_script_update(oracle_t, value)
             }
             ResourceAccountCreateResourceAccount {
                 seed,
@@ -3396,45 +3370,6 @@ pub fn oracle_price_update_entry(oracle_t: TypeTag, value: u128) -> TransactionP
             ident_str!("oracle_price").to_owned(),
         ),
         ident_str!("update_entry").to_owned(),
-        vec![oracle_t],
-        vec![bcs::to_bytes(&value).unwrap()],
-    ))
-}
-
-pub fn oracle_price_script_init_data_source(
-    oracle_t: TypeTag,
-    init_value: u128,
-) -> TransactionPayload {
-    TransactionPayload::EntryFunction(EntryFunction::new(
-        ModuleId::new(
-            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
-            ident_str!("oracle_price_script").to_owned(),
-        ),
-        ident_str!("init_data_source").to_owned(),
-        vec![oracle_t],
-        vec![bcs::to_bytes(&init_value).unwrap()],
-    ))
-}
-
-pub fn oracle_price_script_register_oracle(oracle_t: TypeTag, precision: u8) -> TransactionPayload {
-    TransactionPayload::EntryFunction(EntryFunction::new(
-        ModuleId::new(
-            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
-            ident_str!("oracle_price_script").to_owned(),
-        ),
-        ident_str!("register_oracle").to_owned(),
-        vec![oracle_t],
-        vec![bcs::to_bytes(&precision).unwrap()],
-    ))
-}
-
-pub fn oracle_price_script_update(oracle_t: TypeTag, value: u128) -> TransactionPayload {
-    TransactionPayload::EntryFunction(EntryFunction::new(
-        ModuleId::new(
-            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
-            ident_str!("oracle_price_script").to_owned(),
-        ),
-        ident_str!("update").to_owned(),
         vec![oracle_t],
         vec![bcs::to_bytes(&value).unwrap()],
     ))
@@ -5896,43 +5831,6 @@ mod decoder {
         }
     }
 
-    pub fn oracle_price_script_init_data_source(
-        payload: &TransactionPayload,
-    ) -> Option<EntryFunctionCall> {
-        if let TransactionPayload::EntryFunction(script) = payload {
-            Some(EntryFunctionCall::OraclePriceScriptInitDataSource {
-                oracle_t: script.ty_args().get(0)?.clone(),
-                init_value: bcs::from_bytes(script.args().get(0)?).ok()?,
-            })
-        } else {
-            None
-        }
-    }
-
-    pub fn oracle_price_script_register_oracle(
-        payload: &TransactionPayload,
-    ) -> Option<EntryFunctionCall> {
-        if let TransactionPayload::EntryFunction(script) = payload {
-            Some(EntryFunctionCall::OraclePriceScriptRegisterOracle {
-                oracle_t: script.ty_args().get(0)?.clone(),
-                precision: bcs::from_bytes(script.args().get(0)?).ok()?,
-            })
-        } else {
-            None
-        }
-    }
-
-    pub fn oracle_price_script_update(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
-        if let TransactionPayload::EntryFunction(script) = payload {
-            Some(EntryFunctionCall::OraclePriceScriptUpdate {
-                oracle_t: script.ty_args().get(0)?.clone(),
-                value: bcs::from_bytes(script.args().get(0)?).ok()?,
-            })
-        } else {
-            None
-        }
-    }
-
     pub fn resource_account_create_resource_account(
         payload: &TransactionPayload,
     ) -> Option<EntryFunctionCall> {
@@ -7268,18 +7166,6 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
         map.insert(
             "oracle_price_update_entry".to_string(),
             Box::new(decoder::oracle_price_update_entry),
-        );
-        map.insert(
-            "oracle_price_script_init_data_source".to_string(),
-            Box::new(decoder::oracle_price_script_init_data_source),
-        );
-        map.insert(
-            "oracle_price_script_register_oracle".to_string(),
-            Box::new(decoder::oracle_price_script_register_oracle),
-        );
-        map.insert(
-            "oracle_price_script_update".to_string(),
-            Box::new(decoder::oracle_price_script_update),
         );
         map.insert(
             "resource_account_create_resource_account".to_string(),

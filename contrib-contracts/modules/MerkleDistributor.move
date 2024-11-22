@@ -25,9 +25,9 @@ module MerkleProof {
     public fun verify(proof: &vector<vector<u8>>, root: &vector<u8>, leaf: vector<u8>): bool {
         let computed_hash = leaf;
         let i = 0;
-        let proof_length = Vector::length(proof);
+        let proof_length = vector::length(proof);
         while(i < proof_length) {
-            let sibling = Vector::borrow(proof, i);
+            let sibling = vector::borrow(proof, i);
             // computed_hash is left.
             if (Compare::cmp_bytes(&computed_hash,sibling) < 2) {
                 let concated = concat(computed_hash, *sibling);
@@ -45,7 +45,7 @@ module MerkleProof {
 
 
     fun concat(v1: vector<u8>, v2: vector<u8>): vector<u8> {
-        Vector::append(&mut v1, v2);
+        vector::append(&mut v1, v2);
         v1
     }
 }
@@ -77,10 +77,10 @@ module MerkleDistributor {
         if (bitmap_count * 128 < leaves) {
             bitmap_count = bitmap_count + 1;
         };
-        let claimed_bitmap = Vector::empty();
+        let claimed_bitmap = vector::empty();
         let j = 0;
         while (j < bitmap_count) {
-            Vector::push_back(&mut claimed_bitmap, 0u128);
+            vector::push_back(&mut claimed_bitmap, 0u128);
             j = j + 1;
         };
         let distribution = MerkleDistribution{
@@ -129,7 +129,7 @@ module MerkleDistributor {
     fun is_claimed_<T: store>(distribution: &MerkleDistribution<T>, index: u64): bool {
         let claimed_word_index = index / 128;
         let claimed_bit_index = ((index % 128) as u8);
-        let word = Vector::borrow(&distribution.claimed_bitmap, claimed_word_index);
+        let word = vector::borrow(&distribution.claimed_bitmap, claimed_word_index);
         let mask = 1u128 << claimed_bit_index;
         (*word & mask) == mask
     }
@@ -137,17 +137,17 @@ module MerkleDistributor {
     fun set_claimed_<T: store>(distribution: &mut MerkleDistribution<T>, index: u64) {
         let claimed_word_index = index / 128;
         let claimed_bit_index = ((index % 128) as u8);
-        let word = Vector::borrow_mut(&mut distribution.claimed_bitmap, claimed_word_index);
+        let word = vector::borrow_mut(&mut distribution.claimed_bitmap, claimed_word_index);
         // word | (1 << bit_index)
         let mask = 1u128 << claimed_bit_index;
         *word = (*word | mask);
     }
 
     fun encode_leaf(index: &u64, account: &address, amount: &u128): vector<u8> {
-        let leaf = Vector::empty();
-        Vector::append(&mut leaf, BCS::to_bytes(index));
-        Vector::append(&mut leaf, BCS::to_bytes(account));
-        Vector::append(&mut leaf, BCS::to_bytes(amount));
+        let leaf = vector::empty();
+        vector::append(&mut leaf, BCS::to_bytes(index));
+        vector::append(&mut leaf, BCS::to_bytes(account));
+        vector::append(&mut leaf, BCS::to_bytes(amount));
         leaf
     }
 }

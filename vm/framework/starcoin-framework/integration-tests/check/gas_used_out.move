@@ -11,7 +11,7 @@
 // when gas used out, the txn is kept, the state is unchanged except balance is set to 0.
 
 script {
-    use starcoin_framework::account;
+    use starcoin_framework::coin;
 
     fun main(account: signer) {
         coin::transfer<starcoin_framework::starcoin_coin::STC>(&account, @bob, 10);
@@ -32,12 +32,12 @@ script {
 
 //# run --signers default
 script {
-    use starcoin_framework::account;
+    use starcoin_framework::coin;
 
     fun main() {
         // check the state is unchanged
-        assert!(account::balance<starcoin_framework::starcoin_coin::STC>(@bob) == 1000, 42);
-        assert!(account::balance<starcoin_framework::starcoin_coin::STC>(@alice) == 300, 43);
+        assert!(coin::balance<starcoin_framework::starcoin_coin::STC>(@bob) == 1000, 42);
+        assert!(coin::balance<starcoin_framework::starcoin_coin::STC>(@alice) == 300, 43);
     }
 }
 
