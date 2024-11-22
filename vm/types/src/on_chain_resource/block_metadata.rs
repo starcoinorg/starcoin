@@ -53,4 +53,17 @@ mod tests {
         let hash1 = bcs::from_bytes::<HashValue>(&bytes).unwrap();
         assert_eq!(hash1, hash);
     }
+
+    #[test]
+    fn test_hash_value_serialize() {
+        let hash = HashValue::random();
+        let json_value = serde_json::to_string(&hash).unwrap();
+        println!("{}", json_value);
+        assert_eq!(json_value, format!("\"{}\"", hash.to_string()));
+
+        let de_hash = serde_json::from_slice::<HashValue>(json_value.as_bytes()).unwrap();
+        let de_hash2: HashValue = serde_json::from_str::<HashValue>(&json_value).unwrap();
+        assert_eq!(hash, de_hash);
+        assert_eq!(hash, de_hash2);
+    }
 }
