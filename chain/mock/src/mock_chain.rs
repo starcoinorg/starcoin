@@ -25,6 +25,21 @@ pub struct MockChain {
 }
 
 impl MockChain {
+    pub fn new_with_k(k: KType, net: ChainNetwork) -> Result<Self> {
+        let (storage, chain_info, _, dag) = Genesis::init_storage_for_test_with_param(&net, k)
+            .expect("init storage by genesis fail.");
+
+        let chain = BlockChain::new(
+            net.time_service(),
+            chain_info.head().id(),
+            storage.clone(),
+            None,
+            dag,
+        )?;
+        let miner = AccountInfo::random();
+        Ok(Self::new_inner(net, chain, miner, storage))
+    }
+
     pub fn new(net: ChainNetwork) -> Result<Self> {
         let (storage, chain_info, _, dag) =
             Genesis::init_storage_for_test(&net).expect("init storage by genesis fail.");
@@ -224,6 +239,21 @@ impl MockChain {
             vec![],
             None,
             tips,
+            HashValue::zero(),
+        )?;
+        self.head
+            .consensus()
+            .create_block(template, self.net.time_service().as_ref())
+    }
+
+    pub fn produce_block_with_uncles(&self, uncles: Vec<BlockHeader>) -> Result<Block> {
+        let (template, _) = self.head.create_block_template(
+            *self.miner.address(),
+            None,
+            vec![],
+            uncles,
+            None,
+            vec![],
             HashValue::zero(),
         )?;
         self.head

@@ -22,11 +22,12 @@ use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::MockChain;
 use starcoin_config::ChainNetwork;
 use starcoin_crypto::HashValue;
-use starcoin_dag::blockdag::BlockDAG;
+use starcoin_dag::blockdag::{BlockDAG, DEFAULT_GHOSTDAG_K};
 use starcoin_network_rpc_api::G_RPC_INFO;
 use starcoin_storage::Storage;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
+use starcoin_types::blockhash::KType;
 use starcoin_types::startup_info::ChainInfo;
 use std::sync::Arc;
 use std::time::Duration;
@@ -140,12 +141,13 @@ pub struct SyncNodeMocker {
 }
 
 impl SyncNodeMocker {
-    pub fn new(
+    pub fn new_with_k(
         net: ChainNetwork,
         delay_milliseconds: u64,
         random_error_percent: u32,
+        k: KType,
     ) -> Result<Self> {
-        let chain = MockChain::new(net)?;
+        let chain = MockChain::new_with_k(k, net)?;
         let peer_id = PeerId::random();
         let peer_info = PeerInfo::new(
             peer_id.clone(),
@@ -165,6 +167,19 @@ impl SyncNodeMocker {
             peer_selector,
             sync_dag_store,
         ))
+    }
+
+    pub fn new(
+        net: ChainNetwork,
+        delay_milliseconds: u64,
+        random_error_percent: u32,
+    ) -> Result<Self> {
+        Self::new_with_k(
+            net,
+            delay_milliseconds,
+            random_error_percent,
+            DEFAULT_GHOSTDAG_K,
+        )
     }
 
     pub fn new_with_storage(

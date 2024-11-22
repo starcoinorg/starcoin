@@ -181,3 +181,121 @@ async fn test_continue_sync_dag_blocks() -> Result<()> {
 
     Ok(())
 }
+
+#[stest::test(timeout = 600)]
+async fn test_sync_blue_blocks() -> Result<()> {
+    let test_system = super::test_tools::SyncTestSystem::initialize_sync_system_with_k(2)
+        .await
+        .expect("failed to init system");
+
+    let mut target_node = Arc::new(test_system.target_node);
+    let local_node = Arc::new(test_system.local_node);
+
+    Arc::get_mut(&mut target_node).unwrap().produce_block(3)?;
+
+    println!(
+        "target node produce block 3, main block: {:?}",
+        target_node.chain().current_header().id()
+    );
+
+    let mut uncle_chain = target_node.chain().current_header();
+    let mut main_chain = target_node.chain().current_header();
+    let mut extra_chain = target_node.chain().current_header();
+
+    // the main chain
+    main_chain = Arc::get_mut(&mut target_node)
+        .unwrap()
+        .chain_mocker
+        .produce_and_apply_by_tips(main_chain.clone(), vec![main_chain.id()])?;
+    main_chain = Arc::get_mut(&mut target_node)
+        .unwrap()
+        .chain_mocker
+        .produce_and_apply_by_tips(main_chain.clone(), vec![main_chain.id()])?;
+    main_chain = Arc::get_mut(&mut target_node)
+        .unwrap()
+        .chain_mocker
+        .produce_and_apply_by_tips(main_chain.clone(), vec![main_chain.id()])?;
+    main_chain = Arc::get_mut(&mut target_node)
+        .unwrap()
+        .chain_mocker
+        .produce_and_apply_by_tips(main_chain.clone(), vec![main_chain.id()])?;
+
+    // uncle chain
+    uncle_chain = Arc::get_mut(&mut target_node)
+        .unwrap()
+        .chain_mocker
+        .produce_and_apply_by_tips(uncle_chain.clone(), vec![uncle_chain.id()])?;
+    uncle_chain = Arc::get_mut(&mut target_node)
+        .unwrap()
+        .chain_mocker
+        .produce_and_apply_by_tips(uncle_chain.clone(), vec![uncle_chain.id()])?;
+    uncle_chain = Arc::get_mut(&mut target_node)
+        .unwrap()
+        .chain_mocker
+        .produce_and_apply_by_tips(uncle_chain.clone(), vec![uncle_chain.id()])?;
+
+    // extra chain
+    extra_chain = Arc::get_mut(&mut target_node)
+        .unwrap()
+        .chain_mocker
+        .produce_and_apply_by_tips(extra_chain.clone(), vec![extra_chain.id()])?;
+
+    // main block with 2 uncles
+    let previous_main = main_chain.clone();
+    let first_main_chain = Arc::get_mut(&mut target_node)
+        .unwrap()
+        .chain_mocker
+        .produce_and_apply_by_tips(main_chain.clone(), vec![main_chain.id(), uncle_chain.id()])?;
+
+    // parallel main block
+    let second_main_chain = Arc::get_mut(&mut target_node)
+        .unwrap()
+        .chain_mocker
+        .produce_and_apply_by_tips(
+            previous_main.clone(),
+            vec![previous_main.id(), uncle_chain.id(), extra_chain.id()],
+        )?;
+
+    // merge block
+    let first_block_info = target_node
+        .chain()
+        .get_block_info(Some(first_main_chain.id()))?
+        .unwrap();
+    let second_block_info = target_node
+        .chain()
+        .get_block_info(Some(second_main_chain.id()))?
+        .unwrap();
+    let selected_parent = if first_block_info.total_difficulty > second_block_info.total_difficulty
+    {
+        first_main_chain.clone()
+    } else {
+        second_main_chain.clone()
+    };
+    let merge_block = Arc::get_mut(&mut target_node)
+        .unwrap()
+        .chain_mocker
+        .produce_and_apply_by_tips(
+            selected_parent,
+            vec![first_main_chain.id(), second_main_chain.id()],
+        )?;
+
+    println!(
+        "target node produce block header: {:?}",
+        target_node.chain().current_header()
+    );
+    assert_eq!(merge_block.id(), target_node.chain().current_header().id());
+    let body = target_node.chain().get_block(merge_block.id())?.unwrap();
+    println!("uncles: {:?}", body.uncles());
+    println!(
+        "uncles: {:?}",
+        body.uncles()
+            .unwrap()
+            .iter()
+            .map(|x| x.id())
+            .collect::<Vec<_>>()
+    );
+
+    sync_block_process(target_node, local_node, &test_system.registry).await?;
+
+    Ok(())
+}

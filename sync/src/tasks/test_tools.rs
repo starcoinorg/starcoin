@@ -13,6 +13,7 @@ use starcoin_account_api::AccountInfo;
 use starcoin_chain_api::ChainReader;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork, NodeConfig, RocksdbConfig};
+use starcoin_dag::blockdag::DEFAULT_GHOSTDAG_K;
 use starcoin_dag::consensusdb::prelude::FlexiDagStorageConfig;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
@@ -22,6 +23,7 @@ use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
 #[cfg(test)]
 use starcoin_txpool_mock_service::MockTxPoolService;
+use starcoin_types::blockhash::KType;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -38,6 +40,9 @@ pub struct SyncTestSystem {
 #[cfg(test)]
 impl SyncTestSystem {
     pub async fn initialize_sync_system() -> Result<Self> {
+        Self::initialize_sync_system_with_k(DEFAULT_GHOSTDAG_K).await
+    }
+    pub async fn initialize_sync_system_with_k(k: KType) -> Result<Self> {
         let config = Arc::new(NodeConfig::random_for_dag_test());
 
         let temp_path = PathBuf::from(starcoin_config::temp_dir().as_ref());
@@ -58,12 +63,12 @@ impl SyncTestSystem {
             FlexiDagStorageConfig::new(),
         )
         .expect("init dag storage fail.");
-        let dag = starcoin_dag::blockdag::BlockDAG::create_blockdag(dag_storage); // local dag
+        let dag = starcoin_dag::blockdag::BlockDAG::new(k, dag_storage); // local dag
 
         let chain_info =
             genesis.execute_genesis_block(config.net(), storage.clone(), dag.clone())?;
 
-        let target_node = SyncNodeMocker::new(config.net().clone(), 300, 0)?;
+        let target_node = SyncNodeMocker::new_with_k(config.net().clone(), 300, 0, k)?;
         let local_node = SyncNodeMocker::new_with_storage(
             config.net().clone(),
             storage.clone(),
