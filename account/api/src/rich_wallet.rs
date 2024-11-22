@@ -150,7 +150,7 @@ mod tests {
             "default_gas_price":1,
             "default_gas_token":{
                 "address": "0x1",
-                "module": "STC",
+                "module": "starcoin_coin",
                 "name": "STC",
             },
             "is_default":false,
