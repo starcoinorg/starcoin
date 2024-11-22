@@ -37,3 +37,21 @@ impl MoveStructType for BlockMetadata {
 }
 
 impl MoveResource for BlockMetadata {}
+
+#[cfg(test)]
+mod  tests {
+    use starcoin_crypto::HashValue;
+
+    #[test]
+    fn test_hash_value_serialize_and_deserialize() {
+        let hash = HashValue::zero();
+        let bytes = bcs::to_bytes(&hash).unwrap();
+        const BUF_SIZE:usize = HashValue::LENGTH + 1;
+        let mut buf : [u8; BUF_SIZE] = [0; BUF_SIZE];
+        buf[0] = HashValue::LENGTH as u8;
+        assert_eq!(bytes.as_slice(), buf);
+        let hash1 = bcs::from_bytes::<HashValue>(&bytes).unwrap();
+        assert_eq!(hash1,hash);
+    }
+
+}
