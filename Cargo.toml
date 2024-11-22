@@ -522,7 +522,7 @@ starcoin-chain-service = { path = "chain/service" }
 starcoin-cmd = { path = "cmd/starcoin" }
 starcoin-config = { path = "config" }
 starcoin-consensus = { path = "consensus" }
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "9eeaeb7e30065cc97160de7a1b42fab6ae88058e" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "69ccde1e1ec331588a93346729475d499d52959a" }
 
 starcoin-decrypt = { path = "commons/decrypt" }
 starcoin-dev = { path = "vm/dev" }

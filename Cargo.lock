@@ -390,7 +390,7 @@ dependencies = [
 [[package]]
 name = "aptos-crypto"
 version = "0.0.3"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=9eeaeb7e30065cc97160de7a1b42fab6ae88058e#9eeaeb7e30065cc97160de7a1b42fab6ae88058e"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=69ccde1e1ec331588a93346729475d499d52959a#69ccde1e1ec331588a93346729475d499d52959a"
 dependencies = [
  "aes-gcm 0.10.3",
  "anyhow",
@@ -444,7 +444,7 @@ dependencies = [
 [[package]]
 name = "aptos-crypto-derive"
 version = "0.0.3"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=9eeaeb7e30065cc97160de7a1b42fab6ae88058e#9eeaeb7e30065cc97160de7a1b42fab6ae88058e"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=69ccde1e1ec331588a93346729475d499d52959a#69ccde1e1ec331588a93346729475d499d52959a"
 dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.36",
@@ -10554,7 +10554,7 @@ dependencies = [
 [[package]]
 name = "starcoin-crypto"
 version = "1.10.0-rc.2"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=9eeaeb7e30065cc97160de7a1b42fab6ae88058e#9eeaeb7e30065cc97160de7a1b42fab6ae88058e"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=69ccde1e1ec331588a93346729475d499d52959a#69ccde1e1ec331588a93346729475d499d52959a"
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -10573,7 +10573,7 @@ dependencies = [
 [[package]]
 name = "starcoin-crypto-macro"
 version = "1.10.0-rc.2"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=9eeaeb7e30065cc97160de7a1b42fab6ae88058e#9eeaeb7e30065cc97160de7a1b42fab6ae88058e"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=69ccde1e1ec331588a93346729475d499d52959a#69ccde1e1ec331588a93346729475d499d52959a"
 dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.36",
