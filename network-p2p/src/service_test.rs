@@ -17,7 +17,12 @@ use network_p2p_types::MultiaddrWithPeerId;
 use once_cell::sync::Lazy;
 use sc_peerset::ReputationChange;
 use serde::{Deserialize, Serialize};
+use starcoin_crypto::HashValue;
+use starcoin_types::account_address::AccountAddress;
+use starcoin_types::block::{AccumulatorInfo, BlockHeader, BlockHeaderExtra, BlockInfo};
+use starcoin_types::genesis_config::ChainId;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
+use starcoin_types::U256;
 use std::{borrow::Cow, sync::Arc, time::Duration};
 use Event::NotificationStreamOpened;
 
@@ -576,21 +581,96 @@ fn generate_config(
 
 // test handshake message compatible with a serialize hex message.
 #[test]
-fn test_handshake_message() {
-    let json_msg = r#"
-       {"version":1,"min_supported_version":1,
-       "notif_protocols":["/starcoin/txn/1","/starcoin/block/1"],
-       "rpc_protocols":[],
-       "info":{"chain_id":{"id":1},"genesis_hash":"0x509224b8142926f6c079c66a85ca6db7981734bfe8f9427b3b925574be013f93","status":{"head":{"parent_hash":"0x82b85e25967cd4077f4df26a8975ab34ec6eba954e2c38d2b8393c6c42c2963c","timestamp":1612227819459,"number":9213,"author":"0xe6f6e9ec5a878e29350b4356e21d63db","author_auth_key":null,"txn_accumulator_root":"0xa57516ba50672afe23869529b2d54b9cb95bf6c2ad0982048c5dc1633e567f56","block_accumulator_root":"0x163305561261490852c28f3c1131e4e8d181bea0e1c8552f1ff9f8fbdd107727","state_root":"0xcead8e63f08b297df0e6c0e80a15f824d1a6f08ecb6f88021d6f3dc6c31544af","gas_used":16384000,"difficulty":"0x1648","body_hash":"0x19990c2875098a829ac4d6db2c78b77e6102d0837920304a14ebb474190a5007","chain_id":{"id":1},"nonce":620209232,"extra":"0x00000000","parents_hash":null},"info":{"block_id":"0xcabe94c219acfae4044e8e5c8609a6d98153935e60e18be7f0ca611243714da2","total_difficulty":"0x0356fcbd","txn_accumulator_info":{"accumulator_root":"0xa57516ba50672afe23869529b2d54b9cb95bf6c2ad0982048c5dc1633e567f56","frozen_subtree_roots":["0xed2a8ca4a2972761099903410a9dc0c4607eaec944c41d919c27c57418d2aa59","0x21ee454f8510f89866eae45cd5727bee271595e67740ef5aaf80f9fc9d3b84d3","0x527890d7a348f2bfe9801eaad4d98facd340489a37234f405c15ab4e64a0f2eb","0xd0dacaa8beb77998983313ce06b44385b88c1772992f42a835b2f8477118321b","0x31b0df1da737424b169c3a43c0bc23794cc65d65d352aeff8a50b0593320a0cb","0x17dcc4f902c5e237a2c2a3b47b9263b7e67512c026ff76981e9c88955135cd86","0x0686841f7caeb4cd82eb1d51575971c7b189609a87c63970447c45b103619086","0xabfa4a9ed920176ad2a789d731f26398768732f813351e43a38d4c1aa22ff259","0x6914b1dd9aac5d4721fdb7bd736b1f107e72253050b4effd4bd9952da32eef84","0x2b0be3dc9f9196c5f8b5b9c430083d682720651154b29d1778971273eb9dfbcf","0x566f2db25b5255647988d164c4e2855b689fe5dcf7b1ba37bfa6a3d86accc503","0xe5b5f78b0b2e08fc3e3cafa9808346704da2f7b7a572dd84ed947e00003266c4"],"num_leaves":126960,"num_nodes":253908},"block_accumulator_info":{"accumulator_root":"0x2be16af3d9084b18d6ca44050ff46474d888b8c6340db0fbcb7aef9e423794af","frozen_subtree_roots":["0xef637a9b977e8969503e4fedb8558b0f294268bbaa6a0b24a824ad3c98edcf1e","0xa8cf073cfe1b08a5ed94a04dc79f16d125b7d4fb4d7ce02f75f412ded9cf9b79","0xf89ff07faba4299566955c4b9c31fcba99fc5855a229bed7d6487dafd59f1e70","0x2fd161c1b5d03833eb3efb09e530e689ac67ec7d5748246df4891bb9c3f3111b","0x55e40a53390e839a588904e16fe656676b0c5a7b3ec70bd8dcc2276e70e7600b","0xb3918be1fd6460dd30daf058e0e516c7046d242642130547f510335a319a98dd","0xf0737bc518a99c1a619bd87ba82d95dcd8dd19b0836a7dbed514b603f90e7ea8","0xf48e3dfc240d86a64e9adb9c2d276c6f42119e4aaee7598b13f61e4d77390d11","0x62cb92b81afa80226494d92a2120bdd4e9956c48f44f41b1283a59d9fe32e6df","0xeb5618d7d5699735477bee792b0e1a1ffa3c892fa31b7515b6948d80e3b424b2"],"num_leaves":9214,"num_nodes":18418}}}}}
-       "#;
-    let status = serde_json::from_str::<Status>(json_msg).unwrap();
-    //let hex = hex::encode(status.encode().unwrap());
+fn test_handshake_message() -> Result<()> {
+    let genesis_id = HashValue::from_hex_literal(
+        "0x509224b8142926f6c079c66a85ca6db7981734bfe8f9427b3b925574be013f93",
+    )?;
+    let tx_accumulator_hash = HashValue::from_hex_literal(
+        "0xa57516ba50672afe23869529b2d54b9cb95bf6c2ad0982048c5dc1633e567f56",
+    )?;
+    let block_accumulator_hash = HashValue::from_hex_literal(
+        "0x163305561261490852c28f3c1131e4e8d181bea0e1c8552f1ff9f8fbdd107727",
+    )?;
+    let header = BlockHeader::new(
+        genesis_id,
+        1612227819459,
+        9213,
+        AccountAddress::from_hex_literal("0xe6f6e9ec5a878e29350b4356e21d63db")?,
+        tx_accumulator_hash,
+        block_accumulator_hash,
+        HashValue::from_hex_literal(
+            "0xcead8e63f08b297df0e6c0e80a15f824d1a6f08ecb6f88021d6f3dc6c31544af",
+        )?,
+        16384000,
+        U256::from_str_radix("0x1648", 16)?,
+        HashValue::from_hex_literal(
+            "0x19990c2875098a829ac4d6db2c78b77e6102d0837920304a14ebb474190a5007",
+        )?,
+        ChainId::test(),
+        620209232,
+        BlockHeaderExtra::new([0, 0, 0, 0]),
+        Some(vec![HashValue::from_hex_literal(
+            "0x82b85e25967cd4077f4df26a8975ab34ec6eba954e2c38d2b8393c6c42c2963c",
+        )?]),
+    );
+    let header_id = header.id();
+    let status = Status {
+        version: 1,
+        min_supported_version: 1,
+        notif_protocols: vec![
+            "/starcoin/txn/1".into(),
+            "/starcoin/block/1".into(),
+        ],
+        rpc_protocols: vec![],
+        info: ChainInfo::new(ChainId::test(),
+                             genesis_id,
+                             ChainStatus {
+                                 head: header,
+                                 info: BlockInfo::new(header_id,
+                                                      U256::from_str_radix("0x0356fcbd", 16)?,
+                                                      AccumulatorInfo::new(
+                                                          tx_accumulator_hash,
+                                                          vec![
+                                                              HashValue::from_hex_literal("0xed2a8ca4a2972761099903410a9dc0c4607eaec944c41d919c27c57418d2aa59")?,
+                                                              HashValue::from_hex_literal("0x21ee454f8510f89866eae45cd5727bee271595e67740ef5aaf80f9fc9d3b84d3")?,
+                                                              HashValue::from_hex_literal("0x527890d7a348f2bfe9801eaad4d98facd340489a37234f405c15ab4e64a0f2eb")?,
+                                                              HashValue::from_hex_literal("0xd0dacaa8beb77998983313ce06b44385b88c1772992f42a835b2f8477118321b")?,
+                                                              HashValue::from_hex_literal("0x31b0df1da737424b169c3a43c0bc23794cc65d65d352aeff8a50b0593320a0cb")?,
+                                                              HashValue::from_hex_literal("0x17dcc4f902c5e237a2c2a3b47b9263b7e67512c026ff76981e9c88955135cd86")?,
+                                                              HashValue::from_hex_literal("0x0686841f7caeb4cd82eb1d51575971c7b189609a87c63970447c45b103619086")?,
+                                                              HashValue::from_hex_literal("0xabfa4a9ed920176ad2a789d731f26398768732f813351e43a38d4c1aa22ff259")?,
+                                                              HashValue::from_hex_literal("0x6914b1dd9aac5d4721fdb7bd736b1f107e72253050b4effd4bd9952da32eef84")?,
+                                                              HashValue::from_hex_literal("0x2b0be3dc9f9196c5f8b5b9c430083d682720651154b29d1778971273eb9dfbcf")?,
+                                                              HashValue::from_hex_literal("0x566f2db25b5255647988d164c4e2855b689fe5dcf7b1ba37bfa6a3d86accc503")?,
+                                                              HashValue::from_hex_literal("0xe5b5f78b0b2e08fc3e3cafa9808346704da2f7b7a572dd84ed947e00003266c4")?,
+                                                          ], 126960, 253908),
+                                                      AccumulatorInfo::new(
+                                                          block_accumulator_hash,
+                                                          vec![
+                                                              HashValue::from_hex_literal("0xef637a9b977e8969503e4fedb8558b0f294268bbaa6a0b24a824ad3c98edcf1e")?,
+                                                              HashValue::from_hex_literal("0xa8cf073cfe1b08a5ed94a04dc79f16d125b7d4fb4d7ce02f75f412ded9cf9b79")?,
+                                                              HashValue::from_hex_literal("0xf89ff07faba4299566955c4b9c31fcba99fc5855a229bed7d6487dafd59f1e70")?,
+                                                              HashValue::from_hex_literal("0x2fd161c1b5d03833eb3efb09e530e689ac67ec7d5748246df4891bb9c3f3111b")?,
+                                                              HashValue::from_hex_literal("0x55e40a53390e839a588904e16fe656676b0c5a7b3ec70bd8dcc2276e70e7600b")?,
+                                                              HashValue::from_hex_literal("0xb3918be1fd6460dd30daf058e0e516c7046d242642130547f510335a319a98dd")?,
+                                                              HashValue::from_hex_literal("0xf0737bc518a99c1a619bd87ba82d95dcd8dd19b0836a7dbed514b603f90e7ea8")?,
+                                                              HashValue::from_hex_literal("0xf48e3dfc240d86a64e9adb9c2d276c6f42119e4aaee7598b13f61e4d77390d11")?,
+                                                              HashValue::from_hex_literal("0x62cb92b81afa80226494d92a2120bdd4e9956c48f44f41b1283a59d9fe32e6df")?,
+                                                              HashValue::from_hex_literal("0xeb5618d7d5699735477bee792b0e1a1ffa3c892fa31b7515b6948d80e3b424b2")?,
+                                                          ], 9214, 18418)),
+                             }),
+    };
+    let json_msg = serde_json::to_string(&status).unwrap();
+    let status1 = serde_json::from_str::<Status>(&json_msg).unwrap();
+    assert_eq!(status, status1);
+    // let hex = hex::encode(status.encode().unwrap());
     //println!("{}", hex);
     //println!("{}", serde_json::to_string(&status).unwrap());
-    let bin_msg = "0100000001000000020f2f73746172636f696e2f74786e2f31112f73746172636f696e2f626c6f636b2f31000120509224b8142926f6c079c66a85ca6db7981734bfe8f9427b3b925574be013f932082b85e25967cd4077f4df26a8975ab34ec6eba954e2c38d2b8393c6c42c2963cc337446077010000fd23000000000000e6f6e9ec5a878e29350b4356e21d63db0020a57516ba50672afe23869529b2d54b9cb95bf6c2ad0982048c5dc1633e567f5620163305561261490852c28f3c1131e4e8d181bea0e1c8552f1ff9f8fbdd10772720cead8e63f08b297df0e6c0e80a15f824d1a6f08ecb6f88021d6f3dc6c31544af0000fa000000000000000000000000000000000000000000000000000000000000000000000016482019990c2875098a829ac4d6db2c78b77e6102d0837920304a14ebb474190a50070150a4f724000000000020cabe94c219acfae4044e8e5c8609a6d98153935e60e18be7f0ca611243714da2000000000000000000000000000000000000000000000000000000000356fcbd20a57516ba50672afe23869529b2d54b9cb95bf6c2ad0982048c5dc1633e567f560c20ed2a8ca4a2972761099903410a9dc0c4607eaec944c41d919c27c57418d2aa592021ee454f8510f89866eae45cd5727bee271595e67740ef5aaf80f9fc9d3b84d320527890d7a348f2bfe9801eaad4d98facd340489a37234f405c15ab4e64a0f2eb20d0dacaa8beb77998983313ce06b44385b88c1772992f42a835b2f8477118321b2031b0df1da737424b169c3a43c0bc23794cc65d65d352aeff8a50b0593320a0cb2017dcc4f902c5e237a2c2a3b47b9263b7e67512c026ff76981e9c88955135cd86200686841f7caeb4cd82eb1d51575971c7b189609a87c63970447c45b10361908620abfa4a9ed920176ad2a789d731f26398768732f813351e43a38d4c1aa22ff259206914b1dd9aac5d4721fdb7bd736b1f107e72253050b4effd4bd9952da32eef84202b0be3dc9f9196c5f8b5b9c430083d682720651154b29d1778971273eb9dfbcf20566f2db25b5255647988d164c4e2855b689fe5dcf7b1ba37bfa6a3d86accc50320e5b5f78b0b2e08fc3e3cafa9808346704da2f7b7a572dd84ed947e00003266c4f0ef010000000000d4df030000000000202be16af3d9084b18d6ca44050ff46474d888b8c6340db0fbcb7aef9e423794af0a20ef637a9b977e8969503e4fedb8558b0f294268bbaa6a0b24a824ad3c98edcf1e20a8cf073cfe1b08a5ed94a04dc79f16d125b7d4fb4d7ce02f75f412ded9cf9b7920f89ff07faba4299566955c4b9c31fcba99fc5855a229bed7d6487dafd59f1e70202fd161c1b5d03833eb3efb09e530e689ac67ec7d5748246df4891bb9c3f3111b2055e40a53390e839a588904e16fe656676b0c5a7b3ec70bd8dcc2276e70e7600b20b3918be1fd6460dd30daf058e0e516c7046d242642130547f510335a319a98dd20f0737bc518a99c1a619bd87ba82d95dcd8dd19b0836a7dbed514b603f90e7ea820f48e3dfc240d86a64e9adb9c2d276c6f42119e4aaee7598b13f61e4d77390d112062cb92b81afa80226494d92a2120bdd4e9956c48f44f41b1283a59d9fe32e6df20eb5618d7d5699735477bee792b0e1a1ffa3c892fa31b7515b6948d80e3b424b2fe23000000000000f247000000000000";
+    let bin_msg = "0100000001000000020f2f73746172636f696e2f74786e2f31112f73746172636f696e2f626c6f636b2f3100ff20509224b8142926f6c079c66a85ca6db7981734bfe8f9427b3b925574be013f9320509224b8142926f6c079c66a85ca6db7981734bfe8f9427b3b925574be013f93c337446077010000fd23000000000000e6f6e9ec5a878e29350b4356e21d63db0020a57516ba50672afe23869529b2d54b9cb95bf6c2ad0982048c5dc1633e567f5620163305561261490852c28f3c1131e4e8d181bea0e1c8552f1ff9f8fbdd10772720cead8e63f08b297df0e6c0e80a15f824d1a6f08ecb6f88021d6f3dc6c31544af0000fa000000000000000000000000000000000000000000000000000000000000000000000016482019990c2875098a829ac4d6db2c78b77e6102d0837920304a14ebb474190a5007ff50a4f7240000000001012082b85e25967cd4077f4df26a8975ab34ec6eba954e2c38d2b8393c6c42c2963c20a97a39d3aa469d73d24f92dc17e190cf9bebd0c158b671eb4246bed87f5a82f2000000000000000000000000000000000000000000000000000000000356fcbd20a57516ba50672afe23869529b2d54b9cb95bf6c2ad0982048c5dc1633e567f560c20ed2a8ca4a2972761099903410a9dc0c4607eaec944c41d919c27c57418d2aa592021ee454f8510f89866eae45cd5727bee271595e67740ef5aaf80f9fc9d3b84d320527890d7a348f2bfe9801eaad4d98facd340489a37234f405c15ab4e64a0f2eb20d0dacaa8beb77998983313ce06b44385b88c1772992f42a835b2f8477118321b2031b0df1da737424b169c3a43c0bc23794cc65d65d352aeff8a50b0593320a0cb2017dcc4f902c5e237a2c2a3b47b9263b7e67512c026ff76981e9c88955135cd86200686841f7caeb4cd82eb1d51575971c7b189609a87c63970447c45b10361908620abfa4a9ed920176ad2a789d731f26398768732f813351e43a38d4c1aa22ff259206914b1dd9aac5d4721fdb7bd736b1f107e72253050b4effd4bd9952da32eef84202b0be3dc9f9196c5f8b5b9c430083d682720651154b29d1778971273eb9dfbcf20566f2db25b5255647988d164c4e2855b689fe5dcf7b1ba37bfa6a3d86accc50320e5b5f78b0b2e08fc3e3cafa9808346704da2f7b7a572dd84ed947e00003266c4f0ef010000000000d4df03000000000020163305561261490852c28f3c1131e4e8d181bea0e1c8552f1ff9f8fbdd1077270a20ef637a9b977e8969503e4fedb8558b0f294268bbaa6a0b24a824ad3c98edcf1e20a8cf073cfe1b08a5ed94a04dc79f16d125b7d4fb4d7ce02f75f412ded9cf9b7920f89ff07faba4299566955c4b9c31fcba99fc5855a229bed7d6487dafd59f1e70202fd161c1b5d03833eb3efb09e530e689ac67ec7d5748246df4891bb9c3f3111b2055e40a53390e839a588904e16fe656676b0c5a7b3ec70bd8dcc2276e70e7600b20b3918be1fd6460dd30daf058e0e516c7046d242642130547f510335a319a98dd20f0737bc518a99c1a619bd87ba82d95dcd8dd19b0836a7dbed514b603f90e7ea820f48e3dfc240d86a64e9adb9c2d276c6f42119e4aaee7598b13f61e4d77390d112062cb92b81afa80226494d92a2120bdd4e9956c48f44f41b1283a59d9fe32e6df20eb5618d7d5699735477bee792b0e1a1ffa3c892fa31b7515b6948d80e3b424b2fe23000000000000f247000000000000";
     let bytes = hex::decode(bin_msg).unwrap();
     let status2 = Status::decode(bytes.as_slice()).unwrap();
     assert_eq!(status, status2);
+    Ok(())
 }
 
 #[allow(clippy::let_underscore_future)]
