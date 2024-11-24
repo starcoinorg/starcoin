@@ -5,17 +5,17 @@
 //# run --signers StarcoinAssociation
 script {
     use starcoin_framework::starcoin_coin::STC;
-    use starcoin_framework::Treasury;
+    use starcoin_framework::treasury;
     //use starcoin_framework::Debug;
 
     fun mint(account: signer) {
-        let cap = Treasury::remove_linear_withdraw_capability<STC>(&account);
-        assert!(Treasury::get_linear_withdraw_capability_total(&cap) == 477770400000000000, 1000);
-        assert!(Treasury::get_linear_withdraw_capability_withdraw(&cap) == 0, 1001);
-        assert!(Treasury::get_linear_withdraw_capability_start_time(&cap) == 0, 1002);
-        starcoin_framework::Debug::print(&Treasury::get_linear_withdraw_capability_period(&cap));
-        assert!(Treasury::get_linear_withdraw_capability_period(&cap) ==86400, 1003);
-        Treasury::add_linear_withdraw_capability(&account, cap);
+        let cap = treasury::remove_linear_withdraw_capability<STC>(&account);
+        assert!(treasury::get_linear_withdraw_capability_total(&cap) == 477770400000000000, 1000);
+        assert!(treasury::get_linear_withdraw_capability_withdraw(&cap) == 0, 1001);
+        assert!(treasury::get_linear_withdraw_capability_start_time(&cap) == 0, 1002);
+        starcoin_framework::debug::print(&treasury::get_linear_withdraw_capability_period(&cap));
+        assert!(treasury::get_linear_withdraw_capability_period(&cap) == 86400, 1003);
+        treasury::add_linear_withdraw_capability(&account, cap);
     }
 }
 
@@ -23,19 +23,19 @@ script {
 
 //# run --signers StarcoinAssociation
 script {
-    use starcoin_framework::account;
+    use std::signer;
+    use starcoin_std::debug;
+    use starcoin_framework::coin;
+    use starcoin_framework::treasury;
     use starcoin_framework::starcoin_coin::STC;
-    use starcoin_framework::Treasury;
-    use starcoin_framework::Token;
-    use starcoin_framework::Debug;
 
     fun mint(account: signer) {
-        let linear_cap = Treasury::remove_linear_withdraw_capability<STC>(&account);
-        let token = Treasury::withdraw_with_linear_capability(&mut linear_cap);
-        Debug::print(&Token::value(&token));
-        assert!(Token::value(&token) == 19907100000000000, 1004);
-        Treasury::add_linear_withdraw_capability(&account, linear_cap);
-        coin::deposit(&account, token);
+        let linear_cap = treasury::remove_linear_withdraw_capability<STC>(&account);
+        let token = treasury::withdraw_with_linear_capability(&mut linear_cap);
+        debug::print(&coin::value(&token));
+        assert!(coin::value(&token) == 19907100000000000, 1004);
+        treasury::add_linear_withdraw_capability(&account, linear_cap);
+        coin::deposit(signer::address_of(&account), token);
     }
 }
 
@@ -44,19 +44,20 @@ script {
 
 //# run --signers StarcoinAssociation
 script {
-    use starcoin_framework::account;
+    use std::signer;
+    use starcoin_std::debug;
+
+    use starcoin_framework::coin;
     use starcoin_framework::starcoin_coin::STC;
-    use starcoin_framework::Treasury;
-    use starcoin_framework::Token;
-    //use starcoin_framework::Debug;
+    use starcoin_framework::treasury;
 
     fun mint(account: signer) {
-        let linear_cap = Treasury::remove_linear_withdraw_capability<STC>(&account);
-        let token = Treasury::withdraw_with_linear_capability(&mut linear_cap);
-        starcoin_framework::Debug::print(&Token::value(&token));
-        assert!(Token::value(&token) == 19907100000000000, 1005);
-        Treasury::add_linear_withdraw_capability(&account, linear_cap);
-        coin::deposit(&account, token);
+        let linear_cap = treasury::remove_linear_withdraw_capability<STC>(&account);
+        let token = treasury::withdraw_with_linear_capability(&mut linear_cap);
+        debug::print(&coin::value(&token));
+        assert!(coin::value(&token) == 19907100000000000, 1005);
+        treasury::add_linear_withdraw_capability(&account, linear_cap);
+        coin::deposit(signer::address_of(&account), token);
     }
 }
 
@@ -65,19 +66,24 @@ script {
 
 //# run --signers StarcoinAssociation
 script {
-    use starcoin_framework::account;
+    use std::signer;
+    use starcoin_framework::coin;
+    use starcoin_std::debug;
     use starcoin_framework::starcoin_coin::STC;
-    use starcoin_framework::Treasury;
-    use starcoin_framework::Token;
-    //use starcoin_framework::Debug;
+    use starcoin_framework::treasury;
 
     fun mint(account: signer) {
-        let cap = Treasury::remove_linear_withdraw_capability<STC>(&account);
-        let token = Treasury::withdraw_with_linear_capability(&mut cap);
-        starcoin_framework::Debug::print(&Token::value(&token));
-        assert!(Token::value(&token) == (477770400000000000 - 19907100000000000*2), 1006);
-        coin::deposit(&account, token);
-        assert!(Treasury::get_linear_withdraw_capability_withdraw(&cap) == Treasury::get_linear_withdraw_capability_total(&cap), 1007);
-        Treasury::destroy_linear_withdraw_capability(cap);
+        let cap = treasury::remove_linear_withdraw_capability<STC>(&account);
+        let token = treasury::withdraw_with_linear_capability(&mut cap);
+        debug::print(&coin::value(&token));
+        assert!(coin::value(&token) == (477770400000000000 - 19907100000000000 * 2), 1006);
+        coin::deposit(signer::address_of(&account), token);
+        assert!(
+            treasury::get_linear_withdraw_capability_withdraw(&cap) == treasury::get_linear_withdraw_capability_total(
+                &cap
+            ),
+            1007
+        );
+        treasury::destroy_linear_withdraw_capability(cap);
     }
 }
