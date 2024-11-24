@@ -1,95 +1,13 @@
 processed 6 tasks
 
-task 3 'publish'. lines 7-43:
-warning[W09001]: unused alias
-  ┌─ /var/folders/mc/m_3x4kk518jd_5x6plf003100000gn/T/.tmpDMdwNz:9:14
-  │
-9 │     use std::signer;
-  │              ^^^^^^ Unused 'use' of alias 'signer'. Consider removing it
-
-
-
-task 4 'run'. lines 45-64:
+task 4 'run'. lines 54-72:
 {
-  "gas_used": 1322240,
+  "gas_used": 1382608,
   "status": "Executed"
 }
 
-task 5 'run'. lines 65-84:
-Error: warning[W09001]: unused alias
-   ┌─ /var/folders/mc/m_3x4kk518jd_5x6plf003100000gn/T/.tmp71uxsv:67:14
-   │
-67 │     use std::option;
-   │              ^^^^^^ Unused 'use' of alias 'option'. Consider removing it
-
-error[E04005]: expected a single type
-   ┌─ /var/folders/mc/m_3x4kk518jd_5x6plf003100000gn/T/.tmp71uxsv:72:13
-   │
-72 │         let coin = fake_money::init(&account, 9);
-   │             ^^^^ Invalid type for local
-   │
-   ┌─ /var/folders/mc/m_3x4kk518jd_5x6plf003100000gn/T/.tmpDMdwNz:18:16
-   │
-18 │     public fun init(account: &signer, decimal: u8) {
-   │                ---- Expected a single type, but found expression list type: '()'
-
-error[E04007]: incompatible types
-     ┌─ /var/folders/mc/m_3x4kk518jd_5x6plf003100000gn/T/.tmp71uxsv:73:17
-     │
-  73 │         assert!(coin::value<FakeMoney>(&coin) == 10000, 8002);
-     │                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Invalid call of '(starcoin_framework=0x1)::coin::value'. Invalid argument for parameter 'coin'
-     │
-     ┌─ /var/folders/mc/m_3x4kk518jd_5x6plf003100000gn/T/.tmpDMdwNz:18:16
-     │
-  18 │     public fun init(account: &signer, decimal: u8) {
-     │                ---- Given: '()'
-     │
-     ┌─ ./sources/coin.move:1204:39
-     │
-1204 │     public fun value<CoinType>(coin: &Coin<CoinType>): u64 {
-     │                                       -------------- Expected: '(starcoin_framework=0x1)::coin::Coin<(alice=0xA7DCEF9AEF26202FCE82A7C7D6672AFB)::fake_money::FakeMoney>'
-
-error[E04004]: expected a single non-reference type
-   ┌─ /var/folders/mc/m_3x4kk518jd_5x6plf003100000gn/T/.tmp71uxsv:73:40
-   │
-73 │         assert!(coin::value<FakeMoney>(&coin) == 10000, 8002);
-   │                                        ^^^^^ Invalid borrow
-   │
-   ┌─ /var/folders/mc/m_3x4kk518jd_5x6plf003100000gn/T/.tmpDMdwNz:18:16
-   │
-18 │     public fun init(account: &signer, decimal: u8) {
-   │                ---- Expected a single non-reference type, but found: '()'
-
-error[E04007]: incompatible types
-     ┌─ /var/folders/mc/m_3x4kk518jd_5x6plf003100000gn/T/.tmp71uxsv:74:21
-     │
-  74 │         let coin1 = coin::extract<FakeMoney>(coin, 5000);
-     │                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Invalid call of '(starcoin_framework=0x1)::coin::extract'. Invalid argument for parameter 'coin'
-     │
-     ┌─ /var/folders/mc/m_3x4kk518jd_5x6plf003100000gn/T/.tmpDMdwNz:18:16
-     │
-  18 │     public fun init(account: &signer, decimal: u8) {
-     │                ---- Given: '()'
-     │
-     ┌─ ./sources/coin.move:1005:40
-     │
-1005 │     public fun extract<CoinType>(coin: &mut Coin<CoinType>, amount: u64): Coin<CoinType> {
-     │                                        ------------------- Expected: '&mut (starcoin_framework=0x1)::coin::Coin<(alice=0xA7DCEF9AEF26202FCE82A7C7D6672AFB)::fake_money::FakeMoney>'
-
-error[E04007]: incompatible types
-     ┌─ /var/folders/mc/m_3x4kk518jd_5x6plf003100000gn/T/.tmp71uxsv:75:21
-     │
-  75 │         let coin2 = coin::extract<FakeMoney>(coin, 5000);
-     │                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Invalid call of '(starcoin_framework=0x1)::coin::extract'. Invalid argument for parameter 'coin'
-     │
-     ┌─ /var/folders/mc/m_3x4kk518jd_5x6plf003100000gn/T/.tmpDMdwNz:18:16
-     │
-  18 │     public fun init(account: &signer, decimal: u8) {
-     │                ---- Given: '()'
-     │
-     ┌─ ./sources/coin.move:1005:40
-     │
-1005 │     public fun extract<CoinType>(coin: &mut Coin<CoinType>, amount: u64): Coin<CoinType> {
-     │                                        ------------------- Expected: '&mut (starcoin_framework=0x1)::coin::Coin<(alice=0xA7DCEF9AEF26202FCE82A7C7D6672AFB)::fake_money::FakeMoney>'
-
-
+task 5 'run'. lines 73-92:
+{
+  "gas_used": 377361,
+  "status": "Executed"
+}
