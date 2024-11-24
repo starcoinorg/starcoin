@@ -221,9 +221,10 @@ module starcoin_framework::account {
 
     fun create_account_unchecked(new_address: address): signer {
         let new_account = create_signer(new_address);
-        let authentication_key = bcs::to_bytes(&new_address);
+        // fixme: create authentication key from address.
+        let authentication_key = ZERO_AUTH_KEY;
         assert!(
-            vector::length(&authentication_key) == 16,
+            vector::length(&authentication_key) == 32,
             error::invalid_argument(EMALFORMED_AUTHENTICATION_KEY)
         );
 
