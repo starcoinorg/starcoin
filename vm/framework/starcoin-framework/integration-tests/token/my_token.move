@@ -4,35 +4,65 @@
 
 //# faucet --addr bob
 
-
 //# publish
-module alice::MyToken {
-    use starcoin_framework::Token;
-    use starcoin_framework::signer;
+module alice::fake_money {
+    use std::signer;
+    use std::string;
 
-    struct MyToken has copy, drop, store {}
+    use starcoin_framework::coin;
 
-    public fun init(account: &signer) {
-        assert!(signer::address_of(account) == @alice, 8000);
+    struct FakeMoney {}
 
-        Token::register_token<MyToken>(
+    struct FakeMoneyCapabilities has key {
+        burn_cap: coin::BurnCapability<FakeMoney>,
+        freeze_cap: coin::FreezeCapability<FakeMoney>,
+        mint_cap: coin::MintCapability<FakeMoney>,
+    }
+
+    public fun init(account: &signer, decimal: u8) {
+        let (
+            burn_cap,
+            freeze_cap,
+            mint_cap
+        ) = coin::initialize<FakeMoney>(
             account,
-            3,
+            string::utf8(b"FakeMoney"),
+            string::utf8(b"FakeMoney"),
+            decimal,
+            true,
         );
+        coin::register<FakeMoney>(account);
+        move_to(account, FakeMoneyCapabilities {
+            burn_cap,
+            freeze_cap,
+            mint_cap,
+        })
+    }
+
+    public fun mint(account: &signer, amount: u64): coin::Coin<FakeMoney> acquires FakeMoneyCapabilities {
+        let cap = borrow_global<FakeMoneyCapabilities>(signer::address_of(account));
+        coin::mint(amount, &cap.mint_cap)
+    }
+
+    public fun burn(coin: coin::Coin<FakeMoney>) acquires FakeMoneyCapabilities {
+        let cap = borrow_global<FakeMoneyCapabilities>(@alice);
+        coin::burn(coin, &cap.burn_cap)
     }
 }
-
 // check: EXECUTED
 
 //# publish
 module bob::HideToken {
-    use alice::MyToken::MyToken;
-    use starcoin_framework::Token::Token;
+    use alice::fake_money::FakeMoney;
 
-    struct Collection has key, store { t: Token<MyToken>, }
+    use starcoin_framework::coin;
 
-    public fun hide(account: &signer, token: Token<MyToken>) {
-        let b = Collection { t: token };
+    struct Collection has key, store {
+        t: coin::Coin<FakeMoney>,
+    }
+
+    public fun hide(account: &signer, coin: coin::Coin<FakeMoney>) {
+        let b = Collection { t: coin };
         move_to<Collection>(account, b);
     }
 }
@@ -40,71 +70,69 @@ module bob::HideToken {
 
 //# run --signers alice
 script {
-    use alice::MyToken::{MyToken, Self};
-    use starcoin_framework::account;
-    use starcoin_framework::Token;
+    use std::option;
+    use alice::fake_money::{Self, FakeMoney};
+    use starcoin_framework::coin;
 
     fun main(account: signer) {
-        MyToken::init(&account);
+        fake_money::init(&account, 9);
 
-        let market_cap = Token::market_cap<MyToken>();
+        let market_cap = option::destroy_some(coin::supply<FakeMoney>());
         assert!(market_cap == 0, 8001);
-        assert!(Token::is_registered_in<MyToken>(@alice), 8002);
+        assert!(coin::is_account_registered<FakeMoney>(@alice), 8002);
         // Create 'Balance<TokenType>' resource under sender account, and init with zero
-        account::do_accept_token<MyToken>(&account);
+        coin::register<FakeMoney>(&account);
     }
 }
-
 // check: EXECUTED
-
 
 //# run --signers alice
 script {
-    use starcoin_framework::account;
-    use starcoin_framework::Token;
-    use alice::MyToken::{MyToken};
+    use std::option;
+    use std::signer;
+    use starcoin_framework::coin;
+    use alice::fake_money::{FakeMoney, Self};
 
     fun main(account: signer) {
         // mint 100 coins and check that the market cap increases appropriately
-        let old_market_cap = Token::market_cap<MyToken>();
-        let coin = Token::mint<MyToken>(&account, 10000);
-        assert!(Token::value<MyToken>(&coin) == 10000, 8002);
-        assert!(Token::market_cap<MyToken>() == old_market_cap + 10000, 8003);
-        coin::deposit<MyToken>(&account, coin);
+        let old_market_cap = option::destroy_some(coin::supply<FakeMoney>());
+        let coin = fake_money::mint(&account, 10000);
+        assert!(coin::value<FakeMoney>(&coin) == 10000, 8002);
+        assert!(option::destroy_some(coin::supply<FakeMoney>()) == old_market_cap + 10000, 8003);
+        coin::deposit<FakeMoney>(signer::address_of(&account), coin);
     }
 }
-
 // check: EXECUTED
 
 //# run --signers bob
 script {
-    use starcoin_framework::account;
-    use alice::MyToken::MyToken;
+    use alice::fake_money::FakeMoney;
+    use starcoin_framework::coin;
 
     fun main(account: signer) {
-        account::accept_token<MyToken>(account);
+        coin::register<FakeMoney>(&account);
     }
 }
 
 
 //# run --signers alice
 script {
-    use starcoin_framework::account;
-    use alice::MyToken::MyToken;
+    use alice::fake_money::FakeMoney;
+    use starcoin_framework::coin;
 
     fun main(account: signer) {
-        coin::transfer<MyToken>(&account, @bob, 10);
+        coin::transfer<FakeMoney>(&account, @bob, 10);
     }
 }
 
 //# run --signers bob
 script {
-    use starcoin_framework::account;
-    use alice::MyToken::MyToken;
+    use alice::fake_money::FakeMoney;
     use bob::HideToken;
+    use starcoin_framework::coin;
 
     fun main(account: signer) {
-        let token = coin::withdraw<MyToken>(&account, 10);
+        let token = coin::withdraw<FakeMoney>(&account, 10);
         HideToken::hide(&account, token);
     }
 }
