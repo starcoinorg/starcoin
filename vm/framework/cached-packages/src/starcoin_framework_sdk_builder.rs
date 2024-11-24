@@ -215,6 +215,47 @@ pub enum EntryFunctionCall {
         exec_delay: u64,
     },
 
+    DaoVoteScriptsCastVote {
+        token: TypeTag,
+        action_t: TypeTag,
+        proposer_address: AccountAddress,
+        proposal_id: u64,
+        agree: bool,
+        votes: u128,
+    },
+
+    /// Let user change their vote during the voting time.
+    DaoVoteScriptsFlipVote {
+        token_t: TypeTag,
+        action_t: TypeTag,
+        proposer_address: AccountAddress,
+        proposal_id: u64,
+    },
+
+    /// revoke all votes on a proposal
+    DaoVoteScriptsRevokeVote {
+        token: TypeTag,
+        action: TypeTag,
+        proposer_address: AccountAddress,
+        proposal_id: u64,
+    },
+
+    /// revoke some votes on a proposal
+    DaoVoteScriptsRevokeVoteOfPower {
+        token: TypeTag,
+        action: TypeTag,
+        proposer_address: AccountAddress,
+        proposal_id: u64,
+        power: u128,
+    },
+
+    DaoVoteScriptsUnstakeVote {
+        token: TypeTag,
+        action: TypeTag,
+        proposer_address: AccountAddress,
+        proposal_id: u64,
+    },
+
     /// Add `amount` of coins to the delegation pool `pool_address`.
     DelegationPoolAddStake {
         pool_address: AccountAddress,
@@ -1276,6 +1317,52 @@ impl EntryFunctionCall {
                 min_action_delay,
                 exec_delay,
             ),
+            DaoVoteScriptsCastVote {
+                token,
+                action_t,
+                proposer_address,
+                proposal_id,
+                agree,
+                votes,
+            } => dao_vote_scripts_cast_vote(
+                token,
+                action_t,
+                proposer_address,
+                proposal_id,
+                agree,
+                votes,
+            ),
+            DaoVoteScriptsFlipVote {
+                token_t,
+                action_t,
+                proposer_address,
+                proposal_id,
+            } => dao_vote_scripts_flip_vote(token_t, action_t, proposer_address, proposal_id),
+            DaoVoteScriptsRevokeVote {
+                token,
+                action,
+                proposer_address,
+                proposal_id,
+            } => dao_vote_scripts_revoke_vote(token, action, proposer_address, proposal_id),
+            DaoVoteScriptsRevokeVoteOfPower {
+                token,
+                action,
+                proposer_address,
+                proposal_id,
+                power,
+            } => dao_vote_scripts_revoke_vote_of_power(
+                token,
+                action,
+                proposer_address,
+                proposal_id,
+                power,
+            ),
+            DaoVoteScriptsUnstakeVote {
+                token,
+                action,
+                proposer_address,
+                proposal_id,
+            } => dao_vote_scripts_unstake_vote(token, action, proposer_address, proposal_id),
             DelegationPoolAddStake {
                 pool_address,
                 amount,
@@ -2333,6 +2420,115 @@ pub fn dao_modify_config_proposal_propose(
             bcs::to_bytes(&voting_quorum_rate).unwrap(),
             bcs::to_bytes(&min_action_delay).unwrap(),
             bcs::to_bytes(&exec_delay).unwrap(),
+        ],
+    ))
+}
+
+pub fn dao_vote_scripts_cast_vote(
+    token: TypeTag,
+    action_t: TypeTag,
+    proposer_address: AccountAddress,
+    proposal_id: u64,
+    agree: bool,
+    votes: u128,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("dao_vote_scripts").to_owned(),
+        ),
+        ident_str!("cast_vote").to_owned(),
+        vec![token, action_t],
+        vec![
+            bcs::to_bytes(&proposer_address).unwrap(),
+            bcs::to_bytes(&proposal_id).unwrap(),
+            bcs::to_bytes(&agree).unwrap(),
+            bcs::to_bytes(&votes).unwrap(),
+        ],
+    ))
+}
+
+/// Let user change their vote during the voting time.
+pub fn dao_vote_scripts_flip_vote(
+    token_t: TypeTag,
+    action_t: TypeTag,
+    proposer_address: AccountAddress,
+    proposal_id: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("dao_vote_scripts").to_owned(),
+        ),
+        ident_str!("flip_vote").to_owned(),
+        vec![token_t, action_t],
+        vec![
+            bcs::to_bytes(&proposer_address).unwrap(),
+            bcs::to_bytes(&proposal_id).unwrap(),
+        ],
+    ))
+}
+
+/// revoke all votes on a proposal
+pub fn dao_vote_scripts_revoke_vote(
+    token: TypeTag,
+    action: TypeTag,
+    proposer_address: AccountAddress,
+    proposal_id: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("dao_vote_scripts").to_owned(),
+        ),
+        ident_str!("revoke_vote").to_owned(),
+        vec![token, action],
+        vec![
+            bcs::to_bytes(&proposer_address).unwrap(),
+            bcs::to_bytes(&proposal_id).unwrap(),
+        ],
+    ))
+}
+
+/// revoke some votes on a proposal
+pub fn dao_vote_scripts_revoke_vote_of_power(
+    token: TypeTag,
+    action: TypeTag,
+    proposer_address: AccountAddress,
+    proposal_id: u64,
+    power: u128,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("dao_vote_scripts").to_owned(),
+        ),
+        ident_str!("revoke_vote_of_power").to_owned(),
+        vec![token, action],
+        vec![
+            bcs::to_bytes(&proposer_address).unwrap(),
+            bcs::to_bytes(&proposal_id).unwrap(),
+            bcs::to_bytes(&power).unwrap(),
+        ],
+    ))
+}
+
+pub fn dao_vote_scripts_unstake_vote(
+    token: TypeTag,
+    action: TypeTag,
+    proposer_address: AccountAddress,
+    proposal_id: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("dao_vote_scripts").to_owned(),
+        ),
+        ident_str!("unstake_vote").to_owned(),
+        vec![token, action],
+        vec![
+            bcs::to_bytes(&proposer_address).unwrap(),
+            bcs::to_bytes(&proposal_id).unwrap(),
         ],
     ))
 }
@@ -5106,6 +5302,78 @@ mod decoder {
         }
     }
 
+    pub fn dao_vote_scripts_cast_vote(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::DaoVoteScriptsCastVote {
+                token: script.ty_args().get(0)?.clone(),
+                action_t: script.ty_args().get(1)?.clone(),
+                proposer_address: bcs::from_bytes(script.args().get(0)?).ok()?,
+                proposal_id: bcs::from_bytes(script.args().get(1)?).ok()?,
+                agree: bcs::from_bytes(script.args().get(2)?).ok()?,
+                votes: bcs::from_bytes(script.args().get(3)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn dao_vote_scripts_flip_vote(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::DaoVoteScriptsFlipVote {
+                token_t: script.ty_args().get(0)?.clone(),
+                action_t: script.ty_args().get(1)?.clone(),
+                proposer_address: bcs::from_bytes(script.args().get(0)?).ok()?,
+                proposal_id: bcs::from_bytes(script.args().get(1)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn dao_vote_scripts_revoke_vote(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::DaoVoteScriptsRevokeVote {
+                token: script.ty_args().get(0)?.clone(),
+                action: script.ty_args().get(1)?.clone(),
+                proposer_address: bcs::from_bytes(script.args().get(0)?).ok()?,
+                proposal_id: bcs::from_bytes(script.args().get(1)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn dao_vote_scripts_revoke_vote_of_power(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::DaoVoteScriptsRevokeVoteOfPower {
+                token: script.ty_args().get(0)?.clone(),
+                action: script.ty_args().get(1)?.clone(),
+                proposer_address: bcs::from_bytes(script.args().get(0)?).ok()?,
+                proposal_id: bcs::from_bytes(script.args().get(1)?).ok()?,
+                power: bcs::from_bytes(script.args().get(2)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn dao_vote_scripts_unstake_vote(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::DaoVoteScriptsUnstakeVote {
+                token: script.ty_args().get(0)?.clone(),
+                action: script.ty_args().get(1)?.clone(),
+                proposer_address: bcs::from_bytes(script.args().get(0)?).ok()?,
+                proposal_id: bcs::from_bytes(script.args().get(1)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
     pub fn delegation_pool_add_stake(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
         if let TransactionPayload::EntryFunction(script) = payload {
             Some(EntryFunctionCall::DelegationPoolAddStake {
@@ -6942,6 +7210,26 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
         map.insert(
             "dao_modify_config_proposal_propose".to_string(),
             Box::new(decoder::dao_modify_config_proposal_propose),
+        );
+        map.insert(
+            "dao_vote_scripts_cast_vote".to_string(),
+            Box::new(decoder::dao_vote_scripts_cast_vote),
+        );
+        map.insert(
+            "dao_vote_scripts_flip_vote".to_string(),
+            Box::new(decoder::dao_vote_scripts_flip_vote),
+        );
+        map.insert(
+            "dao_vote_scripts_revoke_vote".to_string(),
+            Box::new(decoder::dao_vote_scripts_revoke_vote),
+        );
+        map.insert(
+            "dao_vote_scripts_revoke_vote_of_power".to_string(),
+            Box::new(decoder::dao_vote_scripts_revoke_vote_of_power),
+        );
+        map.insert(
+            "dao_vote_scripts_unstake_vote".to_string(),
+            Box::new(decoder::dao_vote_scripts_unstake_vote),
         );
         map.insert(
             "delegation_pool_add_stake".to_string(),
