@@ -108,12 +108,16 @@ module starcoin_framework::coin {
     /// APT pairing is not eanbled yet.
     const EAPT_PAIRING_IS_NOT_ENABLED: u64 = 28;
 
+    /// The coin decimal too long
+    const ECOIN_COIN_DECIMAL_TOO_LARGE: u64 = 29;
+
     //
     // Constants
     //
 
     const MAX_COIN_NAME_LENGTH: u64 = 32;
     const MAX_COIN_SYMBOL_LENGTH: u64 = 10;
+    const MAX_COIN_DECIMAL: u8 = 38;
 
     /// Core data structures
 
@@ -1126,6 +1130,7 @@ module starcoin_framework::coin {
 
         assert!(string::length(&name) <= MAX_COIN_NAME_LENGTH, error::invalid_argument(ECOIN_NAME_TOO_LONG));
         assert!(string::length(&symbol) <= MAX_COIN_SYMBOL_LENGTH, error::invalid_argument(ECOIN_SYMBOL_TOO_LONG));
+        assert!(decimals < MAX_COIN_DECIMAL, error::invalid_argument(ECOIN_COIN_DECIMAL_TOO_LARGE));
 
         let coin_info = CoinInfo<CoinType> {
             name,

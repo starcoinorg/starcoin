@@ -26,5 +26,4 @@ script {
         assert!(coin::balance<starcoin_framework::starcoin_coin::STC>(@bob) == 1000000, 42);
     }
 }
-
 // check: EXECUTED
