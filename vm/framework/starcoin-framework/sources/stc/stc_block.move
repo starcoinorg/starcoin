@@ -102,15 +102,13 @@ module starcoin_framework::stc_block {
     }
 
     /// Get the hash of the parents block, used for DAG
-    public fun get_parents_hash(): vector<u8> {
-        // *&borrow_global<BlockMetadata>(system_addresses::get_starcoin_framework()).parent_hash
-        vector::empty()
+    public fun get_parents_hash(): vector<u8> acquires BlockMetadata {
+        *&borrow_global<BlockMetadata>(system_addresses::get_starcoin_framework()).parents_hash
     }
 
     /// Gets the address of the author of the current block
-    public fun get_current_author(): address {
-        // borrow_global<BlockMetadata>(system_addresses::get_starcoin_framework()).author
-        @0x1
+    public fun get_current_author(): address acquires BlockMetadata {
+        borrow_global<BlockMetadata>(system_addresses::get_starcoin_framework()).author
     }
 
     /// Set the metadata for the current block and distribute transaction fees and block rewards.
