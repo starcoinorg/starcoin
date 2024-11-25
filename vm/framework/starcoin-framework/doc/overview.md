@@ -55,6 +55,7 @@ This is the reference documentation of the Starcoin framework.
 -  [`0x1::object_code_deployment`](object_code_deployment.md#0x1_object_code_deployment)
 -  [`0x1::on_chain_config`](on_chain_config.md#0x1_on_chain_config)
 -  [`0x1::on_chain_config_dao`](on_chain_config_dao.md#0x1_on_chain_config_dao)
+-  [`0x1::on_chain_config_scripts`](on_chain_config_scripts.md#0x1_on_chain_config_scripts)
 -  [`0x1::optional_aggregator`](optional_aggregator.md#0x1_optional_aggregator)
 -  [`0x1::oracle`](oracle.md#0x1_oracle)
 -  [`0x1::oracle_aggregator`](oracle_aggregator.md#0x1_oracle_aggregator)

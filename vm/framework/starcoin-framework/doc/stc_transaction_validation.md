@@ -79,20 +79,20 @@
 
 
 
-<a id="0x1_stc_transaction_validation_EPROLOGUE_BAD_CHAIN_ID"></a>
-
-
-
-<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_BAD_CHAIN_ID">EPROLOGUE_BAD_CHAIN_ID</a>: u64 = 6;
-</code></pre>
-
-
-
 <a id="0x1_stc_transaction_validation_EPROLOGUE_ACCOUNT_DOES_NOT_EXIST"></a>
 
 
 
 <pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_ACCOUNT_DOES_NOT_EXIST">EPROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>: u64 = 0;
+</code></pre>
+
+
+
+<a id="0x1_stc_transaction_validation_EPROLOGUE_BAD_CHAIN_ID"></a>
+
+
+
+<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_BAD_CHAIN_ID">EPROLOGUE_BAD_CHAIN_ID</a>: u64 = 6;
 </code></pre>
 
 
