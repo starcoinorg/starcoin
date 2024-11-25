@@ -249,7 +249,7 @@ async fn main() -> Result<()> {
         let script_function = EntryFunction::new(
             ModuleId::new(
                 genesis_address(),
-                Identifier::new("TransferScripts").unwrap(),
+                Identifier::new("transfer_scripts").unwrap(),
             ),
             Identifier::new("batch_peer_to_peer_v2").unwrap(),
             vec![token_type.clone().into()],

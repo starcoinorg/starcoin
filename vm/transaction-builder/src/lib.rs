@@ -204,7 +204,7 @@ pub fn raw_accept_token_txn(
     chain_id: ChainId,
 ) -> RawUserTransaction {
     let payload = TransactionPayload::EntryFunction(EntryFunction::new(
-        ModuleId::new(core_code_address(), Identifier::new("Account").unwrap()),
+        ModuleId::new(core_code_address(), Identifier::new("account").unwrap()),
         Identifier::new("accept_token").unwrap(),
         vec![TypeTag::Struct(Box::new(token_code.try_into().unwrap()))],
         vec![],
@@ -229,7 +229,7 @@ pub fn encode_create_account_script_function(
     initial_balance: u128,
 ) -> EntryFunction {
     EntryFunction::new(
-        ModuleId::new(core_code_address(), Identifier::new("Account").unwrap()),
+        ModuleId::new(core_code_address(), Identifier::new("account").unwrap()),
         Identifier::new("create_account_with_initial_amount").unwrap(),
         vec![token_type],
         vec![

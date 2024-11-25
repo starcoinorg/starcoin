@@ -44,7 +44,7 @@ impl CommandAction for AcceptTokenCommand {
         ctx.state().build_and_execute_transaction(
             opt.transaction_opts.clone(),
             TransactionPayload::EntryFunction(EntryFunction::new(
-                ModuleId::new(core_code_address(), Identifier::new("Account").unwrap()),
+                ModuleId::new(core_code_address(), Identifier::new("account").unwrap()),
                 Identifier::new("accept_token").unwrap(),
                 vec![TypeTag::Struct(Box::new(
                     opt.token_code.clone().try_into().unwrap(),

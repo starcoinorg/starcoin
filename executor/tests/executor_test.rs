@@ -582,7 +582,7 @@ fn test_validate_txn_args() -> Result<()> {
         let action = EntryFunction::new(
             ModuleId::new(
                 core_code_address(),
-                Identifier::new("TransferScript").unwrap(),
+                Identifier::new("transfer_scripts").unwrap(),
             ),
             Identifier::new("peer_to_peer").unwrap(),
             vec![stc_type_tag()],
@@ -603,7 +603,7 @@ fn test_validate_txn_args() -> Result<()> {
         let action = EntryFunction::new(
             ModuleId::new(
                 core_code_address(),
-                Identifier::new("TransferScripts").unwrap(),
+                Identifier::new("transfer_scripts").unwrap(),
             ),
             Identifier::new("peer_to_peer_v2").unwrap(),
             vec![stc_type_tag()],

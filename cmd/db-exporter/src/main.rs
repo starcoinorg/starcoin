@@ -1086,7 +1086,7 @@ pub fn create_account_txn_sent_as_association(
         TransactionPayload::EntryFunction(EntryFunction::new(
             ModuleId::new(
                 starcoin_vm_types::account_config::core_code_address(),
-                Identifier::new("Account").unwrap(),
+                Identifier::new("account").unwrap(),
             ),
             Identifier::new("create_account_with_initial_amount").unwrap(),
             vec![stc_type_tag()],
