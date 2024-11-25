@@ -6,7 +6,6 @@
 script {
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::treasury;
-    //use starcoin_framework::Debug;
 
     fun mint(account: signer) {
         let cap = treasury::remove_linear_withdraw_capability<STC>(&account);

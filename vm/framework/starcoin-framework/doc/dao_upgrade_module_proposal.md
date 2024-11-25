@@ -19,10 +19,12 @@ dao_upgrade_module_proposal is a proposal moudle used to upgrade contract codes 
 
 
 <pre><code><b>use</b> <a href="dao.md#0x1_dao">0x1::dao</a>;
+<b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
 <b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
 <b>use</b> <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation">0x1::stc_transaction_package_validation</a>;
 <b>use</b> <a href="stc_util.md#0x1_stc_util">0x1::stc_util</a>;
+<b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 </code></pre>
 
 
@@ -185,14 +187,23 @@ If this goverment can upgrade module, call this to register capability.
     exec_delay: u64,
     enforced: bool,
 ) <b>acquires</b> <a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_UpgradeModuleCapability">UpgradeModuleCapability</a> {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_propose_module_upgrade_v2">dao_upgrade_module_proposal::propose_module_upgrade_v2</a> | entered"));
     <b>let</b> cap = <b>borrow_global</b>&lt;<a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_UpgradeModuleCapability">UpgradeModuleCapability</a>&lt;TokenT&gt;&gt;(<a href="stc_util.md#0x1_stc_util_token_issuer">stc_util::token_issuer</a>&lt;TokenT&gt;());
     <b>let</b> account_address = <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_account_address">stc_transaction_package_validation::account_address</a>(&cap.cap);
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_propose_module_upgrade_v2">dao_upgrade_module_proposal::propose_module_upgrade_v2</a> | cap"));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(cap);
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_propose_module_upgrade_v2">dao_upgrade_module_proposal::propose_module_upgrade_v2</a> | account_address"));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&account_address);
+
     <b>assert</b>!(account_address == module_address, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_ERR_ADDRESS_MISSMATCH">ERR_ADDRESS_MISSMATCH</a>));
     <a href="dao.md#0x1_dao_propose">dao::propose</a>&lt;TokenT, <a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_UpgradeModuleV2">UpgradeModuleV2</a>&gt;(
         <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
         <a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_UpgradeModuleV2">UpgradeModuleV2</a> { module_address, package_hash, <a href="version.md#0x1_version">version</a>, enforced },
         exec_delay,
     );
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_propose_module_upgrade_v2">dao_upgrade_module_proposal::propose_module_upgrade_v2</a> | exited"));
 }
 </code></pre>
 

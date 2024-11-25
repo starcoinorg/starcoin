@@ -165,6 +165,8 @@ Updates the wall clock time by consensus. Requires VM privilege and will be invo
     //     <b>assert</b>!(now == <a href="timestamp.md#0x1_timestamp">timestamp</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="timestamp.md#0x1_timestamp_EINVALID_TIMESTAMP">EINVALID_TIMESTAMP</a>));
     // } <b>else</b> {
     // Normal <a href="block.md#0x1_block">block</a>. Time must advance
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="timestamp.md#0x1_timestamp_update_global_time">timestamp::update_global_time</a> | Current <b>global</b> time: "));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&global_timer.microseconds);
     <b>assert</b>!(global_timer.microseconds &lt; <a href="timestamp.md#0x1_timestamp">timestamp</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="timestamp.md#0x1_timestamp_EINVALID_TIMESTAMP">EINVALID_TIMESTAMP</a>));
     global_timer.microseconds = <a href="timestamp.md#0x1_timestamp">timestamp</a>;
     //};
