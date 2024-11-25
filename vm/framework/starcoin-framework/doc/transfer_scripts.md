@@ -59,7 +59,7 @@
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="transfer_scripts.md#0x1_transfer_scripts_peer_to_peer">peer_to_peer</a>&lt;TokenType: store&gt;(<a href="account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, payee: <b>address</b>, _payee_auth_key: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, amount: u128)
+<pre><code><b>public</b> entry <b>fun</b> <a href="transfer_scripts.md#0x1_transfer_scripts_peer_to_peer">peer_to_peer</a>&lt;TokenType&gt;(<a href="account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, payee: <b>address</b>, _payee_auth_key: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, amount: u128)
 </code></pre>
 
 
@@ -68,7 +68,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="transfer_scripts.md#0x1_transfer_scripts_peer_to_peer">peer_to_peer</a>&lt;TokenType: store&gt;(
+<pre><code><b>public</b> entry <b>fun</b> <a href="transfer_scripts.md#0x1_transfer_scripts_peer_to_peer">peer_to_peer</a>&lt;TokenType&gt;(
     <a href="account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     payee: <b>address</b>,
     _payee_auth_key: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
@@ -149,7 +149,7 @@ Batch transfer token to others.
 Batch transfer token to others.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="transfer_scripts.md#0x1_transfer_scripts_batch_peer_to_peer_v2">batch_peer_to_peer_v2</a>&lt;TokenType: store&gt;(<a href="account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, payeees: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt;, amounts: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u128&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="transfer_scripts.md#0x1_transfer_scripts_batch_peer_to_peer_v2">batch_peer_to_peer_v2</a>&lt;TokenType&gt;(<a href="account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, payeees: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt;, amounts: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u128&gt;)
 </code></pre>
 
 
@@ -158,7 +158,7 @@ Batch transfer token to others.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="transfer_scripts.md#0x1_transfer_scripts_batch_peer_to_peer_v2">batch_peer_to_peer_v2</a>&lt;TokenType: store&gt;(
+<pre><code><b>public</b> entry <b>fun</b> <a href="transfer_scripts.md#0x1_transfer_scripts_batch_peer_to_peer_v2">batch_peer_to_peer_v2</a>&lt;TokenType&gt;(
     <a href="account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     payeees: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt;,
     amounts: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u128&gt;

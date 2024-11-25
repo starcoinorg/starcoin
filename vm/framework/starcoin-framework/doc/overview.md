@@ -100,6 +100,7 @@ This is the reference documentation of the Starcoin framework.
 -  [`0x1::transaction_validation`](transaction_validation.md#0x1_transaction_validation)
 -  [`0x1::transfer_scripts`](transfer_scripts.md#0x1_transfer_scripts)
 -  [`0x1::treasury`](treasury.md#0x1_treasury)
+-  [`0x1::treasury_scripts`](treasury_scripts.md#0x1_treasury_scripts)
 -  [`0x1::util`](util.md#0x1_util)
 -  [`0x1::validator_consensus_info`](validator_consensus_info.md#0x1_validator_consensus_info)
 -  [`0x1::version`](version.md#0x1_version)
