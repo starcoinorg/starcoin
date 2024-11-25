@@ -172,6 +172,7 @@ module starcoin_framework::dao {
         action_delay: u64,
     ) acquires DaoGlobalInfo {
         debug::print(&std::string::utf8(b"dao::proposal | Entered"));
+        debug::print(&signer::address_of(signer));
 
         if (action_delay == 0) {
             action_delay = min_action_delay<TokenT>();
