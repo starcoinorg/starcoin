@@ -331,9 +331,8 @@ Get the hash of the parents block, used for DAG
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_get_parents_hash">get_parents_hash</a>(): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
-    // *&<b>borrow_global</b>&lt;<a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()).parent_hash
-    <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>()
+<pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_get_parents_hash">get_parents_hash</a>(): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; <b>acquires</b> <a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a> {
+    *&<b>borrow_global</b>&lt;<a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()).parents_hash
 }
 </code></pre>
 
@@ -357,9 +356,8 @@ Gets the address of the author of the current block
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_get_current_author">get_current_author</a>(): <b>address</b> {
-    // <b>borrow_global</b>&lt;<a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()).author
-    @0x1
+<pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_get_current_author">get_current_author</a>(): <b>address</b> <b>acquires</b> <a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a> {
+    <b>borrow_global</b>&lt;<a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()).author
 }
 </code></pre>
 

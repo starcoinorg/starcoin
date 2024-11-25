@@ -646,6 +646,62 @@ pub enum EntryFunctionCall {
         code: Vec<Vec<u8>>,
     },
 
+    OnChainConfigScriptsExecuteOnChainConfigProposal {
+        config_t: TypeTag,
+        proposal_id: u64,
+    },
+
+    OnChainConfigScriptsExecuteOnChainConfigProposalV2 {
+        token_type: TypeTag,
+        config_t: TypeTag,
+        proposer_address: AccountAddress,
+        proposal_id: u64,
+    },
+
+    OnChainConfigScriptsProposeUpdateConsensusConfig {
+        uncle_rate_target: u64,
+        base_block_time_target: u64,
+        base_reward_per_block: u128,
+        base_reward_per_uncle_percent: u64,
+        epoch_block_count: u64,
+        base_block_difficulty_window: u64,
+        min_block_time_target: u64,
+        max_block_time_target: u64,
+        base_max_uncles_per_block: u64,
+        base_block_gas_limit: u64,
+        strategy: u8,
+        exec_delay: u64,
+    },
+
+    OnChainConfigScriptsProposeUpdateMoveLanguageVersion {
+        new_version: u64,
+        exec_delay: u64,
+    },
+
+    OnChainConfigScriptsProposeUpdateRewardConfig {
+        reward_delay: u64,
+        exec_delay: u64,
+    },
+
+    /// Propose to update the transaction publish option.
+    OnChainConfigScriptsProposeUpdateTxnPublishOption {
+        script_allowed: bool,
+        module_publishing_allowed: bool,
+        exec_delay: u64,
+    },
+
+    /// Propose to update the transaction timeout configuration.
+    OnChainConfigScriptsProposeUpdateTxnTimeoutConfig {
+        duration_seconds: u64,
+        exec_delay: u64,
+    },
+
+    /// Propose to update the VM configuration.
+    OnChainConfigScriptsProposeUpdateVmConfig {
+        new_config: Vec<u8>,
+        exec_delay: u64,
+    },
+
     OraclePriceInitDataSourceEntry {
         oracle_t: TypeTag,
         init_value: u128,
@@ -1623,6 +1679,79 @@ impl EntryFunctionCall {
                 metadata_serialized,
                 code,
             } => object_code_deployment_publish(metadata_serialized, code),
+            OnChainConfigScriptsExecuteOnChainConfigProposal {
+                config_t,
+                proposal_id,
+            } => on_chain_config_scripts_execute_on_chain_config_proposal(config_t, proposal_id),
+            OnChainConfigScriptsExecuteOnChainConfigProposalV2 {
+                token_type,
+                config_t,
+                proposer_address,
+                proposal_id,
+            } => on_chain_config_scripts_execute_on_chain_config_proposal_v2(
+                token_type,
+                config_t,
+                proposer_address,
+                proposal_id,
+            ),
+            OnChainConfigScriptsProposeUpdateConsensusConfig {
+                uncle_rate_target,
+                base_block_time_target,
+                base_reward_per_block,
+                base_reward_per_uncle_percent,
+                epoch_block_count,
+                base_block_difficulty_window,
+                min_block_time_target,
+                max_block_time_target,
+                base_max_uncles_per_block,
+                base_block_gas_limit,
+                strategy,
+                exec_delay,
+            } => on_chain_config_scripts_propose_update_consensus_config(
+                uncle_rate_target,
+                base_block_time_target,
+                base_reward_per_block,
+                base_reward_per_uncle_percent,
+                epoch_block_count,
+                base_block_difficulty_window,
+                min_block_time_target,
+                max_block_time_target,
+                base_max_uncles_per_block,
+                base_block_gas_limit,
+                strategy,
+                exec_delay,
+            ),
+            OnChainConfigScriptsProposeUpdateMoveLanguageVersion {
+                new_version,
+                exec_delay,
+            } => on_chain_config_scripts_propose_update_move_language_version(
+                new_version,
+                exec_delay,
+            ),
+            OnChainConfigScriptsProposeUpdateRewardConfig {
+                reward_delay,
+                exec_delay,
+            } => on_chain_config_scripts_propose_update_reward_config(reward_delay, exec_delay),
+            OnChainConfigScriptsProposeUpdateTxnPublishOption {
+                script_allowed,
+                module_publishing_allowed,
+                exec_delay,
+            } => on_chain_config_scripts_propose_update_txn_publish_option(
+                script_allowed,
+                module_publishing_allowed,
+                exec_delay,
+            ),
+            OnChainConfigScriptsProposeUpdateTxnTimeoutConfig {
+                duration_seconds,
+                exec_delay,
+            } => on_chain_config_scripts_propose_update_txn_timeout_config(
+                duration_seconds,
+                exec_delay,
+            ),
+            OnChainConfigScriptsProposeUpdateVmConfig {
+                new_config,
+                exec_delay,
+            } => on_chain_config_scripts_propose_update_vm_config(new_config, exec_delay),
             OraclePriceInitDataSourceEntry {
                 oracle_t,
                 init_value,
@@ -3528,6 +3657,174 @@ pub fn object_code_deployment_publish(
         vec![
             bcs::to_bytes(&metadata_serialized).unwrap(),
             bcs::to_bytes(&code).unwrap(),
+        ],
+    ))
+}
+
+pub fn on_chain_config_scripts_execute_on_chain_config_proposal(
+    config_t: TypeTag,
+    proposal_id: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("on_chain_config_scripts").to_owned(),
+        ),
+        ident_str!("execute_on_chain_config_proposal").to_owned(),
+        vec![config_t],
+        vec![bcs::to_bytes(&proposal_id).unwrap()],
+    ))
+}
+
+pub fn on_chain_config_scripts_execute_on_chain_config_proposal_v2(
+    token_type: TypeTag,
+    config_t: TypeTag,
+    proposer_address: AccountAddress,
+    proposal_id: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("on_chain_config_scripts").to_owned(),
+        ),
+        ident_str!("execute_on_chain_config_proposal_v2").to_owned(),
+        vec![token_type, config_t],
+        vec![
+            bcs::to_bytes(&proposer_address).unwrap(),
+            bcs::to_bytes(&proposal_id).unwrap(),
+        ],
+    ))
+}
+
+pub fn on_chain_config_scripts_propose_update_consensus_config(
+    uncle_rate_target: u64,
+    base_block_time_target: u64,
+    base_reward_per_block: u128,
+    base_reward_per_uncle_percent: u64,
+    epoch_block_count: u64,
+    base_block_difficulty_window: u64,
+    min_block_time_target: u64,
+    max_block_time_target: u64,
+    base_max_uncles_per_block: u64,
+    base_block_gas_limit: u64,
+    strategy: u8,
+    exec_delay: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("on_chain_config_scripts").to_owned(),
+        ),
+        ident_str!("propose_update_consensus_config").to_owned(),
+        vec![],
+        vec![
+            bcs::to_bytes(&uncle_rate_target).unwrap(),
+            bcs::to_bytes(&base_block_time_target).unwrap(),
+            bcs::to_bytes(&base_reward_per_block).unwrap(),
+            bcs::to_bytes(&base_reward_per_uncle_percent).unwrap(),
+            bcs::to_bytes(&epoch_block_count).unwrap(),
+            bcs::to_bytes(&base_block_difficulty_window).unwrap(),
+            bcs::to_bytes(&min_block_time_target).unwrap(),
+            bcs::to_bytes(&max_block_time_target).unwrap(),
+            bcs::to_bytes(&base_max_uncles_per_block).unwrap(),
+            bcs::to_bytes(&base_block_gas_limit).unwrap(),
+            bcs::to_bytes(&strategy).unwrap(),
+            bcs::to_bytes(&exec_delay).unwrap(),
+        ],
+    ))
+}
+
+pub fn on_chain_config_scripts_propose_update_move_language_version(
+    new_version: u64,
+    exec_delay: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("on_chain_config_scripts").to_owned(),
+        ),
+        ident_str!("propose_update_move_language_version").to_owned(),
+        vec![],
+        vec![
+            bcs::to_bytes(&new_version).unwrap(),
+            bcs::to_bytes(&exec_delay).unwrap(),
+        ],
+    ))
+}
+
+pub fn on_chain_config_scripts_propose_update_reward_config(
+    reward_delay: u64,
+    exec_delay: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("on_chain_config_scripts").to_owned(),
+        ),
+        ident_str!("propose_update_reward_config").to_owned(),
+        vec![],
+        vec![
+            bcs::to_bytes(&reward_delay).unwrap(),
+            bcs::to_bytes(&exec_delay).unwrap(),
+        ],
+    ))
+}
+
+/// Propose to update the transaction publish option.
+pub fn on_chain_config_scripts_propose_update_txn_publish_option(
+    script_allowed: bool,
+    module_publishing_allowed: bool,
+    exec_delay: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("on_chain_config_scripts").to_owned(),
+        ),
+        ident_str!("propose_update_txn_publish_option").to_owned(),
+        vec![],
+        vec![
+            bcs::to_bytes(&script_allowed).unwrap(),
+            bcs::to_bytes(&module_publishing_allowed).unwrap(),
+            bcs::to_bytes(&exec_delay).unwrap(),
+        ],
+    ))
+}
+
+/// Propose to update the transaction timeout configuration.
+pub fn on_chain_config_scripts_propose_update_txn_timeout_config(
+    duration_seconds: u64,
+    exec_delay: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("on_chain_config_scripts").to_owned(),
+        ),
+        ident_str!("propose_update_txn_timeout_config").to_owned(),
+        vec![],
+        vec![
+            bcs::to_bytes(&duration_seconds).unwrap(),
+            bcs::to_bytes(&exec_delay).unwrap(),
+        ],
+    ))
+}
+
+/// Propose to update the VM configuration.
+pub fn on_chain_config_scripts_propose_update_vm_config(
+    new_config: Vec<u8>,
+    exec_delay: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("on_chain_config_scripts").to_owned(),
+        ),
+        ident_str!("propose_update_vm_config").to_owned(),
+        vec![],
+        vec![
+            bcs::to_bytes(&new_config).unwrap(),
+            bcs::to_bytes(&exec_delay).unwrap(),
         ],
     ))
 }
@@ -6062,6 +6359,139 @@ mod decoder {
         }
     }
 
+    pub fn on_chain_config_scripts_execute_on_chain_config_proposal(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(
+                EntryFunctionCall::OnChainConfigScriptsExecuteOnChainConfigProposal {
+                    config_t: script.ty_args().get(0)?.clone(),
+                    proposal_id: bcs::from_bytes(script.args().get(0)?).ok()?,
+                },
+            )
+        } else {
+            None
+        }
+    }
+
+    pub fn on_chain_config_scripts_execute_on_chain_config_proposal_v2(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(
+                EntryFunctionCall::OnChainConfigScriptsExecuteOnChainConfigProposalV2 {
+                    token_type: script.ty_args().get(0)?.clone(),
+                    config_t: script.ty_args().get(1)?.clone(),
+                    proposer_address: bcs::from_bytes(script.args().get(0)?).ok()?,
+                    proposal_id: bcs::from_bytes(script.args().get(1)?).ok()?,
+                },
+            )
+        } else {
+            None
+        }
+    }
+
+    pub fn on_chain_config_scripts_propose_update_consensus_config(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(
+                EntryFunctionCall::OnChainConfigScriptsProposeUpdateConsensusConfig {
+                    uncle_rate_target: bcs::from_bytes(script.args().get(0)?).ok()?,
+                    base_block_time_target: bcs::from_bytes(script.args().get(1)?).ok()?,
+                    base_reward_per_block: bcs::from_bytes(script.args().get(2)?).ok()?,
+                    base_reward_per_uncle_percent: bcs::from_bytes(script.args().get(3)?).ok()?,
+                    epoch_block_count: bcs::from_bytes(script.args().get(4)?).ok()?,
+                    base_block_difficulty_window: bcs::from_bytes(script.args().get(5)?).ok()?,
+                    min_block_time_target: bcs::from_bytes(script.args().get(6)?).ok()?,
+                    max_block_time_target: bcs::from_bytes(script.args().get(7)?).ok()?,
+                    base_max_uncles_per_block: bcs::from_bytes(script.args().get(8)?).ok()?,
+                    base_block_gas_limit: bcs::from_bytes(script.args().get(9)?).ok()?,
+                    strategy: bcs::from_bytes(script.args().get(10)?).ok()?,
+                    exec_delay: bcs::from_bytes(script.args().get(11)?).ok()?,
+                },
+            )
+        } else {
+            None
+        }
+    }
+
+    pub fn on_chain_config_scripts_propose_update_move_language_version(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(
+                EntryFunctionCall::OnChainConfigScriptsProposeUpdateMoveLanguageVersion {
+                    new_version: bcs::from_bytes(script.args().get(0)?).ok()?,
+                    exec_delay: bcs::from_bytes(script.args().get(1)?).ok()?,
+                },
+            )
+        } else {
+            None
+        }
+    }
+
+    pub fn on_chain_config_scripts_propose_update_reward_config(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(
+                EntryFunctionCall::OnChainConfigScriptsProposeUpdateRewardConfig {
+                    reward_delay: bcs::from_bytes(script.args().get(0)?).ok()?,
+                    exec_delay: bcs::from_bytes(script.args().get(1)?).ok()?,
+                },
+            )
+        } else {
+            None
+        }
+    }
+
+    pub fn on_chain_config_scripts_propose_update_txn_publish_option(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(
+                EntryFunctionCall::OnChainConfigScriptsProposeUpdateTxnPublishOption {
+                    script_allowed: bcs::from_bytes(script.args().get(0)?).ok()?,
+                    module_publishing_allowed: bcs::from_bytes(script.args().get(1)?).ok()?,
+                    exec_delay: bcs::from_bytes(script.args().get(2)?).ok()?,
+                },
+            )
+        } else {
+            None
+        }
+    }
+
+    pub fn on_chain_config_scripts_propose_update_txn_timeout_config(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(
+                EntryFunctionCall::OnChainConfigScriptsProposeUpdateTxnTimeoutConfig {
+                    duration_seconds: bcs::from_bytes(script.args().get(0)?).ok()?,
+                    exec_delay: bcs::from_bytes(script.args().get(1)?).ok()?,
+                },
+            )
+        } else {
+            None
+        }
+    }
+
+    pub fn on_chain_config_scripts_propose_update_vm_config(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(
+                EntryFunctionCall::OnChainConfigScriptsProposeUpdateVmConfig {
+                    new_config: bcs::from_bytes(script.args().get(0)?).ok()?,
+                    exec_delay: bcs::from_bytes(script.args().get(1)?).ok()?,
+                },
+            )
+        } else {
+            None
+        }
+    }
+
     pub fn oracle_price_init_data_source_entry(
         payload: &TransactionPayload,
     ) -> Option<EntryFunctionCall> {
@@ -7442,6 +7872,38 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
         map.insert(
             "object_code_deployment_publish".to_string(),
             Box::new(decoder::object_code_deployment_publish),
+        );
+        map.insert(
+            "on_chain_config_scripts_execute_on_chain_config_proposal".to_string(),
+            Box::new(decoder::on_chain_config_scripts_execute_on_chain_config_proposal),
+        );
+        map.insert(
+            "on_chain_config_scripts_execute_on_chain_config_proposal_v2".to_string(),
+            Box::new(decoder::on_chain_config_scripts_execute_on_chain_config_proposal_v2),
+        );
+        map.insert(
+            "on_chain_config_scripts_propose_update_consensus_config".to_string(),
+            Box::new(decoder::on_chain_config_scripts_propose_update_consensus_config),
+        );
+        map.insert(
+            "on_chain_config_scripts_propose_update_move_language_version".to_string(),
+            Box::new(decoder::on_chain_config_scripts_propose_update_move_language_version),
+        );
+        map.insert(
+            "on_chain_config_scripts_propose_update_reward_config".to_string(),
+            Box::new(decoder::on_chain_config_scripts_propose_update_reward_config),
+        );
+        map.insert(
+            "on_chain_config_scripts_propose_update_txn_publish_option".to_string(),
+            Box::new(decoder::on_chain_config_scripts_propose_update_txn_publish_option),
+        );
+        map.insert(
+            "on_chain_config_scripts_propose_update_txn_timeout_config".to_string(),
+            Box::new(decoder::on_chain_config_scripts_propose_update_txn_timeout_config),
+        );
+        map.insert(
+            "on_chain_config_scripts_propose_update_vm_config".to_string(),
+            Box::new(decoder::on_chain_config_scripts_propose_update_vm_config),
         );
         map.insert(
             "oracle_price_init_data_source_entry".to_string(),

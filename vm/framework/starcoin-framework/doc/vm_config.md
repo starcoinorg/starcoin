@@ -8,6 +8,7 @@
 
 -  [Struct `VMConfig`](#0x1_vm_config_VMConfig)
 -  [Function `initialize`](#0x1_vm_config_initialize)
+-  [Function `new_from_blob`](#0x1_vm_config_new_from_blob)
 -  [Specification](#@Specification_0)
     -  [Function `initialize`](#@Specification_0_initialize)
 
@@ -78,6 +79,30 @@ Initialize the table under the genesis account
             <a href="gas_schedule.md#0x1_gas_schedule">gas_schedule</a>,
         },
     );
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_vm_config_new_from_blob"></a>
+
+## Function `new_from_blob`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="vm_config.md#0x1_vm_config_new_from_blob">new_from_blob</a>(gas_schedule_blob: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="vm_config.md#0x1_vm_config_VMConfig">vm_config::VMConfig</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="vm_config.md#0x1_vm_config_new_from_blob">new_from_blob</a>(gas_schedule_blob: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="vm_config.md#0x1_vm_config_VMConfig">VMConfig</a> {
+    <a href="util.md#0x1_util_from_bytes">util::from_bytes</a>&lt;<a href="vm_config.md#0x1_vm_config_VMConfig">VMConfig</a>&gt;(gas_schedule_blob)
 }
 </code></pre>
 
