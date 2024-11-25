@@ -40,18 +40,18 @@ spec starcoin_framework::timestamp {
         use starcoin_framework::chain_status;
         requires chain_status::is_operating();
         include UpdateGlobalTimeAbortsIf;
-        ensures (proposer != @vm_reserved) ==> (spec_now_microseconds() == timestamp);
+        ensures (_proposer != @vm_reserved) ==> (spec_now_microseconds() == timestamp);
     }
 
     spec schema UpdateGlobalTimeAbortsIf {
         account: signer;
-        proposer: address;
+        _proposer: address;
         timestamp: u64;
         /// [high-level-req-3]
         aborts_if !system_addresses::is_vm(account);
         /// [high-level-req-4]
-        aborts_if (proposer == @vm_reserved) && (spec_now_microseconds() != timestamp);
-        aborts_if (proposer != @vm_reserved) && (spec_now_microseconds() >= timestamp);
+        aborts_if (_proposer == @vm_reserved) && (spec_now_microseconds() != timestamp);
+        aborts_if (_proposer != @vm_reserved) && (spec_now_microseconds() >= timestamp);
     }
 
     spec fun spec_now_microseconds(): u64 {

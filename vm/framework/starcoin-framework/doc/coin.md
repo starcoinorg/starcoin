@@ -1061,6 +1061,16 @@ The BurnRefReceipt does not match the BurnRef to be returned.
 
 
 
+<a id="0x1_coin_ECOIN_COIN_DECIMAL_TOO_LARGE"></a>
+
+The coin decimal too long
+
+
+<pre><code><b>const</b> <a href="coin.md#0x1_coin_ECOIN_COIN_DECIMAL_TOO_LARGE">ECOIN_COIN_DECIMAL_TOO_LARGE</a>: u64 = 29;
+</code></pre>
+
+
+
 <a id="0x1_coin_ECOIN_CONVERSION_MAP_NOT_FOUND"></a>
 
 The coin converison map is not created yet.
@@ -1267,6 +1277,15 @@ The TransferRefReceipt does not match the TransferRef to be returned.
 
 
 <pre><code><b>const</b> <a href="coin.md#0x1_coin_ETRANSFER_REF_RECEIPT_MISMATCH">ETRANSFER_REF_RECEIPT_MISMATCH</a>: u64 = 22;
+</code></pre>
+
+
+
+<a id="0x1_coin_MAX_COIN_DECIMAL"></a>
+
+
+
+<pre><code><b>const</b> <a href="coin.md#0x1_coin_MAX_COIN_DECIMAL">MAX_COIN_DECIMAL</a>: u8 = 38;
 </code></pre>
 
 
@@ -2673,15 +2692,25 @@ Returns the amount of coin in existence.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x1_coin_supply">supply</a>&lt;CoinType&gt;(): Option&lt;u128&gt; <b>acquires</b> <a href="coin.md#0x1_coin_CoinInfo">CoinInfo</a>, <a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a> {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"dao::supply | entered"));
+
     <b>let</b> coin_supply = <a href="coin.md#0x1_coin_coin_supply">coin_supply</a>&lt;CoinType&gt;();
     <b>let</b> metadata = <a href="coin.md#0x1_coin_paired_metadata">paired_metadata</a>&lt;CoinType&gt;();
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"dao::supply | metadata"));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&metadata);
+
     <b>if</b> (<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&metadata)) {
-        <b>let</b> fungible_asset_supply = <a href="fungible_asset.md#0x1_fungible_asset_supply">fungible_asset::supply</a>(<a href="../../move-stdlib/doc/option.md#0x1_option_extract">option::extract</a>(&<b>mut</b> metadata));
-        <b>if</b> (<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&coin_supply)) {
+        <b>let</b> fungible_asset_supply =
+            <a href="fungible_asset.md#0x1_fungible_asset_supply">fungible_asset::supply</a>(<a href="../../move-stdlib/doc/option.md#0x1_option_extract">option::extract</a>(&<b>mut</b> metadata));
+        <b>if</b> (<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&coin_supply) &&
+            <a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&fungible_asset_supply)) {
             <b>let</b> <a href="coin.md#0x1_coin_supply">supply</a> = <a href="../../move-stdlib/doc/option.md#0x1_option_borrow_mut">option::borrow_mut</a>(&<b>mut</b> coin_supply);
             *<a href="coin.md#0x1_coin_supply">supply</a> = *<a href="coin.md#0x1_coin_supply">supply</a> + <a href="../../move-stdlib/doc/option.md#0x1_option_destroy_some">option::destroy_some</a>(fungible_asset_supply);
         };
     };
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"dao::supply | exit, <a href="coin.md#0x1_coin">coin</a> <a href="coin.md#0x1_coin_supply">supply</a>"));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&coin_supply);
     coin_supply
 }
 </code></pre>
@@ -3251,6 +3280,7 @@ Same as <code>initialize</code> but supply can be initialized to parallelizable 
 
     <b>assert</b>!(<a href="../../move-stdlib/doc/string.md#0x1_string_length">string::length</a>(&name) &lt;= <a href="coin.md#0x1_coin_MAX_COIN_NAME_LENGTH">MAX_COIN_NAME_LENGTH</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x1_coin_ECOIN_NAME_TOO_LONG">ECOIN_NAME_TOO_LONG</a>));
     <b>assert</b>!(<a href="../../move-stdlib/doc/string.md#0x1_string_length">string::length</a>(&symbol) &lt;= <a href="coin.md#0x1_coin_MAX_COIN_SYMBOL_LENGTH">MAX_COIN_SYMBOL_LENGTH</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x1_coin_ECOIN_SYMBOL_TOO_LONG">ECOIN_SYMBOL_TOO_LONG</a>));
+    <b>assert</b>!(<a href="coin.md#0x1_coin_decimals">decimals</a> &lt; <a href="coin.md#0x1_coin_MAX_COIN_DECIMAL">MAX_COIN_DECIMAL</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x1_coin_ECOIN_COIN_DECIMAL_TOO_LARGE">ECOIN_COIN_DECIMAL_TOO_LARGE</a>));
 
     <b>let</b> coin_info = <a href="coin.md#0x1_coin_CoinInfo">CoinInfo</a>&lt;CoinType&gt; {
         name,
@@ -4813,6 +4843,26 @@ Account is not frozen and sufficient balance.
 <b>let</b> <b>post</b> coin_post = <b>global</b>&lt;<a href="coin.md#0x1_coin_CoinStore">CoinStore</a>&lt;CoinType&gt;&gt;(account_addr).<a href="coin.md#0x1_coin">coin</a>.value;
 <b>ensures</b> coin_post == balance - amount;
 <b>ensures</b> result == <a href="coin.md#0x1_coin_Coin">Coin</a>&lt;CoinType&gt; { value: amount };
+</code></pre>
+
+
+
+
+<a id="0x1_coin_WithdrawAbortsIf"></a>
+
+
+<pre><code><b>schema</b> <a href="coin.md#0x1_coin_WithdrawAbortsIf">WithdrawAbortsIf</a>&lt;CoinType&gt; {
+    <a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>;
+    amount: u64;
+    <b>let</b> account_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>);
+    <b>let</b> coin_store = <b>global</b>&lt;<a href="coin.md#0x1_coin_CoinStore">CoinStore</a>&lt;CoinType&gt;&gt;(account_addr);
+    <b>let</b> balance = coin_store.<a href="coin.md#0x1_coin">coin</a>.value;
+    // This enforces <a id="high-level-req-6.6" href="#high-level-req">high-level requirement 6</a>:
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinStore">CoinStore</a>&lt;CoinType&gt;&gt;(account_addr);
+    // This enforces <a id="high-level-req-8.1" href="#high-level-req">high-level requirement 8</a>:
+    <b>aborts_if</b> coin_store.frozen;
+    <b>aborts_if</b> <a href="coin.md#0x1_coin_balance">balance</a> &lt; amount;
+}
 </code></pre>
 
 

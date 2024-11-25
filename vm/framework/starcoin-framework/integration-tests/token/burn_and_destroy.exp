@@ -1,0 +1,51 @@
+processed 9 tasks
+
+task 4 'run'. lines 54-69:
+{
+  "gas_used": 1373436,
+  "status": "Executed"
+}
+
+task 5 'run'. lines 72-97:
+{
+  "gas_used": 1443928,
+  "status": "Executed"
+}
+
+task 6 'run'. lines 100-123:
+{
+  "gas_used": 1206586,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "coin"
+        }
+      },
+      "abort_code": "65542"
+    }
+  }
+}
+
+task 7 'run'. lines 126-140:
+{
+  "gas_used": 1317275,
+  "status": "Executed"
+}
+
+task 8 'run'. lines 142-167:
+{
+  "gas_used": 516643,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "coin"
+        }
+      },
+      "abort_code": "65543"
+    }
+  }
+}

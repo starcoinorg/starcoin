@@ -53,6 +53,22 @@ pub trait StateReaderExt: StateView {
         Ok(rsrc_bytes)
     }
 
+    fn get_resource_type_bytes<R>(&self, address: AccountAddress) -> Result<Bytes>
+    where
+        R: MoveResource,
+    {
+        Ok(self
+            .get_state_value_bytes(&StateKey::resource_typed::<R>(&address)?)?
+            .ok_or_else(|| {
+                format_err!(
+                    "Resource {:?} {:?} not exists at address:{}",
+                    R::module_identifier(),
+                    R::struct_identifier(),
+                    address
+                )
+            })?)
+    }
+
     /// Get Resource by type R
     fn get_resource_type<R>(&self, address: AccountAddress) -> Result<R>
     where

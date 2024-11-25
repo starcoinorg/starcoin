@@ -1,0 +1,23 @@
+processed 4 tasks
+
+task 2 'run'. lines 5-14:
+{
+  "gas_used": 5763,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "from_bcs"
+        }
+      },
+      "abort_code": "65537"
+    }
+  }
+}
+
+task 3 'run'. lines 17-54:
+{
+  "gas_used": 26776,
+  "status": "Executed"
+}

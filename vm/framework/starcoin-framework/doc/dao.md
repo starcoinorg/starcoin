@@ -78,12 +78,14 @@
 
 <pre><code><b>use</b> <a href="account.md#0x1_account">0x1::account</a>;
 <b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
+<b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
 <b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="event.md#0x1_event">0x1::event</a>;
 <b>use</b> <a href="on_chain_config.md#0x1_on_chain_config">0x1::on_chain_config</a>;
 <b>use</b> <a href="../../move-stdlib/doc/option.md#0x1_option">0x1::option</a>;
 <b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
 <b>use</b> <a href="stc_util.md#0x1_stc_util">0x1::stc_util</a>;
+<b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 <b>use</b> <a href="timestamp.md#0x1_timestamp">0x1::timestamp</a>;
 <b>use</b> <a href="treasury.md#0x1_treasury">0x1::treasury</a>;
 </code></pre>
@@ -496,6 +498,15 @@ User vote info.
 
 
 
+<a id="0x1_dao_ERR_TOKEN_NOT_REGISTER"></a>
+
+
+
+<pre><code><b>const</b> <a href="dao.md#0x1_dao_ERR_TOKEN_NOT_REGISTER">ERR_TOKEN_NOT_REGISTER</a>: u64 = 1411;
+</code></pre>
+
+
+
 <a id="0x1_dao_ERR_VOTED_OTHERS_ALREADY"></a>
 
 
@@ -659,6 +670,8 @@ propose a proposal.
     action: ActionT,
     action_delay: u64,
 ) <b>acquires</b> <a href="dao.md#0x1_dao_DaoGlobalInfo">DaoGlobalInfo</a> {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"dao::proposal | Entered"));
+
     <b>if</b> (action_delay == 0) {
         action_delay = <a href="dao.md#0x1_dao_min_action_delay">min_action_delay</a>&lt;TokenT&gt;();
     } <b>else</b> {
@@ -668,6 +681,9 @@ propose a proposal.
     <b>let</b> proposer = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>);
     <b>let</b> start_time = <a href="timestamp.md#0x1_timestamp_now_milliseconds">timestamp::now_milliseconds</a>() + <a href="dao.md#0x1_dao_voting_delay">voting_delay</a>&lt;TokenT&gt;();
     <b>let</b> quorum_votes = <a href="dao.md#0x1_dao_quorum_votes">quorum_votes</a>&lt;TokenT&gt;();
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"dao::proposal | <a href="dao.md#0x1_dao_Proposal">Proposal</a> {"));
+
     <b>let</b> proposal = <a href="dao.md#0x1_dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt; {
         id: proposal_id,
         proposer,
@@ -683,10 +699,15 @@ propose a proposal.
     <b>move_to</b>(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, proposal);
     // emit <a href="event.md#0x1_event">event</a>
     <b>let</b> gov_info = <b>borrow_global_mut</b>&lt;<a href="dao.md#0x1_dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt;&gt;(<a href="stc_util.md#0x1_stc_util_token_issuer">stc_util::token_issuer</a>&lt;TokenT&gt;());
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"dao::proposal | emit <a href="event.md#0x1_event">event</a>"));
+
     <a href="event.md#0x1_event_emit_event">event::emit_event</a>(
         &<b>mut</b> gov_info.proposal_create_event,
         <a href="dao.md#0x1_dao_ProposalCreatedEvent">ProposalCreatedEvent</a> { proposal_id, proposer },
     );
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"dao::proposal | Exited"));
 }
 </code></pre>
 
@@ -1460,11 +1481,20 @@ Quorum votes to make proposal pass.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="dao.md#0x1_dao_quorum_votes">quorum_votes</a>&lt;TokenT&gt;(): u128 {
-    <b>let</b> market_cap = <a href="../../move-stdlib/doc/option.md#0x1_option_destroy_some">option::destroy_some</a>(<a href="coin.md#0x1_coin_supply">coin::supply</a>&lt;TokenT&gt;());
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="dao.md#0x1_dao_quorum_votes">dao::quorum_votes</a> | entered "));
+
+    <b>let</b> supply = <a href="coin.md#0x1_coin_supply">coin::supply</a>&lt;TokenT&gt;();
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="dao.md#0x1_dao_quorum_votes">dao::quorum_votes</a> | supply "));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&supply);
+
+    <b>assert</b>!(<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(&supply), <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="dao.md#0x1_dao_ERR_TOKEN_NOT_REGISTER">ERR_TOKEN_NOT_REGISTER</a>));
+
+    <b>let</b> market_cap = <a href="../../move-stdlib/doc/option.md#0x1_option_destroy_some">option::destroy_some</a>(supply);
     <b>let</b> balance_in_treasury = <a href="treasury.md#0x1_treasury_balance">treasury::balance</a>&lt;TokenT&gt;();
     <b>let</b> supply = market_cap - balance_in_treasury;
     <b>let</b> rate = <a href="dao.md#0x1_dao_voting_quorum_rate">voting_quorum_rate</a>&lt;TokenT&gt;();
     <b>let</b> rate = (rate <b>as</b> u128);
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="dao.md#0x1_dao_quorum_votes">dao::quorum_votes</a> | exited "));
     supply * rate / 100
 }
 </code></pre>

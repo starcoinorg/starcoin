@@ -1,5 +1,5 @@
-/// TreasuryWithdrawDaoProposal is a dao proposal for withdraw Token from Treasury.
-module starcoin_framework::treasury_withdraw_dao_proposal {
+/// dao_treasury_withdraw_proposal is a dao proposal for withdraw Token from Treasury.
+module starcoin_framework::dao_treasury_withdraw_proposal {
 
     use std::error;
     use std::signer;

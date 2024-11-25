@@ -1,0 +1,41 @@
+processed 8 tasks
+
+task 3 'run'. lines 8-20:
+{
+  "gas_used": 22875,
+  "status": "Executed"
+}
+
+task 4 'run'. lines 22-41:
+{
+  "gas_used": 111871,
+  "status": "Executed"
+}
+
+task 5 'run'. lines 42-53:
+{
+  "gas_used": 24541,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "stc_transaction_package_validation"
+        }
+      },
+      "abort_code": "65638"
+    }
+  }
+}
+
+task 6 'run'. lines 55-65:
+{
+  "gas_used": 40248,
+  "status": "Executed"
+}
+
+task 7 'run'. lines 67-76:
+{
+  "gas_used": 26374,
+  "status": "Executed"
+}

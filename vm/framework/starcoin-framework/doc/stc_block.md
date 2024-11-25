@@ -12,6 +12,7 @@ Block module provide metadata for generated blocks.
 -  [Function `initialize`](#0x1_stc_block_initialize)
 -  [Function `get_current_block_number`](#0x1_stc_block_get_current_block_number)
 -  [Function `get_parent_hash`](#0x1_stc_block_get_parent_hash)
+-  [Function `get_parents_hash`](#0x1_stc_block_get_parents_hash)
 -  [Function `get_current_author`](#0x1_stc_block_get_current_author)
 -  [Function `block_prologue`](#0x1_stc_block_block_prologue)
 -  [Function `process_block_metadata`](#0x1_stc_block_process_block_metadata)
@@ -83,16 +84,16 @@ Block metadata struct.
  number of uncles.
 </dd>
 <dt>
-<code>new_block_events: <a href="event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="stc_block.md#0x1_stc_block_NewBlockEvent">stc_block::NewBlockEvent</a>&gt;</code>
-</dt>
-<dd>
- Handle of events when new blocks are emitted
-</dd>
-<dt>
 <code>parents_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
  An Array of the parents hash for a Dag block.
+</dd>
+<dt>
+<code>new_block_events: <a href="event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;<a href="stc_block.md#0x1_stc_block_NewBlockEvent">stc_block::NewBlockEvent</a>&gt;</code>
+</dt>
+<dd>
+
 </dd>
 </dl>
 
@@ -245,19 +246,18 @@ This can only be invoked by the GENESIS_ACCOUNT at genesis
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_initialize">initialize</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, parent_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;) {
-    // Timestamp::assert_genesis();
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);
 
-    <b>move_to</b>&lt;<a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a>&gt;(
-        <a href="account.md#0x1_account">account</a>,
-        <a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a> {
-            number: 0,
-            parent_hash,
-            author: <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>(),
-            uncles: 0,
-            parents_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>&lt;u8&gt;(),
-            new_block_events: <a href="account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="stc_block.md#0x1_stc_block_NewBlockEvent">Self::NewBlockEvent</a>&gt;(<a href="account.md#0x1_account">account</a>),
-        });
+    <b>let</b> block_metadata = <a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a> {
+        number: 0,
+        parent_hash,
+        author: <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>(),
+        uncles: 0,
+        parents_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>&lt;u8&gt;(),
+        new_block_events: <a href="account.md#0x1_account_new_event_handle">account::new_event_handle</a>&lt;<a href="stc_block.md#0x1_stc_block_NewBlockEvent">NewBlockEvent</a>&gt;(<a href="account.md#0x1_account">account</a>),
+    };
+
+    <b>move_to</b>&lt;<a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a>&gt;(<a href="account.md#0x1_account">account</a>, block_metadata);
 }
 </code></pre>
 
@@ -315,6 +315,32 @@ Get the hash of the parent block.
 
 </details>
 
+<a id="0x1_stc_block_get_parents_hash"></a>
+
+## Function `get_parents_hash`
+
+Get the hash of the parents block, used for DAG
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_get_parents_hash">get_parents_hash</a>(): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_get_parents_hash">get_parents_hash</a>(): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
+    // *&<b>borrow_global</b>&lt;<a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()).parent_hash
+    <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>()
+}
+</code></pre>
+
+
+
+</details>
+
 <a id="0x1_stc_block_get_current_author"></a>
 
 ## Function `get_current_author`
@@ -331,8 +357,9 @@ Gets the address of the author of the current block
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_get_current_author">get_current_author</a>(): <b>address</b> <b>acquires</b> <a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a> {
-    <b>borrow_global</b>&lt;<a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()).author
+<pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_get_current_author">get_current_author</a>(): <b>address</b> {
+    // <b>borrow_global</b>&lt;<a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()).author
+    @0x1
 }
 </code></pre>
 
@@ -385,6 +412,8 @@ The runtime always runs this before executing the transactions in a block.
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="coin.md#0x1_coin_value">coin::value</a>(&txn_fee));
 
     // then deal <b>with</b> current <a href="block.md#0x1_block">block</a>.
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_block.md#0x1_stc_block_block_prologue">stc_block::block_prologue</a> | <a href="timestamp.md#0x1_timestamp_update_global_time">timestamp::update_global_time</a>"));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="timestamp.md#0x1_timestamp">timestamp</a>);
     <a href="timestamp.md#0x1_timestamp_update_global_time">timestamp::update_global_time</a>(&<a href="account.md#0x1_account">account</a>, <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(&<a href="account.md#0x1_account">account</a>), <a href="timestamp.md#0x1_timestamp">timestamp</a> * 1000);
 
     <a href="stc_block.md#0x1_stc_block_process_block_metadata">process_block_metadata</a>(
@@ -398,9 +427,6 @@ The runtime always runs this before executing the transactions in a block.
     );
 
     <b>let</b> reward = <a href="epoch.md#0x1_epoch_adjust_epoch">epoch::adjust_epoch</a>(&<a href="account.md#0x1_account">account</a>, number, <a href="timestamp.md#0x1_timestamp">timestamp</a>, uncles, parent_gas_used);
-
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_block.md#0x1_stc_block_block_prologue">stc_block::block_prologue</a> | <a href="timestamp.md#0x1_timestamp_update_global_time">timestamp::update_global_time</a>"));
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="timestamp.md#0x1_timestamp">timestamp</a>);
 
     // pass in previous <a href="block.md#0x1_block">block</a> gas fees.
     <a href="block_reward.md#0x1_block_reward_process_block_reward">block_reward::process_block_reward</a>(&<a href="account.md#0x1_account">account</a>, number, reward, author, auth_key_vec, txn_fee);

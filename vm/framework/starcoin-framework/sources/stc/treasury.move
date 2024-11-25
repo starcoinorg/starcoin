@@ -2,14 +2,15 @@
 module starcoin_framework::treasury {
     use std::error;
     use std::signer;
+
+    use starcoin_framework::account;
+    use starcoin_framework::coin;
+    use starcoin_framework::event;
+    use starcoin_framework::stc_util;
+    use starcoin_framework::timestamp;
+
     use starcoin_std::math128;
     use starcoin_std::type_info;
-    use starcoin_framework::timestamp;
-    use starcoin_framework::stc_util;
-    use starcoin_framework::account;
-    use starcoin_framework::event;
-    use starcoin_framework::coin;
-
 
     struct Treasury<phantom TokenT> has store, key {
         balance: coin::Coin<TokenT>,

@@ -1,0 +1,7 @@
+processed 4 tasks
+
+task 3 'run'. lines 27-37:
+{
+  "gas_used": 620000,
+  "status": "OutOfGas"
+}

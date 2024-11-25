@@ -322,9 +322,7 @@ Initialization of the module.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="epoch.md#0x1_epoch_initialize">initialize</a>(
-    <a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
-) {
+<pre><code><b>public</b> <b>fun</b> <a href="epoch.md#0x1_epoch_initialize">initialize</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
     // Timestamp::assert_genesis();
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);
 

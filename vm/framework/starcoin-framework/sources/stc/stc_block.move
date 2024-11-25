@@ -4,16 +4,28 @@ module starcoin_framework::stc_block {
     use std::signer;
     use std::vector;
 
-    use starcoin_framework::epoch;
+    use starcoin_framework::account;
     use starcoin_framework::block_reward;
-    use starcoin_framework::timestamp;
+    use starcoin_framework::chain_id;
+    use starcoin_framework::coin;
+    use starcoin_framework::epoch;
+    use starcoin_framework::event;
     use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::stc_transaction_fee;
-
-    use starcoin_framework::chain_id;
-    use starcoin_framework::account;
     use starcoin_framework::system_addresses;
-    use starcoin_framework::event;
+    use starcoin_framework::timestamp;
+    use starcoin_std::debug;
+
+    #[test_only]
+    use std::bcs;
+    #[test_only]
+    use std::hash;
+    #[test_only]
+    use starcoin_framework::account::create_signer_for_test;
+    #[test_only]
+    use starcoin_framework::bcs_util;
+    #[test_only]
+    use starcoin_framework::create_signer;
 
     const EPROLOGUE_BAD_CHAIN_ID: u64 = 6;
 
@@ -27,10 +39,10 @@ module starcoin_framework::stc_block {
         author: address,
         /// number of uncles.
         uncles: u64,
-        /// Handle of events when new blocks are emitted
-        new_block_events: event::EventHandle<Self::NewBlockEvent>,
         /// An Array of the parents hash for a Dag block.
         parents_hash: vector<u8>,
+        // Handle of events when new blocks are emitted
+        new_block_events: event::EventHandle<NewBlockEvent>,
     }
 
     /// Events emitted when new block generated.
@@ -53,19 +65,18 @@ module starcoin_framework::stc_block {
 
     /// This can only be invoked by the GENESIS_ACCOUNT at genesis
     public fun initialize(account: &signer, parent_hash: vector<u8>) {
-        // Timestamp::assert_genesis();
         system_addresses::assert_starcoin_framework(account);
 
-        move_to<BlockMetadata>(
-            account,
-            BlockMetadata {
-                number: 0,
-                parent_hash,
-                author: system_addresses::get_starcoin_framework(),
-                uncles: 0,
-                parents_hash: vector::empty<u8>(),
-                new_block_events: account::new_event_handle<Self::NewBlockEvent>(account),
-            });
+        let block_metadata = BlockMetadata {
+            number: 0,
+            parent_hash,
+            author: system_addresses::get_starcoin_framework(),
+            uncles: 0,
+            parents_hash: vector::empty<u8>(),
+            new_block_events: account::new_event_handle<NewBlockEvent>(account),
+        };
+
+        move_to<BlockMetadata>(account, block_metadata);
     }
 
     spec initialize {
@@ -88,6 +99,11 @@ module starcoin_framework::stc_block {
 
     spec get_parent_hash {
         aborts_if !exists<BlockMetadata>(system_addresses::get_starcoin_framework());
+    }
+
+    /// Get the hash of the parents block, used for DAG
+    public fun get_parents_hash(): vector<u8> acquires BlockMetadata {
+        *&borrow_global<BlockMetadata>(system_addresses::get_starcoin_framework()).parents_hash
     }
 
     /// Gets the address of the author of the current block
@@ -125,6 +141,8 @@ module starcoin_framework::stc_block {
         debug::print(&coin::value(&txn_fee));
 
         // then deal with current block.
+        debug::print(&std::string::utf8(b"stc_block::block_prologue | timestamp::update_global_time"));
+        debug::print(&timestamp);
         timestamp::update_global_time(&account, signer::address_of(&account), timestamp * 1000);
 
         process_block_metadata(
@@ -138,9 +156,6 @@ module starcoin_framework::stc_block {
         );
 
         let reward = epoch::adjust_epoch(&account, number, timestamp, uncles, parent_gas_used);
-
-        debug::print(&std::string::utf8(b"stc_block::block_prologue | timestamp::update_global_time"));
-        debug::print(&timestamp);
 
         // pass in previous block gas fees.
         block_reward::process_block_reward(&account, number, reward, author, auth_key_vec, txn_fee);
@@ -188,15 +203,6 @@ module starcoin_framework::stc_block {
         );
         debug::print(&std::string::utf8(b"stc_block::process_block_metadata | Exited"));
     }
-
-    #[test]
-    use starcoin_framework::bcs_util;
-    #[test]
-    use std::hash;
-    #[test]
-    use std::option;
-    use starcoin_framework::coin;
-    use starcoin_std::debug;
 
     #[test]
     fun test_header() {
@@ -286,4 +292,27 @@ module starcoin_framework::stc_block {
         assert!(number == 2, 1002);
         assert!(state_root == x"d2df4c8c579f9e05b0adf14b53785379fb245465d703834eb19fba74d9114a9a", 1003);
     }
+
+    #[test]
+    fun test_block_metadata_bcs() {
+        let test_framework = create_signer_for_test(system_addresses::get_starcoin_framework());
+        let block_metadata = BlockMetadata {
+            number: 0,
+            parent_hash: vector::empty<u8>(),
+            author: system_addresses::get_starcoin_framework(),
+            uncles: 0,
+            parents_hash: vector::empty<u8>(),
+            new_block_events: account::new_event_handle<NewBlockEvent>(&test_framework),
+        };
+        let bcs = bcs::to_bytes(&block_metadata);
+        debug::print(&std::string::utf8(b"test_block_metadata_bcs | bcs"));
+        debug::print(&vector::length(&bcs));
+        debug::print(&bcs);
+
+        let BlockMetadata {
+            number: _, parent_hash: _, author: _, uncles: _, parents_hash: _, new_block_events: event
+        } = block_metadata;
+        event::destroy_handle(event);
+    }
+
 }

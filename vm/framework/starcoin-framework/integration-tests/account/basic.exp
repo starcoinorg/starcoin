@@ -1,0 +1,14 @@
+processed 5 tasks
+
+task 4 'publish'. lines 9-167:
+Error: error[E05001]: ability constraint not satisfied
+   ┌─ /var/folders/mc/m_3x4kk518jd_5x6plf003100000gn/T/.tmpU9Ns6F:16:9
+   │
+16 │         move_to(account, Hold<T> { x })
+   │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   │         │                │    │
+   │         │                │    The type '(default=0x2747CABBB481A433679F6DC8AAE833DD)::Holder::Hold<T>' can have the ability 'key' but the type argument 'T' does not have the required ability 'store'
+   │         │                The type '(default=0x2747CABBB481A433679F6DC8AAE833DD)::Holder::Hold<T>' does not have the ability 'key'
+   │         Invalid call of 'move_to'
+
+

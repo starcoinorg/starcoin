@@ -198,6 +198,64 @@ pub enum EntryFunctionCall {
         proposal_id: u64,
     },
 
+    /// Once the proposal is agreed, anyone can call the method to make the proposal happen.
+    DaoModifyConfigProposalExecute {
+        token_t: TypeTag,
+        proposer_address: AccountAddress,
+        proposal_id: u64,
+    },
+
+    /// Entrypoint for the proposal.
+    DaoModifyConfigProposalPropose {
+        token_t: TypeTag,
+        voting_delay: u64,
+        voting_period: u64,
+        voting_quorum_rate: u8,
+        min_action_delay: u64,
+        exec_delay: u64,
+    },
+
+    DaoVoteScriptsCastVote {
+        token: TypeTag,
+        action_t: TypeTag,
+        proposer_address: AccountAddress,
+        proposal_id: u64,
+        agree: bool,
+        votes: u128,
+    },
+
+    /// Let user change their vote during the voting time.
+    DaoVoteScriptsFlipVote {
+        token_t: TypeTag,
+        action_t: TypeTag,
+        proposer_address: AccountAddress,
+        proposal_id: u64,
+    },
+
+    /// revoke all votes on a proposal
+    DaoVoteScriptsRevokeVote {
+        token: TypeTag,
+        action: TypeTag,
+        proposer_address: AccountAddress,
+        proposal_id: u64,
+    },
+
+    /// revoke some votes on a proposal
+    DaoVoteScriptsRevokeVoteOfPower {
+        token: TypeTag,
+        action: TypeTag,
+        proposer_address: AccountAddress,
+        proposal_id: u64,
+        power: u128,
+    },
+
+    DaoVoteScriptsUnstakeVote {
+        token: TypeTag,
+        action: TypeTag,
+        proposer_address: AccountAddress,
+        proposal_id: u64,
+    },
+
     /// Add `amount` of coins to the delegation pool `pool_address`.
     DelegationPoolAddStake {
         pool_address: AccountAddress,
@@ -599,21 +657,6 @@ pub enum EntryFunctionCall {
     },
 
     OraclePriceUpdateEntry {
-        oracle_t: TypeTag,
-        value: u128,
-    },
-
-    OraclePriceScriptInitDataSource {
-        oracle_t: TypeTag,
-        init_value: u128,
-    },
-
-    OraclePriceScriptRegisterOracle {
-        oracle_t: TypeTag,
-        precision: u8,
-    },
-
-    OraclePriceScriptUpdate {
         oracle_t: TypeTag,
         value: u128,
     },
@@ -1254,6 +1297,72 @@ impl EntryFunctionCall {
                 proposer_address,
                 proposal_id,
             } => dao_queue_proposal_action(token_t, action_t, proposer_address, proposal_id),
+            DaoModifyConfigProposalExecute {
+                token_t,
+                proposer_address,
+                proposal_id,
+            } => dao_modify_config_proposal_execute(token_t, proposer_address, proposal_id),
+            DaoModifyConfigProposalPropose {
+                token_t,
+                voting_delay,
+                voting_period,
+                voting_quorum_rate,
+                min_action_delay,
+                exec_delay,
+            } => dao_modify_config_proposal_propose(
+                token_t,
+                voting_delay,
+                voting_period,
+                voting_quorum_rate,
+                min_action_delay,
+                exec_delay,
+            ),
+            DaoVoteScriptsCastVote {
+                token,
+                action_t,
+                proposer_address,
+                proposal_id,
+                agree,
+                votes,
+            } => dao_vote_scripts_cast_vote(
+                token,
+                action_t,
+                proposer_address,
+                proposal_id,
+                agree,
+                votes,
+            ),
+            DaoVoteScriptsFlipVote {
+                token_t,
+                action_t,
+                proposer_address,
+                proposal_id,
+            } => dao_vote_scripts_flip_vote(token_t, action_t, proposer_address, proposal_id),
+            DaoVoteScriptsRevokeVote {
+                token,
+                action,
+                proposer_address,
+                proposal_id,
+            } => dao_vote_scripts_revoke_vote(token, action, proposer_address, proposal_id),
+            DaoVoteScriptsRevokeVoteOfPower {
+                token,
+                action,
+                proposer_address,
+                proposal_id,
+                power,
+            } => dao_vote_scripts_revoke_vote_of_power(
+                token,
+                action,
+                proposer_address,
+                proposal_id,
+                power,
+            ),
+            DaoVoteScriptsUnstakeVote {
+                token,
+                action,
+                proposer_address,
+                proposal_id,
+            } => dao_vote_scripts_unstake_vote(token, action, proposer_address, proposal_id),
             DelegationPoolAddStake {
                 pool_address,
                 amount,
@@ -1524,17 +1633,6 @@ impl EntryFunctionCall {
             } => oracle_price_register_oracle_entry(oracle_t, precision),
             OraclePriceUpdateEntry { oracle_t, value } => {
                 oracle_price_update_entry(oracle_t, value)
-            }
-            OraclePriceScriptInitDataSource {
-                oracle_t,
-                init_value,
-            } => oracle_price_script_init_data_source(oracle_t, init_value),
-            OraclePriceScriptRegisterOracle {
-                oracle_t,
-                precision,
-            } => oracle_price_script_register_oracle(oracle_t, precision),
-            OraclePriceScriptUpdate { oracle_t, value } => {
-                oracle_price_script_update(oracle_t, value)
             }
             ResourceAccountCreateResourceAccount {
                 seed,
@@ -2273,6 +2371,161 @@ pub fn dao_queue_proposal_action(
         ),
         ident_str!("queue_proposal_action").to_owned(),
         vec![token_t, action_t],
+        vec![
+            bcs::to_bytes(&proposer_address).unwrap(),
+            bcs::to_bytes(&proposal_id).unwrap(),
+        ],
+    ))
+}
+
+/// Once the proposal is agreed, anyone can call the method to make the proposal happen.
+pub fn dao_modify_config_proposal_execute(
+    token_t: TypeTag,
+    proposer_address: AccountAddress,
+    proposal_id: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("dao_modify_config_proposal").to_owned(),
+        ),
+        ident_str!("execute").to_owned(),
+        vec![token_t],
+        vec![
+            bcs::to_bytes(&proposer_address).unwrap(),
+            bcs::to_bytes(&proposal_id).unwrap(),
+        ],
+    ))
+}
+
+/// Entrypoint for the proposal.
+pub fn dao_modify_config_proposal_propose(
+    token_t: TypeTag,
+    voting_delay: u64,
+    voting_period: u64,
+    voting_quorum_rate: u8,
+    min_action_delay: u64,
+    exec_delay: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("dao_modify_config_proposal").to_owned(),
+        ),
+        ident_str!("propose").to_owned(),
+        vec![token_t],
+        vec![
+            bcs::to_bytes(&voting_delay).unwrap(),
+            bcs::to_bytes(&voting_period).unwrap(),
+            bcs::to_bytes(&voting_quorum_rate).unwrap(),
+            bcs::to_bytes(&min_action_delay).unwrap(),
+            bcs::to_bytes(&exec_delay).unwrap(),
+        ],
+    ))
+}
+
+pub fn dao_vote_scripts_cast_vote(
+    token: TypeTag,
+    action_t: TypeTag,
+    proposer_address: AccountAddress,
+    proposal_id: u64,
+    agree: bool,
+    votes: u128,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("dao_vote_scripts").to_owned(),
+        ),
+        ident_str!("cast_vote").to_owned(),
+        vec![token, action_t],
+        vec![
+            bcs::to_bytes(&proposer_address).unwrap(),
+            bcs::to_bytes(&proposal_id).unwrap(),
+            bcs::to_bytes(&agree).unwrap(),
+            bcs::to_bytes(&votes).unwrap(),
+        ],
+    ))
+}
+
+/// Let user change their vote during the voting time.
+pub fn dao_vote_scripts_flip_vote(
+    token_t: TypeTag,
+    action_t: TypeTag,
+    proposer_address: AccountAddress,
+    proposal_id: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("dao_vote_scripts").to_owned(),
+        ),
+        ident_str!("flip_vote").to_owned(),
+        vec![token_t, action_t],
+        vec![
+            bcs::to_bytes(&proposer_address).unwrap(),
+            bcs::to_bytes(&proposal_id).unwrap(),
+        ],
+    ))
+}
+
+/// revoke all votes on a proposal
+pub fn dao_vote_scripts_revoke_vote(
+    token: TypeTag,
+    action: TypeTag,
+    proposer_address: AccountAddress,
+    proposal_id: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("dao_vote_scripts").to_owned(),
+        ),
+        ident_str!("revoke_vote").to_owned(),
+        vec![token, action],
+        vec![
+            bcs::to_bytes(&proposer_address).unwrap(),
+            bcs::to_bytes(&proposal_id).unwrap(),
+        ],
+    ))
+}
+
+/// revoke some votes on a proposal
+pub fn dao_vote_scripts_revoke_vote_of_power(
+    token: TypeTag,
+    action: TypeTag,
+    proposer_address: AccountAddress,
+    proposal_id: u64,
+    power: u128,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("dao_vote_scripts").to_owned(),
+        ),
+        ident_str!("revoke_vote_of_power").to_owned(),
+        vec![token, action],
+        vec![
+            bcs::to_bytes(&proposer_address).unwrap(),
+            bcs::to_bytes(&proposal_id).unwrap(),
+            bcs::to_bytes(&power).unwrap(),
+        ],
+    ))
+}
+
+pub fn dao_vote_scripts_unstake_vote(
+    token: TypeTag,
+    action: TypeTag,
+    proposer_address: AccountAddress,
+    proposal_id: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("dao_vote_scripts").to_owned(),
+        ),
+        ident_str!("unstake_vote").to_owned(),
+        vec![token, action],
         vec![
             bcs::to_bytes(&proposer_address).unwrap(),
             bcs::to_bytes(&proposal_id).unwrap(),
@@ -3313,45 +3566,6 @@ pub fn oracle_price_update_entry(oracle_t: TypeTag, value: u128) -> TransactionP
             ident_str!("oracle_price").to_owned(),
         ),
         ident_str!("update_entry").to_owned(),
-        vec![oracle_t],
-        vec![bcs::to_bytes(&value).unwrap()],
-    ))
-}
-
-pub fn oracle_price_script_init_data_source(
-    oracle_t: TypeTag,
-    init_value: u128,
-) -> TransactionPayload {
-    TransactionPayload::EntryFunction(EntryFunction::new(
-        ModuleId::new(
-            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
-            ident_str!("oracle_price_script").to_owned(),
-        ),
-        ident_str!("init_data_source").to_owned(),
-        vec![oracle_t],
-        vec![bcs::to_bytes(&init_value).unwrap()],
-    ))
-}
-
-pub fn oracle_price_script_register_oracle(oracle_t: TypeTag, precision: u8) -> TransactionPayload {
-    TransactionPayload::EntryFunction(EntryFunction::new(
-        ModuleId::new(
-            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
-            ident_str!("oracle_price_script").to_owned(),
-        ),
-        ident_str!("register_oracle").to_owned(),
-        vec![oracle_t],
-        vec![bcs::to_bytes(&precision).unwrap()],
-    ))
-}
-
-pub fn oracle_price_script_update(oracle_t: TypeTag, value: u128) -> TransactionPayload {
-    TransactionPayload::EntryFunction(EntryFunction::new(
-        ModuleId::new(
-            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
-            ident_str!("oracle_price_script").to_owned(),
-        ),
-        ident_str!("update").to_owned(),
         vec![oracle_t],
         vec![bcs::to_bytes(&value).unwrap()],
     ))
@@ -5057,6 +5271,109 @@ mod decoder {
         }
     }
 
+    pub fn dao_modify_config_proposal_execute(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::DaoModifyConfigProposalExecute {
+                token_t: script.ty_args().get(0)?.clone(),
+                proposer_address: bcs::from_bytes(script.args().get(0)?).ok()?,
+                proposal_id: bcs::from_bytes(script.args().get(1)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn dao_modify_config_proposal_propose(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::DaoModifyConfigProposalPropose {
+                token_t: script.ty_args().get(0)?.clone(),
+                voting_delay: bcs::from_bytes(script.args().get(0)?).ok()?,
+                voting_period: bcs::from_bytes(script.args().get(1)?).ok()?,
+                voting_quorum_rate: bcs::from_bytes(script.args().get(2)?).ok()?,
+                min_action_delay: bcs::from_bytes(script.args().get(3)?).ok()?,
+                exec_delay: bcs::from_bytes(script.args().get(4)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn dao_vote_scripts_cast_vote(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::DaoVoteScriptsCastVote {
+                token: script.ty_args().get(0)?.clone(),
+                action_t: script.ty_args().get(1)?.clone(),
+                proposer_address: bcs::from_bytes(script.args().get(0)?).ok()?,
+                proposal_id: bcs::from_bytes(script.args().get(1)?).ok()?,
+                agree: bcs::from_bytes(script.args().get(2)?).ok()?,
+                votes: bcs::from_bytes(script.args().get(3)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn dao_vote_scripts_flip_vote(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::DaoVoteScriptsFlipVote {
+                token_t: script.ty_args().get(0)?.clone(),
+                action_t: script.ty_args().get(1)?.clone(),
+                proposer_address: bcs::from_bytes(script.args().get(0)?).ok()?,
+                proposal_id: bcs::from_bytes(script.args().get(1)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn dao_vote_scripts_revoke_vote(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::DaoVoteScriptsRevokeVote {
+                token: script.ty_args().get(0)?.clone(),
+                action: script.ty_args().get(1)?.clone(),
+                proposer_address: bcs::from_bytes(script.args().get(0)?).ok()?,
+                proposal_id: bcs::from_bytes(script.args().get(1)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn dao_vote_scripts_revoke_vote_of_power(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::DaoVoteScriptsRevokeVoteOfPower {
+                token: script.ty_args().get(0)?.clone(),
+                action: script.ty_args().get(1)?.clone(),
+                proposer_address: bcs::from_bytes(script.args().get(0)?).ok()?,
+                proposal_id: bcs::from_bytes(script.args().get(1)?).ok()?,
+                power: bcs::from_bytes(script.args().get(2)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn dao_vote_scripts_unstake_vote(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::DaoVoteScriptsUnstakeVote {
+                token: script.ty_args().get(0)?.clone(),
+                action: script.ty_args().get(1)?.clone(),
+                proposer_address: bcs::from_bytes(script.args().get(0)?).ok()?,
+                proposal_id: bcs::from_bytes(script.args().get(1)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
     pub fn delegation_pool_add_stake(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
         if let TransactionPayload::EntryFunction(script) = payload {
             Some(EntryFunctionCall::DelegationPoolAddStake {
@@ -5774,43 +6091,6 @@ mod decoder {
     pub fn oracle_price_update_entry(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
         if let TransactionPayload::EntryFunction(script) = payload {
             Some(EntryFunctionCall::OraclePriceUpdateEntry {
-                oracle_t: script.ty_args().get(0)?.clone(),
-                value: bcs::from_bytes(script.args().get(0)?).ok()?,
-            })
-        } else {
-            None
-        }
-    }
-
-    pub fn oracle_price_script_init_data_source(
-        payload: &TransactionPayload,
-    ) -> Option<EntryFunctionCall> {
-        if let TransactionPayload::EntryFunction(script) = payload {
-            Some(EntryFunctionCall::OraclePriceScriptInitDataSource {
-                oracle_t: script.ty_args().get(0)?.clone(),
-                init_value: bcs::from_bytes(script.args().get(0)?).ok()?,
-            })
-        } else {
-            None
-        }
-    }
-
-    pub fn oracle_price_script_register_oracle(
-        payload: &TransactionPayload,
-    ) -> Option<EntryFunctionCall> {
-        if let TransactionPayload::EntryFunction(script) = payload {
-            Some(EntryFunctionCall::OraclePriceScriptRegisterOracle {
-                oracle_t: script.ty_args().get(0)?.clone(),
-                precision: bcs::from_bytes(script.args().get(0)?).ok()?,
-            })
-        } else {
-            None
-        }
-    }
-
-    pub fn oracle_price_script_update(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
-        if let TransactionPayload::EntryFunction(script) = payload {
-            Some(EntryFunctionCall::OraclePriceScriptUpdate {
                 oracle_t: script.ty_args().get(0)?.clone(),
                 value: bcs::from_bytes(script.args().get(0)?).ok()?,
             })
@@ -6924,6 +7204,34 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
             Box::new(decoder::dao_queue_proposal_action),
         );
         map.insert(
+            "dao_modify_config_proposal_execute".to_string(),
+            Box::new(decoder::dao_modify_config_proposal_execute),
+        );
+        map.insert(
+            "dao_modify_config_proposal_propose".to_string(),
+            Box::new(decoder::dao_modify_config_proposal_propose),
+        );
+        map.insert(
+            "dao_vote_scripts_cast_vote".to_string(),
+            Box::new(decoder::dao_vote_scripts_cast_vote),
+        );
+        map.insert(
+            "dao_vote_scripts_flip_vote".to_string(),
+            Box::new(decoder::dao_vote_scripts_flip_vote),
+        );
+        map.insert(
+            "dao_vote_scripts_revoke_vote".to_string(),
+            Box::new(decoder::dao_vote_scripts_revoke_vote),
+        );
+        map.insert(
+            "dao_vote_scripts_revoke_vote_of_power".to_string(),
+            Box::new(decoder::dao_vote_scripts_revoke_vote_of_power),
+        );
+        map.insert(
+            "dao_vote_scripts_unstake_vote".to_string(),
+            Box::new(decoder::dao_vote_scripts_unstake_vote),
+        );
+        map.insert(
             "delegation_pool_add_stake".to_string(),
             Box::new(decoder::delegation_pool_add_stake),
         );
@@ -7146,18 +7454,6 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
         map.insert(
             "oracle_price_update_entry".to_string(),
             Box::new(decoder::oracle_price_update_entry),
-        );
-        map.insert(
-            "oracle_price_script_init_data_source".to_string(),
-            Box::new(decoder::oracle_price_script_init_data_source),
-        );
-        map.insert(
-            "oracle_price_script_register_oracle".to_string(),
-            Box::new(decoder::oracle_price_script_register_oracle),
-        );
-        map.insert(
-            "oracle_price_script_update".to_string(),
-            Box::new(decoder::oracle_price_script_update),
         );
         map.insert(
             "resource_account_create_resource_account".to_string(),

@@ -1,0 +1,125 @@
+processed 11 tasks
+
+task 2 'run'. lines 5-65:
+{
+  "gas_used": 39589,
+  "status": "Executed"
+}
+
+task 3 'run'. lines 67-78:
+{
+  "gas_used": 21474,
+  "status": "Executed"
+}
+
+task 4 'run'. lines 80-110:
+{
+  "gas_used": 20021,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "consensus_config"
+        }
+      },
+      "abort_code": "65554"
+    }
+  }
+}
+
+task 5 'run'. lines 112-142:
+{
+  "gas_used": 20085,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "consensus_config"
+        }
+      },
+      "abort_code": "65554"
+    }
+  }
+}
+
+task 6 'run'. lines 144-174:
+{
+  "gas_used": 20053,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "consensus_config"
+        }
+      },
+      "abort_code": "65554"
+    }
+  }
+}
+
+task 7 'run'. lines 176-207:
+{
+  "gas_used": 20117,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "consensus_config"
+        }
+      },
+      "abort_code": "65554"
+    }
+  }
+}
+
+task 8 'run'. lines 209-240:
+{
+  "gas_used": 20149,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "consensus_config"
+        }
+      },
+      "abort_code": "65554"
+    }
+  }
+}
+
+task 9 'run'. lines 242-273:
+{
+  "gas_used": 20181,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "consensus_config"
+        }
+      },
+      "abort_code": "65554"
+    }
+  }
+}
+
+task 10 'run'. lines 275-306:
+{
+  "gas_used": 20245,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "consensus_config"
+        }
+      },
+      "abort_code": "65554"
+    }
+  }
+}

@@ -21,6 +21,7 @@ The module provide block rewarding calculation logic.
 <b>use</b> <a href="block_reward_config.md#0x1_block_reward_config">0x1::block_reward_config</a>;
 <b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
 <b>use</b> <a href="create_signer.md#0x1_create_signer">0x1::create_signer</a>;
+<b>use</b> <a href="dao_treasury_withdraw_proposal.md#0x1_dao_treasury_withdraw_proposal">0x1::dao_treasury_withdraw_proposal</a>;
 <b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
 <b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="event.md#0x1_event">0x1::event</a>;
@@ -28,7 +29,6 @@ The module provide block rewarding calculation logic.
 <b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 <b>use</b> <a href="system_addresses.md#0x1_system_addresses">0x1::system_addresses</a>;
 <b>use</b> <a href="treasury.md#0x1_treasury">0x1::treasury</a>;
-<b>use</b> <a href="treasury_withdraw_dao_proposal.md#0x1_treasury_withdraw_dao_proposal">0x1::treasury_withdraw_dao_proposal</a>;
 <b>use</b> <a href="../../move-stdlib/doc/vector.md#0x1_vector">0x1::vector</a>;
 </code></pre>
 
@@ -336,7 +336,7 @@ Process the given block rewards.
                 <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="block_reward.md#0x1_block_reward_process_block_reward">block_reward::process_block_reward</a> | treasury_balance: "));
                 <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&treasury_balance);
                 <b>if</b> (<a href="block_reward.md#0x1_block_reward">block_reward</a> &gt; 0) {
-                    <b>let</b> reward = <a href="treasury_withdraw_dao_proposal.md#0x1_treasury_withdraw_dao_proposal_withdraw_for_block_reward">treasury_withdraw_dao_proposal::withdraw_for_block_reward</a>&lt;STC&gt;(<a href="account.md#0x1_account">account</a>, <a href="block_reward.md#0x1_block_reward">block_reward</a>);
+                    <b>let</b> reward = <a href="dao_treasury_withdraw_proposal.md#0x1_dao_treasury_withdraw_proposal_withdraw_for_block_reward">dao_treasury_withdraw_proposal::withdraw_for_block_reward</a>&lt;STC&gt;(<a href="account.md#0x1_account">account</a>, <a href="block_reward.md#0x1_block_reward">block_reward</a>);
                     <a href="coin.md#0x1_coin_merge">coin::merge</a>(&<b>mut</b> total_reward, reward);
                 };
             };

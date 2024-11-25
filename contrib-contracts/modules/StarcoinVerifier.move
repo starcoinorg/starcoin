@@ -42,9 +42,9 @@ address StarcoinAssociation {
             let leaf_node = Node { hash1: copy address_hash, hash2: account_state_root_hash};
             let current_hash = StructuredHash::hash(SPARSE_MERKLE_LEAF_NODE, &leaf_node);
             let i = 0;
-            let proof_length = Vector::length(&proofs);
+            let proof_length = vector::length(&proofs);
             while (i < proof_length) {
-                let sibling = *Vector::borrow(&proofs, i);
+                let sibling = *vector::borrow(&proofs, i);
                 let bit = Bit::get_bit(&address_hash, proof_length - i - 1);
                 let internal_node = if (bit) {
                     Node {hash1: sibling, hash2: current_hash}
@@ -71,7 +71,7 @@ address StarcoinAssociation {
 
         fun concat(v1: &vector<u8>, v2: vector<u8>): vector<u8> {
             let data = *v1;
-            Vector::append(&mut data, v2);
+            vector::append(&mut data, v2);
             data
         }
 
@@ -81,7 +81,7 @@ address StarcoinAssociation {
         public fun get_bit(data: &vector<u8>, index: u64): bool {
             let pos = index / 8;
             let bit = (7 - index % 8);
-            (*Vector::borrow(data, pos) >> (bit as u8)) & 1u8 != 0
+            (*vector::borrow(data, pos) >> (bit as u8)) & 1u8 != 0
         }
     }
 }

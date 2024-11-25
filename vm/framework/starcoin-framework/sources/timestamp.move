@@ -36,10 +36,11 @@ module starcoin_framework::timestamp {
     /// Updates the wall clock time by consensus. Requires VM privilege and will be invoked during block prologue.
     public fun update_global_time(
         account: &signer,
-        proposer: address,
+        _proposer: address,
         timestamp: u64
     ) acquires CurrentTimeMicroseconds {
         debug::print(&std::string::utf8(b"timestamp::update_global_time | Entered"));
+        debug::print(&timestamp);
 
         // Can only be invoked by StarcoinVM signer.
         // system_addresses::assert_vm(account);

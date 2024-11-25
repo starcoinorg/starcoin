@@ -1,0 +1,77 @@
+processed 9 tasks
+
+task 3 'run'. lines 7-20:
+{
+  "gas_used": 38830,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "system_addresses"
+        }
+      },
+      "abort_code": "327683"
+    }
+  }
+}
+
+task 4 'run'. lines 23-36:
+{
+  "gas_used": 80346,
+  "status": "Executed"
+}
+
+task 5 'run'. lines 39-54:
+{
+  "gas_used": 51293,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "epoch"
+        }
+      },
+      "abort_code": "65637"
+    }
+  }
+}
+
+task 6 'run'. lines 57-76:
+{
+  "gas_used": 48248,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "epoch"
+        }
+      },
+      "abort_code": "19"
+    }
+  }
+}
+
+task 7 'run'. lines 79-98:
+{
+  "gas_used": 54121,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "epoch"
+        }
+      },
+      "abort_code": "65637"
+    }
+  }
+}
+
+task 8 'run'. lines 101-121:
+{
+  "gas_used": 216363,
+  "status": "Executed"
+}

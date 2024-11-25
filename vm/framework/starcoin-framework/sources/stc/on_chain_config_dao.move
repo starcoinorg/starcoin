@@ -66,7 +66,7 @@ module starcoin_framework::on_chain_config_dao {
 
         pragma aborts_if_is_partial = false;
 
-        // copy from Dao::propose spec.
+        // copy from dao::propose spec.
         include dao::AbortIfDaoConfigNotExist<TokenT>;
         include dao::AbortIfDaoInfoNotExist<TokenT>;
         aborts_if !exists<timestamp::CurrentTimeMicroseconds>(system_addresses::get_starcoin_framework());

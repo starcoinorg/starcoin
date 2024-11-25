@@ -33,7 +33,6 @@
 <pre><code><b>use</b> <a href="account.md#0x1_account">0x1::account</a>;
 <b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="event.md#0x1_event">0x1::event</a>;
-<b>use</b> <a href="reserved_accounts_signer.md#0x1_reserved_accounts_signer">0x1::reserved_accounts_signer</a>;
 <b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
 <b>use</b> <a href="system_addresses.md#0x1_system_addresses">0x1::system_addresses</a>;
 <b>use</b> <a href="timestamp.md#0x1_timestamp">0x1::timestamp</a>;
@@ -378,9 +377,9 @@ Register <code>OracleT</code> as an oracle type.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="oracle.md#0x1_oracle_register_oracle">register_oracle</a>&lt;OracleT: <b>copy</b>+store+drop, Info: <b>copy</b>+store+drop&gt;(sender: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, info: Info) {
-    <b>let</b> genesis_account =
-        <a href="reserved_accounts_signer.md#0x1_reserved_accounts_signer_get_stored_signer">reserved_accounts_signer::get_stored_signer</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(sender));
-    <b>move_to</b>(&genesis_account, <a href="oracle.md#0x1_oracle_OracleInfo">OracleInfo</a>&lt;OracleT, Info&gt; {
+    // <b>let</b> genesis_account =
+    //     <a href="reserved_accounts_signer.md#0x1_reserved_accounts_signer_get_stored_signer">reserved_accounts_signer::get_stored_signer</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(sender));
+    <b>move_to</b>(sender, <a href="oracle.md#0x1_oracle_OracleInfo">OracleInfo</a>&lt;OracleT, Info&gt; {
         counter: 0,
         info,
     });

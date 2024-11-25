@@ -108,12 +108,16 @@ module starcoin_framework::coin {
     /// APT pairing is not eanbled yet.
     const EAPT_PAIRING_IS_NOT_ENABLED: u64 = 28;
 
+    /// The coin decimal too long
+    const ECOIN_COIN_DECIMAL_TOO_LARGE: u64 = 29;
+
     //
     // Constants
     //
 
     const MAX_COIN_NAME_LENGTH: u64 = 32;
     const MAX_COIN_SYMBOL_LENGTH: u64 = 10;
+    const MAX_COIN_DECIMAL: u8 = 38;
 
     /// Core data structures
 
@@ -835,15 +839,25 @@ module starcoin_framework::coin {
     #[view]
     /// Returns the amount of coin in existence.
     public fun supply<CoinType>(): Option<u128> acquires CoinInfo, CoinConversionMap {
+        debug::print(&std::string::utf8(b"dao::supply | entered"));
+
         let coin_supply = coin_supply<CoinType>();
         let metadata = paired_metadata<CoinType>();
+
+        debug::print(&std::string::utf8(b"dao::supply | metadata"));
+        debug::print(&metadata);
+
         if (option::is_some(&metadata)) {
-            let fungible_asset_supply = fungible_asset::supply(option::extract(&mut metadata));
-            if (option::is_some(&coin_supply)) {
+            let fungible_asset_supply =
+                fungible_asset::supply(option::extract(&mut metadata));
+            if (option::is_some(&coin_supply) &&
+                option::is_some(&fungible_asset_supply)) {
                 let supply = option::borrow_mut(&mut coin_supply);
                 *supply = *supply + option::destroy_some(fungible_asset_supply);
             };
         };
+        debug::print(&std::string::utf8(b"dao::supply | exit, coin supply"));
+        debug::print(&coin_supply);
         coin_supply
     }
 
@@ -1116,6 +1130,7 @@ module starcoin_framework::coin {
 
         assert!(string::length(&name) <= MAX_COIN_NAME_LENGTH, error::invalid_argument(ECOIN_NAME_TOO_LONG));
         assert!(string::length(&symbol) <= MAX_COIN_SYMBOL_LENGTH, error::invalid_argument(ECOIN_SYMBOL_TOO_LONG));
+        assert!(decimals < MAX_COIN_DECIMAL, error::invalid_argument(ECOIN_COIN_DECIMAL_TOO_LARGE));
 
         let coin_info = CoinInfo<CoinType> {
             name,
