@@ -1,14 +1,15 @@
 module starcoin_framework::on_chain_config_scripts {
 
     use std::signer;
+
     use starcoin_framework::block_reward_config;
+    use starcoin_framework::consensus_config;
+    use starcoin_framework::on_chain_config_dao;
+    use starcoin_framework::starcoin_coin::STC;
     use starcoin_framework::stc_language_version;
-    use starcoin_framework::vm_config;
     use starcoin_framework::stc_transaction_timeout_config;
     use starcoin_framework::transaction_publish_option;
-    use starcoin_framework::starcoin_coin::STC;
-    use starcoin_framework::on_chain_config_dao;
-    use starcoin_framework::consensus_config;
+    use starcoin_framework::vm_config;
 
     public entry fun propose_update_consensus_config(
         account: signer,
