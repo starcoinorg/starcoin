@@ -152,8 +152,7 @@ impl StateKey {
             REGISTRY
                 .resource_group(struct_tag, address)
                 .get_or_add(struct_tag, address, || {
-                    Ok(StateKeyInner::AccessPath(AccessPath::resource_access_path(
-                        *address,
+                    Ok(StateKeyInner::AccessPath(AccessPath::resource_group_access_path(*address,
                         struct_tag.clone(),
                     )))
                 })

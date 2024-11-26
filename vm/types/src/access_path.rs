@@ -79,6 +79,10 @@ impl AccessPath {
         Self::new(address, Self::code_data_path(module_name))
     }
 
+    pub fn resource_group_access_path(address: AccountAddress, struct_tag: StructTag) -> AccessPath {
+        Self::new(address, Self::resource_group_data_path(struct_tag))
+    }
+
     pub fn resource_data_path(tag: StructTag) -> DataPath {
         DataPath::Resource(tag)
     }
@@ -181,7 +185,20 @@ pub fn random_identity() -> Identifier {
 
 impl fmt::Debug for AccessPath {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self)
+        let path = match self.path {
+            DataPath::Code(ref module_name) => format!("\"Code({}::{})\"", &self.address, module_name),
+            DataPath::Resource(ref struct_tag) => {
+                format!("\"Resource({})\"", struct_tag)
+            }
+            DataPath::ResourceGroup(ref struct_tag) => {
+                format!("\"ResourceGroup({})\"", struct_tag)
+            }
+        };
+        write!(
+            f,
+            "AccessPath {{ address: 0x{}, path: {} }}",
+            self.address.short_str_lossless(), path
+        )
     }
 }
 

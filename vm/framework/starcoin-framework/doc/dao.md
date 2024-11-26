@@ -1120,7 +1120,6 @@ extract proposal action to execute.
     proposer_address: <b>address</b>,
     proposal_id: u64,
 ): ActionT <b>acquires</b> <a href="dao.md#0x1_dao_Proposal">Proposal</a> {
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="dao.md#0x1_dao_extract_proposal_action">dao::extract_proposal_action</a> | Entered"));
     // Only executable proposal's action can be extracted.
     <b>assert</b>!(
         <a href="dao.md#0x1_dao_proposal_state">proposal_state</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id) == <a href="dao.md#0x1_dao_EXECUTABLE">EXECUTABLE</a>,
