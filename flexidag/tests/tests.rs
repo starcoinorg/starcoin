@@ -1350,7 +1350,7 @@ fn init_columns() -> anyhow::Result<Vec<ColumnFamilyName>> {
 }
 
 #[test]
-fn test_transaction_write_and_commit() -> anyhow::Result<()> {
+fn test_transaction_write_in_single_mode() -> anyhow::Result<()> {
     let columns = init_columns()?;
     let db = init_transaction_db(&columns)?;
 
@@ -1435,6 +1435,123 @@ fn test_transaction_write_and_commit() -> anyhow::Result<()> {
     transaction.put_cf(column3, b"rose_key", b"claire")?;
 
     transaction.commit()?;
+
+    if let Some(column_value) = db.get_cf(column1, b"jack_key")? {
+        assert_eq!(column_value, b"jacky");
+    } else {
+        bail!("failed to get the value from the column1");
+    }
+
+    if let Some(column_value) = db.get_cf(column2, b"loves_key")? {
+        assert_eq!(column_value, b"loves eternally");
+    } else {
+        bail!("failed to get the value from the column2");
+    }
+
+    if let Some(column_value) = db.get_cf(column3, b"rose_key")? {
+        assert_eq!(column_value, b"claire");
+    } else {
+        bail!("failed to get the value from the column3");
+    }
+
+    anyhow::Ok(())
+}
+
+#[test]
+fn test_transaction_write_in_batch_mode() -> anyhow::Result<()> {
+    let columns = init_columns()?;
+    let db = init_transaction_db(&columns)?;
+
+    let column1 = db.cf_handle(columns[0]).unwrap_or_else(|| {
+        panic!(
+            "check the column name: {0} that maybe not defined",
+            columns[0]
+        )
+    });
+    let column2 = db.cf_handle(columns[1]).unwrap_or_else(|| {
+        panic!(
+            "check the column name: {0} that maybe not defined",
+            columns[1]
+        )
+    });
+    let column3 = db.cf_handle(columns[2]).unwrap_or_else(|| {
+        panic!(
+            "check the column name: {0} that maybe not defined",
+            columns[2]
+        )
+    });
+
+    // write and commit
+    let transaction = db.transaction();
+
+    let mut batch = transaction.get_writebatch();
+
+    batch.put_cf(column1, b"jack_key", b"jack");
+    batch.put_cf(column2, b"loves_key", b"loves");
+    batch.put_cf(column3, b"rose_key", b"rose");
+
+    db.write(batch)?;
+
+    if let Some(column_value) = db.get_cf(column1, b"jack_key")? {
+        assert_eq!(column_value, b"jack");
+    } else {
+        bail!("failed to get the value from the column1");
+    }
+
+    if let Some(column_value) = db.get_cf(column2, b"loves_key")? {
+        assert_eq!(column_value, b"loves");
+    } else {
+        bail!("failed to get the value from the column2");
+    }
+
+    if let Some(column_value) = db.get_cf(column3, b"rose_key")? {
+        assert_eq!(column_value, b"rose");
+    } else {
+        bail!("failed to get the value from the column3");
+    }
+
+    // write and rollback
+    let transaction = db.transaction();
+
+    {
+        let mut batch = transaction.get_writebatch();
+
+        batch.put_cf(column1, b"jack_key", b"jacky");
+        batch.put_cf(column2, b"loves_key", b"loves eternally");
+        batch.put_cf(column3, b"rose_key", b"claire");
+    }
+
+    // no writing
+    // ...
+
+    if let Some(column_value) = db.get_cf(column1, b"jack_key")? {
+        assert_eq!(column_value, b"jack");
+    } else {
+        bail!("failed to get the value from the column1");
+    }
+
+    if let Some(column_value) = db.get_cf(column2, b"loves_key")? {
+        assert_eq!(column_value, b"loves");
+    } else {
+        bail!("failed to get the value from the column2");
+    }
+
+    if let Some(column_value) = db.get_cf(column3, b"rose_key")? {
+        assert_eq!(column_value, b"rose");
+    } else {
+        bail!("failed to get the value from the column3");
+    }
+
+    // write again and commit this time
+    let transaction = db.transaction();
+
+    let mut batch = transaction.get_writebatch();
+
+    batch.put_cf(column1, b"jack_key", b"jacky");
+    batch.put_cf(column2, b"loves_key", b"loves eternally");
+    batch.put_cf(column3, b"rose_key", b"claire");
+
+    db.write(batch)?;
 
     if let Some(column_value) = db.get_cf(column1, b"jack_key")? {
         assert_eq!(column_value, b"jacky");
