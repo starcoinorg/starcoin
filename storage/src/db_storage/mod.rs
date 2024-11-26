@@ -16,6 +16,8 @@ use rocksdb::{
 use starcoin_config::{check_open_fds_limit, RocksdbConfig};
 use std::{collections::HashSet, iter, marker::PhantomData, path::Path};
 
+pub mod transaction_storage;
+
 const RES_FDS: u64 = 4096;
 
 #[allow(clippy::upper_case_acronyms)]
@@ -476,7 +478,7 @@ impl InnerStore for DBStorage {
     }
 }
 
-impl RawDBStorage for DBStorage {
+impl RawDBStorage<false> for DBStorage {
     fn raw_get_pinned_cf<K: AsRef<[u8]>>(
         &self,
         prefix: &str,

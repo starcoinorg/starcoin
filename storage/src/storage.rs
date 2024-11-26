@@ -9,7 +9,7 @@ use crate::{
 };
 use anyhow::{bail, format_err, Result};
 use byteorder::{BigEndian, ReadBytesExt};
-use rocksdb::{DBPinnableSlice, WriteBatch as DBWriteBatch};
+use rocksdb::{DBPinnableSlice, WriteBatchWithTransaction};
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::{debug, info};
@@ -46,14 +46,14 @@ pub trait InnerStore: Send + Sync {
     fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>>;
 }
 
-pub trait RawDBStorage: Send + Sync {
+pub trait RawDBStorage<const TRANSACTION: bool>: Send + Sync {
     fn raw_get_pinned_cf<K: AsRef<[u8]>>(
         &self,
         prefix: &str,
         key: K,
     ) -> Result<Option<DBPinnableSlice>>;
 
-    fn raw_write_batch(&self, batch: DBWriteBatch) -> Result<()>;
+    fn raw_write_batch(&self, batch: WriteBatchWithTransaction<TRANSACTION>) -> Result<()>;
 }
 
 ///Storage instance type define
