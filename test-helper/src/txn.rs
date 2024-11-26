@@ -119,14 +119,16 @@ pub fn create_account_txn_sent_as_association(
 ) -> SignedUserTransaction {
     let args = vec![
         bcs_ext::to_bytes(new_account.address()).unwrap(),
-        bcs_ext::to_bytes(&new_account.auth_key().to_vec()).unwrap(),
         bcs_ext::to_bytes(&initial_amount).unwrap(),
     ];
 
     create_signed_txn_with_association_account(
         TransactionPayload::EntryFunction(EntryFunction::new(
-            ModuleId::new(core_code_address(), Identifier::new("Account").unwrap()),
-            Identifier::new("create_account_with_initial_amount").unwrap(),
+            ModuleId::new(
+                core_code_address(),
+                Identifier::new("transfer_scripts").unwrap(),
+            ),
+            Identifier::new("peer_to_peer_v2").unwrap(),
             vec![stc_type_tag()],
             args,
         )),

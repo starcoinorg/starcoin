@@ -13,7 +13,7 @@ use starcoin_logger::prelude::*;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
-use starcoin_transaction_builder::{build_empty_script, DEFAULT_EXPIRATION_TIME};
+use starcoin_transaction_builder::{empty_txn_payload, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::proptest_types::{AccountInfoUniverse, Index, SignatureCheckedTransactionGen};
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionPayload};
@@ -86,7 +86,7 @@ fn gen_header(
 }
 
 fn gen_script_payload() -> TransactionPayload {
-    TransactionPayload::EntryFunction(build_empty_script())
+    empty_txn_payload()
 }
 
 fn txn_transfer(

@@ -6,7 +6,7 @@ use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::{StructTag, TypeTag, CORE_CODE_ADDRESS};
 use serde::{Deserialize, Serialize};
 
-const MV_FLEXI_DAG_CONFIG_MODULE_NAME: &str = "FlexiDagConfig";
+const MV_FLEXI_DAG_CONFIG_MODULE_NAME: &str = "flexi_dag_config";
 const MV_FLEXI_DAG_CONFIG_STRUCT_NAME: &str = "FlexiDagConfig";
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Eq, Hash, PartialEq, PartialOrd, Ord)]

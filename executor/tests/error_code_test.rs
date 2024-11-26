@@ -200,11 +200,7 @@ pub fn raw_peer_to_peer_txn_with_non_default_gas_token(
     RawUserTransaction::new(
         sender,
         seq_num,
-        TransactionPayload::EntryFunction(encode_transfer_script_by_token_code(
-            receiver,
-            transfer_amount,
-            G_STC_TOKEN_CODE.clone(),
-        )),
+        encode_transfer_script_by_token_code(receiver, transfer_amount, G_STC_TOKEN_CODE.clone()),
         max_gas,
         gas_price,
         expiration_timestamp_secs,

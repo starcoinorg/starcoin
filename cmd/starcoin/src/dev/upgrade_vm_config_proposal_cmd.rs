@@ -14,7 +14,6 @@ use starcoin_rpc_client::StateRootOption;
 use starcoin_transaction_builder::build_vm_config_upgrade_proposal;
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm_types::on_chain_config::VMConfig;
-use starcoin_vm_types::transaction::TransactionPayload;
 
 /// Submit a VM config upgrade proposal
 #[derive(Debug, Parser)]
@@ -62,9 +61,7 @@ impl CommandAction for UpgradeVMConfigProposalCommand {
         let min_action_delay = get_dao_config(ctx.state())?.min_action_delay;
         let vm_config_upgrade_proposal =
             build_vm_config_upgrade_proposal(genesis_config.vm_config, min_action_delay);
-        ctx.state().build_and_execute_transaction(
-            opt.transaction_opts.clone(),
-            TransactionPayload::EntryFunction(vm_config_upgrade_proposal),
-        )
+        ctx.state()
+            .build_and_execute_transaction(opt.transaction_opts.clone(), vm_config_upgrade_proposal)
     }
 }

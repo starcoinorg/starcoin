@@ -14,7 +14,6 @@ use starcoin_types::account_config;
 use starcoin_types::account_config::STCUnit;
 use starcoin_vm_types::account_config::G_STC_TOKEN_CODE;
 use starcoin_vm_types::token::token_value::TokenValue;
-use starcoin_vm_types::transaction::TransactionPayload;
 use std::time::Duration;
 
 /// Get stc to default account.
@@ -71,11 +70,11 @@ impl CommandAction for GetCoinCommand {
             state
                 .build_and_execute_transaction(
                     txn_opt,
-                    TransactionPayload::EntryFunction(encode_transfer_script_by_token_code(
+                    encode_transfer_script_by_token_code(
                         to,
                         opt.amount.scaling(),
                         G_STC_TOKEN_CODE.clone(),
-                    )),
+                    ),
                 )?
                 .get_transaction_info()
         } else {

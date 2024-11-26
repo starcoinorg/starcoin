@@ -7,9 +7,8 @@ use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_executor::validate_transaction;
 use starcoin_logger::prelude::*;
 use starcoin_transaction_builder::{
-    build_batch_script_function_same_amount, build_transfer_txn,
-    encode_create_account_script_function, raw_peer_to_peer_txn, DEFAULT_EXPIRATION_TIME,
-    DEFAULT_MAX_GAS_AMOUNT,
+    build_batch_payload_same_amount, build_transfer_txn, encode_create_account_script_function,
+    raw_peer_to_peer_txn, DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
 };
 use starcoin_types::account::peer_to_peer_txn;
 use starcoin_types::identifier::Identifier;
@@ -76,7 +75,8 @@ impl TStateView for NullStateView {
 fn test_vm_version() {
     let (chain_state, _net) = prepare_genesis();
 
-    let version_module_id = ModuleId::new(genesis_address(), Identifier::new("Version").unwrap());
+    let version_module_id =
+        ModuleId::new(genesis_address(), Identifier::new("stc_version").unwrap());
     let mut value = starcoin_dev::playground::call_contract(
         &chain_state,
         version_module_id,
@@ -103,7 +103,7 @@ fn test_flexidag_config_get() {
 
     let version_module_id = ModuleId::new(
         genesis_address(),
-        Identifier::new("FlexiDagConfig").unwrap(),
+        Identifier::new("flexi_dag_config").unwrap(),
     );
     let mut value = starcoin_dev::playground::call_contract(
         &chain_state,
@@ -159,7 +159,7 @@ fn test_consensus_config_get() -> Result<()> {
 
     let module_id = ModuleId::new(
         genesis_address(),
-        Identifier::new("ConsensusConfig").unwrap(),
+        Identifier::new("consensus_config").unwrap(),
     );
     let mut rets = starcoin_dev::playground::call_contract(
         &chain_state,
@@ -176,6 +176,7 @@ fn test_consensus_config_get() -> Result<()> {
     Ok(())
 }
 
+// fixme
 #[stest::test]
 fn test_batch_transfer() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
@@ -188,12 +189,8 @@ fn test_batch_transfer() -> Result<()> {
         addresses.push(*account.address());
     });
 
-    let script_function = build_batch_script_function_same_amount(addresses, 1);
-    association_execute_should_success(
-        &net,
-        &chain_state,
-        TransactionPayload::EntryFunction(script_function),
-    )?;
+    let payload = build_batch_payload_same_amount(addresses, 1);
+    association_execute_should_success(&net, &chain_state, payload)?;
     Ok(())
 }
 
@@ -230,10 +227,11 @@ fn test_txn_verify_err_case() -> Result<()> {
     Ok(())
 }
 
+// fixme
 #[stest::test(timeout = 360)]
 fn test_package_txn() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
-    let alice = test_helper::Account::new();
+    let alice = Account::new();
     let bob = Account::new();
     let pre_mint_amount = net.genesis_config().pre_mine_amount;
 
@@ -341,8 +339,8 @@ fn test_package_txn() -> Result<()> {
 #[stest::test(timeout = 360)]
 fn test_wrong_package_address() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
-    let alice = test_helper::Account::new();
-    let bob = test_helper::Account::new();
+    let alice = Account::new();
+    let bob = Account::new();
     let pre_mint_amount = net.genesis_config().pre_mine_amount;
 
     // create alice, bob accounts

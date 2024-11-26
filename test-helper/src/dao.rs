@@ -19,7 +19,6 @@ use starcoin_executor::execute_readonly_function;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainStateReader;
 use starcoin_statedb::ChainStateDB;
-use starcoin_transaction_builder::build_empty_script;
 use starcoin_transaction_builder::encode_create_account_script_function;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::{association_address, genesis_address, stc_type_tag};
@@ -437,10 +436,6 @@ pub fn execute_script_on_chain_config(
         vec![type_tag],
         vec![bcs_ext::to_bytes(&proposal_id).unwrap()],
     )
-}
-
-pub fn empty_txn_payload() -> TransactionPayload {
-    TransactionPayload::EntryFunction(build_empty_script())
 }
 
 pub fn dao_vote_test(
