@@ -1,7 +1,7 @@
-use crate::storage::ColumnFamilyName;
+use crate::{db_storage::transaction_storage::DBTransactionStorage, storage::ColumnFamilyName};
 use anyhow::bail;
 use rocksdb::{OptimisticTransactionDB, SingleThreaded};
-use starcoin_config::temp_dir;
+use starcoin_config::{temp_dir, RocksdbConfig};
 
 fn init_transaction_db(
     columns: &[ColumnFamilyName],
@@ -260,6 +260,14 @@ fn test_transaction_write_in_batch_mode() -> anyhow::Result<()> {
     } else {
         bail!("failed to get the value from the column3");
     }
+
+    anyhow::Ok(())
+}
+
+#[test]
+fn test_db_transaction_storage() -> anyhow::Result<()> {
+    let tmpdir = starcoin_config::temp_dir();
+    let _storage = DBTransactionStorage::new(tmpdir.path(), RocksdbConfig::default(), None).unwrap();
 
     anyhow::Ok(())
 }

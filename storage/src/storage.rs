@@ -3,9 +3,7 @@
 
 pub use crate::batch::WriteBatch;
 use crate::{
-    cache_storage::CacheStorage,
-    db_storage::{DBStorage, SchemaIterator},
-    upgrade::DBUpgrade,
+    cache_storage::CacheStorage, db_storage::{transaction_storage::DBTransactionStorage, DBStorage, SchemaIterator}, upgrade::DBUpgrade
 };
 use anyhow::{bail, format_err, Result};
 use byteorder::{BigEndian, ReadBytesExt};
@@ -70,6 +68,9 @@ pub enum StorageInstance {
         cache: Arc<CacheStorage>,
         db: Arc<DBStorage>,
     },
+    TransactionDB {
+        db: Arc<DBTransactionStorage>,
+    }
 }
 
 impl StorageInstance {
@@ -80,6 +81,10 @@ impl StorageInstance {
     }
     pub fn new_db_instance(db: DBStorage) -> Self {
         Self::DB { db: Arc::new(db) }
+    }
+
+    pub fn new_transaction_db_instance(db: DBTransactionStorage) -> Self {
+        Self::TransactionDB { db: Arc::new(db) }
     }
 
     pub fn new_cache_and_db_instance(cache: CacheStorage, db: DBStorage) -> Self {
@@ -137,6 +142,7 @@ impl InnerStore for StorageInstance {
         match self {
             Self::CACHE { cache } => cache.get(prefix_name, key),
             Self::DB { db } => db.get(prefix_name, key),
+            Self::TransactionDB { db } => db.get(prefix_name, key),
             Self::CacheAndDb { cache, db } => {
                 // first get from cache
                 // if from cache get non-existent, query from db
@@ -163,6 +169,7 @@ impl InnerStore for StorageInstance {
         match self {
             Self::CACHE { cache } => cache.put(prefix_name, key, value),
             Self::DB { db } => db.put(prefix_name, key, value),
+            Self::TransactionDB { db } => db.put(prefix_name, key, value),
             Self::CacheAndDb { cache, db } => db
                 .put(prefix_name, key.clone(), value.clone())
                 .and_then(|_| cache.put(prefix_name, key, value)),
@@ -173,6 +180,7 @@ impl InnerStore for StorageInstance {
         match self {
             Self::CACHE { cache } => cache.contains_key(prefix_name, key),
             Self::DB { db } => db.contains_key(prefix_name, key),
+            Self::TransactionDB { db } => db.contains_key(prefix_name, key),
             Self::CacheAndDb { cache, db } => match cache.contains_key(prefix_name, key.clone()) {
                 Ok(true) => Ok(true),
                 _ => db.contains_key(prefix_name, key),
@@ -184,6 +192,7 @@ impl InnerStore for StorageInstance {
         match self {
             Self::CACHE { cache } => cache.remove(prefix_name, key),
             Self::DB { db } => db.remove(prefix_name, key),
+            Self::TransactionDB { db } => db.remove(prefix_name, key),
             Self::CacheAndDb { cache, db } => match db.remove(prefix_name, key.clone()) {
                 Ok(_) => cache.remove(prefix_name, key),
                 _ => bail!("db storage remove error."),
@@ -195,6 +204,7 @@ impl InnerStore for StorageInstance {
         match self {
             Self::CACHE { cache } => cache.write_batch(prefix_name, batch),
             Self::DB { db } => db.write_batch(prefix_name, batch),
+            Self::TransactionDB { db } => db.write_batch(prefix_name, batch),
             Self::CacheAndDb { cache, db } => match db.write_batch(prefix_name, batch.clone()) {
                 Ok(_) => cache.write_batch(prefix_name, batch),
                 Err(err) => bail!("write batch db error: {}", err),
@@ -221,6 +231,7 @@ impl InnerStore for StorageInstance {
         match self {
             Self::CACHE { cache } => cache.put(prefix_name, key, value),
             Self::DB { db } => db.put_sync(prefix_name, key, value),
+            Self::TransactionDB { db } => db.put_sync(prefix_name, key, value),
             Self::CacheAndDb { cache, db } => db
                 .put_sync(prefix_name, key.clone(), value.clone())
                 .and_then(|_| cache.put(prefix_name, key, value)),
@@ -231,6 +242,7 @@ impl InnerStore for StorageInstance {
         match self {
             Self::CACHE { cache } => cache.write_batch(prefix_name, batch),
             Self::DB { db } => db.write_batch_sync(prefix_name, batch),
+            Self::TransactionDB { db } => db.write_batch_sync(prefix_name, batch),
             Self::CacheAndDb { cache, db } => {
                 match db.write_batch_sync(prefix_name, batch.clone()) {
                     Ok(_) => cache.write_batch(prefix_name, batch),
@@ -244,6 +256,7 @@ impl InnerStore for StorageInstance {
         match self {
             Self::CACHE { cache } => cache.multi_get(prefix_name, keys),
             Self::DB { db } => db.multi_get(prefix_name, keys),
+            Self::TransactionDB { db } => db.multi_get(prefix_name, keys),
             Self::CacheAndDb { db, .. } => {
                 /* https://github.com/facebook/rocksdb/wiki/Block-Cache#lru-cache
                 * if use multi_get from CacheStorage, cache may evict some records
