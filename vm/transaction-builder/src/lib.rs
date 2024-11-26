@@ -601,7 +601,7 @@ pub fn build_empty_script() -> EntryFunction {
     EntryFunction::new(
         ModuleId::new(
             core_code_address(),
-            Identifier::new("EmptyScripts").unwrap(),
+            Identifier::new("empty_scripts").unwrap(),
         ),
         Identifier::new("empty_script").unwrap(),
         vec![],

@@ -125,7 +125,7 @@ impl Sample for EntryFunction {
         Self {
             module: ModuleId::new(
                 core_code_address(),
-                Identifier::new("EmptyScripts").unwrap(),
+                Identifier::new("empty_scripts").unwrap(),
             ),
             function: Identifier::new("empty_script").unwrap(),
             ty_args: vec![],
