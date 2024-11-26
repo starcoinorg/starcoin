@@ -11,6 +11,7 @@
 -  [Function `propose_update_txn_timeout_config`](#0x1_on_chain_config_scripts_propose_update_txn_timeout_config)
 -  [Function `propose_update_vm_config`](#0x1_on_chain_config_scripts_propose_update_vm_config)
 -  [Function `propose_update_move_language_version`](#0x1_on_chain_config_scripts_propose_update_move_language_version)
+-  [Function `propose_update_flexi_dag_effective_height`](#0x1_on_chain_config_scripts_propose_update_flexi_dag_effective_height)
 -  [Function `execute_on_chain_config_proposal`](#0x1_on_chain_config_scripts_execute_on_chain_config_proposal)
 -  [Function `execute_on_chain_config_proposal_v2`](#0x1_on_chain_config_scripts_execute_on_chain_config_proposal_v2)
 -  [Specification](#@Specification_0)
@@ -20,12 +21,14 @@
     -  [Function `propose_update_txn_timeout_config`](#@Specification_0_propose_update_txn_timeout_config)
     -  [Function `propose_update_vm_config`](#@Specification_0_propose_update_vm_config)
     -  [Function `propose_update_move_language_version`](#@Specification_0_propose_update_move_language_version)
+    -  [Function `propose_update_flexi_dag_effective_height`](#@Specification_0_propose_update_flexi_dag_effective_height)
     -  [Function `execute_on_chain_config_proposal`](#@Specification_0_execute_on_chain_config_proposal)
     -  [Function `execute_on_chain_config_proposal_v2`](#@Specification_0_execute_on_chain_config_proposal_v2)
 
 
 <pre><code><b>use</b> <a href="block_reward_config.md#0x1_block_reward_config">0x1::block_reward_config</a>;
 <b>use</b> <a href="consensus_config.md#0x1_consensus_config">0x1::consensus_config</a>;
+<b>use</b> <a href="flexi_dag_config.md#0x1_flexi_dag_config">0x1::flexi_dag_config</a>;
 <b>use</b> <a href="on_chain_config_dao.md#0x1_on_chain_config_dao">0x1::on_chain_config_dao</a>;
 <b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
 <b>use</b> <a href="starcoin_coin.md#0x1_starcoin_coin">0x1::starcoin_coin</a>;
@@ -253,6 +256,35 @@ Propose to update the VM configuration.
 
 </details>
 
+<a id="0x1_on_chain_config_scripts_propose_update_flexi_dag_effective_height"></a>
+
+## Function `propose_update_flexi_dag_effective_height`
+
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="on_chain_config_scripts.md#0x1_on_chain_config_scripts_propose_update_flexi_dag_effective_height">propose_update_flexi_dag_effective_height</a>(<a href="account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, new_height: u64, exec_delay: u64)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="on_chain_config_scripts.md#0x1_on_chain_config_scripts_propose_update_flexi_dag_effective_height">propose_update_flexi_dag_effective_height</a>(<a href="account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, new_height: u64, exec_delay: u64) {
+    <b>let</b> config = <a href="flexi_dag_config.md#0x1_flexi_dag_config_new_flexidag_config">flexi_dag_config::new_flexidag_config</a>(new_height);
+    <a href="on_chain_config_dao.md#0x1_on_chain_config_dao_propose_update">on_chain_config_dao::propose_update</a>&lt;<a href="starcoin_coin.md#0x1_starcoin_coin_STC">starcoin_coin::STC</a>, <a href="flexi_dag_config.md#0x1_flexi_dag_config_FlexiDagConfig">flexi_dag_config::FlexiDagConfig</a>&gt;(
+        &<a href="account.md#0x1_account">account</a>,
+        config,
+        exec_delay
+    );
+}
+</code></pre>
+
+
+
+</details>
+
 <a id="0x1_on_chain_config_scripts_execute_on_chain_config_proposal"></a>
 
 ## Function `execute_on_chain_config_proposal`
@@ -395,6 +427,22 @@ Propose to update the VM configuration.
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="on_chain_config_scripts.md#0x1_on_chain_config_scripts_propose_update_move_language_version">propose_update_move_language_version</a>(<a href="account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, new_version: u64, exec_delay: u64)
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> verify = <b>false</b>;
+</code></pre>
+
+
+
+<a id="@Specification_0_propose_update_flexi_dag_effective_height"></a>
+
+### Function `propose_update_flexi_dag_effective_height`
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="on_chain_config_scripts.md#0x1_on_chain_config_scripts_propose_update_flexi_dag_effective_height">propose_update_flexi_dag_effective_height</a>(<a href="account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, new_height: u64, exec_delay: u64)
 </code></pre>
 
 

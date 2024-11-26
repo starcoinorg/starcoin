@@ -396,6 +396,8 @@ pub enum EntryFunctionCall {
         amount: u128,
     },
 
+    EmptyScriptsEmptyScript {},
+
     /// Withdraw an `amount` of coin `CoinType` from `account` and burn it.
     ManagedCoinBurn {
         coin_type: TypeTag,
@@ -670,6 +672,11 @@ pub enum EntryFunctionCall {
         base_max_uncles_per_block: u64,
         base_block_gas_limit: u64,
         strategy: u8,
+        exec_delay: u64,
+    },
+
+    OnChainConfigScriptsProposeUpdateFlexiDagEffectiveHeight {
+        new_height: u64,
         exec_delay: u64,
     },
 
@@ -1118,7 +1125,7 @@ pub enum EntryFunctionCall {
         voting_quorum_rate: u8,
         min_action_delay: u64,
         transaction_timeout: u64,
-        _dag_effective_height: u64,
+        dag_effective_height: u64,
     },
 
     TransactionFeeConvertToStarcoinFaBurnRef {},
@@ -1510,6 +1517,7 @@ impl EntryFunctionCall {
             EasyGasScriptWithdrawGasFeeEntry { token_type, amount } => {
                 easy_gas_script_withdraw_gas_fee_entry(token_type, amount)
             }
+            EmptyScriptsEmptyScript {} => empty_scripts_empty_script(),
             ManagedCoinBurn { coin_type, amount } => managed_coin_burn(coin_type, amount),
             ManagedCoinInitialize {
                 coin_type,
@@ -1720,6 +1728,12 @@ impl EntryFunctionCall {
                 base_block_gas_limit,
                 strategy,
                 exec_delay,
+            ),
+            OnChainConfigScriptsProposeUpdateFlexiDagEffectiveHeight {
+                new_height,
+                exec_delay,
+            } => on_chain_config_scripts_propose_update_flexi_dag_effective_height(
+                new_height, exec_delay,
             ),
             OnChainConfigScriptsProposeUpdateMoveLanguageVersion {
                 new_version,
@@ -2024,7 +2038,7 @@ impl EntryFunctionCall {
                 voting_quorum_rate,
                 min_action_delay,
                 transaction_timeout,
-                _dag_effective_height,
+                dag_effective_height,
             } => stc_genesis_initialize(
                 stdlib_version,
                 reward_delay,
@@ -2056,7 +2070,7 @@ impl EntryFunctionCall {
                 voting_quorum_rate,
                 min_action_delay,
                 transaction_timeout,
-                _dag_effective_height,
+                dag_effective_height,
             ),
             TransactionFeeConvertToStarcoinFaBurnRef {} => {
                 transaction_fee_convert_to_starcoin_fa_burn_ref()
@@ -3040,6 +3054,18 @@ pub fn easy_gas_script_withdraw_gas_fee_entry(
     ))
 }
 
+pub fn empty_scripts_empty_script() -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("empty_scripts").to_owned(),
+        ),
+        ident_str!("empty_script").to_owned(),
+        vec![],
+        vec![],
+    ))
+}
+
 /// Withdraw an `amount` of coin `CoinType` from `account` and burn it.
 pub fn managed_coin_burn(coin_type: TypeTag, amount: u64) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
@@ -3729,6 +3755,24 @@ pub fn on_chain_config_scripts_propose_update_consensus_config(
             bcs::to_bytes(&base_max_uncles_per_block).unwrap(),
             bcs::to_bytes(&base_block_gas_limit).unwrap(),
             bcs::to_bytes(&strategy).unwrap(),
+            bcs::to_bytes(&exec_delay).unwrap(),
+        ],
+    ))
+}
+
+pub fn on_chain_config_scripts_propose_update_flexi_dag_effective_height(
+    new_height: u64,
+    exec_delay: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("on_chain_config_scripts").to_owned(),
+        ),
+        ident_str!("propose_update_flexi_dag_effective_height").to_owned(),
+        vec![],
+        vec![
+            bcs::to_bytes(&new_height).unwrap(),
             bcs::to_bytes(&exec_delay).unwrap(),
         ],
     ))
@@ -4900,7 +4944,7 @@ pub fn stc_genesis_initialize(
     voting_quorum_rate: u8,
     min_action_delay: u64,
     transaction_timeout: u64,
-    _dag_effective_height: u64,
+    dag_effective_height: u64,
 ) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
@@ -4940,7 +4984,7 @@ pub fn stc_genesis_initialize(
             bcs::to_bytes(&voting_quorum_rate).unwrap(),
             bcs::to_bytes(&min_action_delay).unwrap(),
             bcs::to_bytes(&transaction_timeout).unwrap(),
-            bcs::to_bytes(&_dag_effective_height).unwrap(),
+            bcs::to_bytes(&dag_effective_height).unwrap(),
         ],
     ))
 }
@@ -5952,6 +5996,14 @@ mod decoder {
         }
     }
 
+    pub fn empty_scripts_empty_script(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(_script) = payload {
+            Some(EntryFunctionCall::EmptyScriptsEmptyScript {})
+        } else {
+            None
+        }
+    }
+
     pub fn managed_coin_burn(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
         if let TransactionPayload::EntryFunction(script) = payload {
             Some(EntryFunctionCall::ManagedCoinBurn {
@@ -6409,6 +6461,21 @@ mod decoder {
                     base_block_gas_limit: bcs::from_bytes(script.args().get(9)?).ok()?,
                     strategy: bcs::from_bytes(script.args().get(10)?).ok()?,
                     exec_delay: bcs::from_bytes(script.args().get(11)?).ok()?,
+                },
+            )
+        } else {
+            None
+        }
+    }
+
+    pub fn on_chain_config_scripts_propose_update_flexi_dag_effective_height(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(
+                EntryFunctionCall::OnChainConfigScriptsProposeUpdateFlexiDagEffectiveHeight {
+                    new_height: bcs::from_bytes(script.args().get(0)?).ok()?,
+                    exec_delay: bcs::from_bytes(script.args().get(1)?).ok()?,
                 },
             )
         } else {
@@ -7256,7 +7323,7 @@ mod decoder {
                 voting_quorum_rate: bcs::from_bytes(script.args().get(27)?).ok()?,
                 min_action_delay: bcs::from_bytes(script.args().get(28)?).ok()?,
                 transaction_timeout: bcs::from_bytes(script.args().get(29)?).ok()?,
-                _dag_effective_height: bcs::from_bytes(script.args().get(30)?).ok()?,
+                dag_effective_height: bcs::from_bytes(script.args().get(30)?).ok()?,
             })
         } else {
             None
@@ -7754,6 +7821,10 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
             Box::new(decoder::easy_gas_script_withdraw_gas_fee_entry),
         );
         map.insert(
+            "empty_scripts_empty_script".to_string(),
+            Box::new(decoder::empty_scripts_empty_script),
+        );
+        map.insert(
             "managed_coin_burn".to_string(),
             Box::new(decoder::managed_coin_burn),
         );
@@ -7884,6 +7955,10 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
         map.insert(
             "on_chain_config_scripts_propose_update_consensus_config".to_string(),
             Box::new(decoder::on_chain_config_scripts_propose_update_consensus_config),
+        );
+        map.insert(
+            "on_chain_config_scripts_propose_update_flexi_dag_effective_height".to_string(),
+            Box::new(decoder::on_chain_config_scripts_propose_update_flexi_dag_effective_height),
         );
         map.insert(
             "on_chain_config_scripts_propose_update_move_language_version".to_string(),

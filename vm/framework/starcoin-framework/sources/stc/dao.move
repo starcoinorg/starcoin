@@ -581,7 +581,6 @@ module starcoin_framework::dao {
     }
 
 
-
     //// Helper functions
 
     //// Query functions
