@@ -10,23 +10,22 @@
 module default::holder {
     use starcoin_framework::signer;
 
-    struct Hold<T> has key {
+    struct Hold<T: store> has key, store {
         x: T
     }
 
-    public fun hold<T>(account: &signer, x: T) {
+    public fun hold<T: store>(account: &signer, x: T) {
         move_to(account, Hold<T> { x })
     }
 
-    public fun get<T>(account: &signer): T
+    public fun get<T: store>(account: &signer): T
     acquires Hold {
         let Hold { x } = move_from<Hold<T>>(signer::address_of(account));
         x
     }
 }
 
-
-//# run --signers bob
+// //# run --signers bob
 //
 // script {
 //     use starcoin_framework::starcoin_coin::STC;
@@ -56,7 +55,7 @@ module default::holder {
 // // check: 26119
 //
 
-//# run --signers default
+// //# run --signers default
 // script {
 //     use starcoin_framework::account;
 //     use default::holder;
@@ -141,17 +140,17 @@ module default::holder {
 // // check: EXECUTED
 //
 //
-// //# run --signers bob
-// script {
-//     use starcoin_framework::account;
-//     use starcoin_framework::signer;
-//
-//     fun main(account: signer) {
-//         let seq = account::sequence_number(signer::address_of(&account));
-//         assert!(seq == 3, seq);
-//     }
-// }
-// // check: EXECUTE
+//# run --signers bob
+script {
+    use starcoin_framework::account;
+    use starcoin_framework::signer;
+
+    fun main(account: signer) {
+        let seq = account::get_sequence_number(signer::address_of(&account));
+        assert!(seq == 0, seq);
+    }
+}
+// check: EXECUTE
 //
 
 //# run --signers bob

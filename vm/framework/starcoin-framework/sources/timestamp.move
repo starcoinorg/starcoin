@@ -53,6 +53,8 @@ module starcoin_framework::timestamp {
         //     assert!(now == timestamp, error::invalid_argument(EINVALID_TIMESTAMP));
         // } else {
         // Normal block. Time must advance
+        debug::print(&std::string::utf8(b"timestamp::update_global_time | Current global time: "));
+        debug::print(&global_timer.microseconds);
         assert!(global_timer.microseconds < timestamp, error::invalid_argument(EINVALID_TIMESTAMP));
         global_timer.microseconds = timestamp;
         //};

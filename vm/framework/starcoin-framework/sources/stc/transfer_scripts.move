@@ -10,7 +10,7 @@ module starcoin_framework::transfer_scripts {
     const ELENGTH_MISMATCH: u64 = 102;
     const EDEPRECATED_FUNCTION: u64 = 19;
 
-    public entry fun peer_to_peer<TokenType: store>(
+    public entry fun peer_to_peer<TokenType>(
         account: signer,
         payee: address,
         _payee_auth_key: vector<u8>,
@@ -40,7 +40,7 @@ module starcoin_framework::transfer_scripts {
     }
 
     /// Batch transfer token to others.
-    public entry fun batch_peer_to_peer_v2<TokenType: store>(
+    public entry fun batch_peer_to_peer_v2<TokenType>(
         account: signer,
         payeees: vector<address>,
         amounts: vector<u128>

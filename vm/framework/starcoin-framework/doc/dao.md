@@ -671,6 +671,7 @@ propose a proposal.
     action_delay: u64,
 ) <b>acquires</b> <a href="dao.md#0x1_dao_DaoGlobalInfo">DaoGlobalInfo</a> {
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"dao::proposal | Entered"));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>));
 
     <b>if</b> (action_delay == 0) {
         action_delay = <a href="dao.md#0x1_dao_min_action_delay">min_action_delay</a>&lt;TokenT&gt;();

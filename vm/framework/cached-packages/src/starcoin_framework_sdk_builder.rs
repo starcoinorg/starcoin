@@ -1158,6 +1158,35 @@ pub enum EntryFunctionCall {
         amount: u128,
     },
 
+    /// Execute a withdraw proposal.
+    TreasuryScriptsExecuteWithdrawProposal {
+        token_t: TypeTag,
+        proposer_address: AccountAddress,
+        proposal_id: u64,
+    },
+
+    /// Propose a withdraw from treasury.
+    TreasuryScriptsProposeWithdraw {
+        token_t: TypeTag,
+        receiver: AccountAddress,
+        amount: u128,
+        period: u64,
+        exec_delay: u64,
+    },
+
+    /// Withdraw token from treasury and split the LinearWithdrawCapability.
+    TreasuryScriptsWithdrawAndSplitLtWithdrawCap {
+        token_t: TypeTag,
+        for_address: AccountAddress,
+        amount: u128,
+        lock_period: u64,
+    },
+
+    /// Withdraw token from treasury.
+    TreasuryScriptsWithdrawTokenWithLinearWithdrawCapability {
+        token_t: TypeTag,
+    },
+
     /// Used in on-chain governances to update the major version for the next epoch.
     /// Example usage:
     /// - `starcoin_framework::version::set_for_next_epoch(&framework_signer, new_version);`
@@ -2099,6 +2128,32 @@ impl EntryFunctionCall {
                 payee,
                 amount,
             } => transfer_scripts_peer_to_peer_v2(token_type, payee, amount),
+            TreasuryScriptsExecuteWithdrawProposal {
+                token_t,
+                proposer_address,
+                proposal_id,
+            } => treasury_scripts_execute_withdraw_proposal(token_t, proposer_address, proposal_id),
+            TreasuryScriptsProposeWithdraw {
+                token_t,
+                receiver,
+                amount,
+                period,
+                exec_delay,
+            } => treasury_scripts_propose_withdraw(token_t, receiver, amount, period, exec_delay),
+            TreasuryScriptsWithdrawAndSplitLtWithdrawCap {
+                token_t,
+                for_address,
+                amount,
+                lock_period,
+            } => treasury_scripts_withdraw_and_split_lt_withdraw_cap(
+                token_t,
+                for_address,
+                amount,
+                lock_period,
+            ),
+            TreasuryScriptsWithdrawTokenWithLinearWithdrawCapability { token_t } => {
+                treasury_scripts_withdraw_token_with_linear_withdraw_capability(token_t)
+            }
             VersionSetForNextEpoch { major } => version_set_for_next_epoch(major),
             VersionSetVersion { major } => version_set_version(major),
             VestingAdminWithdraw { contract_address } => vesting_admin_withdraw(contract_address),
@@ -5083,6 +5138,87 @@ pub fn transfer_scripts_peer_to_peer_v2(
     ))
 }
 
+/// Execute a withdraw proposal.
+pub fn treasury_scripts_execute_withdraw_proposal(
+    token_t: TypeTag,
+    proposer_address: AccountAddress,
+    proposal_id: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("treasury_scripts").to_owned(),
+        ),
+        ident_str!("execute_withdraw_proposal").to_owned(),
+        vec![token_t],
+        vec![
+            bcs::to_bytes(&proposer_address).unwrap(),
+            bcs::to_bytes(&proposal_id).unwrap(),
+        ],
+    ))
+}
+
+/// Propose a withdraw from treasury.
+pub fn treasury_scripts_propose_withdraw(
+    token_t: TypeTag,
+    receiver: AccountAddress,
+    amount: u128,
+    period: u64,
+    exec_delay: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("treasury_scripts").to_owned(),
+        ),
+        ident_str!("propose_withdraw").to_owned(),
+        vec![token_t],
+        vec![
+            bcs::to_bytes(&receiver).unwrap(),
+            bcs::to_bytes(&amount).unwrap(),
+            bcs::to_bytes(&period).unwrap(),
+            bcs::to_bytes(&exec_delay).unwrap(),
+        ],
+    ))
+}
+
+/// Withdraw token from treasury and split the LinearWithdrawCapability.
+pub fn treasury_scripts_withdraw_and_split_lt_withdraw_cap(
+    token_t: TypeTag,
+    for_address: AccountAddress,
+    amount: u128,
+    lock_period: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("treasury_scripts").to_owned(),
+        ),
+        ident_str!("withdraw_and_split_lt_withdraw_cap").to_owned(),
+        vec![token_t],
+        vec![
+            bcs::to_bytes(&for_address).unwrap(),
+            bcs::to_bytes(&amount).unwrap(),
+            bcs::to_bytes(&lock_period).unwrap(),
+        ],
+    ))
+}
+
+/// Withdraw token from treasury.
+pub fn treasury_scripts_withdraw_token_with_linear_withdraw_capability(
+    token_t: TypeTag,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("treasury_scripts").to_owned(),
+        ),
+        ident_str!("withdraw_token_with_linear_withdraw_capability").to_owned(),
+        vec![token_t],
+        vec![],
+    ))
+}
+
 /// Used in on-chain governances to update the major version for the next epoch.
 /// Example usage:
 /// - `starcoin_framework::version::set_for_next_epoch(&framework_signer, new_version);`
@@ -7398,6 +7534,67 @@ mod decoder {
         }
     }
 
+    pub fn treasury_scripts_execute_withdraw_proposal(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::TreasuryScriptsExecuteWithdrawProposal {
+                token_t: script.ty_args().get(0)?.clone(),
+                proposer_address: bcs::from_bytes(script.args().get(0)?).ok()?,
+                proposal_id: bcs::from_bytes(script.args().get(1)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn treasury_scripts_propose_withdraw(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::TreasuryScriptsProposeWithdraw {
+                token_t: script.ty_args().get(0)?.clone(),
+                receiver: bcs::from_bytes(script.args().get(0)?).ok()?,
+                amount: bcs::from_bytes(script.args().get(1)?).ok()?,
+                period: bcs::from_bytes(script.args().get(2)?).ok()?,
+                exec_delay: bcs::from_bytes(script.args().get(3)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn treasury_scripts_withdraw_and_split_lt_withdraw_cap(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(
+                EntryFunctionCall::TreasuryScriptsWithdrawAndSplitLtWithdrawCap {
+                    token_t: script.ty_args().get(0)?.clone(),
+                    for_address: bcs::from_bytes(script.args().get(0)?).ok()?,
+                    amount: bcs::from_bytes(script.args().get(1)?).ok()?,
+                    lock_period: bcs::from_bytes(script.args().get(2)?).ok()?,
+                },
+            )
+        } else {
+            None
+        }
+    }
+
+    pub fn treasury_scripts_withdraw_token_with_linear_withdraw_capability(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(
+                EntryFunctionCall::TreasuryScriptsWithdrawTokenWithLinearWithdrawCapability {
+                    token_t: script.ty_args().get(0)?.clone(),
+                },
+            )
+        } else {
+            None
+        }
+    }
+
     pub fn version_set_for_next_epoch(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
         if let TransactionPayload::EntryFunction(script) = payload {
             Some(EntryFunctionCall::VersionSetForNextEpoch {
@@ -8236,6 +8433,22 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
         map.insert(
             "transfer_scripts_peer_to_peer_v2".to_string(),
             Box::new(decoder::transfer_scripts_peer_to_peer_v2),
+        );
+        map.insert(
+            "treasury_scripts_execute_withdraw_proposal".to_string(),
+            Box::new(decoder::treasury_scripts_execute_withdraw_proposal),
+        );
+        map.insert(
+            "treasury_scripts_propose_withdraw".to_string(),
+            Box::new(decoder::treasury_scripts_propose_withdraw),
+        );
+        map.insert(
+            "treasury_scripts_withdraw_and_split_lt_withdraw_cap".to_string(),
+            Box::new(decoder::treasury_scripts_withdraw_and_split_lt_withdraw_cap),
+        );
+        map.insert(
+            "treasury_scripts_withdraw_token_with_linear_withdraw_capability".to_string(),
+            Box::new(decoder::treasury_scripts_withdraw_token_with_linear_withdraw_capability),
         );
         map.insert(
             "version_set_for_next_epoch".to_string(),
