@@ -3,6 +3,7 @@ module starcoin_framework::stc_genesis {
 
     use std::option;
     use std::vector;
+    use starcoin_framework::flexi_dag_config;
     use starcoin_framework::oracle_stc_usd;
     use starcoin_framework::dao_modify_config_proposal;
 
@@ -77,7 +78,7 @@ module starcoin_framework::stc_genesis {
         min_action_delay: u64,
         // transaction timeout config
         transaction_timeout: u64,
-        _dag_effective_height: u64,
+        dag_effective_height: u64,
     ) {
         debug::print(&std::string::utf8(b"stc_genesis::initialize Entered"));
 
@@ -111,6 +112,8 @@ module starcoin_framework::stc_genesis {
             &starcoin_framework_account,
             gas_schedule_blob,
         );
+
+        flexi_dag_config::initialize(&starcoin_framework_account, dag_effective_height);
 
         stc_transaction_timeout_config::initialize(&starcoin_framework_account, transaction_timeout);
         consensus_config::initialize(
@@ -261,6 +264,7 @@ module starcoin_framework::stc_genesis {
         on_chain_config_dao::plugin<STC, consensus_config::ConsensusConfig>(starcoin_framework);
         on_chain_config_dao::plugin<STC, block_reward_config::RewardConfig>(starcoin_framework);
         on_chain_config_dao::plugin<STC, stc_transaction_timeout_config::TransactionTimeoutConfig>(starcoin_framework);
+        on_chain_config_dao::plugin<STC, flexi_dag_config::FlexiDagConfig>(starcoin_framework);
 
         // debug::print(&std::string::utf8(b"initialize_stc | Exited"));
 

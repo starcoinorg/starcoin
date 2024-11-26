@@ -1,6 +1,7 @@
 module starcoin_framework::on_chain_config_scripts {
 
     use std::signer;
+    use starcoin_framework::starcoin_coin;
 
     use starcoin_framework::block_reward_config;
     use starcoin_framework::consensus_config;
@@ -10,6 +11,7 @@ module starcoin_framework::on_chain_config_scripts {
     use starcoin_framework::stc_transaction_timeout_config;
     use starcoin_framework::transaction_publish_option;
     use starcoin_framework::vm_config;
+    use starcoin_framework::flexi_dag_config;
 
     public entry fun propose_update_consensus_config(
         account: signer,
@@ -132,15 +134,18 @@ module starcoin_framework::on_chain_config_scripts {
         pragma verify = false;
     }
 
-    // TODO(BobOng): [framework compatible] To implement the following functions, we need to implement the `FlexiDagConfig` struct.
-    // public entry fun propose_update_flexi_dag_effective_height(account: signer, new_height: u64, exec_delay: u64) {
-    //     let config = FlexiDagConfig::new_flexidag_config(new_height);
-    //     OnChainConfigDao::propose_update<STC::STC, FlexiDagConfig::FlexiDagConfig>(&account, config, exec_delay);
-    // }
+    public entry fun propose_update_flexi_dag_effective_height(account: signer, new_height: u64, exec_delay: u64) {
+        let config = flexi_dag_config::new_flexidag_config(new_height);
+        on_chain_config_dao::propose_update<starcoin_coin::STC, flexi_dag_config::FlexiDagConfig>(
+            &account,
+            config,
+            exec_delay
+        );
+    }
 
-    // spec propose_update_flexi_dag_effective_height {
-    //     pragma verify = false;
-    // }
+    spec propose_update_flexi_dag_effective_height {
+        pragma verify = false;
+    }
 
     public entry fun execute_on_chain_config_proposal<ConfigT: copy + drop + store>(account: signer, proposal_id: u64) {
         on_chain_config_dao::execute<STC, ConfigT>(signer::address_of(&account), proposal_id);

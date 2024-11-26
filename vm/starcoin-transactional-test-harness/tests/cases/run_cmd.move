@@ -2,5 +2,5 @@
 
 //# faucet --addr creator --amount 100000000000
 
-//# run --signers creator -- 0x1::EmptyScripts::empty_script
+//# run --signers creator -- 0x1::empty_scripts::empty_script
 
