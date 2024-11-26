@@ -76,7 +76,8 @@ impl TStateView for NullStateView {
 fn test_vm_version() {
     let (chain_state, _net) = prepare_genesis();
 
-    let version_module_id = ModuleId::new(genesis_address(), Identifier::new("Version").unwrap());
+    let version_module_id =
+        ModuleId::new(genesis_address(), Identifier::new("stc_version").unwrap());
     let mut value = starcoin_dev::playground::call_contract(
         &chain_state,
         version_module_id,
@@ -103,7 +104,7 @@ fn test_flexidag_config_get() {
 
     let version_module_id = ModuleId::new(
         genesis_address(),
-        Identifier::new("FlexiDagConfig").unwrap(),
+        Identifier::new("flexi_dag_config").unwrap(),
     );
     let mut value = starcoin_dev::playground::call_contract(
         &chain_state,
@@ -159,7 +160,7 @@ fn test_consensus_config_get() -> Result<()> {
 
     let module_id = ModuleId::new(
         genesis_address(),
-        Identifier::new("ConsensusConfig").unwrap(),
+        Identifier::new("consensus_config").unwrap(),
     );
     let mut rets = starcoin_dev::playground::call_contract(
         &chain_state,

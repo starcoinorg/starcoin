@@ -27,7 +27,6 @@ use starcoin_types::{
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::token::stc;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
-use starcoin_vm_types::transaction::EntryFunction;
 use std::sync::mpsc;
 use std::sync::Arc;
 
@@ -128,13 +127,13 @@ impl TransactionGenerator {
             for (j, account) in block.iter().enumerate() {
                 let txn = create_transaction(
                     self.sequence,
-                    encode_create_account_script_function(
+                    TransactionPayload::EntryFunction(encode_create_account_script_function(
                         StdlibVersion::Latest,
                         stc::stc_type_tag(),
                         &account.address,
                         AuthenticationKey::ed25519(account.public_key()),
                         init_account_balance as u128,
-                    ),
+                    )),
                     self.net.time_service().now_secs() + j as u64 + 1,
                     &self.net,
                 );
@@ -285,12 +284,12 @@ pub fn run_benchmark(
 
 fn create_transaction(
     sequence_number: u64,
-    program: EntryFunction,
+    program: TransactionPayload,
     expiration_timestamp_secs: u64,
     net: &ChainNetwork,
 ) -> Transaction {
     let signed_txn = create_signed_txn_with_association_account(
-        TransactionPayload::EntryFunction(program),
+        program,
         sequence_number,
         40_000_000,
         1,
