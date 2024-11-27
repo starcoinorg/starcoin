@@ -1,6 +1,5 @@
 /// `VMConfig` keep track of VM related configuration, like gas schedule.
 module starcoin_framework::vm_config {
-    use starcoin_framework::storage_gas::GasCurve;
     use starcoin_framework::gas_schedule::GasScheduleV2;
     use starcoin_framework::system_addresses;
     use starcoin_framework::on_chain_config;

@@ -382,7 +382,7 @@ The runtime always runs this before executing the transactions in a block.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_block_prologue">block_prologue</a>(
+<pre><code><b>public</b> <b>fun</b>  <a href="stc_block.md#0x1_stc_block_block_prologue">block_prologue</a>(
     <a href="account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     parent_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64,

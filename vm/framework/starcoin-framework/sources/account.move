@@ -762,6 +762,27 @@ module starcoin_framework::account {
         (resource, signer_cap)
     }
 
+    /// Check auth key is zero.
+    public fun is_account_zero_auth_key(account_addr: address): bool acquires Account {
+        let account = borrow_global<Account>(account_addr);
+        account.authentication_key == ZERO_AUTH_KEY
+    }
+
+    /// Convert from authentication key to address
+    public fun auth_key_to_address(authentication_key: vector<u8>): address {
+        assert!(vector::length(&authentication_key) == 32, error::invalid_argument(EMALFORMED_AUTHENTICATION_KEY));
+        let address_bytes = vector::empty<u8>();
+
+        let i = 16;
+        while (i < 32) {
+            let b = *vector::borrow(&authentication_key, i);
+            vector::push_back(&mut address_bytes, b);
+            i = i + 1;
+        };
+
+        from_bcs::to_address(address_bytes)
+    }
+
     /// create the account for system reserved addresses
     public(friend) fun create_framework_reserved_account(addr: address): (signer, SignerCapability) {
         assert!(

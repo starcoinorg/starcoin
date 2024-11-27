@@ -47,6 +47,9 @@
 -  [Function `update_auth_key_and_originating_address_table`](#0x1_account_update_auth_key_and_originating_address_table)
 -  [Function `create_resource_address`](#0x1_account_create_resource_address)
 -  [Function `create_resource_account`](#0x1_account_create_resource_account)
+-  [Function `is_account_zero_auth_key`](#0x1_account_is_account_zero_auth_key)
+-  [Function `is_account_auth_key`](#0x1_account_is_account_auth_key)
+-  [Function `auth_key_to_address`](#0x1_account_auth_key_to_address)
 -  [Function `create_framework_reserved_account`](#0x1_account_create_framework_reserved_account)
 -  [Function `create_guid`](#0x1_account_create_guid)
 -  [Function `new_event_handle`](#0x1_account_new_event_handle)
@@ -1998,6 +2001,93 @@ than <code>(1/2)^(256)</code>.
     <a href="account.md#0x1_account">account</a>.signer_capability_offer.for = <a href="../../move-stdlib/doc/option.md#0x1_option_some">option::some</a>(resource_addr);
     <b>let</b> signer_cap = <a href="account.md#0x1_account_SignerCapability">SignerCapability</a> { <a href="account.md#0x1_account">account</a>: resource_addr };
     (resource, signer_cap)
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_account_is_account_zero_auth_key"></a>
+
+## Function `is_account_zero_auth_key`
+
+Check auth key is zero.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x1_account_is_account_zero_auth_key">is_account_zero_auth_key</a>(account_addr: <b>address</b>): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x1_account_is_account_zero_auth_key">is_account_zero_auth_key</a>(account_addr: <b>address</b>): bool <b>acquires</b> <a href="account.md#0x1_account_Account">Account</a> {
+    <b>let</b> <a href="account.md#0x1_account">account</a> = <b>borrow_global</b>&lt;<a href="account.md#0x1_account_Account">Account</a>&gt;(account_addr);
+    <a href="account.md#0x1_account">account</a>.authentication_key == <a href="account.md#0x1_account_ZERO_AUTH_KEY">ZERO_AUTH_KEY</a>
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_account_is_account_auth_key"></a>
+
+## Function `is_account_auth_key`
+
+Check is account auth key
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x1_account_is_account_auth_key">is_account_auth_key</a>(account_addr: <b>address</b>, auth_key: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x1_account_is_account_auth_key">is_account_auth_key</a>(account_addr: <b>address</b>, auth_key: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): bool <b>acquires</b> <a href="account.md#0x1_account_Account">Account</a> {
+    <b>let</b> <a href="account.md#0x1_account">account</a> = <b>borrow_global</b>&lt;<a href="account.md#0x1_account_Account">Account</a>&gt;(account_addr);
+    <a href="account.md#0x1_account">account</a>.authentication_key == auth_key
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_account_auth_key_to_address"></a>
+
+## Function `auth_key_to_address`
+
+Convert from authentication key to address
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x1_account_auth_key_to_address">auth_key_to_address</a>(authentication_key: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <b>address</b>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x1_account_auth_key_to_address">auth_key_to_address</a>(authentication_key: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <b>address</b> {
+    <b>assert</b>!(<a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(&authentication_key) == 32, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="account.md#0x1_account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>));
+    <b>let</b> address_bytes = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>&lt;u8&gt;();
+
+    <b>let</b> i = 16;
+    <b>while</b> (i &lt; 32) {
+        <b>let</b> b = *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(&authentication_key, i);
+        <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> address_bytes, b);
+        i = i + 1;
+    };
+
+    <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(address_bytes)
 }
 </code></pre>
 

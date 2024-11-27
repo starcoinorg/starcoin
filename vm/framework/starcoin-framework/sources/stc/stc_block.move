@@ -21,11 +21,11 @@ module starcoin_framework::stc_block {
     #[test_only]
     use std::hash;
     #[test_only]
-    use starcoin_framework::account::create_signer_for_test;
+    use starcoin_framework::account::{create_signer_for_test, create_account_if_does_not_exist};
     #[test_only]
     use starcoin_framework::bcs_util;
     #[test_only]
-    use starcoin_framework::create_signer;
+    use starcoin_framework::starcoin_account::create_account;
 
     const EPROLOGUE_BAD_CHAIN_ID: u64 = 6;
 
@@ -113,7 +113,7 @@ module starcoin_framework::stc_block {
 
     /// Set the metadata for the current block and distribute transaction fees and block rewards.
     /// The runtime always runs this before executing the transactions in a block.
-    public fun block_prologue(
+    public fun  block_prologue(
         account: signer,
         parent_hash: vector<u8>,
         timestamp: u64,
@@ -295,7 +295,9 @@ module starcoin_framework::stc_block {
 
     #[test]
     fun test_block_metadata_bcs() {
-        let test_framework = create_signer_for_test(system_addresses::get_starcoin_framework());
+        debug::print(&std::string::utf8(b"test_block_metadata_bcs | bcs"));
+
+        let test_framework = account::create_account_for_test(system_addresses::get_starcoin_framework());
         let block_metadata = BlockMetadata {
             number: 0,
             parent_hash: vector::empty<u8>(),

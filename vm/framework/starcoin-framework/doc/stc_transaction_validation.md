@@ -25,6 +25,7 @@
 <b>use</b> <a href="create_signer.md#0x1_create_signer">0x1::create_signer</a>;
 <b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
 <b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
+<b>use</b> <a href="../../move-stdlib/doc/hash.md#0x1_hash">0x1::hash</a>;
 <b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
 <b>use</b> <a href="starcoin_coin.md#0x1_starcoin_coin">0x1::starcoin_coin</a>;
 <b>use</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee">0x1::stc_transaction_fee</a>;
@@ -34,6 +35,7 @@
 <b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 <b>use</b> <a href="system_addresses.md#0x1_system_addresses">0x1::system_addresses</a>;
 <b>use</b> <a href="stc_transaction_publish_option.md#0x1_transaction_publish_option">0x1::transaction_publish_option</a>;
+<b>use</b> <a href="../../move-stdlib/doc/vector.md#0x1_vector">0x1::vector</a>;
 </code></pre>
 
 
@@ -371,7 +373,7 @@ It collects gas and bumps the sequence number
 Migration from old StarcoinFramework Account::txn_prologue
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_txn_prologue">txn_prologue</a>&lt;TokenType&gt;(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, txn_sender: <b>address</b>, txn_sequence_number: u64, _txn_authentication_key_preimage: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_txn_prologue">txn_prologue</a>&lt;TokenType&gt;(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, txn_sender: <b>address</b>, txn_sequence_number: u64, txn_authentication_key_preimage: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64)
 </code></pre>
 
 
@@ -384,7 +386,7 @@ Migration from old StarcoinFramework Account::txn_prologue
     <a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     txn_sender: <b>address</b>,
     txn_sequence_number: u64,
-    _txn_authentication_key_preimage: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    txn_authentication_key_preimage: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     txn_gas_price: u64,
     txn_max_gas_units: u64,
 ) {
@@ -398,21 +400,22 @@ Migration from old StarcoinFramework Account::txn_prologue
         <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_SIGNER_ALREADY_DELEGATED">EPROLOGUE_SIGNER_ALREADY_DELEGATED</a>)
     );
 
-    // TODO(BobOng): [framework upgrade] txn_authentication_key_preimage <b>to</b> be check
-    // // Load the transaction sender's <a href="account.md#0x1_account">account</a>
-    // <b>if</b> (is_dummy_auth_key(sender_account)){
-    //     // <b>if</b> sender's auth key is empty, <b>use</b> <b>address</b> <b>as</b> auth key for check transaction.
-    //     <b>assert</b>!(
-    //         Authenticator::derived_address(Hash::sha3_256(txn_authentication_key_preimage)) == txn_sender,
-    //         Errors::invalid_argument(<a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY">EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY</a>)
-    //     );
-    // }<b>else</b>{
-    //     // Check that the <a href="../../move-stdlib/doc/hash.md#0x1_hash">hash</a> of the transaction's <b>public</b> key matches the <a href="account.md#0x1_account">account</a>'s auth key
-    //     <b>assert</b>!(
-    //         Hash::sha3_256(txn_authentication_key_preimage) == *&sender_account.authentication_key,
-    //         Errors::invalid_argument(<a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY">EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY</a>)
-    //     );
-    // };
+    // txn_authentication_key_preimage <b>to</b> be check
+    // Load the transaction sender's <a href="account.md#0x1_account">account</a>
+    <b>if</b> (<a href="account.md#0x1_account_is_account_zero_auth_key">account::is_account_zero_auth_key</a>(txn_sender)) {
+        // <b>if</b> sender's auth key is empty, <b>use</b> <b>address</b> <b>as</b> auth key for check transaction.
+        <b>assert</b>!(
+            <a href="account.md#0x1_account_auth_key_to_address">account::auth_key_to_address</a>(<a href="../../move-stdlib/doc/hash.md#0x1_hash_sha3_256">hash::sha3_256</a>(txn_authentication_key_preimage)) == txn_sender,
+            <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY">EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY</a>)
+        );
+    } <b>else</b> {
+        // Check that the <a href="../../move-stdlib/doc/hash.md#0x1_hash">hash</a> of the transaction's <b>public</b> key matches the <a href="account.md#0x1_account">account</a>'s auth key
+        <b>assert</b>!(
+            //<a href="../../move-stdlib/doc/hash.md#0x1_hash_sha3_256">hash::sha3_256</a>(txn_authentication_key_preimage) == *&sender_account.authentication_key,
+            <a href="account.md#0x1_account_is_account_auth_key">account::is_account_auth_key</a>(txn_sender, <a href="../../move-stdlib/doc/hash.md#0x1_hash_sha3_256">hash::sha3_256</a>(txn_authentication_key_preimage)),
+            <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY">EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY</a>)
+        );
+    };
 
 
     <b>assert</b>!(
@@ -460,7 +463,7 @@ The epilogue is invoked at the end of transactions.
 It collects gas and bumps the sequence number
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_txn_epilogue">txn_epilogue</a>&lt;TokenType&gt;(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, txn_sender: <b>address</b>, _txn_sequence_number: u64, _txn_authentication_key_preimage: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_txn_epilogue">txn_epilogue</a>&lt;TokenType&gt;(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, txn_sender: <b>address</b>, _txn_sequence_number: u64, txn_authentication_key_preimage: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64)
 </code></pre>
 
 
@@ -473,7 +476,7 @@ It collects gas and bumps the sequence number
     <a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     txn_sender: <b>address</b>,
     _txn_sequence_number: u64,
-    _txn_authentication_key_preimage: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    txn_authentication_key_preimage: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     txn_gas_price: u64,
     txn_max_gas_units: u64,
     gas_units_remaining: u64,
@@ -482,7 +485,7 @@ It collects gas and bumps the sequence number
 
 
     // Charge for gas
-    <b>let</b> transaction_fee_amount =(txn_gas_price * (txn_max_gas_units - gas_units_remaining) <b>as</b> u128);
+    <b>let</b> transaction_fee_amount = (txn_gas_price * (txn_max_gas_units - gas_units_remaining) <b>as</b> u128);
     <b>assert</b>!(
         <a href="coin.md#0x1_coin_balance">coin::balance</a>&lt;STC&gt;(txn_sender) &gt;= (transaction_fee_amount <b>as</b> u64),
         <a href="../../move-stdlib/doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EINSUFFICIENT_BALANCE">EINSUFFICIENT_BALANCE</a>)
@@ -491,11 +494,14 @@ It collects gas and bumps the sequence number
     // Bump the sequence number
     <a href="account.md#0x1_account_increment_sequence_number">account::increment_sequence_number</a>(txn_sender);
 
-    // TODO(BobOng): [framework upgrade] txn_authentication_key_preimage <b>to</b> be check
     // Set auth key when user send transaction first.
-    // <b>if</b> (is_dummy_auth_key(sender_account) && !<a href="../../move-stdlib/doc/vector.md#0x1_vector_is_empty">vector::is_empty</a>(&txn_authentication_key_preimage)){
-    //     sender_account.authentication_key = Hash::sha3_256(txn_authentication_key_preimage);
-    // };
+    <b>if</b> (<a href="account.md#0x1_account_is_account_zero_auth_key">account::is_account_zero_auth_key</a>(txn_sender) &&
+        !<a href="../../move-stdlib/doc/vector.md#0x1_vector_is_empty">vector::is_empty</a>(&txn_authentication_key_preimage)) {
+        <a href="account.md#0x1_account_rotate_authentication_key_internal">account::rotate_authentication_key_internal</a>(
+            &<a href="create_signer.md#0x1_create_signer_create_signer">create_signer::create_signer</a>(txn_sender),
+            <a href="../../move-stdlib/doc/hash.md#0x1_hash_sha3_256">hash::sha3_256</a>(txn_authentication_key_preimage)
+        )
+    };
 
     <b>if</b> (transaction_fee_amount &gt; 0) {
         <b>let</b> <a href="transaction_fee.md#0x1_transaction_fee">transaction_fee</a> = <a href="coin.md#0x1_coin_withdraw">coin::withdraw</a>&lt;STC&gt;(
@@ -599,7 +605,7 @@ It collects gas and bumps the sequence number
 ### Function `txn_epilogue`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_txn_epilogue">txn_epilogue</a>&lt;TokenType&gt;(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, txn_sender: <b>address</b>, _txn_sequence_number: u64, _txn_authentication_key_preimage: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_txn_epilogue">txn_epilogue</a>&lt;TokenType&gt;(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, txn_sender: <b>address</b>, _txn_sequence_number: u64, txn_authentication_key_preimage: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64)
 </code></pre>
 
 
