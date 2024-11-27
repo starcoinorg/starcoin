@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::batch::GWriteBatch;
+use crate::batch::{GWriteBatch, WriteBatchWithColumn};
 use crate::{
     batch::WriteBatch,
     metrics::{record_metrics, StorageMetrics},
@@ -86,6 +86,32 @@ impl InnerStore for CacheStorage {
             .collect();
         let batch = WriteBatch { rows };
         record_metrics("cache", prefix_name, "write_batch", self.metrics.as_ref()).call(|| {
+            self.write_batch_inner(batch);
+            Ok(())
+        })
+    }
+
+    fn write_batch_with_column(&self, batch: WriteBatchWithColumn) -> Result<()> {
+        let rows = batch
+            .data
+            .into_iter()
+            .flat_map(|data| {
+                data.row_data
+                    .rows
+                    .iter()
+                    .cloned()
+                    .map(|(k, v)| (compose_key(Some(&data.column), k), v))
+                    .collect::<Vec<_>>()
+            })
+            .collect();
+        let batch = WriteBatch { rows };
+        record_metrics(
+            "cache",
+            "write_batch_column_prefix",
+            "write_batch",
+            self.metrics.as_ref(),
+        )
+        .call(|| {
             self.write_batch_inner(batch);
             Ok(())
         })

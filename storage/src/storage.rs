@@ -3,6 +3,7 @@
 
 pub use crate::batch::WriteBatch;
 use crate::{
+    batch::WriteBatchWithColumn,
     cache_storage::CacheStorage,
     db_storage::{DBStorage, SchemaIterator},
     upgrade::DBUpgrade,
@@ -39,6 +40,7 @@ pub trait InnerStore: Send + Sync {
     fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool>;
     fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()>;
     fn write_batch(&self, prefix_name: &str, batch: WriteBatch) -> Result<()>;
+    fn write_batch_with_column(&self, batch: WriteBatchWithColumn) -> Result<()>;
     fn get_len(&self) -> Result<u64>;
     fn keys(&self) -> Result<Vec<Vec<u8>>>;
     fn put_sync(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
@@ -201,6 +203,31 @@ impl InnerStore for StorageInstance {
             },
         }
     }
+
+    fn write_batch_with_column(&self, batch: WriteBatchWithColumn) -> Result<()> {
+        match self {
+            Self::CACHE { cache } => batch
+                .data
+                .into_iter()
+                .try_for_each(|data| cache.write_batch(&data.column, data.row_data)),
+            Self::DB { db } => batch
+                .data
+                .into_iter()
+                .try_for_each(|data| db.write_batch(&data.column, data.row_data)),
+            Self::CacheAndDb { cache, db } => {
+                batch
+                    .data
+                    .iter()
+                    .cloned()
+                    .try_for_each(|data| db.write_batch(&data.column, data.row_data))?;
+                batch
+                    .data
+                    .into_iter()
+                    .try_for_each(|data| cache.write_batch(&data.column, data.row_data))
+            }
+        }
+    }
+
     fn get_len(&self) -> Result<u64> {
         match self {
             Self::CACHE { cache } => cache.get_len(),

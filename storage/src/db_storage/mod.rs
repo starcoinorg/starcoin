@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    batch::WriteBatch,
+    batch::{WriteBatch, WriteBatchWithColumn},
     errors::StorageInitError,
     metrics::{record_metrics, StorageMetrics},
     storage::{ColumnFamilyName, InnerStore, KeyCodec, RawDBStorage, ValueCodec, WriteOp},
@@ -408,6 +408,30 @@ impl InnerStore for DBStorage {
                     WriteOp::Deletion => db_batch.delete_cf(cf_handle, key),
                 };
             }
+            self.db
+                .write_opt(db_batch, &Self::default_write_options())?;
+            Ok(())
+        })
+    }
+
+    fn write_batch_with_column(&self, batch: WriteBatchWithColumn) -> Result<()> {
+        let mut db_batch = DBWriteBatch::default();
+        batch.data.into_iter().for_each(|data| {
+            let cf_handle = self.get_cf_handle(&data.column);
+            for (key, write_op) in data.row_data.rows {
+                match write_op {
+                    WriteOp::Value(value) => db_batch.put_cf(cf_handle, key, value),
+                    WriteOp::Deletion => db_batch.delete_cf(cf_handle, key),
+                };
+            }
+        });
+        record_metrics(
+            "db",
+            "write_batch_column",
+            "write_batch",
+            self.metrics.as_ref(),
+        )
+        .call(|| {
             self.db
                 .write_opt(db_batch, &Self::default_write_options())?;
             Ok(())
