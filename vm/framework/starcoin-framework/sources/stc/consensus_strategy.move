@@ -1,5 +1,6 @@
 /// The module provides the information of current consensus strategy.
 module starcoin_framework::consensus_strategy {
+    use starcoin_std::debug;
     use starcoin_framework::on_chain_config;
     use starcoin_framework::system_addresses;
 
@@ -16,6 +17,7 @@ module starcoin_framework::consensus_strategy {
 
     /// Publish the chain ID under the genesis account
     public fun initialize(account: &signer, consensus_strategy: u8) {
+        debug::print(&std::string::utf8(b"consensus_strategy::initialize | entered "));
         // Timestamp::assert_genesis();
         system_addresses::assert_starcoin_framework(account);
         let cap = on_chain_config::publish_new_config_with_capability<ConsensusStrategy>(
@@ -24,6 +26,7 @@ module starcoin_framework::consensus_strategy {
         );
         //destroy the cap, so ConsensusStrategy can not been change.
         on_chain_config::destroy_modify_config_capability(cap);
+        debug::print(&std::string::utf8(b"consensus_strategy::initialize | exited "));
     }
 
     /// Return the consensus strategy type of this chain

@@ -48,7 +48,6 @@
 -  [Function `create_resource_address`](#0x1_account_create_resource_address)
 -  [Function `create_resource_account`](#0x1_account_create_resource_account)
 -  [Function `is_account_zero_auth_key`](#0x1_account_is_account_zero_auth_key)
--  [Function `is_account_auth_key`](#0x1_account_is_account_auth_key)
 -  [Function `auth_key_to_address`](#0x1_account_auth_key_to_address)
 -  [Function `create_framework_reserved_account`](#0x1_account_create_framework_reserved_account)
 -  [Function `create_guid`](#0x1_account_create_guid)
@@ -2027,32 +2026,6 @@ Check auth key is zero.
 <pre><code><b>public</b> <b>fun</b> <a href="account.md#0x1_account_is_account_zero_auth_key">is_account_zero_auth_key</a>(account_addr: <b>address</b>): bool <b>acquires</b> <a href="account.md#0x1_account_Account">Account</a> {
     <b>let</b> <a href="account.md#0x1_account">account</a> = <b>borrow_global</b>&lt;<a href="account.md#0x1_account_Account">Account</a>&gt;(account_addr);
     <a href="account.md#0x1_account">account</a>.authentication_key == <a href="account.md#0x1_account_ZERO_AUTH_KEY">ZERO_AUTH_KEY</a>
-}
-</code></pre>
-
-
-
-</details>
-
-<a id="0x1_account_is_account_auth_key"></a>
-
-## Function `is_account_auth_key`
-
-Check is account auth key
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x1_account_is_account_auth_key">is_account_auth_key</a>(account_addr: <b>address</b>, auth_key: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): bool
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x1_account_is_account_auth_key">is_account_auth_key</a>(account_addr: <b>address</b>, auth_key: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): bool <b>acquires</b> <a href="account.md#0x1_account_Account">Account</a> {
-    <b>let</b> <a href="account.md#0x1_account">account</a> = <b>borrow_global</b>&lt;<a href="account.md#0x1_account_Account">Account</a>&gt;(account_addr);
-    <a href="account.md#0x1_account">account</a>.authentication_key == auth_key
 }
 </code></pre>
 

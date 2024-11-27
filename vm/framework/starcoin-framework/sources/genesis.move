@@ -167,7 +167,7 @@ module starcoin_framework::genesis {
 
         let core_resources = account::create_account(@core_resources);
         account::rotate_authentication_key_internal(&core_resources, core_resources_auth_key);
-        starcoin_account::register_apt(&core_resources); // registers APT store
+        starcoin_account::register_stc(&core_resources); // registers APT store
         starcoin_coin::configure_accounts_for_test(starcoin_framework, &core_resources, mint_cap);
     }
 
@@ -537,7 +537,7 @@ module starcoin_framework::genesis {
         starcoin_coin::ensure_initialized_with_apt_fa_metadata_for_test();
 
         let core_resources = account::create_account(@core_resources);
-        starcoin_account::register_apt(&core_resources); // registers APT store
+        starcoin_account::register_stc(&core_resources); // registers APT store
 
         let apt_metadata = object::address_to_object<Metadata>(@starcoin_fungible_asset);
         assert!(primary_fungible_store::primary_store_exists(@core_resources, apt_metadata), 2);

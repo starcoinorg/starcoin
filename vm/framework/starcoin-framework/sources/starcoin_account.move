@@ -54,7 +54,7 @@ module starcoin_framework::starcoin_account {
 
     public entry fun create_account(auth_key: address) {
         let account_signer = account::create_account(auth_key);
-        register_apt(&account_signer);
+        register_stc(&account_signer);
     }
 
     /// Batch version of APT transfer.
@@ -136,7 +136,7 @@ module starcoin_framework::starcoin_account {
         assert!(account::exists_at(addr), error::not_found(EACCOUNT_NOT_FOUND));
     }
 
-    public fun assert_account_is_registered_for_apt(addr: address) {
+    public fun assert_account_is_registered_for_stc(addr: address) {
         assert_account_exists(addr);
         assert!(coin::is_account_registered<STC>(addr), error::not_found(EACCOUNT_NOT_REGISTERED_FOR_APT));
     }
@@ -184,8 +184,8 @@ module starcoin_framework::starcoin_account {
             borrow_global<DirectTransferConfig>(account).allow_arbitrary_coin_transfers
     }
 
-    public(friend) fun register_apt(account_signer: &signer) {
-        if (features::new_accounts_default_to_fa_apt_store_enabled()) {
+    public(friend) fun register_stc(account_signer: &signer) {
+        if (features::new_accounts_default_to_fa_stc_store_enabled()) {
             ensure_primary_fungible_store_exists(signer::address_of(account_signer));
         } else {
             coin::register<STC>(account_signer);

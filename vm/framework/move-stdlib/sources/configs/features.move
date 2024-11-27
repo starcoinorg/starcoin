@@ -536,7 +536,7 @@ module std::features {
 
     public fun get_new_accounts_default_to_fa_apt_store_feature(): u64 { NEW_ACCOUNTS_DEFAULT_TO_FA_APT_STORE }
 
-    public fun new_accounts_default_to_fa_apt_store_enabled(): bool acquires Features {
+    public fun new_accounts_default_to_fa_stc_store_enabled(): bool acquires Features {
         is_enabled(NEW_ACCOUNTS_DEFAULT_TO_FA_APT_STORE)
     }
 

@@ -25,6 +25,7 @@ The module for init Genesis
 <b>use</b> <a href="dao.md#0x1_dao">0x1::dao</a>;
 <b>use</b> <a href="dao_modify_config_proposal.md#0x1_dao_modify_config_proposal">0x1::dao_modify_config_proposal</a>;
 <b>use</b> <a href="dao_treasury_withdraw_proposal.md#0x1_dao_treasury_withdraw_proposal">0x1::dao_treasury_withdraw_proposal</a>;
+<b>use</b> <a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal">0x1::dao_upgrade_module_proposal</a>;
 <b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
 <b>use</b> <a href="epoch.md#0x1_epoch">0x1::epoch</a>;
 <b>use</b> <a href="flexi_dag_config.md#0x1_flexi_dag_config">0x1::flexi_dag_config</a>;
@@ -122,6 +123,7 @@ The module for init Genesis
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="chain_id.md#0x1_chain_id">chain_id</a>);
     <a href="chain_id.md#0x1_chain_id_initialize">chain_id::initialize</a>(&starcoin_framework_account, <a href="chain_id.md#0x1_chain_id">chain_id</a>);
 
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> | <a href="consensus_strategy.md#0x1_consensus_strategy_initialize">consensus_strategy::initialize</a> "));
     <a href="consensus_strategy.md#0x1_consensus_strategy_initialize">consensus_strategy::initialize</a>(&starcoin_framework_account, strategy);
     <a href="stc_block.md#0x1_stc_block_initialize">stc_block::initialize</a>(&starcoin_framework_account, parent_hash);
 
@@ -154,7 +156,9 @@ The module for init Genesis
         base_block_gas_limit,
         strategy,
     );
+
     <a href="epoch.md#0x1_epoch_initialize">epoch::initialize</a>(&starcoin_framework_account);
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> | <a href="epoch.md#0x1_epoch">epoch</a> initialized "));
 
     // stdlib <b>use</b> two phase upgrade strategy.
     <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_update_module_upgrade_strategy">stc_transaction_package_validation::update_module_upgrade_strategy</a>(
@@ -164,10 +168,7 @@ The module for init Genesis
     );
 
     <a href="block_reward.md#0x1_block_reward_initialize">block_reward::initialize</a>(&starcoin_framework_account, reward_delay);
-
-    // TODO(BobOng): [framework compatible] treasury_withdraw_dao_proposal not implemented.
-    // Lock the TreasuryWithdrawCapability <b>to</b> Dao
-    // treasury_withdraw_dao_proposal::plugin(&genesis_account, withdraw_cap);
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> | <a href="block_reward.md#0x1_block_reward">block_reward</a> initialized "));
 
     // Initliaze STC
     <b>let</b> total_supply_coin = <a href="stc_genesis.md#0x1_stc_genesis_initialize_stc">Self::initialize_stc</a>(
@@ -178,6 +179,8 @@ The module for init Genesis
         voting_quorum_rate,
         min_action_delay
     );
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> | initialize_stc "));
 
     // Init goverances <a href="account.md#0x1_account">account</a>
     <b>let</b> core_resource_account = <a href="account.md#0x1_account_create_account">account::create_account</a>(@core_resources);
@@ -192,6 +195,8 @@ The module for init Genesis
     );
 
     <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_initialize">stc_transaction_fee::initialize</a>(&starcoin_framework_account);
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> | <a href="stc_transaction_fee.md#0x1_stc_transaction_fee">stc_transaction_fee</a> initialized "));
 
     // Only test/dev network set <a href="genesis.md#0x1_genesis">genesis</a> auth key.
     <b>if</b> (!<a href="../../move-stdlib/doc/vector.md#0x1_vector_is_empty">vector::is_empty</a>(&genesis_auth_key) && (<a href="stc_util.md#0x1_stc_util_is_net_dev">stc_util::is_net_dev</a>() || <a href="stc_util.md#0x1_stc_util_is_net_test">stc_util::is_net_test</a>())) {
@@ -290,7 +295,7 @@ The treasury will mint the total_stc_amount to the treasury.
     voting_quorum_rate: u8,
     min_action_delay: u64
 ): <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;STC&gt; {
-    // <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"initialize_stc | Entered"));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"initialize_stc | Entered"));
 
     <b>let</b> (burn_cap, mint_cap) = <a href="starcoin_coin.md#0x1_starcoin_coin_initialize">starcoin_coin::initialize</a>(starcoin_framework);
     <a href="coin.md#0x1_coin_register">coin::register</a>&lt;STC&gt;(starcoin_framework);
@@ -314,13 +319,13 @@ The treasury will mint the total_stc_amount to the treasury.
         min_action_delay,
     );
 
-    // TODO(BobOng): [framework compatible] ModifyDaoConfigProposal && UpgradeModuleDaoProposal not implemented.
-    // ModifyDaoConfigProposal::plugin&lt;STC&gt;(<a href="account.md#0x1_account">account</a>);
-    // <b>let</b> upgrade_plan_cap = PackageTxnManager::extract_submit_upgrade_plan_cap(<a href="account.md#0x1_account">account</a>);
-    // UpgradeModuleDaoProposal::plugin&lt;STC&gt;(
-    //     <a href="account.md#0x1_account">account</a>,
-    //     upgrade_plan_cap,
-    // );
+    <a href="dao_modify_config_proposal.md#0x1_dao_modify_config_proposal_plugin">dao_modify_config_proposal::plugin</a>&lt;STC&gt;(starcoin_framework);
+
+    <b>let</b> upgrade_plan_cap =
+        <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_extract_submit_upgrade_plan_cap">stc_transaction_package_validation::extract_submit_upgrade_plan_cap</a>(starcoin_framework);
+    <a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_plugin">dao_upgrade_module_proposal::plugin</a>&lt;STC&gt;(starcoin_framework, upgrade_plan_cap);
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize_stc">stc_genesis::initialize_stc</a> | plugin upgrade cap "));
 
     // the following configurations are gov-ed by Dao.
     <a href="on_chain_config_dao.md#0x1_on_chain_config_dao_plugin">on_chain_config_dao::plugin</a>&lt;STC, <a href="stc_transaction_publish_option.md#0x1_transaction_publish_option_TransactionPublishOption">transaction_publish_option::TransactionPublishOption</a>&gt;(starcoin_framework);
@@ -330,7 +335,7 @@ The treasury will mint the total_stc_amount to the treasury.
     <a href="on_chain_config_dao.md#0x1_on_chain_config_dao_plugin">on_chain_config_dao::plugin</a>&lt;STC, <a href="stc_transaction_timeout_config.md#0x1_stc_transaction_timeout_config_TransactionTimeoutConfig">stc_transaction_timeout_config::TransactionTimeoutConfig</a>&gt;(starcoin_framework);
     <a href="on_chain_config_dao.md#0x1_on_chain_config_dao_plugin">on_chain_config_dao::plugin</a>&lt;STC, <a href="flexi_dag_config.md#0x1_flexi_dag_config_FlexiDagConfig">flexi_dag_config::FlexiDagConfig</a>&gt;(starcoin_framework);
 
-    // <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"initialize_stc | Exited"));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"initialize_stc | Exited"));
 
     total_stc_coin
 }
@@ -385,7 +390,6 @@ Overall governance allocation strategy:
         <a href="treasury.md#0x1_treasury_add_linear_withdraw_capability">treasury::add_linear_withdraw_capability</a>(core_resource_account, liner_withdraw_cap);
     };
     <a href="dao_treasury_withdraw_proposal.md#0x1_dao_treasury_withdraw_proposal_plugin">dao_treasury_withdraw_proposal::plugin</a>&lt;STC&gt;(starcoin_framework, treasury_withdraw_cap);
-    <a href="dao_modify_config_proposal.md#0x1_dao_modify_config_proposal_plugin">dao_modify_config_proposal::plugin</a>&lt;STC&gt;(starcoin_framework);
 }
 </code></pre>
 
