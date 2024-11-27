@@ -206,24 +206,11 @@ impl InnerStore for StorageInstance {
 
     fn write_batch_with_column(&self, batch: WriteBatchWithColumn) -> Result<()> {
         match self {
-            Self::CACHE { cache } => batch
-                .data
-                .into_iter()
-                .try_for_each(|data| cache.write_batch(&data.column, data.row_data)),
-            Self::DB { db } => batch
-                .data
-                .into_iter()
-                .try_for_each(|data| db.write_batch(&data.column, data.row_data)),
+            Self::CACHE { cache } => cache.write_batch_with_column(batch),
+            Self::DB { db } => db.write_batch_with_column(batch),
             Self::CacheAndDb { cache, db } => {
-                batch
-                    .data
-                    .iter()
-                    .cloned()
-                    .try_for_each(|data| db.write_batch(&data.column, data.row_data))?;
-                batch
-                    .data
-                    .into_iter()
-                    .try_for_each(|data| cache.write_batch(&data.column, data.row_data))
+                db.write_batch_with_column(batch.clone())?;
+                cache.write_batch_with_column(batch)
             }
         }
     }
