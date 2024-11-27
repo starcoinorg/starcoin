@@ -768,12 +768,6 @@ module starcoin_framework::account {
         account.authentication_key == ZERO_AUTH_KEY
     }
 
-    /// Check is account auth key
-    public fun is_account_auth_key(account_addr: address, auth_key: vector<u8>): bool acquires Account {
-        let account = borrow_global<Account>(account_addr);
-        account.authentication_key == auth_key
-    }
-
     /// Convert from authentication key to address
     public fun auth_key_to_address(authentication_key: vector<u8>): address {
         assert!(vector::length(&authentication_key) == 32, error::invalid_argument(EMALFORMED_AUTHENTICATION_KEY));

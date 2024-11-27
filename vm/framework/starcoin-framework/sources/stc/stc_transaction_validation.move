@@ -185,11 +185,10 @@ module starcoin_framework::stc_transaction_validation {
             // Check that the hash of the transaction's public key matches the account's auth key
             assert!(
                 //hash::sha3_256(txn_authentication_key_preimage) == *&sender_account.authentication_key,
-                account::is_account_auth_key(txn_sender, hash::sha3_256(txn_authentication_key_preimage)),
+                account::get_authentication_key(txn_sender) == hash::sha3_256(txn_authentication_key_preimage),
                 error::invalid_argument(EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY)
             );
         };
-
 
         assert!(
             (txn_gas_price as u128) * (txn_max_gas_units as u128) <= MAX_U64,
