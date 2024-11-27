@@ -4,7 +4,9 @@
 module starcoin_framework::stc_transaction_validation {
 
     use std::error;
+    use std::hash;
     use std::signer;
+    use std::vector;
     use starcoin_std::debug;
 
     use starcoin_framework::account;
@@ -157,7 +159,7 @@ module starcoin_framework::stc_transaction_validation {
         account: &signer,
         txn_sender: address,
         txn_sequence_number: u64,
-        _txn_authentication_key_preimage: vector<u8>,
+        txn_authentication_key_preimage: vector<u8>,
         txn_gas_price: u64,
         txn_max_gas_units: u64,
     ) {
@@ -171,21 +173,22 @@ module starcoin_framework::stc_transaction_validation {
             error::invalid_state(EPROLOGUE_SIGNER_ALREADY_DELEGATED)
         );
 
-        // TODO(BobOng): [framework upgrade] txn_authentication_key_preimage to be check
-        // // Load the transaction sender's account
-        // if (is_dummy_auth_key(sender_account)){
-        //     // if sender's auth key is empty, use address as auth key for check transaction.
-        //     assert!(
-        //         Authenticator::derived_address(Hash::sha3_256(txn_authentication_key_preimage)) == txn_sender,
-        //         Errors::invalid_argument(EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY)
-        //     );
-        // }else{
-        //     // Check that the hash of the transaction's public key matches the account's auth key
-        //     assert!(
-        //         Hash::sha3_256(txn_authentication_key_preimage) == *&sender_account.authentication_key,
-        //         Errors::invalid_argument(EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY)
-        //     );
-        // };
+        // txn_authentication_key_preimage to be check
+        // Load the transaction sender's account
+        if (account::is_account_zero_auth_key(txn_sender)) {
+            // if sender's auth key is empty, use address as auth key for check transaction.
+            assert!(
+                account::auth_key_to_address(hash::sha3_256(txn_authentication_key_preimage)) == txn_sender,
+                error::invalid_argument(EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY)
+            );
+        } else {
+            // Check that the hash of the transaction's public key matches the account's auth key
+            assert!(
+                //hash::sha3_256(txn_authentication_key_preimage) == *&sender_account.authentication_key,
+                account::is_account_auth_key(txn_sender, hash::sha3_256(txn_authentication_key_preimage)),
+                error::invalid_argument(EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY)
+            );
+        };
 
 
         assert!(
@@ -226,7 +229,7 @@ module starcoin_framework::stc_transaction_validation {
         account: &signer,
         txn_sender: address,
         _txn_sequence_number: u64,
-        _txn_authentication_key_preimage: vector<u8>,
+        txn_authentication_key_preimage: vector<u8>,
         txn_gas_price: u64,
         txn_max_gas_units: u64,
         gas_units_remaining: u64,
@@ -235,7 +238,7 @@ module starcoin_framework::stc_transaction_validation {
 
 
         // Charge for gas
-        let transaction_fee_amount =(txn_gas_price * (txn_max_gas_units - gas_units_remaining) as u128);
+        let transaction_fee_amount = (txn_gas_price * (txn_max_gas_units - gas_units_remaining) as u128);
         assert!(
             coin::balance<STC>(txn_sender) >= (transaction_fee_amount as u64),
             error::out_of_range(EINSUFFICIENT_BALANCE)
@@ -244,11 +247,14 @@ module starcoin_framework::stc_transaction_validation {
         // Bump the sequence number
         account::increment_sequence_number(txn_sender);
 
-        // TODO(BobOng): [framework upgrade] txn_authentication_key_preimage to be check
         // Set auth key when user send transaction first.
-        // if (is_dummy_auth_key(sender_account) && !vector::is_empty(&txn_authentication_key_preimage)){
-        //     sender_account.authentication_key = Hash::sha3_256(txn_authentication_key_preimage);
-        // };
+        if (account::is_account_zero_auth_key(txn_sender) &&
+            !vector::is_empty(&txn_authentication_key_preimage)) {
+            account::rotate_authentication_key_internal(
+                &create_signer::create_signer(txn_sender),
+                hash::sha3_256(txn_authentication_key_preimage)
+            )
+        };
 
         if (transaction_fee_amount > 0) {
             let transaction_fee = coin::withdraw<STC>(
