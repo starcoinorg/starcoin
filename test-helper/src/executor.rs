@@ -82,7 +82,7 @@ pub fn execute_and_apply(chain_state: &ChainStateDB, txn: Transaction) -> Transa
 pub fn current_block_number<S: StateView>(state_view: &S) -> u64 {
     let mut ret = execute_readonly_function(
         state_view,
-        &ModuleId::new(genesis_address(), Identifier::new("Block").unwrap()),
+        &ModuleId::new(genesis_address(), Identifier::new("stc_block").unwrap()),
         &Identifier::new("get_current_block_number").unwrap(),
         vec![],
         vec![],

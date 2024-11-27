@@ -8,7 +8,8 @@ use starcoin_executor::validate_transaction;
 use starcoin_logger::prelude::*;
 use starcoin_transaction_builder::{
     build_batch_payload_same_amount, build_transfer_txn, encode_create_account_script_function,
-    raw_peer_to_peer_txn, DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
+    encode_transfer_script_by_token_code, raw_peer_to_peer_txn, DEFAULT_EXPIRATION_TIME,
+    DEFAULT_MAX_GAS_AMOUNT,
 };
 use starcoin_types::account::peer_to_peer_txn;
 use starcoin_types::identifier::Identifier;
@@ -237,31 +238,19 @@ fn test_package_txn() -> Result<()> {
 
     // create alice, bob accounts
     {
-        let script_function = encode_create_account_script_function(
-            net.stdlib_version(),
-            stc_type_tag(),
-            alice.address(),
-            alice.auth_key(),
+        let script_function = encode_transfer_script_by_token_code(
+            *alice.address(),
             pre_mint_amount / 4,
+            G_STC_TOKEN_CODE.clone(),
         );
-        association_execute_should_success(
-            &net,
-            &chain_state,
-            TransactionPayload::EntryFunction(script_function),
-        )?;
+        association_execute_should_success(&net, &chain_state, script_function)?;
 
-        let script_function = encode_create_account_script_function(
-            net.stdlib_version(),
-            stc_type_tag(),
-            bob.address(),
-            bob.auth_key(),
+        let script_function = encode_transfer_script_by_token_code(
+            *bob.address(),
             pre_mint_amount / 4,
+            G_STC_TOKEN_CODE.clone(),
         );
-        association_execute_should_success(
-            &net,
-            &chain_state,
-            TransactionPayload::EntryFunction(script_function),
-        )?;
+        association_execute_should_success(&net, &chain_state, script_function)?;
     }
 
     // verify package txn
@@ -345,31 +334,19 @@ fn test_wrong_package_address() -> Result<()> {
 
     // create alice, bob accounts
     {
-        let script_function = encode_create_account_script_function(
-            net.stdlib_version(),
-            stc_type_tag(),
-            alice.address(),
-            alice.auth_key(),
+        let script_function = encode_transfer_script_by_token_code(
+            *alice.address(),
             pre_mint_amount / 4,
+            G_STC_TOKEN_CODE.clone(),
         );
-        association_execute_should_success(
-            &net,
-            &chain_state,
-            TransactionPayload::EntryFunction(script_function),
-        )?;
+        association_execute_should_success(&net, &chain_state, script_function)?;
 
-        let script_function = encode_create_account_script_function(
-            net.stdlib_version(),
-            stc_type_tag(),
-            bob.address(),
-            bob.auth_key(),
+        let script_function = encode_transfer_script_by_token_code(
+            *bob.address(),
             pre_mint_amount / 4,
+            G_STC_TOKEN_CODE.clone(),
         );
-        association_execute_should_success(
-            &net,
-            &chain_state,
-            TransactionPayload::EntryFunction(script_function),
-        )?;
+        association_execute_should_success(&net, &chain_state, script_function)?;
     }
 
     {
@@ -542,7 +519,7 @@ fn test_validate_sequence_number_too_new() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
     let account1 = Account::new();
     let txn = create_account_txn_sent_as_association(&account1, 10000, 50_000_000, 1, &net);
-    let output = starcoin_executor::validate_transaction(&chain_state, txn, None);
+    let output = validate_transaction(&chain_state, txn, None);
     assert_eq!(output, None);
     Ok(())
 }
@@ -555,7 +532,7 @@ fn test_validate_sequence_number_too_old() -> Result<()> {
     let output1 = execute_and_apply(&chain_state, Transaction::UserTransaction(txn1));
     assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
     let txn2 = create_account_txn_sent_as_association(&account1, 0, 50_000_000, 1, &net);
-    let output = starcoin_executor::validate_transaction(&chain_state, txn2, None);
+    let output = validate_transaction(&chain_state, txn2, None);
     assert!(
         output.is_some(),
         "expect validate transaction return VMStatus, but get None "
