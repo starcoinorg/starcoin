@@ -21,7 +21,7 @@ use starcoin_txpool_api::{TxPoolSyncService, TxnStatusFullEvent};
 use starcoin_types::{
     account_address::{self, AccountAddress},
     account_config,
-    transaction::{SignedUserTransaction, Transaction, TransactionPayload},
+    transaction::{SignedUserTransaction, Transaction},
     U256,
 };
 use std::time::Duration;
@@ -299,9 +299,7 @@ fn generate_txn(config: Arc<NodeConfig>, seq: u64) -> SignedUserTransaction {
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let account_address = account_address::from_public_key(&public_key);
     let txn = starcoin_transaction_builder::create_signed_txn_with_association_account(
-        TransactionPayload::EntryFunction(
-            starcoin_transaction_builder::encode_transfer_script_function(account_address, 10000),
-        ),
+        starcoin_transaction_builder::encode_transfer_script_function(account_address, 10000),
         seq,
         starcoin_transaction_builder::DEFAULT_MAX_GAS_AMOUNT,
         1,

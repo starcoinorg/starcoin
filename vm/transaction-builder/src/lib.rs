@@ -2,6 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use starcoin_cached_packages::starcoin_framework_sdk_builder::empty_scripts_empty_script;
+use starcoin_cached_packages::starcoin_stdlib::{
+    on_chain_config_scripts_propose_update_vm_config, transfer_scripts_batch_peer_to_peer_v2,
+    transfer_scripts_peer_to_peer, transfer_scripts_peer_to_peer_v2,
+};
 use starcoin_config::{genesis_config::G_TOTAL_STC_AMOUNT, ChainNetwork};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
@@ -71,32 +76,19 @@ pub fn build_transfer_txn(
     )
 }
 
-pub fn build_batch_script_function(
+pub fn build_batch_payload(
     receivers: Vec<AccountAddress>,
     amounts: Vec<u128>,
-) -> EntryFunction {
-    let addresses = MoveValue::vector_address(receivers);
-    let amounts = MoveValue::Vector(amounts.into_iter().map(MoveValue::U128).collect());
-    EntryFunction::new(
-        ModuleId::new(
-            core_code_address(),
-            Identifier::new("transfer_scripts").unwrap(),
-        ),
-        Identifier::new("batch_peer_to_peer_v2").unwrap(),
-        vec![stc_type_tag()],
-        vec![
-            bcs_ext::to_bytes(&addresses).unwrap(),
-            bcs_ext::to_bytes(&amounts).unwrap(),
-        ],
-    )
+) -> TransactionPayload {
+    transfer_scripts_batch_peer_to_peer_v2(stc_type_tag(), receivers, amounts)
 }
 
-pub fn build_batch_script_function_same_amount(
+pub fn build_batch_payload_same_amount(
     receivers: Vec<AccountAddress>,
     amount: u128,
-) -> EntryFunction {
+) -> TransactionPayload {
     let len = receivers.len();
-    build_batch_script_function(receivers, (0..len).map(|_| amount).collect())
+    build_batch_payload(receivers, (0..len).map(|_| amount).collect())
 }
 
 pub fn build_batch_transfer_txn(
@@ -109,9 +101,7 @@ pub fn build_batch_transfer_txn(
     expiration_timestamp_secs: u64,
     chain_id: ChainId,
 ) -> RawUserTransaction {
-    let payload = TransactionPayload::EntryFunction(build_batch_script_function_same_amount(
-        receivers, amount,
-    ));
+    let payload = build_batch_payload_same_amount(receivers, amount);
 
     RawUserTransaction::new_with_default_gas_token(
         sender,
@@ -179,14 +169,11 @@ pub fn raw_peer_to_peer_txn(
     expiration_timestamp_secs: u64,
     chain_id: ChainId,
 ) -> RawUserTransaction {
+    let token_type_tag = TypeTag::Struct(Box::new(token_code.try_into().unwrap()));
     RawUserTransaction::new_with_default_gas_token(
         sender,
         seq_num,
-        TransactionPayload::EntryFunction(encode_transfer_script_by_token_code(
-            receiver,
-            transfer_amount,
-            token_code,
-        )),
+        transfer_scripts_peer_to_peer(token_type_tag, receiver, vec![], transfer_amount),
         max_gas,
         gas_price,
         expiration_timestamp_secs,
@@ -204,7 +191,7 @@ pub fn raw_accept_token_txn(
     chain_id: ChainId,
 ) -> RawUserTransaction {
     let payload = TransactionPayload::EntryFunction(EntryFunction::new(
-        ModuleId::new(core_code_address(), Identifier::new("Account").unwrap()),
+        ModuleId::new(core_code_address(), Identifier::new("account").unwrap()),
         Identifier::new("accept_token").unwrap(),
         vec![TypeTag::Struct(Box::new(token_code.try_into().unwrap()))],
         vec![],
@@ -229,7 +216,7 @@ pub fn encode_create_account_script_function(
     initial_balance: u128,
 ) -> EntryFunction {
     EntryFunction::new(
-        ModuleId::new(core_code_address(), Identifier::new("Account").unwrap()),
+        ModuleId::new(core_code_address(), Identifier::new("account").unwrap()),
         Identifier::new("create_account_with_initial_amount").unwrap(),
         vec![token_type],
         vec![
@@ -240,7 +227,10 @@ pub fn encode_create_account_script_function(
     )
 }
 
-pub fn encode_transfer_script_function(recipient: AccountAddress, amount: u128) -> EntryFunction {
+pub fn encode_transfer_script_function(
+    recipient: AccountAddress,
+    amount: u128,
+) -> TransactionPayload {
     encode_transfer_script_by_token_code(recipient, amount, G_STC_TOKEN_CODE.clone())
 }
 
@@ -248,19 +238,9 @@ pub fn encode_transfer_script_by_token_code(
     recipient: AccountAddress,
     amount: u128,
     token_code: TokenCode,
-) -> EntryFunction {
-    EntryFunction::new(
-        ModuleId::new(
-            core_code_address(),
-            Identifier::new("transfer_scripts").unwrap(),
-        ),
-        Identifier::new("peer_to_peer_v2").unwrap(),
-        vec![TypeTag::Struct(Box::new(token_code.try_into().unwrap()))],
-        vec![
-            bcs_ext::to_bytes(&recipient).unwrap(),
-            bcs_ext::to_bytes(&amount).unwrap(),
-        ],
-    )
+) -> TransactionPayload {
+    let token_type_tag = TypeTag::Struct(Box::new(token_code.try_into().unwrap()));
+    transfer_scripts_peer_to_peer_v2(token_type_tag, recipient, amount)
 }
 
 pub fn encode_nft_transfer_script(uuid: NFTUUID, recipient: AccountAddress) -> EntryFunction {
@@ -285,8 +265,8 @@ pub fn peer_to_peer_txn_sent_as_association(
     expiration_timestamp_secs: u64,
     net: &ChainNetwork,
 ) -> SignedUserTransaction {
-    crate::create_signed_txn_with_association_account(
-        TransactionPayload::EntryFunction(encode_transfer_script_function(recipient, amount)),
+    create_signed_txn_with_association_account(
+        transfer_scripts_peer_to_peer(stc_type_tag(), recipient, vec![], amount),
         seq_num,
         DEFAULT_MAX_GAS_AMOUNT,
         1,
@@ -307,18 +287,7 @@ pub fn peer_to_peer_v2(
         .sign_txn(RawUserTransaction::new_with_default_gas_token(
             *sender.address(),
             seq_num,
-            TransactionPayload::EntryFunction(EntryFunction::new(
-                ModuleId::new(
-                    core_code_address(),
-                    Identifier::new("transfer_scripts").unwrap(),
-                ),
-                Identifier::new("peer_to_peer_v2").unwrap(),
-                vec![stc_type_tag()],
-                vec![
-                    bcs_ext::to_bytes(&recipient).unwrap(),
-                    bcs_ext::to_bytes(&amount).unwrap(),
-                ],
-            )),
+            transfer_scripts_batch_peer_to_peer_v2(stc_type_tag(), vec![*recipient], vec![amount]),
             10000000,
             1,
             1000 + 60 * 60,
@@ -582,35 +551,18 @@ pub fn build_module_upgrade_queue(
     )
 }
 
-pub fn build_vm_config_upgrade_proposal(vm_config: VMConfig, exec_delay: u64) -> EntryFunction {
-    EntryFunction::new(
-        ModuleId::new(
-            core_code_address(),
-            Identifier::new("OnChainConfigScripts").unwrap(),
-        ),
-        Identifier::new("propose_update_vm_config").unwrap(),
-        vec![],
-        vec![
-            bcs_ext::to_bytes(&bcs_ext::to_bytes(&vm_config.gas_schedule).unwrap()).unwrap(),
-            bcs_ext::to_bytes(&exec_delay).unwrap(),
-        ],
+pub fn build_vm_config_upgrade_proposal(
+    vm_config: VMConfig,
+    exec_delay: u64,
+) -> TransactionPayload {
+    on_chain_config_scripts_propose_update_vm_config(
+        bcs_ext::to_bytes(&vm_config.gas_schedule).unwrap(),
+        exec_delay,
     )
 }
 
-pub fn build_empty_script() -> EntryFunction {
-    EntryFunction::new(
-        ModuleId::new(
-            core_code_address(),
-            Identifier::new("empty_scripts").unwrap(),
-        ),
-        Identifier::new("empty_script").unwrap(),
-        vec![],
-        vec![],
-    )
-}
-
-fn empty_txn_payload() -> TransactionPayload {
-    TransactionPayload::EntryFunction(build_empty_script())
+pub fn empty_txn_payload() -> TransactionPayload {
+    empty_scripts_empty_script()
 }
 
 pub fn build_signed_empty_txn(

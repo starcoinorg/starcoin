@@ -1,10 +1,10 @@
 use anyhow::Result;
 use starcoin_crypto::HashValue;
+use starcoin_transaction_builder::empty_txn_payload;
 use starcoin_types::block_metadata::BlockMetadata;
 use starcoin_vm_types::account_config::BlockRewardEvent;
 use test_helper::executor::expect_decode_event;
 use test_helper::{
-    dao::empty_txn_payload,
     executor::{
         account_execute_with_output, blockmeta_execute, current_block_number, prepare_genesis,
     },
