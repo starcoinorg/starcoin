@@ -122,8 +122,8 @@ impl RelationsStore for DbRelationsStore {
 
         let mut parent_to_children = HashMap::new();
         for parent in parents.iter().cloned() {
-            let children = (*self.get_children(parent)?).clone();
-            children.push(hash.clone());
+            let mut children = (*self.get_children(parent)?).clone();
+            children.push(hash);
             parent_to_children.insert(
                 parent
                     .encode()
