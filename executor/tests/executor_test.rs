@@ -59,16 +59,16 @@ impl TStateView for NullStateView {
         Err(anyhow!("No data").into())
     }
 
-    fn is_genesis(&self) -> bool {
-        false
-    }
-
     fn get_usage(
         &self,
     ) -> starcoin_vm_types::state_store::Result<
         starcoin_vm_types::state_store::state_storage_usage::StateStorageUsage,
     > {
         unimplemented!("get_usage not implemented")
+    }
+
+    fn is_genesis(&self) -> bool {
+        false
     }
 }
 

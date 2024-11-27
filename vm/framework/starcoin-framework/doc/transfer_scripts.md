@@ -169,7 +169,7 @@ Batch transfer token to others.
     <b>while</b> (i &lt; len) {
         <b>let</b> payee = *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(&payeees, i);
         <a href="account.md#0x1_account_create_account_if_does_not_exist">account::create_account_if_does_not_exist</a>(payee);
-        <a href="coin.md#0x1_coin_register">coin::register</a>&lt;TokenType&gt;(&<a href="account.md#0x1_account">account</a>);
+        <a href="coin.md#0x1_coin_register">coin::register</a>&lt;TokenType&gt;(&<a href="create_signer.md#0x1_create_signer_create_signer">create_signer::create_signer</a>(payee));
         <b>let</b> amount = *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(&amounts, i);
         <a href="coin.md#0x1_coin_transfer">coin::transfer</a>&lt;TokenType&gt;(&<a href="account.md#0x1_account">account</a>, payee, (amount <b>as</b> u64));
         i = i + 1;

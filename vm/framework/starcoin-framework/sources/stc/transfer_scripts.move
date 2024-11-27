@@ -51,11 +51,10 @@ module starcoin_framework::transfer_scripts {
         while (i < len) {
             let payee = *vector::borrow(&payeees, i);
             account::create_account_if_does_not_exist(payee);
-            coin::register<TokenType>(&account);
+            coin::register<TokenType>(&create_signer::create_signer(payee));
             let amount = *vector::borrow(&amounts, i);
             coin::transfer<TokenType>(&account, payee, (amount as u64));
             i = i + 1;
         }
     }
-
 }
