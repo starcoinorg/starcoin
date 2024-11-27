@@ -40,7 +40,7 @@ fn test_module_hash() {
 fn test_table_item_hash() {
     assert_crypto_hash(
         &StateKey::table_item(&"0x1002".parse().unwrap(), &[7, 2, 3]),
-        "6f5550015f7a6036f88b2458f98a7e4800aba09e83f8f294dbf70bff77f224e6",
+        "0x9ad0a641cf1fd5276bcc6d830502876acc3dcf5dc6e46371381930e6fb04a59c",
     );
 }
 
@@ -48,7 +48,7 @@ fn test_table_item_hash() {
 fn test_raw_hash() {
     assert_crypto_hash(
         &StateKey::raw(&[1, 2, 3]),
-        "655ab5766bc87318e18d9287f32d318e15535d3db9d21a6e5a2b41a51b535aff",
+        "0xc0c9003878aae2e718af90a60bbc5dd3fbfc47c6351e0a67e875977e97ee0443",
     )
 }
 
@@ -58,28 +58,28 @@ fn test_debug() {
     let key = StateKey::module(&AccountAddress::ONE, ident_str!("account"));
     assert_eq!(
         &format!("{:?}", key),
-        "StateKey::AccessPath { address: 0x1, path: \"Code(0000000000000000000000000000000000000000000000000000000000000001::account)\" }",
+        "StateKey::AccessPath { address: 0x1, path: \"Code(0x00000000000000000000000000000001::account)\" }",
     );
 
     // resource
     let key = StateKey::resource_typed::<AccountResource>(&AccountAddress::FOUR).unwrap();
     assert_eq!(
         &format!("{:?}", key),
-        "StateKey::AccessPath { address: 0x4, path: \"Resource(0x1::account::Account)\" }",
+        "StateKey::AccessPath { address: 0x4, path: \"Resource(0x00000000000000000000000000000001::account::Account)\" }",
     );
 
     // resource group
     let key = StateKey::resource_group(&AccountAddress::THREE, &ObjectGroupResource::struct_tag());
     assert_eq!(
         &format!("{:?}", key),
-        "StateKey::AccessPath { address: 0x3, path: \"ResourceGroup(0x1::object::ObjectGroup)\" }",
+        "StateKey::AccessPath { address: 0x3, path: \"ResourceGroup(0x00000000000000000000000000000001::object::ObjectGroup)\" }",
     );
 
     // table item
     let key = StateKey::table_item(&"0x123".parse().unwrap(), &[1]);
     assert_eq!(
         &format!("{:?}", key),
-        "StateKey::TableItem { handle: 0000000000000000000000000000000000000000000000000000000000000123, key: 01 }"
+        "StateKey::TableItem { handle: 00000000000000000000000000000123, key: 01 }"
     );
 
     // raw
