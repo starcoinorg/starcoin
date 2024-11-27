@@ -1,12 +1,15 @@
 use super::schema::{KeyCodec, ValueCodec};
 use super::{
     db::DBStorage,
-    prelude::{BatchDbWriter, CachedDbAccess, DirectDbWriter, StoreError},
+    prelude::{CachedDbAccess, StoreError},
 };
 use crate::define_schema;
-use rocksdb::WriteBatch;
+use bcs_ext::BCSCodec;
 use starcoin_crypto::HashValue as Hash;
+use starcoin_storage::batch::{WriteBatch, WriteBatchData, WriteBatchWithColumn};
+use starcoin_storage::storage::{InnerStore, WriteOp};
 use starcoin_types::blockhash::{BlockHashes, BlockLevel};
+use std::collections::HashMap;
 use std::sync::Arc;
 
 /// Reader API for `RelationsStore`.
@@ -90,41 +93,6 @@ impl DbRelationsStore {
     pub fn clone_with_new_cache(&self, cache_size: usize) -> Self {
         Self::new(Arc::clone(&self.db), self.level, cache_size)
     }
-
-    pub fn insert_batch(
-        &mut self,
-        batch: &mut WriteBatch,
-        hash: Hash,
-        parents: BlockHashes,
-    ) -> Result<(), StoreError> {
-        if self.has(hash)? {
-            return Err(StoreError::KeyAlreadyExists(hash.to_string()));
-        }
-
-        // Insert a new entry for `hash`
-        self.parents_access
-            .write(BatchDbWriter::new(batch, &self.db), hash, parents.clone())?;
-
-        // The new hash has no children yet
-        self.children_access.write(
-            BatchDbWriter::new(batch, &self.db),
-            hash,
-            BlockHashes::new(Vec::new()),
-        )?;
-
-        // Update `children` for each parent
-        for parent in parents.iter().cloned() {
-            let mut children = (*self.get_children(parent)?).clone();
-            children.push(hash);
-            self.children_access.write(
-                BatchDbWriter::new(batch, &self.db),
-                parent,
-                BlockHashes::new(children),
-            )?;
-        }
-
-        Ok(())
-    }
 }
 
 impl RelationsStoreReader for DbRelationsStore {
@@ -147,34 +115,52 @@ impl RelationsStoreReader for DbRelationsStore {
 }
 
 impl RelationsStore for DbRelationsStore {
-    /// See `insert_batch` as well
-    /// TODO: use one function with DbWriter for both this function and insert_batch
     fn insert(&self, hash: Hash, parents: BlockHashes) -> Result<(), StoreError> {
         if self.has(hash)? {
             return Err(StoreError::KeyAlreadyExists(hash.to_string()));
         }
 
-        // Insert a new entry for `hash`
-        self.parents_access
-            .write(DirectDbWriter::new(&self.db), hash, parents.clone())?;
-
-        // The new hash has no children yet
-        self.children_access.write(
-            DirectDbWriter::new(&self.db),
-            hash,
-            BlockHashes::new(Vec::new()),
-        )?;
-
-        // Update `children` for each parent
+        let mut parent_to_children = HashMap::new();
         for parent in parents.iter().cloned() {
-            let mut children = (*self.get_children(parent)?).clone();
-            children.push(hash);
-            self.children_access.write(
-                DirectDbWriter::new(&self.db),
-                parent,
-                BlockHashes::new(children),
-            )?;
+            let children = (*self.get_children(parent)?).clone();
+            parent_to_children.insert(
+                parent
+                    .encode()
+                    .map_err(|e| StoreError::EncodeError(e.to_string()))?,
+                children
+                    .encode()
+                    .map_err(|e| StoreError::EncodeError(e.to_string()))?,
+            );
         }
+
+        let batch = WriteBatchWithColumn {
+            data: vec![
+                WriteBatchData {
+                    column: PARENTS_CF.to_string(),
+                    row_data: WriteBatch::new_with_rows(vec![(
+                        hash.encode()
+                            .map_err(|e| StoreError::EncodeError(e.to_string()))?,
+                        WriteOp::Value(
+                            parents
+                                .encode()
+                                .map_err(|e| StoreError::EncodeError(e.to_string()))?,
+                        ),
+                    )]),
+                },
+                WriteBatchData {
+                    column: CHILDREN_CF.to_string(),
+                    row_data: WriteBatch::new_with_rows(
+                        parent_to_children
+                            .into_iter()
+                            .map(|(key, value)| (key, WriteOp::Value(value)))
+                            .collect(),
+                    ),
+                },
+            ],
+        };
+        self.db
+            .write_batch_with_column(batch)
+            .map_err(|e| StoreError::DBIoError(e.to_string()))?;
 
         Ok(())
     }
