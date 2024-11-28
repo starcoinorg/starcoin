@@ -165,7 +165,7 @@ impl RelationsStore for DbRelationsStore {
             ],
         };
         self.db
-            .write_batch_with_column_sync(batch)
+            .write_batch_with_column(batch)
             .map_err(|e| StoreError::DBIoError(e.to_string()))?;
 
         self.parents_access.flush_cache(&[(hash, parents)])?;
