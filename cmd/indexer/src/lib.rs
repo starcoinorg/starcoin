@@ -281,7 +281,7 @@ mod tests {
         };
         let event_view = TransactionEventEsView::from(v);
         let expected = r#"
-        {"block_hash":"0x0000000000000000000000000000000000000000000000000000000000000000","block_number":"1","transaction_hash":"0x0000000000000000000000000000000000000000000000000000000000000000","transaction_index":0,"transaction_global_index":"1","data":"0x00","type_tag":"bool","event_index":0,"event_key":"0x000000000000000000000000000000000000000000000000","event_seq_number":"0"}
+        {"block_hash":"0x0000000000000000000000000000000000000000000000000000000000000000","block_number":"1","transaction_hash":"0x0000000000000000000000000000000000000000000000000000000000000000","transaction_index":0,"transaction_global_index":"1","data":"0x00","type_tag":"bool","event_index":0,"event_key":{"creation_number":0,"account_address":"0x00000000000000000000000000000000"},"event_seq_number":"0"}
         "#;
         assert_eq!(
             serde_json::to_string(&event_view).unwrap().as_str(),
