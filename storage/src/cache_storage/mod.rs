@@ -137,6 +137,10 @@ impl InnerStore for CacheStorage {
         self.write_batch(prefix_name, batch)
     }
 
+    fn write_batch_with_column_sync(&self, batch: WriteBatchWithColumn) -> Result<()> {
+        self.write_batch_with_column(batch)
+    }
+
     fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
         let composed_keys = keys
             .into_iter()

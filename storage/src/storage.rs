@@ -45,6 +45,7 @@ pub trait InnerStore: Send + Sync {
     fn keys(&self) -> Result<Vec<Vec<u8>>>;
     fn put_sync(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
     fn write_batch_sync(&self, prefix_name: &str, batch: WriteBatch) -> Result<()>;
+    fn write_batch_with_column_sync(&self, batch: WriteBatchWithColumn) -> Result<()>;
     fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>>;
 }
 
@@ -250,6 +251,17 @@ impl InnerStore for StorageInstance {
                     Ok(_) => cache.write_batch(prefix_name, batch),
                     Err(err) => bail!("write batch db error: {}", err),
                 }
+            }
+        }
+    }
+
+    fn write_batch_with_column_sync(&self, batch: WriteBatchWithColumn) -> Result<()> {
+        match self {
+            Self::CACHE { cache } => cache.write_batch_with_column_sync(batch),
+            Self::DB { db } => db.write_batch_with_column_sync(batch),
+            Self::CacheAndDb { cache, db } => {
+                db.write_batch_with_column_sync(batch.clone())?;
+                cache.write_batch_with_column_sync(batch)
             }
         }
     }

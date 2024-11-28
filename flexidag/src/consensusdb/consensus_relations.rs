@@ -4,14 +4,12 @@ use super::{
     prelude::{CachedDbAccess, StoreError},
 };
 use crate::define_schema;
-use bcs_ext::BCSCodec;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_storage::batch::{WriteBatch, WriteBatchData, WriteBatchWithColumn};
 use starcoin_storage::storage::{InnerStore, WriteOp};
 use starcoin_types::blockhash::{BlockHashes, BlockLevel};
 use std::collections::HashMap;
 use std::sync::Arc;
-
 /// Reader API for `RelationsStore`.
 pub trait RelationsStoreReader {
     fn get_parents(&self, hash: Hash) -> Result<BlockHashes, StoreError>;
@@ -122,15 +120,17 @@ impl RelationsStore for DbRelationsStore {
 
         let mut parent_to_children = HashMap::new();
         for parent in parents.iter().cloned() {
-            let mut children = (*self.get_children(parent)?).clone();
+            let mut children = match self.get_children(parent) {
+                Ok(children) => (*children).clone(),
+                Err(e) => match e {
+                    StoreError::KeyNotFound(_) => vec![],
+                    _ => return std::result::Result::Err(e),
+                },
+            };
             children.push(hash);
             parent_to_children.insert(
-                parent
-                    .encode()
-                    .map_err(|e| StoreError::EncodeError(e.to_string()))?,
-                children
-                    .encode()
-                    .map_err(|e| StoreError::EncodeError(e.to_string()))?,
+                parent.to_vec(),
+                bcs_ext::to_bytes(&children).map_err(|e| StoreError::EncodeError(e.to_string()))?,
             );
         }
 
@@ -139,11 +139,9 @@ impl RelationsStore for DbRelationsStore {
                 WriteBatchData {
                     column: PARENTS_CF.to_string(),
                     row_data: WriteBatch::new_with_rows(vec![(
-                        hash.encode()
-                            .map_err(|e| StoreError::EncodeError(e.to_string()))?,
+                        hash.to_vec(),
                         WriteOp::Value(
-                            parents
-                                .encode()
+                            bcs_ext::to_bytes(&parents)
                                 .map_err(|e| StoreError::EncodeError(e.to_string()))?,
                         ),
                     )]),
@@ -162,7 +160,6 @@ impl RelationsStore for DbRelationsStore {
         self.db
             .write_batch_with_column(batch)
             .map_err(|e| StoreError::DBIoError(e.to_string()))?;
-
         Ok(())
     }
 }
