@@ -108,6 +108,13 @@ where
         Ok(())
     }
 
+    pub fn flush_cache(&self, data: &[(S::Key, S::Value)]) -> Result<(), StoreError> {
+        for (key, value) in data {
+            self.cache.insert(key.clone(), value.clone());
+        }
+        Ok(())
+    }
+
     /// Write directly from an iterator and do not cache any data. NOTE: this action also clears the cache
     pub fn write_many_without_cache(
         &self,

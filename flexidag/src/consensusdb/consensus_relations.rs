@@ -119,6 +119,8 @@ impl RelationsStore for DbRelationsStore {
         }
 
         let mut parent_to_children = HashMap::new();
+        parent_to_children.insert(hash, vec![]);
+
         for parent in parents.iter().cloned() {
             let mut children = match self.get_children(parent) {
                 Ok(children) => (*children).clone(),
@@ -128,10 +130,7 @@ impl RelationsStore for DbRelationsStore {
                 },
             };
             children.push(hash);
-            parent_to_children.insert(
-                parent.to_vec(),
-                bcs_ext::to_bytes(&children).map_err(|e| StoreError::EncodeError(e.to_string()))?,
-            );
+            parent_to_children.insert(parent, children);
         }
 
         let batch = WriteBatchWithColumn {
@@ -141,8 +140,7 @@ impl RelationsStore for DbRelationsStore {
                     row_data: WriteBatch::new_with_rows(vec![(
                         hash.to_vec(),
                         WriteOp::Value(
-                            bcs_ext::to_bytes(&parents)
-                                .map_err(|e| StoreError::EncodeError(e.to_string()))?,
+                            <Arc<Vec<Hash>> as ValueCodec<RelationParent>>::encode_value(&parents)?,
                         ),
                     )]),
                 },
@@ -150,16 +148,34 @@ impl RelationsStore for DbRelationsStore {
                     column: CHILDREN_CF.to_string(),
                     row_data: WriteBatch::new_with_rows(
                         parent_to_children
-                            .into_iter()
-                            .map(|(key, value)| (key, WriteOp::Value(value)))
-                            .collect(),
+                            .iter()
+                            .map(|(key, value)| {
+                                std::result::Result::Ok((
+                                    key.to_vec(),
+                                    WriteOp::Value(<Arc<Vec<Hash>> as ValueCodec<
+                                        RelationChildren,
+                                    >>::encode_value(
+                                        &Arc::new(value.clone())
+                                    )?),
+                                ))
+                            })
+                            .collect::<std::result::Result<Vec<_>, StoreError>>()?,
                     ),
                 },
             ],
         };
         self.db
-            .write_batch_with_column(batch)
+            .write_batch_with_column_sync(batch)
             .map_err(|e| StoreError::DBIoError(e.to_string()))?;
+
+        self.parents_access.flush_cache(&[(hash, parents)])?;
+        self.children_access.flush_cache(
+            &parent_to_children
+                .into_iter()
+                .map(|(key, value)| (key, BlockHashes::new(value)))
+                .collect::<Vec<_>>(),
+        )?;
+
         Ok(())
     }
 }
