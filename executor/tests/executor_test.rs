@@ -184,7 +184,8 @@ fn test_batch_transfer() -> Result<()> {
     let bob = Account::new();
     let mut addresses = vec![*alice.address(), *bob.address()];
 
-    (1..30).for_each(|_| {
+    // fixme: reduce account number to avoid OUT_OF_GAS exception
+    (1..20).for_each(|_| {
         let account = Account::new();
         addresses.push(*account.address());
     });

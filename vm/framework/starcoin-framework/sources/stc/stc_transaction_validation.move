@@ -118,7 +118,7 @@ module starcoin_framework::stc_transaction_validation {
         // txn execute success or fail.
         success: bool,
     ) {
-        debug::print(&std::string::utf8(b"transaction_validation::epilogue | Entered"));
+        debug::print(&std::string::utf8(b"stc_transaction_validation::epilogue | Entered"));
 
         system_addresses::assert_starcoin_framework(&account);
         txn_epilogue<TokenType>(
@@ -139,7 +139,7 @@ module starcoin_framework::stc_transaction_validation {
             );
         };
 
-        debug::print(&std::string::utf8(b"transaction_validation::epilogue | Exited"));
+        debug::print(&std::string::utf8(b"stc_transaction_validation::epilogue | Exited"));
     }
 
     const MAX_U64: u128 = 18446744073709551615;
@@ -237,7 +237,6 @@ module starcoin_framework::stc_transaction_validation {
         gas_units_remaining: u64,
     ) {
         system_addresses::assert_starcoin_framework(account);
-
 
         // Charge for gas
         let transaction_fee_amount = (txn_gas_price * (txn_max_gas_units - gas_units_remaining) as u128);
