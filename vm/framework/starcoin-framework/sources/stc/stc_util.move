@@ -14,7 +14,7 @@ module starcoin_framework::stc_util {
 
     #[view]
     public fun is_stc<Coin>(): bool {
-        type_info::type_name<Coin>() == string::utf8(b"0x00000000000000000000000000000001::starcoin_coin::STC")
+        type_info::type_name<Coin>() == string::utf8(b"0x1::starcoin_coin::STC")
     }
 
     #[view]
