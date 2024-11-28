@@ -45,7 +45,7 @@ fn native_from_bytes(
         None => {
             return Err(SafeNativeError::Abort {
                 abort_code: EFROM_BYTES,
-            })
+            });
         }
     };
 
@@ -62,4 +62,22 @@ pub fn make_all(
     let natives = [("from_bytes", native_from_bytes as RawSafeNative)];
 
     builder.make_named_natives(natives)
+}
+
+#[cfg(test)]
+mod tests {
+    use move_core_types::value::MoveTypeLayout;
+    use move_vm_types::values::Value;
+
+    #[test]
+    fn test_bcs_from_bcs_to_address() {
+        assert!(
+            Value::simple_deserialize(
+                "00000000000000000000000000000001".as_bytes(),
+                &MoveTypeLayout::Address
+            )
+            .is_some(),
+            "Failed to convert"
+        );
+    }
 }
