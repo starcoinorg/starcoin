@@ -190,8 +190,8 @@ module starcoin_std::type_info {
         assert!(size_of_val<u64>(&0) == 8, 0); // u64 takes 8 bytes.
         assert!(size_of_val<u128>(&0) == 16, 0); // u128 takes 16 bytes.
         // Address is a u256.
-        assert!(size_of_val(&@0x0) == 32, 0);
-        assert!(size_of_val(account) == 32, 0); // Signer is an address.
+        assert!(size_of_val(&@0x0) == 16, 0);
+        assert!(size_of_val(account) == 16, 0); // Signer is an address.
         // Assert custom type without fields has size 1.
         assert!(size_of_val(&CustomType{}) == 1, 0);
         // Declare a simple struct with a 1-byte field.
