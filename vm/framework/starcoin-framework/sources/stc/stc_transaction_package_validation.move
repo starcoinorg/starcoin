@@ -3,6 +3,7 @@ module starcoin_framework::stc_transaction_package_validation {
     use std::error;
     use std::option;
     use std::signer;
+    use starcoin_std::debug;
     use starcoin_framework::system_addresses;
     use starcoin_framework::stc_version;
 
@@ -96,6 +97,9 @@ module starcoin_framework::stc_transaction_package_validation {
         strategy: u8,
         min_time: option::Option<u64>
     ) acquires ModuleUpgradeStrategy, TwoPhaseUpgradeV2, UpgradePlanCapability {
+
+        debug::print(&std::string::utf8(b"stc_transaction_package_validation::update_module_upgrade_strategy | entered "));
+
         assert!(
             strategy == STRATEGY_ARBITRARY || strategy == STRATEGY_TWO_PHASE || strategy == STRATEGY_NEW_MODULE || strategy == STRATEGY_FREEZE,
             error::invalid_argument(EUNKNOWN_STRATEGY)
@@ -110,6 +114,8 @@ module starcoin_framework::stc_transaction_package_validation {
             move_to(account, ModuleUpgradeStrategy { strategy: strategy });
         };
 
+        debug::print(&std::string::utf8(b"stc_transaction_package_validation::update_module_upgrade_strategy | ModuleUpgradeStrategy updated "));
+
         if (strategy == STRATEGY_TWO_PHASE) {
             let version_cap = on_chain_config::extract_modify_config_capability<stc_version::Version>(account);
             let min_time_limit = option::get_with_default(&min_time, DEFAULT_MIN_TIME_LIMIT);
@@ -117,10 +123,10 @@ module starcoin_framework::stc_transaction_package_validation {
             move_to(account, TwoPhaseUpgradeV2 {
                 config: TwoPhaseUpgradeConfig { min_time_limit: min_time_limit },
                 plan: option::none<UpgradePlanV2>(),
-                version_cap: version_cap,
+                version_cap,
                 upgrade_event: account::new_event_handle<Self::UpgradeEvent>(account)
-            }
-            );
+            });
+            debug::print(&std::string::utf8(b"stc_transaction_package_validation::update_module_upgrade_strategy | UpgradePlanCapability && TwoPhaseUpgradeV2 updated "));
         };
 
         //clean two phase upgrade resource
@@ -143,6 +149,7 @@ module starcoin_framework::stc_transaction_package_validation {
                 destroy_upgrade_plan_cap(cap);
             };
         };
+        debug::print(&std::string::utf8(b"stc_transaction_package_validation::update_module_upgrade_strategy | exited "));
     }
 
 

@@ -110,7 +110,7 @@ spec starcoin_framework::starcoin_account {
 
     /// Check if the address existed.
     /// Check if the StarcoinCoin under the address existed.
-    spec assert_account_is_registered_for_apt(addr: address) {
+    spec assert_account_is_registered_for_stc(addr: address) {
         pragma aborts_if_is_partial;
         aborts_if !account::exists_at(addr);
         aborts_if !coin::spec_is_account_registered<STC>(addr);
@@ -260,7 +260,7 @@ spec starcoin_framework::starcoin_account {
         ensures exists<starcoin_framework::coin::CoinStore<CoinType>>(to);
     }
 
-    spec register_apt(account_signer: &signer) {
+    spec register_stc(account_signer: &signer) {
         // TODO: temporary mockup.
         pragma verify = false;
     }

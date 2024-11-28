@@ -246,6 +246,8 @@ This can only be invoked by the GENESIS_ACCOUNT at genesis
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_initialize">initialize</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, parent_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;) {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_block.md#0x1_stc_block_initialize">stc_block::initialize</a> | entered "));
+
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);
 
     <b>let</b> block_metadata = <a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a> {
@@ -258,6 +260,8 @@ This can only be invoked by the GENESIS_ACCOUNT at genesis
     };
 
     <b>move_to</b>&lt;<a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a>&gt;(<a href="account.md#0x1_account">account</a>, block_metadata);
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_block.md#0x1_stc_block_initialize">stc_block::initialize</a> | exited "));
 }
 </code></pre>
 

@@ -16,10 +16,10 @@
 -  [Function `transfer_coins`](#0x1_starcoin_account_transfer_coins)
 -  [Function `deposit_coins`](#0x1_starcoin_account_deposit_coins)
 -  [Function `assert_account_exists`](#0x1_starcoin_account_assert_account_exists)
--  [Function `assert_account_is_registered_for_apt`](#0x1_starcoin_account_assert_account_is_registered_for_apt)
+-  [Function `assert_account_is_registered_for_stc`](#0x1_starcoin_account_assert_account_is_registered_for_stc)
 -  [Function `set_allow_direct_coin_transfers`](#0x1_starcoin_account_set_allow_direct_coin_transfers)
 -  [Function `can_receive_direct_coin_transfers`](#0x1_starcoin_account_can_receive_direct_coin_transfers)
--  [Function `register_apt`](#0x1_starcoin_account_register_apt)
+-  [Function `register_stc`](#0x1_starcoin_account_register_stc)
 -  [Function `fungible_transfer_only`](#0x1_starcoin_account_fungible_transfer_only)
 -  [Function `is_fungible_balance_at_least`](#0x1_starcoin_account_is_fungible_balance_at_least)
 -  [Function `burn_from_fungible_store`](#0x1_starcoin_account_burn_from_fungible_store)
@@ -35,10 +35,10 @@
     -  [Function `transfer_coins`](#@Specification_1_transfer_coins)
     -  [Function `deposit_coins`](#@Specification_1_deposit_coins)
     -  [Function `assert_account_exists`](#@Specification_1_assert_account_exists)
-    -  [Function `assert_account_is_registered_for_apt`](#@Specification_1_assert_account_is_registered_for_apt)
+    -  [Function `assert_account_is_registered_for_stc`](#@Specification_1_assert_account_is_registered_for_stc)
     -  [Function `set_allow_direct_coin_transfers`](#@Specification_1_set_allow_direct_coin_transfers)
     -  [Function `can_receive_direct_coin_transfers`](#@Specification_1_can_receive_direct_coin_transfers)
-    -  [Function `register_apt`](#@Specification_1_register_apt)
+    -  [Function `register_stc`](#@Specification_1_register_stc)
     -  [Function `fungible_transfer_only`](#@Specification_1_fungible_transfer_only)
     -  [Function `is_fungible_balance_at_least`](#@Specification_1_is_fungible_balance_at_least)
     -  [Function `burn_from_fungible_store`](#@Specification_1_burn_from_fungible_store)
@@ -230,7 +230,7 @@ Basic account creation methods.
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="starcoin_account.md#0x1_starcoin_account_create_account">create_account</a>(auth_key: <b>address</b>) {
     <b>let</b> account_signer = <a href="account.md#0x1_account_create_account">account::create_account</a>(auth_key);
-    <a href="starcoin_account.md#0x1_starcoin_account_register_apt">register_apt</a>(&account_signer);
+    <a href="starcoin_account.md#0x1_starcoin_account_register_stc">register_stc</a>(&account_signer);
 }
 </code></pre>
 
@@ -437,13 +437,13 @@ This would create the recipient account first and register it to receive the Coi
 
 </details>
 
-<a id="0x1_starcoin_account_assert_account_is_registered_for_apt"></a>
+<a id="0x1_starcoin_account_assert_account_is_registered_for_stc"></a>
 
-## Function `assert_account_is_registered_for_apt`
+## Function `assert_account_is_registered_for_stc`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="starcoin_account.md#0x1_starcoin_account_assert_account_is_registered_for_apt">assert_account_is_registered_for_apt</a>(addr: <b>address</b>)
+<pre><code><b>public</b> <b>fun</b> <a href="starcoin_account.md#0x1_starcoin_account_assert_account_is_registered_for_stc">assert_account_is_registered_for_stc</a>(addr: <b>address</b>)
 </code></pre>
 
 
@@ -452,7 +452,7 @@ This would create the recipient account first and register it to receive the Coi
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="starcoin_account.md#0x1_starcoin_account_assert_account_is_registered_for_apt">assert_account_is_registered_for_apt</a>(addr: <b>address</b>) {
+<pre><code><b>public</b> <b>fun</b> <a href="starcoin_account.md#0x1_starcoin_account_assert_account_is_registered_for_stc">assert_account_is_registered_for_stc</a>(addr: <b>address</b>) {
     <a href="starcoin_account.md#0x1_starcoin_account_assert_account_exists">assert_account_exists</a>(addr);
     <b>assert</b>!(<a href="coin.md#0x1_coin_is_account_registered">coin::is_account_registered</a>&lt;STC&gt;(addr), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="starcoin_account.md#0x1_starcoin_account_EACCOUNT_NOT_REGISTERED_FOR_APT">EACCOUNT_NOT_REGISTERED_FOR_APT</a>));
 }
@@ -545,13 +545,13 @@ By default, this returns true if an account has not explicitly set whether the c
 
 </details>
 
-<a id="0x1_starcoin_account_register_apt"></a>
+<a id="0x1_starcoin_account_register_stc"></a>
 
-## Function `register_apt`
+## Function `register_stc`
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="starcoin_account.md#0x1_starcoin_account_register_apt">register_apt</a>(account_signer: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="starcoin_account.md#0x1_starcoin_account_register_stc">register_stc</a>(account_signer: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -560,8 +560,8 @@ By default, this returns true if an account has not explicitly set whether the c
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="starcoin_account.md#0x1_starcoin_account_register_apt">register_apt</a>(account_signer: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
-    <b>if</b> (<a href="../../move-stdlib/doc/features.md#0x1_features_new_accounts_default_to_fa_apt_store_enabled">features::new_accounts_default_to_fa_apt_store_enabled</a>()) {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="starcoin_account.md#0x1_starcoin_account_register_stc">register_stc</a>(account_signer: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
+    <b>if</b> (<a href="../../move-stdlib/doc/features.md#0x1_features_new_accounts_default_to_fa_stc_store_enabled">features::new_accounts_default_to_fa_stc_store_enabled</a>()) {
         <a href="starcoin_account.md#0x1_starcoin_account_ensure_primary_fungible_store_exists">ensure_primary_fungible_store_exists</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(account_signer));
     } <b>else</b> {
         <a href="coin.md#0x1_coin_register">coin::register</a>&lt;STC&gt;(account_signer);
@@ -1048,12 +1048,12 @@ Limit the address of auth_key is not @vm_reserved / @starcoin_framework / @starc
 
 
 
-<a id="@Specification_1_assert_account_is_registered_for_apt"></a>
+<a id="@Specification_1_assert_account_is_registered_for_stc"></a>
 
-### Function `assert_account_is_registered_for_apt`
+### Function `assert_account_is_registered_for_stc`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="starcoin_account.md#0x1_starcoin_account_assert_account_is_registered_for_apt">assert_account_is_registered_for_apt</a>(addr: <b>address</b>)
+<pre><code><b>public</b> <b>fun</b> <a href="starcoin_account.md#0x1_starcoin_account_assert_account_is_registered_for_stc">assert_account_is_registered_for_stc</a>(addr: <b>address</b>)
 </code></pre>
 
 
@@ -1106,12 +1106,12 @@ Check if the StarcoinCoin under the address existed.
 
 
 
-<a id="@Specification_1_register_apt"></a>
+<a id="@Specification_1_register_stc"></a>
 
-### Function `register_apt`
+### Function `register_stc`
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="starcoin_account.md#0x1_starcoin_account_register_apt">register_apt</a>(account_signer: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="starcoin_account.md#0x1_starcoin_account_register_stc">register_stc</a>(account_signer: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 

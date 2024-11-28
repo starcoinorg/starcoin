@@ -20,9 +20,11 @@
     -  [Function `is_module_allowed`](#@Specification_1_is_module_allowed)
 
 
-<pre><code><b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
+<pre><code><b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
+<b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="on_chain_config.md#0x1_on_chain_config">0x1::on_chain_config</a>;
 <b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
+<b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 <b>use</b> <a href="system_addresses.md#0x1_system_addresses">0x1::system_addresses</a>;
 </code></pre>
 
@@ -139,6 +141,8 @@ Module initialization.
     script_allowed: bool,
     module_publishing_allowed: bool,
 ) {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"stc_transaction_publish_option::initialize | entered "));
+
     // timestamp::assert_genesis();
     <b>assert</b>!(
         <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>) == <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>(),
@@ -152,6 +156,7 @@ Module initialization.
         <a href="account.md#0x1_account">account</a>,
         <a href="stc_transaction_publish_option.md#0x1_transaction_publish_option">transaction_publish_option</a>,
     );
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"stc_transaction_publish_option::initialize | exited "));
 }
 </code></pre>
 

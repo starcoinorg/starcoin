@@ -4,6 +4,7 @@ module starcoin_framework::transaction_publish_option {
 
     use std::error;
     use std::signer;
+    use starcoin_std::debug;
     use starcoin_framework::on_chain_config;
     use starcoin_framework::system_addresses;
 
@@ -48,6 +49,8 @@ module starcoin_framework::transaction_publish_option {
         script_allowed: bool,
         module_publishing_allowed: bool,
     ) {
+        debug::print(&std::string::utf8(b"stc_transaction_publish_option::initialize | entered "));
+
         // timestamp::assert_genesis();
         assert!(
             signer::address_of(account) == system_addresses::get_starcoin_framework(),
@@ -61,6 +64,7 @@ module starcoin_framework::transaction_publish_option {
             account,
             transaction_publish_option,
         );
+        debug::print(&std::string::utf8(b"stc_transaction_publish_option::initialize | exited "));
     }
 
     spec initialize {

@@ -14,7 +14,9 @@ The module provides the information of current consensus strategy.
     -  [Function `get`](#@Specification_0_get)
 
 
-<pre><code><b>use</b> <a href="on_chain_config.md#0x1_on_chain_config">0x1::on_chain_config</a>;
+<pre><code><b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
+<b>use</b> <a href="on_chain_config.md#0x1_on_chain_config">0x1::on_chain_config</a>;
+<b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 <b>use</b> <a href="system_addresses.md#0x1_system_addresses">0x1::system_addresses</a>;
 </code></pre>
 
@@ -65,6 +67,7 @@ Publish the chain ID under the genesis account
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="consensus_strategy.md#0x1_consensus_strategy_initialize">initialize</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="consensus_strategy.md#0x1_consensus_strategy">consensus_strategy</a>: u8) {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="consensus_strategy.md#0x1_consensus_strategy_initialize">consensus_strategy::initialize</a> | entered "));
     // Timestamp::assert_genesis();
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);
     <b>let</b> cap = <a href="on_chain_config.md#0x1_on_chain_config_publish_new_config_with_capability">on_chain_config::publish_new_config_with_capability</a>&lt;<a href="consensus_strategy.md#0x1_consensus_strategy_ConsensusStrategy">ConsensusStrategy</a>&gt;(
@@ -73,6 +76,7 @@ Publish the chain ID under the genesis account
     );
     //destroy the cap, so <a href="consensus_strategy.md#0x1_consensus_strategy_ConsensusStrategy">ConsensusStrategy</a> can not been change.
     <a href="on_chain_config.md#0x1_on_chain_config_destroy_modify_config_capability">on_chain_config::destroy_modify_config_capability</a>(cap);
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="consensus_strategy.md#0x1_consensus_strategy_initialize">consensus_strategy::initialize</a> | exited "));
 }
 </code></pre>
 

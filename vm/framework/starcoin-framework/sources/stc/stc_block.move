@@ -65,6 +65,8 @@ module starcoin_framework::stc_block {
 
     /// This can only be invoked by the GENESIS_ACCOUNT at genesis
     public fun initialize(account: &signer, parent_hash: vector<u8>) {
+        debug::print(&std::string::utf8(b"stc_block::initialize | entered "));
+
         system_addresses::assert_starcoin_framework(account);
 
         let block_metadata = BlockMetadata {
@@ -77,6 +79,8 @@ module starcoin_framework::stc_block {
         };
 
         move_to<BlockMetadata>(account, block_metadata);
+
+        debug::print(&std::string::utf8(b"stc_block::initialize | exited "));
     }
 
     spec initialize {

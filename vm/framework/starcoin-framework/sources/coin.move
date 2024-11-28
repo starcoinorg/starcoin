@@ -308,24 +308,25 @@ module starcoin_framework::coin {
     }
 
     inline fun is_stc<CoinType>(): bool {
-        type_info::type_name<CoinType>() == string::utf8(b"0x1::starcoin_coin::STC")
+        type_info::type_name<CoinType>() == string::utf8(b"0x00000000000000000000000000000001::starcoin_coin::STC")
     }
 
-    inline fun create_and_return_paired_metadata_if_not_exist<CoinType>(allow_apt_creation: bool): Object<Metadata> {
-        // debug::print(&std::string::utf8(b"coin::create_and_return_paired_metadata_if_not_exist | Entered"));
+    inline fun create_and_return_paired_metadata_if_not_exist<CoinType>(allow_stc_creation: bool): Object<Metadata> {
+        debug::print(&std::string::utf8(b"coin::create_and_return_paired_metadata_if_not_exist | entered"));
 
         assert!(
             features::coin_to_fungible_asset_migration_feature_enabled(),
             error::invalid_state(EMIGRATION_FRAMEWORK_NOT_ENABLED)
         );
         assert!(exists<CoinConversionMap>(@starcoin_framework), error::not_found(ECOIN_CONVERSION_MAP_NOT_FOUND));
+
         let map = borrow_global_mut<CoinConversionMap>(@starcoin_framework);
         let type = type_info::type_of<CoinType>();
         if (!table::contains(&map.coin_to_fungible_asset_map, type)) {
-            let is_apt = is_stc<CoinType>();
-            assert!(!is_apt || allow_apt_creation, error::invalid_state(EAPT_PAIRING_IS_NOT_ENABLED));
+            let is_stc = is_stc<CoinType>();
+            assert!(!is_stc || allow_stc_creation, error::invalid_state(EAPT_PAIRING_IS_NOT_ENABLED));
             let metadata_object_cref =
-                if (is_apt) {
+                if (is_stc) {
                     object::create_sticky_object_at_address(@starcoin_framework, @starcoin_fungible_asset)
                 } else {
                     object::create_named_object(
@@ -366,7 +367,7 @@ module starcoin_framework::coin {
                 }
             );
         };
-        // debug::print(&std::string::utf8(b"coin::create_and_return_paired_metadata_if_not_exist | Exited"));
+        debug::print(&std::string::utf8(b"coin::create_and_return_paired_metadata_if_not_exist | exited"));
         *table::borrow(&map.coin_to_fungible_asset_map, type)
     }
 
@@ -965,7 +966,7 @@ module starcoin_framework::coin {
         let primary_store_address = primary_fungible_store::primary_store_address<Metadata>(account_address, metadata);
         fungible_asset::store_exists(primary_store_address) && (
             // migration flag is needed, until we start defaulting new accounts to APT PFS
-            features::new_accounts_default_to_fa_apt_store_enabled() || exists<MigrationFlag>(primary_store_address)
+            features::new_accounts_default_to_fa_stc_store_enabled() || exists<MigrationFlag>(primary_store_address)
         )
     }
 

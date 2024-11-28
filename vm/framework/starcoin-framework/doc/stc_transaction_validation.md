@@ -412,11 +412,10 @@ Migration from old StarcoinFramework Account::txn_prologue
         // Check that the <a href="../../move-stdlib/doc/hash.md#0x1_hash">hash</a> of the transaction's <b>public</b> key matches the <a href="account.md#0x1_account">account</a>'s auth key
         <b>assert</b>!(
             //<a href="../../move-stdlib/doc/hash.md#0x1_hash_sha3_256">hash::sha3_256</a>(txn_authentication_key_preimage) == *&sender_account.authentication_key,
-            <a href="account.md#0x1_account_is_account_auth_key">account::is_account_auth_key</a>(txn_sender, <a href="../../move-stdlib/doc/hash.md#0x1_hash_sha3_256">hash::sha3_256</a>(txn_authentication_key_preimage)),
+            <a href="account.md#0x1_account_get_authentication_key">account::get_authentication_key</a>(txn_sender) == <a href="../../move-stdlib/doc/hash.md#0x1_hash_sha3_256">hash::sha3_256</a>(txn_authentication_key_preimage),
             <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY">EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY</a>)
         );
     };
-
 
     <b>assert</b>!(
         (txn_gas_price <b>as</b> u128) * (txn_max_gas_units <b>as</b> u128) &lt;= <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_MAX_U64">MAX_U64</a>,

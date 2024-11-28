@@ -1415,7 +1415,7 @@ Create STC pairing by passing <code>StarcoinCoin</code>.
 
 
 <pre><code>inline <b>fun</b> <a href="coin.md#0x1_coin_is_stc">is_stc</a>&lt;CoinType&gt;(): bool {
-    <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_name">type_info::type_name</a>&lt;CoinType&gt;() == <a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="starcoin_coin.md#0x1_starcoin_coin_STC">0x1::starcoin_coin::STC</a>")
+    <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_name">type_info::type_name</a>&lt;CoinType&gt;() == <a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="starcoin_coin.md#0x1_starcoin_coin_STC">0x00000000000000000000000000000001::starcoin_coin::STC</a>")
 }
 </code></pre>
 
@@ -1429,7 +1429,7 @@ Create STC pairing by passing <code>StarcoinCoin</code>.
 
 
 
-<pre><code><b>fun</b> <a href="coin.md#0x1_coin_create_and_return_paired_metadata_if_not_exist">create_and_return_paired_metadata_if_not_exist</a>&lt;CoinType&gt;(allow_apt_creation: bool): <a href="object.md#0x1_object_Object">object::Object</a>&lt;<a href="fungible_asset.md#0x1_fungible_asset_Metadata">fungible_asset::Metadata</a>&gt;
+<pre><code><b>fun</b> <a href="coin.md#0x1_coin_create_and_return_paired_metadata_if_not_exist">create_and_return_paired_metadata_if_not_exist</a>&lt;CoinType&gt;(allow_stc_creation: bool): <a href="object.md#0x1_object_Object">object::Object</a>&lt;<a href="fungible_asset.md#0x1_fungible_asset_Metadata">fungible_asset::Metadata</a>&gt;
 </code></pre>
 
 
@@ -1438,21 +1438,22 @@ Create STC pairing by passing <code>StarcoinCoin</code>.
 <summary>Implementation</summary>
 
 
-<pre><code>inline <b>fun</b> <a href="coin.md#0x1_coin_create_and_return_paired_metadata_if_not_exist">create_and_return_paired_metadata_if_not_exist</a>&lt;CoinType&gt;(allow_apt_creation: bool): Object&lt;Metadata&gt; {
-    // <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="coin.md#0x1_coin_create_and_return_paired_metadata_if_not_exist">coin::create_and_return_paired_metadata_if_not_exist</a> | Entered"));
+<pre><code>inline <b>fun</b> <a href="coin.md#0x1_coin_create_and_return_paired_metadata_if_not_exist">create_and_return_paired_metadata_if_not_exist</a>&lt;CoinType&gt;(allow_stc_creation: bool): Object&lt;Metadata&gt; {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="coin.md#0x1_coin_create_and_return_paired_metadata_if_not_exist">coin::create_and_return_paired_metadata_if_not_exist</a> | entered"));
 
     <b>assert</b>!(
         <a href="../../move-stdlib/doc/features.md#0x1_features_coin_to_fungible_asset_migration_feature_enabled">features::coin_to_fungible_asset_migration_feature_enabled</a>(),
         <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="coin.md#0x1_coin_EMIGRATION_FRAMEWORK_NOT_ENABLED">EMIGRATION_FRAMEWORK_NOT_ENABLED</a>)
     );
     <b>assert</b>!(<b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a>&gt;(@starcoin_framework), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="coin.md#0x1_coin_ECOIN_CONVERSION_MAP_NOT_FOUND">ECOIN_CONVERSION_MAP_NOT_FOUND</a>));
+
     <b>let</b> map = <b>borrow_global_mut</b>&lt;<a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a>&gt;(@starcoin_framework);
     <b>let</b> type = <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;CoinType&gt;();
     <b>if</b> (!<a href="../../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(&map.coin_to_fungible_asset_map, type)) {
-        <b>let</b> is_apt = <a href="coin.md#0x1_coin_is_stc">is_stc</a>&lt;CoinType&gt;();
-        <b>assert</b>!(!is_apt || allow_apt_creation, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="coin.md#0x1_coin_EAPT_PAIRING_IS_NOT_ENABLED">EAPT_PAIRING_IS_NOT_ENABLED</a>));
+        <b>let</b> is_stc = <a href="coin.md#0x1_coin_is_stc">is_stc</a>&lt;CoinType&gt;();
+        <b>assert</b>!(!is_stc || allow_stc_creation, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="coin.md#0x1_coin_EAPT_PAIRING_IS_NOT_ENABLED">EAPT_PAIRING_IS_NOT_ENABLED</a>));
         <b>let</b> metadata_object_cref =
-            <b>if</b> (is_apt) {
+            <b>if</b> (is_stc) {
                 <a href="object.md#0x1_object_create_sticky_object_at_address">object::create_sticky_object_at_address</a>(@starcoin_framework, @starcoin_fungible_asset)
             } <b>else</b> {
                 <a href="object.md#0x1_object_create_named_object">object::create_named_object</a>(
@@ -1493,7 +1494,7 @@ Create STC pairing by passing <code>StarcoinCoin</code>.
             }
         );
     };
-    // <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="coin.md#0x1_coin_create_and_return_paired_metadata_if_not_exist">coin::create_and_return_paired_metadata_if_not_exist</a> | Exited"));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="coin.md#0x1_coin_create_and_return_paired_metadata_if_not_exist">coin::create_and_return_paired_metadata_if_not_exist</a> | exited"));
     *<a href="../../starcoin-stdlib/doc/table.md#0x1_table_borrow">table::borrow</a>(&map.coin_to_fungible_asset_map, type)
 }
 </code></pre>
@@ -2915,7 +2916,7 @@ Deposit the coin balance into the recipient's account and emit an event.
     <b>let</b> primary_store_address = <a href="primary_fungible_store.md#0x1_primary_fungible_store_primary_store_address">primary_fungible_store::primary_store_address</a>&lt;Metadata&gt;(account_address, metadata);
     <a href="fungible_asset.md#0x1_fungible_asset_store_exists">fungible_asset::store_exists</a>(primary_store_address) && (
         // migration flag is needed, until we start defaulting new accounts <b>to</b> APT PFS
-        <a href="../../move-stdlib/doc/features.md#0x1_features_new_accounts_default_to_fa_apt_store_enabled">features::new_accounts_default_to_fa_apt_store_enabled</a>() || <b>exists</b>&lt;<a href="coin.md#0x1_coin_MigrationFlag">MigrationFlag</a>&gt;(primary_store_address)
+        <a href="../../move-stdlib/doc/features.md#0x1_features_new_accounts_default_to_fa_stc_store_enabled">features::new_accounts_default_to_fa_stc_store_enabled</a>() || <b>exists</b>&lt;<a href="coin.md#0x1_coin_MigrationFlag">MigrationFlag</a>&gt;(primary_store_address)
     )
 }
 </code></pre>
