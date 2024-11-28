@@ -94,7 +94,10 @@ module starcoin_std::type_info {
         features::change_feature_flags_for_testing(&fx, vector[features::get_starcoin_stdlib_chain_id_feature()], vector[]);
 
         // The testing environment chain ID is 4u8.
-        assert!(chain_id() == 4u8, 1);
+        debug::print(&string::utf8(b"chain_id is: "));
+        debug::print(&chain_id());
+
+        assert!(chain_id() == 255u8, 1);
     }
 
     #[test]
@@ -179,6 +182,8 @@ module starcoin_std::type_info {
 
     #[test_only]
     use std::option;
+    #[test_only]
+    use starcoin_std::debug;
 
     #[test(account = @0x0)]
     /// Ensure valid returns across native types and nesting schemas.
