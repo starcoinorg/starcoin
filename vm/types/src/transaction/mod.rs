@@ -413,6 +413,7 @@ impl TryFrom<u8> for TransactionPayloadType {
         match value {
             0 => Ok(Self::Script),
             1 => Ok(Self::Package),
+            2 => Ok(Self::ScriptFunction),
             _ => Err(format_err!("invalid PayloadType")),
         }
     }

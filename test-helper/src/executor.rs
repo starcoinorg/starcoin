@@ -94,10 +94,11 @@ pub fn current_block_number<S: StateView>(state_view: &S) -> u64 {
 }
 
 pub fn get_sequence_number<S: ChainStateReader>(addr: AccountAddress, chain_state: &S) -> u64 {
+    // if account not exist, return 0
     chain_state
         .get_account_resource(addr)
-        .expect("read account state should ok")
-        .sequence_number()
+        .map(|r| r.sequence_number())
+        .unwrap_or_default()
 }
 
 pub fn get_balance<S: ChainStateReader>(address: AccountAddress, chain_state: &S) -> u128 {

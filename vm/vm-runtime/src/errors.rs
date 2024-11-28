@@ -31,14 +31,34 @@ const EDESTROY_TOKEN_NON_ZERO: u64 = 16;
 const EBLOCK_NUMBER_MISMATCH: u64 = 17;
 const EBAD_TRANSACTION_FEE_TOKEN: u64 = 18;
 
-const INVALID_STATE: u8 = 1;
-const REQUIRES_ADDRESS: u8 = 2;
-const INVALID_ARGUMENT: u8 = 7;
-const LIMIT_EXCEEDED: u8 = 8;
+// see error codes defined in Move-Stdlib `error.move`
+const INVALID_ARGUMENT: u64 = 0x1;
+const OUT_OF_RANGE: u64 = 0x2;
+const INVALID_STATE: u64 = 0x3;
+#[allow(unused)]
+const UNAUTHENTICATED: u64 = 0x4;
+#[allow(unused)]
+const PERMISSION_DENIED: u64 = 0x5;
+#[allow(unused)]
+const NOT_FOUND: u64 = 0x6;
+#[allow(unused)]
+const ABORTED: u64 = 0x7;
+const ALREADY_EXISTS: u64 = 0x8;
+#[allow(unused)]
+const RESOURCE_EXHAUSTED: u64 = 0x9;
+#[allow(unused)]
+const CANCELLED: u64 = 0xA;
+#[allow(unused)]
+const INTERNAL: u64 = 0xB;
+#[allow(unused)]
+const NOT_IMPLEMENTED: u64 = 0xC;
+#[allow(unused)]
+const UNAVAILABLE: u64 = 0xD;
 
-pub fn error_split(code: u64) -> (u8, u64) {
-    let category = code as u8;
-    let reason = code >> 8;
+// see `canonical` function defined in Move-Stdlib `error.move`
+pub fn error_split(code: u64) -> (u64, u64) {
+    let category = code >> 16;
+    let reason = code - (category << 16);
     (category, reason)
 }
 
@@ -49,9 +69,6 @@ pub fn convert_prologue_runtime_error(error: VMError) -> Result<(), VMStatus> {
         VMStatus::MoveAbort(location, code) => {
             let (category, reason) = error_split(code);
             let new_major_status = match (category, reason) {
-                (REQUIRES_ADDRESS, PROLOGUE_ACCOUNT_DOES_NOT_EXIST) => {
-                    StatusCode::SENDING_ACCOUNT_DOES_NOT_EXIST
-                }
                 (INVALID_ARGUMENT, PROLOGUE_INVALID_ACCOUNT_AUTH_KEY) => {
                     StatusCode::INVALID_AUTH_KEY
                 }
@@ -70,20 +87,8 @@ pub fn convert_prologue_runtime_error(error: VMError) -> Result<(), VMStatus> {
                     StatusCode::INVALID_MODULE_PUBLISHER
                 }
                 (INVALID_ARGUMENT, PROLOGUE_SCRIPT_NOT_ALLOWED) => StatusCode::UNKNOWN_SCRIPT,
-                (LIMIT_EXCEEDED, PROLOGUE_SEQUENCE_NUMBER_TOO_BIG) => {
-                    StatusCode::SEQUENCE_NUMBER_TOO_BIG
-                }
-                (REQUIRES_ADDRESS, ENOT_GENESIS_ACCOUNT) => StatusCode::NO_ACCOUNT_ROLE,
-                (INVALID_STATE, ENOT_GENESIS) => StatusCode::NOT_GENESIS,
-                (INVALID_STATE, ECONFIG_VALUE_DOES_NOT_EXIST) => {
-                    StatusCode::CONFIG_VALUE_DOES_NOT_EXIST
-                }
-                (INVALID_STATE, EPROLOGUE_SIGNER_ALREADY_DELEGATED) => {
-                    StatusCode::SIGNER_ALREADY_DELEGATED
-                }
                 (INVALID_ARGUMENT, EINVALID_TIMESTAMP) => StatusCode::INVALID_TIMESTAMP,
                 (INVALID_ARGUMENT, ECOIN_DEPOSIT_IS_ZERO) => StatusCode::COIN_DEPOSIT_IS_ZERO,
-                (INVALID_STATE, EDESTROY_TOKEN_NON_ZERO) => StatusCode::DESTROY_TOKEN_NON_ZERO,
                 (INVALID_ARGUMENT, EBLOCK_NUMBER_MISMATCH) => StatusCode::BLOCK_NUMBER_MISMATCH,
                 (INVALID_ARGUMENT, EBAD_TRANSACTION_FEE_TOKEN) => {
                     StatusCode::BAD_TRANSACTION_FEE_CURRENCY
@@ -93,6 +98,21 @@ pub fn convert_prologue_runtime_error(error: VMError) -> Result<(), VMStatus> {
                 }
                 (INVALID_ARGUMENT, EPROLOGUE_SENDING_TXN_GLOBAL_FROZEN) => {
                     StatusCode::SEND_TXN_GLOBAL_FROZEN
+                }
+                (OUT_OF_RANGE, PROLOGUE_ACCOUNT_DOES_NOT_EXIST) => {
+                    StatusCode::SENDING_ACCOUNT_DOES_NOT_EXIST
+                }
+                (OUT_OF_RANGE, ENOT_GENESIS_ACCOUNT) => StatusCode::NO_ACCOUNT_ROLE,
+                (INVALID_STATE, ENOT_GENESIS) => StatusCode::NOT_GENESIS,
+                (INVALID_STATE, ECONFIG_VALUE_DOES_NOT_EXIST) => {
+                    StatusCode::CONFIG_VALUE_DOES_NOT_EXIST
+                }
+                (INVALID_STATE, EPROLOGUE_SIGNER_ALREADY_DELEGATED) => {
+                    StatusCode::SIGNER_ALREADY_DELEGATED
+                }
+                (INVALID_STATE, EDESTROY_TOKEN_NON_ZERO) => StatusCode::DESTROY_TOKEN_NON_ZERO,
+                (ALREADY_EXISTS, PROLOGUE_SEQUENCE_NUMBER_TOO_BIG) => {
+                    StatusCode::SEQUENCE_NUMBER_TOO_BIG
                 }
 
                 (category, reason) => {
@@ -118,7 +138,7 @@ pub fn convert_normal_success_epilogue_error(error: VMError) -> Result<(), VMSta
         VMStatus::MoveAbort(location, code) => {
             let (category, reason) = error_split(code);
             match (category, reason) {
-                (LIMIT_EXCEEDED, EINSUFFICIENT_BALANCE) => {
+                (ALREADY_EXISTS, EINSUFFICIENT_BALANCE) => {
                     let _ = location != account_module_abort();
                     VMStatus::MoveAbort(location, code)
                 }

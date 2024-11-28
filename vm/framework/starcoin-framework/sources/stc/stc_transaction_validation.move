@@ -163,6 +163,7 @@ module starcoin_framework::stc_transaction_validation {
         txn_gas_price: u64,
         txn_max_gas_units: u64,
     ) {
+        debug::print(&std::string::utf8(b"transaction_validation::txn_prologue | Entered"));
         system_addresses::assert_starcoin_framework(account);
 
         // Verify that the transaction sender's account exists
@@ -210,15 +211,17 @@ module starcoin_framework::stc_transaction_validation {
                 error::out_of_range(EPROLOGUE_SEQUENCE_NUMBER_TOO_BIG)
             );
         };
+        let account_sequence_number = account::get_sequence_number(txn_sender);
         // Check that the transaction sequence number matches the sequence number of the account
         assert!(
-            txn_sequence_number >= account::get_sequence_number(txn_sender),
+            txn_sequence_number >= account_sequence_number,
             error::invalid_argument(EPROLOGUE_SEQUENCE_NUMBER_TOO_OLD)
         );
         assert!(
-            txn_sequence_number == account::get_sequence_number(txn_sender),
+            txn_sequence_number == account_sequence_number,
             error::invalid_argument(EPROLOGUE_SEQUENCE_NUMBER_TOO_NEW)
         );
+        debug::print(&std::string::utf8(b"transaction_validation::txn_prologue | Exited"));
     }
 
     /// Migration from old StarcoinFramework Account::txn_eiplogue

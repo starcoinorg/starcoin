@@ -177,7 +177,6 @@ fn test_consensus_config_get() -> Result<()> {
     Ok(())
 }
 
-// fixme
 #[stest::test]
 fn test_batch_transfer() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
@@ -228,7 +227,6 @@ fn test_txn_verify_err_case() -> Result<()> {
     Ok(())
 }
 
-// fixme
 #[stest::test(timeout = 360)]
 fn test_package_txn() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
