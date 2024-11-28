@@ -166,13 +166,6 @@
                   "type": "string",
                   "format": "AccountAddress"
                 },
-                "author_auth_key": {
-                  "description": "Block author auth key.",
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
                 "block_accumulator_root": {
                   "description": "The block accumulator root hash.",
                   "type": "string",
@@ -609,13 +602,6 @@
                   "type": "string",
                   "format": "AccountAddress"
                 },
-                "author_auth_key": {
-                  "description": "Block author auth key.",
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
                 "block_accumulator_root": {
                   "description": "The block accumulator root hash.",
                   "type": "string",
@@ -736,13 +722,6 @@
                     "description": "Block author.",
                     "type": "string",
                     "format": "AccountAddress"
-                  },
-                  "author_auth_key": {
-                    "description": "Block author auth key.",
-                    "type": [
-                      "string",
-                      "null"
-                    ]
                   },
                   "block_accumulator_root": {
                     "description": "The block accumulator root hash.",
@@ -1182,13 +1161,6 @@
                   "type": "string",
                   "format": "AccountAddress"
                 },
-                "author_auth_key": {
-                  "description": "Block author auth key.",
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
                 "block_accumulator_root": {
                   "description": "The block accumulator root hash.",
                   "type": "string",
@@ -1309,13 +1281,6 @@
                     "description": "Block author.",
                     "type": "string",
                     "format": "AccountAddress"
-                  },
-                  "author_auth_key": {
-                    "description": "Block author auth key.",
-                    "type": [
-                      "string",
-                      "null"
-                    ]
                   },
                   "block_accumulator_root": {
                     "description": "The block accumulator root hash.",
@@ -1763,13 +1728,6 @@
                     "type": "string",
                     "format": "AccountAddress"
                   },
-                  "author_auth_key": {
-                    "description": "Block author auth key.",
-                    "type": [
-                      "string",
-                      "null"
-                    ]
-                  },
                   "block_accumulator_root": {
                     "description": "The block accumulator root hash.",
                     "type": "string",
@@ -1890,13 +1848,6 @@
                       "description": "Block author.",
                       "type": "string",
                       "format": "AccountAddress"
-                    },
-                    "author_auth_key": {
-                      "description": "Block author auth key.",
-                      "type": [
-                        "string",
-                        "null"
-                      ]
                     },
                     "block_accumulator_root": {
                       "description": "The block accumulator root hash.",
@@ -3055,7 +3006,22 @@
               },
               "event_key": {
                 "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. By design, the lower part of EventKey is the same as account address.",
-                "type": "string"
+                "type": "object",
+                "required": [
+                  "account_address",
+                  "creation_number"
+                ],
+                "properties": {
+                  "account_address": {
+                    "type": "string",
+                    "format": "AccountAddress"
+                  },
+                  "creation_number": {
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  }
+                }
               },
               "event_seq_number": {
                 "type": "string"
@@ -3121,7 +3087,22 @@
                 ],
                 "items": {
                   "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. By design, the lower part of EventKey is the same as account address.",
-                  "type": "string"
+                  "type": "object",
+                  "required": [
+                    "account_address",
+                    "creation_number"
+                  ],
+                  "properties": {
+                    "account_address": {
+                      "type": "string",
+                      "format": "AccountAddress"
+                    },
+                    "creation_number": {
+                      "type": "integer",
+                      "format": "uint64",
+                      "minimum": 0.0
+                    }
+                  }
                 }
               },
               "from_block": {
@@ -3229,7 +3210,22 @@
               },
               "event_key": {
                 "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. By design, the lower part of EventKey is the same as account address.",
-                "type": "string"
+                "type": "object",
+                "required": [
+                  "account_address",
+                  "creation_number"
+                ],
+                "properties": {
+                  "account_address": {
+                    "type": "string",
+                    "format": "AccountAddress"
+                  },
+                  "creation_number": {
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  }
+                }
               },
               "event_seq_number": {
                 "type": "string"
@@ -3308,13 +3304,6 @@
                 "description": "Block author.",
                 "type": "string",
                 "format": "AccountAddress"
-              },
-              "author_auth_key": {
-                "description": "Block author auth key.",
-                "type": [
-                  "string",
-                  "null"
-                ]
               },
               "block_accumulator_root": {
                 "description": "The block accumulator root hash.",

@@ -51,13 +51,6 @@
                       "type": "string",
                       "format": "AccountAddress"
                     },
-                    "author_auth_key": {
-                      "description": "Block author auth key. this field is deprecated",
-                      "type": [
-                        "string",
-                        "null"
-                      ]
-                    },
                     "block_accumulator_root": {
                       "description": "The parent block info's block accumulator root hash.",
                       "type": "string",
