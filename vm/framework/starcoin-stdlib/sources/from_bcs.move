@@ -75,7 +75,7 @@ module starcoin_std::from_bcs {
     #[test]
     fun test_address() {
         let addr = @0x01;
-        let addr_vec = x"0000000000000000000000000000000000000000000000000000000000000001";
+        let addr_vec = x"00000000000000000000000000000001";
         let addr_out = to_address(addr_vec);
         let addr_vec_out = bcs::to_bytes(&addr_out);
         assert!(addr == addr_out, 0);

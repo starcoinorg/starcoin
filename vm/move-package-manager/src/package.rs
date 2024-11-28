@@ -6,6 +6,8 @@ use move_cli::base::{
 use move_cli::Move;
 use move_core_types::effects::Changes;
 use move_vm_runtime::native_functions::NativeFunctionTable;
+use starcoin_vm_runtime::natives;
+use starcoin_framework::extended_checks;
 
 pub const STARCOIN_STDLIB_PACKAGE_NAME: &str = "StarcoinFramework";
 pub const STARCOIN_STDLIB_PACKAGE_PATH: &str = "{ \
@@ -60,13 +62,17 @@ pub fn handle_package_commands(
         PackageCommand::Prove(c) => c.execute(move_args.package_path, move_args.build_config),
         PackageCommand::Coverage(c) => c.execute(move_args.package_path, move_args.build_config),
         // XXX FIXME YSG
-        PackageCommand::Test(c) => c.execute(
-            move_args.package_path,
-            move_args.build_config,
-            natives,
-            Changes::new(),
-            None,
-        ),
+        PackageCommand::Test(c) =>{
+            natives::configure_for_unit_test();
+            extended_checks::configure_extended_checks_for_unit_test();
+            c.execute(
+                move_args.package_path,
+                move_args.build_config,
+                natives,
+                Changes::new(),
+                None,
+            )
+        },
         PackageCommand::Disassemble(c) => c.execute(move_args.package_path, move_args.build_config),
     }
 }

@@ -2,6 +2,7 @@ module starcoin_std::type_info {
     use std::bcs;
     use std::features;
     use std::string::{Self, String};
+    use std::vector;
 
     //
     // Error codes
@@ -23,21 +24,21 @@ module starcoin_std::type_info {
     // Public functions
     //
 
-    public fun account_address(self: &TypeInfo): address {
-        self.account_address
+    public fun account_address(type_info: &TypeInfo): address {
+        type_info.account_address
     }
 
-    public fun module_name(self: &TypeInfo): vector<u8> {
-        self.module_name
+    public fun module_name(type_info: &TypeInfo): vector<u8> {
+        type_info.module_name
     }
 
-    public fun struct_name(self: &TypeInfo): vector<u8> {
-        self.struct_name
+    public fun struct_name(type_info: &TypeInfo): vector<u8> {
+        type_info.struct_name
     }
 
-    /// Returns the current chain ID, mirroring what `starcoin_framework::chain_id::get()` would return, except in `#[test]`
-    /// functions, where this will always return `4u8` as the chain ID, whereas `starcoin_framework::chain_id::get()` will
-    /// return whichever ID was passed to `starcoin_framework::chain_id::initialize_for_test()`.
+    /// Returns the current chain ID, mirroring what `aptos_framework::chain_id::get()` would return, except in `#[test]`
+    /// functions, where this will always return `4u8` as the chain ID, whereas `aptos_framework::chain_id::get()` will
+    /// return whichever ID was passed to `aptos_framework::chain_id::initialize_for_test()`.
     public fun chain_id(): u8 {
         if (!features::starcoin_stdlib_chain_id_enabled()) {
             abort(std::error::invalid_state(E_NATIVE_FUN_NOT_AVAILABLE))
@@ -50,7 +51,7 @@ module starcoin_std::type_info {
     public native fun type_of<T>(): TypeInfo;
 
     /// Return the human readable string for the type, including the address, module name, and any type arguments.
-    /// Example: 0x1::coin::CoinStore<0x1::starcoin_coin::STC>
+    /// Example: 0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>
     /// Or: 0x1::table::Table<0x1::string::String, 0x1::string::String>
     public native fun type_name<T>(): String;
 
@@ -64,14 +65,12 @@ module starcoin_std::type_info {
     /// nesting patterns, as well as `test_size_of_val_vectors()` for an
     /// analysis of vector size dynamism.
     public fun size_of_val<T>(val_ref: &T): u64 {
-        bcs::serialized_size(val_ref)
+        // Return vector length of vectorized BCS representation.
+        vector::length(&bcs::to_bytes(val_ref))
     }
 
     #[test_only]
     use starcoin_std::table::Table;
-
-    #[test_only]
-    use std::vector;
 
     #[test]
     fun test_type_of() {
