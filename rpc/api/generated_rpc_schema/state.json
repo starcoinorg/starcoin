@@ -9,30 +9,94 @@
       "name": "state.get",
       "params": [
         {
-          "name": "access_path",
+          "name": "state_key",
           "schema": {
             "$schema": "http://json-schema.org/draft-07/schema#",
-            "title": "AccessPath",
+            "title": "StateKey",
             "type": "object",
             "required": [
-              "address",
-              "path"
+              "deserialized",
+              "encoded",
+              "hash_value"
             ],
             "properties": {
-              "address": {
-                "type": "string",
-                "format": "AccountAddress"
+              "deserialized": {
+                "$ref": "#/definitions/StateKey"
               },
-              "path": {
+              "encoded": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                }
+              },
+              "hash_value": {
+                "type": "string",
+                "format": "HashValue"
+              }
+            },
+            "definitions": {
+              "StateKey": {
                 "oneOf": [
                   {
                     "type": "object",
                     "required": [
-                      "Code"
+                      "AccessPath"
                     ],
                     "properties": {
-                      "Code": {
-                        "type": "string"
+                      "AccessPath": {
+                        "type": "object",
+                        "required": [
+                          "address",
+                          "path"
+                        ],
+                        "properties": {
+                          "address": {
+                            "type": "string",
+                            "format": "AccountAddress"
+                          },
+                          "path": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "Code"
+                                ],
+                                "properties": {
+                                  "Code": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "Resource"
+                                ],
+                                "properties": {
+                                  "Resource": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "ResourceGroup"
+                                ],
+                                "properties": {
+                                  "ResourceGroup": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        }
                       }
                     },
                     "additionalProperties": false
@@ -40,11 +104,38 @@
                   {
                     "type": "object",
                     "required": [
-                      "Resource"
+                      "TableItem"
                     ],
                     "properties": {
-                      "Resource": {
-                        "type": "string"
+                      "TableItem": {
+                        "type": "object",
+                        "required": [
+                          "handle",
+                          "key"
+                        ],
+                        "properties": {
+                          "handle": {
+                            "type": "string",
+                            "format": "AccountAddress"
+                          },
+                          "key": {
+                            "type": "string",
+                            "format": "bytes"
+                          }
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "Raw"
+                    ],
+                    "properties": {
+                      "Raw": {
+                        "type": "string",
+                        "format": "bytes"
                       }
                     },
                     "additionalProperties": false
@@ -56,7 +147,7 @@
         }
       ],
       "result": {
-        "name": "Option < Vec < u8 > >",
+        "name": "Option < Bytes >",
         "schema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "title": "Nullable_Array_of_uint8",
@@ -86,7 +177,7 @@
         }
       ],
       "result": {
-        "name": "Option < Vec < u8 > >",
+        "name": "Option < Bytes >",
         "schema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "title": "Nullable_Array_of_uint8",
@@ -106,30 +197,94 @@
       "name": "state.get_with_proof",
       "params": [
         {
-          "name": "access_path",
+          "name": "state_key",
           "schema": {
             "$schema": "http://json-schema.org/draft-07/schema#",
-            "title": "AccessPath",
+            "title": "StateKey",
             "type": "object",
             "required": [
-              "address",
-              "path"
+              "deserialized",
+              "encoded",
+              "hash_value"
             ],
             "properties": {
-              "address": {
-                "type": "string",
-                "format": "AccountAddress"
+              "deserialized": {
+                "$ref": "#/definitions/StateKey"
               },
-              "path": {
+              "encoded": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                }
+              },
+              "hash_value": {
+                "type": "string",
+                "format": "HashValue"
+              }
+            },
+            "definitions": {
+              "StateKey": {
                 "oneOf": [
                   {
                     "type": "object",
                     "required": [
-                      "Code"
+                      "AccessPath"
                     ],
                     "properties": {
-                      "Code": {
-                        "type": "string"
+                      "AccessPath": {
+                        "type": "object",
+                        "required": [
+                          "address",
+                          "path"
+                        ],
+                        "properties": {
+                          "address": {
+                            "type": "string",
+                            "format": "AccountAddress"
+                          },
+                          "path": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "Code"
+                                ],
+                                "properties": {
+                                  "Code": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "Resource"
+                                ],
+                                "properties": {
+                                  "Resource": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "ResourceGroup"
+                                ],
+                                "properties": {
+                                  "ResourceGroup": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        }
                       }
                     },
                     "additionalProperties": false
@@ -137,11 +292,38 @@
                   {
                     "type": "object",
                     "required": [
-                      "Resource"
+                      "TableItem"
                     ],
                     "properties": {
-                      "Resource": {
-                        "type": "string"
+                      "TableItem": {
+                        "type": "object",
+                        "required": [
+                          "handle",
+                          "key"
+                        ],
+                        "properties": {
+                          "handle": {
+                            "type": "string",
+                            "format": "AccountAddress"
+                          },
+                          "key": {
+                            "type": "string",
+                            "format": "bytes"
+                          }
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "Raw"
+                    ],
+                    "properties": {
+                      "Raw": {
+                        "type": "string",
+                        "format": "bytes"
                       }
                     },
                     "additionalProperties": false
@@ -253,30 +435,94 @@
       "name": "state.get_with_proof_raw",
       "params": [
         {
-          "name": "access_path",
+          "name": "state_key",
           "schema": {
             "$schema": "http://json-schema.org/draft-07/schema#",
-            "title": "AccessPath",
+            "title": "StateKey",
             "type": "object",
             "required": [
-              "address",
-              "path"
+              "deserialized",
+              "encoded",
+              "hash_value"
             ],
             "properties": {
-              "address": {
-                "type": "string",
-                "format": "AccountAddress"
+              "deserialized": {
+                "$ref": "#/definitions/StateKey"
               },
-              "path": {
+              "encoded": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                }
+              },
+              "hash_value": {
+                "type": "string",
+                "format": "HashValue"
+              }
+            },
+            "definitions": {
+              "StateKey": {
                 "oneOf": [
                   {
                     "type": "object",
                     "required": [
-                      "Code"
+                      "AccessPath"
                     ],
                     "properties": {
-                      "Code": {
-                        "type": "string"
+                      "AccessPath": {
+                        "type": "object",
+                        "required": [
+                          "address",
+                          "path"
+                        ],
+                        "properties": {
+                          "address": {
+                            "type": "string",
+                            "format": "AccountAddress"
+                          },
+                          "path": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "Code"
+                                ],
+                                "properties": {
+                                  "Code": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "Resource"
+                                ],
+                                "properties": {
+                                  "Resource": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "ResourceGroup"
+                                ],
+                                "properties": {
+                                  "ResourceGroup": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        }
                       }
                     },
                     "additionalProperties": false
@@ -284,11 +530,38 @@
                   {
                     "type": "object",
                     "required": [
-                      "Resource"
+                      "TableItem"
                     ],
                     "properties": {
-                      "Resource": {
-                        "type": "string"
+                      "TableItem": {
+                        "type": "object",
+                        "required": [
+                          "handle",
+                          "key"
+                        ],
+                        "properties": {
+                          "handle": {
+                            "type": "string",
+                            "format": "AccountAddress"
+                          },
+                          "key": {
+                            "type": "string",
+                            "format": "bytes"
+                          }
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "Raw"
+                    ],
+                    "properties": {
+                      "Raw": {
+                        "type": "string",
+                        "format": "bytes"
                       }
                     },
                     "additionalProperties": false
@@ -322,14 +595,11 @@
         }
       ],
       "result": {
-        "name": "Option < AccountState >",
+        "name": "AccountState",
         "schema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
-          "title": "Nullable_AccountState",
-          "type": [
-            "object",
-            "null"
-          ],
+          "title": "AccountState",
+          "type": "object",
           "required": [
             "storage_roots"
           ],
@@ -765,30 +1035,94 @@
       "name": "state.get_with_proof_by_root",
       "params": [
         {
-          "name": "access_path",
+          "name": "state_key",
           "schema": {
             "$schema": "http://json-schema.org/draft-07/schema#",
-            "title": "AccessPath",
+            "title": "StateKey",
             "type": "object",
             "required": [
-              "address",
-              "path"
+              "deserialized",
+              "encoded",
+              "hash_value"
             ],
             "properties": {
-              "address": {
-                "type": "string",
-                "format": "AccountAddress"
+              "deserialized": {
+                "$ref": "#/definitions/StateKey"
               },
-              "path": {
+              "encoded": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                }
+              },
+              "hash_value": {
+                "type": "string",
+                "format": "HashValue"
+              }
+            },
+            "definitions": {
+              "StateKey": {
                 "oneOf": [
                   {
                     "type": "object",
                     "required": [
-                      "Code"
+                      "AccessPath"
                     ],
                     "properties": {
-                      "Code": {
-                        "type": "string"
+                      "AccessPath": {
+                        "type": "object",
+                        "required": [
+                          "address",
+                          "path"
+                        ],
+                        "properties": {
+                          "address": {
+                            "type": "string",
+                            "format": "AccountAddress"
+                          },
+                          "path": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "Code"
+                                ],
+                                "properties": {
+                                  "Code": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "Resource"
+                                ],
+                                "properties": {
+                                  "Resource": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "ResourceGroup"
+                                ],
+                                "properties": {
+                                  "ResourceGroup": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        }
                       }
                     },
                     "additionalProperties": false
@@ -796,11 +1130,38 @@
                   {
                     "type": "object",
                     "required": [
-                      "Resource"
+                      "TableItem"
                     ],
                     "properties": {
-                      "Resource": {
-                        "type": "string"
+                      "TableItem": {
+                        "type": "object",
+                        "required": [
+                          "handle",
+                          "key"
+                        ],
+                        "properties": {
+                          "handle": {
+                            "type": "string",
+                            "format": "AccountAddress"
+                          },
+                          "key": {
+                            "type": "string",
+                            "format": "bytes"
+                          }
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "Raw"
+                    ],
+                    "properties": {
+                      "Raw": {
+                        "type": "string",
+                        "format": "bytes"
                       }
                     },
                     "additionalProperties": false
@@ -921,30 +1282,94 @@
       "name": "state.get_with_proof_by_root_raw",
       "params": [
         {
-          "name": "access_path",
+          "name": "state_key",
           "schema": {
             "$schema": "http://json-schema.org/draft-07/schema#",
-            "title": "AccessPath",
+            "title": "StateKey",
             "type": "object",
             "required": [
-              "address",
-              "path"
+              "deserialized",
+              "encoded",
+              "hash_value"
             ],
             "properties": {
-              "address": {
-                "type": "string",
-                "format": "AccountAddress"
+              "deserialized": {
+                "$ref": "#/definitions/StateKey"
               },
-              "path": {
+              "encoded": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                }
+              },
+              "hash_value": {
+                "type": "string",
+                "format": "HashValue"
+              }
+            },
+            "definitions": {
+              "StateKey": {
                 "oneOf": [
                   {
                     "type": "object",
                     "required": [
-                      "Code"
+                      "AccessPath"
                     ],
                     "properties": {
-                      "Code": {
-                        "type": "string"
+                      "AccessPath": {
+                        "type": "object",
+                        "required": [
+                          "address",
+                          "path"
+                        ],
+                        "properties": {
+                          "address": {
+                            "type": "string",
+                            "format": "AccountAddress"
+                          },
+                          "path": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "Code"
+                                ],
+                                "properties": {
+                                  "Code": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "Resource"
+                                ],
+                                "properties": {
+                                  "Resource": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "ResourceGroup"
+                                ],
+                                "properties": {
+                                  "ResourceGroup": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        }
                       }
                     },
                     "additionalProperties": false
@@ -952,11 +1377,38 @@
                   {
                     "type": "object",
                     "required": [
-                      "Resource"
+                      "TableItem"
                     ],
                     "properties": {
-                      "Resource": {
-                        "type": "string"
+                      "TableItem": {
+                        "type": "object",
+                        "required": [
+                          "handle",
+                          "key"
+                        ],
+                        "properties": {
+                          "handle": {
+                            "type": "string",
+                            "format": "AccountAddress"
+                          },
+                          "key": {
+                            "type": "string",
+                            "format": "bytes"
+                          }
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "Raw"
+                    ],
+                    "properties": {
+                      "Raw": {
+                        "type": "string",
+                        "format": "bytes"
                       }
                     },
                     "additionalProperties": false
@@ -999,14 +1451,11 @@
         }
       ],
       "result": {
-        "name": "Option < TableInfoView >",
+        "name": "TableInfoView",
         "schema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
-          "title": "Nullable_table_info",
-          "type": [
-            "object",
-            "null"
-          ],
+          "title": "table_info",
+          "type": "object",
           "required": [
             "key_type",
             "value_type"

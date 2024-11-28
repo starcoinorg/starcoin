@@ -656,7 +656,7 @@
                         ],
                         "properties": {
                           "init_script": {
-                            "description": "Call a Move script function.",
+                            "description": "Call a Move entry function.",
                             "type": [
                               "object",
                               "null"
@@ -712,14 +712,14 @@
                     "additionalProperties": false
                   },
                   {
-                    "description": "A transaction that executes an existing script function published on-chain.",
+                    "description": "A transaction that executes an existing entry function published on-chain.",
                     "type": "object",
                     "required": [
-                      "ScriptFunction"
+                      "EntryFunction"
                     ],
                     "properties": {
-                      "ScriptFunction": {
-                        "description": "Call a Move script function.",
+                      "EntryFunction": {
+                        "description": "Call a Move entry function.",
                         "type": "object",
                         "required": [
                           "args",
@@ -940,7 +940,7 @@
                           ],
                           "properties": {
                             "init_script": {
-                              "description": "Call a Move script function.",
+                              "description": "Call a Move entry function.",
                               "type": [
                                 "object",
                                 "null"
@@ -996,14 +996,14 @@
                       "additionalProperties": false
                     },
                     {
-                      "description": "A transaction that executes an existing script function published on-chain.",
+                      "description": "A transaction that executes an existing entry function published on-chain.",
                       "type": "object",
                       "required": [
-                        "ScriptFunction"
+                        "EntryFunction"
                       ],
                       "properties": {
-                        "ScriptFunction": {
-                          "description": "Call a Move script function.",
+                        "EntryFunction": {
+                          "description": "Call a Move entry function.",
                           "type": "object",
                           "required": [
                             "args",

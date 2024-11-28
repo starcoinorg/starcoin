@@ -297,13 +297,6 @@
                           "type": "string",
                           "format": "AccountAddress"
                         },
-                        "author_auth_key": {
-                          "description": "Block author auth key.",
-                          "type": [
-                            "string",
-                            "null"
-                          ]
-                        },
                         "block_accumulator_root": {
                           "description": "The block accumulator root hash.",
                           "type": "string",
@@ -549,13 +542,6 @@
                         "description": "Block author.",
                         "type": "string",
                         "format": "AccountAddress"
-                      },
-                      "author_auth_key": {
-                        "description": "Block author auth key.",
-                        "type": [
-                          "string",
-                          "null"
-                        ]
                       },
                       "block_accumulator_root": {
                         "description": "The block accumulator root hash.",
