@@ -308,7 +308,7 @@ module starcoin_framework::coin {
     }
 
     inline fun is_stc<CoinType>(): bool {
-        type_info::type_name<CoinType>() == string::utf8(b"0x00000000000000000000000000000001::starcoin_coin::STC")
+        type_info::type_name<CoinType>() == string::utf8(b"0x1::starcoin_coin::STC")
     }
 
     inline fun create_and_return_paired_metadata_if_not_exist<CoinType>(allow_stc_creation: bool): Object<Metadata> {
