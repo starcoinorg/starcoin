@@ -108,7 +108,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="stc_util.md#0x1_stc_util_is_stc">is_stc</a>&lt;Coin&gt;(): bool {
-    <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_name">type_info::type_name</a>&lt;Coin&gt;() == <a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="starcoin_coin.md#0x1_starcoin_coin_STC">0x00000000000000000000000000000001::starcoin_coin::STC</a>")
+    <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_name">type_info::type_name</a>&lt;Coin&gt;() == <a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="starcoin_coin.md#0x1_starcoin_coin_STC">0x1::starcoin_coin::STC</a>")
 }
 </code></pre>
 

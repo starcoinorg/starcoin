@@ -1415,7 +1415,7 @@ Create STC pairing by passing <code>StarcoinCoin</code>.
 
 
 <pre><code>inline <b>fun</b> <a href="coin.md#0x1_coin_is_stc">is_stc</a>&lt;CoinType&gt;(): bool {
-    <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_name">type_info::type_name</a>&lt;CoinType&gt;() == <a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="starcoin_coin.md#0x1_starcoin_coin_STC">0x00000000000000000000000000000001::starcoin_coin::STC</a>")
+    <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_name">type_info::type_name</a>&lt;CoinType&gt;() == <a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="starcoin_coin.md#0x1_starcoin_coin_STC">0x1::starcoin_coin::STC</a>")
 }
 </code></pre>
 
