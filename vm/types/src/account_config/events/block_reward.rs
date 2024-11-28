@@ -23,7 +23,7 @@ impl BlockRewardEvent {
 }
 
 impl MoveStructType for BlockRewardEvent {
-    const MODULE_NAME: &'static IdentStr = ident_str!("BlockReward");
+    const MODULE_NAME: &'static IdentStr = ident_str!("block_reward");
     const STRUCT_NAME: &'static IdentStr = ident_str!("BlockRewardEvent");
 }
 

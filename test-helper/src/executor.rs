@@ -82,7 +82,7 @@ pub fn execute_and_apply(chain_state: &ChainStateDB, txn: Transaction) -> Transa
 pub fn current_block_number<S: StateView>(state_view: &S) -> u64 {
     let mut ret = execute_readonly_function(
         state_view,
-        &ModuleId::new(genesis_address(), Identifier::new("Block").unwrap()),
+        &ModuleId::new(genesis_address(), Identifier::new("stc_block").unwrap()),
         &Identifier::new("get_current_block_number").unwrap(),
         vec![],
         vec![],
@@ -94,10 +94,11 @@ pub fn current_block_number<S: StateView>(state_view: &S) -> u64 {
 }
 
 pub fn get_sequence_number<S: ChainStateReader>(addr: AccountAddress, chain_state: &S) -> u64 {
+    // if account not exist, return 0
     chain_state
         .get_account_resource(addr)
-        .expect("read account state should ok")
-        .sequence_number()
+        .map(|r| r.sequence_number())
+        .unwrap_or_default()
 }
 
 pub fn get_balance<S: ChainStateReader>(address: AccountAddress, chain_state: &S) -> u128 {

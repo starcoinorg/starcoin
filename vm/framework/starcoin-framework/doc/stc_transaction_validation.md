@@ -337,7 +337,7 @@ It collects gas and bumps the sequence number
     // txn execute success or fail.
     success: bool,
 ) {
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="transaction_validation.md#0x1_transaction_validation_epilogue">transaction_validation::epilogue</a> | Entered"));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_transaction_validation.md#0x1_stc_transaction_validation_epilogue">stc_transaction_validation::epilogue</a> | Entered"));
 
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(&<a href="account.md#0x1_account">account</a>);
     <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_txn_epilogue">txn_epilogue</a>&lt;TokenType&gt;(
@@ -358,7 +358,7 @@ It collects gas and bumps the sequence number
         );
     };
 
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="transaction_validation.md#0x1_transaction_validation_epilogue">transaction_validation::epilogue</a> | Exited"));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_transaction_validation.md#0x1_stc_transaction_validation_epilogue">stc_transaction_validation::epilogue</a> | Exited"));
 }
 </code></pre>
 
@@ -390,6 +390,7 @@ Migration from old StarcoinFramework Account::txn_prologue
     txn_gas_price: u64,
     txn_max_gas_units: u64,
 ) {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"transaction_validation::txn_prologue | Entered"));
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);
 
     // Verify that the transaction sender's <a href="account.md#0x1_account">account</a> <b>exists</b>
@@ -437,15 +438,17 @@ Migration from old StarcoinFramework Account::txn_prologue
             <a href="../../move-stdlib/doc/error.md#0x1_error_out_of_range">error::out_of_range</a>(<a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_SEQUENCE_NUMBER_TOO_BIG">EPROLOGUE_SEQUENCE_NUMBER_TOO_BIG</a>)
         );
     };
+    <b>let</b> account_sequence_number = <a href="account.md#0x1_account_get_sequence_number">account::get_sequence_number</a>(txn_sender);
     // Check that the transaction sequence number matches the sequence number of the <a href="account.md#0x1_account">account</a>
     <b>assert</b>!(
-        txn_sequence_number &gt;= <a href="account.md#0x1_account_get_sequence_number">account::get_sequence_number</a>(txn_sender),
+        txn_sequence_number &gt;= account_sequence_number,
         <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_SEQUENCE_NUMBER_TOO_OLD">EPROLOGUE_SEQUENCE_NUMBER_TOO_OLD</a>)
     );
     <b>assert</b>!(
-        txn_sequence_number == <a href="account.md#0x1_account_get_sequence_number">account::get_sequence_number</a>(txn_sender),
+        txn_sequence_number == account_sequence_number,
         <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_SEQUENCE_NUMBER_TOO_NEW">EPROLOGUE_SEQUENCE_NUMBER_TOO_NEW</a>)
     );
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"transaction_validation::txn_prologue | Exited"));
 }
 </code></pre>
 
@@ -481,7 +484,6 @@ It collects gas and bumps the sequence number
     gas_units_remaining: u64,
 ) {
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);
-
 
     // Charge for gas
     <b>let</b> transaction_fee_amount = (txn_gas_price * (txn_max_gas_units - gas_units_remaining) <b>as</b> u128);
