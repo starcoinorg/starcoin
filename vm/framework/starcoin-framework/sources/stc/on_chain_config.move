@@ -28,7 +28,7 @@ module starcoin_framework::on_chain_config {
         value: ConfigValue,
     }
 
-    const ECONFIG_VALUE_DOES_NOT_EXIST: u64 = 13;
+    const ECONFIG_VALUE_DOES_NOT_EXIST: u64 = 1013;
     const ECAPABILITY_HOLDER_NOT_EXISTS: u64 = 101;
 
     /// Get a copy of `ConfigValue` value stored under `addr`.

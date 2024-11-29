@@ -68,7 +68,7 @@ Marker to publish at the end of genesis.
 The blockchain is not in the genesis status.
 
 
-<pre><code><b>const</b> <a href="chain_status.md#0x1_chain_status_ENOT_GENESIS">ENOT_GENESIS</a>: u64 = 2;
+<pre><code><b>const</b> <a href="chain_status.md#0x1_chain_status_ENOT_GENESIS">ENOT_GENESIS</a>: u64 = 1012;
 </code></pre>
 
 

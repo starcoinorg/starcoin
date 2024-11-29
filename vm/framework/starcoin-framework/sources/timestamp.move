@@ -24,7 +24,7 @@ module starcoin_framework::timestamp {
     /// The blockchain is not in an operating state yet
     const ENOT_OPERATING: u64 = 1;
     /// An invalid timestamp was provided
-    const EINVALID_TIMESTAMP: u64 = 2;
+    const EINVALID_TIMESTAMP: u64 = 1014;
 
     /// Marks that time has started. This can only be called from genesis and with the starcoin framework account.
     public(friend) fun set_time_has_started(starcoin_framework: &signer) {

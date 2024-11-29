@@ -187,7 +187,7 @@ Event emitted when config value is changed.
 
 
 
-<pre><code><b>const</b> <a href="on_chain_config.md#0x1_on_chain_config_ECONFIG_VALUE_DOES_NOT_EXIST">ECONFIG_VALUE_DOES_NOT_EXIST</a>: u64 = 13;
+<pre><code><b>const</b> <a href="on_chain_config.md#0x1_on_chain_config_ECONFIG_VALUE_DOES_NOT_EXIST">ECONFIG_VALUE_DOES_NOT_EXIST</a>: u64 = 1013;
 </code></pre>
 
 

@@ -27,7 +27,15 @@ module starcoin_framework::stc_block {
     #[test_only]
     use starcoin_framework::starcoin_account::create_account;
 
-    const EPROLOGUE_BAD_CHAIN_ID: u64 = 6;
+    const BLOCK_INTERVAL_NUMBER: u64 = 5;
+    const CHECKPOINT_LENGTH: u64 = 60;
+    const BLOCK_HEADER_LENGTH: u64 = 247;
+
+    const EPROLOGUE_BAD_CHAIN_ID: u64 = 1006;
+    const EBLOCK_NUMBER_MISMATCH: u64 = 1017;
+    //const ERROR_NO_HAVE_CHECKPOINT: u64 = 18;
+    //const ERROR_NOT_BLOCK_HEADER: u64 = 19;
+    //const ERROR_INTERVAL_TOO_LITTLE: u64 = 20;
 
     /// Block metadata struct.
     struct BlockMetadata has key {
@@ -54,14 +62,6 @@ module starcoin_framework::stc_block {
         parents_hash: vector<u8>,
     }
 
-    const EBLOCK_NUMBER_MISMATCH: u64 = 17;
-    const ERROR_NO_HAVE_CHECKPOINT: u64 = 18;
-    const ERROR_NOT_BLOCK_HEADER: u64 = 19;
-    const ERROR_INTERVAL_TOO_LITTLE: u64 = 20;
-
-    const CHECKPOINT_LENGTH: u64 = 60;
-    const BLOCK_HEADER_LENGTH: u64 = 247;
-    const BLOCK_INTERVAL_NUMBER: u64 = 5;
 
     /// This can only be invoked by the GENESIS_ACCOUNT at genesis
     public fun initialize(account: &signer, parent_hash: vector<u8>) {
@@ -117,7 +117,7 @@ module starcoin_framework::stc_block {
 
     /// Set the metadata for the current block and distribute transaction fees and block rewards.
     /// The runtime always runs this before executing the transactions in a block.
-    public fun  block_prologue(
+    public fun block_prologue(
         account: signer,
         parent_hash: vector<u8>,
         timestamp: u64,
@@ -136,7 +136,10 @@ module starcoin_framework::stc_block {
 
         // Check that the chain ID stored on-chain matches the chain ID
         // specified by the transaction
-        assert!(chain_id::get() == chain_id, error::invalid_argument(EPROLOGUE_BAD_CHAIN_ID));
+        assert!(
+            chain_id::get() == chain_id,
+            error::invalid_argument(EPROLOGUE_BAD_CHAIN_ID)
+        );
 
         // deal with previous block first.
         let txn_fee = stc_transaction_fee::distribute_transaction_fees<STC>(&account);
@@ -177,7 +180,6 @@ module starcoin_framework::stc_block {
         number: u64,
         parents_hash: vector<u8>,
     ) acquires BlockMetadata {
-
         debug::print(&std::string::utf8(b"stc_block::process_block_metadata | Entered"));
 
         system_addresses::assert_starcoin_framework(account);
@@ -320,5 +322,4 @@ module starcoin_framework::stc_block {
         } = block_metadata;
         event::destroy_handle(event);
     }
-
 }
