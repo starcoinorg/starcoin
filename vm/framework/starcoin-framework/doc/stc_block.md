@@ -188,7 +188,7 @@ Events emitted when new block generated.
 
 
 
-<pre><code><b>const</b> <a href="stc_block.md#0x1_stc_block_EBLOCK_NUMBER_MISMATCH">EBLOCK_NUMBER_MISMATCH</a>: u64 = 17;
+<pre><code><b>const</b> <a href="stc_block.md#0x1_stc_block_EBLOCK_NUMBER_MISMATCH">EBLOCK_NUMBER_MISMATCH</a>: u64 = 1017;
 </code></pre>
 
 
@@ -197,34 +197,7 @@ Events emitted when new block generated.
 
 
 
-<pre><code><b>const</b> <a href="stc_block.md#0x1_stc_block_EPROLOGUE_BAD_CHAIN_ID">EPROLOGUE_BAD_CHAIN_ID</a>: u64 = 6;
-</code></pre>
-
-
-
-<a id="0x1_stc_block_ERROR_INTERVAL_TOO_LITTLE"></a>
-
-
-
-<pre><code><b>const</b> <a href="stc_block.md#0x1_stc_block_ERROR_INTERVAL_TOO_LITTLE">ERROR_INTERVAL_TOO_LITTLE</a>: u64 = 20;
-</code></pre>
-
-
-
-<a id="0x1_stc_block_ERROR_NOT_BLOCK_HEADER"></a>
-
-
-
-<pre><code><b>const</b> <a href="stc_block.md#0x1_stc_block_ERROR_NOT_BLOCK_HEADER">ERROR_NOT_BLOCK_HEADER</a>: u64 = 19;
-</code></pre>
-
-
-
-<a id="0x1_stc_block_ERROR_NO_HAVE_CHECKPOINT"></a>
-
-
-
-<pre><code><b>const</b> <a href="stc_block.md#0x1_stc_block_ERROR_NO_HAVE_CHECKPOINT">ERROR_NO_HAVE_CHECKPOINT</a>: u64 = 18;
+<pre><code><b>const</b> <a href="stc_block.md#0x1_stc_block_EPROLOGUE_BAD_CHAIN_ID">EPROLOGUE_BAD_CHAIN_ID</a>: u64 = 1006;
 </code></pre>
 
 
@@ -386,7 +359,7 @@ The runtime always runs this before executing the transactions in a block.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b>  <a href="stc_block.md#0x1_stc_block_block_prologue">block_prologue</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="stc_block.md#0x1_stc_block_block_prologue">block_prologue</a>(
     <a href="account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     parent_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64,
@@ -405,7 +378,10 @@ The runtime always runs this before executing the transactions in a block.
 
     // Check that the chain ID stored on-chain matches the chain ID
     // specified by the transaction
-    <b>assert</b>!(<a href="chain_id.md#0x1_chain_id_get">chain_id::get</a>() == <a href="chain_id.md#0x1_chain_id">chain_id</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="stc_block.md#0x1_stc_block_EPROLOGUE_BAD_CHAIN_ID">EPROLOGUE_BAD_CHAIN_ID</a>));
+    <b>assert</b>!(
+        <a href="chain_id.md#0x1_chain_id_get">chain_id::get</a>() == <a href="chain_id.md#0x1_chain_id">chain_id</a>,
+        <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="stc_block.md#0x1_stc_block_EPROLOGUE_BAD_CHAIN_ID">EPROLOGUE_BAD_CHAIN_ID</a>)
+    );
 
     // deal <b>with</b> previous <a href="block.md#0x1_block">block</a> first.
     <b>let</b> txn_fee = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_distribute_transaction_fees">stc_transaction_fee::distribute_transaction_fees</a>&lt;STC&gt;(&<a href="account.md#0x1_account">account</a>);
@@ -466,7 +442,6 @@ Call at block prologue
     number: u64,
     parents_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
 ) <b>acquires</b> <a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a> {
-
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_block.md#0x1_stc_block_process_block_metadata">stc_block::process_block_metadata</a> | Entered"));
 
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);

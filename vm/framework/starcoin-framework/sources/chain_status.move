@@ -14,7 +14,7 @@ module starcoin_framework::chain_status {
     /// The blockchain is not in the operating status.
     const ENOT_OPERATING: u64 = 1;
     /// The blockchain is not in the genesis status.
-    const ENOT_GENESIS: u64 = 2;
+    const ENOT_GENESIS: u64 = 1012;
 
     /// Marks that genesis has finished.
     public(friend) fun set_genesis_end(starcoin_framework: &signer) {

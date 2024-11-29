@@ -58,7 +58,7 @@
 
 
 
-<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EINSUFFICIENT_BALANCE">EINSUFFICIENT_BALANCE</a>: u64 = 10;
+<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EINSUFFICIENT_BALANCE">EINSUFFICIENT_BALANCE</a>: u64 = 1010;
 </code></pre>
 
 
@@ -67,7 +67,7 @@
 
 
 
-<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>: u64 = 19;
+<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>: u64 = 1019;
 </code></pre>
 
 
@@ -76,7 +76,7 @@
 
 
 
-<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EBAD_TRANSACTION_FEE_TOKEN">EBAD_TRANSACTION_FEE_TOKEN</a>: u64 = 18;
+<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EBAD_TRANSACTION_FEE_TOKEN">EBAD_TRANSACTION_FEE_TOKEN</a>: u64 = 1018;
 </code></pre>
 
 
@@ -85,7 +85,7 @@
 
 
 
-<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_ACCOUNT_DOES_NOT_EXIST">EPROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>: u64 = 0;
+<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_ACCOUNT_DOES_NOT_EXIST">EPROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>: u64 = 1000;
 </code></pre>
 
 
@@ -94,7 +94,7 @@
 
 
 
-<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_BAD_CHAIN_ID">EPROLOGUE_BAD_CHAIN_ID</a>: u64 = 6;
+<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_BAD_CHAIN_ID">EPROLOGUE_BAD_CHAIN_ID</a>: u64 = 1006;
 </code></pre>
 
 
@@ -103,7 +103,7 @@
 
 
 
-<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_ECOIN_DEPOSIT_IS_ZERO">ECOIN_DEPOSIT_IS_ZERO</a>: u64 = 15;
+<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_ECOIN_DEPOSIT_IS_ZERO">ECOIN_DEPOSIT_IS_ZERO</a>: u64 = 1015;
 </code></pre>
 
 
@@ -112,7 +112,7 @@
 
 
 
-<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_CANT_PAY_GAS_DEPOSIT">EPROLOGUE_CANT_PAY_GAS_DEPOSIT</a>: u64 = 4;
+<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_CANT_PAY_GAS_DEPOSIT">EPROLOGUE_CANT_PAY_GAS_DEPOSIT</a>: u64 = 1004;
 </code></pre>
 
 
@@ -121,7 +121,7 @@
 
 
 
-<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY">EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY</a>: u64 = 1;
+<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY">EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY</a>: u64 = 1001;
 </code></pre>
 
 
@@ -130,7 +130,7 @@
 
 
 
-<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_MODULE_NOT_ALLOWED">EPROLOGUE_MODULE_NOT_ALLOWED</a>: u64 = 7;
+<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_MODULE_NOT_ALLOWED">EPROLOGUE_MODULE_NOT_ALLOWED</a>: u64 = 1007;
 </code></pre>
 
 
@@ -139,7 +139,7 @@
 
 
 
-<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_SCRIPT_NOT_ALLOWED">EPROLOGUE_SCRIPT_NOT_ALLOWED</a>: u64 = 8;
+<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_SCRIPT_NOT_ALLOWED">EPROLOGUE_SCRIPT_NOT_ALLOWED</a>: u64 = 1008;
 </code></pre>
 
 
@@ -148,7 +148,7 @@
 
 
 
-<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_SEQUENCE_NUMBER_TOO_BIG">EPROLOGUE_SEQUENCE_NUMBER_TOO_BIG</a>: u64 = 9;
+<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_SEQUENCE_NUMBER_TOO_BIG">EPROLOGUE_SEQUENCE_NUMBER_TOO_BIG</a>: u64 = 1009;
 </code></pre>
 
 
@@ -157,7 +157,7 @@
 
 
 
-<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_SEQUENCE_NUMBER_TOO_NEW">EPROLOGUE_SEQUENCE_NUMBER_TOO_NEW</a>: u64 = 3;
+<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_SEQUENCE_NUMBER_TOO_NEW">EPROLOGUE_SEQUENCE_NUMBER_TOO_NEW</a>: u64 = 1003;
 </code></pre>
 
 
@@ -166,7 +166,7 @@
 
 
 
-<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_SEQUENCE_NUMBER_TOO_OLD">EPROLOGUE_SEQUENCE_NUMBER_TOO_OLD</a>: u64 = 2;
+<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_SEQUENCE_NUMBER_TOO_OLD">EPROLOGUE_SEQUENCE_NUMBER_TOO_OLD</a>: u64 = 1002;
 </code></pre>
 
 
@@ -175,7 +175,7 @@
 
 
 
-<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_SIGNER_ALREADY_DELEGATED">EPROLOGUE_SIGNER_ALREADY_DELEGATED</a>: u64 = 200;
+<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_SIGNER_ALREADY_DELEGATED">EPROLOGUE_SIGNER_ALREADY_DELEGATED</a>: u64 = 1200;
 </code></pre>
 
 
@@ -184,7 +184,7 @@
 
 
 
-<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_TRANSACTION_EXPIRED">EPROLOGUE_TRANSACTION_EXPIRED</a>: u64 = 5;
+<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_TRANSACTION_EXPIRED">EPROLOGUE_TRANSACTION_EXPIRED</a>: u64 = 1005;
 </code></pre>
 
 

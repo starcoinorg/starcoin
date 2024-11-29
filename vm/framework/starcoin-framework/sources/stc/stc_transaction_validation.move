@@ -25,11 +25,26 @@ module starcoin_framework::stc_transaction_validation {
     const TXN_PAYLOAD_TYPE_PACKAGE: u8 = 1;
     const TXN_PAYLOAD_TYPE_SCRIPT_FUNCTION: u8 = 2;
 
-    const EPROLOGUE_ACCOUNT_DOES_NOT_EXIST: u64 = 0;
-    const EPROLOGUE_TRANSACTION_EXPIRED: u64 = 5;
-    const EPROLOGUE_BAD_CHAIN_ID: u64 = 6;
-    const EPROLOGUE_MODULE_NOT_ALLOWED: u64 = 7;
-    const EPROLOGUE_SCRIPT_NOT_ALLOWED: u64 = 8;
+    const MAX_U64: u128 = 18446744073709551615;
+
+    const EPROLOGUE_ACCOUNT_DOES_NOT_EXIST: u64 = 1000;
+    const EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY: u64 = 1001;
+    const EPROLOGUE_SEQUENCE_NUMBER_TOO_OLD: u64 = 1002;
+    const EPROLOGUE_SEQUENCE_NUMBER_TOO_NEW: u64 = 1003;
+    const EPROLOGUE_CANT_PAY_GAS_DEPOSIT: u64 = 1004;
+    const EPROLOGUE_TRANSACTION_EXPIRED: u64 = 1005;
+    const EPROLOGUE_BAD_CHAIN_ID: u64 = 1006;
+    const EPROLOGUE_MODULE_NOT_ALLOWED: u64 = 1007;
+    const EPROLOGUE_SCRIPT_NOT_ALLOWED: u64 = 1008;
+    const EPROLOGUE_SEQUENCE_NUMBER_TOO_BIG: u64 = 1009;
+    const EINSUFFICIENT_BALANCE: u64 = 1010;
+
+    const ECOIN_DEPOSIT_IS_ZERO: u64 = 1015;
+
+    const EBAD_TRANSACTION_FEE_TOKEN: u64 = 1018;
+    const EDEPRECATED_FUNCTION: u64 = 1019;
+
+    const EPROLOGUE_SIGNER_ALREADY_DELEGATED: u64 = 1200;
 
 
     /// The prologue is invoked at the beginning of every transaction
@@ -141,18 +156,6 @@ module starcoin_framework::stc_transaction_validation {
 
         debug::print(&std::string::utf8(b"stc_transaction_validation::epilogue | Exited"));
     }
-
-    const MAX_U64: u128 = 18446744073709551615;
-    const EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY: u64 = 1;
-    const EPROLOGUE_SEQUENCE_NUMBER_TOO_OLD: u64 = 2;
-    const EPROLOGUE_SEQUENCE_NUMBER_TOO_NEW: u64 = 3;
-    const EPROLOGUE_CANT_PAY_GAS_DEPOSIT: u64 = 4;
-    const EPROLOGUE_SEQUENCE_NUMBER_TOO_BIG: u64 = 9;
-    const EINSUFFICIENT_BALANCE: u64 = 10;
-    const ECOIN_DEPOSIT_IS_ZERO: u64 = 15;
-    const EDEPRECATED_FUNCTION: u64 = 19;
-    const EBAD_TRANSACTION_FEE_TOKEN: u64 = 18;
-    const EPROLOGUE_SIGNER_ALREADY_DELEGATED: u64 = 200;
 
     /// Migration from old StarcoinFramework Account::txn_prologue
     public fun txn_prologue<TokenType>(

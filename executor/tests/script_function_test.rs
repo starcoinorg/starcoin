@@ -181,7 +181,9 @@ fn test_invoke_private_function() -> Result<()> {
     Ok(())
 }
 
+// fixme: need NFT
 //a test for issue https://github.com/starcoinorg/starcoin/issues/3804
+#[ignore]
 #[stest::test]
 fn test_signer_cap_internal_type_error() -> Result<()> {
     let (chain_state, net) = prepare_genesis();

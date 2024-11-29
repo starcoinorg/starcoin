@@ -78,7 +78,7 @@ The blockchain is not in an operating state yet
 An invalid timestamp was provided
 
 
-<pre><code><b>const</b> <a href="timestamp.md#0x1_timestamp_EINVALID_TIMESTAMP">EINVALID_TIMESTAMP</a>: u64 = 2;
+<pre><code><b>const</b> <a href="timestamp.md#0x1_timestamp_EINVALID_TIMESTAMP">EINVALID_TIMESTAMP</a>: u64 = 1014;
 </code></pre>
 
 
