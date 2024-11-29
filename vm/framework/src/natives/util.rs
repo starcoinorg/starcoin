@@ -71,9 +71,12 @@ mod tests {
 
     #[test]
     fn test_bcs_from_bcs_to_address() {
+        let address_val = Value::address("00000000000000000000000000000001".parse().unwrap());
+        let serialized_addr_val = address_val.simple_serialize(&MoveTypeLayout::Address);
+        assert!(serialized_addr_val.is_some(), "Failed to serialize");
         assert!(
             Value::simple_deserialize(
-                "00000000000000000000000000000001".as_bytes(),
+                serialized_addr_val.unwrap().as_slice(),
                 &MoveTypeLayout::Address
             )
             .is_some(),
