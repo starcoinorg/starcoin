@@ -79,6 +79,7 @@ pub fn execute_and_apply(chain_state: &ChainStateDB, txn: Transaction) -> Transa
 
     output
 }
+
 pub fn current_block_number<S: StateView>(state_view: &S) -> u64 {
     let mut ret = execute_readonly_function(
         state_view,
@@ -173,6 +174,7 @@ pub fn account_execute(
 ) -> Result<TransactionOutput> {
     user_execute(*account.address(), account.private_key(), state, payload)
 }
+
 pub fn account_execute_should_success(
     account: &Account,
     state: &ChainStateDB,
@@ -180,6 +182,7 @@ pub fn account_execute_should_success(
 ) -> Result<TransactionOutput> {
     user_execute_should_success(*account.address(), account.private_key(), state, payload)
 }
+
 pub fn account_execute_with_output(
     account: &Account,
     state: &ChainStateDB,
@@ -296,7 +299,7 @@ pub fn expect_event<Event: MoveResource>(output: &TransactionOutput) -> Contract
     output
         .events()
         .iter()
-        .filter(|event| event.is::<Event>())
+        .filter(|event| event.v1().expect("not v1").is::<Event>())
         .last()
         .cloned()
         .unwrap_or_else(|| panic!("Expect event: {}", Event::struct_tag()))
@@ -306,9 +309,9 @@ pub fn expect_decode_event<Event: MoveResource>(output: &TransactionOutput) -> E
     output
         .events()
         .iter()
-        .filter(|event| event.is::<Event>())
+        .filter(|event| event.v1().expect("not v1").is::<Event>())
         .last()
         .cloned()
-        .and_then(|event| event.decode_event::<Event>().ok())
+        .and_then(|event| event.v1().expect("not v1").decode_event::<Event>().ok())
         .unwrap_or_else(|| panic!("Expect event: {}", Event::struct_tag()))
 }

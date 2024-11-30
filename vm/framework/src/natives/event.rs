@@ -6,6 +6,7 @@ use log::info;
 use move_binary_format::errors::PartialVMError;
 use move_core_types::{language_storage::TypeTag, value::MoveTypeLayout, vm_status::StatusCode};
 use move_vm_runtime::native_functions::NativeFunction;
+use move_vm_types::value_serde::deserialize_and_allow_delayed_values;
 #[cfg(feature = "testing")]
 use move_vm_types::values::{Reference, Struct, StructRef};
 use move_vm_types::{
@@ -41,7 +42,7 @@ impl NativeEventContext {
     fn emitted_events(&self, event_key: &EventKey, ty_tag: &TypeTag) -> Vec<&[u8]> {
         let mut events = vec![];
         for event in self.events.iter() {
-            if let (ContractEvent::V0(e), _) = event {
+            if let (ContractEvent::V1(e), _) = event {
                 if e.key() == event_key && e.type_tag() == ty_tag {
                     events.push(e.event_data());
                 }
@@ -50,7 +51,6 @@ impl NativeEventContext {
         events
     }
 
-    /*
     #[cfg(feature = "testing")]
     fn emitted_v2_events(&self, ty_tag: &TypeTag) -> Vec<&[u8]> {
         let mut events = vec![];
@@ -62,7 +62,7 @@ impl NativeEventContext {
             }
         }
         events
-    } */
+    }
 }
 
 /***************************************************************************************************
@@ -108,7 +108,7 @@ fn native_write_to_event_store(
 
     let ctx = context.extensions_mut().get_mut::<NativeEventContext>();
     ctx.events.push((
-        ContractEvent::new(key, seq_num, ty_tag, blob),
+        ContractEvent::new_v1(key, seq_num, ty_tag, blob),
         has_aggregator_lifting.then_some(layout),
     ));
     Ok(smallvec![])
@@ -167,7 +167,6 @@ fn native_emitted_events_by_handle(
     Ok(smallvec![Value::vector_for_testing_only(events)])
 }
 
-/*
 #[cfg(feature = "testing")]
 fn native_emitted_events(
     context: &mut SafeNativeContext,
@@ -195,7 +194,6 @@ fn native_emitted_events(
         .collect::<SafeNativeResult<Vec<Value>>>()?;
     Ok(smallvec![Value::vector_for_testing_only(events)])
 }
- */
 
 #[inline]
 fn native_write_module_event_to_store(
@@ -239,20 +237,19 @@ fn native_write_module_event_to_store(
             )));
         }
     }
-    let (layout, _has_identifier_mappings) =
+    let (layout, has_identifier_mappings) =
         context.type_to_type_layout_with_identifier_mappings(&ty)?;
-    let _blob = serialize_and_allow_delayed_values(&msg, &layout)?.ok_or_else(|| {
+    let blob = serialize_and_allow_delayed_values(&msg, &layout)?.ok_or_else(|| {
         SafeNativeError::InvariantViolation(
             PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
                 .with_message("Event serialization failure".to_string()),
         )
     })?;
-    // TODO: currently we don't support ContractEvent::V2
-    //let ctx = context.extensions_mut().get_mut::<NativeEventContext>();
-    //ctx.events.push((
-    //    ContractEvent::new_v2(type_tag, blob),
-    //    has_identifier_mappings.then_some(layout),
-    //));
+    let ctx = context.extensions_mut().get_mut::<NativeEventContext>();
+    ctx.events.push((
+        ContractEvent::new_v2(type_tag, blob),
+        has_identifier_mappings.then_some(layout),
+    ));
 
     Ok(smallvec![])
 }
@@ -272,9 +269,11 @@ pub fn make_all(
         native_emitted_events_by_handle as RawSafeNative,
     )]);
 
-    // TODO: Currently we don't support ContractEvent::V2
-    //#[cfg(feature = "testing")]
-    //natives.extend([("emitted_events", native_emitted_events as RawSafeNative)]);
+    #[cfg(feature = "testing")]
+    natives.extend([(
+        "emitted_events",
+        native_emitted_events_by_handle as RawSafeNative,
+    )]);
 
     natives.extend([(
         "write_to_event_store",

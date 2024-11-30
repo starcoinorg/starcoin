@@ -55,10 +55,13 @@ impl Default for Filter {
 
 impl Filter {
     pub fn matching(&self, block_number: BlockNumber, e: &ContractEvent) -> bool {
+        let event_key = e.v1().unwrap().key();
         if self.from_block <= block_number
             && block_number <= self.to_block
-            && (self.event_keys.is_empty() || self.event_keys.contains(e.key()))
-            && (self.addrs.is_empty() || self.addrs.contains(&e.key().get_creator_address()))
+            && (self.event_keys.is_empty()
+                || self.event_keys.contains(event_key)
+                    && (self.addrs.is_empty()
+                        || self.addrs.contains(&event_key.get_creator_address())))
         {
             if self.type_tags.is_empty() {
                 return true;

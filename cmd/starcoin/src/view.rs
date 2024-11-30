@@ -271,7 +271,8 @@ impl From<TransactionEventView> for EventView {
 
 impl From<ContractEvent> for EventView {
     /// Tries to convert the provided byte array into Event Key.
-    fn from(event: ContractEvent) -> Self {
+    fn from(contract_event: ContractEvent) -> Self {
+        let event = contract_event.v1().expect("not v1");
         let event_data = EventDataView::new(event.type_tag(), event.event_data());
         Self {
             key: *event.key(),

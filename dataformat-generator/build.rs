@@ -17,7 +17,7 @@ use starcoin_types::account_config::{
     VoteChangedEvent, WithdrawEvent,
 };
 use starcoin_types::block_metadata::BlockMetadata;
-use starcoin_types::contract_event::{ContractEvent, ContractEventV0};
+use starcoin_types::contract_event::{ContractEvent, ContractEventV1};
 use starcoin_types::event::EventKey;
 use starcoin_types::language_storage::TypeTag;
 use starcoin_types::sign_message::{SignedMessage, SigningMessage};
@@ -74,7 +74,7 @@ fn generate() -> Result<(), Error> {
     tracer.trace_type::<BlockMetadata>(&samples)?;
 
     tracer.trace_value(&mut samples, &EventKey::new(0, AccountAddress::random()))?;
-    tracer.trace_type::<ContractEventV0>(&samples)?;
+    tracer.trace_type::<ContractEventV1>(&samples)?;
     tracer.trace_type::<ContractEvent>(&samples)?;
     tracer.trace_type::<StateKey>(&samples)?;
     tracer.trace_type::<PersistedStateValueMetadata>(&samples)?;

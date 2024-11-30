@@ -210,16 +210,12 @@ module starcoin_framework::object {
 
     /// Derives an object address from source material: sha3_256([creator address | seed | 0xFE]).
     public fun create_object_address(source: &address, seed: vector<u8>): address {
-        debug::print(&string::utf8(b"object::create_object_address | entered"));
-        debug::print(source);
-        debug::print(&seed);
         let bytes = bcs::to_bytes(source);
         vector::append(&mut bytes, seed);
         vector::push_back(&mut bytes, OBJECT_FROM_SEED_ADDRESS_SCHEME);
 
         let truncation_hash_16 = bcs_util::truncate_16(hash::sha3_256(bytes));
         let ret = from_bcs::to_address(truncation_hash_16);
-        debug::print(&string::utf8(b"object::create_object_address | exited"));
         ret
     }
 
@@ -334,7 +330,7 @@ module starcoin_framework::object {
         object: address,
         can_delete: bool,
     ): ConstructorRef {
-        debug::print(&string::utf8(b"object::create_object_internal | entered"));
+        // debug::print(&string::utf8(b"object::create_object_internal | entered"));
 
         assert!(!exists<ObjectCore>(object), error::already_exists(EOBJECT_EXISTS));
 
@@ -352,7 +348,7 @@ module starcoin_framework::object {
             },
         );
 
-        debug::print(&string::utf8(b"object::create_object_internal | exited"));
+        // debug::print(&string::utf8(b"object::create_object_internal | exited"));
         ConstructorRef { self: object, can_delete }
     }
 

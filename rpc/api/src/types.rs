@@ -55,6 +55,7 @@ use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
 pub type ByteCode = Vec<u8>;
+
 mod node_api_types;
 pub mod pubsub;
 
@@ -1119,23 +1120,25 @@ pub struct TransactionEventView {
 
 impl From<ContractEventInfo> for TransactionEventView {
     fn from(info: ContractEventInfo) -> Self {
+        let event = info.event.v1().expect("not v1");
         Self {
             block_hash: Some(info.block_hash),
             block_number: Some(info.block_number.into()),
             transaction_hash: Some(info.transaction_hash),
             transaction_index: Some(info.transaction_index),
             transaction_global_index: Some(info.transaction_global_index.into()),
-            data: StrView(info.event.event_data().to_vec()),
-            type_tag: info.event.type_tag().clone().into(),
+            data: StrView(event.event_data().to_vec()),
+            type_tag: event.type_tag().clone().into(),
             event_index: Some(info.event_index),
-            event_key: *info.event.key(),
-            event_seq_number: info.event.sequence_number().into(),
+            event_key: *event.key(),
+            event_seq_number: event.sequence_number().into(),
         }
     }
 }
 
 impl From<ContractEvent> for TransactionEventView {
-    fn from(event: ContractEvent) -> Self {
+    fn from(contract_event: ContractEvent) -> Self {
+        let event = contract_event.v1().expect("not v1");
         Self {
             block_hash: None,
             block_number: None,
@@ -1161,6 +1164,7 @@ impl TransactionEventView {
         event_index: Option<u32>,
         contract_event: &ContractEvent,
     ) -> Self {
+        let event = contract_event.v1().expect("not v1");
         Self {
             block_hash,
             block_number: block_number.map(Into::into),
@@ -1170,8 +1174,8 @@ impl TransactionEventView {
             data: StrView(contract_event.event_data().to_vec()),
             type_tag: contract_event.type_tag().clone().into(),
             event_index,
-            event_key: *contract_event.key(),
-            event_seq_number: contract_event.sequence_number().into(),
+            event_key: *event.key(),
+            event_seq_number: event.sequence_number().into(),
         }
     }
 }
@@ -1239,6 +1243,7 @@ impl From<TransactionOutput> for TransactionOutputView {
         }
     }
 }
+
 impl From<(AccessPath, WriteOp)> for TransactionOutputAction {
     fn from((access_path, op): (AccessPath, WriteOp)) -> Self {
         let (action, value) = match op {
@@ -1260,6 +1265,7 @@ impl From<(AccessPath, WriteOp)> for TransactionOutputAction {
         }
     }
 }
+
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionOutputAction {
     pub access_path: AccessPath,
@@ -1842,6 +1848,7 @@ pub struct ConnectLocal;
 impl ServiceRequest for ConnectLocal {
     type Response = RpcChannel;
 }
+
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct AccumulatorInfoView {
     /// Accumulator root hash
