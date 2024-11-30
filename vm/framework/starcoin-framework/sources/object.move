@@ -21,10 +21,11 @@ module starcoin_framework::object {
     use std::signer;
     use std::string;
     use std::vector;
-    use starcoin_std::debug;
 
+    use starcoin_std::debug;
     use starcoin_std::from_bcs;
 
+    use starcoin_framework::bcs_util;
     use starcoin_framework::account;
     use starcoin_framework::transaction_context;
     use starcoin_framework::create_signer::create_signer;
@@ -216,7 +217,7 @@ module starcoin_framework::object {
         vector::append(&mut bytes, seed);
         vector::push_back(&mut bytes, OBJECT_FROM_SEED_ADDRESS_SCHEME);
 
-        let truncation_hash_16 = from_bcs::truncate_16(hash::sha3_256(bytes));
+        let truncation_hash_16 = bcs_util::truncate_16(hash::sha3_256(bytes));
         let ret = from_bcs::to_address(truncation_hash_16);
         debug::print(&string::utf8(b"object::create_object_address | exited"));
         ret

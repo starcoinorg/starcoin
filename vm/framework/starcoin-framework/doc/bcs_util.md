@@ -17,6 +17,7 @@
 -  [Function `deserialize_u128`](#0x1_bcs_util_deserialize_u128)
 -  [Function `deserialize_u64`](#0x1_bcs_util_deserialize_u64)
 -  [Function `deserialize_u32`](#0x1_bcs_util_deserialize_u32)
+-  [Function `truncate_16`](#0x1_bcs_util_truncate_16)
 -  [Function `deserialize_u16`](#0x1_bcs_util_deserialize_u16)
 -  [Function `deserialize_u8`](#0x1_bcs_util_deserialize_u8)
 -  [Function `deserialize_option_tag`](#0x1_bcs_util_deserialize_option_tag)
@@ -98,6 +99,15 @@
 
 
 <pre><code><b>const</b> <a href="bcs_util.md#0x1_bcs_util_ERR_INPUT_NOT_LARGE_ENOUGH">ERR_INPUT_NOT_LARGE_ENOUGH</a>: u64 = 201;
+</code></pre>
+
+
+
+<a id="0x1_bcs_util_ERR_INVALID_TRUNCATE_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="bcs_util.md#0x1_bcs_util_ERR_INVALID_TRUNCATE_LENGTH">ERR_INVALID_TRUNCATE_LENGTH</a>: u64 = 208;
 </code></pre>
 
 
@@ -447,6 +457,38 @@
 <pre><code><b>public</b> <b>fun</b> <a href="bcs_util.md#0x1_bcs_util_deserialize_u32">deserialize_u32</a>(input: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, offset: u64): (u64, u64) {
     <b>let</b> u = <a href="bcs_util.md#0x1_bcs_util_get_n_bytes_as_u128">get_n_bytes_as_u128</a>(input, offset, 4);
     ((u <b>as</b> u64), offset + 4)
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_bcs_util_truncate_16"></a>
+
+## Function `truncate_16`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bcs_util.md#0x1_bcs_util_truncate_16">truncate_16</a>(v: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bcs_util.md#0x1_bcs_util_truncate_16">truncate_16</a>(v: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
+    <b>assert</b>!(<a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(&v) == 32, <a href="bcs_util.md#0x1_bcs_util_ERR_INVALID_TRUNCATE_LENGTH">ERR_INVALID_TRUNCATE_LENGTH</a>);
+    <b>let</b> trunc_bytes = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>&lt;u8&gt;();
+    <b>let</b> i = 16;
+    <b>while</b> (i &lt; 32) {
+        <b>let</b> b = *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(&v, i);
+        <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> trunc_bytes, b);
+        i = i + 1;
+    };
+    trunc_bytes
 }
 </code></pre>
 

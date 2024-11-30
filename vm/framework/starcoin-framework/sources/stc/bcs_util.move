@@ -9,6 +9,8 @@ module starcoin_framework::bcs_util {
     const ERR_UNEXPECTED_BOOL_VALUE: u64 = 205;
     const ERR_OVERFLOW_PARSING_ULEB128_ENCODED_UINT32: u64 = 206;
     const ERR_INVALID_ULEB128_NUMBER_UNEXPECTED_ZERO_DIGIT: u64 = 207;
+    const ERR_INVALID_TRUNCATE_LENGTH: u64 = 208;
+
     const INTEGER32_MAX_VALUE: u64 = 2147483647;
 
     public fun deserialize_option_bytes_vector(
@@ -208,6 +210,29 @@ module starcoin_framework::bcs_util {
     public fun deserialize_u32(input: &vector<u8>, offset: u64): (u64, u64) {
         let u = get_n_bytes_as_u128(input, offset, 4);
         ((u as u64), offset + 4)
+    }
+
+    public fun truncate_16(v: vector<u8>): vector<u8> {
+        assert!(vector::length(&v) == 32, ERR_INVALID_TRUNCATE_LENGTH);
+        let trunc_bytes = vector::empty<u8>();
+        let i = 16;
+        while (i < 32) {
+            let b = *vector::borrow(&v, i);
+            vector::push_back(&mut trunc_bytes, b);
+            i = i + 1;
+        };
+        trunc_bytes
+    }
+
+    #[test_only] use std::debug;
+
+    #[test]
+    fun test_truncate_16() {
+        let addr = x"fb7e666b5b28a6ab7ccb4c406dc23e95f32719c365d013d80c061b57c62715f9";
+        let truncate = truncate_16(addr);
+        debug::print(&truncate);
+        assert!(vector::length(&truncate) == 16, 1);
+        assert!(truncate == x"f32719c365d013d80c061b57c62715f9", 2);
     }
 
     spec deserialize_u32 {
