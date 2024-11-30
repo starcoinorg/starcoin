@@ -320,20 +320,15 @@ module starcoin_framework::coin {
         );
         assert!(exists<CoinConversionMap>(@starcoin_framework), error::not_found(ECOIN_CONVERSION_MAP_NOT_FOUND));
 
-        debug::print(&std::string::utf8(b"coin::create_and_return_paired_metadata_if_not_exist | 1"));
-
         let map = borrow_global_mut<CoinConversionMap>(@starcoin_framework);
         let type = type_info::type_of<CoinType>();
         if (!table::contains(&map.coin_to_fungible_asset_map, type)) {
-            debug::print(&std::string::utf8(b"coin::create_and_return_paired_metadata_if_not_exist | 2"));
             let is_stc = is_stc<CoinType>();
             assert!(!is_stc || allow_stc_creation, error::invalid_state(EAPT_PAIRING_IS_NOT_ENABLED));
             let metadata_object_cref =
                 if (is_stc) {
-                    debug::print(&std::string::utf8(b"coin::create_and_return_paired_metadata_if_not_exist | 3"));
                     object::create_sticky_object_at_address(@starcoin_framework, @starcoin_fungible_asset)
                 } else {
-                    debug::print(&std::string::utf8(b"coin::create_and_return_paired_metadata_if_not_exist | 4"));
                     object::create_named_object(
                         &create_signer::create_signer(@starcoin_fungible_asset),
                         *string::bytes(&type_info::type_name<CoinType>())
@@ -350,21 +345,17 @@ module starcoin_framework::coin {
                 string::utf8(b""),
                 string::utf8(b""),
             );
-
-            debug::print(&std::string::utf8(b"coin::create_and_return_paired_metadata_if_not_exist | 6"));
             let metadata_object_signer = &object::generate_signer(&metadata_object_cref);
             let type = type_info::type_of<CoinType>();
             move_to(metadata_object_signer, PairedCoinType { type });
             let metadata_obj = object::object_from_constructor_ref(&metadata_object_cref);
 
-            debug::print(&std::string::utf8(b"coin::create_and_return_paired_metadata_if_not_exist | 7"));
             table::add(&mut map.coin_to_fungible_asset_map, type, metadata_obj);
             event::emit(PairCreation {
                 coin_type: type,
                 fungible_asset_metadata_address: object_address(&metadata_obj)
             });
 
-            debug::print(&std::string::utf8(b"coin::create_and_return_paired_metadata_if_not_exist | 8"));
             // Generates all three refs
             let mint_ref = fungible_asset::generate_mint_ref(&metadata_object_cref);
             let transfer_ref = fungible_asset::generate_transfer_ref(&metadata_object_cref);
