@@ -28,6 +28,7 @@ assert!(from_bcs::to_address(bcs::to_bytes(&@0xabcdef)) == @0xabcdef, 0);
 -  [Function `to_address`](#0x1_from_bcs_to_address)
 -  [Function `to_bytes`](#0x1_from_bcs_to_bytes)
 -  [Function `to_string`](#0x1_from_bcs_to_string)
+-  [Function `truncate_16`](#0x1_from_bcs_truncate_16)
 -  [Function `from_bytes`](#0x1_from_bcs_from_bytes)
 -  [Specification](#@Specification_1)
     -  [Function `from_bytes`](#@Specification_1_from_bytes)
@@ -49,6 +50,15 @@ UTF8 check failed in conversion from bytes to string
 
 
 <pre><code><b>const</b> <a href="from_bcs.md#0x1_from_bcs_EINVALID_UTF8">EINVALID_UTF8</a>: u64 = 1;
+</code></pre>
+
+
+
+<a id="0x1_from_bcs_EINVALID_INPUT"></a>
+
+
+
+<pre><code><b>const</b> <a href="from_bcs.md#0x1_from_bcs_EINVALID_INPUT">EINVALID_INPUT</a>: u64 = 2;
 </code></pre>
 
 
@@ -289,6 +299,38 @@ UTF8 check failed in conversion from bytes to string
     <b>let</b> s = <a href="from_bcs.md#0x1_from_bcs_from_bytes">from_bytes</a>&lt;String&gt;(v);
     <b>assert</b>!(<a href="../../move-stdlib/doc/string.md#0x1_string_internal_check_utf8">string::internal_check_utf8</a>(<a href="../../move-stdlib/doc/string.md#0x1_string_bytes">string::bytes</a>(&s)), <a href="from_bcs.md#0x1_from_bcs_EINVALID_UTF8">EINVALID_UTF8</a>);
     s
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_from_bcs_truncate_16"></a>
+
+## Function `truncate_16`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="from_bcs.md#0x1_from_bcs_truncate_16">truncate_16</a>(v: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="from_bcs.md#0x1_from_bcs_truncate_16">truncate_16</a>(v: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
+    <b>assert</b>!(<a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(&v) == 32, <a href="from_bcs.md#0x1_from_bcs_EINVALID_INPUT">EINVALID_INPUT</a>);
+    <b>let</b> trunc_bytes = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>&lt;u8&gt;();
+    <b>let</b> i = 16;
+    <b>while</b> (i &lt; 32) {
+        <b>let</b> b = *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(&v, i);
+        <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> trunc_bytes, b);
+        i = i + 1;
+    };
+    trunc_bytes
 }
 </code></pre>
 

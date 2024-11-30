@@ -33,7 +33,6 @@ This is the reference documentation of the Starcoin framework.
 -  [`0x1::dao_treasury_withdraw_proposal`](dao_treasury_withdraw_proposal.md#0x1_dao_treasury_withdraw_proposal)
 -  [`0x1::dao_upgrade_module_proposal`](dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal)
 -  [`0x1::dao_vote_scripts`](dao_vote_scripts.md#0x1_dao_vote_scripts)
--  [`0x1::delegation_pool`](delegation_pool.md#0x1_delegation_pool)
 -  [`0x1::dispatchable_fungible_asset`](dispatchable_fungible_asset.md#0x1_dispatchable_fungible_asset)
 -  [`0x1::dkg`](dkg.md#0x1_dkg)
 -  [`0x1::easy_gas`](easy_gas.md#0x1_easy_gas)

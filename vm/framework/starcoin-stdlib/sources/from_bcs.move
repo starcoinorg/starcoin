@@ -12,9 +12,11 @@
 /// ```
 module starcoin_std::from_bcs {
     use std::string::{Self, String};
+    use std::vector;
 
     /// UTF8 check failed in conversion from bytes to string
     const EINVALID_UTF8: u64 = 0x1;
+    const EINVALID_INPUT: u64 = 0x2;
 
     public fun to_bool(v: vector<u8>): bool {
         from_bytes<bool>(v)
@@ -59,6 +61,19 @@ module starcoin_std::from_bcs {
         s
     }
 
+    public fun truncate_16(v: vector<u8>): vector<u8> {
+        assert!(vector::length(&v) == 32, EINVALID_INPUT);
+        let trunc_bytes = vector::empty<u8>();
+        let i = 16;
+        while (i < 32) {
+            let b = *vector::borrow(&v, i);
+            vector::push_back(&mut trunc_bytes, b);
+            i = i + 1;
+        };
+        trunc_bytes
+    }
+
+
     /// Package private native function to deserialize a type T.
     ///
     /// Note that this function does not put any constraint on `T`. If code uses this function to
@@ -71,6 +86,9 @@ module starcoin_std::from_bcs {
 
     #[test_only]
     use std::bcs;
+
+    #[test_only]
+    use std::debug;
 
     #[test]
     fun test_address() {
@@ -87,5 +105,14 @@ module starcoin_std::from_bcs {
     fun test_address_fail() {
         let bad_vec = b"01";
         to_address(bad_vec);
+    }
+
+    #[test]
+    fun test_truncate_16() {
+        let addr = x"fb7e666b5b28a6ab7ccb4c406dc23e95f32719c365d013d80c061b57c62715f9";
+        let truncate = truncate_16(addr);
+        debug::print(&truncate);
+        assert!(vector::length(&truncate) == 16, 1);
+        assert!(truncate == x"f32719c365d013d80c061b57c62715f9", 2);
     }
 }
