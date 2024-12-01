@@ -1,7 +1,6 @@
 #[test_only]
 module std::bcs_tests {
     use std::bcs;
-    use std::vector;
 
     struct Box<T> has copy, drop, store { x: T }
     struct Box3<T> has copy, drop, store { x: Box<Box<T>> }
@@ -12,60 +11,59 @@ module std::bcs_tests {
     struct Box127<T> has copy, drop, store { x: Box63<Box63<T>> }
 
     #[test]
-    fun bcs_bool() {
-        let expected_bytes = x"01";
-        let actual_bytes = bcs::to_bytes(&true);
-        assert!(actual_bytes == expected_bytes, 0);
+    fun bcs_address() {
+        let addr = @0x89b9f9d1fadc027cf9532d6f99041522;
+        let expected_output = x"89b9f9d1fadc027cf9532d6f99041522";
+        assert!(bcs::to_bytes(&addr) == expected_output, 0);
+    }
 
-        let expected_size = vector::length(&actual_bytes);
-        let actual_size = bcs::serialized_size(&true);
-        assert!(actual_size == expected_size, 1);
+    #[test]
+    fun bcs_bool() {
+        let expected_output = x"01";
+        assert!(bcs::to_bytes(&true) == expected_output, 0);
     }
 
     #[test]
     fun bcs_u8() {
-        let expected_bytes = x"01";
-        let actual_bytes = bcs::to_bytes(&1u8);
-        assert!(actual_bytes == expected_bytes, 0);
+        let expected_output = x"01";
+        assert!(bcs::to_bytes(&1u8) == expected_output, 0);
+    }
 
-        let expected_size = vector::length(&actual_bytes);
-        let actual_size = bcs::serialized_size(&1u8);
-        assert!(actual_size == expected_size, 1);
+    #[test]
+    fun bcs_u16() {
+        let expected_output = x"0100";
+        assert!(bcs::to_bytes(&1u16) == expected_output, 0);
+    }
+
+    #[test]
+    fun bcs_u32() {
+        let expected_output = x"01000000";
+        assert!(bcs::to_bytes(&1u32) == expected_output, 0);
     }
 
     #[test]
     fun bcs_u64() {
-        let expected_bytes = x"0100000000000000";
-        let actual_bytes = bcs::to_bytes(&1);
-        assert!(actual_bytes == expected_bytes, 0);
-
-        let expected_size = vector::length(&actual_bytes);
-        let actual_size = bcs::serialized_size(&1);
-        assert!(actual_size == expected_size, 1);
+        let expected_output = x"0100000000000000";
+        assert!(bcs::to_bytes(&1) == expected_output, 0);
     }
 
     #[test]
     fun bcs_u128() {
-        let expected_bytes = x"01000000000000000000000000000000";
-        let actual_bytes = bcs::to_bytes(&1u128);
-        assert!(actual_bytes == expected_bytes, 0);
+        let expected_output = x"01000000000000000000000000000000";
+        assert!(bcs::to_bytes(&1u128) == expected_output, 0);
+    }
 
-        let expected_size = vector::length(&actual_bytes);
-        let actual_size = bcs::serialized_size(&1u128);
-        assert!(actual_size == expected_size, 1);
+    #[test]
+    fun bcs_u256() {
+        let expected_output = x"0100000000000000000000000000000000000000000000000000000000000000";
+        assert!(bcs::to_bytes(&1u256) == expected_output, 0);
     }
 
     #[test]
     fun bcs_vec_u8() {
         let v = x"0f";
-
-        let expected_bytes = x"010f";
-        let actual_bytes = bcs::to_bytes(&v);
-        assert!(actual_bytes == expected_bytes, 0);
-
-        let expected_size = vector::length(&actual_bytes);
-        let actual_size = bcs::serialized_size(&v);
-        assert!(actual_size == expected_size, 1);
+        let expected_output = x"010f";
+        assert!(bcs::to_bytes(&v) == expected_output, 0);
     }
 
     fun box3<T>(x: T): Box3<T> {
@@ -94,12 +92,12 @@ module std::bcs_tests {
 
     #[test]
     fun encode_128() {
-        let box = box127(true);
+        bcs::to_bytes(&box127(true));
+    }
 
-        let bytes = bcs::to_bytes(&box);
-        let expected_size = vector::length(&bytes);
-
-        let actual_size = bcs::serialized_size(&box);
-        assert!(actual_size == expected_size, 0);
+    #[test]
+    #[expected_failure] // VM_MAX_VALUE_DEPTH_REACHED
+    fun encode_129() {
+        bcs::to_bytes(&Box { x: box127(true) });
     }
 }

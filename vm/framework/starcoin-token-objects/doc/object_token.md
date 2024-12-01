@@ -415,16 +415,6 @@ The description is over the maximum length
 
 
 
-<a id="0x1_object_token_ENOT_OWNER"></a>
-
-The calling signer is not the owner
-
-
-<pre><code><b>const</b> <a href="object_token.md#0x1_object_token_ENOT_OWNER">ENOT_OWNER</a>: u64 = 8;
-</code></pre>
-
-
-
 <a id="0x1_object_token_EFIELD_NOT_MUTABLE"></a>
 
 The field being changed is not mutable
@@ -441,6 +431,16 @@ The provided signer is not the creator
 
 
 <pre><code><b>const</b> <a href="object_token.md#0x1_object_token_ENOT_CREATOR">ENOT_CREATOR</a>: u64 = 2;
+</code></pre>
+
+
+
+<a id="0x1_object_token_ENOT_OWNER"></a>
+
+The calling signer is not the owner
+
+
+<pre><code><b>const</b> <a href="object_token.md#0x1_object_token_ENOT_OWNER">ENOT_OWNER</a>: u64 = 8;
 </code></pre>
 
 

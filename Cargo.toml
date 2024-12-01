@@ -429,15 +429,11 @@ move-prover-test-utils = { git = "https://github.com/starcoinorg/move", rev = "a
 move-resource-viewer = { git = "https://github.com/starcoinorg/move", rev = "a14d2393e91b88465f1b3b351b20d34f0373e01f" }
 move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "a14d2393e91b88465f1b3b351b20d34f0373e01f" }
 move-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "a14d2393e91b88465f1b3b351b20d34f0373e01f" }
-move-unit-test = { git = "https://github.com/starcoinorg/move", rev = "a14d2393e91b88465f1b3b351b20d34f0373e01f", features = [
-    "table-extension",
-] }
+move-unit-test = { git = "https://github.com/starcoinorg/move", rev = "a14d2393e91b88465f1b3b351b20d34f0373e01f" }
 move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "a14d2393e91b88465f1b3b351b20d34f0373e01f" }
 move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "a14d2393e91b88465f1b3b351b20d34f0373e01f" }
 move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "a14d2393e91b88465f1b3b351b20d34f0373e01f" }
-move-vm-test-utils = { git = "https://github.com/starcoinorg/move", rev = "a14d2393e91b88465f1b3b351b20d34f0373e01f", features = [
-    "table-extension",
-] }
+move-vm-test-utils = { git = "https://github.com/starcoinorg/move", rev = "a14d2393e91b88465f1b3b351b20d34f0373e01f" }
 
 names = { version = "0.14.0", default-features = false }
 network-api = { path = "network/api", package = "network-api" }

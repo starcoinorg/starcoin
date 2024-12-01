@@ -334,6 +334,8 @@ module starcoin_framework::coin {
                         *string::bytes(&type_info::type_name<CoinType>())
                     )
                 };
+
+            debug::print(&std::string::utf8(b"coin::create_and_return_paired_metadata_if_not_exist | 5"));
             primary_fungible_store::create_primary_store_enabled_fungible_asset(
                 &metadata_object_cref,
                 option::none(),
@@ -343,7 +345,6 @@ module starcoin_framework::coin {
                 string::utf8(b""),
                 string::utf8(b""),
             );
-
             let metadata_object_signer = &object::generate_signer(&metadata_object_cref);
             let type = type_info::type_of<CoinType>();
             move_to(metadata_object_signer, PairedCoinType { type });

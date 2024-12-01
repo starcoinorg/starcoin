@@ -261,8 +261,8 @@ module starcoin_framework::starcoin_account {
 
     #[test(alice = @0xa11ce, core = @0x1)]
     public fun test_transfer(alice: &signer, core: &signer) {
-        let bob = from_bcs::to_address(x"0000000000000000000000000000000000000000000000000000000000000b0b");
-        let carol = from_bcs::to_address(x"00000000000000000000000000000000000000000000000000000000000ca501");
+        let bob = from_bcs::to_address(x"00000000000000000000000000000b0b");
+        let carol = from_bcs::to_address(x"000000000000000000000000000ca501");
 
         let (burn_cap, mint_cap) = starcoin_framework::starcoin_coin::initialize_for_test(core);
         create_account(signer::address_of(alice));

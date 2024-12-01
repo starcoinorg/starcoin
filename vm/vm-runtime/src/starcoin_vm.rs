@@ -1099,7 +1099,8 @@ impl StarcoinVM {
         state_view: &S,
         output: &TransactionOutput,
     ) -> Result<(), Error> {
-        for event in output.events() {
+        for contract_event in output.events() {
+            let event = contract_event.v1()?;
             if event.key().get_creator_address() == genesis_address()
                 && (event.is::<UpgradeEvent>() || event.is::<ConfigChangeEvent<Version>>())
             {
@@ -1629,7 +1630,8 @@ impl VMExecutor for StarcoinVM {
 
 impl StarcoinVM {
     pub(crate) fn should_restart_execution(output: &TransactionOutput) -> bool {
-        for event in output.events() {
+        for contract_event in output.events() {
+            let event = contract_event.v1().expect("contract not v1");
             if event.key().get_creator_address() == genesis_address()
                 && (event.is::<UpgradeEvent>() || event.is::<ConfigChangeEvent<Version>>())
             {

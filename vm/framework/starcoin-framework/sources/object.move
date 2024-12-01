@@ -23,6 +23,7 @@ module starcoin_framework::object {
 
     use starcoin_std::from_bcs;
 
+    use starcoin_framework::bcs_util;
     use starcoin_framework::account;
     use starcoin_framework::transaction_context;
     use starcoin_framework::create_signer::create_signer;
@@ -210,7 +211,10 @@ module starcoin_framework::object {
         let bytes = bcs::to_bytes(source);
         vector::append(&mut bytes, seed);
         vector::push_back(&mut bytes, OBJECT_FROM_SEED_ADDRESS_SCHEME);
-        from_bcs::to_address(hash::sha3_256(bytes))
+
+        let truncation_hash_16 = bcs_util::truncate_16(hash::sha3_256(bytes));
+        let ret = from_bcs::to_address(truncation_hash_16);
+        ret
     }
 
     native fun create_user_derived_object_address_impl(source: address, derive_from: address): address;
@@ -223,7 +227,7 @@ module starcoin_framework::object {
             let bytes = bcs::to_bytes(&source);
             vector::append(&mut bytes, bcs::to_bytes(&derive_from));
             vector::push_back(&mut bytes, OBJECT_DERIVED_SCHEME);
-            from_bcs::to_address(hash::sha3_256(bytes))
+            from_bcs::to_address(bcs_util::truncate_16(hash::sha3_256(bytes)))
         }
     }
 
@@ -232,7 +236,7 @@ module starcoin_framework::object {
         let id = guid::create_id(source, creation_num);
         let bytes = bcs::to_bytes(&id);
         vector::push_back(&mut bytes, OBJECT_FROM_GUID_ADDRESS_SCHEME);
-        from_bcs::to_address(hash::sha3_256(bytes))
+        from_bcs::to_address(bcs_util::truncate_16(hash::sha3_256(bytes)))
     }
 
     native fun exists_at<T: key>(object: address): bool;
@@ -250,9 +254,12 @@ module starcoin_framework::object {
     /// Create a new named object and return the ConstructorRef. Named objects can be queried globally
     /// by knowing the user generated seed used to create them. Named objects cannot be deleted.
     public fun create_named_object(creator: &signer, seed: vector<u8>): ConstructorRef {
+        // debug::print(&string::utf8(b"object::create_named_object | entered"));
         let creator_address = signer::address_of(creator);
         let obj_addr = create_object_address(&creator_address, seed);
-        create_object_internal(creator_address, obj_addr, false)
+        let ret = create_object_internal(creator_address, obj_addr, false);
+        // debug::print(&string::utf8(b"object::create_named_object | exited"));
+        ret
     }
 
     /// Create a new object whose address is derived based on the creator account address and another object.
@@ -312,7 +319,7 @@ module starcoin_framework::object {
     fun create_object_from_guid(creator_address: address, guid: guid::GUID): ConstructorRef {
         let bytes = bcs::to_bytes(&guid);
         vector::push_back(&mut bytes, OBJECT_FROM_GUID_ADDRESS_SCHEME);
-        let obj_addr = from_bcs::to_address(hash::sha3_256(bytes));
+        let obj_addr = from_bcs::to_address(bcs_util::truncate_16(hash::sha3_256(bytes)));
         create_object_internal(creator_address, obj_addr, true)
     }
 
@@ -321,6 +328,8 @@ module starcoin_framework::object {
         object: address,
         can_delete: bool,
     ): ConstructorRef {
+        // debug::print(&string::utf8(b"object::create_object_internal | entered"));
+
         assert!(!exists<ObjectCore>(object), error::already_exists(EOBJECT_EXISTS));
 
         let object_signer = create_signer(object);
@@ -336,6 +345,8 @@ module starcoin_framework::object {
                 transfer_events: event::new_event_handle(transfer_events_guid),
             },
         );
+
+        // debug::print(&string::utf8(b"object::create_object_internal | exited"));
         ConstructorRef { self: object, can_delete }
     }
 
@@ -699,6 +710,8 @@ module starcoin_framework::object {
 
     #[test_only]
     use std::option::{Self, Option};
+    #[test_only]
+    use std::debug;
 
     #[test_only]
     const EHERO_DOES_NOT_EXIST: u64 = 0x100;
@@ -863,7 +876,7 @@ module starcoin_framework::object {
         let bytes = bcs::to_bytes(&source);
         vector::append(&mut bytes, bcs::to_bytes(&derive_from));
         vector::push_back(&mut bytes, OBJECT_DERIVED_SCHEME);
-        let directly = from_bcs::to_address(hash::sha3_256(bytes));
+        let directly = from_bcs::to_address(bcs_util::truncate_16(hash::sha3_256(bytes)));
 
         assert!(directly == in_native, 0);
     }
@@ -1071,5 +1084,17 @@ module starcoin_framework::object {
         let linear_transfer_ref = generate_linear_transfer_ref(&transfer_ref);
         set_untransferable(&weapon_constructor_ref);
         transfer_with_ref(linear_transfer_ref, @0x456);
+    }
+
+    #[test]
+    fun test_basic_create_object() {
+        // fb7e666b5b28a6ab7ccb4c406dc23e95f32719c365d013d80c061b57c62715f9
+        // fb7e666b5b28a6ab7ccb4c406dc23e95
+        assert!(from_bcs::to_address(x"f32719c365d013d80c061b57c62715f9") != @0x1, 1);
+        assert!(from_bcs::to_address(x"fb7e666b5b28a6ab7ccb4c406dc23e95") != @0x1, 2);
+        let addr = create_object_address(&@0x1, vector::empty());
+        debug::print(&std::string::utf8(b"Objects address from 0x1: "));
+        debug::print(&addr);
+        assert!(addr != @0x1, 1);
     }
 }

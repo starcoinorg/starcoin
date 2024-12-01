@@ -847,7 +847,7 @@ module starcoin_std::bls12381 {
         // =============================================================================================================
         // SK:        077c8a56f26259215a4a245373ab6ddf328ac6e00e5ea38d8700efa361bdc58d
 
-        let message = b"Hello Starcoin!";
+        let message = b"Hello Aptos!";
 
         // First, test signatures that verify
         let ok = verify_normal_signature(
@@ -879,9 +879,9 @@ module starcoin_std::bls12381 {
             x"82ed7bb5528303a2e306775040a7309e0bd597b70d9949d8c6198a01a7be0b00079320ebfeaf7bbd5bfe86809940d252",
         ];
         let messages = vector[
-            b"Hello Starcoin!",
-            b"Hello Starcoin!",
-            b"Bello Starcoin!",
+            b"Hello Aptos!",
+            b"Hello Aptos!",
+            b"Bello Aptos!",
         ];
 
         let i = 0;

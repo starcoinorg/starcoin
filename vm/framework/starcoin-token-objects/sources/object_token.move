@@ -19,6 +19,8 @@ module starcoin_token_objects::object_token {
 
     #[test_only]
     use starcoin_framework::object::ExtendRef;
+    #[test_only]
+    use starcoin_std::debug;
 
     /// The token does not exist
     const ETOKEN_DOES_NOT_EXIST: u64 = 1;
@@ -1213,7 +1215,6 @@ module starcoin_token_objects::object_token {
 
         let collection_name = string::utf8(b"collection name");
         let token_name = string::utf8(b"token name");
-
         create_collection_helper(creator, collection_name, 1);
         account::create_account_for_test(signer::address_of(creator));
         let constructor_ref = create_from_account(
@@ -1228,6 +1229,7 @@ module starcoin_token_objects::object_token {
         let token_addr = object::address_from_constructor_ref(&constructor_ref);
         assert!(exists<Token>(token_addr), 0);
         burn(burn_ref);
+        debug::print(&string::utf8(b"test_create_from_account_burn_and_delete 5"));
         assert!(!exists<Token>(token_addr), 1);
         assert!(!object::is_object(token_addr), 2);
     }

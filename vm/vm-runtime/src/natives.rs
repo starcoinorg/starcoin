@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use move_vm_runtime::native_functions::NativeFunctionTable;
+use starcoin_framework::natives::object::NativeObjectContext;
+use starcoin_framework::natives::randomness::RandomnessContext;
 use starcoin_gas_schedule::{MiscGasParameters, NativeGasParameters, LATEST_GAS_FEATURE_VERSION};
 use starcoin_native_interface::SafeNativeBuilder;
 use starcoin_vm_types::{
@@ -219,4 +221,6 @@ fn unit_test_extensions_hook(exts: &mut NativeContextExtensions) {
     exts.add(NativeRistrettoPointContext::new());
     exts.add(AlgebraContext::new());
     exts.add(NativeEventContext::default());
+    exts.add(NativeObjectContext::default());
+    exts.add(RandomnessContext::new());
 }
