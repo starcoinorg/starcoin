@@ -26,6 +26,8 @@ use {
     {bytes::Bytes, starcoin_types::delayed_fields::PanicError},
     {move_vm_runtime::native_extensions::NativeContextExtensions, once_cell::sync::Lazy},
 };
+use starcoin_framework::natives::object::NativeObjectContext;
+use starcoin_framework::natives::randomness::RandomnessContext;
 
 #[cfg(feature = "testing")]
 #[allow(dead_code)]
@@ -219,4 +221,6 @@ fn unit_test_extensions_hook(exts: &mut NativeContextExtensions) {
     exts.add(NativeRistrettoPointContext::new());
     exts.add(AlgebraContext::new());
     exts.add(NativeEventContext::default());
+    exts.add(NativeObjectContext::default());
+    exts.add(RandomnessContext::new());
 }

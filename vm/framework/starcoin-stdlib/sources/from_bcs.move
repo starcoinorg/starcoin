@@ -12,7 +12,6 @@
 /// ```
 module starcoin_std::from_bcs {
     use std::string::{Self, String};
-    use std::vector;
 
     /// UTF8 check failed in conversion from bytes to string
     const EINVALID_UTF8: u64 = 0x1;

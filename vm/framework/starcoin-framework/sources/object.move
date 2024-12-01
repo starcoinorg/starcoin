@@ -19,10 +19,8 @@ module starcoin_framework::object {
     use std::error;
     use std::hash;
     use std::signer;
-    use std::string;
     use std::vector;
 
-    use starcoin_std::debug;
     use starcoin_std::from_bcs;
 
     use starcoin_framework::bcs_util;
@@ -712,6 +710,8 @@ module starcoin_framework::object {
 
     #[test_only]
     use std::option::{Self, Option};
+    #[test_only]
+    use std::debug;
 
     #[test_only]
     const EHERO_DOES_NOT_EXIST: u64 = 0x100;
@@ -1093,7 +1093,7 @@ module starcoin_framework::object {
         assert!(from_bcs::to_address(x"f32719c365d013d80c061b57c62715f9") != @0x1, 1);
         assert!(from_bcs::to_address(x"fb7e666b5b28a6ab7ccb4c406dc23e95") != @0x1, 2);
         let addr = create_object_address(&@0x1, vector::empty());
-        debug::print(&string::utf8(b"Objects address from 0x1: "));
+        debug::print(&std::string::utf8(b"Objects address from 0x1: "));
         debug::print(&addr);
         assert!(addr != @0x1, 1);
     }
