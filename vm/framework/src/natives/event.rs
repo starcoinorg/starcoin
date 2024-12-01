@@ -6,6 +6,7 @@ use log::info;
 use move_binary_format::errors::PartialVMError;
 use move_core_types::{language_storage::TypeTag, value::MoveTypeLayout, vm_status::StatusCode};
 use move_vm_runtime::native_functions::NativeFunction;
+#[cfg(feature = "testing")]
 use move_vm_types::value_serde::deserialize_and_allow_delayed_values;
 #[cfg(feature = "testing")]
 use move_vm_types::values::{Reference, Struct, StructRef};
@@ -39,7 +40,7 @@ impl NativeEventContext {
 
     #[cfg(feature = "testing")]
     #[allow(irrefutable_let_patterns)]
-    fn emitted_events(&self, event_key: &EventKey, ty_tag: &TypeTag) -> Vec<&[u8]> {
+    fn emitted_v1_events(&self, event_key: &EventKey, ty_tag: &TypeTag) -> Vec<&[u8]> {
         let mut events = vec![];
         for event in self.events.iter() {
             if let (ContractEvent::V1(e), _) = event {
@@ -154,7 +155,7 @@ fn native_emitted_events_by_handle(
     let ty_layout = context.type_to_type_layout(&ty)?;
     let ctx = context.extensions_mut().get_mut::<NativeEventContext>();
     let events = ctx
-        .emitted_events(&key, &ty_tag)
+        .emitted_v1_events(&key, &ty_tag)
         .into_iter()
         .map(|blob| {
             Value::simple_deserialize(blob, &ty_layout).ok_or_else(|| {
@@ -270,10 +271,7 @@ pub fn make_all(
     )]);
 
     #[cfg(feature = "testing")]
-    natives.extend([(
-        "emitted_events",
-        native_emitted_events_by_handle as RawSafeNative,
-    )]);
+    natives.extend([("emitted_events", native_emitted_events as RawSafeNative)]);
 
     natives.extend([(
         "write_to_event_store",
