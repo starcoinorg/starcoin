@@ -229,7 +229,7 @@ module starcoin_framework::object {
             let bytes = bcs::to_bytes(&source);
             vector::append(&mut bytes, bcs::to_bytes(&derive_from));
             vector::push_back(&mut bytes, OBJECT_DERIVED_SCHEME);
-            from_bcs::to_address(hash::sha3_256(bytes))
+            from_bcs::to_address(bcs_util::truncate_16(hash::sha3_256(bytes)))
         }
     }
 
@@ -238,7 +238,7 @@ module starcoin_framework::object {
         let id = guid::create_id(source, creation_num);
         let bytes = bcs::to_bytes(&id);
         vector::push_back(&mut bytes, OBJECT_FROM_GUID_ADDRESS_SCHEME);
-        from_bcs::to_address(hash::sha3_256(bytes))
+        from_bcs::to_address(bcs_util::truncate_16(hash::sha3_256(bytes)))
     }
 
     native fun exists_at<T: key>(object: address): bool;
@@ -321,7 +321,7 @@ module starcoin_framework::object {
     fun create_object_from_guid(creator_address: address, guid: guid::GUID): ConstructorRef {
         let bytes = bcs::to_bytes(&guid);
         vector::push_back(&mut bytes, OBJECT_FROM_GUID_ADDRESS_SCHEME);
-        let obj_addr = from_bcs::to_address(hash::sha3_256(bytes));
+        let obj_addr = from_bcs::to_address(bcs_util::truncate_16(hash::sha3_256(bytes)));
         create_object_internal(creator_address, obj_addr, true)
     }
 
@@ -876,7 +876,7 @@ module starcoin_framework::object {
         let bytes = bcs::to_bytes(&source);
         vector::append(&mut bytes, bcs::to_bytes(&derive_from));
         vector::push_back(&mut bytes, OBJECT_DERIVED_SCHEME);
-        let directly = from_bcs::to_address(hash::sha3_256(bytes));
+        let directly = from_bcs::to_address(bcs_util::truncate_16(hash::sha3_256(bytes)));
 
         assert!(directly == in_native, 0);
     }
