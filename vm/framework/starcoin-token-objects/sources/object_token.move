@@ -1213,15 +1213,10 @@ module starcoin_token_objects::object_token {
     fun test_create_from_account_burn_and_delete(creator: &signer) acquires Token, TokenIdentifiers {
         use starcoin_framework::account;
 
-        debug::print(&string::utf8(b"test_create_from_account_burn_and_delete 1"));
         let collection_name = string::utf8(b"collection name");
         let token_name = string::utf8(b"token name");
-
-        debug::print(&string::utf8(b"test_create_from_account_burn_and_delete 2"));
         create_collection_helper(creator, collection_name, 1);
         account::create_account_for_test(signer::address_of(creator));
-
-        debug::print(&string::utf8(b"test_create_from_account_burn_and_delete 3"));
         let constructor_ref = create_from_account(
             creator,
             collection_name,
@@ -1230,7 +1225,6 @@ module starcoin_token_objects::object_token {
             option::none(),
             string::utf8(b"token uri"),
         );
-        debug::print(&string::utf8(b"test_create_from_account_burn_and_delete 4"));
         let burn_ref = generate_burn_ref(&constructor_ref);
         let token_addr = object::address_from_constructor_ref(&constructor_ref);
         assert!(exists<Token>(token_addr), 0);
