@@ -272,14 +272,14 @@ impl From<TransactionEventView> for EventView {
 impl From<ContractEvent> for EventView {
     /// Tries to convert the provided byte array into Event Key.
     fn from(contract_event: ContractEvent) -> Self {
-        let event = contract_event.v1().expect("not v1");
-        let event_data = EventDataView::new(event.type_tag(), event.event_data());
+        let event_data_view =
+            EventDataView::new(contract_event.type_tag(), contract_event.event_data());
         Self {
-            key: *event.key(),
-            sequence_number: event.sequence_number(),
-            data: event_data.unwrap_or(EventDataView::Unknown {
-                data: event.event_data().to_vec(),
-                type_tag: event.type_tag().clone().into(),
+            key: contract_event.event_key(),
+            sequence_number: contract_event.sequence_number(),
+            data: event_data_view.unwrap_or(EventDataView::Unknown {
+                data: contract_event.event_data().to_vec(),
+                type_tag: contract_event.type_tag().clone().into(),
             }),
         }
     }

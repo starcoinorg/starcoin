@@ -12,8 +12,9 @@ use crate::{
     on_chain_config::new_epoch_event_key,
 };
 use anyhow::{bail, Error, Result};
+use move_core_types::account_address::AccountAddress;
 use move_core_types::move_resource::MoveStructType;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::{CryptoHash, CryptoHasher};
 use std::str::FromStr;
 
@@ -50,10 +51,10 @@ impl ContractEvent {
         ))
     }
 
-    pub fn event_key(&self) -> Option<&EventKey> {
+    pub fn event_key(&self) -> EventKey {
         match self {
-            ContractEvent::V1(event) => Some(event.key()),
-            ContractEvent::V2(_event) => None,
+            ContractEvent::V1(event) => event.key().clone(),
+            ContractEvent::V2(_event) => EventKey::new(0, AccountAddress::ZERO),
         }
     }
 
@@ -68,6 +69,13 @@ impl ContractEvent {
         match self {
             ContractEvent::V1(event) => &event.type_tag,
             ContractEvent::V2(event) => &event.type_tag,
+        }
+    }
+
+    pub fn sequence_number(&self) -> u64 {
+        match self {
+            ContractEvent::V1(event) => event.sequence_number(),
+            ContractEvent::V2(_event) => 0,
         }
     }
 
@@ -107,14 +115,28 @@ impl ContractEvent {
         }
     }
 
-    pub fn try_v2_typed<T: DeserializeOwned>(&self, event_type: &TypeTag) -> Result<Option<T>> {
-        if let Some(v2) = self.try_v2() {
-            if &v2.type_tag == event_type {
-                return Ok(Some(bcs::from_bytes(&v2.event_data)?));
-            }
-        }
+    // pub fn try_v2_typed<T: DeserializeOwned>(&self, event_type: &TypeTag) -> Result<Option<T>> {
+    //     if let Some(v2) = self.try_v2() {
+    //         if &v2.type_tag == event_type {
+    //             return Ok(Some(bcs::from_bytes(&v2.event_data)?));
+    //         }
+    //     }
+    //
+    //     Ok(None)
+    // }
 
-        Ok(None)
+    pub fn is_typed<EventType: MoveResource>(&self) -> bool {
+        match self {
+            ContractEvent::V1(event) => event.is_typed::<EventType>(),
+            ContractEvent::V2(event) => event.is_typed::<EventType>(),
+        }
+    }
+
+    pub fn decode_event<EventType: MoveResource>(&self) -> Result<EventType> {
+        match self {
+            ContractEvent::V1(event) => event.decode_event::<EventType>(),
+            ContractEvent::V2(event) => event.decode_event::<EventType>(),
+        }
     }
 
     pub fn is_new_epoch_event(&self) -> bool {
@@ -192,7 +214,7 @@ impl ContractEventV1 {
         &self.type_tag
     }
 
-    pub fn is<EventType: MoveResource>(&self) -> bool {
+    pub fn is_typed<EventType: MoveResource>(&self) -> bool {
         self.type_tag == TypeTag::Struct(Box::new(EventType::struct_tag()))
     }
 
@@ -242,6 +264,14 @@ impl ContractEventV2 {
 
     pub fn event_data(&self) -> &[u8] {
         &self.event_data
+    }
+
+    pub fn is_typed<EventType: MoveResource>(&self) -> bool {
+        self.type_tag == TypeTag::Struct(Box::new(EventType::struct_tag()))
+    }
+
+    pub fn decode_event<EventType: MoveResource>(&self) -> Result<EventType> {
+        bcs_ext::from_bytes(self.event_data.as_slice()).map_err(Into::into)
     }
 }
 

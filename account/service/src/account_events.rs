@@ -53,9 +53,9 @@ impl EventHandler<Self, ContractEventNotification> for AccountEventService {
         }
 
         for i in item.0 .1.as_ref() {
-            let event = i.contract_event.v1().expect("contract event not v1");
-            if watched_keys.contains(event.key()) {
-                if let Err(e) = self.handle_contract_event(&i.contract_event) {
+            let contract_event = &i.contract_event;
+            if watched_keys.contains(&contract_event.event_key()) {
+                if let Err(e) = self.handle_contract_event(contract_event) {
                     error!(
                         "fail to save accept token event: {:?}, err: {}",
                         &i.contract_event, e
@@ -68,10 +68,9 @@ impl EventHandler<Self, ContractEventNotification> for AccountEventService {
 
 impl AccountEventService {
     fn handle_contract_event(&self, contract_event: &ContractEvent) -> Result<(), Error> {
-        let event = contract_event.v1()?;
-        if event.is::<AcceptTokenEvent>() {
-            let evt = event.decode_event::<AcceptTokenEvent>()?;
-            let addr = event.key().get_creator_address();
+        if contract_event.is_typed::<AcceptTokenEvent>() {
+            let evt = contract_event.decode_event::<AcceptTokenEvent>()?;
+            let addr = contract_event.event_key().get_creator_address();
             let token_code = evt.token_code();
             self.storage.add_accepted_token(addr, token_code.clone())?;
             info!("addr {:#x} accept new token {}", addr, token_code);
