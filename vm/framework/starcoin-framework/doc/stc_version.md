@@ -104,8 +104,8 @@ Get version under <code>addr</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="stc_version.md#0x1_stc_version_get">get</a>(addr: <b>address</b>): u64 {
-    <b>let</b> <a href="version.md#0x1_version">version</a> = <a href="on_chain_config.md#0x1_on_chain_config_get_by_address">on_chain_config::get_by_address</a>&lt;<a href="stc_version.md#0x1_stc_version_Version">Self::Version</a>&gt;(addr);
-    <a href="version.md#0x1_version">version</a>.major
+    <b>let</b> version = <a href="on_chain_config.md#0x1_on_chain_config_get_by_address">on_chain_config::get_by_address</a>&lt;<a href="stc_version.md#0x1_stc_version_Version">Self::Version</a>&gt;(addr);
+    version.major
 }
 </code></pre>
 

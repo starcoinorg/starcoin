@@ -4,7 +4,6 @@
 module starcoin_framework::chain_id {
     use starcoin_framework::system_addresses;
 
-    friend starcoin_framework::genesis;
     friend starcoin_framework::stc_genesis;
 
     struct ChainId has key {

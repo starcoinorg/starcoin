@@ -21,14 +21,18 @@ module starcoin_framework::object {
     use std::signer;
     use std::vector;
 
-    use starcoin_std::from_bcs;
-
-    use starcoin_framework::bcs_util;
     use starcoin_framework::account;
-    use starcoin_framework::transaction_context;
+    use starcoin_framework::bcs_util;
     use starcoin_framework::create_signer::create_signer;
     use starcoin_framework::event;
     use starcoin_framework::guid;
+    use starcoin_framework::transaction_context;
+    use starcoin_std::from_bcs;
+
+    #[test_only]
+    use std::debug;
+    #[test_only]
+    use std::option::{Self, Option};
 
     friend starcoin_framework::coin;
     friend starcoin_framework::primary_fungible_store;
@@ -707,11 +711,6 @@ module starcoin_framework::object {
         };
         obj_owner
     }
-
-    #[test_only]
-    use std::option::{Self, Option};
-    #[test_only]
-    use std::debug;
 
     #[test_only]
     const EHERO_DOES_NOT_EXIST: u64 = 0x100;

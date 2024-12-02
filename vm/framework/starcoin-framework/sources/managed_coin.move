@@ -2,11 +2,16 @@
 /// It contains scripts you will need to initialize, mint, burn, transfer coins.
 /// By utilizing this current module, a developer can create his own coin and care less about mint and burn capabilities,
 module starcoin_framework::managed_coin {
-    use std::string;
     use std::error;
     use std::signer;
+    use std::string;
 
     use starcoin_framework::coin::{Self, BurnCapability, FreezeCapability, MintCapability};
+
+    #[test_only]
+    use std::option;
+    #[test_only]
+    use starcoin_framework::aggregator_factory;
 
     //
     // Errors
@@ -100,12 +105,6 @@ module starcoin_framework::managed_coin {
     //
     // Tests
     //
-
-    #[test_only]
-    use std::option;
-
-    #[test_only]
-    use starcoin_framework::aggregator_factory;
 
     #[test_only]
     struct FakeMoney {}

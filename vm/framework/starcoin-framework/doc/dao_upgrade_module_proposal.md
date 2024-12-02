@@ -86,7 +86,7 @@ A wrapper of <code><a href="stc_transaction_package_validation.md#0x1_stc_transa
 
 </dd>
 <dt>
-<code><a href="version.md#0x1_version">version</a>: u64</code>
+<code>version: u64</code>
 </dt>
 <dd>
 
@@ -170,7 +170,7 @@ If this goverment can upgrade module, call this to register capability.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_propose_module_upgrade_v2">propose_module_upgrade_v2</a>&lt;TokenT&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, module_address: <b>address</b>, package_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="version.md#0x1_version">version</a>: u64, exec_delay: u64, enforced: bool)
+<pre><code><b>public</b> <b>fun</b> <a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_propose_module_upgrade_v2">propose_module_upgrade_v2</a>&lt;TokenT&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, module_address: <b>address</b>, package_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, version: u64, exec_delay: u64, enforced: bool)
 </code></pre>
 
 
@@ -183,7 +183,7 @@ If this goverment can upgrade module, call this to register capability.
     <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     module_address: <b>address</b>,
     package_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    <a href="version.md#0x1_version">version</a>: u64,
+    version: u64,
     exec_delay: u64,
     enforced: bool,
 ) <b>acquires</b> <a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_UpgradeModuleCapability">UpgradeModuleCapability</a> {
@@ -200,7 +200,7 @@ If this goverment can upgrade module, call this to register capability.
     <b>assert</b>!(account_address == module_address, <a href="../../move-stdlib/doc/error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_ERR_ADDRESS_MISSMATCH">ERR_ADDRESS_MISSMATCH</a>));
     <a href="dao.md#0x1_dao_propose">dao::propose</a>&lt;TokenT, <a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_UpgradeModuleV2">UpgradeModuleV2</a>&gt;(
         <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
-        <a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_UpgradeModuleV2">UpgradeModuleV2</a> { module_address, package_hash, <a href="version.md#0x1_version">version</a>, enforced },
+        <a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_UpgradeModuleV2">UpgradeModuleV2</a> { module_address, package_hash, version, enforced },
         exec_delay,
     );
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_propose_module_upgrade_v2">dao_upgrade_module_proposal::propose_module_upgrade_v2</a> | exited"));
@@ -232,7 +232,7 @@ Once the proposal is agreed, anyone can call this method to generate the upgradi
     proposal_id: u64,
 ) <b>acquires</b> <a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_UpgradeModuleCapability">UpgradeModuleCapability</a> {
     <b>let</b> <a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_UpgradeModuleV2">UpgradeModuleV2</a> {
-        module_address, package_hash, <a href="version.md#0x1_version">version</a>, enforced
+        module_address, package_hash, version, enforced
     } = <a href="dao.md#0x1_dao_extract_proposal_action">dao::extract_proposal_action</a>&lt;
         TokenT,
         <a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_UpgradeModuleV2">UpgradeModuleV2</a>,
@@ -243,7 +243,7 @@ Once the proposal is agreed, anyone can call this method to generate the upgradi
     <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_submit_upgrade_plan_with_cap_v2">stc_transaction_package_validation::submit_upgrade_plan_with_cap_v2</a>(
         &cap.cap,
         package_hash,
-        <a href="version.md#0x1_version">version</a>,
+        version,
         enforced,
     );
 }
@@ -305,7 +305,7 @@ Once the proposal is agreed, anyone can call this method to generate the upgradi
 ### Function `propose_module_upgrade_v2`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_propose_module_upgrade_v2">propose_module_upgrade_v2</a>&lt;TokenT&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, module_address: <b>address</b>, package_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="version.md#0x1_version">version</a>: u64, exec_delay: u64, enforced: bool)
+<pre><code><b>public</b> <b>fun</b> <a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_propose_module_upgrade_v2">propose_module_upgrade_v2</a>&lt;TokenT&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, module_address: <b>address</b>, package_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, version: u64, exec_delay: u64, enforced: bool)
 </code></pre>
 
 

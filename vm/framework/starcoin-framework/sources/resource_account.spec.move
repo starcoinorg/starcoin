@@ -96,19 +96,19 @@ spec starcoin_framework::resource_account {
         ensures exists<starcoin_framework::coin::CoinStore<STC>>(resource_addr);
     }
 
-    spec create_resource_account_and_publish_package(
-        origin: &signer,
-        seed: vector<u8>,
-        metadata_serialized: vector<u8>,
-        code: vector<vector<u8>>,
-    ) {
-        pragma verify = false;
-        //TODO: Loop in code.spec
-        let source_addr = signer::address_of(origin);
-        let resource_addr = account::spec_create_resource_address(source_addr, seed);
-        let optional_auth_key = ZERO_AUTH_KEY;
-        include RotateAccountAuthenticationKeyAndStoreCapabilityAbortsIfWithoutAccountLimit;
-    }
+    // spec create_resource_account_and_publish_package(
+    //     origin: &signer,
+    //     seed: vector<u8>,
+    //     metadata_serialized: vector<u8>,
+    //     code: vector<vector<u8>>,
+    // ) {
+    //     pragma verify = false;
+    //     //TODO: Loop in code.spec
+    //     let source_addr = signer::address_of(origin);
+    //     let resource_addr = account::spec_create_resource_address(source_addr, seed);
+    //     let optional_auth_key = ZERO_AUTH_KEY;
+    //     include RotateAccountAuthenticationKeyAndStoreCapabilityAbortsIfWithoutAccountLimit;
+    // }
 
     spec rotate_account_authentication_key_and_store_capability(
         origin: &signer,

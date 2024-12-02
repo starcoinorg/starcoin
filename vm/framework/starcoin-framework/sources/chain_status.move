@@ -6,7 +6,7 @@ module starcoin_framework::chain_status {
     use starcoin_framework::system_addresses;
     use std::error;
 
-    friend starcoin_framework::genesis;
+    //friend starcoin_framework::genesis;
 
     /// Marker to publish at the end of genesis.
     struct GenesisEndMarker has key {}

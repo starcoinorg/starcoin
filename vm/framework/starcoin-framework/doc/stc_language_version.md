@@ -50,7 +50,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_language_version.md#0x1_stc_language_version_new">new</a>(<a href="version.md#0x1_version">version</a>: u64): <a href="stc_language_version.md#0x1_stc_language_version_LanguageVersion">stc_language_version::LanguageVersion</a>
+<pre><code><b>public</b> <b>fun</b> <a href="stc_language_version.md#0x1_stc_language_version_new">new</a>(version: u64): <a href="stc_language_version.md#0x1_stc_language_version_LanguageVersion">stc_language_version::LanguageVersion</a>
 </code></pre>
 
 
@@ -59,8 +59,8 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_language_version.md#0x1_stc_language_version_new">new</a>(<a href="version.md#0x1_version">version</a>: u64): <a href="stc_language_version.md#0x1_stc_language_version_LanguageVersion">LanguageVersion</a> {
-    <a href="stc_language_version.md#0x1_stc_language_version_LanguageVersion">LanguageVersion</a> { major: <a href="version.md#0x1_version">version</a> }
+<pre><code><b>public</b> <b>fun</b> <a href="stc_language_version.md#0x1_stc_language_version_new">new</a>(version: u64): <a href="stc_language_version.md#0x1_stc_language_version_LanguageVersion">LanguageVersion</a> {
+    <a href="stc_language_version.md#0x1_stc_language_version_LanguageVersion">LanguageVersion</a> { major: version }
 }
 </code></pre>
 
@@ -74,7 +74,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="version.md#0x1_version">version</a>(<a href="version.md#0x1_version">version</a>: &<a href="stc_language_version.md#0x1_stc_language_version_LanguageVersion">stc_language_version::LanguageVersion</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="stc_language_version.md#0x1_stc_language_version_version">version</a>(version: &<a href="stc_language_version.md#0x1_stc_language_version_LanguageVersion">stc_language_version::LanguageVersion</a>): u64
 </code></pre>
 
 
@@ -83,8 +83,8 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="version.md#0x1_version">version</a>(<a href="version.md#0x1_version">version</a>: &<a href="stc_language_version.md#0x1_stc_language_version_LanguageVersion">LanguageVersion</a>): u64 {
-    <a href="version.md#0x1_version">version</a>.major
+<pre><code><b>public</b> <b>fun</b> <a href="stc_language_version.md#0x1_stc_language_version_version">version</a>(version: &<a href="stc_language_version.md#0x1_stc_language_version_LanguageVersion">LanguageVersion</a>): u64 {
+    version.major
 }
 </code></pre>
 
@@ -102,7 +102,7 @@
 ### Function `new`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_language_version.md#0x1_stc_language_version_new">new</a>(<a href="version.md#0x1_version">version</a>: u64): <a href="stc_language_version.md#0x1_stc_language_version_LanguageVersion">stc_language_version::LanguageVersion</a>
+<pre><code><b>public</b> <b>fun</b> <a href="stc_language_version.md#0x1_stc_language_version_new">new</a>(version: u64): <a href="stc_language_version.md#0x1_stc_language_version_LanguageVersion">stc_language_version::LanguageVersion</a>
 </code></pre>
 
 
@@ -118,7 +118,7 @@
 ### Function `version`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="version.md#0x1_version">version</a>(<a href="version.md#0x1_version">version</a>: &<a href="stc_language_version.md#0x1_stc_language_version_LanguageVersion">stc_language_version::LanguageVersion</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="stc_language_version.md#0x1_stc_language_version_version">version</a>(version: &<a href="stc_language_version.md#0x1_stc_language_version_LanguageVersion">stc_language_version::LanguageVersion</a>): u64
 </code></pre>
 
 

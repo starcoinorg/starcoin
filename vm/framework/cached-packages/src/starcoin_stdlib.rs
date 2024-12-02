@@ -24,21 +24,21 @@ pub fn starcoin_coin_transfer(to: AccountAddress, amount: u64) -> TransactionPay
     )
 }
 
-pub fn publish_module_source(module_name: &str, module_src: &str) -> TransactionPayload {
-    let mut builder = PackageBuilder::new("tmp");
-    builder.add_source(module_name, module_src);
-
-    let tmp_dir = builder.write_to_temp().unwrap();
-    let package = BuiltPackage::build(tmp_dir.path().to_path_buf(), BuildOptions::default())
-        .expect("Should be able to build a package");
-    let code = package.extract_code();
-    let metadata = package
-        .extract_metadata()
-        .expect("Should be able to extract metadata");
-    let metadata_serialized =
-        bcs::to_bytes(&metadata).expect("Should be able to serialize metadata");
-    code_publish_package_txn(metadata_serialized, code)
-}
+// pub fn publish_module_source(module_name: &str, module_src: &str) -> TransactionPayload {
+//     let mut builder = PackageBuilder::new("tmp");
+//     builder.add_source(module_name, module_src);
+//
+//     let tmp_dir = builder.write_to_temp().unwrap();
+//     let package = BuiltPackage::build(tmp_dir.path().to_path_buf(), BuildOptions::default())
+//         .expect("Should be able to build a package");
+//     let code = package.extract_code();
+//     let metadata = package
+//         .extract_metadata()
+//         .expect("Should be able to extract metadata");
+//     let metadata_serialized =
+//         bcs::to_bytes(&metadata).expect("Should be able to serialize metadata");
+//     code_publish_package_txn(metadata_serialized, code)
+// }
 
 /// Temporary workaround as `Object<T>` as a function argument is not recognised
 /// when auto generating move transaction payloads. Will address in separate PR.

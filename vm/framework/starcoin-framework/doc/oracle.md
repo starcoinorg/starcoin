@@ -90,7 +90,7 @@ Ext info
 
 <dl>
 <dt>
-<code><a href="version.md#0x1_version">version</a>: u64</code>
+<code>version: u64</code>
 </dt>
 <dd>
 The data version
@@ -469,7 +469,7 @@ Init a data source for type <code>OracleT</code>
     <b>let</b> now = <a href="timestamp.md#0x1_timestamp_now_milliseconds">timestamp::now_milliseconds</a>();
     <b>move_to</b>(sender, <a href="oracle.md#0x1_oracle_OracleFeed">OracleFeed</a>&lt;OracleT, ValueT&gt; {
         record: <a href="oracle.md#0x1_oracle_DataRecord">DataRecord</a>&lt;ValueT&gt; {
-            <a href="version.md#0x1_version">version</a>: 0,
+            version: 0,
             value: init_value,
             updated_at: now,
         }
@@ -570,7 +570,7 @@ Update Oracle's record with new value and UpdateCapability<OracleT>
     <b>let</b> source = <b>borrow_global_mut</b>&lt;<a href="oracle.md#0x1_oracle_DataSource">DataSource</a>&lt;OracleT, ValueT&gt;&gt;(<a href="account.md#0x1_account">account</a>);
     <b>let</b> now = <a href="timestamp.md#0x1_timestamp_now_milliseconds">timestamp::now_milliseconds</a>();
     <b>let</b> oracle_feed = <b>borrow_global_mut</b>&lt;<a href="oracle.md#0x1_oracle_OracleFeed">OracleFeed</a>&lt;OracleT, ValueT&gt;&gt;(<a href="account.md#0x1_account">account</a>);
-    oracle_feed.record.<a href="version.md#0x1_version">version</a> = source.counter;
+    oracle_feed.record.version = source.counter;
     oracle_feed.record.value = value;
     oracle_feed.record.updated_at = now;
     source.counter = source.counter + 1;
@@ -750,7 +750,7 @@ Unpack Record to fields: version, oracle, updated_at.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="oracle.md#0x1_oracle_unpack_record">unpack_record</a>&lt;ValueT: <b>copy</b>+store+drop&gt;(record: <a href="oracle.md#0x1_oracle_DataRecord">DataRecord</a>&lt;ValueT&gt;): (u64, ValueT, u64) {
-    (record.<a href="version.md#0x1_version">version</a>, *&record.value, record.updated_at)
+    (record.version, *&record.value, record.updated_at)
 }
 </code></pre>
 

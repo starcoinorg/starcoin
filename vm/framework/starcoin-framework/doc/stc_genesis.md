@@ -69,7 +69,7 @@ The module for init Genesis
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="stc_genesis.md#0x1_stc_genesis_initialize">initialize</a>(
     stdlib_version: u64,
-    // <a href="block.md#0x1_block">block</a> reward and stc config
+    // block reward and stc config
     reward_delay: u64,
     total_stc_amount: u128,
     pre_mine_stc_amount: u128,
@@ -108,7 +108,7 @@ The module for init Genesis
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> Entered"));
 
 
-    // create <a href="genesis.md#0x1_genesis">genesis</a> <a href="account.md#0x1_account">account</a>
+    // create genesis <a href="account.md#0x1_account">account</a>
     <b>let</b> (starcoin_framework_account, _genesis_signer_cap) =
         <a href="account.md#0x1_account_create_framework_reserved_account">account::create_framework_reserved_account</a>(@starcoin_framework);
 
@@ -198,7 +198,7 @@ The module for init Genesis
 
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> | <a href="stc_transaction_fee.md#0x1_stc_transaction_fee">stc_transaction_fee</a> initialized "));
 
-    // Only test/dev network set <a href="genesis.md#0x1_genesis">genesis</a> auth key.
+    // Only test/dev network set genesis auth key.
     <b>if</b> (!<a href="../../move-stdlib/doc/vector.md#0x1_vector_is_empty">vector::is_empty</a>(&genesis_auth_key) && (<a href="stc_util.md#0x1_stc_util_is_net_dev">stc_util::is_net_dev</a>() || <a href="stc_util.md#0x1_stc_util_is_net_test">stc_util::is_net_test</a>())) {
         <a href="account.md#0x1_account_rotate_authentication_key_internal">account::rotate_authentication_key_internal</a>(&starcoin_framework_account, genesis_auth_key);
     };
@@ -221,7 +221,7 @@ The module for init Genesis
     // StdlibUpgradeScripts::do_upgrade_from_v6_to_v7_with_language_version(&genesis_account, 6);
     // StdlibUpgradeScripts::do_upgrade_from_v11_to_v12(&genesis_account);
 
-    // //Start time, Timestamp::is_genesis() will <b>return</b> <b>false</b>. this call should at the end of <a href="genesis.md#0x1_genesis">genesis</a> init.
+    // //Start time, Timestamp::is_genesis() will <b>return</b> <b>false</b>. this call should at the end of genesis init.
     // <a href="timestamp.md#0x1_timestamp_set_time_has_started">timestamp::set_time_has_started</a>(&starcoin_framework_account);
     // account::release_genesis_signer(genesis_account);
     // account::release_genesis_signer(association);

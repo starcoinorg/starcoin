@@ -294,8 +294,8 @@ Process the given block rewards.
         <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="block_reward.md#0x1_block_reward_ECURRENT_NUMBER_IS_WRONG">ECURRENT_NUMBER_IS_WRONG</a>)
     );
 
-    // distribute gas fee <b>to</b> last <a href="block.md#0x1_block">block</a> reward info.
-    // <b>if</b> not last <a href="block.md#0x1_block">block</a> reward info, the passed in gas fee must be zero.
+    // distribute gas fee <b>to</b> last block reward info.
+    // <b>if</b> not last block reward info, the passed in gas fee must be zero.
     <b>if</b> (len == 0) {
         <a href="coin.md#0x1_coin_destroy_zero">coin::destroy_zero</a>(previous_block_gas_fees);
     } <b>else</b> {
@@ -326,7 +326,7 @@ Process the given block rewards.
             <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="block_reward.md#0x1_block_reward_process_block_reward">block_reward::process_block_reward</a> | total_reward: "));
             <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="coin.md#0x1_coin_value">coin::value</a>(&total_reward));
 
-            // add <a href="block.md#0x1_block">block</a> reward <b>to</b> total.
+            // add block reward <b>to</b> total.
             <b>if</b> (<a href="block_reward.md#0x1_block_reward">block_reward</a> &gt; 0) {
                 // <b>if</b> no STC in Treasury, BlockReward will been 0.
                 <b>let</b> treasury_balance = <a href="treasury.md#0x1_treasury_balance">treasury::balance</a>&lt;STC&gt;();

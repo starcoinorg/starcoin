@@ -10,7 +10,7 @@ module starcoin_framework::aggregator_factory {
     use starcoin_framework::aggregator::Aggregator;
     use starcoin_std::table::{Self, Table};
 
-    friend starcoin_framework::genesis;
+    // friend starcoin_framework::genesis;
     friend starcoin_framework::optional_aggregator;
     friend starcoin_framework::stc_genesis;
 
