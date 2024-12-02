@@ -1100,9 +1100,9 @@ impl StarcoinVM {
         output: &TransactionOutput,
     ) -> Result<(), Error> {
         for contract_event in output.events() {
-            let event = contract_event.v1()?;
-            if event.key().get_creator_address() == genesis_address()
-                && (event.is::<UpgradeEvent>() || event.is::<ConfigChangeEvent<Version>>())
+            if contract_event.event_key().get_creator_address() == genesis_address()
+                && (contract_event.is_typed::<UpgradeEvent>()
+                    || contract_event.is_typed::<ConfigChangeEvent<Version>>())
             {
                 info!("Load vm configs trigger by reconfigure event. ");
                 self.load_configs(state_view)?;
@@ -1179,7 +1179,10 @@ impl StarcoinVM {
                         }
                         // TODO load config by config change event
                         self.check_reconfigure(&data_cache, &output)
-                            .map_err(|_err| VMStatus::error(StatusCode::STORAGE_ERROR, None))?;
+                            .map_err(|err| {
+                                info!("check_reconfigure error: {:?}", err);
+                                VMStatus::error(StatusCode::STORAGE_ERROR, None)
+                            })?;
 
                         #[cfg(feature = "metrics")]
                         if let Some(timer) = timer {
@@ -1631,9 +1634,9 @@ impl VMExecutor for StarcoinVM {
 impl StarcoinVM {
     pub(crate) fn should_restart_execution(output: &TransactionOutput) -> bool {
         for contract_event in output.events() {
-            let event = contract_event.v1().expect("contract not v1");
-            if event.key().get_creator_address() == genesis_address()
-                && (event.is::<UpgradeEvent>() || event.is::<ConfigChangeEvent<Version>>())
+            if contract_event.event_key().get_creator_address() == genesis_address()
+                && (contract_event.is_typed::<UpgradeEvent>()
+                    || contract_event.is_typed::<ConfigChangeEvent<Version>>())
             {
                 info!("should_restart_execution happen");
                 return true;

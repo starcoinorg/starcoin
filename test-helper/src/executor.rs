@@ -299,7 +299,7 @@ pub fn expect_event<Event: MoveResource>(output: &TransactionOutput) -> Contract
     output
         .events()
         .iter()
-        .filter(|event| event.v1().expect("not v1").is::<Event>())
+        .filter(|event| event.is_typed::<Event>())
         .last()
         .cloned()
         .unwrap_or_else(|| panic!("Expect event: {}", Event::struct_tag()))
@@ -309,9 +309,9 @@ pub fn expect_decode_event<Event: MoveResource>(output: &TransactionOutput) -> E
     output
         .events()
         .iter()
-        .filter(|event| event.v1().expect("not v1").is::<Event>())
+        .filter(|event| event.is_typed::<Event>())
         .last()
         .cloned()
-        .and_then(|event| event.v1().expect("not v1").decode_event::<Event>().ok())
+        .and_then(|event| event.decode_event::<Event>().ok())
         .unwrap_or_else(|| panic!("Expect event: {}", Event::struct_tag()))
 }

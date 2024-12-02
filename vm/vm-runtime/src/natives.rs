@@ -2,14 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use move_vm_runtime::native_functions::NativeFunctionTable;
-use starcoin_framework::natives::object::NativeObjectContext;
-use starcoin_framework::natives::randomness::RandomnessContext;
 use starcoin_gas_schedule::{MiscGasParameters, NativeGasParameters, LATEST_GAS_FEATURE_VERSION};
 use starcoin_native_interface::SafeNativeBuilder;
 use starcoin_vm_types::{
     account_config::CORE_CODE_ADDRESS,
     on_chain_config::{Features, TimedFeatures, TimedFeaturesBuilder},
 };
+
+#[cfg(feature = "testing")]
+use starcoin_framework::natives::{object::NativeObjectContext, randomness::RandomnessContext};
+
 #[cfg(feature = "testing")]
 use {
     move_binary_format::errors::PartialVMError,
