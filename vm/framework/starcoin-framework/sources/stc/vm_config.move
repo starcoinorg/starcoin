@@ -1,6 +1,5 @@
 /// `VMConfig` keep track of VM related configuration, like gas schedule.
 module starcoin_framework::vm_config {
-    use starcoin_framework::gas_schedule::GasScheduleV2;
     use starcoin_framework::system_addresses;
     use starcoin_framework::on_chain_config;
     use starcoin_framework::util;
@@ -8,6 +7,21 @@ module starcoin_framework::vm_config {
     spec module {
         pragma verify = false;
         pragma aborts_if_is_strict;
+    }
+
+    struct GasEntry has store, copy, drop {
+        key: std::string::String,
+        val: u64,
+    }
+
+    struct GasSchedule has key, copy, drop {
+        entries: vector<GasEntry>
+    }
+
+
+    struct GasScheduleV2 has key, copy, drop, store {
+        feature_version: u64,
+        entries: vector<GasEntry>,
     }
 
     /// The struct to hold all config data needed to operate the VM.
@@ -21,9 +35,8 @@ module starcoin_framework::vm_config {
         account: &signer,
         gas_schedule_blob: vector<u8>,
     ) {
-        // CoreAddresses::assert_genesis_address(account);
         system_addresses::assert_starcoin_framework(account);
-        let gas_schedule: GasScheduleV2 = util::from_bytes(gas_schedule_blob);
+        let gas_schedule  = util::from_bytes<GasScheduleV2>(gas_schedule_blob);
         on_chain_config::publish_new_config<VMConfig>(
             account,
             VMConfig {

@@ -37,7 +37,7 @@ Check whether the given timestamp is valid for transactions.
 <pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_timeout.md#0x1_stc_transaction_timeout_is_valid_transaction_timestamp">is_valid_transaction_timestamp</a>(txn_timestamp: u64): bool {
     <b>let</b> current_block_time = <a href="timestamp.md#0x1_timestamp_now_seconds">timestamp::now_seconds</a>();
     <b>let</b> block_number = <a href="stc_block.md#0x1_stc_block_get_current_block_number">stc_block::get_current_block_number</a>();
-    // before first <a href="block.md#0x1_block">block</a>, just require txn_timestamp &gt; <a href="genesis.md#0x1_genesis">genesis</a> <a href="timestamp.md#0x1_timestamp">timestamp</a>.
+    // before first block, just require txn_timestamp &gt; genesis <a href="timestamp.md#0x1_timestamp">timestamp</a>.
     <b>if</b> (block_number == 0) {
         <b>return</b> txn_timestamp &gt; current_block_time
     };

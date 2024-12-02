@@ -378,7 +378,7 @@ User vote info.
  proposal id.
 </dd>
 <dt>
-<code><a href="stake.md#0x1_stake">stake</a>: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenT&gt;</code>
+<code>stake: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenT&gt;</code>
 </dt>
 <dd>
  how many tokens to stake.
@@ -726,7 +726,7 @@ which can only be unstaked by user after the proposal is expired, or cancelled, 
 So think twice before casting vote.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dao.md#0x1_dao_cast_vote">cast_vote</a>&lt;TokenT, ActionT: <b>copy</b>, drop, store&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, proposer_address: <b>address</b>, proposal_id: u64, <a href="stake.md#0x1_stake">stake</a>: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenT&gt;, agree: bool)
+<pre><code><b>public</b> <b>fun</b> <a href="dao.md#0x1_dao_cast_vote">cast_vote</a>&lt;TokenT, ActionT: <b>copy</b>, drop, store&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, proposer_address: <b>address</b>, proposal_id: u64, stake: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenT&gt;, agree: bool)
 </code></pre>
 
 
@@ -739,7 +739,7 @@ So think twice before casting vote.
     <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     proposer_address: <b>address</b>,
     proposal_id: u64,
-    <a href="stake.md#0x1_stake">stake</a>: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenT&gt;,
+    stake: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenT&gt;,
     agree: bool,
 ) <b>acquires</b> <a href="dao.md#0x1_dao_Proposal">Proposal</a>, <a href="dao.md#0x1_dao_DaoGlobalInfo">DaoGlobalInfo</a>, <a href="dao.md#0x1_dao_Vote">Vote</a> {
     {
@@ -755,17 +755,17 @@ So think twice before casting vote.
         <b>assert</b>!(my_vote.id == proposal_id, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="dao.md#0x1_dao_ERR_VOTED_OTHERS_ALREADY">ERR_VOTED_OTHERS_ALREADY</a>));
         <b>assert</b>!(my_vote.agree == agree, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="dao.md#0x1_dao_ERR_VOTE_STATE_MISMATCH">ERR_VOTE_STATE_MISMATCH</a>));
 
-        <a href="dao.md#0x1_dao_do_cast_vote">do_cast_vote</a>(proposal, my_vote, <a href="stake.md#0x1_stake">stake</a>);
-        <a href="coin.md#0x1_coin_value">coin::value</a>(&my_vote.<a href="stake.md#0x1_stake">stake</a>)
+        <a href="dao.md#0x1_dao_do_cast_vote">do_cast_vote</a>(proposal, my_vote, stake);
+        <a href="coin.md#0x1_coin_value">coin::value</a>(&my_vote.stake)
     } <b>else</b> {
         <b>let</b> my_vote = <a href="dao.md#0x1_dao_Vote">Vote</a>&lt;TokenT&gt; {
             proposer: proposer_address,
             id: proposal_id,
-            <a href="stake.md#0x1_stake">stake</a>: <a href="coin.md#0x1_coin_zero">coin::zero</a>(),
+            stake: <a href="coin.md#0x1_coin_zero">coin::zero</a>(),
             agree,
         };
-        <a href="dao.md#0x1_dao_do_cast_vote">do_cast_vote</a>(proposal, &<b>mut</b> my_vote, <a href="stake.md#0x1_stake">stake</a>);
-        <b>let</b> total_voted = <a href="coin.md#0x1_coin_value">coin::value</a>(&my_vote.<a href="stake.md#0x1_stake">stake</a>);
+        <a href="dao.md#0x1_dao_do_cast_vote">do_cast_vote</a>(proposal, &<b>mut</b> my_vote, stake);
+        <b>let</b> total_voted = <a href="coin.md#0x1_coin_value">coin::value</a>(&my_vote.stake);
         <b>move_to</b>(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, my_vote);
         total_voted
     };
@@ -795,7 +795,7 @@ So think twice before casting vote.
 
 
 
-<pre><code><b>fun</b> <a href="dao.md#0x1_dao_do_cast_vote">do_cast_vote</a>&lt;TokenT, ActionT: <b>copy</b>, drop, store&gt;(proposal: &<b>mut</b> <a href="dao.md#0x1_dao_Proposal">dao::Proposal</a>&lt;TokenT, ActionT&gt;, vote: &<b>mut</b> <a href="dao.md#0x1_dao_Vote">dao::Vote</a>&lt;TokenT&gt;, <a href="stake.md#0x1_stake">stake</a>: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenT&gt;)
+<pre><code><b>fun</b> <a href="dao.md#0x1_dao_do_cast_vote">do_cast_vote</a>&lt;TokenT, ActionT: <b>copy</b>, drop, store&gt;(proposal: &<b>mut</b> <a href="dao.md#0x1_dao_Proposal">dao::Proposal</a>&lt;TokenT, ActionT&gt;, vote: &<b>mut</b> <a href="dao.md#0x1_dao_Vote">dao::Vote</a>&lt;TokenT&gt;, stake: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenT&gt;)
 </code></pre>
 
 
@@ -807,10 +807,10 @@ So think twice before casting vote.
 <pre><code><b>fun</b> <a href="dao.md#0x1_dao_do_cast_vote">do_cast_vote</a>&lt;TokenT, ActionT: <b>copy</b> + drop + store&gt;(
     proposal: &<b>mut</b> <a href="dao.md#0x1_dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;,
     vote: &<b>mut</b> <a href="dao.md#0x1_dao_Vote">Vote</a>&lt;TokenT&gt;,
-    <a href="stake.md#0x1_stake">stake</a>: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenT&gt;
+    stake: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenT&gt;
 ) {
-    <b>let</b> stake_value = <a href="coin.md#0x1_coin_value">coin::value</a>(&<a href="stake.md#0x1_stake">stake</a>);
-    <a href="coin.md#0x1_coin_merge">coin::merge</a>(&<b>mut</b> vote.<a href="stake.md#0x1_stake">stake</a>, <a href="stake.md#0x1_stake">stake</a>);
+    <b>let</b> stake_value = <a href="coin.md#0x1_coin_value">coin::value</a>(&stake);
+    <a href="coin.md#0x1_coin_merge">coin::merge</a>(&<b>mut</b> vote.stake, stake);
     <b>if</b> (vote.agree) {
         proposal.for_votes = proposal.for_votes + (stake_value <b>as</b> u128);
     } <b>else</b> {
@@ -901,7 +901,7 @@ Let user change their vote during the voting time.
     proposal: &<b>mut</b> <a href="dao.md#0x1_dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;
 ): u128 {
     my_vote.agree = !my_vote.agree;
-    <b>let</b> total_voted = (<a href="coin.md#0x1_coin_value">coin::value</a>(&my_vote.<a href="stake.md#0x1_stake">stake</a>) <b>as</b> u128);
+    <b>let</b> total_voted = (<a href="coin.md#0x1_coin_value">coin::value</a>(&my_vote.stake) <b>as</b> u128);
     <b>if</b> (my_vote.agree) {
         proposal.for_votes = proposal.for_votes + total_voted;
         proposal.against_votes = proposal.against_votes - total_voted;
@@ -964,14 +964,14 @@ Revoke some voting powers from vote on <code>proposal_id</code> of <code>propose
             proposer: proposer_address,
             voter: <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>),
             agree: my_vote.agree,
-            vote: (<a href="coin.md#0x1_coin_value">coin::value</a>(&my_vote.<a href="stake.md#0x1_stake">stake</a>) <b>as</b> u128),
+            vote: (<a href="coin.md#0x1_coin_value">coin::value</a>(&my_vote.stake) <b>as</b> u128),
         },
     );
 
-    // <b>if</b> user <b>has</b> no <a href="stake.md#0x1_stake">stake</a>, destroy his vote. resolve https://github.com/starcoinorg/starcoin/issues/2925.
-    <b>if</b> (<a href="coin.md#0x1_coin_value">coin::value</a>(&my_vote.<a href="stake.md#0x1_stake">stake</a>) == 0) {
-        <b>let</b> <a href="dao.md#0x1_dao_Vote">Vote</a> { <a href="stake.md#0x1_stake">stake</a>, proposer: _, id: _, agree: _ } = my_vote;
-        <a href="coin.md#0x1_coin_destroy_zero">coin::destroy_zero</a>(<a href="stake.md#0x1_stake">stake</a>);
+    // <b>if</b> user <b>has</b> no stake, destroy his vote. resolve https://github.com/starcoinorg/starcoin/issues/2925.
+    <b>if</b> (<a href="coin.md#0x1_coin_value">coin::value</a>(&my_vote.stake) == 0) {
+        <b>let</b> <a href="dao.md#0x1_dao_Vote">Vote</a> { stake, proposer: _, id: _, agree: _ } = my_vote;
+        <a href="coin.md#0x1_coin_destroy_zero">coin::destroy_zero</a>(stake);
     } <b>else</b> {
         <b>move_to</b>(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, my_vote);
     };
@@ -1005,9 +1005,9 @@ Revoke some voting powers from vote on <code>proposal_id</code> of <code>propose
     to_revoke: u128
 ): <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenT&gt; {
     <b>spec</b> {
-        <b>assume</b> vote.<a href="stake.md#0x1_stake">stake</a>.value &gt;= to_revoke;
+        <b>assume</b> vote.stake.value &gt;= to_revoke;
     };
-    <b>let</b> reverted_stake = <a href="coin.md#0x1_coin_extract">coin::extract</a>(&<b>mut</b> vote.<a href="stake.md#0x1_stake">stake</a>, (to_revoke <b>as</b> u64));
+    <b>let</b> reverted_stake = <a href="coin.md#0x1_coin_extract">coin::extract</a>(&<b>mut</b> vote.stake, (to_revoke <b>as</b> u64));
     <b>if</b> (vote.agree) {
         proposal.for_votes = proposal.for_votes - to_revoke;
     } <b>else</b> {
@@ -1052,13 +1052,13 @@ Retrieve back my staked token voted for a proposal.
         // Only after vote period end, user can unstake his votes.
         <b>assert</b>!(state &gt; <a href="dao.md#0x1_dao_ACTIVE">ACTIVE</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="dao.md#0x1_dao_ERR_PROPOSAL_STATE_INVALID">ERR_PROPOSAL_STATE_INVALID</a>));
     };
-    <b>let</b> <a href="dao.md#0x1_dao_Vote">Vote</a> { proposer, id, <a href="stake.md#0x1_stake">stake</a>, agree: _ } = <b>move_from</b>&lt;<a href="dao.md#0x1_dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(
+    <b>let</b> <a href="dao.md#0x1_dao_Vote">Vote</a> { proposer, id, stake, agree: _ } = <b>move_from</b>&lt;<a href="dao.md#0x1_dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(
         <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>),
     );
     // these checks are still required.
     <b>assert</b>!(proposer == proposer_address, <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="dao.md#0x1_dao_ERR_PROPOSER_MISMATCH">ERR_PROPOSER_MISMATCH</a>));
     <b>assert</b>!(id == proposal_id, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="dao.md#0x1_dao_ERR_VOTED_OTHERS_ALREADY">ERR_VOTED_OTHERS_ALREADY</a>));
-    <a href="stake.md#0x1_stake">stake</a>
+    stake
 }
 </code></pre>
 
@@ -1346,7 +1346,7 @@ Get voter's vote info on proposal with <code>proposal_id</code> of <code>propose
     <b>let</b> vote = <b>borrow_global</b>&lt;<a href="dao.md#0x1_dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(voter);
     <b>assert</b>!(vote.proposer == proposer_address, <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="dao.md#0x1_dao_ERR_PROPOSER_MISMATCH">ERR_PROPOSER_MISMATCH</a>));
     <b>assert</b>!(vote.id == proposal_id, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="dao.md#0x1_dao_ERR_VOTED_OTHERS_ALREADY">ERR_VOTED_OTHERS_ALREADY</a>));
-    (vote.agree, (<a href="coin.md#0x1_coin_value">coin::value</a>(&vote.<a href="stake.md#0x1_stake">stake</a>) <b>as</b> u128))
+    (vote.agree, (<a href="coin.md#0x1_coin_value">coin::value</a>(&vote.stake) <b>as</b> u128))
 }
 </code></pre>
 
@@ -1990,7 +1990,7 @@ set min action delay
     <b>let</b> vote = <b>global</b>&lt;<a href="dao.md#0x1_dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(voter);
     <b>aborts_if</b> vote.id != proposal_id;
     <b>aborts_if</b> vote.agree != agree;
-    <b>aborts_if</b> vote.<a href="stake.md#0x1_stake">stake</a>.value + stake_value &gt; MAX_U128;
+    <b>aborts_if</b> vote.stake.value + stake_value &gt; MAX_U128;
 }
 </code></pre>
 
@@ -2001,7 +2001,7 @@ set min action delay
 ### Function `cast_vote`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dao.md#0x1_dao_cast_vote">cast_vote</a>&lt;TokenT, ActionT: <b>copy</b>, drop, store&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, proposer_address: <b>address</b>, proposal_id: u64, <a href="stake.md#0x1_stake">stake</a>: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenT&gt;, agree: bool)
+<pre><code><b>public</b> <b>fun</b> <a href="dao.md#0x1_dao_cast_vote">cast_vote</a>&lt;TokenT, ActionT: <b>copy</b>, drop, store&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, proposer_address: <b>address</b>, proposal_id: u64, stake: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenT&gt;, agree: bool)
 </code></pre>
 
 
@@ -2017,10 +2017,10 @@ set min action delay
     voter: sender,
     proposal_id: proposal_id,
     agree: agree,
-    stake_value: <a href="stake.md#0x1_stake">stake</a>.value,
+    stake_value: stake.value,
 };
 <b>modifies</b> <b>global</b>&lt;<a href="dao.md#0x1_dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
-<b>ensures</b> !vote_exists ==&gt; <b>global</b>&lt;<a href="dao.md#0x1_dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender).<a href="stake.md#0x1_stake">stake</a>.value == <a href="stake.md#0x1_stake">stake</a>.value;
+<b>ensures</b> !vote_exists ==&gt; <b>global</b>&lt;<a href="dao.md#0x1_dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender).stake.value == stake.value;
 </code></pre>
 
 
@@ -2030,18 +2030,18 @@ set min action delay
 ### Function `do_cast_vote`
 
 
-<pre><code><b>fun</b> <a href="dao.md#0x1_dao_do_cast_vote">do_cast_vote</a>&lt;TokenT, ActionT: <b>copy</b>, drop, store&gt;(proposal: &<b>mut</b> <a href="dao.md#0x1_dao_Proposal">dao::Proposal</a>&lt;TokenT, ActionT&gt;, vote: &<b>mut</b> <a href="dao.md#0x1_dao_Vote">dao::Vote</a>&lt;TokenT&gt;, <a href="stake.md#0x1_stake">stake</a>: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenT&gt;)
+<pre><code><b>fun</b> <a href="dao.md#0x1_dao_do_cast_vote">do_cast_vote</a>&lt;TokenT, ActionT: <b>copy</b>, drop, store&gt;(proposal: &<b>mut</b> <a href="dao.md#0x1_dao_Proposal">dao::Proposal</a>&lt;TokenT, ActionT&gt;, vote: &<b>mut</b> <a href="dao.md#0x1_dao_Vote">dao::Vote</a>&lt;TokenT&gt;, stake: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;TokenT&gt;)
 </code></pre>
 
 
 
 
 <pre><code><b>pragma</b> addition_overflow_unchecked = <b>true</b>;
-<b>aborts_if</b> vote.<a href="stake.md#0x1_stake">stake</a>.value + <a href="stake.md#0x1_stake">stake</a>.value &gt; MAX_U128;
-<b>ensures</b> vote.<a href="stake.md#0x1_stake">stake</a>.value == <b>old</b>(vote).<a href="stake.md#0x1_stake">stake</a>.value + <a href="stake.md#0x1_stake">stake</a>.value;
-<b>ensures</b> vote.agree ==&gt; <b>old</b>(proposal).for_votes + <a href="stake.md#0x1_stake">stake</a>.value == proposal.for_votes;
+<b>aborts_if</b> vote.stake.value + stake.value &gt; MAX_U128;
+<b>ensures</b> vote.stake.value == <b>old</b>(vote).stake.value + stake.value;
+<b>ensures</b> vote.agree ==&gt; <b>old</b>(proposal).for_votes + stake.value == proposal.for_votes;
 <b>ensures</b> vote.agree ==&gt; <b>old</b>(proposal).against_votes == proposal.against_votes;
-<b>ensures</b> !vote.agree ==&gt; <b>old</b>(proposal).against_votes + <a href="stake.md#0x1_stake">stake</a>.value == proposal.against_votes;
+<b>ensures</b> !vote.agree ==&gt; <b>old</b>(proposal).against_votes + stake.value == proposal.against_votes;
 <b>ensures</b> !vote.agree ==&gt; <b>old</b>(proposal).for_votes == proposal.for_votes;
 </code></pre>
 
@@ -2108,10 +2108,10 @@ set min action delay
 <pre><code><b>schema</b> <a href="dao.md#0x1_dao_CheckFlipVote">CheckFlipVote</a>&lt;TokenT, ActionT&gt; {
     my_vote: <a href="dao.md#0x1_dao_Vote">Vote</a>&lt;TokenT&gt;;
     proposal: <a href="dao.md#0x1_dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;;
-    <b>aborts_if</b> my_vote.agree && proposal.for_votes &lt; my_vote.<a href="stake.md#0x1_stake">stake</a>.value;
-    <b>aborts_if</b> my_vote.agree && proposal.against_votes + my_vote.<a href="stake.md#0x1_stake">stake</a>.value &gt; MAX_U128;
-    <b>aborts_if</b> !my_vote.agree && proposal.against_votes &lt; my_vote.<a href="stake.md#0x1_stake">stake</a>.value;
-    <b>aborts_if</b> !my_vote.agree && proposal.for_votes + my_vote.<a href="stake.md#0x1_stake">stake</a>.value &gt; MAX_U128;
+    <b>aborts_if</b> my_vote.agree && proposal.for_votes &lt; my_vote.stake.value;
+    <b>aborts_if</b> my_vote.agree && proposal.against_votes + my_vote.stake.value &gt; MAX_U128;
+    <b>aborts_if</b> !my_vote.agree && proposal.against_votes &lt; my_vote.stake.value;
+    <b>aborts_if</b> !my_vote.agree && proposal.for_votes + my_vote.stake.value &gt; MAX_U128;
 }
 </code></pre>
 
@@ -2161,9 +2161,9 @@ set min action delay
 <b>modifies</b> <b>global</b>&lt;<a href="dao.md#0x1_dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
 <b>modifies</b> <b>global</b>&lt;<a href="dao.md#0x1_dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
 <b>modifies</b> <b>global</b>&lt;<a href="dao.md#0x1_dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt;&gt;(@0x2);
-<b>ensures</b> <b>global</b>&lt;<a href="dao.md#0x1_dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender).<a href="stake.md#0x1_stake">stake</a>.value + result.value == <b>old</b>(
+<b>ensures</b> <b>global</b>&lt;<a href="dao.md#0x1_dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender).stake.value + result.value == <b>old</b>(
     <b>global</b>&lt;<a href="dao.md#0x1_dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender)
-).<a href="stake.md#0x1_stake">stake</a>.value;
+).stake.value;
 <b>ensures</b> result.value == voting_power;
 </code></pre>
 
@@ -2177,7 +2177,7 @@ set min action delay
     vote: <a href="dao.md#0x1_dao_Vote">Vote</a>&lt;TokenT&gt;;
     proposal: <a href="dao.md#0x1_dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;;
     to_revoke: u128;
-    <b>aborts_if</b> vote.<a href="stake.md#0x1_stake">stake</a>.value &lt; to_revoke;
+    <b>aborts_if</b> vote.stake.value &lt; to_revoke;
     <b>aborts_if</b> vote.agree && proposal.for_votes &lt; to_revoke;
     <b>aborts_if</b> !vote.agree && proposal.against_votes &lt; to_revoke;
 }
@@ -2233,7 +2233,7 @@ set min action delay
 <b>let</b> vote = <b>global</b>&lt;<a href="dao.md#0x1_dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
 <b>include</b> <a href="dao.md#0x1_dao_CheckVoteOnProposal">CheckVoteOnProposal</a>&lt;TokenT&gt; { vote, proposer_address, proposal_id };
 <b>ensures</b> !<b>exists</b>&lt;<a href="dao.md#0x1_dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
-<b>ensures</b> result.value == <b>old</b>(vote).<a href="stake.md#0x1_stake">stake</a>.value;
+<b>ensures</b> result.value == <b>old</b>(vote).stake.value;
 </code></pre>
 
 

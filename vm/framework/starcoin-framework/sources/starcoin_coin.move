@@ -10,7 +10,7 @@ module starcoin_framework::starcoin_coin {
     use starcoin_framework::coin::{Self, BurnCapability, MintCapability};
     use starcoin_framework::system_addresses;
 
-    friend starcoin_framework::genesis;
+    // friend starcoin_framework::genesis;
     friend starcoin_framework::stc_genesis;
 
     /// Account does not have mint capability

@@ -15,13 +15,13 @@
 /// See AIP-73 for further discussion
 ///
 module starcoin_framework::dispatchable_fungible_asset {
-    use starcoin_framework::fungible_asset::{Self, FungibleAsset, TransferRef};
-    use starcoin_framework::function_info::{Self, FunctionInfo};
-    use starcoin_framework::object::{Self, ConstructorRef, Object};
-
     use std::error;
     use std::features;
     use std::option::{Self, Option};
+
+    use starcoin_framework::function_info::{Self, FunctionInfo};
+    use starcoin_framework::fungible_asset::{Self, FungibleAsset, TransferRef};
+    use starcoin_framework::object::{Self, ConstructorRef, Object};
 
     /// TransferRefStore doesn't exist on the fungible asset type.
     const ESTORE_NOT_FOUND: u64 = 1;

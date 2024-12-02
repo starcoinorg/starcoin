@@ -120,7 +120,7 @@ The holder of UpgradePlanCapability for account_address can submit UpgradePlan f
 
 </dd>
 <dt>
-<code><a href="version.md#0x1_version">version</a>: u64</code>
+<code>version: u64</code>
 </dt>
 <dd>
 
@@ -271,7 +271,7 @@ module upgrade event.
 
 </dd>
 <dt>
-<code><a href="version.md#0x1_version">version</a>: u64</code>
+<code>version: u64</code>
 </dt>
 <dd>
 
@@ -687,7 +687,7 @@ extract out UpgradePlanCapability from <code><a href="../../move-stdlib/doc/sign
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_submit_upgrade_plan_v2">submit_upgrade_plan_v2</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, package_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="version.md#0x1_version">version</a>: u64, enforced: bool)
+<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_submit_upgrade_plan_v2">submit_upgrade_plan_v2</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, package_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, version: u64, enforced: bool)
 </code></pre>
 
 
@@ -699,12 +699,12 @@ extract out UpgradePlanCapability from <code><a href="../../move-stdlib/doc/sign
 <pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_submit_upgrade_plan_v2">submit_upgrade_plan_v2</a>(
     <a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     package_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    <a href="version.md#0x1_version">version</a>: u64,
+    version: u64,
     enforced: bool
 ) <b>acquires</b> <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_TwoPhaseUpgradeV2">TwoPhaseUpgradeV2</a>, <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_UpgradePlanCapability">UpgradePlanCapability</a>, <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a> {
     <b>let</b> account_address = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>);
     <b>let</b> cap = <b>borrow_global</b>&lt;<a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_UpgradePlanCapability">UpgradePlanCapability</a>&gt;(account_address);
-    <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_submit_upgrade_plan_with_cap_v2">submit_upgrade_plan_with_cap_v2</a>(cap, package_hash, <a href="version.md#0x1_version">version</a>, enforced);
+    <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_submit_upgrade_plan_with_cap_v2">submit_upgrade_plan_with_cap_v2</a>(cap, package_hash, version, enforced);
 }
 </code></pre>
 
@@ -718,7 +718,7 @@ extract out UpgradePlanCapability from <code><a href="../../move-stdlib/doc/sign
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_submit_upgrade_plan_with_cap_v2">submit_upgrade_plan_with_cap_v2</a>(cap: &<a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_UpgradePlanCapability">stc_transaction_package_validation::UpgradePlanCapability</a>, package_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="version.md#0x1_version">version</a>: u64, enforced: bool)
+<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_submit_upgrade_plan_with_cap_v2">submit_upgrade_plan_with_cap_v2</a>(cap: &<a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_UpgradePlanCapability">stc_transaction_package_validation::UpgradePlanCapability</a>, package_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, version: u64, enforced: bool)
 </code></pre>
 
 
@@ -730,7 +730,7 @@ extract out UpgradePlanCapability from <code><a href="../../move-stdlib/doc/sign
 <pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_submit_upgrade_plan_with_cap_v2">submit_upgrade_plan_with_cap_v2</a>(
     cap: &<a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_UpgradePlanCapability">UpgradePlanCapability</a>,
     package_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    <a href="version.md#0x1_version">version</a>: u64,
+    version: u64,
     enforced: bool
 ) <b>acquires</b> <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_TwoPhaseUpgradeV2">TwoPhaseUpgradeV2</a>, <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a> {
     <b>let</b> package_address = cap.account_address;
@@ -740,7 +740,7 @@ extract out UpgradePlanCapability from <code><a href="../../move-stdlib/doc/sign
     );
     <b>let</b> tpu = <b>borrow_global_mut</b>&lt;<a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_TwoPhaseUpgradeV2">TwoPhaseUpgradeV2</a>&gt;(package_address);
     <b>let</b> active_after_time = <a href="timestamp.md#0x1_timestamp_now_milliseconds">timestamp::now_milliseconds</a>() + tpu.config.min_time_limit;
-    tpu.plan = <a href="../../move-stdlib/doc/option.md#0x1_option_some">option::some</a>(<a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_UpgradePlanV2">UpgradePlanV2</a> { package_hash, active_after_time, <a href="version.md#0x1_version">version</a>, enforced });
+    tpu.plan = <a href="../../move-stdlib/doc/option.md#0x1_option_some">option::some</a>(<a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_UpgradePlanV2">UpgradePlanV2</a> { package_hash, active_after_time, version, enforced });
 }
 </code></pre>
 
@@ -979,12 +979,12 @@ Check againest on the given package data.
         <b>let</b> plan = <a href="../../move-stdlib/doc/option.md#0x1_option_borrow">option::borrow</a>(&tpu.plan);
         <a href="on_chain_config.md#0x1_on_chain_config_set_with_capability">on_chain_config::set_with_capability</a>&lt;<a href="stc_version.md#0x1_stc_version_Version">stc_version::Version</a>&gt;(
             &<b>mut</b> tpu.version_cap,
-            <a href="stc_version.md#0x1_stc_version_new_version">stc_version::new_version</a>(plan.<a href="version.md#0x1_version">version</a>)
+            <a href="stc_version.md#0x1_stc_version_new_version">stc_version::new_version</a>(plan.version)
         );
         <a href="event.md#0x1_event_emit_event">event::emit_event</a>&lt;<a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_UpgradeEvent">Self::UpgradeEvent</a>&gt;(&<b>mut</b> tpu.upgrade_event, <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_UpgradeEvent">UpgradeEvent</a> {
             package_address,
             package_hash: *&plan.package_hash,
-            <a href="version.md#0x1_version">version</a>: plan.<a href="version.md#0x1_version">version</a>
+            version: plan.version
         });
     };
     tpu.plan = <a href="../../move-stdlib/doc/option.md#0x1_option_none">option::none</a>&lt;<a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_UpgradePlanV2">UpgradePlanV2</a>&gt;();
@@ -1016,7 +1016,7 @@ Check againest on the given package data.
     package_address: <b>address</b>,
     package_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;
 ) <b>acquires</b> <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_TwoPhaseUpgradeV2">TwoPhaseUpgradeV2</a>, <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a> {
-    // Can only be invoked by <a href="genesis.md#0x1_genesis">genesis</a> <a href="account.md#0x1_account">account</a>
+    // Can only be invoked by genesis <a href="account.md#0x1_account">account</a>
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);
     <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_check_package_txn_v2">check_package_txn_v2</a>(txn_sender, package_address, package_hash);
 }
@@ -1048,7 +1048,7 @@ Package txn finished, and clean UpgradePlan
     package_address: <b>address</b>,
     success: bool
 ) <b>acquires</b> <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_TwoPhaseUpgradeV2">TwoPhaseUpgradeV2</a>, <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a> {
-    // Can only be invoked by <a href="genesis.md#0x1_genesis">genesis</a> <a href="account.md#0x1_account">account</a>
+    // Can only be invoked by genesis <a href="account.md#0x1_account">account</a>
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);
     <b>let</b> strategy = <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_get_module_upgrade_strategy">get_module_upgrade_strategy</a>(package_address);
     <b>if</b> (strategy == <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_STRATEGY_TWO_PHASE">STRATEGY_TWO_PHASE</a>) {
@@ -1152,7 +1152,7 @@ Package txn finished, and clean UpgradePlan
 ### Function `submit_upgrade_plan_v2`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_submit_upgrade_plan_v2">submit_upgrade_plan_v2</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, package_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="version.md#0x1_version">version</a>: u64, enforced: bool)
+<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_submit_upgrade_plan_v2">submit_upgrade_plan_v2</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, package_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, version: u64, enforced: bool)
 </code></pre>
 
 
@@ -1175,7 +1175,7 @@ Package txn finished, and clean UpgradePlan
 ### Function `submit_upgrade_plan_with_cap_v2`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_submit_upgrade_plan_with_cap_v2">submit_upgrade_plan_with_cap_v2</a>(cap: &<a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_UpgradePlanCapability">stc_transaction_package_validation::UpgradePlanCapability</a>, package_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="version.md#0x1_version">version</a>: u64, enforced: bool)
+<pre><code><b>public</b> <b>fun</b> <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_submit_upgrade_plan_with_cap_v2">submit_upgrade_plan_with_cap_v2</a>(cap: &<a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_UpgradePlanCapability">stc_transaction_package_validation::UpgradePlanCapability</a>, package_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, version: u64, enforced: bool)
 </code></pre>
 
 

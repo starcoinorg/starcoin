@@ -6,6 +6,9 @@
 <code><a href="vm_config.md#0x1_vm_config_VMConfig">VMConfig</a></code> keep track of VM related configuration, like gas schedule.
 
 
+-  [Struct `GasEntry`](#0x1_vm_config_GasEntry)
+-  [Resource `GasSchedule`](#0x1_vm_config_GasSchedule)
+-  [Resource `GasScheduleV2`](#0x1_vm_config_GasScheduleV2)
 -  [Struct `VMConfig`](#0x1_vm_config_VMConfig)
 -  [Function `initialize`](#0x1_vm_config_initialize)
 -  [Function `new_from_blob`](#0x1_vm_config_new_from_blob)
@@ -13,13 +16,106 @@
     -  [Function `initialize`](#@Specification_0_initialize)
 
 
-<pre><code><b>use</b> <a href="gas_schedule.md#0x1_gas_schedule">0x1::gas_schedule</a>;
-<b>use</b> <a href="on_chain_config.md#0x1_on_chain_config">0x1::on_chain_config</a>;
+<pre><code><b>use</b> <a href="on_chain_config.md#0x1_on_chain_config">0x1::on_chain_config</a>;
+<b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 <b>use</b> <a href="system_addresses.md#0x1_system_addresses">0x1::system_addresses</a>;
 <b>use</b> <a href="util.md#0x1_util">0x1::util</a>;
 </code></pre>
 
 
+
+<a id="0x1_vm_config_GasEntry"></a>
+
+## Struct `GasEntry`
+
+
+
+<pre><code><b>struct</b> <a href="vm_config.md#0x1_vm_config_GasEntry">GasEntry</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>key: <a href="../../move-stdlib/doc/string.md#0x1_string_String">string::String</a></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>val: u64</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
+<a id="0x1_vm_config_GasSchedule"></a>
+
+## Resource `GasSchedule`
+
+
+
+<pre><code><b>struct</b> <a href="vm_config.md#0x1_vm_config_GasSchedule">GasSchedule</a> <b>has</b> <b>copy</b>, drop, key
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>entries: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="vm_config.md#0x1_vm_config_GasEntry">vm_config::GasEntry</a>&gt;</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
+<a id="0x1_vm_config_GasScheduleV2"></a>
+
+## Resource `GasScheduleV2`
+
+
+
+<pre><code><b>struct</b> <a href="vm_config.md#0x1_vm_config_GasScheduleV2">GasScheduleV2</a> <b>has</b> <b>copy</b>, drop, store, key
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>feature_version: u64</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>entries: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="vm_config.md#0x1_vm_config_GasEntry">vm_config::GasEntry</a>&gt;</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
 
 <a id="0x1_vm_config_VMConfig"></a>
 
@@ -40,7 +136,7 @@ The struct to hold all config data needed to operate the VM.
 
 <dl>
 <dt>
-<code><a href="gas_schedule.md#0x1_gas_schedule">gas_schedule</a>: <a href="gas_schedule.md#0x1_gas_schedule_GasScheduleV2">gas_schedule::GasScheduleV2</a></code>
+<code>gas_schedule: <a href="vm_config.md#0x1_vm_config_GasScheduleV2">vm_config::GasScheduleV2</a></code>
 </dt>
 <dd>
 
@@ -70,13 +166,12 @@ Initialize the table under the genesis account
     <a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     gas_schedule_blob: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
 ) {
-    // CoreAddresses::assert_genesis_address(<a href="account.md#0x1_account">account</a>);
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);
-    <b>let</b> <a href="gas_schedule.md#0x1_gas_schedule">gas_schedule</a>: GasScheduleV2 = <a href="util.md#0x1_util_from_bytes">util::from_bytes</a>(gas_schedule_blob);
+    <b>let</b> gas_schedule  = <a href="util.md#0x1_util_from_bytes">util::from_bytes</a>&lt;<a href="vm_config.md#0x1_vm_config_GasScheduleV2">GasScheduleV2</a>&gt;(gas_schedule_blob);
     <a href="on_chain_config.md#0x1_on_chain_config_publish_new_config">on_chain_config::publish_new_config</a>&lt;<a href="vm_config.md#0x1_vm_config_VMConfig">VMConfig</a>&gt;(
         <a href="account.md#0x1_account">account</a>,
         <a href="vm_config.md#0x1_vm_config_VMConfig">VMConfig</a> {
-            <a href="gas_schedule.md#0x1_gas_schedule">gas_schedule</a>,
+            gas_schedule,
         },
     );
 }

@@ -373,7 +373,7 @@ The runtime always runs this before executing the transactions in a block.
 ) <b>acquires</b> <a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a> {
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_block.md#0x1_stc_block_block_prologue">stc_block::block_prologue</a> | Entered"));
 
-    // Can only be invoked by <a href="genesis.md#0x1_genesis">genesis</a> <a href="account.md#0x1_account">account</a>
+    // Can only be invoked by genesis <a href="account.md#0x1_account">account</a>
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(&<a href="account.md#0x1_account">account</a>);
 
     // Check that the chain ID stored on-chain matches the chain ID
@@ -383,13 +383,13 @@ The runtime always runs this before executing the transactions in a block.
         <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="stc_block.md#0x1_stc_block_EPROLOGUE_BAD_CHAIN_ID">EPROLOGUE_BAD_CHAIN_ID</a>)
     );
 
-    // deal <b>with</b> previous <a href="block.md#0x1_block">block</a> first.
+    // deal <b>with</b> previous block first.
     <b>let</b> txn_fee = <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_distribute_transaction_fees">stc_transaction_fee::distribute_transaction_fees</a>&lt;STC&gt;(&<a href="account.md#0x1_account">account</a>);
 
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_block.md#0x1_stc_block_block_prologue">stc_block::block_prologue</a> | txn_fee"));
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="coin.md#0x1_coin_value">coin::value</a>(&txn_fee));
 
-    // then deal <b>with</b> current <a href="block.md#0x1_block">block</a>.
+    // then deal <b>with</b> current block.
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_block.md#0x1_stc_block_block_prologue">stc_block::block_prologue</a> | <a href="timestamp.md#0x1_timestamp_update_global_time">timestamp::update_global_time</a>"));
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="timestamp.md#0x1_timestamp">timestamp</a>);
     <a href="timestamp.md#0x1_timestamp_update_global_time">timestamp::update_global_time</a>(&<a href="account.md#0x1_account">account</a>, <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(&<a href="account.md#0x1_account">account</a>), <a href="timestamp.md#0x1_timestamp">timestamp</a> * 1000);
@@ -406,7 +406,7 @@ The runtime always runs this before executing the transactions in a block.
 
     <b>let</b> reward = <a href="epoch.md#0x1_epoch_adjust_epoch">epoch::adjust_epoch</a>(&<a href="account.md#0x1_account">account</a>, number, <a href="timestamp.md#0x1_timestamp">timestamp</a>, uncles, parent_gas_used);
 
-    // pass in previous <a href="block.md#0x1_block">block</a> gas fees.
+    // pass in previous block gas fees.
     <a href="block_reward.md#0x1_block_reward_process_block_reward">block_reward::process_block_reward</a>(&<a href="account.md#0x1_account">account</a>, number, reward, author, auth_key_vec, txn_fee);
 
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_block.md#0x1_stc_block_block_prologue">stc_block::block_prologue</a> | Exited"));
@@ -448,7 +448,7 @@ Call at block prologue
 
     <b>let</b> block_metadata_ref = <b>borrow_global_mut</b>&lt;<a href="stc_block.md#0x1_stc_block_BlockMetadata">BlockMetadata</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>());
 
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_block.md#0x1_stc_block_process_block_metadata">stc_block::process_block_metadata</a> | <b>to</b> check <a href="block.md#0x1_block">block</a> number"));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_block.md#0x1_stc_block_process_block_metadata">stc_block::process_block_metadata</a> | <b>to</b> check block number"));
 
     <b>assert</b>!(number == (block_metadata_ref.number + 1), <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="stc_block.md#0x1_stc_block_EBLOCK_NUMBER_MISMATCH">EBLOCK_NUMBER_MISMATCH</a>));
     block_metadata_ref.number = number;

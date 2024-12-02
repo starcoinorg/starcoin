@@ -366,8 +366,8 @@
 
 <pre><code><b>fun</b> <a href="easy_gas.md#0x1_easy_gas_get_data_source_address">get_data_source_address</a>&lt;TokenT&gt;(): <b>address</b> <b>acquires</b> <a href="easy_gas.md#0x1_easy_gas_GasTokenEntry">GasTokenEntry</a> {
     <b>let</b> token_type_info = <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;TokenT&gt;();
-    <b>let</b> <a href="genesis.md#0x1_genesis">genesis</a> = <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>();
-    <b>let</b> gas_token_entry = <b>borrow_global</b>&lt;<a href="easy_gas.md#0x1_easy_gas_GasTokenEntry">GasTokenEntry</a>&gt;(<a href="genesis.md#0x1_genesis">genesis</a>);
+    <b>let</b> genesis = <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>();
+    <b>let</b> gas_token_entry = <b>borrow_global</b>&lt;<a href="easy_gas.md#0x1_easy_gas_GasTokenEntry">GasTokenEntry</a>&gt;(genesis);
     <b>assert</b>!(<a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_module_name">type_info::module_name</a>(&token_type_info) == *&gas_token_entry.module_name
         && <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_account_address">type_info::account_address</a>(&token_type_info) == *&gas_token_entry.account_address
         && <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_struct_name">type_info::struct_name</a>(&token_type_info) == *&gas_token_entry.struct_name,

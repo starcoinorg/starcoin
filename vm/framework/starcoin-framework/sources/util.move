@@ -1,7 +1,5 @@
 /// Utility functions used by the framework modules.
 module starcoin_framework::util {
-    friend starcoin_framework::code;
-    friend starcoin_framework::gas_schedule;
 
     /// Native function to deserialize a type T.
     ///

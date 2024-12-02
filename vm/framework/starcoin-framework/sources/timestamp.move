@@ -3,11 +3,12 @@
 /// * genesis: to initialize the timestamp
 /// * block: to reach consensus on the global wall clock time
 module starcoin_framework::timestamp {
-    use starcoin_framework::system_addresses;
     use std::error;
+
+    use starcoin_framework::system_addresses;
     use starcoin_std::debug;
 
-    friend starcoin_framework::genesis;
+    // friend starcoin_framework::genesis;
     friend starcoin_framework::stc_genesis;
 
     /// A singleton resource holding the current Unix time in microseconds

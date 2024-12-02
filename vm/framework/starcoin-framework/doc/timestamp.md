@@ -161,10 +161,10 @@ Updates the wall clock time by consensus. Requires VM privilege and will be invo
     <b>let</b> global_timer = <b>borrow_global_mut</b>&lt;<a href="timestamp.md#0x1_timestamp_CurrentTimeMicroseconds">CurrentTimeMicroseconds</a>&gt;(@starcoin_framework);
     //<b>let</b> now = global_timer.microseconds;
     // <b>if</b> (proposer == @starcoin_framework) {
-    //     // NIL <a href="block.md#0x1_block">block</a> <b>with</b> null <b>address</b> <b>as</b> proposer. Timestamp must be equal.
+    //     // NIL block <b>with</b> null <b>address</b> <b>as</b> proposer. Timestamp must be equal.
     //     <b>assert</b>!(now == <a href="timestamp.md#0x1_timestamp">timestamp</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="timestamp.md#0x1_timestamp_EINVALID_TIMESTAMP">EINVALID_TIMESTAMP</a>));
     // } <b>else</b> {
-    // Normal <a href="block.md#0x1_block">block</a>. Time must advance
+    // Normal block. Time must advance
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="timestamp.md#0x1_timestamp_update_global_time">timestamp::update_global_time</a> | Current <b>global</b> time: "));
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&global_timer.microseconds);
     <b>assert</b>!(global_timer.microseconds &lt; <a href="timestamp.md#0x1_timestamp">timestamp</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="timestamp.md#0x1_timestamp_EINVALID_TIMESTAMP">EINVALID_TIMESTAMP</a>));

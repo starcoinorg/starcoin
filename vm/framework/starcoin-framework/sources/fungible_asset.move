@@ -1,18 +1,21 @@
 /// This defines the fungible asset module that can issue fungible asset of any `Metadata` object. The
 /// metadata object can be any object that equipped with `Metadata` resource.
 module starcoin_framework::fungible_asset {
+    use std::error;
+    use std::features;
+    use std::option::{Self, Option};
+    use std::signer;
+    use std::string;
+    use std::string::String;
+
     use starcoin_framework::aggregator_v2::{Self, Aggregator};
     use starcoin_framework::create_signer;
     use starcoin_framework::event;
     use starcoin_framework::function_info::{Self, FunctionInfo};
-    use starcoin_framework::object::{Self, Object, ConstructorRef, DeleteRef, ExtendRef};
-    use std::string;
-    use std::features;
+    use starcoin_framework::object::{Self, ConstructorRef, DeleteRef, ExtendRef, Object};
 
-    use std::error;
-    use std::option::{Self, Option};
-    use std::signer;
-    use std::string::String;
+    #[test_only]
+    use starcoin_framework::account;
 
     friend starcoin_framework::coin;
     friend starcoin_framework::primary_fungible_store;
@@ -1178,9 +1181,6 @@ module starcoin_framework::fungible_asset {
         let object_signer = create_signer::create_signer(fungible_store_address);
         move_to(&object_signer, ConcurrentFungibleBalance { balance });
     }
-
-    #[test_only]
-    use starcoin_framework::account;
 
     #[test_only]
     #[resource_group_member(group = starcoin_framework::object::ObjectGroup)]

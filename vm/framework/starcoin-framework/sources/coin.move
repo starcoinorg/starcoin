@@ -5,26 +5,23 @@ module starcoin_framework::coin {
     use std::option::{Self, Option};
     use std::signer;
     use std::string::{Self, String};
-    use starcoin_std::debug;
-    use starcoin_std::table::{Self, Table};
 
     use starcoin_framework::account;
-    use starcoin_framework::aggregator_factory;
     use starcoin_framework::aggregator::{Self, Aggregator};
-    use starcoin_framework::event::{Self, EventHandle};
-    use starcoin_framework::guid;
-    use starcoin_framework::optional_aggregator::{Self, OptionalAggregator};
-    use starcoin_framework::system_addresses;
-
-    use starcoin_framework::fungible_asset::{Self, FungibleAsset, Metadata, MintRef, TransferRef, BurnRef};
-    use starcoin_framework::object::{Self, Object, object_address};
-    use starcoin_framework::primary_fungible_store;
-    use starcoin_std::type_info::{Self, TypeInfo, type_name};
+    use starcoin_framework::aggregator_factory;
     use starcoin_framework::create_signer;
+    use starcoin_framework::event::{Self, EventHandle};
+    use starcoin_framework::fungible_asset::{Self, BurnRef, FungibleAsset, Metadata, MintRef, TransferRef};
+    use starcoin_framework::guid;
+    use starcoin_framework::object::{Self, Object, object_address};
+    use starcoin_framework::optional_aggregator::{Self, OptionalAggregator};
+    use starcoin_framework::primary_fungible_store;
+    use starcoin_framework::system_addresses;
+    use starcoin_std::debug;
+    use starcoin_std::table::{Self, Table};
+    use starcoin_std::type_info::{Self, type_name, TypeInfo};
 
     friend starcoin_framework::starcoin_coin;
-    friend starcoin_framework::genesis;
-    friend starcoin_framework::transaction_fee;
 
     //
     // Errors.

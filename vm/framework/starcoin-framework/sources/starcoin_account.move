@@ -1,22 +1,26 @@
 module starcoin_framework::starcoin_account {
-    use starcoin_framework::account::{Self, new_event_handle};
-    use starcoin_framework::starcoin_coin::STC;
-    use starcoin_framework::coin::{Self, Coin};
-    use starcoin_framework::create_signer::create_signer;
-    use starcoin_framework::event::{EventHandle, emit_event, emit};
-    use starcoin_framework::fungible_asset::{Self, Metadata, BurnRef};
-    use starcoin_framework::primary_fungible_store;
-    use starcoin_framework::object;
-
     use std::error;
     use std::features;
     use std::signer;
     use std::vector;
 
-    friend starcoin_framework::genesis;
+    use starcoin_framework::account::{Self, new_event_handle};
+    use starcoin_framework::coin::{Self, Coin};
+    use starcoin_framework::create_signer::create_signer;
+    use starcoin_framework::event::{emit, emit_event, EventHandle};
+    use starcoin_framework::fungible_asset::{Self, BurnRef, Metadata};
+    use starcoin_framework::object;
+    use starcoin_framework::primary_fungible_store;
+    use starcoin_framework::starcoin_coin::STC;
+
+    #[test_only]
+    use std::string::utf8;
+    #[test_only]
+    use starcoin_framework::account::create_account_for_test;
+    #[test_only]
+    use starcoin_std::from_bcs;
+
     friend starcoin_framework::resource_account;
-    friend starcoin_framework::transaction_fee;
-    friend starcoin_framework::transaction_validation;
 
     /// Account does not exist.
     const EACCOUNT_NOT_FOUND: u64 = 1;
@@ -248,13 +252,6 @@ module starcoin_framework::starcoin_account {
     }
 
     // tests
-
-    #[test_only]
-    use starcoin_std::from_bcs;
-    #[test_only]
-    use std::string::utf8;
-    #[test_only]
-    use starcoin_framework::account::create_account_for_test;
 
     #[test_only]
     struct FakeCoin {}

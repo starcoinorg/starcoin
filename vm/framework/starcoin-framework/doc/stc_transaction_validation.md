@@ -63,15 +63,6 @@
 
 
 
-<a id="0x1_stc_transaction_validation_EDEPRECATED_FUNCTION"></a>
-
-
-
-<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>: u64 = 1019;
-</code></pre>
-
-
-
 <a id="0x1_stc_transaction_validation_EBAD_TRANSACTION_FEE_TOKEN"></a>
 
 
@@ -104,6 +95,15 @@
 
 
 <pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_ECOIN_DEPOSIT_IS_ZERO">ECOIN_DEPOSIT_IS_ZERO</a>: u64 = 1015;
+</code></pre>
+
+
+
+<a id="0x1_stc_transaction_validation_EDEPRECATED_FUNCTION"></a>
+
+
+
+<pre><code><b>const</b> <a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EDEPRECATED_FUNCTION">EDEPRECATED_FUNCTION</a>: u64 = 1019;
 </code></pre>
 
 
@@ -251,7 +251,7 @@ It verifies:
 ) {
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"transaction_validation::prologue | Entered"));
 
-    // Can only be invoked by <a href="genesis.md#0x1_genesis">genesis</a> <a href="account.md#0x1_account">account</a>
+    // Can only be invoked by genesis <a href="account.md#0x1_account">account</a>
     // <b>assert</b>!(
     //     <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(&<a href="account.md#0x1_account">account</a>) == <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>(),
     //     error::requires_address(<a href="stc_transaction_validation.md#0x1_stc_transaction_validation_EPROLOGUE_ACCOUNT_DOES_NOT_EXIST">EPROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>),
@@ -505,11 +505,11 @@ It collects gas and bumps the sequence number
     };
 
     <b>if</b> (transaction_fee_amount &gt; 0) {
-        <b>let</b> <a href="transaction_fee.md#0x1_transaction_fee">transaction_fee</a> = <a href="coin.md#0x1_coin_withdraw">coin::withdraw</a>&lt;STC&gt;(
+        <b>let</b> transaction_fee = <a href="coin.md#0x1_coin_withdraw">coin::withdraw</a>&lt;STC&gt;(
             &<a href="create_signer.md#0x1_create_signer_create_signer">create_signer::create_signer</a>(txn_sender),
             (transaction_fee_amount <b>as</b> u64)
         );
-        <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_pay_fee">stc_transaction_fee::pay_fee</a>(<a href="transaction_fee.md#0x1_transaction_fee">transaction_fee</a>);
+        <a href="stc_transaction_fee.md#0x1_stc_transaction_fee_pay_fee">stc_transaction_fee::pay_fee</a>(transaction_fee);
     };
 }
 </code></pre>

@@ -55,7 +55,7 @@ move_to(&create_signer_with_capability(&lp.cap), LiquidityCoin<X, Y>{ mint, burn
 
 A dev wishes to have an account dedicated to managing a contract. The contract itself does not
 require signer post initialization. The dev could do the following:
-1. Create a new account using <code><a href="resource_account.md#0x1_resource_account_create_resource_account_and_publish_package">resource_account::create_resource_account_and_publish_package</a></code>.
+1. Create a new account using <code>resource_account::create_resource_account_and_publish_package</code>.
 This creates the account and publishes the package for that account.
 2. At a later point in time, the account creator can move the signer capability to the module.
 
@@ -81,7 +81,6 @@ module.resource_signer_cap = option::some(resource_signer_cap);
 -  [Constants](#@Constants_2)
 -  [Function `create_resource_account`](#0x1_resource_account_create_resource_account)
 -  [Function `create_resource_account_and_fund`](#0x1_resource_account_create_resource_account_and_fund)
--  [Function `create_resource_account_and_publish_package`](#0x1_resource_account_create_resource_account_and_publish_package)
 -  [Function `rotate_account_authentication_key_and_store_capability`](#0x1_resource_account_rotate_account_authentication_key_and_store_capability)
 -  [Function `retrieve_resource_account_cap`](#0x1_resource_account_retrieve_resource_account_cap)
 -  [Specification](#@Specification_3)
@@ -89,13 +88,11 @@ module.resource_signer_cap = option::some(resource_signer_cap);
     -  [Module-level Specification](#module-level-spec)
     -  [Function `create_resource_account`](#@Specification_3_create_resource_account)
     -  [Function `create_resource_account_and_fund`](#@Specification_3_create_resource_account_and_fund)
-    -  [Function `create_resource_account_and_publish_package`](#@Specification_3_create_resource_account_and_publish_package)
     -  [Function `rotate_account_authentication_key_and_store_capability`](#@Specification_3_rotate_account_authentication_key_and_store_capability)
     -  [Function `retrieve_resource_account_cap`](#@Specification_3_retrieve_resource_account_cap)
 
 
 <pre><code><b>use</b> <a href="account.md#0x1_account">0x1::account</a>;
-<b>use</b> <a href="code.md#0x1_code">0x1::code</a>;
 <b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
 <b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
@@ -246,44 +243,6 @@ used for resource accounts that need access to <code>Coin&lt;StarcoinCoin&gt;</c
 
 </details>
 
-<a id="0x1_resource_account_create_resource_account_and_publish_package"></a>
-
-## Function `create_resource_account_and_publish_package`
-
-Creates a new resource account, publishes the package under this account transaction under
-this account and leaves the signer cap readily available for pickup.
-
-
-<pre><code><b>public</b> entry <b>fun</b> <a href="resource_account.md#0x1_resource_account_create_resource_account_and_publish_package">create_resource_account_and_publish_package</a>(origin: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, seed: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, metadata_serialized: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="code.md#0x1_code">code</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> entry <b>fun</b> <a href="resource_account.md#0x1_resource_account_create_resource_account_and_publish_package">create_resource_account_and_publish_package</a>(
-    origin: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
-    seed: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    metadata_serialized: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    <a href="code.md#0x1_code">code</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
-) <b>acquires</b> <a href="resource_account.md#0x1_resource_account_Container">Container</a> {
-    <b>let</b> (resource, resource_signer_cap) = <a href="account.md#0x1_account_create_resource_account">account::create_resource_account</a>(origin, seed);
-    starcoin_framework::code::publish_package_txn(&resource, metadata_serialized, <a href="code.md#0x1_code">code</a>);
-    <a href="resource_account.md#0x1_resource_account_rotate_account_authentication_key_and_store_capability">rotate_account_authentication_key_and_store_capability</a>(
-        origin,
-        resource,
-        resource_signer_cap,
-        <a href="resource_account.md#0x1_resource_account_ZERO_AUTH_KEY">ZERO_AUTH_KEY</a>,
-    );
-}
-</code></pre>
-
-
-
-</details>
-
 <a id="0x1_resource_account_rotate_account_authentication_key_and_store_capability"></a>
 
 ## Function `rotate_account_authentication_key_and_store_capability`
@@ -363,7 +322,7 @@ the SignerCapability.
     };
 
     <b>if</b> (empty_container) {
-        <b>let</b> container = <b>move_from</b>(source_addr);
+        <b>let</b> container = <b>move_from</b>&lt;<a href="resource_account.md#0x1_resource_account_Container">Container</a>&gt;(source_addr);
         <b>let</b> <a href="resource_account.md#0x1_resource_account_Container">Container</a> { store } = container;
         <a href="../../starcoin-stdlib/doc/simple_map.md#0x1_simple_map_destroy_empty">simple_map::destroy_empty</a>(store);
     };
@@ -512,26 +471,6 @@ the SignerCapability.
 <b>aborts_if</b> <a href="coin.md#0x1_coin_spec_is_account_registered">coin::spec_is_account_registered</a>&lt;STC&gt;(resource_addr) && coin_store_resource.frozen;
 // This enforces <a id="high-level-req-3" href="#high-level-req">high-level requirement 3</a>:
 <b>ensures</b> <b>exists</b>&lt;starcoin_framework::coin::CoinStore&lt;STC&gt;&gt;(resource_addr);
-</code></pre>
-
-
-
-<a id="@Specification_3_create_resource_account_and_publish_package"></a>
-
-### Function `create_resource_account_and_publish_package`
-
-
-<pre><code><b>public</b> entry <b>fun</b> <a href="resource_account.md#0x1_resource_account_create_resource_account_and_publish_package">create_resource_account_and_publish_package</a>(origin: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, seed: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, metadata_serialized: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="code.md#0x1_code">code</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;)
-</code></pre>
-
-
-
-
-<pre><code><b>pragma</b> verify = <b>false</b>;
-<b>let</b> source_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(origin);
-<b>let</b> resource_addr = <a href="account.md#0x1_account_spec_create_resource_address">account::spec_create_resource_address</a>(source_addr, seed);
-<b>let</b> optional_auth_key = <a href="resource_account.md#0x1_resource_account_ZERO_AUTH_KEY">ZERO_AUTH_KEY</a>;
-<b>include</b> <a href="resource_account.md#0x1_resource_account_RotateAccountAuthenticationKeyAndStoreCapabilityAbortsIfWithoutAccountLimit">RotateAccountAuthenticationKeyAndStoreCapabilityAbortsIfWithoutAccountLimit</a>;
 </code></pre>
 
 
