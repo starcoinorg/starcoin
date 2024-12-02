@@ -14,7 +14,9 @@ use tokio::{
     task::JoinHandle,
 };
 
-#[derive(Debug)]
+use super::worker_scheduler::WorkerScheduler;
+
+#[derive(Debug, Clone)]
 pub enum ExecuteState {
     Executing(HashValue),
     Executed(Box<ExecutedBlock>),
@@ -29,6 +31,24 @@ pub struct DagBlockExecutor {
     storage: Arc<dyn Store>,
     vm_metrics: Option<VMMetrics>,
     dag: BlockDAG,
+    worker_scheduler: Arc<WorkerScheduler>,
+}
+
+struct ExecutorDeconstructor {
+    worker_scheduler: Arc<WorkerScheduler>,
+}
+
+impl ExecutorDeconstructor {
+    pub fn new(worker_scheduler: Arc<WorkerScheduler>) -> Self {
+        worker_scheduler.worker_start();
+        Self { worker_scheduler }
+    }
+}
+
+impl Drop for ExecutorDeconstructor {
+    fn drop(&mut self) {
+        self.worker_scheduler.worker_exits();
+    }
 }
 
 impl DagBlockExecutor {
@@ -39,6 +59,7 @@ impl DagBlockExecutor {
         storage: Arc<dyn Store>,
         vm_metrics: Option<VMMetrics>,
         dag: BlockDAG,
+        worker_scheduler: Arc<WorkerScheduler>,
     ) -> anyhow::Result<(Sender<Option<Block>>, Self)> {
         let (sender_for_main, receiver) = mpsc::channel::<Option<Block>>(buffer_size);
         let executor = Self {
@@ -48,6 +69,7 @@ impl DagBlockExecutor {
             storage,
             vm_metrics,
             dag,
+            worker_scheduler,
         };
         anyhow::Ok((sender_for_main, executor))
     }
@@ -76,8 +98,13 @@ impl DagBlockExecutor {
 
     pub fn start_to_execute(mut self) -> anyhow::Result<JoinHandle<()>> {
         let handle = tokio::spawn(async move {
+            let _ = ExecutorDeconstructor::new(self.worker_scheduler.clone());
             let mut chain = None;
             loop {
+                if self.worker_scheduler.check_if_stop().await {
+                    info!("sync worker scheduler stopped");
+                    return;
+                }
                 match self.receiver.recv().await {
                     Some(op_block) => {
                         let block = match op_block {
@@ -97,6 +124,10 @@ impl DagBlockExecutor {
                         );
 
                         loop {
+                            if self.worker_scheduler.check_if_stop().await {
+                                info!("sync worker scheduler stopped");
+                                return;
+                            }
                             match Self::waiting_for_parents(
                                 &self.dag,
                                 self.storage.clone(),

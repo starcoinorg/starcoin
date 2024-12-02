@@ -16,7 +16,10 @@ use crate::{
     tasks::continue_execute_absent_block::ContinueChainOperator,
 };
 
-use super::executor::{DagBlockExecutor, ExecuteState};
+use super::{
+    executor::{DagBlockExecutor, ExecuteState},
+    worker_scheduler::WorkerScheduler,
+};
 
 struct DagBlockWorker {
     pub sender_to_executor: Sender<Option<Block>>,
@@ -34,6 +37,7 @@ pub struct DagBlockSender<'a> {
     vm_metrics: Option<VMMetrics>,
     dag: BlockDAG,
     notifier: &'a mut dyn ContinueChainOperator,
+    worker_scheduler: Arc<WorkerScheduler>,
 }
 
 impl<'a> DagBlockSender<'a> {
@@ -45,6 +49,7 @@ impl<'a> DagBlockSender<'a> {
         vm_metrics: Option<VMMetrics>,
         dag: BlockDAG,
         notifier: &'a mut dyn ContinueChainOperator,
+        worker_scheduler: Arc<WorkerScheduler>,
     ) -> Self {
         Self {
             sync_dag_store,
@@ -55,6 +60,7 @@ impl<'a> DagBlockSender<'a> {
             vm_metrics,
             dag,
             notifier,
+            worker_scheduler,
         }
     }
 
@@ -141,6 +147,7 @@ impl<'a> DagBlockSender<'a> {
                 self.storage.clone(),
                 self.vm_metrics.clone(),
                 self.dag.clone(),
+                self.worker_scheduler.clone(),
             )?;
 
             self.executors.push(DagBlockWorker {

@@ -15,7 +15,7 @@ use stream_task::{
     CustomErrorHandle, Generator, TaskError, TaskEventHandle, TaskGenerator, TaskHandle, TaskState,
 };
 
-use crate::store::sync_dag_store::SyncDagStore;
+use crate::{parallel::worker_scheduler::WorkerScheduler, store::sync_dag_store::SyncDagStore};
 
 use super::{
     AccumulatorCollector, BlockAccumulatorSyncTask, BlockCollector, BlockConnectedEventHandle,
@@ -39,6 +39,7 @@ where
     custom_error_handle: Arc<dyn CustomErrorHandle>,
     dag: BlockDAG,
     sync_dag_store: SyncDagStore,
+    worker_scheduler: Arc<WorkerScheduler>,
 }
 
 impl<H, F, N> InnerSyncTask<H, F, N>
@@ -59,6 +60,7 @@ where
         custom_error_handle: Arc<dyn CustomErrorHandle>,
         dag: BlockDAG,
         sync_dag_store: SyncDagStore,
+        worker_scheduler: Arc<WorkerScheduler>,
     ) -> Self {
         Self {
             ancestor,
@@ -72,6 +74,7 @@ where
             custom_error_handle,
             dag,
             sync_dag_store,
+            worker_scheduler,
         }
     }
 
@@ -155,6 +158,7 @@ where
                 self.storage.clone(),
                 self.fetcher.clone(),
                 self.sync_dag_store.clone(),
+                self.worker_scheduler.clone(),
             );
 
             Ok(TaskGenerator::new(

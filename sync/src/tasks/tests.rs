@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #![allow(clippy::arithmetic_side_effects)]
+use crate::parallel::worker_scheduler::WorkerScheduler;
 use crate::store::sync_dag_store::SyncDagStore;
 use crate::tasks::block_sync_task::SyncBlockData;
 use crate::tasks::mock::{ErrorStrategy, MockBlockIdFetcher, SyncNodeMocker};
@@ -71,6 +72,9 @@ pub async fn test_failed_block() -> Result<()> {
         block_info: chain_status.info,
         peers: vec![PeerId::random()],
     };
+    let worker_scheduler = Arc::new(WorkerScheduler::new());
+    worker_scheduler.tell_worker_to_stop().await;
+    worker_scheduler.wait_for_worker().await;
     let mut block_collector = BlockCollector::new_with_handle(
         chain_info.status().info.clone(),
         target,
@@ -81,7 +85,9 @@ pub async fn test_failed_block() -> Result<()> {
         storage.clone(),
         Arc::new(fetcher),
         sync_dag_store,
+        worker_scheduler.clone(),
     );
+    worker_scheduler.tell_worker_to_start().await;
     let header = BlockHeaderBuilder::random().with_number(1).build();
     let body = BlockBody::new(Vec::new(), None);
     let failed_block = Block::new(header, body);
@@ -113,6 +119,8 @@ pub async fn test_full_sync_fork() -> Result<()> {
     let storage = node2.chain().get_storage();
     let (sender, receiver) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
+    node2.worker_scheduler.tell_worker_to_stop().await;
+    node2.worker_scheduler.wait_for_worker().await;
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
@@ -128,7 +136,9 @@ pub async fn test_full_sync_fork() -> Result<()> {
         None,
         dag.clone(),
         node2.sync_dag_store.clone(),
+        node2.worker_scheduler.clone(),
     )?;
+    node2.worker_scheduler.tell_worker_to_start().await;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
     let mut node2 = join_handle.await;
@@ -148,6 +158,8 @@ pub async fn test_full_sync_fork() -> Result<()> {
     let (sender, receiver) = unbounded();
     let target = arc_node1.sync_target();
     let (sender_2, _receiver_2) = unbounded();
+    node2.worker_scheduler.tell_worker_to_stop().await;
+    node2.worker_scheduler.wait_for_worker().await;
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
@@ -163,7 +175,9 @@ pub async fn test_full_sync_fork() -> Result<()> {
         None,
         dag,
         node2.sync_dag_store.clone(),
+        node2.worker_scheduler.clone(),
     )?;
+    node2.worker_scheduler.tell_worker_to_start().await;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
     let node2 = join_handle.await;
@@ -199,6 +213,8 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
     let storage = node2.chain().get_storage();
     let (sender, receiver) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
+    node2.worker_scheduler.tell_worker_to_stop().await;
+    node2.worker_scheduler.wait_for_worker().await;
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
@@ -214,7 +230,9 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
         None,
         dag,
         node2.sync_dag_store.clone(),
+        node2.worker_scheduler.clone(),
     )?;
+    node2.worker_scheduler.tell_worker_to_start().await;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
     let node2 = join_handle.await;
@@ -252,6 +270,8 @@ pub async fn test_full_sync_continue() -> Result<()> {
     let storage = node2.chain().get_storage();
     let (sender, receiver) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
+    node2.worker_scheduler.tell_worker_to_stop().await;
+    node2.worker_scheduler.wait_for_worker().await;
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
@@ -267,7 +287,9 @@ pub async fn test_full_sync_continue() -> Result<()> {
         None,
         dag.clone(),
         node2.sync_dag_store.clone(),
+        node2.worker_scheduler.clone(),
     )?;
+    node2.worker_scheduler.tell_worker_to_start().await;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
     let node2 = join_handle.await;
@@ -291,6 +313,8 @@ pub async fn test_full_sync_continue() -> Result<()> {
     //continue sync
     //TODO find a way to verify continue sync will reuse previous task local block.
     let (sender_2, _receiver_2) = unbounded();
+    node2.worker_scheduler.tell_worker_to_stop().await;
+    node2.worker_scheduler.wait_for_worker().await;
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
@@ -306,8 +330,9 @@ pub async fn test_full_sync_continue() -> Result<()> {
         None,
         dag,
         node2.sync_dag_store.clone(),
+        node2.worker_scheduler.clone(),
     )?;
-
+    node2.worker_scheduler.tell_worker_to_start().await;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
     let node2 = join_handle.await;
@@ -345,6 +370,8 @@ pub async fn test_full_sync_cancel() -> Result<()> {
     let storage = node2.chain().get_storage();
     let (sender, receiver) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
+    node2.worker_scheduler.tell_worker_to_stop().await;
+    node2.worker_scheduler.wait_for_worker().await;
     let (sync_task, task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
@@ -360,13 +387,21 @@ pub async fn test_full_sync_cancel() -> Result<()> {
         None,
         dag,
         node2.sync_dag_store.clone(),
+        node2.worker_scheduler.clone(),
     )?;
+    node2.worker_scheduler.tell_worker_to_start().await;
+    let node2_worker_handle = node2.worker_scheduler.clone();
     let join_handle = node2.process_block_connect_event(receiver).await;
     let sync_join_handle = tokio::task::spawn(sync_task);
 
     Delay::new(Duration::from_millis(100)).await;
 
     task_handle.cancel();
+    node2_worker_handle.tell_worker_to_stop().await;
+    while !node2_worker_handle.check_if_stop().await {
+        println!("wait for worker stop.");
+    }
+
     let sync_result = sync_join_handle.await?;
     assert!(sync_result.is_err());
     assert!(sync_result.err().unwrap().is_canceled());
@@ -837,6 +872,8 @@ async fn test_net_rpc_err() -> Result<()> {
     let storage = node2.chain().get_storage();
     let (sender, receiver) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
+    node2.worker_scheduler.tell_worker_to_stop().await;
+    node2.worker_scheduler.wait_for_worker().await;
     let (sync_task, _task_handle, _task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
@@ -852,7 +889,9 @@ async fn test_net_rpc_err() -> Result<()> {
         None,
         dag,
         node2.sync_dag_store.clone(),
+        node2.worker_scheduler.clone(),
     )?;
+    node2.worker_scheduler.tell_worker_to_start().await;
     let _join_handle = node2.process_block_connect_event(receiver).await;
     let sync_join_handle = tokio::task::spawn(sync_task);
 
@@ -987,7 +1026,11 @@ fn sync_block_in_async_connection(
 
     let local_net = local_node.chain_mocker.net();
     let (local_ancestor_sender, _local_ancestor_receiver) = unbounded();
-
+    let worker_scheduler = Arc::new(WorkerScheduler::new());
+    async_std::task::block_on(async {
+        worker_scheduler.tell_worker_to_stop().await;
+        worker_scheduler.wait_for_worker().await;
+    });
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
@@ -1003,7 +1046,11 @@ fn sync_block_in_async_connection(
         None,
         dag,
         local_node.sync_dag_store.clone(),
+        worker_scheduler.clone(),
     )?;
+    async_std::task::block_on(async {
+        worker_scheduler.tell_worker_to_start().await;
+    });
     let branch = async_std::task::block_on(sync_task)?;
     assert_eq!(branch.current_header().number(), target.target_id.number());
     let target_dag_state = target_node.chain().get_dag_state()?;

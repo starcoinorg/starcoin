@@ -1,5 +1,6 @@
 use crate::{
     block_connector::{BlockConnectorService, CheckBlockConnectorHashValue},
+    parallel::worker_scheduler::WorkerScheduler,
     tasks::full_sync_task,
 };
 use std::sync::Arc;
@@ -19,7 +20,10 @@ async fn sync_block_process(
     local_node: Arc<SyncNodeMocker>,
     registry: &ServiceRef<RegistryService>,
 ) -> Result<(Arc<SyncNodeMocker>, Arc<SyncNodeMocker>)> {
+    let worker_scheduler = Arc::new(WorkerScheduler::new());
     loop {
+        worker_scheduler.tell_worker_to_stop().await;
+        worker_scheduler.wait_for_worker().await;
         let target = target_node.sync_target();
 
         let storage = local_node.chain().get_storage();
@@ -50,7 +54,9 @@ async fn sync_block_process(
             None,
             local_node.chain().dag().clone(),
             local_node.sync_dag_store.clone(),
+            worker_scheduler.clone(),
         )?;
+        worker_scheduler.tell_worker_to_start().await;
         let branch = sync_task.await?;
         info!("checking branch in sync service is the same as target's branch");
         assert_eq!(branch.current_header().id(), target.target_id.id());

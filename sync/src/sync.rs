@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::BlockConnectorService;
+use crate::parallel::worker_scheduler::WorkerScheduler;
 use crate::store::sync_dag_store::{SyncDagStore, SyncDagStoreConfig};
 use crate::sync_metrics::SyncMetrics;
 use crate::tasks::{full_sync_task, AncestorEvent, SyncFetcher};
@@ -65,6 +66,7 @@ pub struct SyncService {
     metrics: Option<SyncMetrics>,
     peer_score_metrics: Option<PeerScoreMetrics>,
     vm_metrics: Option<VMMetrics>,
+    worker_scheduler: Arc<WorkerScheduler>,
 }
 
 impl SyncService {
@@ -92,6 +94,7 @@ impl SyncService {
             .metrics
             .registry()
             .and_then(|registry| PeerScoreMetrics::register(registry).ok());
+        let worker_scheduler = Arc::new(WorkerScheduler::new());
         Ok(Self {
             sync_status: SyncStatus::new(ChainStatus::new(head_block.header, head_block_info)),
             stage: SyncStage::NotStart,
@@ -100,6 +103,7 @@ impl SyncService {
             metrics,
             peer_score_metrics,
             vm_metrics,
+            worker_scheduler,
         })
     }
 
@@ -215,6 +219,8 @@ impl SyncService {
             }
         }
 
+        let worker_scheduler = self.worker_scheduler.clone();
+
         let network = ctx.get_shared::<NetworkServiceRef>()?;
         let storage = self.storage.clone();
         let self_ref = ctx.self_ref();
@@ -226,14 +232,21 @@ impl SyncService {
         let sync_metrics = self.metrics.clone();
         let vm_metrics = self.vm_metrics.clone();
         let dag = ctx.get_shared::<BlockDAG>()?;
-        let sync_dag_store = SyncDagStore::create_from_path(
-            config.storage.sync_dir(),
-            SyncDagStoreConfig::create_with_params(
-                config.storage.cache_size(),
-                RocksdbConfig::default(),
-            ),
-        )?;
+
         let fut = async move {
+            info!("stop the workers in the previous sync task.");
+            worker_scheduler.tell_worker_to_stop().await;
+            info!("waiting for them stopping.");
+            worker_scheduler.wait_for_worker().await;
+            info!("succeed to stop the workers in the previous sync task.");
+
+            let sync_dag_store = SyncDagStore::create_from_path(
+                config.storage.sync_dir(),
+                SyncDagStoreConfig::create_with_params(
+                    config.storage.cache_size(),
+                    RocksdbConfig::default(),
+                ),
+            )?;
             let startup_info = storage
                 .get_startup_info()?
                 .ok_or_else(|| format_err!("Startup info should exist."))?;
@@ -270,6 +283,7 @@ impl SyncService {
                     vm_metrics.clone(),
                     dag,
                     sync_dag_store,
+                    worker_scheduler.clone(),
                 )?;
 
                 self_ref.notify(SyncBeginEvent {
@@ -277,10 +291,12 @@ impl SyncService {
                     task_handle,
                     task_event_handle,
                     peer_selector: rpc_client.selector().clone(),
+                    worker_scheduler: worker_scheduler.clone(),
                 })?;
                 if let Some(sync_task_total) = sync_task_total.as_ref() {
                     sync_task_total.with_label_values(&["start"]).inc();
                 }
+                worker_scheduler.tell_worker_to_start().await;
                 Ok(Some(fut.await?))
             } else {
                 info!("[sync]No best peer to request, current is best.");
@@ -387,7 +403,14 @@ impl SyncService {
 
     fn cancel_task(&mut self) {
         match std::mem::replace(&mut self.stage, SyncStage::Canceling) {
-            SyncStage::Synchronizing(handle) => handle.task_handle.cancel(),
+            SyncStage::Synchronizing(handle) => {
+                handle.task_handle.cancel();
+                tokio::task::block_in_place(|| {
+                    tokio::runtime::Handle::current().block_on(async {
+                        self.worker_scheduler.tell_worker_to_stop().await;
+                    });
+                });
+            }
             stage => {
                 //restore state machine state.
                 self.stage = stage;
@@ -472,6 +495,7 @@ pub struct SyncBeginEvent {
     task_handle: TaskHandle,
     task_event_handle: Arc<TaskEventCounterHandle>,
     peer_selector: PeerSelector,
+    worker_scheduler: Arc<WorkerScheduler>,
 }
 
 impl EventHandler<Self, SyncBeginEvent> for SyncService {
@@ -482,6 +506,7 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService {
             msg.task_event_handle,
             msg.peer_selector,
         );
+        let worker_scheduler = msg.worker_scheduler.clone();
         let sync_task_handle = SyncTaskHandle {
             target: target.clone(),
             task_begin: None,
@@ -507,6 +532,11 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService {
                 if target_total_difficulty <= current_total_difficulty {
                     info!("[sync] target block({})'s total_difficulty({}) is <= current's total_difficulty({}), cancel sync task.", target.target_id.number(), target_total_difficulty, current_total_difficulty);
                     task_handle.cancel();
+                    tokio::task::block_in_place(|| {
+                        tokio::runtime::Handle::current().block_on(async {
+                            worker_scheduler.tell_worker_to_stop().await;
+                        });
+                    });
                 } else {
                     let target_id_number =
                         BlockIdAndNumber::new(target.target_id.id(), target.target_id.number());
@@ -528,6 +558,11 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService {
             SyncStage::Canceling => {
                 self.stage = SyncStage::Canceling;
                 task_handle.cancel();
+                tokio::task::block_in_place(|| {
+                    tokio::runtime::Handle::current().block_on(async {
+                        worker_scheduler.tell_worker_to_stop().await;
+                    });
+                });
             }
         }
     }
