@@ -69,7 +69,7 @@ impl TransactionPublishOption {
 }
 
 impl OnChainConfig for TransactionPublishOption {
-    const MODULE_IDENTIFIER: &'static str = "TransactionPublishOption";
+    const MODULE_IDENTIFIER: &'static str = "transaction_publish_option";
     const TYPE_IDENTIFIER: &'static str = "TransactionPublishOption";
 
     fn deserialize_into_config(bytes: &[u8]) -> Result<Self> {
