@@ -1338,7 +1338,6 @@ mod tests {
             native_table: native_table_v1(),
             gas_constants: G_GAS_CONSTANTS_V1.clone(),
         });
-        println!("gas_schedule: {:?}", gas_schedule.entries);
         // assert_eq!(_entries, gas_schedule.entries);
         let gas_params =
             StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map(), 6);
@@ -1350,7 +1349,7 @@ mod tests {
 
     #[test]
     fn test_main_config() {
-        let entries = config_entries(
+        let _entries = config_entries(
             instruction_gas_schedule_v1(),
             native_gas_schedule_v2(),
             txn_gas_schedule_v2(),
@@ -1361,7 +1360,7 @@ mod tests {
             native_table: native_table_v2(),
             gas_constants: G_GAS_CONSTANTS_V2.clone(),
         });
-        assert_eq!(entries, gas_schedule.entries);
+        assert_eq!(_entries, gas_schedule.entries);
         let gas_params =
             StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map(), 6);
         assert_eq!(
