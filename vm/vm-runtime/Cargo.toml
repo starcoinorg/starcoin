@@ -52,6 +52,7 @@ move-unit-test = { workspace = true, optional = true }
 [dev-dependencies]
 stdlib = { workspace = true }
 claims = { workspace = true }
+starcoin-cached-packages = { workspace = true }
 
 
 [features]

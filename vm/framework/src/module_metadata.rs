@@ -86,6 +86,7 @@ pub enum KnownAttributeKind {
     ResourceGroupMember = 3,
     Event = 4,
     Randomness = 5,
+    BytecodeInstruction = 6,
 }
 
 impl KnownAttribute {
@@ -176,6 +177,17 @@ impl KnownAttribute {
         } else {
             None
         }
+    }
+
+    pub fn bytecode_instruction() -> Self {
+        Self {
+            kind: KnownAttributeKind::BytecodeInstruction as u8,
+            args: vec![],
+        }
+    }
+
+    pub fn is_bytecode_instruction(&self) -> bool {
+        self.kind == KnownAttributeKind::BytecodeInstruction as u8
     }
 }
 
