@@ -1,21 +1,37 @@
 use anyhow::Result;
 use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
+use starcoin_framework::get_metadata_from_compiled_module;
+use starcoin_gas_schedule::LATEST_GAS_FEATURE_VERSION;
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::normalized::Function;
-use std::collections::HashSet;
-use stdlib::load_latest_compiled_modules;
+use std::collections::{HashMap, HashSet};
 
 #[test]
 pub fn test_native_function_matches() -> Result<()> {
-    let modules = load_latest_compiled_modules();
+    let modules = starcoin_cached_packages::head_release_bundle().compiled_modules();
+    let runtime_metadata = modules
+        .iter()
+        .filter_map(|m| {
+            get_metadata_from_compiled_module(m).map(|metadata| (m.self_id(), metadata))
+        })
+        .collect::<HashMap<_, _>>();
     let native_functions: Vec<_> = modules
         .iter()
         .flat_map(|m| {
             m.function_defs()
                 .iter()
                 .filter_map(|func_def| {
-                    if func_def.is_native() {
-                        Some(Function::new(m, func_def).0)
+                    let func_name = Function::new(m, func_def).0;
+                    if func_def.is_native()
+                        && !runtime_metadata
+                            .get(&m.self_id())
+                            .and_then(|metadata| {
+                                metadata.fun_attributes.get(&func_name.to_string())
+                            })
+                            .map(|attr| attr.iter().any(|attr| attr.is_bytecode_instruction()))
+                            .unwrap_or_default()
+                    {
+                        Some(func_name)
                     } else {
                         None
                     }
@@ -32,7 +48,7 @@ pub fn test_native_function_matches() -> Result<()> {
         .collect();
 
     let mut native_function_table = starcoin_vm_runtime::natives::starcoin_natives(
-        6,
+        LATEST_GAS_FEATURE_VERSION,
         G_LATEST_GAS_PARAMS.clone().natives,
         G_LATEST_GAS_PARAMS.clone().vm.misc,
         starcoin_vm_types::on_chain_config::TimedFeaturesBuilder::enable_all().build(),
@@ -49,6 +65,7 @@ pub fn test_native_function_matches() -> Result<()> {
             &f
         );
     }
+
     for f in native_function_table {
         println!("native {:?} is un-used in latest stdlib", f)
     }

@@ -12328,6 +12328,7 @@ dependencies = [
  "serde",
  "serde_bytes",
  "starcoin-aggregator",
+ "starcoin-cached-packages",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-framework 0.1.0",

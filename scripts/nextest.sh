@@ -24,6 +24,7 @@ cargo nextest -V >/dev/null 2>&1 || cargo install cargo-nextest --version "0.9.5
 #cargo nextest run --workspace --retries 2 --build-jobs 8 --test-threads 12 --no-fail-fast --failure-output immediate-final
 cargo nextest run \
 -p starcoin-executor \
+-p starcoin-vm-runtime \
 --retries 2 --build-jobs 8 --test-threads 12 --no-fail-fast --failure-output immediate-final
 
 

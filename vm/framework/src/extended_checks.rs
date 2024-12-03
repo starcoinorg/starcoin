@@ -47,6 +47,7 @@ const RESOURCE_GROUP_MEMBER: &str = "resource_group_member";
 const RESOURCE_GROUP_NAME: &str = "group";
 const RESOURCE_GROUP_SCOPE: &str = "scope";
 const VIEW_FUN_ATTRIBUTE: &str = "view";
+const BYTECODE_INSTRUCTION: &str = "bytecode_instruction";
 
 const RANDOMNESS_MODULE_NAME: &str = "randomness";
 
@@ -131,8 +132,36 @@ impl<'a> ExtendedChecker<'a> {
                 self.check_unsafe_randomness_usage(module);
                 self.check_and_record_events(module);
                 self.check_init_module(module);
-                self.build_error_map(module)
+                self.build_error_map(module);
+                self.check_and_record_bytecode_instruction(module)
             }
+        }
+    }
+}
+
+// ----------------------------------------------------------------------------------
+// Native Functions
+
+impl<'a> ExtendedChecker<'a> {
+    fn check_and_record_bytecode_instruction(&mut self, module: &ModuleEnv) {
+        let module_id = self.get_runtime_module_id(module);
+        for ref fun in module.get_functions() {
+            if !fun.is_native() || !self.has_attribute(fun, BYTECODE_INSTRUCTION) {
+                continue;
+            }
+
+            eprintln!(
+                "Found bytecode instruction function {}",
+                fun.get_simple_name_string()
+            );
+
+            self.output
+                .entry(module_id.clone())
+                .or_default()
+                .fun_attributes
+                .entry(fun.get_simple_name_string().to_string())
+                .or_default()
+                .push(KnownAttribute::bytecode_instruction());
         }
     }
 }
@@ -677,9 +706,9 @@ impl<'a> ExtendedChecker<'a> {
                         Type::Reference(mutability, inner) => {
                             if let Type::Primitive(inner) = inner.as_ref() {
                                 if inner == &PrimitiveType::Signer
-                                // Avoid a redundant error message for `&mut signer`, which is
-                                // always disallowed for transaction entries, not just for
-                                // `#[view]`.
+                                    // Avoid a redundant error message for `&mut signer`, which is
+                                    // always disallowed for transaction entries, not just for
+                                    // `#[view]`.
                                     && mutability == &ReferenceKind::Immutable
                                 {
                                     self.env.error(
