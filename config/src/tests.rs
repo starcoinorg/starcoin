@@ -187,3 +187,18 @@ fn test_check_method_in_api_sets() {
     assert!(!ApiSet::UnsafeContext.check_rpc_method("unknown"));
     assert!(!ApiSet::UnsafeContext.check_rpc_method(""));
 }
+
+#[test]
+fn print_all_genesis_config() {
+    for net in BuiltinNetworkID::networks() {
+        if net.is_dev() || net.is_test() || net.is_dag_test() {
+            continue;
+        }
+        let genesis_config = net.genesis_config();
+        println!("genesis config for network: {}", net);
+        println!(
+            "{}\n\n\n",
+            serde_json::to_string_pretty(genesis_config).unwrap()
+        );
+    }
+}

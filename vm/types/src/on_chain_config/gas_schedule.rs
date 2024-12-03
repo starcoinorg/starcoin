@@ -21,7 +21,7 @@ pub static G_GAS_SCHEDULE_GAS_SCHEDULE: Lazy<Identifier> =
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct GasSchedule {
-    pub feature_vesion: u64,
+    pub feature_version: u64,
     pub entries: Vec<(String, u64)>,
 }
 
@@ -690,7 +690,7 @@ impl From<&CostTable> for GasSchedule {
         append_extra_gas_cost_framework_upgrade(&mut entries);
 
         Self {
-            feature_vesion: 13,
+            feature_version: 13,
             entries,
         }
     }

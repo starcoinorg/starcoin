@@ -179,7 +179,7 @@ impl StarcoinVM {
                 bail!("failed to load gas schedule!");
             }
             Some(gs) => {
-                let gas_feature_version = gs.feature_vesion;
+                let gas_feature_version = gs.feature_version;
                 let gas_schdule_treemap = gs.clone().to_btree_map();
                 let gas_params = StarcoinGasParameters::from_on_chain_gas_schedule(
                     &gas_schdule_treemap,

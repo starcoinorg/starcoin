@@ -765,7 +765,7 @@ pub static G_DAG_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_period: G_DEFAULT_TIME_LOCKED_PERIOD,
         vm_config: VMConfig {
             gas_schedule: GasSchedule {
-                feature_vesion: LATEST_GAS_FEATURE_VERSION,
+                feature_version: LATEST_GAS_FEATURE_VERSION,
                 entries: StarcoinGasParameters::initial()
                     .to_on_chain_gas_schedule(LATEST_GAS_FEATURE_VERSION),
             },
@@ -820,7 +820,7 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_period: G_DEFAULT_TIME_LOCKED_PERIOD,
         vm_config: VMConfig {
             gas_schedule: GasSchedule {
-                feature_vesion: LATEST_GAS_FEATURE_VERSION,
+                feature_version: LATEST_GAS_FEATURE_VERSION,
                 entries: StarcoinGasParameters::initial()
                     .to_on_chain_gas_schedule(LATEST_GAS_FEATURE_VERSION),
             },
@@ -878,7 +878,7 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_period: 3600 * 24,
         vm_config: VMConfig {
             gas_schedule: GasSchedule {
-                feature_vesion: LATEST_GAS_FEATURE_VERSION,
+                feature_version: LATEST_GAS_FEATURE_VERSION,
                 entries: StarcoinGasParameters::initial()
                     .to_on_chain_gas_schedule(LATEST_GAS_FEATURE_VERSION),
             },
@@ -940,7 +940,7 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_mint_period: 3600 * 24 * 31,
         vm_config: VMConfig {
             gas_schedule: GasSchedule {
-                feature_vesion: LATEST_GAS_FEATURE_VERSION,
+                feature_version: LATEST_GAS_FEATURE_VERSION,
                 entries: StarcoinGasParameters::initial()
                     .to_on_chain_gas_schedule(LATEST_GAS_FEATURE_VERSION),
             },

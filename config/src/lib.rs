@@ -5,7 +5,7 @@ use crate::account_vault_config::AccountVaultConfig;
 use crate::helper::{load_config, save_config};
 use crate::sync_config::SyncConfig;
 use anyhow::{ensure, format_err, Result};
-use clap::{value_parser, Parser};
+use clap::Parser;
 use git_version::git_version;
 use once_cell::sync::Lazy;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -182,7 +182,7 @@ pub struct StarcoinOpt {
     pub connect: Option<Connect>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[arg(long = "data-dir", short = 'd', value_parser = value_parser!(std::ffi::OsString))]
+    #[arg(long = "data-dir", short = 'd', value_parser)]
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
     pub base_data_dir: Option<PathBuf>,
 
