@@ -2988,8 +2988,10 @@ Lifetime: transient
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_new_accounts_default_to_fa_stc_store_enabled">new_accounts_default_to_fa_stc_store_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
-    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_NEW_ACCOUNTS_DEFAULT_TO_FA_APT_STORE">NEW_ACCOUNTS_DEFAULT_TO_FA_APT_STORE</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_new_accounts_default_to_fa_stc_store_enabled">new_accounts_default_to_fa_stc_store_enabled</a>(): bool {
+    // TODO(BobOng): [framework-upgrade] <b>to</b> confirm which feature flag should be used here
+    // <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_NEW_ACCOUNTS_DEFAULT_TO_FA_APT_STORE">NEW_ACCOUNTS_DEFAULT_TO_FA_APT_STORE</a>)
+    <b>false</b>
 }
 </code></pre>
 

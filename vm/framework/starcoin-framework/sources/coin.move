@@ -332,7 +332,6 @@ module starcoin_framework::coin {
                     )
                 };
 
-            debug::print(&std::string::utf8(b"coin::create_and_return_paired_metadata_if_not_exist | 5"));
             primary_fungible_store::create_primary_store_enabled_fungible_asset(
                 &metadata_object_cref,
                 option::none(),

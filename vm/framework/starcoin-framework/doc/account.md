@@ -96,6 +96,7 @@
 
 
 <pre><code><b>use</b> <a href="../../move-stdlib/doc/bcs.md#0x1_bcs">0x1::bcs</a>;
+<b>use</b> <a href="bcs_util.md#0x1_bcs_util">0x1::bcs_util</a>;
 <b>use</b> <a href="chain_id.md#0x1_chain_id">0x1::chain_id</a>;
 <b>use</b> <a href="create_signer.md#0x1_create_signer">0x1::create_signer</a>;
 <b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
@@ -1294,7 +1295,7 @@ to rotate his address to Alice's address in the first place.
     };
 
     // Construct a valid `<a href="account.md#0x1_account_RotationProofChallenge">RotationProofChallenge</a>` that `cap_rotate_key` and `cap_update_table` will validate against.
-    <b>let</b> curr_auth_key_as_address = <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(account_resource.authentication_key);
+    <b>let</b> curr_auth_key_as_address = <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(<a href="bcs_util.md#0x1_bcs_util_truncate_16">bcs_util::truncate_16</a>(account_resource.authentication_key));
     <b>let</b> challenge = <a href="account.md#0x1_account_RotationProofChallenge">RotationProofChallenge</a> {
         sequence_number: account_resource.sequence_number,
         originator: addr,
@@ -1357,7 +1358,7 @@ to rotate his address to Alice's address in the first place.
         <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="account.md#0x1_account_ENO_SUCH_ROTATION_CAPABILITY_OFFER">ENO_SUCH_ROTATION_CAPABILITY_OFFER</a>)
     );
 
-    <b>let</b> curr_auth_key = <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(offerer_account_resource.authentication_key);
+    <b>let</b> curr_auth_key = <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(<a href="bcs_util.md#0x1_bcs_util_truncate_16">bcs_util::truncate_16</a>(offerer_account_resource.authentication_key));
     <b>let</b> challenge = <a href="account.md#0x1_account_RotationProofChallenge">RotationProofChallenge</a> {
         sequence_number: <a href="account.md#0x1_account_get_sequence_number">get_sequence_number</a>(delegate_address),
         originator: rotation_cap_offerer_address,
@@ -1893,7 +1894,7 @@ in the event of key recovery.
     };
 
     // Set `<a href="account.md#0x1_account_OriginatingAddress">OriginatingAddress</a>[new_auth_key] = originating_address`.
-    <b>let</b> new_auth_key = <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(new_auth_key_vector);
+    <b>let</b> new_auth_key = <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(<a href="bcs_util.md#0x1_bcs_util_truncate_16">bcs_util::truncate_16</a>(new_auth_key_vector));
     <a href="../../starcoin-stdlib/doc/table.md#0x1_table_add">table::add</a>(address_map, new_auth_key, originating_addr);
 
     <b>if</b> (std::features::module_event_migration_enabled()) {
@@ -1942,7 +1943,7 @@ involves the use of a cryptographic hash operation and should be use thoughtfull
     <b>let</b> bytes = <a href="../../move-stdlib/doc/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a>(source);
     <a href="../../move-stdlib/doc/vector.md#0x1_vector_append">vector::append</a>(&<b>mut</b> bytes, seed);
     <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> bytes, <a href="account.md#0x1_account_DERIVE_RESOURCE_ACCOUNT_SCHEME">DERIVE_RESOURCE_ACCOUNT_SCHEME</a>);
-    <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(<a href="../../move-stdlib/doc/hash.md#0x1_hash_sha3_256">hash::sha3_256</a>(bytes))
+    <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(<a href="bcs_util.md#0x1_bcs_util_truncate_16">bcs_util::truncate_16</a>(<a href="../../move-stdlib/doc/hash.md#0x1_hash_sha3_256">hash::sha3_256</a>(bytes)))
 }
 </code></pre>
 
@@ -2050,17 +2051,7 @@ Convert from authentication key to address
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account.md#0x1_account_auth_key_to_address">auth_key_to_address</a>(authentication_key: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <b>address</b> {
-    <b>assert</b>!(<a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(&authentication_key) == 32, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="account.md#0x1_account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>));
-    <b>let</b> address_bytes = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>&lt;u8&gt;();
-
-    <b>let</b> i = 16;
-    <b>while</b> (i &lt; 32) {
-        <b>let</b> b = *<a href="../../move-stdlib/doc/vector.md#0x1_vector_borrow">vector::borrow</a>(&authentication_key, i);
-        <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> address_bytes, b);
-        i = i + 1;
-    };
-
-    <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(address_bytes)
+    <a href="../../starcoin-stdlib/doc/from_bcs.md#0x1_from_bcs_to_address">from_bcs::to_address</a>(<a href="bcs_util.md#0x1_bcs_util_truncate_16">bcs_util::truncate_16</a>(authentication_key))
 }
 </code></pre>
 

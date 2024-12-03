@@ -21,11 +21,7 @@ module starcoin_framework::stc_block {
     #[test_only]
     use std::hash;
     #[test_only]
-    use starcoin_framework::account::{create_signer_for_test, create_account_if_does_not_exist};
-    #[test_only]
     use starcoin_framework::bcs_util;
-    #[test_only]
-    use starcoin_framework::starcoin_account::create_account;
 
     const BLOCK_INTERVAL_NUMBER: u64 = 5;
     const CHECKPOINT_LENGTH: u64 = 60;
