@@ -57,6 +57,7 @@ use std::{
     sync::Arc,
 };
 
+#[allow(dead_code)]
 static MAIN_DIRECT_SAVE_BLOCK_HASH_MAP: Lazy<BTreeMap<HashValue, (BlockExecutedData, BlockInfo)>> =
     Lazy::new(|| {
         let mut maps = BTreeMap::new();
@@ -1417,6 +1418,7 @@ impl BlockChain {
         Ok(ExecutedBlock { block, block_info })
     }
 
+    #[allow(unused)]
     fn execute_save_directly(
         storage: &dyn Store,
         statedb: ChainStateDB,
@@ -1977,20 +1979,20 @@ impl ChainReader for BlockChain {
     fn execute(&mut self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
         let header = verified_block.0.header().clone();
         if self.check_chain_type()? == ChainType::Single {
-            let executed = if let Some((executed_data, block_info)) =
-                MAIN_DIRECT_SAVE_BLOCK_HASH_MAP.get(&verified_block.0.header.id())
+            let executed = //if let Some((executed_data, block_info)) =
+                //MAIN_DIRECT_SAVE_BLOCK_HASH_MAP.get(&verified_block.0.header.id())
             {
-                Self::execute_save_directly(
-                    self.storage.as_ref(),
-                    self.statedb.fork(),
-                    self.txn_accumulator.fork(None),
-                    self.block_accumulator.fork(None),
-                    Some(self.status.status.clone()),
-                    verified_block.0,
-                    block_info.clone(),
-                    executed_data.clone(),
-                )?
-            } else {
+                //Self::execute_save_directly(
+                //    self.storage.as_ref(),
+                //    self.statedb.fork(),
+                //    self.txn_accumulator.fork(None),
+                //    self.block_accumulator.fork(None),
+                //    Some(self.status.status.clone()),
+                //    verified_block.0,
+                //    block_info.clone(),
+                //    executed_data.clone(),
+                //)?
+            //} else {
                 Self::execute_block_and_save(
                     self.storage.as_ref(),
                     self.statedb.fork(),
