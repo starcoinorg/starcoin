@@ -155,36 +155,36 @@ crate::gas_schedule::macros::define_gas_parameters!(
         ],
         [
             vec_pack_per_elem: InternalGasPerArg,
-             "vec_pack.per_elem",
+            { 12.. => "vec_pack.per_elem" },
             (84 + 1) * MUL
         ],
-        [vec_len_base: InternalGas,  "vec_len.base", (98 + 1) * MUL],
+        [vec_len_base: InternalGas, { 12.. => "vec_len.base" }, (98 + 1) * MUL],
         [
             vec_imm_borrow_base: InternalGas,
-             "vec_imm_borrow.base",
+            { 12.. => "vec_imm_borrow.base"},
             (1334 + 1) * MUL
         ],
         [
             vec_mut_borrow_base: InternalGas,
-             "vec_mut_borrow.base",
+            { 12.. =>  "vec_mut_borrow.base"},
             (1902 + 1) * MUL
         ],
         [
             vec_push_back_per_abs_mem_unit: InternalGasPerAbstractMemoryUnit,
-             "vec_push_back.per_abs_mem_unit",
+            { 12.. =>"vec_push_back.per_abs_mem_unit"},
             (52 + 1) * MUL
         ],
         [
             vec_pop_back_base: InternalGas,
-             "vec_pop_back.base",
+             { 12.. =>"vec_pop_back.base"},
             (227 + 1) * MUL
         ],
          [
             vec_unpack_per_expected_elem: InternalGasPerArg,
-             "vec_unpack.per_expected_elem",
+             { 12.. =>"vec_unpack.per_expected_elem"},
             (572 + 1) * MUL
         ],
-        [vec_swap_base: InternalGas,  "vec_swap.base", (1436 + 1) * MUL],
+        [vec_swap_base: InternalGas,  { 12.. => "vec_swap.base" }, (1436 + 1) * MUL],
         // XXX FIXME YSG, check v6 bytecode cost
         [cast_u16: InternalGas,  "cast_u16", (2 + 1) * MUL],
         [cast_u32: InternalGas,  "cast_u32", (1 + 1)* MUL],
