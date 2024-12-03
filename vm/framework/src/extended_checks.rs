@@ -150,11 +150,6 @@ impl<'a> ExtendedChecker<'a> {
                 continue;
             }
 
-            eprintln!(
-                "Found bytecode instruction function {}",
-                fun.get_simple_name_string()
-            );
-
             self.output
                 .entry(module_id.clone())
                 .or_default()
