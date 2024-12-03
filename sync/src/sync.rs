@@ -237,7 +237,7 @@ impl SyncService {
             info!("stop the workers in the previous sync task.");
             worker_scheduler.tell_worker_to_stop().await;
             info!("waiting for them stopping.");
-            worker_scheduler.wait_for_worker().await;
+            worker_scheduler.wait_for_worker().await?;
             info!("succeed to stop the workers in the previous sync task.");
 
             let sync_dag_store = SyncDagStore::create_from_path(

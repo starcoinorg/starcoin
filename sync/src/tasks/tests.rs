@@ -74,7 +74,7 @@ pub async fn test_failed_block() -> Result<()> {
     };
     let worker_scheduler = Arc::new(WorkerScheduler::new());
     worker_scheduler.tell_worker_to_stop().await;
-    worker_scheduler.wait_for_worker().await;
+    worker_scheduler.wait_for_worker().await?;
     let mut block_collector = BlockCollector::new_with_handle(
         chain_info.status().info.clone(),
         target,
@@ -120,7 +120,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
     let (sender, receiver) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
     node2.worker_scheduler.tell_worker_to_stop().await;
-    node2.worker_scheduler.wait_for_worker().await;
+    node2.worker_scheduler.wait_for_worker().await?;
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
@@ -159,7 +159,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
     let target = arc_node1.sync_target();
     let (sender_2, _receiver_2) = unbounded();
     node2.worker_scheduler.tell_worker_to_stop().await;
-    node2.worker_scheduler.wait_for_worker().await;
+    node2.worker_scheduler.wait_for_worker().await?;
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
@@ -214,7 +214,7 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
     let (sender, receiver) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
     node2.worker_scheduler.tell_worker_to_stop().await;
-    node2.worker_scheduler.wait_for_worker().await;
+    node2.worker_scheduler.wait_for_worker().await?;
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
@@ -271,7 +271,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
     let (sender, receiver) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
     node2.worker_scheduler.tell_worker_to_stop().await;
-    node2.worker_scheduler.wait_for_worker().await;
+    node2.worker_scheduler.wait_for_worker().await?;
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
@@ -314,7 +314,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
     //TODO find a way to verify continue sync will reuse previous task local block.
     let (sender_2, _receiver_2) = unbounded();
     node2.worker_scheduler.tell_worker_to_stop().await;
-    node2.worker_scheduler.wait_for_worker().await;
+    node2.worker_scheduler.wait_for_worker().await?;
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
@@ -371,7 +371,7 @@ pub async fn test_full_sync_cancel() -> Result<()> {
     let (sender, receiver) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
     node2.worker_scheduler.tell_worker_to_stop().await;
-    node2.worker_scheduler.wait_for_worker().await;
+    node2.worker_scheduler.wait_for_worker().await?;
     let (sync_task, task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
@@ -873,7 +873,7 @@ async fn test_net_rpc_err() -> Result<()> {
     let (sender, receiver) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
     node2.worker_scheduler.tell_worker_to_stop().await;
-    node2.worker_scheduler.wait_for_worker().await;
+    node2.worker_scheduler.wait_for_worker().await?;
     let (sync_task, _task_handle, _task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
@@ -1029,7 +1029,10 @@ fn sync_block_in_async_connection(
     let worker_scheduler = Arc::new(WorkerScheduler::new());
     async_std::task::block_on(async {
         worker_scheduler.tell_worker_to_stop().await;
-        worker_scheduler.wait_for_worker().await;
+        worker_scheduler
+            .wait_for_worker()
+            .await
+            .expect("the sync workers do not exist");
     });
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),

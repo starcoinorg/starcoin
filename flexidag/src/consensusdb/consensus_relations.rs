@@ -166,7 +166,7 @@ impl RelationsStore for DbRelationsStore {
         };
         self.db
             .write_batch_with_column(batch)
-            .map_err(|e| StoreError::DBIoError(e.to_string()))?;
+            .map_err(|e| StoreError::DBIoError(format!("Failed to write batch when writing batch with column for the dag releationship: {:?}", e)))?;
 
         self.parents_access.flush_cache(&[(hash, parents)])?;
         self.children_access.flush_cache(

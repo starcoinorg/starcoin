@@ -23,7 +23,7 @@ async fn sync_block_process(
     let worker_scheduler = Arc::new(WorkerScheduler::new());
     loop {
         worker_scheduler.tell_worker_to_stop().await;
-        worker_scheduler.wait_for_worker().await;
+        worker_scheduler.wait_for_worker().await?;
         let target = target_node.sync_target();
 
         let storage = local_node.chain().get_storage();

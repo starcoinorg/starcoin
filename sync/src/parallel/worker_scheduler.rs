@@ -1,5 +1,7 @@
 use std::{sync::atomic::AtomicU64, time::Duration};
 
+use anyhow::bail;
+use starcoin_logger::prelude::debug;
 use tokio::sync::RwLock;
 
 #[derive(Debug)]
@@ -46,7 +48,7 @@ impl WorkerScheduler {
         }
     }
 
-    pub async fn check_worker_count(&self) -> u64 {
+    pub fn check_worker_count(&self) -> u64 {
         self.worker_count.load(std::sync::atomic::Ordering::SeqCst)
     }
 
@@ -60,14 +62,25 @@ impl WorkerScheduler {
             .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
     }
 
-    pub async fn wait_for_worker(&self) {
+    pub async fn wait_for_worker(&self) -> anyhow::Result<()> {
+        const MAX_ATTEMPTS: u32 = 150;
+        const INITIAL_DELAY: Duration = Duration::from_secs(30);
+        let mut delay = INITIAL_DELAY;
+        let mut attempts: u32 = 0;
         loop {
-            if 0 == self.check_worker_count().await {
+            if 0 == self.check_worker_count() {
                 break;
-            } else {
-                tokio::task::yield_now().await;
-                tokio::time::sleep(Duration::from_millis(200)).await;
             }
+            attempts = attempts.saturating_add(1);
+            if attempts >= MAX_ATTEMPTS {
+                bail!("Timeout waiting for workers to exit");
+            }
+            tokio::task::yield_now().await;
+            debug!("waiting for worker to exit, attempt {}", attempts);
+            tokio::time::sleep(delay).await;
+            delay = std::cmp::min(delay.saturating_mul(2), Duration::from_secs(60 * 60 * 2));
         }
+
+        anyhow::Ok(())
     }
 }
