@@ -29,6 +29,7 @@ use starcoin_crypto::{ed25519, HashValue, SigningKey};
 use starcoin_time_service::{MockTimeService, TimeService};
 use std::ops::Deref;
 use std::sync::Arc;
+use vm::file_format_common::VERSION_MAX;
 use vm::CompiledModule;
 
 /// Wrapper for `proptest`'s [`Index`][proptest::sample::Index] that allows `AsRef` to work.
@@ -483,7 +484,7 @@ impl Package {
         (compiled_module_strategy, script_strategy).prop_map(|(compile_module, script)| {
             let mut vec_bytes: Vec<u8> = vec![];
             compile_module
-                .serialize(&mut vec_bytes)
+                .serialize_for_version(Some(VERSION_MAX), &mut vec_bytes)
                 .expect("compile module serialize  must success");
             let first_module = Module::new(vec_bytes);
             let module_vec = vec![first_module];
