@@ -372,9 +372,7 @@ mod tests {
     use starcoin_storage::storage::StorageInstance;
     use starcoin_storage::{BlockStore, BlockTransactionInfoStore, IntoSuper, Storage};
     use starcoin_transaction_builder::StdlibVersion;
-    use starcoin_types::account_config::{
-        core_code_address, genesis_address, ModuleUpgradeStrategy,
-    };
+    use starcoin_types::account_config::{core_code_address, genesis_address};
     use starcoin_types::language_storage::ModuleId;
     use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
     use starcoin_vm_types::account_config::association_address;
@@ -534,16 +532,17 @@ mod tests {
             net.genesis_config().stdlib_version.version()
         );
 
-        let module_upgrade_strategy =
-            account_state_reader.get_resource::<ModuleUpgradeStrategy>(genesis_address());
-        assert!(
-            module_upgrade_strategy.is_ok(),
-            "ModuleUpgradeStrategy should exist."
-        );
-        assert!(
-            module_upgrade_strategy.unwrap().two_phase(),
-            "ModuleUpgradeStrategy should be STRATEGY_TWO_PHASE."
-        );
+        // todo: uncomment following code if module upgrade is supported.
+        //let module_upgrade_strategy =
+        //    account_state_reader.get_resource::<ModuleUpgradeStrategy>(genesis_address());
+        //assert!(
+        //    module_upgrade_strategy.is_ok(),
+        //    "ModuleUpgradeStrategy should exist."
+        //);
+        //assert!(
+        //    module_upgrade_strategy.unwrap().two_phase(),
+        //    "ModuleUpgradeStrategy should be STRATEGY_TWO_PHASE."
+        //);
 
         let block_info = storage2
             .get_block_info(genesis_block.header().id())?

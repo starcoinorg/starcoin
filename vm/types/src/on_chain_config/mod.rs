@@ -32,7 +32,7 @@ mod vm_config;
 mod timed_features;
 
 pub use self::{
-    consensus_config::{consensus_config_type_tag, ConsensusConfig, G_CONSENSUS_CONFIG_IDENTIFIER},
+    consensus_config::{consensus_config_type_tag, ConsensusConfig},
     dao_config::DaoConfig,
     flexi_dag_config::*,
     gas_schedule::{
