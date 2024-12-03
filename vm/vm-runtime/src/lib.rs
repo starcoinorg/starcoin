@@ -93,7 +93,7 @@ pub(crate) fn discard_error_output(err: StatusCode) -> TransactionOutput {
 
 pub(crate) fn default_gas_schedule() -> GasSchedule {
     GasSchedule {
-        feature_vesion: LATEST_GAS_FEATURE_VERSION,
+        feature_version: LATEST_GAS_FEATURE_VERSION,
         entries: StarcoinGasParameters::initial()
             .to_on_chain_gas_schedule(LATEST_GAS_FEATURE_VERSION),
     }

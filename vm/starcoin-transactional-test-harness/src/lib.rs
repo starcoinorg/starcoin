@@ -592,7 +592,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             .gas_schedule;
         let gas_parameters = StarcoinGasParameters::from_on_chain_gas_schedule(
             &gs.clone().to_btree_map(),
-            gs.feature_vesion,
+            gs.feature_version,
         )
         .unwrap();
         let max_number_of_gas_units = gas_parameters.vm.txn.maximum_number_of_gas_units;
