@@ -170,7 +170,7 @@ fn test_genesis_config_security() {
             .entries
             .into_iter()
             .collect::<BTreeMap<String, u64>>();
-        let min_price_per_gas_unit = gas_constant.get("tx.min_price_per_gas_unit").unwrap();
+        let min_price_per_gas_unit = gas_constant.get("txn.min_price_per_gas_unit").unwrap();
         assert!(*min_price_per_gas_unit > 0);
         // maximum_number_of_gas_units must be less than base_block_gas_limit
         let maximum_number_of_gas_units =

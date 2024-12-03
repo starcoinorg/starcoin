@@ -192,6 +192,7 @@ pub fn instruction_gas_schedule_v1() -> Vec<(String, u64)> {
             "instr.move_to_generic.per_abs_mem_unit".to_string(),
             gas_total(27, 1),
         ),
+        ("instr.vec_pack.per_elem".to_string(), gas_total(84, 1)),
     ]
 }
 
