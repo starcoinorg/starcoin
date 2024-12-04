@@ -19,14 +19,14 @@ use starcoin_executor::execute_readonly_function;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainStateReader;
 use starcoin_statedb::ChainStateDB;
-use starcoin_transaction_builder::encode_create_account_script_function;
+use starcoin_transaction_builder::encode_transfer_script_by_token_code;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::{association_address, genesis_address, stc_type_tag};
 use starcoin_types::block_metadata::BlockMetadata;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::{ModuleId, StructTag, TypeTag};
 use starcoin_types::transaction::{EntryFunction, TransactionPayload};
-use starcoin_vm_types::account_config::core_code_address;
+use starcoin_vm_types::account_config::{core_code_address, G_STC_TOKEN_CODE};
 use starcoin_vm_types::on_chain_config::VMConfig;
 use starcoin_vm_types::value::{serialize_values, MoveValue};
 use starcoin_vm_types::StateView;
@@ -50,7 +50,7 @@ pub fn proposal_state<S: StateView>(
 ) -> u8 {
     let mut ret = execute_readonly_function(
         state_view,
-        &ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap()),
+        &ModuleId::new(genesis_address(), Identifier::new("dao").unwrap()),
         &Identifier::new("proposal_state").unwrap(),
         vec![token, action_ty.clone()],
         serialize_values(&vec![
@@ -78,7 +78,7 @@ pub fn proposal_exist<S: StateView>(
 ) -> bool {
     let mut ret = execute_readonly_function(
         state_view,
-        &ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap()),
+        &ModuleId::new(genesis_address(), Identifier::new("dao").unwrap()),
         &Identifier::new("proposal_exists").unwrap(),
         vec![token, action_ty],
         serialize_values(&vec![
@@ -95,7 +95,7 @@ pub fn proposal_exist<S: StateView>(
 pub fn on_chain_config_type_tag(params_type_tag: TypeTag) -> TypeTag {
     TypeTag::Struct(Box::new(StructTag {
         address: genesis_address(),
-        module: Identifier::new("OnChainConfigDao").unwrap(),
+        module: Identifier::new("on_chain_config_dao").unwrap(),
         name: Identifier::new("OnChainConfigUpdate").unwrap(),
         type_args: vec![params_type_tag],
     }))
@@ -104,7 +104,7 @@ pub fn on_chain_config_type_tag(params_type_tag: TypeTag) -> TypeTag {
 pub fn reward_config_type_tag() -> TypeTag {
     TypeTag::Struct(Box::new(StructTag {
         address: genesis_address(),
-        module: Identifier::new("RewardConfig").unwrap(),
+        module: Identifier::new("block_reward_config").unwrap(),
         name: Identifier::new("RewardConfig").unwrap(),
         type_args: vec![],
     }))
@@ -113,7 +113,7 @@ pub fn reward_config_type_tag() -> TypeTag {
 pub fn transaction_timeout_type_tag() -> TypeTag {
     TypeTag::Struct(Box::new(StructTag {
         address: genesis_address(),
-        module: Identifier::new("TransactionTimeoutConfig").unwrap(),
+        module: Identifier::new("stc_transaction_timeout_config").unwrap(),
         name: Identifier::new("TransactionTimeoutConfig").unwrap(),
         type_args: vec![],
     }))
@@ -122,7 +122,7 @@ pub fn transaction_timeout_type_tag() -> TypeTag {
 pub fn txn_publish_config_type_tag() -> TypeTag {
     TypeTag::Struct(Box::new(StructTag {
         address: genesis_address(),
-        module: Identifier::new("TransactionPublishOption").unwrap(),
+        module: Identifier::new("transaction_publish_option").unwrap(),
         name: Identifier::new("TransactionPublishOption").unwrap(),
         type_args: vec![],
     }))
@@ -151,23 +151,18 @@ pub fn execute_create_account(
         )?;
         if !chain_state.exist_account(alice.address())? {
             let init_balance = pre_mint_amount / 4;
-            let script_function = encode_create_account_script_function(
-                net.stdlib_version(),
-                stc_type_tag(),
-                alice.address(),
-                alice.auth_key(),
+            let script_function = encode_transfer_script_by_token_code(
+                *alice.address(),
                 init_balance,
+                G_STC_TOKEN_CODE.clone(),
             );
+
             debug!(
                 "execute create account script: addr:{}, init_balance:{}",
                 alice.address(),
                 init_balance
             );
-            association_execute_should_success(
-                net,
-                chain_state,
-                TransactionPayload::EntryFunction(script_function),
-            )?;
+            association_execute_should_success(net, chain_state, script_function)?;
         }
 
         Ok(())

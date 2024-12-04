@@ -4,8 +4,8 @@
 use crate::Account;
 use starcoin_config::ChainNetwork;
 use starcoin_transaction_builder::{
-    create_signed_txn_with_association_account, encode_create_account_script_function,
-    encode_transfer_script_by_token_code, DEFAULT_MAX_GAS_AMOUNT,
+    create_signed_txn_with_association_account, encode_transfer_script_by_token_code,
+    DEFAULT_MAX_GAS_AMOUNT,
 };
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
@@ -156,19 +156,17 @@ pub fn create_user_txn(
     pre_mint_amount: u128,
     expire_time: u64,
 ) -> anyhow::Result<Vec<SignedUserTransaction>> {
-    let script_function = encode_create_account_script_function(
-        net.stdlib_version(),
-        stc_type_tag(),
-        alice.address(),
-        alice.auth_key(),
+    let script_function = encode_transfer_script_by_token_code(
+        *alice.address(),
         pre_mint_amount / 4,
+        G_STC_TOKEN_CODE.clone(),
     );
     let txn = net
         .genesis_config()
         .sign_with_association(build_transaction(
             address,
             seq_number,
-            TransactionPayload::EntryFunction(script_function),
+            script_function,
             expire_time + 60 * 60,
         ))?;
     Ok(vec![txn])

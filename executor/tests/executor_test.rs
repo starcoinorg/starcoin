@@ -33,10 +33,6 @@ use test_helper::executor::{
     TEST_MODULE, TEST_MODULE_1, TEST_MODULE_2,
 };
 
-use test_helper::executor::{
-    compile_modules_with_address, execute_and_apply, get_balance, get_sequence_number,
-    prepare_genesis,
-};
 // use test_helper::Account;
 use starcoin_state_api::StateReaderExt;
 use starcoin_types::account::Account;
@@ -45,6 +41,10 @@ use starcoin_vm_runtime::starcoin_vm::{chunk_block_transactions, StarcoinVM};
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::state_value::StateValue;
+use test_helper::executor::{
+    compile_modules_with_address, execute_and_apply, get_balance, get_sequence_number,
+    prepare_genesis,
+};
 use test_helper::txn::create_account_txn_sent_as_association;
 
 #[derive(Default)]
@@ -201,17 +201,12 @@ fn test_txn_verify_err_case() -> Result<()> {
     let mut vm = StarcoinVM::new(None, &chain_state);
     let alice = Account::new();
     let bob = Account::new();
-    let script_function = encode_create_account_script_function(
-        net.stdlib_version(),
-        stc_type_tag(),
-        alice.address(),
-        alice.auth_key(),
-        100000,
-    );
+    let script_function =
+        encode_transfer_script_by_token_code(*alice.address(), 100000, G_STC_TOKEN_CODE.clone());
     let txn = RawUserTransaction::new_with_default_gas_token(
         *alice.address(),
         0,
-        TransactionPayload::EntryFunction(script_function),
+        script_function,
         10000000,
         1,
         1000 + 60 * 60,
