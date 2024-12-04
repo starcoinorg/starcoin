@@ -851,7 +851,7 @@ module starcoin_framework::object {
         std::vector::push_back(&mut bytes, 0);
         std::vector::push_back(&mut bytes, 0);
         std::vector::push_back(&mut bytes, DERIVE_AUID_ADDRESS_SCHEME);
-        let auid2 = starcoin_framework::from_bcs::to_address(std::hash::sha3_256(bytes));
+        let auid2 = starcoin_framework::from_bcs::to_address(bcs_util::truncate_16(std::hash::sha3_256(bytes)));
         assert!(auid1 == auid2, 0);
     }
 
