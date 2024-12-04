@@ -12,7 +12,9 @@ use bcs_ext::Sample;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::{CryptoHash, CryptoHasher};
+use vm::deserializer::DeserializerConfig;
 use vm::errors::Location;
+use vm::file_format_common::{IDENTIFIER_SIZE_MAX, VERSION_MAX};
 
 #[derive(
     Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash, JsonSchema,
@@ -57,7 +59,8 @@ impl Package {
     }
 
     fn parse_module_address(module: &Module) -> Result<AccountAddress> {
-        let compiled_module = CompiledModule::deserialize(module.code())
+        let config = DeserializerConfig::new(VERSION_MAX, IDENTIFIER_SIZE_MAX);
+        let compiled_module = CompiledModule::deserialize_with_config(module.code(), &config)
             .map_err(|e| e.finish(Location::Undefined).into_vm_status())?;
         Ok(*compiled_module.address())
     }
