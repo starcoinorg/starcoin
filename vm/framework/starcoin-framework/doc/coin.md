@@ -1462,7 +1462,6 @@ Create STC pairing by passing <code>StarcoinCoin</code>.
                 )
             };
 
-        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="coin.md#0x1_coin_create_and_return_paired_metadata_if_not_exist">coin::create_and_return_paired_metadata_if_not_exist</a> | 5"));
         <a href="primary_fungible_store.md#0x1_primary_fungible_store_create_primary_store_enabled_fungible_asset">primary_fungible_store::create_primary_store_enabled_fungible_asset</a>(
             &metadata_object_cref,
             <a href="../../move-stdlib/doc/option.md#0x1_option_none">option::none</a>(),

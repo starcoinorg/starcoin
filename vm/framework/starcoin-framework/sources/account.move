@@ -4,13 +4,16 @@ module starcoin_framework::account {
     use std::hash;
     use std::option::{Self, Option};
     use std::signer;
+    use std::string;
     use std::vector;
 
+    use starcoin_framework::bcs_util;
     use starcoin_framework::chain_id;
     use starcoin_framework::create_signer::create_signer;
     use starcoin_framework::event::{Self, EventHandle};
     use starcoin_framework::guid;
     use starcoin_framework::system_addresses;
+
     use starcoin_std::debug;
     use starcoin_std::ed25519;
     use starcoin_std::from_bcs;
@@ -209,17 +212,18 @@ module starcoin_framework::account {
             error::invalid_argument(ECANNOT_RESERVED_ADDRESS)
         );
 
-        let signer = create_account_unchecked(new_address);
+        let signer = create_account_unchecked(new_address, vector::empty<u8>());
 
         debug::print(&std::string::utf8(b"account::create_account | Exited"));
 
         signer
     }
 
-    fun create_account_unchecked(new_address: address): signer {
+    fun create_account_unchecked(new_address: address, authentication_key: vector<u8>): signer {
         let new_account = create_signer(new_address);
-        // fixme: create authentication key from address.
-        let authentication_key = ZERO_AUTH_KEY;
+        if (vector::is_empty(&authentication_key)) {
+            authentication_key = ZERO_AUTH_KEY
+        };
         assert!(
             vector::length(&authentication_key) == 32,
             error::invalid_argument(EMALFORMED_AUTHENTICATION_KEY)
@@ -342,6 +346,8 @@ module starcoin_framework::account {
         cap_rotate_key: vector<u8>,
         cap_update_table: vector<u8>,
     ) acquires Account, OriginatingAddress {
+        debug::print(&string::utf8(b"account::rotate_authentication_key | entered"));
+
         let addr = signer::address_of(account);
         assert!(exists_at(addr), error::not_found(EACCOUNT_DOES_NOT_EXIST));
         let account_resource = borrow_global_mut<Account>(addr);
@@ -365,8 +371,12 @@ module starcoin_framework::account {
             abort error::invalid_argument(EINVALID_SCHEME)
         };
 
+        debug::print(&string::utf8(b"starcoin_framework::rotate_authentication_key | curr_auth_key_as_address"));
+        let truncated_authentication_key = bcs_util::truncate_16(account_resource.authentication_key);
+        debug::print(&truncated_authentication_key);
+
         // Construct a valid `RotationProofChallenge` that `cap_rotate_key` and `cap_update_table` will validate against.
-        let curr_auth_key_as_address = from_bcs::to_address(account_resource.authentication_key);
+        let curr_auth_key_as_address = from_bcs::to_address(truncated_authentication_key);
         let challenge = RotationProofChallenge {
             sequence_number: account_resource.sequence_number,
             originator: addr,
@@ -390,6 +400,8 @@ module starcoin_framework::account {
 
         // Update the `OriginatingAddress` table.
         update_auth_key_and_originating_address_table(addr, account_resource, new_auth_key);
+
+        debug::print(&string::utf8(b"account::rotate_authentication_key | exited"));
     }
 
     public entry fun rotate_authentication_key_with_rotation_capability(
@@ -409,7 +421,7 @@ module starcoin_framework::account {
             error::not_found(ENO_SUCH_ROTATION_CAPABILITY_OFFER)
         );
 
-        let curr_auth_key = from_bcs::to_address(offerer_account_resource.authentication_key);
+        let curr_auth_key = from_bcs::to_address(bcs_util::truncate_16(offerer_account_resource.authentication_key));
         let challenge = RotationProofChallenge {
             sequence_number: get_sequence_number(delegate_address),
             originator: rotation_cap_offerer_address,
@@ -664,8 +676,10 @@ module starcoin_framework::account {
         account_resource: &mut Account,
         new_auth_key_vector: vector<u8>,
     ) acquires OriginatingAddress {
+        debug::print(&string::utf8(b"account::update_auth_key_and_originating_address_table | entered"));
+
         let address_map = &mut borrow_global_mut<OriginatingAddress>(@starcoin_framework).address_map;
-        let curr_auth_key = from_bcs::to_address(account_resource.authentication_key);
+        let curr_auth_key = from_bcs::to_address(bcs_util::truncate_16(account_resource.authentication_key));
 
         // Checks `OriginatingAddress[curr_auth_key]` is either unmapped, or mapped to `originating_address`.
         // If it's mapped to the originating address, removes that mapping.
@@ -686,8 +700,14 @@ module starcoin_framework::account {
             );
         };
 
+
         // Set `OriginatingAddress[new_auth_key] = originating_address`.
-        let new_auth_key = from_bcs::to_address(new_auth_key_vector);
+        let new_auth_key = from_bcs::to_address(bcs_util::truncate_16(new_auth_key_vector));
+
+        debug::print(&string::utf8(b"account::update_auth_key_and_originating_address_table | new_auth_key"));
+        debug::print(&new_auth_key);
+
+
         table::add(address_map, new_auth_key, originating_addr);
 
         if (std::features::module_event_migration_enabled()) {
@@ -707,6 +727,8 @@ module starcoin_framework::account {
 
         // Update the account resource's authentication key.
         account_resource.authentication_key = new_auth_key_vector;
+
+        debug::print(&string::utf8(b"account::update_auth_key_and_originating_address_table | exited"));
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -715,11 +737,12 @@ module starcoin_framework::account {
 
     /// This is a helper function to compute resource addresses. Computation of the address
     /// involves the use of a cryptographic hash operation and should be use thoughtfully.
-    public fun create_resource_address(source: &address, seed: vector<u8>): address {
+    public fun create_resource_address(source: &address, seed: vector<u8>): (address, vector<u8>) {
         let bytes = bcs::to_bytes(source);
         vector::append(&mut bytes, seed);
         vector::push_back(&mut bytes, DERIVE_RESOURCE_ACCOUNT_SCHEME);
-        from_bcs::to_address(hash::sha3_256(bytes))
+        let auth_key = hash::sha3_256(bytes);
+        (from_bcs::to_address(bcs_util::truncate_16(auth_key)), auth_key)
     }
 
     /// A resource account is used to manage resources independent of an account managed by a user.
@@ -732,7 +755,7 @@ module starcoin_framework::account {
     /// collision where someone has legitimately produced a private key that maps to a resource account address is less
     /// than `(1/2)^(256)`.
     public fun create_resource_account(source: &signer, seed: vector<u8>): (signer, SignerCapability) acquires Account {
-        let resource_addr = create_resource_address(&signer::address_of(source), seed);
+        let (resource_addr, auth_key) = create_resource_address(&signer::address_of(source), seed);
         let resource = if (exists_at(resource_addr)) {
             let account = borrow_global<Account>(resource_addr);
             assert!(
@@ -745,7 +768,7 @@ module starcoin_framework::account {
             );
             create_signer(resource_addr)
         } else {
-            create_account_unchecked(resource_addr)
+            create_account_unchecked(resource_addr, auth_key)
         };
 
         // By default, only the SignerCapability should have control over the resource account and not the auth key.
@@ -767,17 +790,7 @@ module starcoin_framework::account {
 
     /// Convert from authentication key to address
     public fun auth_key_to_address(authentication_key: vector<u8>): address {
-        assert!(vector::length(&authentication_key) == 32, error::invalid_argument(EMALFORMED_AUTHENTICATION_KEY));
-        let address_bytes = vector::empty<u8>();
-
-        let i = 16;
-        while (i < 32) {
-            let b = *vector::borrow(&authentication_key, i);
-            vector::push_back(&mut address_bytes, b);
-            i = i + 1;
-        };
-
-        from_bcs::to_address(address_bytes)
+        from_bcs::to_address(bcs_util::truncate_16(authentication_key))
     }
 
     /// create the account for system reserved addresses
@@ -795,7 +808,7 @@ module starcoin_framework::account {
                 addr == @0xa,
             error::permission_denied(ENO_VALID_FRAMEWORK_RESERVED_ADDRESS),
         );
-        let signer = create_account_unchecked(addr);
+        let signer = create_account_unchecked(addr, vector::empty<u8>());
         let signer_cap = SignerCapability { account: addr };
         (signer, signer_cap)
     }
@@ -910,7 +923,7 @@ module starcoin_framework::account {
     public fun create_account_for_test(new_address: address): signer {
         // Make this easier by just allowing the account to be created again in a test
         if (!exists_at(new_address)) {
-            create_account_unchecked(new_address)
+            create_account_unchecked(new_address, vector::empty<u8>())
         } else {
             create_signer_for_test(new_address)
         }
@@ -1000,8 +1013,8 @@ module starcoin_framework::account {
 
     #[test(user = @0x1)]
     public entry fun test_resource_account_and_create_account(user: signer) acquires Account {
-        let resource_addr = create_resource_address(&@0x1, x"01");
-        create_account_unchecked(resource_addr);
+        let (resource_addr, auth_key) = create_resource_address(&@0x1, x"01");
+        create_account_unchecked(resource_addr, auth_key);
 
         create_resource_account(&user, x"01");
     }
@@ -1091,11 +1104,12 @@ module starcoin_framework::account {
     }
 
     #[test_only]
-    public fun create_account_from_ed25519_public_key(pk_bytes: vector<u8>): signer {
+    public fun create_account_from_ed25519_public_key(pk_bytes: vector<u8>): signer acquires Account {
         let pk = ed25519::new_unvalidated_public_key_from_bytes(pk_bytes);
         let curr_auth_key = ed25519::unvalidated_public_key_to_authentication_key(&pk);
-        let alice_address = from_bcs::to_address(curr_auth_key);
-        let alice = create_account_unchecked(alice_address);
+        let alice_address = from_bcs::to_address(bcs_util::truncate_16(curr_auth_key));
+        let alice = create_account_unchecked(alice_address, curr_auth_key);
+        rotate_authentication_key_internal(&alice, curr_auth_key);
         alice
     }
 
@@ -1104,7 +1118,7 @@ module starcoin_framework::account {
     //
 
     #[test(bob = @0x345)]
-    #[expected_failure(abort_code = 65544, location = Self)]
+    #[expected_failure(abort_code = 65544, location = starcoin_framework::account)]
     public entry fun test_invalid_offer_signer_capability(bob: signer) acquires Account {
         let (_alice_sk, alice_pk) = ed25519::generate_keys();
         let alice_pk_bytes = ed25519::validated_public_key_to_bytes(&alice_pk);
@@ -1423,7 +1437,6 @@ module starcoin_framework::account {
     //
     // Tests for key rotation
     //
-
     #[test(account = @starcoin_framework)]
     public entry fun test_valid_rotate_authentication_key_multi_ed25519_to_multi_ed25519(
         account: signer
@@ -1432,13 +1445,13 @@ module starcoin_framework::account {
         let (curr_sk, curr_pk) = multi_ed25519::generate_keys(2, 3);
         let curr_pk_unvalidated = multi_ed25519::public_key_to_unvalidated(&curr_pk);
         let curr_auth_key = multi_ed25519::unvalidated_public_key_to_authentication_key(&curr_pk_unvalidated);
-        let alice_addr = from_bcs::to_address(curr_auth_key);
-        let alice = create_account_unchecked(alice_addr);
+        let alice_addr = from_bcs::to_address(bcs_util::truncate_16(curr_auth_key));
+        let alice = create_account_unchecked(alice_addr, curr_auth_key);
 
         let (new_sk, new_pk) = multi_ed25519::generate_keys(4, 5);
         let new_pk_unvalidated = multi_ed25519::public_key_to_unvalidated(&new_pk);
         let new_auth_key = multi_ed25519::unvalidated_public_key_to_authentication_key(&new_pk_unvalidated);
-        let new_address = from_bcs::to_address(new_auth_key);
+        let new_address = from_bcs::to_address(bcs_util::truncate_16(new_auth_key));
 
         let challenge = RotationProofChallenge {
             sequence_number: borrow_global<Account>(alice_addr).sequence_number,
@@ -1474,15 +1487,15 @@ module starcoin_framework::account {
         let (curr_sk, curr_pk) = multi_ed25519::generate_keys(2, 3);
         let curr_pk_unvalidated = multi_ed25519::public_key_to_unvalidated(&curr_pk);
         let curr_auth_key = multi_ed25519::unvalidated_public_key_to_authentication_key(&curr_pk_unvalidated);
-        let alice_addr = from_bcs::to_address(curr_auth_key);
-        let alice = create_account_unchecked(alice_addr);
+        let alice_addr = from_bcs::to_address(bcs_util::truncate_16(curr_auth_key));
+        let alice = create_account_unchecked(alice_addr, curr_auth_key);
 
         let account_resource = borrow_global_mut<Account>(alice_addr);
 
         let (new_sk, new_pk) = ed25519::generate_keys();
         let new_pk_unvalidated = ed25519::public_key_to_unvalidated(&new_pk);
         let new_auth_key = ed25519::unvalidated_public_key_to_authentication_key(&new_pk_unvalidated);
-        let new_addr = from_bcs::to_address(new_auth_key);
+        let new_addr = from_bcs::to_address(bcs_util::truncate_16(new_auth_key));
 
         let challenge = RotationProofChallenge {
             sequence_number: account_resource.sequence_number,
@@ -1516,12 +1529,12 @@ module starcoin_framework::account {
         initialize(account);
 
         let alice_addr = @0x1234;
-        let alice = create_account_unchecked(alice_addr);
+        let alice = create_account_unchecked(alice_addr, vector::empty<u8>());
 
         let (_new_sk, new_pk) = ed25519::generate_keys();
         let new_pk_unvalidated = ed25519::public_key_to_unvalidated(&new_pk);
         let new_auth_key = ed25519::unvalidated_public_key_to_authentication_key(&new_pk_unvalidated);
-        let _new_addr = from_bcs::to_address(new_auth_key);
+        let _new_addr = from_bcs::to_address(bcs_util::truncate_16(new_auth_key));
 
         rotate_authentication_key_call(&alice, new_auth_key);
         assert!(borrow_global<Account>(alice_addr).authentication_key == new_auth_key, 0);
@@ -1532,7 +1545,7 @@ module starcoin_framework::account {
     #[expected_failure(abort_code = 0x20014, location = Self)]
     public entry fun test_max_guid(account: &signer) acquires Account {
         let addr = signer::address_of(account);
-        create_account_unchecked(addr);
+        create_account_unchecked(addr, vector::empty<u8>());
         let account_state = borrow_global_mut<Account>(addr);
         account_state.guid_creation_num = MAX_GUID_CREATION_NUM - 1;
         create_guid(account);
@@ -1547,7 +1560,7 @@ module starcoin_framework::account {
     #[test(account = @0x1234)]
     fun test_events(account: &signer) acquires Account {
         let addr = signer::address_of(account);
-        create_account_unchecked(addr);
+        create_account_unchecked(addr, vector::empty<u8>());
         register_coin<FakeCoin>(addr);
 
         let eventhandle = &borrow_global<Account>(addr).coin_register_events;

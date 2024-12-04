@@ -12,11 +12,15 @@ module starcoin_framework::starcoin_account {
     use starcoin_framework::object;
     use starcoin_framework::primary_fungible_store;
     use starcoin_framework::starcoin_coin::STC;
+    #[test_only]
+    use std::string;
 
     #[test_only]
     use std::string::utf8;
     #[test_only]
     use starcoin_framework::account::create_account_for_test;
+    #[test_only]
+    use starcoin_std::debug;
     #[test_only]
     use starcoin_std::from_bcs;
 
@@ -277,18 +281,23 @@ module starcoin_framework::starcoin_account {
 
     #[test(alice = @0xa11ce, core = @0x1)]
     public fun test_transfer_to_resource_account(alice: &signer, core: &signer) {
+        debug::print(&string::utf8(b"starcoin_account::test_transfer_to_resource_account | entered"));
         let (resource_account, _) = account::create_resource_account(alice, vector[]);
         let resource_acc_addr = signer::address_of(&resource_account);
+
         let (burn_cap, mint_cap) = starcoin_framework::starcoin_coin::initialize_for_test(core);
         assert!(!coin::is_account_registered<STC>(resource_acc_addr), 0);
 
         create_account(signer::address_of(alice));
         coin::deposit(signer::address_of(alice), coin::mint(10000, &mint_cap));
+        debug::print(&coin::balance<STC>(signer::address_of(alice)));
+
         transfer(alice, resource_acc_addr, 500);
         assert!(coin::balance<STC>(resource_acc_addr) == 500, 1);
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
+        debug::print(&string::utf8(b"starcoin_account::test_transfer_to_resource_account | exited"));
     }
 
     #[test(from = @0x123, core = @0x1, recipient_1 = @0x124, recipient_2 = @0x125)]

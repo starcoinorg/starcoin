@@ -18,7 +18,8 @@ module starcoin_framework::primary_fungible_store {
 
     use std::option::Option;
     use std::signer;
-    use std::string::String;
+    use std::string::{Self, String};
+    use starcoin_std::debug;
 
     #[resource_group_member(group = starcoin_framework::object::ObjectGroup)]
     /// A resource that holds the derive ref for the fungible asset metadata object. This is used to create primary
@@ -60,12 +61,15 @@ module starcoin_framework::primary_fungible_store {
         owner: address,
         metadata: Object<T>,
     ): Object<FungibleStore> acquires DeriveRefPod {
+        debug::print(&string::utf8(b"primary_fungible_store::ensure_primary_store_exists | entered"));
         let store_addr = primary_store_address(owner, metadata);
-        if (fungible_asset::store_exists(store_addr)) {
+        let ret = if (fungible_asset::store_exists(store_addr)) {
             object::address_to_object(store_addr)
         } else {
             create_primary_store(owner, metadata)
-        }
+        };
+        debug::print(&string::utf8(b"primary_fungible_store::ensure_primary_store_exists | exited"));
+        ret
     }
 
     /// Create a primary store object to hold fungible asset for the given address.
@@ -73,6 +77,10 @@ module starcoin_framework::primary_fungible_store {
         owner_addr: address,
         metadata: Object<T>,
     ): Object<FungibleStore> acquires DeriveRefPod {
+        debug::print(&string::utf8(b"primary_fungible_store::create_primary_store | entered"));
+        debug::print(&owner_addr);
+        debug::print(&metadata);
+
         let metadata_addr = object::object_address(&metadata);
         object::address_to_object<Metadata>(metadata_addr);
         let derive_ref = &borrow_global<DeriveRefPod>(metadata_addr).metadata_derive_ref;
@@ -81,7 +89,11 @@ module starcoin_framework::primary_fungible_store {
         let transfer_ref = &object::generate_transfer_ref(constructor_ref);
         object::disable_ungated_transfer(transfer_ref);
 
-        fungible_asset::create_store(constructor_ref, metadata)
+        let ret = fungible_asset::create_store(constructor_ref, metadata);
+        debug::print(&string::utf8(b"primary_fungible_store::create_primary_store | exited"));
+        debug::print(&ret);
+
+        ret
     }
 
     #[view]
@@ -163,9 +175,13 @@ module starcoin_framework::primary_fungible_store {
 
     /// Deposit fungible asset `fa` to the given account's primary store.
     public fun deposit(owner: address, fa: FungibleAsset) acquires DeriveRefPod {
+        debug::print(&string::utf8(b"primary_fungible_store::deposit | entered"));
+
         let metadata = fungible_asset::asset_metadata(&fa);
         let store = ensure_primary_store_exists(owner, metadata);
         dispatchable_fungible_asset::deposit(store, fa);
+
+        debug::print(&string::utf8(b"primary_fungible_store::deposit | exited"));
     }
 
     /// Deposit fungible asset `fa` to the given account's primary store.
@@ -269,8 +285,6 @@ module starcoin_framework::primary_fungible_store {
         generate_burn_ref,
         generate_transfer_ref
     };
-    #[test_only]
-    use std::string;
     #[test_only]
     use std::option;
 

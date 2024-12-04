@@ -200,7 +200,7 @@ module starcoin_framework::resource_account {
         create_resource_account(&user, copy seed, vector::empty());
         let container = borrow_global<Container>(user_addr);
 
-        let resource_addr = starcoin_framework::account::create_resource_address(&user_addr, seed);
+        let (resource_addr, _) = starcoin_framework::account::create_resource_address(&user_addr, seed);
         let resource_cap = simple_map::borrow(&container.store, &resource_addr);
 
         let resource = account::create_signer_with_capability(resource_cap);
@@ -221,7 +221,7 @@ module starcoin_framework::resource_account {
         create_resource_account(&user, seed2, vector::empty());
         let container = borrow_global<Container>(user_addr);
 
-        let resource_addr = account::create_resource_address(&user_addr, seed);
+        let (resource_addr, _) = account::create_resource_address(&user_addr, seed);
         let resource_cap = simple_map::borrow(&container.store, &resource_addr);
 
         let resource = account::create_signer_with_capability(resource_cap);
@@ -240,7 +240,7 @@ module starcoin_framework::resource_account {
         let seed = x"01";
         create_resource_account_and_fund(&user, copy seed, vector::empty(), 10);
 
-        let resource_addr = starcoin_framework::account::create_resource_address(&user_addr, seed);
+        let (resource_addr, _) = starcoin_framework::account::create_resource_address(&user_addr, seed);
         coin::transfer<STC>(&user, resource_addr, 10);
 
         coin::destroy_burn_cap(burn);
@@ -257,7 +257,7 @@ module starcoin_framework::resource_account {
         let seed = x"01";
         create_resource_account(&user, copy seed, vector::empty());
 
-        let resource_addr = starcoin_framework::account::create_resource_address(&user_addr, seed);
+        let (resource_addr, _) = starcoin_framework::account::create_resource_address(&user_addr, seed);
         let coin = coin::mint<STC>(100, &mint);
         coin::deposit(resource_addr, coin);
 
