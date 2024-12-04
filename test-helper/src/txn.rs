@@ -200,7 +200,7 @@ pub fn build_cast_vote_txn(
     let vote_script_function = EntryFunction::new(
         ModuleId::new(
             core_code_address(),
-            Identifier::new("DaoVoteScripts").unwrap(),
+            Identifier::new("dao_vote_scripts").unwrap(),
         ),
         Identifier::new("cast_vote").unwrap(),
         vec![stc_type_tag(), action_type_tag],
@@ -229,7 +229,7 @@ pub fn build_queue_txn(
     expire_time: u64,
 ) -> SignedUserTransaction {
     let script_function = EntryFunction::new(
-        ModuleId::new(core_code_address(), Identifier::new("Dao").unwrap()),
+        ModuleId::new(core_code_address(), Identifier::new("dao").unwrap()),
         Identifier::new("queue_proposal_action").unwrap(),
         vec![stc_type_tag(), action_type_tag],
         vec![

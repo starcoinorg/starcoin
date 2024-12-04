@@ -172,7 +172,7 @@ pub fn execute_create_account(
 pub fn quorum_vote<S: StateView>(state_view: &S, token: TypeTag) -> u128 {
     let mut ret = execute_readonly_function(
         state_view,
-        &ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap()),
+        &ModuleId::new(genesis_address(), Identifier::new("dao").unwrap()),
         &Identifier::new("quorum_votes").unwrap(),
         vec![token],
         vec![],
@@ -186,7 +186,7 @@ pub fn quorum_vote<S: StateView>(state_view: &S, token: TypeTag) -> u128 {
 pub fn voting_delay<S: StateView>(state_view: &S, token: TypeTag) -> u64 {
     let mut ret = execute_readonly_function(
         state_view,
-        &ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap()),
+        &ModuleId::new(genesis_address(), Identifier::new("dao").unwrap()),
         &Identifier::new("voting_delay").unwrap(),
         vec![token],
         vec![],
@@ -200,7 +200,7 @@ pub fn voting_delay<S: StateView>(state_view: &S, token: TypeTag) -> u64 {
 pub fn voting_period<S: StateView>(state_view: &S, token: TypeTag) -> u64 {
     let mut ret = execute_readonly_function(
         state_view,
-        &ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap()),
+        &ModuleId::new(genesis_address(), Identifier::new("dao").unwrap()),
         &Identifier::new("voting_period").unwrap(),
         vec![token],
         vec![],
@@ -214,7 +214,7 @@ pub fn voting_period<S: StateView>(state_view: &S, token: TypeTag) -> u64 {
 pub fn min_action_delay<S: StateView>(state_view: &S, token: TypeTag) -> u64 {
     let mut ret = execute_readonly_function(
         state_view,
-        &ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap()),
+        &ModuleId::new(genesis_address(), Identifier::new("dao").unwrap()),
         &Identifier::new("min_action_delay").unwrap(),
         vec![token],
         vec![],
@@ -253,7 +253,7 @@ fn execute_cast_vote(
     let script_function = EntryFunction::new(
         ModuleId::new(
             core_code_address(),
-            Identifier::new("DaoVoteScripts").unwrap(),
+            Identifier::new("dao_vote_scripts").unwrap(),
         ),
         Identifier::new("cast_vote").unwrap(),
         vec![stc_type_tag(), dao_action_type_tag.clone()],
@@ -296,7 +296,7 @@ pub fn vote_script_consensus(_net: &ChainNetwork, strategy: u8) -> EntryFunction
     EntryFunction::new(
         ModuleId::new(
             core_code_address(),
-            Identifier::new("OnChainConfigScripts").unwrap(),
+            Identifier::new("on_chain_config_scripts").unwrap(),
         ),
         Identifier::new("propose_update_consensus_config").unwrap(),
         vec![],
@@ -322,7 +322,7 @@ pub fn vote_reward_scripts(_net: &ChainNetwork, reward_delay: u64) -> EntryFunct
     EntryFunction::new(
         ModuleId::new(
             core_code_address(),
-            Identifier::new("OnChainConfigScripts").unwrap(),
+            Identifier::new("on_chain_config_scripts").unwrap(),
         ),
         Identifier::new("propose_update_reward_config").unwrap(),
         vec![],
@@ -338,7 +338,7 @@ pub fn vote_txn_timeout_script(_net: &ChainNetwork, duration_seconds: u64) -> En
     EntryFunction::new(
         ModuleId::new(
             core_code_address(),
-            Identifier::new("OnChainConfigScripts").unwrap(),
+            Identifier::new("on_chain_config_scripts").unwrap(),
         ),
         Identifier::new("propose_update_txn_timeout_config").unwrap(),
         vec![],
@@ -358,7 +358,7 @@ pub fn vote_txn_publish_option_script(
     EntryFunction::new(
         ModuleId::new(
             core_code_address(),
-            Identifier::new("OnChainConfigScripts").unwrap(),
+            Identifier::new("on_chain_config_scripts").unwrap(),
         ),
         Identifier::new("propose_update_txn_publish_option").unwrap(),
         vec![],
@@ -375,7 +375,7 @@ pub fn vote_vm_config_script(_net: &ChainNetwork, vm_config: VMConfig) -> EntryF
     EntryFunction::new(
         ModuleId::new(
             core_code_address(),
-            Identifier::new("OnChainConfigScripts").unwrap(),
+            Identifier::new("on_chain_config_scripts").unwrap(),
         ),
         Identifier::new("propose_update_vm_config").unwrap(),
         vec![],
@@ -390,7 +390,7 @@ pub fn vote_language_version(_net: &ChainNetwork, lang_version: u64) -> EntryFun
     EntryFunction::new(
         ModuleId::new(
             core_code_address(),
-            Identifier::new("OnChainConfigScripts").unwrap(),
+            Identifier::new("on_chain_config_scripts").unwrap(),
         ),
         Identifier::new("propose_update_move_language_version").unwrap(),
         vec![],
@@ -405,7 +405,7 @@ pub fn vote_flexi_dag_config(_net: &ChainNetwork, effective_height: u64) -> Entr
     EntryFunction::new(
         ModuleId::new(
             core_code_address(),
-            Identifier::new("OnChainConfigScripts").unwrap(),
+            Identifier::new("on_chain_config_scripts").unwrap(),
         ),
         Identifier::new("propose_update_flexi_dag_effective_height").unwrap(),
         vec![],
@@ -425,7 +425,7 @@ pub fn execute_script_on_chain_config(
     EntryFunction::new(
         ModuleId::new(
             core_code_address(),
-            Identifier::new("OnChainConfigScripts").unwrap(),
+            Identifier::new("on_chain_config_scripts").unwrap(),
         ),
         Identifier::new("execute_on_chain_config_proposal").unwrap(),
         vec![type_tag],
@@ -551,7 +551,7 @@ pub fn dao_vote_test(
         assert_eq!(state, AGREED);
 
         let script_function = EntryFunction::new(
-            ModuleId::new(core_code_address(), Identifier::new("Dao").unwrap()),
+            ModuleId::new(core_code_address(), Identifier::new("dao").unwrap()),
             Identifier::new("queue_proposal_action").unwrap(),
             vec![stc_type_tag(), action_type_tag.clone()],
             vec![
@@ -635,7 +635,7 @@ pub fn dao_vote_test(
         let script_function = EntryFunction::new(
             ModuleId::new(
                 core_code_address(),
-                Identifier::new("DaoVoteScripts").unwrap(),
+                Identifier::new("dao_vote_scripts").unwrap(),
             ),
             Identifier::new("unstake_vote").unwrap(),
             vec![stc_type_tag(), action_type_tag.clone()],
@@ -653,7 +653,7 @@ pub fn dao_vote_test(
     {
         // Destroy terminated proposal
         let script_function = EntryFunction::new(
-            ModuleId::new(core_code_address(), Identifier::new("Dao").unwrap()),
+            ModuleId::new(core_code_address(), Identifier::new("dao").unwrap()),
             Identifier::new("destroy_terminated_proposal").unwrap(),
             vec![stc_type_tag(), action_type_tag],
             vec![
