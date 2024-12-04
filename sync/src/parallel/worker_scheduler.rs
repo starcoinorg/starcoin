@@ -78,6 +78,7 @@ impl WorkerScheduler {
             tokio::task::yield_now().await;
             debug!("waiting for worker to exit, attempt {}", attempts);
             tokio::time::sleep(delay).await;
+            // the delay is no more than 2 hours
             delay = std::cmp::min(delay.saturating_mul(2), Duration::from_secs(60 * 60 * 2));
         }
 
