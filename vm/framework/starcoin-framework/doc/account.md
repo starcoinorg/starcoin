@@ -1931,6 +1931,8 @@ in the event of key recovery.
 
     // Update the <a href="account.md#0x1_account">account</a> resource's authentication key.
     account_resource.authentication_key = new_auth_key_vector;
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="account.md#0x1_account_update_auth_key_and_originating_address_table">account::update_auth_key_and_originating_address_table</a> | exited"));
 }
 </code></pre>
 

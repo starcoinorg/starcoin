@@ -7,6 +7,7 @@ module starcoin_framework::fungible_asset {
     use std::signer;
     use std::string;
     use std::string::String;
+    use starcoin_std::debug;
 
     use starcoin_framework::aggregator_v2::{Self, Aggregator};
     use starcoin_framework::create_signer;
@@ -246,6 +247,8 @@ module starcoin_framework::fungible_asset {
         icon_uri: String,
         project_uri: String,
     ): Object<Metadata> {
+        debug::print(&std::string::utf8(b"fungible_asset::add_fungibility | entered"));
+
         assert!(!object::can_generate_delete_ref(constructor_ref), error::invalid_argument(EOBJECT_IS_DELETABLE));
         let metadata_object_signer = &object::generate_signer(constructor_ref);
         assert!(string::length(&name) <= MAX_NAME_LENGTH, error::out_of_range(ENAME_TOO_LONG));
@@ -253,6 +256,7 @@ module starcoin_framework::fungible_asset {
         assert!(decimals <= MAX_DECIMALS, error::out_of_range(EDECIMALS_TOO_LARGE));
         assert!(string::length(&icon_uri) <= MAX_URI_LENGTH, error::out_of_range(EURI_TOO_LONG));
         assert!(string::length(&project_uri) <= MAX_URI_LENGTH, error::out_of_range(EURI_TOO_LONG));
+
         move_to(metadata_object_signer,
             Metadata {
                 name,
@@ -262,6 +266,9 @@ module starcoin_framework::fungible_asset {
                 project_uri,
             }
         );
+
+        debug::print(&std::string::utf8(b"fungible_asset::add_fungibility | default_to_concurrent_fungible_supply"));
+        debug::print(&default_to_concurrent_fungible_supply());
 
         if (default_to_concurrent_fungible_supply()) {
             let unlimited = option::is_none(&maximum_supply);
@@ -279,7 +286,11 @@ module starcoin_framework::fungible_asset {
             });
         };
 
-        object::object_from_constructor_ref<Metadata>(constructor_ref)
+        let ret = object::object_from_constructor_ref<Metadata>(constructor_ref);
+
+        debug::print(&std::string::utf8(b"fungible_asset::add_fungibility | exited"));
+
+        ret
     }
 
     /// Set that only untransferable stores can be created for this fungible asset.
@@ -1478,6 +1489,7 @@ module starcoin_framework::fungible_asset {
 
         let (creator_ref, token_object) = create_test_token(creator);
         let (mint_ref, transfer_ref, _burn, _mutate_metadata_ref) = init_test_metadata(&creator_ref);
+
         let test_token = object::convert<TestToken, Metadata>(token_object);
         assert!(exists<Supply>(object::object_address(&test_token)), 1);
         assert!(!exists<ConcurrentSupply>(object::object_address(&test_token)), 2);
