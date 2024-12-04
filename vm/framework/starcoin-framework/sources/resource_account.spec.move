@@ -86,8 +86,8 @@ spec starcoin_framework::resource_account {
         let resource_addr = account::spec_create_resource_address(source_addr, seed);
         let coin_store_resource = global<coin::CoinStore<STC>>(resource_addr);
 
-        include starcoin_account::WithdrawAbortsIf<STC>{from: origin, amount: fund_amount};
-        include starcoin_account::GuidAbortsIf<STC>{to: resource_addr};
+        include starcoin_account::WithdrawAbortsIf<STC> { from: origin, amount: fund_amount };
+        include starcoin_account::GuidAbortsIf<STC> { to: resource_addr };
         include RotateAccountAuthenticationKeyAndStoreCapabilityAbortsIfWithoutAccountLimit;
 
         //coin property
@@ -139,7 +139,9 @@ spec starcoin_framework::resource_account {
         aborts_if get && !exists<Account>(source_addr);
         /// [high-level-req-4]
         aborts_if exists<Container>(source_addr) && simple_map::spec_contains_key(container.store, resource_addr);
-        aborts_if get && !(exists<Account>(resource_addr) && len(global<Account>(source_addr).authentication_key) == 32);
+        aborts_if get && !(exists<Account>(resource_addr) && len(
+            global<Account>(source_addr).authentication_key
+        ) == 32);
         aborts_if !get && !(exists<Account>(resource_addr) && len(optional_auth_key) == 32);
 
         ensures simple_map::spec_contains_key(global<Container>(source_addr).store, resource_addr);
@@ -159,12 +161,15 @@ spec starcoin_framework::resource_account {
 
         aborts_if len(ZERO_AUTH_KEY) != 32;
         include account::exists_at(resource_addr) ==> account::CreateResourceAccountAbortsIf;
-        include !account::exists_at(resource_addr) ==> account::CreateAccountAbortsIf {addr: resource_addr};
+        include !account::exists_at(
+            resource_addr
+        ) ==> account::CreateAccountAbortsIf { addr: resource_addr, authentication_key: optional_auth_key };
 
         aborts_if get && !exists<account::Account>(source_addr);
         aborts_if exists<Container>(source_addr) && simple_map::spec_contains_key(container.store, resource_addr);
-        aborts_if get && len(global<account::Account>(source_addr).authentication_key) != 32;
-        aborts_if !get && len(optional_auth_key) != 32;
+        aborts_if get && len(global<account::Account>(source_addr).authentication_key) != 32;aborts_if !get && len(
+            optional_auth_key
+        ) != 32;
 
         ensures simple_map::spec_contains_key(global<Container>(source_addr).store, resource_addr);
         ensures exists<Container>(source_addr);
@@ -173,7 +178,7 @@ spec starcoin_framework::resource_account {
     spec retrieve_resource_account_cap(
         resource: &signer,
         source_addr: address,
-    ) : account::SignerCapability  {
+    ) : account::SignerCapability {
         /// [high-level-req-6]
         aborts_if !exists<Container>(source_addr);
         let resource_addr = signer::address_of(resource);
@@ -185,6 +190,9 @@ spec starcoin_framework::resource_account {
         /// [high-level-req-8]
         ensures simple_map::spec_contains_key(old(global<Container>(source_addr)).store, resource_addr) &&
             simple_map::spec_len(old(global<Container>(source_addr)).store) == 1 ==> !exists<Container>(source_addr);
-        ensures exists<Container>(source_addr) ==> !simple_map::spec_contains_key(global<Container>(source_addr).store, resource_addr);
+        ensures exists<Container>(source_addr) ==> !simple_map::spec_contains_key(
+            global<Container>(source_addr).store,
+            resource_addr
+        );
     }
 }

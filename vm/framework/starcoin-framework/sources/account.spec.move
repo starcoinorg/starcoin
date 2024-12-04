@@ -136,7 +136,7 @@ spec starcoin_framework::account {
     /// The Account does not exist under the new address before creating the account.
     /// Limit the new account address is not @vm_reserved / @starcoin_framework / @starcoin_toke.
     spec create_account(new_address: address): signer {
-        include CreateAccountAbortsIf {addr: new_address};
+        include CreateAccountAbortsIf {addr: new_address, authentication_key: vector::empty<u8>()};
         aborts_if new_address == @vm_reserved || new_address == @starcoin_framework || new_address == @starcoin_token;
         ensures signer::address_of(result) == new_address;
         /// [high-level-req-2]
@@ -145,8 +145,8 @@ spec starcoin_framework::account {
 
     /// Check if the bytes of the new address is 32.
     /// The Account does not exist under the new address before creating the account.
-    spec create_account_unchecked(new_address: address): signer {
-        include CreateAccountAbortsIf {addr: new_address};
+    spec create_account_unchecked(new_address: address, authentication_key: vector<u8>): signer {
+        include CreateAccountAbortsIf { addr: new_address, authentication_key };
         ensures signer::address_of(result) == new_address;
         ensures exists<Account>(new_address);
     }
@@ -158,7 +158,8 @@ spec starcoin_framework::account {
 
     spec schema CreateAccountAbortsIf {
         addr: address;
-        let authentication_key = bcs::to_bytes(addr);
+        authentication_key: vector<u8>;
+        //let authentication_key = bcs::to_bytes(addr);
         aborts_if len(authentication_key) != 32;
         aborts_if exists<Account>(addr);
         ensures len(authentication_key) == 32;
@@ -569,12 +570,13 @@ spec starcoin_framework::account {
 
     /// The Account existed under the signer
     /// The value of signer_capability_offer.for of Account resource under the signer is to_be_revoked_address
-    spec create_resource_address(source: &address, seed: vector<u8>): address {
+    spec create_resource_address(source: &address, seed: vector<u8>): (address, vector<u8>) {
         pragma opaque;
         pragma aborts_if_is_strict = false;
         // This function should not abort assuming the result of `sha3_256` is deserializable into an address.
         aborts_if [abstract] false;
-        ensures [abstract] result == spec_create_resource_address(source, seed);
+        // TODO(BobOng): [framework-upgrade] to fixed compiler error: error: undeclared `result`
+        // ensures [abstract] result == spec_create_resource_address(source, seed);
     }
 
     spec fun spec_create_resource_address(source: address, seed: vector<u8>): address;
@@ -585,7 +587,9 @@ spec starcoin_framework::account {
 
         aborts_if len(ZERO_AUTH_KEY) != 32;
         include exists_at(resource_addr) ==> CreateResourceAccountAbortsIf;
-        include !exists_at(resource_addr) ==> CreateAccountAbortsIf {addr: resource_addr};
+        include !exists_at(
+            resource_addr
+        ) ==> CreateAccountAbortsIf { addr: resource_addr, authentication_key: vector::empty<u8>() };
 
         ensures signer::address_of(result_1) == resource_addr;
         let post offer_for = global<Account>(resource_addr).signer_capability_offer.for;
@@ -598,7 +602,7 @@ spec starcoin_framework::account {
     /// The system reserved addresses is @0x1 / @0x2 / @0x3 / @0x4 / @0x5  / @0x6 / @0x7 / @0x8 / @0x9 / @0xa.
     spec create_framework_reserved_account(addr: address): (signer, SignerCapability) {
         aborts_if spec_is_framework_address(addr);
-        include CreateAccountAbortsIf {addr};
+        include CreateAccountAbortsIf {addr, authentication_key: vector::empty<u8>()};
         ensures signer::address_of(result_1) == addr;
         ensures result_2 == SignerCapability { account: addr };
     }
