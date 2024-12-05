@@ -7,9 +7,8 @@ use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_executor::validate_transaction;
 use starcoin_logger::prelude::*;
 use starcoin_transaction_builder::{
-    build_batch_payload_same_amount, build_transfer_txn, encode_create_account_script_function,
-    encode_transfer_script_by_token_code, raw_peer_to_peer_txn, DEFAULT_EXPIRATION_TIME,
-    DEFAULT_MAX_GAS_AMOUNT,
+    build_batch_payload_same_amount, build_transfer_txn, encode_transfer_script_by_token_code,
+    raw_peer_to_peer_txn, DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
 };
 use starcoin_types::account::peer_to_peer_txn;
 use starcoin_types::identifier::Identifier;
@@ -197,7 +196,7 @@ fn test_batch_transfer() -> Result<()> {
 
 #[stest::test]
 fn test_txn_verify_err_case() -> Result<()> {
-    let (chain_state, net) = prepare_genesis();
+    let (chain_state, _net) = prepare_genesis();
     let mut vm = StarcoinVM::new(None, &chain_state);
     let alice = Account::new();
     let bob = Account::new();

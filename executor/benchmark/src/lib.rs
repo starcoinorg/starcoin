@@ -15,8 +15,8 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
 use starcoin_transaction_builder::{
-    create_signed_txn_with_association_account, encode_create_account_script_function,
-    encode_transfer_script_by_token_code, encode_transfer_script_function,
+    create_signed_txn_with_association_account, encode_transfer_script_by_token_code,
+    encode_transfer_script_function,
 };
 use starcoin_types::{
     account_address,
@@ -25,18 +25,17 @@ use starcoin_types::{
     transaction::{Transaction, TransactionPayload},
 };
 use starcoin_vm_types::account_config::G_STC_TOKEN_CODE;
-use starcoin_vm_types::genesis_config::StdlibVersion;
-use starcoin_vm_types::token::stc;
-use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use std::sync::mpsc;
 use std::sync::Arc;
 
 struct AccountData {
+    #[allow(dead_code)]
     public_key: Ed25519PublicKey,
     address: AccountAddress,
 }
 
 impl AccountData {
+    #[allow(dead_code)]
     pub fn public_key(&self) -> &Ed25519PublicKey {
         &self.public_key
     }
