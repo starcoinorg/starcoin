@@ -16,7 +16,7 @@ use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
 use starcoin_transaction_builder::{
     create_signed_txn_with_association_account, encode_create_account_script_function,
-    encode_transfer_script_function,
+    encode_transfer_script_by_token_code, encode_transfer_script_function,
 };
 use starcoin_types::{
     account_address,
@@ -24,6 +24,7 @@ use starcoin_types::{
     block_metadata::BlockMetadata,
     transaction::{Transaction, TransactionPayload},
 };
+use starcoin_vm_types::account_config::G_STC_TOKEN_CODE;
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::token::stc;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
@@ -127,13 +128,11 @@ impl TransactionGenerator {
             for (j, account) in block.iter().enumerate() {
                 let txn = create_transaction(
                     self.sequence,
-                    TransactionPayload::EntryFunction(encode_create_account_script_function(
-                        StdlibVersion::Latest,
-                        stc::stc_type_tag(),
-                        &account.address,
-                        AuthenticationKey::ed25519(account.public_key()),
+                    encode_transfer_script_by_token_code(
+                        account.address,
                         init_account_balance as u128,
-                    )),
+                        G_STC_TOKEN_CODE.clone(),
+                    ),
                     self.net.time_service().now_secs() + j as u64 + 1,
                     &self.net,
                 );
