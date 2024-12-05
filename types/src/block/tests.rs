@@ -48,6 +48,7 @@ fn this_header() -> BlockHeader {
         timestamp,
         number,
         author,
+        None,
         txn_accumulator_root,
         block_accumulator_root,
         state_root,

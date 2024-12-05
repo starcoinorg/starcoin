@@ -46,9 +46,6 @@ pub mod event {
 
 pub mod filter;
 
-#[cfg(any(test, feature = "fuzzing"))]
-pub mod proptest_types;
-
 pub mod sign_message {
     pub use starcoin_vm_types::sign_message::*;
 }
