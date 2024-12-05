@@ -15,12 +15,14 @@ use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
 use starcoin_transaction_builder::{empty_txn_payload, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::block::BlockHeaderExtra;
-use starcoin_types::proptest_types::{AccountInfoUniverse, Index, SignatureCheckedTransactionGen};
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionPayload};
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader},
     block_metadata::BlockMetadata,
     U256,
+};
+use starcoin_vm_types::proptest_types::{
+    AccountInfoUniverse, Index, SignatureCheckedTransactionGen,
 };
 use std::convert::TryFrom;
 use std::sync::Arc;

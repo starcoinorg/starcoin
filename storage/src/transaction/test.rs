@@ -8,9 +8,9 @@ use crate::storage::StorageInstance;
 use crate::{Storage, TransactionStore};
 use proptest::{collection::vec, prelude::*};
 use starcoin_config::RocksdbConfig;
-use starcoin_types::{
-    proptest_types::{AccountInfoUniverse, Index, SignatureCheckedTransactionGen},
-    transaction::Transaction,
+use starcoin_types::transaction::Transaction;
+use starcoin_vm_types::proptest_types::{
+    AccountInfoUniverse, Index, SignatureCheckedTransactionGen,
 };
 
 fn init_store(
