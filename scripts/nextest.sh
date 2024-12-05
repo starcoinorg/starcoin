@@ -30,6 +30,8 @@ cargo nextest run \
 -p starcoin-config \
 -p starcoin-txpool \
 -p starcoin-chain \
+-p starcoin-network \
+-p starcoin-storage \
 --retries 2 --build-jobs 8 --test-threads 12 --no-fail-fast --failure-output immediate-final
 
 
