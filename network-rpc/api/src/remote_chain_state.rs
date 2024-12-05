@@ -62,7 +62,7 @@ impl ChainStateReader for RemoteChainStateReader {
             .ok_or_else(|| anyhow!("state root not set"))?;
         let req = GetStateWithProof {
             state_root,
-            access_path: access_path.clone(),
+            state_key: state_key.clone(),
         };
         let client = self.client.clone();
         let state_proof: StateWithProof =
