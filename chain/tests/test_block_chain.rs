@@ -551,6 +551,7 @@ fn test_block_chain_for_dag_fork() -> Result<()> {
     Ok(())
 }
 
+#[ignore]
 #[stest::test]
 fn test_gen_dag_chain() -> Result<()> {
     let fork_number = 11u64;

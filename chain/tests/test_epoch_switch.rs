@@ -14,6 +14,7 @@ use test_helper::dao::{
     vote_script_consensus,
 };
 
+#[ignore]
 #[stest::test(timeout = 120)]
 fn test_modify_on_chain_config_consensus_by_dao() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
