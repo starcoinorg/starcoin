@@ -150,8 +150,7 @@ impl DagBlockExecutor {
                                         header.id(), absent_id, delay
                                     );
                                     tokio::task::yield_now().await;
-                                    tokio::time::sleep(delay)
-                                        .await;
+                                    tokio::time::sleep(delay).await;
                                     // the delay is no more than 2 hours
                                     delay = std::cmp::min(
                                         delay.saturating_mul(2),

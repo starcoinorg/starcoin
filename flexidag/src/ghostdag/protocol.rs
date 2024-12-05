@@ -222,9 +222,19 @@ impl<
                 .collect::<HashSet<_>>()
         {
             warn!("The data of blue set is not equal when executing the block: {:?}, for {:?}, checking data: {:?}", header.id(), blue_blocks.iter().map(|header| header.id()).collect::<Vec<_>>(), new_block_data.mergeset_blues);
-            new_block_data.mergeset_blues =
-                Arc::new(vec![selected_parent].into_iter().chain(blue_blocks.iter().map(|header| header.id())).collect());
-            new_block_data.mergeset_reds = Arc::new(header.parents_hash().into_iter().filter(|header_id| !new_block_data.mergeset_blues.contains(header_id)).collect());
+            new_block_data.mergeset_blues = Arc::new(
+                vec![selected_parent]
+                    .into_iter()
+                    .chain(blue_blocks.iter().map(|header| header.id()))
+                    .collect(),
+            );
+            new_block_data.mergeset_reds = Arc::new(
+                header
+                    .parents_hash()
+                    .into_iter()
+                    .filter(|header_id| !new_block_data.mergeset_blues.contains(header_id))
+                    .collect(),
+            );
         }
 
         let blue_score = self
