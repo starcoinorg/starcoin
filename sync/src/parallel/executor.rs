@@ -123,9 +123,8 @@ impl DagBlockExecutor {
                             block.header().id()
                         );
 
-                        const MAX_ATTEMPTS: u32 = 150;
-                        const INITIAL_DELAY: Duration = Duration::from_millis(100);
-                        let mut delay = INITIAL_DELAY;
+                        const MAX_ATTEMPTS: u32 = 72000;
+                        let delay = Duration::from_millis(100);
                         let mut attempts: u32 = 0;
 
                         loop {
@@ -141,7 +140,7 @@ impl DagBlockExecutor {
                                 Ok((true, None)) => break,
                                 Ok((false, Some(absent_id))) => {
                                     attempts = attempts.saturating_add(1);
-                                    if attempts >= MAX_ATTEMPTS {
+                                    if attempts > MAX_ATTEMPTS {
                                         warn!("Timeout waiting for workers to exit, waiting for parents for block: {:?}, delay: {:?}", absent_id, delay);
                                         return;
                                     }
@@ -151,11 +150,6 @@ impl DagBlockExecutor {
                                     );
                                     tokio::task::yield_now().await;
                                     tokio::time::sleep(delay).await;
-                                    // the delay is no more than 2 hours
-                                    delay = std::cmp::min(
-                                        delay.saturating_mul(2),
-                                        Duration::from_secs(60 * 60 * 2),
-                                    );
                                 }
                                 Ok(_) => {
                                     panic!("impossible flow, check the code in waiting_for_parents")

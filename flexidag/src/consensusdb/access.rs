@@ -4,9 +4,7 @@ use super::prelude::DbWriter;
 use super::schema::{KeyCodec, Schema, ValueCodec};
 use itertools::Itertools;
 use rocksdb::{Direction, IteratorMode, ReadOptions};
-use starcoin_logger::prelude::info;
 use starcoin_storage::storage::RawDBStorage;
-use std::backtrace::Backtrace;
 use std::{
     collections::hash_map::RandomState, error::Error, hash::BuildHasher, marker::PhantomData,
     sync::Arc,
