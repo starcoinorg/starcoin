@@ -61,7 +61,6 @@ where
             self.cache.insert(key, data.clone());
             Ok(data)
         } else {
-            info!("jacktest: key not found: {:?}", Backtrace::capture());
             Err(StoreError::KeyNotFound(format!("{:?}", key)))
         }
     }
