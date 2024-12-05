@@ -180,8 +180,8 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     txpool_service.add_txns(vec![txn]).pop().unwrap().unwrap();
     let mut receiver = receiver;
     let res = receiver.next().await.unwrap();
-    let prefix = r#"{"jsonrpc":"2.0","method":"starcoin_subscription","params":{"result":[""#;
-    let suffix = r#""],"subscription":0}}"#;
+    let prefix = r#"{"jsonrpc":"2.0","method":"starcoin_subscription","params":{"subscription":0,"result":[""#;
+    let suffix = r#""]}}"#;
     let response = format!("{}0x{}{}", prefix, txn_id.to_hex(), suffix);
     assert_eq!(res, response);
     // And unsubscribe
