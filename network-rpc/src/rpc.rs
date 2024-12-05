@@ -226,18 +226,15 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
     fn get_state_with_proof(
         &self,
         _peer_id: PeerId,
-        _req: GetStateWithProof,
+        req: GetStateWithProof,
     ) -> BoxFuture<Result<StateWithProof>> {
-        // XXX FIXME YSG
-        /*
         let state_service = self.state_service.clone();
         let fut = async move {
             state_service
-                .get_with_proof_by_root(req.access_path, req.state_root)
+                .get_with_proof_by_root(req.state_key, req.state_root)
                 .await
         };
-        Box::pin(fut) */
-        unimplemented!("")
+        Box::pin(fut)
     }
 
     fn get_state_with_table_item_proof(

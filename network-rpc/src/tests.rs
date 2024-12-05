@@ -14,6 +14,7 @@ use starcoin_state_api::StateWithProof;
 use starcoin_types::{access_path, account_config::genesis_address, block::BlockHeader};
 use starcoin_vm_types::access_path::DataPath;
 use starcoin_vm_types::on_chain_resource::Epoch;
+use starcoin_vm_types::state_store::state_key::StateKey;
 use std::sync::Arc;
 
 #[stest::test]
@@ -43,6 +44,8 @@ fn test_network_rpc() {
         genesis_address(),
         DataPath::Resource(Epoch::struct_tag_for_epoch()),
     );
+
+    let state_key = StateKey::resource(&genesis_address(), &Epoch::struct_tag_for_epoch()).unwrap();
 
     //ping ok
     let req = Ping {
@@ -79,7 +82,7 @@ fn test_network_rpc() {
 
     let state_req = GetStateWithProof {
         state_root,
-        access_path: access_path.clone(),
+        state_key,
     };
     let state_with_proof: StateWithProof = block_on(async {
         client

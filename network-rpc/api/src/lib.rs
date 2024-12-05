@@ -14,7 +14,6 @@ use starcoin_accumulator::AccumulatorNode;
 use starcoin_crypto::HashValue;
 use starcoin_state_api::{StateWithProof, StateWithTableItemProof};
 use starcoin_state_tree::StateNode;
-use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::block::{BlockHeader, BlockInfo, BlockNumber};
@@ -27,6 +26,7 @@ pub use network_p2p_core::RawRpcClient;
 pub use remote_chain_state::RemoteChainStateReader;
 
 pub use starcoin_types::block::BlockBody;
+use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::table::TableHandle;
 
 pub const MAX_BLOCK_REQUEST_SIZE: u64 = 50;
@@ -157,7 +157,7 @@ impl RpcRequest for GetTxnsWithHash {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GetStateWithProof {
     pub state_root: HashValue,
-    pub access_path: AccessPath,
+    pub state_key: StateKey,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
