@@ -19,6 +19,11 @@ move-vm-types = { workspace = true }
 sha2 = "0.9.3"
 sha3 = "0.9.1"
 smallvec = "1.6.1"
+include_dir = { workspace = true }
+once_cell = { workspace = true }
+anyhow = { workspace = true }
+starcoin-logger = { workspace = true }
+tempfile = { workspace = true }
 
 [dev-dependencies]
 dir-diff = "0.3.2"

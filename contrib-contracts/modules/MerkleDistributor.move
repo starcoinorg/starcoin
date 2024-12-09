@@ -2,23 +2,23 @@ address StarcoinAssociation {
 module MerkleDistributorScripts {
     use StarcoinAssociation::MerkleDistributor;
     use StarcoinFramework::Account;
-    public(script) fun create<T: store>(signer: signer, merkle_root: vector<u8>, token_amounts: u128, leaves: u64) {
+    public entry fun create<T: store>(signer: signer, merkle_root: vector<u8>, token_amounts: u128, leaves: u64) {
         let tokens = Account::withdraw<T>(&signer, token_amounts);
         MerkleDistributor::create<T>(&signer, merkle_root, tokens, leaves);
     }
 
-    public(script) fun claim_for_address<T: store>(distribution_address: address, index: u64, account: address, amount: u128, merkle_proof: vector<vector<u8>>) {
+    public entry fun claim_for_address<T: store>(distribution_address: address, index: u64, account: address, amount: u128, merkle_proof: vector<vector<u8>>) {
         MerkleDistributor::claim_for_address<T>(distribution_address, index, account, amount, merkle_proof);
     }
-    public(script) fun claim<T: store>(signer: signer, distribution_address: address, index: u64, amount: u128, merkle_proof: vector<vector<u8>>) {
+    public entry fun claim<T: store>(signer: signer, distribution_address: address, index: u64, amount: u128, merkle_proof: vector<vector<u8>>) {
         let tokens = MerkleDistributor::claim<T>(&signer, distribution_address, index, amount, merkle_proof);
         Account::deposit_to_self<T>(&signer, tokens);
     }
 }
 
 module MerkleProof {
-    use StarcoinFramework::Hash;
-    use StarcoinFramework::Vector;
+    use std::hash;
+    use std::vector;
     use StarcoinFramework::Compare;
 
     /// verify leaf node with hash of `leaf` with `proof` againest merkle `root`.
@@ -31,10 +31,10 @@ module MerkleProof {
             // computed_hash is left.
             if (Compare::cmp_bytes(&computed_hash,sibling) < 2) {
                 let concated = concat(computed_hash, *sibling);
-                computed_hash = Hash::sha3_256(concated);
+                computed_hash = hash::sha3_256(concated);
             } else {
                 let concated = concat(*sibling, computed_hash);
-                computed_hash = Hash::sha3_256(concated);
+                computed_hash = hash::sha3_256(concated);
 
             };
 
@@ -55,8 +55,7 @@ module MerkleProof {
 module MerkleDistributor {
     use StarcoinFramework::Token::{Token, Self};
     use StarcoinAssociation::MerkleProof;
-    use StarcoinFramework::Vector;
-    use StarcoinFramework::BCS;
+    use std::bcs;
     // use StarcoinFramework::BitOperators;
     use StarcoinFramework::Account;
     use StarcoinFramework::Signer;

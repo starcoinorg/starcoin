@@ -11,7 +11,7 @@ use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::transaction::{EntryFunction, Package, TransactionPayload};
 use starcoin_vm_types::value::MoveValue;
 use test_helper::executor::{
-    association_execute_should_success, compile_modules_with_address, prepare_genesis,
+    association_execute_should_success, compile_modules_with_address_internal, prepare_genesis,
 };
 #[stest::test]
 fn test_starcoin_merkle() -> Result<()> {
@@ -27,8 +27,11 @@ fn test_starcoin_merkle() -> Result<()> {
 
     {
         let source = include_str!("../modules/StarcoinVerifier.move");
-        let modules = compile_modules_with_address(association_address(), source);
-
+        let modules = compile_modules_with_address_internal(
+            association_address(),
+            source,
+            &starcoin_move_stdlib::move_stdlib_files(),
+        );
         let package = Package::new(modules, None)?;
         association_execute_should_success(
             &net,

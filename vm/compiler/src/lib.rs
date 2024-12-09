@@ -16,6 +16,7 @@ use move_compiler::shared::known_attributes::KnownAttribute;
 use move_compiler::shared::{Flags, NumericalAddress};
 use once_cell::sync::Lazy;
 use regex::{Captures, Regex};
+use starcoin_logger::prelude::info;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::compatibility::Compatibility;
 use starcoin_vm_types::file_format::CompiledModule;
@@ -55,6 +56,8 @@ pub fn starcoin_framework_named_addresses() -> BTreeMap<String, NumericalAddress
         ("Genesis", "0x1"),
         ("StarcoinFramework", "0x1"),
         ("StarcoinAssociation", "0xA550C18"),
+        ("std", "0x1"),
+        ("starcoin_std", "0x1"),
     ];
     mapping
         .iter()
@@ -174,6 +177,7 @@ pub fn compile_source_string_no_report(
     FilesSourceText,
     Result<(Vec<AnnotatedCompiledUnit>, Diagnostics), Diagnostics>,
 )> {
+    info!("YSG test compile_source_string_no_report");
     let temp_dir = tempfile::tempdir()?;
     let temp_file = temp_dir.path().join("temp.move");
     let processed_source = process_source_tpl(

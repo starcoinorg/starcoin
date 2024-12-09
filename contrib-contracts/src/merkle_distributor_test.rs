@@ -10,7 +10,7 @@ use starcoin_vm_types::token::stc::stc_type_tag;
 use starcoin_vm_types::transaction::{EntryFunction, Package, TransactionPayload};
 use starcoin_vm_types::value::MoveValue;
 use test_helper::executor::{
-    association_execute, association_execute_should_success, compile_modules_with_address,
+    association_execute, association_execute_should_success, compile_modules_with_address_internal,
     move_abort_code, prepare_genesis,
 };
 
@@ -37,7 +37,12 @@ fn test_merkle_distributor() -> Result<()> {
     // deploy the module
     {
         let source = include_str!("../modules/MerkleDistributor.move");
-        let modules = compile_modules_with_address(association_address(), source);
+        let mut source_files = starcoin_move_stdlib::move_stdlib_files();
+        let starcoin_stdlib_files = starcoin_move_stdlib::starcoin_stdlib_files();
+        source_files.extend(starcoin_stdlib_files);
+
+        let modules =
+            compile_modules_with_address_internal(association_address(), source, &source_files);
 
         let package = Package::new(modules, None)?;
         association_execute_should_success(

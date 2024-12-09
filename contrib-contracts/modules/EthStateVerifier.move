@@ -1,6 +1,6 @@
 address StarcoinAssociation {
 module Bytes {
-    use StarcoinFramework::Vector;
+    use std::vector;
 
     public fun slice(data: &vector<u8>, start: u64, end: u64): vector<u8> {
         let i = start;
@@ -19,7 +19,7 @@ module Bytes {
     }
 }
 module RLP {
-    use StarcoinFramework::Vector;
+    use std::vector;
     use StarcoinAssociation::Bytes;
     const INVALID_RLP_DATA: u64 = 100;
     const DATA_TOO_SHORT: u64 = 101;
@@ -91,8 +91,8 @@ module RLP {
 }
 module EthStateVerifier {
     use StarcoinAssociation::RLP;
-    use StarcoinFramework::Vector;
-    use StarcoinFramework::Hash;
+    use std::vector;
+    use std::hash;
     use StarcoinAssociation::Bytes;
 
     const INVALID_PROOF: u64 = 400;
@@ -132,7 +132,7 @@ module EthStateVerifier {
         let dec = RLP::decode_list(node);
         // trie root is always a hash
         if (key_index == 0 || vector::length(node) >= 32u64) {
-            if (Hash::keccak_256(*node) != expected_root) {
+            if (hash::sha3_256(*node) != expected_root) {
                 return false
             }
         } else {
@@ -210,7 +210,7 @@ module EthStateVerifier {
         proof: vector<vector<u8>>,
         expected_value: vector<u8>,
     ): bool {
-        let hashed_key = Hash::keccak_256(key);
+        let hashed_key = hash::sha3_256(key);
         let key = to_nibbles(&hashed_key);
         return verify_inner(expected_root, key, proof, expected_value, 0, 0)
     }
