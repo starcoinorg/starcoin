@@ -34,6 +34,7 @@ cargo nextest run \
 -p starcoin-storage \
 -p starcoin-types \
 -p starcoin-sync \
+-p starcoin-vm-types \
 --retries 2 --build-jobs 8 --test-threads 12 --no-fail-fast --failure-output immediate-final
 
 
