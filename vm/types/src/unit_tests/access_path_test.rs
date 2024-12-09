@@ -15,15 +15,14 @@ fn test_data_type() {
 
 #[test]
 fn test_access_path_str_valid() {
-    let r1 = format!(
-        "{}/1/0x1::Account::Account",
-        AccountAddress::random()
-    );
-    let test_cases = vec!["0x0/0/Account",
-                          "0x1/0/Account",
-                          "0x1/1/0x1::Account::Account",
-                          "0x1/1/0x1::Account::Balance<0x1::STC::STC>",
-                          r1.as_str()];
+    let r1 = format!("{}/1/0x1::Account::Account", AccountAddress::random());
+    let test_cases = vec![
+        "0x0/0/Account",
+        "0x1/0/Account",
+        "0x1/1/0x1::Account::Account",
+        "0x1/1/0x1::Account::Balance<0x1::STC::STC>",
+        r1.as_str(),
+    ];
     for case in test_cases {
         let access_path = AccessPath::from_str(case).unwrap();
         assert_eq!(case.to_owned(), access_path.to_string())
@@ -33,10 +32,7 @@ fn test_access_path_str_valid() {
 #[test]
 fn test_access_path_str_invalid() {
     //invalid address
-    let r1 = format!(
-        "{}00/1/0x1::Account::Account",
-        AccountAddress::random()
-    );
+    let r1 = format!("{}00/1/0x1::Account::Account", AccountAddress::random());
     let test_cases = vec![
         // invalid struct tag
         "0x1/1/Account",

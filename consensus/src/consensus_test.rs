@@ -98,9 +98,9 @@ fn verify_header_test_barnard_block3_ubuntu22() {
         .unwrap()
 }
 // see https://stcscan.io/barnard/address/0x01/resources
-// 0x00000000000000000000000000000001::Config::Config<0x00000000000000000000000000000001::ConsensusConfig::ConsensusConfig> "strategy":1
+// 0x1::Config::Config<0x1::ConsensusConfig::ConsensusConfig> "strategy":1
 // see https://stcscan.io/main/address/0x01/resources
-// 0x00000000000000000000000000000001::Config::Config<0x00000000000000000000000000000001::ConsensusConfig::ConsensusConfig> "strategy":3
+// 0x01::Config::Config<0x1::ConsensusConfig::ConsensusConfig> "strategy":3
 #[stest::test]
 fn verify_header_test_barnard_block5061847_ubuntu20() {
     let str = r#"{"header":{"parent_hash":"0x45efb7914f0fe6bcd6baf4ed7a67da076953cf18128a25227e575a689236942f","timestamp":1654174610768,"number":5061847,"author":"0x7eec55ea1bafa8c4919101135b90b17b","author_auth_key":null,"txn_accumulator_root":"0x8c35c3d34ee16ca395c2a17668b61894b347c037d49d30477e7d2506dc69e936","block_accumulator_root":"0x0e602da30ea3f2f91b505f8a788dfc1c2b73619f328661a80ec6d59197527936","state_root":"0x42c63a367951160b01ce4e2c1e4559f08e786cf1e56a5e423da6db459f9507f7","gas_used":0,"difficulty":"0x0bee","body_hash":"0xc01e0329de6d899348a8ef4bd51db56175b3fa0988e57c3dcec8eaf13a164d97","chain_id":{"id":251},"nonce":2771673659,"extra":"0x00000000"},"body":{"transactions":[],"uncles":null}}"#;
