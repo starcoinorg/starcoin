@@ -190,7 +190,11 @@ impl fmt::Debug for AccessPath {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         let path = match self.path {
             DataPath::Code(ref module_name) => {
-                format!("\"Code({}::{})\"", &self.address, module_name)
+                format!(
+                    "\"Code(0x{}::{})\"",
+                    &self.address.short_str_lossless(),
+                    module_name
+                )
             }
             DataPath::Resource(ref struct_tag) => {
                 format!("\"Resource({})\"", struct_tag)
@@ -210,7 +214,7 @@ impl fmt::Debug for AccessPath {
 
 impl fmt::Display for AccessPath {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}/{}", self.address, self.path)
+        write!(f, "0x{}/{}", self.address.short_str_lossless(), self.path)
     }
 }
 

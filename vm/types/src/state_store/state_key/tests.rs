@@ -16,7 +16,7 @@ fn assert_crypto_hash(key: &StateKey, expected_hash: &str) {
 fn test_resource_hash() {
     assert_crypto_hash(
         &StateKey::resource_typed::<AccountResource>(&AccountAddress::TWO).unwrap(),
-        "8f9ab5d5e3c9f5b885fcceea388fecd16bdb490da08aac9d4f026ddc66733def",
+        "fdec56915926115cd094939bf5ef500157dd63a56e1a0e7521600adacdc50b90",
     );
 }
 
@@ -24,7 +24,7 @@ fn test_resource_hash() {
 fn test_resource_group_hash() {
     assert_crypto_hash(
         &StateKey::resource_group(&AccountAddress::TWO, &ObjectGroupResource::struct_tag()),
-        "87973d52189ac6a25ea543214305c4c8fb3bc2ceea8c34600361b03527578133",
+        "0x235dbcd87b398a707c229dbe02d3a42b118128a38ac266ff2d77c729c8c24d42",
     );
 }
 
@@ -32,7 +32,7 @@ fn test_resource_group_hash() {
 fn test_module_hash() {
     assert_crypto_hash(
         &StateKey::module(&AccountAddress::TWO, ident_str!("mymodule")),
-        "83d33b345c5e4b25d8f4dfe2b98b492024313b3b6e4febea6bfa844dbd850200",
+        "2b1fbcded1092bfbd49306ed6f39766c6235b3c52d412965668b600bc874e119",
     );
 }
 
@@ -58,21 +58,21 @@ fn test_debug() {
     let key = StateKey::module(&AccountAddress::ONE, ident_str!("account"));
     assert_eq!(
         &format!("{:?}", key),
-        "StateKey::AccessPath { address: 0x1, path: \"Code(0x00000000000000000000000000000001::account)\" }",
+        "StateKey::AccessPath { address: 0x1, path: \"Code(0x1::account)\" }",
     );
 
     // resource
     let key = StateKey::resource_typed::<AccountResource>(&AccountAddress::FOUR).unwrap();
     assert_eq!(
         &format!("{:?}", key),
-        "StateKey::AccessPath { address: 0x4, path: \"Resource(0x00000000000000000000000000000001::account::Account)\" }",
+        "StateKey::AccessPath { address: 0x4, path: \"Resource(0x1::account::Account)\" }",
     );
 
     // resource group
     let key = StateKey::resource_group(&AccountAddress::THREE, &ObjectGroupResource::struct_tag());
     assert_eq!(
         &format!("{:?}", key),
-        "StateKey::AccessPath { address: 0x3, path: \"ResourceGroup(0x00000000000000000000000000000001::object::ObjectGroup)\" }",
+        "StateKey::AccessPath { address: 0x3, path: \"ResourceGroup(0x1::object::ObjectGroup)\" }",
     );
 
     // table item

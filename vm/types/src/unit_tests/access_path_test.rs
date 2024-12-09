@@ -16,13 +16,13 @@ fn test_data_type() {
 #[test]
 fn test_access_path_str_valid() {
     let r1 = format!(
-        "{}/1/0x00000000000000000000000000000001::Account::Account",
+        "{}/1/0x1::Account::Account",
         AccountAddress::random()
     );
-    let test_cases = vec!["0x00000000000000000000000000000000/0/Account",
-                          "0x00000000000000000000000000000001/0/Account",
-                          "0x00000000000000000000000000000001/1/0x00000000000000000000000000000001::Account::Account",
-                          "0x00000000000000000000000000000001/1/0x00000000000000000000000000000001::Account::Balance<0x00000000000000000000000000000001::STC::STC>",
+    let test_cases = vec!["0x0/0/Account",
+                          "0x1/0/Account",
+                          "0x1/1/0x1::Account::Account",
+                          "0x1/1/0x1::Account::Balance<0x1::STC::STC>",
                           r1.as_str()];
     for case in test_cases {
         let access_path = AccessPath::from_str(case).unwrap();
@@ -34,21 +34,21 @@ fn test_access_path_str_valid() {
 fn test_access_path_str_invalid() {
     //invalid address
     let r1 = format!(
-        "{}00/1/0x00000000000000000000000000000001::Account::Account",
+        "{}00/1/0x1::Account::Account",
         AccountAddress::random()
     );
     let test_cases = vec![
         // invalid struct tag
-        "0x00000000000000000000000000000001/1/Account",
+        "0x1/1/Account",
         // invalid module name
-        "0x00000000000000000000000000000001/0/0x00000000000000000000000000000001::Account::Account",
+        "0x1/0/0x1::Account::Account",
         //invalid data type
-        "0x00000000000000000000000000000001/3/Account",
+        "0x1/3/Account",
         //too many `/`
-        "0x00000000000000000000000000000001/0/Account/xxx",
-        "0x00000000000000000000000000000001/0//Account",
+        "0x1/0/Account/xxx",
+        "0x1/0//Account",
         //too less '`'
-        "0x00000000000000000000000000000001/1",
+        "0x1/1",
         r1.as_str(),
     ];
     for case in test_cases {
@@ -63,13 +63,13 @@ fn test_access_path_str_invalid() {
 
 #[test]
 fn test_bad_case_from_protest() {
-    let raw_path = "0x00000000000000000000000000000001/1/0x00000000000000000000000000000001::a::A_";
+    let raw_path = "0x1/1/0x1::a::A_";
     let access_path = AccessPath::from_str(raw_path);
     assert!(access_path.is_ok());
 
     //The module name start with '_' will encounter parse error
     //This may be the parser error, or the identity's arbitrary error
-    let raw_path = "0x00000000000000000000000000000001/1/0x00000000000000000000000000000001::_a::A";
+    let raw_path = "0x1/1/0x1::_a::A";
     let access_path = AccessPath::from_str(raw_path);
     assert!(access_path.is_err());
 }
