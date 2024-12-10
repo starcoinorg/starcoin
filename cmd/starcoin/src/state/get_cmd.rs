@@ -21,7 +21,7 @@ use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 #[clap(name = "get")]
 pub enum GetOpt {
     Code {
-        #[clap(help = "module id like: 0x1::Account")]
+        #[clap(help = "module id like: 0x1::account")]
         module_id: StrView<ModuleId>,
         #[clap(long, short = 'n')]
         /// Get state at a special block height.
@@ -30,7 +30,7 @@ pub enum GetOpt {
     Resource {
         #[clap(help = "account address")]
         address: AccountAddress,
-        #[clap(help = "resource struct tag,", default_value = "0x1::Account::Account")]
+        #[clap(help = "resource struct tag,", default_value = "0x1::account::Account")]
         resource_type: StrView<StructTag>,
         #[clap(long, short = 'n')]
         /// Get state at a special block height.

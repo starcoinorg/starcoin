@@ -66,6 +66,7 @@ starcoin-framework = { workspace = true }
 stdlib = { workspace = true }
 starcoin-dag = { workspace = true }
 bytes = { workspace = true }
+starcoin-cached-packages = { workspace = true }
 
 [dev-dependencies]
 datatest-stable = { workspace = true }

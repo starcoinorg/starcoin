@@ -81,7 +81,7 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::sync::Mutex;
 use std::{collections::BTreeMap, convert::TryInto, path::Path, str::FromStr};
-use stdlib::{starcoin_framework_named_addresses, stdlib_files};
+use stdlib::starcoin_framework_named_addresses;
 use tempfile::{NamedTempFile, TempDir};
 
 pub mod context;
@@ -1506,7 +1506,10 @@ pub fn print_help(task_name: Option<String>) -> Result<()> {
 //TODO(simon): construct PackagePaths properly
 pub static G_PRECOMPILED_STARCOIN_FRAMEWORK: Lazy<(FullyCompiledProgram, Vec<PackagePaths>)> =
     Lazy::new(|| {
-        let sources = stdlib_files();
+        let sources = starcoin_cached_packages::head_release_bundle()
+            .files()
+            .unwrap();
+        eprintln!("sources {:?} {:?}", sources[0], sources[1]);
         let package_paths = vec![PackagePaths {
             name: None,
             paths: sources,
