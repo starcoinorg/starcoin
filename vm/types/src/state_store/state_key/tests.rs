@@ -16,7 +16,7 @@ fn assert_crypto_hash(key: &StateKey, expected_hash: &str) {
 fn test_resource_hash() {
     assert_crypto_hash(
         &StateKey::resource_typed::<AccountResource>(&AccountAddress::TWO).unwrap(),
-        "8f9ab5d5e3c9f5b885fcceea388fecd16bdb490da08aac9d4f026ddc66733def",
+        "fdec56915926115cd094939bf5ef500157dd63a56e1a0e7521600adacdc50b90",
     );
 }
 
@@ -24,7 +24,7 @@ fn test_resource_hash() {
 fn test_resource_group_hash() {
     assert_crypto_hash(
         &StateKey::resource_group(&AccountAddress::TWO, &ObjectGroupResource::struct_tag()),
-        "87973d52189ac6a25ea543214305c4c8fb3bc2ceea8c34600361b03527578133",
+        "235dbcd87b398a707c229dbe02d3a42b118128a38ac266ff2d77c729c8c24d42",
     );
 }
 
@@ -32,7 +32,7 @@ fn test_resource_group_hash() {
 fn test_module_hash() {
     assert_crypto_hash(
         &StateKey::module(&AccountAddress::TWO, ident_str!("mymodule")),
-        "83d33b345c5e4b25d8f4dfe2b98b492024313b3b6e4febea6bfa844dbd850200",
+        "2b1fbcded1092bfbd49306ed6f39766c6235b3c52d412965668b600bc874e119",
     );
 }
 
