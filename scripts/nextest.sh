@@ -21,19 +21,11 @@ cargo nextest -V >/dev/null 2>&1 || cargo install cargo-nextest --version "0.9.5
 # --failure-output immediate-final, make error log output immediate & at the end of the run
 # --retries 2, a correct test case usually takes no more than 3 tries to pass
 # --build-jobs 8, a little (~20s) faster than 5 or 10 build jobs 
-#cargo nextest run --workspace --retries 2 --build-jobs 8 --test-threads 12 --no-fail-fast --failure-output immediate-final
-cargo nextest run \
--p starcoin-executor \
--p starcoin-vm-runtime \
--p starcoin-genesis \
--p starcoin-node \
--p starcoin-config \
--p starcoin-txpool \
--p starcoin-chain \
--p starcoin-network \
--p starcoin-storage \
--p starcoin-types \
--p starcoin-sync \
+cargo nextest run --workspace \
+--exclude starcoin-transactional-test-harness \
+--exclude starcoin-framework \
+--exclude contrib-contracts \
+--exclude starcoin-consensus \
 --retries 2 --build-jobs 8 --test-threads 12 --no-fail-fast --failure-output immediate-final
 
 
