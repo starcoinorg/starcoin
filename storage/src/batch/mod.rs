@@ -56,3 +56,14 @@ where
         Ok(Self::new_with_rows(rows?))
     }
 }
+
+#[derive(Debug, Default, Clone)]
+pub struct WriteBatchData {
+    pub column: String,
+    pub row_data: WriteBatch,
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct WriteBatchWithColumn {
+    pub data: Vec<WriteBatchData>,
+}

@@ -1,14 +1,15 @@
 use super::schema::{KeyCodec, ValueCodec};
 use super::{
     db::DBStorage,
-    prelude::{BatchDbWriter, CachedDbAccess, DirectDbWriter, StoreError},
+    prelude::{CachedDbAccess, StoreError},
 };
 use crate::define_schema;
-use rocksdb::WriteBatch;
 use starcoin_crypto::HashValue as Hash;
+use starcoin_storage::batch::{WriteBatch, WriteBatchData, WriteBatchWithColumn};
+use starcoin_storage::storage::{InnerStore, WriteOp};
 use starcoin_types::blockhash::{BlockHashes, BlockLevel};
+use std::collections::HashMap;
 use std::sync::Arc;
-
 /// Reader API for `RelationsStore`.
 pub trait RelationsStoreReader {
     fn get_parents(&self, hash: Hash) -> Result<BlockHashes, StoreError>;
@@ -90,41 +91,6 @@ impl DbRelationsStore {
     pub fn clone_with_new_cache(&self, cache_size: usize) -> Self {
         Self::new(Arc::clone(&self.db), self.level, cache_size)
     }
-
-    pub fn insert_batch(
-        &mut self,
-        batch: &mut WriteBatch,
-        hash: Hash,
-        parents: BlockHashes,
-    ) -> Result<(), StoreError> {
-        if self.has(hash)? {
-            return Err(StoreError::KeyAlreadyExists(hash.to_string()));
-        }
-
-        // Insert a new entry for `hash`
-        self.parents_access
-            .write(BatchDbWriter::new(batch, &self.db), hash, parents.clone())?;
-
-        // The new hash has no children yet
-        self.children_access.write(
-            BatchDbWriter::new(batch, &self.db),
-            hash,
-            BlockHashes::new(Vec::new()),
-        )?;
-
-        // Update `children` for each parent
-        for parent in parents.iter().cloned() {
-            let mut children = (*self.get_children(parent)?).clone();
-            children.push(hash);
-            self.children_access.write(
-                BatchDbWriter::new(batch, &self.db),
-                parent,
-                BlockHashes::new(children),
-            )?;
-        }
-
-        Ok(())
-    }
 }
 
 impl RelationsStoreReader for DbRelationsStore {
@@ -147,34 +113,68 @@ impl RelationsStoreReader for DbRelationsStore {
 }
 
 impl RelationsStore for DbRelationsStore {
-    /// See `insert_batch` as well
-    /// TODO: use one function with DbWriter for both this function and insert_batch
     fn insert(&self, hash: Hash, parents: BlockHashes) -> Result<(), StoreError> {
         if self.has(hash)? {
             return Err(StoreError::KeyAlreadyExists(hash.to_string()));
         }
 
-        // Insert a new entry for `hash`
-        self.parents_access
-            .write(DirectDbWriter::new(&self.db), hash, parents.clone())?;
+        let mut parent_to_children = HashMap::new();
+        parent_to_children.insert(hash, vec![]);
 
-        // The new hash has no children yet
-        self.children_access.write(
-            DirectDbWriter::new(&self.db),
-            hash,
-            BlockHashes::new(Vec::new()),
-        )?;
-
-        // Update `children` for each parent
         for parent in parents.iter().cloned() {
-            let mut children = (*self.get_children(parent)?).clone();
+            let mut children = match self.get_children(parent) {
+                Ok(children) => (*children).clone(),
+                Err(e) => match e {
+                    StoreError::KeyNotFound(_) => vec![],
+                    _ => return std::result::Result::Err(e),
+                },
+            };
             children.push(hash);
-            self.children_access.write(
-                DirectDbWriter::new(&self.db),
-                parent,
-                BlockHashes::new(children),
-            )?;
+            parent_to_children.insert(parent, children);
         }
+
+        let batch = WriteBatchWithColumn {
+            data: vec![
+                WriteBatchData {
+                    column: PARENTS_CF.to_string(),
+                    row_data: WriteBatch::new_with_rows(vec![(
+                        hash.to_vec(),
+                        WriteOp::Value(
+                            <Arc<Vec<Hash>> as ValueCodec<RelationParent>>::encode_value(&parents)?,
+                        ),
+                    )]),
+                },
+                WriteBatchData {
+                    column: CHILDREN_CF.to_string(),
+                    row_data: WriteBatch::new_with_rows(
+                        parent_to_children
+                            .iter()
+                            .map(|(key, value)| {
+                                std::result::Result::Ok((
+                                    key.to_vec(),
+                                    WriteOp::Value(<Arc<Vec<Hash>> as ValueCodec<
+                                        RelationChildren,
+                                    >>::encode_value(
+                                        &Arc::new(value.clone())
+                                    )?),
+                                ))
+                            })
+                            .collect::<std::result::Result<Vec<_>, StoreError>>()?,
+                    ),
+                },
+            ],
+        };
+        self.db
+            .write_batch_with_column(batch)
+            .map_err(|e| StoreError::DBIoError(format!("Failed to write batch when writing batch with column for the dag releationship: {:?}", e)))?;
+
+        self.parents_access.flush_cache(&[(hash, parents)])?;
+        self.children_access.flush_cache(
+            &parent_to_children
+                .into_iter()
+                .map(|(key, value)| (key, BlockHashes::new(value)))
+                .collect::<Vec<_>>(),
+        )?;
 
         Ok(())
     }

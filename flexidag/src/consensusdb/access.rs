@@ -33,6 +33,10 @@ where
         }
     }
 
+    pub fn clear_cache(&self) {
+        self.cache.remove_all();
+    }
+
     pub fn read_from_cache(&self, key: S::Key) -> Option<S::Value> {
         self.cache.get(&key)
     }
@@ -104,6 +108,13 @@ where
         for (key, data) in iter {
             writer.put::<S>(&key, &data)?;
             self.cache.insert(key, data);
+        }
+        Ok(())
+    }
+
+    pub fn flush_cache(&self, data: &[(S::Key, S::Value)]) -> Result<(), StoreError> {
+        for (key, value) in data {
+            self.cache.insert(key.clone(), value.clone());
         }
         Ok(())
     }

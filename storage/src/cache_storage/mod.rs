@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::batch::GWriteBatch;
+use crate::batch::{GWriteBatch, WriteBatchWithColumn};
 use crate::{
     batch::WriteBatch,
     metrics::{record_metrics, StorageMetrics},
@@ -91,6 +91,32 @@ impl InnerStore for CacheStorage {
         })
     }
 
+    fn write_batch_with_column(&self, batch: WriteBatchWithColumn) -> Result<()> {
+        let rows = batch
+            .data
+            .into_iter()
+            .flat_map(|data| {
+                data.row_data
+                    .rows
+                    .iter()
+                    .cloned()
+                    .map(|(k, v)| (compose_key(Some(&data.column), k), v))
+                    .collect::<Vec<_>>()
+            })
+            .collect();
+        let batch = WriteBatch { rows };
+        record_metrics(
+            "cache",
+            "write_batch_column_prefix",
+            "write_batch",
+            self.metrics.as_ref(),
+        )
+        .call(|| {
+            self.write_batch_inner(batch);
+            Ok(())
+        })
+    }
+
     fn get_len(&self) -> Result<u64, Error> {
         Ok(self.cache.lock().len() as u64)
     }
@@ -109,6 +135,10 @@ impl InnerStore for CacheStorage {
 
     fn write_batch_sync(&self, prefix_name: &str, batch: WriteBatch) -> Result<()> {
         self.write_batch(prefix_name, batch)
+    }
+
+    fn write_batch_with_column_sync(&self, batch: WriteBatchWithColumn) -> Result<()> {
+        self.write_batch_with_column(batch)
     }
 
     fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {

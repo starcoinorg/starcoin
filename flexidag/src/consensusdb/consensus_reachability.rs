@@ -3,7 +3,7 @@ use super::{
     prelude::{BatchDbWriter, CachedDbAccess, CachedDbItem, DirectDbWriter, StoreError},
 };
 use starcoin_crypto::HashValue as Hash;
-use starcoin_storage::storage::RawDBStorage;
+use starcoin_storage::{batch::WriteBatchData, storage::{InnerStore, RawDBStorage, WriteOp}};
 
 use crate::{
     consensusdb::schema::{KeyCodec, ValueCodec},
@@ -125,6 +125,13 @@ impl DbReachabilityStore {
 
     pub fn clone_with_new_cache(&self, cache_size: usize) -> Self {
         Self::new_with_prefix_end(Arc::clone(&self.db), cache_size)
+    }
+
+    pub fn batch_write(&self, batch: starcoin_storage::batch::WriteBatchWithColumn) {
+        self.db.write_batch_with_column(batch).unwrap();
+        self.access.clear_cache();
+
+        // self.reindex_root.clear_cache().unwrap();
     }
 }
 
@@ -253,22 +260,34 @@ impl<'a> StagingReachabilityStore<'a> {
 
     pub fn commit(
         self,
-        batch: &mut WriteBatch,
-    ) -> Result<RwLockWriteGuard<'a, DbReachabilityStore>, StoreError> {
-        let db = Arc::clone(&self.store_read.db);
+        batch: &mut starcoin_storage::batch::WriteBatchWithColumn,
+    ) -> Result<(), StoreError> {
         let mut store_write = RwLockUpgradableReadGuard::upgrade(self.store_read);
+        let mut reach_data = vec![];
         for (k, v) in self.staging_writes {
             let data = Arc::new(v);
-            store_write
-                .access
-                .write(BatchDbWriter::new(batch, &db), k, data)?
+            reach_data.push((k.to_vec(), WriteOp::Value(data.encode_value()?)));
+            // store_write
+            //     .access
+            //     .write(BatchDbWriter::new(batch, &db), k, data)?
         }
+        batch.data.push(WriteBatchData {
+                column: REACHABILITY_DATA_CF.to_string(),
+                row_data: starcoin_storage::batch::WriteBatch::new_with_rows(reach_data),
+        });
+
+        let mut root_index_data = vec![];
         if let Some(root) = self.staging_reindex_root {
-            store_write
-                .reindex_root
-                .write(BatchDbWriter::new(batch, &db), &root)?;
+            root_index_data.push((REINDEX_ROOT_KEY.as_bytes().to_vec(), WriteOp::Value(root.encode_value()?)));
+            // store_write
+            //     .reindex_root
+            //     .write(BatchDbWriter::new(batch, &db), &root)?;
         }
-        Ok(store_write)
+        batch.data.push(WriteBatchData {
+                column: REACHABILITY_DATA_CF.to_string(),
+                row_data: starcoin_storage::batch::WriteBatch::new_with_rows(root_index_data),
+        });
+        Ok(())
     }
 }
 

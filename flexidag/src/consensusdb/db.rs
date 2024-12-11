@@ -8,6 +8,7 @@ use super::{
     },
 };
 use parking_lot::RwLock;
+use rocksdb::FlushOptions;
 use starcoin_config::{RocksdbConfig, StorageConfig};
 pub(crate) use starcoin_storage::db_storage::DBStorage;
 use std::{path::Path, sync::Arc};

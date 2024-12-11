@@ -3,27 +3,29 @@
 
 extern crate chrono;
 
+use crate::batch::{WriteBatch, WriteBatchData, WriteBatchWithColumn};
 use crate::block::{
-    FailedBlock, OldBlockHeaderStorage, OldBlockInnerStorage, OldFailedBlockStorage,
+    DagSyncBlock, FailedBlock, OldBlockHeaderStorage, OldBlockInnerStorage, OldFailedBlockStorage,
     OldFailedBlockV2,
 };
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
-use crate::storage::{CodecKVStore, InnerStore, StorageInstance, ValueCodec};
+use crate::storage::{CodecKVStore, InnerStore, StorageInstance, ValueCodec, WriteOp};
 use crate::table_info::TableInfoStore;
 use crate::transaction::LegacyTransactionStorage;
 use crate::transaction_info::{BlockTransactionInfo, OldTransactionInfoStorage};
 use crate::{
-    BlockInfoStore, BlockStore, BlockTransactionInfoStore, Storage,
-    StorageVersion, /*TableInfoStore,*/
-    DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME_V2,
+    BlockInfoStore, BlockStore, BlockTransactionInfoStore, Storage, StorageVersion,
+    BLOCK_PREFIX_NAME, DAG_SYNC_BLOCK_PREFIX_NAME, DEFAULT_PREFIX_NAME,
+    TRANSACTION_INFO_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME_V2,
 };
-use anyhow::Result;
+use anyhow::{Ok, Result};
+use bcs_ext::BCSCodec;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_config::RocksdbConfig;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::info;
-use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockInfo};
+use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockHeaderBuilder, BlockInfo};
 use starcoin_types::startup_info::SnapshotRange;
 use starcoin_types::transaction::{RichTransactionInfo, SignedUserTransaction, TransactionInfo};
 use starcoin_types::vm_error::KeptVMStatus;
@@ -600,4 +602,220 @@ fn test_table_info_storage() -> Result<()> {
         .collect::<Vec<TableInfo>>();
     assert_eq!(vals, vals2);
     Ok(())
+}
+
+fn run_write_batch(instance: StorageInstance) -> Result<()> {
+    let body = BlockBody::new_empty();
+
+    let block1 = Block::new(
+        BlockHeaderBuilder::new()
+            .with_body_hash(body.hash())
+            .with_number(1)
+            .build(),
+        body.clone(),
+    );
+    let block2 = Block::new(
+        BlockHeaderBuilder::new()
+            .with_body_hash(body.hash())
+            .with_number(2)
+            .build(),
+        body.clone(),
+    );
+
+    let dag_block1 = DagSyncBlock {
+        block: Block::new(
+            BlockHeaderBuilder::new()
+                .with_body_hash(body.hash())
+                .with_number(3)
+                .build(),
+            body.clone(),
+        ),
+        children: vec![Block::random().id(), Block::random().id()],
+    };
+
+    let dag_block2 = DagSyncBlock {
+        block: Block::new(
+            BlockHeaderBuilder::new()
+                .with_body_hash(body.hash())
+                .with_number(4)
+                .build(),
+            body.clone(),
+        ),
+        children: vec![Block::random().id(), Block::random().id()],
+    };
+
+    let batch_with_columns = WriteBatchWithColumn {
+        data: vec![
+            WriteBatchData {
+                column: BLOCK_PREFIX_NAME.to_string(),
+                row_data: WriteBatch::new_with_rows(vec![
+                    (
+                        block1.id().encode()?,
+                        WriteOp::Value(block1.clone().encode()?),
+                    ),
+                    (
+                        block2.id().encode()?,
+                        WriteOp::Value(block2.clone().encode()?),
+                    ),
+                ]),
+            },
+            WriteBatchData {
+                column: DAG_SYNC_BLOCK_PREFIX_NAME.to_string(),
+                row_data: WriteBatch::new_with_rows(vec![
+                    (
+                        dag_block1.block.id().encode()?,
+                        WriteOp::Value(dag_block1.clone().encode()?),
+                    ),
+                    (
+                        dag_block2.block.id().encode()?,
+                        WriteOp::Value(dag_block2.clone().encode()?),
+                    ),
+                ]),
+            },
+        ],
+    };
+
+    instance.write_batch_with_column(batch_with_columns)?;
+
+    match instance {
+        StorageInstance::CACHE { cache } => {
+            let read_block1 = Block::decode(
+                &cache
+                    .get(BLOCK_PREFIX_NAME, block1.id().encode()?)?
+                    .expect("failed to get the block"),
+            )?;
+            assert_eq!(read_block1, block1);
+
+            let read_block2 = Block::decode(
+                &cache
+                    .get(BLOCK_PREFIX_NAME, block2.id().encode()?)?
+                    .expect("failed to get the block"),
+            )?;
+            assert_eq!(read_block2, block2);
+
+            let read_dag_block1 = DagSyncBlock::decode(
+                &cache
+                    .get(DAG_SYNC_BLOCK_PREFIX_NAME, dag_block1.block.id().encode()?)?
+                    .expect("failed to get the dag block"),
+            )?;
+            assert_eq!(read_dag_block1, dag_block1);
+
+            let read_dag_block2 = DagSyncBlock::decode(
+                &cache
+                    .get(DAG_SYNC_BLOCK_PREFIX_NAME, dag_block2.block.id().encode()?)?
+                    .expect("failed to get the dag block"),
+            )?;
+            assert_eq!(read_dag_block2, dag_block2);
+        }
+        StorageInstance::DB { db } => {
+            let read_block1 = Block::decode(
+                &db.get(BLOCK_PREFIX_NAME, block1.id().encode()?)?
+                    .expect("failed to get the block"),
+            )?;
+            assert_eq!(read_block1, block1);
+
+            let read_block2 = Block::decode(
+                &db.get(BLOCK_PREFIX_NAME, block2.id().encode()?)?
+                    .expect("failed to get the block"),
+            )?;
+            assert_eq!(read_block2, block2);
+
+            let read_dag_block1 = DagSyncBlock::decode(
+                &db.get(DAG_SYNC_BLOCK_PREFIX_NAME, dag_block1.block.id().encode()?)?
+                    .expect("failed to get the dag block"),
+            )?;
+            assert_eq!(read_dag_block1, dag_block1);
+
+            let read_dag_block2 = DagSyncBlock::decode(
+                &db.get(DAG_SYNC_BLOCK_PREFIX_NAME, dag_block2.block.id().encode()?)?
+                    .expect("failed to get the dag block"),
+            )?;
+            assert_eq!(read_dag_block2, dag_block2);
+        }
+        StorageInstance::CacheAndDb { cache, db } => {
+            let read_block1 = Block::decode(
+                &cache
+                    .get(BLOCK_PREFIX_NAME, block1.id().encode()?)?
+                    .expect("failed to get the block"),
+            )?;
+            assert_eq!(read_block1, block1);
+
+            let read_block2 = Block::decode(
+                &cache
+                    .get(BLOCK_PREFIX_NAME, block2.id().encode()?)?
+                    .expect("failed to get the block"),
+            )?;
+            assert_eq!(read_block2, block2);
+
+            let read_dag_block1 = DagSyncBlock::decode(
+                &cache
+                    .get(DAG_SYNC_BLOCK_PREFIX_NAME, dag_block1.block.id().encode()?)?
+                    .expect("failed to get the dag block"),
+            )?;
+            assert_eq!(read_dag_block1, dag_block1);
+
+            let read_dag_block2 = DagSyncBlock::decode(
+                &cache
+                    .get(DAG_SYNC_BLOCK_PREFIX_NAME, dag_block2.block.id().encode()?)?
+                    .expect("failed to get the dag block"),
+            )?;
+            assert_eq!(read_dag_block2, dag_block2);
+
+            let read_block1 = Block::decode(
+                &db.get(BLOCK_PREFIX_NAME, block1.id().encode()?)?
+                    .expect("failed to get the block"),
+            )?;
+            assert_eq!(read_block1, block1);
+
+            let read_block2 = Block::decode(
+                &db.get(BLOCK_PREFIX_NAME, block2.id().encode()?)?
+                    .expect("failed to get the block"),
+            )?;
+            assert_eq!(read_block2, block2);
+
+            let read_dag_block1 = DagSyncBlock::decode(
+                &db.get(DAG_SYNC_BLOCK_PREFIX_NAME, dag_block1.block.id().encode()?)?
+                    .expect("failed to get the dag block"),
+            )?;
+            assert_eq!(read_dag_block1, dag_block1);
+
+            let read_dag_block2 = DagSyncBlock::decode(
+                &db.get(DAG_SYNC_BLOCK_PREFIX_NAME, dag_block2.block.id().encode()?)?
+                    .expect("failed to get the dag block"),
+            )?;
+            assert_eq!(read_dag_block2, dag_block2);
+        }
+    }
+
+    Ok(())
+}
+
+#[test]
+fn test_batch_write_for_cache_and_db() -> Result<()> {
+    let tmpdir = starcoin_config::temp_dir();
+    let instance = StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        DBStorage::new(tmpdir.path(), RocksdbConfig::default(), None)?,
+    );
+
+    run_write_batch(instance)
+}
+
+#[test]
+fn test_batch_write_for_db() -> Result<()> {
+    let tmpdir = starcoin_config::temp_dir();
+    let instance = StorageInstance::new_db_instance(DBStorage::new(
+        tmpdir.path(),
+        RocksdbConfig::default(),
+        None,
+    )?);
+
+    run_write_batch(instance)
+}
+
+#[test]
+fn test_batch_write_for_cache() -> Result<()> {
+    let instance = StorageInstance::new_cache_instance();
+
+    run_write_batch(instance)
 }
