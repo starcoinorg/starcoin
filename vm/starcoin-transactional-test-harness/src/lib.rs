@@ -8,7 +8,6 @@ use move_binary_format::{file_format::CompiledScript, CompiledModule};
 use move_command_line_common::address::ParsedAddress;
 use move_command_line_common::files::verify_and_create_named_address_mapping;
 use move_compiler::compiled_unit::{AnnotatedCompiledUnit, CompiledUnitEnum};
-use move_compiler::shared::known_attributes::KnownAttribute;
 use move_compiler::shared::{NumberFormat, NumericalAddress, PackagePaths};
 use move_compiler::{construct_pre_compiled_lib, FullyCompiledProgram};
 use move_core_types::language_storage::StructTag;
@@ -38,6 +37,7 @@ use starcoin_config::{genesis_key_pair, BuiltinNetworkID};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_dev::playground::call_contract;
+use starcoin_framework::extended_checks;
 use starcoin_gas_meter::StarcoinGasParameters;
 use starcoin_gas_schedule::FromOnChainGasSchedule;
 use starcoin_rpc_api::types::{
@@ -1072,7 +1072,8 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
     }
 
     fn known_attributes(&self) -> &BTreeSet<String> {
-        KnownAttribute::get_all_attribute_names()
+        // KnownAttribute::get_all_attribute_names()
+        extended_checks::get_all_attribute_names()
     }
 
     fn init(
