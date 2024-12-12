@@ -9,11 +9,11 @@ use move_vm_runtime::native_functions::NativeFunctionTable;
 use starcoin_framework::extended_checks;
 use starcoin_vm_runtime::natives;
 
-pub const STARCOIN_STDLIB_PACKAGE_NAME: &str = "StarcoinFramework";
+pub const STARCOIN_STDLIB_PACKAGE_NAME: &str = "starcoin_framework";
 pub const STARCOIN_STDLIB_PACKAGE_PATH: &str = "{ \
     git = \"https://github.com/starcoinorg/starcoin-framework.git\", rev = \"main\" \
 }";
-pub const STARCOIN_STDLIB_ADDR_NAME: &str = "StarcoinFramework";
+pub const STARCOIN_STDLIB_ADDR_NAME: &str = "starcoin_framework";
 pub const STARCOIN_STDLIB_ADDR_VALUE: &str = "0x1";
 
 #[derive(Parser)]
