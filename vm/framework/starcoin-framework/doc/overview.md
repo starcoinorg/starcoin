@@ -75,7 +75,6 @@ This is the reference documentation of the Starcoin framework.
 -  [`0x1::treasury`](treasury.md#0x1_treasury)
 -  [`0x1::treasury_scripts`](treasury_scripts.md#0x1_treasury_scripts)
 -  [`0x1::util`](util.md#0x1_util)
--  [`0x1::validator_consensus_info`](validator_consensus_info.md#0x1_validator_consensus_info)
 -  [`0x1::vm_config`](vm_config.md#0x1_vm_config)
 
 
