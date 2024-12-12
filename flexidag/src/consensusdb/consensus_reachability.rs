@@ -3,10 +3,7 @@ use super::{
     prelude::{BatchDbWriter, CachedDbAccess, CachedDbItem, DirectDbWriter, StoreError},
 };
 use starcoin_crypto::HashValue as Hash;
-use starcoin_storage::{
-    batch::WriteBatchData,
-    storage::{InnerStore, RawDBStorage, WriteOp},
-};
+use starcoin_storage::storage::{InnerStore, RawDBStorage};
 
 use crate::{
     consensusdb::schema::{KeyCodec, ValueCodec},
@@ -15,7 +12,7 @@ use crate::{
 };
 use starcoin_types::blockhash::{self, BlockHashMap, BlockHashes};
 
-use parking_lot::{RwLockUpgradableReadGuard, RwLockWriteGuard};
+use parking_lot::RwLockUpgradableReadGuard;
 use rocksdb::WriteBatch;
 use std::{collections::hash_map::Entry::Vacant, sync::Arc};
 

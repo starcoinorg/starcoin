@@ -38,7 +38,6 @@ fn test_dag_commit() -> Result<()> {
         .build();
 
     let mut parents_hash = vec![genesis.id()];
-    let origin = dag.init_with_genesis(genesis.clone())?;
 
     for _ in 0..10 {
         let header_builder = BlockHeaderBuilder::random();
@@ -46,7 +45,7 @@ fn test_dag_commit() -> Result<()> {
             .with_parents_hash(parents_hash.clone())
             .build();
         parents_hash = vec![header.id()];
-        dag.commit(header.to_owned(), origin)?;
+        dag.commit(header.to_owned())?;
         let ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
         println!("{:?},{:?}", header, ghostdata);
     }
@@ -92,15 +91,14 @@ fn test_dag_1() -> Result<()> {
     let genesis_id = genesis.id();
     let mut dag = BlockDAG::create_for_testing().unwrap();
     let expect_selected_parented = [block5.id(), block3.id(), block3_1.id(), genesis_id];
-    let origin = dag.init_with_genesis(genesis.clone()).unwrap();
 
-    dag.commit(block1, origin)?;
-    dag.commit(block2, origin)?;
-    dag.commit(block3_1, origin)?;
-    dag.commit(block3, origin)?;
-    dag.commit(block4, origin)?;
-    dag.commit(block5, origin)?;
-    dag.commit(block6, origin)?;
+    dag.commit(block1)?;
+    dag.commit(block2)?;
+    dag.commit(block3_1)?;
+    dag.commit(block3)?;
+    dag.commit(block4)?;
+    dag.commit(block5)?;
+    dag.commit(block6)?;
     let mut count = 0;
     while latest_id != genesis_id && count < 4 {
         let ghostdata = dag
@@ -130,9 +128,8 @@ async fn test_with_spawn() {
         .with_parents_hash(vec![genesis.id()])
         .build();
     let mut dag = BlockDAG::create_for_testing().unwrap();
-    let real_origin = dag.init_with_genesis(genesis.clone()).unwrap();
-    dag.commit(block1.clone(), real_origin).unwrap();
-    dag.commit(block2.clone(), real_origin).unwrap();
+    dag.commit(block1.clone()).unwrap();
+    dag.commit(block2.clone()).unwrap();
     let block3 = BlockHeaderBuilder::random()
         .with_difficulty(3.into())
         .with_parents_hash(vec![block1.id(), block2.id()])
@@ -144,7 +141,7 @@ async fn test_with_spawn() {
         let handle = tokio::task::spawn_blocking(move || {
             let mut count = 10;
             loop {
-                match dag_clone.commit(block_clone.clone(), real_origin) {
+                match dag_clone.commit(block_clone.clone()) {
                     std::result::Result::Ok(_) => break,
                     Err(e) => {
                         debug!("failed to commit error: {:?}, i: {:?}", e, i);
@@ -261,8 +258,7 @@ fn test_dag_genesis_fork() {
             .with_parents_hash(parents_hash.clone())
             .build();
         parents_hash = vec![header.id()];
-        dag.commit(header.to_owned(), genesis.parent_hash())
-            .unwrap();
+        dag.commit(header.to_owned()).unwrap();
         let _ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
     }
 
@@ -285,8 +281,7 @@ fn test_dag_genesis_fork() {
             .with_parents_hash(old_parents_hash.clone())
             .build();
         old_parents_hash = vec![header.id()];
-        dag.commit(header.to_owned(), genesis.parent_hash())
-            .unwrap();
+        dag.commit(header.to_owned()).unwrap();
         let ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
         println!("add a old header: {:?}, tips: {:?}", header, ghostdata);
     }
@@ -298,8 +293,7 @@ fn test_dag_genesis_fork() {
             .with_parents_hash(parents_hash.clone())
             .build();
         parents_hash = vec![header.id()];
-        dag.commit(header.to_owned(), genesis.parent_hash())
-            .unwrap();
+        dag.commit(header.to_owned()).unwrap();
         let ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
         println!("add a forked header: {:?}, tips: {:?}", header, ghostdata);
     }
@@ -308,8 +302,7 @@ fn test_dag_genesis_fork() {
     parents_hash.append(&mut old_parents_hash);
     let header = header_builder.with_parents_hash(parents_hash).build();
     // parents_hash = vec![header.id()];
-    dag.commit(header.to_owned(), genesis.parent_hash())
-        .unwrap();
+    dag.commit(header.to_owned()).unwrap();
     let ghostdata = dag.ghostdata_by_hash(header.id()).unwrap().unwrap();
     println!("add a forked header: {:?}, tips: {:?}", header, ghostdata);
 }
@@ -359,10 +352,10 @@ fn test_dag_multiple_commits() -> anyhow::Result<()> {
             .build();
         parents_hash = vec![header.id()];
         parent_hash = header.id();
-        dag.commit(header.to_owned(), genesis.parent_hash())?;
+        dag.commit(header.to_owned())?;
         if header.number() == 6 {
-            dag.commit(header.to_owned(), genesis.parent_hash())?;
-            dag.commit(header.to_owned(), genesis.parent_hash())?;
+            dag.commit(header.to_owned())?;
+            dag.commit(header.to_owned())?;
         }
         let ghostdata = dag.ghostdata(&parents_hash).unwrap();
         println!("add a header: {:?}, tips: {:?}", header, ghostdata);
@@ -710,7 +703,6 @@ fn add_and_print_with_ghostdata(
     number: BlockNumber,
     parent: Hash,
     parents: Vec<Hash>,
-    origin: Hash,
     dag: &mut BlockDAG,
     ghostdata: GhostdagData,
 ) -> anyhow::Result<BlockHeader> {
@@ -721,7 +713,7 @@ fn add_and_print_with_ghostdata(
         .with_number(number)
         .build();
     let start = Instant::now();
-    dag.commit_trusted_block(header.to_owned(), origin, Arc::new(ghostdata))?;
+    dag.commit_trusted_block(header.to_owned(), Arc::new(ghostdata))?;
     let duration = start.elapsed();
     println!(
         "commit header: {:?}, number: {:?}, duration: {:?}",
@@ -741,7 +733,6 @@ fn add_and_print_with_pruning_point(
     number: BlockNumber,
     parent: Hash,
     parents: Vec<Hash>,
-    origin: Hash,
     pruning_point: Hash,
     dag: &mut BlockDAG,
 ) -> anyhow::Result<BlockHeader> {
@@ -753,7 +744,7 @@ fn add_and_print_with_pruning_point(
         .with_pruning_point(pruning_point)
         .build();
     let start = Instant::now();
-    dag.commit(header.to_owned(), origin)?;
+    dag.commit(header.to_owned())?;
     let duration = start.elapsed();
     println!(
         "commit header: {:?}, number: {:?}, duration: {:?}",
@@ -773,10 +764,9 @@ fn add_and_print(
     number: BlockNumber,
     parent: Hash,
     parents: Vec<Hash>,
-    origin: Hash,
     dag: &mut BlockDAG,
 ) -> anyhow::Result<BlockHeader> {
-    add_and_print_with_pruning_point(number, parent, parents, origin, Hash::zero(), dag)
+    add_and_print_with_pruning_point(number, parent, parents, Hash::zero(), dag)
 }
 
 #[test]
@@ -795,32 +785,18 @@ fn test_dag_mergeset() -> anyhow::Result<()> {
     let mut parents_hash = vec![genesis.id()];
     let mut parent_hash = genesis.id();
 
-    let mut header = add_and_print(
-        2,
-        parent_hash,
-        parents_hash,
-        genesis.parent_hash(),
-        &mut dag,
-    )?
-    .id();
-    let red = add_and_print(3, header, vec![header], genesis.parent_hash(), &mut dag)?.id();
+    let mut header = add_and_print(2, parent_hash, parents_hash, &mut dag)?.id();
+    let red = add_and_print(3, header, vec![header], &mut dag)?.id();
 
     parents_hash = vec![genesis.id()];
     parent_hash = genesis.id();
 
-    header = add_and_print(
-        2,
-        parent_hash,
-        parents_hash,
-        genesis.parent_hash(),
-        &mut dag,
-    )?
-    .id();
-    header = add_and_print(3, header, vec![header], genesis.parent_hash(), &mut dag)?.id();
-    header = add_and_print(4, header, vec![header], genesis.parent_hash(), &mut dag)?.id();
+    header = add_and_print(2, parent_hash, parents_hash, &mut dag)?.id();
+    header = add_and_print(3, header, vec![header], &mut dag)?.id();
+    header = add_and_print(4, header, vec![header], &mut dag)?.id();
     let blue = header;
 
-    header = add_and_print(5, blue, vec![blue, red], genesis.parent_hash(), &mut dag)?.id();
+    header = add_and_print(5, blue, vec![blue, red], &mut dag)?.id();
 
     let ghostdata = dag.ghostdata(&[header, red])?;
     println!(
@@ -846,13 +822,7 @@ fn test_big_data_commit() -> anyhow::Result<()> {
     // one
     let mut parent = genesis.clone();
     for i in 0..count {
-        let new = add_and_print(
-            i + 1,
-            parent.id(),
-            vec![parent.id()],
-            genesis.parent_hash(),
-            &mut dag,
-        )?;
+        let new = add_and_print(i + 1, parent.id(), vec![parent.id()], &mut dag)?;
         parent = new;
     }
     // let last_one = parent;
@@ -896,69 +866,25 @@ fn test_prune() -> anyhow::Result<()> {
 
     dag.init_with_genesis(genesis.clone()).unwrap();
 
-    let block1 = add_and_print(
-        1,
-        genesis.id(),
-        vec![genesis.id()],
-        genesis.parent_hash(),
-        &mut dag,
-    )?;
+    let block1 = add_and_print(1, genesis.id(), vec![genesis.id()], &mut dag)?;
 
-    let block_main_2 = add_and_print(
-        2,
-        block1.id(),
-        vec![block1.id()],
-        genesis.parent_hash(),
-        &mut dag,
-    )?;
-    let block_main_3 = add_and_print(
-        3,
-        block_main_2.id(),
-        vec![block_main_2.id()],
-        genesis.parent_hash(),
-        &mut dag,
-    )?;
-    let block_main_3_1 = add_and_print(
-        3,
-        block_main_2.id(),
-        vec![block_main_2.id()],
-        genesis.parent_hash(),
-        &mut dag,
-    )?;
+    let block_main_2 = add_and_print(2, block1.id(), vec![block1.id()], &mut dag)?;
+    let block_main_3 = add_and_print(3, block_main_2.id(), vec![block_main_2.id()], &mut dag)?;
+    let block_main_3_1 = add_and_print(3, block_main_2.id(), vec![block_main_2.id()], &mut dag)?;
     let block_main_4 = add_and_print(
         4,
         block_main_3.id(),
         vec![block_main_3.id(), block_main_3_1.id()],
-        genesis.parent_hash(),
         &mut dag,
     )?;
-    let block_main_5 = add_and_print(
-        5,
-        block_main_4.id(),
-        vec![block_main_4.id()],
-        genesis.parent_hash(),
-        &mut dag,
-    )?;
+    let block_main_5 = add_and_print(5, block_main_4.id(), vec![block_main_4.id()], &mut dag)?;
 
-    let block_red_2 = add_and_print(
-        2,
-        block1.id(),
-        vec![block1.id()],
-        genesis.parent_hash(),
-        &mut dag,
-    )?;
-    let block_red_2_1 = add_and_print(
-        2,
-        block1.id(),
-        vec![block1.id()],
-        genesis.parent_hash(),
-        &mut dag,
-    )?;
+    let block_red_2 = add_and_print(2, block1.id(), vec![block1.id()], &mut dag)?;
+    let block_red_2_1 = add_and_print(2, block1.id(), vec![block1.id()], &mut dag)?;
     let block_red_3 = add_and_print(
         3,
         block_red_2.id(),
         vec![block_red_2.id(), block_red_2_1.id()],
-        genesis.parent_hash(),
         &mut dag,
     )?;
 
@@ -1024,22 +950,9 @@ fn test_prune() -> anyhow::Result<()> {
 
     // test the pruning logic
 
-    let block_main_6 = add_and_print(
-        6,
-        block_main_5.id(),
-        tips.clone(),
-        genesis.parent_hash(),
-        &mut dag,
-    )?;
-    let block_main_6_1 =
-        add_and_print(6, block_main_5.id(), tips, genesis.parent_hash(), &mut dag)?;
-    let block_fork = add_and_print(
-        4,
-        block_red_3.id(),
-        vec![block_red_3.id()],
-        genesis.parent_hash(),
-        &mut dag,
-    )?;
+    let block_main_6 = add_and_print(6, block_main_5.id(), tips.clone(), &mut dag)?;
+    let block_main_6_1 = add_and_print(6, block_main_5.id(), tips, &mut dag)?;
+    let block_fork = add_and_print(4, block_red_3.id(), vec![block_red_3.id()], &mut dag)?;
 
     dag.save_dag_state(
         genesis.id(),
@@ -1081,69 +994,25 @@ fn test_verification_blue_block() -> anyhow::Result<()> {
 
     dag.init_with_genesis(genesis.clone()).unwrap();
 
-    let block1 = add_and_print(
-        1,
-        genesis.id(),
-        vec![genesis.id()],
-        genesis.parent_hash(),
-        &mut dag,
-    )?;
+    let block1 = add_and_print(1, genesis.id(), vec![genesis.id()], &mut dag)?;
 
-    let block_main_2 = add_and_print(
-        2,
-        block1.id(),
-        vec![block1.id()],
-        genesis.parent_hash(),
-        &mut dag,
-    )?;
-    let block_main_3 = add_and_print(
-        3,
-        block_main_2.id(),
-        vec![block_main_2.id()],
-        genesis.parent_hash(),
-        &mut dag,
-    )?;
-    let block_main_3_1 = add_and_print(
-        3,
-        block_main_2.id(),
-        vec![block_main_2.id()],
-        genesis.parent_hash(),
-        &mut dag,
-    )?;
+    let block_main_2 = add_and_print(2, block1.id(), vec![block1.id()], &mut dag)?;
+    let block_main_3 = add_and_print(3, block_main_2.id(), vec![block_main_2.id()], &mut dag)?;
+    let block_main_3_1 = add_and_print(3, block_main_2.id(), vec![block_main_2.id()], &mut dag)?;
     let block_main_4 = add_and_print(
         4,
         block_main_3.id(),
         vec![block_main_3.id(), block_main_3_1.id()],
-        genesis.parent_hash(),
         &mut dag,
     )?;
-    let block_main_5 = add_and_print(
-        5,
-        block_main_4.id(),
-        vec![block_main_4.id()],
-        genesis.parent_hash(),
-        &mut dag,
-    )?;
+    let block_main_5 = add_and_print(5, block_main_4.id(), vec![block_main_4.id()], &mut dag)?;
 
-    let block_red_2 = add_and_print(
-        2,
-        block1.id(),
-        vec![block1.id()],
-        genesis.parent_hash(),
-        &mut dag,
-    )?;
-    let block_red_2_1 = add_and_print(
-        2,
-        block1.id(),
-        vec![block1.id()],
-        genesis.parent_hash(),
-        &mut dag,
-    )?;
+    let block_red_2 = add_and_print(2, block1.id(), vec![block1.id()], &mut dag)?;
+    let block_red_2_1 = add_and_print(2, block1.id(), vec![block1.id()], &mut dag)?;
     let block_red_3 = add_and_print(
         3,
         block_red_2.id(),
         vec![block_red_2.id(), block_red_2_1.id()],
-        genesis.parent_hash(),
         &mut dag,
     )?;
 
@@ -1215,7 +1084,6 @@ fn test_verification_blue_block() -> anyhow::Result<()> {
         6,
         block_main_5.id(),
         vec![block_main_5.id(), block_red_3.id()],
-        genesis.parent_hash(),
         &mut dag,
     )?;
     assert_eq!(
@@ -1240,25 +1108,12 @@ fn test_verification_blue_block() -> anyhow::Result<()> {
         6,
         block_main_5.id(),
         vec![block_main_5.id(), block_red_3.id()],
-        genesis.parent_hash(),
         &mut dag,
         makeup_ghostdata.clone(),
     )?;
 
-    let block_from_normal = add_and_print(
-        7,
-        normal_block.id(),
-        vec![normal_block.id()],
-        genesis.parent_hash(),
-        &mut dag,
-    )?;
-    let block_from_makeup = add_and_print(
-        7,
-        makeup_block.id(),
-        vec![makeup_block.id()],
-        genesis.parent_hash(),
-        &mut dag,
-    )?;
+    let block_from_normal = add_and_print(7, normal_block.id(), vec![normal_block.id()], &mut dag)?;
+    let block_from_makeup = add_and_print(7, makeup_block.id(), vec![makeup_block.id()], &mut dag)?;
 
     let ghostdag_data_from_normal = dag
         .ghostdata_by_hash(block_from_normal.id())?
@@ -1288,7 +1143,6 @@ fn test_verification_blue_block() -> anyhow::Result<()> {
         8,
         together_mine.selected_parent,
         vec![block_from_normal.id(), block_from_makeup.id()],
-        genesis.parent_hash(),
         &mut dag,
     )?;
     let together_ghost_data = dag.storage.ghost_dag_store.get_data(mine_together.id())?;
@@ -1300,7 +1154,6 @@ fn test_verification_blue_block() -> anyhow::Result<()> {
         8,
         together_mine.selected_parent,
         vec![block_from_normal.id(), block_from_makeup.id()],
-        genesis.parent_hash(),
         &mut dag,
     )?;
     let together_ghost_data = dag.storage.ghost_dag_store.get_data(mine_together.id())?;

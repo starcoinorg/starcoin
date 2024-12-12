@@ -659,19 +659,11 @@ impl BlockChain {
         self.storage.save_block_info(block_info.clone())?;
 
         self.storage.save_table_infos(txn_table_infos)?;
-        let genesis_header = self
-            .storage
-            .get_block_header_by_hash(self.genesis_hash)?
-            .ok_or_else(|| format_err!("failed to get genesis because it is none"))?;
         let result = match verified_block.ghostdata {
-            Some(trusted_ghostdata) => self.dag.commit_trusted_block(
-                header.to_owned(),
-                genesis_header.parent_hash(),
-                Arc::new(trusted_ghostdata),
-            ),
-            None => self
+            Some(trusted_ghostdata) => self
                 .dag
-                .commit(header.to_owned(), genesis_header.parent_hash()),
+                .commit_trusted_block(header.to_owned(), Arc::new(trusted_ghostdata)),
+            None => self.dag.commit(header.to_owned()),
         };
         match result {
             anyhow::Result::Ok(_) => info!("finish to commit dag block: {:?}", block_id),
