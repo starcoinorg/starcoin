@@ -1981,6 +1981,7 @@ dependencies = [
  "serde_json",
  "starcoin-crypto",
  "starcoin-executor",
+ "starcoin-move-stdlib",
  "starcoin-state-api",
  "starcoin-types",
  "starcoin-vm-types",
@@ -11149,15 +11150,19 @@ dependencies = [
 name = "starcoin-move-stdlib"
 version = "0.1.1"
 dependencies = [
+ "anyhow",
  "dir-diff",
  "file_diff",
+ "include_dir",
  "move-core-types",
  "move-vm-runtime",
  "move-vm-types",
+ "once_cell",
  "sha2 0.9.9",
  "sha3",
  "smallvec 1.10.0",
  "starcoin-gas-schedule",
+ "starcoin-logger",
  "starcoin-native-interface",
  "tempfile",
 ]

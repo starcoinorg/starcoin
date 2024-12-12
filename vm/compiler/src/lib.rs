@@ -55,6 +55,8 @@ pub fn starcoin_framework_named_addresses() -> BTreeMap<String, NumericalAddress
         ("Genesis", "0x1"),
         ("StarcoinFramework", "0x1"),
         ("StarcoinAssociation", "0xA550C18"),
+        ("std", "0x1"),
+        ("starcoin_std", "0x1"),
     ];
     mapping
         .iter()

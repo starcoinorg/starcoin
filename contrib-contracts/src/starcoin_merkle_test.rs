@@ -27,7 +27,11 @@ fn test_starcoin_merkle() -> Result<()> {
 
     {
         let source = include_str!("../modules/StarcoinVerifier.move");
-        let modules = compile_modules_with_address(association_address(), source);
+        let modules = compile_modules_with_address(
+            association_address(),
+            source,
+            &starcoin_move_stdlib::move_stdlib_files(),
+        );
 
         let package = Package::new(modules, None)?;
         association_execute_should_success(

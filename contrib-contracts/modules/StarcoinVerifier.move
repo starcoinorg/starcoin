@@ -1,15 +1,15 @@
 address StarcoinAssociation {
     module StarcoinVerifierScripts {
         use StarcoinAssociation::StarcoinVerifier;
-        public(script) fun create(signer: signer, merkle_root: vector<u8>) {
+        public entry fun create(signer: signer, merkle_root: vector<u8>) {
             StarcoinVerifier::create(&signer, merkle_root);
         }
     }
     module StarcoinVerifier {
-        use StarcoinFramework::Vector;
+        use std::vector;
         use StarcoinAssociation::Bit;
         use StarcoinAssociation::StructuredHash;
-        use StarcoinFramework::Hash;
+        use std::hash;
 
         struct StarcoinMerkle has key {
             merkle_root: vector<u8>,
@@ -38,7 +38,7 @@ address StarcoinAssociation {
         }
 
         public fun verify(expected_root: vector<u8>, account_address: vector<u8>, account_state_root_hash: vector<u8>, proofs: vector<vector<u8>>): bool {
-            let address_hash = Hash::sha3_256(account_address);
+            let address_hash = hash::sha3_256(account_address);
             let leaf_node = Node { hash1: copy address_hash, hash2: account_state_root_hash};
             let current_hash = StructuredHash::hash(SPARSE_MERKLE_LEAF_NODE, &leaf_node);
             let i = 0;
@@ -59,13 +59,13 @@ address StarcoinAssociation {
     }
 
     module StructuredHash {
-        use StarcoinFramework::Hash;
-        use StarcoinFramework::Vector;
-        use StarcoinFramework::BCS;
+        use std::hash;
+        use std::vector;
+        use std::bcs;
         const STARCOIN_HASH_PREFIX: vector<u8> = b"STARCOIN::";
         public fun hash<MoveValue: store>(structure: vector<u8>, data: &MoveValue): vector<u8> {
-            let prefix_hash = Hash::sha3_256(concat(&STARCOIN_HASH_PREFIX, structure));
-            let bcs_bytes = BCS::to_bytes(data);
+            let prefix_hash = hash::sha3_256(concat(&STARCOIN_HASH_PREFIX, structure));
+            let bcs_bytes = bcs::to_bytes(data);
             Hash::sha3_256(concat(&prefix_hash, bcs_bytes))
         }
 
@@ -77,7 +77,7 @@ address StarcoinAssociation {
 
     }
     module Bit {
-        use StarcoinFramework::Vector;
+        use std::vector;
         public fun get_bit(data: &vector<u8>, index: u64): bool {
             let pos = index / 8;
             let bit = (7 - index % 8);

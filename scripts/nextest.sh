@@ -24,7 +24,6 @@ cargo nextest -V >/dev/null 2>&1 || cargo install cargo-nextest --version "0.9.5
 cargo nextest run --workspace \
 --exclude starcoin-transactional-test-harness \
 --exclude starcoin-framework \
---exclude contrib-contracts \
 --exclude starcoin-consensus \
 --retries 2 --build-jobs 8 --test-threads 12 --no-fail-fast --failure-output immediate-final
 
