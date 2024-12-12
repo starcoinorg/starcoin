@@ -12066,6 +12066,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-dag",
  "starcoin-dev",
+ "starcoin-framework 0.1.0",
  "starcoin-gas-meter",
  "starcoin-gas-schedule",
  "starcoin-genesis",

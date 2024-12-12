@@ -8,7 +8,6 @@ use move_binary_format::{file_format::CompiledScript, CompiledModule};
 use move_command_line_common::address::ParsedAddress;
 use move_command_line_common::files::verify_and_create_named_address_mapping;
 use move_compiler::compiled_unit::{AnnotatedCompiledUnit, CompiledUnitEnum};
-use move_compiler::shared::known_attributes::KnownAttribute;
 use move_compiler::shared::{NumberFormat, NumericalAddress, PackagePaths};
 use move_compiler::{construct_pre_compiled_lib, FullyCompiledProgram};
 use move_core_types::language_storage::StructTag;
@@ -83,6 +82,7 @@ use std::sync::Mutex;
 use std::{collections::BTreeMap, convert::TryInto, path::Path, str::FromStr};
 use stdlib::{starcoin_framework_named_addresses, stdlib_files};
 use tempfile::{NamedTempFile, TempDir};
+use starcoin_framework::extended_checks;
 
 pub mod context;
 pub mod fork_chain;
@@ -1072,7 +1072,8 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
     }
 
     fn known_attributes(&self) -> &BTreeSet<String> {
-        KnownAttribute::get_all_attribute_names()
+        // KnownAttribute::get_all_attribute_names()
+        extended_checks::get_all_attribute_names()
     }
 
     fn init(
