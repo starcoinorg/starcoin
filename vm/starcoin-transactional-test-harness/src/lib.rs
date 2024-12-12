@@ -1518,8 +1518,8 @@ pub static G_PRECOMPILED_STARCOIN_FRAMEWORK: Lazy<(FullyCompiledProgram, Vec<Pac
         let program_res = construct_pre_compiled_lib(
             package_paths,
             None,
-            move_compiler::Flags::empty(),
-            &BTreeSet::new(),
+            move_compiler::Flags::empty().set_sources_shadow_deps(false),
+            starcoin_framework::extended_checks::get_all_attribute_names(),
         )
         .unwrap();
         (
