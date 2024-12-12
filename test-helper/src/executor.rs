@@ -108,10 +108,14 @@ pub fn get_balance<S: ChainStateReader>(address: AccountAddress, chain_state: &S
         .expect("read balance resource should ok")
 }
 
-pub fn compile_modules_with_address(
+pub fn compile_modules_with_address(address: AccountAddress, code: &str) -> Vec<Module> {
+    compile_modules_with_address_ext(address, code, &stdlib_files())
+}
+
+pub fn compile_modules_with_address_ext(
     address: AccountAddress,
     code: &str,
-    libs: &Vec<String>,
+    libs: &[String],
 ) -> Vec<Module> {
     let (_, compiled_result) =
         starcoin_move_compiler::compile_source_string(code, libs, address).expect("compile fail");

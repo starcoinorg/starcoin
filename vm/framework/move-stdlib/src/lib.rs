@@ -16,12 +16,11 @@ pub struct SourceFiles {
     pub files: Vec<String>,
 }
 pub static MOVE_STDLIB_SOURCE_FILES: Lazy<SourceFiles> = Lazy::new(|| {
-    restore_sources(MOVE_STDLIB_SOURCES_DIR.clone(), "move-stdlib")
-        .expect("Restore source file error")
+    restore_sources(MOVE_STDLIB_SOURCES_DIR, "move-stdlib").expect("Restore source file error")
 });
 pub const STARCOIN_STDLIB_SOURCES_DIR: Dir = include_dir!("../starcoin-stdlib/sources");
 pub static STARCOIN_STDLIB_SOURCE_FILES: Lazy<SourceFiles> = Lazy::new(|| {
-    restore_sources(STARCOIN_STDLIB_SOURCES_DIR.clone(), "starcoin-stdlib")
+    restore_sources(STARCOIN_STDLIB_SOURCES_DIR, "starcoin-stdlib")
         .expect("Restore source file error")
 });
 pub fn move_stdlib_files() -> Vec<String> {
