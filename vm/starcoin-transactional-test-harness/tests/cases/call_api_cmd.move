@@ -6,7 +6,7 @@
 
 //# call-api chain.get_block_by_number [1]
 
-//# call-api state.get_with_proof_by_root_raw ["0x1/1/0x1::Account::Account","{{$.call-api[0].header.state_root}}"]
+//# call-api state.get_with_proof_by_root_raw ["0x1/1/0x1::account::Account","{{$.call-api[0].header.state_root}}"]
 
 //# run --signers creator --args {{$.call-api[0].header.number}}u64  --args  "{{$.call-api[0].header.block_hash}}" --args "{{$.call-api[1]}}"
 script{

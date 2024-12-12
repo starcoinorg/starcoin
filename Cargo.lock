@@ -12068,6 +12068,7 @@ dependencies = [
  "serde_json",
  "starcoin-abi-decoder",
  "starcoin-accumulator",
+ "starcoin-cached-packages",
  "starcoin-chain-api",
  "starcoin-config",
  "starcoin-crypto",
