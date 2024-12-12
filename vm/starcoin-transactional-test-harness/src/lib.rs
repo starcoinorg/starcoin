@@ -1509,7 +1509,6 @@ pub static G_PRECOMPILED_STARCOIN_FRAMEWORK: Lazy<(FullyCompiledProgram, Vec<Pac
         let sources = starcoin_cached_packages::head_release_bundle()
             .files()
             .unwrap();
-        eprintln!("sources {:?} {:?}", sources[0], sources[1]);
         let package_paths = vec![PackagePaths {
             name: None,
             paths: sources,
