@@ -62,7 +62,7 @@ mod tests {
         let hash = HashValue::random();
         let json_value = serde_json::to_string(&hash).unwrap();
         println!("{}", json_value);
-        assert_eq!(json_value, format!("\"{}\"", hash.to_string()));
+        assert_eq!(json_value, format!("\"{}\"", hash));
 
         let de_hash = serde_json::from_slice::<HashValue>(json_value.as_bytes()).unwrap();
         let de_hash2: HashValue = serde_json::from_str::<HashValue>(&json_value).unwrap();

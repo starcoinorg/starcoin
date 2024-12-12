@@ -36,15 +36,15 @@ The generated json file should be same as `examples/merkle-exmaple.json`.
 2. Then create a distribution onchain.
 
 ``` move
-public(script) fun create<T: store>(signer: signer, merkle_root: vector<u8>, token_amounts: u128, leafs: u64);
+public entry fun create<T: store>(signer: signer, merkle_root: vector<u8>, token_amounts: u128, leafs: u64);
 ```
 
 3. User claim
 
 ``` move
 // claim from myslef.
-public(script) fun claim<T: store>(signer: signer, distribution_address: address, index: u64, amount: u128, merkle_proof: vector<vector<u8>>);
+public entry fun claim<T: store>(signer: signer, distribution_address: address, index: u64, amount: u128, merkle_proof: vector<vector<u8>>);
 
 // claim for someone else.
-public(script) fun claim_for_address<T: store>(distribution_address: address, index: u64, account: address, amount: u128, merkle_proof: vector<vector<u8>>);
+public entry fun claim_for_address<T: store>(distribution_address: address, index: u64, account: address, amount: u128, merkle_proof: vector<vector<u8>>);
 ```
