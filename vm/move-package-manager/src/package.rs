@@ -44,6 +44,7 @@ pub enum PackageCommand {
     #[clap(name = "disassemble")]
     Disassemble(Disassemble),
 }
+
 pub fn handle_package_commands(
     natives: NativeFunctionTable,
     move_args: Move,
@@ -65,9 +66,13 @@ pub fn handle_package_commands(
         PackageCommand::Test(c) => {
             natives::configure_for_unit_test();
             extended_checks::configure_extended_checks_for_unit_test();
+
+            let mut build_config = move_args.build_config.clone();
+            build_config.compiler_config.known_attributes =
+                extended_checks::get_all_attribute_names().clone();
             c.execute(
                 move_args.package_path,
-                move_args.build_config,
+                build_config,
                 natives,
                 Changes::new(),
                 None,
