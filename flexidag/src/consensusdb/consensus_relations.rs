@@ -1,4 +1,5 @@
 use super::schema::{KeyCodec, ValueCodec};
+use super::writer::BatchDbWriter;
 use super::{
     db::DBStorage,
     prelude::{CachedDbAccess, StoreError},
@@ -90,6 +91,41 @@ impl DbRelationsStore {
 
     pub fn clone_with_new_cache(&self, cache_size: usize) -> Self {
         Self::new(Arc::clone(&self.db), self.level, cache_size)
+    }
+
+    pub fn insert_batch(
+        &mut self,
+        batch: &mut rocksdb::WriteBatch,
+        hash: Hash,
+        parents: BlockHashes,
+    ) -> Result<(), StoreError> {
+        if self.has(hash)? {
+            return Err(StoreError::KeyAlreadyExists(hash.to_string()));
+        }
+
+        // Insert a new entry for `hash`
+        self.parents_access
+            .write(BatchDbWriter::new(batch, &self.db), hash, parents.clone())?;
+
+        // The new hash has no children yet
+        self.children_access.write(
+            BatchDbWriter::new(batch, &self.db),
+            hash,
+            BlockHashes::new(Vec::new()),
+        )?;
+
+        // Update `children` for each parent
+        for parent in parents.iter().cloned() {
+            let mut children = (*self.get_children(parent)?).clone();
+            children.push(hash);
+            self.children_access.write(
+                BatchDbWriter::new(batch, &self.db),
+                parent,
+                BlockHashes::new(children),
+            )?;
+        }
+
+        Ok(())
     }
 }
 

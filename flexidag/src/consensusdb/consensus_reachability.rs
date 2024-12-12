@@ -3,7 +3,10 @@ use super::{
     prelude::{BatchDbWriter, CachedDbAccess, CachedDbItem, DirectDbWriter, StoreError},
 };
 use starcoin_crypto::HashValue as Hash;
-use starcoin_storage::{batch::WriteBatchData, storage::{InnerStore, RawDBStorage, WriteOp}};
+use starcoin_storage::{
+    batch::WriteBatchData,
+    storage::{InnerStore, RawDBStorage, WriteOp},
+};
 
 use crate::{
     consensusdb::schema::{KeyCodec, ValueCodec},
@@ -244,49 +247,39 @@ impl ReachabilityStoreReader for DbReachabilityStore {
 }
 
 pub struct StagingReachabilityStore<'a> {
+    db: Arc<DBStorage>,
     store_read: RwLockUpgradableReadGuard<'a, DbReachabilityStore>,
     staging_writes: BlockHashMap<ReachabilityData>,
     staging_reindex_root: Option<Hash>,
 }
 
 impl<'a> StagingReachabilityStore<'a> {
-    pub fn new(store_read: RwLockUpgradableReadGuard<'a, DbReachabilityStore>) -> Self {
+    pub fn new(
+        db: Arc<DBStorage>,
+        store_read: RwLockUpgradableReadGuard<'a, DbReachabilityStore>,
+    ) -> Self {
         Self {
+            db,
             store_read,
             staging_writes: BlockHashMap::new(),
             staging_reindex_root: None,
         }
     }
 
-    pub fn commit(
-        self,
-        batch: &mut starcoin_storage::batch::WriteBatchWithColumn,
-    ) -> Result<(), StoreError> {
+    pub fn commit(self, batch: &mut WriteBatch) -> Result<(), StoreError> {
         let mut store_write = RwLockUpgradableReadGuard::upgrade(self.store_read);
-        let mut reach_data = vec![];
         for (k, v) in self.staging_writes {
             let data = Arc::new(v);
-            reach_data.push((k.to_vec(), WriteOp::Value(data.encode_value()?)));
-            // store_write
-            //     .access
-            //     .write(BatchDbWriter::new(batch, &db), k, data)?
+            store_write
+                .access
+                .write(BatchDbWriter::new(batch, &self.db), k, data)?
         }
-        batch.data.push(WriteBatchData {
-                column: REACHABILITY_DATA_CF.to_string(),
-                row_data: starcoin_storage::batch::WriteBatch::new_with_rows(reach_data),
-        });
 
-        let mut root_index_data = vec![];
         if let Some(root) = self.staging_reindex_root {
-            root_index_data.push((REINDEX_ROOT_KEY.as_bytes().to_vec(), WriteOp::Value(root.encode_value()?)));
-            // store_write
-            //     .reindex_root
-            //     .write(BatchDbWriter::new(batch, &db), &root)?;
+            store_write
+                .reindex_root
+                .write(BatchDbWriter::new(batch, &self.db), &root)?;
         }
-        batch.data.push(WriteBatchData {
-                column: REACHABILITY_DATA_CF.to_string(),
-                row_data: starcoin_storage::batch::WriteBatch::new_with_rows(root_index_data),
-        });
         Ok(())
     }
 }

@@ -10,7 +10,8 @@ use crate::{
 };
 use anyhow::{ensure, format_err, Error, Result};
 use rocksdb::{
-    DBIterator, DBPinnableSlice, FlushOptions, IteratorMode, Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB
+    DBIterator, DBPinnableSlice, FlushOptions, IteratorMode, Options, ReadOptions,
+    WriteBatch as DBWriteBatch, WriteOptions, DB,
 };
 use starcoin_config::{check_open_fds_limit, RocksdbConfig};
 use std::{collections::HashSet, iter, marker::PhantomData, path::Path};

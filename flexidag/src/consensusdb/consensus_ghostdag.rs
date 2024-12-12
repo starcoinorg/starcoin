@@ -225,7 +225,7 @@ impl DbGhostdagStore {
         &self,
         batch: &mut WriteBatch,
         hash: Hash,
-        data: &Arc<GhostdagData>,
+        data: Arc<GhostdagData>,
     ) -> Result<(), StoreError> {
         if self.access.has(hash)? {
             return Err(StoreError::KeyAlreadyExists(hash.to_string()));

@@ -4,7 +4,9 @@ use crate::consensusdb::consenses_state::{
     DagState, DagStateReader, DagStateStore, ReachabilityView,
 };
 use crate::consensusdb::prelude::{FlexiDagStorageConfig, StoreError};
-use crate::consensusdb::schemadb::{GhostdagStoreReader, ReachabilityStore, REINDEX_ROOT_KEY};
+use crate::consensusdb::schemadb::{
+    GhostdagStoreReader, ReachabilityStore, StagingReachabilityStore, REINDEX_ROOT_KEY,
+};
 use crate::consensusdb::{
     prelude::FlexiDagStorage,
     schemadb::{
@@ -16,9 +18,11 @@ use crate::ghostdag::protocol::GhostdagManager;
 use crate::prune::pruning_point_manager::PruningPointManagerT;
 use crate::{process_key_already_error, reachability};
 use anyhow::{bail, ensure, Ok};
+use rocksdb::WriteBatch;
 use starcoin_config::temp_dir;
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_logger::prelude::{debug, info, warn};
+use starcoin_storage::batch::WriteBatchWithColumn;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::{
     blockhash::{BlockHashes, KType},
@@ -84,7 +88,7 @@ impl BlockDAG {
             cache_size: 1024,
             ..Default::default()
         };
-        let dag_storage = FlexiDagStorage::create_from_path(temp_dir(), config)?;
+        let dag_storage = FlexiDagStorage::create_from_path("./testdb/", config)?;
         Ok(Self::create_blockdag(dag_storage))
     }
 
@@ -322,12 +326,22 @@ impl BlockDAG {
             Some(ghostdata) => ghostdata,
         };
 
+        // Create a DB batch writer
+        let mut batch = WriteBatch::default();
+
+        // lock the dag data to write in batch
+        let mut stage = StagingReachabilityStore::new(
+            self.storage.db.clone(),
+            self.storage.reachability_store.upgradable_read(),
+        );
+
         // Store ghostdata
-        process_key_already_error(
-            self.storage
-                .ghost_dag_store
-                .insert(header.id(), ghostdata.clone()),
-        )?;
+        process_key_already_error(self.storage.ghost_dag_store.insert_batch(
+            &mut batch,
+            header.id(),
+            ghostdata.clone(),
+        ))
+        .expect("failed to ghostdata in batch");
 
         // Update reachability store
         debug!(
@@ -335,78 +349,45 @@ impl BlockDAG {
             header.id(),
             header.number()
         );
-        let reachability_store = self.storage.reachability_store.clone();
 
         let mut merge_set = ghostdata
             .unordered_mergeset_without_selected_parent()
             .filter(|hash| self.storage.reachability_store.read().has(*hash).unwrap())
             .collect::<Vec<_>>()
             .into_iter();
-        let add_block_result = {
-            let mut reachability_writer = reachability_store.write();
-            inquirer::add_block(
-                reachability_writer.deref_mut(),
-                header.id(),
-                ghostdata.selected_parent,
-                &mut merge_set,
-            )
-        };
-        match add_block_result {
-            Result::Ok(_) => (),
-            Err(reachability::ReachabilityError::DataInconsistency) => {
-                let _future_covering_set = reachability_store
-                    .read()
-                    .get_future_covering_set(header.id())?;
-                info!(
-                    "the key {:?} was already processed, original error message: {:?}",
-                    header.id(),
-                    reachability::ReachabilityError::DataInconsistency
-                );
-            }
-            Err(reachability::ReachabilityError::StoreError(StoreError::KeyNotFound(msg))) => {
-                if msg == *REINDEX_ROOT_KEY.to_string() {
-                    info!(
-                        "the key {:?} was already processed, original error message: {:?}",
-                        header.id(),
-                        reachability::ReachabilityError::StoreError(StoreError::KeyNotFound(
-                            REINDEX_ROOT_KEY.to_string()
-                        ))
-                    );
-                    info!("now set the reindex key to origin: {:?}", origin);
-                    // self.storage.reachability_store.set_reindex_root(origin)?;
-                    self.set_reindex_root(origin)?;
-                    bail!(
-                        "failed to add a block when committing, e: {:?}",
-                        reachability::ReachabilityError::StoreError(StoreError::KeyNotFound(msg))
-                    );
-                } else {
-                    bail!(
-                        "failed to add a block when committing, e: {:?}",
-                        reachability::ReachabilityError::StoreError(StoreError::KeyNotFound(msg))
-                    );
-                }
-            }
-            Err(reachability::ReachabilityError::StoreError(StoreError::InvalidInterval(_, _))) => {
-                self.set_reindex_root(origin)?;
-                bail!("failed to add a block when committing for invalid interval",);
-            }
-            Err(e) => {
-                bail!("failed to add a block when committing, e: {:?}", e);
-            }
-        }
 
-        process_key_already_error(
-            self.storage
-                .relations_store
-                .write()
-                .insert(header.id(), BlockHashes::new(parents)),
-        )?;
+        inquirer::add_block(
+            &mut stage,
+            header.id(),
+            ghostdata.selected_parent,
+            &mut merge_set,
+        )
+        .expect("failed to add block in batch");
+
+        stage
+            .commit(&mut batch)
+            .expect("failed to write the stage reachability in batch");
+
+        process_key_already_error(self.storage.relations_store.write().insert_batch(
+            &mut batch,
+            header.id(),
+            BlockHashes::new(parents),
+        ))
+        .expect("failed to insert relations in batch");
+
         // Store header store
-        process_key_already_error(self.storage.header_store.insert(
+        process_key_already_error(self.storage.header_store.insert_batch(
+            &mut batch,
             header.id(),
             Arc::new(header),
             1,
-        ))?;
+        ))
+        .expect("failed to insert header in batch");
+
+        self.storage
+            .write_batch(batch)
+            .expect("failed to write dag data in batch");
+
         Ok(())
     }
 

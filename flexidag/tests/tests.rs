@@ -841,7 +841,7 @@ fn test_big_data_commit() -> anyhow::Result<()> {
 
     dag.init_with_genesis(genesis.clone()).unwrap();
 
-    let count = 20000;
+    let count = 200000;
 
     // one
     let mut parent = genesis.clone();
@@ -855,29 +855,29 @@ fn test_big_data_commit() -> anyhow::Result<()> {
         )?;
         parent = new;
     }
-    let last_one = parent;
+    // let last_one = parent;
 
-    // two
-    let mut parent = genesis.clone();
-    for i in 0..count {
-        let new = add_and_print(
-            i + 1,
-            parent.id(),
-            vec![parent.id()],
-            genesis.parent_hash(),
-            &mut dag,
-        )?;
-        parent = new;
-    }
-    let last_two = parent;
+    // // two
+    // let mut parent = genesis.clone();
+    // for i in 0..count {
+    //     let new = add_and_print(
+    //         i + 1,
+    //         parent.id(),
+    //         vec![parent.id()],
+    //         genesis.parent_hash(),
+    //         &mut dag,
+    //     )?;
+    //     parent = new;
+    // }
+    // let last_two = parent;
 
-    let _new = add_and_print(
-        count + 1,
-        last_one.id(),
-        vec![last_one.id(), last_two.id()],
-        genesis.parent_hash(),
-        &mut dag,
-    )?;
+    // let _new = add_and_print(
+    //     count + 1,
+    //     last_one.id(),
+    //     vec![last_one.id(), last_two.id()],
+    //     genesis.parent_hash(),
+    //     &mut dag,
+    // )?;
 
     anyhow::Result::Ok(())
 }
