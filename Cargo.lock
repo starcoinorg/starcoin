@@ -11101,6 +11101,7 @@ dependencies = [
  "petgraph 0.5.1",
  "regex",
  "starcoin-crypto",
+ "starcoin-framework 0.1.0",
  "starcoin-logger",
  "starcoin-vm-types",
  "stest",

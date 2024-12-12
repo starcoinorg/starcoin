@@ -92,7 +92,7 @@ module RLP {
 module EthStateVerifier {
     use StarcoinAssociation::RLP;
     use std::vector;
-    use starcoin_std::starcoin_hash
+    use starcoin_std::starcoin_hash;
     use StarcoinAssociation::Bytes;
 
     const INVALID_PROOF: u64 = 400;

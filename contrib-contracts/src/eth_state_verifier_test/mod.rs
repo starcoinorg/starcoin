@@ -66,11 +66,10 @@ fn test_eth_state_proof_verify() -> Result<()> {
     // deploy the module
     {
         let source = include_str!("../../modules/EthStateVerifier.move");
-        let modules = compile_modules_with_address(
-            association_address(),
-            source,
-            &starcoin_move_stdlib::move_stdlib_files(),
-        );
+        let mut dep_libs = starcoin_move_stdlib::move_stdlib_files();
+        let starcoin_stdlib_files = starcoin_move_stdlib::starcoin_stdlib_files();
+        dep_libs.extend(starcoin_stdlib_files);
+        let modules = compile_modules_with_address(association_address(), source, &dep_libs);
 
         let package = Package::new(modules, None)?;
         association_execute_should_success(

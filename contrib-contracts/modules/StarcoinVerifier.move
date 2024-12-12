@@ -66,7 +66,7 @@ address StarcoinAssociation {
         public fun hash<MoveValue: store>(structure: vector<u8>, data: &MoveValue): vector<u8> {
             let prefix_hash = hash::sha3_256(concat(&STARCOIN_HASH_PREFIX, structure));
             let bcs_bytes = bcs::to_bytes(data);
-            Hash::sha3_256(concat(&prefix_hash, bcs_bytes))
+            hash::sha3_256(concat(&prefix_hash, bcs_bytes))
         }
 
         fun concat(v1: &vector<u8>, v2: vector<u8>): vector<u8> {

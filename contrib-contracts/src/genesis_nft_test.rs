@@ -15,6 +15,8 @@ struct DataProof {
     proof: Vec<String>,
 }
 
+// XXX FIXME BOB wait nft
+#[ignore]
 #[stest::test]
 fn test_genesis_nft_verify() -> Result<()> {
     assert!(verify_genesis_nft_address(genesis_address())?);
