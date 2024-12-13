@@ -14,6 +14,8 @@ use tokio::{
     task::JoinHandle,
 };
 
+const MAX_TOTAL_WAITING_TIME: u64 = 3600000; // an hour
+
 #[derive(Debug)]
 pub enum ExecuteState {
     Executing(HashValue),
@@ -96,6 +98,8 @@ impl DagBlockExecutor {
                             block.header().id()
                         );
 
+                        let mut total_waiting_time: u64 = 0;
+                        let waiting_per_time: u64 = 100;
                         loop {
                             match Self::waiting_for_parents(
                                 &self.dag,
@@ -104,9 +108,34 @@ impl DagBlockExecutor {
                             ) {
                                 Ok(true) => break,
                                 Ok(false) => {
+                                    if total_waiting_time >= MAX_TOTAL_WAITING_TIME {
+                                        error!(
+                                            "failed to check parents: {:?}, for reason: timeout",
+                                            header
+                                        );
+                                        match self
+                                            .sender
+                                            .send(ExecuteState::Error(Box::new(header.clone())))
+                                            .await
+                                        {
+                                            Ok(_) => (),
+                                            Err(e) => {
+                                                error!(
+                                                    "failed to send error state: {:?}, for reason: {:?}",
+                                                    header, e
+                                                );
+                                                return;
+                                            }
+                                        }
+                                        return;
+                                    }
                                     tokio::task::yield_now().await;
-                                    tokio::time::sleep(tokio::time::Duration::from_millis(100))
-                                        .await
+                                    tokio::time::sleep(tokio::time::Duration::from_millis(
+                                        waiting_per_time,
+                                    ))
+                                    .await;
+                                    total_waiting_time =
+                                        total_waiting_time.saturating_add(waiting_per_time);
                                 }
                                 Err(e) => {
                                     error!(
