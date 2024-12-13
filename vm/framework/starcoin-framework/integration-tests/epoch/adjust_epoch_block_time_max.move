@@ -2,6 +2,7 @@
 
 //# faucet --addr Genesis
 
+
 //# run --signers Genesis
 script {
     use starcoin_framework::consensus_config;
@@ -16,7 +17,7 @@ script {
         let max_block_time_target = consensus_config::max_block_time_target(&config);
         let pre_block_time_target = epoch::block_time_target();
 
-        while (epoch::number() < 10) {
+        while (epoch::number() < 5) {
             let uncles = 1;
             if (block_number == epoch::end_block_number()) {
                 uncles = 0;

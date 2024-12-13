@@ -15,7 +15,7 @@ script {
         let base_block_time_target = consensus_config::base_block_time_target(&config);
         let min_block_time_target = consensus_config::min_block_time_target(&config);
         let pre_block_time_target = epoch::block_time_target();
-        while (epoch::number() < 10) {
+        while (epoch::number() < 5) {
             if (block_number == epoch::end_block_number()) {
                 //Debug::print(&Epoch::block_time_target());
             };
