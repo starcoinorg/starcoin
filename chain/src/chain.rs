@@ -1397,14 +1397,14 @@ impl ChainReader for BlockChain {
                     .get_data(previous_header.pruning_point())?
             };
 
-            self.dag().verify_pruning_point(
-                previous_header.pruning_point(),
-                previous_ghostdata.as_ref(),
-                header.pruning_point(),
-                &next_ghostdata,
-                pruning_depth,
-                pruning_finality,
-            )?;
+            // self.dag().verify_pruning_point(
+            //     previous_header.pruning_point(),
+            //     previous_ghostdata.as_ref(),
+            //     header.pruning_point(),
+            //     &next_ghostdata,
+            //     pruning_depth,
+            //     pruning_finality,
+            // )?;
         }
 
         Ok(next_ghostdata)
