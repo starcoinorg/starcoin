@@ -74,13 +74,13 @@ module starcoin_std::debug {
         assert_equal(&v, b"[ 100, 200, 300 ]");
 
         let foo = Foo {};
-        assert_equal(&foo, b"0x1::debug::Foo {\n  dummy_field: false\n}");
+        assert_equal(&foo, b"0x00000000000000000000000000000001::debug::Foo {\n  dummy_field: false\n}");
 
         let bar = Bar { x: 404, y: Foo {}, z: true };
-        assert_equal(&bar, b"0x1::debug::Bar {\n  x: 404,\n  y: 0x1::debug::Foo {\n    dummy_field: false\n  },\n  z: true\n}");
+        assert_equal(&bar, b"0x00000000000000000000000000000001::debug::Bar {\n  x: 404,\n  y: 0x00000000000000000000000000000001::debug::Foo {\n    dummy_field: false\n  },\n  z: true\n}");
 
         let box = Box { x: Foo {} };
-        assert_equal(&box, b"0x1::debug::Box<0x1::debug::Foo> {\n  x: 0x1::debug::Foo {\n    dummy_field: false\n  }\n}");
+        assert_equal(&box, b"0x00000000000000000000000000000001::debug::Box<0x00000000000000000000000000000001::debug::Foo> {\n  x: 0x00000000000000000000000000000001::debug::Foo {\n    dummy_field: false\n  }\n}");
     }
 
     #[test]
@@ -155,7 +155,7 @@ module starcoin_std::debug {
             msgs: vector[MSG_1, MSG_2],
         };
 
-        assert_equal(&obj, b"0x1::debug::TestInner {\n  val: 100,\n  vec: [ 200, 400 ],\n  msgs: [\n    0x616263646566,\n    0x313233343536\n  ]\n}");
+        assert_equal(&obj, b"0x00000000000000000000000000000001::debug::TestInner {\n  val: 100,\n  vec: [ 200, 400 ],\n  msgs: [\n    0x616263646566,\n    0x313233343536\n  ]\n}");
 
         let obj = TestInner {
             val: 10,
@@ -163,7 +163,7 @@ module starcoin_std::debug {
             msgs: vector[],
         };
 
-        assert_equal(&obj, b"0x1::debug::TestInner {\n  val: 10,\n  vec: [],\n  msgs: []\n}");
+        assert_equal(&obj, b"0x00000000000000000000000000000001::debug::TestInner {\n  val: 10,\n  vec: [],\n  msgs: []\n}");
     }
 
     #[test(_s1 = @0x123, _s2 = @0x456)]
@@ -210,7 +210,7 @@ module starcoin_std::debug {
                 msgs: vector[x"0000"],
             }
         ];
-        assert_equal(&v, b"[\n  0x1::debug::TestInner {\n    val: 4,\n    vec: [ 127, 128 ],\n    msgs: [\n      0x00ff,\n      0xabcd\n    ]\n  },\n  0x1::debug::TestInner {\n    val: 8,\n    vec: [ 128, 129 ],\n    msgs: [\n      0x0000\n    ]\n  }\n]");
+        assert_equal(&v, b"[\n  0x00000000000000000000000000000001::debug::TestInner {\n    val: 4,\n    vec: [ 127, 128 ],\n    msgs: [\n      0x00ff,\n      0xabcd\n    ]\n  },\n  0x00000000000000000000000000000001::debug::TestInner {\n    val: 8,\n    vec: [ 128, 129 ],\n    msgs: [\n      0x0000\n    ]\n  }\n]");
     }
 
     #[test(_s1 = @0x123, _s2 = @0x456)]
@@ -255,7 +255,7 @@ module starcoin_std::debug {
                 TestInner { val: 8u128 , vec: vector[128u128, 129u128], msgs: vector[] }
             ]
         ];
-        assert_equal(&v, b"[\n  [\n    0x1::debug::TestInner {\n      val: 4,\n      vec: [ 127, 128 ],\n      msgs: []\n    },\n    0x1::debug::TestInner {\n      val: 8,\n      vec: [ 128, 129 ],\n      msgs: []\n    }\n  ],\n  [\n    0x1::debug::TestInner {\n      val: 4,\n      vec: [ 127, 128 ],\n      msgs: []\n    },\n    0x1::debug::TestInner {\n      val: 8,\n      vec: [ 128, 129 ],\n      msgs: []\n    }\n  ]\n]");
+        assert_equal(&v, b"[\n  [\n    0x00000000000000000000000000000001::debug::TestInner {\n      val: 4,\n      vec: [ 127, 128 ],\n      msgs: []\n    },\n    0x00000000000000000000000000000001::debug::TestInner {\n      val: 8,\n      vec: [ 128, 129 ],\n      msgs: []\n    }\n  ],\n  [\n    0x00000000000000000000000000000001::debug::TestInner {\n      val: 4,\n      vec: [ 127, 128 ],\n      msgs: []\n    },\n    0x00000000000000000000000000000001::debug::TestInner {\n      val: 8,\n      vec: [ 128, 129 ],\n      msgs: []\n    }\n  ]\n]");
     }
 
     #[test]
@@ -270,8 +270,7 @@ module starcoin_std::debug {
                 TestInner { val: 2, vec: vector[132u128, 133u128], msgs: vector[] }
             ],
         };
-
-        assert_equal(&obj, b"0x1::debug::TestStruct {\n  addr: @0x1,\n  number: 255,\n  bytes: 0xc0ffee,\n  name: \"He\\\"llo\",\n  vec: [\n    0x1::debug::TestInner {\n      val: 1,\n      vec: [ 130, 131 ],\n      msgs: []\n    },\n    0x1::debug::TestInner {\n      val: 2,\n      vec: [ 132, 133 ],\n      msgs: []\n    }\n  ]\n}");
+        assert_equal(&obj, b"0x00000000000000000000000000000001::debug::TestStruct {\n  addr: @0x1,\n  number: 255,\n  bytes: 0xc0ffee,\n  name: \"He\\\"llo\",\n  vec: [\n    0x00000000000000000000000000000001::debug::TestInner {\n      val: 1,\n      vec: [ 130, 131 ],\n      msgs: []\n    },\n    0x00000000000000000000000000000001::debug::TestInner {\n      val: 2,\n      vec: [ 132, 133 ],\n      msgs: []\n    }\n  ]\n}");
     }
 
     #[test]
@@ -280,6 +279,6 @@ module starcoin_std::debug {
             val: 60u64,
         };
 
-        assert_equal(&obj, b"0x1::debug::GenericStruct<0x1::debug::Foo> {\n  val: 60\n}");
+        assert_equal(&obj, b"0x00000000000000000000000000000001::debug::GenericStruct<0x00000000000000000000000000000001::debug::Foo> {\n  val: 60\n}");
     }
 }

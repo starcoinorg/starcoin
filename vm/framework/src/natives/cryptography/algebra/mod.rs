@@ -71,18 +71,20 @@ impl TryFrom<TypeTag> for Structure {
 
     fn try_from(value: TypeTag) -> Result<Self, Self::Error> {
         match value.to_string().as_str() {
-            "0x1::bls12381_algebra::Fr" => Ok(Structure::BLS12381Fr),
-            "0x1::bls12381_algebra::Fq12" => Ok(Structure::BLS12381Fq12),
-            "0x1::bls12381_algebra::G1" => Ok(Structure::BLS12381G1),
-            "0x1::bls12381_algebra::G2" => Ok(Structure::BLS12381G2),
-            "0x1::bls12381_algebra::Gt" => Ok(Structure::BLS12381Gt),
+            "0x00000000000000000000000000000001::bls12381_algebra::Fr" => Ok(Structure::BLS12381Fr),
+            "0x00000000000000000000000000000001::bls12381_algebra::Fq12" => {
+                Ok(Structure::BLS12381Fq12)
+            }
+            "0x00000000000000000000000000000001::bls12381_algebra::G1" => Ok(Structure::BLS12381G1),
+            "0x00000000000000000000000000000001::bls12381_algebra::G2" => Ok(Structure::BLS12381G2),
+            "0x00000000000000000000000000000001::bls12381_algebra::Gt" => Ok(Structure::BLS12381Gt),
 
-            "0x1::bn254_algebra::Fr" => Ok(Self::BN254Fr),
-            "0x1::bn254_algebra::Fq" => Ok(Self::BN254Fq),
-            "0x1::bn254_algebra::Fq12" => Ok(Self::BN254Fq12),
-            "0x1::bn254_algebra::G1" => Ok(Self::BN254G1),
-            "0x1::bn254_algebra::G2" => Ok(Self::BN254G2),
-            "0x1::bn254_algebra::Gt" => Ok(Self::BN254Gt),
+            "0x00000000000000000000000000000001::bn254_algebra::Fr" => Ok(Self::BN254Fr),
+            "0x00000000000000000000000000000001::bn254_algebra::Fq" => Ok(Self::BN254Fq),
+            "0x00000000000000000000000000000001::bn254_algebra::Fq12" => Ok(Self::BN254Fq12),
+            "0x00000000000000000000000000000001::bn254_algebra::G1" => Ok(Self::BN254G1),
+            "0x00000000000000000000000000000001::bn254_algebra::G2" => Ok(Self::BN254G2),
+            "0x00000000000000000000000000000001::bn254_algebra::Gt" => Ok(Self::BN254Gt),
             _ => Err(()),
         }
     }
@@ -125,31 +127,59 @@ impl TryFrom<TypeTag> for SerializationFormat {
 
     fn try_from(value: TypeTag) -> Result<Self, Self::Error> {
         match value.to_string().as_str() {
-            "0x1::bls12381_algebra::FormatFq12LscLsb" => {
+            "0x00000000000000000000000000000001::bls12381_algebra::FormatFq12LscLsb" => {
                 Ok(SerializationFormat::BLS12381Fq12LscLsb)
             }
-            "0x1::bls12381_algebra::FormatG1Uncompr" => {
+            "0x00000000000000000000000000000001::bls12381_algebra::FormatG1Uncompr" => {
                 Ok(SerializationFormat::BLS12381G1Uncompressed)
             }
-            "0x1::bls12381_algebra::FormatG1Compr" => Ok(SerializationFormat::BLS12381G1Compressed),
-            "0x1::bls12381_algebra::FormatG2Uncompr" => {
+            "0x00000000000000000000000000000001::bls12381_algebra::FormatG1Compr" => {
+                Ok(SerializationFormat::BLS12381G1Compressed)
+            }
+            "0x00000000000000000000000000000001::bls12381_algebra::FormatG2Uncompr" => {
                 Ok(SerializationFormat::BLS12381G2Uncompressed)
             }
-            "0x1::bls12381_algebra::FormatG2Compr" => Ok(SerializationFormat::BLS12381G2Compressed),
-            "0x1::bls12381_algebra::FormatGt" => Ok(SerializationFormat::BLS12381Gt),
-            "0x1::bls12381_algebra::FormatFrLsb" => Ok(SerializationFormat::BLS12381FrLsb),
-            "0x1::bls12381_algebra::FormatFrMsb" => Ok(SerializationFormat::BLS12381FrMsb),
+            "0x00000000000000000000000000000001::bls12381_algebra::FormatG2Compr" => {
+                Ok(SerializationFormat::BLS12381G2Compressed)
+            }
+            "0x00000000000000000000000000000001::bls12381_algebra::FormatGt" => {
+                Ok(SerializationFormat::BLS12381Gt)
+            }
+            "0x00000000000000000000000000000001::bls12381_algebra::FormatFrLsb" => {
+                Ok(SerializationFormat::BLS12381FrLsb)
+            }
+            "0x00000000000000000000000000000001::bls12381_algebra::FormatFrMsb" => {
+                Ok(SerializationFormat::BLS12381FrMsb)
+            }
 
-            "0x1::bn254_algebra::FormatG1Uncompr" => Ok(Self::BN254G1Uncompressed),
-            "0x1::bn254_algebra::FormatG1Compr" => Ok(Self::BN254G1Compressed),
-            "0x1::bn254_algebra::FormatG2Uncompr" => Ok(Self::BN254G2Uncompressed),
-            "0x1::bn254_algebra::FormatG2Compr" => Ok(Self::BN254G2Compressed),
-            "0x1::bn254_algebra::FormatGt" => Ok(Self::BN254Gt),
-            "0x1::bn254_algebra::FormatFrLsb" => Ok(Self::BN254FrLsb),
-            "0x1::bn254_algebra::FormatFrMsb" => Ok(Self::BN254FrMsb),
-            "0x1::bn254_algebra::FormatFqLsb" => Ok(Self::BN254FqLsb),
-            "0x1::bn254_algebra::FormatFqMsb" => Ok(Self::BN254FqMsb),
-            "0x1::bn254_algebra::FormatFq12LscLsb" => Ok(Self::BN254Fq12LscLsb),
+            "0x00000000000000000000000000000001::bn254_algebra::FormatG1Uncompr" => {
+                Ok(Self::BN254G1Uncompressed)
+            }
+            "0x00000000000000000000000000000001::bn254_algebra::FormatG1Compr" => {
+                Ok(Self::BN254G1Compressed)
+            }
+            "0x00000000000000000000000000000001::bn254_algebra::FormatG2Uncompr" => {
+                Ok(Self::BN254G2Uncompressed)
+            }
+            "0x00000000000000000000000000000001::bn254_algebra::FormatG2Compr" => {
+                Ok(Self::BN254G2Compressed)
+            }
+            "0x00000000000000000000000000000001::bn254_algebra::FormatGt" => Ok(Self::BN254Gt),
+            "0x00000000000000000000000000000001::bn254_algebra::FormatFrLsb" => {
+                Ok(Self::BN254FrLsb)
+            }
+            "0x00000000000000000000000000000001::bn254_algebra::FormatFrMsb" => {
+                Ok(Self::BN254FrMsb)
+            }
+            "0x00000000000000000000000000000001::bn254_algebra::FormatFqLsb" => {
+                Ok(Self::BN254FqLsb)
+            }
+            "0x00000000000000000000000000000001::bn254_algebra::FormatFqMsb" => {
+                Ok(Self::BN254FqMsb)
+            }
+            "0x00000000000000000000000000000001::bn254_algebra::FormatFq12LscLsb" => {
+                Ok(Self::BN254Fq12LscLsb)
+            }
             _ => Err(()),
         }
     }
@@ -167,10 +197,10 @@ impl TryFrom<TypeTag> for HashToStructureSuite {
 
     fn try_from(value: TypeTag) -> Result<Self, Self::Error> {
         match value.to_string().as_str() {
-            "0x1::bls12381_algebra::HashG1XmdSha256SswuRo" => {
+            "0x00000000000000000000000000000001::bls12381_algebra::HashG1XmdSha256SswuRo" => {
                 Ok(HashToStructureSuite::Bls12381g1XmdSha256SswuRo)
             }
-            "0x1::bls12381_algebra::HashG2XmdSha256SswuRo" => {
+            "0x00000000000000000000000000000001::bls12381_algebra::HashG2XmdSha256SswuRo" => {
                 Ok(HashToStructureSuite::Bls12381g2XmdSha256SswuRo)
             }
             _ => Err(()),

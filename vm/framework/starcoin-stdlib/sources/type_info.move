@@ -51,8 +51,8 @@ module starcoin_std::type_info {
     public native fun type_of<T>(): TypeInfo;
 
     /// Return the human readable string for the type, including the address, module name, and any type arguments.
-    /// Example: 0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>
-    /// Or: 0x1::table::Table<0x1::string::String, 0x1::string::String>
+    /// Example: 0x00000000000000000000000000000001::coin::CoinStore<0x00000000000000000000000000000001::aptos_coin::AptosCoin>
+    /// Or: 0x00000000000000000000000000000001::table::Table<0x00000000000000000000000000000001::string::String, 0x00000000000000000000000000000001::string::String>
     public native fun type_name<T>(): String;
 
     native fun chain_id_internal(): u8;
@@ -85,7 +85,7 @@ module starcoin_std::type_info {
         let type_info = type_of<Table<String, String>>();
         assert!(account_address(&type_info) == @starcoin_std, 0);
         assert!(module_name(&type_info) == b"table", 1);
-        assert!(struct_name(&type_info) == b"Table<0x1::string::String, 0x1::string::String>", 2);
+        assert!(struct_name(&type_info) == b"Table<0x00000000000000000000000000000001::string::String, 0x00000000000000000000000000000001::string::String>", 2);
     }
 
     #[test(fx = @std)]
@@ -114,17 +114,17 @@ module starcoin_std::type_info {
         // vector
         assert!(type_name<vector<u8>>() == string::utf8(b"vector<u8>"), 6);
         assert!(type_name<vector<vector<u8>>>() == string::utf8(b"vector<vector<u8>>"), 7);
-        assert!(type_name<vector<vector<TypeInfo>>>() == string::utf8(b"vector<vector<0x1::type_info::TypeInfo>>"), 8);
+        assert!(type_name<vector<vector<TypeInfo>>>() == string::utf8(b"vector<vector<0x00000000000000000000000000000001::type_info::TypeInfo>>"), 8);
 
 
         // struct
-        assert!(type_name<TypeInfo>() == string::utf8(b"0x1::type_info::TypeInfo"), 9);
+        assert!(type_name<TypeInfo>() == string::utf8(b"0x00000000000000000000000000000001::type_info::TypeInfo"), 9);
         assert!(type_name<
             Table<
                 TypeInfo,
                 Table<u8, vector<TypeInfo>>
             >
-        >() == string::utf8(b"0x1::table::Table<0x1::type_info::TypeInfo, 0x1::table::Table<u8, vector<0x1::type_info::TypeInfo>>>"), 10);
+        >() == string::utf8(b"0x00000000000000000000000000000001::table::Table<0x00000000000000000000000000000001::type_info::TypeInfo, 0x00000000000000000000000000000001::table::Table<u8, vector<0x00000000000000000000000000000001::type_info::TypeInfo>>>"), 10);
     }
 
     #[verify_only]

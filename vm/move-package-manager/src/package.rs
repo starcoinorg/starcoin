@@ -9,11 +9,11 @@ use move_vm_runtime::native_functions::NativeFunctionTable;
 use starcoin_framework::extended_checks;
 use starcoin_vm_runtime::natives;
 
-pub const STARCOIN_STDLIB_PACKAGE_NAME: &str = "StarcoinFramework";
+pub const STARCOIN_STDLIB_PACKAGE_NAME: &str = "starcoin_framework";
 pub const STARCOIN_STDLIB_PACKAGE_PATH: &str = "{ \
     git = \"https://github.com/starcoinorg/starcoin-framework.git\", rev = \"main\" \
 }";
-pub const STARCOIN_STDLIB_ADDR_NAME: &str = "StarcoinFramework";
+pub const STARCOIN_STDLIB_ADDR_NAME: &str = "starcoin_framework";
 pub const STARCOIN_STDLIB_ADDR_VALUE: &str = "0x1";
 
 #[derive(Parser)]
@@ -44,6 +44,7 @@ pub enum PackageCommand {
     #[clap(name = "disassemble")]
     Disassemble(Disassemble),
 }
+
 pub fn handle_package_commands(
     natives: NativeFunctionTable,
     move_args: Move,
@@ -65,9 +66,13 @@ pub fn handle_package_commands(
         PackageCommand::Test(c) => {
             natives::configure_for_unit_test();
             extended_checks::configure_extended_checks_for_unit_test();
+
+            let mut build_config = move_args.build_config.clone();
+            build_config.compiler_config.known_attributes =
+                extended_checks::get_all_attribute_names().clone();
             c.execute(
                 move_args.package_path,
-                move_args.build_config,
+                build_config,
                 natives,
                 Changes::new(),
                 None,

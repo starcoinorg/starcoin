@@ -73,9 +73,6 @@ module starcoin_std::from_bcs {
     #[test_only]
     use std::bcs;
 
-    #[test_only]
-    use std::debug;
-
     #[test]
     fun test_address() {
         let addr = @0x01;
