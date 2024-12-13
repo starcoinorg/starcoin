@@ -275,16 +275,16 @@ where
     #[inline]
     fn evaluate(&self, feature_version: u64, env: &E) -> GasQuantity<Self::Unit> {
         match self {
-            Either::Left(left) => left.evaluate(feature_version, env),
-            Either::Right(right) => right.evaluate(feature_version, env),
+            Self::Left(left) => left.evaluate(feature_version, env),
+            Self::Right(right) => right.evaluate(feature_version, env),
         }
     }
 
     #[inline]
     fn visit(&self, visitor: &mut impl GasExpressionVisitor) {
         match self {
-            Either::Left(left) => left.visit(visitor),
-            Either::Right(right) => right.visit(visitor),
+            Self::Left(left) => left.visit(visitor),
+            Self::Right(right) => right.visit(visitor),
         }
     }
 }
