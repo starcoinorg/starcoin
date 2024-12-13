@@ -54,7 +54,7 @@ which is no longer suitable for the dag"]
 pub async fn test_failed_block() -> Result<()> {
     let net = ChainNetwork::new_builtin(BuiltinNetworkID::Halley);
     let (storage, chain_info, _, dag) = Genesis::init_storage_for_test(&net)?;
-    let sync_dag_store = SyncDagStore::create_for_testing()?;
+    let sync_dag_store = Arc::new(SyncDagStore::create_for_testing()?);
 
     let chain = BlockChain::new(
         net.time_service(),
@@ -917,7 +917,7 @@ async fn test_sync_target() {
         300,
         0,
         peer_selector,
-        SyncDagStore::create_for_testing().expect("failed to create the sync dag store"),
+        Arc::new(SyncDagStore::create_for_testing().expect("failed to create the sync dag store")),
     ));
     let full_target = node2
         .get_best_target(genesis_chain_info.total_difficulty())

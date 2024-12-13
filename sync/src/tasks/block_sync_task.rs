@@ -214,7 +214,7 @@ pub struct BlockCollector<N, H> {
     local_store: Arc<dyn Store>,
     fetcher: Arc<dyn BlockFetcher>,
     latest_block_id: HashValue,
-    sync_dag_store: SyncDagStore,
+    sync_dag_store: Arc<SyncDagStore>,
 }
 
 impl<N, H> ContinueChainOperator for BlockCollector<N, H>
@@ -264,7 +264,7 @@ where
         skip_pow_verify: bool,
         local_store: Arc<dyn Store>,
         fetcher: Arc<dyn BlockFetcher>,
-        sync_dag_store: SyncDagStore,
+        sync_dag_store: Arc<SyncDagStore>,
     ) -> Self {
         let latest_block_id = chain.current_header().id();
         Self {
