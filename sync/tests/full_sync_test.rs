@@ -76,7 +76,7 @@ fn test_sync_by_notification() {
 }
 
 // TODO(BobOng): ignore this test caused by slowly, it will be fixed in the future.
-#[ignore]
+// #[ignore]
 #[stest::test(timeout = 120)]
 fn test_sync_and_notification() {
     let first_config = Arc::new(NodeConfig::random_for_test());

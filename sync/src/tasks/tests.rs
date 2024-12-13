@@ -44,7 +44,7 @@ use super::test_tools::{full_sync_new_node, SyncTestSystem};
 use super::BlockConnectedEvent;
 
 // TODO(BobOng): ignore this test caused by slowly, it will be fixed in the future.
-#[ignore]
+// #[ignore]
 #[stest::test(timeout = 120)]
 pub async fn test_full_sync_new_node() -> Result<()> {
     full_sync_new_node().await
@@ -98,7 +98,7 @@ pub async fn test_failed_block() -> Result<()> {
 }
 
 // TODO(BobOng): ignore this test caused by slowly, it will be fixed in the future.
-#[ignore]
+//#[ignore]
 #[stest::test(timeout = 120)]
 pub async fn test_full_sync_fork() -> Result<()> {
     let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::DagTest);
