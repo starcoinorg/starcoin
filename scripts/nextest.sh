@@ -22,7 +22,6 @@ cargo nextest -V >/dev/null 2>&1 || cargo install cargo-nextest --version "0.9.5
 # --retries 2, a correct test case usually takes no more than 3 tries to pass
 # --build-jobs 8, a little (~20s) faster than 5 or 10 build jobs 
 cargo nextest run --workspace \
---exclude starcoin-transactional-test-harness \
 --exclude starcoin-consensus \
 --retries 2 --build-jobs 8 --test-threads 12 --no-fail-fast --failure-output immediate-final
 
