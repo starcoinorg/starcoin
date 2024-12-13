@@ -17,6 +17,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 stdlib = { workspace = true }
 stest = { workspace = true }
+starcoin-move-stdlib = { workspace = true }
 tempfile = { workspace = true }
 
 [package]

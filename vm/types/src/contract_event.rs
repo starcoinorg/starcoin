@@ -53,7 +53,7 @@ impl ContractEvent {
 
     pub fn event_key(&self) -> EventKey {
         match self {
-            ContractEvent::V1(event) => event.key().clone(),
+            ContractEvent::V1(event) => *event.key(),
             ContractEvent::V2(_event) => EventKey::new(0, AccountAddress::ZERO),
         }
     }

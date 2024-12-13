@@ -57,8 +57,7 @@ pub trait StateReaderExt: StateView {
     where
         R: MoveResource,
     {
-        Ok(self
-            .get_state_value_bytes(&StateKey::resource_typed::<R>(&address)?)?
+        self.get_state_value_bytes(&StateKey::resource_typed::<R>(&address)?)?
             .ok_or_else(|| {
                 format_err!(
                     "Resource {:?} {:?} not exists at address:{}",
@@ -66,7 +65,7 @@ pub trait StateReaderExt: StateView {
                     R::struct_identifier(),
                     address
                 )
-            })?)
+            })
     }
 
     /// Get Resource by type R

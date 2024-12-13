@@ -73,7 +73,7 @@ pub async fn start_txpool_with_miner(
     }
     //registry.register::<MinerService>().await.unwrap();
     let pool_actor = registry.register::<TxPoolActorService>().await.unwrap();
-    Delay::new(Duration::from_millis(300)).await;
+    Delay::new(Duration::from_millis(1000)).await;
     let txpool_service = registry.get_shared::<TxPoolService>().await.unwrap();
 
     (

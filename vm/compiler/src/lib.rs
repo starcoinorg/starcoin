@@ -12,7 +12,6 @@ use anyhow::{bail, ensure, Result};
 use move_binary_format::errors::PartialVMResult;
 use move_compiler::compiled_unit::AnnotatedCompiledUnit;
 use move_compiler::diagnostics::{unwrap_or_report_diagnostics, Diagnostics, FilesSourceText};
-use move_compiler::shared::known_attributes::KnownAttribute;
 use move_compiler::shared::{Flags, NumericalAddress};
 use once_cell::sync::Lazy;
 use regex::{Captures, Regex};
@@ -55,6 +54,15 @@ pub fn starcoin_framework_named_addresses() -> BTreeMap<String, NumericalAddress
         ("Genesis", "0x1"),
         ("StarcoinFramework", "0x1"),
         ("StarcoinAssociation", "0xA550C18"),
+        ("vm", "0x0"),
+        ("vm_reserved", "0x0"),
+        ("std", "0x1"),
+        ("starcoin_std", "0x1"),
+        ("starcoin_framework", "0x1"),
+        ("starcoin_fungible_asset", "0x1"),
+        ("starcoin_token", "0x1"),
+        ("starcoin_token_objects", "0x1"),
+        ("core_resources", "0xA550C18"),
     ];
     mapping
         .iter()
@@ -189,13 +197,12 @@ pub fn compile_source_string_no_report(
     for dep in deps {
         windows_line_ending_to_unix_in_file(dep)?;
     }
-    let flags = Flags::empty().set_sources_shadow_deps(true);
     let compiler = move_compiler::Compiler::from_files(
         targets,
         deps.to_vec(),
         starcoin_framework_named_addresses(),
-        flags,
-        KnownAttribute::get_all_attribute_names(),
+        Flags::empty().set_sources_shadow_deps(false),
+        starcoin_framework::extended_checks::get_all_attribute_names(),
     );
     compiler.build()
 }

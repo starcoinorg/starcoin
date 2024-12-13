@@ -37,7 +37,6 @@ use starcoin_config::{genesis_key_pair, BuiltinNetworkID};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_dev::playground::call_contract;
-use starcoin_framework::extended_checks;
 use starcoin_gas_meter::StarcoinGasParameters;
 use starcoin_gas_schedule::FromOnChainGasSchedule;
 use starcoin_rpc_api::types::{
@@ -81,7 +80,7 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::sync::Mutex;
 use std::{collections::BTreeMap, convert::TryInto, path::Path, str::FromStr};
-use stdlib::{starcoin_framework_named_addresses, stdlib_files};
+use stdlib::starcoin_framework_named_addresses;
 use tempfile::{NamedTempFile, TempDir};
 
 pub mod context;
@@ -1072,8 +1071,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
     }
 
     fn known_attributes(&self) -> &BTreeSet<String> {
-        // KnownAttribute::get_all_attribute_names()
-        extended_checks::get_all_attribute_names()
+        starcoin_framework::extended_checks::get_all_attribute_names()
     }
 
     fn init(
@@ -1506,7 +1504,9 @@ pub fn print_help(task_name: Option<String>) -> Result<()> {
 //TODO(simon): construct PackagePaths properly
 pub static G_PRECOMPILED_STARCOIN_FRAMEWORK: Lazy<(FullyCompiledProgram, Vec<PackagePaths>)> =
     Lazy::new(|| {
-        let sources = stdlib_files();
+        let sources = starcoin_cached_packages::head_release_bundle()
+            .files()
+            .unwrap();
         let package_paths = vec![PackagePaths {
             name: None,
             paths: sources,
@@ -1515,8 +1515,8 @@ pub static G_PRECOMPILED_STARCOIN_FRAMEWORK: Lazy<(FullyCompiledProgram, Vec<Pac
         let program_res = construct_pre_compiled_lib(
             package_paths,
             None,
-            move_compiler::Flags::empty(),
-            &BTreeSet::new(),
+            move_compiler::Flags::empty().set_sources_shadow_deps(false),
+            starcoin_framework::extended_checks::get_all_attribute_names(),
         )
         .unwrap();
         (
