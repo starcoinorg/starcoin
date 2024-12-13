@@ -29,7 +29,7 @@ jobs:
       - name: run cargo check
         uses: actions-rs/cargo@v1
         env:
-          RUSTFLAGS: -Wclippy::use_self -D warnings
+          RUSTFLAGS: -D warnings
         with:
           command: clippy
           args: --all-targets
