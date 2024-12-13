@@ -3,13 +3,14 @@
 /// represent types and storing values in bcs format.
 module starcoin_token_objects::object_property_map {
     use std::bcs;
-    use std::vector;
     use std::error;
     use std::string::{Self, String};
+    use std::vector;
+
+    use starcoin_framework::object::{Self, ConstructorRef, ExtendRef, Object, ObjectCore};
     use starcoin_std::from_bcs;
     use starcoin_std::simple_map::{Self, SimpleMap};
     use starcoin_std::type_info;
-    use starcoin_framework::object::{Self, ConstructorRef, Object, ExtendRef, ObjectCore};
 
     // Errors
     /// The property map does not exist
@@ -133,7 +134,7 @@ module starcoin_token_objects::object_property_map {
         } else if (type == BYTE_VECTOR) {
             string::utf8(b"vector<u8>")
         } else if (type == STRING) {
-            string::utf8(b"0x1::string::String")
+            string::utf8(b"0x00000000000000000000000000000001::string::String")
         } else {
             abort (error::invalid_argument(ETYPE_INVALID))
         }
@@ -159,7 +160,7 @@ module starcoin_token_objects::object_property_map {
             ADDRESS
         } else if (type == string::utf8(b"vector<u8>")) {
             BYTE_VECTOR
-        } else if (type == string::utf8(b"0x1::string::String")) {
+        } else if (type == string::utf8(b"0x00000000000000000000000000000001::string::String")) {
             STRING
         } else {
             abort (error::invalid_argument(ETYPE_INVALID))
@@ -355,7 +356,6 @@ module starcoin_token_objects::object_property_map {
         assert_end_to_end_input(object);
 
         test_end_to_end_update_typed(&mutator, &object);
-
         assert!(length(&object) == 9, 19);
 
         remove(&mutator, &string::utf8(b"bool"));
@@ -366,7 +366,7 @@ module starcoin_token_objects::object_property_map {
         remove(&mutator, &string::utf8(b"u128"));
         remove(&mutator, &string::utf8(b"u256"));
         remove(&mutator, &string::utf8(b"vector<u8>"));
-        remove(&mutator, &string::utf8(b"0x1::string::String"));
+        remove(&mutator, &string::utf8(b"0x00000000000000000000000000000001::string::String"));
 
         assert!(length(&object) == 0, 20);
 
@@ -382,7 +382,7 @@ module starcoin_token_objects::object_property_map {
         remove(&mutator, &string::utf8(b"u128"));
         remove(&mutator, &string::utf8(b"u256"));
         remove(&mutator, &string::utf8(b"vector<u8>"));
-        remove(&mutator, &string::utf8(b"0x1::string::String"));
+        remove(&mutator, &string::utf8(b"0x00000000000000000000000000000001::string::String"));
 
         assert!(length(&object) == 0, 31);
 
@@ -411,8 +411,8 @@ module starcoin_token_objects::object_property_map {
         );
         add(
             &mutator,
-            string::utf8(b"0x1::string::String"),
-            string::utf8(b"0x1::string::String"),
+            string::utf8(b"0x00000000000000000000000000000001::string::String"),
+            string::utf8(b"0x00000000000000000000000000000001::string::String"),
             bcs::to_bytes<String>(&string::utf8(b"a"))
         );
 
@@ -430,7 +430,7 @@ module starcoin_token_objects::object_property_map {
             38
         );
         assert!(read_bytes(&object, &string::utf8(b"vector<u8>")) == vector[0x01], 39);
-        assert!(read_string(&object, &string::utf8(b"0x1::string::String")) == string::utf8(b"a"), 40);
+        assert!(read_string(&object, &string::utf8(b"0x00000000000000000000000000000001::string::String")) == string::utf8(b"a"), 40);
 
         assert!(length(&object) == 9, 41);
 
@@ -449,8 +449,8 @@ module starcoin_token_objects::object_property_map {
         );
         update(
             &mutator,
-            &string::utf8(b"0x1::string::String"),
-            string::utf8(b"0x1::string::String"),
+            &string::utf8(b"0x00000000000000000000000000000001::string::String"),
+            string::utf8(b"0x00000000000000000000000000000001::string::String"),
             bcs::to_bytes<String>(&string::utf8(b"ha"))
         );
 
@@ -462,7 +462,7 @@ module starcoin_token_objects::object_property_map {
         assert!(read_u128(&object, &string::utf8(b"u128")) == 0x25, 15);
         assert!(read_u256(&object, &string::utf8(b"u256")) == 0x26, 16);
         assert!(read_bytes(&object, &string::utf8(b"vector<u8>")) == vector[0x02], 17);
-        assert!(read_string(&object, &string::utf8(b"0x1::string::String")) == string::utf8(b"ha"), 18);
+        assert!(read_string(&object, &string::utf8(b"0x00000000000000000000000000000001::string::String")) == string::utf8(b"ha"), 18);
     }
 
     #[test_only]
@@ -475,7 +475,7 @@ module starcoin_token_objects::object_property_map {
         update_typed<u128>(mutator, &string::utf8(b"u128"), 0x25);
         update_typed<u256>(mutator, &string::utf8(b"u256"), 0x26);
         update_typed<vector<u8>>(mutator, &string::utf8(b"vector<u8>"), vector[0x02]);
-        update_typed<String>(mutator, &string::utf8(b"0x1::string::String"), string::utf8(b"ha"));
+        update_typed<String>(mutator, &string::utf8(b"0x00000000000000000000000000000001::string::String"), string::utf8(b"ha"));
 
         assert!(!read_bool(object, &string::utf8(b"bool")), 10);
         assert!(read_u8(object, &string::utf8(b"u8")) == 0x21, 11);
@@ -485,7 +485,7 @@ module starcoin_token_objects::object_property_map {
         assert!(read_u128(object, &string::utf8(b"u128")) == 0x25, 15);
         assert!(read_u256(object, &string::utf8(b"u256")) == 0x26, 16);
         assert!(read_bytes(object, &string::utf8(b"vector<u8>")) == vector[0x02], 17);
-        assert!(read_string(object, &string::utf8(b"0x1::string::String")) == string::utf8(b"ha"), 18);
+        assert!(read_string(object, &string::utf8(b"0x00000000000000000000000000000001::string::String")) == string::utf8(b"ha"), 18);
     }
 
     #[test_only]
@@ -498,7 +498,7 @@ module starcoin_token_objects::object_property_map {
         add_typed<u128>(mutator, string::utf8(b"u128"), 0x25);
         add_typed<u256>(mutator, string::utf8(b"u256"), 0x26);
         add_typed<vector<u8>>(mutator, string::utf8(b"vector<u8>"), vector[0x02]);
-        add_typed<String>(mutator, string::utf8(b"0x1::string::String"), string::utf8(b"ha"));
+        add_typed<String>(mutator, string::utf8(b"0x00000000000000000000000000000001::string::String"), string::utf8(b"ha"));
 
         assert!(!read_bool(object, &string::utf8(b"bool")), 21);
         assert!(read_u8(object, &string::utf8(b"u8")) == 0x21, 22);
@@ -508,7 +508,7 @@ module starcoin_token_objects::object_property_map {
         assert!(read_u128(object, &string::utf8(b"u128")) == 0x25, 26);
         assert!(read_u256(object, &string::utf8(b"u256")) == 0x26, 27);
         assert!(read_bytes(object, &string::utf8(b"vector<u8>")) == vector[0x02], 28);
-        assert!(read_string(object, &string::utf8(b"0x1::string::String")) == string::utf8(b"ha"), 29);
+        assert!(read_string(object, &string::utf8(b"0x00000000000000000000000000000001::string::String")) == string::utf8(b"ha"), 29);
     }
 
     #[test(creator = @0x123)]
@@ -533,7 +533,7 @@ module starcoin_token_objects::object_property_map {
                 string::utf8(b"u128"),
                 string::utf8(b"u256"),
                 string::utf8(b"vector<u8>"),
-                string::utf8(b"0x1::string::String"),
+                string::utf8(b"0x00000000000000000000000000000001::string::String"),
             ],
             vector[
                 string::utf8(b"bool"),
@@ -544,7 +544,7 @@ module starcoin_token_objects::object_property_map {
                 string::utf8(b"u128"),
                 string::utf8(b"u256"),
                 string::utf8(b"vector<u8>"),
-                string::utf8(b"0x1::string::String"),
+                string::utf8(b"0x00000000000000000000000000000001::string::String"),
             ],
             vector[
                 bcs::to_bytes<bool>(&true),
@@ -661,7 +661,7 @@ module starcoin_token_objects::object_property_map {
             6
         );
         assert!(read_bytes(&object, &string::utf8(b"vector<u8>")) == vector[0x01], 7);
-        assert!(read_string(&object, &string::utf8(b"0x1::string::String")) == string::utf8(b"a"), 8);
+        assert!(read_string(&object, &string::utf8(b"0x00000000000000000000000000000001::string::String")) == string::utf8(b"a"), 8);
 
         assert!(length(&object) == 9, 9);
     }

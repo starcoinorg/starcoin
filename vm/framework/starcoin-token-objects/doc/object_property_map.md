@@ -507,7 +507,7 @@ Maps <code>String</code> representation of types from their <code>u8</code> repr
     } <b>else</b> <b>if</b> (type == <a href="object_property_map.md#0x1_object_property_map_BYTE_VECTOR">BYTE_VECTOR</a>) {
         <a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;")
     } <b>else</b> <b>if</b> (type == <a href="object_property_map.md#0x1_object_property_map_STRING">STRING</a>) {
-        <a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="../../move-stdlib/doc/string.md#0x1_string_String">0x1::string::String</a>")
+        <a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="../../move-stdlib/doc/string.md#0x1_string_String">0x00000000000000000000000000000001::string::String</a>")
     } <b>else</b> {
         <b>abort</b> (<a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="object_property_map.md#0x1_object_property_map_ETYPE_INVALID">ETYPE_INVALID</a>))
     }
@@ -553,7 +553,7 @@ Maps the <code>String</code> representation of types to <code>u8</code>
         <a href="object_property_map.md#0x1_object_property_map_ADDRESS">ADDRESS</a>
     } <b>else</b> <b>if</b> (type == <a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;")) {
         <a href="object_property_map.md#0x1_object_property_map_BYTE_VECTOR">BYTE_VECTOR</a>
-    } <b>else</b> <b>if</b> (type == <a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="../../move-stdlib/doc/string.md#0x1_string_String">0x1::string::String</a>")) {
+    } <b>else</b> <b>if</b> (type == <a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="../../move-stdlib/doc/string.md#0x1_string_String">0x00000000000000000000000000000001::string::String</a>")) {
         <a href="object_property_map.md#0x1_object_property_map_STRING">STRING</a>
     } <b>else</b> {
         <b>abort</b> (<a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="object_property_map.md#0x1_object_property_map_ETYPE_INVALID">ETYPE_INVALID</a>))
@@ -1268,7 +1268,7 @@ Removes a property from the map, ensuring that it does in fact exist
         6
     );
     <b>assert</b>!(<a href="object_property_map.md#0x1_object_property_map_read_bytes">read_bytes</a>(&<a href="../../starcoin-framework/doc/object.md#0x1_object">object</a>, &<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;")) == <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>[0x01], 7);
-    <b>assert</b>!(<a href="object_property_map.md#0x1_object_property_map_read_string">read_string</a>(&<a href="../../starcoin-framework/doc/object.md#0x1_object">object</a>, &<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="../../move-stdlib/doc/string.md#0x1_string_String">0x1::string::String</a>")) == <a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"a"), 8);
+    <b>assert</b>!(<a href="object_property_map.md#0x1_object_property_map_read_string">read_string</a>(&<a href="../../starcoin-framework/doc/object.md#0x1_object">object</a>, &<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="../../move-stdlib/doc/string.md#0x1_string_String">0x00000000000000000000000000000001::string::String</a>")) == <a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"a"), 8);
 
     <b>assert</b>!(<a href="object_property_map.md#0x1_object_property_map_length">length</a>(&<a href="../../starcoin-framework/doc/object.md#0x1_object">object</a>) == 9, 9);
 }
