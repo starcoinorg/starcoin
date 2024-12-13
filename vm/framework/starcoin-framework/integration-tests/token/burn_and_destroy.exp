@@ -2,19 +2,19 @@ processed 9 tasks
 
 task 4 'run'. lines 54-69:
 {
-  "gas_used": 1373436,
+  "gas_used": 1427117,
   "status": "Executed"
 }
 
 task 5 'run'. lines 72-97:
 {
-  "gas_used": 1443928,
+  "gas_used": 1464397,
   "status": "Executed"
 }
 
 task 6 'run'. lines 100-123:
 {
-  "gas_used": 1206586,
+  "gas_used": 1228593,
   "status": {
     "MoveAbort": {
       "location": {
@@ -30,13 +30,13 @@ task 6 'run'. lines 100-123:
 
 task 7 'run'. lines 126-140:
 {
-  "gas_used": 1317275,
+  "gas_used": 1379378,
   "status": "Executed"
 }
 
 task 8 'run'. lines 142-167:
 {
-  "gas_used": 516643,
+  "gas_used": 528530,
   "status": {
     "MoveAbort": {
       "location": {
