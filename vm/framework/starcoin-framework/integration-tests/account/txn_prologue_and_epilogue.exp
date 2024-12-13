@@ -2,13 +2,13 @@ processed 12 tasks
 
 task 3 'run'. lines 8-27:
 {
-  "gas_used": 1905475,
+  "gas_used": 1922786,
   "status": "Executed"
 }
 
 task 4 'run'. lines 30-70:
 {
-  "gas_used": 983195,
+  "gas_used": 1102916,
   "status": {
     "MoveAbort": {
       "location": {
@@ -24,7 +24,7 @@ task 4 'run'. lines 30-70:
 
 task 5 'run'. lines 73-107:
 {
-  "gas_used": 1059814,
+  "gas_used": 1182504,
   "status": {
     "MoveAbort": {
       "location": {
@@ -33,14 +33,14 @@ task 5 'run'. lines 73-107:
           "name": "stc_transaction_validation"
         }
       },
-      "abort_code": "65540"
+      "abort_code": "66540"
     }
   }
 }
 
 task 6 'run'. lines 110-145:
 {
-  "gas_used": 340105,
+  "gas_used": 364278,
   "status": {
     "MoveAbort": {
       "location": {
@@ -49,14 +49,14 @@ task 6 'run'. lines 110-145:
           "name": "stc_transaction_validation"
         }
       },
-      "abort_code": "65537"
+      "abort_code": "66537"
     }
   }
 }
 
 task 7 'run'. lines 148-187:
 {
-  "gas_used": 1070080,
+  "gas_used": 1189687,
   "status": {
     "MoveAbort": {
       "location": {
@@ -65,20 +65,20 @@ task 7 'run'. lines 148-187:
           "name": "stc_transaction_validation"
         }
       },
-      "abort_code": "65539"
+      "abort_code": "66539"
     }
   }
 }
 
 task 8 'run'. lines 190-245:
 {
-  "gas_used": 2197192,
+  "gas_used": 2389553,
   "status": "Executed"
 }
 
 task 9 'run'. lines 248-287:
 {
-  "gas_used": 1021866,
+  "gas_used": 1141651,
   "status": {
     "MoveAbort": {
       "location": {
@@ -87,14 +87,14 @@ task 9 'run'. lines 248-287:
           "name": "stc_transaction_validation"
         }
       },
-      "abort_code": "65538"
+      "abort_code": "66538"
     }
   }
 }
 
 task 10 'run'. lines 290-330:
 {
-  "gas_used": 984195,
+  "gas_used": 1085681,
   "status": {
     "MoveAbort": {
       "location": {
@@ -103,14 +103,14 @@ task 10 'run'. lines 290-330:
           "name": "stc_transaction_validation"
         }
       },
-      "abort_code": "131082"
+      "abort_code": "132082"
     }
   }
 }
 
 task 11 'run'. lines 333-374:
 {
-  "gas_used": 278162,
+  "gas_used": 281131,
   "status": {
     "MoveAbort": {
       "location": {
