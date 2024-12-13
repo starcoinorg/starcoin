@@ -210,22 +210,29 @@ impl<
             }
         }
 
+        let remote_blue_set = blue_blocks
+            .iter()
+            .map(|header| header.id())
+            .collect::<HashSet<_>>();
         if new_block_data
             .mergeset_blues
             .iter()
             .skip(1)
             .cloned()
             .collect::<HashSet<_>>()
-            != blue_blocks
-                .iter()
-                .map(|header| header.id())
-                .collect::<HashSet<_>>()
+            != remote_blue_set
         {
-            if header.number() < 10000000 {
-                // no bail before 10000000
-                warn!("The data of blue set is not equal when executing the block: {:?}, for {:?}, checking data: {:?}", header.id(), blue_blocks.iter().map(|header| header.id()).collect::<Vec<_>>(), new_block_data.mergeset_blues);
-            } else {
-                bail!("The data of blue set is not equal when executing the block: {:?}, for {:?}, checking data: {:?}", header.id(), blue_blocks.iter().map(|header| header.id()).collect::<Vec<_>>(), new_block_data.mergeset_blues);
+            warn!("The data of blue set is not equal when executing the block: {:?}, for {:?}, checking data: {:?}", header.id(), blue_blocks.iter().map(|header| header.id()).collect::<Vec<_>>(), new_block_data.mergeset_blues);
+            let ghostdata = self.ghostdag(&header.parents_hash())?;
+            if ghostdata
+                .mergeset_blues
+                .iter()
+                .skip(1)
+                .cloned()
+                .collect::<HashSet<_>>()
+                != remote_blue_set
+            {
+                bail!("The ghost data of blue set is not equal when executing the block: {:?}, for {:?}, checking data: {:?}", header.id(), blue_blocks.iter().map(|header| header.id()).collect::<Vec<_>>(), ghostdata.mergeset_blues);
             }
         }
 
@@ -377,12 +384,20 @@ impl<
             *candidate_blue_anticone_size = (*candidate_blue_anticone_size).checked_add(1).unwrap();
             if *candidate_blue_anticone_size > self.k {
                 // k-cluster violation: The candidate's blue anticone exceeded k
+                info!(
+                    "Checking blue candidate: {} failed, blue anticone exceeded k",
+                    blue_candidate
+                );
                 return Ok(ColoringState::Red);
             }
 
             if *candidate_blues_anticone_sizes.get(&block).unwrap() == self.k {
                 // k-cluster violation: A block in candidate's blue anticone already
                 // has k blue blocks in its own anticone
+                info!(
+                    "Checking blue candidate: {} failed, block {} has k blue blocks in its anticone",
+                    blue_candidate, block
+                );
                 return Ok(ColoringState::Red);
             }
 
@@ -431,6 +446,10 @@ impl<
         // The maximum length of new_block_data.mergeset_blues can be K+1 because
         // it contains the selected parent.
         if new_block_data.mergeset_blues.len() as KType == self.k.checked_add(1).unwrap() {
+            info!(
+                "Checking blue candidate: {} failed, mergeset blues size is K+1",
+                blue_candidate
+            );
             return Ok(ColoringOutput::Red);
         }
 

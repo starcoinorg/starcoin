@@ -19,10 +19,12 @@ use starcoin_logger::prelude::debug;
 use starcoin_types::{
     block::{BlockHeader, BlockHeaderBuilder, BlockNumber},
     blockhash::{BlockHashMap, HashKTypeMap, KType},
+    consensus_header::ConsensusHeader,
+    U256,
 };
 
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     ops::{Deref, DerefMut},
     sync::Arc,
     time::Instant,
@@ -441,8 +443,18 @@ fn test_reachability_check_ancestor() -> anyhow::Result<()> {
         reachability_store.write().deref_mut(),
         child,
         parent,
-        &mut vec![parent].into_iter(),
+        &mut vec![].into_iter(),
     )?;
+    // mergetset
+    let uncle1 = Hash::random();
+    let selected_parent_uncle1 = Hash::random();
+    inquirer::add_block(
+        reachability_store.write().deref_mut(),
+        selected_parent_uncle1,
+        parent,
+        &mut vec![].into_iter(),
+    )?;
+    let uncle2 = Hash::random();
 
     let mut target = child;
     let mut target_parent = parent;
@@ -455,17 +467,37 @@ fn test_reachability_check_ancestor() -> anyhow::Result<()> {
                 reachability_store.write().deref_mut(),
                 child,
                 parent,
-                &mut vec![parent].into_iter(),
+                &mut vec![uncle2, uncle1, selected_parent_uncle1].into_iter(),
             )?;
 
             target = child;
             target_parent = parent;
+        } else if i == 46 {
+            inquirer::add_block(
+                reachability_store.write().deref_mut(),
+                child,
+                parent,
+                &mut vec![].into_iter(),
+            )?;
+            inquirer::add_block(
+                reachability_store.write().deref_mut(),
+                uncle1,
+                selected_parent_uncle1,
+                &mut vec![].into_iter(),
+            )?;
+
+            inquirer::add_block(
+                reachability_store.write().deref_mut(),
+                uncle2,
+                parent,
+                &mut vec![].into_iter(),
+            )?;
         } else {
             inquirer::add_block(
                 reachability_store.write().deref_mut(),
                 child,
                 parent,
-                &mut vec![parent].into_iter(),
+                &mut vec![].into_iter(),
             )?;
         }
     }
@@ -473,6 +505,18 @@ fn test_reachability_check_ancestor() -> anyhow::Result<()> {
     // the relationship
     // origin.....target_parent-target.....parent-child
     // ancestor
+    assert!(
+        dag.check_ancestor_of(selected_parent_uncle1, vec![parent, child])?,
+        "failed to check target is the ancestor of its descendant"
+    );
+    assert!(
+        dag.check_ancestor_of(uncle1, vec![parent, child])?,
+        "failed to check target is the ancestor of its descendant"
+    );
+    assert!(
+        dag.check_ancestor_of(uncle2, vec![parent, child])?,
+        "failed to check target is the ancestor of its descendant"
+    );
     assert!(
         dag.check_ancestor_of(target, vec![parent, child])?,
         "failed to check target is the ancestor of its descendant"
@@ -737,6 +781,31 @@ fn add_and_print_with_ghostdata(
     Ok(header)
 }
 
+fn add_and_print_with_difficulty(
+    number: BlockNumber,
+    parent: Hash,
+    parents: Vec<Hash>,
+    difficulty: U256,
+) -> anyhow::Result<BlockHeader> {
+    let header_builder = BlockHeaderBuilder::random();
+    let header = header_builder
+        .with_parent_hash(parent)
+        .with_parents_hash(parents)
+        .with_number(number)
+        .with_difficulty(difficulty)
+        .build();
+    let start = Instant::now();
+    let duration = start.elapsed();
+    println!(
+        "commit header: {:?}, number: {:?}, duration: {:?}",
+        header.id(),
+        header.number(),
+        duration
+    );
+
+    Ok(header)
+}
+
 fn add_and_print_with_pruning_point(
     number: BlockNumber,
     parent: Hash,
@@ -751,6 +820,7 @@ fn add_and_print_with_pruning_point(
         .with_parents_hash(parents)
         .with_number(number)
         .with_pruning_point(pruning_point)
+        .with_difficulty(U256::from(10))
         .build();
     let start = Instant::now();
     dag.commit(header.to_owned(), origin)?;
@@ -761,10 +831,11 @@ fn add_and_print_with_pruning_point(
         header.number(),
         duration
     );
-    let _ghostdata = dag.ghostdata(&[header.id()])?;
+    // let ghostdata = dag.ghostdata(&[header.id()])?;
+    // let ghostdata = dag.ghostdata_by_hash(header.id())?.unwrap();
     // println!(
-    //     "add a header: {:?}, blue set: {:?}, red set: {:?}, blue anticone size: {:?}",
-    //     header, ghostdata.mergeset_blues, ghostdata.mergeset_reds, ghostdata.blues_anticone_sizes
+    //     "add a header: {:?}, selected_parent: {:?}, blue set: {:?}, red set: {:?}, blue anticone size: {:?}",
+    //     header, ghostdata.selected_parent, ghostdata.mergeset_blues, ghostdata.mergeset_reds, ghostdata.blues_anticone_sizes
     // );
     Ok(header)
 }
@@ -1067,6 +1138,193 @@ fn test_prune() -> anyhow::Result<()> {
     );
 
     anyhow::Result::Ok(())
+}
+
+#[test]
+fn test_verification_blue_block_inconsistent() -> anyhow::Result<()> {
+    loop_to_blue()?;
+    anyhow::Result::Ok(())
+}
+
+fn loop_to_blue() -> anyhow::Result<()> {
+    // initialzie the dag firstly
+    let k = 2;
+
+    let mut dag = BlockDAG::create_for_testing_with_parameters(k).unwrap();
+
+    let origin = BlockHeaderBuilder::random().with_number(0).build();
+    let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;
+
+    dag.init_with_genesis(genesis.clone()).unwrap();
+
+    let mut storage = HashMap::new();
+
+    let block1 =
+        add_and_print_with_difficulty(1, genesis.id(), vec![genesis.id()], U256::from(10))?;
+    storage.insert(block1.id(), block1.clone());
+    let ghost = dag.ghostdata(&block1.parents())?;
+    let verified_ghost = dag.verify_and_ghostdata(
+        &ghost
+            .mergeset_blues
+            .iter()
+            .skip(1)
+            .cloned()
+            .map(|x| storage.get(&x).unwrap().clone())
+            .collect::<Vec<_>>(),
+        &block1,
+    )?;
+    dag.commit_trusted_block(
+        block1.clone(),
+        genesis.parent_hash(),
+        Arc::new(verified_ghost),
+    )?;
+
+    let mut bottom = vec![];
+    let mut last = block1.clone();
+    for i in 0..500 {
+        let block2 =
+            add_and_print_with_difficulty(1 + i, last.id(), vec![last.id()], U256::from(10))?;
+        last = block2.clone();
+        storage.insert(block2.id(), block2.clone());
+        let ghost = dag.ghostdata(&block2.parents())?;
+        let verified_ghost = dag.verify_and_ghostdata(
+            &ghost
+                .mergeset_blues
+                .iter()
+                .skip(1)
+                .cloned()
+                .map(|x| storage.get(&x).unwrap().clone())
+                .collect::<Vec<_>>(),
+            &block2,
+        )?;
+        dag.commit_trusted_block(
+            block2.clone(),
+            genesis.parent_hash(),
+            Arc::new(verified_ghost),
+        )?;
+        bottom.push(block2);
+    }
+
+    let mut top = vec![];
+    let mut iter = bottom.iter().peekable();
+    while let Some(first) = iter.next() {
+        if let Some(second) = iter.next() {
+            let block = add_and_print_with_difficulty(
+                3,
+                first.id(),
+                vec![first.id(), second.id()],
+                U256::from(10),
+            )?;
+            storage.insert(block.id(), block.clone());
+            let ghost = dag.ghostdata(&block.parents())?;
+            let verified_ghost = dag.verify_and_ghostdata(
+                &ghost
+                    .mergeset_blues
+                    .iter()
+                    .skip(1)
+                    .cloned()
+                    .map(|x| storage.get(&x).unwrap().clone())
+                    .collect::<Vec<_>>(),
+                &block,
+            )?;
+            dag.commit_trusted_block(
+                block.clone(),
+                genesis.parent_hash(),
+                Arc::new(verified_ghost),
+            )?;
+
+            last = block.clone();
+            top.push(block);
+        } else {
+            let block = add_and_print_with_difficulty(
+                3,
+                first.id(),
+                vec![first.id(), last.id()],
+                U256::from(10),
+            )?;
+            storage.insert(block.id(), block.clone());
+            let ghost = dag.ghostdata(&block.parents())?;
+            let verified_ghost = dag.verify_and_ghostdata(
+                &ghost
+                    .mergeset_blues
+                    .iter()
+                    .skip(1)
+                    .cloned()
+                    .map(|x| storage.get(&x).unwrap().clone())
+                    .collect::<Vec<_>>(),
+                &block,
+            )?;
+            dag.commit_trusted_block(
+                block.clone(),
+                genesis.parent_hash(),
+                Arc::new(verified_ghost),
+            )?;
+
+            top.push(block);
+            if top.len() == 1 {
+                last = top[0].clone();
+                break;
+            } else {
+                bottom.clone_from(&top);
+                iter = bottom.iter().peekable();
+                top.clear();
+            }
+        }
+    }
+
+    let block1_1 = add_and_print_with_difficulty(
+        1,
+        genesis.id(),
+        vec![last.id(), block1.id()],
+        U256::from(99999999),
+    )?;
+    storage.insert(block1_1.id(), block1_1.clone());
+    let ghost = dag.ghostdata(&block1_1.parents())?;
+    let verified_ghost = dag.verify_and_ghostdata(
+        &ghost
+            .mergeset_blues
+            .iter()
+            .skip(1)
+            .cloned()
+            .map(|x| storage.get(&x).unwrap().clone())
+            .collect::<Vec<_>>(),
+        &block1_1,
+    )?;
+    dag.commit_trusted_block(
+        block1_1.clone(),
+        genesis.parent_hash(),
+        Arc::new(verified_ghost),
+    )?;
+
+    let block3 = add_and_print_with_difficulty(
+        3,
+        block1_1.id(),
+        vec![block1_1.id(), last.id()],
+        U256::from(10),
+    )?;
+
+    let ghostdata = dag.ghostdata(&block3.parents())?;
+    println!(
+        "add a header: {:?}, selected_parent: {:?}, blue set: {:?}, red set: {:?}, blue anticone size: {:?}",
+        block3, ghostdata.selected_parent, ghostdata.mergeset_blues, ghostdata.mergeset_reds, ghostdata.blues_anticone_sizes
+    );
+    let verified_ghostdata = dag.verify_and_ghostdata(
+        &ghostdata
+            .mergeset_blues
+            .iter()
+            .skip(1)
+            .map(|x| dag.storage.header_store.get_header(*x).unwrap())
+            .collect::<Vec<_>>(),
+        &block3,
+    )?;
+    println!(
+        "after verification: selected_parent: {:?}, blue set: {:?}, red set: {:?}, blue anticone size: {:?}",
+        verified_ghostdata.selected_parent, verified_ghostdata.mergeset_blues, verified_ghostdata.mergeset_reds, verified_ghostdata.blues_anticone_sizes
+    );
+
+    assert_eq!(ghostdata.mergeset_blues, verified_ghostdata.mergeset_blues);
+
+    anyhow::Ok(())
 }
 
 #[test]
