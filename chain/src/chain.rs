@@ -19,7 +19,6 @@ use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::{BlockDAG, MineNewDagBlockInfo};
 use starcoin_dag::consensusdb::consenses_state::DagState;
 use starcoin_dag::consensusdb::prelude::StoreError;
-use starcoin_dag::consensusdb::schemadb::GhostdagStoreReader;
 use starcoin_executor::VMMetrics;
 #[cfg(feature = "force-deploy")]
 use starcoin_force_upgrade::force_upgrade_management::get_force_upgrade_block_number;
@@ -1377,37 +1376,7 @@ impl ChainReader for BlockChain {
         uncles: &[BlockHeader],
         header: &BlockHeader,
     ) -> Result<starcoin_dag::types::ghostdata::GhostdagData> {
-        let previous_header = self
-            .storage
-            .get_block_header_by_hash(header.parent_hash())?
-            .ok_or_else(|| format_err!("cannot find parent block header"))?;
-        let next_ghostdata = self.dag().verify_and_ghostdata(uncles, header)?;
-        let (pruning_depth, pruning_finality) = self.get_pruning_config();
-        if self.status().head().pruning_point() != HashValue::zero() {
-            let previous_ghostdata = if previous_header.pruning_point() == HashValue::zero() {
-                let genesis = self
-                    .storage
-                    .get_genesis()?
-                    .ok_or_else(|| format_err!("the genesis id is none!"))?;
-                self.dag().storage.ghost_dag_store.get_data(genesis)?
-            } else {
-                self.dag()
-                    .storage
-                    .ghost_dag_store
-                    .get_data(previous_header.pruning_point())?
-            };
-
-            // self.dag().verify_pruning_point(
-            //     previous_header.pruning_point(),
-            //     previous_ghostdata.as_ref(),
-            //     header.pruning_point(),
-            //     &next_ghostdata,
-            //     pruning_depth,
-            //     pruning_finality,
-            // )?;
-        }
-
-        Ok(next_ghostdata)
+        Ok(self.dag().verify_and_ghostdata(uncles, header)?)
     }
 
     fn is_dag_ancestor_of(&self, ancestor: HashValue, descendants: Vec<HashValue>) -> Result<bool> {
