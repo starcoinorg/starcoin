@@ -68,8 +68,10 @@ pub fn handle_package_commands(
             extended_checks::configure_extended_checks_for_unit_test();
 
             let mut build_config = move_args.build_config.clone();
-            build_config.compiler_config.known_attributes =
-                extended_checks::get_all_attribute_names().clone();
+            build_config
+                .compiler_config
+                .known_attributes
+                .clone_from(extended_checks::get_all_attribute_names());
             c.execute(
                 move_args.package_path,
                 build_config,

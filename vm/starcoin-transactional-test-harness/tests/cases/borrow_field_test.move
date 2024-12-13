@@ -24,7 +24,7 @@ module creator::test {
 
 //# run --signers creator
 script {
-    use StarcoinFramework::Signer;
+    use std::signer;
     use creator::test;
 
     fun main(s: signer) {
