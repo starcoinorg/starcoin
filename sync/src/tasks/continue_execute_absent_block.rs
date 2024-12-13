@@ -19,14 +19,14 @@ pub trait ContinueChainOperator {
 pub struct ContinueExecuteAbsentBlock<'a> {
     operator: &'a mut dyn ContinueChainOperator,
     local_store: Arc<dyn Store>,
-    sync_dag_store: SyncDagStore,
+    sync_dag_store: Arc<SyncDagStore>,
 }
 
 impl<'a> ContinueExecuteAbsentBlock<'a> {
     pub fn new(
         operator: &'a mut dyn ContinueChainOperator,
         local_store: Arc<dyn Store>,
-        sync_dag_store: SyncDagStore,
+        sync_dag_store: Arc<SyncDagStore>,
     ) -> anyhow::Result<ContinueExecuteAbsentBlock<'a>> {
         anyhow::Result::Ok(ContinueExecuteAbsentBlock {
             operator,

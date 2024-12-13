@@ -26,7 +26,7 @@ struct DagBlockWorker {
 }
 
 pub struct DagBlockSender<'a> {
-    sync_dag_store: SyncDagStore,
+    sync_dag_store: Arc<SyncDagStore>,
     executors: Vec<DagBlockWorker>,
     queue_size: usize,
     time_service: Arc<dyn TimeService>,
@@ -38,7 +38,7 @@ pub struct DagBlockSender<'a> {
 
 impl<'a> DagBlockSender<'a> {
     pub fn new(
-        sync_dag_store: SyncDagStore,
+        sync_dag_store: Arc<SyncDagStore>,
         queue_size: usize,
         time_service: Arc<dyn TimeService>,
         storage: Arc<dyn Store>,

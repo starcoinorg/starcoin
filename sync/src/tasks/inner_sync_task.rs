@@ -38,7 +38,7 @@ where
     peer_provider: N,
     custom_error_handle: Arc<dyn CustomErrorHandle>,
     dag: BlockDAG,
-    sync_dag_store: SyncDagStore,
+    sync_dag_store: Arc<SyncDagStore>,
 }
 
 impl<H, F, N> InnerSyncTask<H, F, N>
@@ -58,7 +58,7 @@ where
         peer_provider: N,
         custom_error_handle: Arc<dyn CustomErrorHandle>,
         dag: BlockDAG,
-        sync_dag_store: SyncDagStore,
+        sync_dag_store: Arc<SyncDagStore>,
     ) -> Self {
         Self {
             ancestor,

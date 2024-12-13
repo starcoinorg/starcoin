@@ -622,7 +622,7 @@ pub fn full_sync_task<H, A, F, N>(
     sync_metrics: Option<SyncMetrics>,
     vm_metrics: Option<VMMetrics>,
     dag: BlockDAG,
-    sync_dag_store: SyncDagStore,
+    sync_dag_store: Arc<SyncDagStore>,
 ) -> Result<(
     BoxFuture<'static, Result<BlockChain, TaskError>>,
     TaskHandle,
