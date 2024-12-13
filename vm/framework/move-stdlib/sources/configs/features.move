@@ -60,8 +60,10 @@ module std::features {
 
     public fun get_sha_512_and_ripemd_160_feature(): u64 { SHA_512_AND_RIPEMD_160_NATIVES }
 
-    public fun sha_512_and_ripemd_160_enabled(): bool acquires Features {
-        is_enabled(SHA_512_AND_RIPEMD_160_NATIVES)
+    public fun sha_512_and_ripemd_160_enabled(): bool {
+        // is_enabled(SHA_512_AND_RIPEMD_160_NATIVES)
+        // TODO(BobOng): [framework-upgrade] to confirm which feature flag should be used here
+        true
     }
 
     /// Whether the new `starcoin_stdlib::type_info::chain_id()` native for fetching the chain ID is enabled.
@@ -113,8 +115,10 @@ module std::features {
 
     public fun get_blake2b_256_feature(): u64 { BLAKE2B_256_NATIVE }
 
-    public fun blake2b_256_enabled(): bool acquires Features {
-        is_enabled(BLAKE2B_256_NATIVE)
+    public fun blake2b_256_enabled(): bool {
+        // is_enabled(BLAKE2B_256_NATIVE)
+        // TODO(BobOng): [framework-upgrade] to confirm which feature flag should be used here
+        true
     }
 
     /// Whether resource groups are enabled.
