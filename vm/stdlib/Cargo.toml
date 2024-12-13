@@ -10,16 +10,13 @@ move-bytecode-verifier = { workspace = true }
 move-compiler = { workspace = true }
 move-prover = { workspace = true }
 once_cell = { workspace = true }
-serde = { features = ["derive"], workspace = true }
 sha2 = { workspace = true }
 simplelog = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-framework = { workspace = true }
 starcoin-move-compiler = { workspace = true }
 starcoin-vm-types = { workspace = true }
-tempfile = { workspace = true }
-walkdir = { workspace = true }
-starcoin-framework-legacy = { workspace = true }
+starcoin-cached-packages = { workspace = true }
 
 [dev-dependencies]
 datatest-stable = { workspace = true }

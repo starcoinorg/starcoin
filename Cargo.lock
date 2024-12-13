@@ -6275,7 +6275,7 @@ dependencies = [
  "starcoin-cmd",
  "starcoin-config",
  "starcoin-crypto",
- "starcoin-framework 0.1.0",
+ "starcoin-framework",
  "starcoin-gas-schedule",
  "starcoin-logger",
  "starcoin-move-compiler",
@@ -10199,7 +10199,7 @@ dependencies = [
  "once_cell",
  "proptest",
  "proptest-derive 0.3.0",
- "starcoin-framework 0.1.0",
+ "starcoin-framework",
  "starcoin-package-builder",
  "starcoin-vm-types",
 ]
@@ -10780,19 +10780,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "starcoin-framework"
-version = "13.0.0"
-source = "git+https://github.com/starcoinorg/starcoin-framework?rev=94bcd77e80232b169cf95754ef4e87775645afcd#94bcd77e80232b169cf95754ef4e87775645afcd"
-dependencies = [
- "anyhow",
- "include_dir",
- "log 0.4.22",
- "once_cell",
- "tempfile",
- "walkdir",
-]
-
-[[package]]
 name = "starcoin-gas-algebra"
 version = "2.0.1"
 dependencies = [
@@ -11101,7 +11088,7 @@ dependencies = [
  "petgraph 0.5.1",
  "regex",
  "starcoin-crypto",
- "starcoin-framework 0.1.0",
+ "starcoin-framework",
  "starcoin-logger",
  "starcoin-vm-types",
  "stest",
@@ -11423,7 +11410,7 @@ dependencies = [
  "itertools 0.10.5",
  "move-command-line-common",
  "move-package",
- "starcoin-framework 0.1.0",
+ "starcoin-framework",
  "tempfile",
 ]
 
@@ -11711,7 +11698,7 @@ dependencies = [
  "serde-reflection 0.3.2",
  "serde_yaml",
  "starcoin-cached-packages",
- "starcoin-framework 0.1.0",
+ "starcoin-framework",
  "starcoin-vm-types",
  "tempfile",
  "textwrap 0.14.2",
@@ -12074,7 +12061,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-dag",
  "starcoin-dev",
- "starcoin-framework 0.1.0",
+ "starcoin-framework",
  "starcoin-gas-meter",
  "starcoin-gas-schedule",
  "starcoin-genesis",
@@ -12257,7 +12244,7 @@ dependencies = [
  "starcoin-cached-packages",
  "starcoin-config",
  "starcoin-crypto",
- "starcoin-framework 0.1.0",
+ "starcoin-framework",
  "starcoin-gas-algebra",
  "starcoin-gas-meter",
  "starcoin-gas-schedule",
@@ -12362,16 +12349,13 @@ dependencies = [
  "move-compiler",
  "move-prover",
  "once_cell",
- "serde",
  "sha2 0.9.9",
  "simplelog",
+ "starcoin-cached-packages",
  "starcoin-crypto",
- "starcoin-framework 0.1.0",
- "starcoin-framework 13.0.0",
+ "starcoin-framework",
  "starcoin-move-compiler",
  "starcoin-vm-types",
- "tempfile",
- "walkdir",
 ]
 
 [[package]]
