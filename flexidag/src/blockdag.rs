@@ -17,6 +17,7 @@ use crate::consensusdb::{
 use crate::ghostdag::protocol::GhostdagManager;
 use crate::process_key_already_error;
 use crate::prune::pruning_point_manager::PruningPointManagerT;
+use crate::reachability::ReachabilityError;
 use anyhow::{bail, ensure, Ok};
 use rocksdb::WriteBatch;
 use starcoin_config::temp_dir;
@@ -242,13 +243,26 @@ impl BlockDAG {
             .filter(|hash| self.storage.reachability_store.read().has(*hash).unwrap())
             .collect::<Vec<_>>()
             .into_iter();
-        inquirer::add_block(
+        match inquirer::add_block(
             &mut stage,
             header.id(),
             ghostdata.selected_parent,
             &mut merge_set,
-        )
-        .expect("failed to add reachability in stage batch");
+        ) {
+            std::result::Result::Ok(_) => {}
+            Err(e) => match e {
+                ReachabilityError::DataInconsistency => {
+                    info!(
+                        "the key {:?} was already processed, original error message: {:?}",
+                        header.id(),
+                        ReachabilityError::DataInconsistency
+                    );
+                }
+                _ => {
+                    panic!("failed to add block in batch for error: {:?}", e);
+                }
+            },
+        }
 
         process_key_already_error(self.storage.relations_store.write().insert_batch(
             &mut batch,
@@ -339,13 +353,26 @@ impl BlockDAG {
             .collect::<Vec<_>>()
             .into_iter();
 
-        inquirer::add_block(
+        match inquirer::add_block(
             &mut stage,
             header.id(),
             ghostdata.selected_parent,
             &mut merge_set,
-        )
-        .expect("failed to add block in batch");
+        ) {
+            std::result::Result::Ok(_) => {}
+            Err(e) => match e {
+                ReachabilityError::DataInconsistency => {
+                    info!(
+                        "the key {:?} was already processed, original error message: {:?}",
+                        header.id(),
+                        ReachabilityError::DataInconsistency
+                    );
+                }
+                _ => {
+                    panic!("failed to add block in batch for error: {:?}", e);
+                }
+            },
+        }
 
         process_key_already_error(self.storage.relations_store.write().insert_batch(
             &mut batch,
