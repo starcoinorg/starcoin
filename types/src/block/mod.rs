@@ -27,6 +27,7 @@ use starcoin_crypto::{
     HashValue,
 };
 use starcoin_vm_types::account_config::genesis_address;
+use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use std::fmt::Formatter;
 use std::hash::Hash;
 use std::sync::Mutex;
@@ -545,6 +546,7 @@ impl Into<RawBlockHeader> for BlockHeader {
             timestamp: self.timestamp,
             number: self.number,
             author: self.author,
+            author_auth_key: None,
             accumulator_root: self.txn_accumulator_root,
             parent_block_accumulator_root: self.block_accumulator_root,
             state_root: self.state_root,
@@ -566,6 +568,9 @@ pub struct RawBlockHeader {
     pub number: BlockNumber,
     /// Block author.
     pub author: AccountAddress,
+    /// Block author auth key.
+    /// this field is deprecated
+    pub author_auth_key: Option<AuthenticationKey>,
     /// The transaction accumulator root hash after executing this block.
     pub accumulator_root: HashValue,
     /// The parent block accumulator root hash.
@@ -1039,6 +1044,7 @@ impl BlockTemplate {
             timestamp: self.timestamp,
             number: self.number,
             author: self.author,
+            author_auth_key: None,
             accumulator_root: self.txn_accumulator_root,
             parent_block_accumulator_root: self.block_accumulator_root,
             state_root: self.state_root,
