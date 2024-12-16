@@ -57,6 +57,7 @@ pub trait RawDBStorage: Send + Sync {
     ) -> Result<Option<DBPinnableSlice>>;
 
     fn raw_write_batch(&self, batch: DBWriteBatch) -> Result<()>;
+    fn raw_write_batch_sync(&self, batch: DBWriteBatch) -> Result<()>;
 }
 
 ///Storage instance type define

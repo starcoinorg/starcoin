@@ -544,4 +544,11 @@ impl RawDBStorage for DBStorage {
         self.db.write(batch)?;
         Ok(())
     }
+
+    fn raw_write_batch_sync(&self, batch: DBWriteBatch) -> Result<()> {
+        let mut opt = WriteOptions::default();
+        opt.set_sync(true);
+        self.db.write_opt(batch, &opt)?;
+        Ok(())
+    }
 }
