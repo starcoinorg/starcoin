@@ -25,9 +25,8 @@ use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::path::Path;
 use std::{collections::BTreeMap, fs::File, io::Read, path::PathBuf};
 use stdlib::{
-    build_stdlib, load_compiled_modules,
-    load_latest_stable_compiled_modules, save_binary, COMPILED_EXTENSION, COMPILED_OUTPUT_PATH,
-    LATEST_COMPILED_OUTPUT_PATH, STDLIB_DIR_NAME,
+    build_stdlib, load_compiled_modules, load_latest_stable_compiled_modules, save_binary,
+    COMPILED_EXTENSION, COMPILED_OUTPUT_PATH, LATEST_COMPILED_OUTPUT_PATH, STDLIB_DIR_NAME,
 };
 
 fn compiled_modules(stdlib_path: &mut PathBuf) -> BTreeMap<ModuleId, CompiledModule> {
