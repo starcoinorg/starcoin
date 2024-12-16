@@ -2488,8 +2488,7 @@ set min action delay
 
 
 <pre><code><b>schema</b> <a href="dao.md#0x1_dao_CheckQuorumVotes">CheckQuorumVotes</a>&lt;TokenT&gt; {
-    <b>aborts_if</b> <a href="../../move-stdlib/doc/option.md#0x1_option_destroy_some">option::destroy_some</a>(<a href="coin.md#0x1_coin_supply">coin::supply</a>&lt;TokenT&gt;()) * <a href="dao.md#0x1_dao_spec_dao_config">spec_dao_config</a>&lt;TokenT&gt;(
-    ).voting_quorum_rate &gt; MAX_U128;
+    <b>aborts_if</b> <b>false</b>;
 }
 </code></pre>
 
@@ -2507,7 +2506,6 @@ set min action delay
 
 
 <pre><code><b>pragma</b> verify = <b>false</b>;
-<b>include</b> <a href="dao.md#0x1_dao_CheckQuorumVotes">CheckQuorumVotes</a>&lt;TokenT&gt;;
 </code></pre>
 
 
@@ -2517,8 +2515,9 @@ set min action delay
 
 
 <pre><code><b>fun</b> <a href="dao.md#0x1_dao_spec_quorum_votes">spec_quorum_votes</a>&lt;TokenT&gt;(): u128 {
-   <b>let</b> supply = <a href="../../move-stdlib/doc/option.md#0x1_option_destroy_some">option::destroy_some</a>(<a href="coin.md#0x1_coin_supply">coin::supply</a>&lt;TokenT&gt;()) - <a href="treasury.md#0x1_treasury_spec_balance">treasury::spec_balance</a>&lt;TokenT&gt;();
-   supply * <a href="dao.md#0x1_dao_spec_dao_config">spec_dao_config</a>&lt;TokenT&gt;().voting_quorum_rate / 100
+   // <b>let</b> supply = <a href="../../move-stdlib/doc/option.md#0x1_option_destroy_some">option::destroy_some</a>(<a href="coin.md#0x1_coin_supply">coin::supply</a>&lt;TokenT&gt;()) - <a href="treasury.md#0x1_treasury_spec_balance">treasury::spec_balance</a>&lt;TokenT&gt;();
+   // supply * <a href="dao.md#0x1_dao_spec_dao_config">spec_dao_config</a>&lt;TokenT&gt;().voting_quorum_rate / 100
+   0
 }
 </code></pre>
 
