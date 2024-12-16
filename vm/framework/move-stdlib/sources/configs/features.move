@@ -618,7 +618,7 @@ module std::features {
     // Feature Flag Implementation
 
     /// The provided signer has not a framework address.
-    const EFRAMEWORK_SIGNER_NEEDED: u64 = 1;
+    const EFRAMEWORK_SIGNER_NEEDED: u64 = 100;
 
     /// The enabled features, represented by a bitset stored on chain.
     struct Features has key {

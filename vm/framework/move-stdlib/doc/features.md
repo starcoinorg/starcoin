@@ -491,7 +491,7 @@ Deployed to production, and disabling is deprecated.
 The provided signer has not a framework address.
 
 
-<pre><code><b>const</b> <a href="features.md#0x1_features_EFRAMEWORK_SIGNER_NEEDED">EFRAMEWORK_SIGNER_NEEDED</a>: u64 = 1;
+<pre><code><b>const</b> <a href="features.md#0x1_features_EFRAMEWORK_SIGNER_NEEDED">EFRAMEWORK_SIGNER_NEEDED</a>: u64 = 100;
 </code></pre>
 
 

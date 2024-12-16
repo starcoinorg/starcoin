@@ -50,10 +50,10 @@ pub mod shared {
 
 pub fn starcoin_framework_named_addresses() -> BTreeMap<String, NumericalAddress> {
     let mapping = [
-        ("VMReserved", "0x0"),
-        ("Genesis", "0x1"),
-        ("StarcoinFramework", "0x1"),
-        ("StarcoinAssociation", "0xA550C18"),
+        // ("VMReserved", "0x0"),
+        // ("Genesis", "0x1"),
+        // ("StarcoinFramework", "0x1"),
+        // ("StarcoinAssociation", "0xA550C18"),
         ("vm", "0x0"),
         ("vm_reserved", "0x0"),
         ("std", "0x1"),
