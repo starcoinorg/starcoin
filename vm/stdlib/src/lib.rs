@@ -30,7 +30,6 @@ use std::{
 
 mod compat;
 pub use compat::*;
-pub use starcoin_framework_legacy::SourceFiles;
 pub use starcoin_move_compiler::utils::iterate_directory;
 
 pub const NO_USE_COMPILED: &str = "MOVE_NO_USE_COMPILED";
@@ -57,20 +56,22 @@ pub const ERROR_DESC_EXTENSION: &str = "errmap";
 pub const ERROR_DESCRIPTIONS: &[u8] =
     std::include_bytes!("../compiled/latest/error_descriptions/error_descriptions.errmap");
 
-// XXX FIXME YSG need to remove
-pub const STDLIB_DIR: Dir = starcoin_framework_legacy::SOURCES_DIR;
-
 // The current stdlib that is freshly built. This will never be used in deployment so we don't need
 // to pull the same trick here in order to include this in the Rust binary.
 static G_FRESH_MOVE_LANG_STDLIB: Lazy<Vec<Vec<u8>>> = Lazy::new(|| {
-    build_stdlib(STARCOIN_FRAMEWORK_SOURCES.files.as_slice())
-        .values()
-        .map(|m| {
-            let mut blob = vec![];
-            m.serialize(&mut blob).unwrap();
-            blob
-        })
-        .collect()
+    build_stdlib(
+        starcoin_cached_packages::head_release_bundle()
+            .files()
+            .unwrap()
+            .as_slice(),
+    )
+    .values()
+    .map(|m| {
+        let mut blob = vec![];
+        m.serialize(&mut blob).unwrap();
+        blob
+    })
+    .collect()
 });
 
 // This needs to be a string literal due to restrictions imposed by include_bytes.
@@ -103,8 +104,6 @@ pub static G_COMPILED_STDLIB: Lazy<HashMap<StdlibVersion, Vec<Vec<u8>>>> = Lazy:
 });
 
 pub const SCRIPT_HASH_LENGTH: usize = HashValue::LENGTH;
-
-pub use starcoin_framework_legacy::STARCOIN_FRAMEWORK_SOURCES;
 
 /// Return all versions of stdlib, include latest.
 pub fn stdlib_versions() -> Vec<StdlibVersion> {
@@ -163,7 +162,10 @@ pub fn module_to_package(
 }
 
 pub fn stdlib_files() -> Vec<String> {
-    STARCOIN_FRAMEWORK_SOURCES.files.clone()
+    starcoin_cached_packages::head_release_bundle()
+        .files()
+        .unwrap()
+        .clone()
 }
 
 pub fn build_stdlib(targets: &[String]) -> BTreeMap<String, CompiledModule> {

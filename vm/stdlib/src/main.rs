@@ -8,7 +8,6 @@ use itertools::Itertools;
 use log::LevelFilter;
 use simplelog::{Config, SimpleLogger};
 use starcoin_crypto::hash::PlainCryptoHash;
-use starcoin_framework_legacy::STARCOIN_FRAMEWORK_SOURCES;
 use starcoin_move_compiler::check_compiled_module_compat;
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::file_format::CompiledModule;
@@ -140,11 +139,7 @@ fn full_update_with_version(version_number: u64) -> PathBuf {
     dest
 }
 
-fn replace_stdlib_by_path(
-    _source_dir: &Path,
-    module_path: &Path,
-    new_modules: BTreeMap<String, CompiledModule>,
-) {
+fn replace_stdlib_by_path(module_path: &Path, new_modules: BTreeMap<String, CompiledModule>) {
     if module_path.exists() {
         std::fs::remove_dir_all(module_path).unwrap();
     }
@@ -317,8 +312,12 @@ fn main() {
         .join("../../vm/stdlib");
     std::env::set_current_dir(base_path).expect("failed to change directory");
 
-    let sources = &STARCOIN_FRAMEWORK_SOURCES;
-    let new_modules = build_stdlib(&sources.files);
+    let new_modules = build_stdlib(
+        starcoin_cached_packages::head_release_bundle()
+            .files()
+            .unwrap()
+            .as_slice(),
+    );
 
     if !no_check_compatibility {
         if let Some((pre_stable_version, pre_stable_modules)) = pre_version
@@ -367,11 +366,7 @@ fn main() {
 
     // Write the stdlib blob
     let module_path = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH).join(STDLIB_DIR_NAME);
-    replace_stdlib_by_path(
-        sources.tempdir.path(),
-        module_path.as_path(),
-        new_modules.clone(),
-    );
+    replace_stdlib_by_path(module_path.as_path(), new_modules.clone());
     let stdlib_versions = &stdlib::G_STDLIB_VERSIONS;
     for version in stdlib_versions.iter() {
         let modules = stdlib::load_compiled_modules(*version);
