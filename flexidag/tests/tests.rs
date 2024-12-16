@@ -467,48 +467,66 @@ fn test_reachability_check_ancestor() -> anyhow::Result<()> {
     // origin.....target_parent-target.....parent-child
     // ancestor
     assert!(
-        dag.check_ancestor_of(target, vec![parent, child])?,
+        dag.check_ancestor_of(target, parent)?,
         "failed to check target is the ancestor of its descendant"
     );
     assert!(
-        dag.check_ancestor_of(origin, vec![target, parent, child])?,
+        dag.check_ancestor_of(target, child)?,
+        "failed to check target is the ancestor of its descendant"
+    );
+    assert!(
+        dag.check_ancestor_of(origin, target)?,
         "failed to check origin is the parent of its child"
     );
     assert!(
-        dag.check_ancestor_of(parent, vec![child])?,
+        dag.check_ancestor_of(origin, parent)?,
+        "failed to check origin is the parent of its child"
+    );
+    assert!(
+        dag.check_ancestor_of(origin, child)?,
+        "failed to check origin is the parent of its child"
+    );
+    assert!(
+        dag.check_ancestor_of(parent, child)?,
         "failed to check target, parent is the parent of its child"
     );
     assert!(
-        dag.check_ancestor_of(target_parent, vec![target])?,
+        dag.check_ancestor_of(target_parent, target)?,
         "failed to check target parent, parent is the parent of its child"
     );
 
     // not ancestor
     assert!(
-        !dag.check_ancestor_of(child, vec![target])?,
+        !dag.check_ancestor_of(child, target)?,
         "failed to check child is not the ancestor of its descendant"
     );
     assert!(
-        !dag.check_ancestor_of(parent, vec![target])?,
+        !dag.check_ancestor_of(parent, target)?,
         "failed to check child is not the ancestor of its descendant"
     );
     assert!(
-        !dag.check_ancestor_of(child, vec![parent])?,
+        !dag.check_ancestor_of(child, parent)?,
         "failed to check target, child is the child of its parent"
     );
     assert!(
-        !dag.check_ancestor_of(target, vec![target_parent])?,
+        !dag.check_ancestor_of(target, target_parent)?,
         "failed to check target is the child of its parent"
     );
 
     assert!(
-        dag.check_ancestor_of(target, vec![Hash::random(), Hash::random(),])
-            .is_err(),
+        dag.check_ancestor_of(target, Hash::random()).is_err(),
         "failed to check not the ancestor of descendants"
     );
     assert!(
-        dag.check_ancestor_of(Hash::random(), vec![target, parent, child])
-            .is_err(),
+        dag.check_ancestor_of(Hash::random(), target).is_err(),
+        "failed to check not the descendant of parents"
+    );
+    assert!(
+        dag.check_ancestor_of(Hash::random(), parent).is_err(),
+        "failed to check not the descendant of parents"
+    );
+    assert!(
+        dag.check_ancestor_of(Hash::random(), child).is_err(),
         "failed to check not the descendant of parents"
     );
 
@@ -589,7 +607,7 @@ fn test_reachability_not_ancestor() -> anyhow::Result<()> {
     hashes.push(child3);
     print_reachability_data(reachability_store.read().deref(), &hashes);
 
-    let result = dag.check_ancestor_of(child1, vec![child3]);
+    let result = dag.check_ancestor_of(child1, child3);
     println!("dag.check_ancestor_of() result = {:?}", result);
 
     Ok(())
@@ -692,7 +710,7 @@ fn test_reachability_algorithm() -> anyhow::Result<()> {
     print_reachability_data(reachability_store.read().deref(), &hashes);
 
     assert!(
-        dag.check_ancestor_of(origin, vec![child5])?,
+        dag.check_ancestor_of(origin, child5)?,
         "child 5 must be origin's child"
     );
 

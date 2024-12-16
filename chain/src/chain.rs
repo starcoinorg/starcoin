@@ -1379,8 +1379,8 @@ impl ChainReader for BlockChain {
         Ok(self.dag().verify_and_ghostdata(uncles, header)?)
     }
 
-    fn is_dag_ancestor_of(&self, ancestor: HashValue, descendants: Vec<HashValue>) -> Result<bool> {
-        self.dag().check_ancestor_of(ancestor, descendants)
+    fn is_dag_ancestor_of(&self, ancestor: HashValue, descendant: HashValue) -> Result<bool> {
+        self.dag().check_ancestor_of(ancestor, descendant)
     }
 
     fn get_pruning_height(&self) -> BlockNumber {
@@ -1522,7 +1522,7 @@ impl BlockChain {
 
         let mut new_tips = vec![];
         for hash in tips {
-            if !dag.check_ancestor_of(hash, vec![new_tip_block.id()])? {
+            if !dag.check_ancestor_of(hash, new_tip_block.id())? {
                 new_tips.push(hash);
             }
         }

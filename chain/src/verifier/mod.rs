@@ -392,7 +392,7 @@ impl BasicDagVerifier {
             parents_hash.iter().try_for_each(|parent_hash| {
                 verify_block!(
                     VerifyBlockField::Header,
-                    current_chain.is_dag_ancestor_of(new_block_header.pruning_point(), vec![*parent_hash]).map_err(|e| {
+                    current_chain.is_dag_ancestor_of(new_block_header.pruning_point(), *parent_hash).map_err(|e| {
                         ConnectBlockError::VerifyBlockFailed(
                             VerifyBlockField::Header,
                             anyhow::anyhow!(
