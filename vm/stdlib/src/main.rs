@@ -150,7 +150,8 @@ fn replace_stdlib_by_path(module_path: &Path, new_modules: BTreeMap<String, Comp
         let mv_file = module_path.join(name).with_extension(COMPILED_EXTENSION);
         save_binary(mv_file.as_path(), &bytes);
     }
-    //build_stdlib_error_code_map()
+    // TODO(BobOng): [framework-upgrade] to fix this problem
+    // build_stdlib_error_code_map()
 }
 
 // Generates the compiled stdlib and transaction scripts. Until this is run changes to the source
