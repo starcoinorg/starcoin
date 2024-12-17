@@ -104,8 +104,6 @@ module starcoin_std::debug {
 
     #[test_only]
     use std::features;
-    #[test_only]
-    use std::signer;
 
     #[test(s = @0x123)]
     fun test_print_primitive_types(s: signer) {
@@ -137,10 +135,7 @@ module starcoin_std::debug {
         assert_equal(&a, b"@0x1234c0ffee");
 
         if (features::signer_native_format_fix_enabled()) {
-            // TODO(BobOng): [framework upgrade] to fix print signer failed
-            //let signer = s;
-            //assert_equal(&signer, b"signer(@0x123)");
-            assert_equal(&signer::address_of(&s), b"@0x123");
+            assert_equal(&s, b"signer(@0x123)");
         }
     }
 
@@ -166,8 +161,8 @@ module starcoin_std::debug {
         assert_equal(&obj, b"0x00000000000000000000000000000001::debug::TestInner {\n  val: 10,\n  vec: [],\n  msgs: []\n}");
     }
 
-    #[test(_s1 = @0x123, _s2 = @0x456)]
-    fun test_print_vectors(_s1: signer, _s2: signer) {
+    #[test(s1 = @0x123, s2 = @0x456)]
+    fun test_print_vectors(s1: signer, s2: signer) {
         let v_u8 = x"ffabcdef";
         assert_equal(&v_u8, b"0xffabcdef");
 
@@ -192,11 +187,10 @@ module starcoin_std::debug {
         let v_addr = vector[@0x1234, @0x5678, @0xabcdef];
         assert_equal(&v_addr, b"[ @0x1234, @0x5678, @0xabcdef ]");
 
-        // TODO(BobOng): [framework upgrade] to fix print signer failed
-        // if (features::signer_native_format_fix_enabled()) {
-        //     let v_signer = vector[s1, s2];
-        //     assert_equal(&v_signer, b"[ signer(@0x123), signer(@0x456) ]");
-        // };
+        if (features::signer_native_format_fix_enabled()) {
+            let v_signer = vector[s1, s2];
+            assert_equal(&v_signer, b"[ signer(@0x123), signer(@0x456) ]");
+        };
 
         let v = vector[
             TestInner {
@@ -213,8 +207,8 @@ module starcoin_std::debug {
         assert_equal(&v, b"[\n  0x00000000000000000000000000000001::debug::TestInner {\n    val: 4,\n    vec: [ 127, 128 ],\n    msgs: [\n      0x00ff,\n      0xabcd\n    ]\n  },\n  0x00000000000000000000000000000001::debug::TestInner {\n    val: 8,\n    vec: [ 128, 129 ],\n    msgs: [\n      0x0000\n    ]\n  }\n]");
     }
 
-    #[test(_s1 = @0x123, _s2 = @0x456)]
-    fun test_print_vector_of_vectors(_s1: signer, _s2: signer) {
+    #[test(s1 = @0x123, s2 = @0x456)]
+    fun test_print_vector_of_vectors(s1: signer, s2: signer) {
         let v_u8 = vector[x"ffab", x"cdef"];
         assert_equal(&v_u8, b"[\n  0xffab,\n  0xcdef\n]");
 
@@ -239,11 +233,10 @@ module starcoin_std::debug {
         let v_addr = vector[vector[@0x1234, @0x5678], vector[@0xabcdef, @0x9999]];
         assert_equal(&v_addr, b"[\n  [ @0x1234, @0x5678 ],\n  [ @0xabcdef, @0x9999 ]\n]");
 
-        // TODO(BobOng): [framework-upgrade] to fix print signer failed
-        // if (features::signer_native_format_fix_enabled()) {
-        //     let v_signer = vector[vector[s1], vector[s2]];
-        //     assert_equal(&v_signer, b"[\n  [ signer(@0x123) ],\n  [ signer(@0x456) ]\n]");
-        // };
+        if (features::signer_native_format_fix_enabled()) {
+            let v_signer = vector[vector[s1], vector[s2]];
+            assert_equal(&v_signer, b"[\n  [ signer(@0x123) ],\n  [ signer(@0x456) ]\n]");
+        };
 
         let v = vector[
             vector[
@@ -257,6 +250,7 @@ module starcoin_std::debug {
         ];
         assert_equal(&v, b"[\n  [\n    0x00000000000000000000000000000001::debug::TestInner {\n      val: 4,\n      vec: [ 127, 128 ],\n      msgs: []\n    },\n    0x00000000000000000000000000000001::debug::TestInner {\n      val: 8,\n      vec: [ 128, 129 ],\n      msgs: []\n    }\n  ],\n  [\n    0x00000000000000000000000000000001::debug::TestInner {\n      val: 4,\n      vec: [ 127, 128 ],\n      msgs: []\n    },\n    0x00000000000000000000000000000001::debug::TestInner {\n      val: 8,\n      vec: [ 128, 129 ],\n      msgs: []\n    }\n  ]\n]");
     }
+
 
     #[test]
     fun test_print_nested_struct() {

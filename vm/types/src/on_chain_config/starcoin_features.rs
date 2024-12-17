@@ -82,6 +82,7 @@ impl Default for Features {
         features.enable(SIGNATURE_CHECKER_V2_SCRIPT_FIX);
         features.enable(AGGREGATOR_V2_API);
         features.enable(BN254_STRUCTURES);
+        features.enable(SIGNER_NATIVE_FORMAT_FIX);
         features
     }
 }
