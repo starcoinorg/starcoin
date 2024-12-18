@@ -261,6 +261,22 @@ impl BlockDAG {
             "finish preparing mergeset into the reachability store, mergeset: {:?}",
             merge_set
         );
+
+        if stage.get_reindex_root()? != header.pruning_point()
+            && header.pruning_point() != HashValue::zero()
+        {
+            info!(
+                "try to hint virtual selected parent, root index: {:?}",
+                stage.get_reindex_root()
+            );
+            inquirer::hint_virtual_selected_parent(&mut stage, header.pruning_point())?;
+        }
+
+        info!(
+            "after hint virtual selected parent, root index: {:?}",
+            stage.get_reindex_root()
+        );
+
         match inquirer::add_block(
             &mut stage,
             header.id(),
