@@ -217,6 +217,23 @@ impl BlockDAG {
             }
         };
 
+        if self.storage.reachability_store.read().get_reindex_root()? != header.pruning_point()
+            && header.pruning_point() != HashValue::zero()
+        {
+            info!(
+                "try to hint virtual selected parent, root index: {:?}",
+                self.storage.reachability_store.read().get_reindex_root()
+            );
+            inquirer::hint_virtual_selected_parent(
+                self.storage.reachability_store.write().deref_mut(),
+                header.pruning_point(),
+            )?;
+            info!(
+                "after hint virtual selected parent, root index: {:?}",
+                self.storage.reachability_store.read().get_reindex_root()
+            );
+        }
+
         info!("start to commit via batch");
 
         // Create a DB batch writer
@@ -260,21 +277,6 @@ impl BlockDAG {
         info!(
             "finish preparing mergeset into the reachability store, mergeset: {:?}",
             merge_set
-        );
-
-        if stage.get_reindex_root()? != header.pruning_point()
-            && header.pruning_point() != HashValue::zero()
-        {
-            info!(
-                "try to hint virtual selected parent, root index: {:?}",
-                stage.get_reindex_root()
-            );
-            inquirer::hint_virtual_selected_parent(&mut stage, header.pruning_point())?;
-        }
-
-        info!(
-            "after hint virtual selected parent, root index: {:?}",
-            stage.get_reindex_root()
         );
 
         match inquirer::add_block(
