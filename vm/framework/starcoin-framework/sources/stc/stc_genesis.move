@@ -1,6 +1,7 @@
 /// The module for init Genesis
 module starcoin_framework::stc_genesis {
 
+    use std::features;
     use std::option;
     use std::vector;
 
@@ -80,6 +81,7 @@ module starcoin_framework::stc_genesis {
         // transaction timeout config
         transaction_timeout: u64,
         dag_effective_height: u64,
+        features: vector<u8>,
     ) {
         debug::print(&std::string::utf8(b"stc_genesis::initialize Entered"));
 
@@ -87,6 +89,12 @@ module starcoin_framework::stc_genesis {
         // create genesis account
         let (starcoin_framework_account, _genesis_signer_cap) =
             account::create_framework_reserved_account(@starcoin_framework);
+
+        // Initialize features
+        features::initialize(
+            &starcoin_framework_account,
+            features
+        );
 
         initialize_versions(&starcoin_framework_account, stdlib_version);
 
@@ -308,7 +316,7 @@ module starcoin_framework::stc_genesis {
         dao_treasury_withdraw_proposal::plugin<STC>(starcoin_framework, treasury_withdraw_cap);
     }
 
-    /// Init the genesis for unit tests
+    #[test]
     public fun initialize_for_unit_tests() {
         let stdlib_version: u64 = 6;
         let reward_delay: u64 = 7;
@@ -384,6 +392,7 @@ module starcoin_framework::stc_genesis {
             min_action_delay,
             transaction_timeout,
             0,
+            vector::empty(),
         );
     }
 }

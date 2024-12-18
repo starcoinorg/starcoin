@@ -499,6 +499,7 @@ pub enum EntryFunctionCall {
         min_action_delay: u64,
         transaction_timeout: u64,
         dag_effective_height: u64,
+        features: Vec<u8>,
     },
 
     /// Batch transfer token to others.
@@ -898,6 +899,7 @@ impl EntryFunctionCall {
                 min_action_delay,
                 transaction_timeout,
                 dag_effective_height,
+                features,
             } => stc_genesis_initialize(
                 stdlib_version,
                 reward_delay,
@@ -930,6 +932,7 @@ impl EntryFunctionCall {
                 min_action_delay,
                 transaction_timeout,
                 dag_effective_height,
+                features,
             ),
             TransferScriptsBatchPeerToPeer {
                 token_type,
@@ -2100,6 +2103,7 @@ pub fn stc_genesis_initialize(
     min_action_delay: u64,
     transaction_timeout: u64,
     dag_effective_height: u64,
+    features: Vec<u8>,
 ) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
@@ -2140,6 +2144,7 @@ pub fn stc_genesis_initialize(
             bcs::to_bytes(&min_action_delay).unwrap(),
             bcs::to_bytes(&transaction_timeout).unwrap(),
             bcs::to_bytes(&dag_effective_height).unwrap(),
+            bcs::to_bytes(&features).unwrap(),
         ],
     ))
 }
@@ -3099,6 +3104,7 @@ mod decoder {
                 min_action_delay: bcs::from_bytes(script.args().get(28)?).ok()?,
                 transaction_timeout: bcs::from_bytes(script.args().get(29)?).ok()?,
                 dag_effective_height: bcs::from_bytes(script.args().get(30)?).ok()?,
+                features: bcs::from_bytes(script.args().get(31)?).ok()?,
             })
         } else {
             None

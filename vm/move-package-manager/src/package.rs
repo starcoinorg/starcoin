@@ -4,10 +4,10 @@ use move_cli::base::{
     prove::Prove, test::Test,
 };
 use move_cli::Move;
-use move_core_types::effects::Changes;
 use move_vm_runtime::native_functions::NativeFunctionTable;
 use starcoin_framework::extended_checks;
 use starcoin_vm_runtime::natives;
+use starcoin_vm_types::on_chain_config::starcoin_test_feature_flags_genesis;
 
 pub const STARCOIN_STDLIB_PACKAGE_NAME: &str = "starcoin_framework";
 pub const STARCOIN_STDLIB_PACKAGE_PATH: &str = "{ \
@@ -76,7 +76,7 @@ pub fn handle_package_commands(
                 move_args.package_path,
                 build_config,
                 natives,
-                Changes::new(),
+                starcoin_test_feature_flags_genesis(),
                 None,
             )
         }

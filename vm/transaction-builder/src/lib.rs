@@ -1,36 +1,42 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
-use starcoin_cached_packages::starcoin_framework_sdk_builder::empty_scripts_empty_script;
-use starcoin_cached_packages::starcoin_stdlib::{
-    on_chain_config_scripts_propose_update_vm_config, transfer_scripts_batch_peer_to_peer_v2,
-    transfer_scripts_peer_to_peer, transfer_scripts_peer_to_peer_v2,
-};
-use starcoin_config::{genesis_config::G_TOTAL_STC_AMOUNT, ChainNetwork};
-use starcoin_crypto::hash::PlainCryptoHash;
-use starcoin_crypto::HashValue;
-use starcoin_types::account::Account;
-use starcoin_vm_types::access::ModuleAccess;
-use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::account_config;
-use starcoin_vm_types::account_config::{core_code_address, genesis_address};
-use starcoin_vm_types::file_format::CompiledModule;
-use starcoin_vm_types::genesis_config::ChainId;
-use starcoin_vm_types::identifier::Identifier;
-use starcoin_vm_types::language_storage::ModuleId;
-use starcoin_vm_types::language_storage::{StructTag, TypeTag};
-use starcoin_vm_types::on_chain_config::VMConfig;
-use starcoin_vm_types::on_chain_resource::nft::NFTUUID;
-use starcoin_vm_types::token::stc::{stc_type_tag, G_STC_TOKEN_CODE};
-use starcoin_vm_types::token::token_code::TokenCode;
-use starcoin_vm_types::transaction::authenticator::{AccountPrivateKey, AuthenticationKey};
-use starcoin_vm_types::transaction::{
-    EntryFunction, Module, Package, RawUserTransaction, SignedUserTransaction, Transaction,
-    TransactionPayload,
-};
-use starcoin_vm_types::value::{serialize_values, MoveValue};
 use std::convert::TryInto;
+
+use anyhow::Result;
+use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
+
+use starcoin_cached_packages::{
+    starcoin_framework_sdk_builder::{empty_scripts_empty_script, stc_genesis_initialize},
+    starcoin_stdlib::{
+        on_chain_config_scripts_propose_update_vm_config, transfer_scripts_batch_peer_to_peer_v2,
+        transfer_scripts_peer_to_peer, transfer_scripts_peer_to_peer_v2,
+    },
+};
+
+use starcoin_config::{genesis_config::G_TOTAL_STC_AMOUNT, ChainNetwork};
+use starcoin_types::account::Account;
+use starcoin_vm_types::on_chain_config::Features;
+use starcoin_vm_types::{
+    access::ModuleAccess,
+    account_address::AccountAddress,
+    account_config::{self, core_code_address, genesis_address},
+    file_format::CompiledModule,
+    genesis_config::ChainId,
+    identifier::Identifier,
+    language_storage::{ModuleId, StructTag, TypeTag},
+    on_chain_config::VMConfig,
+    on_chain_resource::nft::NFTUUID,
+    token::{
+        stc::{stc_type_tag, G_STC_TOKEN_CODE},
+        token_code::TokenCode,
+    },
+    transaction::{
+        authenticator::{AccountPrivateKey, AuthenticationKey},
+        EntryFunction, Module, Package, RawUserTransaction, SignedUserTransaction, Transaction,
+        TransactionPayload,
+    },
+};
 use stdlib::{module_to_package, stdlib_package};
 pub use stdlib::{stdlib_compiled_modules, stdlib_modules, StdLibOptions, StdlibVersion};
 
@@ -347,59 +353,54 @@ pub fn build_init_script(net: &ChainNetwork) -> EntryFunction {
     let association_auth_key =
         AuthenticationKey::multi_ed25519(&genesis_config.association_key_pair.1).to_vec();
 
-    EntryFunction::new(
-        ModuleId::new(core_code_address(), Identifier::new("stc_genesis").unwrap()),
-        Identifier::new("initialize").unwrap(),
-        vec![],
-        serialize_values(&vec![
-            MoveValue::U64(net.genesis_config().stdlib_version.version()),
-            MoveValue::U64(genesis_config.reward_delay),
-            MoveValue::U128(G_TOTAL_STC_AMOUNT.scaling()),
-            MoveValue::U128(genesis_config.pre_mine_amount),
-            MoveValue::U128(genesis_config.time_mint_amount),
-            MoveValue::U64(genesis_config.time_mint_period),
-            MoveValue::vector_u8(genesis_parent_hash.to_vec()),
-            MoveValue::vector_u8(association_auth_key),
-            MoveValue::vector_u8(genesis_auth_key),
-            MoveValue::U8(chain_id),
-            MoveValue::U64(genesis_timestamp),
-            //consensus config
-            MoveValue::U64(genesis_config.consensus_config.uncle_rate_target),
-            MoveValue::U64(genesis_config.consensus_config.epoch_block_count),
-            MoveValue::U64(genesis_config.consensus_config.base_block_time_target),
-            MoveValue::U64(genesis_config.consensus_config.base_block_difficulty_window),
-            MoveValue::U128(genesis_config.consensus_config.base_reward_per_block),
-            MoveValue::U64(
-                genesis_config
-                    .consensus_config
-                    .base_reward_per_uncle_percent,
-            ),
-            MoveValue::U64(genesis_config.consensus_config.min_block_time_target),
-            MoveValue::U64(genesis_config.consensus_config.max_block_time_target),
-            MoveValue::U64(genesis_config.consensus_config.base_max_uncles_per_block),
-            MoveValue::U64(genesis_config.consensus_config.base_block_gas_limit),
-            MoveValue::U8(genesis_config.consensus_config.strategy),
-            //vm config
-            MoveValue::Bool(genesis_config.publishing_option.is_script_allowed()),
-            MoveValue::Bool(
-                genesis_config
-                    .publishing_option
-                    .is_module_publishing_allowed(),
-            ),
-            MoveValue::vector_u8(
-                bcs_ext::to_bytes(&genesis_config.vm_config.gas_schedule).unwrap(),
-            ),
-            // dao config params
-            MoveValue::U64(genesis_config.dao_config.voting_delay),
-            MoveValue::U64(genesis_config.dao_config.voting_period),
-            MoveValue::U8(genesis_config.dao_config.voting_quorum_rate),
-            MoveValue::U64(genesis_config.dao_config.min_action_delay),
-            //transaction timeout config
-            MoveValue::U64(genesis_config.transaction_timeout),
-            // flexidag effective height
-            MoveValue::U64(genesis_config.dag_effective_height),
-        ]),
-    )
+    let payload = stc_genesis_initialize(
+        net.genesis_config().stdlib_version.version(),
+        genesis_config.reward_delay,
+        G_TOTAL_STC_AMOUNT.scaling(),
+        genesis_config.pre_mine_amount,
+        genesis_config.time_mint_amount,
+        genesis_config.time_mint_period,
+        genesis_parent_hash.to_vec(),
+        association_auth_key,
+        genesis_auth_key,
+        chain_id,
+        genesis_timestamp,
+        //consensus config
+        genesis_config.consensus_config.uncle_rate_target,
+        genesis_config.consensus_config.epoch_block_count,
+        genesis_config.consensus_config.base_block_time_target,
+        genesis_config.consensus_config.base_block_difficulty_window,
+        genesis_config.consensus_config.base_reward_per_block,
+        genesis_config
+            .consensus_config
+            .base_reward_per_uncle_percent,
+        genesis_config.consensus_config.min_block_time_target,
+        genesis_config.consensus_config.max_block_time_target,
+        genesis_config.consensus_config.base_max_uncles_per_block,
+        genesis_config.consensus_config.base_block_gas_limit,
+        genesis_config.consensus_config.strategy,
+        //vm config
+        genesis_config.publishing_option.is_script_allowed(),
+        genesis_config
+            .publishing_option
+            .is_module_publishing_allowed(),
+        bcs_ext::to_bytes(&genesis_config.vm_config.gas_schedule).unwrap(),
+        // dao config params
+        genesis_config.dao_config.voting_delay,
+        genesis_config.dao_config.voting_period,
+        genesis_config.dao_config.voting_quorum_rate,
+        genesis_config.dao_config.min_action_delay,
+        //transaction timeout config
+        genesis_config.transaction_timeout,
+        // flexidag effective height
+        genesis_config.dag_effective_height,
+        Features::default().features,
+    );
+
+    match payload {
+        TransactionPayload::EntryFunction(e) => e,
+        _ => panic!("Expected EntryFunction payload"),
+    }
 }
 
 pub fn build_package_with_stdlib_module(

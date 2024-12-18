@@ -32,6 +32,12 @@ module std::features {
     /// Deployed to production, and disabling is deprecated.
     const EFEATURE_CANNOT_BE_DISABLED: u64 = 3;
 
+    /// Initialized from parameters
+    public fun initialize(framework: &signer, features: vector<u8>) {
+        assert!(signer::address_of(framework) == @std, error::permission_denied(EFRAMEWORK_SIGNER_NEEDED));
+        move_to<Features>(framework, Features { features })
+    }
+
     // --------------------------------------------------------------------------------------------
     // Code Publishing
 
@@ -60,10 +66,8 @@ module std::features {
 
     public fun get_sha_512_and_ripemd_160_feature(): u64 { SHA_512_AND_RIPEMD_160_NATIVES }
 
-    public fun sha_512_and_ripemd_160_enabled(): bool {
-        // is_enabled(SHA_512_AND_RIPEMD_160_NATIVES)
-        // TODO(BobOng): [framework-upgrade] to confirm which feature flag should be used here
-        true
+    public fun sha_512_and_ripemd_160_enabled(): bool acquires Features {
+        is_enabled(SHA_512_AND_RIPEMD_160_NATIVES)
     }
 
     /// Whether the new `starcoin_stdlib::type_info::chain_id()` native for fetching the chain ID is enabled.
@@ -481,10 +485,8 @@ module std::features {
 
     public fun get_transaction_context_extension_feature(): u64 { TRANSACTION_CONTEXT_EXTENSION }
 
-    public fun transaction_context_extension_enabled(): bool {
-        // is_enabled(TRANSACTION_CONTEXT_EXTENSION)
-        // TODO(BobOng): [framework-upgrade] to confirm which feature flag should be used here
-        true
+    public fun transaction_context_extension_enabled(): bool acquires Features {
+        is_enabled(TRANSACTION_CONTEXT_EXTENSION)
     }
 
     /// Whether migration from coin to fungible asset feature is enabled.
@@ -494,10 +496,8 @@ module std::features {
 
     public fun get_coin_to_fungible_asset_migration_feature(): u64 { COIN_TO_FUNGIBLE_ASSET_MIGRATION }
 
-    public fun coin_to_fungible_asset_migration_feature_enabled(): bool {
-        // is_enabled(COIN_TO_FUNGIBLE_ASSET_MIGRATION)
-        // TODO(BobOng): [framework-upgrade] to confirm which feature flag should be used here
-        true
+    public fun coin_to_fungible_asset_migration_feature_enabled(): bool acquires Features {
+        is_enabled(COIN_TO_FUNGIBLE_ASSET_MIGRATION)
     }
 
     const PRIMARY_APT_FUNGIBLE_STORE_AT_USER_ADDRESS: u64 = 61;
@@ -535,10 +535,8 @@ module std::features {
 
     public fun get_dispatchable_fungible_asset_feature(): u64 { DISPATCHABLE_FUNGIBLE_ASSET }
 
-    public fun dispatchable_fungible_asset_enabled(): bool {
-        // TODO(BobOng): [framework-upgrade] to confirm which feature flag should be used here
-        // is_enabled(DISPATCHABLE_FUNGIBLE_ASSET)
-        true
+    public fun dispatchable_fungible_asset_enabled(): bool acquires Features {
+        is_enabled(DISPATCHABLE_FUNGIBLE_ASSET)
     }
 
     /// Lifetime: transient
@@ -547,7 +545,6 @@ module std::features {
     public fun get_new_accounts_default_to_fa_apt_store_feature(): u64 { NEW_ACCOUNTS_DEFAULT_TO_FA_STC_STORE }
 
     public fun new_accounts_default_to_fa_stc_store_enabled(): bool acquires Features {
-        // TODO(BobOng): [framework-upgrade] to confirm which feature flag should be used here
         is_enabled(NEW_ACCOUNTS_DEFAULT_TO_FA_STC_STORE)
     }
 

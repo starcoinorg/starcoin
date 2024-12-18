@@ -10,7 +10,6 @@ The module for init Genesis
 -  [Function `initialize_versions`](#0x1_stc_genesis_initialize_versions)
 -  [Function `initialize_stc`](#0x1_stc_genesis_initialize_stc)
 -  [Function `initialize_stc_governance_allocation`](#0x1_stc_genesis_initialize_stc_governance_allocation)
--  [Function `initialize_for_unit_tests`](#0x1_stc_genesis_initialize_for_unit_tests)
 -  [Specification](#@Specification_0)
 
 
@@ -28,6 +27,7 @@ The module for init Genesis
 <b>use</b> <a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal">0x1::dao_upgrade_module_proposal</a>;
 <b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
 <b>use</b> <a href="epoch.md#0x1_epoch">0x1::epoch</a>;
+<b>use</b> <a href="../../move-stdlib/doc/features.md#0x1_features">0x1::features</a>;
 <b>use</b> <a href="flexi_dag_config.md#0x1_flexi_dag_config">0x1::flexi_dag_config</a>;
 <b>use</b> <a href="on_chain_config.md#0x1_on_chain_config">0x1::on_chain_config</a>;
 <b>use</b> <a href="on_chain_config_dao.md#0x1_on_chain_config_dao">0x1::on_chain_config_dao</a>;
@@ -58,7 +58,7 @@ The module for init Genesis
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="stc_genesis.md#0x1_stc_genesis_initialize">initialize</a>(stdlib_version: u64, reward_delay: u64, total_stc_amount: u128, pre_mine_stc_amount: u128, time_mint_stc_amount: u128, time_mint_stc_period: u64, parent_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, association_auth_key: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, genesis_auth_key: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="chain_id.md#0x1_chain_id">chain_id</a>: u8, _genesis_timestamp: u64, uncle_rate_target: u64, epoch_block_count: u64, base_block_time_target: u64, base_block_difficulty_window: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8, script_allowed: bool, module_publishing_allowed: bool, gas_schedule_blob: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64, transaction_timeout: u64, dag_effective_height: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="stc_genesis.md#0x1_stc_genesis_initialize">initialize</a>(stdlib_version: u64, reward_delay: u64, total_stc_amount: u128, pre_mine_stc_amount: u128, time_mint_stc_amount: u128, time_mint_stc_period: u64, parent_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, association_auth_key: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, genesis_auth_key: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="chain_id.md#0x1_chain_id">chain_id</a>: u8, _genesis_timestamp: u64, uncle_rate_target: u64, epoch_block_count: u64, base_block_time_target: u64, base_block_difficulty_window: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8, script_allowed: bool, module_publishing_allowed: bool, gas_schedule_blob: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64, transaction_timeout: u64, dag_effective_height: u64, <a href="../../move-stdlib/doc/features.md#0x1_features">features</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -104,6 +104,7 @@ The module for init Genesis
     // transaction timeout config
     transaction_timeout: u64,
     dag_effective_height: u64,
+    <a href="../../move-stdlib/doc/features.md#0x1_features">features</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
 ) {
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> Entered"));
 
@@ -111,6 +112,12 @@ The module for init Genesis
     // create genesis <a href="account.md#0x1_account">account</a>
     <b>let</b> (starcoin_framework_account, _genesis_signer_cap) =
         <a href="account.md#0x1_account_create_framework_reserved_account">account::create_framework_reserved_account</a>(@starcoin_framework);
+
+    // Initialize <a href="../../move-stdlib/doc/features.md#0x1_features">features</a>
+    <a href="../../move-stdlib/doc/features.md#0x1_features_initialize">features::initialize</a>(
+        &starcoin_framework_account,
+        <a href="../../move-stdlib/doc/features.md#0x1_features">features</a>
+    );
 
     <a href="stc_genesis.md#0x1_stc_genesis_initialize_versions">initialize_versions</a>(&starcoin_framework_account, stdlib_version);
 
@@ -390,105 +397,6 @@ Overall governance allocation strategy:
         <a href="treasury.md#0x1_treasury_add_linear_withdraw_capability">treasury::add_linear_withdraw_capability</a>(core_resource_account, liner_withdraw_cap);
     };
     <a href="dao_treasury_withdraw_proposal.md#0x1_dao_treasury_withdraw_proposal_plugin">dao_treasury_withdraw_proposal::plugin</a>&lt;STC&gt;(starcoin_framework, treasury_withdraw_cap);
-}
-</code></pre>
-
-
-
-</details>
-
-<a id="0x1_stc_genesis_initialize_for_unit_tests"></a>
-
-## Function `initialize_for_unit_tests`
-
-Init the genesis for unit tests
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="stc_genesis.md#0x1_stc_genesis_initialize_for_unit_tests">initialize_for_unit_tests</a>()
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="stc_genesis.md#0x1_stc_genesis_initialize_for_unit_tests">initialize_for_unit_tests</a>() {
-    <b>let</b> stdlib_version: u64 = 6;
-    <b>let</b> reward_delay: u64 = 7;
-    <b>let</b> total_stc_amount: u128 = 3185136000000000000u128;
-    <b>let</b> pre_mine_stc_amount: u128 = 159256800000000000u128;
-    <b>let</b> time_mint_stc_amount: u128 = (85043130u128 * 3u128 + 74213670u128 * 3u128) * 1000000000u128;
-    <b>let</b> time_mint_stc_period: u64 = 1000000000;
-
-    <b>let</b> parent_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; = x"0000000000000000000000000000000000000000000000000000000000000000";
-    <b>let</b> association_auth_key: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; = x"0000000000000000000000000000000000000000000000000000000000000000";
-    <b>let</b> genesis_auth_key: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; = x"0000000000000000000000000000000000000000000000000000000000000000";
-    <b>let</b> <a href="chain_id.md#0x1_chain_id">chain_id</a>: u8 = 255;
-    <b>let</b> genesis_timestamp: u64 = 0;
-
-    //consensus config
-    <b>let</b> uncle_rate_target: u64 = 80;
-    <b>let</b> epoch_block_count: u64 = 240;
-    <b>let</b> base_block_time_target: u64 = 10000;
-    <b>let</b> base_block_difficulty_window: u64 = 24;
-    <b>let</b> base_reward_per_block: u128 = 1000000000;
-    <b>let</b> base_reward_per_uncle_percent: u64 = 10;
-    <b>let</b> min_block_time_target: u64 = 1000;
-    <b>let</b> max_block_time_target: u64 = 20000;
-    <b>let</b> base_max_uncles_per_block: u64 = 2;
-    <b>let</b> base_block_gas_limit: u64 = 500000000;
-    <b>let</b> strategy: u8 = 0;
-
-    //vm config
-    <b>let</b> script_allowed: bool = <b>true</b>;
-    <b>let</b> module_publishing_allowed: bool = <b>true</b>;
-
-    // todo: initialize gas_schedule_blob properly
-    <b>let</b> gas_schedule_blob: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>&lt;u8&gt;();
-
-    // <a href="dao.md#0x1_dao">dao</a> config
-    <b>let</b> voting_delay: u64 = 1000;
-    <b>let</b> voting_period: u64 = 6000;
-    <b>let</b> voting_quorum_rate: u8 = 4;
-    <b>let</b> min_action_delay: u64 = 1000;
-
-    // transaction timeout config
-    <b>let</b> transaction_timeout: u64 = 10000;
-
-    <a href="stc_genesis.md#0x1_stc_genesis_initialize">Self::initialize</a>(
-        stdlib_version,
-        reward_delay,
-        total_stc_amount,
-        pre_mine_stc_amount,
-        time_mint_stc_amount,
-        time_mint_stc_period,
-        parent_hash,
-        association_auth_key,
-        genesis_auth_key,
-        <a href="chain_id.md#0x1_chain_id">chain_id</a>,
-        genesis_timestamp,
-        uncle_rate_target,
-        epoch_block_count,
-        base_block_time_target,
-        base_block_difficulty_window,
-        base_reward_per_block,
-        base_reward_per_uncle_percent,
-        min_block_time_target,
-        max_block_time_target,
-        base_max_uncles_per_block,
-        base_block_gas_limit,
-        strategy,
-        script_allowed,
-        module_publishing_allowed,
-        gas_schedule_blob,
-        voting_delay,
-        voting_period,
-        voting_quorum_rate,
-        min_action_delay,
-        transaction_timeout,
-        0,
-    );
 }
 </code></pre>
 
