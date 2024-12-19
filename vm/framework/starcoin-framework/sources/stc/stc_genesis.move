@@ -96,8 +96,10 @@ module starcoin_framework::stc_genesis {
             features
         );
 
+        // Initialize versions
         initialize_versions(&starcoin_framework_account, stdlib_version);
 
+        // Initalize aggreator factorys
         aggregator_factory::initialize_aggregator_factory(&starcoin_framework_account);
 
         // Init global time
@@ -269,6 +271,7 @@ module starcoin_framework::stc_genesis {
             stc_transaction_package_validation::extract_submit_upgrade_plan_cap(starcoin_framework);
         dao_upgrade_module_proposal::plugin<STC>(starcoin_framework, upgrade_plan_cap);
 
+
         debug::print(&std::string::utf8(b"stc_genesis::initialize_stc | plugin upgrade cap "));
 
         // the following configurations are gov-ed by Dao.
@@ -278,6 +281,7 @@ module starcoin_framework::stc_genesis {
         on_chain_config_dao::plugin<STC, block_reward_config::RewardConfig>(starcoin_framework);
         on_chain_config_dao::plugin<STC, stc_transaction_timeout_config::TransactionTimeoutConfig>(starcoin_framework);
         on_chain_config_dao::plugin<STC, flexi_dag_config::FlexiDagConfig>(starcoin_framework);
+
 
         debug::print(&std::string::utf8(b"initialize_stc | Exited"));
 

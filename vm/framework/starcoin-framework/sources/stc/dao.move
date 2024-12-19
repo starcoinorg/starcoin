@@ -172,7 +172,6 @@ module starcoin_framework::dao {
         action_delay: u64,
     ) acquires DaoGlobalInfo {
         debug::print(&std::string::utf8(b"dao::proposal | Entered"));
-        debug::print(&signer::address_of(signer));
 
         if (action_delay == 0) {
             action_delay = min_action_delay<TokenT>();
@@ -184,7 +183,9 @@ module starcoin_framework::dao {
         let start_time = timestamp::now_milliseconds() + voting_delay<TokenT>();
         let quorum_votes = quorum_votes<TokenT>();
 
-        debug::print(&std::string::utf8(b"dao::proposal | Proposal {"));
+        debug::print(&std::string::utf8(b"dao::proposal | Proposal "));
+        debug::print(&proposal_id);
+        debug::print(&start_time);
 
         let proposal = Proposal<TokenT, ActionT> {
             id: proposal_id,
@@ -514,6 +515,9 @@ module starcoin_framework::dao {
         proposal: &Proposal<TokenT, ActionT>,
         current_time: u64,
     ): u8 {
+        debug::print(&std::string::utf8(b"do_proposal_state | entered "));
+        debug::print(proposal);
+
         if (current_time < proposal.start_time) {
             // Pending
             PENDING

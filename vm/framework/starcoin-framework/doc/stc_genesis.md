@@ -119,8 +119,10 @@ The module for init Genesis
         <a href="../../move-stdlib/doc/features.md#0x1_features">features</a>
     );
 
+    // Initialize versions
     <a href="stc_genesis.md#0x1_stc_genesis_initialize_versions">initialize_versions</a>(&starcoin_framework_account, stdlib_version);
 
+    // Initalize aggreator factorys
     <a href="aggregator_factory.md#0x1_aggregator_factory_initialize_aggregator_factory">aggregator_factory::initialize_aggregator_factory</a>(&starcoin_framework_account);
 
     // Init <b>global</b> time
@@ -332,6 +334,7 @@ The treasury will mint the total_stc_amount to the treasury.
         <a href="stc_transaction_package_validation.md#0x1_stc_transaction_package_validation_extract_submit_upgrade_plan_cap">stc_transaction_package_validation::extract_submit_upgrade_plan_cap</a>(starcoin_framework);
     <a href="dao_upgrade_module_proposal.md#0x1_dao_upgrade_module_proposal_plugin">dao_upgrade_module_proposal::plugin</a>&lt;STC&gt;(starcoin_framework, upgrade_plan_cap);
 
+
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize_stc">stc_genesis::initialize_stc</a> | plugin upgrade cap "));
 
     // the following configurations are gov-ed by Dao.
@@ -341,6 +344,7 @@ The treasury will mint the total_stc_amount to the treasury.
     <a href="on_chain_config_dao.md#0x1_on_chain_config_dao_plugin">on_chain_config_dao::plugin</a>&lt;STC, <a href="block_reward_config.md#0x1_block_reward_config_RewardConfig">block_reward_config::RewardConfig</a>&gt;(starcoin_framework);
     <a href="on_chain_config_dao.md#0x1_on_chain_config_dao_plugin">on_chain_config_dao::plugin</a>&lt;STC, <a href="stc_transaction_timeout_config.md#0x1_stc_transaction_timeout_config_TransactionTimeoutConfig">stc_transaction_timeout_config::TransactionTimeoutConfig</a>&gt;(starcoin_framework);
     <a href="on_chain_config_dao.md#0x1_on_chain_config_dao_plugin">on_chain_config_dao::plugin</a>&lt;STC, <a href="flexi_dag_config.md#0x1_flexi_dag_config_FlexiDagConfig">flexi_dag_config::FlexiDagConfig</a>&gt;(starcoin_framework);
+
 
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"initialize_stc | Exited"));
 
