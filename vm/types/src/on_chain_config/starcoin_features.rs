@@ -1,8 +1,12 @@
 // Copyright (c) The Starcoin Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use move_core_types::effects::{ChangeSet, Op};
-use move_core_types::language_storage::CORE_CODE_ADDRESS;
+use move_core_types::{
+    account_address::AccountAddress,
+    effects::{ChangeSet, Op},
+    identifier::Identifier,
+    language_storage::{CORE_CODE_ADDRESS, StructTag},
+};
 use serde::{Deserialize, Serialize};
 
 use crate::on_chain_config::OnChainConfig;
@@ -230,11 +234,16 @@ pub fn starcoin_test_feature_flags_genesis() -> ChangeSet {
     change_set
         .add_resource_op(
             CORE_CODE_ADDRESS,
-            Features::struct_tag(),
+            //Features::struct_tag(),
+            StructTag {
+                address: AccountAddress::ONE,
+                module: Identifier::new("features").unwrap(),
+                name: Identifier::new("Features").unwrap(),
+                type_args: vec![],
+            },
             Op::New(features_value.into()),
         )
         .expect("adding genesis Feature resource must succeed");
-
     change_set
 }
 

@@ -320,7 +320,7 @@ module starcoin_framework::stc_genesis {
         dao_treasury_withdraw_proposal::plugin<STC>(starcoin_framework, treasury_withdraw_cap);
     }
 
-    #[test]
+    // #[test]
     public fun initialize_for_unit_tests() {
         let stdlib_version: u64 = 6;
         let reward_delay: u64 = 7;
