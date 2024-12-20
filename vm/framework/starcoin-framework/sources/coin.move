@@ -803,15 +803,20 @@ module starcoin_framework::coin {
     #[view]
     /// Returns `true` if `account_addr` is registered to receive `CoinType`.
     public fun is_account_registered<CoinType>(account_addr: address): bool acquires CoinConversionMap {
+        debug::print(&std::string::utf8(b"coin::is_account_registered | entered"));
         assert!(is_coin_initialized<CoinType>(), error::invalid_argument(ECOIN_INFO_NOT_PUBLISHED));
-        if (exists<CoinStore<CoinType>>(account_addr)) {
+        let ret = if (exists<CoinStore<CoinType>>(account_addr)) {
+            debug::print(&std::string::utf8(b"coin::is_account_registered | CoinStore exist"));
             true
         } else {
+            debug::print(&std::string::utf8(b"coin::is_account_registered | CoinStore not exist, convert to primary fungible store"));
             let paired_metadata_opt = paired_metadata<CoinType>();
             (option::is_some(
                 &paired_metadata_opt
             ) && migrated_primary_fungible_store_exists(account_addr, option::destroy_some(paired_metadata_opt)))
-        }
+        };
+        debug::print(&std::string::utf8(b"coin::is_account_registered | exited"));
+        ret
     }
 
     #[view]
@@ -2228,15 +2233,25 @@ module starcoin_framework::coin {
         assert!(!coin_store_exists<FakeMoney>(account_addr), 0);
         assert!(is_account_registered<FakeMoney>(account_addr), 0);
 
+        debug::print(&std::string::utf8(b"test_is_account_registered | 1"));
+
         // Deposit FA to bob to created primary fungible store without `MigrationFlag`.
         primary_fungible_store::deposit(bob_addr, coin_to_fungible_asset(mint<FakeMoney>(100, &mint_cap)));
         assert!(!coin_store_exists<FakeMoney>(bob_addr), 0);
+
+        debug::print(&std::string::utf8(b"test_is_account_registered | 2"));
+
         register<FakeMoney>(bob);
         assert!(coin_store_exists<FakeMoney>(bob_addr), 0);
+
+        debug::print(&std::string::utf8(b"test_is_account_registered | 3"));
         maybe_convert_to_fungible_store<FakeMoney>(bob_addr);
         assert!(!coin_store_exists<FakeMoney>(bob_addr), 0);
+        debug::print(&std::string::utf8(b"test_is_account_registered | 4"));
+
         register<FakeMoney>(bob);
         assert!(!coin_store_exists<FakeMoney>(bob_addr), 0);
+        debug::print(&std::string::utf8(b"test_is_account_registered | 5"));
 
         move_to(account, FakeMoneyCapabilities {
             burn_cap,
