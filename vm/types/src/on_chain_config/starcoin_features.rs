@@ -5,7 +5,7 @@ use move_core_types::{
     account_address::AccountAddress,
     effects::{ChangeSet, Op},
     identifier::Identifier,
-    language_storage::{CORE_CODE_ADDRESS, StructTag},
+    language_storage::{StructTag, CORE_CODE_ADDRESS},
 };
 use serde::{Deserialize, Serialize};
 
