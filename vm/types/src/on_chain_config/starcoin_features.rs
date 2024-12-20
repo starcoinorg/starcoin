@@ -248,8 +248,6 @@ pub fn starcoin_test_feature_flags_genesis() -> ChangeSet {
     change_set
 }
 
-
-
 // TODO(BobOng): This method will cause decoding errors
 // #[cfg(test)]
 // mod test {
