@@ -20,9 +20,9 @@ use {
     crate::execute_transactions,
     anyhow::bail,
     log::info,
+    move_core_types::move_resource::MoveStructType,
     starcoin_force_upgrade::ForceUpgrade,
     starcoin_types::account::DEFAULT_EXPIRATION_TIME,
-    starcoin_types::identifier::Identifier,
     starcoin_vm_runtime::force_upgrade_management::{
         get_force_upgrade_account, get_force_upgrade_block_number,
     },
@@ -30,7 +30,6 @@ use {
         access_path::AccessPath,
         account_config::{genesis_address, ModuleUpgradeStrategy},
         genesis_config::StdlibVersion,
-        move_resource::MoveResource,
         on_chain_config,
         on_chain_config::Version,
         state_store::state_key::StateKey,
@@ -136,7 +135,7 @@ fn create_force_upgrade_extra_txn<S: ChainStateReader + ChainStateWriter>(
 ) -> anyhow::Result<Option<Transaction>> {
     // Only execute extra_txn when stdlib version is 11
     if statedb
-        .get_on_chain_config::<Version>()?
+        .get_on_chain_config::<Version>()
         .map(|v| v.into_stdlib_version())
         .map(|v| v != StdlibVersion::Version(11))
         .unwrap_or(true)
@@ -172,7 +171,7 @@ fn create_force_upgrade_extra_txn<S: ChainStateReader + ChainStateWriter>(
 
 // todo: check the execute_extra_txn in OpenedBlock, and merge with it
 #[cfg(feature = "force-deploy")]
-fn execute_extra_txn<S: ChainStateReader + ChainStateWriter>(
+fn execute_extra_txn<S: ChainStateReader + ChainStateWriter + Sync>(
     chain_state: &S,
     txn: Transaction,
     vm_metrics: Option<VMMetrics>,
@@ -184,7 +183,10 @@ fn execute_extra_txn<S: ChainStateReader + ChainStateWriter>(
 
     // retrieve the original strategy value
     let old_val = chain_state
-        .get_state_value(&StateKey::AccessPath(strategy_path.clone()))?
+        .get_state_value(&StateKey::resource(
+            &genesis_address(),
+            &ModuleUpgradeStrategy::struct_tag(),
+        )?)?
         .expect("module upgrade strategy should exist");
     // Set strategy to 100 upgrade package directly
     chain_state.set(&strategy_path, vec![100])?;
@@ -194,9 +196,9 @@ fn execute_extra_txn<S: ChainStateReader + ChainStateWriter>(
         .expect("extra txn must have output");
 
     // restore strategy to old value
-    chain_state.set(&strategy_path, old_val)?;
+    chain_state.set(&strategy_path, old_val.bytes().to_vec())?;
 
-    let (mut table_infos, write_set, events, _gas_used, status) = output.into_inner();
+    let (write_set, events, _gas_used, status, _) = output.into_inner();
     match status {
         TransactionStatus::Discard(status) => {
             bail!("extra txn {txn_hash:?} is discarded: {status:?}");
@@ -207,12 +209,8 @@ fn execute_extra_txn<S: ChainStateReader + ChainStateWriter>(
                 .map_err(BlockExecutorError::BlockChainStateErr)?;
             {
                 // update stdlib version to 12 directly
-                let version_path = on_chain_config::access_path_for_config(
-                    genesis_address(),
-                    Identifier::new("Version").unwrap(),
-                    Identifier::new("Version").unwrap(),
-                    vec![],
-                );
+                let version_path =
+                    on_chain_config::access_path_for_config(Version::struct_tag().clone());
                 let version = on_chain_config::Version { major: 12 };
                 chain_state.set(&version_path, bcs_ext::to_bytes(&version)?)?;
             }
@@ -229,8 +227,6 @@ fn execute_extra_txn<S: ChainStateReader + ChainStateWriter>(
                 status,
             ));
             executed_data.txn_events.push(events);
-            // Merge more table_infos, and keep the latest TableInfo for a same TableHandle
-            executed_data.txn_table_infos.append(&mut table_infos);
             executed_data.write_sets.push(write_set);
         }
         TransactionStatus::Retry => {

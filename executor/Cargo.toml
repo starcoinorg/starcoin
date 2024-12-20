@@ -11,6 +11,7 @@ starcoin-statedb = { workspace = true }
 starcoin-force-upgrade = { workspace = true }
 serde = { workspace = true }
 bcs-ext = { workspace = true }
+move-core-types = { workspace = true }
 
 [dev-dependencies]
 bcs-ext = { workspace = true }
