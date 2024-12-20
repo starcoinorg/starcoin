@@ -16,10 +16,14 @@ starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
 starcoin-force-upgrade = { workspace = true }
+move-core-types = { workspace = true }
 
 [dev-dependencies]
 starcoin-genesis = { workspace = true }
 stest = { workspace = true }
+
+[features]
+force-deploy = ["starcoin-vm-runtime/force-deploy"]
 
 [package]
 authors = { workspace = true }

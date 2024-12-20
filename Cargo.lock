@@ -11386,6 +11386,7 @@ dependencies = [
  "async-trait",
  "bcs-ext",
  "futures 0.3.30",
+ "move-core-types",
  "parking_lot 0.12.1",
  "starcoin-accumulator",
  "starcoin-chain-api",

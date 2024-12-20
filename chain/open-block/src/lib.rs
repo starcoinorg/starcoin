@@ -27,8 +27,9 @@ use std::{convert::TryInto, sync::Arc};
 
 #[cfg(feature = "force-deploy")]
 use {
+    move_core_types::move_resource::MoveStructType,
     starcoin_force_upgrade::ForceUpgrade,
-    starcoin_types::{account::DEFAULT_EXPIRATION_TIME, identifier::Identifier},
+    starcoin_types::account::DEFAULT_EXPIRATION_TIME,
     starcoin_vm_runtime::force_upgrade_management::{
         get_force_upgrade_account, get_force_upgrade_block_number,
     },
@@ -36,10 +37,10 @@ use {
         access_path::AccessPath,
         account_config::{genesis_address, ModuleUpgradeStrategy},
         genesis_config::StdlibVersion,
-        move_resource::MoveResource,
         on_chain_config::{self, Version},
         state_store::state_key::StateKey,
-        state_view::{StateReaderExt, StateView},
+        state_store::TStateView,
+        state_view::StateReaderExt,
     },
 };
 
@@ -311,12 +312,8 @@ impl OpenedBlock {
             #[cfg(feature = "force-deploy")]
             {
                 // update stdlib version to 12 directly
-                let version_path = on_chain_config::access_path_for_config(
-                    genesis_address(),
-                    Identifier::new("Version").unwrap(),
-                    Identifier::new("Version").unwrap(),
-                    vec![],
-                );
+                let version_path =
+                    on_chain_config::access_path_for_config(Version::struct_tag().clone());
                 let version = on_chain_config::Version { major: 12 };
                 self.state
                     .set(&version_path, bcs_ext::to_bytes(&version)?)?;
@@ -373,7 +370,7 @@ impl OpenedBlock {
         // Only execute extra_txn when stdlib version is 11
         if self
             .state
-            .get_on_chain_config::<Version>()?
+            .get_on_chain_config::<Version>()
             .map(|v| v.into_stdlib_version())
             .map(|v| v != StdlibVersion::Version(11))
             .unwrap_or(true)
@@ -410,7 +407,10 @@ impl OpenedBlock {
         // retrieve old strategy value
         let old_val = self
             .state
-            .get_state_value(&StateKey::AccessPath(strategy_path.clone()))?
+            .get_state_value(&StateKey::resource(
+                &genesis_address(),
+                &ModuleUpgradeStrategy::struct_tag(),
+            )?)?
             .expect("module upgrade strategy should exist");
         // Set strategy to 100 to execute force-deploy-txn directly
         self.state.set(&strategy_path, vec![100])?;
@@ -424,7 +424,7 @@ impl OpenedBlock {
         .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
 
         // Restore the old value
-        self.state.set(&strategy_path, old_val)?;
+        self.state.set(&strategy_path, old_val.bytes().to_vec())?;
 
         let output = results.pop().expect("executed txn should has output");
         match output.status() {
