@@ -164,6 +164,7 @@ impl Features {
         self.features[byte_index] &= !bit_mask;
     }
 
+    // TODO(BobOng): This method will cause decoding errors
     // pub fn into_flag_vec(self) -> Vec<FeatureFlag> {
     //     let Self { features } = self;
     //     features
@@ -247,22 +248,25 @@ pub fn starcoin_test_feature_flags_genesis() -> ChangeSet {
     change_set
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
 
-    #[test]
-    fn test_features_into_flag_vec() {
-        let mut features = Features { features: vec![] };
-        features.enable(FeatureFlag::BLS12_381_STRUCTURES);
-        features.enable(FeatureFlag::BN254_STRUCTURES);
 
-        assert_eq!(
-            vec![
-                FeatureFlag::BLS12_381_STRUCTURES,
-                FeatureFlag::BN254_STRUCTURES
-            ],
-            features.into_flag_vec()
-        );
-    }
-}
+// TODO(BobOng): This method will cause decoding errors
+// #[cfg(test)]
+// mod test {
+//     use super::*;
+//
+//     #[test]
+//     fn test_features_into_flag_vec() {
+//         let mut features = Features { features: vec![] };
+//         features.enable(FeatureFlag::BLS12_381_STRUCTURES);
+//         features.enable(FeatureFlag::BN254_STRUCTURES);
+//
+//         assert_eq!(
+//             vec![
+//                 FeatureFlag::BLS12_381_STRUCTURES,
+//                 FeatureFlag::BN254_STRUCTURES
+//             ],
+//             features.into_flag_vec()
+//         );
+//     }
+// }
