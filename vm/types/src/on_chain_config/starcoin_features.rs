@@ -1,10 +1,15 @@
 // Copyright (c) The Starcoin Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::on_chain_config::OnChainConfig;
-use move_core_types::effects::{ChangeSet, Op};
-use move_core_types::language_storage::CORE_CODE_ADDRESS;
+use move_core_types::{
+    account_address::AccountAddress,
+    effects::{ChangeSet, Op},
+    identifier::Identifier,
+    language_storage::{StructTag, CORE_CODE_ADDRESS},
+};
 use serde::{Deserialize, Serialize};
+
+use crate::on_chain_config::OnChainConfig;
 
 /// The feature flags define in the Move source. This must stay aligned with the constants there.
 
@@ -57,7 +62,60 @@ pub enum FeatureFlag {
     WEBAUTHN_SIGNATURE = 44,
     RECONFIGURE_WITH_DKG = 45,
     REJECT_UNSTABLE_BYTECODE = 46,
+    TRANSACTION_CONTEXT_EXTENSION = 59,
+    COIN_TO_FUNGIBLE_ASSET_MIGRATION = 60,
+    DISPATCHABLE_FUNGIBLE_ASSET = 63,
+    NEW_ACCOUNTS_DEFAULT_TO_FA_STC_STORE = 64,
     DISALLOW_USER_NATIVES = 71,
+}
+
+impl FeatureFlag {
+    pub fn default_features() -> Vec<Self> {
+        vec![
+            FeatureFlag::CODE_DEPENDENCY_CHECK,
+            FeatureFlag::TREAT_FRIEND_AS_PRIVATE,
+            FeatureFlag::SHA_512_AND_RIPEMD_160_NATIVES,
+            FeatureFlag::APTOS_STD_CHAIN_ID_NATIVES,
+            FeatureFlag::VM_BINARY_FORMAT_V6,
+            FeatureFlag::MULTI_ED25519_PK_VALIDATE_V2_NATIVES,
+            FeatureFlag::BLAKE2B_256_NATIVE,
+            FeatureFlag::RESOURCE_GROUPS,
+            FeatureFlag::MULTISIG_ACCOUNTS,
+            FeatureFlag::DELEGATION_POOLS,
+            FeatureFlag::CRYPTOGRAPHY_ALGEBRA_NATIVES,
+            FeatureFlag::BLS12_381_STRUCTURES,
+            FeatureFlag::ED25519_PUBKEY_VALIDATE_RETURN_FALSE_WRONG_LENGTH,
+            FeatureFlag::STRUCT_CONSTRUCTORS,
+            FeatureFlag::SIGNATURE_CHECKER_V2,
+            FeatureFlag::STORAGE_SLOT_METADATA,
+            FeatureFlag::CHARGE_INVARIANT_VIOLATION,
+            FeatureFlag::APTOS_UNIQUE_IDENTIFIERS,
+            FeatureFlag::GAS_PAYER_ENABLED,
+            FeatureFlag::BULLETPROOFS_NATIVES,
+            FeatureFlag::SIGNER_NATIVE_FORMAT_FIX,
+            FeatureFlag::MODULE_EVENT,
+            FeatureFlag::EMIT_FEE_STATEMENT,
+            FeatureFlag::STORAGE_DELETION_REFUND,
+            FeatureFlag::SIGNATURE_CHECKER_V2_SCRIPT_FIX,
+            FeatureFlag::AGGREGATOR_V2_API,
+            FeatureFlag::SAFER_RESOURCE_GROUPS,
+            FeatureFlag::SAFER_METADATA,
+            FeatureFlag::SINGLE_SENDER_AUTHENTICATOR,
+            FeatureFlag::SPONSORED_AUTOMATIC_ACCOUNT_V1_CREATION,
+            FeatureFlag::FEE_PAYER_ACCOUNT_OPTIONAL,
+            FeatureFlag::AGGREGATOR_V2_DELAYED_FIELDS,
+            FeatureFlag::LIMIT_MAX_IDENTIFIER_LENGTH,
+            FeatureFlag::OPERATOR_BENEFICIARY_CHANGE,
+            FeatureFlag::BN254_STRUCTURES,
+            FeatureFlag::COMMISSION_CHANGE_DELEGATION_POOL,
+            FeatureFlag::WEBAUTHN_SIGNATURE,
+            FeatureFlag::REJECT_UNSTABLE_BYTECODE,
+            FeatureFlag::TRANSACTION_CONTEXT_EXTENSION,
+            FeatureFlag::COIN_TO_FUNGIBLE_ASSET_MIGRATION,
+            FeatureFlag::DISPATCHABLE_FUNGIBLE_ASSET,
+            //FeatureFlag::NEW_ACCOUNTS_DEFAULT_TO_FA_STC_STORE,
+        ]
+    }
 }
 
 /// Representation of features on chain as a bitset.
@@ -73,15 +131,10 @@ impl Default for Features {
             features: vec![0; 5],
         };
 
-        use FeatureFlag::*;
-        features.enable(VM_BINARY_FORMAT_V6);
-        features.enable(BLS12_381_STRUCTURES);
-        features.enable(SIGNATURE_CHECKER_V2);
-        features.enable(STORAGE_SLOT_METADATA);
-        features.enable(APTOS_UNIQUE_IDENTIFIERS);
-        features.enable(SIGNATURE_CHECKER_V2_SCRIPT_FIX);
-        features.enable(AGGREGATOR_V2_API);
-        features.enable(BN254_STRUCTURES);
+        for feature in FeatureFlag::default_features() {
+            features.enable(feature);
+        }
+
         features
     }
 }
@@ -92,17 +145,37 @@ impl OnChainConfig for Features {
 }
 
 impl Features {
-    pub fn enable(&mut self, flag: FeatureFlag) {
+    fn resize_for_flag(&mut self, flag: FeatureFlag) -> (usize, u8) {
         let byte_index = (flag as u64 / 8) as usize;
         let bit_mask = 1 << (flag as u64 % 8);
         while self.features.len() <= byte_index {
             self.features.push(0);
         }
+        (byte_index, bit_mask)
+    }
 
+    pub fn enable(&mut self, flag: FeatureFlag) {
+        let (byte_index, bit_mask) = self.resize_for_flag(flag);
         self.features[byte_index] |= bit_mask;
     }
 
-    #[allow(dead_code)]
+    pub fn disable(&mut self, flag: FeatureFlag) {
+        let (byte_index, bit_mask) = self.resize_for_flag(flag);
+        self.features[byte_index] &= !bit_mask;
+    }
+
+    // TODO(BobOng): This method will cause decoding errors
+    // pub fn into_flag_vec(self) -> Vec<FeatureFlag> {
+    //     let Self { features } = self;
+    //     features
+    //         .into_iter()
+    //         .flat_map(|byte| (0..8).map(move |bit_idx| byte & (1 << bit_idx) != 0))
+    //         .enumerate()
+    //         .filter(|(_feature_idx, enabled)| *enabled)
+    //         .map(|(feature_idx, _)| FeatureFlag::from_repr(feature_idx).unwrap())
+    //         .collect()
+    // }
+
     pub fn is_enabled(&self, flag: FeatureFlag) -> bool {
         let val = flag as u64;
         let byte_index = (val / 8) as usize;
@@ -162,10 +235,36 @@ pub fn starcoin_test_feature_flags_genesis() -> ChangeSet {
     change_set
         .add_resource_op(
             CORE_CODE_ADDRESS,
-            Features::struct_tag(),
+            //Features::struct_tag(),
+            StructTag {
+                address: AccountAddress::ONE,
+                module: Identifier::new("features").unwrap(),
+                name: Identifier::new("Features").unwrap(),
+                type_args: vec![],
+            },
             Op::New(features_value.into()),
         )
         .expect("adding genesis Feature resource must succeed");
-
     change_set
 }
+
+// TODO(BobOng): This method will cause decoding errors
+// #[cfg(test)]
+// mod test {
+//     use super::*;
+//
+//     #[test]
+//     fn test_features_into_flag_vec() {
+//         let mut features = Features { features: vec![] };
+//         features.enable(FeatureFlag::BLS12_381_STRUCTURES);
+//         features.enable(FeatureFlag::BN254_STRUCTURES);
+//
+//         assert_eq!(
+//             vec![
+//                 FeatureFlag::BLS12_381_STRUCTURES,
+//                 FeatureFlag::BN254_STRUCTURES
+//             ],
+//             features.into_flag_vec()
+//         );
+//     }
+// }

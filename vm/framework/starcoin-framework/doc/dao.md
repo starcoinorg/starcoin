@@ -671,7 +671,6 @@ propose a proposal.
     action_delay: u64,
 ) <b>acquires</b> <a href="dao.md#0x1_dao_DaoGlobalInfo">DaoGlobalInfo</a> {
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"dao::proposal | Entered"));
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>));
 
     <b>if</b> (action_delay == 0) {
         action_delay = <a href="dao.md#0x1_dao_min_action_delay">min_action_delay</a>&lt;TokenT&gt;();
@@ -683,7 +682,9 @@ propose a proposal.
     <b>let</b> start_time = <a href="timestamp.md#0x1_timestamp_now_milliseconds">timestamp::now_milliseconds</a>() + <a href="dao.md#0x1_dao_voting_delay">voting_delay</a>&lt;TokenT&gt;();
     <b>let</b> quorum_votes = <a href="dao.md#0x1_dao_quorum_votes">quorum_votes</a>&lt;TokenT&gt;();
 
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"dao::proposal | <a href="dao.md#0x1_dao_Proposal">Proposal</a> {"));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"dao::proposal | <a href="dao.md#0x1_dao_Proposal">Proposal</a> "));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&proposal_id);
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&start_time);
 
     <b>let</b> proposal = <a href="dao.md#0x1_dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt; {
         id: proposal_id,
@@ -1265,6 +1266,9 @@ Get the proposal state.
     proposal: &<a href="dao.md#0x1_dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;,
     current_time: u64,
 ): u8 {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"do_proposal_state | entered "));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(proposal);
+
     <b>if</b> (current_time &lt; proposal.start_time) {
         // Pending
         <a href="dao.md#0x1_dao_PENDING">PENDING</a>

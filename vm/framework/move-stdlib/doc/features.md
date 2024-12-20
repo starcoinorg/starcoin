@@ -32,6 +32,7 @@ return true.
 -  [Resource `Features`](#0x1_features_Features)
 -  [Resource `PendingFeatures`](#0x1_features_PendingFeatures)
 -  [Constants](#@Constants_0)
+-  [Function `initialize`](#0x1_features_initialize)
 -  [Function `code_dependency_check_enabled`](#0x1_features_code_dependency_check_enabled)
 -  [Function `treat_friend_as_private`](#0x1_features_treat_friend_as_private)
 -  [Function `get_sha_512_and_ripemd_160_feature`](#0x1_features_get_sha_512_and_ripemd_160_feature)
@@ -491,7 +492,7 @@ Deployed to production, and disabling is deprecated.
 The provided signer has not a framework address.
 
 
-<pre><code><b>const</b> <a href="features.md#0x1_features_EFRAMEWORK_SIGNER_NEEDED">EFRAMEWORK_SIGNER_NEEDED</a>: u64 = 1;
+<pre><code><b>const</b> <a href="features.md#0x1_features_EFRAMEWORK_SIGNER_NEEDED">EFRAMEWORK_SIGNER_NEEDED</a>: u64 = 100;
 </code></pre>
 
 
@@ -926,6 +927,32 @@ Lifetime: transient
 
 
 
+<a id="0x1_features_initialize"></a>
+
+## Function `initialize`
+
+Initialized from parameters
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_initialize">initialize</a>(framework: &<a href="signer.md#0x1_signer">signer</a>, <a href="features.md#0x1_features">features</a>: <a href="vector.md#0x1_vector">vector</a>&lt;u8&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_initialize">initialize</a>(framework: &<a href="signer.md#0x1_signer">signer</a>, <a href="features.md#0x1_features">features</a>: <a href="vector.md#0x1_vector">vector</a>&lt;u8&gt;) {
+    <b>assert</b>!(<a href="signer.md#0x1_signer_address_of">signer::address_of</a>(framework) == @std, <a href="error.md#0x1_error_permission_denied">error::permission_denied</a>(<a href="features.md#0x1_features_EFRAMEWORK_SIGNER_NEEDED">EFRAMEWORK_SIGNER_NEEDED</a>));
+    <b>move_to</b>&lt;<a href="features.md#0x1_features_Features">Features</a>&gt;(framework, <a href="features.md#0x1_features_Features">Features</a> { <a href="features.md#0x1_features">features</a> })
+}
+</code></pre>
+
+
+
+</details>
+
 <a id="0x1_features_code_dependency_check_enabled"></a>
 
 ## Function `code_dependency_check_enabled`
@@ -1011,10 +1038,8 @@ Lifetime: transient
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_sha_512_and_ripemd_160_enabled">sha_512_and_ripemd_160_enabled</a>(): bool {
-    // <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_SHA_512_AND_RIPEMD_160_NATIVES">SHA_512_AND_RIPEMD_160_NATIVES</a>)
-    // TODO(BobOng): [framework-upgrade] <b>to</b> confirm which feature flag should be used here
-    <b>true</b>
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_sha_512_and_ripemd_160_enabled">sha_512_and_ripemd_160_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
+    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_SHA_512_AND_RIPEMD_160_NATIVES">SHA_512_AND_RIPEMD_160_NATIVES</a>)
 }
 </code></pre>
 
@@ -2733,10 +2758,8 @@ Lifetime: transient
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_transaction_context_extension_enabled">transaction_context_extension_enabled</a>(): bool {
-    // <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_TRANSACTION_CONTEXT_EXTENSION">TRANSACTION_CONTEXT_EXTENSION</a>)
-    // TODO(BobOng): [framework-upgrade] <b>to</b> confirm which feature flag should be used here
-    <b>true</b>
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_transaction_context_extension_enabled">transaction_context_extension_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
+    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_TRANSACTION_CONTEXT_EXTENSION">TRANSACTION_CONTEXT_EXTENSION</a>)
 }
 </code></pre>
 
@@ -2781,10 +2804,8 @@ Lifetime: transient
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_coin_to_fungible_asset_migration_feature_enabled">coin_to_fungible_asset_migration_feature_enabled</a>(): bool {
-    // <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_COIN_TO_FUNGIBLE_ASSET_MIGRATION">COIN_TO_FUNGIBLE_ASSET_MIGRATION</a>)
-    // TODO(BobOng): [framework-upgrade] <b>to</b> confirm which feature flag should be used here
-    <b>true</b>
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_coin_to_fungible_asset_migration_feature_enabled">coin_to_fungible_asset_migration_feature_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
+    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_COIN_TO_FUNGIBLE_ASSET_MIGRATION">COIN_TO_FUNGIBLE_ASSET_MIGRATION</a>)
 }
 </code></pre>
 
@@ -2950,10 +2971,8 @@ Lifetime: transient
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_dispatchable_fungible_asset_enabled">dispatchable_fungible_asset_enabled</a>(): bool {
-    // TODO(BobOng): [framework-upgrade] <b>to</b> confirm which feature flag should be used here
-    // <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_DISPATCHABLE_FUNGIBLE_ASSET">DISPATCHABLE_FUNGIBLE_ASSET</a>)
-    <b>true</b>
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_dispatchable_fungible_asset_enabled">dispatchable_fungible_asset_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
+    <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_DISPATCHABLE_FUNGIBLE_ASSET">DISPATCHABLE_FUNGIBLE_ASSET</a>)
 }
 </code></pre>
 
@@ -2999,7 +3018,6 @@ Lifetime: transient
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="features.md#0x1_features_new_accounts_default_to_fa_stc_store_enabled">new_accounts_default_to_fa_stc_store_enabled</a>(): bool <b>acquires</b> <a href="features.md#0x1_features_Features">Features</a> {
-    // TODO(BobOng): [framework-upgrade] <b>to</b> confirm which feature flag should be used here
     <a href="features.md#0x1_features_is_enabled">is_enabled</a>(<a href="features.md#0x1_features_NEW_ACCOUNTS_DEFAULT_TO_FA_STC_STORE">NEW_ACCOUNTS_DEFAULT_TO_FA_STC_STORE</a>)
 }
 </code></pre>

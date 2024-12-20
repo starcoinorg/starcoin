@@ -2579,15 +2579,20 @@ Returns <code><b>true</b></code> if <code>account_addr</code> is registered to r
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x1_coin_is_account_registered">is_account_registered</a>&lt;CoinType&gt;(account_addr: <b>address</b>): bool <b>acquires</b> <a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a> {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="coin.md#0x1_coin_is_account_registered">coin::is_account_registered</a> | entered"));
     <b>assert</b>!(<a href="coin.md#0x1_coin_is_coin_initialized">is_coin_initialized</a>&lt;CoinType&gt;(), <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x1_coin_ECOIN_INFO_NOT_PUBLISHED">ECOIN_INFO_NOT_PUBLISHED</a>));
-    <b>if</b> (<b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinStore">CoinStore</a>&lt;CoinType&gt;&gt;(account_addr)) {
+    <b>let</b> ret = <b>if</b> (<b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinStore">CoinStore</a>&lt;CoinType&gt;&gt;(account_addr)) {
+        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="coin.md#0x1_coin_is_account_registered">coin::is_account_registered</a> | <a href="coin.md#0x1_coin_CoinStore">CoinStore</a> exist"));
         <b>true</b>
     } <b>else</b> {
+        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="coin.md#0x1_coin_is_account_registered">coin::is_account_registered</a> | <a href="coin.md#0x1_coin_CoinStore">CoinStore</a> not exist, convert <b>to</b> primary fungible store"));
         <b>let</b> paired_metadata_opt = <a href="coin.md#0x1_coin_paired_metadata">paired_metadata</a>&lt;CoinType&gt;();
         (<a href="../../move-stdlib/doc/option.md#0x1_option_is_some">option::is_some</a>(
             &paired_metadata_opt
         ) && <a href="coin.md#0x1_coin_migrated_primary_fungible_store_exists">migrated_primary_fungible_store_exists</a>(account_addr, <a href="../../move-stdlib/doc/option.md#0x1_option_destroy_some">option::destroy_some</a>(paired_metadata_opt)))
-    }
+    };
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="coin.md#0x1_coin_is_account_registered">coin::is_account_registered</a> | exited"));
+    ret
 }
 </code></pre>
 
