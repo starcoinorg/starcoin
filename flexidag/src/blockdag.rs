@@ -364,6 +364,23 @@ impl BlockDAG {
             Some(ghostdata) => ghostdata,
         };
 
+        if self.storage.reachability_store.read().get_reindex_root()? != header.pruning_point()
+            && header.pruning_point() != HashValue::zero()
+        {
+            info!(
+                "try to hint virtual selected parent, root index: {:?}",
+                self.storage.reachability_store.read().get_reindex_root()
+            );
+            inquirer::hint_virtual_selected_parent(
+                self.storage.reachability_store.write().deref_mut(),
+                header.pruning_point(),
+            )?;
+            info!(
+                "after hint virtual selected parent, root index: {:?}",
+                self.storage.reachability_store.read().get_reindex_root()
+            );
+        }
+
         // Create a DB batch writer
         let mut batch = WriteBatch::default();
 

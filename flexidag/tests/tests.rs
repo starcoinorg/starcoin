@@ -614,6 +614,55 @@ fn test_reachability_not_ancestor() -> anyhow::Result<()> {
 }
 
 #[test]
+#[ignore = "maxmum data testing for dev"]
+fn test_hint_virtaul_selected_parent() -> anyhow::Result<()> {
+    let dag = BlockDAG::create_for_testing().unwrap();
+    let reachability_store = dag.storage.reachability_store.clone();
+
+    let origin = Hash::random();
+
+    inquirer::init_for_test(
+        reachability_store.write().deref_mut(),
+        origin,
+        // Interval::maximal(),
+       Interval::new(1, 100000), 
+    )?;
+
+    let mut next_parent = origin;
+    let _start = Instant::now();
+    for _i in 0..5000 {
+        let child = Hash::random();
+        inquirer::add_block(
+            reachability_store.write().deref_mut(),
+            child,
+            next_parent,
+            &mut vec![].into_iter(),
+        )?;
+        next_parent = child;
+    }
+    // println!("add 50000 blocks duration: {:?}", start.elapsed());
+
+    println!("before hint, root reindex = {:?}, origin interval = {:?} ", reachability_store.read().get_reindex_root()?, reachability_store.read().get_interval(origin));
+    inquirer::hint_virtual_selected_parent(&mut *reachability_store.write(), next_parent)?;
+    println!("after hint, root reindex = {:?}, origin interval = {:?} ", reachability_store.read().get_reindex_root()?, reachability_store.read().get_interval(origin));
+
+    // let start = Instant::now();
+    // for _i in 0..200000 {
+    //     let child = Hash::random();
+    //     inquirer::add_block(
+    //         reachability_store.write().deref_mut(),
+    //         child,
+    //         next_parent,
+    //         &mut vec![].into_iter(),
+    //     )?;
+    //     next_parent = child;
+    // }
+    // println!("add 50000 blocks again duration: {:?}", start.elapsed());
+
+    Ok(())
+}
+
+#[test]
 fn test_reachability_algorithm() -> anyhow::Result<()> {
     let dag = BlockDAG::create_for_testing().unwrap();
     let reachability_store = dag.storage.reachability_store.clone();
@@ -826,6 +875,7 @@ fn test_dag_mergeset() -> anyhow::Result<()> {
 }
 
 #[test]
+#[ignore = "this is the large amount of data testing for performance, dev only"]
 fn test_big_data_commit() -> anyhow::Result<()> {
     // initialzie the dag firstly
     let mut dag = BlockDAG::create_for_testing().unwrap();
@@ -841,6 +891,9 @@ fn test_big_data_commit() -> anyhow::Result<()> {
     let mut parent = genesis.clone();
     for i in 0..count {
         let new = add_and_print(i + 1, parent.id(), vec![parent.id()], &mut dag)?;
+        if i % 50000 == 0 {
+            inquirer::hint_virtual_selected_parent(&mut *dag.storage.reachability_store.write(), new.id())?;
+        }
         parent = new;
     }
     // let last_one = parent;
