@@ -625,7 +625,7 @@ fn test_hint_virtaul_selected_parent() -> anyhow::Result<()> {
         reachability_store.write().deref_mut(),
         origin,
         // Interval::maximal(),
-       Interval::new(1, 100000), 
+        Interval::new(1, 100000),
     )?;
 
     let mut next_parent = origin;
@@ -642,9 +642,17 @@ fn test_hint_virtaul_selected_parent() -> anyhow::Result<()> {
     }
     // println!("add 50000 blocks duration: {:?}", start.elapsed());
 
-    println!("before hint, root reindex = {:?}, origin interval = {:?} ", reachability_store.read().get_reindex_root()?, reachability_store.read().get_interval(origin));
+    println!(
+        "before hint, root reindex = {:?}, origin interval = {:?} ",
+        reachability_store.read().get_reindex_root()?,
+        reachability_store.read().get_interval(origin)
+    );
     inquirer::hint_virtual_selected_parent(&mut *reachability_store.write(), next_parent)?;
-    println!("after hint, root reindex = {:?}, origin interval = {:?} ", reachability_store.read().get_reindex_root()?, reachability_store.read().get_interval(origin));
+    println!(
+        "after hint, root reindex = {:?}, origin interval = {:?} ",
+        reachability_store.read().get_reindex_root()?,
+        reachability_store.read().get_interval(origin)
+    );
 
     // let start = Instant::now();
     // for _i in 0..200000 {
@@ -892,7 +900,10 @@ fn test_big_data_commit() -> anyhow::Result<()> {
     for i in 0..count {
         let new = add_and_print(i + 1, parent.id(), vec![parent.id()], &mut dag)?;
         if i % 50000 == 0 {
-            inquirer::hint_virtual_selected_parent(&mut *dag.storage.reachability_store.write(), new.id())?;
+            inquirer::hint_virtual_selected_parent(
+                &mut *dag.storage.reachability_store.write(),
+                new.id(),
+            )?;
         }
         parent = new;
     }

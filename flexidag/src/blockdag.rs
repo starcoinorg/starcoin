@@ -234,7 +234,7 @@ impl BlockDAG {
             );
         }
 
-        info!("start to commit via batch");
+        info!("start to commit via batch, header id: {:?}", header.id());
 
         // Create a DB batch writer
         let mut batch = WriteBatch::default();
@@ -248,7 +248,6 @@ impl BlockDAG {
             self.storage.reachability_store.upgradable_read(),
         );
 
-        info!("start to add block into the ghostdata store");
         // Store ghostdata
         process_key_already_error(self.storage.ghost_dag_store.insert_batch(
             &mut batch,
@@ -256,10 +255,6 @@ impl BlockDAG {
             ghostdata.clone(),
         ))
         .expect("failed to ghostdata in batch");
-        info!(
-            "finish adding block into the ghostdata store, data: {:?}",
-            ghostdata
-        );
 
         // Update reachability store
         debug!(
@@ -268,16 +263,11 @@ impl BlockDAG {
             header.number()
         );
 
-        info!("start to prepare mergeset into the reachability store");
         let mut merge_set = ghostdata
             .unordered_mergeset_without_selected_parent()
             .filter(|hash| self.storage.reachability_store.read().has(*hash).unwrap())
             .collect::<Vec<_>>()
             .into_iter();
-        info!(
-            "finish preparing mergeset into the reachability store, mergeset: {:?}",
-            merge_set
-        );
 
         match inquirer::add_block(
             &mut stage,
@@ -299,7 +289,6 @@ impl BlockDAG {
                 }
             },
         }
-        info!("finish adding block into reachability store and start to insert relations into the relations store, data: {:?}", parents);
 
         process_key_already_error(self.storage.relations_store.write().insert_batch(
             &mut batch,
@@ -308,17 +297,13 @@ impl BlockDAG {
         ))
         .expect("failed to insert relations in batch");
 
-        info!("finish inserting relations into the relations store, start to insert header into the header store");
-
         // Store header store
         process_key_already_error(self.storage.header_store.insert(
             header.id(),
-            Arc::new(header),
+            Arc::new(header.clone()),
             1,
         ))
         .expect("failed to insert header in batch");
-
-        info!("finish inserting header into the header store, start to commit the stage");
 
         // the read lock will be updated to the write lock
         // and then write the batch
@@ -327,13 +312,13 @@ impl BlockDAG {
             .commit(&mut batch)
             .expect("failed to write the stage reachability in batch");
 
-        info!("finish committing the stage, start to write the batch");
-
         // write the data just one time
         self.storage
             .write_batch(batch)
             .expect("failed to write dag data in batch");
-        info!("finish writing the batch");
+
+        info!("finish writing the batch, head id: {:?}", header.id());
+
         Ok(())
     }
 
@@ -380,6 +365,8 @@ impl BlockDAG {
                 self.storage.reachability_store.read().get_reindex_root()
             );
         }
+
+        info!("start to commit via batch, header id: {:?}", header.id());
 
         // Create a DB batch writer
         let mut batch = WriteBatch::default();
@@ -446,7 +433,7 @@ impl BlockDAG {
         process_key_already_error(self.storage.header_store.insert_batch(
             &mut batch,
             header.id(),
-            Arc::new(header),
+            Arc::new(header.clone()),
             1,
         ))
         .expect("failed to insert header in batch");
@@ -462,6 +449,8 @@ impl BlockDAG {
         self.storage
             .write_batch(batch)
             .expect("failed to write dag data in batch");
+
+        info!("finish writing the batch, head id: {:?}", header.id());
 
         Ok(())
     }
