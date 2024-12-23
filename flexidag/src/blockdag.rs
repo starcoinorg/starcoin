@@ -219,6 +219,11 @@ impl BlockDAG {
 
         if self.storage.reachability_store.read().get_reindex_root()? != header.pruning_point()
             && header.pruning_point() != HashValue::zero()
+            && self
+                .storage
+                .reachability_store
+                .read()
+                .has(header.pruning_point())?
         {
             info!(
                 "try to hint virtual selected parent, root index: {:?}",
@@ -351,6 +356,11 @@ impl BlockDAG {
 
         if self.storage.reachability_store.read().get_reindex_root()? != header.pruning_point()
             && header.pruning_point() != HashValue::zero()
+            && self
+                .storage
+                .reachability_store
+                .read()
+                .has(header.pruning_point())?
         {
             info!(
                 "try to hint virtual selected parent, root index: {:?}",

@@ -38,6 +38,7 @@ fn test_dag_commit() -> Result<()> {
         .build();
 
     let mut parents_hash = vec![genesis.id()];
+    let _origin = dag.init_with_genesis(genesis.clone())?;
 
     for _ in 0..10 {
         let header_builder = BlockHeaderBuilder::random();
@@ -91,6 +92,7 @@ fn test_dag_1() -> Result<()> {
     let genesis_id = genesis.id();
     let mut dag = BlockDAG::create_for_testing().unwrap();
     let expect_selected_parented = [block5.id(), block3.id(), block3_1.id(), genesis_id];
+    let _origin = dag.init_with_genesis(genesis.clone())?;
 
     dag.commit(block1)?;
     dag.commit(block2)?;
@@ -128,6 +130,8 @@ async fn test_with_spawn() {
         .with_parents_hash(vec![genesis.id()])
         .build();
     let mut dag = BlockDAG::create_for_testing().unwrap();
+    let _origin = dag.init_with_genesis(genesis.clone()).unwrap();
+
     dag.commit(block1.clone()).unwrap();
     dag.commit(block2.clone()).unwrap();
     let block3 = BlockHeaderBuilder::random()
