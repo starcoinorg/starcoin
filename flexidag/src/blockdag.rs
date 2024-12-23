@@ -88,7 +88,7 @@ impl BlockDAG {
             cache_size: 1024,
             ..Default::default()
         };
-        let dag_storage = FlexiDagStorage::create_from_path("./testdb/", config)?;
+        let dag_storage = FlexiDagStorage::create_from_path(temp_dir(), config)?;
         Ok(Self::create_blockdag(dag_storage))
     }
 
