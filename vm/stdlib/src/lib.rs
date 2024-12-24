@@ -60,7 +60,7 @@ pub const ERROR_DESCRIPTIONS: &[u8] =
 // to pull the same trick here in order to include this in the Rust binary.
 static G_FRESH_MOVE_LANG_STDLIB: Lazy<Vec<Vec<u8>>> = Lazy::new(|| {
     build_stdlib(
-        starcoin_cached_packages::head_release_bundle()
+        starcoin_framework::testnet_release_bundle()
             .files()
             .unwrap()
             .as_slice(),
@@ -162,7 +162,7 @@ pub fn module_to_package(
 }
 
 pub fn stdlib_files() -> Vec<String> {
-    starcoin_cached_packages::head_release_bundle()
+    starcoin_framework::testnet_release_bundle()
         .files()
         .unwrap()
         .clone()

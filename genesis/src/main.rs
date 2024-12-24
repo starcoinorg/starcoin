@@ -27,7 +27,7 @@ fn main() {
         info!("Start generate network: {:?}", id);
         // skip test && dev network generate.
         if id.is_test() || id.is_dev() || id.is_dag_test() {
-            info!("End generate network: {:?}, it is test network", id);
+            info!("skip generating network: {:?}, it is test network", id);
             continue;
         }
         if !id.genesis_config().is_ready() {
