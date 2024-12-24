@@ -23,7 +23,7 @@ use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
-use starcoin_rpc_api::types::StrView;
+use starcoin_rpc_api::types::{DecodedMoveValue, StrView};
 use starcoin_state_tree::StateTree;
 use starcoin_statedb::{ChainStateDB, ChainStateReader, ChainStateWriter};
 use starcoin_storage::{
@@ -49,6 +49,9 @@ use starcoin_types::{
     transaction::Transaction,
 };
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
+use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::{
     access_path::DataType,
     account_config::stc_type_tag,
@@ -246,6 +249,7 @@ enum Cmd {
     SaveStartupInfo(SaveStartupInfoOptions),
     TokenSupply(TokenSupplyOptions),
     ForceDeploy(ForceDeployOutput),
+    TokensInfo(TokensInfoOptions),
 }
 
 #[derive(Debug, Clone, Parser)]
@@ -537,6 +541,23 @@ pub struct TokenSupplyOptions {
     resource_type: StrView<StructTag>,
 }
 
+#[derive(Debug, Clone, Parser)]
+#[clap(name = "token-infos-options", about = "token infos options")]
+pub struct TokensInfoOptions {
+    #[clap(long, short = 'n')]
+    /// Chain Network, like main, barnard
+    pub net: BuiltinNetworkID,
+    #[clap(long, short = 'o', parse(from_os_str))]
+    /// output file, like balance.csv
+    pub output: PathBuf,
+    #[clap(long, short = 'i', parse(from_os_str))]
+    /// starcoin node db path. like ~/.starcoin/main
+    pub db_path: PathBuf,
+
+    #[clap(long, short = 'b')]
+    pub block_number: Option<BlockNumber>,
+}
+
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
     let opt = Opt::parse();
@@ -738,6 +759,15 @@ async fn main() -> anyhow::Result<()> {
                 option.net,
                 option.block_number,
                 option.resource_type.0,
+            );
+            return result;
+        }
+        Cmd::TokensInfo(option) => {
+            let result = tokens_info(
+                option.db_path,
+                option.output,
+                option.net,
+                option.block_number,
             );
             return result;
         }
@@ -2517,6 +2547,160 @@ fn token_supply(
     println!("t2: {}", now.elapsed().as_millis());
     writeln!(file, "total {}", sum)?;
     writeln!(file, "cur height {}", cur_num)?;
+    file.flush()?;
+    Ok(())
+}
+
+fn tokens_info(
+    from_dir: PathBuf,
+    output: PathBuf,
+    network: BuiltinNetworkID,
+    block_number: Option<BlockNumber>,
+) -> anyhow::Result<()> {
+    let net = ChainNetwork::new_builtin(network);
+    let db_storage = DBStorage::open_with_cfs(
+        from_dir.join("starcoindb/db/starcoindb"),
+        StorageVersion::current_version()
+            .get_column_family_names()
+            .to_vec(),
+        true,
+        Default::default(),
+        None,
+    )?;
+    let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(None),
+        db_storage,
+    ))?);
+    let (chain_info, _) =
+        Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())?;
+    let chain = BlockChain::new(
+        net.time_service(),
+        chain_info.head().id(),
+        storage.clone(),
+        None,
+    )
+    .expect("create block chain should success.");
+    let cur_num = block_number.unwrap_or_else(|| chain_info.head().number());
+    let block = chain
+        .get_block_by_number(cur_num)?
+        .ok_or_else(|| format_err!("get block by number {} error", cur_num))?;
+
+    let root = block.header.state_root();
+    let statedb = ChainStateDB::new(storage.clone(), Some(root));
+    let value_annotator = MoveValueAnnotator::new(&statedb);
+
+    let state_tree = StateTree::<AccountAddress>::new(storage.clone(), Some(root));
+
+    let mut file = File::create(output)?;
+
+    let global_states = state_tree.dump()?;
+
+    // STC
+    /*
+    let str = "0x1::Account::Balance<0x1::STC::STC>";
+    let token_info = "0x1::Token::TokenInfo<0x1::STC::STC>";
+    let resource_struct_tag = parse_struct_tag(str)?; */
+    let token_address = AccountAddress::from_hex_literal("0x8c109349c6bd91411d6bc962e080c4a3")?;
+    let token = "0x8c109349c6bd91411d6bc962e080c4a3::STAR::STAR";
+    let token_balance = format!("0x1::Account::Balance<{}>", token);
+    let token_info = format!("0x1::Token::TokenInfo<{}>", token);
+    let token_mint_capability = format!("0x1::Token::MintCapability<{}>", token);
+    let token_burn_capability = format!("0x1::Token::BurnCapability<{}>", token);
+
+    let info_struct_tag = parse_struct_tag(token_info.as_str())?;
+    let mint_struct_tag = parse_struct_tag(token_mint_capability.as_str())?;
+    let burn_struct_tag = parse_struct_tag(token_burn_capability.as_str())?;
+    let info_value = statedb.get_state_value(&StateKey::AccessPath(
+        AccessPath::resource_access_path(token_address, info_struct_tag.clone()),
+    ))?;
+    let mint_value = statedb.get_state_value(&StateKey::AccessPath(
+        AccessPath::resource_access_path(token_address, mint_struct_tag.clone()),
+    ))?;
+    let burn_value = statedb.get_state_value(&StateKey::AccessPath(
+        AccessPath::resource_access_path(token_address, burn_struct_tag.clone()),
+    ))?;
+    let decoded_info: Option<DecodedMoveValue> = match info_value {
+        Some(v) => {
+            let annotated_struct = value_annotator.view_struct(info_struct_tag, v.as_slice())?;
+            Some(annotated_struct.into())
+        }
+        None => None,
+    };
+    let decoded_mint: Option<DecodedMoveValue> = match mint_value {
+        Some(v) => {
+            let annotated_struct =
+                value_annotator.view_struct(mint_struct_tag.clone(), v.as_slice())?;
+            Some(annotated_struct.into())
+        }
+        None => None,
+    };
+    let decoded_burn: Option<DecodedMoveValue> = match burn_value {
+        Some(v) => {
+            let annotated_struct =
+                value_annotator.view_struct(burn_struct_tag.clone(), v.as_slice())?;
+            Some(annotated_struct.into())
+        }
+        None => None,
+    };
+
+    let resource_struct_tag = parse_struct_tag(token_balance.as_str())?;
+    use std::time::Instant;
+    let now = Instant::now();
+    let mut sum: u128 = 0;
+    let mut account_list = vec![];
+    for (address_bytes, account_state_bytes) in global_states.iter() {
+        let account: AccountAddress = bcs_ext::from_bytes(address_bytes)?;
+        let account_state: AccountState = account_state_bytes.as_slice().try_into()?;
+        let resource_root = account_state.storage_roots()[DataType::RESOURCE.storage_index()];
+        let resource = match resource_root {
+            None => None,
+            Some(root) => {
+                let account_tree = StateTree::<StructTag>::new(storage.clone(), Some(root));
+                let data = account_tree.get(&resource_struct_tag)?;
+
+                if let Some(d) = data {
+                    let annotated_struct =
+                        value_annotator.view_struct(resource_struct_tag.clone(), d.as_slice())?;
+                    let resource = annotated_struct;
+                    let resource_json_value = serde_json::to_value(MoveStruct(resource))?;
+                    account_list.push((account, resource_json_value.clone()));
+                    Some(resource_json_value)
+                } else {
+                    None
+                }
+            }
+        };
+        if let Some(res) = resource {
+            let balance = (res
+                .get("token")
+                .unwrap()
+                .get("value")
+                .unwrap()
+                .as_f64()
+                .unwrap()
+                / 1000000000.0) as u128;
+            if balance > 0 {
+                writeln!(file, "{} {}", account, balance)?;
+                sum += balance;
+            }
+        }
+    }
+    println!("t2: {}", now.elapsed().as_millis());
+    if let Some(decoded_info) = decoded_info {
+        writeln!(file, "token info: {:?}", decoded_info)?;
+    }
+    if let Some(decoded_mint) = decoded_mint {
+        writeln!(file, "token mint: {:?}", decoded_mint)?;
+    }
+    if let Some(decoded_burn) = decoded_burn {
+        writeln!(file, "token burn: {:?}", decoded_burn)?;
+    }
+
+    writeln!(file, "total {}", sum)?;
+    writeln!(file, "account list")?;
+    for (account, resource) in account_list {
+        writeln!(file, "{} {}", account, resource)?;
+    }
     file.flush()?;
     Ok(())
 }

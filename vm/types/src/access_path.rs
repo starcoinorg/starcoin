@@ -338,3 +338,13 @@ impl FromStr for AccessPath {
         Ok(AccessPath::new(address, data_path))
     }
 }
+
+mod tests {
+    #[test]
+    fn test_stc_token() {
+        use crate::parser::parse_struct_tag;
+        let str = "0x1::Account::Balance<0x1::STC::STC>";
+        let struct_tag = parse_struct_tag(str).unwrap();
+        println!("{:?}", struct_tag);
+    }
+}
