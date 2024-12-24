@@ -8,8 +8,10 @@ use super::{
     },
 };
 use parking_lot::RwLock;
+use rocksdb::WriteBatch;
 use starcoin_config::{RocksdbConfig, StorageConfig};
 pub(crate) use starcoin_storage::db_storage::DBStorage;
+use starcoin_storage::storage::RawDBStorage;
 use std::{path::Path, sync::Arc};
 
 #[derive(Clone)]
@@ -19,6 +21,7 @@ pub struct FlexiDagStorage {
     pub reachability_store: Arc<RwLock<DbReachabilityStore>>,
     pub relations_store: Arc<RwLock<DbRelationsStore>>,
     pub state_store: Arc<RwLock<DbDagStateStore>>,
+    pub(crate) db: Arc<DBStorage>,
 }
 
 #[derive(Clone)]
@@ -92,7 +95,20 @@ impl FlexiDagStorage {
                 1,
                 config.cache_size,
             ))),
-            state_store: Arc::new(RwLock::new(DbDagStateStore::new(db, config.cache_size))),
+            state_store: Arc::new(RwLock::new(DbDagStateStore::new(
+                db.clone(),
+                config.cache_size,
+            ))),
+            db,
+        })
+    }
+
+    pub fn write_batch(&self, batch: WriteBatch) -> Result<(), StoreError> {
+        self.db.raw_write_batch_sync(batch).map_err(|e| {
+            StoreError::DBIoError(format!(
+                "failed to write in batch for dag data, error: {:?}",
+                e.to_string()
+            ))
         })
     }
 }

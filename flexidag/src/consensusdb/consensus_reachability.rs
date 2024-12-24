@@ -3,7 +3,7 @@ use super::{
     prelude::{BatchDbWriter, CachedDbAccess, CachedDbItem, DirectDbWriter, StoreError},
 };
 use starcoin_crypto::HashValue as Hash;
-use starcoin_storage::storage::RawDBStorage;
+use starcoin_storage::storage::{InnerStore, RawDBStorage};
 
 use crate::{
     consensusdb::schema::{KeyCodec, ValueCodec},
@@ -12,7 +12,7 @@ use crate::{
 };
 use starcoin_types::blockhash::{self, BlockHashMap, BlockHashes};
 
-use parking_lot::{RwLockUpgradableReadGuard, RwLockWriteGuard};
+use parking_lot::RwLockUpgradableReadGuard;
 use rocksdb::WriteBatch;
 use std::{collections::hash_map::Entry::Vacant, sync::Arc};
 
@@ -126,6 +126,13 @@ impl DbReachabilityStore {
     pub fn clone_with_new_cache(&self, cache_size: usize) -> Self {
         Self::new_with_prefix_end(Arc::clone(&self.db), cache_size)
     }
+
+    pub fn batch_write(&self, batch: starcoin_storage::batch::WriteBatchWithColumn) {
+        self.db.write_batch_with_column(batch).unwrap();
+        self.access.clear_cache();
+
+        // self.reindex_root.clear_cache().unwrap();
+    }
 }
 
 impl ReachabilityStore for DbReachabilityStore {
@@ -237,38 +244,40 @@ impl ReachabilityStoreReader for DbReachabilityStore {
 }
 
 pub struct StagingReachabilityStore<'a> {
+    db: Arc<DBStorage>,
     store_read: RwLockUpgradableReadGuard<'a, DbReachabilityStore>,
     staging_writes: BlockHashMap<ReachabilityData>,
     staging_reindex_root: Option<Hash>,
 }
 
 impl<'a> StagingReachabilityStore<'a> {
-    pub fn new(store_read: RwLockUpgradableReadGuard<'a, DbReachabilityStore>) -> Self {
+    pub fn new(
+        db: Arc<DBStorage>,
+        store_read: RwLockUpgradableReadGuard<'a, DbReachabilityStore>,
+    ) -> Self {
         Self {
+            db,
             store_read,
             staging_writes: BlockHashMap::new(),
             staging_reindex_root: None,
         }
     }
 
-    pub fn commit(
-        self,
-        batch: &mut WriteBatch,
-    ) -> Result<RwLockWriteGuard<'a, DbReachabilityStore>, StoreError> {
-        let db = Arc::clone(&self.store_read.db);
+    pub fn commit(self, batch: &mut WriteBatch) -> Result<(), StoreError> {
         let mut store_write = RwLockUpgradableReadGuard::upgrade(self.store_read);
         for (k, v) in self.staging_writes {
             let data = Arc::new(v);
             store_write
                 .access
-                .write(BatchDbWriter::new(batch, &db), k, data)?
+                .write(BatchDbWriter::new(batch, &self.db), k, data)?
         }
+
         if let Some(root) = self.staging_reindex_root {
             store_write
                 .reindex_root
-                .write(BatchDbWriter::new(batch, &db), &root)?;
+                .write(BatchDbWriter::new(batch, &self.db), &root)?;
         }
-        Ok(store_write)
+        Ok(())
     }
 }
 

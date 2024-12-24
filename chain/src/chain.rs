@@ -19,7 +19,6 @@ use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::{BlockDAG, MineNewDagBlockInfo};
 use starcoin_dag::consensusdb::consenses_state::DagState;
 use starcoin_dag::consensusdb::prelude::StoreError;
-use starcoin_dag::consensusdb::schemadb::GhostdagStoreReader;
 use starcoin_executor::VMMetrics;
 #[cfg(feature = "force-deploy")]
 use starcoin_force_upgrade::force_upgrade_management::get_force_upgrade_block_number;
@@ -94,7 +93,7 @@ impl BlockChain {
         uncles: Option<HashMap<HashValue, MintedUncleNumber>>,
         storage: Arc<dyn Store>,
         vm_metrics: Option<VMMetrics>,
-        mut dag: BlockDAG,
+        dag: BlockDAG,
     ) -> Result<Self> {
         let block_info = storage
             .get_block_info(head_block.id())?
@@ -133,10 +132,6 @@ impl BlockChain {
             vm_metrics,
             dag: dag.clone(),
         };
-        let genesis_header = storage
-            .get_block_header_by_hash(genesis)?
-            .ok_or_else(|| format_err!("failed to get genesis because it is none"))?;
-        dag.set_reindex_root(genesis_header.parent_hash())?;
         watch(CHAIN_WATCH_NAME, "n1251");
         match uncles {
             Some(data) => chain.uncles = data,
@@ -659,19 +654,11 @@ impl BlockChain {
         self.storage.save_block_info(block_info.clone())?;
 
         self.storage.save_table_infos(txn_table_infos)?;
-        let genesis_header = self
-            .storage
-            .get_block_header_by_hash(self.genesis_hash)?
-            .ok_or_else(|| format_err!("failed to get genesis because it is none"))?;
         let result = match verified_block.ghostdata {
-            Some(trusted_ghostdata) => self.dag.commit_trusted_block(
-                header.to_owned(),
-                genesis_header.parent_hash(),
-                Arc::new(trusted_ghostdata),
-            ),
-            None => self
+            Some(trusted_ghostdata) => self
                 .dag
-                .commit(header.to_owned(), genesis_header.parent_hash()),
+                .commit_trusted_block(header.to_owned(), Arc::new(trusted_ghostdata)),
+            None => self.dag.commit(header.to_owned()),
         };
         match result {
             anyhow::Result::Ok(_) => info!("finish to commit dag block: {:?}", block_id),
@@ -1385,41 +1372,11 @@ impl ChainReader for BlockChain {
         uncles: &[BlockHeader],
         header: &BlockHeader,
     ) -> Result<starcoin_dag::types::ghostdata::GhostdagData> {
-        let previous_header = self
-            .storage
-            .get_block_header_by_hash(header.parent_hash())?
-            .ok_or_else(|| format_err!("cannot find parent block header"))?;
-        let next_ghostdata = self.dag().verify_and_ghostdata(uncles, header)?;
-        let (pruning_depth, pruning_finality) = self.get_pruning_config();
-        if self.status().head().pruning_point() != HashValue::zero() {
-            let previous_ghostdata = if previous_header.pruning_point() == HashValue::zero() {
-                let genesis = self
-                    .storage
-                    .get_genesis()?
-                    .ok_or_else(|| format_err!("the genesis id is none!"))?;
-                self.dag().storage.ghost_dag_store.get_data(genesis)?
-            } else {
-                self.dag()
-                    .storage
-                    .ghost_dag_store
-                    .get_data(previous_header.pruning_point())?
-            };
-
-            self.dag().verify_pruning_point(
-                previous_header.pruning_point(),
-                previous_ghostdata.as_ref(),
-                header.pruning_point(),
-                &next_ghostdata,
-                pruning_depth,
-                pruning_finality,
-            )?;
-        }
-
-        Ok(next_ghostdata)
+        Ok(self.dag().verify_and_ghostdata(uncles, header)?)
     }
 
-    fn is_dag_ancestor_of(&self, ancestor: HashValue, descendants: Vec<HashValue>) -> Result<bool> {
-        self.dag().check_ancestor_of(ancestor, descendants)
+    fn is_dag_ancestor_of(&self, ancestor: HashValue, descendant: HashValue) -> Result<bool> {
+        self.dag().check_ancestor_of(ancestor, descendant)
     }
 
     fn get_pruning_height(&self) -> BlockNumber {
@@ -1561,7 +1518,7 @@ impl BlockChain {
 
         let mut new_tips = vec![];
         for hash in tips {
-            if !dag.check_ancestor_of(hash, vec![new_tip_block.id()])? {
+            if !dag.check_ancestor_of(hash, new_tip_block.id())? {
                 new_tips.push(hash);
             }
         }

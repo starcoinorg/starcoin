@@ -23,16 +23,16 @@ impl<S: Schema> CachedDbItem<S> {
     }
 
     pub fn read(&self) -> Result<S::Value, StoreError> {
-        if let Some(item) = self.cached_item.read().clone() {
-            return Ok(item);
-        }
+        // if let Some(item) = self.cached_item.read().clone() {
+        //     return Ok(item);
+        // }
         if let Some(slice) = self
             .db
             .raw_get_pinned_cf(S::COLUMN_FAMILY, &self.key.encode_key()?)
             .map_err(|_| StoreError::CFNotExist(S::COLUMN_FAMILY.to_string()))?
         {
             let item = S::Value::decode_value(&slice)?;
-            *self.cached_item.write() = Some(item.clone());
+            // *self.cached_item.write() = Some(item.clone());
             Ok(item)
         } else {
             Err(StoreError::KeyNotFound(
@@ -52,6 +52,11 @@ impl<S: Schema> CachedDbItem<S> {
 where {
         *self.cached_item.write() = None;
         writer.delete::<S>(&self.key)?;
+        Ok(())
+    }
+
+    pub fn clear_cache(&mut self) -> Result<(), StoreError> {
+        *self.cached_item.write() = None;
         Ok(())
     }
 

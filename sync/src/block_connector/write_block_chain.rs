@@ -403,7 +403,7 @@ where
                 if descendant == start {
                     continue;
                 }
-                if self.main.dag().check_ancestor_of(descendant, vec![start])? {
+                if self.main.dag().check_ancestor_of(descendant, start)? {
                     continue;
                 }
 

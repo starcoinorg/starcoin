@@ -114,7 +114,7 @@ pub trait ChainReader {
         uncles: &[BlockHeader],
         header: &BlockHeader,
     ) -> Result<GhostdagData>;
-    fn is_dag_ancestor_of(&self, ancestor: HashValue, descendants: Vec<HashValue>) -> Result<bool>;
+    fn is_dag_ancestor_of(&self, ancestor: HashValue, descendant: HashValue) -> Result<bool>;
     fn get_pruning_height(&self) -> BlockNumber;
     fn get_pruning_config(&self) -> (u64, u64);
 }

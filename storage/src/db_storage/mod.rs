@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    batch::WriteBatch,
+    batch::{WriteBatch, WriteBatchWithColumn},
     errors::StorageInitError,
     metrics::{record_metrics, StorageMetrics},
     storage::{ColumnFamilyName, InnerStore, KeyCodec, RawDBStorage, ValueCodec, WriteOp},
@@ -10,8 +10,8 @@ use crate::{
 };
 use anyhow::{ensure, format_err, Error, Result};
 use rocksdb::{
-    DBIterator, DBPinnableSlice, IteratorMode, Options, ReadOptions, WriteBatch as DBWriteBatch,
-    WriteOptions, DB,
+    DBIterator, DBPinnableSlice, FlushOptions, IteratorMode, Options, ReadOptions,
+    WriteBatch as DBWriteBatch, WriteOptions, DB,
 };
 use starcoin_config::{check_open_fds_limit, RocksdbConfig};
 use std::{collections::HashSet, iter, marker::PhantomData, path::Path};
@@ -98,6 +98,7 @@ impl DBStorage {
             Self::open_inner(&rocksdb_opts, path, column_families.clone())?
         };
         check_open_fds_limit(rocksdb_config.max_open_files as u64 + RES_FDS)?;
+
         Ok(Self {
             db,
             cfs: column_families,
@@ -414,6 +415,56 @@ impl InnerStore for DBStorage {
         })
     }
 
+    fn write_batch_with_column(&self, batch: WriteBatchWithColumn) -> Result<()> {
+        let mut db_batch = DBWriteBatch::default();
+        batch.data.into_iter().for_each(|data| {
+            let cf_handle = self.get_cf_handle(&data.column);
+            for (key, write_op) in data.row_data.rows {
+                match write_op {
+                    WriteOp::Value(value) => db_batch.put_cf(cf_handle, key, value),
+                    WriteOp::Deletion => db_batch.delete_cf(cf_handle, key),
+                };
+            }
+        });
+        record_metrics(
+            "db",
+            "write_batch_column",
+            "write_batch",
+            self.metrics.as_ref(),
+        )
+        .call(|| {
+            self.db
+                .write_opt(db_batch, &Self::default_write_options())?;
+            let mut flush_options = FlushOptions::default();
+            flush_options.set_wait(false);
+            self.db.flush_opt(&flush_options).unwrap();
+            Ok(())
+        })
+    }
+
+    fn write_batch_with_column_sync(&self, batch: WriteBatchWithColumn) -> Result<()> {
+        let mut db_batch = DBWriteBatch::default();
+        batch.data.into_iter().for_each(|data| {
+            let cf_handle = self.get_cf_handle(&data.column);
+            for (key, write_op) in data.row_data.rows {
+                match write_op {
+                    WriteOp::Value(value) => db_batch.put_cf(cf_handle, key, value),
+                    WriteOp::Deletion => db_batch.delete_cf(cf_handle, key),
+                };
+            }
+        });
+        record_metrics(
+            "db",
+            "write_batch_column",
+            "write_batch",
+            self.metrics.as_ref(),
+        )
+        .call(|| {
+            self.db.write_opt(db_batch, &Self::sync_write_options())?;
+            Ok(())
+        })
+    }
+
     fn get_len(&self) -> Result<u64> {
         unimplemented!()
     }
@@ -491,6 +542,13 @@ impl RawDBStorage for DBStorage {
 
     fn raw_write_batch(&self, batch: DBWriteBatch) -> Result<()> {
         self.db.write(batch)?;
+        Ok(())
+    }
+
+    fn raw_write_batch_sync(&self, batch: DBWriteBatch) -> Result<()> {
+        let mut opt = WriteOptions::default();
+        opt.set_sync(true);
+        self.db.write_opt(batch, &opt)?;
         Ok(())
     }
 }
