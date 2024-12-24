@@ -283,7 +283,7 @@ impl BlockDAG {
             std::result::Result::Ok(_) => {}
             Err(e) => match e {
                 ReachabilityError::DataInconsistency => {
-                    info!(
+                    warn!(
                         "the key {:?} was already processed, original error message: {:?}",
                         header.id(),
                         ReachabilityError::DataInconsistency
@@ -680,10 +680,15 @@ impl BlockDAG {
     ) -> anyhow::Result<ReachabilityView> {
         let de = descendants
             .into_iter()
-            .filter(|descendant| {
-                self.check_ancestor_of(ancestor, *descendant)
-                    .unwrap_or(false)
-            })
+            .filter(
+                |descendant| match self.check_ancestor_of(ancestor, *descendant) {
+                    std::result::Result::Ok(result) => result,
+                    Err(e) => {
+                        warn!("Error checking ancestor relationship: {:?}", e);
+                        false
+                    }
+                },
+            )
             .collect::<Vec<_>>();
         anyhow::Ok(ReachabilityView {
             ancestor,
