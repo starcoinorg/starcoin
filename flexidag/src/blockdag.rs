@@ -533,7 +533,7 @@ impl BlockDAG {
         pruning_depth: u64,
         pruning_finality: u64,
     ) -> anyhow::Result<MineNewDagBlockInfo> {
-        info!("start to calculate the mergeset and tips, previous pruning point: {:?}, previous ghostdata: {:?}", previous_pruning_point, previous_ghostdata);
+        info!("start to calculate the mergeset and tips, previous pruning point: {:?}, previous ghostdata: {:?} and its red block count: {:?}", previous_pruning_point, previous_ghostdata.to_compact(), previous_ghostdata.mergeset_reds.len());
         let dag_state = self.get_dag_state(previous_pruning_point)?;
         let next_ghostdata = self.ghostdata(&dag_state.tips)?;
         info!(
