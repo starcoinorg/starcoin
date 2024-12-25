@@ -224,7 +224,6 @@ where
 {
     fn has_dag_block(&self, block_id: HashValue) -> anyhow::Result<bool> {
         self.chain
-            .dag()
             .has_dag_block(block_id)
             .context("Failed to check if DAG block exists")
     }

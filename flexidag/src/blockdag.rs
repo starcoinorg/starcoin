@@ -98,7 +98,7 @@ impl BlockDAG {
         Ok(Self::new(k, dag_storage))
     }
 
-    pub fn has_dag_block(&self, hash: Hash) -> anyhow::Result<bool> {
+    pub fn has_block_connected(&self, hash: Hash) -> anyhow::Result<bool> {
         Ok(self.storage.header_store.has(hash)?)
     }
 

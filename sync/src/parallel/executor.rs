@@ -69,7 +69,7 @@ impl DagBlockExecutor {
                 return Ok(false);
             }
 
-            if !chain.has_dag_block(parent_id)? {
+            if !chain.has_block_connected(parent_id)? {
                 return Ok(false);
             }
         }
