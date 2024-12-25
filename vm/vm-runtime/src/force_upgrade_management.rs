@@ -3,7 +3,6 @@
 
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_types::account::Account;
-use starcoin_types::block::BlockNumber;
 use starcoin_vm_types::genesis_config::ChainId;
 
 pub const FORCE_UPGRADE_BLOCK_NUMBER: u64 = 17500000;
