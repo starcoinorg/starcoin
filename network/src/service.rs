@@ -930,7 +930,7 @@ mod test {
         assert!(!greater_barnard_fork_version(&v3));
         let v4 = String::from("starcoin/1.12.9 (build:v1.12.9) (kele01)");
         assert!(!greater_barnard_fork_version(&v4));
-        let v5 = String::from("starcoin/1.13.12 (build:v1.13.12-alpha) (kele01)");
+        let v5 = String::from("starcoin/1.13.13 (build:v1.13.12-alpha) (kele01)");
         assert!(greater_barnard_fork_version(&v5));
     }
 }
