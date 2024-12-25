@@ -313,7 +313,7 @@ fn main() {
     std::env::set_current_dir(base_path).expect("failed to change directory");
 
     let new_modules = build_stdlib(
-        starcoin_cached_packages::head_release_bundle()
+        starcoin_framework::testnet_release_bundle()
             .files()
             .unwrap()
             .as_slice(),

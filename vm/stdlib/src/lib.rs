@@ -56,24 +56,6 @@ pub const ERROR_DESC_EXTENSION: &str = "errmap";
 pub const ERROR_DESCRIPTIONS: &[u8] =
     std::include_bytes!("../compiled/latest/error_descriptions/error_descriptions.errmap");
 
-// The current stdlib that is freshly built. This will never be used in deployment so we don't need
-// to pull the same trick here in order to include this in the Rust binary.
-static G_FRESH_MOVE_LANG_STDLIB: Lazy<Vec<Vec<u8>>> = Lazy::new(|| {
-    build_stdlib(
-        starcoin_cached_packages::head_release_bundle()
-            .files()
-            .unwrap()
-            .as_slice(),
-    )
-    .values()
-    .map(|m| {
-        let mut blob = vec![];
-        m.serialize(&mut blob).unwrap();
-        blob
-    })
-    .collect()
-});
-
 // This needs to be a string literal due to restrictions imposed by include_bytes.
 /// The compiled library needs to be included in the Rust binary due to Docker deployment issues.
 /// This is why we include it here.
@@ -130,12 +112,13 @@ pub enum StdLibOptions {
 /// Returns a reference to the standard library. Depending upon the `option` flag passed in
 /// either a compiled version of the standard library will be returned or a new freshly built stdlib
 /// will be used.
-pub fn stdlib_modules(option: StdLibOptions) -> &'static [Vec<u8>] {
+pub fn stdlib_modules(option: StdLibOptions) -> Vec<Vec<u8>> {
     match option {
-        StdLibOptions::Fresh => &G_FRESH_MOVE_LANG_STDLIB,
+        StdLibOptions::Fresh => starcoin_cached_packages::head_release_bundle().legacy_copy_code(),
         StdLibOptions::Compiled(version) => G_COMPILED_STDLIB
             .get(&version)
-            .unwrap_or_else(|| panic!("Stdlib version {:?} not exist.", version)),
+            .unwrap_or_else(|| panic!("Stdlib version {:?} not exist.", version))
+            .to_vec(),
     }
 }
 
@@ -162,7 +145,7 @@ pub fn module_to_package(
 }
 
 pub fn stdlib_files() -> Vec<String> {
-    starcoin_cached_packages::head_release_bundle()
+    starcoin_framework::testnet_release_bundle()
         .files()
         .unwrap()
         .clone()

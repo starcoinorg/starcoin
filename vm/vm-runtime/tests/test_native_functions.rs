@@ -8,7 +8,7 @@ use std::collections::{HashMap, HashSet};
 
 #[test]
 pub fn test_native_function_matches() -> Result<()> {
-    let modules = starcoin_cached_packages::head_release_bundle().compiled_modules();
+    let modules = starcoin_framework::testnet_release_bundle().compiled_modules();
     let runtime_metadata = modules
         .iter()
         .filter_map(|m| {

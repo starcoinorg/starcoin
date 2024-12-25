@@ -12013,6 +12013,7 @@ dependencies = [
  "starcoin-cached-packages",
  "starcoin-config",
  "starcoin-crypto",
+ "starcoin-framework",
  "starcoin-logger",
  "starcoin-types",
  "starcoin-vm-types",

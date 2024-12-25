@@ -49,4 +49,4 @@ build/
 mold
 
 # ignore framework release bundle file
-**/*.mrb
+*.mrb
