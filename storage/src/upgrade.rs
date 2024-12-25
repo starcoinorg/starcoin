@@ -33,7 +33,7 @@ pub static BARNARD_HARD_FORK_HASH: Lazy<HashValue> = Lazy::new(|| {
 pub static DRAGON_HARD_FORK_HEIGHT: BlockNumber = 16801958;
 pub static DRAGON_HARD_FORK_HASH: Lazy<HashValue> = Lazy::new(|| {
     HashValue::from_hex_literal(
-        "0x1067291d5f74c1332de6e9109b1b4c382be1c482a052ad4bb0e2b66f220bb22e",
+        "0xbef8d0af3b358af9fe25f7383fd2580679c54fe2ce7ff7a7434785ba6d11b943",
     )
     .expect("")
 });
