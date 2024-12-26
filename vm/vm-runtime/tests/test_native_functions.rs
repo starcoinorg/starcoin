@@ -5,10 +5,11 @@ use starcoin_gas_schedule::LATEST_GAS_FEATURE_VERSION;
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::normalized::Function;
 use std::collections::{HashMap, HashSet};
+use stdlib::StdLibOptions;
 
 #[test]
 pub fn test_native_function_matches() -> Result<()> {
-    let modules = starcoin_framework::testnet_release_bundle().compiled_modules();
+    let modules = stdlib::stdlib_compiled_modules(StdLibOptions::Fresh);
     let runtime_metadata = modules
         .iter()
         .filter_map(|m| {

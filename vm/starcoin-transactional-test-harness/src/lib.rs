@@ -1504,7 +1504,7 @@ pub fn print_help(task_name: Option<String>) -> Result<()> {
 //TODO(simon): construct PackagePaths properly
 pub static G_PRECOMPILED_STARCOIN_FRAMEWORK: Lazy<(FullyCompiledProgram, Vec<PackagePaths>)> =
     Lazy::new(|| {
-        let sources = starcoin_framework::testnet_release_bundle()
+        let sources = starcoin_cached_packages::head_release_bundle()
             .files()
             .unwrap();
         let package_paths = vec![PackagePaths {
