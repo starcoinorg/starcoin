@@ -735,7 +735,10 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
                         continue;
                     }
                     match chain.apply_with_verifier::<DagVerifier>(block.clone()) {
-                        Ok(_) => execute_count = execute_count.saturating_add(1),
+                        Ok(_) => {
+                            execute_count = execute_count.saturating_add(1);
+                            break;
+                        }
                         Err(e) => {
                             warn!(
                                 "[sync specific] Execute block failed, block id: {:?}, error: {:?}",
