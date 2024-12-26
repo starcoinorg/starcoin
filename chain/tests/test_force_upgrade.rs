@@ -1,16 +1,21 @@
+use std::str::FromStr;
+use std::sync::Arc;
+
 use anyhow::format_err;
+
 use starcoin_accumulator::Accumulator;
 use starcoin_chain_api::{ChainReader, ChainWriter};
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
 use starcoin_statedb::ChainStateDB;
-use starcoin_transaction_builder::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};
+use starcoin_transaction_builder::{
+    build_burn_illegal_stc_txn_with_association, build_transfer_from_association,
+    DEFAULT_EXPIRATION_TIME,
+};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
 use starcoin_vm_types::on_chain_config::Version;
 use starcoin_vm_types::{account_config, state_view::StateReaderExt};
-use std::str::FromStr;
-use std::sync::Arc;
 use test_helper::executor::get_balance;
 
 #[stest::test]
@@ -130,21 +135,75 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
         let txns_num = txns_num + 2;
         assert_eq!(miner.get_txn_accumulator().num_leaves(), txns_num);
 
-        assert_eq!(
-            get_balance(black1, miner.chain_state()),
-            0,
-            "Upgrade Failed, Balance of black list account not 0"
-        );
-
-        assert_eq!(
-            get_balance(black2, miner.chain_state()),
-            0,
-            "Upgrade Failed, Balance of black list account not 0"
-        );
+        // let black1_balance = get_balance(black1, miner.chain_state());
+        // println!("Black 1 balance is: {:?}", black1_balance);
+        // assert_eq!(
+        //     black1_balance, 0,
+        //     "Upgrade Failed, Balance of black list account not 0"
+        // );
+        //
+        // println!("Black 2 balance is: {:?}", black1_balance);
+        // let black2_balance = get_balance(black2, miner.chain_state());
+        // assert_eq!(
+        //     black2_balance, 0,
+        //     "Upgrade Failed, Balance of black list account not 0"
+        // );
 
         assert_eq!(get_balance(rand3, miner.chain_state()), initial_balance + 3);
 
         block2
+    };
+
+    // fork a new chain, to apply block number 3, this will call StdlibUpgrade::burn_illegal_token_from_frozen_address
+    {
+        let burn_black_txn_1 = build_burn_illegal_stc_txn_with_association(
+            &black1,
+            association_sequence_num + 3,
+            initial_balance + 1,
+            config.net(),
+        );
+        let burn_black_txn_2 = build_burn_illegal_stc_txn_with_association(
+            &black2,
+            association_sequence_num + 4,
+            initial_balance + 2,
+            config.net(),
+        );
+
+        let (block_template, _excluded) = miner
+            .create_block_template(
+                account_config::association_address(),
+                None,
+                vec![burn_black_txn_1, burn_black_txn_2],
+                vec![],
+                Some(block_gas_limit),
+            )
+            .unwrap();
+
+        let block3 = miner
+            .consensus()
+            .create_block(block_template, miner.time_service().as_ref())?;
+
+        miner.apply(block3.clone())?;
+
+        // 1 meta + 3 txns = 4 txns
+        let txns_num = txns_num + 4;
+        let leaves_num = miner.get_txn_accumulator().num_leaves();
+        assert_eq!(leaves_num, txns_num);
+
+        let black1_balance = get_balance(black1, miner.chain_state());
+        println!("Black 1 balance is: {:?}", black1_balance);
+        assert_eq!(
+            black1_balance, 0,
+            "Upgrade Failed, Balance of black list account not 0"
+        );
+
+        println!("Black 2 balance is: {:?}", black1_balance);
+        let black2_balance = get_balance(black2, miner.chain_state());
+        assert_eq!(
+            black2_balance, 0,
+            "Upgrade Failed, Balance of black list account not 0"
+        );
+        block3
     };
 
     // apply block number 2 to another chain

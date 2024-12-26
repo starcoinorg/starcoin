@@ -1,15 +1,20 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use std::convert::TryInto;
+
 use anyhow::Result;
-use starcoin_config::{genesis_config::G_TOTAL_STC_AMOUNT, ChainNetwork};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
+
+use starcoin_config::{genesis_config::G_TOTAL_STC_AMOUNT, ChainNetwork};
 use starcoin_types::account::Account;
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config;
-use starcoin_vm_types::account_config::{core_code_address, genesis_address};
+use starcoin_vm_types::account_config::{
+    association_address, core_code_address, genesis_address, STC_TOKEN_CODE_STR,
+};
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::identifier::Identifier;
@@ -25,8 +30,7 @@ use starcoin_vm_types::transaction::{
     TransactionPayload,
 };
 use starcoin_vm_types::value::MoveValue;
-use std::convert::TryInto;
-use stdlib::{module_to_package, stdlib_package};
+use stdlib::{module_to_package, stdlib_package, COMPILED_MOVE_CODE_DIR};
 pub use stdlib::{stdlib_compiled_modules, stdlib_modules, StdLibOptions, StdlibVersion};
 
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
@@ -909,4 +913,48 @@ pub fn build_signed_empty_txn(
     );
     let signature = prikey.sign(&txn);
     SignedUserTransaction::new(txn, signature)
+}
+
+// Build a signed user transaction for burning illegal tokens from a frozen address.
+// This function creates a signed user transaction that attempts to burn illegal tokens
+// from a frozen address. The transaction is signed by the `signer` and is intended for the `recipient`.
+//
+// # Arguments
+// - `signer`: A reference to the `Account` that will sign the transaction.
+// - `recipient`: A reference to the `AccountAddress` of the recipient.
+// - `seq_num`: The sequence number of the transaction.
+// - `amount`: The amount of tokens to be burned, represented as a `u128`.
+// - `net`: A reference to the `ChainNetwork` which provides the chain ID for the transaction.
+//
+// # Returns
+// - A `SignedUserTransaction` that is signed by the `signer` with the specified transaction details.
+pub fn build_burn_illegal_stc_txn_with_association(
+    recipient: &AccountAddress,
+    seq_num: u64,
+    amount: u128,
+    net: &ChainNetwork,
+) -> SignedUserTransaction {
+    let raw_txn = RawUserTransaction::new_with_default_gas_token(
+        association_address(),
+        seq_num,
+        TransactionPayload::ScriptFunction(ScriptFunction::new(
+            ModuleId::new(
+                core_code_address(),
+                Identifier::new("StdlibUpgradeScripts").unwrap(),
+            ),
+            Identifier::new("burn_illegal_token_from_frozen_address").unwrap(),
+            vec![],
+            vec![
+                bcs_ext::to_bytes(&recipient).unwrap(),
+                bcs_ext::to_bytes(&amount).unwrap(),
+            ],
+        )),
+        10000000,
+        1,
+        1000 + 60 * 60,
+        net.chain_id(),
+    );
+    net.genesis_config()
+        .sign_with_association(raw_txn)
+        .expect("Sign with association failed")
 }
