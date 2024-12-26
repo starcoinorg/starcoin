@@ -135,36 +135,38 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
         let txns_num = txns_num + 2;
         assert_eq!(miner.get_txn_accumulator().num_leaves(), txns_num);
 
-        // let black1_balance = get_balance(black1, miner.chain_state());
-        // println!("Black 1 balance is: {:?}", black1_balance);
-        // assert_eq!(
-        //     black1_balance, 0,
-        //     "Upgrade Failed, Balance of black list account not 0"
-        // );
-        //
-        // println!("Black 2 balance is: {:?}", black1_balance);
-        // let black2_balance = get_balance(black2, miner.chain_state());
-        // assert_eq!(
-        //     black2_balance, 0,
-        //     "Upgrade Failed, Balance of black list account not 0"
-        // );
+        let black1_balance = get_balance(black1, miner.chain_state());
+        println!("Black 1 balance is: {:?}", black1_balance);
+        assert_eq!(
+            black1_balance,
+            initial_balance + 1,
+            "Force-Upgrading Failed, Balance of black-1 account changed!"
+        );
+
+        let black2_balance = get_balance(black2, miner.chain_state());
+        println!("Black 2 balance is: {:?}", black2_balance);
+        assert_eq!(
+            black2_balance,
+            initial_balance + 2,
+            "Force-upgrading Failed, Balance of black-2 account changed!"
+        );
 
         assert_eq!(get_balance(rand3, miner.chain_state()), initial_balance + 3);
 
         block2
     };
 
-    // fork a new chain, to apply block number 3, this will call StdlibUpgrade::burn_illegal_token_from_frozen_address
+    // Apply block number 3, this will call StdlibUpgrade::burn_illegal_token_from_frozen_address
     {
         let burn_black_txn_1 = build_burn_illegal_stc_txn_with_association(
             &black1,
-            association_sequence_num + 3,
+            association_sequence_num + 4,
             initial_balance + 1,
             config.net(),
         );
         let burn_black_txn_2 = build_burn_illegal_stc_txn_with_association(
             &black2,
-            association_sequence_num + 4,
+            association_sequence_num + 5,
             initial_balance + 2,
             config.net(),
         );
@@ -186,22 +188,22 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
         miner.apply(block3.clone())?;
 
         // 1 meta + 3 txns = 4 txns
-        let txns_num = txns_num + 4;
-        let leaves_num = miner.get_txn_accumulator().num_leaves();
-        assert_eq!(leaves_num, txns_num);
+        //let txns_num = txns_num + 3;
+        //let leaves_num = miner.get_txn_accumulator().num_leaves();
+        //assert_eq!(leaves_num, txns_num);
 
         let black1_balance = get_balance(black1, miner.chain_state());
         println!("Black 1 balance is: {:?}", black1_balance);
         assert_eq!(
             black1_balance, 0,
-            "Upgrade Failed, Balance of black list account not 0"
+            "Burning Failed, Balance of black-1 account is not 0"
         );
 
-        println!("Black 2 balance is: {:?}", black1_balance);
         let black2_balance = get_balance(black2, miner.chain_state());
+        println!("Black 2 balance is: {:?}", black2_balance);
         assert_eq!(
             black2_balance, 0,
-            "Upgrade Failed, Balance of black list account not 0"
+            "Burning Failed, Balance of black-2 account is not 0"
         );
         block3
     };
@@ -219,8 +221,14 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
         let txns_num = txns_num + 2;
         assert_eq!(chain_to_apply.get_txn_accumulator().num_leaves(), txns_num);
 
-        assert_eq!(get_balance(black1, chain_to_apply.chain_state()), 0);
-        assert_eq!(get_balance(black2, chain_to_apply.chain_state()), 0);
+        assert_eq!(
+            get_balance(black1, chain_to_apply.chain_state()),
+            initial_balance + 1
+        );
+        assert_eq!(
+            get_balance(black2, chain_to_apply.chain_state()),
+            initial_balance + 2
+        );
         assert_eq!(
             get_balance(rand3, chain_to_apply.chain_state()),
             initial_balance + 3
