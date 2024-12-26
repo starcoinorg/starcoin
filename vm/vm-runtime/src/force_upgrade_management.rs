@@ -15,7 +15,8 @@ pub fn get_force_upgrade_block_number(chain_id: &ChainId) -> u64 {
     } else if chain_id.is_halley() || chain_id.is_proxima() {
         300
     } else if chain_id.is_barnard() {
-        16085000
+        // add 8000 + BARNARD_HARD_FORK_HEIGHT
+        16088000
     } else {
         FORCE_UPGRADE_BLOCK_NUMBER
     }
