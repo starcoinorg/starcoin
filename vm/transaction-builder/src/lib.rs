@@ -12,9 +12,7 @@ use starcoin_types::account::Account;
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config;
-use starcoin_vm_types::account_config::{
-    association_address, core_code_address, genesis_address, STC_TOKEN_CODE_STR,
-};
+use starcoin_vm_types::account_config::{association_address, core_code_address, genesis_address};
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::identifier::Identifier;
@@ -30,7 +28,7 @@ use starcoin_vm_types::transaction::{
     TransactionPayload,
 };
 use starcoin_vm_types::value::MoveValue;
-use stdlib::{module_to_package, stdlib_package, COMPILED_MOVE_CODE_DIR};
+use stdlib::{module_to_package, stdlib_package};
 pub use stdlib::{stdlib_compiled_modules, stdlib_modules, StdLibOptions, StdlibVersion};
 
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
