@@ -61,6 +61,17 @@ impl ServiceRequest for SyncStatusRequest {
 }
 
 #[derive(Debug, Clone)]
+pub struct SyncSpecificTagretRequest {
+    pub block: Option<Block>,
+    pub block_id: HashValue,
+    pub layer: u64, // the number of layers to sync
+}
+
+impl ServiceRequest for SyncSpecificTagretRequest {
+    type Response = Result<()>;
+}
+
+#[derive(Debug, Clone)]
 pub struct SyncProgressRequest;
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
