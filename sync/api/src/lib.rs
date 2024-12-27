@@ -1,6 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use std::cmp::Ordering;
+
 use anyhow::Result;
 use network_api::PeerId;
 use network_api::PeerStrategy;
@@ -15,6 +17,38 @@ use starcoin_types::U256;
 pub use stream_task::TaskProgressReport;
 
 mod service;
+
+#[derive(Clone, Debug, Eq)]
+pub struct SyncBlockSort {
+    pub block: Block,
+}
+
+impl PartialEq for SyncBlockSort {
+    fn eq(&self, other: &Self) -> bool {
+        self.block.header().id() == other.block.header().id()
+    }
+}
+
+impl PartialOrd for SyncBlockSort {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for SyncBlockSort {
+    fn cmp(&self, other: &Self) -> Ordering {
+        let result = self
+            .block
+            .header()
+            .number()
+            .cmp(&other.block.header().number());
+        if Ordering::Equal == result {
+            self.block.header().id().cmp(&other.block.header().id())
+        } else {
+            result
+        }
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct StartSyncTxnEvent;
@@ -64,7 +98,7 @@ impl ServiceRequest for SyncStatusRequest {
 pub struct SyncSpecificTagretRequest {
     pub block: Option<Block>,
     pub block_id: HashValue,
-    pub layer: u64, // the number of layers to sync
+    pub peer_id: Option<PeerId>,
 }
 
 impl ServiceRequest for SyncSpecificTagretRequest {

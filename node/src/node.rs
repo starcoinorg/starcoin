@@ -7,11 +7,10 @@ use crate::peer_message_handler::NodePeerMessageHandler;
 use crate::rpc_service_factory::RpcServiceFactory;
 use crate::NodeHandle;
 use actix::prelude::*;
-use anyhow::{format_err, Result};
+use anyhow::Result;
 use futures::channel::oneshot;
 use futures::executor::block_on;
 use futures_timer::Delay;
-use network_api::{PeerProvider, PeerSelector, PeerStrategy};
 use starcoin_account_service::{AccountEventService, AccountService, AccountStorage};
 use starcoin_block_relayer::BlockRelayer;
 use starcoin_chain_notify::ChainNotifyHandlerService;
@@ -26,7 +25,7 @@ use starcoin_miner::generate_block_event_pacemaker::GenerateBlockEventPacemaker;
 use starcoin_miner::{BlockBuilderService, MinerService};
 use starcoin_miner_client::job_bus_client::JobBusClient;
 use starcoin_miner_client::miner::MinerClientService;
-use starcoin_network::{NetworkActorService, NetworkServiceRef};
+use starcoin_network::NetworkActorService;
 use starcoin_network_rpc::NetworkRpcService;
 use starcoin_node_api::errors::NodeStartError;
 use starcoin_node_api::message::{NodeRequest, NodeResponse};
@@ -48,10 +47,10 @@ use starcoin_storage::{BlockStore, Storage};
 use starcoin_stratum::service::{StratumService, StratumServiceFactory};
 use starcoin_stratum::stratum::{Stratum, StratumFactory};
 use starcoin_sync::announcement::AnnouncementService;
-use starcoin_sync::block_connector::{BlockConnectorService, ExecuteRequest, ResetRequest};
+use starcoin_sync::block_connector::{BlockConnectorService, ResetRequest};
 use starcoin_sync::sync::SyncService;
 use starcoin_sync::txn_sync::TxnSyncService;
-use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
+use starcoin_sync_api::SyncSpecificTagretRequest;
 use starcoin_txpool::{TxPoolActorService, TxPoolService};
 use starcoin_types::blockhash::KType;
 use starcoin_types::system_events::{SystemShutdown, SystemStarted};
@@ -142,46 +141,55 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                 NodeResponse::AsyncResult(receiver)
             }
             NodeRequest::ReExecuteBlock(block_hash) => {
-                let storage = self
-                    .registry
-                    .get_shared_sync::<Arc<Storage>>()
-                    .expect("Storage must exist.");
+                // let storage = self
+                //     .registry
+                //     .get_shared_sync::<Arc<Storage>>()
+                //     .expect("Storage must exist.");
 
-                let connect_service = ctx
-                    .service_ref::<BlockConnectorService<TxPoolService>>()?
-                    .clone();
-                let network = ctx.get_shared::<NetworkServiceRef>()?;
+                let sync_service = ctx.service_ref::<SyncService>()?.clone();
                 let fut = async move {
                     info!("Prepare to re execute block {}", block_hash);
-                    let block = match storage.get_block(block_hash)? {
-                        Some(block) => Some(block),
-                        None => {
-                            info!("Get block from peer to peer network");
-                            //get block from peer to peer network.
-                            let peer_set = network.peer_set().await?;
-                            if peer_set.is_empty() {
-                                info!("Peers is empty.");
-                                None
-                            } else {
-                                let peer_selector =
-                                    PeerSelector::new(peer_set, PeerStrategy::Best, None);
-                                peer_selector.retain_rpc_peers();
-                                let rpc_client = VerifiedRpcClient::new(peer_selector, network);
-                                let mut blocks = rpc_client.get_blocks(vec![block_hash]).await?;
-                                blocks.pop().flatten().map(|(block, _peer)| block)
-                            }
-                        }
-                    };
-                    let block = block.ok_or_else(|| {
-                        format_err!(
-                            "Can not find block by {} from local and peer to peer network.",
-                            block_hash
-                        )
-                    })?;
-                    let result = connect_service.send(ExecuteRequest { block }).await??;
-                    info!("Re execute result: {:?}", result);
+                    sync_service
+                        .send(SyncSpecificTagretRequest {
+                            block: None,
+                            block_id: block_hash,
+                            peer_id: None,
+                        })
+                        .await??;
                     Ok(())
                 };
+                // let network = ctx.get_shared::<NetworkServiceRef>()?;
+                // let fut = async move {
+                //     info!("Prepare to re execute block {}", block_hash);
+                //     let block = match storage.get_block(block_hash)? {
+                //         Some(block) => Some(block),
+                //         None => {
+                //             info!("Get block from peer to peer network");
+                //             //get block from peer to peer network.
+                //             let peer_set = network.peer_set().await?;
+                //             if peer_set.is_empty() {
+                //                 info!("Peers is empty.");
+                //                 None
+                //             } else {
+                //                 let peer_selector =
+                //                     PeerSelector::new(peer_set, PeerStrategy::Best, None);
+                //                 peer_selector.retain_rpc_peers();
+                //                 let rpc_client = VerifiedRpcClient::new(peer_selector, network);
+                //                 let mut blocks = rpc_client.get_blocks(vec![block_hash]).await?;
+                //                 blocks.pop().flatten().map(|(block, _peer)| block)
+                //             }
+                //         }
+                //     };
+                //     let block = block.ok_or_else(|| {
+                //         format_err!(
+                //             "Can not find block by {} from local and peer to peer network.",
+                //             block_hash
+                //         )
+                //     })?;
+                //     let result = connect_service.send(ExecuteRequest { block }).await??;
+                //     info!("Re execute result: {:?}", result);
+                //     Ok(())
+                // };
                 let receiver = ctx.exec(fut);
                 NodeResponse::AsyncResult(receiver)
             }

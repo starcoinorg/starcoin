@@ -26,15 +26,16 @@ use starcoin_service_registry::{
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::{
-    PeerScoreRequest, PeerScoreResponse, SyncCancelRequest, SyncProgressReport,
+    PeerScoreRequest, PeerScoreResponse, SyncBlockSort, SyncCancelRequest, SyncProgressReport,
     SyncProgressRequest, SyncServiceHandler, SyncSpecificTagretRequest, SyncStartRequest,
     SyncStatusRequest, SyncTarget,
 };
 use starcoin_txpool::TxPoolService;
-use starcoin_types::block::BlockIdAndNumber;
+use starcoin_types::block::{Block, BlockIdAndNumber};
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
+use std::collections::{BinaryHeap, HashSet};
 use std::result::Result::Ok;
 use std::sync::Arc;
 use std::time::Duration;
@@ -641,8 +642,14 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
         let dag = ctx.get_shared::<BlockDAG>()?;
 
         let fut = async move {
-            let verified_rpc_client =
-                Self::create_verified_client(network, config.clone(), None, vec![], None).await?;
+            let verified_rpc_client = Self::create_verified_client(
+                network,
+                config.clone(),
+                Some(PeerStrategy::Best),
+                vec![],
+                None,
+            )
+            .await?;
             let startup_info = storage
                 .get_startup_info()?
                 .ok_or_else(|| format_err!("Startup info should exist."))?;
@@ -657,35 +664,39 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
             let specific_block = match msg.block {
                 Some(block) => block,
                 None => {
-                    let block_from_remote = verified_rpc_client
-                        .get_block_diligently(vec![msg.block_id])
-                        .await?;
-                    if block_from_remote.len() != 1 {
-                        return Err(format_err!(
-                            "Get block by id failed, block id: {:?}",
-                            msg.block_id
-                        ));
+                    if let Some(block) = storage.get_block(msg.block_id)? {
+                        block
+                    } else {
+                        let block_from_remote = verified_rpc_client
+                            .get_block_diligently(vec![msg.block_id])
+                            .await?;
+                        if block_from_remote.len() != 1 {
+                            return Err(format_err!(
+                                "Get block by id failed, block id: {:?}",
+                                msg.block_id
+                            ));
+                        }
+                        block_from_remote
+                            .first()
+                            .as_ref()
+                            .expect("it should not be none, because the len = 1")
+                            .as_ref()
+                            .ok_or_else(|| {
+                                format_err!("Get block by id failed, block id: {:?}", msg.block_id)
+                            })?
+                            .0
+                            .clone()
                     }
-                    block_from_remote
-                        .first()
-                        .as_ref()
-                        .expect("it should not be none")
-                        .as_ref()
-                        .ok_or_else(|| {
-                            format_err!("Get block by id failed, block id: {:?}", msg.block_id)
-                        })?
-                        .0
-                        .clone()
                 }
             };
 
-            let mut candidates = vec![specific_block.id()];
-            let mut waiting_list = vec![];
+            let mut current_round = specific_block.header().parents_hash();
+            let mut next_round = vec![];
             let mut blocks_to_be_executed = vec![];
 
-            // ensure the blocks are ready to be executed
-            while !candidates.is_empty() {
-                for block_id in candidates {
+            // ensure the previous blocks are ready to be executed or were executed already
+            while !current_round.is_empty() {
+                for block_id in current_round {
                     // already executed
                     if chain.has_dag_block(block_id)? {
                         continue;
@@ -693,7 +704,7 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
 
                     // fetch from the local
                     match storage.get_block(block_id)? {
-                        Some(block_in_local) => waiting_list.push(block_in_local),
+                        Some(block_in_local) => next_round.push(block_in_local),
                         None => {
                             // fetch from the remote
                             let parents_in_remote = verified_rpc_client
@@ -708,57 +719,60 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
                             parents_in_remote
                                 .first()
                                 .and_then(|opt_block| opt_block.as_ref())
-                                .map(|block| waiting_list.push(block.0.clone()))
+                                .map(|block| next_round.push(block.0.clone()))
                                 .ok_or_else(|| {
                                     format_err!("Get block by id failed, block id: {:?}", block_id)
                                 })?;
                         }
                     }
                 }
-                if waiting_list.is_empty() {
+                if next_round.is_empty() {
                     break;
                 }
-                candidates = waiting_list
+                current_round = next_round
                     .iter()
                     .flat_map(|block| block.header().parents_hash())
+                    .collect::<HashSet<_>>()
+                    .into_iter()
                     .collect::<Vec<_>>();
-                blocks_to_be_executed.extend(waiting_list);
-                waiting_list = vec![];
+                blocks_to_be_executed.extend(next_round);
+                next_round = vec![];
             }
+            let mut waiting_for_execution_heap = blocks_to_be_executed
+                .into_iter()
+                .collect::<HashSet<_>>()
+                .into_iter()
+                .map(|block| SyncBlockSort { block })
+                .collect::<BinaryHeap<_>>();
 
-            blocks_to_be_executed.sort_by_key(|a| a.header().number());
-            let mut execute_count: usize = 0;
-            let mut error_count: usize = 0;
+            let mut failed_blocks: Vec<Block> = vec![];
             loop {
-                for block in &blocks_to_be_executed {
-                    if chain.has_dag_block(block.id())? {
+                let block = match waiting_for_execution_heap.pop() {
+                    Some(sync_block) => sync_block.block,
+                    None => break,
+                };
+                if chain.has_dag_block(block.id())? {
+                    continue;
+                }
+                match chain.apply_with_verifier::<DagVerifier>(block.clone()) {
+                    Ok(_) => {
+                        waiting_for_execution_heap.extend(failed_blocks.iter().map(|block| {
+                            SyncBlockSort {
+                                block: block.clone(),
+                            }
+                        }));
+                        failed_blocks.clear();
                         continue;
                     }
-                    match chain.apply_with_verifier::<DagVerifier>(block.clone()) {
-                        Ok(_) => {
-                            execute_count = execute_count.saturating_add(1);
-                            break;
-                        }
-                        Err(e) => {
-                            warn!(
-                                "[sync specific] Execute block failed, block id: {:?}, error: {:?}",
-                                block.id(),
-                                e
-                            );
-                            error_count = error_count.saturating_add(1);
-                            if execute_count > blocks_to_be_executed.len().pow(2) {
-                                error!("[sync specific] Execute block failed, block id: {:?}, error: {:?}", block.id(), e);
-                                return Err(format_err!(
-                                    "Execute block failed, block id: {:?}, error: {:?}",
-                                    block.id(),
-                                    e
-                                ));
-                            }
-                        }
+                    Err(e) => {
+                        warn!(
+                            "[sync specific] Execute block failed, block id: {:?}, error: {:?}",
+                            block.id(),
+                            e
+                        );
+                        failed_blocks.push(block);
+                        continue;
                     }
-                }
-                if execute_count == blocks_to_be_executed.len() {
-                    break;
                 }
             }
             Ok(())
