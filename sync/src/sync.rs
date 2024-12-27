@@ -682,15 +682,7 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
                             ));
                         }
                         let block = block_from_remote
-                            .first()
-                            .as_ref()
-                            .expect("it should not be none, because the len = 1")
-                            .as_ref()
-                            .ok_or_else(|| {
-                                format_err!("Get block by id failed, block id: {:?}", msg.block_id)
-                            })?
-                            .0
-                            .clone();
+                            .first().expect("should not be none").0.clone();
                         storage.save_dag_sync_block(DagSyncBlock {
                             block: block.clone(),
                             children: vec![],
@@ -733,13 +725,9 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
                                         block_id
                                     ));
                                 }
-                                parents_in_remote
-                                    .first()
-                                    .and_then(|opt_block| opt_block.as_ref())
-                                    .map(|block| next_round.push(block.0.clone()))
-                                    .ok_or_else(|| {
-                                        format_err!("Get block by id failed, block id: {:?}", block_id)
-                                    })?;
+                                let block = parents_in_remote
+                                    .first().expect("should not be none").0.clone();
+                                next_round.push(block.clone());
                                 storage.save_dag_sync_block(DagSyncBlock {
                                     block: next_round.last().expect("impossible to be none").clone(),
                                     children: vec![],
