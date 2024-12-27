@@ -718,24 +718,32 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
                     match storage.get_block(block_id)? {
                         Some(block_in_local) => next_round.push(block_in_local),
                         None => {
-                            // fetch from the remote
-                            let parents_in_remote = verified_rpc_client
-                                .get_block_diligently(vec![block_id])
-                                .await?;
-                            if parents_in_remote.len() != 1 {
-                                return Err(format_err!(
-                                    "Get block by id failed, block id: {:?}",
-                                    block_id
-                                ));
-                            }
-                            parents_in_remote
-                                .first()
-                                .and_then(|opt_block| opt_block.as_ref())
-                                .map(|block| next_round.push(block.0.clone()))
-                                .ok_or_else(|| {
-                                    format_err!("Get block by id failed, block id: {:?}", block_id)
+                            if let Some(sync_dag_block) = storage.get_dag_sync_block(block_id)? {
+                                next_round.push(sync_dag_block.block);
+                            } else {
+                                // fetch from the remote
+                                let parents_in_remote = verified_rpc_client
+                                    .get_block_diligently(vec![block_id])
+                                    .await?;
+                                if parents_in_remote.len() != 1 {
+                                    return Err(format_err!(
+                                        "Get block by id failed, block id: {:?}",
+                                        block_id
+                                    ));
+                                }
+                                parents_in_remote
+                                    .first()
+                                    .and_then(|opt_block| opt_block.as_ref())
+                                    .map(|block| next_round.push(block.0.clone()))
+                                    .ok_or_else(|| {
+                                        format_err!("Get block by id failed, block id: {:?}", block_id)
+                                    })?;
+                                storage.save_dag_sync_block(DagSyncBlock {
+                                    block: next_round.last().expect("impossible to be none").clone(),
+                                    children: vec![],
                                 })?;
-                        }
+                            }
+                       }
                     }
                 }
                 if next_round.is_empty() {
