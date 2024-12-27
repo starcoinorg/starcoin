@@ -302,6 +302,7 @@ where
                             if let std::result::Result::Ok(sync_service) =
                                 ctx.service_ref::<SyncService>()
                             {
+                                return;
                                 info!(
                                     "BlockConnector try connect future block ({:?},{}), peer_id:{:?}, notify Sync service check sync.",
                                     block.id(),
