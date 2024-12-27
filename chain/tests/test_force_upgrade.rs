@@ -110,6 +110,8 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
         assert_eq!(get_balance(rand3, miner.chain_state()), initial_balance + 3);
     }
 
+    let forked_txn_num = txns_num;
+
     // fork a new chain, to apply block number 2
     let mut chain_to_apply = miner.fork(miner.current_header().id()).unwrap();
 
@@ -132,7 +134,7 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
         miner.apply(block2.clone())?;
 
         // 1 meta + 1 extra = 2 txns
-        let txns_num = txns_num + 2;
+        txns_num += 2;
         assert_eq!(miner.get_txn_accumulator().num_leaves(), txns_num);
 
         let black1_balance = get_balance(black1, miner.chain_state());
@@ -156,8 +158,20 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
         block2
     };
 
-    // Apply block number 3, this will call StdlibUpgrade::burn_illegal_token_from_frozen_address
+    // Upgrade script will create a new signer on the behalf of the association account,
+    // the sequence number of the association account will be increased by 1.
     {
+        assert_eq!(
+            miner
+                .chain_state_reader()
+                .get_sequence_number(account_config::association_address())
+                .unwrap(),
+            association_sequence_num + 4
+        );
+    }
+
+    // Apply block number 3, this will call StdlibUpgrade::burn_illegal_token_from_frozen_address
+    let block_num_3 = {
         let burn_black_txn_1 = build_burn_illegal_stc_txn_with_association(
             &black1,
             association_sequence_num + 4,
@@ -187,10 +201,10 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
 
         miner.apply(block3.clone())?;
 
-        // 1 meta + 3 txns = 4 txns
-        //let txns_num = txns_num + 3;
-        //let leaves_num = miner.get_txn_accumulator().num_leaves();
-        //assert_eq!(leaves_num, txns_num);
+        // 1 meta + 2 txns = 3 txns
+        txns_num += 3;
+        let leaves_num = miner.get_txn_accumulator().num_leaves();
+        assert_eq!(leaves_num, txns_num);
 
         let black1_balance = get_balance(black1, miner.chain_state());
         println!("Black 1 balance is: {:?}", black1_balance);
@@ -208,7 +222,7 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
         block3
     };
 
-    // apply block number 2 to another chain
+    // apply block number 2,3 to another chain
     {
         // !!!non-zero balance
         assert_ne!(get_balance(black1, chain_to_apply.chain_state()), 0);
@@ -218,7 +232,7 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
         chain_to_apply.apply(block_num_2)?;
 
         // 1 meta + 1 extra = 2 txns
-        let txns_num = txns_num + 2;
+        let txns_num = forked_txn_num + 2;
         assert_eq!(chain_to_apply.get_txn_accumulator().num_leaves(), txns_num);
 
         assert_eq!(
@@ -229,6 +243,20 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
             get_balance(black2, chain_to_apply.chain_state()),
             initial_balance + 2
         );
+        assert_eq!(
+            get_balance(rand3, chain_to_apply.chain_state()),
+            initial_balance + 3
+        );
+
+        chain_to_apply.apply(block_num_3)?;
+
+        // 1 meta + 2 txns = 3 txns
+        let txns_num = txns_num + 3;
+        let leaves_num = miner.get_txn_accumulator().num_leaves();
+        assert_eq!(leaves_num, txns_num);
+
+        assert_eq!(get_balance(black1, chain_to_apply.chain_state()), 0);
+        assert_eq!(get_balance(black2, chain_to_apply.chain_state()), 0);
         assert_eq!(
             get_balance(rand3, chain_to_apply.chain_state()),
             initial_balance + 3
