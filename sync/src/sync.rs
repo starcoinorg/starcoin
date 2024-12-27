@@ -193,6 +193,7 @@ impl SyncService {
         peer_strategy: Option<PeerStrategy>,
         ctx: &mut ServiceContext<Self>,
     ) -> Result<()> {
+        return Ok(());
         let sync_task_total = self
             .metrics
             .as_ref()
@@ -562,6 +563,7 @@ impl CheckSyncEvent {
 
 impl EventHandler<Self, CheckSyncEvent> for SyncService {
     fn handle_event(&mut self, msg: CheckSyncEvent, ctx: &mut ServiceContext<Self>) {
+        return;
         if let Err(e) = self.check_and_start_sync(msg.peers, msg.skip_pow_verify, msg.strategy, ctx)
         {
             error!("[sync] Check sync error: {:?}", e);
