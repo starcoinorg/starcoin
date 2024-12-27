@@ -724,6 +724,7 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
                                 next_round.push(sync_dag_block.block);
                             } else {
                                 // fetch from the remote
+                                async_std::task::sleep(Duration::from_millis(500)).await;
                                 let parents_in_remote = verified_rpc_client
                                     .get_block_diligently(vec![block_id])
                                     .await?;
