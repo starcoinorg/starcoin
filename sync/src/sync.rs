@@ -673,7 +673,7 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
                         sync_dag_block.block
                     } else {
                         let block_from_remote = verified_rpc_client
-                            .get_block_diligently(vec![msg.block_id])
+                            .get_blocks(vec![msg.block_id])
                             .await?;
                         if block_from_remote.len() != 1 {
                             return Err(format_err!(
@@ -724,9 +724,8 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
                                 next_round.push(sync_dag_block.block);
                             } else {
                                 // fetch from the remote
-                                async_std::task::sleep(Duration::from_millis(500)).await;
                                 let parents_in_remote = verified_rpc_client
-                                    .get_block_diligently(vec![block_id])
+                                    .get_blocks(vec![block_id])
                                     .await?;
                                 if parents_in_remote.len() != 1 {
                                     return Err(format_err!(
