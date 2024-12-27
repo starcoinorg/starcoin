@@ -23,6 +23,7 @@ use starcoin_network::PeerEvent;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
+use starcoin_storage::block::DagSyncBlock;
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::{
@@ -666,6 +667,8 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
                 None => {
                     if let Some(block) = storage.get_block(msg.block_id)? {
                         block
+                    } else if let Some(sync_dag_block) = storage.get_dag_sync_block(msg.block_id)? {
+                        sync_dag_block.block
                     } else {
                         let block_from_remote = verified_rpc_client
                             .get_block_diligently(vec![msg.block_id])
@@ -676,7 +679,7 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
                                 msg.block_id
                             ));
                         }
-                        block_from_remote
+                        let block = block_from_remote
                             .first()
                             .as_ref()
                             .expect("it should not be none, because the len = 1")
@@ -685,7 +688,12 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
                                 format_err!("Get block by id failed, block id: {:?}", msg.block_id)
                             })?
                             .0
-                            .clone()
+                            .clone();
+                        storage.save_dag_sync_block(DagSyncBlock {
+                            block: block.clone(),
+                            children: vec![],
+                        })?;
+                        block
                     }
                 }
             };
@@ -695,6 +703,10 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
             let mut blocks_to_be_executed = vec![];
 
             // ensure the previous blocks are ready to be executed or were executed already
+            info!(
+                "[sync specific] Start to sync specific block: {:?}",
+                specific_block.id()
+            );
             while !current_round.is_empty() {
                 for block_id in current_round {
                     // already executed
@@ -737,6 +749,10 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
                     .collect::<Vec<_>>();
                 blocks_to_be_executed.extend(next_round);
                 next_round = vec![];
+                info!(
+                    "[sync specific] Fetch parents blocks, current_round: {:?}",
+                    current_round
+                );
             }
             let mut waiting_for_execution_heap = blocks_to_be_executed
                 .into_iter()
@@ -746,6 +762,7 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
                 .collect::<BinaryHeap<_>>();
 
             let mut failed_blocks: Vec<Block> = vec![];
+            info!("[sync specific] Start to execute blocks");
             loop {
                 let block = match waiting_for_execution_heap.pop() {
                     Some(sync_block) => sync_block.block,
@@ -775,6 +792,7 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
                     }
                 }
             }
+            info!("[sync specific] Sync specific block done");
             Ok(())
         };
 

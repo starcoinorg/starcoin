@@ -341,12 +341,6 @@ impl EventHandler<Self, PeerCompactBlockMessage> for BlockRelayer {
         if let Some(metrics) = self.metrics.as_ref() {
             metrics.block_relay_time.observe(time_sec);
         }
-        sl_info!(
-            "{action} {hash} {time_sec}",
-            time_sec = time_sec,
-            hash = compact_block_msg.message.compact_block.header.id().to_hex(),
-            action = "block_relay_time",
-        );
         //TODO should filter too old block?
 
         if let Err(e) = self.handle_block_event(compact_block_msg, ctx) {
