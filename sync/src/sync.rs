@@ -4,7 +4,7 @@
 use crate::block_connector::BlockConnectorService;
 use crate::store::sync_dag_store::{SyncDagStore, SyncDagStoreConfig};
 use crate::sync_metrics::SyncMetrics;
-use crate::tasks::{full_sync_task, AncestorEvent, SyncFetcher};
+use crate::tasks::{full_sync_task, AncestorEvent, BlockFetcher, SyncFetcher};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
 use anyhow::{format_err, Result};
 use futures::FutureExt;
@@ -673,7 +673,7 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
                         sync_dag_block.block
                     } else {
                         let block_from_remote = verified_rpc_client
-                            .get_blocks(vec![msg.block_id])
+                            .fetch_blocks(vec![msg.block_id])
                             .await?;
                         if block_from_remote.len() != 1 {
                             return Err(format_err!(
@@ -725,7 +725,7 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
                             } else {
                                 // fetch from the remote
                                 let parents_in_remote = verified_rpc_client
-                                    .get_blocks(vec![block_id])
+                                    .fetch_blocks(vec![block_id])
                                     .await?;
                                 if parents_in_remote.len() != 1 {
                                     return Err(format_err!(
