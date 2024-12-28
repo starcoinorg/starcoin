@@ -697,10 +697,10 @@ impl BlockChain {
             txn_accumulator,
             block_accumulator,
             &genesis_epoch,
-            None,
+            None, /*parent status*/
             genesis_block,
             &chain_id,
-            None,
+            None, /*VM metrics*/
         )?;
         dag = Self::init_dag(dag, genesis_header)?;
         Self::new(time_service, executed_block.block.id(), storage, None, dag)
@@ -1269,12 +1269,19 @@ impl BlockChain {
         };
 
         watch(CHAIN_WATCH_NAME, "n21");
-        let executed_data = starcoin_executor::block_execute(
-            &statedb,
-            transactions.clone(),
-            epoch.block_gas_limit(),
-            vm_metrics,
-        )?;
+        let executed_data = if header.is_genesis() {
+            starcoin_executor::execute_genesis_transaction(
+                &statedb,
+                transactions.first().unwrap().clone(),
+            )?
+        } else {
+            starcoin_executor::block_execute(
+                &statedb,
+                transactions.clone(),
+                epoch.block_gas_limit(),
+                vm_metrics,
+            )?
+        };
         watch(CHAIN_WATCH_NAME, "n22");
         let state_root = executed_data.state_root;
         let vec_transaction_info = &executed_data.txn_infos;
