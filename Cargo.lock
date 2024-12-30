@@ -10680,31 +10680,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "starcoin-force-upgrade"
-version = "1.13.10"
-dependencies = [
- "anyhow",
- "async-trait",
- "bcs-ext",
- "futures 0.3.30",
- "include_dir",
- "parking_lot 0.12.1",
- "starcoin-accumulator",
- "starcoin-chain-api",
- "starcoin-crypto",
- "starcoin-genesis",
- "starcoin-logger",
- "starcoin-move-compiler",
- "starcoin-state-api",
- "starcoin-statedb",
- "starcoin-storage",
- "starcoin-types",
- "starcoin-vm-types",
- "stdlib",
- "stest",
-]
-
-[[package]]
 name = "starcoin-framework"
 version = "0.1.0"
 dependencies = [
