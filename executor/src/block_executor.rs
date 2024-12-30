@@ -82,10 +82,14 @@ pub fn execute_genesis_transaction<S: StateView + ChainStateWriter + Sync>(
         txn_outputs.len()
     );
     let mut executed_data = BlockExecutedData::default();
-    let (write_set, events, gas_used, status, _) =
-        txn_outputs.first().unwrap().clone().into_inner();
+    // this expect will never fail, as we have checked the output count is 1.
+    let (write_set, events, gas_used, status, _) = txn_outputs
+        .first()
+        .expect("genesis txn must have one output")
+        .clone()
+        .into_inner();
     let extra_write_set =
-        extract_extra_writeset(chain_state).expect("extract extra writeset failed");
+        extract_extra_writeset(chain_state).expect("extract extra write set failed");
     let write_set = write_set
         .into_mut()
         .squash(extra_write_set.into_mut())
