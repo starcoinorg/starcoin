@@ -59,4 +59,3 @@ starcoin-cached-packages = { workspace = true }
 default = ["metrics"]
 metrics = ["starcoin-metrics"]
 testing = ["move-stdlib/testing", "starcoin-framework/testing", "starcoin-aggregator/testing", "move-unit-test"]
-force-deploy = []

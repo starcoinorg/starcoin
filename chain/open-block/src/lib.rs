@@ -25,24 +25,6 @@ use starcoin_types::{
 };
 use std::{convert::TryInto, sync::Arc};
 
-#[cfg(feature = "force-deploy")]
-use {
-    starcoin_force_upgrade::ForceUpgrade,
-    starcoin_types::{account::DEFAULT_EXPIRATION_TIME, identifier::Identifier},
-    starcoin_vm_runtime::force_upgrade_management::{
-        get_force_upgrade_account, get_force_upgrade_block_number,
-    },
-    starcoin_vm_types::{
-        access_path::AccessPath,
-        account_config::{genesis_address, ModuleUpgradeStrategy},
-        genesis_config::StdlibVersion,
-        move_resource::MoveResource,
-        on_chain_config::{self, Version},
-        state_store::state_key::StateKey,
-        state_view::{StateReaderExt, StateView},
-    },
-};
-
 pub struct OpenedBlock {
     previous_block_info: BlockInfo,
     block_meta: BlockMetadata,
@@ -238,10 +220,6 @@ impl OpenedBlock {
             };
         }
 
-        #[cfg(feature = "force-deploy")]
-        self.execute_extra_txn()
-            .expect("Extra txn must be executed successfully");
-
         Ok(ExcludedTxns {
             discarded_txns: discard_txns,
             untouched_txns: untouched_user_txns,
@@ -285,15 +263,6 @@ impl OpenedBlock {
         txn_hash: HashValue,
         output: TransactionOutput,
     ) -> Result<(HashValue, HashValue)> {
-        self.push_txn_and_state_opt(txn_hash, output, false)
-    }
-
-    fn push_txn_and_state_opt(
-        &mut self,
-        txn_hash: HashValue,
-        output: TransactionOutput,
-        is_extra_txn: bool,
-    ) -> Result<(HashValue, HashValue)> {
         // Ignore the newly created table_infos.
         // Because they are not needed to calculate state_root, or included to TransactionInfo.
         // This auxiliary function is used to create a new block for mining, nothing need to be persisted to storage.
@@ -305,23 +274,6 @@ impl OpenedBlock {
         self.state
             .apply_write_set(write_set)
             .map_err(BlockExecutorError::BlockChainStateErr)?;
-        if is_extra_txn {
-            #[cfg(not(feature = "force-deploy"))]
-            panic!("never include extra txn if `force-deploy` has been disabled");
-            #[cfg(feature = "force-deploy")]
-            {
-                // update stdlib version to 12 directly
-                let version_path = on_chain_config::access_path_for_config(
-                    genesis_address(),
-                    Identifier::new("Version").unwrap(),
-                    Identifier::new("Version").unwrap(),
-                    vec![],
-                );
-                let version = on_chain_config::Version { major: 12 };
-                self.state
-                    .set(&version_path, bcs_ext::to_bytes(&version)?)?;
-            }
-        }
         let txn_state_root = self
             .state
             .commit()
@@ -331,7 +283,7 @@ impl OpenedBlock {
             txn_hash,
             txn_state_root,
             events.as_slice(),
-            if is_extra_txn { 0 } else { gas_used },
+            gas_used,
             status,
         );
         let accumulator_root = self.txn_accumulator.append(&[txn_info.id()])?;
@@ -363,89 +315,6 @@ impl OpenedBlock {
             self.block_meta,
         );
         Ok(block_template)
-    }
-
-    /// The logic for handling the forced upgrade will be processed.
-    /// First, set the account policy in `0x1::PackageTxnManager` to 100,
-    /// Second, after the contract deployment is successful, revert it back.
-    #[cfg(feature = "force-deploy")]
-    fn execute_extra_txn(&mut self) -> Result<()> {
-        // Only execute extra_txn when stdlib version is 11
-        if self
-            .state
-            .get_on_chain_config::<Version>()?
-            .map(|v| v.into_stdlib_version())
-            .map(|v| v != StdlibVersion::Version(11))
-            .unwrap_or(true)
-        {
-            return Ok(());
-        }
-
-        let extra_txn =
-            if self.block_meta.number() == get_force_upgrade_block_number(&self.chain_id) {
-                let account = get_force_upgrade_account(&self.chain_id)?;
-                let sequence_number = self.state.get_sequence_number(*account.address())?;
-                let extra_txn = ForceUpgrade::force_deploy_txn(
-                    account,
-                    sequence_number,
-                    self.block_meta.timestamp() / 1000 + DEFAULT_EXPIRATION_TIME,
-                    &self.chain_id,
-                )?;
-                info!(
-                    "execute_extra_txn | extra txn in opened block ({:?}), block_num: {:?}",
-                    extra_txn.id(),
-                    self.block_meta.number()
-                );
-                Transaction::UserTransaction(extra_txn)
-            } else {
-                return Ok(());
-            };
-        let extra_txn_hash = extra_txn.id();
-
-        let strategy_path = AccessPath::resource_access_path(
-            genesis_address(),
-            ModuleUpgradeStrategy::struct_tag(),
-        );
-
-        // retrieve old strategy value
-        let old_val = self
-            .state
-            .get_state_value(&StateKey::AccessPath(strategy_path.clone()))?
-            .expect("module upgrade strategy should exist");
-        // Set strategy to 100 to execute force-deploy-txn directly
-        self.state.set(&strategy_path, vec![100])?;
-
-        // execute this special txn without gas limit
-        let mut results = execute_transactions(
-            &self.state,
-            vec![extra_txn.clone()],
-            self.vm_metrics.clone(),
-        )
-        .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
-
-        // Restore the old value
-        self.state.set(&strategy_path, old_val)?;
-
-        let output = results.pop().expect("executed txn should has output");
-        match output.status() {
-            TransactionStatus::Discard(status) => {
-                bail!(
-                    "extra txn {:?} is discarded, vm status: {:?}",
-                    extra_txn,
-                    status
-                );
-            }
-            TransactionStatus::Keep(_) => {
-                // Do not add extra_txn to included_user_txns
-                // treat it like BlockMeta txn
-                let _ = self.push_txn_and_state_opt(extra_txn_hash, output, true)?;
-            }
-            TransactionStatus::Retry => {
-                bail!("extra txn {:?} is impossible to retry", extra_txn);
-            }
-        };
-
-        Ok(())
     }
 }
 
