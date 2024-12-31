@@ -5366,7 +5366,7 @@ dependencies = [
  "move-bytecode-source-map",
  "move-command-line-common",
  "move-coverage 0.1.0",
- "petgraph 0.5.1",
+ "petgraph 0.6.3",
  "serde 1.0.205",
 ]
 
@@ -10196,7 +10196,7 @@ dependencies = [
  "move-command-line-common",
  "move-compiler",
  "once_cell",
- "petgraph 0.5.1",
+ "petgraph 0.6.3",
  "regex",
  "starcoin-crypto",
  "starcoin-logger",
