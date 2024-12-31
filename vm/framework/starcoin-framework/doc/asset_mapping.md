@@ -11,13 +11,15 @@ with proof verification.
 
 -  [Resource `AssetMappingStore`](#0x1_asset_mapping_AssetMappingStore)
 -  [Resource `AssetMappingPool`](#0x1_asset_mapping_AssetMappingPool)
+-  [Resource `AssetMappingProof`](#0x1_asset_mapping_AssetMappingProof)
 -  [Constants](#@Constants_0)
 -  [Function `initialize`](#0x1_asset_mapping_initialize)
+-  [Function `initalize_proof`](#0x1_asset_mapping_initalize_proof)
 -  [Function `create_store_from_coin`](#0x1_asset_mapping_create_store_from_coin)
 -  [Function `create_store_for_type`](#0x1_asset_mapping_create_store_for_type)
 -  [Function `balance`](#0x1_asset_mapping_balance)
 -  [Function `assign_to_account`](#0x1_asset_mapping_assign_to_account)
--  [Function `computer_poove`](#0x1_asset_mapping_computer_poove)
+-  [Function `calculation_proof`](#0x1_asset_mapping_calculation_proof)
 
 
 <pre><code><b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
@@ -94,6 +96,33 @@ Contains:
 
 <dl>
 <dt>
+<code>token_stores: <a href="../../starcoin-stdlib/doc/smart_table.md#0x1_smart_table_SmartTable">smart_table::SmartTable</a>&lt;<a href="object.md#0x1_object_Object">object::Object</a>&lt;<a href="fungible_asset.md#0x1_fungible_asset_Metadata">fungible_asset::Metadata</a>&gt;, <a href="asset_mapping.md#0x1_asset_mapping_AssetMappingStore">asset_mapping::AssetMappingStore</a>&gt;</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
+<a id="0x1_asset_mapping_AssetMappingProof"></a>
+
+## Resource `AssetMappingProof`
+
+
+
+<pre><code><b>struct</b> <a href="asset_mapping.md#0x1_asset_mapping_AssetMappingProof">AssetMappingProof</a> <b>has</b> store, key
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
 <code>proof_root: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
@@ -101,12 +130,6 @@ Contains:
 </dd>
 <dt>
 <code>anchor_height: u64</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>token_stores: <a href="../../starcoin-stdlib/doc/smart_table.md#0x1_smart_table_SmartTable">smart_table::SmartTable</a>&lt;<a href="object.md#0x1_object_Object">object::Object</a>&lt;<a href="fungible_asset.md#0x1_fungible_asset_Metadata">fungible_asset::Metadata</a>&gt;, <a href="asset_mapping.md#0x1_asset_mapping_AssetMappingStore">asset_mapping::AssetMappingStore</a>&gt;</code>
 </dt>
 <dd>
 
@@ -126,6 +149,15 @@ Contains:
 
 
 <pre><code><b>const</b> <a href="asset_mapping.md#0x1_asset_mapping_EINVALID_NOT_PROOF">EINVALID_NOT_PROOF</a>: u64 = 102;
+</code></pre>
+
+
+
+<a id="0x1_asset_mapping_EINVALID_PROOF_ROOT"></a>
+
+
+
+<pre><code><b>const</b> <a href="asset_mapping.md#0x1_asset_mapping_EINVALID_PROOF_ROOT">EINVALID_PROOF_ROOT</a>: u64 = 102;
 </code></pre>
 
 
@@ -151,7 +183,7 @@ Initializes the asset mapping pool
 Verifies the framework signer and creates a new AssetMappingPool
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_initialize">initialize</a>(framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, proof_root: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, anchor_height: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_initialize">initialize</a>(framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
 </code></pre>
 
 
@@ -160,15 +192,45 @@ Verifies the framework signer and creates a new AssetMappingPool
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_initialize">initialize</a>(framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, proof_root: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, anchor_height: u64) {
+<pre><code><b>public</b> <b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_initialize">initialize</a>(framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
     <b>assert</b>!(
         <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(framework) == <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>(),
         <a href="../../move-stdlib/doc/error.md#0x1_error_unauthenticated">error::unauthenticated</a>(<a href="asset_mapping.md#0x1_asset_mapping_EINVALID_SIGNER">EINVALID_SIGNER</a>)
     );
     <b>move_to</b>(framework, <a href="asset_mapping.md#0x1_asset_mapping_AssetMappingPool">AssetMappingPool</a> {
+        token_stores: <a href="../../starcoin-stdlib/doc/smart_table.md#0x1_smart_table_new">smart_table::new</a>&lt;Object&lt;Metadata&gt;, <a href="asset_mapping.md#0x1_asset_mapping_AssetMappingStore">AssetMappingStore</a>&gt;(),
+    });
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_asset_mapping_initalize_proof"></a>
+
+## Function `initalize_proof`
+
+Called by StarcoinNode after Genesis
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_initalize_proof">initalize_proof</a>(framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, proof_root: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, anchor_height: u64)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_initalize_proof">initalize_proof</a>(framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, proof_root: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, anchor_height: u64) {
+    <b>assert</b>!(
+        <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(framework) == <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>(),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_unauthenticated">error::unauthenticated</a>(<a href="asset_mapping.md#0x1_asset_mapping_EINVALID_SIGNER">EINVALID_SIGNER</a>)
+    );
+    <b>move_to</b>(framework, <a href="asset_mapping.md#0x1_asset_mapping_AssetMappingProof">AssetMappingProof</a> {
         proof_root,
         anchor_height,
-        token_stores: <a href="../../starcoin-stdlib/doc/smart_table.md#0x1_smart_table_new">smart_table::new</a>&lt;Object&lt;Metadata&gt;, <a href="asset_mapping.md#0x1_asset_mapping_AssetMappingStore">AssetMappingStore</a>&gt;(),
     });
 }
 </code></pre>
@@ -208,7 +270,6 @@ Requirements:
     <b>let</b> <a href="fungible_asset.md#0x1_fungible_asset">fungible_asset</a> = <a href="coin.md#0x1_coin_coin_to_fungible_asset">coin::coin_to_fungible_asset</a>(<a href="coin.md#0x1_coin">coin</a>);
     <b>let</b> token_stores =
         &<b>mut</b> <b>borrow_global_mut</b>&lt;<a href="asset_mapping.md#0x1_asset_mapping_AssetMappingPool">AssetMappingPool</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()).token_stores;
-
 
     <b>let</b> (metadata, fungible_store, extend_ref) = <a href="asset_mapping.md#0x1_asset_mapping_create_store_for_type">create_store_for_type</a>&lt;T&gt;(token_issuer);
     <a href="fungible_asset.md#0x1_fungible_asset_deposit">fungible_asset::deposit</a>(fungible_store, <a href="fungible_asset.md#0x1_fungible_asset">fungible_asset</a>);
@@ -321,11 +382,17 @@ Requirements:
     proove: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     amount: u64
 ) <b>acquires</b> <a href="asset_mapping.md#0x1_asset_mapping_AssetMappingPool">AssetMappingPool</a> {
+    <b>assert</b>!(
+        <b>exists</b>&lt;<a href="asset_mapping.md#0x1_asset_mapping_AssetMappingProof">AssetMappingProof</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="asset_mapping.md#0x1_asset_mapping_EINVALID_PROOF_ROOT">EINVALID_PROOF_ROOT</a>)
+    );
+
     <b>let</b> metadata = <a href="coin.md#0x1_coin_ensure_paired_metadata">coin::ensure_paired_metadata</a>&lt;T&gt;();
     <b>let</b> mapping_pool = <b>borrow_global_mut</b>&lt;<a href="asset_mapping.md#0x1_asset_mapping_AssetMappingPool">AssetMappingPool</a>&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(token_issuer));
     <b>let</b> mapping_store = <a href="../../starcoin-stdlib/doc/smart_table.md#0x1_smart_table_borrow_mut">smart_table::borrow_mut</a>(&<b>mut</b> mapping_pool.token_stores, metadata);
 
-    <b>assert</b>!(<a href="asset_mapping.md#0x1_asset_mapping_computer_poove">computer_poove</a>(proove), <a href="../../move-stdlib/doc/error.md#0x1_error_unauthenticated">error::unauthenticated</a>(<a href="asset_mapping.md#0x1_asset_mapping_EINVALID_NOT_PROOF">EINVALID_NOT_PROOF</a>));
+    <b>assert</b>!(<a href="asset_mapping.md#0x1_asset_mapping_calculation_proof">calculation_proof</a>(proove, <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>()), <a href="../../move-stdlib/doc/error.md#0x1_error_unauthenticated">error::unauthenticated</a>(<a href="asset_mapping.md#0x1_asset_mapping_EINVALID_NOT_PROOF">EINVALID_NOT_PROOF</a>));
+
     // <a href="fungible_asset.md#0x1_fungible_asset_withdraw">fungible_asset::withdraw</a>(&store.transfer_ref, store.fungible_store, to_account_primary_store, amount);
     <b>let</b> store_signer = <a href="object.md#0x1_object_generate_signer_for_extending">object::generate_signer_for_extending</a>(&mapping_store.extend_ref);
     <a href="fungible_asset.md#0x1_fungible_asset_deposit">fungible_asset::deposit</a>(
@@ -339,17 +406,14 @@ Requirements:
 
 </details>
 
-<a id="0x1_asset_mapping_computer_poove"></a>
+<a id="0x1_asset_mapping_calculation_proof"></a>
 
-## Function `computer_poove`
+## Function `calculation_proof`
 
 Computes and verifies the provided proof
-@param proove - The proof data to verify
-@returns Boolean indicating proof validity
-Note: Current implementation returns true (TODO)
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_computer_poove">computer_poove</a>(proove: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): bool
+<pre><code><b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_calculation_proof">calculation_proof</a>(_leaf: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, _siblings: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;): bool
 </code></pre>
 
 
@@ -358,7 +422,7 @@ Note: Current implementation returns true (TODO)
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_computer_poove">computer_poove</a>(proove: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;) : bool {
+<pre><code><b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_calculation_proof">calculation_proof</a>(_leaf: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, _siblings: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;): bool {
     // TODO(BobOng): implement this function
     <b>true</b>
 }

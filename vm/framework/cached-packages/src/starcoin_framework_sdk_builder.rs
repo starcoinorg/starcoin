@@ -165,6 +165,12 @@ pub enum EntryFunctionCall {
         amount: u64,
     },
 
+    /// Called by StarcoinNode after Genesis
+    AssetMappingInitalizeProof {
+        proof_root: Vec<u8>,
+        anchor_height: u64,
+    },
+
     CoinCreateCoinConversionMap {},
 
     /// Create STC pairing by passing `StarcoinCoin`.
@@ -663,6 +669,10 @@ impl EntryFunctionCall {
                 proove,
                 amount,
             } => asset_mapping_assign_to_account(t, receiper, proove, amount),
+            AssetMappingInitalizeProof {
+                proof_root,
+                anchor_height,
+            } => asset_mapping_initalize_proof(proof_root, anchor_height),
             CoinCreateCoinConversionMap {} => coin_create_coin_conversion_map(),
             CoinCreatePairing { coin_type } => coin_create_pairing(coin_type),
             CoinMigrateToFungibleStore { coin_type } => coin_migrate_to_fungible_store(coin_type),
@@ -1300,6 +1310,25 @@ pub fn asset_mapping_assign_to_account(
             bcs::to_bytes(&receiper).unwrap(),
             bcs::to_bytes(&proove).unwrap(),
             bcs::to_bytes(&amount).unwrap(),
+        ],
+    ))
+}
+
+/// Called by StarcoinNode after Genesis
+pub fn asset_mapping_initalize_proof(
+    proof_root: Vec<u8>,
+    anchor_height: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("asset_mapping").to_owned(),
+        ),
+        ident_str!("initalize_proof").to_owned(),
+        vec![],
+        vec![
+            bcs::to_bytes(&proof_root).unwrap(),
+            bcs::to_bytes(&anchor_height).unwrap(),
         ],
     ))
 }
@@ -2586,6 +2615,19 @@ mod decoder {
         }
     }
 
+    pub fn asset_mapping_initalize_proof(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::AssetMappingInitalizeProof {
+                proof_root: bcs::from_bytes(script.args().get(0)?).ok()?,
+                anchor_height: bcs::from_bytes(script.args().get(1)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
     pub fn coin_create_coin_conversion_map(
         payload: &TransactionPayload,
     ) -> Option<EntryFunctionCall> {
@@ -3475,6 +3517,10 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
         map.insert(
             "asset_mapping_assign_to_account".to_string(),
             Box::new(decoder::asset_mapping_assign_to_account),
+        );
+        map.insert(
+            "asset_mapping_initalize_proof".to_string(),
+            Box::new(decoder::asset_mapping_initalize_proof),
         );
         map.insert(
             "coin_create_coin_conversion_map".to_string(),

@@ -16,6 +16,7 @@ The module for init Genesis
 
 <pre><code><b>use</b> <a href="account.md#0x1_account">0x1::account</a>;
 <b>use</b> <a href="aggregator_factory.md#0x1_aggregator_factory">0x1::aggregator_factory</a>;
+<b>use</b> <a href="asset_mapping.md#0x1_asset_mapping">0x1::asset_mapping</a>;
 <b>use</b> <a href="block_reward.md#0x1_block_reward">0x1::block_reward</a>;
 <b>use</b> <a href="block_reward_config.md#0x1_block_reward_config">0x1::block_reward_config</a>;
 <b>use</b> <a href="chain_id.md#0x1_chain_id">0x1::chain_id</a>;
@@ -108,7 +109,6 @@ The module for init Genesis
     <a href="../../move-stdlib/doc/features.md#0x1_features">features</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
 ) {
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> Entered"));
-
 
     // create genesis <a href="account.md#0x1_account">account</a>
     <b>let</b> (starcoin_framework_account, _genesis_signer_cap) =
@@ -383,6 +383,13 @@ Overall governance allocation strategy:
     time_mint_stc_amount: u128,
     time_mint_stc_period: u64,
 ) {
+    // Initialize asset mapping
+    <a href="asset_mapping.md#0x1_asset_mapping_initialize">asset_mapping::initialize</a>(starcoin_framework);
+    // TODO(BobOng): To confirm how many STC put into asset mapping pool
+    <b>let</b> asset_mapping_coin = <a href="coin.md#0x1_coin_extract">coin::extract</a>&lt;STC&gt;(&<b>mut</b> total_supply_stc, 1000000000);
+    <a href="asset_mapping.md#0x1_asset_mapping_create_store_from_coin">asset_mapping::create_store_from_coin</a>&lt;STC&gt;(starcoin_framework, asset_mapping_coin);
+
+    // Initialize <a href="treasury.md#0x1_treasury">treasury</a>
     <b>let</b> treasury_withdraw_cap = <a href="treasury.md#0x1_treasury_initialize">treasury::initialize</a>(starcoin_framework, total_supply_stc);
 
     <b>if</b> (pre_mine_stc_amount &gt; 0) {
@@ -393,6 +400,7 @@ Overall governance allocation strategy:
         );
         <a href="coin.md#0x1_coin_deposit">coin::deposit</a>(core_resource_address, stc);
     };
+
     <b>if</b> (time_mint_stc_amount &gt; 0) {
         <b>let</b> liner_withdraw_cap = <a href="treasury.md#0x1_treasury_issue_linear_withdraw_capability">treasury::issue_linear_withdraw_capability</a>&lt;STC&gt;(
             &<b>mut</b> treasury_withdraw_cap,

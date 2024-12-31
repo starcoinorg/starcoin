@@ -4,6 +4,7 @@ module starcoin_framework::stc_genesis {
     use std::features;
     use std::option;
     use std::vector;
+    use starcoin_framework::asset_mapping;
 
     use starcoin_framework::account;
     use starcoin_framework::aggregator_factory;
@@ -84,7 +85,6 @@ module starcoin_framework::stc_genesis {
         features: vector<u8>,
     ) {
         debug::print(&std::string::utf8(b"stc_genesis::initialize Entered"));
-
 
         // create genesis account
         let (starcoin_framework_account, _genesis_signer_cap) =
@@ -299,6 +299,13 @@ module starcoin_framework::stc_genesis {
         time_mint_stc_amount: u128,
         time_mint_stc_period: u64,
     ) {
+        // Initialize asset mapping
+        asset_mapping::initialize(starcoin_framework);
+        // TODO(BobOng): To confirm how many STC put into asset mapping pool
+        let asset_mapping_coin = coin::extract<STC>(&mut total_supply_stc, 1000000000);
+        asset_mapping::create_store_from_coin<STC>(starcoin_framework, asset_mapping_coin);
+
+        // Initialize treasury
         let treasury_withdraw_cap = treasury::initialize(starcoin_framework, total_supply_stc);
 
         if (pre_mine_stc_amount > 0) {
@@ -309,6 +316,7 @@ module starcoin_framework::stc_genesis {
             );
             coin::deposit(core_resource_address, stc);
         };
+
         if (time_mint_stc_amount > 0) {
             let liner_withdraw_cap = treasury::issue_linear_withdraw_capability<STC>(
                 &mut treasury_withdraw_cap,
