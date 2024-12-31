@@ -36,7 +36,7 @@ use starcoin_types::block::{Block, BlockIdAndNumber};
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
-use std::collections::{BinaryHeap, HashSet};
+use std::collections::{BTreeSet, BinaryHeap, HashSet};
 use std::result::Result::Ok;
 use std::sync::Arc;
 use std::time::Duration;
@@ -755,25 +755,25 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
             }
             let mut waiting_for_execution_heap = blocks_to_be_executed
                 .into_iter()
-                .collect::<HashSet<_>>()
-                .into_iter()
                 .map(|block| SyncBlockSort { block })
-                .collect::<BinaryHeap<_>>();
+                .collect::<BTreeSet<_>>();
 
-            let mut failed_blocks: Vec<Block> = vec![];
+            let mut failed_blocks: HashSet<Block>  = HashSet::new();
             info!("[sync specific] Start to execute blocks");
             loop {
-                let block = match waiting_for_execution_heap.pop() {
-                    Some(sync_block) => sync_block.block,
+                let block = match waiting_for_execution_heap.first() {
+                    Some(sync_block) => sync_block.block.clone(),
                     None => break,
                 };
                 if chain.has_dag_block(block.id())? {
+                    waiting_for_execution_heap.remove(&SyncBlockSort { block: block.clone()  });
                     continue;
                 }
                 let mut parent_ready = true;
                 for parent_id in block.header().parents_hash() {
                     if !chain.has_dag_block(parent_id)? {
-                        failed_blocks.push(block.clone());
+                        failed_blocks.insert(block.clone());
+                        waiting_for_execution_heap.remove(&SyncBlockSort { block: block.clone()  });
                         parent_ready = false;
                         continue;
                     }
@@ -791,6 +791,7 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
                                         block: block.clone(),
                                     }
                                 }));
+                                waiting_for_execution_heap.remove(&SyncBlockSort { block: block.clone()  });
                                 failed_blocks.clear();
                                 continue;
                             }
@@ -800,7 +801,8 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
                                     block.id(),
                                     e
                                 );
-                                failed_blocks.push(block);
+                                waiting_for_execution_heap.remove(&SyncBlockSort { block: block.clone()  });
+                                failed_blocks.insert(block);
                                 continue;
                             }
                         }
