@@ -692,15 +692,16 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
                 }
             };
 
-            let mut current_round = specific_block.header().parents_hash();
-            let mut next_round = vec![];
-            let mut blocks_to_be_executed = vec![];
-
             // ensure the previous blocks are ready to be executed or were executed already
             info!(
                 "[sync specific] Start to sync specific block: {:?}",
                 specific_block.id()
             );
+
+            let mut current_round = specific_block.header().parents_hash();
+            let mut next_round = vec![];
+            let mut blocks_to_be_executed = vec![specific_block];
+
             while !current_round.is_empty() {
                 for block_id in current_round {
                     // already executed
@@ -769,6 +770,17 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
                 if chain.has_dag_block(block.id())? {
                     continue;
                 }
+                let mut parent_ready = true;
+                for parent_id in block.header().parents_hash() {
+                    if !chain.has_dag_block(parent_id)? {
+                        failed_blocks.push(block.clone());
+                        parent_ready = false;
+                        continue;
+                    }
+                }
+                if !parent_ready {
+                    continue;
+                }
                 match chain.apply_with_verifier::<DagVerifier>(block.clone()) {
                     Ok(_) => {
                         waiting_for_execution_heap.extend(failed_blocks.iter().map(|block| {
@@ -794,7 +806,13 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
             Ok(())
         };
 
-        async_std::task::block_on(fut)
+        // async_std::task::block_on(fut)
+        ctx.spawn(fut.then(|result| async move {
+            if let Err(e) = result {
+                error!("[sync specific] Sync specific block failed, error: {:?}", e);
+            }
+        }));
+        Ok(())
     }
 }
 
