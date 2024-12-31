@@ -16,6 +16,7 @@ This is the reference documentation of the Starcoin framework.
 -  [`0x1::aggregator`](aggregator.md#0x1_aggregator)
 -  [`0x1::aggregator_factory`](aggregator_factory.md#0x1_aggregator_factory)
 -  [`0x1::aggregator_v2`](aggregator_v2.md#0x1_aggregator_v2)
+-  [`0x1::asset_mapping`](asset_mapping.md#0x1_asset_mapping)
 -  [`0x1::bcs_util`](bcs_util.md#0x1_bcs_util)
 -  [`0x1::block_reward`](block_reward.md#0x1_block_reward)
 -  [`0x1::block_reward_config`](block_reward_config.md#0x1_block_reward_config)

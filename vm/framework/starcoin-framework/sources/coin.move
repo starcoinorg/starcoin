@@ -22,6 +22,7 @@ module starcoin_framework::coin {
     use starcoin_std::type_info::{Self, type_name, TypeInfo};
 
     friend starcoin_framework::starcoin_coin;
+    friend starcoin_framework::asset_mapping;
 
     //
     // Errors.
