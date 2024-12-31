@@ -12,8 +12,8 @@ use futures_timer::Delay;
 use network_api::peer_score::PeerScoreMetrics;
 use network_api::{PeerId, PeerProvider, PeerSelector, PeerStrategy, ReputationChange};
 use starcoin_chain::verifier::DagVerifier;
-use starcoin_chain::BlockChain;
-use starcoin_chain_api::ChainReader;
+use starcoin_chain::{BlockChain, ChainWriter};
+use starcoin_chain_api::{ChainReader, ExecutedBlock};
 use starcoin_config::{NodeConfig, RocksdbConfig};
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
@@ -700,7 +700,7 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
 
             let mut current_round = specific_block.header().parents_hash();
             let mut next_round = vec![];
-            let mut blocks_to_be_executed = vec![specific_block];
+            let mut blocks_to_be_executed = vec![specific_block.clone()];
 
             while !current_round.is_empty() {
                 for block_id in current_round {
@@ -781,26 +781,42 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
                 if !parent_ready {
                     continue;
                 }
-                match chain.apply_with_verifier::<DagVerifier>(block.clone()) {
-                    Ok(_) => {
-                        waiting_for_execution_heap.extend(failed_blocks.iter().map(|block| {
-                            SyncBlockSort {
-                                block: block.clone(),
+
+                match chain.verify_with_verifier::<DagVerifier>(block.clone()) {
+                    Ok(verified_executed_block) => {
+                        match chain.execute(verified_executed_block) {
+                            Ok(_) => {
+                                waiting_for_execution_heap.extend(failed_blocks.iter().map(|block| {
+                                    SyncBlockSort {
+                                        block: block.clone(),
+                                    }
+                                }));
+                                failed_blocks.clear();
+                                continue;
                             }
-                        }));
-                        failed_blocks.clear();
-                        continue;
+                            Err(e) => {
+                                warn!(
+                                    "[sync specific] Execute block failed, block id: {:?}, error: {:?}",
+                                    block.id(),
+                                    e
+                                );
+                                failed_blocks.push(block);
+                                continue;
+                            }
+                        }
                     }
-                    Err(e) => {
-                        warn!(
-                            "[sync specific] Execute block failed, block id: {:?}, error: {:?}",
-                            block.id(),
-                            e
-                        );
-                        failed_blocks.push(block);
-                        continue;
-                    }
+                    Err(_) => return Err(format_err!("Verify block failed, block id: {:?}", block.id())),
                 }
+            }
+
+            if chain.has_dag_block(msg.block_id)? {
+                chain.connect(ExecutedBlock { block: specific_block, block_info: storage.get_block_info(msg.block_id)?.ok_or_else(|| format_err!("failed to get the block info for id: {:?}", msg.block_id))? })?;
+                info!("[sync specific] Sync specific block done");
+            } else {
+                return Err(format_err!(
+                    "Sync specific block failed, block id: {:?}",
+                    specific_block.id()
+                ));
             }
             info!("[sync specific] Sync specific block done");
             Ok(())
