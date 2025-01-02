@@ -22,7 +22,6 @@ starcoin-time-service = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-vm-runtime = { workspace = true, optional = true }
-starcoin-force-upgrade = { workspace = true }
 starcoin-storage = { workspace = true }
 thiserror = { workspace = true }
 starcoin-network-rpc-api = { workspace = true }
@@ -47,16 +46,10 @@ stest = { workspace = true }
 test-helper = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 starcoin-network-rpc-api = { workspace = true }
-starcoin-force-upgrade = { workspace = true }
 
 [features]
 default = []
 fuzzing = ["proptest", "proptest-derive", "starcoin-types/fuzzing"]
-force-deploy = [
-    "starcoin-vm-runtime/force-deploy",
-    "starcoin-vm-runtime",
-    "starcoin-executor/force-deploy",
-]
 
 [package]
 authors = { workspace = true }

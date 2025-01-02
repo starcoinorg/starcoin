@@ -10229,7 +10229,6 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-dag",
  "starcoin-executor",
- "starcoin-force-upgrade",
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-network-rpc-api",
@@ -10613,7 +10612,6 @@ dependencies = [
  "starcoin-consensus",
  "starcoin-crypto",
  "starcoin-dev",
- "starcoin-force-upgrade",
  "starcoin-logger",
  "starcoin-resource-viewer",
  "starcoin-state-api",
@@ -10679,31 +10677,6 @@ dependencies = [
  "tiny_http",
  "tokio",
  "tokio-executor 0.2.0-alpha.6",
-]
-
-[[package]]
-name = "starcoin-force-upgrade"
-version = "1.13.10"
-dependencies = [
- "anyhow",
- "async-trait",
- "bcs-ext",
- "futures 0.3.30",
- "include_dir",
- "parking_lot 0.12.1",
- "starcoin-accumulator",
- "starcoin-chain-api",
- "starcoin-crypto",
- "starcoin-genesis",
- "starcoin-logger",
- "starcoin-move-compiler",
- "starcoin-state-api",
- "starcoin-statedb",
- "starcoin-storage",
- "starcoin-types",
- "starcoin-vm-types",
- "stdlib",
- "stest",
 ]
 
 [[package]]
@@ -11390,7 +11363,6 @@ dependencies = [
  "starcoin-chain-api",
  "starcoin-crypto",
  "starcoin-executor",
- "starcoin-force-upgrade",
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-state-api",

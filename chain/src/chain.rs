@@ -41,11 +41,9 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, Transaction},
     U256,
 };
-#[cfg(feature = "force-deploy")]
-use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
 use starcoin_vm_types::access_path::{AccessPath, DataPath};
 use starcoin_vm_types::account_config::genesis_address;
-use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy};
+use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use std::cmp::min;
@@ -688,7 +686,6 @@ impl BlockChain {
         let block_accumulator = MerkleAccumulator::new_empty(
             storage.get_accumulator_store(AccumulatorStoreType::Block),
         );
-        let chain_id = genesis_block.header().chain_id();
         let genesis_header = genesis_block.header().clone();
         let statedb = ChainStateDB::new(storage.clone().into_super_arc(), None);
         let executed_block = Self::execute_block_and_save(
@@ -699,7 +696,6 @@ impl BlockChain {
             &genesis_epoch,
             None, /*parent status*/
             genesis_block,
-            &chain_id,
             None, /*VM metrics*/
         )?;
         dag = Self::init_dag(dag, genesis_header)?;
@@ -1242,7 +1238,6 @@ impl BlockChain {
         epoch: &Epoch,
         parent_status: Option<ChainStatus>,
         block: Block,
-        chain_id: &ChainId,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<ExecutedBlock> {
         let header = block.header();
@@ -1288,7 +1283,7 @@ impl BlockChain {
         verify_block!(
             VerifyBlockField::State,
             state_root == header.state_root(),
-            "verify legacy block:{:?} state_root fail, executed_accumulator_root:{:?}, header.txn_accumulator_root(): {:?}",
+            "verify single chain block:{:?} state_root fail, executed_accumulator_root:{:?}, header.txn_accumulator_root(): {:?}",
             block_id,
             state_root, header.txn_accumulator_root()
         );
@@ -1301,24 +1296,9 @@ impl BlockChain {
             "invalid block: gas_used is not match"
         );
 
-        #[cfg(feature = "force-deploy")]
-        let valid_txn_num = if header.number() == get_force_upgrade_block_number(chain_id)
-            && executed_data.with_extra_txn
-        {
-            vec_transaction_info.len() == transactions.len().checked_add(1).unwrap()
-        } else {
-            vec_transaction_info.len() == transactions.len()
-        };
-        #[cfg(not(feature = "force-deploy"))]
-        let valid_txn_num = {
-            // Silence unused variable warning
-            let _ = chain_id;
-            vec_transaction_info.len() == transactions.len()
-        };
-
         verify_block!(
             VerifyBlockField::State,
-            valid_txn_num,
+            vec_transaction_info.len() == transactions.len(),
             "invalid txn num in the block"
         );
 
@@ -1984,7 +1964,6 @@ impl ChainReader for BlockChain {
     }
 
     fn execute(&mut self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
-        let header = verified_block.0.header().clone();
         if self.check_chain_type()? == ChainType::Single {
             let executed = //if let Some((executed_data, block_info)) =
                 //MAIN_DIRECT_SAVE_BLOCK_HASH_MAP.get(&verified_block.0.header.id())
@@ -2008,7 +1987,6 @@ impl ChainReader for BlockChain {
                     &self.epoch,
                     Some(self.status.status.clone()),
                     verified_block.0,
-                    &header.chain_id(),
                     self.vm_metrics.clone(),
                 )?
             };

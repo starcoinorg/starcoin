@@ -40,7 +40,6 @@ members = [
     "chain",
     "chain/api",
     "chain/open-block",
-    "chain/force-upgrade",
     "chain/mock",
     "chain/chain-notify",
     "chain/service",
@@ -163,7 +162,6 @@ default-members = [
     "chain",
     "chain/api",
     "chain/open-block",
-    "chain/force-upgrade",
     "chain/mock",
     "chain/chain-notify",
     "chain/service",
@@ -548,7 +546,6 @@ starcoin-network-rpc-api = { path = "network-rpc/api" }
 starcoin-node = { path = "node" }
 starcoin-node-api = { path = "node/api" }
 starcoin-open-block = { path = "chain/open-block" }
-starcoin-force-upgrade = { path = "chain/force-upgrade" }
 starcoin-resource-viewer = { path = "vm/resource-viewer" }
 starcoin-package-builder = { path = "vm/package-builder" }
 starcoin-move-stdlib = { path = "vm/framework/move-stdlib" }
