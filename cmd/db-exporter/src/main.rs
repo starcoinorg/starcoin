@@ -39,6 +39,7 @@ use starcoin_storage::{
 use starcoin_transaction_builder::{
     build_signed_empty_txn, create_signed_txn_with_association_account, DEFAULT_MAX_GAS_AMOUNT,
 };
+use starcoin_types::proof::SparseMerkleProof;
 use starcoin_types::{
     account::{peer_to_peer_txn, Account, DEFAULT_EXPIRATION_TIME},
     account_address::AccountAddress,
@@ -2551,6 +2552,21 @@ fn token_supply(
     Ok(())
 }
 
+fn get_sparse_merkle_proof(proof: SparseMerkleProof) -> Vec<u8> {
+    let mut proof2 = Vec::with_capacity((proof.siblings.len() + 2) * 32);
+    if let Some(leaf) = proof.leaf {
+        proof2.extend(leaf.0.to_vec());
+        proof2.extend(leaf.1.to_vec());
+    } else {
+        proof2.extend(HashValue::zero().to_vec());
+        proof2.extend(HashValue::zero().to_vec());
+    }
+    for sibling in proof.siblings {
+        proof2.extend(sibling.to_vec());
+    }
+    proof2
+}
+
 fn tokens_info(
     from_dir: PathBuf,
     output: PathBuf,
@@ -2648,6 +2664,7 @@ fn tokens_info(
     let now = Instant::now();
     let mut sum: u128 = 0;
     let mut account_list = vec![];
+    let mut state_proof_list = vec![];
     for (address_bytes, account_state_bytes) in global_states.iter() {
         let account: AccountAddress = bcs_ext::from_bytes(address_bytes)?;
         let account_state: AccountState = account_state_bytes.as_slice().try_into()?;
@@ -2663,6 +2680,26 @@ fn tokens_info(
                         value_annotator.view_struct(resource_struct_tag.clone(), d.as_slice())?;
                     let resource = annotated_struct;
                     let resource_json_value = serde_json::to_value(MoveStruct(resource))?;
+                    let state_proof = statedb.get_with_proof(&AccessPath::resource_access_path(
+                        account,
+                        resource_struct_tag.clone(),
+                    ))?;
+
+                    let blob = if let Some(blob) = state_proof.proof.account_state {
+                        blob.into()
+                    } else {
+                        vec![0; 32]
+                    };
+                    let account_proof = get_sparse_merkle_proof(state_proof.proof.account_proof);
+                    let account_state_proof =
+                        get_sparse_merkle_proof(state_proof.proof.account_state_proof);
+                    state_proof_list.push((
+                        account,
+                        state_proof.state.unwrap_or(vec![0; 32]),
+                        blob,
+                        account_proof,
+                        account_state_proof,
+                    ));
                     account_list.push((account, resource_json_value.clone()));
                     Some(resource_json_value)
                 } else {
@@ -2680,7 +2717,6 @@ fn tokens_info(
                 .unwrap()
                 / 1000000000.0) as u128;
             if balance > 0 {
-                writeln!(file, "{} {}", account, balance)?;
                 sum += balance;
             }
         }
@@ -2700,6 +2736,14 @@ fn tokens_info(
     writeln!(file, "account list")?;
     for (account, resource) in account_list {
         writeln!(file, "{} {}", account, resource)?;
+    }
+    writeln!(file, "state_root {}", statedb.state_root())?;
+    for (account, state, blob, account_proof, account_state_proof) in state_proof_list {
+        writeln!(
+            file,
+            "{} {:?} {:?} {:?} {:?}",
+            account, state, blob, account_proof, account_state_proof
+        )?;
     }
     file.flush()?;
     Ok(())
