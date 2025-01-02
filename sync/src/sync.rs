@@ -36,7 +36,7 @@ use starcoin_types::block::{Block, BlockIdAndNumber};
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
-use std::collections::{BTreeSet, BinaryHeap, HashSet};
+use std::collections::{BTreeSet, HashSet};
 use std::result::Result::Ok;
 use std::sync::Arc;
 use std::time::Duration;
@@ -193,7 +193,6 @@ impl SyncService {
         peer_strategy: Option<PeerStrategy>,
         ctx: &mut ServiceContext<Self>,
     ) -> Result<()> {
-        return Ok(());
         let sync_task_total = self
             .metrics
             .as_ref()
@@ -563,7 +562,6 @@ impl CheckSyncEvent {
 
 impl EventHandler<Self, CheckSyncEvent> for SyncService {
     fn handle_event(&mut self, msg: CheckSyncEvent, ctx: &mut ServiceContext<Self>) {
-        return;
         if let Err(e) = self.check_and_start_sync(msg.peers, msg.skip_pow_verify, msg.strategy, ctx)
         {
             error!("[sync] Check sync error: {:?}", e);
@@ -672,9 +670,8 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
                     } else if let Some(sync_dag_block) = storage.get_dag_sync_block(msg.block_id)? {
                         sync_dag_block.block
                     } else {
-                        let block_from_remote = verified_rpc_client
-                            .fetch_blocks(vec![msg.block_id])
-                            .await?;
+                        let block_from_remote =
+                            verified_rpc_client.fetch_blocks(vec![msg.block_id]).await?;
                         if block_from_remote.len() != 1 {
                             return Err(format_err!(
                                 "Get block by id failed, block id: {:?}",
@@ -682,7 +679,10 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
                             ));
                         }
                         let block = block_from_remote
-                            .first().expect("should not be none").0.clone();
+                            .first()
+                            .expect("should not be none")
+                            .0
+                            .clone();
                         storage.save_dag_sync_block(DagSyncBlock {
                             block: block.clone(),
                             children: vec![],
@@ -717,9 +717,8 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
                                 next_round.push(sync_dag_block.block);
                             } else {
                                 // fetch from the remote
-                                let parents_in_remote = verified_rpc_client
-                                    .fetch_blocks(vec![block_id])
-                                    .await?;
+                                let parents_in_remote =
+                                    verified_rpc_client.fetch_blocks(vec![block_id]).await?;
                                 if parents_in_remote.len() != 1 {
                                     return Err(format_err!(
                                         "Get block by id failed, block id: {:?}",
@@ -727,14 +726,20 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
                                     ));
                                 }
                                 let block = parents_in_remote
-                                    .first().expect("should not be none").0.clone();
+                                    .first()
+                                    .expect("should not be none")
+                                    .0
+                                    .clone();
                                 next_round.push(block.clone());
                                 storage.save_dag_sync_block(DagSyncBlock {
-                                    block: next_round.last().expect("impossible to be none").clone(),
+                                    block: next_round
+                                        .last()
+                                        .expect("impossible to be none")
+                                        .clone(),
                                     children: vec![],
                                 })?;
                             }
-                       }
+                        }
                     }
                 }
                 if next_round.is_empty() {
@@ -758,24 +763,26 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
                 .map(|block| SyncBlockSort { block })
                 .collect::<BTreeSet<_>>();
 
-            let mut failed_blocks: HashSet<Block>  = HashSet::new();
+            let mut failed_blocks: HashSet<Block> = HashSet::new();
             info!("[sync specific] Start to execute blocks");
-            loop {
-                let block = match waiting_for_execution_heap.first() {
-                    Some(sync_block) => sync_block.block.clone(),
-                    None => break,
-                };
+            while let Some(SyncBlockSort { block }) =
+                waiting_for_execution_heap.iter().next().cloned()
+            {
                 if chain.has_dag_block(block.id())? {
-                    waiting_for_execution_heap.remove(&SyncBlockSort { block: block.clone()  });
+                    waiting_for_execution_heap.remove(&SyncBlockSort {
+                        block: block.clone(),
+                    });
                     continue;
                 }
                 let mut parent_ready = true;
                 for parent_id in block.header().parents_hash() {
                     if !chain.has_dag_block(parent_id)? {
                         failed_blocks.insert(block.clone());
-                        waiting_for_execution_heap.remove(&SyncBlockSort { block: block.clone()  });
+                        waiting_for_execution_heap.remove(&SyncBlockSort {
+                            block: block.clone(),
+                        });
                         parent_ready = false;
-                        continue;
+                        break;
                     }
                 }
                 if !parent_ready {
@@ -783,36 +790,48 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
                 }
 
                 match chain.verify_with_verifier::<DagVerifier>(block.clone()) {
-                    Ok(verified_executed_block) => {
-                        match chain.execute(verified_executed_block) {
-                            Ok(_) => {
-                                waiting_for_execution_heap.extend(failed_blocks.iter().map(|block| {
-                                    SyncBlockSort {
-                                        block: block.clone(),
-                                    }
-                                }));
-                                waiting_for_execution_heap.remove(&SyncBlockSort { block: block.clone()  });
-                                failed_blocks.clear();
-                                continue;
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "[sync specific] Execute block failed, block id: {:?}, error: {:?}",
-                                    block.id(),
-                                    e
-                                );
-                                waiting_for_execution_heap.remove(&SyncBlockSort { block: block.clone()  });
-                                failed_blocks.insert(block);
-                                continue;
-                            }
+                    Ok(verified_executed_block) => match chain.execute(verified_executed_block) {
+                        Ok(_) => {
+                            waiting_for_execution_heap.extend(failed_blocks.iter().map(|block| {
+                                SyncBlockSort {
+                                    block: block.clone(),
+                                }
+                            }));
+                            waiting_for_execution_heap.remove(&SyncBlockSort {
+                                block: block.clone(),
+                            });
+                            failed_blocks.clear();
+                            continue;
                         }
+                        Err(e) => {
+                            warn!(
+                                "[sync specific] Execute block failed, block id: {:?}, error: {:?}",
+                                block.id(),
+                                e
+                            );
+                            waiting_for_execution_heap.remove(&SyncBlockSort {
+                                block: block.clone(),
+                            });
+                            failed_blocks.insert(block.clone());
+                            continue;
+                        }
+                    },
+                    Err(_) => {
+                        return Err(format_err!(
+                            "Verify block failed, block id: {:?}",
+                            block.id()
+                        ))
                     }
-                    Err(_) => return Err(format_err!("Verify block failed, block id: {:?}", block.id())),
                 }
             }
 
             if chain.has_dag_block(msg.block_id)? {
-                chain.connect(ExecutedBlock { block: specific_block, block_info: storage.get_block_info(msg.block_id)?.ok_or_else(|| format_err!("failed to get the block info for id: {:?}", msg.block_id))? })?;
+                chain.connect(ExecutedBlock {
+                    block: specific_block,
+                    block_info: storage.get_block_info(msg.block_id)?.ok_or_else(|| {
+                        format_err!("failed to get the block info for id: {:?}", msg.block_id)
+                    })?,
+                })?;
                 info!("[sync specific] Sync specific block done");
             } else {
                 return Err(format_err!(
@@ -824,7 +843,6 @@ impl ServiceHandler<Self, SyncSpecificTagretRequest> for SyncService {
             Ok(())
         };
 
-        // async_std::task::block_on(fut)
         ctx.spawn(fut.then(|result| async move {
             if let Err(e) = result {
                 error!("[sync specific] Sync specific block failed, error: {:?}", e);
