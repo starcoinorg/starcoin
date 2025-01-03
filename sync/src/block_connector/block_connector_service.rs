@@ -16,6 +16,7 @@ use anyhow::{bail, format_err, Ok, Result};
 use network_api::PeerProvider;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
+use starcoin_config::genesis_config::G_BASE_MAX_UNCLES_PER_BLOCK;
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
@@ -30,10 +31,12 @@ use starcoin_service_registry::{
 };
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::PeerNewBlock;
+use starcoin_sync_api::SyncSpecificTagretRequest;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 #[cfg(test)]
 use starcoin_txpool_mock_service::MockTxPoolService;
+use starcoin_types::block::BlockHeader;
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown};
@@ -121,6 +124,23 @@ where
         }
 
         None
+    }
+
+    // return false if the number of the block is larger than the current number of the chain.
+    // or return false if the gap of those two blocks is larger than 2 * G_BASE_MAX_UNCLES_PER_BLOCK
+    // else return true.
+    // return false will trigger the burden sync operation.
+    // return true will trigger the specific(light) sync operation.
+    fn is_near_block(&self, block_header: &BlockHeader) -> bool {
+        let current_number = self.chain_service.get_main().status().head().number();
+        if current_number <= block_header.number() {
+            return false;
+        }
+        let gap = current_number.saturating_sub(block_header.number());
+        if gap <= G_BASE_MAX_UNCLES_PER_BLOCK.saturating_mul(2) {
+            return true;
+        }
+        false
     }
 }
 
@@ -308,7 +328,15 @@ where
                                     block.header().number(),
                                     peer_id
                                 );
-                                let _ = sync_service.notify(CheckSyncEvent::default());
+                                if !self.is_near_block(block.as_ref().header()) {
+                                    let _ = sync_service.notify(CheckSyncEvent::default());
+                                } else {
+                                    let _ = sync_service.notify(SyncSpecificTagretRequest {
+                                        block: Some(block.as_ref().clone()),
+                                        block_id: block.id(),
+                                        peer_id: Some(peer_id),
+                                    });
+                                }
                             }
                         }
                         e => {
