@@ -60,10 +60,12 @@ module starcoin_framework::smt_proofs {
     const ERROR_COUNT_COMMON_PREFIX: u64 = 102;
     const BIT_RIGHT: bool = true;
 
-    public fun verify_non_membership_proof_by_key(root_hash: &vector<u8>,
-                                                  non_membership_leaf_data: &vector<u8>,
-                                                  side_nodes: &vector<vector<u8>>,
-                                                  key: &vector<u8>): bool {
+    public fun verify_non_membership_proof_by_key(
+        root_hash: &vector<u8>,
+        non_membership_leaf_data: &vector<u8>,
+        side_nodes: &vector<vector<u8>>,
+        key: &vector<u8>
+    ): bool {
         let leaf_path = smt_tree_hasher::digest(key);
         verify_non_membership_proof_by_leaf_path(root_hash, non_membership_leaf_data, side_nodes, &leaf_path)
     }
@@ -119,17 +121,19 @@ module starcoin_framework::smt_proofs {
     public fun compute_root_hash_by_leaf(
         leaf_path: &vector<u8>,
         leaf_value_hash: &vector<u8>,
-        side_nodes: &vector<vector<u8>>)
-    : vector<u8> {
+        side_nodes: &vector<vector<u8>>
+    ): vector<u8> {
         let (leaf_hash, _) = smt_tree_hasher::digest_leaf(leaf_path, leaf_value_hash);
         compute_root_hash(leaf_path, &leaf_hash, side_nodes)
     }
 
     // Compute root hash after a new leaf included.
-    public fun compute_root_hash_new_leaf_included(leaf_path: &vector<u8>,
-                                                   leaf_value_hash: &vector<u8>,
-                                                   non_membership_leaf_data: &vector<u8>,
-                                                   side_nodes: &vector<vector<u8>>): vector<u8> {
+    public fun compute_root_hash_new_leaf_included(
+        leaf_path: &vector<u8>,
+        leaf_value_hash: &vector<u8>,
+        non_membership_leaf_data: &vector<u8>,
+        side_nodes: &vector<vector<u8>>
+    ): vector<u8> {
         let (new_side_nodes, leaf_node_hash) = create_membership_side_nodes(
             leaf_path,
             leaf_value_hash,
@@ -142,10 +146,12 @@ module starcoin_framework::smt_proofs {
 
     // Create membership proof from non-membership proof.
     // Return root hash, side nodes.
-    public fun create_membership_proof(leaf_path: &vector<u8>,
-                                       leaf_value_hash: &vector<u8>,
-                                       non_membership_leaf_data: &vector<u8>,
-                                       side_nodes: &vector<vector<u8>>): (vector<u8>, vector<vector<u8>>) {
+    public fun create_membership_proof(
+        leaf_path: &vector<u8>,
+        leaf_value_hash: &vector<u8>,
+        non_membership_leaf_data: &vector<u8>,
+        side_nodes: &vector<vector<u8>>
+    ): (vector<u8>, vector<vector<u8>>) {
         let (new_side_nodes, leaf_node_hash) = create_membership_side_nodes(
             leaf_path,
             leaf_value_hash,
@@ -157,10 +163,12 @@ module starcoin_framework::smt_proofs {
     }
 
     // Create membership proof side nodes from non-membership proof.
-    fun create_membership_side_nodes(leaf_path: &vector<u8>,
-                                     leaf_value_hash: &vector<u8>,
-                                     non_membership_leaf_data: &vector<u8>,
-                                     side_nodes: &vector<vector<u8>>): (vector<vector<u8>>, vector<u8>) {
+    fun create_membership_side_nodes(
+        leaf_path: &vector<u8>,
+        leaf_value_hash: &vector<u8>,
+        non_membership_leaf_data: &vector<u8>,
+        side_nodes: &vector<vector<u8>>
+    ): (vector<vector<u8>>, vector<u8>) {
         let side_nodes_len = vector::length<vector<u8>>(side_nodes);
         let (new_leaf_hash, _) = smt_tree_hasher::digest_leaf(leaf_path, leaf_value_hash);
         let new_side_nodes = if (vector::length(non_membership_leaf_data) > 0) {
@@ -197,9 +205,11 @@ module starcoin_framework::smt_proofs {
 
     // Compute root hash.
     // The parameter `node_hash` is leaf or internal node hash.
-    fun compute_root_hash(path: &vector<u8>,
-                          node_hash: &vector<u8>,
-                          side_nodes: &vector<vector<u8>>): vector<u8> {
+    fun compute_root_hash(
+        path: &vector<u8>,
+        node_hash: &vector<u8>,
+        side_nodes: &vector<vector<u8>>
+    ): vector<u8> {
         debug::print(side_nodes);
         let side_nodes_len = vector::length<vector<u8>>(side_nodes);
 
