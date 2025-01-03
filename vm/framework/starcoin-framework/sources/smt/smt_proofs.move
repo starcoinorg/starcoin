@@ -234,10 +234,10 @@ module starcoin_framework::smt_non_membership_proof_test {
 
     use std::hash;
     use std::vector;
-    use starcoin_framework::bcs_util;
-    use starcoin_framework::smt_utils;
-    use starcoin_framework::smt_tree_hasher;
+
     use starcoin_framework::smt_hash;
+    use starcoin_framework::smt_tree_hasher;
+    use starcoin_framework::smt_utils;
     use starcoin_std::debug;
 
     const TEST_CHAIN_ID: u64 = 218;
