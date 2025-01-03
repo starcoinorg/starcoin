@@ -395,6 +395,8 @@ pub fn build_init_script(net: &ChainNetwork) -> EntryFunction {
         // flexidag effective height
         genesis_config.dag_effective_height,
         Features::default().features,
+        // TODO(BobOng): to set proof root
+        Vec::new(),
     );
 
     match payload {
