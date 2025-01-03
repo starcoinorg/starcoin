@@ -25,7 +25,7 @@ use starcoin_vm_types::on_chain_config::{ConsensusConfig, OnChainConfig};
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::token::stc::{stc_type_tag, STCUnit};
 use starcoin_vm_types::vm_status::KeptVMStatus;
-use starcoin_vm_types::{transaction::Package, vm_status::StatusCode};
+use starcoin_vm_types::{on_chain_config, transaction::Package, vm_status::StatusCode};
 use test_helper::executor::{
     account_execute, account_execute_should_success, association_execute_should_success,
     blockmeta_execute, build_raw_txn, current_block_number, TEST_MODULE, TEST_MODULE_1,
@@ -37,7 +37,7 @@ use test_helper::executor::{
     prepare_genesis,
 };
 // use test_helper::Account;
-use starcoin_state_api::StateReaderExt;
+use starcoin_state_api::{ChainStateReader, StateReaderExt};
 use starcoin_types::account::Account;
 use starcoin_types::account_config::G_STC_TOKEN_CODE;
 use starcoin_vm_runtime::starcoin_vm::{chunk_block_transactions, StarcoinVM};
@@ -1088,5 +1088,22 @@ fn test_chunk_block_transactions() -> Result<()> {
     let result3 = chunk_block_transactions(txns3);
     assert_eq!(result3.len(), 3);
 
+    Ok(())
+}
+
+
+#[test]
+fn get_vm_version_verify() -> Result<()> {
+    let (chain_state, _net) = prepare_genesis();
+    let version_path = on_chain_config::access_path_for_config(
+        genesis_address(),
+        Identifier::new("Version").unwrap(),
+        Identifier::new("Version").unwrap(),
+        vec![],
+    );
+    let mut state_proof = chain_state.get_with_proof(&version_path)?;
+    state_proof.verify(chain_state.state_root(), version_path.clone())?;
+    state_proof.state.as_mut().unwrap()[0] = 12;
+    assert!(state_proof.verify(chain_state.state_root(), version_path).is_err());
     Ok(())
 }
