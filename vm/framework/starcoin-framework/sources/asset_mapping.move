@@ -44,7 +44,6 @@ module starcoin_framework::asset_mapping {
 
     struct AssetMappingProof has key, store {
         proof_root: vector<u8>,
-        anchor_height: u64,
     }
 
     /// Error code for invalid signer
@@ -55,9 +54,8 @@ module starcoin_framework::asset_mapping {
     /// Initializes the asset mapping pool
     /// @param framework - The framework signer
     /// @param proof_root - Initial proof root for verification
-    /// @param anchor_height - Initial anchor height
     /// Verifies the framework signer and creates a new AssetMappingPool
-    public fun initialize(framework: &signer) {
+    public fun initialize(framework: &signer, proof_root: vector<u8>) {
         assert!(
             signer::address_of(framework) == system_addresses::get_starcoin_framework(),
             error::unauthenticated(EINVALID_SIGNER)
@@ -65,17 +63,8 @@ module starcoin_framework::asset_mapping {
         move_to(framework, AssetMappingPool {
             token_stores: smart_table::new<Object<Metadata>, AssetMappingStore>(),
         });
-    }
-
-    /// Called by StarcoinNode after Genesis
-    public entry fun initalize_proof(framework: &signer, proof_root: vector<u8>, anchor_height: u64) {
-        assert!(
-            signer::address_of(framework) == system_addresses::get_starcoin_framework(),
-            error::unauthenticated(EINVALID_SIGNER)
-        );
         move_to(framework, AssetMappingProof {
             proof_root,
-            anchor_height,
         });
     }
 
@@ -182,8 +171,7 @@ module starcoin_framework::asset_mapping {
         debug::print(&std::string::utf8(b"asset_mapping::test_asset_mapping_create_store_from_coin | entered"));
 
         let amount = 10000000000;
-        Self::initialize(framework);
-        Self::initalize_proof(framework, vector::empty<u8>(), 0);
+        Self::initialize(framework, vector::empty<u8>());
 
         // create genesis account
         account::create_account_for_test(signer::address_of(framework));

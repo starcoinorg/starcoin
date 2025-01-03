@@ -14,7 +14,6 @@ with proof verification.
 -  [Resource `AssetMappingProof`](#0x1_asset_mapping_AssetMappingProof)
 -  [Constants](#@Constants_0)
 -  [Function `initialize`](#0x1_asset_mapping_initialize)
--  [Function `initalize_proof`](#0x1_asset_mapping_initalize_proof)
 -  [Function `create_store_from_coin`](#0x1_asset_mapping_create_store_from_coin)
 -  [Function `create_store_for_type`](#0x1_asset_mapping_create_store_for_type)
 -  [Function `balance`](#0x1_asset_mapping_balance)
@@ -128,12 +127,6 @@ Contains:
 <dd>
 
 </dd>
-<dt>
-<code>anchor_height: u64</code>
-</dt>
-<dd>
-
-</dd>
 </dl>
 
 
@@ -179,11 +172,10 @@ Error code for invalid signer
 Initializes the asset mapping pool
 @param framework - The framework signer
 @param proof_root - Initial proof root for verification
-@param anchor_height - Initial anchor height
 Verifies the framework signer and creates a new AssetMappingPool
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_initialize">initialize</a>(framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_initialize">initialize</a>(framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, proof_root: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -192,7 +184,7 @@ Verifies the framework signer and creates a new AssetMappingPool
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_initialize">initialize</a>(framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
+<pre><code><b>public</b> <b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_initialize">initialize</a>(framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, proof_root: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;) {
     <b>assert</b>!(
         <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(framework) == <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>(),
         <a href="../../move-stdlib/doc/error.md#0x1_error_unauthenticated">error::unauthenticated</a>(<a href="asset_mapping.md#0x1_asset_mapping_EINVALID_SIGNER">EINVALID_SIGNER</a>)
@@ -200,37 +192,8 @@ Verifies the framework signer and creates a new AssetMappingPool
     <b>move_to</b>(framework, <a href="asset_mapping.md#0x1_asset_mapping_AssetMappingPool">AssetMappingPool</a> {
         token_stores: <a href="../../starcoin-stdlib/doc/smart_table.md#0x1_smart_table_new">smart_table::new</a>&lt;Object&lt;Metadata&gt;, <a href="asset_mapping.md#0x1_asset_mapping_AssetMappingStore">AssetMappingStore</a>&gt;(),
     });
-}
-</code></pre>
-
-
-
-</details>
-
-<a id="0x1_asset_mapping_initalize_proof"></a>
-
-## Function `initalize_proof`
-
-Called by StarcoinNode after Genesis
-
-
-<pre><code><b>public</b> entry <b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_initalize_proof">initalize_proof</a>(framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, proof_root: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, anchor_height: u64)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> entry <b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_initalize_proof">initalize_proof</a>(framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, proof_root: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, anchor_height: u64) {
-    <b>assert</b>!(
-        <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(framework) == <a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>(),
-        <a href="../../move-stdlib/doc/error.md#0x1_error_unauthenticated">error::unauthenticated</a>(<a href="asset_mapping.md#0x1_asset_mapping_EINVALID_SIGNER">EINVALID_SIGNER</a>)
-    );
     <b>move_to</b>(framework, <a href="asset_mapping.md#0x1_asset_mapping_AssetMappingProof">AssetMappingProof</a> {
         proof_root,
-        anchor_height,
     });
 }
 </code></pre>
@@ -393,7 +356,6 @@ Requirements:
 
     <b>assert</b>!(<a href="asset_mapping.md#0x1_asset_mapping_calculation_proof">calculation_proof</a>(proove, <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>()), <a href="../../move-stdlib/doc/error.md#0x1_error_unauthenticated">error::unauthenticated</a>(<a href="asset_mapping.md#0x1_asset_mapping_EINVALID_NOT_PROOF">EINVALID_NOT_PROOF</a>));
 
-    // <a href="fungible_asset.md#0x1_fungible_asset_withdraw">fungible_asset::withdraw</a>(&store.transfer_ref, store.fungible_store, to_account_primary_store, amount);
     <b>let</b> store_signer = <a href="object.md#0x1_object_generate_signer_for_extending">object::generate_signer_for_extending</a>(&mapping_store.extend_ref);
     <a href="fungible_asset.md#0x1_fungible_asset_deposit">fungible_asset::deposit</a>(
         <a href="primary_fungible_store.md#0x1_primary_fungible_store_ensure_primary_store_exists">primary_fungible_store::ensure_primary_store_exists</a>(receiper, metadata),

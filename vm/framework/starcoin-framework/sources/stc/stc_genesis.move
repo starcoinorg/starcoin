@@ -83,6 +83,7 @@ module starcoin_framework::stc_genesis {
         transaction_timeout: u64,
         dag_effective_height: u64,
         features: vector<u8>,
+        asset_mapping_proof_root: vector<u8>,
     ) {
         debug::print(&std::string::utf8(b"stc_genesis::initialize Entered"));
 
@@ -167,6 +168,9 @@ module starcoin_framework::stc_genesis {
         );
 
         debug::print(&std::string::utf8(b"stc_genesis::initialize | initialize_stc "));
+
+        // Asset mapping initialize
+        asset_mapping::initialize(&starcoin_framework_account, asset_mapping_proof_root);
 
         // Init goverances account
         let core_resource_account = account::create_account(@core_resources);
@@ -299,8 +303,6 @@ module starcoin_framework::stc_genesis {
         time_mint_stc_amount: u128,
         time_mint_stc_period: u64,
     ) {
-        // Initialize asset mapping
-        asset_mapping::initialize(starcoin_framework);
         // TODO(BobOng): To confirm how many STC put into asset mapping pool
         let asset_mapping_coin = coin::extract<STC>(&mut total_supply_stc, 1000000000);
         asset_mapping::create_store_from_coin<STC>(starcoin_framework, asset_mapping_coin);
@@ -404,6 +406,7 @@ module starcoin_framework::stc_genesis {
             min_action_delay,
             transaction_timeout,
             0,
+            vector::empty(),
             vector::empty(),
         );
     }
