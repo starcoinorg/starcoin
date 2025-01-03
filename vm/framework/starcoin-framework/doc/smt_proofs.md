@@ -72,10 +72,12 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="smt_proofs.md#0x1_smt_proofs_verify_non_membership_proof_by_key">verify_non_membership_proof_by_key</a>(root_hash: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-                                              non_membership_leaf_data: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-                                              side_nodes: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
-                                              key: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="smt_proofs.md#0x1_smt_proofs_verify_non_membership_proof_by_key">verify_non_membership_proof_by_key</a>(
+    root_hash: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    non_membership_leaf_data: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    side_nodes: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
+    key: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;
+): bool {
     <b>let</b> leaf_path = <a href="smt_tree_hasher.md#0x1_smt_tree_hasher_digest">smt_tree_hasher::digest</a>(key);
     <a href="smt_proofs.md#0x1_smt_proofs_verify_non_membership_proof_by_leaf_path">verify_non_membership_proof_by_leaf_path</a>(root_hash, non_membership_leaf_data, side_nodes, &leaf_path)
 }
@@ -209,8 +211,8 @@
 <pre><code><b>public</b> <b>fun</b> <a href="smt_proofs.md#0x1_smt_proofs_compute_root_hash_by_leaf">compute_root_hash_by_leaf</a>(
     leaf_path: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     leaf_value_hash: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    side_nodes: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;)
-: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
+    side_nodes: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;
+): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
     <b>let</b> (leaf_hash, _) = <a href="smt_tree_hasher.md#0x1_smt_tree_hasher_digest_leaf">smt_tree_hasher::digest_leaf</a>(leaf_path, leaf_value_hash);
     <a href="smt_proofs.md#0x1_smt_proofs_compute_root_hash">compute_root_hash</a>(leaf_path, &leaf_hash, side_nodes)
 }
@@ -235,10 +237,12 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="smt_proofs.md#0x1_smt_proofs_compute_root_hash_new_leaf_included">compute_root_hash_new_leaf_included</a>(leaf_path: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-                                               leaf_value_hash: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-                                               non_membership_leaf_data: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-                                               side_nodes: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="smt_proofs.md#0x1_smt_proofs_compute_root_hash_new_leaf_included">compute_root_hash_new_leaf_included</a>(
+    leaf_path: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    leaf_value_hash: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    non_membership_leaf_data: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    side_nodes: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;
+): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
     <b>let</b> (new_side_nodes, leaf_node_hash) = <a href="smt_proofs.md#0x1_smt_proofs_create_membership_side_nodes">create_membership_side_nodes</a>(
         leaf_path,
         leaf_value_hash,
@@ -269,10 +273,12 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="smt_proofs.md#0x1_smt_proofs_create_membership_proof">create_membership_proof</a>(leaf_path: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-                                   leaf_value_hash: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-                                   non_membership_leaf_data: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-                                   side_nodes: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;): (<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;) {
+<pre><code><b>public</b> <b>fun</b> <a href="smt_proofs.md#0x1_smt_proofs_create_membership_proof">create_membership_proof</a>(
+    leaf_path: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    leaf_value_hash: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    non_membership_leaf_data: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    side_nodes: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;
+): (<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;) {
     <b>let</b> (new_side_nodes, leaf_node_hash) = <a href="smt_proofs.md#0x1_smt_proofs_create_membership_side_nodes">create_membership_side_nodes</a>(
         leaf_path,
         leaf_value_hash,
@@ -303,10 +309,12 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="smt_proofs.md#0x1_smt_proofs_create_membership_side_nodes">create_membership_side_nodes</a>(leaf_path: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-                                 leaf_value_hash: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-                                 non_membership_leaf_data: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-                                 side_nodes: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;): (<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;) {
+<pre><code><b>fun</b> <a href="smt_proofs.md#0x1_smt_proofs_create_membership_side_nodes">create_membership_side_nodes</a>(
+    leaf_path: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    leaf_value_hash: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    non_membership_leaf_data: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    side_nodes: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;
+): (<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;) {
     <b>let</b> side_nodes_len = <a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;(side_nodes);
     <b>let</b> (new_leaf_hash, _) = <a href="smt_tree_hasher.md#0x1_smt_tree_hasher_digest_leaf">smt_tree_hasher::digest_leaf</a>(leaf_path, leaf_value_hash);
     <b>let</b> new_side_nodes = <b>if</b> (<a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(non_membership_leaf_data) &gt; 0) {
@@ -361,9 +369,11 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="smt_proofs.md#0x1_smt_proofs_compute_root_hash">compute_root_hash</a>(path: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-                      node_hash: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-                      side_nodes: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
+<pre><code><b>fun</b> <a href="smt_proofs.md#0x1_smt_proofs_compute_root_hash">compute_root_hash</a>(
+    path: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    node_hash: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    side_nodes: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;
+): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(side_nodes);
     <b>let</b> side_nodes_len = <a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;(side_nodes);
 
