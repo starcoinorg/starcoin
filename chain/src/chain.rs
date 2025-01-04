@@ -1527,6 +1527,9 @@ impl BlockChain {
 
         let mut new_tips = vec![];
         for hash in tips {
+            if !self.has_dag_block(hash)? {
+                continue;
+            }
             if !dag.check_ancestor_of(hash, new_tip_block.id())? {
                 new_tips.push(hash);
             }
