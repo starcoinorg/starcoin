@@ -244,6 +244,7 @@ module starcoin_framework::smt_non_membership_proof_test {
 
     use std::hash;
     use std::vector;
+    use starcoin_framework::smt_proofs::verify_membership_proof_by_key_value;
 
     use starcoin_framework::smt_hash;
     use starcoin_framework::smt_tree_hasher;
@@ -375,5 +376,46 @@ module starcoin_framework::smt_non_membership_proof_test {
         debug::print(&leaf_node_value);
         debug::print(&x"2767f15c8af2f2c7225d5273fdd683edc714110a987d1054697c348aed4e6cc7");
         assert!(leaf_node_value == x"2767f15c8af2f2c7225d5273fdd683edc714110a987d1054697c348aed4e6cc7", 1107);
+    }
+
+    // This function mainly verifies that the value of the 0x1::chain_id::ChainId structure is 0xff (i.e. 255)
+    // after the genesis of the test network is started.
+    //
+    // The test location of the rust code function name is `test_get_chain_id_after_genesis_with_proof_verify`
+    //
+    // expected_root_hash: HashValue(0xf65860f575bf2a198c069adb4e7872037e3a329b63ef617e40afa39b87b067c8),
+    // element_key: HashValue(0x4cc8bd9df94b37c233555d9a3bba0a712c3c709f047486d1e624b2bcd3b83266),
+    // element_blob: Some(Blob { Raw: 0xff  }),
+    // siblings: [
+    //   HashValue(0xcfb1462d4fc72f736eab2a56b2bf72ca6ad1c4e8c79557046a8b0adce047f007),
+    //   HashValue(0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000),
+    //   HashValue(0x5ca9febe74c7fde3fdcf2bd464de6d8899a0a13d464893aada2714c6fa774f9d),
+    //   HashValue(0x1519a398fed69687cabf51adf831f0ee1650aaf79775d00135fc70f55a73e151),
+    //   HashValue(0x50ce5c38983ba2eb196acd44e0aaedf040b1437ad1106e05ca452d7e27e4e03f),
+    //   HashValue(0x55ed28435637a061a6dd9e20b72849199cd36184570f976b7e306a27bebf2fdf),
+    //   HashValue(0x0dc23e31614798a6f67659b0b808b3eadc3b13a2a7bc03580a9e3004e45c2e6c),
+    //   HashValue(0x83bed048bc0bc452c98cb0e9f1cc0f691919eaf756864fc44940c2d1e01da92a)
+    // ]
+    #[test]
+    public fun test_verify_membership_proof_by_key_value() {
+        let siblings = vector::empty<vector<u8>>();
+        vector::push_back(&mut siblings, x"cfb1462d4fc72f736eab2a56b2bf72ca6ad1c4e8c79557046a8b0adce047f007");
+        vector::push_back(&mut siblings, x"5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000");
+        vector::push_back(&mut siblings, x"5ca9febe74c7fde3fdcf2bd464de6d8899a0a13d464893aada2714c6fa774f9d");
+        vector::push_back(&mut siblings, x"1519a398fed69687cabf51adf831f0ee1650aaf79775d00135fc70f55a73e151");
+        vector::push_back(&mut siblings, x"50ce5c38983ba2eb196acd44e0aaedf040b1437ad1106e05ca452d7e27e4e03f");
+        vector::push_back(&mut siblings, x"55ed28435637a061a6dd9e20b72849199cd36184570f976b7e306a27bebf2fdf");
+        vector::push_back(&mut siblings, x"0dc23e31614798a6f67659b0b808b3eadc3b13a2a7bc03580a9e3004e45c2e6c");
+        vector::push_back(&mut siblings, x"83bed048bc0bc452c98cb0e9f1cc0f691919eaf756864fc44940c2d1e01da92a");
+
+        let expect_root_hash = x"f65860f575bf2a198c069adb4e7872037e3a329b63ef617e40afa39b87b067c8";
+        let element_key = x"4cc8bd9df94b37c233555d9a3bba0a712c3c709f047486d1e624b2bcd3b83266";
+        assert!(verify_membership_proof_by_key_value(
+            &expect_root_hash,
+            &siblings,
+            &element_key,
+            &x"ff",
+            false
+        ), 1111);
     }
 }
