@@ -21,6 +21,7 @@
 <b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="smt_tree_hasher.md#0x1_smt_tree_hasher">0x1::smt_tree_hasher</a>;
 <b>use</b> <a href="smt_utils.md#0x1_smt_utils">0x1::smt_utils</a>;
+<b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 </code></pre>
 
 
@@ -169,7 +170,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="smt_proofs.md#0x1_smt_proofs_verify_membership_proof">verify_membership_proof</a>(root_hash: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, side_nodes: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, leaf_path: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, leaf_value_hash: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): bool
+<pre><code><b>public</b> <b>fun</b> <a href="smt_proofs.md#0x1_smt_proofs_verify_membership_proof">verify_membership_proof</a>(expect_root_hash: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, sibling_nodes: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, leaf_path: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, leaf_value_hash: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): bool
 </code></pre>
 
 
@@ -179,13 +180,36 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="smt_proofs.md#0x1_smt_proofs_verify_membership_proof">verify_membership_proof</a>(
-    root_hash: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    side_nodes: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
+    expect_root_hash: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    sibling_nodes: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
     leaf_path: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     leaf_value_hash: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;
 ): bool {
-    <b>let</b> (leaf_hash, _) = <a href="smt_tree_hasher.md#0x1_smt_tree_hasher_digest_leaf">smt_tree_hasher::digest_leaf</a>(leaf_path, leaf_value_hash);
-    <a href="smt_proofs.md#0x1_smt_proofs_compute_root_hash">compute_root_hash</a>(leaf_path, &leaf_hash, side_nodes) == *root_hash
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(
+        &<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="smt_proofs.md#0x1_smt_proofs_verify_membership_proof">smt_proofs::verify_membership_proof</a> | entered, leaf path & leaf value <a href="../../move-stdlib/doc/hash.md#0x1_hash">hash</a> & sibling_nodes")
+    );
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(leaf_path);
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(leaf_value_hash);
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(sibling_nodes);
+
+    <b>let</b> (leaf_hash, leaf_value) = <a href="smt_tree_hasher.md#0x1_smt_tree_hasher_digest_leaf">smt_tree_hasher::digest_leaf</a>(leaf_path, leaf_value_hash);
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(
+        &<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(
+            b"<a href="smt_proofs.md#0x1_smt_proofs_verify_membership_proof">smt_proofs::verify_membership_proof</a> | after <a href="smt_tree_hasher.md#0x1_smt_tree_hasher_digest_leaf">smt_tree_hasher::digest_leaf</a>, leaf_path & leaf_value: "
+        )
+    );
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&leaf_hash);
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&leaf_value);
+
+    <b>let</b> ret_hash = <a href="smt_proofs.md#0x1_smt_proofs_compute_root_hash">compute_root_hash</a>(leaf_path, &leaf_hash, sibling_nodes);
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(
+        &<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(
+            b"<a href="smt_proofs.md#0x1_smt_proofs_verify_membership_proof">smt_proofs::verify_membership_proof</a> | after <a href="smt_proofs.md#0x1_smt_proofs_compute_root_hash">Self::compute_root_hash</a>, ret_hash & expect_root_hash: "
+        )
+    );
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&ret_hash);
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(expect_root_hash);
+    ret_hash == *expect_root_hash
 }
 </code></pre>
 
@@ -360,7 +384,7 @@
 
 
 
-<pre><code><b>fun</b> <a href="smt_proofs.md#0x1_smt_proofs_compute_root_hash">compute_root_hash</a>(path: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, node_hash: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, side_nodes: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="smt_proofs.md#0x1_smt_proofs_compute_root_hash">compute_root_hash</a>(path: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, node_hash: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, side_nodes: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -369,12 +393,11 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="smt_proofs.md#0x1_smt_proofs_compute_root_hash">compute_root_hash</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="smt_proofs.md#0x1_smt_proofs_compute_root_hash">compute_root_hash</a>(
     path: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     node_hash: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     side_nodes: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;
 ): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(side_nodes);
     <b>let</b> side_nodes_len = <a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;(side_nodes);
 
     <b>let</b> i = 0;

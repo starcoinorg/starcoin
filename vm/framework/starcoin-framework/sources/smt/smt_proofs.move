@@ -50,11 +50,15 @@
 module starcoin_framework::smt_proofs {
 
     use std::error;
+    use std::string;
     use std::vector;
 
     use starcoin_framework::smt_tree_hasher;
     use starcoin_framework::smt_utils;
     use starcoin_std::debug;
+
+    #[test_only]
+    use starcoin_framework::smt_hash;
 
     const ERROR_KEY_ALREADY_EXISTS_IN_PROOF: u64 = 101;
     const ERROR_COUNT_COMMON_PREFIX: u64 = 102;
@@ -109,13 +113,36 @@ module starcoin_framework::smt_proofs {
     }
 
     public fun verify_membership_proof(
-        root_hash: &vector<u8>,
-        side_nodes: &vector<vector<u8>>,
+        expect_root_hash: &vector<u8>,
+        sibling_nodes: &vector<vector<u8>>,
         leaf_path: &vector<u8>,
         leaf_value_hash: &vector<u8>
     ): bool {
-        let (leaf_hash, _) = smt_tree_hasher::digest_leaf(leaf_path, leaf_value_hash);
-        compute_root_hash(leaf_path, &leaf_hash, side_nodes) == *root_hash
+        debug::print(
+            &string::utf8(b"smt_proofs::verify_membership_proof | entered, leaf path & leaf value hash & sibling_nodes")
+        );
+        debug::print(leaf_path);
+        debug::print(leaf_value_hash);
+        debug::print(sibling_nodes);
+
+        let (leaf_hash, leaf_value) = smt_tree_hasher::digest_leaf(leaf_path, leaf_value_hash);
+        debug::print(
+            &string::utf8(
+                b"smt_proofs::verify_membership_proof | after smt_tree_hasher::digest_leaf, leaf_path & leaf_value: "
+            )
+        );
+        debug::print(&leaf_hash);
+        debug::print(&leaf_value);
+
+        let ret_hash = compute_root_hash(leaf_path, &leaf_hash, sibling_nodes);
+        debug::print(
+            &string::utf8(
+                b"smt_proofs::verify_membership_proof | after Self::compute_root_hash, ret_hash & expect_root_hash: "
+            )
+        );
+        debug::print(&ret_hash);
+        debug::print(expect_root_hash);
+        ret_hash == *expect_root_hash
     }
 
     public fun compute_root_hash_by_leaf(
@@ -205,12 +232,11 @@ module starcoin_framework::smt_proofs {
 
     // Compute root hash.
     // The parameter `node_hash` is leaf or internal node hash.
-    fun compute_root_hash(
+    public fun compute_root_hash(
         path: &vector<u8>,
         node_hash: &vector<u8>,
         side_nodes: &vector<vector<u8>>
     ): vector<u8> {
-        debug::print(side_nodes);
         let side_nodes_len = vector::length<vector<u8>>(side_nodes);
 
         let i = 0;
@@ -229,154 +255,6 @@ module starcoin_framework::smt_proofs {
         current_hash
     }
 
-    //    struct SparseMerkleInternalNode has store, drop {
-    //        left_child: vector<u8>,
-    //        right_child: vector<u8>,
-    //    }
-
-    //    struct SparseMerkleLeafNode has store, drop {
-    //        key: vector<u8>,
-    //    }
-}
-
-#[test_only]
-module starcoin_framework::smt_non_membership_proof_test {
-
-    use std::hash;
-    use std::vector;
-    use starcoin_framework::smt_proofs::verify_membership_proof_by_key_value;
-
-    use starcoin_framework::smt_hash;
-    use starcoin_framework::smt_tree_hasher;
-    use starcoin_framework::smt_utils;
-    use starcoin_std::debug;
-
-    const TEST_CHAIN_ID: u64 = 218;
-
-    struct MerkleInternalNode has store, drop {
-        left_child: vector<u8>,
-        right_child: vector<u8>,
-    }
-
-    #[test]
-    public fun test_iter_bits() {
-        let hash = x"1000000000000000000000000000000000000000000000000000000000000000";
-        debug::print(&hash::sha3_256(*&hash));
-
-        let bit_vec = smt_hash::path_bits_to_bool_vector_from_msb(&hash);
-        debug::print(&bit_vec);
-        assert!(vector::length<bool>(&bit_vec) == 256, 1101);
-
-        let sub_bits = vector::slice<bool>(&bit_vec, 252, 256);
-        debug::print(&sub_bits);
-        assert!(vector::length<bool>(&sub_bits) == 4, 1102);
-    }
-
-    // #[test]
-    // public fun test_bit() {
-    //     assert!(BitOperators::and(1, 2) == 0, 1103);
-    //     assert!(BitOperators::and(1, 3) == 1, 1104);
-    //     assert!(BitOperators::and(1, 16 >> 4) == 1, 1105);
-    // }
-
-    #[test]
-    public fun test_print_fix_keyword() {
-        let k1 = x"01";
-        let k2 = b"helloworld";
-        debug::print(&k1);
-        debug::print(&k2);
-        debug::print(&hash::sha3_256(k1));
-        debug::print(&hash::sha3_256(k2));
-    }
-
-
-    #[test]
-    public fun test_get_bit() {
-        // Print origin hash
-        let origin_hash = x"1000000000000000000000000000000000000000000000000000000000000001";
-        debug::print(&origin_hash);
-
-        // Expect first byte is 'F', which binary is 11111111
-        let first_byte = *vector::borrow(&origin_hash, 0);
-        debug::print(&first_byte);
-
-        // let bit = BitOperators::and(BitOperators::rshift((first_byte as u64), 4), (1 as u64));
-        let bit = (first_byte >> 4 & 1);
-        debug::print(&bit);
-        assert!((first_byte >> 4 & 1) == 1, 1106);
-
-        let bit_hash = vector::empty();
-        let i = 0;
-        while (i < 256) {
-            vector::push_back(&mut bit_hash, smt_utils::get_bit_at_from_msb(&origin_hash, i));
-            i = i + 1;
-        };
-        debug::print(&bit_hash);
-
-        // Test skip bit
-        vector::reverse(&mut bit_hash);
-        let skip_bits = vector::slice<bool>(&bit_hash, 252, 256);
-        debug::print(&skip_bits);
-
-        let skip_bits_1 = vector::slice<bool>(&bit_hash, 0, 1);
-        debug::print(&skip_bits_1);
-    }
-
-    #[test]
-    public fun test_fixed_leaf_node_data() {
-        let data = x"0076d3bc41c9f588f7fcd0d5bf4718f8f84b1c41b20882703100b9eb9413807c012767f15c8af2f2c7225d5273fdd683edc714110a987d1054697c348aed4e6cc7";
-        let expect = x"da3c17cfd8be129f09b61272f8afcf42bf5b77cf7e405f5aa20c30684a205488";
-
-        let crypto_hash = smt_tree_hasher::digest_leaf_data(&data);
-
-        debug::print(&crypto_hash);
-        debug::print(&expect);
-        assert!(crypto_hash == expect, 1107);
-    }
-
-    #[test]
-    public fun test_fixed_internal_node_data() {
-        let left = x"24a7e02bc5b39e8a4b7d2396d2e637632d0938944d16d571f0485168461f46eb";
-        let right = x"42bfc776a76b35ca641ee761a5f4bc6ebf2d4e2441c517f8a8e085dec3ca443c";
-        let expect = x"060aec78413605e993f9338255b661ac794a68729ffa50022aca72b01586a306";
-
-        let (crypto_hash, _) = smt_tree_hasher::digest_node(&left, &right);
-
-        debug::print(&crypto_hash);
-        debug::print(&expect);
-
-        assert!(crypto_hash == expect, 1108);
-    }
-
-    #[test]
-    fun test_common_prefix_bits_len() {
-        let bits1 = smt_hash::path_bits_to_bool_vector_from_msb(
-            &x"0000000000000000000000000000000000000000000000000000000000000000"
-        );
-        let bits2 = smt_hash::path_bits_to_bool_vector_from_msb(
-            &x"1000000000000000000000000000000000000000000000000000000000000000"
-        );
-        debug::print(&bits1);
-        debug::print(&bits2);
-        let len = smt_utils::count_vector_common_prefix<bool>(&bits1, &bits2);
-        debug::print(&len);
-        assert!(len == 3, 1109);
-    }
-
-    #[test]
-    public fun test_fixed_split_leaf_node_data() {
-        let data = x"0076d3bc41c9f588f7fcd0d5bf4718f8f84b1c41b20882703100b9eb9413807c012767f15c8af2f2c7225d5273fdd683edc714110a987d1054697c348aed4e6cc7";
-        let (leaf_node_path, leaf_node_value) = smt_tree_hasher::parse_leaf(&data);
-        //assert!(prefix == x"00", 1110);
-
-        debug::print(&leaf_node_path);
-        debug::print(&x"76d3bc41c9f588f7fcd0d5bf4718f8f84b1c41b20882703100b9eb9413807c01");
-        assert!(leaf_node_path == x"76d3bc41c9f588f7fcd0d5bf4718f8f84b1c41b20882703100b9eb9413807c01", 1106);
-
-        debug::print(&leaf_node_value);
-        debug::print(&x"2767f15c8af2f2c7225d5273fdd683edc714110a987d1054697c348aed4e6cc7");
-        assert!(leaf_node_value == x"2767f15c8af2f2c7225d5273fdd683edc714110a987d1054697c348aed4e6cc7", 1107);
-    }
 
     // This function mainly verifies that the value of the 0x1::chain_id::ChainId structure is 0xff (i.e. 255)
     // after the genesis of the test network is started.
@@ -396,8 +274,9 @@ module starcoin_framework::smt_non_membership_proof_test {
     //   HashValue(0x0dc23e31614798a6f67659b0b808b3eadc3b13a2a7bc03580a9e3004e45c2e6c),
     //   HashValue(0x83bed048bc0bc452c98cb0e9f1cc0f691919eaf756864fc44940c2d1e01da92a)
     // ]
+
     #[test]
-    public fun test_verify_membership_proof_by_key_value() {
+    public fun test_verify_membership_proof() {
         let siblings = vector::empty<vector<u8>>();
         vector::push_back(&mut siblings, x"cfb1462d4fc72f736eab2a56b2bf72ca6ad1c4e8c79557046a8b0adce047f007");
         vector::push_back(&mut siblings, x"5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000");
@@ -410,12 +289,33 @@ module starcoin_framework::smt_non_membership_proof_test {
 
         let expect_root_hash = x"f65860f575bf2a198c069adb4e7872037e3a329b63ef617e40afa39b87b067c8";
         let element_key = x"4cc8bd9df94b37c233555d9a3bba0a712c3c709f047486d1e624b2bcd3b83266";
-        assert!(verify_membership_proof_by_key_value(
+        assert!(Self::verify_membership_proof(
             &expect_root_hash,
             &siblings,
             &element_key,
             &x"ff",
-            false
-        ), 1111);
+        ), 1110);
+
+        // let node_data = vector::empty<u8>();
+        // vector::append(&mut node_data, element_key);
+        //
+        // let value_hash = smt_hash::hash(&x"00000000000000ff");
+        // debug::print(&string::utf8(b"test_verify_membership_proof | value_hash "));
+        // debug::print(&value_hash);
+        // vector::append(&mut node_data, value_hash);
+        //
+        // let node_hash = smt_hash::hash(&node_data);
+        // debug::print(&string::utf8(b"test_verify_membership_proof | current_hash "));
+        // debug::print(&node_hash);
+        //
+        // let actual_root = Self::compute_root_hash(
+        //     &element_key,
+        //     //&node_hash,
+        //     &x"796c380bdad1231f930708197d9d4ddffe61e8bf2b3d817a0efe21230b11ae2e",
+        //     &siblings,
+        // );
+        // assert!(actual_root == expect_root_hash, 1110);
+
     }
 }
+

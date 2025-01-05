@@ -2,10 +2,16 @@ module starcoin_framework::smt_utils {
 
     use std::error;
     use std::vector;
+    use starcoin_framework::smt_hash;
 
     const ERROR_VECTORS_NOT_SAME_LENGTH: u64 = 103;
     const BIT_RIGHT: bool = true;
     const BIT_LEFT: bool = false;
+
+    const ERROR_INVALID_PATH_BYTES_LENGTH: u64 = 101;
+    const ERROR_INVALID_PATH_BITS_LENGTH: u64 = 102;
+    const ERROR_INVALID_NODES_DATA_PACKAGE_LENGTH: u64 = 103;
+    //const NODE_DATA_LENGTH: u64 = 32;
 
     // Get the bit at an offset from the most significant bit.
     public fun get_bit_at_from_msb(data: &vector<u8>, position: u64): bool {
@@ -95,5 +101,42 @@ module starcoin_framework::smt_utils {
             i = i + 1;
         };
         result
+    }
+
+
+    public fun path_bits_to_bool_vector_from_msb(path: &vector<u8>): vector<bool> {
+        let path_len = vector::length<u8>(path);
+        assert!(path_len == smt_hash::size(), error::invalid_argument(ERROR_INVALID_PATH_BYTES_LENGTH));
+        let result_vec = bits_to_bool_vector_from_msb(path);
+        assert!(
+            vector::length<bool>(&result_vec) == smt_hash::size() * 8,// smt_tree_hasher::path_size_in_bits(),
+            error::invalid_state(ERROR_INVALID_PATH_BITS_LENGTH)
+        );
+        result_vec
+    }
+
+
+    // Split sibling nodes data from concatenated data.
+    // Due `Move` API call not yet support the parameter type such as vector<vector<u8>>,
+    // so we concat all vectors into one vector<u8>.
+    public fun split_side_nodes_data(side_nodes_data: &vector<u8>): vector<vector<u8>> {
+        let node_data_length = smt_hash::size();
+        let len = vector::length(side_nodes_data);
+        assert!(len % node_data_length == 0, error::invalid_state(ERROR_INVALID_NODES_DATA_PACKAGE_LENGTH));
+
+        if (len > 0) {
+            let result = vector::empty<vector<u8>>();
+            let size = len / node_data_length;
+            let idx = 0;
+            while (idx < size) {
+                let start = idx * node_data_length;
+                let end = start + node_data_length;
+                vector::push_back(&mut result, sub_u8_vector(side_nodes_data, start, end));
+                idx = idx + 1;
+            };
+            result
+        } else {
+            vector::empty<vector<u8>>()
+        }
     }
 }

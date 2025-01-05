@@ -8,7 +8,7 @@ module starcoin_framework::smt_tree_hasher {
 
     // sparse merkle tree leaf(node) prefix.
     const LEAF_PREFIX: vector<u8> = x"00";
-    // sparse merkle tree (internal)node prefix.
+    // sparse merkle tree (internal) node prefix.
     const NODE_PREFIX: vector<u8> = x"01";
 
     // Leaf node data include: prefix + leaf_path + leaf_value_hash
