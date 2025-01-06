@@ -1,13 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use std::hash::Hash;
 use anyhow::anyhow;
 use anyhow::Result;
 use forkable_jellyfish_merkle::node_type::SparseMerkleLeafNode;
 use sha3::{Digest, Sha3_256};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
+use std::hash::Hash;
 
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_executor::validate_transaction;
@@ -1186,19 +1186,25 @@ fn test_sha3_256_diffrent_with_crypto_macro() -> Result<()> {
         "0x4f2b59b9af93b435e0a33b6ab7a8a90e471dba936be2bc2937629b7782b8ebd0",
     )?;
 
-    let smt_hash = SparseMerkleLeafNode::new(hash_1, hash_2).crypto_hash();
+    let leaf_node = SparseMerkleLeafNode::new(hash_1, hash_2);
+
+    let smt_hash = leaf_node.crypto_hash();
     println!(
         "test_sha3_256_diffrent_with_crypto_macro | SparseMerkleLeafNode crypto hash: {:?}",
         SparseMerkleLeafNode::new(hash_1, hash_2).crypto_hash()
     );
 
-    let mut hash_vec = Vec::new();
-    hash_vec.append(&mut hash_1.to_vec());
-    hash_vec.append(&mut hash_2.to_vec());
-    let move_hash = HashValue::sha3_256_of(hash_vec.as_slice());
+    let ser = bcs_ext::to_bytes(&leaf_node)?;
+    const STARCOIN_HASH_PREFIX: &[u8] = b"STARCOIN::SparseMerkleLeafNode";
+    let hash_vec = [
+        HashValue::sha3_256_of(STARCOIN_HASH_PREFIX).as_slice(),
+        ser.as_slice(),
+    ]
+        .concat();
+    let move_hash = HashValue::sha3_256_of(&hash_vec[..]);
     println!(
         "test_sha3_256_diffrent_with_crypto_macro | sha3 crypto {:?}",
-        HashValue::sha3_256_of(hash_vec.as_slice()),
+        move_hash,
     );
 
     assert_eq!(move_hash, smt_hash, "Failed to get the same hash");
