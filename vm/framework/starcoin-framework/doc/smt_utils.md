@@ -13,9 +13,12 @@
 -  [Function `concat_u8_vectors`](#0x1_smt_utils_concat_u8_vectors)
 -  [Function `sub_u8_vector`](#0x1_smt_utils_sub_u8_vector)
 -  [Function `sub_vector`](#0x1_smt_utils_sub_vector)
+-  [Function `path_bits_to_bool_vector_from_msb`](#0x1_smt_utils_path_bits_to_bool_vector_from_msb)
+-  [Function `split_side_nodes_data`](#0x1_smt_utils_split_side_nodes_data)
 
 
 <pre><code><b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
+<b>use</b> <a href="smt_hash.md#0x1_smt_hash">0x1::smt_hash</a>;
 <b>use</b> <a href="../../move-stdlib/doc/vector.md#0x1_vector">0x1::vector</a>;
 </code></pre>
 
@@ -40,6 +43,33 @@
 
 
 <pre><code><b>const</b> <a href="smt_utils.md#0x1_smt_utils_BIT_RIGHT">BIT_RIGHT</a>: bool = <b>true</b>;
+</code></pre>
+
+
+
+<a id="0x1_smt_utils_ERROR_INVALID_NODES_DATA_PACKAGE_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="smt_utils.md#0x1_smt_utils_ERROR_INVALID_NODES_DATA_PACKAGE_LENGTH">ERROR_INVALID_NODES_DATA_PACKAGE_LENGTH</a>: u64 = 103;
+</code></pre>
+
+
+
+<a id="0x1_smt_utils_ERROR_INVALID_PATH_BITS_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="smt_utils.md#0x1_smt_utils_ERROR_INVALID_PATH_BITS_LENGTH">ERROR_INVALID_PATH_BITS_LENGTH</a>: u64 = 102;
+</code></pre>
+
+
+
+<a id="0x1_smt_utils_ERROR_INVALID_PATH_BYTES_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="smt_utils.md#0x1_smt_utils_ERROR_INVALID_PATH_BYTES_LENGTH">ERROR_INVALID_PATH_BYTES_LENGTH</a>: u64 = 101;
 </code></pre>
 
 
@@ -275,6 +305,78 @@
         i = i + 1;
     };
     result
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_smt_utils_path_bits_to_bool_vector_from_msb"></a>
+
+## Function `path_bits_to_bool_vector_from_msb`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="smt_utils.md#0x1_smt_utils_path_bits_to_bool_vector_from_msb">path_bits_to_bool_vector_from_msb</a>(path: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="smt_utils.md#0x1_smt_utils_path_bits_to_bool_vector_from_msb">path_bits_to_bool_vector_from_msb</a>(path: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;bool&gt; {
+    <b>let</b> path_len = <a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>&lt;u8&gt;(path);
+    <b>assert</b>!(path_len == <a href="smt_hash.md#0x1_smt_hash_size">smt_hash::size</a>(), <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="smt_utils.md#0x1_smt_utils_ERROR_INVALID_PATH_BYTES_LENGTH">ERROR_INVALID_PATH_BYTES_LENGTH</a>));
+    <b>let</b> result_vec = <a href="smt_utils.md#0x1_smt_utils_bits_to_bool_vector_from_msb">bits_to_bool_vector_from_msb</a>(path);
+    <b>assert</b>!(
+        <a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>&lt;bool&gt;(&result_vec) == <a href="smt_hash.md#0x1_smt_hash_size">smt_hash::size</a>() * 8,// <a href="smt_tree_hasher.md#0x1_smt_tree_hasher_path_size_in_bits">smt_tree_hasher::path_size_in_bits</a>(),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="smt_utils.md#0x1_smt_utils_ERROR_INVALID_PATH_BITS_LENGTH">ERROR_INVALID_PATH_BITS_LENGTH</a>)
+    );
+    result_vec
+}
+</code></pre>
+
+
+
+</details>
+
+<a id="0x1_smt_utils_split_side_nodes_data"></a>
+
+## Function `split_side_nodes_data`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="smt_utils.md#0x1_smt_utils_split_side_nodes_data">split_side_nodes_data</a>(side_nodes_data: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="smt_utils.md#0x1_smt_utils_split_side_nodes_data">split_side_nodes_data</a>(side_nodes_data: &<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt; {
+    <b>let</b> node_data_length = <a href="smt_hash.md#0x1_smt_hash_size">smt_hash::size</a>();
+    <b>let</b> len = <a href="../../move-stdlib/doc/vector.md#0x1_vector_length">vector::length</a>(side_nodes_data);
+    <b>assert</b>!(len % node_data_length == 0, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="smt_utils.md#0x1_smt_utils_ERROR_INVALID_NODES_DATA_PACKAGE_LENGTH">ERROR_INVALID_NODES_DATA_PACKAGE_LENGTH</a>));
+
+    <b>if</b> (len &gt; 0) {
+        <b>let</b> result = <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;();
+        <b>let</b> size = len / node_data_length;
+        <b>let</b> idx = 0;
+        <b>while</b> (idx &lt; size) {
+            <b>let</b> start = idx * node_data_length;
+            <b>let</b> end = start + node_data_length;
+            <a href="../../move-stdlib/doc/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> result, <a href="smt_utils.md#0x1_smt_utils_sub_u8_vector">sub_u8_vector</a>(side_nodes_data, start, end));
+            idx = idx + 1;
+        };
+        result
+    } <b>else</b> {
+        <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;()
+    }
 }
 </code></pre>
 

@@ -1,40 +1,48 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-
+use std::hash::Hash;
 use anyhow::anyhow;
 use anyhow::Result;
+use forkable_jellyfish_merkle::node_type::SparseMerkleLeafNode;
+use sha3::{Digest, Sha3_256};
+use starcoin_crypto::hash::PlainCryptoHash;
+use starcoin_crypto::HashValue;
 
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_executor::validate_transaction;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, StateReaderExt};
 use starcoin_transaction_builder::{
-    build_batch_payload_same_amount, build_transfer_txn, DEFAULT_EXPIRATION_TIME,
-    DEFAULT_MAX_GAS_AMOUNT, encode_transfer_script_by_token_code, raw_peer_to_peer_txn,
+    build_batch_payload_same_amount, build_transfer_txn, encode_transfer_script_by_token_code,
+    raw_peer_to_peer_txn, DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
 };
+use starcoin_types::account::peer_to_peer_txn;
+use starcoin_types::account::Account;
+use starcoin_types::account_config::G_STC_TOKEN_CODE;
+use starcoin_types::identifier::Identifier;
+use starcoin_types::language_storage::{ModuleId, StructTag, CORE_CODE_ADDRESS};
+use starcoin_types::transaction::{EntryFunction, RawUserTransaction, TransactionArgument};
 use starcoin_types::{
     account_config, block_metadata::BlockMetadata, transaction::Transaction,
     transaction::TransactionPayload, transaction::TransactionStatus,
 };
-use starcoin_types::account::Account;
-use starcoin_types::account::peer_to_peer_txn;
-use starcoin_types::account_config::G_STC_TOKEN_CODE;
-use starcoin_types::identifier::Identifier;
-use starcoin_types::language_storage::{CORE_CODE_ADDRESS, ModuleId, StructTag};
-use starcoin_types::transaction::{EntryFunction, RawUserTransaction, TransactionArgument};
 use starcoin_vm_runtime::starcoin_vm::{chunk_block_transactions, StarcoinVM};
-use starcoin_vm_types::{on_chain_config::{ConsensusConfig, OnChainConfig}, transaction::Package, vm_status::StatusCode};
 use starcoin_vm_types::access_path::AccessPath;
-use starcoin_vm_types::account_config::AccountResource;
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::account_config::genesis_address;
+use starcoin_vm_types::account_config::AccountResource;
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::state_value::StateValue;
 use starcoin_vm_types::state_store::TStateView;
 use starcoin_vm_types::token::stc::{stc_type_tag, STCUnit};
 use starcoin_vm_types::vm_status::KeptVMStatus;
+use starcoin_vm_types::{
+    on_chain_config::{ConsensusConfig, OnChainConfig},
+    transaction::Package,
+    vm_status::StatusCode,
+};
 use test_helper::executor::{
     account_execute, account_execute_should_success, association_execute_should_success,
     blockmeta_execute, build_raw_txn, current_block_number, prepare_customized_genesis,
@@ -85,7 +93,7 @@ fn test_vm_version() {
         vec![TransactionArgument::Address(genesis_address())],
         None,
     )
-        .unwrap();
+    .unwrap();
 
     let readed_version: u64 = bcs_ext::from_bytes(&value.pop().unwrap().1).unwrap();
     let version = {
@@ -113,7 +121,7 @@ fn test_flexidag_config_get() {
         vec![TransactionArgument::Address(genesis_address())],
         None,
     )
-        .unwrap();
+    .unwrap();
 
     let read_version: u64 = bcs_ext::from_bytes(&value.pop().unwrap().1).unwrap();
     let version = {
@@ -564,7 +572,7 @@ fn test_validate_txn_args() -> Result<()> {
         );
         account1.sign_txn(txn)
     }
-        .unwrap();
+    .unwrap();
     assert!(validate_transaction(&chain_state, txn, None).is_some());
 
     let txn = {
@@ -585,7 +593,7 @@ fn test_validate_txn_args() -> Result<()> {
         );
         account1.sign_txn(txn)
     }
-        .unwrap();
+    .unwrap();
     assert!(validate_transaction(&chain_state, txn, None).is_some());
 
     let txn = {
@@ -606,7 +614,7 @@ fn test_validate_txn_args() -> Result<()> {
         );
         account1.sign_txn(txn)
     }
-        .unwrap();
+    .unwrap();
     assert!(validate_transaction(&chain_state, txn, None).is_some());
     Ok(())
 }
@@ -1135,7 +1143,6 @@ fn test_chunk_block_transactions() -> Result<()> {
     Ok(())
 }
 
-
 #[test]
 fn test_get_chain_id_after_genesis_with_proof_verify() -> Result<()> {
     let (chain_state, _net) = prepare_genesis();
@@ -1149,23 +1156,52 @@ fn test_get_chain_id_after_genesis_with_proof_verify() -> Result<()> {
     let path_statekey = StateKey::resource(&CORE_CODE_ADDRESS, &chain_id_struct_tag)?;
 
     // Print 0x1 version resource
-    let resource_value =
-        bcs_ext::from_bytes::<ChainId>(
-            &chain_state.get_resource(CORE_CODE_ADDRESS, &chain_id_struct_tag,
-            )?
-        )?;
-    println!("get_vm_version_verify | path: {:?}, state_value : {:?}", chain_id_struct_tag, resource_value);
+    let resource_value = bcs_ext::from_bytes::<ChainId>(
+        &chain_state.get_resource(CORE_CODE_ADDRESS, &chain_id_struct_tag)?,
+    )?;
+    println!(
+        "test_get_chain_id_after_genesis_with_proof_verify | path: {:?}, state_value : {:?}",
+        chain_id_struct_tag, resource_value
+    );
     assert_eq!(resource_value.id(), 0xff, "not expect chain id");
-
 
     // Get proof and verify proof
     let mut state_proof = chain_state.get_with_proof(&path_statekey)?;
-    let version_path = AccessPath::resource_access_path(genesis_address(), chain_id_struct_tag);
-    state_proof.verify(chain_state.state_root(), version_path.clone())?;
+    let proof_path = AccessPath::resource_access_path(genesis_address(), chain_id_struct_tag);
+    state_proof.verify(chain_state.state_root(), proof_path.clone())?;
 
     state_proof.state.as_mut().unwrap()[0] = 0xFE;
     assert!(state_proof
-        .verify(chain_state.state_root(), version_path)
+        .verify(chain_state.state_root(), proof_path)
         .is_err());
+    Ok(())
+}
+
+#[test]
+fn test_sha3_256_diffrent_with_crypto_macro() -> Result<()> {
+    let hash_1 = HashValue::from_hex_literal(
+        "0x4cc8bd9df94b37c233555d9a3bba0a712c3c709f047486d1e624b2bcd3b83266",
+    )?;
+    let hash_2 = HashValue::from_hex_literal(
+        "0x4f2b59b9af93b435e0a33b6ab7a8a90e471dba936be2bc2937629b7782b8ebd0",
+    )?;
+
+    let smt_hash = SparseMerkleLeafNode::new(hash_1, hash_2).crypto_hash();
+    println!(
+        "test_sha3_256_diffrent_with_crypto_macro | SparseMerkleLeafNode crypto hash: {:?}",
+        SparseMerkleLeafNode::new(hash_1, hash_2).crypto_hash()
+    );
+
+    let mut hash_vec = Vec::new();
+    hash_vec.append(&mut hash_1.to_vec());
+    hash_vec.append(&mut hash_2.to_vec());
+    let move_hash = HashValue::sha3_256_of(hash_vec.as_slice());
+    println!(
+        "test_sha3_256_diffrent_with_crypto_macro | sha3 crypto {:?}",
+        HashValue::sha3_256_of(hash_vec.as_slice()),
+    );
+
+    assert_eq!(move_hash, smt_hash, "Failed to get the same hash");
+
     Ok(())
 }
