@@ -389,7 +389,11 @@ Overall governance allocation strategy:
 ) {
     // TODO(BobOng): To confirm how many STC put into asset mapping pool
     <b>let</b> asset_mapping_coin = <a href="coin.md#0x1_coin_extract">coin::extract</a>&lt;STC&gt;(&<b>mut</b> total_supply_stc, 1000000000);
-    <a href="asset_mapping.md#0x1_asset_mapping_create_store_from_coin">asset_mapping::create_store_from_coin</a>&lt;STC&gt;(starcoin_framework, asset_mapping_coin);
+    <a href="asset_mapping.md#0x1_asset_mapping_create_store_from_coin">asset_mapping::create_store_from_coin</a>&lt;STC&gt;(
+        starcoin_framework,
+        std::string::utf8(b"0x1::STC::STC"),
+        asset_mapping_coin
+    );
 
     // Initialize <a href="treasury.md#0x1_treasury">treasury</a>
     <b>let</b> treasury_withdraw_cap = <a href="treasury.md#0x1_treasury_initialize">treasury::initialize</a>(starcoin_framework, total_supply_stc);

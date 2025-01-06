@@ -4,6 +4,7 @@
 use anyhow::anyhow;
 use anyhow::Result;
 use forkable_jellyfish_merkle::node_type::SparseMerkleLeafNode;
+use forkable_jellyfish_merkle::RawKey;
 use sha3::{Digest, Sha3_256};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
@@ -21,7 +22,7 @@ use starcoin_types::account::peer_to_peer_txn;
 use starcoin_types::account::Account;
 use starcoin_types::account_config::G_STC_TOKEN_CODE;
 use starcoin_types::identifier::Identifier;
-use starcoin_types::language_storage::{ModuleId, StructTag, CORE_CODE_ADDRESS};
+use starcoin_types::language_storage::{ModuleId, StructTag, TypeTag, CORE_CODE_ADDRESS};
 use starcoin_types::transaction::{EntryFunction, RawUserTransaction, TransactionArgument};
 use starcoin_types::{
     account_config, block_metadata::BlockMetadata, transaction::Transaction,
@@ -1200,7 +1201,7 @@ fn test_sha3_256_diffrent_with_crypto_macro() -> Result<()> {
         HashValue::sha3_256_of(STARCOIN_HASH_PREFIX).as_slice(),
         ser.as_slice(),
     ]
-        .concat();
+    .concat();
     let move_hash = HashValue::sha3_256_of(&hash_vec[..]);
     println!(
         "test_sha3_256_diffrent_with_crypto_macro | sha3 crypto {:?}",
@@ -1208,6 +1209,34 @@ fn test_sha3_256_diffrent_with_crypto_macro() -> Result<()> {
     );
 
     assert_eq!(move_hash, smt_hash, "Failed to get the same hash");
+    Ok(())
+}
+
+#[test]
+fn test_asset_mapping_for_specified_coin_type() -> Result<()> {
+    let (_chain_state, _net) = prepare_genesis();
+    let chain_id_struct_tag = StructTag {
+        address: CORE_CODE_ADDRESS,
+        module: Identifier::new("coin").unwrap(),
+        name: Identifier::new("CoinStore").unwrap(),
+        type_args: vec![TypeTag::Struct(Box::new(StructTag {
+            address: CORE_CODE_ADDRESS,
+            module: Identifier::new("starcoin_coin").unwrap(),
+            name: Identifier::new("STC").unwrap(),
+            type_args: vec![],
+        }))],
+    };
+
+    let access_path = AccessPath::resource_access_path(genesis_address(), chain_id_struct_tag);
+    let (account_address, data_path) = access_path.into_inner();
+
+    println!(
+        "test_asset_mapping_for_specified_coin_type | account {:?}, data_path: {:?}, data_path key hash: {:?}",
+        account_address,
+        data_path.encode_key()?,
+        data_path.key_hash()
+    );
+
 
     Ok(())
 }

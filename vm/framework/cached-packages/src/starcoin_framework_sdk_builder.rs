@@ -150,18 +150,11 @@ pub enum EntryFunctionCall {
         cap_update_table: Vec<u8>,
     },
 
-    /// Assigns tokens to a recipient account with proof verification
-    /// @param token_issuer - The token issuer signer
-    /// @param receiper - Recipient address
-    /// @param proove - Proof data for verification
-    /// @param amount - Amount of tokens to assign
-    /// Requirements:
-    /// - Valid proof must be provided
-    /// - Sufficient balance must exist
-    AssetMappingAssignToAccount {
-        t: TypeTag,
+    AssetMappingAssignToAccountWithProof {
         receiper: AccountAddress,
-        proove: Vec<u8>,
+        old_token_str: Vec<u8>,
+        proof_path: Vec<u8>,
+        proof_siblings: Vec<u8>,
         amount: u64,
     },
 
@@ -658,12 +651,19 @@ impl EntryFunctionCall {
                 new_public_key_bytes,
                 cap_update_table,
             ),
-            AssetMappingAssignToAccount {
-                t,
+            AssetMappingAssignToAccountWithProof {
                 receiper,
-                proove,
+                old_token_str,
+                proof_path,
+                proof_siblings,
                 amount,
-            } => asset_mapping_assign_to_account(t, receiper, proove, amount),
+            } => asset_mapping_assign_to_account_with_proof(
+                receiper,
+                old_token_str,
+                proof_path,
+                proof_siblings,
+                amount,
+            ),
             CoinCreateCoinConversionMap {} => coin_create_coin_conversion_map(),
             CoinCreatePairing { coin_type } => coin_create_pairing(coin_type),
             CoinMigrateToFungibleStore { coin_type } => coin_migrate_to_fungible_store(coin_type),
@@ -1278,18 +1278,11 @@ pub fn account_rotate_authentication_key_with_rotation_capability(
     ))
 }
 
-/// Assigns tokens to a recipient account with proof verification
-/// @param token_issuer - The token issuer signer
-/// @param receiper - Recipient address
-/// @param proove - Proof data for verification
-/// @param amount - Amount of tokens to assign
-/// Requirements:
-/// - Valid proof must be provided
-/// - Sufficient balance must exist
-pub fn asset_mapping_assign_to_account(
-    t: TypeTag,
+pub fn asset_mapping_assign_to_account_with_proof(
     receiper: AccountAddress,
-    proove: Vec<u8>,
+    old_token_str: Vec<u8>,
+    proof_path: Vec<u8>,
+    proof_siblings: Vec<u8>,
     amount: u64,
 ) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
@@ -1297,11 +1290,13 @@ pub fn asset_mapping_assign_to_account(
             AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
             ident_str!("asset_mapping").to_owned(),
         ),
-        ident_str!("assign_to_account").to_owned(),
-        vec![t],
+        ident_str!("assign_to_account_with_proof").to_owned(),
+        vec![],
         vec![
             bcs::to_bytes(&receiper).unwrap(),
-            bcs::to_bytes(&proove).unwrap(),
+            bcs::to_bytes(&old_token_str).unwrap(),
+            bcs::to_bytes(&proof_path).unwrap(),
+            bcs::to_bytes(&proof_siblings).unwrap(),
             bcs::to_bytes(&amount).unwrap(),
         ],
     ))
@@ -2576,15 +2571,16 @@ mod decoder {
         }
     }
 
-    pub fn asset_mapping_assign_to_account(
+    pub fn asset_mapping_assign_to_account_with_proof(
         payload: &TransactionPayload,
     ) -> Option<EntryFunctionCall> {
         if let TransactionPayload::EntryFunction(script) = payload {
-            Some(EntryFunctionCall::AssetMappingAssignToAccount {
-                t: script.ty_args().get(0)?.clone(),
+            Some(EntryFunctionCall::AssetMappingAssignToAccountWithProof {
                 receiper: bcs::from_bytes(script.args().get(0)?).ok()?,
-                proove: bcs::from_bytes(script.args().get(1)?).ok()?,
-                amount: bcs::from_bytes(script.args().get(2)?).ok()?,
+                old_token_str: bcs::from_bytes(script.args().get(1)?).ok()?,
+                proof_path: bcs::from_bytes(script.args().get(2)?).ok()?,
+                proof_siblings: bcs::from_bytes(script.args().get(3)?).ok()?,
+                amount: bcs::from_bytes(script.args().get(4)?).ok()?,
             })
         } else {
             None
@@ -3479,8 +3475,8 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
             Box::new(decoder::account_rotate_authentication_key_with_rotation_capability),
         );
         map.insert(
-            "asset_mapping_assign_to_account".to_string(),
-            Box::new(decoder::asset_mapping_assign_to_account),
+            "asset_mapping_assign_to_account_with_proof".to_string(),
+            Box::new(decoder::asset_mapping_assign_to_account_with_proof),
         );
         map.insert(
             "coin_create_coin_conversion_map".to_string(),

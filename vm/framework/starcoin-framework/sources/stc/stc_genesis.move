@@ -305,7 +305,11 @@ module starcoin_framework::stc_genesis {
     ) {
         // TODO(BobOng): To confirm how many STC put into asset mapping pool
         let asset_mapping_coin = coin::extract<STC>(&mut total_supply_stc, 1000000000);
-        asset_mapping::create_store_from_coin<STC>(starcoin_framework, asset_mapping_coin);
+        asset_mapping::create_store_from_coin<STC>(
+            starcoin_framework,
+            std::string::utf8(b"0x1::STC::STC"),
+            asset_mapping_coin
+        );
 
         // Initialize treasury
         let treasury_withdraw_cap = treasury::initialize(starcoin_framework, total_supply_stc);

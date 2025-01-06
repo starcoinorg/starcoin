@@ -4,18 +4,20 @@
 /// with proof verification.
 module starcoin_framework::asset_mapping {
 
+    use std::bcs;
     use std::error;
+    use std::hash;
     use std::signer;
+    use std::string;
     use std::vector;
 
     use starcoin_framework::coin;
     use starcoin_framework::fungible_asset::{Self, FungibleStore, Metadata};
-    use starcoin_framework::object;
-    use starcoin_framework::object::{ExtendRef, Object};
+    use starcoin_framework::object::{Self, ExtendRef, Object};
     use starcoin_framework::primary_fungible_store;
+    use starcoin_framework::starcoin_proof_verifier;
     use starcoin_framework::stc_util;
     use starcoin_framework::system_addresses;
-
     use starcoin_std::debug;
     use starcoin_std::smart_table;
 
@@ -23,6 +25,8 @@ module starcoin_framework::asset_mapping {
     use starcoin_framework::account;
     #[test_only]
     use starcoin_framework::starcoin_coin::{Self, STC};
+    #[test_only]
+    use starcoin_std::type_info;
 
     /// AssetMappingStore represents a store for mapped assets
     /// Contains:
@@ -39,11 +43,18 @@ module starcoin_framework::asset_mapping {
     /// - anchor_height: Block height anchor for the mapping
     /// - token_stores: Smart table mapping metadata to stores
     struct AssetMappingPool has key, store {
-        token_stores: smart_table::SmartTable<Object<Metadata>, AssetMappingStore>
+        token_stores: smart_table::SmartTable<Object<Metadata>, AssetMappingStore>,
     }
 
     struct AssetMappingProof has key, store {
         proof_root: vector<u8>,
+    }
+
+    /// AssetMappingCoinType represents a mapping that from old version token types to now version asset stores
+    /// eg. 0x1::STC::STC -> 0x1::starcoin_coin::STC
+    ///
+    struct AssetMappingCoinType has key, store {
+        token_mapping: smart_table::SmartTable<std::string::String, Object<Metadata>>,
     }
 
     /// Error code for invalid signer
@@ -66,6 +77,9 @@ module starcoin_framework::asset_mapping {
         move_to(framework, AssetMappingProof {
             proof_root,
         });
+        move_to(framework, AssetMappingCoinType {
+            token_mapping: smart_table::new<string::String, Object<Metadata>>(),
+        })
     }
 
     /// Creates a new store from a coin
@@ -74,7 +88,11 @@ module starcoin_framework::asset_mapping {
     /// Requirements:
     /// - Token issuer must be authorized for the given token type
     /// - Converts coin to fungible asset and stores it
-    public fun create_store_from_coin<T: key>(token_issuer: &signer, coin: coin::Coin<T>) acquires AssetMappingPool {
+    public fun create_store_from_coin<T: key>(
+        token_issuer: &signer,
+        old_token_str: string::String,
+        coin: coin::Coin<T>
+    ) acquires AssetMappingPool, AssetMappingCoinType {
         let token_issuer_addr = signer::address_of(token_issuer);
         assert!(
             token_issuer_addr == stc_util::token_issuer<T>(),
@@ -91,6 +109,11 @@ module starcoin_framework::asset_mapping {
             extend_ref,
             fungible_store,
         });
+
+        // Add token mapping coin type
+        let asset_coin_type =
+            borrow_global_mut<AssetMappingCoinType>(system_addresses::get_starcoin_framework());
+        smart_table::add(&mut asset_coin_type.token_mapping, old_token_str, metadata);
     }
 
     /// Creates a store for a specific token type
@@ -122,6 +145,28 @@ module starcoin_framework::asset_mapping {
         fungible_asset::balance(smart_table::borrow(&pool.token_stores, metadata).fungible_store)
     }
 
+    public entry fun assign_to_account_with_proof(
+        token_issuer: &signer,
+        receiper: address,
+        old_token_str: vector<u8>,
+        proof_path: vector<u8>,
+        proof_siblings: vector<u8>,
+        amount: u64
+    ) acquires AssetMappingPool, AssetMappingCoinType, AssetMappingProof {
+        assert!(
+            exists<AssetMappingProof>(system_addresses::get_starcoin_framework()),
+            error::invalid_state(EINVALID_PROOF_ROOT)
+        );
+
+        // Verify that the token type of the request mapping is the passed-in verification type
+        assert!(
+            calculation_proof(proof_path, amount, split_proof_siblings_from_vec(proof_siblings)),
+            error::unauthenticated(EINVALID_NOT_PROOF)
+        );
+
+        assign_to_account(token_issuer, receiper, old_token_str, amount);
+    }
+
     /// Assigns tokens to a recipient account with proof verification
     /// @param token_issuer - The token issuer signer
     /// @param receiper - Recipient address
@@ -130,34 +175,46 @@ module starcoin_framework::asset_mapping {
     /// Requirements:
     /// - Valid proof must be provided
     /// - Sufficient balance must exist
-    public entry fun assign_to_account<T>(
+    fun assign_to_account(
         token_issuer: &signer,
         receiper: address,
-        proove: vector<u8>,
+        old_token_str: vector<u8>,
         amount: u64
-    ) acquires AssetMappingPool {
-        assert!(
-            exists<AssetMappingProof>(system_addresses::get_starcoin_framework()),
-            error::invalid_state(EINVALID_PROOF_ROOT)
-        );
-
-        let metadata = coin::ensure_paired_metadata<T>();
+    ) acquires AssetMappingPool, AssetMappingCoinType {
+        let coin_type_mapping = borrow_global<AssetMappingCoinType>(system_addresses::get_starcoin_framework());
+        let metadata = smart_table::borrow(&coin_type_mapping.token_mapping, string::utf8(old_token_str));
         let mapping_pool = borrow_global_mut<AssetMappingPool>(signer::address_of(token_issuer));
-        let mapping_store = smart_table::borrow_mut(&mut mapping_pool.token_stores, metadata);
-
-        assert!(calculation_proof(proove, vector::empty()), error::unauthenticated(EINVALID_NOT_PROOF));
+        let mapping_store = smart_table::borrow_mut(
+            &mut mapping_pool.token_stores,
+            *metadata
+        );
 
         let store_signer = object::generate_signer_for_extending(&mapping_store.extend_ref);
         fungible_asset::deposit(
-            primary_fungible_store::ensure_primary_store_exists(receiper, metadata),
+            primary_fungible_store::ensure_primary_store_exists(receiper, *metadata),
             fungible_asset::withdraw(&store_signer, mapping_store.fungible_store, amount)
         )
     }
 
-    /// Computes and verifies the provided proof
-    fun calculation_proof(_leaf: vector<u8>, _siblings: vector<vector<u8>>): bool {
+    fun split_proof_siblings_from_vec(_siblings: vector<u8>): vector<vector<u8>> {
         // TODO(BobOng): implement this function
-        true
+        vector::empty()
+    }
+
+    /// Computes and verifies the provided proof
+    fun calculation_proof(
+        proof_path_hash: vector<u8>,
+        amount: u64,
+        proof_siblings: vector<vector<u8>>
+    ): bool acquires AssetMappingProof {
+        let expect_proof_root =
+            borrow_global_mut<AssetMappingProof>(system_addresses::get_starcoin_framework()).proof_root;
+        let actual_root = starcoin_proof_verifier::computer_root_hash(
+            proof_path_hash,
+            hash::sha3_256(bcs::to_bytes(&amount)),
+            proof_siblings
+        );
+        expect_proof_root == actual_root
     }
 
     // Test function for asset mapping store creation and assignment
@@ -167,7 +224,10 @@ module starcoin_framework::asset_mapping {
     //  Asset assignment to account
     //  Final balance verification
     #[test(framework= @starcoin_framework, alice= @0x123)]
-    fun test_asset_mapping_create_store_from_coin(framework: &signer, alice: &signer) acquires AssetMappingPool {
+    fun test_asset_mapping_create_store_from_coin(
+        framework: &signer,
+        alice: &signer
+    ) acquires AssetMappingPool, AssetMappingCoinType {
         debug::print(&std::string::utf8(b"asset_mapping::test_asset_mapping_create_store_from_coin | entered"));
 
         let amount = 10000000000;
@@ -180,13 +240,26 @@ module starcoin_framework::asset_mapping {
         coin::register<STC>(framework);
         starcoin_coin::mint(framework, signer::address_of(framework), amount);
 
+
+        // Construct Old token string
+        let old_token_str = string::utf8(b"0x00000000000000000000000000000001::starcoin_coin::STC");
+
         let coin = coin::withdraw<STC>(framework, amount);
-        create_store_from_coin<STC>(framework, coin);
+        create_store_from_coin<STC>(
+            framework,
+            old_token_str,
+            coin
+        );
         assert!(Self::balance<STC>() == amount, 10001);
 
         // Assign to alice
         let alice_addr = signer::address_of(alice);
-        assign_to_account<STC>(framework, alice_addr, vector::empty<u8>(), amount);
+        assign_to_account(
+            framework,
+            alice_addr,
+            *string::bytes(&old_token_str),
+            amount
+        );
         assert!(Self::balance<STC>() == 0, 10002);
 
         let stc_metadata = coin::ensure_paired_metadata<STC>();
@@ -197,4 +270,69 @@ module starcoin_framework::asset_mapping {
 
         debug::print(&std::string::utf8(b"asset_mapping::test_asset_mapping_create_store_from_coin | exited"));
     }
+
+    #[test(framework= @starcoin_framework)]
+    fun test_asset_mapping_calculation_proof(framework: &signer) acquires AssetMappingProof {
+        let siblings = vector::empty<vector<u8>>();
+        vector::push_back(&mut siblings, x"cfb1462d4fc72f736eab2a56b2bf72ca6ad1c4e8c79557046a8b0adce047f007");
+        vector::push_back(&mut siblings, x"5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000");
+        vector::push_back(&mut siblings, x"5ca9febe74c7fde3fdcf2bd464de6d8899a0a13d464893aada2714c6fa774f9d");
+        vector::push_back(&mut siblings, x"1519a398fed69687cabf51adf831f0ee1650aaf79775d00135fc70f55a73e151");
+        vector::push_back(&mut siblings, x"50ce5c38983ba2eb196acd44e0aaedf040b1437ad1106e05ca452d7e27e4e03f");
+        vector::push_back(&mut siblings, x"55ed28435637a061a6dd9e20b72849199cd36184570f976b7e306a27bebf2fdf");
+        vector::push_back(&mut siblings, x"0dc23e31614798a6f67659b0b808b3eadc3b13a2a7bc03580a9e3004e45c2e6c");
+        vector::push_back(&mut siblings, x"83bed048bc0bc452c98cb0e9f1cc0f691919eaf756864fc44940c2d1e01da92a");
+
+        let element_key = x"4cc8bd9df94b37c233555d9a3bba0a712c3c709f047486d1e624b2bcd3b83266";
+        Self::initialize(framework, x"f65860f575bf2a198c069adb4e7872037e3a329b63ef617e40afa39b87b067c8");
+        assert!(Self::calculation_proof(element_key, 0xff, siblings), 10010);
+    }
+
+    #[test]
+    fun test_asset_mapping_proof_coin_type_name() {
+        debug::print(&std::string::utf8(b"asset_mapping::test_asset_mapping_coin_type_verify | entered"));
+
+        // Check type path name
+        let type_name = type_info::type_name<coin::CoinStore<starcoin_coin::STC>>();
+        debug::print(
+            &std::string::utf8(
+                b"asset_mapping::test_asset_mapping_coin_type_verify | type of coin::CoinStore<starcoin_coin::STC>"
+            )
+        );
+        debug::print(&type_name);
+        assert!(
+            type_name == std::string::utf8(
+                b"0x00000000000000000000000000000001::coin::CoinStore<0x00000000000000000000000000000001::starcoin_coin::STC>"
+            ),
+            10020
+        );
+        debug::print(&std::string::utf8(b"asset_mapping::test_asset_mapping_coin_type_verify | exited"));
+    }
+
+
+    // let expected_hash = x"9afe1e0e6013eb63b6004a4eb6b1bf76bdb04b725619648163d9dbc3194f224c";
+    //
+    // // TODO(BobOng) Expect type_hash == expected_hash
+    // let type_data = std::string::bytes(&type_name);
+    // debug::print(&std::string::utf8(b"asset_mapping::test_asset_mapping_coin_type_verify | type_hash"));
+    // debug::print(type_data);
+    // debug::print(
+    //     &bcs::to_bytes<vector<u8>>(
+    //         &b"0x00000000000000000000000000000001::coin::CoinStore<0x00000000000000000000000000000001::starcoin_coin::STC>"
+    //     )
+    // );
+    // let type_hash = hash::sha3_256(*type_data);
+    // debug::print(&type_hash);
+    // // assert!(type_hash == expected_hash, 10011);
+    //
+    // // TODO(BobOng) Expect type_data == example_type_path_data
+    // let example_type_path_data = vector<u8>[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4, 99, 111, 105, 110, 9, 67, 111, 105, 110, 83, 116, 111, 114, 101, 1, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 13, 115, 116, 97, 114, 99, 111, 105, 110, 95, 99, 111, 105, 110, 3, 83, 84, 67, 0];
+    // debug::print(&example_type_path_data);
+    // debug::print(type_data);
+    // // assert!(*type_data == example_type_path_data, 10011);
+    //
+    // // TODO(BobOng) Expect example_type_path_data == expected_hash
+    // let example_actual_hash = hash::sha3_256(example_type_path_data);
+    // debug::print(&example_actual_hash);
+    // assert!(example_actual_hash == expected_hash, 10012);
 }
