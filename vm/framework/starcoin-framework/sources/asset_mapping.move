@@ -149,7 +149,8 @@ module starcoin_framework::asset_mapping {
         token_issuer: &signer,
         receiper: address,
         old_token_str: vector<u8>,
-        proof_path: vector<u8>,
+        proof_path_hash: vector<u8>,
+        proof_value_hash: vector<u8>,
         proof_siblings: vector<u8>,
         amount: u64
     ) acquires AssetMappingPool, AssetMappingCoinType, AssetMappingProof {
@@ -160,7 +161,7 @@ module starcoin_framework::asset_mapping {
 
         // Verify that the token type of the request mapping is the passed-in verification type
         assert!(
-            calculation_proof(proof_path, amount, split_proof_siblings_from_vec(proof_siblings)),
+            calculation_proof(proof_path_hash, proof_value_hash, split_proof_siblings_from_vec(proof_siblings)),
             error::unauthenticated(EINVALID_NOT_PROOF)
         );
 
@@ -204,14 +205,14 @@ module starcoin_framework::asset_mapping {
     /// Computes and verifies the provided proof
     fun calculation_proof(
         proof_path_hash: vector<u8>,
-        amount: u64,
+        blob_hash: vector<u8>,
         proof_siblings: vector<vector<u8>>
     ): bool acquires AssetMappingProof {
         let expect_proof_root =
             borrow_global_mut<AssetMappingProof>(system_addresses::get_starcoin_framework()).proof_root;
         let actual_root = starcoin_proof_verifier::computer_root_hash(
             proof_path_hash,
-            hash::sha3_256(bcs::to_bytes(&amount)),
+            blob_hash,
             proof_siblings
         );
         expect_proof_root == actual_root
@@ -285,7 +286,14 @@ module starcoin_framework::asset_mapping {
 
         let element_key = x"4cc8bd9df94b37c233555d9a3bba0a712c3c709f047486d1e624b2bcd3b83266";
         Self::initialize(framework, x"f65860f575bf2a198c069adb4e7872037e3a329b63ef617e40afa39b87b067c8");
-        assert!(Self::calculation_proof(element_key, 0xff, siblings), 10010);
+        assert!(
+            Self::calculation_proof(
+                element_key,
+                x"4f2b59b9af93b435e0a33b6ab7a8a90e471dba936be2bc2937629b7782b8ebd0",
+                siblings
+            ),
+            10010
+        );
     }
 
     #[test]
@@ -309,30 +317,4 @@ module starcoin_framework::asset_mapping {
         debug::print(&std::string::utf8(b"asset_mapping::test_asset_mapping_coin_type_verify | exited"));
     }
 
-
-    // let expected_hash = x"9afe1e0e6013eb63b6004a4eb6b1bf76bdb04b725619648163d9dbc3194f224c";
-    //
-    // // TODO(BobOng) Expect type_hash == expected_hash
-    // let type_data = std::string::bytes(&type_name);
-    // debug::print(&std::string::utf8(b"asset_mapping::test_asset_mapping_coin_type_verify | type_hash"));
-    // debug::print(type_data);
-    // debug::print(
-    //     &bcs::to_bytes<vector<u8>>(
-    //         &b"0x00000000000000000000000000000001::coin::CoinStore<0x00000000000000000000000000000001::starcoin_coin::STC>"
-    //     )
-    // );
-    // let type_hash = hash::sha3_256(*type_data);
-    // debug::print(&type_hash);
-    // // assert!(type_hash == expected_hash, 10011);
-    //
-    // // TODO(BobOng) Expect type_data == example_type_path_data
-    // let example_type_path_data = vector<u8>[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4, 99, 111, 105, 110, 9, 67, 111, 105, 110, 83, 116, 111, 114, 101, 1, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 13, 115, 116, 97, 114, 99, 111, 105, 110, 95, 99, 111, 105, 110, 3, 83, 84, 67, 0];
-    // debug::print(&example_type_path_data);
-    // debug::print(type_data);
-    // // assert!(*type_data == example_type_path_data, 10011);
-    //
-    // // TODO(BobOng) Expect example_type_path_data == expected_hash
-    // let example_actual_hash = hash::sha3_256(example_type_path_data);
-    // debug::print(&example_actual_hash);
-    // assert!(example_actual_hash == expected_hash, 10012);
 }
