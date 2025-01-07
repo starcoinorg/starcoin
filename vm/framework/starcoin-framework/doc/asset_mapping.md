@@ -24,12 +24,10 @@ with proof verification.
 -  [Function `calculation_proof`](#0x1_asset_mapping_calculation_proof)
 
 
-<pre><code><b>use</b> <a href="../../move-stdlib/doc/bcs.md#0x1_bcs">0x1::bcs</a>;
-<b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
+<pre><code><b>use</b> <a href="coin.md#0x1_coin">0x1::coin</a>;
 <b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
 <b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="fungible_asset.md#0x1_fungible_asset">0x1::fungible_asset</a>;
-<b>use</b> <a href="../../move-stdlib/doc/hash.md#0x1_hash">0x1::hash</a>;
 <b>use</b> <a href="object.md#0x1_object">0x1::object</a>;
 <b>use</b> <a href="primary_fungible_store.md#0x1_primary_fungible_store">0x1::primary_fungible_store</a>;
 <b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
@@ -369,7 +367,7 @@ Retrieves the balance for a specific token type
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_assign_to_account_with_proof">assign_to_account_with_proof</a>(token_issuer: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, receiper: <b>address</b>, old_token_str: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, proof_path: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, proof_siblings: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, amount: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_assign_to_account_with_proof">assign_to_account_with_proof</a>(token_issuer: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, receiper: <b>address</b>, old_token_str: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, proof_path_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, proof_value_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, proof_siblings: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, amount: u64)
 </code></pre>
 
 
@@ -382,7 +380,8 @@ Retrieves the balance for a specific token type
     token_issuer: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     receiper: <b>address</b>,
     old_token_str: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    proof_path: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    proof_path_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    proof_value_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     proof_siblings: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     amount: u64
 ) <b>acquires</b> <a href="asset_mapping.md#0x1_asset_mapping_AssetMappingPool">AssetMappingPool</a>, <a href="asset_mapping.md#0x1_asset_mapping_AssetMappingCoinType">AssetMappingCoinType</a>, <a href="asset_mapping.md#0x1_asset_mapping_AssetMappingProof">AssetMappingProof</a> {
@@ -393,7 +392,7 @@ Retrieves the balance for a specific token type
 
     // Verify that the token type of the request mapping is the passed-in verification type
     <b>assert</b>!(
-        <a href="asset_mapping.md#0x1_asset_mapping_calculation_proof">calculation_proof</a>(proof_path, amount, <a href="asset_mapping.md#0x1_asset_mapping_split_proof_siblings_from_vec">split_proof_siblings_from_vec</a>(proof_siblings)),
+        <a href="asset_mapping.md#0x1_asset_mapping_calculation_proof">calculation_proof</a>(proof_path_hash, proof_value_hash, <a href="asset_mapping.md#0x1_asset_mapping_split_proof_siblings_from_vec">split_proof_siblings_from_vec</a>(proof_siblings)),
         <a href="../../move-stdlib/doc/error.md#0x1_error_unauthenticated">error::unauthenticated</a>(<a href="asset_mapping.md#0x1_asset_mapping_EINVALID_NOT_PROOF">EINVALID_NOT_PROOF</a>)
     );
 
@@ -486,7 +485,7 @@ Requirements:
 Computes and verifies the provided proof
 
 
-<pre><code><b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_calculation_proof">calculation_proof</a>(proof_path_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, amount: u64, proof_siblings: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;): bool
+<pre><code><b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_calculation_proof">calculation_proof</a>(proof_path_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, blob_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, proof_siblings: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;): bool
 </code></pre>
 
 
@@ -497,14 +496,14 @@ Computes and verifies the provided proof
 
 <pre><code><b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_calculation_proof">calculation_proof</a>(
     proof_path_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    amount: u64,
+    blob_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     proof_siblings: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;
 ): bool <b>acquires</b> <a href="asset_mapping.md#0x1_asset_mapping_AssetMappingProof">AssetMappingProof</a> {
     <b>let</b> expect_proof_root =
         <b>borrow_global_mut</b>&lt;<a href="asset_mapping.md#0x1_asset_mapping_AssetMappingProof">AssetMappingProof</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()).proof_root;
     <b>let</b> actual_root = <a href="starcoin_proof.md#0x1_starcoin_proof_verifier_computer_root_hash">starcoin_proof_verifier::computer_root_hash</a>(
         proof_path_hash,
-        <a href="../../move-stdlib/doc/hash.md#0x1_hash_sha3_256">hash::sha3_256</a>(<a href="../../move-stdlib/doc/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a>(&amount)),
+        blob_hash,
         proof_siblings
     );
     expect_proof_root == actual_root

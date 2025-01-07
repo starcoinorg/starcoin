@@ -4,9 +4,7 @@
 /// with proof verification.
 module starcoin_framework::asset_mapping {
 
-    use std::bcs;
     use std::error;
-    use std::hash;
     use std::signer;
     use std::string;
     use std::vector;
@@ -25,6 +23,8 @@ module starcoin_framework::asset_mapping {
     use starcoin_framework::account;
     #[test_only]
     use starcoin_framework::starcoin_coin::{Self, STC};
+    #[test_only]
+    use starcoin_framework::starcoin_proof_verifier::splite_symbol;
     #[test_only]
     use starcoin_std::type_info;
 
@@ -274,15 +274,32 @@ module starcoin_framework::asset_mapping {
 
     #[test(framework= @starcoin_framework)]
     fun test_asset_mapping_calculation_proof(framework: &signer) acquires AssetMappingProof {
-        let siblings = vector::empty<vector<u8>>();
-        vector::push_back(&mut siblings, x"cfb1462d4fc72f736eab2a56b2bf72ca6ad1c4e8c79557046a8b0adce047f007");
-        vector::push_back(&mut siblings, x"5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000");
-        vector::push_back(&mut siblings, x"5ca9febe74c7fde3fdcf2bd464de6d8899a0a13d464893aada2714c6fa774f9d");
-        vector::push_back(&mut siblings, x"1519a398fed69687cabf51adf831f0ee1650aaf79775d00135fc70f55a73e151");
-        vector::push_back(&mut siblings, x"50ce5c38983ba2eb196acd44e0aaedf040b1437ad1106e05ca452d7e27e4e03f");
-        vector::push_back(&mut siblings, x"55ed28435637a061a6dd9e20b72849199cd36184570f976b7e306a27bebf2fdf");
-        vector::push_back(&mut siblings, x"0dc23e31614798a6f67659b0b808b3eadc3b13a2a7bc03580a9e3004e45c2e6c");
-        vector::push_back(&mut siblings, x"83bed048bc0bc452c98cb0e9f1cc0f691919eaf756864fc44940c2d1e01da92a");
+        let siblings_data = vector::empty<u8>();
+        vector::append(&mut siblings_data, x"cfb1462d4fc72f736eab2a56b2bf72ca6ad1c4e8c79557046a8b0adce047f007");
+        vector::push_back(&mut siblings_data, splite_symbol());
+
+        vector::append(&mut siblings_data, x"5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000");
+        vector::push_back(&mut siblings_data, splite_symbol());
+
+        vector::append(&mut siblings_data, x"5ca9febe74c7fde3fdcf2bd464de6d8899a0a13d464893aada2714c6fa774f9d");
+        vector::push_back(&mut siblings_data, splite_symbol());
+
+        vector::append(&mut siblings_data, x"1519a398fed69687cabf51adf831f0ee1650aaf79775d00135fc70f55a73e151");
+        vector::push_back(&mut siblings_data, splite_symbol());
+
+        vector::append(&mut siblings_data, x"50ce5c38983ba2eb196acd44e0aaedf040b1437ad1106e05ca452d7e27e4e03f");
+        vector::push_back(&mut siblings_data, splite_symbol());
+
+        vector::append(&mut siblings_data, x"55ed28435637a061a6dd9e20b72849199cd36184570f976b7e306a27bebf2fdf");
+        vector::push_back(&mut siblings_data, splite_symbol());
+
+        vector::append(&mut siblings_data, x"0dc23e31614798a6f67659b0b808b3eadc3b13a2a7bc03580a9e3004e45c2e6c");
+        vector::push_back(&mut siblings_data, splite_symbol());
+
+        vector::append(&mut siblings_data, x"83bed048bc0bc452c98cb0e9f1cc0f691919eaf756864fc44940c2d1e01da92a");
+        vector::push_back(&mut siblings_data, splite_symbol());
+
+        let siblings = starcoin_proof_verifier::split(siblings_data);
 
         let element_key = x"4cc8bd9df94b37c233555d9a3bba0a712c3c709f047486d1e624b2bcd3b83266";
         Self::initialize(framework, x"f65860f575bf2a198c069adb4e7872037e3a329b63ef617e40afa39b87b067c8");
@@ -316,5 +333,4 @@ module starcoin_framework::asset_mapping {
         );
         debug::print(&std::string::utf8(b"asset_mapping::test_asset_mapping_coin_type_verify | exited"));
     }
-
 }

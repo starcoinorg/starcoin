@@ -68,6 +68,39 @@ module starcoin_framework::starcoin_proof_verifier {
         current_hash
     }
 
+
+    // ASCII for '|'
+    const DELMITER: u8 = 124;
+
+    public fun splite_symbol(): u8 {
+        DELMITER
+    }
+
+    public fun split(input: vector<u8>): vector<vector<u8>> {
+        let result: vector<vector<u8>> = vector::empty();
+        let current_segment = vector::empty<u8>();
+        let i = 0;
+        let len = vector::length(&input);
+
+        while (i < len) {
+            let current_byte = *vector::borrow(&input, i);
+            if (current_byte == DELMITER) {
+                if (!vector::is_empty(&current_segment)) {
+                    vector::push_back(&mut result, current_segment);
+                    current_segment = vector::empty();
+                };
+            } else {
+                vector::push_back(&mut current_segment, current_byte);
+            };
+            i = i + 1;
+        };
+
+        if (!vector::is_empty(&current_segment)) {
+            vector::push_back(&mut result, current_segment);
+        };
+        result
+    }
+
     #[test]
     public fun test_starcoin_proof_verify_is_expect_root() {
         let siblings = vector::empty<vector<u8>>();
@@ -88,6 +121,29 @@ module starcoin_framework::starcoin_proof_verifier {
             siblings,
         );
         assert!(actual_root_hash == expect_root_hash, 1000);
+    }
+
+    #[test]
+    public fun test_starcoin_proof_split() {
+        // Test case 1: Normal split
+        let input1 = b"hello|world|test";
+        let result1 = split(input1);
+        assert!(vector::length(&result1) == 3, 10010);
+
+        // Test case 2: Empty segments
+        let input2 = b"||test||";
+        let result2 = split(input2);
+        assert!(vector::length(&result2) == 1, 10011);
+
+        // Test case 3: Single segment
+        let input3 = b"hello";
+        let result3 = split(input3);
+        assert!(vector::length(&result3) == 1, 10012);
+
+        // Test case 4: Empty input
+        let input4 = b"";
+        let result4 = split(input4);
+        assert!(vector::length(&result4) == 0, 10013);
     }
 }
 

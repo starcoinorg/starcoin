@@ -153,7 +153,8 @@ pub enum EntryFunctionCall {
     AssetMappingAssignToAccountWithProof {
         receiper: AccountAddress,
         old_token_str: Vec<u8>,
-        proof_path: Vec<u8>,
+        proof_path_hash: Vec<u8>,
+        proof_value_hash: Vec<u8>,
         proof_siblings: Vec<u8>,
         amount: u64,
     },
@@ -654,13 +655,15 @@ impl EntryFunctionCall {
             AssetMappingAssignToAccountWithProof {
                 receiper,
                 old_token_str,
-                proof_path,
+                proof_path_hash,
+                proof_value_hash,
                 proof_siblings,
                 amount,
             } => asset_mapping_assign_to_account_with_proof(
                 receiper,
                 old_token_str,
-                proof_path,
+                proof_path_hash,
+                proof_value_hash,
                 proof_siblings,
                 amount,
             ),
@@ -1281,7 +1284,8 @@ pub fn account_rotate_authentication_key_with_rotation_capability(
 pub fn asset_mapping_assign_to_account_with_proof(
     receiper: AccountAddress,
     old_token_str: Vec<u8>,
-    proof_path: Vec<u8>,
+    proof_path_hash: Vec<u8>,
+    proof_value_hash: Vec<u8>,
     proof_siblings: Vec<u8>,
     amount: u64,
 ) -> TransactionPayload {
@@ -1295,7 +1299,8 @@ pub fn asset_mapping_assign_to_account_with_proof(
         vec![
             bcs::to_bytes(&receiper).unwrap(),
             bcs::to_bytes(&old_token_str).unwrap(),
-            bcs::to_bytes(&proof_path).unwrap(),
+            bcs::to_bytes(&proof_path_hash).unwrap(),
+            bcs::to_bytes(&proof_value_hash).unwrap(),
             bcs::to_bytes(&proof_siblings).unwrap(),
             bcs::to_bytes(&amount).unwrap(),
         ],
@@ -2578,9 +2583,10 @@ mod decoder {
             Some(EntryFunctionCall::AssetMappingAssignToAccountWithProof {
                 receiper: bcs::from_bytes(script.args().get(0)?).ok()?,
                 old_token_str: bcs::from_bytes(script.args().get(1)?).ok()?,
-                proof_path: bcs::from_bytes(script.args().get(2)?).ok()?,
-                proof_siblings: bcs::from_bytes(script.args().get(3)?).ok()?,
-                amount: bcs::from_bytes(script.args().get(4)?).ok()?,
+                proof_path_hash: bcs::from_bytes(script.args().get(2)?).ok()?,
+                proof_value_hash: bcs::from_bytes(script.args().get(3)?).ok()?,
+                proof_siblings: bcs::from_bytes(script.args().get(4)?).ok()?,
+                amount: bcs::from_bytes(script.args().get(5)?).ok()?,
             })
         } else {
             None
