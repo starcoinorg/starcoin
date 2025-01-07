@@ -19,6 +19,7 @@ use crate::process_key_already_error;
 use crate::prune::pruning_point_manager::PruningPointManagerT;
 use crate::reachability::ReachabilityError;
 use anyhow::{bail, ensure, Ok};
+use parking_lot::Mutex;
 use rocksdb::WriteBatch;
 use starcoin_config::temp_dir;
 use starcoin_crypto::{HashValue as Hash, HashValue};
@@ -54,6 +55,7 @@ pub struct BlockDAG {
     pub storage: FlexiDagStorage,
     ghostdag_manager: DbGhostdagManager,
     pruning_point_manager: PruningPointManager,
+    commit_lock: Arc<Mutex<FlexiDagStorage>>,
 }
 
 impl BlockDAG {
@@ -75,11 +77,12 @@ impl BlockDAG {
             reachability_service.clone(),
         );
         let pruning_point_manager = PruningPointManager::new(reachability_service, ghostdag_store);
-
+        let commit_lock = Arc::new(Mutex::new(db.clone()));
         Self {
             ghostdag_manager,
             storage: db,
             pruning_point_manager,
+            commit_lock,
         }
     }
 
@@ -327,10 +330,11 @@ impl BlockDAG {
             );
         }
 
-        info!("start to commit via batch, header id: {:?}", header.id());
-
         // Create a DB batch writer
         let mut batch = WriteBatch::default();
+
+        info!("start to commit via batch, header id: {:?}", header.id());
+        let lock_guard = self.commit_lock.lock();
 
         // lock the dag data to write in batch
         // the cache will be written at the same time
@@ -410,6 +414,7 @@ impl BlockDAG {
             .write_batch(batch)
             .expect("failed to write dag data in batch");
 
+        drop(lock_guard);
         info!("finish writing the batch, head id: {:?}", header.id());
 
         Ok(())
@@ -468,6 +473,9 @@ impl BlockDAG {
 
         // Create a DB batch writer
         let mut batch = WriteBatch::default();
+
+        info!("start to commit via batch, header id: {:?}", header.id());
+        let lock_guard = self.commit_lock.lock();
 
         // lock the dag data to write in batch, read lock.
         // the cache will be written at the same time
@@ -548,6 +556,7 @@ impl BlockDAG {
             .write_batch(batch)
             .expect("failed to write dag data in batch");
 
+        drop(lock_guard);
         info!("finish writing the batch, head id: {:?}", header.id());
 
         Ok(())
