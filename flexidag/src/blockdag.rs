@@ -98,13 +98,101 @@ impl BlockDAG {
         Ok(Self::new(k, dag_storage))
     }
 
-    pub fn has_block_connected(&self, hash: Hash) -> anyhow::Result<bool> {
-        Ok(self.storage.header_store.has(hash)?)
+    pub fn has_block_connected(&self, block_header: &BlockHeader) -> anyhow::Result<bool> {
+        let _ghostdata = match self.storage.ghost_dag_store.get_data(block_header.id()) {
+            std::result::Result::Ok(data) => data,
+            Err(e) => {
+                warn!(
+                    "failed to get ghostdata by hash: {:?}, the block should be re-executed",
+                    e
+                );
+                return anyhow::Result::Ok(false);
+            }
+        };
+
+        let _dag_header = match self.storage.header_store.get_header(block_header.id()) {
+            std::result::Result::Ok(header) => header,
+            Err(e) => {
+                warn!(
+                    "failed to get header by hash: {:?}, the block should be re-executed",
+                    e
+                );
+                return anyhow::Result::Ok(false);
+            }
+        };
+
+        let parents = match self
+            .storage
+            .relations_store
+            .read()
+            .get_parents(block_header.id())
+        {
+            std::result::Result::Ok(parents) => parents,
+            Err(e) => {
+                warn!(
+                    "failed to get parents by hash: {:?}, the block should be re-executed",
+                    e
+                );
+                return anyhow::Result::Ok(false);
+            }
+        };
+
+        if !parents.iter().all(|parent| {
+            let children = match self.storage.relations_store.read().get_children(*parent) {
+                std::result::Result::Ok(children) => children,
+                Err(e) => {
+                    warn!("failed to get children by hash: {:?}, the block should be re-executed", e);
+                    return false;
+                }
+            };
+
+            if !children.contains(&block_header.id()) {
+                warn!("the parent: {:?} does not have the child: {:?}", parent, block_header.id());
+                return false;
+            }
+
+            match inquirer::is_dag_ancestor_of(&*self.storage.reachability_store.read(), *parent, block_header.id()) {
+                std::result::Result::Ok(pass) => {
+                    if !pass {
+                        warn!("failed to check ancestor, the block: {:?} is not the descendant of its parent: {:?}, the block should be re-executed", block_header.id(), *parent);
+                        return false;
+                    }
+                    true
+                }
+                Err(e) => {
+                    warn!("failed to check ancestor, the block: {:?} is not the descendant of its parent: {:?}, the block should be re-executed, error: {:?}", block_header.id(), *parent, e);
+                    false
+                }
+            }
+        }) {
+            return anyhow::Result::Ok(false);
+        }
+
+        if block_header.pruning_point() == HashValue::zero() {
+            return anyhow::Result::Ok(true);
+        } else {
+            match inquirer::is_dag_ancestor_of(
+                &*self.storage.reachability_store.read(),
+                block_header.pruning_point(),
+                block_header.id(),
+            ) {
+                std::result::Result::Ok(pass) => {
+                    if !pass {
+                        warn!("failed to check ancestor, the block: {:?} is not the descendant of the pruning: {:?}", block_header.id(), block_header.pruning_point());
+                        return anyhow::Result::Ok(false);
+                    }
+                }
+                Err(e) => {
+                    warn!("failed to check ancestor, the block: {:?} is not the descendant of the pruning: {:?}, error: {:?}", block_header.id(), block_header.pruning_point(), e);
+                    return anyhow::Result::Ok(false);
+                }
+            }
+        }
+
+        anyhow::Result::Ok(true)
     }
 
     pub fn check_ancestor_of(&self, ancestor: Hash, descendant: Hash) -> anyhow::Result<bool> {
-        // self.ghostdag_manager
-        //     .check_ancestor_of(ancestor, descendant)
         inquirer::is_dag_ancestor_of(
             &*self.storage.reachability_store.read(),
             ancestor,

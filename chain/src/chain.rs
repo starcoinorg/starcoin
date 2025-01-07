@@ -1369,7 +1369,7 @@ impl ChainReader for BlockChain {
             return Ok(false);
         }
 
-        self.dag.has_block_connected(header.id())
+        self.dag.has_block_connected(&header)
     }
 
     fn check_chain_type(&self) -> Result<ChainType> {

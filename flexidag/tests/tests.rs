@@ -149,7 +149,7 @@ async fn test_with_spawn() {
                     std::result::Result::Ok(_) => break,
                     Err(e) => {
                         debug!("failed to commit error: {:?}, i: {:?}", e, i);
-                        if dag_clone.has_block_connected(block_clone.id()).unwrap() {
+                        if dag_clone.has_block_connected(&block_clone).unwrap() {
                             break;
                         }
                         count -= 1;
