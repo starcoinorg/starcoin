@@ -10161,6 +10161,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-asset-mapping"
+version = "2.0.1"
+dependencies = [
+ "anyhow",
+ "bcs-ext",
+ "forkable-jellyfish-merkle",
+ "starcoin-config",
+ "starcoin-crypto",
+ "starcoin-state-api",
+ "starcoin-types",
+ "starcoin-vm-types",
+ "test-helper",
+]
+
+[[package]]
 name = "starcoin-block-relayer"
 version = "2.0.1"
 dependencies = [

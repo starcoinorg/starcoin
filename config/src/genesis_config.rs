@@ -650,6 +650,9 @@ pub struct GenesisConfig {
 
     /// Flexidag effective height
     pub dag_effective_height: u64,
+
+    /// Asset mapping proof root hash
+    pub asset_mapping_root_hash: HashValue,
 }
 
 impl GenesisConfig {
@@ -799,6 +802,7 @@ pub static G_DAG_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         transaction_timeout: ONE_DAY,
         dag_effective_height: 0,
+        asset_mapping_root_hash: HashValue::zero(),
     }
 });
 
@@ -854,6 +858,7 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         transaction_timeout: ONE_DAY,
         dag_effective_height: u64::MAX,
+        asset_mapping_root_hash: HashValue::zero(),
     }
 });
 
@@ -912,6 +917,7 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         transaction_timeout: ONE_DAY,
         dag_effective_height: 0,
+        asset_mapping_root_hash: HashValue::zero(),
     }
 });
 
@@ -975,6 +981,7 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         transaction_timeout: ONE_DAY,
         dag_effective_height: 0,
+        asset_mapping_root_hash: HashValue::zero(),
     }
 });
 
@@ -1034,6 +1041,7 @@ pub static G_PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         transaction_timeout: ONE_DAY,
         dag_effective_height: 0u64,
+        asset_mapping_root_hash: HashValue::zero(),
     }
 });
 
@@ -1092,6 +1100,7 @@ pub static G_BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         transaction_timeout: ONE_DAY,
         dag_effective_height: u64::MAX,
+        asset_mapping_root_hash: HashValue::zero(),
     }
 });
 
@@ -1164,6 +1173,8 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         transaction_timeout: ONE_DAY,
         dag_effective_height: u64::MAX,
+        // TODO(BobOng): to confirm the asset mapping proof root hash
+        asset_mapping_root_hash: HashValue::zero(),
     }
 });
 
@@ -1218,6 +1229,7 @@ pub static G_VEGA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         transaction_timeout: ONE_DAY,
         dag_effective_height: 0,
+        asset_mapping_root_hash: HashValue::zero(),
     }
 });
 
