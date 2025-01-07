@@ -50,7 +50,7 @@ use starcoin_sync::announcement::AnnouncementService;
 use starcoin_sync::block_connector::{BlockConnectorService, ResetRequest};
 use starcoin_sync::sync::SyncService;
 use starcoin_sync::txn_sync::TxnSyncService;
-use starcoin_sync_api::SyncSpecificTagretRequest;
+use starcoin_sync_api::SyncSpecificTargretRequest;
 use starcoin_txpool::{TxPoolActorService, TxPoolService};
 use starcoin_types::blockhash::KType;
 use starcoin_types::system_events::{SystemShutdown, SystemStarted};
@@ -144,7 +144,7 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                 let sync_service = ctx.service_ref::<SyncService>()?.clone();
                 let fut = async move {
                     info!("Prepare to re execute block {}", block_hash);
-                    sync_service.notify(SyncSpecificTagretRequest {
+                    sync_service.notify(SyncSpecificTargretRequest {
                         block: None,
                         block_id: block_hash,
                         peer_id: None,

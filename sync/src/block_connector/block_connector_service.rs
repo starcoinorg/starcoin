@@ -31,7 +31,7 @@ use starcoin_service_registry::{
 };
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::PeerNewBlock;
-use starcoin_sync_api::SyncSpecificTagretRequest;
+use starcoin_sync_api::SyncSpecificTargretRequest;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 #[cfg(test)]
@@ -331,7 +331,7 @@ where
                                 if !self.is_near_block(block.as_ref().header()) {
                                     let _ = sync_service.notify(CheckSyncEvent::default());
                                 } else {
-                                    let _ = sync_service.notify(SyncSpecificTagretRequest {
+                                    let _ = sync_service.notify(SyncSpecificTargretRequest {
                                         block: Some(block.as_ref().clone()),
                                         block_id: block.id(),
                                         peer_id: Some(peer_id),

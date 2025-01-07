@@ -28,7 +28,7 @@ use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::{
     PeerScoreRequest, PeerScoreResponse, SyncBlockSort, SyncCancelRequest, SyncProgressReport,
-    SyncProgressRequest, SyncServiceHandler, SyncSpecificTagretRequest, SyncStartRequest,
+    SyncProgressRequest, SyncServiceHandler, SyncSpecificTargretRequest, SyncStartRequest,
     SyncStatusRequest, SyncTarget,
 };
 use starcoin_txpool::TxPoolService;
@@ -212,7 +212,7 @@ impl SyncService {
 
     fn check_and_start_light_sync(
         &mut self,
-        msg: SyncSpecificTagretRequest,
+        msg: SyncSpecificTargretRequest,
         ctx: &mut ServiceContext<Self>,
     ) -> Result<()> {
         let network = ctx.get_shared::<NetworkServiceRef>()?;
@@ -843,8 +843,8 @@ impl EventHandler<Self, NewHeadBlock> for SyncService {
     }
 }
 
-impl EventHandler<Self, SyncSpecificTagretRequest> for SyncService {
-    fn handle_event(&mut self, msg: SyncSpecificTagretRequest, ctx: &mut ServiceContext<Self>) {
+impl EventHandler<Self, SyncSpecificTargretRequest> for SyncService {
+    fn handle_event(&mut self, msg: SyncSpecificTargretRequest, ctx: &mut ServiceContext<Self>) {
         match self.check_and_start_light_sync(msg, ctx) {
             Ok(()) => (),
             Err(e) => warn!("[sync] Check and start light sync failed: {:?}", e),

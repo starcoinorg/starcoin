@@ -95,13 +95,13 @@ impl ServiceRequest for SyncStatusRequest {
 }
 
 #[derive(Debug, Clone)]
-pub struct SyncSpecificTagretRequest {
+pub struct SyncSpecificTargretRequest {
     pub block: Option<Block>,
     pub block_id: HashValue,
     pub peer_id: Option<PeerId>,
 }
 
-impl ServiceRequest for SyncSpecificTagretRequest {
+impl ServiceRequest for SyncSpecificTargretRequest {
     type Response = Result<()>;
 }
 
