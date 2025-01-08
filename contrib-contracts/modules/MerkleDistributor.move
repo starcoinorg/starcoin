@@ -1,44 +1,59 @@
-address StarcoinAssociation {
-module MerkleDistributorScripts {
+module StarcoinAssociation::MerkleDistributorScripts {
     use StarcoinAssociation::MerkleDistributor;
-    use StarcoinFramework::Account;
-    public(script) fun create<T: store>(signer: signer, merkle_root: vector<u8>, token_amounts: u128, leaves: u64) {
-        let tokens = Account::withdraw<T>(&signer, token_amounts);
-        MerkleDistributor::create<T>(&signer, merkle_root, tokens, leaves);
+    use starcoin_framework::coin;
+    use starcoin_std::signer;
+
+    public entry fun create<T>(signer: signer, merkle_root: vector<u8>, coin_amounts: u128, leaves: u64) {
+        let coins = coin::withdraw<T>(&signer, coin_amounts);
+        MerkleDistributor::create<T>(&signer, merkle_root, coins, leaves);
     }
 
-    public(script) fun claim_for_address<T: store>(distribution_address: address, index: u64, account: address, amount: u128, merkle_proof: vector<vector<u8>>) {
-        MerkleDistributor::claim_for_address<T>(distribution_address, index, account, amount, merkle_proof);
+    public entry fun claim_for_address<T>(
+        signer: signer,
+        distribution_address: address,
+        index: u64,
+        account: address,
+        amount: u128,
+        merkle_proof: vector<vector<u8>>
+    ) {
+        MerkleDistributor::claim_for_address<T>(&signer, distribution_address, index, account, amount, merkle_proof);
     }
-    public(script) fun claim<T: store>(signer: signer, distribution_address: address, index: u64, amount: u128, merkle_proof: vector<vector<u8>>) {
-        let tokens = MerkleDistributor::claim<T>(&signer, distribution_address, index, amount, merkle_proof);
-        Account::deposit_to_self<T>(&signer, tokens);
+
+    public entry fun claim<T>(
+        signer: signer,
+        distribution_address: address,
+        index: u64,
+        amount: u128,
+        merkle_proof: vector<vector<u8>>
+    ) {
+        let coins = MerkleDistributor::claim<T>(&signer, distribution_address, index, amount, merkle_proof);
+        let account_addr = signer::address_of(&signer);
+        coin::deposit<T>(account_addr, coins);
     }
 }
 
-module MerkleProof {
-    use StarcoinFramework::Hash;
-    use StarcoinFramework::Vector;
-    use StarcoinFramework::Compare;
+module StarcoinAssociation::MerkleProof {
+    use std::hash;
+    use std::vector;
+    use starcoin_std::comparator;
 
-    /// verify leaf node with hash of `leaf` with `proof` againest merkle `root`.
+    /// verify leaf node with hash of `leaf` with `proof` against merkle `root`.
     public fun verify(proof: &vector<vector<u8>>, root: &vector<u8>, leaf: vector<u8>): bool {
         let computed_hash = leaf;
         let i = 0;
         let proof_length = vector::length(proof);
-        while(i < proof_length) {
+        while (i < proof_length) {
             let sibling = vector::borrow(proof, i);
             // computed_hash is left.
-            if (Compare::cmp_bytes(&computed_hash,sibling) < 2) {
+            if (!comparator::is_greater_than(&comparator::compare_u8_vector(computed_hash, *sibling))) {
                 let concated = concat(computed_hash, *sibling);
-                computed_hash = Hash::sha3_256(concated);
+                computed_hash = hash::sha3_256(concated);
             } else {
                 let concated = concat(*sibling, computed_hash);
-                computed_hash = Hash::sha3_256(concated);
-
+                computed_hash = hash::sha3_256(concated);
             };
 
-            i = i+1;
+            i = i + 1;
         };
         &computed_hash == root
     }
@@ -51,28 +66,27 @@ module MerkleProof {
 }
 
 
-
-module MerkleDistributor {
-    use StarcoinFramework::Token::{Token, Self};
+module StarcoinAssociation::MerkleDistributor {
     use StarcoinAssociation::MerkleProof;
-    use StarcoinFramework::Vector;
-    use StarcoinFramework::BCS;
-    // use StarcoinFramework::BitOperators;
-    use StarcoinFramework::Account;
-    use StarcoinFramework::Signer;
-    use StarcoinFramework::Errors;
-    use StarcoinFramework::Hash;
+    use starcoin_framework::coin;
+    use std::bcs;
+    use std::error;
+    use std::hash;
+    use std::vector;
+    use starcoin_std::signer;
 
-    struct MerkleDistribution<T: store> has key {
+
+    struct MerkleDistribution<phantom T> has key {
         merkle_root: vector<u8>,
-        tokens: Token<T>,
+        coins: coin::Coin<T>,
         claimed_bitmap: vector<u128>,
     }
+
     const INVALID_PROOF: u64 = 1;
     const ALREADY_CLAIMED: u64 = 2;
 
     /// Initialization.
-    public fun create<T: store>(signer: &signer, merkle_root: vector<u8>, tokens: Token<T>, leaves: u64) {
+    public fun create<T>(signer: &signer, merkle_root: vector<u8>, coins: coin::Coin<T>, leaves: u64) {
         let bitmap_count = leaves / 128;
         if (bitmap_count * 128 < leaves) {
             bitmap_count = bitmap_count + 1;
@@ -83,50 +97,69 @@ module MerkleDistributor {
             vector::push_back(&mut claimed_bitmap, 0u128);
             j = j + 1;
         };
-        let distribution = MerkleDistribution{
+        let distribution = MerkleDistribution {
             merkle_root,
-            tokens,
-            claimed_bitmap
+            coins,
+            claimed_bitmap,
         };
         move_to(signer, distribution);
     }
 
     /// claim for some address.
-    public fun claim_for_address<T: store>(distribution_address: address, index: u64, account: address, amount: u128, merkle_proof: vector<vector<u8>>)
-    acquires  MerkleDistribution {
+    public fun claim_for_address<T>(
+        signer: &signer,
+        distribution_address: address,
+        index: u64,
+        account: address,
+        amount: u128,
+        merkle_proof: vector<vector<u8>>
+    )
+    acquires MerkleDistribution {
         let distribution = borrow_global_mut<MerkleDistribution<T>>(distribution_address);
-        let claimed_tokens = internal_claim(distribution, index, account, amount, merkle_proof);
-        Account::deposit(account, claimed_tokens);
+        let claimed_coins = internal_claim(signer, distribution, index, account, amount, merkle_proof);
+        coin::deposit(account, claimed_coins);
     }
 
     /// claim by myself.
-    public fun claim<T: store>(signer: &signer, distribution_address: address, index: u64, amount: u128, merkle_proof: vector<vector<u8>>): Token<T>
-    acquires  MerkleDistribution  {
+    public fun claim<T>(
+        signer: &signer,
+        distribution_address: address,
+        index: u64,
+        amount: u128,
+        merkle_proof: vector<vector<u8>>
+    ): coin::Coin<T> acquires MerkleDistribution {
         let distribution = borrow_global_mut<MerkleDistribution<T>>(distribution_address);
-        internal_claim(distribution, index, Signer::address_of(signer), amount, merkle_proof)
+        internal_claim(signer, distribution, index, signer::address_of(signer), amount, merkle_proof)
     }
 
     /// Query whether `index` of `distribution_address` has already claimed.
-    public fun is_claimed<T: store>(distribution_address: address, index: u64): bool
+    public fun is_claimed<T>(distribution_address: address, index: u64): bool
     acquires MerkleDistribution {
         let distribution = borrow_global<MerkleDistribution<T>>(distribution_address);
         is_claimed_(distribution, index)
     }
 
-    fun internal_claim<T: store>(distribution: &mut MerkleDistribution<T>, index: u64, account: address, amount: u128, merkle_proof: vector<vector<u8>>): Token<T> {
-        let claimed =  is_claimed_(distribution, index);
-        assert!(!claimed, Errors::custom(ALREADY_CLAIMED));
+    fun internal_claim<T>(
+        signer: &signer,
+        distribution: &mut MerkleDistribution<T>,
+        index: u64,
+        account: address,
+        amount: u128,
+        merkle_proof: vector<vector<u8>>
+    ): coin::Coin<T> {
+        let claimed = is_claimed_(distribution, index);
+        assert!(!claimed, error::invalid_argument(ALREADY_CLAIMED));
 
         let leaf_data = encode_leaf(&index, &account, &amount);
-        let verified = MerkleProof::verify(&merkle_proof, &distribution.merkle_root, Hash::sha3_256(leaf_data));
-        assert!(verified, Errors::custom(INVALID_PROOF));
+        let verified = MerkleProof::verify(&merkle_proof, &distribution.merkle_root, hash::sha3_256(leaf_data));
+        assert!(verified, error::invalid_argument(INVALID_PROOF));
 
         set_claimed_(distribution, index);
 
-        Token::withdraw(&mut distribution.tokens, amount)
+        coin::withdraw(signer, (amount as u64))
     }
 
-    fun is_claimed_<T: store>(distribution: &MerkleDistribution<T>, index: u64): bool {
+    fun is_claimed_<T>(distribution: &MerkleDistribution<T>, index: u64): bool {
         let claimed_word_index = index / 128;
         let claimed_bit_index = ((index % 128) as u8);
         let word = vector::borrow(&distribution.claimed_bitmap, claimed_word_index);
@@ -134,7 +167,7 @@ module MerkleDistributor {
         (*word & mask) == mask
     }
 
-    fun set_claimed_<T: store>(distribution: &mut MerkleDistribution<T>, index: u64) {
+    fun set_claimed_<T>(distribution: &mut MerkleDistribution<T>, index: u64) {
         let claimed_word_index = index / 128;
         let claimed_bit_index = ((index % 128) as u8);
         let word = vector::borrow_mut(&mut distribution.claimed_bitmap, claimed_word_index);
@@ -145,10 +178,9 @@ module MerkleDistributor {
 
     fun encode_leaf(index: &u64, account: &address, amount: &u128): vector<u8> {
         let leaf = vector::empty();
-        vector::append(&mut leaf, BCS::to_bytes(index));
-        vector::append(&mut leaf, BCS::to_bytes(account));
-        vector::append(&mut leaf, BCS::to_bytes(amount));
+        vector::append(&mut leaf, bcs::to_bytes(index));
+        vector::append(&mut leaf, bcs::to_bytes(account));
+        vector::append(&mut leaf, bcs::to_bytes(amount));
         leaf
     }
-}
 }

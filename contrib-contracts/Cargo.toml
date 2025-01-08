@@ -19,6 +19,7 @@ stdlib = { workspace = true }
 stest = { workspace = true }
 starcoin-move-stdlib = { workspace = true }
 tempfile = { workspace = true }
+starcoin-logger = { workspace = true }
 
 [package]
 authors = { workspace = true }

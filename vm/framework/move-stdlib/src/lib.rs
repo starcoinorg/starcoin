@@ -23,12 +23,21 @@ pub static STARCOIN_STDLIB_SOURCE_FILES: Lazy<SourceFiles> = Lazy::new(|| {
     restore_sources(STARCOIN_STDLIB_SOURCES_DIR, "starcoin-stdlib")
         .expect("Restore source file error")
 });
+pub const STARCOIN_FRAMEWORK_SOURCES_DIR: Dir = include_dir!("../starcoin-framework/sources");
+pub static STARCOIN_FRAMEWORK_SOURCE_FILES: Lazy<SourceFiles> = Lazy::new(|| {
+    restore_sources(STARCOIN_FRAMEWORK_SOURCES_DIR, "starcoin-framework")
+        .expect("Restore source file error")
+});
 pub fn move_stdlib_files() -> Vec<String> {
     MOVE_STDLIB_SOURCE_FILES.files.clone()
 }
 pub fn starcoin_stdlib_files() -> Vec<String> {
     STARCOIN_STDLIB_SOURCE_FILES.files.clone()
 }
+pub fn starcoin_framework_files() -> Vec<String> {
+    STARCOIN_FRAMEWORK_SOURCE_FILES.files.clone()
+}
+
 //restore the sources files to a tempdir
 fn restore_sources(dir: Dir, path: &str) -> anyhow::Result<SourceFiles> {
     let temp_dir = tempfile::tempdir()?;
