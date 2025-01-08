@@ -19,6 +19,7 @@ use crate::process_key_already_error;
 use crate::prune::pruning_point_manager::PruningPointManagerT;
 use crate::reachability::ReachabilityError;
 use anyhow::{bail, ensure, Ok};
+use parking_lot::Mutex;
 use rocksdb::WriteBatch;
 use starcoin_config::temp_dir;
 use starcoin_crypto::{HashValue as Hash, HashValue};
@@ -54,6 +55,7 @@ pub struct BlockDAG {
     pub storage: FlexiDagStorage,
     ghostdag_manager: DbGhostdagManager,
     pruning_point_manager: PruningPointManager,
+    commit_lock: Arc<Mutex<FlexiDagStorage>>,
 }
 
 impl BlockDAG {
@@ -75,11 +77,12 @@ impl BlockDAG {
             reachability_service.clone(),
         );
         let pruning_point_manager = PruningPointManager::new(reachability_service, ghostdag_store);
-
+        let commit_lock = Arc::new(Mutex::new(db.clone()));
         Self {
             ghostdag_manager,
             storage: db,
             pruning_point_manager,
+            commit_lock,
         }
     }
 
@@ -98,13 +101,101 @@ impl BlockDAG {
         Ok(Self::new(k, dag_storage))
     }
 
-    pub fn has_dag_block(&self, hash: Hash) -> anyhow::Result<bool> {
-        Ok(self.storage.header_store.has(hash)?)
+    pub fn has_block_connected(&self, block_header: &BlockHeader) -> anyhow::Result<bool> {
+        let _ghostdata = match self.storage.ghost_dag_store.get_data(block_header.id()) {
+            std::result::Result::Ok(data) => data,
+            Err(e) => {
+                warn!(
+                    "failed to get ghostdata by hash: {:?}, the block should be re-executed",
+                    e
+                );
+                return anyhow::Result::Ok(false);
+            }
+        };
+
+        let _dag_header = match self.storage.header_store.get_header(block_header.id()) {
+            std::result::Result::Ok(header) => header,
+            Err(e) => {
+                warn!(
+                    "failed to get header by hash: {:?}, the block should be re-executed",
+                    e
+                );
+                return anyhow::Result::Ok(false);
+            }
+        };
+
+        let parents = match self
+            .storage
+            .relations_store
+            .read()
+            .get_parents(block_header.id())
+        {
+            std::result::Result::Ok(parents) => parents,
+            Err(e) => {
+                warn!(
+                    "failed to get parents by hash: {:?}, the block should be re-executed",
+                    e
+                );
+                return anyhow::Result::Ok(false);
+            }
+        };
+
+        if !parents.iter().all(|parent| {
+            let children = match self.storage.relations_store.read().get_children(*parent) {
+                std::result::Result::Ok(children) => children,
+                Err(e) => {
+                    warn!("failed to get children by hash: {:?}, the block should be re-executed", e);
+                    return false;
+                }
+            };
+
+            if !children.contains(&block_header.id()) {
+                warn!("the parent: {:?} does not have the child: {:?}", parent, block_header.id());
+                return false;
+            }
+
+            match inquirer::is_dag_ancestor_of(&*self.storage.reachability_store.read(), *parent, block_header.id()) {
+                std::result::Result::Ok(pass) => {
+                    if !pass {
+                        warn!("failed to check ancestor, the block: {:?} is not the descendant of its parent: {:?}, the block should be re-executed", block_header.id(), *parent);
+                        return false;
+                    }
+                    true
+                }
+                Err(e) => {
+                    warn!("failed to check ancestor, the block: {:?} is not the descendant of its parent: {:?}, the block should be re-executed, error: {:?}", block_header.id(), *parent, e);
+                    false
+                }
+            }
+        }) {
+            return anyhow::Result::Ok(false);
+        }
+
+        if block_header.pruning_point() == HashValue::zero() {
+            return anyhow::Result::Ok(true);
+        } else {
+            match inquirer::is_dag_ancestor_of(
+                &*self.storage.reachability_store.read(),
+                block_header.pruning_point(),
+                block_header.id(),
+            ) {
+                std::result::Result::Ok(pass) => {
+                    if !pass {
+                        warn!("failed to check ancestor, the block: {:?} is not the descendant of the pruning: {:?}", block_header.id(), block_header.pruning_point());
+                        return anyhow::Result::Ok(false);
+                    }
+                }
+                Err(e) => {
+                    warn!("failed to check ancestor, the block: {:?} is not the descendant of the pruning: {:?}, error: {:?}", block_header.id(), block_header.pruning_point(), e);
+                    return anyhow::Result::Ok(false);
+                }
+            }
+        }
+
+        anyhow::Result::Ok(true)
     }
 
     pub fn check_ancestor_of(&self, ancestor: Hash, descendant: Hash) -> anyhow::Result<bool> {
-        // self.ghostdag_manager
-        //     .check_ancestor_of(ancestor, descendant)
         inquirer::is_dag_ancestor_of(
             &*self.storage.reachability_store.read(),
             ancestor,
@@ -239,10 +330,11 @@ impl BlockDAG {
             );
         }
 
-        info!("start to commit via batch, header id: {:?}", header.id());
-
         // Create a DB batch writer
         let mut batch = WriteBatch::default();
+
+        info!("start to commit via batch, header id: {:?}", header.id());
+        let lock_guard = self.commit_lock.lock();
 
         // lock the dag data to write in batch
         // the cache will be written at the same time
@@ -322,6 +414,7 @@ impl BlockDAG {
             .write_batch(batch)
             .expect("failed to write dag data in batch");
 
+        drop(lock_guard);
         info!("finish writing the batch, head id: {:?}", header.id());
 
         Ok(())
@@ -380,6 +473,9 @@ impl BlockDAG {
 
         // Create a DB batch writer
         let mut batch = WriteBatch::default();
+
+        info!("start to commit via batch, header id: {:?}", header.id());
+        let lock_guard = self.commit_lock.lock();
 
         // lock the dag data to write in batch, read lock.
         // the cache will be written at the same time
@@ -460,6 +556,7 @@ impl BlockDAG {
             .write_batch(batch)
             .expect("failed to write dag data in batch");
 
+        drop(lock_guard);
         info!("finish writing the batch, head id: {:?}", header.id());
 
         Ok(())
@@ -533,12 +630,12 @@ impl BlockDAG {
         pruning_depth: u64,
         pruning_finality: u64,
     ) -> anyhow::Result<MineNewDagBlockInfo> {
-        info!("start to calculate the mergeset and tips, previous pruning point: {:?}, previous ghostdata: {:?}", previous_pruning_point, previous_ghostdata);
+        info!("start to calculate the mergeset and tips, previous pruning point: {:?}, previous ghostdata: {:?} and its red block count: {:?}", previous_pruning_point, previous_ghostdata.to_compact(), previous_ghostdata.mergeset_reds.len());
         let dag_state = self.get_dag_state(previous_pruning_point)?;
         let next_ghostdata = self.ghostdata(&dag_state.tips)?;
         info!(
-            "start to calculate the mergeset and tips for tips: {:?}, and last pruning point: {:?} and next ghostdata: {:?}",
-            dag_state.tips, previous_pruning_point, next_ghostdata,
+            "start to calculate the mergeset and tips for tips: {:?}, and last pruning point: {:?} and next ghostdata: {:?}, red block count: {:?}",
+            dag_state.tips, previous_pruning_point, next_ghostdata.to_compact(), next_ghostdata.mergeset_reds.len()
         );
         let next_pruning_point = self.pruning_point_manager().next_pruning_point(
             previous_pruning_point,

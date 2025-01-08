@@ -74,8 +74,30 @@ fn add_dag_block(
     mergeset_iterator: HashIterator,
 ) -> Result<()> {
     // Update the future covering set for blocks in the mergeset
+    let mut insert_future_set_result: Vec<std::result::Result<(), ReachabilityError>> = Vec::new();
     for merged_block in mergeset_iterator {
-        insert_to_future_covering_set(store, merged_block, new_block)?;
+        let result = insert_to_future_covering_set(store, merged_block, new_block);
+        if result.is_err() {
+            match result {
+                Err(ReachabilityError::DataInconsistency) => {
+                    // This is a data inconsistency error, which means that the block is already in the future covering set
+                    // of the merged block. This is a serious error, and we should propagate it.
+                    insert_future_set_result.push(Err(ReachabilityError::DataInconsistency));
+                }
+                Err(ReachabilityError::HashesNotOrdered) => {
+                    // This is a hashes not ordered error, which means that the merged block is not in the future covering set
+                    // of the new block. This is a serious error, and we should propagate it.
+                    return Err(ReachabilityError::HashesNotOrdered);
+                }
+                _ => {
+                    // This is an unexpected error, and we should propagate it.
+                    return result;
+                }
+            }
+        }
+    }
+    for result in insert_future_set_result.into_iter() {
+        result?;
     }
     Ok(())
 }

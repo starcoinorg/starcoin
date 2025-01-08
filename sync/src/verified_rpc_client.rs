@@ -22,6 +22,7 @@ use starcoin_types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
     transaction::TransactionInfo,
 };
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::time::Instant;
 use thiserror::Error;
@@ -732,6 +733,94 @@ impl VerifiedRpcClient {
             format!("failed to get blocks from peer : {:?}.", peer_id),
         )
         .into())
+    }
+
+    pub async fn get_block_diligently(
+        &self,
+        ids: Vec<HashValue>,
+    ) -> Result<Vec<Option<(Block, Option<PeerId>)>>> {
+        let peer_infos = self
+            .peer_selector
+            .bests(0.into())
+            .ok_or_else(|| format_err!("No peers for send request."))?;
+
+        let mut result: HashMap<HashValue, (Block, PeerId)> = HashMap::new();
+        let mut waiting_list = ids.clone();
+        for peer_info in peer_infos {
+            let blocks = match self
+                .get_blocks_inner(peer_info.peer_id(), waiting_list.clone())
+                .await
+            {
+                Ok(blocks) => blocks,
+                Err(err) => {
+                    warn!("get blocks failed:{}, call get blocks legacy", err);
+                    vec![]
+                }
+            };
+            if blocks.is_empty() {
+                continue;
+            }
+
+            let rpc_result = waiting_list
+                .into_iter()
+                .zip(blocks)
+                .map(|(id, block)| {
+                    if let Some(block) = block {
+                        let actual_id = block.id();
+                        if actual_id != id {
+                            warn!(
+                                "Get block by id: {:?} from peer: {:?}, but got block: {:?}",
+                                id,
+                                peer_info.peer_id(),
+                                actual_id
+                            );
+                            (id, None)
+                        } else {
+                            (id, Some(block))
+                        }
+                    } else {
+                        (id, None)
+                    }
+                })
+                .collect::<Vec<_>>();
+
+            waiting_list = vec![];
+
+            result.extend(
+                rpc_result
+                    .iter()
+                    .filter(|(id, block)| {
+                        if block.is_none() {
+                            waiting_list.push(*id);
+                        }
+                        block.is_some()
+                    })
+                    .cloned()
+                    .map(|(id, block)| {
+                        (
+                            id,
+                            (
+                                block.expect("block should not be none"),
+                                peer_info.peer_id(),
+                            ),
+                        )
+                    })
+                    .collect::<Vec<(HashValue, (Block, PeerId))>>(),
+            );
+
+            if waiting_list.is_empty() {
+                break;
+            }
+        }
+
+        Ok(ids
+            .into_iter()
+            .map(|id| {
+                result.get(&id).map(|block_and_peerid| {
+                    (block_and_peerid.0.clone(), Some(block_and_peerid.1.clone()))
+                })
+            })
+            .collect())
     }
 
     pub async fn get_blocks(

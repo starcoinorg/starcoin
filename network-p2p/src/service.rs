@@ -1308,12 +1308,12 @@ impl<T: BusinessLayerHandle + Send> Future for NetworkWorker<T> {
                 })) => {
                     if let Some(metrics) = this.metrics.as_ref() {
                         for (protocol, message) in &messages {
-                            info!(
-                                "[network-p2p] receive notification from {} {} {}",
-                                remote,
-                                protocol,
-                                message.len()
-                            );
+                            // info!(
+                            //     "[network-p2p] receive notification from {} {} {}",
+                            //     remote,
+                            //     protocol,
+                            //     message.len()
+                            // );
                             metrics
                                 .notifications_sizes
                                 .with_label_values(&["in", protocol])
