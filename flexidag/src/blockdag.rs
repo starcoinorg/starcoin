@@ -308,8 +308,20 @@ impl BlockDAG {
             }
         };
 
-        if self.storage.reachability_store.read().get_reindex_root()? != header.pruning_point()
-            && header.pruning_point() != HashValue::zero()
+        if header.pruning_point() == HashValue::zero() {
+            info!(
+                "try to hint virtual selected parent, root index: {:?}",
+                self.storage.reachability_store.read().get_reindex_root()
+            );
+            inquirer::hint_virtual_selected_parent(
+                self.storage.reachability_store.write().deref_mut(),
+                header.parent_hash(),
+            )?;
+            info!(
+                "after hint virtual selected parent, root index: {:?}",
+                self.storage.reachability_store.read().get_reindex_root()
+            );
+        } else if self.storage.reachability_store.read().get_reindex_root()? != header.pruning_point()
             && self
                 .storage
                 .reachability_store
