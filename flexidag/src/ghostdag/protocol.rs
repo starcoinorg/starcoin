@@ -485,6 +485,10 @@ impl<
         });
         Ok(sorted_blocks)
     }
+
+    pub fn k(&self) -> KType {
+        self.k
+    }
 }
 
 /// Chain block with attached ghostdag data

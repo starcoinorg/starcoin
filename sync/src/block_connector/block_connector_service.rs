@@ -16,7 +16,6 @@ use anyhow::{bail, format_err, Ok, Result};
 use network_api::PeerProvider;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
-use starcoin_config::genesis_config::G_BASE_MAX_UNCLES_PER_BLOCK;
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
@@ -137,10 +136,20 @@ where
             return false;
         }
         let gap = current_number.saturating_sub(block_header.number());
-        if gap <= G_BASE_MAX_UNCLES_PER_BLOCK.saturating_mul(2) {
-            return true;
-        }
-        false
+        let k = self.chain_service.get_dag().ghost_dag_manager().k() as u64;
+        let config_gap = self
+            .config
+            .sync
+            .lightweight_sync_max_gap()
+            .map_or(k.saturating_mul(2), |max_gap| max_gap);
+        debug!(
+            "is-near-block: current_number: {:?}, block_number: {:?}, gap: {:?}, config_gap: {:?}",
+            current_number,
+            block_header.number(),
+            gap,
+            config_gap
+        );
+        gap <= config_gap
     }
 }
 
