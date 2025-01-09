@@ -276,18 +276,18 @@ impl PeerSelector {
                 peers
             });
         if best_peers.is_empty() || best_peers[0].total_difficulty() <= min_difficulty {
-            info!(
-                "best peer difficulty {:?} is smaller than min difficulty {:?}, return None",
-                best_peers[0].total_difficulty(),
-                min_difficulty
-            );
+            // info!(
+            //     "best peer difficulty {:?} is smaller than min difficulty {:?}, return None",
+            //     best_peers[0].total_difficulty(),
+            //     min_difficulty
+            // );
             None
         } else {
-            info!(
-                "best peer difficulty {:?}, info: {:?} picked",
-                best_peers[0].total_difficulty(),
-                best_peers
-            );
+            // info!(
+            //     "best peer difficulty {:?}, info: {:?} picked",
+            //     best_peers[0].total_difficulty(),
+            //     best_peers
+            // );
             Some(best_peers)
         }
     }

@@ -28,7 +28,7 @@ use starcoin_types::{
 };
 #[cfg(test)]
 use starcoin_vm_types::{account_address::AccountAddress, transaction::SignedUserTransaction};
-use std::collections::HashSet;
+// use std::collections::HashSet;
 use std::{fmt::Formatter, sync::Arc};
 
 use super::BlockConnectorService;
@@ -380,55 +380,55 @@ where
             self.dag.clone(),
         )?;
 
-        let start = new_head_block.header().id();
-        let lastest = self.main.status().head.clone();
+        // let start = new_head_block.header().id();
+        // let lastest = self.main.status().head.clone();
 
-        let lastest_dag_state = if lastest.pruning_point() == HashValue::zero() {
-            let genesis = self
-                .main
-                .get_storage()
-                .get_genesis()?
-                .ok_or_else(|| format_err!("Cannot get the genesis in storage!"))?;
-            self.main.dag().get_dag_state(genesis)?
-        } else {
-            self.main.dag().get_dag_state(lastest.pruning_point())?
-        };
+        // let lastest_dag_state = if lastest.pruning_point() == HashValue::zero() {
+        //     let genesis = self
+        //         .main
+        //         .get_storage()
+        //         .get_genesis()?
+        //         .ok_or_else(|| format_err!("Cannot get the genesis in storage!"))?;
+        //     self.main.dag().get_dag_state(genesis)?
+        // } else {
+        //     self.main.dag().get_dag_state(lastest.pruning_point())?
+        // };
 
-        let mut deleted_chain = lastest_dag_state.tips.into_iter().collect::<HashSet<_>>();
-        let mut ready_to_delete = HashSet::new();
-        loop {
-            let loop_to_delete = deleted_chain.clone();
-            deleted_chain.clear();
-            for descendant in loop_to_delete.into_iter() {
-                if descendant == start {
-                    continue;
-                }
-                if self.main.dag().check_ancestor_of(descendant, start)? {
-                    continue;
-                }
+        // let mut deleted_chain = lastest_dag_state.tips.into_iter().collect::<HashSet<_>>();
+        // let mut ready_to_delete = HashSet::new();
+        // loop {
+        //     let loop_to_delete = deleted_chain.clone();
+        //     deleted_chain.clear();
+        //     for descendant in loop_to_delete.into_iter() {
+        //         if descendant == start {
+        //             continue;
+        //         }
+        //         if self.main.dag().check_ancestor_of(descendant, start)? {
+        //             continue;
+        //         }
 
-                let descendant_header = self
-                    .storage
-                    .get_block_header_by_hash(descendant)?
-                    .ok_or_else(|| {
-                        format_err!(
-                            "in resetting, cannot find the block header for {:?}",
-                            descendant
-                        )
-                    })?;
-                deleted_chain.extend(descendant_header.parents_hash());
+        //         let descendant_header = self
+        //             .storage
+        //             .get_block_header_by_hash(descendant)?
+        //             .ok_or_else(|| {
+        //                 format_err!(
+        //                     "in resetting, cannot find the block header for {:?}",
+        //                     descendant
+        //                 )
+        //             })?;
+        //         deleted_chain.extend(descendant_header.parents_hash());
 
-                ready_to_delete.insert(descendant);
-            }
+        //         ready_to_delete.insert(descendant);
+        //     }
 
-            if deleted_chain.is_empty() {
-                for candidate in ready_to_delete.into_iter() {
-                    self.storage.delete_block(candidate)?;
-                    self.storage.delete_block_info(candidate)?;
-                }
-                break;
-            }
-        }
+        //     if deleted_chain.is_empty() {
+        //         for candidate in ready_to_delete.into_iter() {
+        //             self.storage.delete_block(candidate)?;
+        //             self.storage.delete_block_info(candidate)?;
+        //         }
+        //         break;
+        //     }
+        // }
 
         if new_head_block.header().pruning_point() == HashValue::zero() {
             let genesis = self
@@ -657,7 +657,7 @@ where
             .header()
             .parents_hash()
             .iter()
-            .all(|parent_hash| self.main.dag().has_dag_block(*parent_hash).unwrap_or(false))
+            .all(|parent_hash| self.main.has_dag_block(*parent_hash).unwrap_or(false))
         {
             debug!(
                 "block: {:?} is a future dag block, trigger sync to pull other dag blocks",

@@ -384,6 +384,15 @@ impl BlockChain {
             .ok_or_else(|| format_err!("Can not find block hash by number {}", number))
     }
 
+    pub fn check_parents_ready(&self, header: &BlockHeader) -> bool {
+        header.parents_hash().into_iter().all(|parent| {
+            self.has_dag_block(parent).unwrap_or_else(|e| {
+                warn!("check_parents_ready error: {:?}", e);
+                false
+            })
+        })
+    }
+
     fn check_exist_block(&self, block_id: HashValue, block_number: BlockNumber) -> Result<bool> {
         Ok(self
             .get_hash_by_number(block_number)?
@@ -1360,7 +1369,7 @@ impl ChainReader for BlockChain {
             return Ok(false);
         }
 
-        self.dag.has_dag_block(header.id())
+        self.dag.has_block_connected(&header)
     }
 
     fn check_chain_type(&self) -> Result<ChainType> {

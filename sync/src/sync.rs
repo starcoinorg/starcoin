@@ -4,15 +4,16 @@
 use crate::block_connector::BlockConnectorService;
 use crate::store::sync_dag_store::{SyncDagStore, SyncDagStoreConfig};
 use crate::sync_metrics::SyncMetrics;
-use crate::tasks::{full_sync_task, AncestorEvent, SyncFetcher};
+use crate::tasks::{full_sync_task, AncestorEvent, BlockFetcher, SyncFetcher};
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
 use anyhow::{format_err, Result};
 use futures::FutureExt;
 use futures_timer::Delay;
 use network_api::peer_score::PeerScoreMetrics;
 use network_api::{PeerId, PeerProvider, PeerSelector, PeerStrategy, ReputationChange};
-use starcoin_chain::BlockChain;
-use starcoin_chain_api::ChainReader;
+use starcoin_chain::verifier::DagVerifier;
+use starcoin_chain::{BlockChain, ChainWriter};
+use starcoin_chain_api::{ChainReader, ExecutedBlock};
 use starcoin_config::{NodeConfig, RocksdbConfig};
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
@@ -22,17 +23,20 @@ use starcoin_network::PeerEvent;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
+use starcoin_storage::block::DagSyncBlock;
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::{
-    PeerScoreRequest, PeerScoreResponse, SyncCancelRequest, SyncProgressReport,
-    SyncProgressRequest, SyncServiceHandler, SyncStartRequest, SyncStatusRequest, SyncTarget,
+    PeerScoreRequest, PeerScoreResponse, SyncBlockSort, SyncCancelRequest, SyncProgressReport,
+    SyncProgressRequest, SyncServiceHandler, SyncSpecificTargretRequest, SyncStartRequest,
+    SyncStatusRequest, SyncTarget,
 };
 use starcoin_txpool::TxPoolService;
-use starcoin_types::block::BlockIdAndNumber;
+use starcoin_types::block::{Block, BlockIdAndNumber};
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
+use std::collections::{BTreeSet, HashSet};
 use std::result::Result::Ok;
 use std::sync::Arc;
 use std::time::Duration;
@@ -182,6 +186,242 @@ impl SyncService {
         )))
     }
 
+    fn try_to_start_sync(&mut self) -> Result<bool> {
+        let previous_stage = std::mem::replace(&mut self.stage, SyncStage::Checking);
+        match previous_stage {
+            SyncStage::NotStart | SyncStage::Done => Ok(true),
+            SyncStage::Checking => {
+                info!("[sync] Sync stage is already in Checking");
+                Ok(false)
+            }
+            SyncStage::Synchronizing(task_handle) => {
+                info!("[sync] Sync stage is already in Synchronizing");
+                if let Some(report) = task_handle.task_event_handle.get_report() {
+                    info!("[sync] report: {}", report);
+                }
+                //restore to Synchronizing
+                self.stage = SyncStage::Synchronizing(task_handle);
+                Ok(false)
+            }
+            SyncStage::Canceling => {
+                info!("[sync] Sync task is in canceling.");
+                Ok(false)
+            }
+        }
+    }
+
+    fn check_and_start_light_sync(
+        &mut self,
+        msg: SyncSpecificTargretRequest,
+        ctx: &mut ServiceContext<Self>,
+    ) -> Result<()> {
+        let network = ctx.get_shared::<NetworkServiceRef>()?;
+        let config = self.config.clone();
+        let storage = self.storage.clone();
+        let dag = ctx.get_shared::<BlockDAG>()?;
+
+        let fut = async move {
+            let verified_rpc_client = Self::create_verified_client(
+                network,
+                config.clone(),
+                Some(PeerStrategy::Best),
+                msg.peer_id
+                    .map_or_else(std::vec::Vec::new, |peer_id| vec![peer_id]),
+                None,
+            )
+            .await?;
+            let startup_info = storage
+                .get_startup_info()?
+                .ok_or_else(|| format_err!("Startup info should exist."))?;
+            let mut chain = BlockChain::new(
+                config.net().time_service(),
+                startup_info.main,
+                storage.clone(),
+                None,
+                dag,
+            )?;
+
+            let specific_block = match msg.block {
+                Some(block) => block,
+                None => {
+                    if let Some(block) = storage.get_block(msg.block_id)? {
+                        block
+                    } else if let Some(sync_dag_block) = storage.get_dag_sync_block(msg.block_id)? {
+                        sync_dag_block.block
+                    } else {
+                        let block_from_remote =
+                            verified_rpc_client.fetch_blocks(vec![msg.block_id]).await?;
+                        if block_from_remote.len() != 1 {
+                            return Err(format_err!(
+                                "Get block by id failed, block id: {:?}",
+                                msg.block_id
+                            ));
+                        }
+                        let block = block_from_remote
+                            .first()
+                            .expect("should not be none")
+                            .0
+                            .clone();
+                        storage.save_dag_sync_block(DagSyncBlock {
+                            block: block.clone(),
+                            children: vec![],
+                        })?;
+                        block
+                    }
+                }
+            };
+
+            // ensure the previous blocks are ready to be executed or were executed already
+            info!(
+                "[sync specific] Start to sync specific block: {:?}",
+                specific_block.id()
+            );
+
+            let mut current_round = specific_block.header().parents_hash();
+            let mut next_round = vec![];
+            let mut blocks_to_be_executed = vec![specific_block.clone()];
+
+            while !current_round.is_empty() {
+                for block_id in current_round {
+                    // already executed
+                    if chain.has_dag_block(block_id)? {
+                        continue;
+                    }
+
+                    // fetch from the local
+                    match storage.get_block(block_id)? {
+                        Some(block_in_local) => next_round.push(block_in_local),
+                        None => {
+                            if let Some(sync_dag_block) = storage.get_dag_sync_block(block_id)? {
+                                next_round.push(sync_dag_block.block);
+                            } else {
+                                // fetch from the remote
+                                let parents_in_remote =
+                                    verified_rpc_client.fetch_blocks(vec![block_id]).await?;
+                                if parents_in_remote.len() != 1 {
+                                    return Err(format_err!(
+                                        "Get block by id failed, block id: {:?}",
+                                        block_id
+                                    ));
+                                }
+                                let block = parents_in_remote
+                                    .first()
+                                    .expect("should not be none")
+                                    .0
+                                    .clone();
+                                next_round.push(block.clone());
+                                storage.save_dag_sync_block(DagSyncBlock {
+                                    block: next_round
+                                        .last()
+                                        .expect("impossible to be none")
+                                        .clone(),
+                                    children: vec![],
+                                })?;
+                            }
+                        }
+                    }
+                }
+                if next_round.is_empty() {
+                    break;
+                }
+                current_round = next_round
+                    .iter()
+                    .flat_map(|block| block.header().parents_hash())
+                    .collect::<HashSet<_>>()
+                    .into_iter()
+                    .collect::<Vec<_>>();
+                blocks_to_be_executed.extend(next_round);
+                next_round = vec![];
+                info!(
+                    "[sync specific] Fetch parents blocks, current_round: {:?}",
+                    current_round
+                );
+            }
+            let mut waiting_for_execution_heap = blocks_to_be_executed
+                .into_iter()
+                .map(|block| SyncBlockSort { block })
+                .collect::<BTreeSet<_>>();
+
+            let mut failed_blocks: HashSet<Block> = HashSet::new();
+            info!("[sync specific] Start to execute blocks");
+            while let Some(SyncBlockSort { block }) =
+                waiting_for_execution_heap.iter().next().cloned()
+            {
+                if chain.has_dag_block(block.id())? {
+                    waiting_for_execution_heap.remove(&SyncBlockSort {
+                        block: block.clone(),
+                    });
+                    continue;
+                }
+                if !chain.check_parents_ready(block.header()) {
+                    failed_blocks.insert(block.clone());
+                    waiting_for_execution_heap.remove(&SyncBlockSort {
+                        block: block.clone(),
+                    });
+                    continue;
+                }
+                match chain.verify_with_verifier::<DagVerifier>(block.clone()) {
+                    Ok(verified_executed_block) => match chain.execute(verified_executed_block) {
+                        Ok(_) => {
+                            waiting_for_execution_heap.extend(failed_blocks.iter().map(|block| {
+                                SyncBlockSort {
+                                    block: block.clone(),
+                                }
+                            }));
+                            waiting_for_execution_heap.remove(&SyncBlockSort {
+                                block: block.clone(),
+                            });
+                            failed_blocks.clear();
+                            continue;
+                        }
+                        Err(e) => {
+                            warn!(
+                                "[sync specific] Execute block failed, block id: {:?}, error: {:?}",
+                                block.id(),
+                                e
+                            );
+                            waiting_for_execution_heap.remove(&SyncBlockSort {
+                                block: block.clone(),
+                            });
+                            failed_blocks.insert(block.clone());
+                            continue;
+                        }
+                    },
+                    Err(_) => {
+                        return Err(format_err!(
+                            "Verify block failed, block id: {:?}",
+                            block.id()
+                        ))
+                    }
+                }
+            }
+
+            if chain.has_dag_block(msg.block_id)? {
+                chain.connect(ExecutedBlock {
+                    block: specific_block,
+                    block_info: storage.get_block_info(msg.block_id)?.ok_or_else(|| {
+                        format_err!("failed to get the block info for id: {:?}", msg.block_id)
+                    })?,
+                })?;
+                info!("[sync specific] Sync specific block done");
+            } else {
+                return Err(format_err!(
+                    "Sync specific block failed, block id: {:?}",
+                    specific_block.id()
+                ));
+            }
+            info!("[sync specific] Sync specific block done");
+            Ok(())
+        };
+
+        ctx.spawn(fut.then(|result| async move {
+            if let Err(e) = result {
+                error!("[sync specific] Sync specific block failed, error: {:?}", e);
+            }
+        }));
+        Ok(())
+    }
+
     pub fn check_and_start_sync(
         &mut self,
         peers: Vec<PeerId>,
@@ -197,32 +437,14 @@ impl SyncService {
         if let Some(sync_task_total) = sync_task_total.as_ref() {
             sync_task_total.with_label_values(&["check"]).inc();
         }
-        match std::mem::replace(&mut self.stage, SyncStage::Checking) {
-            SyncStage::NotStart | SyncStage::Done => {
-                //continue
-                info!(
-                    "[sync] Start checking sync,skip_pow_verify:{}, special peers: {:?}",
-                    skip_pow_verify, peers
-                );
-            }
-            SyncStage::Checking => {
-                info!("[sync] Sync stage is already in Checking");
-                return Ok(());
-            }
-            SyncStage::Synchronizing(task_handle) => {
-                info!("[sync] Sync stage is already in Synchronizing");
-                if let Some(report) = task_handle.task_event_handle.get_report() {
-                    info!("[sync] report: {}", report);
-                }
-                //restore to Synchronizing
-                self.stage = SyncStage::Synchronizing(task_handle);
-                return Ok(());
-            }
-            SyncStage::Canceling => {
-                info!("[sync] Sync task is in canceling.");
-                return Ok(());
-            }
+
+        if !self.try_to_start_sync()? {
+            return Ok(());
         }
+        info!(
+            "[sync] Start checking sync,skip_pow_verify:{}, special peers: {:?}",
+            skip_pow_verify, peers
+        );
 
         let network = ctx.get_shared::<NetworkServiceRef>()?;
         let storage = self.storage.clone();
@@ -617,6 +839,15 @@ impl EventHandler<Self, NewHeadBlock> for SyncService {
             msg.executed_block.block_info.clone(),
         )) {
             ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
+        }
+    }
+}
+
+impl EventHandler<Self, SyncSpecificTargretRequest> for SyncService {
+    fn handle_event(&mut self, msg: SyncSpecificTargretRequest, ctx: &mut ServiceContext<Self>) {
+        match self.check_and_start_light_sync(msg, ctx) {
+            Ok(()) => (),
+            Err(e) => warn!("[sync] Check and start light sync failed: {:?}", e),
         }
     }
 }
