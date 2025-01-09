@@ -314,10 +314,10 @@ impl BlockDAG {
                 "try to hint virtual selected parent, root index: {:?}",
                 self.storage.reachability_store.read().get_reindex_root()
             );
-            inquirer::hint_virtual_selected_parent(
+            let _ = inquirer::hint_virtual_selected_parent(
                 self.storage.reachability_store.write().deref_mut(),
                 header.parent_hash(),
-            )?;
+            );
             info!(
                 "after hint virtual selected parent, root index: {:?}",
                 self.storage.reachability_store.read().get_reindex_root()
