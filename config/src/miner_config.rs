@@ -7,6 +7,8 @@ use clap::Parser;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
+pub static G_MAX_PARENTS_COUNT: u64 = 16;
+
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
 pub struct MinerConfig {
@@ -66,7 +68,7 @@ impl MinerConfig {
     }
 
     pub fn maximum_parents_count(&self) -> u64 {
-        self.maximum_parents_count.unwrap_or_else(|| 16)
+        self.maximum_parents_count.unwrap_or(G_MAX_PARENTS_COUNT)
     }
 }
 

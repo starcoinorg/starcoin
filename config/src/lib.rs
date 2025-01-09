@@ -33,7 +33,7 @@ pub mod genesis_config;
 mod helper;
 mod logger_config;
 mod metrics_config;
-mod miner_config;
+pub mod miner_config;
 mod network_config;
 mod rpc_config;
 mod storage_config;
