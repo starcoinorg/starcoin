@@ -19,6 +19,7 @@ use crate::process_key_already_error;
 use crate::prune::pruning_point_manager::PruningPointManagerT;
 use crate::reachability::ReachabilityError;
 use anyhow::{bail, ensure, Ok};
+use itertools::Itertools;
 use parking_lot::Mutex;
 use rocksdb::WriteBatch;
 use starcoin_config::temp_dir;
@@ -322,8 +323,7 @@ impl BlockDAG {
                 self.storage.reachability_store.read().get_reindex_root()
             );
         } else if self.storage.reachability_store.read().get_reindex_root()?
-            != header.pruning_point()
-            && self
+            != header.pruning_point() && self
                 .storage
                 .reachability_store
                 .read()
@@ -642,9 +642,24 @@ impl BlockDAG {
         previous_ghostdata: &GhostdagData,
         pruning_depth: u64,
         pruning_finality: u64,
+        max_parents_count: u64,
     ) -> anyhow::Result<MineNewDagBlockInfo> {
         info!("start to calculate the mergeset and tips, previous pruning point: {:?}, previous ghostdata: {:?} and its red block count: {:?}", previous_pruning_point, previous_ghostdata.to_compact(), previous_ghostdata.mergeset_reds.len());
-        let dag_state = self.get_dag_state(previous_pruning_point)?;
+        let mut dag_state = self.get_dag_state(previous_pruning_point)?;
+
+        // filter 
+        if dag_state.tips.len() > max_parents_count as usize {
+            dag_state.tips = dag_state.tips.into_iter().sorted_by(|a, b| {
+                let a_blue_work = self.storage.ghost_dag_store.get_blue_work(*a).expect(&format!("the ghostdag data should be existed for {:?}", a));
+                let b_blue_work = self.storage.ghost_dag_store.get_blue_work(*a).expect(&format!("the ghostdag data should be existed for {:?}", b));
+                if a_blue_work == b_blue_work {
+                    a.cmp(b)
+                } else {
+                    b_blue_work.cmp(&a_blue_work)
+                }
+            }).take(max_parents_count as usize).collect();
+        }
+
         let next_ghostdata = self.ghostdata(&dag_state.tips)?;
         info!(
             "start to calculate the mergeset and tips for tips: {:?}, and last pruning point: {:?} and next ghostdata: {:?}, red block count: {:?}",
@@ -657,10 +672,12 @@ impl BlockDAG {
             pruning_depth,
             pruning_finality,
         )?;
+
         info!(
             "the next pruning point is: {:?}, and the previous pruning point is: {:?}",
             next_pruning_point, previous_pruning_point
         );
+
         if next_pruning_point == Hash::zero() || next_pruning_point == previous_pruning_point {
             anyhow::Ok(MineNewDagBlockInfo {
                 tips: dag_state.tips,

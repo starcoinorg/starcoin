@@ -453,6 +453,7 @@ where
                 previous_ghostdata.as_ref(),
                 pruning_depth,
                 pruning_finality,
+                self.config.miner.maximum_parents_count(),
             )?
         } else {
             let genesis = ctx.get_shared::<Genesis>()?;
