@@ -321,7 +321,8 @@ impl BlockDAG {
                 "after hint virtual selected parent, root index: {:?}",
                 self.storage.reachability_store.read().get_reindex_root()
             );
-        } else if self.storage.reachability_store.read().get_reindex_root()? != header.pruning_point()
+        } else if self.storage.reachability_store.read().get_reindex_root()?
+            != header.pruning_point()
             && self
                 .storage
                 .reachability_store

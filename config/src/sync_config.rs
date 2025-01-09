@@ -28,6 +28,18 @@ pub struct SyncConfig {
         help = "max retry times once sync block failed, default 15."
     )]
     max_retry_times: Option<u64>,
+
+    /// the maximum gap between the current head block's number and the peer's block's number
+    /// and if the block height broadcast by a peer node is greater than the height of the local head block by this maximum value,
+    /// a regular sync process will be initiated;
+    /// otherwise, a lightweight sync process will be triggered, strengthening the reference relationship between nodes.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(
+        name = "lightweight-sync-max-gap",
+        long,
+        help = "The height difference threshold for triggering a lightweight sync."
+    )]
+    lightweight_sync_max_gap: Option<u64>,
 }
 
 impl SyncConfig {
@@ -37,6 +49,10 @@ impl SyncConfig {
 
     pub fn max_retry_times(&self) -> u64 {
         self.max_retry_times.unwrap_or(15)
+    }
+
+    pub fn lightweight_sync_max_gap(&self) -> Option<u64> {
+        self.lightweight_sync_max_gap
     }
 }
 
@@ -48,6 +64,10 @@ impl ConfigModule for SyncConfig {
 
         if opt.sync.max_retry_times.is_some() {
             self.max_retry_times = opt.sync.max_retry_times;
+        }
+
+        if opt.sync.lightweight_sync_max_gap.is_some() {
+            self.lightweight_sync_max_gap = opt.sync.lightweight_sync_max_gap;
         }
 
         Ok(())
