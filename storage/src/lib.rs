@@ -175,7 +175,7 @@ static VEC_PREFIX_NAME_V4: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
     ]
 });
 
-// this is is for proxima. DAG_SYNC_BLOCK_PREFIX_NAME added.
+// this is for proxima. DAG_SYNC_BLOCK_PREFIX_NAME added.
 // DAG_SYNC_BLOCK_PREFIX_NAME should be in v4 when upgrading to the master version
 static VEC_PREFIX_NAME_V5: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
     vec![
