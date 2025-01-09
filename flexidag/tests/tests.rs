@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, format_err, Ok, Result};
+use starcoin_config::miner_config::G_MAX_PARENTS_COUNT;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_dag::{
     blockdag::{BlockDAG, MineNewDagBlockInfo},
@@ -1028,6 +1029,7 @@ fn test_prune() -> anyhow::Result<()> {
         previous_ghostdata.as_ref(),
         pruning_depth,
         pruning_finality,
+        G_MAX_PARENTS_COUNT,
     )?;
 
     assert_eq!(pruning_point, block_main_2.id());
@@ -1056,6 +1058,7 @@ fn test_prune() -> anyhow::Result<()> {
         previous_ghostdata.as_ref(),
         pruning_depth,
         pruning_finality,
+        G_MAX_PARENTS_COUNT,
     )?;
 
     assert_eq!(pruning_point, block_main_2.id());

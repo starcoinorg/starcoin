@@ -323,7 +323,8 @@ impl BlockDAG {
                 self.storage.reachability_store.read().get_reindex_root()
             );
         } else if self.storage.reachability_store.read().get_reindex_root()?
-            != header.pruning_point() && self
+            != header.pruning_point()
+            && self
                 .storage
                 .reachability_store
                 .read()
@@ -647,17 +648,40 @@ impl BlockDAG {
         info!("start to calculate the mergeset and tips, previous pruning point: {:?}, previous ghostdata: {:?} and its red block count: {:?}", previous_pruning_point, previous_ghostdata.to_compact(), previous_ghostdata.mergeset_reds.len());
         let mut dag_state = self.get_dag_state(previous_pruning_point)?;
 
-        // filter 
+        // filter
         if dag_state.tips.len() > max_parents_count as usize {
-            dag_state.tips = dag_state.tips.into_iter().sorted_by(|a, b| {
-                let a_blue_work = self.storage.ghost_dag_store.get_blue_work(*a).expect(&format!("the ghostdag data should be existed for {:?}", a));
-                let b_blue_work = self.storage.ghost_dag_store.get_blue_work(*a).expect(&format!("the ghostdag data should be existed for {:?}", b));
-                if a_blue_work == b_blue_work {
-                    a.cmp(b)
-                } else {
-                    b_blue_work.cmp(&a_blue_work)
-                }
-            }).take(max_parents_count as usize).collect();
+            dag_state.tips = dag_state
+                .tips
+                .into_iter()
+                .sorted_by(|a, b| {
+                    let a_blue_work = self
+                        .storage
+                        .ghost_dag_store
+                        .get_blue_work(*a)
+                        .unwrap_or_else(|e| {
+                            panic!(
+                                "the ghostdag data should be existed for {:?}, e: {:?}",
+                                a, e
+                            )
+                        });
+                    let b_blue_work = self
+                        .storage
+                        .ghost_dag_store
+                        .get_blue_work(*a)
+                        .unwrap_or_else(|e| {
+                            panic!(
+                                "the ghostdag data should be existed for {:?}, e: {:?}",
+                                b, e
+                            )
+                        });
+                    if a_blue_work == b_blue_work {
+                        a.cmp(b)
+                    } else {
+                        b_blue_work.cmp(&a_blue_work)
+                    }
+                })
+                .take(max_parents_count as usize)
+                .collect();
         }
 
         let next_ghostdata = self.ghostdata(&dag_state.tips)?;
