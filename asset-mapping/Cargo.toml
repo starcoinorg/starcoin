@@ -12,10 +12,14 @@ rust-version = { workspace = true }
 [dependencies]
 anyhow = { workspace = true }
 bcs-ext = { workspace = true }
-test-helper = { workspace = true }
+forkable-jellyfish-merkle = { workspace = true }
+starcoin-transaction-builder = { workspace = true }
+starcoin-chain = { workspace = true }
+starcoin-consensus = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-state-api = { workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-config = { workspace = true }
-forkable-jellyfish-merkle = { workspace = true }
+test-helper = { workspace = true }
+starcoin-cached-packages = { workspace = true }
