@@ -6,22 +6,25 @@ use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 
 use forkable_jellyfish_merkle::{blob::Blob, node_type::SparseMerkleLeafNode, RawKey};
 use starcoin_cached_packages::starcoin_framework_sdk_builder::asset_mapping_assign_to_account_with_proof;
-use starcoin_chain::{ChainReader, ChainWriter};
+use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
 use starcoin_config::{ChainNetwork, NodeConfig, G_TEST_CONFIG};
 use starcoin_consensus::Consensus;
 use starcoin_state_api::ChainStateReader;
 use starcoin_transaction_builder::DEFAULT_MAX_GAS_AMOUNT;
+use starcoin_types::account::Account;
 use starcoin_types::{
     account::DEFAULT_EXPIRATION_TIME, account_address::AccountAddress,
     account_config::CORE_CODE_ADDRESS, identifier::Identifier, language_storage::StructTag,
 };
-use starcoin_types::account::Account;
-use starcoin_vm_types::account_config::stc_type_tag;
+use starcoin_vm_types::transaction::SignedUserTransaction;
 use starcoin_vm_types::{
-    access_path::AccessPath, account_config, account_config::genesis_address,
-    genesis_config::ChainId, state_store::state_key::StateKey, state_view::StateReaderExt,
+    access_path::AccessPath,
+    account_config,
+    account_config::{genesis_address, stc_type_tag},
+    genesis_config::ChainId,
+    state_store::state_key::StateKey,
+    state_view::StateReaderExt,
 };
-use starcoin_vm_types::transaction::TransactionPayload;
 use test_helper::executor::prepare_genesis;
 
 #[test]
@@ -133,37 +136,15 @@ fn test_asset_mapping_whole_process() -> Result<()> {
         let config = Arc::new(NodeConfig::random_for_test());
         let mut block_chain = test_helper::gen_blockchain_with_blocks_for_test(0, config.net())?;
 
-        let association_sequence_num = {
-            block_chain
-                .chain_state_reader()
-                .get_sequence_number(account_config::association_address())?
+        let peer_to_peer_txn = {
+            local_build_peer_to_peer_from_association(
+                &block_chain,
+                receiver,
+                initial_balance,
+                config.net(),
+            )?
         };
-
-        let transaction_txn = starcoin_transaction_builder::build_transfer_from_association(
-            receiver,
-            association_sequence_num,
-            initial_balance,
-            config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
-            config.net(),
-        )
-        .try_into()?;
-
-        let (block_template, _excluded) = block_chain
-            .create_block_template(
-                account_config::association_address(),
-                None,
-                vec![transaction_txn],
-                vec![],
-                Some(block_gas_limit),
-                None,
-            )
-            .unwrap();
-
-        let block = block_chain
-            .consensus()
-            .create_block(block_template, block_chain.time_service().as_ref())?;
-
-        block_chain.apply(block)?;
+        local_block_chain_excecute_txn(&mut block_chain, peer_to_peer_txn)?;
 
         {
             let chain_state = block_chain.chain_state_reader();
@@ -195,11 +176,18 @@ fn test_asset_mapping_whole_process() -> Result<()> {
         proof_root_hash, proof_path_hash, proof_value_hash, proof_siblings,
     );
 
+    // Create a new blockchain and verify proof
     {
         let custom_chain_id = ChainId::new(100);
         let mut genesis_config = G_TEST_CONFIG.clone();
         genesis_config.asset_mapping_root_hash = proof_root_hash;
-        let net = ChainNetwork::new_custom("asset_mapping_test".parse()?, custom_chain_id, genesis_config)?;
+
+        let net = ChainNetwork::new_custom(
+            "asset_mapping_test".parse()?,
+            custom_chain_id,
+            genesis_config,
+        )?;
+
         let mut block_chain = test_helper::gen_blockchain_with_blocks_for_test(0, &net)?;
 
         let mut proof_encoded_siblings: Vec<u8> = Vec::new();
@@ -214,44 +202,89 @@ fn test_asset_mapping_whole_process() -> Result<()> {
                 .get_sequence_number(genesis_address())?
         };
 
-        let asset_mapping_txn =  Account::new_genesis_account(genesis_address()).create_signed_txn_with_args(
-            asset_mapping_assign_to_account_with_proof(
-                receiver,
-                "0x1::STC::STC".as_bytes().to_vec(),
-                proof_path_hash.to_vec(),
-                proof_value_hash.to_vec(),
-                proof_encoded_siblings,
-                initial_balance as u64,
+        // Transfer STC from association account to receiver account
+        let peer_to_peer_txn =
+            { local_build_peer_to_peer_from_association(&block_chain, receiver, 1, &net)? };
+        local_block_chain_excecute_txn(&mut block_chain, peer_to_peer_txn)?;
+
+        // Verify proof and assign asset mapping to receiver account
+        local_block_chain_excecute_txn(
+            &mut block_chain,
+            Account::new_genesis_account(genesis_address()).create_signed_txn_with_args(
+                asset_mapping_assign_to_account_with_proof(
+                    receiver,
+                    "0x1::STC::STC".as_bytes().to_vec(),
+                    proof_path_hash.to_vec(),
+                    proof_value_hash.to_vec(),
+                    proof_encoded_siblings,
+                    initial_balance as u64,
+                ),
+                genesis_sequence_number,
+                DEFAULT_MAX_GAS_AMOUNT,
+                block_gas_limit,
+                DEFAULT_EXPIRATION_TIME,
+                net.chain_id(),
             ),
-            genesis_sequence_number,
-            DEFAULT_MAX_GAS_AMOUNT,
-            block_gas_limit,
-            DEFAULT_EXPIRATION_TIME,
-            net.chain_id(),
-        );
-
-        let (block_template, _excluded) = block_chain
-            .create_block_template(
-                account_config::association_address(),
-                None,
-                vec![asset_mapping_txn],
-                vec![],
-                Some(block_gas_limit),
-                None,
-            )
-            .unwrap();
-
-        block_chain.apply(block_chain
-            .consensus()
-            .create_block(block_template, block_chain.time_service().as_ref())?)?;
+        )?;
 
         {
             let balance = block_chain.chain_state_reader().get_balance(receiver)?;
-            assert_eq!(balance, initial_balance);
+            println!("The verify blockchain receiver balance is: {:?}", balance);
+            assert_eq!(balance, initial_balance + 1);
         }
     }
 
     Ok(())
 }
 
-fn execute_block_with_txn() {}
+fn local_build_peer_to_peer_from_association(
+    chain: &BlockChain,
+    receiver: AccountAddress,
+    amount: u128,
+    net: &ChainNetwork,
+) -> Result<SignedUserTransaction> {
+    let association_sequence_num = {
+        chain
+            .chain_state_reader()
+            .get_sequence_number(account_config::association_address())?
+    };
+
+    Ok(
+        starcoin_transaction_builder::build_transfer_from_association(
+            receiver,
+            association_sequence_num,
+            amount,
+            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+            net,
+        )
+        .try_into()?,
+    )
+}
+
+fn local_block_chain_excecute_txn(
+    chain: &mut BlockChain,
+    txn: SignedUserTransaction,
+) -> Result<()> {
+    let block_gas_limit: u64 = 10000000;
+    let (block_template, excluded) = chain
+        .create_block_template(
+            account_config::association_address(),
+            None,
+            vec![txn],
+            vec![],
+            Some(block_gas_limit),
+            None,
+        )
+        .unwrap();
+
+    assert!(excluded.discarded_txns.is_empty(), "Execute txn failed!");
+    assert!(excluded.untouched_txns.is_empty(), "Execute txn failed!");
+
+    let block = chain
+        .consensus()
+        .create_block(block_template, chain.time_service().as_ref())?;
+
+    chain.apply(block)?;
+
+    Ok(())
+}
