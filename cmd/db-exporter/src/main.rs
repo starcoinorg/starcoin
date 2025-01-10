@@ -2612,12 +2612,11 @@ fn tokens_info(
     let global_states = state_tree.dump()?;
 
     // STC
-    /*
-    let str = "0x1::Account::Balance<0x1::STC::STC>";
-    let token_info = "0x1::Token::TokenInfo<0x1::STC::STC>";
-    let resource_struct_tag = parse_struct_tag(str)?; */
-    let token_address = AccountAddress::from_hex_literal("0x8c109349c6bd91411d6bc962e080c4a3")?;
-    let token = "0x8c109349c6bd91411d6bc962e080c4a3::STAR::STAR";
+    let token_address = AccountAddress::from_hex_literal("0x1")?;
+    let token = "0x::STC::STC";
+    // STAR
+    // let token_address = AccountAddress::from_hex_literal("0x8c109349c6bd91411d6bc962e080c4a3")?;
+    // let token = "0x8c109349c6bd91411d6bc962e080c4a3::STAR::STAR";
     let token_balance = format!("0x1::Account::Balance<{}>", token);
     let token_info = format!("0x1::Token::TokenInfo<{}>", token);
     let token_mint_capability = format!("0x1::Token::MintCapability<{}>", token);

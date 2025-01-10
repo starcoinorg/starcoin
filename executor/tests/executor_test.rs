@@ -1091,7 +1091,6 @@ fn test_chunk_block_transactions() -> Result<()> {
     Ok(())
 }
 
-
 #[test]
 fn get_vm_version_verify() -> Result<()> {
     let (chain_state, _net) = prepare_genesis();
@@ -1104,6 +1103,8 @@ fn get_vm_version_verify() -> Result<()> {
     let mut state_proof = chain_state.get_with_proof(&version_path)?;
     state_proof.verify(chain_state.state_root(), version_path.clone())?;
     state_proof.state.as_mut().unwrap()[0] = 12;
-    assert!(state_proof.verify(chain_state.state_root(), version_path).is_err());
+    assert!(state_proof
+        .verify(chain_state.state_root(), version_path)
+        .is_err());
     Ok(())
 }
