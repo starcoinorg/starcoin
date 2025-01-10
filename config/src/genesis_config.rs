@@ -1173,7 +1173,7 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         transaction_timeout: ONE_DAY,
         dag_effective_height: u64::MAX,
-        // TODO(BobOng): to confirm the asset mapping proof root hash
+        // TODO(BobOng): [asset-mapping] To confirm the asset mapping proof root hash
         asset_mapping_root_hash: HashValue::zero(),
     }
 });

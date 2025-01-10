@@ -246,7 +246,12 @@ module starcoin_framework::starcoin_account {
         if (fungible_asset::store_exists(store_addr)) {
             store_addr
         } else {
-            object::object_address(&primary_fungible_store::create_primary_store(owner, object::address_to_object<Metadata>(@starcoin_fungible_asset)))
+            object::object_address(
+                &primary_fungible_store::create_primary_store(
+                    owner,
+                    object::address_to_object<Metadata>(@starcoin_fungible_asset)
+                )
+            )
         }
     }
 

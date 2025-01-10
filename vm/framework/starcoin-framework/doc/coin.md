@@ -1450,12 +1450,25 @@ Create STC pairing by passing <code>StarcoinCoin</code>.
     <b>let</b> map = <b>borrow_global_mut</b>&lt;<a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a>&gt;(@starcoin_framework);
     <b>let</b> type = <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;CoinType&gt;();
     <b>if</b> (!<a href="../../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(&map.coin_to_fungible_asset_map, type)) {
+        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(
+            &std::string::utf8(b"<a href="coin.md#0x1_coin_create_and_return_paired_metadata_if_not_exist">coin::create_and_return_paired_metadata_if_not_exist</a> | map not contain type")
+        );
         <b>let</b> is_stc = <a href="coin.md#0x1_coin_is_stc">is_stc</a>&lt;CoinType&gt;();
         <b>assert</b>!(!is_stc || allow_stc_creation, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="coin.md#0x1_coin_EAPT_PAIRING_IS_NOT_ENABLED">EAPT_PAIRING_IS_NOT_ENABLED</a>));
         <b>let</b> metadata_object_cref =
             <b>if</b> (is_stc) {
+                <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(
+                    &std::string::utf8(
+                        b"<a href="coin.md#0x1_coin_create_and_return_paired_metadata_if_not_exist">coin::create_and_return_paired_metadata_if_not_exist</a> | type is stc, create sticky <a href="object.md#0x1_object">object</a> at 0x1"
+                    )
+                );
                 <a href="object.md#0x1_object_create_sticky_object_at_address">object::create_sticky_object_at_address</a>(@starcoin_framework, @starcoin_fungible_asset)
             } <b>else</b> {
+                <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(
+                    &std::string::utf8(
+                        b"<a href="coin.md#0x1_coin_create_and_return_paired_metadata_if_not_exist">coin::create_and_return_paired_metadata_if_not_exist</a> | type is not stc, create new asset sub <a href="object.md#0x1_object">object</a>"
+                    )
+                );
                 <a href="object.md#0x1_object_create_named_object">object::create_named_object</a>(
                     &<a href="create_signer.md#0x1_create_signer_create_signer">create_signer::create_signer</a>(@starcoin_fungible_asset),
                     *<a href="../../move-stdlib/doc/string.md#0x1_string_bytes">string::bytes</a>(&<a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_name">type_info::type_name</a>&lt;CoinType&gt;())

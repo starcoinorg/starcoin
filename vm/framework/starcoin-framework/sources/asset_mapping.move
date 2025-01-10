@@ -7,7 +7,6 @@ module starcoin_framework::asset_mapping {
     use std::error;
     use std::signer;
     use std::string;
-    use std::vector;
 
     use starcoin_framework::coin;
     use starcoin_framework::fungible_asset::{Self, FungibleStore, Metadata};
@@ -19,6 +18,8 @@ module starcoin_framework::asset_mapping {
     use starcoin_std::debug;
     use starcoin_std::smart_table;
 
+    #[test_only]
+    use std::vector;
     #[test_only]
     use starcoin_framework::account;
     #[test_only]
@@ -32,18 +33,11 @@ module starcoin_framework::asset_mapping {
     /// Contains:
     /// - extend_ref: Reference for extending object capabilities
     /// - fungible_store: The actual store holding fungible assets
+    /// - fungible_metadata: The type of fungible assets
     struct AssetMappingStore has key, store {
         extend_ref: ExtendRef,
         fungible_store: Object<FungibleStore>,
-    }
-
-    /// AssetMappingPool manages a collection of asset mapping stores
-    /// Contains:
-    /// - proof_root: Root hash for proof verification
-    /// - anchor_height: Block height anchor for the mapping
-    /// - token_stores: Smart table mapping metadata to stores
-    struct AssetMappingPool has key, store {
-        token_stores: smart_table::SmartTable<Object<Metadata>, AssetMappingStore>,
+        fungible_metadata: Object<Metadata>,
     }
 
     struct AssetMappingProof has key, store {
@@ -53,14 +47,15 @@ module starcoin_framework::asset_mapping {
     /// AssetMappingCoinType represents a mapping that from old version token types to now version asset stores
     /// eg. 0x1::STC::STC -> 0x1::starcoin_coin::STC
     ///
-    struct AssetMappingCoinType has key, store {
-        token_mapping: smart_table::SmartTable<std::string::String, Object<Metadata>>,
+    struct AssetMappingPool has key, store {
+        token_mapping: smart_table::SmartTable<std::string::String, AssetMappingStore>,
     }
 
     /// Error code for invalid signer
     const EINVALID_SIGNER: u64 = 101;
-    const EINVALID_NOT_PROOF: u64 = 102;
     const EINVALID_PROOF_ROOT: u64 = 102;
+    const EINVALID_NOT_PROOF: u64 = 103;
+    const EINVALID_ASSET_MAPPING_POOL: u64 = 104;
 
     /// Initializes the asset mapping pool
     /// @param framework - The framework signer
@@ -71,14 +66,11 @@ module starcoin_framework::asset_mapping {
             signer::address_of(framework) == system_addresses::get_starcoin_framework(),
             error::unauthenticated(EINVALID_SIGNER)
         );
-        move_to(framework, AssetMappingPool {
-            token_stores: smart_table::new<Object<Metadata>, AssetMappingStore>(),
-        });
         move_to(framework, AssetMappingProof {
             proof_root,
         });
-        move_to(framework, AssetMappingCoinType {
-            token_mapping: smart_table::new<string::String, Object<Metadata>>(),
+        move_to(framework, AssetMappingPool {
+            token_mapping: smart_table::new<string::String, AssetMappingStore>(),
         })
     }
 
@@ -90,9 +82,11 @@ module starcoin_framework::asset_mapping {
     /// - Converts coin to fungible asset and stores it
     public fun create_store_from_coin<T: key>(
         token_issuer: &signer,
-        old_token_str: string::String,
+        old_token_str: vector<u8>,
         coin: coin::Coin<T>
-    ) acquires AssetMappingPool, AssetMappingCoinType {
+    ) acquires AssetMappingPool {
+        debug::print(&string::utf8(b"asset_mapping::create_store_from_coin | entered"));
+
         let token_issuer_addr = signer::address_of(token_issuer);
         assert!(
             token_issuer_addr == stc_util::token_issuer<T>(),
@@ -100,20 +94,31 @@ module starcoin_framework::asset_mapping {
         );
 
         let fungible_asset = coin::coin_to_fungible_asset(coin);
-        let token_stores =
-            &mut borrow_global_mut<AssetMappingPool>(system_addresses::get_starcoin_framework()).token_stores;
 
-        let (metadata, fungible_store, extend_ref) = create_store_for_type<T>(token_issuer);
-        fungible_asset::deposit(fungible_store, fungible_asset);
-        smart_table::add(token_stores, metadata, AssetMappingStore {
-            extend_ref,
+        let (
+            fungible_metadata,
             fungible_store,
-        });
+            extend_ref
+        ) = create_store_for_coin_type<T>(token_issuer);
+
+        debug::print(&string::utf8(b"asset_mapping::create_store_from_coin | created token store"));
+        debug::print(&fungible_store);
+
+        fungible_asset::deposit(fungible_store, fungible_asset);
 
         // Add token mapping coin type
         let asset_coin_type =
-            borrow_global_mut<AssetMappingCoinType>(system_addresses::get_starcoin_framework());
-        smart_table::add(&mut asset_coin_type.token_mapping, old_token_str, metadata);
+            borrow_global_mut<AssetMappingPool>(system_addresses::get_starcoin_framework());
+        smart_table::add(
+            &mut asset_coin_type.token_mapping,
+            string::utf8(old_token_str),
+            AssetMappingStore {
+                fungible_store,
+                fungible_metadata,
+                extend_ref,
+            }
+        );
+        debug::print(&string::utf8(b"asset_mapping::create_store_from_coin | exited"));
     }
 
     /// Creates a store for a specific token type
@@ -122,7 +127,7 @@ module starcoin_framework::asset_mapping {
     /// - metadata: Token metadata object
     /// - store: Created fungible store
     /// - extend_ref: Extension reference for the store
-    fun create_store_for_type<T>(framework: &signer): (Object<Metadata>, Object<FungibleStore>, ExtendRef) {
+    fun create_store_for_coin_type<T>(framework: &signer): (Object<Metadata>, Object<FungibleStore>, ExtendRef) {
         debug::print(&std::string::utf8(b"asset_mapping::create_store_for_type | entered"));
 
         let metadata = coin::ensure_paired_metadata<T>();
@@ -139,10 +144,12 @@ module starcoin_framework::asset_mapping {
 
     /// Retrieves the balance for a specific token type
     /// @returns Current balance of the token in the mapping pool
-    fun balance<T>(): u64 acquires AssetMappingPool {
-        let metadata = coin::ensure_paired_metadata<T>();
+    fun fungible_store_balance(old_asset_str: vector<u8>): u64 acquires AssetMappingPool {
+        // let metadata = coin::ensure_paired_metadata<T>();
         let pool = borrow_global<AssetMappingPool>(system_addresses::get_starcoin_framework());
-        fungible_asset::balance(smart_table::borrow(&pool.token_stores, metadata).fungible_store)
+        let fungible_asset_store =
+            smart_table::borrow(&pool.token_mapping, string::utf8(old_asset_str)).fungible_store;
+        fungible_asset::balance(fungible_asset_store)
     }
 
     public entry fun assign_to_account_with_proof(
@@ -153,7 +160,7 @@ module starcoin_framework::asset_mapping {
         proof_value_hash: vector<u8>,
         proof_siblings: vector<u8>,
         amount: u64
-    ) acquires AssetMappingPool, AssetMappingCoinType, AssetMappingProof {
+    ) acquires AssetMappingPool, AssetMappingProof {
         assert!(
             exists<AssetMappingProof>(system_addresses::get_starcoin_framework()),
             error::invalid_state(EINVALID_PROOF_ROOT)
@@ -161,7 +168,7 @@ module starcoin_framework::asset_mapping {
 
         // Verify that the token type of the request mapping is the passed-in verification type
         assert!(
-            calculation_proof(proof_path_hash, proof_value_hash, split_proof_siblings_from_vec(proof_siblings)),
+            calculation_proof(proof_path_hash, proof_value_hash, starcoin_proof_verifier::split(proof_siblings)),
             error::unauthenticated(EINVALID_NOT_PROOF)
         );
 
@@ -176,30 +183,43 @@ module starcoin_framework::asset_mapping {
     /// Requirements:
     /// - Valid proof must be provided
     /// - Sufficient balance must exist
-    fun assign_to_account(
+    public fun assign_to_account(
         token_issuer: &signer,
-        receiper: address,
+        receiver: address,
         old_token_str: vector<u8>,
         amount: u64
-    ) acquires AssetMappingPool, AssetMappingCoinType {
-        let coin_type_mapping = borrow_global<AssetMappingCoinType>(system_addresses::get_starcoin_framework());
-        let metadata = smart_table::borrow(&coin_type_mapping.token_mapping, string::utf8(old_token_str));
-        let mapping_pool = borrow_global_mut<AssetMappingPool>(signer::address_of(token_issuer));
-        let mapping_store = smart_table::borrow_mut(
-            &mut mapping_pool.token_stores,
-            *metadata
+    ) acquires AssetMappingPool {
+        debug::print(&string::utf8(b"asset_mapping::assign_to_account | entered"));
+
+        assert!(
+            exists<AssetMappingPool>(signer::address_of(token_issuer)),
+            error::invalid_state(EINVALID_ASSET_MAPPING_POOL)
         );
 
-        let store_signer = object::generate_signer_for_extending(&mapping_store.extend_ref);
-        fungible_asset::deposit(
-            primary_fungible_store::ensure_primary_store_exists(receiper, *metadata),
-            fungible_asset::withdraw(&store_signer, mapping_store.fungible_store, amount)
-        )
-    }
+        let coin_type_mapping =
+            borrow_global<AssetMappingPool>(system_addresses::get_starcoin_framework());
+        debug::print(&string::utf8(b"asset_mapping::assign_to_account | coin_type_mapping"));
 
-    fun split_proof_siblings_from_vec(_siblings: vector<u8>): vector<vector<u8>> {
-        // TODO(BobOng): implement this function
-        vector::empty()
+        let mapping_store = smart_table::borrow(
+            &coin_type_mapping.token_mapping,
+            string::utf8(old_token_str)
+        );
+        debug::print(&string::utf8(b"asset_mapping::assign_to_account | metadata"));
+        debug::print(&fungible_asset::is_frozen(mapping_store.fungible_store));
+
+        debug::print(&string::utf8(b"asset_mapping::assign_to_account | fungible_asset::withdraw:"));
+        let mapping_fa = fungible_asset::withdraw(
+            &object::generate_signer_for_extending(&mapping_store.extend_ref),
+            mapping_store.fungible_store,
+            amount
+        );
+        debug::print(&string::utf8(b"asset_mapping::assign_to_account | Getting receiver fungible store: "));
+
+        let target_store =
+            primary_fungible_store::ensure_primary_store_exists(receiver, mapping_store.fungible_metadata);
+
+        fungible_asset::deposit(target_store, mapping_fa);
+        debug::print(&string::utf8(b"asset_mapping::assign_to_account | exited"));
     }
 
     /// Computes and verifies the provided proof
@@ -228,40 +248,47 @@ module starcoin_framework::asset_mapping {
     fun test_asset_mapping_create_store_from_coin(
         framework: &signer,
         alice: &signer
-    ) acquires AssetMappingPool, AssetMappingCoinType {
+    ) acquires AssetMappingPool {
         debug::print(&std::string::utf8(b"asset_mapping::test_asset_mapping_create_store_from_coin | entered"));
 
         let amount = 10000000000;
         Self::initialize(framework, vector::empty<u8>());
 
+        debug::print(&std::string::utf8(b"asset_mapping::test_asset_mapping_create_store_from_coin | before create_account_for_test"));
         // create genesis account
         account::create_account_for_test(signer::address_of(framework));
 
+        debug::print(&std::string::utf8(b"asset_mapping::test_asset_mapping_create_store_from_coin | starcoin_coin::initialize_for_test"));
+
         let (burn_cap, mint_cap) = starcoin_coin::initialize_for_test(framework);
+
+        debug::print(&std::string::utf8(b"asset_mapping::test_asset_mapping_create_store_from_coin | coin::register<STC>(framework)"));
         coin::register<STC>(framework);
+
+        debug::print(&std::string::utf8(b"asset_mapping::test_asset_mapping_create_store_from_coin | starcoin_coin::mint"));
         starcoin_coin::mint(framework, signer::address_of(framework), amount);
 
+        debug::print(&std::string::utf8(b"asset_mapping::test_asset_mapping_create_store_from_coin | after coin::register<STC>(framework) and mint"));
 
         // Construct Old token string
-        let old_token_str = string::utf8(b"0x00000000000000000000000000000001::starcoin_coin::STC");
-
+        let old_token_str = b"0x00000000000000000000000000000001::starcoin_coin::STC";
         let coin = coin::withdraw<STC>(framework, amount);
-        create_store_from_coin<STC>(
+        Self::create_store_from_coin<STC>(
             framework,
             old_token_str,
             coin
         );
-        assert!(Self::balance<STC>() == amount, 10001);
+        assert!(Self::fungible_store_balance(old_token_str) == amount, 10001);
 
         // Assign to alice
         let alice_addr = signer::address_of(alice);
-        assign_to_account(
+        Self::assign_to_account(
             framework,
             alice_addr,
-            *string::bytes(&old_token_str),
+            old_token_str,
             amount
         );
-        assert!(Self::balance<STC>() == 0, 10002);
+        assert!(Self::fungible_store_balance(old_token_str) == 0, 10002);
 
         let stc_metadata = coin::ensure_paired_metadata<STC>();
         assert!(primary_fungible_store::balance(alice_addr, stc_metadata) == amount, 10003);

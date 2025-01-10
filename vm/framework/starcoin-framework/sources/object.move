@@ -19,6 +19,7 @@ module starcoin_framework::object {
     use std::error;
     use std::hash;
     use std::signer;
+    use std::string;
     use std::vector;
 
     use starcoin_framework::account;
@@ -27,10 +28,9 @@ module starcoin_framework::object {
     use starcoin_framework::event;
     use starcoin_framework::guid;
     use starcoin_framework::transaction_context;
+    use starcoin_std::debug;
     use starcoin_std::from_bcs;
 
-    #[test_only]
-    use std::debug;
     #[test_only]
     use std::option::{Self, Option};
 
@@ -332,7 +332,9 @@ module starcoin_framework::object {
         object: address,
         can_delete: bool,
     ): ConstructorRef {
-        // debug::print(&string::utf8(b"object::create_object_internal | entered"));
+        debug::print(&string::utf8(b"object::create_object_internal | entered"));
+        debug::print(&creator_address);
+        debug::print(&object);
 
         assert!(!exists<ObjectCore>(object), error::already_exists(EOBJECT_EXISTS));
 
@@ -350,7 +352,7 @@ module starcoin_framework::object {
             },
         );
 
-        // debug::print(&string::utf8(b"object::create_object_internal | exited"));
+        debug::print(&string::utf8(b"object::create_object_internal | exited"));
         ConstructorRef { self: object, can_delete }
     }
 

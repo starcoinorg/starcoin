@@ -321,12 +321,25 @@ module starcoin_framework::coin {
         let map = borrow_global_mut<CoinConversionMap>(@starcoin_framework);
         let type = type_info::type_of<CoinType>();
         if (!table::contains(&map.coin_to_fungible_asset_map, type)) {
+            debug::print(
+                &std::string::utf8(b"coin::create_and_return_paired_metadata_if_not_exist | map not contain type")
+            );
             let is_stc = is_stc<CoinType>();
             assert!(!is_stc || allow_stc_creation, error::invalid_state(EAPT_PAIRING_IS_NOT_ENABLED));
             let metadata_object_cref =
                 if (is_stc) {
+                    debug::print(
+                        &std::string::utf8(
+                            b"coin::create_and_return_paired_metadata_if_not_exist | type is stc, create sticky object at 0x1"
+                        )
+                    );
                     object::create_sticky_object_at_address(@starcoin_framework, @starcoin_fungible_asset)
                 } else {
+                    debug::print(
+                        &std::string::utf8(
+                            b"coin::create_and_return_paired_metadata_if_not_exist | type is not stc, create new asset sub object"
+                        )
+                    );
                     object::create_named_object(
                         &create_signer::create_signer(@starcoin_fungible_asset),
                         *string::bytes(&type_info::type_name<CoinType>())

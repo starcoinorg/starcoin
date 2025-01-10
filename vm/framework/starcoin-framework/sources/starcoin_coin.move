@@ -156,6 +156,8 @@ module starcoin_framework::starcoin_coin {
     use starcoin_framework::aggregator_factory;
     #[test_only]
     use starcoin_framework::fungible_asset::FungibleAsset;
+    #[test_only]
+    use starcoin_std::debug;
 
     #[test_only]
     public fun mint_stc_fa_for_test(amount: u64): FungibleAsset acquires MintCapStore {
@@ -185,10 +187,13 @@ module starcoin_framework::starcoin_coin {
 
     #[test_only]
     public fun initialize_for_test(starcoin_framework: &signer): (BurnCapability<STC>, MintCapability<STC>) {
+        debug::print(&string::utf8(b"starcoin_coin::initialize_for_test | entered"));
         aggregator_factory::initialize_aggregator_factory_for_test(starcoin_framework);
         let (burn_cap, mint_cap) = initialize(starcoin_framework);
         coin::create_coin_conversion_map(starcoin_framework);
         coin::create_pairing<STC>(starcoin_framework);
+
+        debug::print(&string::utf8(b"starcoin_coin::initialize_for_test | exited"));
         (burn_cap, mint_cap)
     }
 

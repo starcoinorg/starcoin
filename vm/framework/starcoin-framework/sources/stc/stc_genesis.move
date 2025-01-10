@@ -303,11 +303,11 @@ module starcoin_framework::stc_genesis {
         time_mint_stc_amount: u128,
         time_mint_stc_period: u64,
     ) {
-        // TODO(BobOng): To confirm how many STC put into asset mapping pool
-        let asset_mapping_coin = coin::extract<STC>(&mut total_supply_stc, 1000000000);
+        // TODO(BobOng): [asset-mapping] To confirm how many STC put into asset mapping pool, now is 10,000,000,000 STC
+        let asset_mapping_coin = coin::extract<STC>(&mut total_supply_stc, 100000000000000000);
         asset_mapping::create_store_from_coin<STC>(
             starcoin_framework,
-            std::string::utf8(b"0x1::STC::STC"),
+            b"0x1::STC::STC",
             asset_mapping_coin
         );
 

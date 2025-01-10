@@ -126,8 +126,10 @@ fn test_asset_mapping_for_specified_coin_type() -> Result<()> {
 
 #[test]
 fn test_asset_mapping_whole_process() -> Result<()> {
+    starcoin_logger::init_for_test();
+
     let block_gas_limit: u64 = 10000000;
-    let initial_balance: u128 = 1000000000000;
+    let initial_balance: u128 = 100000000000; // 1000 STC
     let receiver = AccountAddress::from_str("0xd0c5a06ae6100ce115cad1600fe59e96").unwrap();
 
     // Create a source BlockChain
@@ -202,10 +204,19 @@ fn test_asset_mapping_whole_process() -> Result<()> {
                 .get_sequence_number(genesis_address())?
         };
 
-        // Transfer STC from association account to receiver account
-        let peer_to_peer_txn =
-            { local_build_peer_to_peer_from_association(&block_chain, receiver, 1, &net)? };
-        local_block_chain_excecute_txn(&mut block_chain, peer_to_peer_txn)?;
+        {
+            // Transfer STC from association account to receiver account
+            let peer_to_peer_txn =
+                { local_build_peer_to_peer_from_association(&block_chain, receiver, 1, &net)? };
+            local_block_chain_excecute_txn(&mut block_chain, peer_to_peer_txn)?;
+        }
+
+        {
+            // Transfer STC from association account to framework account for gas fee
+            let peer_to_peer_txn =
+                { local_build_peer_to_peer_from_association(&block_chain, AccountAddress::from_hex_literal("0x1").unwrap(), 1000000000, &net)? };
+            local_block_chain_excecute_txn(&mut block_chain, peer_to_peer_txn)?;
+        }
 
         // Verify proof and assign asset mapping to receiver account
         local_block_chain_excecute_txn(
@@ -221,7 +232,7 @@ fn test_asset_mapping_whole_process() -> Result<()> {
                 ),
                 genesis_sequence_number,
                 DEFAULT_MAX_GAS_AMOUNT,
-                block_gas_limit,
+                1,
                 DEFAULT_EXPIRATION_TIME,
                 net.chain_id(),
             ),
@@ -265,14 +276,13 @@ fn local_block_chain_excecute_txn(
     chain: &mut BlockChain,
     txn: SignedUserTransaction,
 ) -> Result<()> {
-    let block_gas_limit: u64 = 10000000;
     let (block_template, excluded) = chain
         .create_block_template(
             account_config::association_address(),
             None,
             vec![txn],
             vec![],
-            Some(block_gas_limit),
+            Some(DEFAULT_MAX_GAS_AMOUNT),
             None,
         )
         .unwrap();
