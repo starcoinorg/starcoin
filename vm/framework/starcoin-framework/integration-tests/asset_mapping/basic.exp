@@ -1,13 +1,18 @@
-processed 7 tasks
+processed 6 tasks
 
-task 5 'run'. lines 57-67:
+task 5 'run'. lines 108-120:
 {
-  "gas_used": 5320541,
-  "status": "Executed"
-}
-
-task 6 'run'. lines 69-93:
-{
-  "gas_used": 4349075,
-  "status": "Executed"
+  "gas_used": 936902,
+  "status": {
+    "ExecutionFailure": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "asset_mapping"
+        }
+      },
+      "function": 0,
+      "code_offset": 54
+    }
+  }
 }

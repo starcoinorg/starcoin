@@ -402,9 +402,15 @@ module starcoin_framework::coin {
     public fun coin_to_fungible_asset<CoinType>(
         coin: Coin<CoinType>
     ): FungibleAsset acquires CoinConversionMap, CoinInfo {
+        debug::print(&string::utf8(b"coin::coin_to_fungible_asset | entered"));
+
         let metadata = ensure_paired_metadata<CoinType>();
         let amount = burn_internal(coin);
-        fungible_asset::mint_internal(metadata, amount)
+
+        let ret = fungible_asset::mint_internal(metadata, amount);
+
+        debug::print(&string::utf8(b"coin::coin_to_fungible_asset | exited"));
+        ret
     }
 
     /// Conversion from fungible asset to coin. Not public to push the migration to FA.

@@ -1149,11 +1149,11 @@ module starcoin_framework::fungible_asset {
     }
 
     inline fun borrow_store_resource<T: key>(store: &Object<T>): &FungibleStore acquires FungibleStore {
-        debug::print(&string::utf8(b"fungible_asset::borrow_store_resource | entered"));
+        // debug::print(&string::utf8(b"fungible_asset::borrow_store_resource | entered"));
         let store_addr = object::object_address(store);
         debug::print(&store_addr);
         assert!(exists<FungibleStore>(store_addr), error::not_found(EFUNGIBLE_STORE_EXISTENCE));
-        debug::print(&string::utf8(b"fungible_asset::borrow_store_resource | exited"));
+        // debug::print(&string::utf8(b"fungible_asset::borrow_store_resource | exited"));
         borrow_global<FungibleStore>(store_addr)
     }
 
@@ -1207,6 +1207,7 @@ module starcoin_framework::fungible_asset {
         let object_signer = create_signer::create_signer(fungible_store_address);
         move_to(&object_signer, ConcurrentFungibleBalance { balance });
     }
+
 
     #[test_only]
     #[resource_group_member(group = starcoin_framework::object::ObjectGroup)]

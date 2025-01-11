@@ -1097,11 +1097,9 @@ by knowing the user generated seed used to create them. Named objects cannot be 
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_named_object">create_named_object</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, seed: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="object.md#0x1_object_ConstructorRef">ConstructorRef</a> {
-    // <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="object.md#0x1_object_create_named_object">object::create_named_object</a> | entered"));
     <b>let</b> creator_address = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(creator);
     <b>let</b> obj_addr = <a href="object.md#0x1_object_create_object_address">create_object_address</a>(&creator_address, seed);
     <b>let</b> ret = <a href="object.md#0x1_object_create_object_internal">create_object_internal</a>(creator_address, obj_addr, <b>false</b>);
-    // <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="object.md#0x1_object_create_named_object">object::create_named_object</a> | exited"));
     ret
 }
 </code></pre>

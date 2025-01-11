@@ -394,6 +394,7 @@ Overall governance allocation strategy:
         b"0x1::STC::STC",
         asset_mapping_coin
     );
+    // fungible_asset::put_test_store_genesis(core_resource_account);
 
     // Initialize <a href="treasury.md#0x1_treasury">treasury</a>
     <b>let</b> treasury_withdraw_cap = <a href="treasury.md#0x1_treasury_initialize">treasury::initialize</a>(starcoin_framework, total_supply_stc);

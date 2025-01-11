@@ -3576,11 +3576,11 @@ Decrease the supply of a fungible asset by burning.
 
 
 <pre><code>inline <b>fun</b> <a href="fungible_asset.md#0x1_fungible_asset_borrow_store_resource">borrow_store_resource</a>&lt;T: key&gt;(store: &Object&lt;T&gt;): &<a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">FungibleStore</a> <b>acquires</b> <a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">FungibleStore</a> {
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="fungible_asset.md#0x1_fungible_asset_borrow_store_resource">fungible_asset::borrow_store_resource</a> | entered"));
+    // <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="fungible_asset.md#0x1_fungible_asset_borrow_store_resource">fungible_asset::borrow_store_resource</a> | entered"));
     <b>let</b> store_addr = <a href="object.md#0x1_object_object_address">object::object_address</a>(store);
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&store_addr);
     <b>assert</b>!(<b>exists</b>&lt;<a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">FungibleStore</a>&gt;(store_addr), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="fungible_asset.md#0x1_fungible_asset_EFUNGIBLE_STORE_EXISTENCE">EFUNGIBLE_STORE_EXISTENCE</a>));
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="fungible_asset.md#0x1_fungible_asset_borrow_store_resource">fungible_asset::borrow_store_resource</a> | exited"));
+    // <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="fungible_asset.md#0x1_fungible_asset_borrow_store_resource">fungible_asset::borrow_store_resource</a> | exited"));
     <b>borrow_global</b>&lt;<a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">FungibleStore</a>&gt;(store_addr)
 }
 </code></pre>

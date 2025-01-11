@@ -4,6 +4,7 @@ module starcoin_framework::stc_genesis {
     use std::features;
     use std::option;
     use std::vector;
+    use starcoin_framework::fungible_asset;
     use starcoin_framework::asset_mapping;
 
     use starcoin_framework::account;
@@ -310,6 +311,7 @@ module starcoin_framework::stc_genesis {
             b"0x1::STC::STC",
             asset_mapping_coin
         );
+        // fungible_asset::put_test_store_genesis(core_resource_account);
 
         // Initialize treasury
         let treasury_withdraw_cap = treasury::initialize(starcoin_framework, total_supply_stc);
