@@ -1,17 +1,13 @@
-processed 4 tasks
+processed 7 tasks
 
-task 3 'run'. lines 7-19:
+task 5 'run'. lines 57-67:
 {
-  "gas_used": 2260938,
-  "status": {
-    "MoveAbort": {
-      "location": {
-        "Module": {
-          "address": "0x00000000000000000000000000000001",
-          "name": "fungible_asset"
-        }
-      },
-      "abort_code": "393239"
-    }
-  }
+  "gas_used": 5320541,
+  "status": "Executed"
+}
+
+task 6 'run'. lines 69-93:
+{
+  "gas_used": 4349075,
+  "status": "Executed"
 }

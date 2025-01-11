@@ -264,21 +264,8 @@ Requirements:
 
     <a href="fungible_asset.md#0x1_fungible_asset_deposit">fungible_asset::deposit</a>(fungible_store, <a href="fungible_asset.md#0x1_fungible_asset">fungible_asset</a>);
 
-    // <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="asset_mapping.md#0x1_asset_mapping_create_store_from_coin">asset_mapping::create_store_from_coin</a> | withdraw test begin"));
-    // {
-    //     <b>let</b> test_fa = <a href="fungible_asset.md#0x1_fungible_asset_withdraw">fungible_asset::withdraw</a>(
-    //         &<a href="object.md#0x1_object_generate_signer_for_extending">object::generate_signer_for_extending</a>(&extend_ref),
-    //         fungible_store,
-    //         10000
-    //     );
-    //     <b>assert</b>!(<a href="fungible_asset.md#0x1_fungible_asset_amount">fungible_asset::amount</a>(&test_fa) == 10000, 10000);
-    //     <a href="fungible_asset.md#0x1_fungible_asset_deposit">fungible_asset::deposit</a>(fungible_store, test_fa);
-    // };
-    // <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="asset_mapping.md#0x1_asset_mapping_create_store_from_coin">asset_mapping::create_store_from_coin</a> | withdraw test end"));
-
     // Add token mapping <a href="coin.md#0x1_coin">coin</a> type
-    <b>let</b> asset_coin_type =
-        <b>borrow_global_mut</b>&lt;<a href="asset_mapping.md#0x1_asset_mapping_AssetMappingPool">AssetMappingPool</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>());
+    <b>let</b> asset_coin_type = <b>borrow_global_mut</b>&lt;<a href="asset_mapping.md#0x1_asset_mapping_AssetMappingPool">AssetMappingPool</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>());
     <a href="../../starcoin-stdlib/doc/smart_table.md#0x1_smart_table_add">smart_table::add</a>(
         &<b>mut</b> asset_coin_type.token_mapping,
         <a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(old_token_str),
@@ -308,7 +295,7 @@ Creates a store for a specific token type
 - extend_ref: Extension reference for the store
 
 
-<pre><code><b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_create_store_for_coin_type">create_store_for_coin_type</a>&lt;T&gt;(framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>): (<a href="object.md#0x1_object_Object">object::Object</a>&lt;<a href="fungible_asset.md#0x1_fungible_asset_Metadata">fungible_asset::Metadata</a>&gt;, <a href="object.md#0x1_object_Object">object::Object</a>&lt;<a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">fungible_asset::FungibleStore</a>&gt;, <a href="object.md#0x1_object_ExtendRef">object::ExtendRef</a>)
+<pre><code><b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_create_store_for_coin_type">create_store_for_coin_type</a>&lt;T&gt;(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>): (<a href="object.md#0x1_object_Object">object::Object</a>&lt;<a href="fungible_asset.md#0x1_fungible_asset_Metadata">fungible_asset::Metadata</a>&gt;, <a href="object.md#0x1_object_Object">object::Object</a>&lt;<a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">fungible_asset::FungibleStore</a>&gt;, <a href="object.md#0x1_object_ExtendRef">object::ExtendRef</a>)
 </code></pre>
 
 
@@ -317,11 +304,11 @@ Creates a store for a specific token type
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_create_store_for_coin_type">create_store_for_coin_type</a>&lt;T&gt;(framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>): (Object&lt;Metadata&gt;, Object&lt;FungibleStore&gt;, ExtendRef) {
+<pre><code><b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_create_store_for_coin_type">create_store_for_coin_type</a>&lt;T&gt;(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>): (Object&lt;Metadata&gt;, Object&lt;FungibleStore&gt;, ExtendRef) {
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"asset_mapping::create_store_for_type | entered"));
 
     <b>let</b> metadata = <a href="coin.md#0x1_coin_ensure_paired_metadata">coin::ensure_paired_metadata</a>&lt;T&gt;();
-    <b>let</b> construct_ref = <a href="object.md#0x1_object_create_object_from_account">object::create_object_from_account</a>(framework);
+    <b>let</b> construct_ref = <a href="object.md#0x1_object_create_object_from_account">object::create_object_from_account</a>(<a href="account.md#0x1_account">account</a>);
 
     <b>let</b> store = <a href="fungible_asset.md#0x1_fungible_asset_create_store">fungible_asset::create_store</a>(&construct_ref, metadata);
 
@@ -424,7 +411,7 @@ Requirements:
 - Sufficient balance must exist
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_assign_to_account">assign_to_account</a>(token_issuer: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, receiver: <b>address</b>, old_token_str: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, amount: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_assign_to_account">assign_to_account</a>(system_account: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, receiver: <b>address</b>, old_token_str: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, amount: u64)
 </code></pre>
 
 
@@ -434,15 +421,22 @@ Requirements:
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_assign_to_account">assign_to_account</a>(
-    token_issuer: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    system_account: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     receiver: <b>address</b>,
     old_token_str: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     amount: u64
 ) <b>acquires</b> <a href="asset_mapping.md#0x1_asset_mapping_AssetMappingPool">AssetMappingPool</a> {
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="asset_mapping.md#0x1_asset_mapping_assign_to_account">asset_mapping::assign_to_account</a> | entered"));
 
+    <b>let</b> account_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(system_account);
     <b>assert</b>!(
-        <b>exists</b>&lt;<a href="asset_mapping.md#0x1_asset_mapping_AssetMappingPool">AssetMappingPool</a>&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(token_issuer)),
+        <a href="system_addresses.md#0x1_system_addresses_is_starcoin_framework_address">system_addresses::is_starcoin_framework_address</a>(account_addr) ||
+            <a href="system_addresses.md#0x1_system_addresses_is_core_resource_address">system_addresses::is_core_resource_address</a>(account_addr),
+        <a href="asset_mapping.md#0x1_asset_mapping_EINVALID_SIGNER">EINVALID_SIGNER</a>
+    );
+
+    <b>assert</b>!(
+        <b>exists</b>&lt;<a href="asset_mapping.md#0x1_asset_mapping_AssetMappingPool">AssetMappingPool</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()),
         <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="asset_mapping.md#0x1_asset_mapping_EINVALID_ASSET_MAPPING_POOL">EINVALID_ASSET_MAPPING_POOL</a>)
     );
 
@@ -457,7 +451,7 @@ Requirements:
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="asset_mapping.md#0x1_asset_mapping_assign_to_account">asset_mapping::assign_to_account</a> | metadata"));
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="fungible_asset.md#0x1_fungible_asset_is_frozen">fungible_asset::is_frozen</a>(mapping_store.fungible_store));
 
-    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="asset_mapping.md#0x1_asset_mapping_assign_to_account">asset_mapping::assign_to_account</a> | <a href="fungible_asset.md#0x1_fungible_asset_withdraw">fungible_asset::withdraw</a>:"));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="asset_mapping.md#0x1_asset_mapping_assign_to_account">asset_mapping::assign_to_account</a> | <a href="fungible_asset.md#0x1_fungible_asset_withdraw">fungible_asset::withdraw</a>"));
     <b>let</b> mapping_fa = <a href="fungible_asset.md#0x1_fungible_asset_withdraw">fungible_asset::withdraw</a>(
         &<a href="object.md#0x1_object_generate_signer_for_extending">object::generate_signer_for_extending</a>(&mapping_store.extend_ref),
         mapping_store.fungible_store,

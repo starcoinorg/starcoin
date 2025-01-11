@@ -107,8 +107,7 @@ module starcoin_framework::asset_mapping {
         fungible_asset::deposit(fungible_store, fungible_asset);
 
         // Add token mapping coin type
-        let asset_coin_type =
-            borrow_global_mut<AssetMappingPool>(system_addresses::get_starcoin_framework());
+        let asset_coin_type = borrow_global_mut<AssetMappingPool>(system_addresses::get_starcoin_framework());
         smart_table::add(
             &mut asset_coin_type.token_mapping,
             string::utf8(old_token_str),
@@ -127,11 +126,11 @@ module starcoin_framework::asset_mapping {
     /// - metadata: Token metadata object
     /// - store: Created fungible store
     /// - extend_ref: Extension reference for the store
-    fun create_store_for_coin_type<T>(framework: &signer): (Object<Metadata>, Object<FungibleStore>, ExtendRef) {
+    fun create_store_for_coin_type<T>(account: &signer): (Object<Metadata>, Object<FungibleStore>, ExtendRef) {
         debug::print(&std::string::utf8(b"asset_mapping::create_store_for_type | entered"));
 
         let metadata = coin::ensure_paired_metadata<T>();
-        let construct_ref = object::create_object_from_account(framework);
+        let construct_ref = object::create_object_from_account(account);
 
         let store = fungible_asset::create_store(&construct_ref, metadata);
 
@@ -184,15 +183,22 @@ module starcoin_framework::asset_mapping {
     /// - Valid proof must be provided
     /// - Sufficient balance must exist
     public fun assign_to_account(
-        token_issuer: &signer,
+        system_account: &signer,
         receiver: address,
         old_token_str: vector<u8>,
         amount: u64
     ) acquires AssetMappingPool {
         debug::print(&string::utf8(b"asset_mapping::assign_to_account | entered"));
 
+        let account_addr = signer::address_of(system_account);
         assert!(
-            exists<AssetMappingPool>(signer::address_of(token_issuer)),
+            system_addresses::is_starcoin_framework_address(account_addr) ||
+                system_addresses::is_core_resource_address(account_addr),
+            EINVALID_SIGNER
+        );
+
+        assert!(
+            exists<AssetMappingPool>(system_addresses::get_starcoin_framework()),
             error::invalid_state(EINVALID_ASSET_MAPPING_POOL)
         );
 
@@ -207,7 +213,7 @@ module starcoin_framework::asset_mapping {
         debug::print(&string::utf8(b"asset_mapping::assign_to_account | metadata"));
         debug::print(&fungible_asset::is_frozen(mapping_store.fungible_store));
 
-        debug::print(&string::utf8(b"asset_mapping::assign_to_account | fungible_asset::withdraw:"));
+        debug::print(&string::utf8(b"asset_mapping::assign_to_account | fungible_asset::withdraw"));
         let mapping_fa = fungible_asset::withdraw(
             &object::generate_signer_for_extending(&mapping_store.extend_ref),
             mapping_store.fungible_store,
