@@ -2627,35 +2627,35 @@ fn tokens_info(
     let burn_struct_tag = parse_struct_tag(token_burn_capability.as_str())?;
     let info_value = statedb.get_state_value(&StateKey::AccessPath(
         AccessPath::resource_access_path(token_address, info_struct_tag.clone()),
-    ))?;
+    ));
     let mint_value = statedb.get_state_value(&StateKey::AccessPath(
         AccessPath::resource_access_path(token_address, mint_struct_tag.clone()),
-    ))?;
+    ));
     let burn_value = statedb.get_state_value(&StateKey::AccessPath(
         AccessPath::resource_access_path(token_address, burn_struct_tag.clone()),
-    ))?;
+    ));
     let decoded_info: Option<DecodedMoveValue> = match info_value {
-        Some(v) => {
+        Ok(Some(v)) => {
             let annotated_struct = value_annotator.view_struct(info_struct_tag, v.as_slice())?;
             Some(annotated_struct.into())
         }
-        None => None,
+        _ => None,
     };
     let decoded_mint: Option<DecodedMoveValue> = match mint_value {
-        Some(v) => {
+        Ok(Some(v)) => {
             let annotated_struct =
                 value_annotator.view_struct(mint_struct_tag.clone(), v.as_slice())?;
             Some(annotated_struct.into())
         }
-        None => None,
+        _ => None,
     };
     let decoded_burn: Option<DecodedMoveValue> = match burn_value {
-        Some(v) => {
+        Ok(Some(v)) => {
             let annotated_struct =
                 value_annotator.view_struct(burn_struct_tag.clone(), v.as_slice())?;
             Some(annotated_struct.into())
         }
-        None => None,
+        _ => None,
     };
 
     let resource_struct_tag = parse_struct_tag(token_balance.as_str())?;
