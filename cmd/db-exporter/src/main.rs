@@ -2740,8 +2740,12 @@ fn tokens_info(
     for (account, state, blob, account_proof, account_state_proof) in state_proof_list {
         writeln!(
             file,
-            "{} {:?} {:?} {:?} {:?}",
-            account, state, blob, account_proof, account_state_proof
+            "{} {} {} {} {}",
+            account,
+            hex::encode(state),
+            hex::encode(blob),
+            hex::encode(account_proof),
+            hex::encode(account_state_proof)
         )?;
     }
     file.flush()?;
