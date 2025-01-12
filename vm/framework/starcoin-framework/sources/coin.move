@@ -13,7 +13,7 @@ module starcoin_framework::coin {
     use starcoin_framework::event::{Self, EventHandle};
     use starcoin_framework::fungible_asset::{Self, BurnRef, FungibleAsset, Metadata, MintRef, TransferRef};
     use starcoin_framework::guid;
-    use starcoin_framework::object::{Self, Object, object_address};
+    use starcoin_framework::object::{Self, Object, object_address, is_object};
     use starcoin_framework::optional_aggregator::{Self, OptionalAggregator};
     use starcoin_framework::primary_fungible_store;
     use starcoin_framework::system_addresses;
@@ -108,6 +108,9 @@ module starcoin_framework::coin {
 
     /// The coin decimal too long
     const ECOIN_COIN_DECIMAL_TOO_LARGE: u64 = 29;
+
+    // The metadata create failed
+    const EMETA_DATA_NOT_FOUND: u64 = 30;
 
     //
     // Constants
@@ -345,6 +348,12 @@ module starcoin_framework::coin {
                         *string::bytes(&type_info::type_name<CoinType>())
                     )
                 };
+
+            debug::print(&metadata_object_cref);
+            assert!(
+                object::is_object(object::address_from_constructor_ref(&metadata_object_cref)),
+                error::invalid_state(EMETA_DATA_NOT_FOUND)
+            );
 
             primary_fungible_store::create_primary_store_enabled_fungible_asset(
                 &metadata_object_cref,

@@ -10,6 +10,7 @@ with proof verification.
 
 
 -  [Resource `AssetMappingStore`](#0x1_asset_mapping_AssetMappingStore)
+-  [Resource `AssetMappingStoreT`](#0x1_asset_mapping_AssetMappingStoreT)
 -  [Resource `AssetMappingPool`](#0x1_asset_mapping_AssetMappingPool)
 -  [Constants](#@Constants_0)
 -  [Function `initialize`](#0x1_asset_mapping_initialize)
@@ -73,6 +74,39 @@ Contains:
 </dd>
 <dt>
 <code>metadata: <a href="object.md#0x1_object_Object">object::Object</a>&lt;<a href="fungible_asset.md#0x1_fungible_asset_Metadata">fungible_asset::Metadata</a>&gt;</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
+<a id="0x1_asset_mapping_AssetMappingStoreT"></a>
+
+## Resource `AssetMappingStoreT`
+
+
+
+<pre><code><b>struct</b> <a href="asset_mapping.md#0x1_asset_mapping_AssetMappingStoreT">AssetMappingStoreT</a>&lt;T&gt; <b>has</b> key
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code><a href="coin.md#0x1_coin">coin</a>: <a href="coin.md#0x1_coin_Coin">coin::Coin</a>&lt;T&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>old_path_str: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
 
