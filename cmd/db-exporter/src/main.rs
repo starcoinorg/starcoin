@@ -2613,7 +2613,7 @@ fn tokens_info(
 
     // STC
     let token_address = AccountAddress::from_hex_literal("0x1")?;
-    let token = "0x::STC::STC";
+    let token = "0x1::STC::STC";
     // STAR
     // let token_address = AccountAddress::from_hex_literal("0x8c109349c6bd91411d6bc962e080c4a3")?;
     // let token = "0x8c109349c6bd91411d6bc962e080c4a3::STAR::STAR";
