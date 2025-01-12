@@ -104,7 +104,7 @@ impl FlexiDagStorage {
     }
 
     pub fn write_batch(&self, batch: WriteBatch) -> Result<(), StoreError> {
-        self.db.raw_write_batch_sync(batch).map_err(|e| {
+        self.db.raw_write_batch(batch).map_err(|e| {
             StoreError::DBIoError(format!(
                 "failed to write in batch for dag data, error: {:?}",
                 e.to_string()
