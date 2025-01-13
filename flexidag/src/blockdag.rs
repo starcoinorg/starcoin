@@ -396,7 +396,11 @@ impl BlockDAG {
             .collect::<Vec<_>>()
             .into_iter();
 
-        info!("start to commit via batch3, header id: {:?}, count of mergeset: {:?}, ", header.id(), merge_set.len());
+        info!(
+            "start to commit via batch3, header id: {:?}, count of mergeset: {:?}, ",
+            header.id(),
+            merge_set.len()
+        );
 
         match inquirer::add_block(
             &mut stage,
