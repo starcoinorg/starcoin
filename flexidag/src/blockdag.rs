@@ -105,8 +105,10 @@ impl BlockDAG {
     pub fn has_block_connected(&self, block_header: &BlockHeader) -> anyhow::Result<bool> {
         match self.storage.ghost_dag_store.has(block_header.id()) {
             std::result::Result::Ok(true) => (),
-            std::result::Result::Ok(false) => {
-                warn!("failed to get ghostdata by hash, the block should be re-executed",);
+            std::result::Result::Ok(false) =>{
+                warn!(
+                    "failed to get ghostdata by hash, the block should be re-executed",
+                );
                 return anyhow::Result::Ok(false);
             }
             Err(e) => {
@@ -121,8 +123,10 @@ impl BlockDAG {
         match self.storage.header_store.has(block_header.id()) {
             std::result::Result::Ok(true) => (),
             std::result::Result::Ok(false) => {
-                warn!("failed to get header by hash, the block should be re-executed",);
-                return anyhow::Result::Ok(false);
+                warn!(
+                    "failed to get header by hash, the block should be re-executed",
+                );
+                return anyhow::Result::Ok(false)
             }
             Err(e) => {
                 warn!(
@@ -317,40 +321,41 @@ impl BlockDAG {
             }
         };
 
-        if header.pruning_point() == HashValue::zero() {
+        // if header.pruning_point() == HashValue::zero() {
+        //     info!(
+        //         "try to hint virtual selected parent, root index: {:?}",
+        //         self.storage.reachability_store.read().get_reindex_root()
+        //     );
+        //     let _ = inquirer::hint_virtual_selected_parent(
+        //         self.storage.reachability_store.write().deref_mut(),
+        //         header.parent_hash(),
+        //     );
+        //     info!(
+        //         "after hint virtual selected parent, root index: {:?}",
+        //         self.storage.reachability_store.read().get_reindex_root()
+        //     );
+        // } else if self.storage.reachability_store.read().get_reindex_root()?
+        //     != header.pruning_point()
+        //     && self
+        //         .storage
+        //         .reachability_store
+        //         .read()
+        //         .has(header.pruning_point())?
+        // {
             info!(
                 "try to hint virtual selected parent, root index: {:?}",
                 self.storage.reachability_store.read().get_reindex_root()
             );
-            let _ = inquirer::hint_virtual_selected_parent(
-                self.storage.reachability_store.write().deref_mut(),
-                header.parent_hash(),
-            );
-            info!(
-                "after hint virtual selected parent, root index: {:?}",
-                self.storage.reachability_store.read().get_reindex_root()
-            );
-        } else if self.storage.reachability_store.read().get_reindex_root()?
-            != header.pruning_point()
-            && self
-                .storage
-                .reachability_store
-                .read()
-                .has(header.pruning_point())?
-        {
-            info!(
-                "try to hint virtual selected parent, root index: {:?}",
-                self.storage.reachability_store.read().get_reindex_root()
-            );
-            inquirer::hint_virtual_selected_parent(
+            let hint_result = inquirer::hint_virtual_selected_parent(
                 self.storage.reachability_store.write().deref_mut(),
                 header.pruning_point(),
-            )?;
-            info!(
-                "after hint virtual selected parent, root index: {:?}",
-                self.storage.reachability_store.read().get_reindex_root()
             );
-        }
+            info!(
+                "after hint virtual selected parent, root index: {:?}, hint result: {:?}",
+                self.storage.reachability_store.read().get_reindex_root(),
+                hint_result
+            );
+        // }
 
         // Create a DB batch writer
         let mut batch = WriteBatch::default();
@@ -392,11 +397,7 @@ impl BlockDAG {
             .collect::<Vec<_>>()
             .into_iter();
 
-        info!(
-            "start to commit via batch3, header id: {:?}, count of mergeset: {:?}, ",
-            header.id(),
-            merge_set.len()
-        );
+        info!("start to commit via batch3, header id: {:?}, count of mergeset: {:?}, ", header.id(), merge_set.len());
 
         match inquirer::add_block(
             &mut stage,
@@ -497,19 +498,18 @@ impl BlockDAG {
         //         .read()
         //         .has(header.pruning_point())?
         // {
-        info!(
-            "try to hint virtual selected parent, root index: {:?}",
-            self.storage.reachability_store.read().get_reindex_root()
-        );
-        let hint_result = inquirer::hint_virtual_selected_parent(
-            self.storage.reachability_store.write().deref_mut(),
-            header.parent_hash(),
-        );
-        info!(
-            "after hint virtual selected parent, root index: {:?}, hint result: {:?}",
-            self.storage.reachability_store.read().get_reindex_root(),
-            hint_result
-        );
+            info!(
+                "try to hint virtual selected parent, root index: {:?}",
+                self.storage.reachability_store.read().get_reindex_root()
+            );
+            let hint_result = inquirer::hint_virtual_selected_parent(
+                self.storage.reachability_store.write().deref_mut(),
+                header.parent_hash(),
+            );
+            info!(
+                "after hint virtual selected parent, root index: {:?}, hint result: {:?}",
+                self.storage.reachability_store.read().get_reindex_root(), hint_result
+            );
         // }
 
         info!("start to commit via batch, header id: {:?}", header.id());
