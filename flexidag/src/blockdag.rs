@@ -396,8 +396,6 @@ impl BlockDAG {
             self.storage.reachability_store.upgradable_read(),
         );
 
-        info!("start to commit via batch1, header id: {:?}", header.id());
-
         // Store ghostdata
         process_key_already_error(self.storage.ghost_dag_store.insert_batch(
             &mut batch,
@@ -405,8 +403,6 @@ impl BlockDAG {
             ghostdata.clone(),
         ))
         .expect("failed to ghostdata in batch");
-
-        info!("start to commit via batch2, header id: {:?}", header.id());
 
         // Update reachability store
         debug!(
@@ -420,12 +416,6 @@ impl BlockDAG {
             .filter(|hash| self.storage.reachability_store.read().has(*hash).unwrap())
             .collect::<Vec<_>>()
             .into_iter();
-
-        info!(
-            "start to commit via batch3, header id: {:?}, count of mergeset: {:?}, ",
-            header.id(),
-            merge_set.len()
-        );
 
         match inquirer::add_block(
             &mut stage,
@@ -448,16 +438,12 @@ impl BlockDAG {
             },
         }
 
-        info!("start to commit via batch4, header id: {:?}", header.id());
-
         process_key_already_error(self.storage.relations_store.write().insert_batch(
             &mut batch,
             header.id(),
             BlockHashes::new(parents),
         ))
         .expect("failed to insert relations in batch");
-
-        info!("start to commit via batch5, header id: {:?}", header.id());
 
         // Store header store
         process_key_already_error(self.storage.header_store.insert(
@@ -467,8 +453,6 @@ impl BlockDAG {
         ))
         .expect("failed to insert header in batch");
 
-        info!("start to commit via batch6, header id: {:?}", header.id());
-
         // the read lock will be updated to the write lock
         // and then write the batch
         // and then release the lock
@@ -476,14 +460,10 @@ impl BlockDAG {
             .commit(&mut batch)
             .expect("failed to write the stage reachability in batch");
 
-        info!("start to commit via batch7, header id: {:?}", header.id());
-
         // write the data just one time
         self.storage
             .write_batch(batch)
             .expect("failed to write dag data in batch");
-
-        info!("start to commit via batch8, header id: {:?}", header.id());
 
         drop(lock_guard);
         info!("finish writing the batch, head id: {:?}", header.id());
