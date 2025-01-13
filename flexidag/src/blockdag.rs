@@ -317,41 +317,41 @@ impl BlockDAG {
             }
         };
 
-        // if header.pruning_point() == HashValue::zero() {
-        //     info!(
-        //         "try to hint virtual selected parent, root index: {:?}",
-        //         self.storage.reachability_store.read().get_reindex_root()
-        //     );
-        //     let _ = inquirer::hint_virtual_selected_parent(
-        //         self.storage.reachability_store.write().deref_mut(),
-        //         header.parent_hash(),
-        //     );
-        //     info!(
-        //         "after hint virtual selected parent, root index: {:?}",
-        //         self.storage.reachability_store.read().get_reindex_root()
-        //     );
-        // } else if self.storage.reachability_store.read().get_reindex_root()?
-        //     != header.pruning_point()
-        //     && self
-        //         .storage
-        //         .reachability_store
-        //         .read()
-        //         .has(header.pruning_point())?
-        // {
-        info!(
-            "try to hint virtual selected parent, root index: {:?}",
-            self.storage.reachability_store.read().get_reindex_root()
-        );
-        let hint_result = inquirer::hint_virtual_selected_parent(
-            self.storage.reachability_store.write().deref_mut(),
-            header.pruning_point(),
-        );
-        info!(
-            "after hint virtual selected parent, root index: {:?}, hint result: {:?}",
-            self.storage.reachability_store.read().get_reindex_root(),
-            hint_result
-        );
-        // }
+        if header.pruning_point() == HashValue::zero() {
+            info!(
+                "try to hint virtual selected parent, root index: {:?}",
+                self.storage.reachability_store.read().get_reindex_root()
+            );
+            let _ = inquirer::hint_virtual_selected_parent(
+                self.storage.reachability_store.write().deref_mut(),
+                header.parent_hash(),
+            );
+            info!(
+                "after hint virtual selected parent, root index: {:?}",
+                self.storage.reachability_store.read().get_reindex_root()
+            );
+        } else if self.storage.reachability_store.read().get_reindex_root()?
+            != header.pruning_point()
+            && self
+                .storage
+                .reachability_store
+                .read()
+                .has(header.pruning_point())?
+        {
+            info!(
+                "try to hint virtual selected parent, root index: {:?}",
+                self.storage.reachability_store.read().get_reindex_root()
+            );
+            let hint_result = inquirer::hint_virtual_selected_parent(
+                self.storage.reachability_store.write().deref_mut(),
+                header.pruning_point(),
+            );
+            info!(
+                "after hint virtual selected parent, root index: {:?}, hint result: {:?}",
+                self.storage.reachability_store.read().get_reindex_root(),
+                hint_result
+            );
+        }
 
         // Create a DB batch writer
         let mut batch = WriteBatch::default();
@@ -490,28 +490,28 @@ impl BlockDAG {
             Some(ghostdata) => ghostdata,
         };
 
-        // if self.storage.reachability_store.read().get_reindex_root()? != header.pruning_point()
-        //     && header.pruning_point() != HashValue::zero()
-        //     && self
-        //         .storage
-        //         .reachability_store
-        //         .read()
-        //         .has(header.pruning_point())?
-        // {
-        info!(
-            "try to hint virtual selected parent, root index: {:?}",
-            self.storage.reachability_store.read().get_reindex_root()
-        );
-        let hint_result = inquirer::hint_virtual_selected_parent(
-            self.storage.reachability_store.write().deref_mut(),
-            header.parent_hash(),
-        );
-        info!(
-            "after hint virtual selected parent, root index: {:?}, hint result: {:?}",
-            self.storage.reachability_store.read().get_reindex_root(),
-            hint_result
-        );
-        // }
+        if self.storage.reachability_store.read().get_reindex_root()? != header.pruning_point()
+            && header.pruning_point() != HashValue::zero()
+            && self
+                .storage
+                .reachability_store
+                .read()
+                .has(header.pruning_point())?
+        {
+            info!(
+                "try to hint virtual selected parent, root index: {:?}",
+                self.storage.reachability_store.read().get_reindex_root()
+            );
+            let hint_result = inquirer::hint_virtual_selected_parent(
+                self.storage.reachability_store.write().deref_mut(),
+                header.parent_hash(),
+            );
+            info!(
+                "after hint virtual selected parent, root index: {:?}, hint result: {:?}",
+                self.storage.reachability_store.read().get_reindex_root(),
+                hint_result
+            );
+        }
 
         info!("start to commit via batch, header id: {:?}", header.id());
 
@@ -802,12 +802,19 @@ impl BlockDAG {
     ) -> Result<bool, anyhow::Error> {
         if let Some(pruning_point) = latest_pruning_point {
             if pruning_point == HashValue::zero() {
+                info!("pruning point is zero");
                 Ok(true)
             } else if header.pruning_point() == pruning_point {
+                info!(
+                    "pruning point is the same as the latest pruning point, pruning point: {:?}",
+                    pruning_point
+                );
                 Ok(false)
             } else if self.check_ancestor_of(header.pruning_point(), pruning_point)? {
+                info!("pruning point is the ancestor of the latest pruning point, pruning point: {:?}, latest pruning point: {:?}", header.pruning_point(), pruning_point);
                 Ok(true)
             } else {
+                info!("pruning point is not the ancestor of the latest pruning point, pruning point: {:?}, latest pruning point: {:?}", header.pruning_point(), pruning_point);
                 Ok(false)
             }
         } else {
