@@ -105,10 +105,8 @@ impl BlockDAG {
     pub fn has_block_connected(&self, block_header: &BlockHeader) -> anyhow::Result<bool> {
         match self.storage.ghost_dag_store.has(block_header.id()) {
             std::result::Result::Ok(true) => (),
-            std::result::Result::Ok(false) =>{
-                warn!(
-                    "failed to get ghostdata by hash, the block should be re-executed",
-                );
+            std::result::Result::Ok(false) => {
+                warn!("failed to get ghostdata by hash, the block should be re-executed",);
                 return anyhow::Result::Ok(false);
             }
             Err(e) => {
@@ -123,10 +121,8 @@ impl BlockDAG {
         match self.storage.header_store.has(block_header.id()) {
             std::result::Result::Ok(true) => (),
             std::result::Result::Ok(false) => {
-                warn!(
-                    "failed to get header by hash, the block should be re-executed",
-                );
-                return anyhow::Result::Ok(false)
+                warn!("failed to get header by hash, the block should be re-executed",);
+                return anyhow::Result::Ok(false);
             }
             Err(e) => {
                 warn!(
@@ -425,7 +421,11 @@ impl BlockDAG {
             .collect::<Vec<_>>()
             .into_iter();
 
-        info!("start to commit via batch3, header id: {:?}, count of mergeset: {:?}, ", header.id(), merge_set.len());
+        info!(
+            "start to commit via batch3, header id: {:?}, count of mergeset: {:?}, ",
+            header.id(),
+            merge_set.len()
+        );
 
         match inquirer::add_block(
             &mut stage,
