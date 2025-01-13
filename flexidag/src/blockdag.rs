@@ -105,10 +105,8 @@ impl BlockDAG {
     pub fn has_block_connected(&self, block_header: &BlockHeader) -> anyhow::Result<bool> {
         match self.storage.ghost_dag_store.has(block_header.id()) {
             std::result::Result::Ok(true) => (),
-            std::result::Result::Ok(false) =>{
-                warn!(
-                    "failed to get ghostdata by hash, the block should be re-executed",
-                );
+            std::result::Result::Ok(false) => {
+                warn!("failed to get ghostdata by hash, the block should be re-executed",);
                 return anyhow::Result::Ok(false);
             }
             Err(e) => {
@@ -123,10 +121,8 @@ impl BlockDAG {
         match self.storage.header_store.has(block_header.id()) {
             std::result::Result::Ok(true) => (),
             std::result::Result::Ok(false) => {
-                warn!(
-                    "failed to get header by hash, the block should be re-executed",
-                );
-                return anyhow::Result::Ok(false)
+                warn!("failed to get header by hash, the block should be re-executed",);
+                return anyhow::Result::Ok(false);
             }
             Err(e) => {
                 warn!(
@@ -342,19 +338,19 @@ impl BlockDAG {
         //         .read()
         //         .has(header.pruning_point())?
         // {
-            info!(
-                "try to hint virtual selected parent, root index: {:?}",
-                self.storage.reachability_store.read().get_reindex_root()
-            );
-            let hint_result = inquirer::hint_virtual_selected_parent(
-                self.storage.reachability_store.write().deref_mut(),
-                header.pruning_point(),
-            );
-            info!(
-                "after hint virtual selected parent, root index: {:?}, hint result: {:?}",
-                self.storage.reachability_store.read().get_reindex_root(),
-                hint_result
-            );
+        info!(
+            "try to hint virtual selected parent, root index: {:?}",
+            self.storage.reachability_store.read().get_reindex_root()
+        );
+        let hint_result = inquirer::hint_virtual_selected_parent(
+            self.storage.reachability_store.write().deref_mut(),
+            header.pruning_point(),
+        );
+        info!(
+            "after hint virtual selected parent, root index: {:?}, hint result: {:?}",
+            self.storage.reachability_store.read().get_reindex_root(),
+            hint_result
+        );
         // }
 
         // Create a DB batch writer
@@ -397,7 +393,11 @@ impl BlockDAG {
             .collect::<Vec<_>>()
             .into_iter();
 
-        info!("start to commit via batch3, header id: {:?}, count of mergeset: {:?}, ", header.id(), merge_set.len());
+        info!(
+            "start to commit via batch3, header id: {:?}, count of mergeset: {:?}, ",
+            header.id(),
+            merge_set.len()
+        );
 
         match inquirer::add_block(
             &mut stage,
@@ -498,18 +498,19 @@ impl BlockDAG {
         //         .read()
         //         .has(header.pruning_point())?
         // {
-            info!(
-                "try to hint virtual selected parent, root index: {:?}",
-                self.storage.reachability_store.read().get_reindex_root()
-            );
-            let hint_result = inquirer::hint_virtual_selected_parent(
-                self.storage.reachability_store.write().deref_mut(),
-                header.parent_hash(),
-            );
-            info!(
-                "after hint virtual selected parent, root index: {:?}, hint result: {:?}",
-                self.storage.reachability_store.read().get_reindex_root(), hint_result
-            );
+        info!(
+            "try to hint virtual selected parent, root index: {:?}",
+            self.storage.reachability_store.read().get_reindex_root()
+        );
+        let hint_result = inquirer::hint_virtual_selected_parent(
+            self.storage.reachability_store.write().deref_mut(),
+            header.parent_hash(),
+        );
+        info!(
+            "after hint virtual selected parent, root index: {:?}, hint result: {:?}",
+            self.storage.reachability_store.read().get_reindex_root(),
+            hint_result
+        );
         // }
 
         info!("start to commit via batch, header id: {:?}", header.id());
@@ -794,18 +795,40 @@ impl BlockDAG {
         self.pruning_point_manager().reachability_service()
     }
 
+    fn check_historical_block(
+        &self,
+        header: &BlockHeader,
+        latest_pruning_point: Option<HashValue>,
+    ) -> Result<bool, anyhow::Error> {
+        if let Some(pruning_point) = latest_pruning_point {
+            if pruning_point == HashValue::zero() {
+                Ok(true)
+            } else if header.pruning_point() == pruning_point {
+                Ok(false)
+            } else if self.check_ancestor_of(header.pruning_point(), pruning_point)? {
+                Ok(true)
+            } else {
+                Ok(false)
+            }
+        } else {
+            Ok(true)
+        }
+    }
+
     pub fn verify_and_ghostdata(
         &self,
         blue_blocks: &[BlockHeader],
         header: &BlockHeader,
+        latest_pruning_point: Option<HashValue>,
     ) -> Result<GhostdagData, anyhow::Error> {
-        if header.pruning_point() != HashValue::zero() {
-            self.ghost_dag_manager().ghostdag(&header.parents())
-        } else {
+        if self.check_historical_block(header, latest_pruning_point)? {
             self.ghost_dag_manager()
                 .verify_and_ghostdata(blue_blocks, header)
+        } else {
+            self.ghost_dag_manager().ghostdag(&header.parents())
         }
     }
+
     pub fn check_upgrade(&self, main: &BlockHeader, genesis_id: HashValue) -> anyhow::Result<()> {
         // set the state with key 0
         if main.version() == 0 || main.version() == 1 {

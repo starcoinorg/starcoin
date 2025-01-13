@@ -1381,7 +1381,20 @@ impl ChainReader for BlockChain {
         uncles: &[BlockHeader],
         header: &BlockHeader,
     ) -> Result<starcoin_dag::types::ghostdata::GhostdagData> {
-        Ok(self.dag().verify_and_ghostdata(uncles, header)?)
+        let latest_pruning_point = {
+            match self.storage.get_startup_info().unwrap_or(None) {
+                Some(startup_info) => self
+                    .storage
+                    .get_block_header_by_hash(startup_info.main)
+                    .unwrap_or(None)
+                    .map(|head_block| head_block.pruning_point()),
+                None => None,
+            }
+        };
+
+        Ok(self
+            .dag()
+            .verify_and_ghostdata(uncles, header, latest_pruning_point)?)
     }
 
     fn is_dag_ancestor_of(&self, ancestor: HashValue, descendant: HashValue) -> Result<bool> {
