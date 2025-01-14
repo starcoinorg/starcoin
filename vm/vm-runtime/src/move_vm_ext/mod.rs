@@ -3,6 +3,19 @@
 
 //! MoveVM and Session wrapped, to make sure Starcoin natives and extensions are always installed and
 //! taken care of after session finish.
+use move_binary_format::errors::{PartialVMError, PartialVMResult};
+use move_core_types::{
+    account_address::AccountAddress, language_storage::StructTag, vm_status::StatusCode,
+};
+
+use starcoin_vm_types::state_store::state_key::StateKey;
+
+pub use crate::move_vm_ext::{
+    resolver::{AsExecutorView, AsResourceGroupView, ResourceGroupResolver, StarcoinMoveResolver},
+    session::{SessionExt, SessionId},
+    vm::MoveVmExt,
+};
+
 mod resolver;
 mod session;
 mod vm;
@@ -10,17 +23,6 @@ mod vm;
 mod warm_vm_cache;
 
 pub(crate) mod write_op_converter;
-
-pub use crate::move_vm_ext::{
-    resolver::{AsExecutorView, StarcoinMoveResolver},
-    session::{SessionExt, SessionId},
-    vm::MoveVmExt,
-};
-use move_binary_format::errors::{PartialVMError, PartialVMResult};
-use move_core_types::{
-    account_address::AccountAddress, language_storage::StructTag, vm_status::StatusCode,
-};
-use starcoin_vm_types::state_store::state_key::StateKey;
 
 pub(crate) fn resource_state_key(
     address: &AccountAddress,

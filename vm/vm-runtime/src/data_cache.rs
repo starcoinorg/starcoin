@@ -2,23 +2,29 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Scratchpad for on chain values during the execution.
 
-use crate::move_vm_ext::AsExecutorView;
+use std::{
+    cell::RefCell,
+    collections::btree_map::BTreeMap,
+    collections::HashSet,
+    ops::{Deref, DerefMut},
+};
+use std::collections::HashMap;
+
 use bytes::Bytes;
-use move_binary_format::deserializer::DeserializerConfig;
 use move_binary_format::CompiledModule;
+use move_binary_format::deserializer::DeserializerConfig;
 use move_bytecode_utils::compiled_module_viewer::CompiledModuleView;
 use move_core_types::metadata::Metadata;
-use move_core_types::resolver::{resource_size, ModuleResolver, ResourceResolver};
+use move_core_types::resolver::{ModuleResolver, resource_size, ResourceResolver};
 use move_core_types::value::MoveTypeLayout;
 use move_table_extension::{TableHandle, TableResolver};
+
 use starcoin_gas_schedule::LATEST_GAS_FEATURE_VERSION;
 use starcoin_logger::prelude::*;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_vm_runtime_types::resolver::ExecutorView;
-use starcoin_vm_runtime_types::resource_group_adapter::ResourceGroupAdapter;
-use starcoin_vm_types::state_store::{
-    errors::StateviewError, state_key::StateKey, state_storage_usage::StateStorageUsage,
-    state_value::StateValue, StateView, TStateView,
+use starcoin_vm_runtime_types::{
+    resolver::{ExecutorView, ResourceGroupSize, ResourceGroupView, TResourceGroupView},
+    resource_group_adapter::ResourceGroupAdapter,
 };
 use starcoin_vm_types::{
     errors::*,
@@ -26,11 +32,15 @@ use starcoin_vm_types::{
     vm_status::StatusCode,
     write_set::{WriteOp, WriteSet},
 };
-use std::{
-    cell::RefCell,
-    collections::btree_map::BTreeMap,
-    collections::HashSet,
-    ops::{Deref, DerefMut},
+use starcoin_vm_types::state_store::{
+    errors::StateviewError, state_key::StateKey, state_storage_usage::StateStorageUsage,
+    state_value::StateValue, StateView, TStateView,
+};
+
+use crate::move_vm_ext::{
+    AsExecutorView,
+    AsResourceGroupView,
+    ResourceGroupResolver,
 };
 
 pub fn get_resource_group_member_from_metadata(
@@ -52,9 +62,9 @@ pub fn get_resource_group_member_from_metadata(
 /// for (non-group) resources and subsequent handling in the StorageAdapter itself.
 pub struct StorageAdapter<'e, E> {
     executor_view: &'e E,
-    _deserializer_config: DeserializerConfig,
-    _resource_group_view: ResourceGroupAdapter<'e>,
-    _accessed_groups: RefCell<HashSet<StateKey>>,
+    deserializer_config: DeserializerConfig,
+    resource_group_view: ResourceGroupAdapter<'e>,
+    accessed_groups: RefCell<HashSet<StateKey>>,
 }
 
 /// A local cache for a given a `StateView`. The cache is private to the Diem layer
@@ -146,6 +156,8 @@ impl<'block, S: StateView> ModuleResolver for StateViewCache<'block, S> {
         StorageAdapter::new(self).get_module(module_id)
     }
 }
+
+
 impl<'block, S: StateView> ResourceResolver for StateViewCache<'block, S> {
     type Error = PartialVMError;
 
@@ -165,14 +177,14 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
     pub fn new(state_store: &'a S) -> Self {
         Self {
             executor_view: state_store,
-            _deserializer_config: DeserializerConfig::new(0, 0),
-            _resource_group_view: ResourceGroupAdapter::new(
+            deserializer_config: DeserializerConfig::new(0, 0),
+            resource_group_view: ResourceGroupAdapter::new(
                 None,
                 state_store,
                 LATEST_GAS_FEATURE_VERSION,
                 false,
             ),
-            _accessed_groups: RefCell::new(HashSet::new()),
+            accessed_groups: RefCell::new(HashSet::new()),
         }
     }
 
@@ -206,6 +218,7 @@ impl<'a, S: StateView> ModuleResolver for StorageAdapter<'a, S> {
         self.get(&key).map(|r| r.map(|v| v.bytes().clone()))
     }
 }
+
 impl<'a, S: StateView> ResourceResolver for StorageAdapter<'a, S> {
     type Error = PartialVMError;
 
@@ -224,6 +237,37 @@ impl<'a, S: StateView> ResourceResolver for StorageAdapter<'a, S> {
         Ok((buf, size))
     }
 }
+
+impl<'e, E: StateView> ResourceGroupResolver for StorageAdapter<'e, E> {
+    fn release_resource_group_cache(
+        &self,
+    ) -> Option<HashMap<StateKey, BTreeMap<StructTag, Bytes>>> {
+        self.resource_group_view.release_group_cache()
+    }
+
+    fn resource_group_size(&self, group_key: &StateKey) -> PartialVMResult<ResourceGroupSize> {
+        self.resource_group_view.resource_group_size(group_key)
+    }
+
+    fn resource_size_in_group(
+        &self,
+        group_key: &StateKey,
+        resource_tag: &StructTag,
+    ) -> PartialVMResult<usize> {
+        self.resource_group_view
+            .resource_size_in_group(group_key, resource_tag)
+    }
+
+    fn resource_exists_in_group(
+        &self,
+        group_key: &StateKey,
+        resource_tag: &StructTag,
+    ) -> PartialVMResult<bool> {
+        self.resource_group_view
+            .resource_exists_in_group(group_key, resource_tag)
+    }
+}
+
 
 impl<'a, S> Deref for StorageAdapter<'a, S> {
     type Target = S;
@@ -249,6 +293,7 @@ impl<'a, S: StateView> TableResolver for StorageAdapter<'a, S> {
             })
     }
 }
+
 impl<'a, S: StateView> CompiledModuleView for StorageAdapter<'a, S> {
     type Item = CompiledModule;
     fn view_compiled_module(&self, id: &ModuleId) -> anyhow::Result<Option<Self::Item>> {
@@ -273,6 +318,13 @@ impl<S: StateView> AsMoveResolver<S> for S {
 impl<'a, S: StateView> AsExecutorView for StorageAdapter<'a, S> {
     fn as_executor_view(&self) -> &dyn ExecutorView {
         self.executor_view
+    }
+}
+
+// Allows to extract the view from `StorageAdapter`.
+impl<'e, S> AsResourceGroupView for StorageAdapter<'e, S> {
+    fn as_resource_group_view(&self) -> &dyn ResourceGroupView {
+        &self.resource_group_view
     }
 }
 
@@ -321,6 +373,25 @@ impl<S: StateView> ResourceResolver for RemoteStorageOwned<S> {
     }
 }
 
+impl<'e, S: ResourceGroupView> ResourceGroupResolver for RemoteStorageOwned<S> {
+    fn release_resource_group_cache(&self) -> Option<HashMap<StateKey, BTreeMap<StructTag, Bytes>>> {
+        self.as_resource_group_view().release_group_cache()
+    }
+
+    fn resource_group_size(&self, group_key: &StateKey) -> PartialVMResult<ResourceGroupSize> {
+        self.as_resource_group_view().resource_group_size(group_key)
+    }
+
+    fn resource_size_in_group(&self, group_key: &StateKey, resource_tag: &StructTag) -> PartialVMResult<usize> {
+        self.as_resource_group_view().resource_size_in_group(group_key, resource_tag)
+    }
+
+    fn resource_exists_in_group(&self, group_key: &StateKey, resource_tag: &StructTag) -> PartialVMResult<bool> {
+        self.as_resource_group_view().resource_exists_in_group(group_key, resource_tag)
+    }
+}
+
+
 impl<S: StateView> TableResolver for RemoteStorageOwned<S> {
     fn resolve_table_entry_bytes_with_layout(
         &self,
@@ -339,6 +410,13 @@ impl<S: StateView> AsExecutorView for RemoteStorageOwned<S> {
     }
 }
 
+impl<S: ResourceGroupView> AsResourceGroupView for RemoteStorageOwned<S> {
+    fn as_resource_group_view(&self) -> &dyn ResourceGroupView {
+        &self.state_view
+    }
+}
+
+
 pub trait IntoMoveResolver<S> {
     fn into_move_resolver(self) -> RemoteStorageOwned<S>;
 }
@@ -349,10 +427,13 @@ impl<S: StateView> IntoMoveResolver<S> for S {
     }
 }
 
+
 #[cfg(test)]
 pub(crate) mod tests {
-    use super::*;
     use starcoin_vm_runtime_types::resource_group_adapter::GroupSizeKind;
+
+    use super::*;
+
     //use starcoin_vm_types::on_chain_config::{Features, OnChainConfig};
 
     // Expose a method to create a storage adapter with a provided group size kind.

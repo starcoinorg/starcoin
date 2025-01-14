@@ -671,6 +671,7 @@ impl ChainStateWriter for ChainStateDB {
     }
 
     fn apply_write_set(&self, write_set: WriteSet) -> Result<()> {
+        info!("ChainStateWriter::apply_write_set | write set: {:?}", write_set);
         let mut lock_table_handle = self.updates_table_handle.write();
         let mut locks = self.updates.write();
         for (state_key, write_op) in write_set {
