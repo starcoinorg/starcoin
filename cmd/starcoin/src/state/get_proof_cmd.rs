@@ -72,7 +72,9 @@ impl CommandAction for GetProofCommand {
             DataPath::Resource(struct_tag) => {
                 StateKey::resource(&access_path.address, &struct_tag)?
             }
-            DataPath::ResourceGroup(_) => Err(anyhow::anyhow!("ResourceGroup is not supported."))?,
+            DataPath::ResourceGroup(struct_tag) => {
+                StateKey::resource_group(&access_path.address, &struct_tag)
+            }
         };
 
         let (proof, result) = if opt.raw {
