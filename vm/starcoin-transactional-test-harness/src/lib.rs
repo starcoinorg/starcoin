@@ -1028,7 +1028,6 @@ impl<'a> StarcoinTestAdapter<'a> {
     }
 }
 
-#[allow(dead_code)]
 fn view_resource_in_move_storage(
     storage: StorageAdapter<ChainStateDB>,
     address: AccountAddress,
@@ -1211,7 +1210,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         named_addr_opt: Option<Identifier>,
         gas_budget: Option<u64>,
         _extra: Self::ExtraPublishArgs,
-    ) -> anyhow::Result<(Option<String>, CompiledModule, Option<Value>)> {
+    ) -> anyhow::Result<(Option<String>, CompiledModule)> {
         let module_id = module.self_id();
         let signer = match named_addr_opt {
             Some(name) => self.compiled_state.resolve_named_address(name.as_str()),
@@ -1233,11 +1232,10 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         let output = self.run_transaction(txn)?;
 
         match output.output.status {
-            TransactionStatusView::Executed => Ok((None, module, None)),
+            TransactionStatusView::Executed => Ok((None, module)),
             _ => Ok((
                 Some(format!("Publish failure: {:?}", output.output.status)),
                 module,
-                Some(serde_json::to_value(&output)?),
             )),
         }
     }
@@ -1250,7 +1248,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         args: Vec<MoveValue>,
         gas_budget: Option<u64>,
         _extra_args: Self::ExtraRunArgs,
-    ) -> anyhow::Result<(Option<String>, Option<Value>)> {
+    ) -> anyhow::Result<Option<String>> {
         assert!(!signers.is_empty());
         if signers.len() != 1 {
             panic!("Expected 1 signer, got {}.", signers.len());
@@ -1316,10 +1314,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             gas_used: output.output.gas_used.0,
             status: output.output.status.clone(),
         };
-        Ok((
-            Some(serde_json::to_string_pretty(&result)?),
-            Some(serde_json::to_value(&output)?),
-        ))
+        Ok(Some(serde_json::to_string_pretty(&result)?))
     }
 
     fn call_function(
@@ -1331,7 +1326,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         args: Vec<MoveValue>,
         gas_budget: Option<u64>,
         _extra_args: Self::ExtraRunArgs,
-    ) -> anyhow::Result<(Option<String>, SerializedReturnValues, Option<Value>)> {
+    ) -> anyhow::Result<(Option<String>, SerializedReturnValues)> {
         {
             assert!(!signers.is_empty());
             if signers.len() != 1 {
@@ -1366,29 +1361,24 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             mutable_reference_outputs: vec![],
             return_values: vec![],
         };
-        Ok((
-            Some(serde_json::to_string_pretty(&result)?),
-            value,
-            Some(serde_json::to_value(&output)?),
-        ))
+        Ok((Some(serde_json::to_string_pretty(&result)?), value))
     }
 
     fn view_data(
         &mut self,
-        _address: AccountAddress,
-        _module: &ModuleId,
-        _resource: &IdentStr,
-        _type_args: Vec<TypeTag>,
-    ) -> anyhow::Result<(String, Value)> {
-        let _s = StorageAdapter::new(&self.context.storage);
-        // view_resource_in_move_storage(&s, address, module, resource, type_args)
-        unimplemented!()
+        address: AccountAddress,
+        module: &ModuleId,
+        resource: &IdentStr,
+        type_args: Vec<TypeTag>,
+    ) -> anyhow::Result<String> {
+        let s = StorageAdapter::new(&self.context.storage);
+        view_resource_in_move_storage(s, address, module, resource, type_args)
     }
 
     fn handle_subcommand(
         &mut self,
         subcommand: TaskInput<Self::Subcommand>,
-    ) -> anyhow::Result<(Option<String>, Option<Value>)> {
+    ) -> anyhow::Result<Option<String>> {
         let (result_str, cmd_var_ctx) = match subcommand.command {
             StarcoinSubcommands::Faucet {
                 address,
@@ -1428,7 +1418,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
                 eprintln!("{}: {}", subcommand.name, cmd_var_ctx);
             }
         }
-        Ok((result_str, cmd_var_ctx))
+        Ok(result_str)
     }
 }
 
