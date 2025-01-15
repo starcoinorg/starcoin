@@ -12,7 +12,7 @@ mod warm_vm_cache;
 pub(crate) mod write_op_converter;
 
 pub use crate::move_vm_ext::{
-    resolver::{AsExecutorView, StarcoinMoveResolver},
+    resolver::{AsExecutorView, ResourceGroupResolver, StarcoinMoveResolver},
     session::{SessionExt, SessionId},
     vm::MoveVmExt,
 };

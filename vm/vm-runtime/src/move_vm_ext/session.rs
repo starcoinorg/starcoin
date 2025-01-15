@@ -118,7 +118,6 @@ impl SessionId {
 #[allow(dead_code)]
 pub struct SessionExt<'r, 'l> {
     inner: Session<'r, 'l>,
-    #[allow(dead_code)]
     resolver: &'r dyn StarcoinMoveResolver,
     features: Arc<Features>,
 }
@@ -275,7 +274,7 @@ impl<'r, 'l> SessionExt<'r, 'l> {
     /// merging them into a single op corresponding to the whole resource group (V0).
     fn split_and_merge_resource_groups(
         runtime: &MoveVM,
-        _resolver: &dyn StarcoinMoveResolver,
+        resolver: &dyn StarcoinMoveResolver,
         change_set: ChangeSet,
     ) -> PartialVMResult<(ChangeSet, ResourceGroupChangeSet)> {
         // The use of this implies that we could theoretically call unwrap with no consequences,
@@ -286,16 +285,16 @@ impl<'r, 'l> SessionExt<'r, 'l> {
         };
         let mut change_set_filtered = ChangeSet::new();
 
-        //let mut maybe_resource_group_cache = resolver.release_resource_group_cache().map(|v| {
-        //    v.into_iter()
-        //        .map(|(k, v)| (k, v.into_iter().collect::<BTreeMap<_, _>>()))
-        //        .collect::<BTreeMap<_, _>>()
-        //});
-        //let mut resource_group_change_set = if maybe_resource_group_cache.is_some() {
-        //    ResourceGroupChangeSet::V0(BTreeMap::new())
-        //} else {
-        //    ResourceGroupChangeSet::V1(BTreeMap::new())
-        //};
+        let mut maybe_resource_group_cache = resolver.release_resource_group_cache().map(|v| {
+            v.into_iter()
+                .map(|(k, v)| (k, v.into_iter().collect::<BTreeMap<_, _>>()))
+                .collect::<BTreeMap<_, _>>()
+        });
+        let mut resource_group_change_set = if maybe_resource_group_cache.is_some() {
+            ResourceGroupChangeSet::V0(BTreeMap::new())
+        } else {
+            ResourceGroupChangeSet::V1(BTreeMap::new())
+        };
         for (addr, account_changeset) in change_set.into_inner() {
             let mut resource_groups: BTreeMap<
                 StructTag,
@@ -331,57 +330,54 @@ impl<'r, 'l> SessionExt<'r, 'l> {
                 )
                 .map_err(|_| common_error())?;
 
-            //for (resource_group_tag, resources) in resource_groups {
-            //    let state_key = StateKey::resource_group(&addr, &resource_group_tag);
-            //    match &mut resource_group_change_set {
-            //        ResourceGroupChangeSet::V0(v0_changes) => {
-            //            let source_data = maybe_resource_group_cache
-            //                .as_mut()
-            //                .expect("V0 cache must be set")
-            //                .remove(&state_key)
-            //                .unwrap_or_default();
-            //            Self::populate_v0_resource_group_change_set(
-            //                v0_changes,
-            //                state_key,
-            //                source_data,
-            //                resources,
-            //            )?;
-            //        }
-            //        ResourceGroupChangeSet::V1(v1_changes) => {
-            //            // Maintain the behavior of failing the transaction on resource
-            //            // group member existence invariants.
-            //            for (struct_tag, current_op) in resources.iter() {
-            //                let exists =
-            //                    resolver.resource_exists_in_group(&state_key, struct_tag)?;
-            //                if matches!(current_op, MoveStorageOp::New(_)) == exists {
-            //                    // Deletion and Modification require resource to exist,
-            //                    // while creation requires the resource to not exist.
-            //                    return Err(common_error());
-            //                }
-            //            }
-            //            v1_changes.insert(state_key, resources);
-            //        }
-            //    }
-            //}
+            for (resource_group_tag, resources) in resource_groups {
+                let state_key = StateKey::resource_group(&addr, &resource_group_tag);
+                match &mut resource_group_change_set {
+                    ResourceGroupChangeSet::V0(v0_changes) => {
+                        let source_data = maybe_resource_group_cache
+                            .as_mut()
+                            .expect("V0 cache must be set")
+                            .remove(&state_key)
+                            .unwrap_or_default();
+                        Self::populate_v0_resource_group_change_set(
+                            v0_changes,
+                            state_key,
+                            source_data,
+                            resources,
+                        )?;
+                    }
+                    ResourceGroupChangeSet::V1(v1_changes) => {
+                        // Maintain the behavior of failing the transaction on resource
+                        // group member existence invariants.
+                        for (struct_tag, current_op) in resources.iter() {
+                            let exists =
+                                resolver.resource_exists_in_group(&state_key, struct_tag)?;
+                            if matches!(current_op, MoveStorageOp::New(_)) == exists {
+                                // Deletion and Modification require resource to exist,
+                                // while creation requires the resource to not exist.
+                                return Err(common_error());
+                            }
+                        }
+                        v1_changes.insert(state_key, resources);
+                    }
+                }
+            }
         }
 
-        Ok((
-            change_set_filtered,
-            ResourceGroupChangeSet::V0(BTreeMap::new()),
-        ))
+        Ok((change_set_filtered, resource_group_change_set))
     }
 
     fn convert_change_set(
         woc: &WriteOpConverter,
         change_set: ChangeSet,
-        _resource_group_change_set: ResourceGroupChangeSet,
+        resource_group_change_set: ResourceGroupChangeSet,
         events: Vec<(ContractEvent, Option<MoveTypeLayout>)>,
         table_change_set: TableChangeSet,
         aggregator_change_set: AggregatorChangeSet,
         legacy_resource_creation_as_modification: bool,
     ) -> PartialVMResult<(VMChangeSet, ModuleWriteSet)> {
         let mut resource_write_set = BTreeMap::new();
-        let resource_group_write_set = BTreeMap::new();
+        let mut resource_group_write_set = BTreeMap::new();
 
         let mut has_modules_published_to_special_address = false;
         let mut module_write_ops = BTreeMap::new();
@@ -412,20 +408,20 @@ impl<'r, 'l> SessionExt<'r, 'l> {
             }
         }
 
-        //match resource_group_change_set {
-        //    ResourceGroupChangeSet::V0(v0_changes) => {
-        //        for (state_key, blob_op) in v0_changes {
-        //            let op = woc.convert_resource(&state_key, blob_op, false)?;
-        //            resource_write_set.insert(state_key, op);
-        //        }
-        //    }
-        //    ResourceGroupChangeSet::V1(v1_changes) => {
-        //        for (state_key, resources) in v1_changes {
-        //            let group_write = woc.convert_resource_group_v1(&state_key, resources)?;
-        //            resource_group_write_set.insert(state_key, group_write);
-        //        }
-        //    }
-        //}
+        match resource_group_change_set {
+            ResourceGroupChangeSet::V0(v0_changes) => {
+                for (state_key, blob_op) in v0_changes {
+                    let op = woc.convert_resource(&state_key, blob_op, false)?;
+                    resource_write_set.insert(state_key, op);
+                }
+            }
+            ResourceGroupChangeSet::V1(v1_changes) => {
+                for (state_key, resources) in v1_changes {
+                    let group_write = woc.convert_resource_group_v1(&state_key, resources)?;
+                    resource_group_write_set.insert(state_key, group_write);
+                }
+            }
+        }
 
         for (handle, change) in table_change_set.changes {
             for (key, value_op) in change.entries {

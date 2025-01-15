@@ -4,10 +4,11 @@
 use crate::resolver::{
     size_u32_as_uleb128, ResourceGroupSize, ResourceGroupView, TResourceGroupView, TResourceView,
 };
-use anyhow::Error;
 use bytes::Bytes;
+use move_core_types::vm_status::StatusCode;
 use move_core_types::{language_storage::StructTag, value::MoveTypeLayout};
 use serde::Serialize;
+use starcoin_vm_types::errors::{PartialVMError, PartialVMResult};
 use starcoin_vm_types::state_store::state_key::StateKey;
 use std::{
     cell::RefCell,
@@ -46,20 +47,24 @@ impl GroupSizeKind {
 pub fn group_tagged_resource_size<T: Serialize + Clone + Debug>(
     tag: &T,
     value_byte_len: usize,
-) -> anyhow::Result<u64> {
-    Ok((bcs::serialized_size(&tag)? + value_byte_len + size_u32_as_uleb128(value_byte_len)) as u64)
+) -> PartialVMResult<u64> {
+    Ok((bcs::serialized_size(&tag).map_err(|e| {
+        PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR).with_message(format!(
+            "Tag serialization error for tag {:?}: {:?}",
+            tag, e
+        ))
+    })? + value_byte_len
+        + size_u32_as_uleb128(value_byte_len)) as u64)
 }
 
 /// Utility method to compute the size of the group as GroupSizeKind::AsSum.
 pub fn group_size_as_sum<T: Serialize + Clone + Debug>(
     mut group: impl Iterator<Item = (T, usize)>,
-) -> anyhow::Result<ResourceGroupSize> {
-    let (count, len) = group
-        .try_fold((0, 0), |(count, len), (tag, value_byte_len)| {
-            let delta = group_tagged_resource_size(&tag, value_byte_len)?;
-            Ok((count + 1, len + delta))
-        })
-        .map_err(|_: Error| anyhow::Error::msg("Resource group member tag serialization error"))?;
+) -> PartialVMResult<ResourceGroupSize> {
+    let (count, len) = group.try_fold((0, 0), |(count, len), (tag, value_byte_len)| {
+        let delta = group_tagged_resource_size(&tag, value_byte_len)?;
+        Ok::<(usize, u64), PartialVMError>((count + 1, len + delta))
+    })?;
 
     Ok(ResourceGroupSize::Combined {
         num_tagged_resources: count,
@@ -157,7 +162,7 @@ impl<'r> ResourceGroupAdapter<'r> {
 
     // Ensures that the resource group at state_key is cached in self.group_cache. Ok(true)
     // means the resource was already cached, while Ok(false) means it just got cached.
-    fn load_to_cache(&self, group_key: &StateKey) -> anyhow::Result<bool> {
+    fn load_to_cache(&self, group_key: &StateKey) -> PartialVMResult<bool> {
         let already_cached = self.group_cache.borrow().contains_key(group_key);
         if already_cached {
             return Ok(true);
@@ -165,10 +170,16 @@ impl<'r> ResourceGroupAdapter<'r> {
 
         let group_data = self.resource_view.get_resource_bytes(group_key, None)?;
         let (group_data, blob_len): (BTreeMap<StructTag, Bytes>, u64) = group_data.map_or_else(
-            || Ok::<_, Error>((BTreeMap::new(), 0)),
+            || Ok::<_, PartialVMError>((BTreeMap::new(), 0)),
             |group_data_blob| {
-                let group_data = bcs::from_bytes(&group_data_blob)
-                    .map_err(|_| anyhow::Error::msg("Resource group deserialization error"))?;
+                let group_data = bcs::from_bytes(&group_data_blob).map_err(|e| {
+                    PartialVMError::new(StatusCode::UNEXPECTED_DESERIALIZATION_ERROR).with_message(
+                        format!(
+                            "Failed to deserialize the resource group at {:? }: {:?}",
+                            group_key, e
+                        ),
+                    )
+                })?;
                 Ok((group_data, group_data_blob.len() as u64))
             },
         )?;
@@ -199,7 +210,10 @@ impl TResourceGroupView for ResourceGroupAdapter<'_> {
         self.group_size_kind == GroupSizeKind::AsSum
     }
 
-    fn resource_group_size(&self, group_key: &Self::GroupKey) -> anyhow::Result<ResourceGroupSize> {
+    fn resource_group_size(
+        &self,
+        group_key: &Self::GroupKey,
+    ) -> PartialVMResult<ResourceGroupSize> {
         if self.group_size_kind == GroupSizeKind::None {
             return Ok(ResourceGroupSize::zero_concrete());
         }
@@ -222,7 +236,7 @@ impl TResourceGroupView for ResourceGroupAdapter<'_> {
         group_key: &Self::GroupKey,
         resource_tag: &Self::ResourceTag,
         maybe_layout: Option<&MoveTypeLayout>,
-    ) -> anyhow::Result<Option<Bytes>> {
+    ) -> PartialVMResult<Option<Bytes>> {
         if let Some(group_view) = self.maybe_resource_group_view {
             return group_view.get_resource_from_group(group_key, resource_tag, maybe_layout);
         }
