@@ -89,14 +89,15 @@ pub trait TResourceGroupView {
     /// the parallel execution setting, as a wrong value will be (later) caught by validation.
     /// Thus, R/W conflicts are avoided, as long as the estimates are correct (e.g. updating
     /// struct members of a fixed size).
-    fn resource_group_size(&self, group_key: &Self::GroupKey) -> anyhow::Result<ResourceGroupSize>;
+    fn resource_group_size(&self, group_key: &Self::GroupKey)
+        -> PartialVMResult<ResourceGroupSize>;
 
     fn get_resource_from_group(
         &self,
         group_key: &Self::GroupKey,
         resource_tag: &Self::ResourceTag,
         maybe_layout: Option<&Self::Layout>,
-    ) -> anyhow::Result<Option<Bytes>>;
+    ) -> PartialVMResult<Option<Bytes>>;
 
     /// Needed for charging storage fees for a resource group write, as that requires knowing
     /// the size of the resource group AFTER the changeset of the transaction is applied (while
@@ -107,7 +108,7 @@ pub trait TResourceGroupView {
         &self,
         group_key: &Self::GroupKey,
         resource_tag: &Self::ResourceTag,
-    ) -> anyhow::Result<usize> {
+    ) -> PartialVMResult<usize> {
         Ok(self
             .get_resource_from_group(group_key, resource_tag, None)?
             .map_or(0, |bytes| bytes.len()))
@@ -127,7 +128,7 @@ pub trait TResourceGroupView {
         &self,
         group_key: &Self::GroupKey,
         resource_tag: &Self::ResourceTag,
-    ) -> anyhow::Result<bool> {
+    ) -> PartialVMResult<bool> {
         self.get_resource_from_group(group_key, resource_tag, None)
             .map(|maybe_bytes| maybe_bytes.is_some())
     }
