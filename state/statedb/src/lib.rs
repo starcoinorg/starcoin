@@ -112,7 +112,7 @@ impl AccountStateObject {
                 .transpose()?
                 .flatten()),
             DataPath::Resource(struct_tag) => self.resource_tree.lock().get(struct_tag),
-            DataPath::ResourceGroup(_) => unimplemented!(),
+            DataPath::ResourceGroup(_) => unimplemented!("ResourceGroup not support get"),
         }
     }
 
@@ -131,7 +131,9 @@ impl AccountStateObject {
                 .transpose()?
                 .unwrap_or((None, SparseMerkleProof::new(None, vec![])))),
             DataPath::Resource(struct_tag) => self.resource_tree.lock().get_with_proof(struct_tag),
-            DataPath::ResourceGroup(_) => unimplemented!(),
+            DataPath::ResourceGroup(_) => {
+                unimplemented!("ResourceGroup not support get_with_proof")
+            }
         }
     }
 
@@ -151,7 +153,7 @@ impl AccountStateObject {
             DataPath::Resource(struct_tag) => {
                 self.resource_tree.lock().put(struct_tag, value);
             }
-            DataPath::ResourceGroup(_) => unimplemented!(),
+            DataPath::ResourceGroup(_) => unimplemented!("ResourceGroup not support set"),
         }
     }
 
@@ -617,7 +619,9 @@ impl ChainStateWriter for ChainStateDB {
                 DataPath::Resource(struct_tag) => {
                     StateKey::resource(&access_path.address, struct_tag)?
                 }
-                DataPath::ResourceGroup(_) => unimplemented!(),
+                DataPath::ResourceGroup(struct_tag) => {
+                    StateKey::resource_group(&access_path.address, struct_tag)
+                }
             }
         };
         self.apply_write_set(
@@ -634,7 +638,9 @@ impl ChainStateWriter for ChainStateDB {
                 DataPath::Resource(struct_tag) => {
                     StateKey::resource(&access_path.address, struct_tag)?
                 }
-                DataPath::ResourceGroup(_) => unimplemented!(),
+                DataPath::ResourceGroup(struct_tag) => {
+                    StateKey::resource_group(&access_path.address, struct_tag)
+                }
             }
         };
         self.apply_write_set(

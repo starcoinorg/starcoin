@@ -127,7 +127,9 @@ impl ChainStateWriter for FakeDataStore {
                 DataPath::Resource(struct_tag) => {
                     StateKey::resource(&access_path.address, struct_tag)?
                 }
-                DataPath::ResourceGroup(_) => unimplemented!(),
+                DataPath::ResourceGroup(struct_tag) => {
+                    StateKey::resource_group(&access_path.address, struct_tag)
+                }
             }
         };
         self.set(state_key, value);
@@ -142,7 +144,9 @@ impl ChainStateWriter for FakeDataStore {
                 DataPath::Resource(struct_tag) => {
                     StateKey::resource(&access_path.address, struct_tag)?
                 }
-                DataPath::ResourceGroup(_) => unimplemented!(),
+                DataPath::ResourceGroup(struct_tag) => {
+                    StateKey::resource_group(&access_path.address, struct_tag)
+                }
             }
         };
         self.remove(&state_key);

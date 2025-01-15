@@ -365,7 +365,7 @@ impl fmt::Display for DataPath {
                 write!(f, "{}/{}", storage_index, module_name)
             }
             DataPath::ResourceGroup(struct_tag) => {
-                write!(f, "ResourceGroup({})", struct_tag)
+                write!(f, "{}/{}", storage_index, struct_tag)
             }
         }
     }
