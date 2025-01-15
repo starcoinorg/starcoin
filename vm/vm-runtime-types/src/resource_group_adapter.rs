@@ -402,7 +402,7 @@ mod tests {
         fn resource_group_size(
             &self,
             group_key: &Self::GroupKey,
-        ) -> anyhow::Result<ResourceGroupSize> {
+        ) -> PartialVMResult<ResourceGroupSize> {
             Ok(self
                 .group
                 .get(group_key)
@@ -415,7 +415,7 @@ mod tests {
             group_key: &Self::GroupKey,
             resource_tag: &Self::ResourceTag,
             _maybe_layout: Option<&Self::Layout>,
-        ) -> anyhow::Result<Option<Bytes>> {
+        ) -> PartialVMResult<Option<Bytes>> {
             Ok(self
                 .group
                 .get(group_key)
@@ -426,7 +426,7 @@ mod tests {
             &self,
             _group_key: &Self::GroupKey,
             _resource_tag: &Self::ResourceTag,
-        ) -> anyhow::Result<usize> {
+        ) -> PartialVMResult<usize> {
             unimplemented!("Currently resolved by ResourceGroupAdapter");
         }
 
@@ -434,7 +434,7 @@ mod tests {
             &self,
             _group_key: &Self::GroupKey,
             _resource_tag: &Self::ResourceTag,
-        ) -> anyhow::Result<bool> {
+        ) -> PartialVMResult<bool> {
             unimplemented!("Currently resolved by ResourceGroupAdapter");
         }
 
