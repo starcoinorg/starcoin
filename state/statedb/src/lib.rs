@@ -112,7 +112,10 @@ impl AccountStateObject {
                 .transpose()?
                 .flatten()),
             DataPath::Resource(struct_tag) => self.resource_tree.lock().get(struct_tag),
-            DataPath::ResourceGroup(_) => unimplemented!("ResourceGroup not support get"),
+            DataPath::ResourceGroup(_) => {
+                debug!("resource_group_tree not support get");
+                Ok(None)
+            }
         }
     }
 
@@ -132,7 +135,8 @@ impl AccountStateObject {
                 .unwrap_or((None, SparseMerkleProof::new(None, vec![])))),
             DataPath::Resource(struct_tag) => self.resource_tree.lock().get_with_proof(struct_tag),
             DataPath::ResourceGroup(_) => {
-                unimplemented!("ResourceGroup not support get_with_proof")
+                debug!("resource_group_tree not support get");
+                Ok((None, SparseMerkleProof::new(None, vec![])))
             }
         }
     }
@@ -153,7 +157,9 @@ impl AccountStateObject {
             DataPath::Resource(struct_tag) => {
                 self.resource_tree.lock().put(struct_tag, value);
             }
-            DataPath::ResourceGroup(_) => unimplemented!("ResourceGroup not support set"),
+            DataPath::ResourceGroup(_) => {
+                debug!("resource_group_tree not support set")
+            }
         }
     }
 
