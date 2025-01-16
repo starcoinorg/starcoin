@@ -1,4 +1,4 @@
-module starcoin_framework::dao_featuers_proposal {
+module starcoin_framework::dao_features_proposal {
 
     use std::error;
     use std::features;

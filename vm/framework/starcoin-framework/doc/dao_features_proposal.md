@@ -1,15 +1,15 @@
 
-<a id="0x1_dao_featuers_proposal"></a>
+<a id="0x1_dao_features_proposal"></a>
 
-# Module `0x1::dao_featuers_proposal`
+# Module `0x1::dao_features_proposal`
 
 
 
--  [Struct `FeaturesUpdate`](#0x1_dao_featuers_proposal_FeaturesUpdate)
+-  [Struct `FeaturesUpdate`](#0x1_dao_features_proposal_FeaturesUpdate)
 -  [Constants](#@Constants_0)
--  [Function `propose`](#0x1_dao_featuers_proposal_propose)
--  [Function `execute`](#0x1_dao_featuers_proposal_execute)
--  [Function `execute_urgent`](#0x1_dao_featuers_proposal_execute_urgent)
+-  [Function `propose`](#0x1_dao_features_proposal_propose)
+-  [Function `execute`](#0x1_dao_features_proposal_execute)
+-  [Function `execute_urgent`](#0x1_dao_features_proposal_execute_urgent)
 -  [Specification](#@Specification_1)
 
 
@@ -25,13 +25,13 @@
 
 
 
-<a id="0x1_dao_featuers_proposal_FeaturesUpdate"></a>
+<a id="0x1_dao_features_proposal_FeaturesUpdate"></a>
 
 ## Struct `FeaturesUpdate`
 
 
 
-<pre><code><b>struct</b> <a href="dao_features_proposal.md#0x1_dao_featuers_proposal_FeaturesUpdate">FeaturesUpdate</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="dao_features_proposal.md#0x1_dao_features_proposal_FeaturesUpdate">FeaturesUpdate</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -63,32 +63,32 @@
 ## Constants
 
 
-<a id="0x1_dao_featuers_proposal_E_NOT_ANY_FLAGS"></a>
+<a id="0x1_dao_features_proposal_E_NOT_ANY_FLAGS"></a>
 
 
 
-<pre><code><b>const</b> <a href="dao_features_proposal.md#0x1_dao_featuers_proposal_E_NOT_ANY_FLAGS">E_NOT_ANY_FLAGS</a>: u64 = 2;
+<pre><code><b>const</b> <a href="dao_features_proposal.md#0x1_dao_features_proposal_E_NOT_ANY_FLAGS">E_NOT_ANY_FLAGS</a>: u64 = 2;
 </code></pre>
 
 
 
-<a id="0x1_dao_featuers_proposal_E_NOT_AUTHORIZED"></a>
+<a id="0x1_dao_features_proposal_E_NOT_AUTHORIZED"></a>
 
 
 
-<pre><code><b>const</b> <a href="dao_features_proposal.md#0x1_dao_featuers_proposal_E_NOT_AUTHORIZED">E_NOT_AUTHORIZED</a>: u64 = 1;
+<pre><code><b>const</b> <a href="dao_features_proposal.md#0x1_dao_features_proposal_E_NOT_AUTHORIZED">E_NOT_AUTHORIZED</a>: u64 = 1;
 </code></pre>
 
 
 
-<a id="0x1_dao_featuers_proposal_propose"></a>
+<a id="0x1_dao_features_proposal_propose"></a>
 
 ## Function `propose`
 
 Entrypoint for the proposal.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="dao_features_proposal.md#0x1_dao_featuers_proposal_propose">propose</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, enable: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;, disable: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;, exec_delay: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="dao_features_proposal.md#0x1_dao_features_proposal_propose">propose</a>(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, enable: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;, disable: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;, exec_delay: u64)
 </code></pre>
 
 
@@ -97,7 +97,7 @@ Entrypoint for the proposal.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="dao_features_proposal.md#0x1_dao_featuers_proposal_propose">propose</a>(
+<pre><code><b>public</b> entry <b>fun</b> <a href="dao_features_proposal.md#0x1_dao_features_proposal_propose">propose</a>(
     <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
     enable: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;,
     disable: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;,
@@ -105,13 +105,13 @@ Entrypoint for the proposal.
 ) {
     <b>assert</b>!(
         !<a href="../../move-stdlib/doc/vector.md#0x1_vector_is_empty">vector::is_empty</a>(&enable) || !<a href="../../move-stdlib/doc/vector.md#0x1_vector_is_empty">vector::is_empty</a>(&disable),
-        <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="dao_features_proposal.md#0x1_dao_featuers_proposal_E_NOT_ANY_FLAGS">E_NOT_ANY_FLAGS</a>)
+        <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="dao_features_proposal.md#0x1_dao_features_proposal_E_NOT_ANY_FLAGS">E_NOT_ANY_FLAGS</a>)
     );
-    <b>let</b> action = <a href="dao_features_proposal.md#0x1_dao_featuers_proposal_FeaturesUpdate">FeaturesUpdate</a> {
+    <b>let</b> action = <a href="dao_features_proposal.md#0x1_dao_features_proposal_FeaturesUpdate">FeaturesUpdate</a> {
         enable,
         disable,
     };
-    <a href="dao.md#0x1_dao_propose">dao::propose</a>&lt;STC, <a href="dao_features_proposal.md#0x1_dao_featuers_proposal_FeaturesUpdate">FeaturesUpdate</a>&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, action, exec_delay);
+    <a href="dao.md#0x1_dao_propose">dao::propose</a>&lt;STC, <a href="dao_features_proposal.md#0x1_dao_features_proposal_FeaturesUpdate">FeaturesUpdate</a>&gt;(<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, action, exec_delay);
 }
 </code></pre>
 
@@ -119,14 +119,14 @@ Entrypoint for the proposal.
 
 </details>
 
-<a id="0x1_dao_featuers_proposal_execute"></a>
+<a id="0x1_dao_features_proposal_execute"></a>
 
 ## Function `execute`
 
 Once the proposal is agreed, anyone can call the method to make the proposal happen.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="dao_features_proposal.md#0x1_dao_featuers_proposal_execute">execute</a>(proposal_adderss: <b>address</b>, proposal_id: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="dao_features_proposal.md#0x1_dao_features_proposal_execute">execute</a>(proposal_adderss: <b>address</b>, proposal_id: u64)
 </code></pre>
 
 
@@ -135,11 +135,11 @@ Once the proposal is agreed, anyone can call the method to make the proposal hap
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="dao_features_proposal.md#0x1_dao_featuers_proposal_execute">execute</a>(proposal_adderss: <b>address</b>, proposal_id: u64) {
-    <b>let</b> <a href="dao_features_proposal.md#0x1_dao_featuers_proposal_FeaturesUpdate">FeaturesUpdate</a> {
+<pre><code><b>public</b> entry <b>fun</b> <a href="dao_features_proposal.md#0x1_dao_features_proposal_execute">execute</a>(proposal_adderss: <b>address</b>, proposal_id: u64) {
+    <b>let</b> <a href="dao_features_proposal.md#0x1_dao_features_proposal_FeaturesUpdate">FeaturesUpdate</a> {
         enable,
         disable,
-    } = <a href="dao.md#0x1_dao_extract_proposal_action">dao::extract_proposal_action</a>&lt;STC, <a href="dao_features_proposal.md#0x1_dao_featuers_proposal_FeaturesUpdate">FeaturesUpdate</a>&gt;(
+    } = <a href="dao.md#0x1_dao_extract_proposal_action">dao::extract_proposal_action</a>&lt;STC, <a href="dao_features_proposal.md#0x1_dao_features_proposal_FeaturesUpdate">FeaturesUpdate</a>&gt;(
         proposal_adderss,
         proposal_id
     );
@@ -153,13 +153,13 @@ Once the proposal is agreed, anyone can call the method to make the proposal hap
 
 </details>
 
-<a id="0x1_dao_featuers_proposal_execute_urgent"></a>
+<a id="0x1_dao_features_proposal_execute_urgent"></a>
 
 ## Function `execute_urgent`
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="dao_features_proposal.md#0x1_dao_featuers_proposal_execute_urgent">execute_urgent</a>(core_resource: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, enable: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;, disable: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="dao_features_proposal.md#0x1_dao_features_proposal_execute_urgent">execute_urgent</a>(core_resource: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, enable: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;, disable: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;)
 </code></pre>
 
 
@@ -168,8 +168,8 @@ Once the proposal is agreed, anyone can call the method to make the proposal hap
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="dao_features_proposal.md#0x1_dao_featuers_proposal_execute_urgent">execute_urgent</a>(core_resource: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, enable: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;, disable: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;) {
-    <b>assert</b>!(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(core_resource) == @core_resources, <a href="../../move-stdlib/doc/error.md#0x1_error_unauthenticated">error::unauthenticated</a>(<a href="dao_features_proposal.md#0x1_dao_featuers_proposal_E_NOT_AUTHORIZED">E_NOT_AUTHORIZED</a>));
+<pre><code><b>public</b> entry <b>fun</b> <a href="dao_features_proposal.md#0x1_dao_features_proposal_execute_urgent">execute_urgent</a>(core_resource: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, enable: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;, disable: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u64&gt;) {
+    <b>assert</b>!(<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(core_resource) == @core_resources, <a href="../../move-stdlib/doc/error.md#0x1_error_unauthenticated">error::unauthenticated</a>(<a href="dao_features_proposal.md#0x1_dao_features_proposal_E_NOT_AUTHORIZED">E_NOT_AUTHORIZED</a>));
     <b>let</b> framework = &<a href="create_signer.md#0x1_create_signer">create_signer</a>(@starcoin_framework);
     <a href="../../move-stdlib/doc/features.md#0x1_features_change_feature_flags_for_next_epoch">features::change_feature_flags_for_next_epoch</a>(framework, enable, disable);
     <a href="../../move-stdlib/doc/features.md#0x1_features_on_new_epoch">features::on_new_epoch</a>(framework);
