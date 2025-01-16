@@ -655,7 +655,6 @@ impl BlockDAG {
         pruning_finality: u64,
         max_parents_count: u64,
     ) -> anyhow::Result<MineNewDagBlockInfo> {
-        info!("start to calculate the mergeset and tips, previous pruning point: {:?}, previous ghostdata: {:?} and its red block count: {:?}", previous_pruning_point, previous_ghostdata.to_compact(), previous_ghostdata.mergeset_reds.len());
         let mut dag_state = self.get_dag_state(previous_pruning_point)?;
 
         // filter
@@ -695,10 +694,7 @@ impl BlockDAG {
         }
 
         let next_ghostdata = self.ghostdata(&dag_state.tips)?;
-        info!(
-            "start to calculate the mergeset and tips for tips: {:?}, and last pruning point: {:?} and next ghostdata: {:?}, red block count: {:?}",
-            dag_state.tips, previous_pruning_point, next_ghostdata.to_compact(), next_ghostdata.mergeset_reds.len()
-        );
+
         let next_pruning_point = self.pruning_point_manager().next_pruning_point(
             previous_pruning_point,
             previous_ghostdata,
@@ -707,12 +703,11 @@ impl BlockDAG {
             pruning_finality,
         )?;
 
-        info!(
-            "the next pruning point is: {:?}, and the previous pruning point is: {:?}",
-            next_pruning_point, previous_pruning_point
-        );
-
         if next_pruning_point == Hash::zero() || next_pruning_point == previous_pruning_point {
+            info!(
+                "tips: {:?}, the next pruning point is: {:?}, the current ghostdata's selected parent: {:?}, blue blocks are: {:?} and its red blocks are: {:?}",
+                dag_state.tips, next_pruning_point, next_ghostdata.selected_parent, next_ghostdata.mergeset_blues, next_ghostdata.mergeset_reds.len(), 
+            );
             anyhow::Ok(MineNewDagBlockInfo {
                 tips: dag_state.tips,
                 blue_blocks: (*next_ghostdata.mergeset_blues).clone(),
@@ -724,15 +719,13 @@ impl BlockDAG {
                 previous_pruning_point,
                 next_pruning_point,
             )?;
-            let mergeset_blues = (*self
+            let pruned_ghostdata = self
                 .ghost_dag_manager()
-                .ghostdag(&pruned_tips)?
-                .mergeset_blues)
-                .clone();
+                .ghostdag(&pruned_tips)?;
+            let mergeset_blues = pruned_ghostdata.mergeset_blues.as_ref().clone();
             info!(
-                "previous tips are: {:?}, the pruned tips are: {:?}, the mergeset blues are: {:?}, the next pruning point is: {:?}",
-                dag_state.tips,
-                pruned_tips, mergeset_blues, next_pruning_point
+                "the pruning was triggered, previous tips: {:?}, the current tips: {:?}, the next pruning point is: {:?}, the current ghostdata's selected parent: {:?}, blue blocks are: {:?} and its red blocks are: {:?}",
+                pruned_tips, dag_state.tips, next_pruning_point, pruned_ghostdata.selected_parent, pruned_ghostdata.mergeset_blues, pruned_ghostdata.mergeset_reds.len(), 
             );
             anyhow::Ok(MineNewDagBlockInfo {
                 tips: pruned_tips,
