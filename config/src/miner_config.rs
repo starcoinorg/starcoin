@@ -38,7 +38,7 @@ pub struct MinerConfig {
     base: Option<Arc<BaseConfig>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long = "maximum-parents_count")]
+    #[clap(long = "maximum-parents-count")]
     pub maximum_parents_count: Option<u64>,
 }
 

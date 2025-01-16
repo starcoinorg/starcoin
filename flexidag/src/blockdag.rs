@@ -676,7 +676,7 @@ impl BlockDAG {
                     let b_blue_work = self
                         .storage
                         .ghost_dag_store
-                        .get_blue_work(*a)
+                        .get_blue_work(*b)
                         .unwrap_or_else(|e| {
                             panic!(
                                 "the ghostdag data should be existed for {:?}, e: {:?}",
