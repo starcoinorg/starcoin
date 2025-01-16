@@ -112,7 +112,9 @@ impl AccountStateObject {
                 .transpose()?
                 .flatten()),
             DataPath::Resource(struct_tag) => self.resource_tree.lock().get(struct_tag),
-            DataPath::ResourceGroup(_) => unimplemented!(),
+            DataPath::ResourceGroup(_) => {
+                bail!("resource_group_tree not support get");
+            }
         }
     }
 
@@ -149,9 +151,13 @@ impl AccountStateObject {
                     .put(module_name, value);
             }
             DataPath::Resource(struct_tag) => {
+                eprintln!("xxxx resource {:?}", struct_tag);
                 self.resource_tree.lock().put(struct_tag, value);
             }
-            DataPath::ResourceGroup(_) => unimplemented!(),
+            DataPath::ResourceGroup(struct_tag) => {
+                eprintln!("xxxx resource_group as resource {:?}", struct_tag);
+                self.resource_tree.lock().put(struct_tag, value);
+            }
         }
     }
 
