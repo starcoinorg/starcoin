@@ -4,7 +4,7 @@ module StarcoinAssociation::MerkleDistributorScripts {
     use starcoin_std::signer;
 
     public entry fun create<T>(signer: signer, merkle_root: vector<u8>, coin_amounts: u128, leaves: u64) {
-        let coins = coin::withdraw<T>(&signer, coin_amounts);
+        let coins = coin::withdraw<T>(&signer, (coin_amounts as u64));
         MerkleDistributor::create<T>(&signer, merkle_root, coins, leaves);
     }
 
@@ -74,6 +74,7 @@ module StarcoinAssociation::MerkleDistributor {
     use std::hash;
     use std::vector;
     use starcoin_std::signer;
+    use starcoin_std::debug;
 
 
     struct MerkleDistribution<phantom T> has key {
