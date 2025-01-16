@@ -42,6 +42,9 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
         current_pruning_point: HashValue,
         next_pruning_point: HashValue,
     ) -> anyhow::Result<Vec<HashValue>> {
+        if next_pruning_point == HashValue::zero() {
+            return Ok(dag_state.tips.clone());
+        }
         if current_pruning_point == next_pruning_point {
             return Ok(dag_state.tips.clone());
         }
