@@ -205,6 +205,9 @@ impl BlockDAG {
     }
 
     pub fn check_ancestor_of(&self, ancestor: Hash, descendant: Hash) -> anyhow::Result<bool> {
+        if ancestor == Hash::zero() {
+            return Ok(true);
+        }
         inquirer::is_dag_ancestor_of(
             &*self.storage.reachability_store.read(),
             ancestor,
