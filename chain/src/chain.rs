@@ -375,6 +375,7 @@ impl BlockChain {
         )?;
         let excluded_txns = opened_block.push_txns(user_txns)?;
         let template = opened_block.finalize()?;
+
         Ok((template, excluded_txns))
     }
 

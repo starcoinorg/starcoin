@@ -452,11 +452,6 @@ impl BlockDAG {
         // Generate ghostdag data
         let parents = header.parents();
 
-        debug!(
-            "start to get the ghost data from block: {:?}, number: {:?}",
-            header.id(),
-            header.number()
-        );
         let ghostdata = match self.ghostdata_by_hash(header.id())? {
             None => {
                 // It must be the dag genesis if header is a format for a single chain
@@ -766,13 +761,19 @@ impl BlockDAG {
         self.pruning_point_manager().reachability_service()
     }
 
+    // return true the block processing will be going into the single chain logic,
+    // which means that this is a historical block that converge to the next pruning point
+    // return false it will be going into the ghost logic,
+    // which means that this is a new block that will be added by the ghost protocol that enhance the parallelism of the block processing.
+    // for vega, the special situation is:
+    // the pruning logic was delivered after vega running for a long time, so the historical block will be processed by the single chain logic.
     fn check_historical_block(
         &self,
         header: &BlockHeader,
         latest_pruning_point: Option<HashValue>,
     ) -> Result<bool, anyhow::Error> {
         if let Some(pruning_point) = latest_pruning_point {
-            if pruning_point == HashValue::zero() {
+            if pruning_point == HashValue::zero() && header.chain_id().is_vega() {
                 info!("pruning point is zero");
                 Ok(true)
             } else if header.pruning_point() == pruning_point {
@@ -780,6 +781,11 @@ impl BlockDAG {
                     "pruning point is the same as the latest pruning point, pruning point: {:?}",
                     pruning_point
                 );
+                Ok(false)
+            } else if header.pruning_point() != HashValue::zero()
+                && pruning_point == HashValue::zero()
+            {
+                info!("pruning point is not zero, but the latest pruning point is zero, pruning point: {:?}, latest pruning point: {:?}, this is the first pruning point", header.pruning_point(), pruning_point);
                 Ok(false)
             } else if self.check_ancestor_of(header.pruning_point(), pruning_point)? {
                 info!("pruning point is the ancestor of the latest pruning point, pruning point: {:?}, latest pruning point: {:?}", header.pruning_point(), pruning_point);
@@ -789,7 +795,7 @@ impl BlockDAG {
                 Ok(false)
             }
         } else {
-            Ok(true)
+            Ok(false)
         }
     }
 
