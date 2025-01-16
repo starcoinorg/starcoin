@@ -2,6 +2,8 @@ use anyhow::{format_err, Result};
 use starcoin_vm_types::transaction::Package;
 use stdlib::COMPILED_MOVE_CODE_DIR;
 
+// todo: enable this test when we have more releases
+#[ignore]
 #[test]
 fn test_package_init_function() -> Result<()> {
     let _path_list = [
