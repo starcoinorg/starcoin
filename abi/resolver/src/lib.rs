@@ -426,25 +426,25 @@ mod tests {
 
     #[test]
     fn test_resolver_abi() {
-        let modules = stdlib::load_latest_stable_compiled_modules().unwrap().1;
+        let modules = stdlib::load_latest_compiled_modules();
         let view = InMemoryStateView::new(modules);
         let r = ABIResolver::new(&view);
         // test module ok
         {
-            let m = ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap());
+            let m = ModuleId::new(genesis_address(), Identifier::new("dao").unwrap());
             r.resolve_module(&m).unwrap();
         }
         // test struct tag
         {
             let st = parse_struct_tag(
-                "0x1::Dao::Proposal<0x1::STC::STC, 0x1::MintDaoProposal::MintToken>",
+                "0x1::dao::Proposal<0x1::starcoin_coin::STC, 0x1::dao_features_proposal::FeaturesUpdate>",
             )
             .unwrap();
             r.resolve_struct_tag(&st).unwrap();
         }
         // test struct def
         {
-            let m = ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap());
+            let m = ModuleId::new(genesis_address(), Identifier::new("dao").unwrap());
             let s = Identifier::new("Proposal").unwrap();
             let func_abi = r.resolve_struct(&m, s.as_ident_str()).unwrap();
             println!("{}", serde_json::to_string_pretty(&func_abi).unwrap());
@@ -452,25 +452,25 @@ mod tests {
 
         // test resolve module function index
         {
-            let m = ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap());
+            let m = ModuleId::new(genesis_address(), Identifier::new("dao").unwrap());
             let f = r.resolve_module_function_index(&m, 0).unwrap();
             assert_eq!(f.name(), "cast_vote");
         }
 
         // test resolve module function index overflow
         {
-            let m = ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap());
+            let m = ModuleId::new(genesis_address(), Identifier::new("dao").unwrap());
             assert!(r.resolve_module_function_index(&m, 31).is_err())
         }
     }
 
     #[test]
     fn test_normalized() {
-        let modules = stdlib::load_latest_stable_compiled_modules().unwrap().1;
+        let modules = stdlib::load_latest_compiled_modules();
         let dao = modules
             .iter()
             .find(|m| {
-                m.self_id() == ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap())
+                m.self_id() == ModuleId::new(genesis_address(), Identifier::new("dao").unwrap())
             })
             .unwrap();
         let _m = Module::new(dao);
@@ -492,7 +492,7 @@ mod tests {
             test_helper::executor::compile_modules_with_address(address, test_source)
                 .pop()
                 .unwrap();
-        let modules = stdlib::load_latest_stable_compiled_modules().unwrap().1;
+        let modules = stdlib::load_latest_compiled_modules();
         let view = InMemoryStateView::new(modules);
         let r = ABIResolver::new(&view);
         let _abi = r.resolve_module_code(module.code()).unwrap();
