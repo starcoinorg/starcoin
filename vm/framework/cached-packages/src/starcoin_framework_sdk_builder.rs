@@ -192,18 +192,18 @@ pub enum EntryFunctionCall {
     },
 
     /// Once the proposal is agreed, anyone can call the method to make the proposal happen.
-    DaoFeatuersProposalExecute {
+    DaoFeaturesProposalExecute {
         proposal_adderss: AccountAddress,
         proposal_id: u64,
     },
 
-    DaoFeatuersProposalExecuteUrgent {
+    DaoFeaturesProposalExecuteUrgent {
         enable: Vec<u64>,
         disable: Vec<u64>,
     },
 
     /// Entrypoint for the proposal.
-    DaoFeatuersProposalPropose {
+    DaoFeaturesProposalPropose {
         enable: Vec<u64>,
         disable: Vec<u64>,
         exec_delay: u64,
@@ -663,18 +663,18 @@ impl EntryFunctionCall {
                 proposer_address,
                 proposal_id,
             } => dao_queue_proposal_action(token_t, action_t, proposer_address, proposal_id),
-            DaoFeatuersProposalExecute {
+            DaoFeaturesProposalExecute {
                 proposal_adderss,
                 proposal_id,
-            } => dao_featuers_proposal_execute(proposal_adderss, proposal_id),
-            DaoFeatuersProposalExecuteUrgent { enable, disable } => {
-                dao_featuers_proposal_execute_urgent(enable, disable)
+            } => dao_features_proposal_execute(proposal_adderss, proposal_id),
+            DaoFeaturesProposalExecuteUrgent { enable, disable } => {
+                dao_features_proposal_execute_urgent(enable, disable)
             }
-            DaoFeatuersProposalPropose {
+            DaoFeaturesProposalPropose {
                 enable,
                 disable,
                 exec_delay,
-            } => dao_featuers_proposal_propose(enable, disable, exec_delay),
+            } => dao_features_proposal_propose(enable, disable, exec_delay),
             DaoModifyConfigProposalExecute {
                 token_t,
                 proposer_address,
@@ -1362,14 +1362,14 @@ pub fn dao_queue_proposal_action(
 }
 
 /// Once the proposal is agreed, anyone can call the method to make the proposal happen.
-pub fn dao_featuers_proposal_execute(
+pub fn dao_features_proposal_execute(
     proposal_adderss: AccountAddress,
     proposal_id: u64,
 ) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
             AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
-            ident_str!("dao_featuers_proposal").to_owned(),
+            ident_str!("dao_features_proposal").to_owned(),
         ),
         ident_str!("execute").to_owned(),
         vec![],
@@ -1380,14 +1380,14 @@ pub fn dao_featuers_proposal_execute(
     ))
 }
 
-pub fn dao_featuers_proposal_execute_urgent(
+pub fn dao_features_proposal_execute_urgent(
     enable: Vec<u64>,
     disable: Vec<u64>,
 ) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
             AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
-            ident_str!("dao_featuers_proposal").to_owned(),
+            ident_str!("dao_features_proposal").to_owned(),
         ),
         ident_str!("execute_urgent").to_owned(),
         vec![],
@@ -1399,7 +1399,7 @@ pub fn dao_featuers_proposal_execute_urgent(
 }
 
 /// Entrypoint for the proposal.
-pub fn dao_featuers_proposal_propose(
+pub fn dao_features_proposal_propose(
     enable: Vec<u64>,
     disable: Vec<u64>,
     exec_delay: u64,
@@ -1407,7 +1407,7 @@ pub fn dao_featuers_proposal_propose(
     TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
             AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
-            ident_str!("dao_featuers_proposal").to_owned(),
+            ident_str!("dao_features_proposal").to_owned(),
         ),
         ident_str!("propose").to_owned(),
         vec![],
@@ -2603,11 +2603,11 @@ mod decoder {
         }
     }
 
-    pub fn dao_featuers_proposal_execute(
+    pub fn dao_features_proposal_execute(
         payload: &TransactionPayload,
     ) -> Option<EntryFunctionCall> {
         if let TransactionPayload::EntryFunction(script) = payload {
-            Some(EntryFunctionCall::DaoFeatuersProposalExecute {
+            Some(EntryFunctionCall::DaoFeaturesProposalExecute {
                 proposal_adderss: bcs::from_bytes(script.args().get(0)?).ok()?,
                 proposal_id: bcs::from_bytes(script.args().get(1)?).ok()?,
             })
@@ -2616,11 +2616,11 @@ mod decoder {
         }
     }
 
-    pub fn dao_featuers_proposal_execute_urgent(
+    pub fn dao_features_proposal_execute_urgent(
         payload: &TransactionPayload,
     ) -> Option<EntryFunctionCall> {
         if let TransactionPayload::EntryFunction(script) = payload {
-            Some(EntryFunctionCall::DaoFeatuersProposalExecuteUrgent {
+            Some(EntryFunctionCall::DaoFeaturesProposalExecuteUrgent {
                 enable: bcs::from_bytes(script.args().get(0)?).ok()?,
                 disable: bcs::from_bytes(script.args().get(1)?).ok()?,
             })
@@ -2629,11 +2629,11 @@ mod decoder {
         }
     }
 
-    pub fn dao_featuers_proposal_propose(
+    pub fn dao_features_proposal_propose(
         payload: &TransactionPayload,
     ) -> Option<EntryFunctionCall> {
         if let TransactionPayload::EntryFunction(script) = payload {
-            Some(EntryFunctionCall::DaoFeatuersProposalPropose {
+            Some(EntryFunctionCall::DaoFeaturesProposalPropose {
                 enable: bcs::from_bytes(script.args().get(0)?).ok()?,
                 disable: bcs::from_bytes(script.args().get(1)?).ok()?,
                 exec_delay: bcs::from_bytes(script.args().get(2)?).ok()?,
@@ -3436,16 +3436,16 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
             Box::new(decoder::dao_queue_proposal_action),
         );
         map.insert(
-            "dao_featuers_proposal_execute".to_string(),
-            Box::new(decoder::dao_featuers_proposal_execute),
+            "dao_features_proposal_execute".to_string(),
+            Box::new(decoder::dao_features_proposal_execute),
         );
         map.insert(
-            "dao_featuers_proposal_execute_urgent".to_string(),
-            Box::new(decoder::dao_featuers_proposal_execute_urgent),
+            "dao_features_proposal_execute_urgent".to_string(),
+            Box::new(decoder::dao_features_proposal_execute_urgent),
         );
         map.insert(
-            "dao_featuers_proposal_propose".to_string(),
-            Box::new(decoder::dao_featuers_proposal_propose),
+            "dao_features_proposal_propose".to_string(),
+            Box::new(decoder::dao_features_proposal_propose),
         );
         map.insert(
             "dao_modify_config_proposal_execute".to_string(),
