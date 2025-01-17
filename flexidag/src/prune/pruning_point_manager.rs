@@ -1,5 +1,5 @@
 use starcoin_crypto::HashValue;
-use starcoin_logger::prelude::{debug, info};
+use starcoin_logger::prelude::info;
 
 use crate::reachability::reachability_service::ReachabilityService;
 use crate::{
