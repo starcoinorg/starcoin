@@ -720,7 +720,7 @@ impl BlockDAG {
             let pruned_ghostdata = self.ghost_dag_manager().ghostdag(&pruned_tips)?;
             let mergeset_blues = pruned_ghostdata.mergeset_blues.as_ref().clone();
             info!(
-                "the pruning was triggered, previous tips: {:?}, the current tips: {:?}, the next pruning point is: {:?}, the current ghostdata's selected parent: {:?}, blue blocks are: {:?} and its red blocks are: {:?}",
+                "the pruning was triggered, before pruning, the tips: {:?}, after pruning tips: {:?}, the next pruning point is: {:?}, the current ghostdata's selected parent: {:?}, blue blocks are: {:?} and its red blocks are: {:?}",
                 pruned_tips, dag_state.tips, next_pruning_point, pruned_ghostdata.selected_parent, pruned_ghostdata.mergeset_blues, pruned_ghostdata.mergeset_reds.len(),
             );
             anyhow::Ok(MineNewDagBlockInfo {
@@ -776,25 +776,24 @@ impl BlockDAG {
         latest_pruning_point: Option<HashValue>,
     ) -> Result<bool, anyhow::Error> {
         if let Some(pruning_point) = latest_pruning_point {
-            if pruning_point == HashValue::zero() && header.chain_id().is_vega() {
-                info!("pruning point is zero");
-                Ok(true)
+            if header.chain_id().is_vega() {
+                match (header.pruning_point() == HashValue::zero(), pruning_point == HashValue::zero()) {
+                    (true, true) => Ok(true),
+                    (true, false) => bail!("the block header pruning point is zero, but the latest pruning point is not zero"),
+                    (false, true) => Ok(false),
+                    (false, false) => {
+                        if self.check_ancestor_of(header.pruning_point(), pruning_point)? {
+                            Ok(true)
+                        } else {
+                            Ok(false)
+                        }
+                    }
+                }
             } else if header.pruning_point() == pruning_point {
-                info!(
-                    "pruning point is the same as the latest pruning point, pruning point: {:?}",
-                    pruning_point
-                );
-                Ok(false)
-            } else if header.pruning_point() != HashValue::zero()
-                && pruning_point == HashValue::zero()
-            {
-                info!("pruning point is not zero, but the latest pruning point is zero, pruning point: {:?}, latest pruning point: {:?}, this is the first pruning point", header.pruning_point(), pruning_point);
                 Ok(false)
             } else if self.check_ancestor_of(header.pruning_point(), pruning_point)? {
-                info!("pruning point is the ancestor of the latest pruning point, pruning point: {:?}, latest pruning point: {:?}", header.pruning_point(), pruning_point);
                 Ok(true)
             } else {
-                info!("pruning point is not the ancestor of the latest pruning point, pruning point: {:?}, latest pruning point: {:?}", header.pruning_point(), pruning_point);
                 Ok(false)
             }
         } else {
@@ -808,10 +807,23 @@ impl BlockDAG {
         header: &BlockHeader,
         latest_pruning_point: Option<HashValue>,
     ) -> Result<GhostdagData, anyhow::Error> {
+        info!(
+            "checking historical block: header pruning point: {:?}, latest pruning point: {:?}",
+            header.pruning_point(),
+            latest_pruning_point
+        );
         if self.check_historical_block(header, latest_pruning_point)? {
+            info!(
+                "the block is a historical block, the header id: {:?}",
+                header.id()
+            );
             self.ghost_dag_manager()
                 .verify_and_ghostdata(blue_blocks, header)
         } else {
+            info!(
+                "the block is not a historical block, the header id: {:?}",
+                header.id()
+            );
             self.ghost_dag_manager().ghostdag(&header.parents())
         }
     }
