@@ -776,25 +776,26 @@ impl BlockDAG {
         latest_pruning_point: Option<HashValue>,
     ) -> Result<bool, anyhow::Error> {
         if let Some(pruning_point) = latest_pruning_point {
-            if header.chain_id().is_vega() {
-                match (header.pruning_point() == HashValue::zero(), pruning_point == HashValue::zero()) {
-                    (true, true) => Ok(true),
-                    (true, false) => bail!("the block header pruning point is zero, but the latest pruning point is not zero"),
-                    (false, true) => Ok(false),
-                    (false, false) => {
-                        if self.check_ancestor_of(header.pruning_point(), pruning_point)? {
-                            Ok(true)
-                        } else {
-                            Ok(false)
-                        }
+            match (
+                header.pruning_point() == HashValue::zero(),
+                pruning_point == HashValue::zero(),
+            ) {
+                (true, true) => {
+                    if header.chain_id().is_vega() {
+                        Ok(true)
+                    } else {
+                        Ok(false)
                     }
                 }
-            } else if header.pruning_point() == pruning_point {
-                Ok(false)
-            } else if self.check_ancestor_of(header.pruning_point(), pruning_point)? {
-                Ok(true)
-            } else {
-                Ok(false)
+                (true, false) => Ok(true),
+                (false, true) => Ok(false),
+                (false, false) => {
+                    if self.check_ancestor_of(header.pruning_point(), pruning_point)? {
+                        Ok(true)
+                    } else {
+                        Ok(false)
+                    }
+                }
             }
         } else {
             Ok(false)
