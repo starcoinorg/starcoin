@@ -112,8 +112,12 @@ impl AccountStateObject {
                 .transpose()?
                 .flatten()),
             DataPath::Resource(struct_tag) => self.resource_tree.lock().get(struct_tag),
-            DataPath::ResourceGroup(_) => {
-                bail!("resource_group_tree not support get");
+            DataPath::ResourceGroup(struct_tag) => {
+                eprintln!(
+                    "redirect getting resource_group_tree to resource_tree {}",
+                    data_path
+                );
+                self.resource_tree.lock().get(struct_tag)
             }
         }
     }
@@ -140,6 +144,7 @@ impl AccountStateObject {
     }
 
     pub fn set(&self, data_path: DataPath, value: Vec<u8>) {
+        let human_str = format!("{}", data_path);
         match data_path {
             DataPath::Code(module_name) => {
                 if self.code_tree.lock().is_none() {
@@ -156,7 +161,7 @@ impl AccountStateObject {
                 self.resource_tree.lock().put(struct_tag, value);
             }
             DataPath::ResourceGroup(struct_tag) => {
-                eprintln!("treat resource_group as resource");
+                eprintln!("redirect setting resource_group to resource {}", human_str);
                 self.resource_tree.lock().put(struct_tag, value);
             }
         }
@@ -169,6 +174,7 @@ impl AccountStateObject {
         let struct_tag = data_path
             .as_struct_tag()
             .expect("DataPath must been struct tag at here.");
+        eprintln!("remove resource {}", struct_tag);
         self.resource_tree.lock().remove(struct_tag);
         Ok(())
     }

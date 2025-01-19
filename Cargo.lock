@@ -10617,6 +10617,7 @@ dependencies = [
  "starcoin-transaction-builder",
  "starcoin-types",
  "starcoin-vm-runtime",
+ "starcoin-vm-runtime-types",
  "starcoin-vm-types",
  "stdlib",
  "stest",

@@ -36,8 +36,11 @@ use test_helper::executor::{
 use starcoin_state_api::StateReaderExt;
 use starcoin_types::account::Account;
 use starcoin_types::account_config::G_STC_TOKEN_CODE;
+use starcoin_vm_runtime::data_cache::AsMoveResolver;
+use starcoin_vm_runtime::move_vm_ext::ResourceGroupResolver;
 use starcoin_vm_runtime::starcoin_vm::{chunk_block_transactions, StarcoinVM};
 use starcoin_vm_types::account_config::core_code_address;
+use starcoin_vm_types::language_storage::StructTag;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::state_value::StateValue;
 use test_helper::executor::{
@@ -1132,5 +1135,32 @@ fn test_chunk_block_transactions() -> Result<()> {
     let result3 = chunk_block_transactions(txns3);
     assert_eq!(result3.len(), 3);
 
+    Ok(())
+}
+
+#[test]
+fn test_genesis_writeset_for_object() -> Result<()> {
+    starcoin_logger::init_for_test();
+
+    let (chain_statedb, _network) = prepare_genesis();
+    let state_key = StateKey::resource_group(
+        &genesis_address(),
+        &StructTag {
+            address: genesis_address(),
+            module: Identifier::new("object").unwrap(),
+            name: Identifier::new("ObjectGroup").unwrap(),
+            type_args: vec![],
+        },
+    );
+    let object_core_tag = StructTag {
+        address: genesis_address(),
+        module: Identifier::new("object").unwrap(),
+        name: Identifier::new("ObjectCore").unwrap(),
+        type_args: vec![],
+    };
+    let resource_group_adapter = chain_statedb.as_move_resolver();
+    assert!(resource_group_adapter
+        .resource_exists_in_group(&state_key, &object_core_tag)
+        .unwrap());
     Ok(())
 }
