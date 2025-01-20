@@ -309,6 +309,10 @@ impl<'r, 'l> SessionExt<'r, 'l> {
                         get_resource_group_member_from_metadata(&struct_tag, md)
                     });
 
+                eprintln!(
+                    "struct_tag: {:?} resource group tag {:?}",
+                    struct_tag, resource_group_tag
+                );
                 if let Some(resource_group_tag) = resource_group_tag {
                     if resource_groups
                         .entry(resource_group_tag)
