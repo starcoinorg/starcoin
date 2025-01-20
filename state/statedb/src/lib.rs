@@ -112,8 +112,12 @@ impl AccountStateObject {
                 .transpose()?
                 .flatten()),
             DataPath::Resource(struct_tag) => self.resource_tree.lock().get(struct_tag),
-            DataPath::ResourceGroup(_) => {
-                bail!("resource_group_tree not support get");
+            DataPath::ResourceGroup(struct_tag) => {
+                eprintln!(
+                    "redirect getting resource_group_tree to resource_tree {}",
+                    data_path
+                );
+                self.resource_tree.lock().get(struct_tag)
             }
         }
     }
