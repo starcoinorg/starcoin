@@ -23,8 +23,6 @@ struct DataProof {
     proof: Vec<String>,
 }
 
-// XXX FIXME YSG next pr
-#[ignore]
 #[stest::test]
 fn test_merkle_distributor() -> Result<()> {
     let association = Account::new_association();
@@ -41,7 +39,9 @@ fn test_merkle_distributor() -> Result<()> {
         let source = include_str!("../modules/MerkleDistributor.move");
         let mut dep_libs = starcoin_move_stdlib::move_stdlib_files();
         let starcoin_stdlib_files = starcoin_move_stdlib::starcoin_stdlib_files();
+        let starcoin_framework_files = starcoin_move_stdlib::starcoin_framework_files();
         dep_libs.extend(starcoin_stdlib_files);
+        dep_libs.extend(starcoin_framework_files);
         let modules = compile_modules_with_address_ext(association_address(), source, &dep_libs);
 
         let package = Package::new(modules, None)?;
@@ -143,6 +143,7 @@ fn test_merkle_distributor() -> Result<()> {
             &chain_state,
             TransactionPayload::EntryFunction(script_function),
         )?;
+        println!("YSG result {:?}", result);
         let status = result.status().status().unwrap();
         // INVALID_PROOF
         assert_eq!(Some(511), move_abort_code(status));
