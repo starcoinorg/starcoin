@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Scratchpad for on chain values during the execution.
 
-use crate::move_vm_ext::{AsExecutorView, ResourceGroupResolver};
+use crate::move_vm_ext::{resource_state_key, AsExecutorView, ResourceGroupResolver};
 use bytes::Bytes;
 use move_binary_format::deserializer::DeserializerConfig;
 use move_binary_format::CompiledModule;
@@ -14,7 +14,9 @@ use move_table_extension::{TableHandle, TableResolver};
 use starcoin_gas_schedule::LATEST_GAS_FEATURE_VERSION;
 use starcoin_logger::prelude::*;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_vm_runtime_types::resolver::{ExecutorView, ResourceGroupSize, TResourceGroupView};
+use starcoin_vm_runtime_types::resolver::{
+    ExecutorView, ResourceGroupSize, TResourceGroupView, TResourceView,
+};
 use starcoin_vm_runtime_types::resource_group_adapter::ResourceGroupAdapter;
 use starcoin_vm_types::state_store::{
     errors::StateviewError, state_key::StateKey, state_storage_usage::StateStorageUsage,
@@ -38,7 +40,19 @@ pub fn get_resource_group_member_from_metadata(
     struct_tag: &StructTag,
     metadata: &[Metadata],
 ) -> Option<StructTag> {
+    eprintln!(
+        "get_resource_group_member_from_metadata {} origin metadata count {}",
+        struct_tag,
+        metadata.len()
+    );
+    if metadata.is_empty() && struct_tag.name.as_ident_str().as_str() == "ObjectCore" {
+        panic!("let's see the backtrace");
+    }
     let metadata = starcoin_framework::get_metadata(metadata)?;
+    eprintln!(
+        "get_resource_group_member_from_metadata {} metadata struct_attributes {:?}",
+        struct_tag, metadata.struct_attributes
+    );
     metadata
         .struct_attributes
         .get(struct_tag.name.as_ident_str().as_str())?
@@ -55,7 +69,7 @@ pub struct StorageAdapter<'e, E> {
     executor_view: &'e E,
     _deserializer_config: DeserializerConfig,
     resource_group_view: ResourceGroupAdapter<'e>,
-    _accessed_groups: RefCell<HashSet<StateKey>>,
+    accessed_groups: RefCell<HashSet<StateKey>>,
 }
 
 /// A local cache for a given a `StateView`. The cache is private to the Diem layer
@@ -173,7 +187,7 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
                 LATEST_GAS_FEATURE_VERSION,
                 false,
             ),
-            _accessed_groups: RefCell::new(HashSet::new()),
+            accessed_groups: RefCell::new(HashSet::new()),
         }
     }
 
@@ -210,19 +224,45 @@ impl<'a, S: StateView> ModuleResolver for StorageAdapter<'a, S> {
 impl<'a, S: StateView> ResourceResolver for StorageAdapter<'a, S> {
     type Error = PartialVMError;
 
-    // TODO(simon): don't ignore metadata and layout
     fn get_resource_bytes_with_metadata_and_layout(
         &self,
         address: &AccountAddress,
         struct_tag: &StructTag,
-        _metadata: &[Metadata],
-        _layout: Option<&MoveTypeLayout>,
+        metadata: &[Metadata],
+        maybe_layout: Option<&MoveTypeLayout>,
     ) -> Result<(Option<Bytes>, usize), Self::Error> {
-        let key = StateKey::resource(address, struct_tag)
-            .map_err(|_| PartialVMError::new(StatusCode::STORAGE_ERROR))?;
-        let buf = self.get(&key)?.map(|v| v.bytes().clone());
-        let size = resource_size(&buf);
-        Ok((buf, size))
+        let resource_group = get_resource_group_member_from_metadata(struct_tag, metadata);
+        if let Some(resource_group) = resource_group {
+            eprintln!(
+                "get_resource_bytes_with_metadata_and_layout {} from group",
+                struct_tag
+            );
+            let key = StateKey::resource_group(address, &resource_group);
+            let buf =
+                self.resource_group_view
+                    .get_resource_from_group(&key, struct_tag, maybe_layout)?;
+
+            let first_access = self.accessed_groups.borrow_mut().insert(key.clone());
+            let group_size = if first_access {
+                self.resource_group_view.resource_group_size(&key)?.get()
+            } else {
+                0
+            };
+
+            let buf_size = resource_size(&buf);
+            Ok((buf, buf_size + group_size as usize))
+        } else {
+            eprintln!(
+                "get_resource_bytes_with_metadata_and_layout {} from executor_view",
+                struct_tag
+            );
+            let state_key = resource_state_key(address, struct_tag)?;
+            let buf = self
+                .executor_view
+                .get_resource_bytes(&state_key, maybe_layout)?;
+            let buf_size = resource_size(&buf);
+            Ok((buf, buf_size))
+        }
     }
 }
 
