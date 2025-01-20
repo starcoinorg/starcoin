@@ -111,7 +111,15 @@ impl AccountStateObject {
                 .map(|tree| tree.get(module_name))
                 .transpose()?
                 .flatten()),
-            DataPath::Resource(struct_tag) => self.resource_tree.lock().get(struct_tag),
+            DataPath::Resource(struct_tag) => {
+                let res = self.resource_tree.lock().get(struct_tag);
+                eprintln!(
+                    "getting resource {} is_none {}",
+                    data_path,
+                    res.as_ref().unwrap().is_none()
+                );
+                res
+            }
             DataPath::ResourceGroup(struct_tag) => {
                 eprintln!(
                     "redirect getting resource_group_tree to resource_tree {}",
