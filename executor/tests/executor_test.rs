@@ -7,8 +7,9 @@ use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_executor::validate_transaction;
 use starcoin_logger::prelude::*;
 use starcoin_transaction_builder::{
-    build_batch_payload_same_amount, build_transfer_txn, encode_transfer_script_by_token_code,
-    raw_peer_to_peer_txn, DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
+    build_batch_payload_same_amount, build_transfer_txn, empty_test_metadata,
+    encode_transfer_script_by_token_code, raw_peer_to_peer_txn, DEFAULT_EXPIRATION_TIME,
+    DEFAULT_MAX_GAS_AMOUNT,
 };
 use starcoin_types::account::peer_to_peer_txn;
 use starcoin_types::identifier::Identifier;
@@ -1163,4 +1164,14 @@ fn test_genesis_writeset_for_object() -> Result<()> {
         .resource_exists_in_group(&state_key, &object_core_tag)
         .unwrap());
     Ok(())
+}
+
+#[test]
+fn empty_scripts_test_metadata() {
+    starcoin_logger::init_for_test();
+
+    let (chain_state, net) = prepare_genesis();
+
+    //let _ = genesis_execute_should_sucess(&chain_state, &net, empty_test_metadata());
+    let _ = association_execute_should_success(&net, &chain_state, empty_test_metadata());
 }

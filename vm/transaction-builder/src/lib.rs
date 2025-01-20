@@ -6,6 +6,7 @@ use std::convert::TryInto;
 use anyhow::Result;
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 
+use starcoin_cached_packages::starcoin_stdlib::empty_scripts_test_metadata;
 use starcoin_cached_packages::{
     starcoin_framework_sdk_builder::{empty_scripts_empty_script, stc_genesis_initialize},
     starcoin_stdlib::{
@@ -13,7 +14,6 @@ use starcoin_cached_packages::{
         transfer_scripts_peer_to_peer, transfer_scripts_peer_to_peer_v2,
     },
 };
-
 use starcoin_config::{genesis_config::G_TOTAL_STC_AMOUNT, ChainNetwork};
 use starcoin_types::account::Account;
 use starcoin_vm_types::on_chain_config::Features;
@@ -564,6 +564,10 @@ pub fn build_vm_config_upgrade_proposal(
 
 pub fn empty_txn_payload() -> TransactionPayload {
     empty_scripts_empty_script()
+}
+
+pub fn empty_test_metadata() -> TransactionPayload {
+    empty_scripts_test_metadata()
 }
 
 pub fn build_signed_empty_txn(

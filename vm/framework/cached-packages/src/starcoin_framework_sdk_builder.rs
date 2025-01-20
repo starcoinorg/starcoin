@@ -289,6 +289,8 @@ pub enum EntryFunctionCall {
 
     EmptyScriptsEmptyScript {},
 
+    EmptyScriptsTestMetadata {},
+
     /// Withdraw an `amount` of coin `CoinType` from `account` and burn it.
     ManagedCoinBurn {
         coin_type: TypeTag,
@@ -754,6 +756,7 @@ impl EntryFunctionCall {
                 easy_gas_script_withdraw_gas_fee_entry(token_type, amount)
             }
             EmptyScriptsEmptyScript {} => empty_scripts_empty_script(),
+            EmptyScriptsTestMetadata {} => empty_scripts_test_metadata(),
             ManagedCoinBurn { coin_type, amount } => managed_coin_burn(coin_type, amount),
             ManagedCoinInitialize {
                 coin_type,
@@ -1635,6 +1638,18 @@ pub fn empty_scripts_empty_script() -> TransactionPayload {
             ident_str!("empty_scripts").to_owned(),
         ),
         ident_str!("empty_script").to_owned(),
+        vec![],
+        vec![],
+    ))
+}
+
+pub fn empty_scripts_test_metadata() -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("empty_scripts").to_owned(),
+        ),
+        ident_str!("test_metadata").to_owned(),
         vec![],
         vec![],
     ))
@@ -2802,6 +2817,14 @@ mod decoder {
         }
     }
 
+    pub fn empty_scripts_test_metadata(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(_script) = payload {
+            Some(EntryFunctionCall::EmptyScriptsTestMetadata {})
+        } else {
+            None
+        }
+    }
+
     pub fn managed_coin_burn(payload: &TransactionPayload) -> Option<EntryFunctionCall> {
         if let TransactionPayload::EntryFunction(script) = payload {
             Some(EntryFunctionCall::ManagedCoinBurn {
@@ -3494,6 +3517,10 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
         map.insert(
             "empty_scripts_empty_script".to_string(),
             Box::new(decoder::empty_scripts_empty_script),
+        );
+        map.insert(
+            "empty_scripts_test_metadata".to_string(),
+            Box::new(decoder::empty_scripts_test_metadata),
         );
         map.insert(
             "managed_coin_burn".to_string(),
