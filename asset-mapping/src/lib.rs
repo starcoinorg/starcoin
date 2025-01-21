@@ -29,7 +29,6 @@ use starcoin_vm_types::{
     state_view::StateReaderExt,
     transaction::SignedUserTransaction,
 };
-use test_helper::dao::quorum_vote;
 use test_helper::executor::prepare_genesis;
 
 #[test]

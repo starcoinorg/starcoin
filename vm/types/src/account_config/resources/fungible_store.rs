@@ -1,25 +1,29 @@
 // Copyright © Starcoin Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+use move_core_types::language_storage::{StructTag, CORE_CODE_ADDRESS};
 use move_core_types::{
     account_address::AccountAddress,
     ident_str,
     identifier::IdentStr,
     move_resource::{MoveResource, MoveStructType},
 };
-use move_core_types::language_storage::{CORE_CODE_ADDRESS, StructTag};
+
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
 use serde::{Deserialize, Serialize};
 
-pub fn primary_store(address: &AccountAddress) -> AccountAddress {
+pub fn primary_store(address: &AccountAddress, meta_address: &AccountAddress) -> AccountAddress {
     let mut bytes = address.to_vec();
-    bytes.append(&mut AccountAddress::TEN.to_vec());
+    // bytes.append(&mut AccountAddress::TEN.to_vec());
+    bytes.append(&mut meta_address.to_vec());
     bytes.push(0xFC);
-    AccountAddress::from_bytes(starcoin_crypto::hash::HashValue::sha3_256_of(&bytes).to_vec())
-        .unwrap()
+    let hash_vec = starcoin_crypto::hash::HashValue::sha3_256_of(&bytes).to_vec();
+    let address_bytes: [u8; AccountAddress::LENGTH] = hash_vec[16..]
+        .try_into()
+        .expect("Slice with incorrect length");
+    AccountAddress::from_bytes(address_bytes).unwrap()
 }
-
 /// The balance resource held under an account.
 #[derive(Debug, Serialize, Deserialize)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
@@ -72,3 +76,19 @@ impl MoveStructType for FungibleStoreResource {
 }
 
 impl MoveResource for FungibleStoreResource {}
+
+
+#[test]
+fn test_compare_primary_store_address() -> anyhow::Result<()> {
+    let primary_store_addr =
+        primary_store(
+            &AccountAddress::from_hex_literal("0xd0c5a06ae6100ce115cad1600fe59e96")?,
+            &AccountAddress::ONE,
+        );
+    assert_eq!(
+        primary_store_addr,
+        AccountAddress::from_hex_literal("0x786d516a2228196dff48bf39a4b085f0")?,
+        "Not expect address"
+    );
+    Ok(())
+}

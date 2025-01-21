@@ -10,11 +10,13 @@
 
 use anyhow::{format_err, Result};
 use bytes::Bytes;
+use log::warn;
 use move_core_types::{
     account_address::AccountAddress,
     language_storage::{ModuleId, StructTag},
 };
 
+use crate::account_config::fungible_store;
 use crate::{
     account_config::{
         genesis_address, token_code::TokenCode, AccountResource, CoinStoreResource,
@@ -122,25 +124,27 @@ pub trait StateReaderExt: StateView {
         )?
         .coin() as u128;
 
+        let primary_store_address = fungible_store::primary_store(&address, &type_tag.address);
         // Get from coin store
         let fungible_store_state_key = StateKey::resource(
-            &address,
+            &primary_store_address,
             &FungibleStoreResource::struct_tag_for_token(),
         )?;
-        println!("StateReadExt::get_balance_by_type : fungible_store_state_key: {:?}", fungible_store_state_key);
-        let fungible_balance = bcs_ext::from_bytes::<FungibleStoreResource>(
-            &self
-                .get_state_value_bytes(&fungible_store_state_key)?
-                .ok_or_else(|| {
-                    format_err!(
-                        "FungibleStoreResource not exists at address:{} for type tag:{}",
-                        address,
-                        type_tag
-                    )
-                })?,
-        )?
-        .balance() as u128;
 
+        let fungible_balance = match self.get_state_value_bytes(&fungible_store_state_key)? {
+            Some(bytes) => {
+                bcs_ext::from_bytes::<FungibleStoreResource>(&bytes)?
+                    .balance() as u128
+            }
+            None => {
+                warn!(
+                    "FungibleStoreResource not exists at address:{:?} for type tag:{:?}",
+                    primary_store_address,
+                    fungible_store_state_key
+                );
+                0
+            }
+        };
         Ok(coin_balance + fungible_balance)
     }
 
