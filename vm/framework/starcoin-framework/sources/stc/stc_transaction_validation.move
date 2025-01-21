@@ -9,7 +9,6 @@ module starcoin_framework::stc_transaction_validation {
     use std::signer;
     use std::vector;
     use starcoin_framework::object;
-    use starcoin_framework::fungible_asset;
     use starcoin_std::debug;
 
     use starcoin_framework::account;

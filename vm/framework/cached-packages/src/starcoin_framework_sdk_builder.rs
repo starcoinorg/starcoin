@@ -150,6 +150,12 @@ pub enum EntryFunctionCall {
         cap_update_table: Vec<u8>,
     },
 
+    AssetMappingAssignToAccountTest {
+        receiver: AccountAddress,
+        old_token_str: Vec<u8>,
+        amount: u64,
+    },
+
     AssetMappingAssignToAccountWithProof {
         receiper: AccountAddress,
         old_token_str: Vec<u8>,
@@ -654,6 +660,11 @@ impl EntryFunctionCall {
                 new_public_key_bytes,
                 cap_update_table,
             ),
+            AssetMappingAssignToAccountTest {
+                receiver,
+                old_token_str,
+                amount,
+            } => asset_mapping_assign_to_account_test(receiver, old_token_str, amount),
             AssetMappingAssignToAccountWithProof {
                 receiper,
                 old_token_str,
@@ -1280,6 +1291,26 @@ pub fn account_rotate_authentication_key_with_rotation_capability(
             bcs::to_bytes(&new_scheme).unwrap(),
             bcs::to_bytes(&new_public_key_bytes).unwrap(),
             bcs::to_bytes(&cap_update_table).unwrap(),
+        ],
+    ))
+}
+
+pub fn asset_mapping_assign_to_account_test(
+    receiver: AccountAddress,
+    old_token_str: Vec<u8>,
+    amount: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("asset_mapping").to_owned(),
+        ),
+        ident_str!("assign_to_account_test").to_owned(),
+        vec![],
+        vec![
+            bcs::to_bytes(&receiver).unwrap(),
+            bcs::to_bytes(&old_token_str).unwrap(),
+            bcs::to_bytes(&amount).unwrap(),
         ],
     ))
 }
@@ -2591,6 +2622,20 @@ mod decoder {
         }
     }
 
+    pub fn asset_mapping_assign_to_account_test(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::AssetMappingAssignToAccountTest {
+                receiver: bcs::from_bytes(script.args().get(0)?).ok()?,
+                old_token_str: bcs::from_bytes(script.args().get(1)?).ok()?,
+                amount: bcs::from_bytes(script.args().get(2)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
     pub fn asset_mapping_assign_to_account_with_proof(
         payload: &TransactionPayload,
     ) -> Option<EntryFunctionCall> {
@@ -3502,6 +3547,10 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
         map.insert(
             "account_rotate_authentication_key_with_rotation_capability".to_string(),
             Box::new(decoder::account_rotate_authentication_key_with_rotation_capability),
+        );
+        map.insert(
+            "asset_mapping_assign_to_account_test".to_string(),
+            Box::new(decoder::asset_mapping_assign_to_account_test),
         );
         map.insert(
             "asset_mapping_assign_to_account_with_proof".to_string(),

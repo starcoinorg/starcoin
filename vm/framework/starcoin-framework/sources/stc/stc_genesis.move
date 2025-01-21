@@ -4,9 +4,8 @@ module starcoin_framework::stc_genesis {
     use std::features;
     use std::option;
     use std::vector;
-    use starcoin_framework::fungible_asset;
-    use starcoin_framework::asset_mapping;
 
+    use starcoin_framework::asset_mapping;
     use starcoin_framework::account;
     use starcoin_framework::aggregator_factory;
     use starcoin_framework::block_reward;
@@ -38,6 +37,7 @@ module starcoin_framework::stc_genesis {
     use starcoin_framework::transaction_publish_option;
     use starcoin_framework::treasury;
     use starcoin_framework::vm_config;
+
     use starcoin_std::debug;
 
     spec module {
@@ -305,13 +305,12 @@ module starcoin_framework::stc_genesis {
         time_mint_stc_period: u64,
     ) {
         // TODO(BobOng): [asset-mapping] To confirm how many STC put into asset mapping pool, now is 10,000,000,000 STC
-        // let asset_mapping_coin = coin::extract<STC>(&mut total_supply_stc, 100000000000000000);
-        // asset_mapping::create_store_from_coin<STC>(
-        //     starcoin_framework,
-        //     b"0x1::STC::STC",
-        //     asset_mapping_coin
-        // );
-        // fungible_asset::put_test_store_genesis(core_resource_account);
+        let asset_mapping_coin = coin::extract<STC>(&mut total_supply_stc, 100000000000000000);
+        asset_mapping::create_store_from_coin<STC>(
+            starcoin_framework,
+            b"0x1::STC::STC",
+            asset_mapping_coin
+        );
 
         // Initialize treasury
         let treasury_withdraw_cap = treasury::initialize(starcoin_framework, total_supply_stc);

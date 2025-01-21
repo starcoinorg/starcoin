@@ -186,6 +186,15 @@ module starcoin_framework::asset_mapping {
         assign_to_account(token_issuer, receiper, old_token_str, amount);
     }
 
+    public entry fun assign_to_account_test(
+        system_account: &signer,
+        receiver: address,
+        old_token_str: vector<u8>,
+        amount: u64
+    )  acquires AssetMappingPool, AssetMappingStore {
+        Self::assign_to_account(system_account, receiver, old_token_str, amount);
+    }
+
     /// Assigns tokens to a recipient account with proof verification
     /// @param token_issuer - The token issuer signer
     /// @param receiper - Recipient address
@@ -233,6 +242,7 @@ module starcoin_framework::asset_mapping {
             amount
         );
         debug::print(&string::utf8(b"asset_mapping::assign_to_account | Getting receiver fungible store: "));
+        debug::print(&mapping_fa);
 
         let target_store =
             primary_fungible_store::ensure_primary_store_exists(receiver, mapping_store.metadata);

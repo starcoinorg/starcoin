@@ -13,7 +13,7 @@ module starcoin_framework::coin {
     use starcoin_framework::event::{Self, EventHandle};
     use starcoin_framework::fungible_asset::{Self, BurnRef, FungibleAsset, Metadata, MintRef, TransferRef};
     use starcoin_framework::guid;
-    use starcoin_framework::object::{Self, Object, object_address, is_object};
+    use starcoin_framework::object::{Self, Object, object_address};
     use starcoin_framework::optional_aggregator::{Self, OptionalAggregator};
     use starcoin_framework::primary_fungible_store;
     use starcoin_framework::system_addresses;

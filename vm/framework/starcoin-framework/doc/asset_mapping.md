@@ -18,6 +18,7 @@ with proof verification.
 -  [Function `create_store_for_coin_type`](#0x1_asset_mapping_create_store_for_coin_type)
 -  [Function `fungible_store_balance`](#0x1_asset_mapping_fungible_store_balance)
 -  [Function `assign_to_account_with_proof`](#0x1_asset_mapping_assign_to_account_with_proof)
+-  [Function `assign_to_account_test`](#0x1_asset_mapping_assign_to_account_test)
 -  [Function `assign_to_account`](#0x1_asset_mapping_assign_to_account)
 -  [Function `calculation_proof`](#0x1_asset_mapping_calculation_proof)
 
@@ -425,6 +426,35 @@ Retrieves the balance for a specific token type
 
 </details>
 
+<a id="0x1_asset_mapping_assign_to_account_test"></a>
+
+## Function `assign_to_account_test`
+
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_assign_to_account_test">assign_to_account_test</a>(system_account: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, receiver: <b>address</b>, old_token_str: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, amount: u64)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_assign_to_account_test">assign_to_account_test</a>(
+    system_account: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
+    receiver: <b>address</b>,
+    old_token_str: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    amount: u64
+)  <b>acquires</b> <a href="asset_mapping.md#0x1_asset_mapping_AssetMappingPool">AssetMappingPool</a>, <a href="asset_mapping.md#0x1_asset_mapping_AssetMappingStore">AssetMappingStore</a> {
+    <a href="asset_mapping.md#0x1_asset_mapping_assign_to_account">Self::assign_to_account</a>(system_account, receiver, old_token_str, amount);
+}
+</code></pre>
+
+
+
+</details>
+
 <a id="0x1_asset_mapping_assign_to_account"></a>
 
 ## Function `assign_to_account`
@@ -487,6 +517,7 @@ Requirements:
         amount
     );
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="asset_mapping.md#0x1_asset_mapping_assign_to_account">asset_mapping::assign_to_account</a> | Getting receiver fungible store: "));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&mapping_fa);
 
     <b>let</b> target_store =
         <a href="primary_fungible_store.md#0x1_primary_fungible_store_ensure_primary_store_exists">primary_fungible_store::ensure_primary_store_exists</a>(receiver, mapping_store.metadata);

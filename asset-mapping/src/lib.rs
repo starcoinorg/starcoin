@@ -5,12 +5,12 @@ use anyhow::Result;
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 
 use forkable_jellyfish_merkle::{blob::Blob, node_type::SparseMerkleLeafNode, RawKey};
-use starcoin_cached_packages::starcoin_framework_sdk_builder::asset_mapping_assign_to_account_with_proof;
+use starcoin_cached_packages::starcoin_framework_sdk_builder::{asset_mapping_assign_to_account_test, asset_mapping_assign_to_account_with_proof};
 use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
 use starcoin_config::{ChainNetwork, NodeConfig, G_TEST_CONFIG};
 use starcoin_consensus::Consensus;
 use starcoin_state_api::ChainStateReader;
-use starcoin_transaction_builder::DEFAULT_MAX_GAS_AMOUNT;
+use starcoin_transaction_builder::{create_signed_txn_with_association_account, DEFAULT_MAX_GAS_AMOUNT, peer_to_peer_txn_sent_as_association};
 use starcoin_types::{
     account::DEFAULT_EXPIRATION_TIME, account_address::AccountAddress,
     account_config::CORE_CODE_ADDRESS, identifier::Identifier, language_storage::StructTag,
@@ -18,13 +18,14 @@ use starcoin_types::{
 };
 use starcoin_vm_types::{
     access_path::AccessPath,
-    account_config,
-    account_config::{genesis_address, stc_type_tag},
+    account_config::{self, genesis_address, stc_type_tag},
     genesis_config::ChainId,
     state_store::state_key::StateKey,
     state_view::StateReaderExt,
     transaction::SignedUserTransaction,
 };
+use starcoin_vm_types::account_config::association_address;
+use test_helper::dao::quorum_vote;
 use test_helper::executor::prepare_genesis;
 
 #[test]
@@ -63,6 +64,8 @@ fn test_get_chain_id_after_genesis_with_proof_verify() -> Result<()> {
 
 #[test]
 fn test_sha3_256_diffrent_with_crypto_macro() -> Result<()> {
+    starcoin_logger::init_for_test();
+
     let element_key_hash = HashValue::from_hex_literal(
         "0x4cc8bd9df94b37c233555d9a3bba0a712c3c709f047486d1e624b2bcd3b83266",
     )?;
@@ -84,7 +87,7 @@ fn test_sha3_256_diffrent_with_crypto_macro() -> Result<()> {
         HashValue::sha3_256_of(STARCOIN_HASH_PREFIX).as_slice(),
         ser.as_slice(),
     ]
-    .concat();
+        .concat();
 
     let move_hash = HashValue::sha3_256_of(&hash_vec[..]);
     println!(
@@ -104,6 +107,7 @@ fn test_sha3_256_diffrent_with_crypto_macro() -> Result<()> {
 
 #[test]
 fn test_asset_mapping_for_specified_coin_type() -> Result<()> {
+    starcoin_logger::init_for_test();
     let (_chain_state, _net) = prepare_genesis();
     let stc_store_tag = StructTag {
         address: CORE_CODE_ADDRESS,
@@ -123,6 +127,64 @@ fn test_asset_mapping_for_specified_coin_type() -> Result<()> {
     );
     Ok(())
 }
+
+#[test]
+fn test_simple_asset_mapping_without_proof() -> Result<()> {
+    starcoin_logger::init_for_test();
+
+    // let (chain_state, net) = prepare_genesis();
+    let test_net = ChainNetwork::new_test();
+    let mut block_chain = test_helper::gen_blockchain_with_blocks_for_test(0, &test_net)?;
+    let associal_sequence_number = block_chain.chain_state_reader().get_sequence_number(association_address())?;
+
+    // Build alice and transfer STC to alice
+    let amount = 1000000000;
+    let alice = AccountAddress::from_str("0xd0c5a06ae6100ce115cad1600fe59e96").unwrap();
+    local_block_chain_excecute_txn(
+        &mut block_chain,
+        peer_to_peer_txn_sent_as_association(
+            alice,
+            associal_sequence_number,
+            amount,
+            DEFAULT_EXPIRATION_TIME,
+            &test_net,
+        ),
+    )?;
+
+    // Check alice's balance
+    {
+        assert_eq!(block_chain.chain_state_reader().get_balance(alice)?, amount, "alice balance not expect");
+    }
+
+    let genesis_sequence_number = {
+        block_chain.chain_state_reader().get_sequence_number(genesis_address())?
+    };
+    // Execute assign asset mapping to alice
+    local_block_chain_excecute_txn(
+        &mut block_chain,
+        create_signed_txn_with_association_account(
+            asset_mapping_assign_to_account_test(
+                alice,
+                "0x1::STC::STC".as_bytes().to_vec(),
+                amount as u64,
+            ),
+            genesis_sequence_number,
+            DEFAULT_MAX_GAS_AMOUNT,
+            1,
+            DEFAULT_EXPIRATION_TIME,
+            &test_net,
+        ),
+    )?;
+
+    // Check alice's balance with 2 * amount
+    {
+        let balance = block_chain.chain_state_reader().get_balance(alice)?;
+        assert_eq!(balance, amount * 2, "alice balance not expect");
+    }
+
+    Ok(())
+}
+
 
 #[test]
 fn test_asset_mapping_whole_process() -> Result<()> {
@@ -274,7 +336,7 @@ fn local_build_peer_to_peer_from_association(
             net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
             net,
         )
-        .try_into()?,
+            .try_into()?,
     )
 }
 

@@ -113,11 +113,11 @@ impl AccountStateObject {
                 .flatten()),
             DataPath::Resource(struct_tag) => {
                 let res = self.resource_tree.lock().get(struct_tag);
-                eprintln!(
-                    "getting resource {} is_none {}",
-                    data_path,
-                    res.as_ref().unwrap().is_none()
-                );
+                // eprintln!(
+                //     "getting resource {} is_none {}",
+                //     data_path,
+                //     res.as_ref().unwrap().is_none()
+                // );
                 res
             }
             DataPath::ResourceGroup(struct_tag) => {

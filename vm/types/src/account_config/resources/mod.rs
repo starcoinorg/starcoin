@@ -9,6 +9,7 @@ mod key_rotation_capability;
 mod module_upgrade_strategy;
 mod object;
 mod withdraw_capability;
+mod fungible_store;
 
 pub use crate::token::token_info::*;
 pub use account::*;
