@@ -7,17 +7,14 @@ use anyhow::{anyhow, Result};
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 
 use forkable_jellyfish_merkle::{blob::Blob, node_type::SparseMerkleLeafNode, RawKey};
+use starcoin_cached_packages::starcoin_framework_sdk_builder::starcoin_account_create_account;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_executor::validate_transaction;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, StateReaderExt};
 // use test_helper::Account;
 use starcoin_statedb::ChainStateDB;
-use starcoin_transaction_builder::{
-    build_batch_payload_same_amount, build_transfer_txn, empty_test_metadata,
-    encode_transfer_script_by_token_code, raw_peer_to_peer_txn, DEFAULT_EXPIRATION_TIME,
-    DEFAULT_MAX_GAS_AMOUNT,
-};
+use starcoin_transaction_builder::{build_batch_payload_same_amount, build_transfer_txn, empty_test_metadata, encode_transfer_script_by_token_code, raw_peer_to_peer_txn, DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT, create_signed_txn_with_association_account};
 use starcoin_vm_runtime::{
     data_cache::AsMoveResolver,
     move_vm_ext::ResourceGroupResolver,
@@ -55,6 +52,8 @@ use starcoin_types::{
     transaction::{EntryFunction, RawUserTransaction, TransactionArgument},
     transaction::{Transaction, TransactionPayload, TransactionStatus},
 };
+use starcoin_types::account_address::AccountAddress;
+use starcoin_vm_types::account_config::{association_address, fungible_store, FungibleStoreResource};
 
 #[derive(Default)]
 pub struct NullStateView;
@@ -1180,4 +1179,26 @@ fn empty_scripts_test_metadata() {
 
     //let _ = genesis_execute_should_sucess(&chain_state, &net, empty_test_metadata());
     let _ = association_execute_should_success(&net, &chain_state, empty_test_metadata());
+}
+
+#[test]
+fn test_create_new_account_and_check_primary_fungible_store() -> Result<()> {
+    starcoin_logger::init_for_test();
+
+    let (chain_state, net) = prepare_genesis();
+    let test_addr = AccountAddress::from_hex_literal("0xd0c5a06ae6100ce115cad1600fe59e96").unwrap();
+    let store_addr = AccountAddress::from_hex_literal("0x786d516a2228196dff48bf39a4b085f0").unwrap();
+    association_execute_should_success(&net, &chain_state, starcoin_account_create_account(test_addr))?;
+
+    let primary_store_address = fungible_store::primary_store(&test_addr, &AccountAddress::ONE);
+    assert_eq!(primary_store_address, store_addr, "store address not equal");
+
+    // Get from fungible asset
+    let fungible_store_state_key = StateKey::resource_group(
+        &primary_store_address,
+        &FungibleStoreResource::struct_tag_for_resource(),
+    );
+    chain_state.get_state_value_bytes(&fungible_store_state_key)?.expect("should exists");
+
+    Ok(())
 }

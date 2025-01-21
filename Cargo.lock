@@ -10627,6 +10627,7 @@ dependencies = [
  "sha3",
  "starcoin-abi-resolver",
  "starcoin-abi-types",
+ "starcoin-cached-packages",
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
