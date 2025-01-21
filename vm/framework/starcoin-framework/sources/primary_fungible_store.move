@@ -67,6 +67,10 @@ module starcoin_framework::primary_fungible_store {
         debug::print(&owner);
 
         let store_addr = primary_store_address(owner, metadata);
+
+        debug::print(&string::utf8(b"primary_fungible_store::ensure_primary_store_exists | primary store address: "));
+        debug::print(&store_addr);
+
         let ret = if (fungible_asset::store_exists(store_addr)) {
             object::address_to_object(store_addr)
         } else {
@@ -86,21 +90,15 @@ module starcoin_framework::primary_fungible_store {
         debug::print(&metadata);
 
         let metadata_addr = object::object_address(&metadata);
-        debug::print(&string::utf8(b"primary_fungible_store::create_primary_store | 1"));
         debug::print(&metadata_addr);
-
         object::address_to_object<Metadata>(metadata_addr);
 
-        debug::print(&string::utf8(b"primary_fungible_store::create_primary_store | 2"));
         let derive_ref = &borrow_global<DeriveRefPod>(metadata_addr).metadata_derive_ref;
         let constructor_ref = &object::create_user_derived_object(owner_addr, derive_ref);
 
-        debug::print(&string::utf8(b"primary_fungible_store::create_primary_store | 3"));
         // Disable ungated transfer as deterministic stores shouldn't be transferrable.
         let transfer_ref = &object::generate_transfer_ref(constructor_ref);
         object::disable_ungated_transfer(transfer_ref);
-
-        debug::print(&string::utf8(b"primary_fungible_store::create_primary_store | 4"));
 
         let ret = fungible_asset::create_store(constructor_ref, metadata);
         debug::print(&string::utf8(b"primary_fungible_store::create_primary_store | exited"));

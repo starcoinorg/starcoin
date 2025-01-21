@@ -8,13 +8,14 @@ use forkable_jellyfish_merkle::{blob::Blob, node_type::SparseMerkleLeafNode, Raw
 use starcoin_cached_packages::starcoin_framework_sdk_builder::{
     asset_mapping_assign_to_account_test, asset_mapping_assign_to_account_with_proof,
 };
+
 use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
 use starcoin_config::{ChainNetwork, NodeConfig, G_TEST_CONFIG};
 use starcoin_consensus::Consensus;
 use starcoin_state_api::ChainStateReader;
 use starcoin_transaction_builder::{
-    create_signed_txn_with_association_account, peer_to_peer_txn_sent_as_association,
-    DEFAULT_MAX_GAS_AMOUNT,
+    create_signed_txn_with_association_account,
+    peer_to_peer_txn_sent_as_association, DEFAULT_MAX_GAS_AMOUNT,
 };
 use starcoin_types::{
     account::Account, account::DEFAULT_EXPIRATION_TIME, account_address::AccountAddress,
@@ -190,7 +191,11 @@ fn test_simple_asset_mapping_without_proof() -> Result<()> {
     // Check alice's balance with 2 * amount
     {
         let balance = block_chain.chain_state_reader().get_balance(alice)?;
-        assert_eq!(balance, amount * 2, "alice balance not expect");
+        assert_eq!(
+            balance,
+            amount * 2,
+            "alice balance not expect after asset-mapping"
+        );
     }
 
     Ok(())
@@ -200,7 +205,7 @@ fn test_simple_asset_mapping_without_proof() -> Result<()> {
 fn test_asset_mapping_whole_process() -> Result<()> {
     starcoin_logger::init_for_test();
 
-    let block_gas_limit: u64 = 10000000;
+    let _block_gas_limit: u64 = 10000000;
     let initial_balance: u128 = 100000000000; // 1000 STC
     let receiver = AccountAddress::from_str("0xd0c5a06ae6100ce115cad1600fe59e96").unwrap();
 

@@ -175,6 +175,15 @@ eg. 0x1::STC::STC -> 0x1::starcoin_coin::STC
 
 
 
+<a id="0x1_asset_mapping_EINVALID_DEPOSIT"></a>
+
+
+
+<pre><code><b>const</b> <a href="asset_mapping.md#0x1_asset_mapping_EINVALID_DEPOSIT">EINVALID_DEPOSIT</a>: u64 = 104;
+</code></pre>
+
+
+
 <a id="0x1_asset_mapping_EINVALID_NOT_PROOF"></a>
 
 
@@ -519,10 +528,21 @@ Requirements:
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="asset_mapping.md#0x1_asset_mapping_assign_to_account">asset_mapping::assign_to_account</a> | Getting receiver fungible store: "));
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&mapping_fa);
 
+    <b>let</b> mapping_fa_amount = <a href="fungible_asset.md#0x1_fungible_asset_amount">fungible_asset::amount</a>(&mapping_fa);
+
     <b>let</b> target_store =
         <a href="primary_fungible_store.md#0x1_primary_fungible_store_ensure_primary_store_exists">primary_fungible_store::ensure_primary_store_exists</a>(receiver, mapping_store.metadata);
-
     <a href="fungible_asset.md#0x1_fungible_asset_deposit">fungible_asset::deposit</a>(target_store, mapping_fa);
+
+    <b>let</b> target_store_balance = <a href="fungible_asset.md#0x1_fungible_asset_balance">fungible_asset::balance</a>(target_store);
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="asset_mapping.md#0x1_asset_mapping_assign_to_account">asset_mapping::assign_to_account</a> | target_store balance: "));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&target_store);
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&target_store_balance);
+
+    <b>assert</b>!(
+        target_store_balance &gt;= mapping_fa_amount,
+        <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="asset_mapping.md#0x1_asset_mapping_EINVALID_DEPOSIT">EINVALID_DEPOSIT</a>)
+    );
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="asset_mapping.md#0x1_asset_mapping_assign_to_account">asset_mapping::assign_to_account</a> | exited"));
 }
 </code></pre>

@@ -59,6 +59,7 @@ module starcoin_framework::asset_mapping {
     const EINVALID_PROOF_ROOT: u64 = 102;
     const EINVALID_NOT_PROOF: u64 = 103;
     const EINVALID_ASSET_MAPPING_POOL: u64 = 104;
+    const EINVALID_DEPOSIT: u64 = 104;
 
     const ASSET_MAPPING_OBJECT_SEED: vector<u8> = b"asset-mapping";
 
@@ -244,10 +245,21 @@ module starcoin_framework::asset_mapping {
         debug::print(&string::utf8(b"asset_mapping::assign_to_account | Getting receiver fungible store: "));
         debug::print(&mapping_fa);
 
+        let mapping_fa_amount = fungible_asset::amount(&mapping_fa);
+
         let target_store =
             primary_fungible_store::ensure_primary_store_exists(receiver, mapping_store.metadata);
-
         fungible_asset::deposit(target_store, mapping_fa);
+
+        let target_store_balance = fungible_asset::balance(target_store);
+        debug::print(&string::utf8(b"asset_mapping::assign_to_account | target_store balance: "));
+        debug::print(&target_store);
+        debug::print(&target_store_balance);
+
+        assert!(
+            target_store_balance >= mapping_fa_amount,
+            error::invalid_state(EINVALID_DEPOSIT)
+        );
         debug::print(&string::utf8(b"asset_mapping::assign_to_account | exited"));
     }
 
