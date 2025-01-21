@@ -132,15 +132,11 @@ pub trait StateReaderExt: StateView {
         );
 
         let fungible_balance = match self.get_state_value_bytes(&fungible_store_state_key)? {
-            Some(bytes) => {
-                bcs_ext::from_bytes::<FungibleStoreResource>(&bytes)?
-                    .balance() as u128
-            }
+            Some(bytes) => bcs_ext::from_bytes::<FungibleStoreResource>(&bytes)?.balance() as u128,
             None => {
                 warn!(
                     "FungibleStoreResource not exists at address:{:?} for type tag:{:?}",
-                    primary_store_address,
-                    fungible_store_state_key
+                    primary_store_address, fungible_store_state_key
                 );
                 0
             }
