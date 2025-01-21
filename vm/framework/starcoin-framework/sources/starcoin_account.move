@@ -246,7 +246,12 @@ module starcoin_framework::starcoin_account {
         if (fungible_asset::store_exists(store_addr)) {
             store_addr
         } else {
-            object::object_address(&primary_fungible_store::create_primary_store(owner, object::address_to_object<Metadata>(@starcoin_fungible_asset)))
+            object::object_address(
+                &primary_fungible_store::create_primary_store(
+                    owner,
+                    object::address_to_object<Metadata>(@starcoin_fungible_asset)
+                )
+            )
         }
     }
 
@@ -437,7 +442,7 @@ module starcoin_framework::starcoin_account {
         use starcoin_framework::fungible_asset::Metadata;
         use starcoin_framework::starcoin_coin;
 
-        starcoin_coin::ensure_initialized_with_apt_fa_metadata_for_test();
+        starcoin_coin::ensure_initialized_with_stc_fa_metadata_for_test();
 
         let apt_metadata = object::address_to_object<Metadata>(@starcoin_fungible_asset);
         let user_addr = signer::address_of(user);

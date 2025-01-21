@@ -10158,6 +10158,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-asset-mapping"
+version = "2.0.1"
+dependencies = [
+ "anyhow",
+ "bcs-ext",
+ "forkable-jellyfish-merkle",
+ "starcoin-cached-packages",
+ "starcoin-chain",
+ "starcoin-config",
+ "starcoin-consensus",
+ "starcoin-crypto",
+ "starcoin-logger",
+ "starcoin-state-api",
+ "starcoin-transaction-builder",
+ "starcoin-types",
+ "starcoin-vm-types",
+ "test-helper",
+]
+
+[[package]]
 name = "starcoin-block-relayer"
 version = "2.0.1"
 dependencies = [
@@ -10597,12 +10617,14 @@ version = "2.0.1"
 dependencies = [
  "anyhow",
  "bcs-ext",
+ "forkable-jellyfish-merkle",
  "hex",
  "log 0.4.22",
  "move-transactional-test-runner",
  "once_cell",
  "serde",
  "serde_json",
+ "sha3",
  "starcoin-abi-resolver",
  "starcoin-abi-types",
  "starcoin-config",

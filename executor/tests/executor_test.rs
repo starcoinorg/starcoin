@@ -1,54 +1,60 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::anyhow;
-use anyhow::Result;
+use std::hash::Hash;
+
+use anyhow::{anyhow, Result};
+use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
+
+use forkable_jellyfish_merkle::{blob::Blob, node_type::SparseMerkleLeafNode, RawKey};
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_executor::validate_transaction;
 use starcoin_logger::prelude::*;
+use starcoin_state_api::{ChainStateReader, StateReaderExt};
+// use test_helper::Account;
+use starcoin_statedb::ChainStateDB;
 use starcoin_transaction_builder::{
-    build_batch_payload_same_amount, build_transfer_txn, empty_test_metadata,
-    encode_transfer_script_by_token_code, raw_peer_to_peer_txn, DEFAULT_EXPIRATION_TIME,
-    DEFAULT_MAX_GAS_AMOUNT,
+    build_batch_payload_same_amount, build_transfer_txn, DEFAULT_EXPIRATION_TIME,
+    DEFAULT_MAX_GAS_AMOUNT, empty_test_metadata, encode_transfer_script_by_token_code,
+    raw_peer_to_peer_txn,
 };
-use starcoin_types::account::peer_to_peer_txn;
-use starcoin_types::identifier::Identifier;
-use starcoin_types::language_storage::ModuleId;
-use starcoin_types::transaction::{EntryFunction, RawUserTransaction, TransactionArgument};
-use starcoin_types::{
-    account_config, block_metadata::BlockMetadata, transaction::Transaction,
-    transaction::TransactionPayload, transaction::TransactionStatus,
+use starcoin_vm_runtime::{
+    data_cache::AsMoveResolver,
+    move_vm_ext::ResourceGroupResolver,
+    starcoin_vm::{chunk_block_transactions, StarcoinVM},
 };
-use starcoin_vm_types::account_config::genesis_address;
-use starcoin_vm_types::account_config::AccountResource;
-use starcoin_vm_types::genesis_config::ChainId;
-use starcoin_vm_types::on_chain_config::{ConsensusConfig, OnChainConfig};
-use starcoin_vm_types::state_store::TStateView;
-use starcoin_vm_types::token::stc::{stc_type_tag, STCUnit};
-use starcoin_vm_types::vm_status::KeptVMStatus;
-use starcoin_vm_types::{transaction::Package, vm_status::StatusCode};
+use starcoin_vm_types::{
+    access_path::AccessPath,
+    account_config::{AccountResource, core_code_address, genesis_address, ModuleUpgradeStrategy},
+    genesis_config::ChainId,
+    on_chain_config::{ConsensusConfig, OnChainConfig},
+    state_store::{state_key::StateKey, state_value::StateValue, TStateView},
+    token::stc::{stc_type_tag, STCUnit},
+    transaction::Package,
+    vm_status::KeptVMStatus,
+    vm_status::StatusCode,
+};
 use test_helper::executor::{
     account_execute, account_execute_should_success, association_execute_should_success,
     blockmeta_execute, build_raw_txn, current_block_number, prepare_customized_genesis,
     TEST_MODULE, TEST_MODULE_1, TEST_MODULE_2,
 };
-
-// use test_helper::Account;
-use starcoin_state_api::StateReaderExt;
-use starcoin_types::account::Account;
-use starcoin_types::account_config::G_STC_TOKEN_CODE;
-use starcoin_vm_runtime::data_cache::AsMoveResolver;
-use starcoin_vm_runtime::move_vm_ext::ResourceGroupResolver;
-use starcoin_vm_runtime::starcoin_vm::{chunk_block_transactions, StarcoinVM};
-use starcoin_vm_types::account_config::core_code_address;
-use starcoin_vm_types::language_storage::StructTag;
-use starcoin_vm_types::state_store::state_key::StateKey;
-use starcoin_vm_types::state_store::state_value::StateValue;
 use test_helper::executor::{
     compile_modules_with_address, execute_and_apply, get_balance, get_sequence_number,
     prepare_genesis,
 };
 use test_helper::txn::create_account_txn_sent_as_association;
+
+use starcoin_types::{
+    account::{peer_to_peer_txn, Account},
+    account_config,
+    account_config::G_STC_TOKEN_CODE,
+    block_metadata::BlockMetadata,
+    transaction::{Transaction, TransactionPayload, TransactionStatus},
+    identifier::Identifier,
+    language_storage::{ModuleId, StructTag, TypeTag, CORE_CODE_ADDRESS}
+    transaction::{EntryFunction, RawUserTransaction, TransactionArgument},
+};
 
 #[derive(Default)]
 pub struct NullStateView;

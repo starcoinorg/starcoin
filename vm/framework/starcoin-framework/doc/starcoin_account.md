@@ -693,7 +693,12 @@ Ensure that APT Primary FungibleStore exists (and create if it doesn't)
     <b>if</b> (<a href="fungible_asset.md#0x1_fungible_asset_store_exists">fungible_asset::store_exists</a>(store_addr)) {
         store_addr
     } <b>else</b> {
-        <a href="object.md#0x1_object_object_address">object::object_address</a>(&<a href="primary_fungible_store.md#0x1_primary_fungible_store_create_primary_store">primary_fungible_store::create_primary_store</a>(owner, <a href="object.md#0x1_object_address_to_object">object::address_to_object</a>&lt;Metadata&gt;(@starcoin_fungible_asset)))
+        <a href="object.md#0x1_object_object_address">object::object_address</a>(
+            &<a href="primary_fungible_store.md#0x1_primary_fungible_store_create_primary_store">primary_fungible_store::create_primary_store</a>(
+                owner,
+                <a href="object.md#0x1_object_address_to_object">object::address_to_object</a>&lt;Metadata&gt;(@starcoin_fungible_asset)
+            )
+        )
     }
 }
 </code></pre>
