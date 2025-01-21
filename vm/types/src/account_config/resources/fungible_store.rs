@@ -77,14 +77,12 @@ impl MoveStructType for FungibleStoreResource {
 
 impl MoveResource for FungibleStoreResource {}
 
-
 #[test]
 fn test_compare_primary_store_address() -> anyhow::Result<()> {
-    let primary_store_addr =
-        primary_store(
-            &AccountAddress::from_hex_literal("0xd0c5a06ae6100ce115cad1600fe59e96")?,
-            &AccountAddress::ONE,
-        );
+    let primary_store_addr = primary_store(
+        &AccountAddress::from_hex_literal("0xd0c5a06ae6100ce115cad1600fe59e96")?,
+        &AccountAddress::ONE,
+    );
     assert_eq!(
         primary_store_addr,
         AccountAddress::from_hex_literal("0x786d516a2228196dff48bf39a4b085f0")?,
