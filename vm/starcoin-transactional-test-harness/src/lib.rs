@@ -523,7 +523,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             self.fetch_balance_resource(&genesis_address(), STC_TOKEN_CODE_STR.to_string())?;
         let genesis_account_data = AccountData::with_account_and_event_counts(
             Account::new_genesis_account(genesis_address()),
-            balance.token(),
+            balance.coin() as u128,
             genesis_account.sequence_number(),
             0,
             0,
@@ -563,7 +563,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         let balance = self.fetch_balance_resource(&address, STC_TOKEN_CODE_STR.to_string())?;
         let account_data = AccountData::with_account_and_event_counts(
             Account::new_genesis_account(address),
-            balance.token(),
+            balance.coin() as u128,
             account.sequence_number(),
             0,
             0,
@@ -603,7 +603,7 @@ impl<'a> StarcoinTestAdapter<'a> {
                 self.fetch_balance_resource(signer_addr, stc_type_tag().to_string())?;
             std::cmp::min(
                 max_number_of_gas_units,
-                ((account_balance.token() / gas_unit_price as u128) as u64).into(),
+                ((account_balance.coin() as u128 / gas_unit_price as u128) as u64).into(),
             )
         };
         let chain_id = self.context.storage.get_chain_id()?;
