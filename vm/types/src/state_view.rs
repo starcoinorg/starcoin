@@ -126,10 +126,10 @@ pub trait StateReaderExt: StateView {
 
         let primary_store_address = fungible_store::primary_store(&address, &type_tag.address);
         // Get from coin store
-        let fungible_store_state_key = StateKey::resource(
+        let fungible_store_state_key = StateKey::resource_group(
             &primary_store_address,
-            &FungibleStoreResource::struct_tag_for_token(),
-        )?;
+            &FungibleStoreResource::struct_tag_for_resource(),
+        );
 
         let fungible_balance = match self.get_state_value_bytes(&fungible_store_state_key)? {
             Some(bytes) => {

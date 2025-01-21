@@ -55,7 +55,7 @@ impl FungibleStoreResource {
     }
 
     // TODO/XXX: remove this once the MoveResource trait allows type arguments to `struct_tag`.
-    pub fn struct_tag_for_token() -> StructTag {
+    pub fn struct_tag_for_resource() -> StructTag {
         StructTag {
             address: CORE_CODE_ADDRESS,
             name: Self::struct_identifier(),
