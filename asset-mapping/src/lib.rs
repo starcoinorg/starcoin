@@ -5,17 +5,22 @@ use anyhow::Result;
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 
 use forkable_jellyfish_merkle::{blob::Blob, node_type::SparseMerkleLeafNode, RawKey};
-use starcoin_cached_packages::starcoin_framework_sdk_builder::{asset_mapping_assign_to_account_test, asset_mapping_assign_to_account_with_proof};
+use starcoin_cached_packages::starcoin_framework_sdk_builder::{
+    asset_mapping_assign_to_account_test, asset_mapping_assign_to_account_with_proof,
+};
 use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
 use starcoin_config::{ChainNetwork, NodeConfig, G_TEST_CONFIG};
 use starcoin_consensus::Consensus;
 use starcoin_state_api::ChainStateReader;
-use starcoin_transaction_builder::{create_signed_txn_with_association_account, DEFAULT_MAX_GAS_AMOUNT, peer_to_peer_txn_sent_as_association};
-use starcoin_types::{
-    account::DEFAULT_EXPIRATION_TIME, account_address::AccountAddress,
-    account_config::CORE_CODE_ADDRESS, identifier::Identifier, language_storage::StructTag,
-    account::Account,
+use starcoin_transaction_builder::{
+    create_signed_txn_with_association_account, peer_to_peer_txn_sent_as_association,
+    DEFAULT_MAX_GAS_AMOUNT,
 };
+use starcoin_types::{
+    account::Account, account::DEFAULT_EXPIRATION_TIME, account_address::AccountAddress,
+    account_config::CORE_CODE_ADDRESS, identifier::Identifier, language_storage::StructTag,
+};
+use starcoin_vm_types::account_config::association_address;
 use starcoin_vm_types::{
     access_path::AccessPath,
     account_config::{self, genesis_address, stc_type_tag},
@@ -24,7 +29,6 @@ use starcoin_vm_types::{
     state_view::StateReaderExt,
     transaction::SignedUserTransaction,
 };
-use starcoin_vm_types::account_config::association_address;
 use test_helper::dao::quorum_vote;
 use test_helper::executor::prepare_genesis;
 
@@ -87,7 +91,7 @@ fn test_sha3_256_diffrent_with_crypto_macro() -> Result<()> {
         HashValue::sha3_256_of(STARCOIN_HASH_PREFIX).as_slice(),
         ser.as_slice(),
     ]
-        .concat();
+    .concat();
 
     let move_hash = HashValue::sha3_256_of(&hash_vec[..]);
     println!(
@@ -135,7 +139,9 @@ fn test_simple_asset_mapping_without_proof() -> Result<()> {
     // let (chain_state, net) = prepare_genesis();
     let test_net = ChainNetwork::new_test();
     let mut block_chain = test_helper::gen_blockchain_with_blocks_for_test(0, &test_net)?;
-    let associal_sequence_number = block_chain.chain_state_reader().get_sequence_number(association_address())?;
+    let associal_sequence_number = block_chain
+        .chain_state_reader()
+        .get_sequence_number(association_address())?;
 
     // Build alice and transfer STC to alice
     let amount = 1000000000;
@@ -153,11 +159,17 @@ fn test_simple_asset_mapping_without_proof() -> Result<()> {
 
     // Check alice's balance
     {
-        assert_eq!(block_chain.chain_state_reader().get_balance(alice)?, amount, "alice balance not expect");
+        assert_eq!(
+            block_chain.chain_state_reader().get_balance(alice)?,
+            amount,
+            "alice balance not expect"
+        );
     }
 
     let genesis_sequence_number = {
-        block_chain.chain_state_reader().get_sequence_number(genesis_address())?
+        block_chain
+            .chain_state_reader()
+            .get_sequence_number(genesis_address())?
     };
     // Execute assign asset mapping to alice
     local_block_chain_excecute_txn(
@@ -184,7 +196,6 @@ fn test_simple_asset_mapping_without_proof() -> Result<()> {
 
     Ok(())
 }
-
 
 #[test]
 fn test_asset_mapping_whole_process() -> Result<()> {
@@ -336,7 +347,7 @@ fn local_build_peer_to_peer_from_association(
             net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
             net,
         )
-            .try_into()?,
+        .try_into()?,
     )
 }
 

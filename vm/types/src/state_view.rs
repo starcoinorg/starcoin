@@ -8,12 +8,17 @@
 
 //! This crate defines [`trait StateView`](StateView).
 
-use crate::state_store::state_key::StateKey;
-use crate::state_store::StateView;
+use anyhow::{format_err, Result};
+use bytes::Bytes;
+use move_core_types::{
+    account_address::AccountAddress,
+    language_storage::{ModuleId, StructTag},
+};
+
 use crate::{
     account_config::{
-        genesis_address, token_code::TokenCode, AccountResource, BalanceResource, TokenInfo,
-        G_STC_TOKEN_CODE,
+        genesis_address, token_code::TokenCode, AccountResource, CoinStoreResource,
+        FungibleStoreResource, TokenInfo, G_STC_TOKEN_CODE,
     },
     genesis_config::ChainId,
     move_resource::MoveResource,
@@ -23,12 +28,7 @@ use crate::{
         BlockMetadata, Epoch, EpochData, EpochInfo, Treasury,
     },
     sips::SIP,
-};
-use anyhow::{format_err, Result};
-use bytes::Bytes;
-use move_core_types::{
-    account_address::AccountAddress,
-    language_storage::{ModuleId, StructTag},
+    state_store::{state_key::StateKey, StateView},
 };
 
 impl<T: ?Sized> StateReaderExt for T where T: StateView {}
@@ -105,20 +105,43 @@ pub trait StateReaderExt: StateView {
 
     /// Get balance by address and coin type
     fn get_balance_by_type(&self, address: AccountAddress, type_tag: StructTag) -> Result<u128> {
-        let rsrc_bytes = self
-            .get_state_value_bytes(&StateKey::resource(
-                &address,
-                &BalanceResource::struct_tag_for_token(type_tag.clone()),
-            )?)?
-            .ok_or_else(|| {
-                format_err!(
-                    "BalanceResource not exists at address:{} for type tag:{}",
-                    address,
-                    type_tag
-                )
-            })?;
-        let rsrc = bcs_ext::from_bytes::<BalanceResource>(&rsrc_bytes)?;
-        Ok(rsrc.token())
+        // Get from coin store
+        let coin_balance = bcs_ext::from_bytes::<CoinStoreResource>(
+            &self
+                .get_state_value_bytes(&StateKey::resource(
+                    &address,
+                    &CoinStoreResource::struct_tag_for_token(type_tag.clone()),
+                )?)?
+                .ok_or_else(|| {
+                    format_err!(
+                        "CoinStoreResource not exists at address:{} for type tag:{}",
+                        address,
+                        type_tag
+                    )
+                })?,
+        )?
+        .coin() as u128;
+
+        // Get from coin store
+        let fungible_store_state_key = StateKey::resource(
+            &address,
+            &FungibleStoreResource::struct_tag_for_token(),
+        )?;
+        println!("StateReadExt::get_balance_by_type : fungible_store_state_key: {:?}", fungible_store_state_key);
+        let fungible_balance = bcs_ext::from_bytes::<FungibleStoreResource>(
+            &self
+                .get_state_value_bytes(&fungible_store_state_key)?
+                .ok_or_else(|| {
+                    format_err!(
+                        "FungibleStoreResource not exists at address:{} for type tag:{}",
+                        address,
+                        type_tag
+                    )
+                })?,
+        )?
+        .balance() as u128;
+
+        Ok(coin_balance + fungible_balance)
     }
 
     fn get_balance_by_token_code(

@@ -65,7 +65,7 @@ use starcoin_vm_types::transaction::authenticator::AccountPrivateKey;
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use starcoin_vm_types::write_set::{WriteOp, WriteSetMut};
 use starcoin_vm_types::{
-    account_config::BalanceResource,
+    account_config::CoinStoreResource,
     block_metadata::BlockMetadata,
     genesis_config::ChainId,
     on_chain_config::VMConfig,
@@ -497,9 +497,9 @@ impl<'a> StarcoinTestAdapter<'a> {
         &self,
         signer_addr: &AccountAddress,
         balance_currency_code: String,
-    ) -> Result<BalanceResource> {
+    ) -> Result<CoinStoreResource> {
         let token_code = TokenCode::from_str(balance_currency_code.as_str())?;
-        let balance_resource_tag = BalanceResource::struct_tag_for_token(token_code.try_into()?);
+        let balance_resource_tag = CoinStoreResource::struct_tag_for_token(token_code.try_into()?);
         let balance_access_key = StateKey::resource(signer_addr, &balance_resource_tag)?;
 
         let balance_blob = self

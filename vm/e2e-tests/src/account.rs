@@ -10,7 +10,7 @@ use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::account_config::{genesis_address, AccountResource, BalanceResource};
+use starcoin_vm_types::account_config::{genesis_address, AccountResource, CoinStoreResource};
 use starcoin_vm_types::event::{EventHandle, EventKey};
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::language_storage::StructTag;
@@ -135,7 +135,7 @@ impl Account {
     pub fn make_coin_store_access_path(&self) -> AccessPath {
         // TODO(BobOng):
         // self.make_access_path(CoinStoreResource::struct_tag())
-        self.make_access_path(BalanceResource::struct_tag())
+        self.make_access_path(CoinStoreResource::struct_tag())
     }
 
     // TODO: plug in the account type
@@ -619,7 +619,7 @@ impl AccountData {
             .simple_serialize(&CoinStore::layout())
             .unwrap();
         write_set.push((
-            StateKey::resource_typed::<BalanceResource>(self.address()).unwrap(),
+            StateKey::resource_typed::<CoinStoreResource>(self.address()).unwrap(),
             WriteOp::legacy_modification(balance.into()),
         ));
 

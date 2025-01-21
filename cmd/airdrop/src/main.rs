@@ -20,7 +20,7 @@ use starcoin_types::language_storage::ModuleId;
 use starcoin_types::transaction::authenticator::AccountPrivateKey;
 use starcoin_types::transaction::{EntryFunction, RawUserTransaction};
 use starcoin_vm_types::account_config::auto_accept_token::AutoAcceptToken;
-use starcoin_vm_types::account_config::{stc_type_tag, BalanceResource, G_STC_TOKEN_CODE};
+use starcoin_vm_types::account_config::{stc_type_tag, CoinStoreResource, G_STC_TOKEN_CODE};
 use starcoin_vm_types::language_storage::{StructTag, TypeTag};
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::token::token_code::TokenCode;
@@ -80,7 +80,7 @@ async fn is_accept_token(
     let balance = client
         .get_resource(
             address,
-            BalanceResource::struct_tag_for_token(token_type).into(),
+            CoinStoreResource::struct_tag_for_token(token_type).into(),
             None,
         )
         .await

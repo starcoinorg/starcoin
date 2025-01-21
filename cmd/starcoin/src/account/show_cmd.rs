@@ -11,7 +11,7 @@ use starcoin_crypto::ValidCryptoMaterialStringExt;
 use starcoin_rpc_client::StateRootOption;
 use starcoin_state_api::{ChainStateReader, StateReaderExt};
 use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::account_config::BalanceResource;
+use starcoin_vm_types::account_config::CoinStoreResource;
 use starcoin_vm_types::token::token_code::TokenCode;
 use std::collections::HashMap;
 
@@ -74,9 +74,9 @@ impl CommandAction for ShowCommand {
             .resources
             .into_iter()
             .filter_map(|(resource_type, resource)| {
-                if let Some(token_code) = BalanceResource::token_code(&resource_type.0) {
+                if let Some(token_code) = CoinStoreResource::token_code(&resource_type.0) {
                     let balance = resource
-                        .decode::<BalanceResource>()
+                        .decode::<CoinStoreResource>()
                         .ok()
                         .map(|balance| balance.token());
                     Some((token_code, balance.unwrap_or(0)))
