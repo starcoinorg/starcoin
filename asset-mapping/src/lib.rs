@@ -14,8 +14,8 @@ use starcoin_config::{ChainNetwork, NodeConfig, G_TEST_CONFIG};
 use starcoin_consensus::Consensus;
 use starcoin_state_api::ChainStateReader;
 use starcoin_transaction_builder::{
-    create_signed_txn_with_association_account,
-    peer_to_peer_txn_sent_as_association, DEFAULT_MAX_GAS_AMOUNT,
+    create_signed_txn_with_association_account, peer_to_peer_txn_sent_as_association,
+    DEFAULT_MAX_GAS_AMOUNT,
 };
 use starcoin_types::{
     account::Account, account::DEFAULT_EXPIRATION_TIME, account_address::AccountAddress,

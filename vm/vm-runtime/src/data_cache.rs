@@ -233,10 +233,6 @@ impl<'a, S: StateView> ResourceResolver for StorageAdapter<'a, S> {
     ) -> Result<(Option<Bytes>, usize), Self::Error> {
         let resource_group = get_resource_group_member_from_metadata(struct_tag, metadata);
         if let Some(resource_group) = resource_group {
-            // eprintln!(
-            //     "get_resource_bytes_with_metadata_and_layout {} from group",
-            //     struct_tag
-            // );
             let key = StateKey::resource_group(address, &resource_group);
             let buf =
                 self.resource_group_view
@@ -252,10 +248,6 @@ impl<'a, S: StateView> ResourceResolver for StorageAdapter<'a, S> {
             let buf_size = resource_size(&buf);
             Ok((buf, buf_size + group_size as usize))
         } else {
-            // eprintln!(
-            //     "get_resource_bytes_with_metadata_and_layout {} from executor_view",
-            //     struct_tag
-            // );
             let state_key = resource_state_key(address, struct_tag)?;
             let buf = self
                 .executor_view
