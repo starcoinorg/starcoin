@@ -334,7 +334,7 @@ impl DataPath {
     pub fn is_resource_group(&self) -> bool {
         matches!(self, Self::ResourceGroup(_))
     }
-    // todo: handle ResourceGroup
+    // todo(simon): handle ResourceGroup
     pub fn as_struct_tag(&self) -> Option<&StructTag> {
         match self {
             Self::Resource(struct_tag) => Some(struct_tag),
