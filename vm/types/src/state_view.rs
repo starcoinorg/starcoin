@@ -64,8 +64,8 @@ pub trait StateReaderExt: StateView {
     ) -> Result<Option<Bytes>> {
         Ok(
             if let Some(group_data_blob) = self.get_state_value_bytes(&group_key)? {
-                let (group_data, _blob_len) =
-                    bcs_ext::from_bytes::<(BTreeMap<StructTag, Bytes>, u64)>(&group_data_blob)?;
+                let group_data =
+                    bcs_ext::from_bytes::<BTreeMap<StructTag, Bytes>>(&group_data_blob)?;
                 group_data.get(resource_tag).cloned()
             } else {
                 None
