@@ -27,7 +27,6 @@ use starcoin_types::startup_info::{ChainInfo, StartupInfo};
 use starcoin_types::transaction::Package;
 use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::{block::Block, transaction::Transaction};
-use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::{
     account_config::CORE_CODE_ADDRESS,
     state_store::StateView,
@@ -142,15 +141,8 @@ impl Genesis {
     }
 
     pub fn build_genesis_transaction(net: &ChainNetwork) -> Result<SignedUserTransaction> {
-        let package = build_stdlib_package(
-            net,
-            if net.is_test() || net.is_dag_test() {
-                StdLibOptions::Fresh
-            } else {
-                // todo: currently only support latest stdlib version.
-                StdLibOptions::Compiled(StdlibVersion::Latest)
-            },
-        )?;
+        // todo(simon): support versioned stdlib
+        let package = build_stdlib_package(net, StdLibOptions::Fresh)?;
         Self::build_genesis_transaction_with_package(net, package)
     }
 
