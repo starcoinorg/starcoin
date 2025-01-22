@@ -8,6 +8,7 @@ use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 
 use forkable_jellyfish_merkle::{blob::Blob, node_type::SparseMerkleLeafNode, RawKey};
 use starcoin_cached_packages::starcoin_framework_sdk_builder::starcoin_account_create_account;
+use starcoin_cached_packages::starcoin_stdlib::transfer_scripts_peer_to_peer;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_executor::validate_transaction;
 use starcoin_logger::prelude::*;
@@ -47,16 +48,18 @@ use test_helper::executor::{
 };
 use test_helper::txn::create_account_txn_sent_as_association;
 
-use starcoin_types::account_address::AccountAddress;
 use starcoin_types::{
     account::{peer_to_peer_txn, Account},
+    account_address::AccountAddress,
     account_config,
     account_config::G_STC_TOKEN_CODE,
     block_metadata::BlockMetadata,
     identifier::Identifier,
     language_storage::{ModuleId, StructTag, TypeTag, CORE_CODE_ADDRESS},
-    transaction::{EntryFunction, RawUserTransaction, TransactionArgument},
-    transaction::{Transaction, TransactionPayload, TransactionStatus},
+    transaction::{
+        EntryFunction, RawUserTransaction, Transaction, TransactionArgument, TransactionPayload,
+        TransactionStatus,
+    },
 };
 use starcoin_vm_runtime_types::resolver::TResourceGroupView;
 use starcoin_vm_runtime_types::resource_group_adapter;
@@ -1199,6 +1202,7 @@ fn test_create_new_account_and_check_primary_fungible_store() -> Result<()> {
     let test_addr = AccountAddress::from_hex_literal("0xd0c5a06ae6100ce115cad1600fe59e96").unwrap();
     let store_addr =
         AccountAddress::from_hex_literal("0x786d516a2228196dff48bf39a4b085f0").unwrap();
+
     association_execute_should_success(
         &net,
         &chain_state,
@@ -1222,41 +1226,30 @@ fn test_create_new_account_and_check_primary_fungible_store() -> Result<()> {
         /*LATEST_GAS_FEATURE_VERSION*/ 13,
         false,
     );
-    //assert!(
-    //    resource_group_adapter.resource_exists_in_group(
-    //        &StateKey::resource_group(&store_addr, &object_group_tag,),
-    //        &fungible_store_tag,
-    //    )?,
-    //    "should exist"
-    //);
 
-    // TODO get resrouce from group
-    resource_group_adapter
+    assert!(
+        resource_group_adapter.resource_exists_in_group(
+            &StateKey::resource_group(&store_addr, &object_group_tag,),
+            &fungible_store_tag,
+        )?,
+        "should exist"
+    );
+
+    // Get resrouce from group
+    let readed_bytes = resource_group_adapter
         .get_resource_from_group(
             &StateKey::resource_group(&store_addr, &object_group_tag),
             &fungible_store_tag,
             None,
         )
         .unwrap();
+    assert!(readed_bytes.is_some(), "Except not none");
 
-    // chain_state
-    //     .get_state_value_bytes(&StateKey::resource(
-    //         &AccountAddress::from_hex_literal("0x9698655257a6f843cb5f654a9520a575").unwrap(),
-    //         &FungibleStoreResource::struct_tag_for_resource(),
-    //     )?)?
-    //     .expect(
-    //         "0x9698655257a6f843cb5f654a9520a575 0x1::fungible_asset::FungibleStore should exists",
-    //     );
-
-    // Get from fungible asset
-    // chain_state
-    //     .get_state_value_bytes(&StateKey::resource(
-    //         &primary_store_address,
-    //         &FungibleStoreResource::struct_tag_for_resource(),
-    //     )?)?
-    //     .expect(
-    //         "0x786d516a2228196dff48bf39a4b085f0 0x1::fungible_asset::FungibleStore should exists",
-    //     );
+    assert_eq!(
+        bcs_ext::from_bytes::<FungibleStoreResource>(&readed_bytes.unwrap())?.balance() as u128,
+        0,
+        "balance should be 0"
+    );
 
     Ok(())
 }
