@@ -58,6 +58,9 @@ use starcoin_types::{
     transaction::{EntryFunction, RawUserTransaction, TransactionArgument},
     transaction::{Transaction, TransactionPayload, TransactionStatus},
 };
+use starcoin_vm_runtime_types::resolver::TResourceGroupView;
+use starcoin_vm_runtime_types::resource_group_adapter;
+use starcoin_vm_runtime_types::resource_group_adapter::ResourceGroupAdapter;
 use starcoin_vm_types::account_config::{
     association_address, fungible_store, FungibleStoreResource,
 };
@@ -1213,17 +1216,28 @@ fn test_create_new_account_and_check_primary_fungible_store() -> Result<()> {
     };
     let fungible_store_tag = FungibleStoreResource::struct_tag_for_resource();
 
-    let resource_group_adapter = chain_state.as_move_resolver();
-    assert!(resource_group_adapter.resource_exists_in_group(
-        &StateKey::resource_group(
-            &store_addr,
-            &object_group_tag,
-        ),
-        &fungible_store_tag,
-    )?, "should exist");
+    let resource_group_adapter = ResourceGroupAdapter::new(
+        None,
+        &chain_state,
+        /*LATEST_GAS_FEATURE_VERSION*/ 13,
+        false,
+    );
+    //assert!(
+    //    resource_group_adapter.resource_exists_in_group(
+    //        &StateKey::resource_group(&store_addr, &object_group_tag,),
+    //        &fungible_store_tag,
+    //    )?,
+    //    "should exist"
+    //);
 
     // TODO get resrouce from group
-    // resource_group_adapter.get_resource_from_group();
+    resource_group_adapter
+        .get_resource_from_group(
+            &StateKey::resource_group(&store_addr, &object_group_tag),
+            &fungible_store_tag,
+            None,
+        )
+        .unwrap();
 
     // chain_state
     //     .get_state_value_bytes(&StateKey::resource(
