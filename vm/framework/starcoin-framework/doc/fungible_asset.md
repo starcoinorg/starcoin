@@ -2597,6 +2597,8 @@ Applications can use this to create multiple stores for isolating fungible asset
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(constructor_ref);
 
     <b>let</b> store_obj = &<a href="object.md#0x1_object_generate_signer">object::generate_signer</a>(constructor_ref);
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(store_obj));
+
     <b>move_to</b>(store_obj, <a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">FungibleStore</a> {
         metadata: <a href="object.md#0x1_object_convert">object::convert</a>(metadata),
         balance: 0,

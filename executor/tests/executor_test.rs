@@ -1205,14 +1205,44 @@ fn test_create_new_account_and_check_primary_fungible_store() -> Result<()> {
     let primary_store_address = fungible_store::primary_store(&test_addr, &AccountAddress::ONE);
     assert_eq!(primary_store_address, store_addr, "store address not equal");
 
+    let object_group_tag = StructTag {
+        address: genesis_address(),
+        module: Identifier::new("object").unwrap(),
+        name: Identifier::new("ObjectGroup").unwrap(),
+        type_args: vec![],
+    };
+    let fungible_store_tag = FungibleStoreResource::struct_tag_for_resource();
+
+    let resource_group_adapter = chain_state.as_move_resolver();
+    assert!(resource_group_adapter.resource_exists_in_group(
+        &StateKey::resource_group(
+            &store_addr,
+            &object_group_tag,
+        ),
+        &fungible_store_tag,
+    )?, "should exist");
+
+    // TODO get resrouce from group
+    // resource_group_adapter.get_resource_from_group();
+
+    // chain_state
+    //     .get_state_value_bytes(&StateKey::resource(
+    //         &AccountAddress::from_hex_literal("0x9698655257a6f843cb5f654a9520a575").unwrap(),
+    //         &FungibleStoreResource::struct_tag_for_resource(),
+    //     )?)?
+    //     .expect(
+    //         "0x9698655257a6f843cb5f654a9520a575 0x1::fungible_asset::FungibleStore should exists",
+    //     );
+
     // Get from fungible asset
-    let fungible_store_state_key = StateKey::resource_group(
-        &primary_store_address,
-        &FungibleStoreResource::struct_tag_for_resource(),
-    );
-    chain_state
-        .get_state_value_bytes(&fungible_store_state_key)?
-        .expect("should exists");
+    // chain_state
+    //     .get_state_value_bytes(&StateKey::resource(
+    //         &primary_store_address,
+    //         &FungibleStoreResource::struct_tag_for_resource(),
+    //     )?)?
+    //     .expect(
+    //         "0x786d516a2228196dff48bf39a4b085f0 0x1::fungible_asset::FungibleStore should exists",
+    //     );
 
     Ok(())
 }

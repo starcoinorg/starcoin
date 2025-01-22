@@ -750,6 +750,8 @@ module starcoin_framework::fungible_asset {
         debug::print(constructor_ref);
 
         let store_obj = &object::generate_signer(constructor_ref);
+        debug::print(&signer::address_of(store_obj));
+
         move_to(store_obj, FungibleStore {
             metadata: object::convert(metadata),
             balance: 0,
