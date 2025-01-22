@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 pub static G_MAX_PARENTS_COUNT: u64 = 16;
+pub static G_DAG_BLOCK_RECEIVE_TIME_WINDOW: u64 = 2; // in second, 2s for default
 
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
@@ -40,6 +41,10 @@ pub struct MinerConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long = "maximum-parents-count")]
     pub maximum_parents_count: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(long = "dag-block-receive-time-window")]
+    pub dag_block_receive_time_window: Option<u64>,
 }
 
 impl MinerConfig {
@@ -69,6 +74,11 @@ impl MinerConfig {
 
     pub fn maximum_parents_count(&self) -> u64 {
         self.maximum_parents_count.unwrap_or(G_MAX_PARENTS_COUNT)
+    }
+
+    pub fn dag_block_receive_time_window(&self) -> u64 {
+        self.dag_block_receive_time_window
+            .unwrap_or(G_DAG_BLOCK_RECEIVE_TIME_WINDOW)
     }
 }
 
@@ -115,6 +125,10 @@ impl ConfigModule for MinerConfig {
 
         if opt.miner.maximum_parents_count.is_some() {
             self.maximum_parents_count = opt.miner.maximum_parents_count;
+        }
+
+        if opt.miner.dag_block_receive_time_window.is_some() {
+            self.dag_block_receive_time_window = opt.miner.dag_block_receive_time_window;
         }
 
         Ok(())

@@ -38,6 +38,7 @@ use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
+use starcoin_types::system_events::NewDagBlockFromPeer;
 use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown};
 use std::sync::Arc;
 use sysinfo::{DiskExt, System, SystemExt};
@@ -380,6 +381,8 @@ where
                 }
                 Err(e) => warn!("BlockConnector fail: {:?}, peer_id:{:?}", e, peer_id),
             }
+        } else {
+            ctx.broadcast(NewDagBlockFromPeer);
         }
     }
 }

@@ -36,6 +36,9 @@ pub struct SystemShutdown;
 #[derive(Clone, Debug)]
 pub struct SyncStatusChangeEvent(pub SyncStatus);
 
+#[derive(Clone, Debug)]
+pub struct NewDagBlockFromPeer;
+
 ///Fire this event for generate a new block
 #[derive(Clone, Debug)]
 pub struct GenerateBlockEvent {
