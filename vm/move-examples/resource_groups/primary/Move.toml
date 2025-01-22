@@ -1,0 +1,9 @@
+[package]
+name = "ResourceGroupsPrimary"
+version = "0.0.0"
+
+[addresses]
+resource_groups_primary = "0x2"
+
+[dependencies]
+StarcoinFramework = { local = "../../../framework/starcoin-framework" }

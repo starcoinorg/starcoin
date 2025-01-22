@@ -1,0 +1,9 @@
+[package]
+name = "shared_account"
+version = "0.0.0"
+
+[addresses]
+shared_account = "0x2"
+
+[dependencies]
+StarcoinFramework = { local = "../../framework/starcoin-framework" }
