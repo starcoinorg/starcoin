@@ -21,8 +21,8 @@ use starcoin_vm_types::transaction::{
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use std::ops::Sub;
 use test_helper::executor::{
-    compile_ir_script, compile_modules_with_address, compile_script, execute_and_apply,
-    prepare_genesis,
+    association_execute_should_success, compile_ir_script, compile_modules_with_address,
+    compile_script, execute_and_apply, prepare_genesis,
 };
 use test_helper::txn::create_account_txn_sent_as_association;
 
@@ -461,5 +461,38 @@ fn test_transaction_arg_verify() -> Result<()> {
         KeptVMStatus::MiscellaneousError,
         output.status().status().unwrap()
     );
+    Ok(())
+}
+
+// this test aims to check if resource group works well
+#[stest::test]
+fn test_object_metadata() -> Result<()> {
+    let (chain_state, net) = prepare_genesis();
+
+    let script = prepare_script(
+        SyntaxChoice::Source,
+        r#"
+        script{
+            use std::option;
+            use std::string;
+            use starcoin_std::debug;
+            use starcoin_framework::object;
+            use starcoin_framework::coin;
+            use starcoin_framework::starcoin_coin::STC;
+
+            fun test_metadata(_account: &signer) {
+                debug::print(&string::utf8(b"test_metadata | entered"));
+                let metadata = coin::paired_metadata<STC>();
+                assert!(option::is_some(&metadata), 10000);
+                let metdata_obj = option::destroy_some(metadata);
+                assert!(object::is_object(object::object_address(&metdata_obj)), 10001);
+                debug::print(&string::utf8(b"test_metadata | exited"));
+            }
+        }
+        "#,
+    )?;
+    let payload = TransactionPayload::Script(Script::new(script, vec![], vec![]));
+    let output = association_execute_should_success(&net, &chain_state, payload)?;
+    assert_eq!(KeptVMStatus::Executed, output.status().status().unwrap());
     Ok(())
 }

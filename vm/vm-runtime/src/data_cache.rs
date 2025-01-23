@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Scratchpad for on chain values during the execution.
 
-use crate::move_vm_ext::AsExecutorView;
+use crate::move_vm_ext::{resource_state_key, AsExecutorView, ResourceGroupResolver};
 use bytes::Bytes;
 use move_binary_format::deserializer::DeserializerConfig;
 use move_binary_format::CompiledModule;
@@ -14,7 +14,9 @@ use move_table_extension::{TableHandle, TableResolver};
 use starcoin_gas_schedule::LATEST_GAS_FEATURE_VERSION;
 use starcoin_logger::prelude::*;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_vm_runtime_types::resolver::ExecutorView;
+use starcoin_vm_runtime_types::resolver::{
+    ExecutorView, ResourceGroupSize, TResourceGroupView, TResourceView,
+};
 use starcoin_vm_runtime_types::resource_group_adapter::ResourceGroupAdapter;
 use starcoin_vm_types::state_store::{
     errors::StateviewError, state_key::StateKey, state_storage_usage::StateStorageUsage,
@@ -26,6 +28,7 @@ use starcoin_vm_types::{
     vm_status::StatusCode,
     write_set::{WriteOp, WriteSet},
 };
+use std::collections::HashMap;
 use std::{
     cell::RefCell,
     collections::btree_map::BTreeMap,
@@ -53,8 +56,8 @@ pub fn get_resource_group_member_from_metadata(
 pub struct StorageAdapter<'e, E> {
     executor_view: &'e E,
     _deserializer_config: DeserializerConfig,
-    _resource_group_view: ResourceGroupAdapter<'e>,
-    _accessed_groups: RefCell<HashSet<StateKey>>,
+    resource_group_view: ResourceGroupAdapter<'e>,
+    accessed_groups: RefCell<HashSet<StateKey>>,
 }
 
 /// A local cache for a given a `StateView`. The cache is private to the Diem layer
@@ -166,13 +169,13 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
         Self {
             executor_view: state_store,
             _deserializer_config: DeserializerConfig::new(0, 0),
-            _resource_group_view: ResourceGroupAdapter::new(
+            resource_group_view: ResourceGroupAdapter::new(
                 None,
                 state_store,
                 LATEST_GAS_FEATURE_VERSION,
                 false,
             ),
-            _accessed_groups: RefCell::new(HashSet::new()),
+            accessed_groups: RefCell::new(HashSet::new()),
         }
     }
 
@@ -209,19 +212,67 @@ impl<'a, S: StateView> ModuleResolver for StorageAdapter<'a, S> {
 impl<'a, S: StateView> ResourceResolver for StorageAdapter<'a, S> {
     type Error = PartialVMError;
 
-    // TODO(simon): don't ignore metadata and layout
     fn get_resource_bytes_with_metadata_and_layout(
         &self,
         address: &AccountAddress,
         struct_tag: &StructTag,
-        _metadata: &[Metadata],
-        _layout: Option<&MoveTypeLayout>,
+        metadata: &[Metadata],
+        maybe_layout: Option<&MoveTypeLayout>,
     ) -> Result<(Option<Bytes>, usize), Self::Error> {
-        let key = StateKey::resource(address, struct_tag)
-            .map_err(|_| PartialVMError::new(StatusCode::STORAGE_ERROR))?;
-        let buf = self.get(&key)?.map(|v| v.bytes().clone());
-        let size = resource_size(&buf);
-        Ok((buf, size))
+        let resource_group = get_resource_group_member_from_metadata(struct_tag, metadata);
+        if let Some(resource_group) = resource_group {
+            let key = StateKey::resource_group(address, &resource_group);
+            let buf =
+                self.resource_group_view
+                    .get_resource_from_group(&key, struct_tag, maybe_layout)?;
+
+            let first_access = self.accessed_groups.borrow_mut().insert(key.clone());
+            let group_size = if first_access {
+                self.resource_group_view.resource_group_size(&key)?.get()
+            } else {
+                0
+            };
+
+            let buf_size = resource_size(&buf);
+            Ok((buf, buf_size + group_size as usize))
+        } else {
+            let state_key = resource_state_key(address, struct_tag)?;
+            let buf = self
+                .executor_view
+                .get_resource_bytes(&state_key, maybe_layout)?;
+            let buf_size = resource_size(&buf);
+            Ok((buf, buf_size))
+        }
+    }
+}
+
+impl<'a, S: StateView> ResourceGroupResolver for StorageAdapter<'a, S> {
+    fn release_resource_group_cache(
+        &self,
+    ) -> Option<HashMap<StateKey, BTreeMap<StructTag, Bytes>>> {
+        self.resource_group_view.release_group_cache()
+    }
+
+    fn resource_group_size(&self, group_key: &StateKey) -> PartialVMResult<ResourceGroupSize> {
+        self.resource_group_view.resource_group_size(group_key)
+    }
+
+    fn resource_size_in_group(
+        &self,
+        group_key: &StateKey,
+        resource_tag: &StructTag,
+    ) -> PartialVMResult<usize> {
+        self.resource_group_view
+            .resource_size_in_group(group_key, resource_tag)
+    }
+
+    fn resource_exists_in_group(
+        &self,
+        group_key: &StateKey,
+        resource_tag: &StructTag,
+    ) -> PartialVMResult<bool> {
+        self.resource_group_view
+            .resource_exists_in_group(group_key, resource_tag)
     }
 }
 
@@ -318,6 +369,36 @@ impl<S: StateView> ResourceResolver for RemoteStorageOwned<S> {
     ) -> Result<(Option<Bytes>, usize), Self::Error> {
         self.as_move_resolver()
             .get_resource_bytes_with_metadata_and_layout(address, struct_tag, metadata, layout)
+    }
+}
+
+impl<S: StateView> ResourceGroupResolver for RemoteStorageOwned<S> {
+    fn release_resource_group_cache(
+        &self,
+    ) -> Option<HashMap<StateKey, BTreeMap<StructTag, Bytes>>> {
+        self.as_move_resolver().release_resource_group_cache()
+    }
+
+    fn resource_group_size(&self, group_key: &StateKey) -> PartialVMResult<ResourceGroupSize> {
+        self.as_move_resolver().resource_group_size(group_key)
+    }
+
+    fn resource_size_in_group(
+        &self,
+        group_key: &StateKey,
+        resource_tag: &StructTag,
+    ) -> PartialVMResult<usize> {
+        self.as_move_resolver()
+            .resource_size_in_group(group_key, resource_tag)
+    }
+
+    fn resource_exists_in_group(
+        &self,
+        group_key: &StateKey,
+        resource_tag: &StructTag,
+    ) -> PartialVMResult<bool> {
+        self.as_move_resolver()
+            .resource_exists_in_group(group_key, resource_tag)
     }
 }
 

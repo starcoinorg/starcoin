@@ -331,6 +331,10 @@ impl DataPath {
     pub fn is_resource(&self) -> bool {
         matches!(self, Self::Resource(_))
     }
+    pub fn is_resource_group(&self) -> bool {
+        matches!(self, Self::ResourceGroup(_))
+    }
+    // todo(simon): handle ResourceGroup
     pub fn as_struct_tag(&self) -> Option<&StructTag> {
         match self {
             Self::Resource(struct_tag) => Some(struct_tag),
@@ -365,7 +369,7 @@ impl fmt::Display for DataPath {
                 write!(f, "{}/{}", storage_index, module_name)
             }
             DataPath::ResourceGroup(struct_tag) => {
-                write!(f, "ResourceGroup({})", struct_tag)
+                write!(f, "{}/{}", storage_index, struct_tag)
             }
         }
     }
@@ -384,7 +388,7 @@ impl FromStr for AccessPath {
         let data_path = match data_type {
             DataType::CODE => Self::code_data_path(Identifier::new(parts[2])?),
             DataType::RESOURCE => Self::resource_data_path(parse_struct_tag(parts[2])?),
-            DataType::ResourceGroup => Self::resource_data_path(parse_struct_tag(parts[2])?),
+            DataType::ResourceGroup => Self::resource_group_data_path(parse_struct_tag(parts[2])?),
         };
         Ok(Self::new(address, data_path))
     }

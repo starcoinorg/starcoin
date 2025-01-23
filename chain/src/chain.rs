@@ -2099,8 +2099,8 @@ impl ChainReader for BlockChain {
                 DataPath::Resource(struct_tag) => {
                     StateKey::resource(&access_path.address, &struct_tag)?
                 }
-                DataPath::ResourceGroup(_) => {
-                    bail!("ResourceGroup is not supported in get_transaction_proof")
+                DataPath::ResourceGroup(struct_tag) => {
+                    StateKey::resource_group(&access_path.address, &struct_tag)
                 }
             };
             Some(statedb.get_with_proof(&state_key)?)

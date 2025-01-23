@@ -126,6 +126,7 @@ impl StateKey {
         Ok(myself)
     }
 
+    // todo: remove Result
     pub fn resource(address: &AccountAddress, struct_tag: &StructTag) -> Result<Self> {
         Ok(Self(REGISTRY.resource(struct_tag, address).get_or_add(
             struct_tag,
