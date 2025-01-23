@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Scratchpad for on chain values during the execution.
 
-use crate::move_vm_ext::{resource_state_key, AsExecutorView, ResourceGroupResolver};
+use crate::move_vm_ext::{AsExecutorView, ResourceGroupResolver};
 use bytes::Bytes;
 use move_binary_format::deserializer::DeserializerConfig;
 use move_binary_format::CompiledModule;
@@ -236,7 +236,7 @@ impl<'a, S: StateView> ResourceResolver for StorageAdapter<'a, S> {
             let buf_size = resource_size(&buf);
             Ok((buf, buf_size + group_size as usize))
         } else {
-            let state_key = resource_state_key(address, struct_tag)?;
+            let state_key = StateKey::resource(address, struct_tag);
             let buf = self
                 .executor_view
                 .get_resource_bytes(&state_key, maybe_layout)?;
