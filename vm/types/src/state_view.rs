@@ -8,7 +8,7 @@
 
 //! This crate defines [`trait StateView`](StateView).
 
-use crate::account_config::fungible_store;
+use crate::account_config::{fungible_store, ObjectGroupResource};
 use crate::{
     account_config::{
         genesis_address, token_code::TokenCode, AccountResource, CoinStoreResource,
@@ -28,6 +28,7 @@ use anyhow::{format_err, Result};
 use bytes::Bytes;
 use log::warn;
 use move_core_types::identifier::Identifier;
+use move_core_types::move_resource::MoveStructType;
 use move_core_types::{
     account_address::AccountAddress,
     language_storage::{ModuleId, StructTag},
@@ -144,25 +145,19 @@ pub trait StateReaderExt: StateView {
 
         let primary_store_address = fungible_store::primary_store(&address, &type_tag.address);
         // Get from coin store
-        let object_group_tag = StructTag {
-            address: genesis_address(),
-            module: Identifier::new("object").unwrap(),
-            name: Identifier::new("ObjectGroup").unwrap(),
-            type_args: vec![],
-        };
-
+        let object_group_tag = ObjectGroupResource::struct_tag();
         let fungible_store_tag = FungibleStoreResource::struct_tag_for_resource();
-        let fungible_store_state_key =
+        let fungible_store_group_key =
             StateKey::resource_group(&primary_store_address, &object_group_tag);
 
         let fungible_balance = match self
-            .get_resource_from_group(&fungible_store_state_key, &fungible_store_tag)?
+            .get_resource_from_group(&fungible_store_group_key, &fungible_store_tag)?
         {
             Some(bytes) => bcs_ext::from_bytes::<FungibleStoreResource>(&bytes)?.balance() as u128,
             None => {
                 warn!(
                     "FungibleStoreResource not exists at address:{:?} for type tag:{:?}",
-                    primary_store_address, fungible_store_state_key
+                    primary_store_address, fungible_store_group_key
                 );
                 0
             }
