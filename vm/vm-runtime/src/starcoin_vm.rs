@@ -479,7 +479,7 @@ impl StarcoinVM {
         remote_cache: &StateViewCache<S>,
         package_address: AccountAddress,
     ) -> Result<bool> {
-        let key = StateKey::resource(&package_address, &ModuleUpgradeStrategy::struct_tag())?;
+        let key = StateKey::resource(&package_address, &ModuleUpgradeStrategy::struct_tag());
         if let Some(data) = remote_cache.get_state_value(&key)? {
             Ok(bcs_ext::from_bytes::<ModuleUpgradeStrategy>(data.bytes())?.only_new_module())
         } else {
@@ -503,7 +503,7 @@ impl StarcoinVM {
             || (chain_id.is_barnard() && block_number < 8311392)
         {
             let key =
-                StateKey::resource(&package_address, &TwoPhaseUpgradeV2Resource::struct_tag())?;
+                StateKey::resource(&package_address, &TwoPhaseUpgradeV2Resource::struct_tag());
             if let Some(data) = remote_cache.get_state_value(&key)? {
                 let enforced =
                     bcs_ext::from_bytes::<TwoPhaseUpgradeV2Resource>(data.bytes())?.enforced();

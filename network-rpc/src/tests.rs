@@ -45,7 +45,7 @@ fn test_network_rpc() {
         DataPath::Resource(Epoch::struct_tag_for_epoch()),
     );
 
-    let state_key = StateKey::resource(&genesis_address(), &Epoch::struct_tag_for_epoch()).unwrap();
+    let state_key = StateKey::resource(&genesis_address(), &Epoch::struct_tag_for_epoch());
 
     //ping ok
     let req = Ping {

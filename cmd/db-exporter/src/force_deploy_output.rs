@@ -113,7 +113,7 @@ pub fn force_deploy_output(
         AccessPath::resource_access_path(genesis_address(), ModuleUpgradeStrategy::struct_tag());
     // Write upgrade strategy resource to 0
     let upgrade_strategy_path =
-        StateKey::resource(&genesis_address(), &ModuleUpgradeStrategy::struct_tag())?;
+        StateKey::resource(&genesis_address(), &ModuleUpgradeStrategy::struct_tag());
 
     let statedb = chain.chain_state();
     let before_ret = statedb

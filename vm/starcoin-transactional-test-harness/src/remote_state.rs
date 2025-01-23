@@ -318,7 +318,7 @@ impl RemoteRpcAsyncClient {
         address: &AccountAddress,
         tag: &StructTag,
     ) -> PartialVMResult<Option<Vec<u8>>> {
-        let state_key = StateKey::resource(address, tag).unwrap();
+        let state_key = StateKey::resource(address, tag);
         let state_with_proof = self
             .state_client
             .get_with_proof_by_root(state_key, self.state_root)

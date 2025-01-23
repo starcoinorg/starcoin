@@ -273,7 +273,7 @@ where
                 .state_root
                 .unwrap_or(service.clone().state_root().await?);
             let chain_state = ChainStateDB::new(state_store, Some(state_root));
-            let state_key = StateKey::resource(&addr, &resource_type.0)?;
+            let state_key = StateKey::resource(&addr, &resource_type.0);
             let data = chain_state.get_state_value_bytes(&state_key)?;
             Ok(match data {
                 None => None,

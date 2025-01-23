@@ -583,7 +583,7 @@ impl ChainStateReader for ChainStateDB {
             name: Identifier::new("TableHandles").unwrap(),
             type_args: vec![],
         };
-        let state_key = StateKey::resource(handle_address, &struct_tag)?;
+        let state_key = StateKey::resource(handle_address, &struct_tag);
         let table_path_proof = self.get_with_proof(&state_key)?;
         let state_tree_table_handle = self.get_state_tree_table_handles(idx)?;
         let table_handle_proof = state_tree_table_handle.get_with_proof(handle)?;
@@ -620,7 +620,7 @@ impl ChainStateWriter for ChainStateDB {
             match &access_path.path {
                 DataPath::Code(name) => StateKey::module(&access_path.address, name),
                 DataPath::Resource(struct_tag) => {
-                    StateKey::resource(&access_path.address, struct_tag)?
+                    StateKey::resource(&access_path.address, struct_tag)
                 }
                 DataPath::ResourceGroup(struct_tag) => {
                     StateKey::resource_group(&access_path.address, struct_tag)
@@ -639,7 +639,7 @@ impl ChainStateWriter for ChainStateDB {
             match &access_path.path {
                 DataPath::Code(name) => StateKey::module(&access_path.address, name),
                 DataPath::Resource(struct_tag) => {
-                    StateKey::resource(&access_path.address, struct_tag)?
+                    StateKey::resource(&access_path.address, struct_tag)
                 }
                 DataPath::ResourceGroup(struct_tag) => {
                     StateKey::resource_group(&access_path.address, struct_tag)

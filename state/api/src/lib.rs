@@ -52,7 +52,7 @@ pub trait ChainStateAsyncService: Clone + std::marker::Unpin + Send + Sync {
         R: MoveResource,
     {
         let rsrc_bytes = self
-            .get(StateKey::resource_typed::<R>(&address)?)
+            .get(StateKey::resource_typed::<R>(&address))
             .await?
             .ok_or_else(|| {
                 format_err!(

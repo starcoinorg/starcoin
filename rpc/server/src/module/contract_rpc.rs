@@ -103,7 +103,7 @@ where
         let playground = self.playground.clone();
         let f = async move {
             let state_root = service.clone().state_root().await?;
-            let state_key = StateKey::resource(&addr, &resource_type.0)?;
+            let state_key = StateKey::resource(&addr, &resource_type.0);
             let data = service.get(state_key).await?;
             match data {
                 None => Ok(None),

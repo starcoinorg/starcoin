@@ -87,7 +87,7 @@ async fn main() -> Result<()> {
     let txpool_client = TxPoolClient::from(channel.clone());
     let chain_id: u8 = chain_client.id().await.map_err(map_rpc_error)?.id;
     let account_sequence_number = {
-        let state_key = StateKey::resource(&sender, &account_struct_tag())?;
+        let state_key = StateKey::resource(&sender, &account_struct_tag());
         let account_data: Option<Vec<u8>> = state_client
             .get(state_key)
             .await

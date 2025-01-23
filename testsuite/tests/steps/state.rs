@@ -15,7 +15,7 @@ pub fn steps() -> Steps<MyWorld> {
             account.address.clone(),
             AccountResource::struct_tag(),
         );
-        let key = StateKey::resource(account.address(), &AccountResource::struct_tag()).unwrap();
+        let key = StateKey::resource(account.address(), &AccountResource::struct_tag());
         let proof = client.clone().state_get_with_proof(key).unwrap();
         let state_root = client.clone().state_get_state_root().unwrap();
         proof

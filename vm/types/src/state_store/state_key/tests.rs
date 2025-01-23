@@ -15,7 +15,7 @@ fn assert_crypto_hash(key: &StateKey, expected_hash: &str) {
 #[test]
 fn test_resource_hash() {
     assert_crypto_hash(
-        &StateKey::resource_typed::<AccountResource>(&AccountAddress::TWO).unwrap(),
+        &StateKey::resource_typed::<AccountResource>(&AccountAddress::TWO),
         "fdec56915926115cd094939bf5ef500157dd63a56e1a0e7521600adacdc50b90",
     );
 }
@@ -62,7 +62,7 @@ fn test_debug() {
     );
 
     // resource
-    let key = StateKey::resource_typed::<AccountResource>(&AccountAddress::FOUR).unwrap();
+    let key = StateKey::resource_typed::<AccountResource>(&AccountAddress::FOUR);
     assert_eq!(
         &format!("{:?}", key),
         "StateKey::AccessPath { address: 0x4, path: \"Resource(0x00000000000000000000000000000001::account::Account)\" }",

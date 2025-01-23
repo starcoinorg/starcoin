@@ -2097,7 +2097,7 @@ impl ChainReader for BlockChain {
             let state_key = match access_path.path {
                 DataPath::Code(module_name) => StateKey::module(&access_path.address, &module_name),
                 DataPath::Resource(struct_tag) => {
-                    StateKey::resource(&access_path.address, &struct_tag)?
+                    StateKey::resource(&access_path.address, &struct_tag)
                 }
                 DataPath::ResourceGroup(struct_tag) => {
                     StateKey::resource_group(&access_path.address, &struct_tag)
