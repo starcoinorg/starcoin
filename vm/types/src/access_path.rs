@@ -328,12 +328,6 @@ impl DataPath {
     pub fn is_code(&self) -> bool {
         matches!(self, Self::Code(_))
     }
-    pub fn is_resource(&self) -> bool {
-        matches!(self, Self::Resource(_))
-    }
-    pub fn is_resource_group(&self) -> bool {
-        matches!(self, Self::ResourceGroup(_))
-    }
     // todo(simon): handle ResourceGroup
     pub fn as_struct_tag(&self) -> Option<&StructTag> {
         match self {
