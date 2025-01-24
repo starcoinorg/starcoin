@@ -27,7 +27,6 @@ use crate::{
 use anyhow::{format_err, Result};
 use bytes::Bytes;
 use log::warn;
-use move_core_types::identifier::Identifier;
 use move_core_types::move_resource::MoveStructType;
 use move_core_types::{
     account_address::AccountAddress,
@@ -127,21 +126,19 @@ pub trait StateReaderExt: StateView {
     /// Get balance by address and coin type
     fn get_balance_by_type(&self, address: AccountAddress, type_tag: StructTag) -> Result<u128> {
         // Get from coin store
-        let coin_balance = bcs_ext::from_bytes::<CoinStoreResource>(
-            &self
-                .get_state_value_bytes(&StateKey::resource(
-                    &address,
-                    &CoinStoreResource::struct_tag_for_token(type_tag.clone()),
-                )?)?
-                .ok_or_else(|| {
-                    format_err!(
-                        "CoinStoreResource not exists at address:{} for type tag:{}",
-                        address,
-                        type_tag
-                    )
-                })?,
-        )?
-        .coin() as u128;
+        let coin_balance = match self.get_state_value_bytes(&StateKey::resource(
+            &address,
+            &CoinStoreResource::struct_tag_for_token(type_tag.clone()),
+        )?)? {
+            Some(bytes) => bcs_ext::from_bytes::<CoinStoreResource>(&bytes)?.coin() as u128,
+            None => {
+                warn!(
+                    "CoinStoreResource not exists at address:{} for type tag:{}",
+                    address, type_tag
+                );
+                0
+            }
+        };
 
         let primary_store_address = fungible_store::primary_store(&address, &type_tag.address);
         // Get from coin store

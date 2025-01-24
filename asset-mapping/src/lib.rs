@@ -15,8 +15,8 @@ use starcoin_config::{ChainNetwork, G_TEST_CONFIG};
 use starcoin_consensus::Consensus;
 use starcoin_state_api::ChainStateReader;
 use starcoin_types::{
-    account_address::AccountAddress,
-    account_config::CORE_CODE_ADDRESS, identifier::Identifier, language_storage::StructTag,
+    account_address::AccountAddress, account_config::CORE_CODE_ADDRESS, identifier::Identifier,
+    language_storage::StructTag,
 };
 use starcoin_vm_types::{
     access_path::AccessPath,
@@ -25,6 +25,7 @@ use starcoin_vm_types::{
     state_store::state_key::StateKey,
     state_view::StateReaderExt,
 };
+use starcoin_vm_types::account_config::{CoinStoreResource, stc_struct_tag};
 use test_helper::executor::{
     association_execute_should_success, prepare_customized_genesis, prepare_genesis,
 };
@@ -88,7 +89,7 @@ fn test_sha3_256_diffrent_with_crypto_macro() -> Result<()> {
         HashValue::sha3_256_of(STARCOIN_HASH_PREFIX).as_slice(),
         ser.as_slice(),
     ]
-    .concat();
+        .concat();
 
     let move_hash = HashValue::sha3_256_of(&hash_vec[..]);
     println!(
@@ -188,24 +189,19 @@ fn test_asset_mapping_whole_process() -> Result<()> {
             &chain_state_1,
             transfer_scripts_peer_to_peer_v2(stc_type_tag(), alice, initial_balance),
         )?;
+
         // Check balance is initial_balance
         let balance = chain_state_1.get_balance(alice)?;
         assert_eq!(balance, initial_balance);
 
-        let proof = chain_state_1.get_with_proof(&StateKey::resource(
-            &CORE_CODE_ADDRESS,
-            &StructTag {
-                address: CORE_CODE_ADDRESS,
-                module: Identifier::new("coin").unwrap(),
-                name: Identifier::new("CoinStore").unwrap(),
-                type_args: vec![stc_type_tag()],
-            },
-        )?)?;
+        let state_proof = chain_state_1.get_with_proof(
+            &StateKey::resource(&alice, &CoinStoreResource::struct_tag_for_token(stc_struct_tag()))?,
+        )?;
         (
             chain_state_1.state_root(),
-            proof.proof.account_state_proof.leaf.unwrap().0,
-            proof.proof.account_state_proof.leaf.unwrap().1,
-            proof.proof.account_state_proof.siblings,
+            state_proof.proof.account_state_proof.leaf().unwrap().0,
+            state_proof.proof.account_state_proof.leaf().unwrap().1,
+            state_proof.proof.account_state_proof.siblings,
         )
     };
 
@@ -241,7 +237,7 @@ fn test_asset_mapping_whole_process() -> Result<()> {
             starcoin_account_create_account(alice),
         )?;
 
-        assert_eq!(chain_state_2.get_balance(alice)?, initial_balance + 1);
+        assert_eq!(chain_state_2.get_balance(alice)?, 0);
 
         // Asset mapping for alice
         association_execute_should_success(
@@ -257,8 +253,21 @@ fn test_asset_mapping_whole_process() -> Result<()> {
             ),
         )?;
 
-        assert_eq!(chain_state_2.get_balance(alice)?, initial_balance + 1);
+        assert_eq!(chain_state_2.get_balance(alice)?, initial_balance);
     }
 
+    Ok(())
+}
+
+#[test]
+fn test_hash_hello() -> Result<()> {
+    // 0x3338be694f50c5f338814986cdf0686453a888b84f424d792af4b9202398f392
+    let hello_hash = HashValue::sha3_256_of("hello".as_bytes());
+    println!("test_hash_hello | {:?}", hello_hash);
+    assert_eq!(
+        hello_hash.to_hex_literal(),
+        "0x3338be694f50c5f338814986cdf0686453a888b84f424d792af4b9202398f392",
+        "not expect hash"
+    );
     Ok(())
 }

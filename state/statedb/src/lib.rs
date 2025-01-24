@@ -139,7 +139,7 @@ impl AccountStateObject {
     }
 
     pub fn set(&self, data_path: DataPath, value: Vec<u8>) {
-        let human_str = format!("{}", data_path);
+        let _human_str = format!("{}", data_path);
         match data_path {
             DataPath::Code(module_name) => {
                 if self.code_tree.lock().is_none() {

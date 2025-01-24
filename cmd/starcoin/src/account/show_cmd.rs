@@ -78,7 +78,7 @@ impl CommandAction for ShowCommand {
                     let balance = resource
                         .decode::<CoinStoreResource>()
                         .ok()
-                        .map(|balance| balance.token());
+                        .map(|balance| balance.coin() as u128);
                     Some((token_code, balance.unwrap_or(0)))
                 } else {
                     None

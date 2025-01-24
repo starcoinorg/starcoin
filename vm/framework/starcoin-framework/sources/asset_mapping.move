@@ -17,6 +17,8 @@ module starcoin_framework::asset_mapping {
     use starcoin_framework::system_addresses;
     use starcoin_std::debug;
     use starcoin_std::simple_map::{Self, SimpleMap};
+    #[test_only]
+    use std::hash;
 
     #[test_only]
     use std::vector;
@@ -67,7 +69,7 @@ module starcoin_framework::asset_mapping {
     /// @param framework - The framework signer
     /// @param proof_root - Initial proof root for verification
     /// Verifies the framework signer and creates a new AssetMappingPool
-    public fun initialize(framework: &signer, proof_root: vector<u8>){
+    public fun initialize(framework: &signer, proof_root: vector<u8>) {
         assert!(
             signer::address_of(framework) == system_addresses::get_starcoin_framework(),
             error::unauthenticated(EINVALID_SIGNER)
@@ -192,7 +194,7 @@ module starcoin_framework::asset_mapping {
         receiver: address,
         old_token_str: vector<u8>,
         amount: u64
-    )  acquires AssetMappingPool, AssetMappingStore {
+    ) acquires AssetMappingPool, AssetMappingStore {
         Self::assign_to_account(system_account, receiver, old_token_str, amount);
     }
 
@@ -296,21 +298,39 @@ module starcoin_framework::asset_mapping {
         let amount = 10000000000;
         Self::initialize(framework, vector::empty<u8>());
 
-        debug::print(&std::string::utf8(b"asset_mapping::test_asset_mapping_create_store_from_coin | before create_account_for_test"));
+        debug::print(
+            &std::string::utf8(
+                b"asset_mapping::test_asset_mapping_create_store_from_coin | before create_account_for_test"
+            )
+        );
         // create genesis account
         account::create_account_for_test(signer::address_of(framework));
 
-        debug::print(&std::string::utf8(b"asset_mapping::test_asset_mapping_create_store_from_coin | starcoin_coin::initialize_for_test"));
+        debug::print(
+            &std::string::utf8(
+                b"asset_mapping::test_asset_mapping_create_store_from_coin | starcoin_coin::initialize_for_test"
+            )
+        );
 
         let (burn_cap, mint_cap) = starcoin_coin::initialize_for_test(framework);
 
-        debug::print(&std::string::utf8(b"asset_mapping::test_asset_mapping_create_store_from_coin | coin::register<STC>(framework)"));
+        debug::print(
+            &std::string::utf8(
+                b"asset_mapping::test_asset_mapping_create_store_from_coin | coin::register<STC>(framework)"
+            )
+        );
         coin::register<STC>(framework);
 
-        debug::print(&std::string::utf8(b"asset_mapping::test_asset_mapping_create_store_from_coin | starcoin_coin::mint"));
+        debug::print(
+            &std::string::utf8(b"asset_mapping::test_asset_mapping_create_store_from_coin | starcoin_coin::mint")
+        );
         starcoin_coin::mint(framework, signer::address_of(framework), amount);
 
-        debug::print(&std::string::utf8(b"asset_mapping::test_asset_mapping_create_store_from_coin | after coin::register<STC>(framework) and mint"));
+        debug::print(
+            &std::string::utf8(
+                b"asset_mapping::test_asset_mapping_create_store_from_coin | after coin::register<STC>(framework) and mint"
+            )
+        );
 
         // Construct Old token string
         let old_token_str = b"0x00000000000000000000000000000001::starcoin_coin::STC";
@@ -401,5 +421,29 @@ module starcoin_framework::asset_mapping {
             10020
         );
         debug::print(&std::string::utf8(b"asset_mapping::test_asset_mapping_coin_type_verify | exited"));
+    }
+
+    #[test]
+    fun test_calculation_proof_1() {
+        let proof_sibling_data = vector::empty<vector<u8>>();
+        vector::push_back(&mut proof_sibling_data, x"6b67362f680d4d15f996aed2a5c83e3dce37cb37bed4bc498aaeef77ea8a28a2");
+        vector::push_back(&mut proof_sibling_data, x"5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000");
+        vector::push_back(&mut proof_sibling_data, x"5ca9febe74c7fde3fdcf2bd464de6d8899a0a13d464893aada2714c6fa774f9d");
+        vector::push_back(&mut proof_sibling_data, x"06fa88f7fae77461044d10cc504c5e6666910d1ee4d1b1d99f8dbea047d0c9ff");
+        vector::push_back(&mut proof_sibling_data, x"5f3620db0071243d18285e1a2c4d74b734421e65581bbb41e70498369c863cdb");
+        vector::push_back(&mut proof_sibling_data, x"4949e6d0a2be6d8a79fd3fee859e10e564815e88a16dec26760be15c8ae017e7");
+        vector::push_back(&mut proof_sibling_data, x"8cd8632ea21b3a4623bb825d2451f6c76055cda7433e1da3d76773dba7c06878");
+        vector::push_back(&mut proof_sibling_data, x"379f1d32988ebd8d01627d0326523e28aa5fa1dbf2e87d076d7dca72884a4c46");
+
+        assert!(starcoin_proof_verifier::computer_root_hash(
+            x"9afe1e0e6013eb63b6004a4eb6b1bf76bdb04b725619648163d9dbc3194f224c",
+            x"b9d3ba6fe71eff0b1e9c9d70401fd6767a15a82a28f2542dbc27fda50730b6e9",
+            proof_sibling_data,
+        ) == x"a307d98b0b6da330fb0ac31283d6913d18627412a515b0c88e59346dfe04e0d5", 10011);
+    }
+
+    #[test]
+    fun test_asset_mapping_hello_hash() {
+        debug::print(&hash::sha3_256(b"hello"));
     }
 }
