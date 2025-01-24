@@ -16,6 +16,7 @@ The module for init Genesis
 
 <pre><code><b>use</b> <a href="account.md#0x1_account">0x1::account</a>;
 <b>use</b> <a href="aggregator_factory.md#0x1_aggregator_factory">0x1::aggregator_factory</a>;
+<b>use</b> <a href="asset_mapping.md#0x1_asset_mapping">0x1::asset_mapping</a>;
 <b>use</b> <a href="block_reward.md#0x1_block_reward">0x1::block_reward</a>;
 <b>use</b> <a href="block_reward_config.md#0x1_block_reward_config">0x1::block_reward_config</a>;
 <b>use</b> <a href="chain_id.md#0x1_chain_id">0x1::chain_id</a>;
@@ -59,7 +60,7 @@ The module for init Genesis
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="stc_genesis.md#0x1_stc_genesis_initialize">initialize</a>(stdlib_version: u64, reward_delay: u64, total_stc_amount: u128, pre_mine_stc_amount: u128, time_mint_stc_amount: u128, time_mint_stc_period: u64, parent_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, association_auth_key: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, genesis_auth_key: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="chain_id.md#0x1_chain_id">chain_id</a>: u8, _genesis_timestamp: u64, uncle_rate_target: u64, epoch_block_count: u64, base_block_time_target: u64, base_block_difficulty_window: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8, script_allowed: bool, module_publishing_allowed: bool, gas_schedule_blob: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64, transaction_timeout: u64, dag_effective_height: u64, <a href="../../move-stdlib/doc/features.md#0x1_features">features</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="stc_genesis.md#0x1_stc_genesis_initialize">initialize</a>(stdlib_version: u64, reward_delay: u64, total_stc_amount: u128, pre_mine_stc_amount: u128, time_mint_stc_amount: u128, time_mint_stc_period: u64, parent_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, association_auth_key: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, genesis_auth_key: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="chain_id.md#0x1_chain_id">chain_id</a>: u8, _genesis_timestamp: u64, uncle_rate_target: u64, epoch_block_count: u64, base_block_time_target: u64, base_block_difficulty_window: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8, script_allowed: bool, module_publishing_allowed: bool, gas_schedule_blob: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64, transaction_timeout: u64, dag_effective_height: u64, <a href="../../move-stdlib/doc/features.md#0x1_features">features</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, asset_mapping_proof_root: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -106,9 +107,9 @@ The module for init Genesis
     transaction_timeout: u64,
     dag_effective_height: u64,
     <a href="../../move-stdlib/doc/features.md#0x1_features">features</a>: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    asset_mapping_proof_root: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
 ) {
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> Entered"));
-
 
     // create genesis <a href="account.md#0x1_account">account</a>
     <b>let</b> (starcoin_framework_account, _genesis_signer_cap) =
@@ -191,6 +192,9 @@ The module for init Genesis
     );
 
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_genesis.md#0x1_stc_genesis_initialize">stc_genesis::initialize</a> | initialize_stc "));
+
+    // Asset mapping initialize
+    <a href="asset_mapping.md#0x1_asset_mapping_initialize">asset_mapping::initialize</a>(&starcoin_framework_account, asset_mapping_proof_root);
 
     // Init goverances <a href="account.md#0x1_account">account</a>
     <b>let</b> core_resource_account = <a href="account.md#0x1_account_create_account">account::create_account</a>(@core_resources);
@@ -383,6 +387,16 @@ Overall governance allocation strategy:
     time_mint_stc_amount: u128,
     time_mint_stc_period: u64,
 ) {
+    // TODO(BobOng): [asset-mapping] To confirm how many STC put into asset mapping pool, now is 10,000,000,000 STC
+    // <b>let</b> asset_mapping_coin = <a href="coin.md#0x1_coin_extract">coin::extract</a>&lt;STC&gt;(&<b>mut</b> total_supply_stc, 100000000000000000);
+    // <a href="asset_mapping.md#0x1_asset_mapping_create_store_from_coin">asset_mapping::create_store_from_coin</a>&lt;STC&gt;(
+    //     starcoin_framework,
+    //     b"0x1::STC::STC",
+    //     asset_mapping_coin
+    // );
+    // fungible_asset::put_test_store_genesis(core_resource_account);
+
+    // Initialize <a href="treasury.md#0x1_treasury">treasury</a>
     <b>let</b> treasury_withdraw_cap = <a href="treasury.md#0x1_treasury_initialize">treasury::initialize</a>(starcoin_framework, total_supply_stc);
 
     <b>if</b> (pre_mine_stc_amount &gt; 0) {
@@ -393,6 +407,7 @@ Overall governance allocation strategy:
         );
         <a href="coin.md#0x1_coin_deposit">coin::deposit</a>(core_resource_address, stc);
     };
+
     <b>if</b> (time_mint_stc_amount &gt; 0) {
         <b>let</b> liner_withdraw_cap = <a href="treasury.md#0x1_treasury_issue_linear_withdraw_capability">treasury::issue_linear_withdraw_capability</a>&lt;STC&gt;(
             &<b>mut</b> treasury_withdraw_cap,
@@ -499,6 +514,7 @@ Overall governance allocation strategy:
         min_action_delay,
         transaction_timeout,
         0,
+        <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>(),
         <a href="../../move-stdlib/doc/vector.md#0x1_vector_empty">vector::empty</a>(),
     );
 }

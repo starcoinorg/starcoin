@@ -1,45 +1,53 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use std::hash::Hash;
+
 use anyhow::anyhow;
 use anyhow::Result;
+use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
+
+use forkable_jellyfish_merkle::{blob::Blob, node_type::SparseMerkleLeafNode, RawKey};
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_executor::validate_transaction;
 use starcoin_logger::prelude::*;
+use starcoin_state_api::{ChainStateReader, StateReaderExt};
+use starcoin_statedb::ChainStateDB;
 use starcoin_transaction_builder::{
     build_batch_payload_same_amount, build_transfer_txn, encode_transfer_script_by_token_code,
     raw_peer_to_peer_txn, DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
 };
 use starcoin_types::account::peer_to_peer_txn;
+use starcoin_types::account::Account;
+use starcoin_types::account_config::G_STC_TOKEN_CODE;
 use starcoin_types::identifier::Identifier;
-use starcoin_types::language_storage::ModuleId;
+use starcoin_types::language_storage::{ModuleId, StructTag, TypeTag, CORE_CODE_ADDRESS};
 use starcoin_types::transaction::{EntryFunction, RawUserTransaction, TransactionArgument};
 use starcoin_types::{
     account_config, block_metadata::BlockMetadata, transaction::Transaction,
     transaction::TransactionPayload, transaction::TransactionStatus,
 };
+use starcoin_vm_runtime::starcoin_vm::{chunk_block_transactions, StarcoinVM};
+use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm_types::account_config::{core_code_address, ModuleUpgradeStrategy};
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::account_config::AccountResource;
 use starcoin_vm_types::genesis_config::ChainId;
-use starcoin_vm_types::on_chain_config::{ConsensusConfig, OnChainConfig};
+use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_store::state_value::StateValue;
 use starcoin_vm_types::state_store::TStateView;
 use starcoin_vm_types::token::stc::{stc_type_tag, STCUnit};
 use starcoin_vm_types::vm_status::KeptVMStatus;
-use starcoin_vm_types::{transaction::Package, vm_status::StatusCode};
+use starcoin_vm_types::{
+    on_chain_config::{ConsensusConfig, OnChainConfig},
+    transaction::Package,
+    vm_status::StatusCode,
+};
 use test_helper::executor::{
     account_execute, account_execute_should_success, association_execute_should_success,
     blockmeta_execute, build_raw_txn, current_block_number, prepare_customized_genesis,
     TEST_MODULE, TEST_MODULE_1, TEST_MODULE_2,
 };
-
-// use test_helper::Account;
-use starcoin_state_api::StateReaderExt;
-use starcoin_types::account::Account;
-use starcoin_types::account_config::G_STC_TOKEN_CODE;
-use starcoin_vm_runtime::starcoin_vm::{chunk_block_transactions, StarcoinVM};
-use starcoin_vm_types::account_config::core_code_address;
-use starcoin_vm_types::state_store::state_key::StateKey;
-use starcoin_vm_types::state_store::state_value::StateValue;
 use test_helper::executor::{
     compile_modules_with_address, execute_and_apply, get_balance, get_sequence_number,
     prepare_genesis,
@@ -85,7 +93,7 @@ fn test_vm_version() {
         vec![TransactionArgument::Address(genesis_address())],
         None,
     )
-    .unwrap();
+        .unwrap();
 
     let readed_version: u64 = bcs_ext::from_bytes(&value.pop().unwrap().1).unwrap();
     let version = {
@@ -113,7 +121,7 @@ fn test_flexidag_config_get() {
         vec![TransactionArgument::Address(genesis_address())],
         None,
     )
-    .unwrap();
+        .unwrap();
 
     let read_version: u64 = bcs_ext::from_bytes(&value.pop().unwrap().1).unwrap();
     let version = {
@@ -564,7 +572,7 @@ fn test_validate_txn_args() -> Result<()> {
         );
         account1.sign_txn(txn)
     }
-    .unwrap();
+        .unwrap();
     assert!(validate_transaction(&chain_state, txn, None).is_some());
 
     let txn = {
@@ -585,7 +593,7 @@ fn test_validate_txn_args() -> Result<()> {
         );
         account1.sign_txn(txn)
     }
-    .unwrap();
+        .unwrap();
     assert!(validate_transaction(&chain_state, txn, None).is_some());
 
     let txn = {
@@ -606,7 +614,7 @@ fn test_validate_txn_args() -> Result<()> {
         );
         account1.sign_txn(txn)
     }
-    .unwrap();
+        .unwrap();
     assert!(validate_transaction(&chain_state, txn, None).is_some());
     Ok(())
 }
@@ -1132,5 +1140,21 @@ fn test_chunk_block_transactions() -> Result<()> {
     let result3 = chunk_block_transactions(txns3);
     assert_eq!(result3.len(), 3);
 
+    Ok(())
+}
+
+#[test]
+fn test_genesis_writeset_for_object() -> Result<()> {
+    starcoin_logger::init_for_test();
+
+    let (chain_statedb, _network) = prepare_genesis();
+    let state_key = StateKey::resource(&genesis_address(), &StructTag {
+        address: genesis_address(),
+        module: Identifier::new("object").unwrap(),
+        name: Identifier::new("ObjectCore").unwrap(),
+        type_args: vec![],
+    })?;
+    let state =  chain_statedb.get_state_value(&state_key)?;
+    assert!(state.is_some(), "failed to get object");
     Ok(())
 }

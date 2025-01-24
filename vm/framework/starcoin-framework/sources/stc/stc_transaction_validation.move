@@ -5,8 +5,11 @@ module starcoin_framework::stc_transaction_validation {
 
     use std::error;
     use std::hash;
+    use std::option;
     use std::signer;
     use std::vector;
+    use starcoin_framework::object;
+    use starcoin_framework::fungible_asset;
     use starcoin_std::debug;
 
     use starcoin_framework::account;
@@ -153,6 +156,11 @@ module starcoin_framework::stc_transaction_validation {
                 success,
             );
         };
+
+        let metadata = coin::paired_metadata<STC>();
+        assert!(option::is_some(&metadata), 10000);
+        let metdata_obj = option::destroy_some(metadata);
+        assert!(object::is_object(object::object_address(&metdata_obj)), 10001);
 
         debug::print(&std::string::utf8(b"stc_transaction_validation::epilogue | Exited"));
     }

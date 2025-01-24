@@ -41,6 +41,7 @@ module starcoin_framework::primary_fungible_store {
         icon_uri: String,
         project_uri: String,
     ) {
+        debug::print(&string::utf8(b"primary_fungible_store::create_primary_store_enabled_fungible_asset | entered"));
         fungible_asset::add_fungibility(
             constructor_ref,
             maximum_supply,
@@ -54,6 +55,7 @@ module starcoin_framework::primary_fungible_store {
         move_to(metadata_obj, DeriveRefPod {
             metadata_derive_ref: object::generate_derive_ref(constructor_ref),
         });
+        debug::print(&string::utf8(b"primary_fungible_store::create_primary_store_enabled_fungible_asset | exited"));
     }
 
     /// Ensure that the primary store object for the given address exists. If it doesn't, create it.
@@ -62,6 +64,8 @@ module starcoin_framework::primary_fungible_store {
         metadata: Object<T>,
     ): Object<FungibleStore> acquires DeriveRefPod {
         debug::print(&string::utf8(b"primary_fungible_store::ensure_primary_store_exists | entered"));
+        debug::print(&owner);
+
         let store_addr = primary_store_address(owner, metadata);
         let ret = if (fungible_asset::store_exists(store_addr)) {
             object::address_to_object(store_addr)
@@ -82,12 +86,21 @@ module starcoin_framework::primary_fungible_store {
         debug::print(&metadata);
 
         let metadata_addr = object::object_address(&metadata);
+        debug::print(&string::utf8(b"primary_fungible_store::create_primary_store | 1"));
+        debug::print(&metadata_addr);
+
         object::address_to_object<Metadata>(metadata_addr);
+
+        debug::print(&string::utf8(b"primary_fungible_store::create_primary_store | 2"));
         let derive_ref = &borrow_global<DeriveRefPod>(metadata_addr).metadata_derive_ref;
         let constructor_ref = &object::create_user_derived_object(owner_addr, derive_ref);
+
+        debug::print(&string::utf8(b"primary_fungible_store::create_primary_store | 3"));
         // Disable ungated transfer as deterministic stores shouldn't be transferrable.
         let transfer_ref = &object::generate_transfer_ref(constructor_ref);
         object::disable_ungated_transfer(transfer_ref);
+
+        debug::print(&string::utf8(b"primary_fungible_store::create_primary_store | 4"));
 
         let ret = fungible_asset::create_store(constructor_ref, metadata);
         debug::print(&string::utf8(b"primary_fungible_store::create_primary_store | exited"));

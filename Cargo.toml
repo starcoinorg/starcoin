@@ -121,6 +121,7 @@ members = [
     "cmd/db-exporter",
     "cmd/genesis-nft-miner",
     "flexidag",
+    "asset-mapping",
 ]
 
 default-members = [
@@ -236,6 +237,7 @@ default-members = [
     "cmd/miner_client/api",
     "cmd/db-exporter",
     "flexidag",
+    "asset-mapping",
 ]
 
 [workspace.lints.clippy]
@@ -511,6 +513,7 @@ starcoin-account-api = { path = "account/api" }
 starcoin-account-provider = { path = "account/provider" }
 starcoin-account-service = { path = "account/service" }
 starcoin-accumulator = { path = "commons/accumulator", package = "starcoin-accumulator" }
+starcoin-asset-mapping = { path = "asset-mapping" }
 starcoin-block-relayer = { path = "block-relayer" }
 starcoin-chain = { path = "chain" }
 starcoin-chain-api = { path = "chain/api" }
