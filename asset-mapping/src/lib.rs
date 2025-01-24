@@ -197,11 +197,12 @@ fn test_asset_mapping_whole_process() -> Result<()> {
         let state_proof = chain_state_1.get_with_proof(
             &StateKey::resource(&alice, &CoinStoreResource::struct_tag_for_token(stc_struct_tag()))?,
         )?;
+
         (
             chain_state_1.state_root(),
-            state_proof.proof.account_state_proof.leaf().unwrap().0,
-            state_proof.proof.account_state_proof.leaf().unwrap().1,
-            state_proof.proof.account_state_proof.siblings,
+            state_proof.proof.account_proof.leaf().unwrap().0,
+            state_proof.proof.account_proof.leaf().unwrap().1,
+            state_proof.proof.account_proof.siblings,
         )
     };
 
