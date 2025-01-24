@@ -18,6 +18,7 @@ use starcoin_types::{
     account_address::AccountAddress, account_config::CORE_CODE_ADDRESS, identifier::Identifier,
     language_storage::StructTag,
 };
+use starcoin_vm_types::account_config::{stc_struct_tag, CoinStoreResource};
 use starcoin_vm_types::{
     access_path::AccessPath,
     account_config::{genesis_address, stc_type_tag},
@@ -25,7 +26,6 @@ use starcoin_vm_types::{
     state_store::state_key::StateKey,
     state_view::StateReaderExt,
 };
-use starcoin_vm_types::account_config::{CoinStoreResource, stc_struct_tag};
 use test_helper::executor::{
     association_execute_should_success, prepare_customized_genesis, prepare_genesis,
 };
@@ -89,7 +89,7 @@ fn test_sha3_256_diffrent_with_crypto_macro() -> Result<()> {
         HashValue::sha3_256_of(STARCOIN_HASH_PREFIX).as_slice(),
         ser.as_slice(),
     ]
-        .concat();
+    .concat();
 
     let move_hash = HashValue::sha3_256_of(&hash_vec[..]);
     println!(
@@ -194,9 +194,10 @@ fn test_asset_mapping_whole_process() -> Result<()> {
         let balance = chain_state_1.get_balance(alice)?;
         assert_eq!(balance, initial_balance);
 
-        let state_proof = chain_state_1.get_with_proof(
-            &StateKey::resource(&alice, &CoinStoreResource::struct_tag_for_token(stc_struct_tag()))?,
-        )?;
+        let state_proof = chain_state_1.get_with_proof(&StateKey::resource(
+            &alice,
+            &CoinStoreResource::struct_tag_for_token(stc_struct_tag()),
+        )?)?;
 
         (
             chain_state_1.state_root(),
