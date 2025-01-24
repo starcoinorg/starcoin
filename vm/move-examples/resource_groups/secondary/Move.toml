@@ -1,0 +1,11 @@
+[package]
+name = "ResourceGroupsSecondary"
+version = "0.0.1"
+
+[addresses]
+resource_groups_primary = "0xed9ea1f3533c14e1b52d9ff6475776ba"
+resource_groups_secondary = "0xed9ea1f3533c14e1b52d9ff6475776ba"
+
+[dependencies]
+StarcoinFramework = { local = "../../../framework/starcoin-framework" }
+ResourceGroupsPrimary = { local = "../primary" }
