@@ -1224,6 +1224,7 @@ fn merge_ap_write_set(
                     action: WriteOpView::Value,
                     value: Some(WriteOpValueView::Resource(data.to_vec().into())),
                 }),
+                // Parsing resources in group and expanding them into individual actions.
                 DataPath::ResourceGroup(_) => {
                     let group_data: BTreeMap<StructTag, Bytes> =
                         bcs_ext::from_bytes(&data).expect("resource group data must be valid");

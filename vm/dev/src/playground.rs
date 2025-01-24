@@ -134,7 +134,7 @@ pub fn dry_run_explain<S: StateView>(
                     view.abi = Some(resolver.resolve_module_code(view.code.0.as_slice())?);
                 }
                 WriteOpValueView::Resource(view) => {
-                    let struct_tag = access_path.path.as_struct_tag().ok_or_else(|| {
+                    let struct_tag = access_path.path.resource_tag().ok_or_else(|| {
                         format_err!("invalid resource access path: {}", access_path)
                     })?;
                     let struct_abi = resolver.resolve_struct_tag(struct_tag)?;
