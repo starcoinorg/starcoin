@@ -56,7 +56,7 @@ module starcoin_framework::stc_genesis {
         association_auth_key: vector<u8>,
         genesis_auth_key: vector<u8>,
         chain_id: u8,
-        _genesis_timestamp: u64,
+        genesis_timestamp: u64,
         //consensus config
         uncle_rate_target: u64,
         epoch_block_count: u64,
@@ -103,7 +103,7 @@ module starcoin_framework::stc_genesis {
         aggregator_factory::initialize_aggregator_factory(&starcoin_framework_account);
 
         // Init global time
-        timestamp::set_time_has_started(&starcoin_framework_account);
+        timestamp::set_time_has_started(&starcoin_framework_account, genesis_timestamp * 1000);
 
         debug::print(&std::string::utf8(b"stc_genesis::initialize | chain_id: "));
         debug::print(&chain_id);

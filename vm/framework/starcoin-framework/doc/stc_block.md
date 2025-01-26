@@ -32,7 +32,6 @@ Block module provide metadata for generated blocks.
 <b>use</b> <a href="epoch.md#0x1_epoch">0x1::epoch</a>;
 <b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="event.md#0x1_event">0x1::event</a>;
-<b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
 <b>use</b> <a href="starcoin_coin.md#0x1_starcoin_coin">0x1::starcoin_coin</a>;
 <b>use</b> <a href="stc_transaction_fee.md#0x1_stc_transaction_fee">0x1::stc_transaction_fee</a>;
 <b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
@@ -392,7 +391,7 @@ The runtime always runs this before executing the transactions in a block.
     // then deal <b>with</b> current block.
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="stc_block.md#0x1_stc_block_block_prologue">stc_block::block_prologue</a> | <a href="timestamp.md#0x1_timestamp_update_global_time">timestamp::update_global_time</a>"));
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="timestamp.md#0x1_timestamp">timestamp</a>);
-    <a href="timestamp.md#0x1_timestamp_update_global_time">timestamp::update_global_time</a>(&<a href="account.md#0x1_account">account</a>, <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(&<a href="account.md#0x1_account">account</a>), <a href="timestamp.md#0x1_timestamp">timestamp</a> * 1000);
+    <a href="timestamp.md#0x1_timestamp_update_global_time">timestamp::update_global_time</a>(&<a href="account.md#0x1_account">account</a>, <a href="timestamp.md#0x1_timestamp">timestamp</a> * 1000);
 
     <a href="stc_block.md#0x1_stc_block_process_block_metadata">process_block_metadata</a>(
         &<a href="account.md#0x1_account">account</a>,

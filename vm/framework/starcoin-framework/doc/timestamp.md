@@ -110,7 +110,7 @@ Conversion factor between seconds and microseconds
 Marks that time has started. This can only be called from genesis and with the starcoin framework account.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="timestamp.md#0x1_timestamp_set_time_has_started">set_time_has_started</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="timestamp.md#0x1_timestamp_set_time_has_started">set_time_has_started</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, microseconds: u64)
 </code></pre>
 
 
@@ -119,9 +119,9 @@ Marks that time has started. This can only be called from genesis and with the s
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="timestamp.md#0x1_timestamp_set_time_has_started">set_time_has_started</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>) {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="timestamp.md#0x1_timestamp_set_time_has_started">set_time_has_started</a>(starcoin_framework: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, microseconds: u64) {
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(starcoin_framework);
-    <b>let</b> timer = <a href="timestamp.md#0x1_timestamp_CurrentTimeMicroseconds">CurrentTimeMicroseconds</a> { microseconds: 0 };
+    <b>let</b> timer = <a href="timestamp.md#0x1_timestamp_CurrentTimeMicroseconds">CurrentTimeMicroseconds</a> { microseconds };
     <b>move_to</b>(starcoin_framework, timer);
 }
 </code></pre>
@@ -137,7 +137,7 @@ Marks that time has started. This can only be called from genesis and with the s
 Updates the wall clock time by consensus. Requires VM privilege and will be invoked during block prologue.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x1_timestamp_update_global_time">update_global_time</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, _proposer: <b>address</b>, <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x1_timestamp_update_global_time">update_global_time</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64)
 </code></pre>
 
 
@@ -148,7 +148,6 @@ Updates the wall clock time by consensus. Requires VM privilege and will be invo
 
 <pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x1_timestamp_update_global_time">update_global_time</a>(
     <a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>,
-    _proposer: <b>address</b>,
     <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64
 ) <b>acquires</b> <a href="timestamp.md#0x1_timestamp_CurrentTimeMicroseconds">CurrentTimeMicroseconds</a> {
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="timestamp.md#0x1_timestamp_update_global_time">timestamp::update_global_time</a> | Entered"));
@@ -159,17 +158,11 @@ Updates the wall clock time by consensus. Requires VM privilege and will be invo
     <a href="system_addresses.md#0x1_system_addresses_assert_starcoin_framework">system_addresses::assert_starcoin_framework</a>(<a href="account.md#0x1_account">account</a>);
 
     <b>let</b> global_timer = <b>borrow_global_mut</b>&lt;<a href="timestamp.md#0x1_timestamp_CurrentTimeMicroseconds">CurrentTimeMicroseconds</a>&gt;(@starcoin_framework);
-    //<b>let</b> now = global_timer.microseconds;
-    // <b>if</b> (proposer == @starcoin_framework) {
-    //     // NIL block <b>with</b> null <b>address</b> <b>as</b> proposer. Timestamp must be equal.
-    //     <b>assert</b>!(now == <a href="timestamp.md#0x1_timestamp">timestamp</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="timestamp.md#0x1_timestamp_EINVALID_TIMESTAMP">EINVALID_TIMESTAMP</a>));
-    // } <b>else</b> {
     // Normal block. Time must advance
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="timestamp.md#0x1_timestamp_update_global_time">timestamp::update_global_time</a> | Current <b>global</b> time: "));
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&global_timer.microseconds);
     <b>assert</b>!(global_timer.microseconds &lt; <a href="timestamp.md#0x1_timestamp">timestamp</a>, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_argument">error::invalid_argument</a>(<a href="timestamp.md#0x1_timestamp_EINVALID_TIMESTAMP">EINVALID_TIMESTAMP</a>));
     global_timer.microseconds = <a href="timestamp.md#0x1_timestamp">timestamp</a>;
-    //};
 
     <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&std::string::utf8(b"<a href="timestamp.md#0x1_timestamp_update_global_time">timestamp::update_global_time</a> | Exited"));
 }
@@ -326,15 +319,13 @@ Gets the current time in seconds.
 ### Function `update_global_time`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x1_timestamp_update_global_time">update_global_time</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, _proposer: <b>address</b>, <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x1_timestamp_update_global_time">update_global_time</a>(<a href="account.md#0x1_account">account</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="timestamp.md#0x1_timestamp">timestamp</a>: u64)
 </code></pre>
 
 
 
 
 <pre><code><b>requires</b> <a href="chain_status.md#0x1_chain_status_is_operating">chain_status::is_operating</a>();
-<b>include</b> <a href="timestamp.md#0x1_timestamp_UpdateGlobalTimeAbortsIf">UpdateGlobalTimeAbortsIf</a>;
-<b>ensures</b> (_proposer != @vm_reserved) ==&gt; (<a href="timestamp.md#0x1_timestamp_spec_now_microseconds">spec_now_microseconds</a>() == <a href="timestamp.md#0x1_timestamp">timestamp</a>);
 </code></pre>
 
 
