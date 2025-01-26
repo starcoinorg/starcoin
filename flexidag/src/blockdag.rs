@@ -1,8 +1,10 @@
 use super::reachability::{inquirer, reachability_service::MTReachabilityService};
 use super::types::ghostdata::GhostdagData;
+use crate::block_depth::block_depth_info::BlockDepthManagerT;
 use crate::consensusdb::consenses_state::{
     DagState, DagStateReader, DagStateStore, ReachabilityView,
 };
+use crate::consensusdb::consensus_block_depth::DbBlockDepthInfoStore;
 use crate::consensusdb::prelude::{FlexiDagStorageConfig, StoreError};
 use crate::consensusdb::schemadb::{
     GhostdagStoreReader, ReachabilityStore, StagingReachabilityStore,
@@ -44,6 +46,8 @@ pub type DbGhostdagManager = GhostdagManager<
 >;
 
 pub type PruningPointManager = PruningPointManagerT<DbReachabilityStore>;
+pub type BlockDepthManager =
+    BlockDepthManagerT<DbBlockDepthInfoStore, DbReachabilityStore, DbGhostdagStore>;
 
 pub struct MineNewDagBlockInfo {
     pub tips: Vec<HashValue>,
@@ -57,6 +61,7 @@ pub struct BlockDAG {
     ghostdag_manager: DbGhostdagManager,
     pruning_point_manager: PruningPointManager,
     commit_lock: Arc<Mutex<FlexiDagStorage>>,
+    block_depth_manager: BlockDepthManager,
 }
 
 impl BlockDAG {
@@ -78,13 +83,20 @@ impl BlockDAG {
             header_store,
             reachability_service.clone(),
         );
-        let pruning_point_manager = PruningPointManager::new(reachability_service, ghostdag_store);
+        let pruning_point_manager =
+            PruningPointManager::new(reachability_service.clone(), ghostdag_store.clone());
         let commit_lock = Arc::new(Mutex::new(db.clone()));
+        let block_depth_manager = BlockDepthManager::new(
+            db.block_depth_info_store.clone(),
+            reachability_service,
+            ghostdag_store,
+        );
         Self {
             ghostdag_manager,
             storage: db,
             pruning_point_manager,
             commit_lock,
+            block_depth_manager,
         }
     }
 
