@@ -471,6 +471,7 @@ where
         if blue_blocks.is_empty() {
             bail!("failed to get the blue blocks from the DAG");
         }
+
         let selected_parent = *blue_blocks
             .first()
             .ok_or_else(|| format_err!("the blue blocks must be not be 0!"))?;
