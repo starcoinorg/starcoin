@@ -42,8 +42,12 @@ pub fn handle_compatibility_check(
         Some(_) => move_args.package_path.clone(),
         None => Some(std::env::current_dir()?),
     };
-    let pkg = move_args
-        .build_config
+    let mut build_config = move_args.build_config.clone();
+    build_config
+        .compiler_config
+        .known_attributes
+        .clone_from(starcoin_framework::extended_checks::get_all_attribute_names());
+    let pkg = build_config
         .clone()
         .compile_package(package_path.as_ref().unwrap(), &mut std::io::stdout())?;
 
