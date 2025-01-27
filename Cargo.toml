@@ -402,38 +402,38 @@ sha2_0_10_6 = { package = "sha2", version = "0.10.6" }
 siphasher = "0.3.10"
 merkletree = { version = "0.22.1" }
 mirai-annotations = "1.10.1"
-move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-bytecode-source-map = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-bytecode-utils = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-cli = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-compiler = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-compiler-v2 = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-core-types = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-coverage = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-disassembler = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-docgen = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-errmapgen = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-ir-compiler = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-ir-types = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-model = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-package = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-prover = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-prover-boogie-backend = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-prover-bytecode-pipeline = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-stackless-bytecode = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-prover-test-utils = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-resource-viewer = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-unit-test = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345", features = [
+move-binary-format = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-bytecode-source-map = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-bytecode-utils = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-bytecode-verifier = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-cli = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-command-line-common = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-compiler = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-compiler-v2 = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-core-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-coverage = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-disassembler = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-docgen = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-errmapgen = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-ir-compiler = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-ir-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-model = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-package = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-prover = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-prover-boogie-backend = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-prover-bytecode-pipeline = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-stackless-bytecode = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-prover-test-utils = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-resource-viewer = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-unit-test = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", features = [
     "table-extension",
 ] }
-move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345" }
-move-vm-test-utils = { git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345", features = [
+move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5" }
+move-vm-test-utils = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", features = [
     "table-extension",
 ] }
 
@@ -613,7 +613,7 @@ unsigned-varint = { version = "0.6.0", features = [
     "futures",
     "asynchronous_codec",
 ] }
-vm = { package = "move-binary-format", git = "https://github.com/starcoinorg/move", rev = "fff485f5ea2502e53fb69cb77c116639bf90b345", features = [
+vm = { package = "move-binary-format", git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", features = [
     "fuzzing",
 ] }
 vm-status-translator = { path = "vm/vm-status-translator" }
