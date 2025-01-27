@@ -16,7 +16,7 @@ use starcoin_chain_api::{
 use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
-use starcoin_dag::blockdag::{BlockDAG, MineNewDagBlockInfo};
+use starcoin_dag::blockdag::{BlockDAG, MineNewDagBlockInfo, G_MERGE_DEPTH};
 use starcoin_dag::consensusdb::consenses_state::DagState;
 use starcoin_dag::consensusdb::prelude::StoreError;
 use starcoin_executor::VMMetrics;
@@ -1394,9 +1394,13 @@ impl ChainReader for BlockChain {
             }
         };
 
-        Ok(self
-            .dag()
-            .verify_and_ghostdata(uncles, header, latest_pruning_point)?)
+        let dag = self.dag();
+
+        let ghostdata = dag.verify_and_ghostdata(uncles, header, latest_pruning_point)?;
+
+        dag.check_bounded_merge_depth(header.pruning_point(), &ghostdata, G_MERGE_DEPTH, self.get_pruning_config().0)?;
+
+        Ok(ghostdata)
     }
 
     fn is_dag_ancestor_of(&self, ancestor: HashValue, descendant: HashValue) -> Result<bool> {
