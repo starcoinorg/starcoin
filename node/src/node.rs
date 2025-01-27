@@ -289,6 +289,7 @@ impl NodeService {
         )?;
         let dag = starcoin_dag::blockdag::BlockDAG::new(
             KType::try_from(G_BASE_MAX_UNCLES_PER_BLOCK)?,
+            config.miner.dag_merge_depth(),
             dag_storage.clone(),
         );
         registry.put_shared(dag.clone()).await?;

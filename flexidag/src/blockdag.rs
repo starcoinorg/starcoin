@@ -27,6 +27,7 @@ use anyhow::{bail, ensure, Ok};
 use itertools::Itertools;
 use parking_lot::Mutex;
 use rocksdb::WriteBatch;
+use starcoin_config::miner_config::G_MERGE_DEPTH;
 use starcoin_config::temp_dir;
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_logger::prelude::{debug, info, warn};
@@ -40,7 +41,6 @@ use std::ops::DerefMut;
 use std::sync::Arc;
 
 pub const DEFAULT_GHOSTDAG_K: KType = 8u16;
-pub static G_MERGE_DEPTH: u64 = 3600; // the merge depth should be smaller than the pruning finality
 
 pub type DbGhostdagManager = GhostdagManager<
     DbGhostdagStore,
@@ -70,10 +70,10 @@ pub struct BlockDAG {
 
 impl BlockDAG {
     pub fn create_blockdag(dag_storage: FlexiDagStorage) -> Self {
-        Self::new(DEFAULT_GHOSTDAG_K, dag_storage)
+        Self::new(DEFAULT_GHOSTDAG_K, G_MERGE_DEPTH, dag_storage)
     }
 
-    pub fn new(k: KType, db: FlexiDagStorage) -> Self {
+    pub fn new(k: KType, merge_depth: u64, db: FlexiDagStorage) -> Self {
         let ghostdag_store = db.ghost_dag_store.clone();
         let header_store = db.header_store.clone();
         let relations_store = db.relations_store.clone();
@@ -93,6 +93,7 @@ impl BlockDAG {
             db.block_depth_info_store.clone(),
             reachability_service,
             ghostdag_store,
+            merge_depth,
         );
         Self {
             ghostdag_manager,
@@ -115,7 +116,7 @@ impl BlockDAG {
     pub fn create_for_testing_with_parameters(k: KType) -> anyhow::Result<Self> {
         let dag_storage =
             FlexiDagStorage::create_from_path(temp_dir(), FlexiDagStorageConfig::default())?;
-        Ok(Self::new(k, dag_storage))
+        Ok(Self::new(k, G_MERGE_DEPTH, dag_storage))
     }
 
     pub fn has_block_connected(&self, block_header: &BlockHeader) -> anyhow::Result<bool> {
@@ -776,12 +777,8 @@ impl BlockDAG {
         };
 
         info!("try to remove the red blocks when mining, tips: {:?} and ghostdata: {:?}, pruning point: {:?}", tips, ghostdata, pruning_point);
-        (tips, ghostdata) = self.remove_bounded_merge_breaking_parents(
-            tips,
-            ghostdata,
-            pruning_point,
-            G_MERGE_DEPTH,
-        )?;
+        (tips, ghostdata) =
+            self.remove_bounded_merge_breaking_parents(tips, ghostdata, pruning_point)?;
         info!(
             "after removing the bounded merge breaking parents, tips: {:?} and ghostdata: {:?}",
             tips, ghostdata
@@ -820,14 +817,11 @@ impl BlockDAG {
         &self,
         pruning_point: Hash,
         ghostdata: &GhostdagData,
-        merge_depth: u64,
         finality_depth: u64,
     ) -> anyhow::Result<(Hash, Hash)> {
-        let merge_depth_root = self.block_depth_manager.calc_merge_depth_root(
-            ghostdata,
-            pruning_point,
-            merge_depth,
-        )?;
+        let merge_depth_root = self
+            .block_depth_manager
+            .calc_merge_depth_root(ghostdata, pruning_point)?;
         if merge_depth_root == Hash::zero() {
             return anyhow::Ok((Hash::zero(), Hash::zero()));
         }
@@ -876,11 +870,10 @@ impl BlockDAG {
         mut parents: Vec<Hash>,
         mut ghostdata: GhostdagData,
         pruning_point: Hash,
-        merge_depth: u64,
     ) -> anyhow::Result<(Vec<Hash>, GhostdagData)> {
         let merge_depth_root = self
             .block_depth_manager
-            .calc_merge_depth_root(&ghostdata, pruning_point, merge_depth)
+            .calc_merge_depth_root(&ghostdata, pruning_point)
             .map_err(|e| anyhow::anyhow!("Failed to calculate merge depth root: {}", e))?;
         if merge_depth_root == Hash::zero() {
             return anyhow::Ok((parents, ghostdata));
