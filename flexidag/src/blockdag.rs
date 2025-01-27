@@ -790,7 +790,9 @@ impl BlockDAG {
                 (true, false) => Ok(true),
                 (false, true) => Ok(false),
                 (false, false) => {
-                    if self.check_ancestor_of(header.pruning_point(), pruning_point)? {
+                    if header.pruning_point() == pruning_point {
+                        Ok(false)
+                    } else if self.check_ancestor_of(header.pruning_point(), pruning_point)? {
                         Ok(true)
                     } else {
                         Ok(false)
