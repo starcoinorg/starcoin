@@ -226,8 +226,9 @@ fn build_error_code_map(output_path: &str, sources: &[String], dep_path: &str) {
     options.verbosity_level = LevelFilter::Warn;
     options.run_errmapgen = true;
     options.errmapgen.output_file = output_path.to_string();
-    options.known_attributes =
-        starcoin_framework::extended_checks::get_all_attribute_names().clone();
+    options
+        .known_attributes
+        .clone_from(starcoin_framework::extended_checks::get_all_attribute_names());
     //options.setup_logging_for_test();
     move_prover::run_move_prover_errors_to_stderr(options).unwrap();
 }
