@@ -2,7 +2,7 @@
   "genesis_block_parameter": {
     "Static": {
       "parent_hash": "0xb9215327433b65d5f98f4155d39b06d9a74cc40886857ad510d753022b903f05",
-      "timestamp": 1661944080000,
+      "timestamp": 1737879796000,
       "difficulty": "0x64"
     }
   },
