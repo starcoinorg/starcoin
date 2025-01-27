@@ -64,7 +64,7 @@ pub fn handle_package_commands(
                 .compiler_config
                 .known_attributes
                 .clone_from(extended_checks::get_all_attribute_names());
-            c.execute(move_args.package_path, move_args.build_config)
+            c.execute(move_args.package_path, build_config)
         }
         PackageCommand::Errmap(c) => c.execute(move_args.package_path, move_args.build_config),
         PackageCommand::Prove(c) => c.execute(move_args.package_path, move_args.build_config),
