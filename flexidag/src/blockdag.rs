@@ -4,7 +4,9 @@ use crate::block_depth::block_depth_info::BlockDepthManagerT;
 use crate::consensusdb::consenses_state::{
     DagState, DagStateReader, DagStateStore, ReachabilityView,
 };
-use crate::consensusdb::consensus_block_depth::DbBlockDepthInfoStore;
+use crate::consensusdb::consensus_block_depth::{
+    BlockDepthInfo, BlockDepthInfoStore, DbBlockDepthInfoStore,
+};
 use crate::consensusdb::prelude::{FlexiDagStorageConfig, StoreError};
 use crate::consensusdb::schemadb::{
     GhostdagStoreReader, ReachabilityStore, StagingReachabilityStore,
@@ -812,6 +814,61 @@ impl BlockDAG {
             bail!("pruning point is not correct, the local next pruning point is {}, but the block header pruning point is {}", next_pruning_point, inside_next_pruning_point);
         }
         anyhow::Ok(())
+    }
+
+    pub fn check_bounded_merge_depth(
+        &self,
+        pruning_point: Hash,
+        ghostdata: &GhostdagData,
+        merge_depth: u64,
+        finality_depth: u64,
+    ) -> anyhow::Result<(Hash, Hash)> {
+        let merge_depth_root = self.block_depth_manager.calc_merge_depth_root(
+            ghostdata,
+            pruning_point,
+            merge_depth,
+        )?;
+        if merge_depth_root == Hash::zero() {
+            return anyhow::Ok((Hash::zero(), Hash::zero()));
+        }
+        let finality_point = self.block_depth_manager.calc_finality_point(
+            ghostdata,
+            pruning_point,
+            finality_depth,
+        )?;
+        let mut kosherizing_blues: Option<Vec<Hash>> = None;
+
+        for red in ghostdata.mergeset_reds.iter().copied() {
+            if self
+                .reachability_service()
+                .is_dag_ancestor_of(merge_depth_root, red)
+            {
+                continue;
+            }
+            // Lazy load the kosherizing blocks since this case is extremely rare
+            if kosherizing_blues.is_none() {
+                kosherizing_blues = Some(
+                    self.block_depth_manager
+                        .kosherizing_blues(ghostdata, merge_depth_root)
+                        .collect(),
+                );
+            }
+            if !self.reachability_service().is_dag_ancestor_of_any(
+                red,
+                &mut kosherizing_blues.as_ref().unwrap().iter().copied(),
+            ) {
+                bail!("failed to verify the bounded merge depth, the header refers too many bad red blocks");
+            }
+        }
+
+        self.storage.block_depth_info_store.insert(
+            ghostdata.selected_parent,
+            BlockDepthInfo {
+                merge_depth_root,
+                finality_point,
+            },
+        )?;
+        Ok((merge_depth_root, finality_point))
     }
 
     pub fn remove_bounded_merge_breaking_parents(
