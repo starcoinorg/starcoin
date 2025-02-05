@@ -61,7 +61,7 @@ module starcoin_framework::asset_mapping {
     const EINVALID_PROOF_ROOT: u64 = 102;
     const EINVALID_NOT_PROOF: u64 = 103;
     const EINVALID_ASSET_MAPPING_POOL: u64 = 104;
-    const EINVALID_DEPOSIT: u64 = 104;
+    const EINVALID_DEPOSIT: u64 = 105;
 
     const ASSET_MAPPING_OBJECT_SEED: vector<u8> = b"asset-mapping";
 

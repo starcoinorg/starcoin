@@ -179,7 +179,7 @@ eg. 0x1::STC::STC -> 0x1::starcoin_coin::STC
 
 
 
-<pre><code><b>const</b> <a href="asset_mapping.md#0x1_asset_mapping_EINVALID_DEPOSIT">EINVALID_DEPOSIT</a>: u64 = 104;
+<pre><code><b>const</b> <a href="asset_mapping.md#0x1_asset_mapping_EINVALID_DEPOSIT">EINVALID_DEPOSIT</a>: u64 = 105;
 </code></pre>
 
 
