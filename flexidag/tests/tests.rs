@@ -20,6 +20,7 @@ use starcoin_logger::prelude::debug;
 use starcoin_types::{
     block::{BlockHeader, BlockHeaderBuilder, BlockNumber},
     blockhash::{BlockHashMap, HashKTypeMap, KType},
+    U256,
 };
 
 use std::{
@@ -1248,6 +1249,260 @@ fn test_verification_blue_block() -> anyhow::Result<()> {
     let together_ghost_data = dag.storage.ghost_dag_store.get_data(mine_together.id())?;
     dag.ghost_dag_manager()
         .check_ghostdata_blue_block(&together_ghost_data)?;
+
+    anyhow::Result::Ok(())
+}
+
+fn add_and_print_with_pruning_point_and_difficulty(
+    number: BlockNumber,
+    parent: Hash,
+    parents: Vec<Hash>,
+    pruning_point: Hash,
+    difficulty: U256,
+    dag: &mut BlockDAG,
+) -> anyhow::Result<BlockHeader> {
+    let header_builder = BlockHeaderBuilder::random();
+    let header = header_builder
+        .with_parent_hash(parent)
+        .with_parents_hash(parents.clone())
+        .with_number(number)
+        .with_pruning_point(pruning_point)
+        .with_difficulty(difficulty)
+        .build();
+    let start = Instant::now();
+    dag.commit(header.to_owned())?;
+    let duration = start.elapsed();
+    println!(
+        "commit header: {:?}, number: {:?}, duration: {:?}",
+        header.id(),
+        header.number(),
+        duration
+    );
+    // let ghostdata = dag.ghostdata(&parents)?;
+    // dag.storage.ghost_dag_store.insert(header.id(), Arc::new(ghostdata))?;
+    // println!(
+    //     "add a header: {:?}, blue set: {:?}, red set: {:?}, blue anticone size: {:?}",
+    //     header, ghostdata.mergeset_blues, ghostdata.mergeset_reds, ghostdata.blues_anticone_sizes
+    // );
+    Ok(header)
+}
+
+#[test]
+fn test_merge_bounded() -> anyhow::Result<()> {
+    // initialzie the dag firstly
+    let k = 3;
+    let pruning_depth = 4;
+    let pruning_finality = 3;
+
+    let mut dag = BlockDAG::create_for_testing_with_parameters(k).unwrap();
+
+    let origin = BlockHeaderBuilder::random().with_number(0).build();
+    let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;
+
+    dag.init_with_genesis(genesis.clone()).unwrap();
+
+    println!(
+        "origin: {:?}, genesis: {:?}",
+        genesis.parent_hash(),
+        genesis.id()
+    );
+
+    let block1 = add_and_print(1, genesis.id(), vec![genesis.id()], &mut dag)?;
+
+    let block_main_2 = add_and_print_with_pruning_point_and_difficulty(
+        2,
+        block1.id(),
+        vec![block1.id()],
+        Hash::zero(),
+        3000.into(),
+        &mut dag,
+    )?;
+    let block_main_3 = add_and_print(3, block_main_2.id(), vec![block_main_2.id()], &mut dag)?;
+    let block_main_3_1 = add_and_print(3, block_main_2.id(), vec![block_main_2.id()], &mut dag)?;
+    let block_main_4 = add_and_print(
+        4,
+        block_main_3.id(),
+        vec![block_main_3.id(), block_main_3_1.id()],
+        &mut dag,
+    )?;
+    let block_main_5 = add_and_print(5, block_main_4.id(), vec![block_main_4.id()], &mut dag)?;
+
+    let block_red_2 = add_and_print(2, block1.id(), vec![block1.id()], &mut dag)?;
+    let block_red_2_1 = add_and_print(2, block1.id(), vec![block1.id()], &mut dag)?;
+    let block_red_3 = add_and_print(
+        3,
+        block_red_2.id(),
+        vec![block_red_2.id(), block_red_2_1.id()],
+        &mut dag,
+    )?;
+
+    dag.save_dag_state(
+        genesis.id(),
+        DagState {
+            tips: vec![block_red_3.id(), block_main_5.id()],
+        },
+    )?;
+
+    // prunning process begins
+    let (previous_ghostdata, previous_pruning_point) =
+        if block_main_5.pruning_point() == Hash::zero() {
+            (
+                dag.ghostdata_by_hash(genesis.id())?.ok_or_else(|| {
+                    format_err!("failed to get the ghostdata by genesis: {:?}", genesis.id())
+                })?,
+                genesis.id(),
+            )
+        } else {
+            (
+                dag.ghostdata_by_hash(block_main_5.pruning_point())?
+                    .ok_or_else(|| {
+                        format_err!(
+                            "failed to get the ghostdata by pruning point: {:?}",
+                            block_main_5.pruning_point()
+                        )
+                    })?,
+                block_main_5.pruning_point(),
+            )
+        };
+
+    // test the pruning point calculation
+    println!("**************** test the pruning point calculation and checking, generating the first merge depth point ****************");
+    let MineNewDagBlockInfo {
+        tips,
+        blue_blocks: _,
+        pruning_point,
+    } = dag.calc_mergeset_and_tips(
+        previous_pruning_point,
+        previous_ghostdata.as_ref(),
+        pruning_depth,
+        pruning_finality,
+        G_MAX_PARENTS_COUNT,
+    )?;
+
+    assert_eq!(pruning_point, block_main_2.id());
+    assert_eq!(tips.len(), 1);
+    assert_eq!(*tips.last().unwrap(), block_main_5.id());
+
+    let merge_depth = 3;
+
+    let ghostdata = dag.ghostdata(&tips)?;
+
+    assert_eq!(tips, vec![block_main_5.id()]);
+    assert_eq!(ghostdata, dag.ghostdata(&[block_main_5.id()])?);
+
+    dag.storage
+        .state_store
+        .write()
+        .insert(pruning_point, DagState { tips: tips.clone() })?;
+
+    let ghostdata = dag.ghostdata(&tips)?;
+
+    let (merge_depth_root, _finality_point) =
+        dag.check_bounded_merge_depth(pruning_point, &ghostdata, pruning_depth)?;
+    assert_eq!(
+        dag.ghost_dag_manager()
+            .find_selected_parent(vec![block_main_3.id(), block_main_3_1.id()])?,
+        merge_depth_root
+    );
+
+    // to test the calculation
+    println!("**************** test the pruning point calculation and checking, generating the second merge depth point ****************");
+    let block_main_6 = add_and_print(6, block_main_5.id(), vec![block_main_5.id()], &mut dag)?;
+    dag.storage.state_store.write().insert(
+        pruning_point,
+        DagState {
+            tips: vec![block_main_6.id()],
+        },
+    )?;
+    let MineNewDagBlockInfo {
+        tips,
+        blue_blocks: _,
+        pruning_point,
+    } = dag.calc_mergeset_and_tips(
+        pruning_point,
+        dag.storage
+            .ghost_dag_store
+            .get_data(pruning_point)?
+            .as_ref(),
+        pruning_depth,
+        pruning_finality,
+        G_MAX_PARENTS_COUNT,
+    )?;
+
+    assert_eq!(pruning_point, block_main_2.id());
+    assert_eq!(tips.len(), 1);
+    assert_eq!(*tips.last().unwrap(), block_main_6.id());
+
+    let ghostdata = dag.ghostdata(&tips)?;
+
+    let (tips, ghostdata) =
+        dag.remove_bounded_merge_breaking_parents(tips, ghostdata, pruning_point)?;
+
+    assert_eq!(tips.len(), 1);
+    assert_eq!(*tips.last().unwrap(), block_main_6.id());
+
+    let (merge_depth_root, _finality_point) =
+        dag.check_bounded_merge_depth(pruning_point, &ghostdata, merge_depth)?;
+    let mut fork = dag
+        .ghost_dag_manager()
+        .find_selected_parent(vec![block_main_3.id(), block_main_3_1.id()])?;
+    assert_eq!(fork, merge_depth_root);
+
+    fork = if block_main_3.id() == fork {
+        block_main_3_1.id()
+    } else {
+        block_main_3.id()
+    };
+
+    // to test the filter
+    let block_red_4 = add_and_print(4, fork, vec![fork], &mut dag)?;
+    let block_red_5 = add_and_print(5, block_red_4.id(), vec![block_red_4.id()], &mut dag)?;
+
+    let ghostdata = dag.ghostdata(&[block_main_6.id(), block_red_5.id()])?;
+    assert_eq!(
+        HashSet::from_iter(vec![block_red_4.id(), block_red_5.id()]),
+        ghostdata
+            .mergeset_reds
+            .as_ref()
+            .iter()
+            .cloned()
+            .collect::<HashSet<_>>()
+    );
+
+    dag.storage.state_store.write().insert(
+        pruning_point,
+        DagState {
+            tips: vec![block_main_6.id(), block_red_5.id()],
+        },
+    )?;
+    let MineNewDagBlockInfo {
+        tips,
+        blue_blocks: _,
+        pruning_point,
+    } = dag.calc_mergeset_and_tips(
+        pruning_point,
+        dag.storage
+            .ghost_dag_store
+            .get_data(pruning_point)?
+            .as_ref(),
+        pruning_depth,
+        pruning_finality,
+        G_MAX_PARENTS_COUNT,
+    )?;
+
+    assert_eq!(pruning_point, block_main_2.id());
+    assert_eq!(tips.len(), 2);
+    assert_eq!(
+        tips.iter().cloned().collect::<HashSet<_>>(),
+        HashSet::from_iter(vec![block_main_6.id(), block_red_5.id()])
+    );
+
+    let ghostdata = dag.ghostdata(&tips)?;
+
+    let (tips, _ghostdata) =
+        dag.remove_bounded_merge_breaking_parents(tips, ghostdata, pruning_point)?;
+    assert_eq!(tips.len(), 1);
+    assert_eq!(tips, vec![block_main_6.id()]);
 
     anyhow::Result::Ok(())
 }
