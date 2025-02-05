@@ -119,6 +119,15 @@ impl BlockDAG {
         Ok(Self::new(k, G_MERGE_DEPTH, dag_storage))
     }
 
+    pub fn create_for_testing_with_k_and_merge_depth(
+        k: KType,
+        merge_depth: u64,
+    ) -> anyhow::Result<Self> {
+        let dag_storage =
+            FlexiDagStorage::create_from_path(temp_dir(), FlexiDagStorageConfig::default())?;
+        Ok(Self::new(k, merge_depth, dag_storage))
+    }
+
     pub fn has_block_connected(&self, block_header: &BlockHeader) -> anyhow::Result<bool> {
         match self.storage.ghost_dag_store.has(block_header.id()) {
             std::result::Result::Ok(true) => (),
