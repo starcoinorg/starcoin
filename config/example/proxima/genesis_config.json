@@ -1913,5 +1913,5 @@
   },
   "time_service_type": "RealTimeService",
   "transaction_timeout": 86400,
-  "dag_effective_height": 0
+  "dag_effective_height": 18446744073709551615
 }
