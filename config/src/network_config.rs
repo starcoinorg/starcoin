@@ -7,7 +7,7 @@ use crate::{
     ConfigModule, QuotaDuration, StarcoinOpt,
 };
 use anyhow::Result;
-use clap::{value_parser, Parser};
+use clap::Parser;
 use network_api::messages::{NotificationMessage, BLOCK_PROTOCOL_NAME};
 use network_p2p_types::peer_id::PeerId;
 use network_p2p_types::{
