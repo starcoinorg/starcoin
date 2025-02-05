@@ -21,7 +21,7 @@ pub struct ExportOpt {
     account_address: AccountAddress,
     #[clap(short = 'p', default_value = "")]
     password: String,
-    #[arg(short = 'o', value_parser = value_parser!(std::ffi::OsString))]
+    #[arg(short = 'o')]
     output_file: Option<PathBuf>,
 }
 

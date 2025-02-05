@@ -47,7 +47,6 @@ pub struct RotateAuthKeyOpt {
     #[arg(
         short = 'f',
         help = "file path of private key",
-        value_parser = value_parser!(std::ffi::OsString),
         conflicts_with("input")
     )]
     from_file: Option<PathBuf>,

@@ -180,11 +180,7 @@ pub struct NetworkConfig {
     pub node_key: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(
-        long = "node-key-file",
-        value_parser = value_parser!(PathBuf),
-        conflicts_with("node_key")
-    )]
+    #[clap(long = "node-key-file", conflicts_with("node_key"))]
     /// Node network private key file, default is network_key under the data dir.
     pub node_key_file: Option<PathBuf>,
 

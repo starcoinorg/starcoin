@@ -1,6 +1,6 @@
 use crate::{BaseConfig, ConfigModule, StarcoinOpt};
 use anyhow::{bail, Result};
-use clap::{value_parser, Parser};
+use clap::Parser;
 use serde::{Deserialize, Serialize};
 use starcoin_account_api::AccountProviderStrategy;
 use starcoin_types::account_address::AccountAddress;
@@ -13,16 +13,12 @@ pub const G_ENV_PRIVATE_KEY: &str = "STARCOIN_PRIVATE_KEY";
 pub struct AccountProviderConfig {
     /// Path to the local account provider dir, load the accounts from local dir path
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[arg(long,value_name = "local-account-dir")]
+    #[arg(long = "local-account-dir")]
     pub account_dir: Option<PathBuf>,
 
     /// Path to the secret file storing the private key.
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[arg(
-        long = "secret-file",
-        help = "file path of private key",
-        value_parser = value_parser!(std::ffi::OsString)
-    )]
+    #[arg(long = "secret-file", help = "file path of private key")]
     pub secret_file: Option<PathBuf>,
 
     /// Read private from env variable `STARCOIN_PRIVATE_KEY`.

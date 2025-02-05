@@ -55,12 +55,7 @@ pub struct PackageOpt {
     /// args for the script.
     args: Option<Vec<TransactionArgument>>,
 
-    #[arg(
-        short = 'o',
-        name = "out-dir",
-        help = "out dir",
-        value_parser = value_parser!(std::ffi::OsString)
-    )]
+    #[arg(short = 'o', name = "out-dir", help = "out dir")]
     out_dir: Option<PathBuf>,
 
     #[clap(short = 'n', name = "package-name", long = "name")]

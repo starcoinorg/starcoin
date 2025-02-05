@@ -40,12 +40,7 @@ pub struct CompileOpt {
     )]
     deps: Option<Vec<String>>,
 
-    #[arg(
-        short = 'o',
-        name = "out_dir",
-        help = "out dir",
-        value_parser = value_parser!(std::ffi::OsString)
-    )]
+    #[arg(short = 'o', name = "out_dir", help = "out dir")]
     out_dir: Option<PathBuf>,
 
     #[clap(name = "source_file_or_dir", help = "source file path")]
