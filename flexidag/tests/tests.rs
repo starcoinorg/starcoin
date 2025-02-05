@@ -1293,8 +1293,9 @@ fn test_merge_bounded() -> anyhow::Result<()> {
     let k = 3;
     let pruning_depth = 4;
     let pruning_finality = 3;
+    let merge_depth = 3;
 
-    let mut dag = BlockDAG::create_for_testing_with_parameters(k).unwrap();
+    let mut dag = BlockDAG::create_for_testing_with_k_and_merge_depth(k, merge_depth).unwrap();
 
     let origin = BlockHeaderBuilder::random().with_number(0).build();
     let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;
@@ -1382,8 +1383,6 @@ fn test_merge_bounded() -> anyhow::Result<()> {
     assert_eq!(pruning_point, block_main_2.id());
     assert_eq!(tips.len(), 1);
     assert_eq!(*tips.last().unwrap(), block_main_5.id());
-
-    let merge_depth = 3;
 
     let ghostdata = dag.ghostdata(&tips)?;
 
@@ -1478,7 +1477,7 @@ fn test_merge_bounded() -> anyhow::Result<()> {
     let MineNewDagBlockInfo {
         tips,
         blue_blocks: _,
-        pruning_point,
+        pruning_point: _,
     } = dag.calc_mergeset_and_tips(
         pruning_point,
         dag.storage
@@ -1490,17 +1489,6 @@ fn test_merge_bounded() -> anyhow::Result<()> {
         G_MAX_PARENTS_COUNT,
     )?;
 
-    assert_eq!(pruning_point, block_main_2.id());
-    assert_eq!(tips.len(), 2);
-    assert_eq!(
-        tips.iter().cloned().collect::<HashSet<_>>(),
-        HashSet::from_iter(vec![block_main_6.id(), block_red_5.id()])
-    );
-
-    let ghostdata = dag.ghostdata(&tips)?;
-
-    let (tips, _ghostdata) =
-        dag.remove_bounded_merge_breaking_parents(tips, ghostdata, pruning_point)?;
     assert_eq!(tips.len(), 1);
     assert_eq!(tips, vec![block_main_6.id()]);
 
