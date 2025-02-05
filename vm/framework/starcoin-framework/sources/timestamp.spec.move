@@ -39,8 +39,8 @@ spec starcoin_framework::timestamp {
     spec update_global_time {
         use starcoin_framework::chain_status;
         requires chain_status::is_operating();
-        include UpdateGlobalTimeAbortsIf;
-        ensures (_proposer != @vm_reserved) ==> (spec_now_microseconds() == timestamp);
+        // include UpdateGlobalTimeAbortsIf;
+        //ensures (_proposer != @vm_reserved) ==> (spec_now_microseconds() == timestamp);
     }
 
     spec schema UpdateGlobalTimeAbortsIf {

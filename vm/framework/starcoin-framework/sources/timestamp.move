@@ -28,16 +28,15 @@ module starcoin_framework::timestamp {
     const EINVALID_TIMESTAMP: u64 = 1014;
 
     /// Marks that time has started. This can only be called from genesis and with the starcoin framework account.
-    public(friend) fun set_time_has_started(starcoin_framework: &signer) {
+    public(friend) fun set_time_has_started(starcoin_framework: &signer, microseconds: u64) {
         system_addresses::assert_starcoin_framework(starcoin_framework);
-        let timer = CurrentTimeMicroseconds { microseconds: 0 };
+        let timer = CurrentTimeMicroseconds { microseconds };
         move_to(starcoin_framework, timer);
     }
 
     /// Updates the wall clock time by consensus. Requires VM privilege and will be invoked during block prologue.
     public fun update_global_time(
         account: &signer,
-        _proposer: address,
         timestamp: u64
     ) acquires CurrentTimeMicroseconds {
         debug::print(&std::string::utf8(b"timestamp::update_global_time | Entered"));
@@ -48,17 +47,11 @@ module starcoin_framework::timestamp {
         system_addresses::assert_starcoin_framework(account);
 
         let global_timer = borrow_global_mut<CurrentTimeMicroseconds>(@starcoin_framework);
-        //let now = global_timer.microseconds;
-        // if (proposer == @starcoin_framework) {
-        //     // NIL block with null address as proposer. Timestamp must be equal.
-        //     assert!(now == timestamp, error::invalid_argument(EINVALID_TIMESTAMP));
-        // } else {
         // Normal block. Time must advance
         debug::print(&std::string::utf8(b"timestamp::update_global_time | Current global time: "));
         debug::print(&global_timer.microseconds);
         assert!(global_timer.microseconds < timestamp, error::invalid_argument(EINVALID_TIMESTAMP));
         global_timer.microseconds = timestamp;
-        //};
 
         debug::print(&std::string::utf8(b"timestamp::update_global_time | Exited"));
     }
@@ -66,7 +59,7 @@ module starcoin_framework::timestamp {
     #[test_only]
     public fun set_time_has_started_for_testing(account: &signer) {
         if (!exists<CurrentTimeMicroseconds>(@starcoin_framework)) {
-            set_time_has_started(account);
+            set_time_has_started(account, 0);
         };
     }
 

@@ -1,7 +1,6 @@
 /// Block module provide metadata for generated blocks.
 module starcoin_framework::stc_block {
     use std::error;
-    use std::signer;
     use std::vector;
 
     use starcoin_framework::account;
@@ -146,7 +145,7 @@ module starcoin_framework::stc_block {
         // then deal with current block.
         debug::print(&std::string::utf8(b"stc_block::block_prologue | timestamp::update_global_time"));
         debug::print(&timestamp);
-        timestamp::update_global_time(&account, signer::address_of(&account), timestamp * 1000);
+        timestamp::update_global_time(&account, timestamp * 1000);
 
         process_block_metadata(
             &account,

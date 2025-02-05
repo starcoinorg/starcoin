@@ -58,7 +58,14 @@ pub fn handle_package_commands(
             [(STARCOIN_STDLIB_ADDR_NAME, STARCOIN_STDLIB_ADDR_VALUE)],
             "",
         ),
-        PackageCommand::Build(c) => c.execute(move_args.package_path, move_args.build_config),
+        PackageCommand::Build(c) => {
+            let mut build_config = move_args.build_config.clone();
+            build_config
+                .compiler_config
+                .known_attributes
+                .clone_from(extended_checks::get_all_attribute_names());
+            c.execute(move_args.package_path, build_config)
+        }
         PackageCommand::Errmap(c) => c.execute(move_args.package_path, move_args.build_config),
         PackageCommand::Prove(c) => c.execute(move_args.package_path, move_args.build_config),
         PackageCommand::Coverage(c) => c.execute(move_args.package_path, move_args.build_config),
