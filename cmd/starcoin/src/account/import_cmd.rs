@@ -4,7 +4,7 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
-use clap::{value_parser, Parser};
+use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_account_api::{AccountInfo, AccountPrivateKey};
 use starcoin_crypto::{ValidCryptoMaterial, ValidCryptoMaterialStringExt};

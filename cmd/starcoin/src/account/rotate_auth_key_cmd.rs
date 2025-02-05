@@ -4,7 +4,7 @@
 use std::path::PathBuf;
 
 use anyhow::{bail, Result};
-use clap::{value_parser, Parser};
+use clap::Parser;
 use starcoin_crypto::{ValidCryptoMaterial, ValidCryptoMaterialStringExt};
 
 use scmd::{CommandAction, ExecContext};
