@@ -347,7 +347,7 @@ module starcoin_framework::object {
             },
         );
 
-        debug::print(&string::utf8(b"object::create_object_internal | exited"));
+        // debug::print(&string::utf8(b"object::create_object_internal | exited"));
         ConstructorRef { self: object, can_delete }
     }
 

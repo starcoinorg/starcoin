@@ -68,7 +68,7 @@ script {
         let metadata = coin::paired_metadata<STC>();
         assert!(option::is_some(&metadata), 10000);
         let metdata_obj = option::destroy_some(metadata);
-        object::address_to_object<STC>(object::object_address(&metdata_obj));
+        assert!(object::is_object(object::object_address(&metdata_obj)), 10001);
     }
 }
 

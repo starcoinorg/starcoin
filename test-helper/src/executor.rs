@@ -190,16 +190,6 @@ pub fn account_execute_should_success(
     user_execute_should_success(*account.address(), account.private_key(), state, payload)
 }
 
-pub fn genesis_execute_should_sucess(
-    state: &ChainStateDB,
-    net: &ChainNetwork,
-    payload: TransactionPayload,
-) -> Result<TransactionOutput> {
-    let txn = build_raw_txn(genesis_address(), state, payload, None);
-    let txn = net.genesis_config().clone().sign_with_genesis(txn)?;
-    execute_signed_txn_should_success(state, txn)
-}
-
 pub fn account_execute_with_output(
     account: &Account,
     state: &ChainStateDB,
