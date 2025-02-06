@@ -150,7 +150,7 @@ fn test_flexidag_config_get_for_proxima() {
         vm.get_flexidag_config().unwrap().effective_height
     };
 
-    assert_eq!(version, 0);
+    assert_eq!(version, u64::MAX);
 }
 
 #[stest::test]

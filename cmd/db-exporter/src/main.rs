@@ -253,10 +253,10 @@ enum Cmd {
 #[derive(Debug, Clone, Parser)]
 #[clap(name = "db-exporter", about = "starcoin db exporter")]
 pub struct ExporterOptions {
-    #[arg(long, short = 'o', value_parser = value_parser!(std::ffi::OsString))]
+    #[arg(long, short = 'o')]
     /// output file, like accounts.csv, default is stdout.
     pub output: Option<PathBuf>,
-    #[arg(long, short = 'i', value_parser = value_parser!(std::ffi::OsString))]
+    #[arg(long, short = 'i')]
     /// starcoin node db path. like ~/.starcoin/barnard/starcoindb/db/starcoindb
     pub db_path: PathBuf,
 
