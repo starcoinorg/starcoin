@@ -47,7 +47,7 @@ pub struct Options {
         short = 't',
         long = "token-code",
         name = "token-code",
-        help = "token's code to drop, for example: 0x1::STC::STC, default is STC."
+        help = "token's code to drop, for example: 0x1::starcoin_coin::STC, default is STC."
     )]
     token_code: Option<TokenCode>,
 }

@@ -34,7 +34,7 @@ pub struct UpgradeModulePlanOpt {
     #[clap(
         name = "dao-token",
         long = "dao-token",
-        default_value = "0x1::STC::STC"
+        default_value = "0x1::starcoin_coin::STC"
     )]
     /// The token for dao governance, default is 0x1::STC::STC
     dao_token: TokenCode,

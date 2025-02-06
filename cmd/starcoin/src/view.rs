@@ -61,7 +61,7 @@ pub struct TransactionOptions {
     pub dry_run: bool,
 
     #[clap(name = "gas-token", long = "gas-token", name = "token code of gas")]
-    /// "token code of gas to pay, for example: 0x1::STC::STC, default is STC."
+    /// "token code of gas to pay, for example: 0x1::starcoin_coin::STC, default is STC."
     pub gas_token: Option<String>,
 }
 

@@ -30,7 +30,7 @@ pub enum GetContractDataOpt {
         address: AccountAddress,
         #[clap(
             help = "resource struct tag,",
-            default_value = "0x1::Account::Balance<0x1::STC::STC>"
+            default_value = "0x1::coin::CoinStore<0x1::starcoin_coin::STC>"
         )]
         resource_type: StrView<StructTag>,
     },
