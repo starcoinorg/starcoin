@@ -1,144 +1,145 @@
+
 <a id="0x1_object"></a>
 
 # Module `0x1::object`
 
 This defines the Move object model with the following properties:
-
 - Simplified storage interface that supports a heterogeneous collection of resources to be
-  stored together. This enables data types to share a common core data layer (e.g., tokens),
-  while having richer extensions (e.g., concert ticket, sword).
+stored together. This enables data types to share a common core data layer (e.g., tokens),
+while having richer extensions (e.g., concert ticket, sword).
 - Globally accessible data and ownership model that enables creators and developers to dictate
-  the application and lifetime of data.
+the application and lifetime of data.
 - Extensible programming model that supports individualization of user applications that
-  leverage the core framework including tokens.
+leverage the core framework including tokens.
 - Support emitting events directly, thus improving discoverability of events associated with
-  objects.
+objects.
 - Considerate of the underlying system by leveraging resource groups for gas efficiency,
-  avoiding costly deserialization and serialization costs, and supporting deletability.
+avoiding costly deserialization and serialization costs, and supporting deletability.
 
 TODO:
-
 * There is no means to borrow an object or a reference to an object. We are exploring how to
-  make it so that a reference to a global object can be returned from a function.
+make it so that a reference to a global object can be returned from a function.
 
 
-- [Resource `ObjectCore`](#0x1_object_ObjectCore)
-- [Resource `TombStone`](#0x1_object_TombStone)
-- [Resource `Untransferable`](#0x1_object_Untransferable)
-- [Struct `ObjectGroup`](#0x1_object_ObjectGroup)
-- [Struct `Object`](#0x1_object_Object)
-- [Struct `ConstructorRef`](#0x1_object_ConstructorRef)
-- [Struct `DeleteRef`](#0x1_object_DeleteRef)
-- [Struct `ExtendRef`](#0x1_object_ExtendRef)
-- [Struct `TransferRef`](#0x1_object_TransferRef)
-- [Struct `LinearTransferRef`](#0x1_object_LinearTransferRef)
-- [Struct `DeriveRef`](#0x1_object_DeriveRef)
-- [Struct `TransferEvent`](#0x1_object_TransferEvent)
-- [Struct `Transfer`](#0x1_object_Transfer)
-- [Constants](#@Constants_0)
-- [Function `is_untransferable`](#0x1_object_is_untransferable)
-- [Function `is_burnt`](#0x1_object_is_burnt)
-- [Function `address_to_object`](#0x1_object_address_to_object)
-- [Function `is_object`](#0x1_object_is_object)
-- [Function `object_exists`](#0x1_object_object_exists)
-- [Function `create_object_address`](#0x1_object_create_object_address)
-- [Function `create_user_derived_object_address_impl`](#0x1_object_create_user_derived_object_address_impl)
-- [Function `create_user_derived_object_address`](#0x1_object_create_user_derived_object_address)
-- [Function `create_guid_object_address`](#0x1_object_create_guid_object_address)
-- [Function `exists_at`](#0x1_object_exists_at)
-- [Function `object_address`](#0x1_object_object_address)
-- [Function `convert`](#0x1_object_convert)
-- [Function `create_named_object`](#0x1_object_create_named_object)
-- [Function `create_user_derived_object`](#0x1_object_create_user_derived_object)
-- [Function `create_object`](#0x1_object_create_object)
-- [Function `create_sticky_object`](#0x1_object_create_sticky_object)
-- [Function `create_sticky_object_at_address`](#0x1_object_create_sticky_object_at_address)
-- [Function `create_object_from_account`](#0x1_object_create_object_from_account)
-- [Function `create_object_from_object`](#0x1_object_create_object_from_object)
-- [Function `create_object_from_guid`](#0x1_object_create_object_from_guid)
-- [Function `create_object_internal`](#0x1_object_create_object_internal)
-- [Function `generate_delete_ref`](#0x1_object_generate_delete_ref)
-- [Function `generate_extend_ref`](#0x1_object_generate_extend_ref)
-- [Function `generate_transfer_ref`](#0x1_object_generate_transfer_ref)
-- [Function `generate_derive_ref`](#0x1_object_generate_derive_ref)
-- [Function `generate_signer`](#0x1_object_generate_signer)
-- [Function `address_from_constructor_ref`](#0x1_object_address_from_constructor_ref)
-- [Function `object_from_constructor_ref`](#0x1_object_object_from_constructor_ref)
-- [Function `can_generate_delete_ref`](#0x1_object_can_generate_delete_ref)
-- [Function `create_guid`](#0x1_object_create_guid)
-- [Function `new_event_handle`](#0x1_object_new_event_handle)
-- [Function `address_from_delete_ref`](#0x1_object_address_from_delete_ref)
-- [Function `object_from_delete_ref`](#0x1_object_object_from_delete_ref)
-- [Function `delete`](#0x1_object_delete)
-- [Function `generate_signer_for_extending`](#0x1_object_generate_signer_for_extending)
-- [Function `address_from_extend_ref`](#0x1_object_address_from_extend_ref)
-- [Function `disable_ungated_transfer`](#0x1_object_disable_ungated_transfer)
-- [Function `set_untransferable`](#0x1_object_set_untransferable)
-- [Function `enable_ungated_transfer`](#0x1_object_enable_ungated_transfer)
-- [Function `generate_linear_transfer_ref`](#0x1_object_generate_linear_transfer_ref)
-- [Function `transfer_with_ref`](#0x1_object_transfer_with_ref)
-- [Function `transfer_call`](#0x1_object_transfer_call)
-- [Function `transfer`](#0x1_object_transfer)
-- [Function `transfer_raw`](#0x1_object_transfer_raw)
-- [Function `transfer_raw_inner`](#0x1_object_transfer_raw_inner)
-- [Function `transfer_to_object`](#0x1_object_transfer_to_object)
-- [Function `verify_ungated_and_descendant`](#0x1_object_verify_ungated_and_descendant)
-- [Function `burn`](#0x1_object_burn)
-- [Function `unburn`](#0x1_object_unburn)
-- [Function `ungated_transfer_allowed`](#0x1_object_ungated_transfer_allowed)
-- [Function `owner`](#0x1_object_owner)
-- [Function `is_owner`](#0x1_object_is_owner)
-- [Function `owns`](#0x1_object_owns)
-- [Function `root_owner`](#0x1_object_root_owner)
-- [Specification](#@Specification_1)
-    - [High-level Requirements](#high-level-req)
-    - [Module-level Specification](#module-level-spec)
-    - [Function `address_to_object`](#@Specification_1_address_to_object)
-    - [Function `create_object_address`](#@Specification_1_create_object_address)
-    - [Function `create_user_derived_object_address_impl`](#@Specification_1_create_user_derived_object_address_impl)
-    - [Function `create_user_derived_object_address`](#@Specification_1_create_user_derived_object_address)
-    - [Function `create_guid_object_address`](#@Specification_1_create_guid_object_address)
-    - [Function `exists_at`](#@Specification_1_exists_at)
-    - [Function `object_address`](#@Specification_1_object_address)
-    - [Function `convert`](#@Specification_1_convert)
-    - [Function `create_named_object`](#@Specification_1_create_named_object)
-    - [Function `create_user_derived_object`](#@Specification_1_create_user_derived_object)
-    - [Function `create_object`](#@Specification_1_create_object)
-    - [Function `create_sticky_object`](#@Specification_1_create_sticky_object)
-    - [Function `create_sticky_object_at_address`](#@Specification_1_create_sticky_object_at_address)
-    - [Function `create_object_from_account`](#@Specification_1_create_object_from_account)
-    - [Function `create_object_from_object`](#@Specification_1_create_object_from_object)
-    - [Function `create_object_from_guid`](#@Specification_1_create_object_from_guid)
-    - [Function `create_object_internal`](#@Specification_1_create_object_internal)
-    - [Function `generate_delete_ref`](#@Specification_1_generate_delete_ref)
-    - [Function `generate_transfer_ref`](#@Specification_1_generate_transfer_ref)
-    - [Function `object_from_constructor_ref`](#@Specification_1_object_from_constructor_ref)
-    - [Function `create_guid`](#@Specification_1_create_guid)
-    - [Function `new_event_handle`](#@Specification_1_new_event_handle)
-    - [Function `object_from_delete_ref`](#@Specification_1_object_from_delete_ref)
-    - [Function `delete`](#@Specification_1_delete)
-    - [Function `disable_ungated_transfer`](#@Specification_1_disable_ungated_transfer)
-    - [Function `set_untransferable`](#@Specification_1_set_untransferable)
-    - [Function `enable_ungated_transfer`](#@Specification_1_enable_ungated_transfer)
-    - [Function `generate_linear_transfer_ref`](#@Specification_1_generate_linear_transfer_ref)
-    - [Function `transfer_with_ref`](#@Specification_1_transfer_with_ref)
-    - [Function `transfer_call`](#@Specification_1_transfer_call)
-    - [Function `transfer`](#@Specification_1_transfer)
-    - [Function `transfer_raw`](#@Specification_1_transfer_raw)
-    - [Function `transfer_to_object`](#@Specification_1_transfer_to_object)
-    - [Function `verify_ungated_and_descendant`](#@Specification_1_verify_ungated_and_descendant)
-    - [Function `burn`](#@Specification_1_burn)
-    - [Function `unburn`](#@Specification_1_unburn)
-    - [Function `ungated_transfer_allowed`](#@Specification_1_ungated_transfer_allowed)
-    - [Function `owner`](#@Specification_1_owner)
-    - [Function `is_owner`](#@Specification_1_is_owner)
-    - [Function `owns`](#@Specification_1_owns)
-    - [Function `root_owner`](#@Specification_1_root_owner)
+-  [Resource `ObjectCore`](#0x1_object_ObjectCore)
+-  [Resource `TombStone`](#0x1_object_TombStone)
+-  [Resource `Untransferable`](#0x1_object_Untransferable)
+-  [Struct `ObjectGroup`](#0x1_object_ObjectGroup)
+-  [Struct `Object`](#0x1_object_Object)
+-  [Struct `ConstructorRef`](#0x1_object_ConstructorRef)
+-  [Struct `DeleteRef`](#0x1_object_DeleteRef)
+-  [Struct `ExtendRef`](#0x1_object_ExtendRef)
+-  [Struct `TransferRef`](#0x1_object_TransferRef)
+-  [Struct `LinearTransferRef`](#0x1_object_LinearTransferRef)
+-  [Struct `DeriveRef`](#0x1_object_DeriveRef)
+-  [Struct `TransferEvent`](#0x1_object_TransferEvent)
+-  [Struct `Transfer`](#0x1_object_Transfer)
+-  [Constants](#@Constants_0)
+-  [Function `is_untransferable`](#0x1_object_is_untransferable)
+-  [Function `is_burnt`](#0x1_object_is_burnt)
+-  [Function `address_to_object`](#0x1_object_address_to_object)
+-  [Function `is_object`](#0x1_object_is_object)
+-  [Function `object_exists`](#0x1_object_object_exists)
+-  [Function `create_object_address`](#0x1_object_create_object_address)
+-  [Function `create_user_derived_object_address_impl`](#0x1_object_create_user_derived_object_address_impl)
+-  [Function `create_user_derived_object_address`](#0x1_object_create_user_derived_object_address)
+-  [Function `create_guid_object_address`](#0x1_object_create_guid_object_address)
+-  [Function `exists_at`](#0x1_object_exists_at)
+-  [Function `object_address`](#0x1_object_object_address)
+-  [Function `convert`](#0x1_object_convert)
+-  [Function `create_named_object`](#0x1_object_create_named_object)
+-  [Function `create_user_derived_object`](#0x1_object_create_user_derived_object)
+-  [Function `create_object`](#0x1_object_create_object)
+-  [Function `create_sticky_object`](#0x1_object_create_sticky_object)
+-  [Function `create_sticky_object_at_address`](#0x1_object_create_sticky_object_at_address)
+-  [Function `create_object_from_account`](#0x1_object_create_object_from_account)
+-  [Function `create_object_from_object`](#0x1_object_create_object_from_object)
+-  [Function `create_object_from_guid`](#0x1_object_create_object_from_guid)
+-  [Function `create_object_internal`](#0x1_object_create_object_internal)
+-  [Function `generate_delete_ref`](#0x1_object_generate_delete_ref)
+-  [Function `generate_extend_ref`](#0x1_object_generate_extend_ref)
+-  [Function `generate_transfer_ref`](#0x1_object_generate_transfer_ref)
+-  [Function `generate_derive_ref`](#0x1_object_generate_derive_ref)
+-  [Function `generate_signer`](#0x1_object_generate_signer)
+-  [Function `address_from_constructor_ref`](#0x1_object_address_from_constructor_ref)
+-  [Function `object_from_constructor_ref`](#0x1_object_object_from_constructor_ref)
+-  [Function `can_generate_delete_ref`](#0x1_object_can_generate_delete_ref)
+-  [Function `create_guid`](#0x1_object_create_guid)
+-  [Function `new_event_handle`](#0x1_object_new_event_handle)
+-  [Function `address_from_delete_ref`](#0x1_object_address_from_delete_ref)
+-  [Function `object_from_delete_ref`](#0x1_object_object_from_delete_ref)
+-  [Function `delete`](#0x1_object_delete)
+-  [Function `generate_signer_for_extending`](#0x1_object_generate_signer_for_extending)
+-  [Function `address_from_extend_ref`](#0x1_object_address_from_extend_ref)
+-  [Function `disable_ungated_transfer`](#0x1_object_disable_ungated_transfer)
+-  [Function `set_untransferable`](#0x1_object_set_untransferable)
+-  [Function `enable_ungated_transfer`](#0x1_object_enable_ungated_transfer)
+-  [Function `generate_linear_transfer_ref`](#0x1_object_generate_linear_transfer_ref)
+-  [Function `transfer_with_ref`](#0x1_object_transfer_with_ref)
+-  [Function `transfer_call`](#0x1_object_transfer_call)
+-  [Function `transfer`](#0x1_object_transfer)
+-  [Function `transfer_raw`](#0x1_object_transfer_raw)
+-  [Function `transfer_raw_inner`](#0x1_object_transfer_raw_inner)
+-  [Function `transfer_to_object`](#0x1_object_transfer_to_object)
+-  [Function `verify_ungated_and_descendant`](#0x1_object_verify_ungated_and_descendant)
+-  [Function `burn`](#0x1_object_burn)
+-  [Function `unburn`](#0x1_object_unburn)
+-  [Function `ungated_transfer_allowed`](#0x1_object_ungated_transfer_allowed)
+-  [Function `owner`](#0x1_object_owner)
+-  [Function `is_owner`](#0x1_object_is_owner)
+-  [Function `owns`](#0x1_object_owns)
+-  [Function `root_owner`](#0x1_object_root_owner)
+-  [Specification](#@Specification_1)
+    -  [High-level Requirements](#high-level-req)
+    -  [Module-level Specification](#module-level-spec)
+    -  [Function `address_to_object`](#@Specification_1_address_to_object)
+    -  [Function `create_object_address`](#@Specification_1_create_object_address)
+    -  [Function `create_user_derived_object_address_impl`](#@Specification_1_create_user_derived_object_address_impl)
+    -  [Function `create_user_derived_object_address`](#@Specification_1_create_user_derived_object_address)
+    -  [Function `create_guid_object_address`](#@Specification_1_create_guid_object_address)
+    -  [Function `exists_at`](#@Specification_1_exists_at)
+    -  [Function `object_address`](#@Specification_1_object_address)
+    -  [Function `convert`](#@Specification_1_convert)
+    -  [Function `create_named_object`](#@Specification_1_create_named_object)
+    -  [Function `create_user_derived_object`](#@Specification_1_create_user_derived_object)
+    -  [Function `create_object`](#@Specification_1_create_object)
+    -  [Function `create_sticky_object`](#@Specification_1_create_sticky_object)
+    -  [Function `create_sticky_object_at_address`](#@Specification_1_create_sticky_object_at_address)
+    -  [Function `create_object_from_account`](#@Specification_1_create_object_from_account)
+    -  [Function `create_object_from_object`](#@Specification_1_create_object_from_object)
+    -  [Function `create_object_from_guid`](#@Specification_1_create_object_from_guid)
+    -  [Function `create_object_internal`](#@Specification_1_create_object_internal)
+    -  [Function `generate_delete_ref`](#@Specification_1_generate_delete_ref)
+    -  [Function `generate_transfer_ref`](#@Specification_1_generate_transfer_ref)
+    -  [Function `object_from_constructor_ref`](#@Specification_1_object_from_constructor_ref)
+    -  [Function `create_guid`](#@Specification_1_create_guid)
+    -  [Function `new_event_handle`](#@Specification_1_new_event_handle)
+    -  [Function `object_from_delete_ref`](#@Specification_1_object_from_delete_ref)
+    -  [Function `delete`](#@Specification_1_delete)
+    -  [Function `disable_ungated_transfer`](#@Specification_1_disable_ungated_transfer)
+    -  [Function `set_untransferable`](#@Specification_1_set_untransferable)
+    -  [Function `enable_ungated_transfer`](#@Specification_1_enable_ungated_transfer)
+    -  [Function `generate_linear_transfer_ref`](#@Specification_1_generate_linear_transfer_ref)
+    -  [Function `transfer_with_ref`](#@Specification_1_transfer_with_ref)
+    -  [Function `transfer_call`](#@Specification_1_transfer_call)
+    -  [Function `transfer`](#@Specification_1_transfer)
+    -  [Function `transfer_raw`](#@Specification_1_transfer_raw)
+    -  [Function `transfer_to_object`](#@Specification_1_transfer_to_object)
+    -  [Function `verify_ungated_and_descendant`](#@Specification_1_verify_ungated_and_descendant)
+    -  [Function `burn`](#@Specification_1_burn)
+    -  [Function `unburn`](#@Specification_1_unburn)
+    -  [Function `ungated_transfer_allowed`](#@Specification_1_ungated_transfer_allowed)
+    -  [Function `owner`](#@Specification_1_owner)
+    -  [Function `is_owner`](#@Specification_1_is_owner)
+    -  [Function `owns`](#@Specification_1_owns)
+    -  [Function `root_owner`](#@Specification_1_root_owner)
+
 
 <pre><code><b>use</b> <a href="account.md#0x1_account">0x1::account</a>;
 <b>use</b> <a href="../../move-stdlib/doc/bcs.md#0x1_bcs">0x1::bcs</a>;
 <b>use</b> <a href="bcs_util.md#0x1_bcs_util">0x1::bcs_util</a>;
 <b>use</b> <a href="create_signer.md#0x1_create_signer">0x1::create_signer</a>;
+<b>use</b> <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug">0x1::debug</a>;
 <b>use</b> <a href="../../move-stdlib/doc/error.md#0x1_error">0x1::error</a>;
 <b>use</b> <a href="event.md#0x1_event">0x1::event</a>;
 <b>use</b> <a href="../../move-stdlib/doc/features.md#0x1_features">0x1::features</a>;
@@ -146,6 +147,7 @@ TODO:
 <b>use</b> <a href="guid.md#0x1_guid">0x1::guid</a>;
 <b>use</b> <a href="../../move-stdlib/doc/hash.md#0x1_hash">0x1::hash</a>;
 <b>use</b> <a href="../../move-stdlib/doc/signer.md#0x1_signer">0x1::signer</a>;
+<b>use</b> <a href="../../move-stdlib/doc/string.md#0x1_string">0x1::string</a>;
 <b>use</b> <a href="transaction_context.md#0x1_transaction_context">0x1::transaction_context</a>;
 <b>use</b> <a href="../../move-stdlib/doc/vector.md#0x1_vector">0x1::vector</a>;
 </code></pre>
@@ -233,8 +235,7 @@ This is added to objects that are burnt (ownership transferred to BURN_ADDRESS).
 
 ## Resource `Untransferable`
 
-The existence of this renders all <code><a href="object.md#0x1_object_TransferRef">TransferRef</a></code>s irrelevant.
-The object cannot be moved.
+The existence of this renders all <code><a href="object.md#0x1_object_TransferRef">TransferRef</a></code>s irrelevant. The object cannot be moved.
 
 
 <pre><code>#[resource_group_member(#[group = <a href="object.md#0x1_object_ObjectGroup">0x1::object::ObjectGroup</a>])]
@@ -585,6 +586,7 @@ Emitted whenever the object's owner field is changed.
 
 ## Constants
 
+
 <a id="0x1_object_BURN_ADDRESS"></a>
 
 Address where unwanted objects can be forcefully transferred to.
@@ -720,7 +722,6 @@ nesting, but any checks such as transfer will only be evaluated this deep.
 
 Scheme identifier used to generate an object's address <code>obj_addr</code> as derived from another object.
 The object's address is generated as:
-
 ```
 obj_addr = sha3_256(account addr | derived from object's address | 0xFC)
 ```
@@ -736,16 +737,12 @@ derivation to produce an object address.
 
 <a id="0x1_object_OBJECT_FROM_GUID_ADDRESS_SCHEME"></a>
 
-Scheme identifier used to generate an object's address <code>obj_addr</code> via a fresh GUID generated by the creator
-at
+Scheme identifier used to generate an object's address <code>obj_addr</code> via a fresh GUID generated by the creator at
 <code>source_addr</code>. The object's address is generated as:
-
 ```
 obj_addr = sha3_256(guid | 0xFD)
 ```
-
-where <code><a href="guid.md#0x1_guid">guid</a> = <a href="account.md#0x1_account_create_guid">account::
-create_guid</a>(<a href="create_signer.md#0x1_create_signer">create_signer</a>(source_addr))</code>
+where <code><a href="guid.md#0x1_guid">guid</a> = <a href="account.md#0x1_account_create_guid">account::create_guid</a>(<a href="create_signer.md#0x1_create_signer">create_signer</a>(source_addr))</code>
 
 This 0xFD constant serves as a domain separation tag to prevent existing authentication key and resource account
 derivation to produce an object address.
@@ -758,8 +755,7 @@ derivation to produce an object address.
 
 <a id="0x1_object_OBJECT_FROM_SEED_ADDRESS_SCHEME"></a>
 
-Scheme identifier used to generate an object's address <code>obj_addr</code> from the creator's <code>source_addr</code>
-and a <code>seed</code> as:
+Scheme identifier used to generate an object's address <code>obj_addr</code> from the creator's <code>source_addr</code> and a <code>seed</code> as:
 obj_addr = sha3_256(source_addr | seed | 0xFE).
 
 This 0xFE constant serves as a domain separation tag to prevent existing authentication key and resource account
@@ -774,6 +770,8 @@ derivation to produce an object address.
 <a id="0x1_object_is_untransferable"></a>
 
 ## Function `is_untransferable`
+
+
 
 <pre><code>#[view]
 <b>public</b> <b>fun</b> <a href="object.md#0x1_object_is_untransferable">is_untransferable</a>&lt;T: key&gt;(<a href="object.md#0x1_object">object</a>: <a href="object.md#0x1_object_Object">object::Object</a>&lt;T&gt;): bool
@@ -797,6 +795,8 @@ derivation to produce an object address.
 <a id="0x1_object_is_burnt"></a>
 
 ## Function `is_burnt`
+
+
 
 <pre><code>#[view]
 <b>public</b> <b>fun</b> <a href="object.md#0x1_object_is_burnt">is_burnt</a>&lt;T: key&gt;(<a href="object.md#0x1_object">object</a>: <a href="object.md#0x1_object_Object">object::Object</a>&lt;T&gt;): bool
@@ -929,6 +929,8 @@ Derives an object address from source material: sha3_256([creator address | seed
 
 ## Function `create_user_derived_object_address_impl`
 
+
+
 <pre><code><b>fun</b> <a href="object.md#0x1_object_create_user_derived_object_address_impl">create_user_derived_object_address_impl</a>(source: <b>address</b>, derive_from: <b>address</b>): <b>address</b>
 </code></pre>
 
@@ -1008,6 +1010,8 @@ Derives an object from an Account GUID.
 <a id="0x1_object_exists_at"></a>
 
 ## Function `exists_at`
+
+
 
 <pre><code><b>fun</b> <a href="object.md#0x1_object_exists_at">exists_at</a>&lt;T: key&gt;(<a href="object.md#0x1_object">object</a>: <b>address</b>): bool
 </code></pre>
@@ -1282,6 +1286,8 @@ doesn't have the same bottlenecks.
 
 ## Function `create_object_from_guid`
 
+
+
 <pre><code><b>fun</b> <a href="object.md#0x1_object_create_object_from_guid">create_object_from_guid</a>(creator_address: <b>address</b>, <a href="guid.md#0x1_guid">guid</a>: <a href="guid.md#0x1_guid_GUID">guid::GUID</a>): <a href="object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>
 </code></pre>
 
@@ -1306,6 +1312,8 @@ doesn't have the same bottlenecks.
 <a id="0x1_object_create_object_internal"></a>
 
 ## Function `create_object_internal`
+
+
 
 <pre><code><b>fun</b> <a href="object.md#0x1_object_create_object_internal">create_object_internal</a>(creator_address: <b>address</b>, <a href="object.md#0x1_object">object</a>: <b>address</b>, can_delete: bool): <a href="object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>
 </code></pre>
@@ -2003,6 +2011,8 @@ hierarchy.
 
 ## Function `transfer_raw_inner`
 
+
+
 <pre><code><b>fun</b> <a href="object.md#0x1_object_transfer_raw_inner">transfer_raw_inner</a>(<a href="object.md#0x1_object">object</a>: <b>address</b>, <b>to</b>: <b>address</b>)
 </code></pre>
 
@@ -2357,6 +2367,9 @@ to determine the identity of the starting point of ownership.
 
 ## Specification
 
+
+
+
 <a id="high-level-req"></a>
 
 ### High-level Requirements
@@ -2423,6 +2436,7 @@ to determine the identity of the starting point of ownership.
 
 ### Module-level Specification
 
+
 <pre><code><b>pragma</b> aborts_if_is_strict;
 </code></pre>
 
@@ -2441,6 +2455,7 @@ to determine the identity of the starting point of ownership.
 
 ### Function `address_to_object`
 
+
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_address_to_object">address_to_object</a>&lt;T: key&gt;(<a href="object.md#0x1_object">object</a>: <b>address</b>): <a href="object.md#0x1_object_Object">object::Object</a>&lt;T&gt;
 </code></pre>
 
@@ -2457,6 +2472,7 @@ to determine the identity of the starting point of ownership.
 <a id="@Specification_1_create_object_address"></a>
 
 ### Function `create_object_address`
+
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_object_address">create_object_address</a>(source: &<b>address</b>, seed: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <b>address</b>
 </code></pre>
@@ -2485,6 +2501,7 @@ to determine the identity of the starting point of ownership.
 
 ### Function `create_user_derived_object_address_impl`
 
+
 <pre><code><b>fun</b> <a href="object.md#0x1_object_create_user_derived_object_address_impl">create_user_derived_object_address_impl</a>(source: <b>address</b>, derive_from: <b>address</b>): <b>address</b>
 </code></pre>
 
@@ -2500,6 +2517,7 @@ to determine the identity of the starting point of ownership.
 <a id="@Specification_1_create_user_derived_object_address"></a>
 
 ### Function `create_user_derived_object_address`
+
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_user_derived_object_address">create_user_derived_object_address</a>(source: <b>address</b>, derive_from: <b>address</b>): <b>address</b>
 </code></pre>
@@ -2519,6 +2537,7 @@ to determine the identity of the starting point of ownership.
 
 ### Function `create_guid_object_address`
 
+
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_guid_object_address">create_guid_object_address</a>(source: <b>address</b>, creation_num: u64): <b>address</b>
 </code></pre>
 
@@ -2537,6 +2556,7 @@ to determine the identity of the starting point of ownership.
 
 ### Function `exists_at`
 
+
 <pre><code><b>fun</b> <a href="object.md#0x1_object_exists_at">exists_at</a>&lt;T: key&gt;(<a href="object.md#0x1_object">object</a>: <b>address</b>): bool
 </code></pre>
 
@@ -2552,6 +2572,7 @@ to determine the identity of the starting point of ownership.
 <a id="@Specification_1_object_address"></a>
 
 ### Function `object_address`
+
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_object_address">object_address</a>&lt;T: key&gt;(<a href="object.md#0x1_object">object</a>: &<a href="object.md#0x1_object_Object">object::Object</a>&lt;T&gt;): <b>address</b>
 </code></pre>
@@ -2569,6 +2590,7 @@ to determine the identity of the starting point of ownership.
 
 ### Function `convert`
 
+
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_convert">convert</a>&lt;X: key, Y: key&gt;(<a href="object.md#0x1_object">object</a>: <a href="object.md#0x1_object_Object">object::Object</a>&lt;X&gt;): <a href="object.md#0x1_object_Object">object::Object</a>&lt;Y&gt;
 </code></pre>
 
@@ -2585,6 +2607,7 @@ to determine the identity of the starting point of ownership.
 <a id="@Specification_1_create_named_object"></a>
 
 ### Function `create_named_object`
+
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_named_object">create_named_object</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, seed: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;): <a href="object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>
 </code></pre>
@@ -2619,6 +2642,7 @@ to determine the identity of the starting point of ownership.
 
 ### Function `create_user_derived_object`
 
+
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x1_object_create_user_derived_object">create_user_derived_object</a>(creator_address: <b>address</b>, derive_ref: &<a href="object.md#0x1_object_DeriveRef">object::DeriveRef</a>): <a href="object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>
 </code></pre>
 
@@ -2650,6 +2674,7 @@ to determine the identity of the starting point of ownership.
 <a id="@Specification_1_create_object"></a>
 
 ### Function `create_object`
+
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_object">create_object</a>(owner_address: <b>address</b>): <a href="object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>
 </code></pre>
@@ -2684,6 +2709,7 @@ to determine the identity of the starting point of ownership.
 
 ### Function `create_sticky_object`
 
+
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_sticky_object">create_sticky_object</a>(owner_address: <b>address</b>): <a href="object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>
 </code></pre>
 
@@ -2717,6 +2743,7 @@ to determine the identity of the starting point of ownership.
 
 ### Function `create_sticky_object_at_address`
 
+
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x1_object_create_sticky_object_at_address">create_sticky_object_at_address</a>(owner_address: <b>address</b>, object_address: <b>address</b>): <a href="object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>
 </code></pre>
 
@@ -2731,6 +2758,7 @@ to determine the identity of the starting point of ownership.
 <a id="@Specification_1_create_object_from_account"></a>
 
 ### Function `create_object_from_account`
+
 
 <pre><code>#[deprecated]
 <b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_object_from_account">create_object_from_account</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>): <a href="object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>
@@ -2784,6 +2812,7 @@ to determine the identity of the starting point of ownership.
 
 ### Function `create_object_from_object`
 
+
 <pre><code>#[deprecated]
 <b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_object_from_object">create_object_from_object</a>(creator: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>): <a href="object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>
 </code></pre>
@@ -2833,6 +2862,7 @@ to determine the identity of the starting point of ownership.
 
 ### Function `create_object_from_guid`
 
+
 <pre><code><b>fun</b> <a href="object.md#0x1_object_create_object_from_guid">create_object_from_guid</a>(creator_address: <b>address</b>, <a href="guid.md#0x1_guid">guid</a>: <a href="guid.md#0x1_guid_GUID">guid::GUID</a>): <a href="object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>
 </code></pre>
 
@@ -2869,6 +2899,7 @@ to determine the identity of the starting point of ownership.
 
 ### Function `create_object_internal`
 
+
 <pre><code><b>fun</b> <a href="object.md#0x1_object_create_object_internal">create_object_internal</a>(creator_address: <b>address</b>, <a href="object.md#0x1_object">object</a>: <b>address</b>, can_delete: bool): <a href="object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>
 </code></pre>
 
@@ -2888,6 +2919,7 @@ to determine the identity of the starting point of ownership.
 
 ### Function `generate_delete_ref`
 
+
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_delete_ref">generate_delete_ref</a>(ref: &<a href="object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>): <a href="object.md#0x1_object_DeleteRef">object::DeleteRef</a>
 </code></pre>
 
@@ -2903,6 +2935,7 @@ to determine the identity of the starting point of ownership.
 <a id="@Specification_1_generate_transfer_ref"></a>
 
 ### Function `generate_transfer_ref`
+
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_transfer_ref">generate_transfer_ref</a>(ref: &<a href="object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>): <a href="object.md#0x1_object_TransferRef">object::TransferRef</a>
 </code></pre>
@@ -2922,6 +2955,7 @@ to determine the identity of the starting point of ownership.
 
 ### Function `object_from_constructor_ref`
 
+
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_object_from_constructor_ref">object_from_constructor_ref</a>&lt;T: key&gt;(ref: &<a href="object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>): <a href="object.md#0x1_object_Object">object::Object</a>&lt;T&gt;
 </code></pre>
 
@@ -2938,6 +2972,7 @@ to determine the identity of the starting point of ownership.
 <a id="@Specification_1_create_guid"></a>
 
 ### Function `create_guid`
+
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_create_guid">create_guid</a>(<a href="object.md#0x1_object">object</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>): <a href="guid.md#0x1_guid_GUID">guid::GUID</a>
 </code></pre>
@@ -2961,6 +2996,7 @@ to determine the identity of the starting point of ownership.
 <a id="@Specification_1_new_event_handle"></a>
 
 ### Function `new_event_handle`
+
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_new_event_handle">new_event_handle</a>&lt;T: drop, store&gt;(<a href="object.md#0x1_object">object</a>: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>): <a href="event.md#0x1_event_EventHandle">event::EventHandle</a>&lt;T&gt;
 </code></pre>
@@ -2989,6 +3025,7 @@ to determine the identity of the starting point of ownership.
 
 ### Function `object_from_delete_ref`
 
+
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_object_from_delete_ref">object_from_delete_ref</a>&lt;T: key&gt;(ref: &<a href="object.md#0x1_object_DeleteRef">object::DeleteRef</a>): <a href="object.md#0x1_object_Object">object::Object</a>&lt;T&gt;
 </code></pre>
 
@@ -3006,6 +3043,7 @@ to determine the identity of the starting point of ownership.
 
 ### Function `delete`
 
+
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_delete">delete</a>(ref: <a href="object.md#0x1_object_DeleteRef">object::DeleteRef</a>)
 </code></pre>
 
@@ -3022,6 +3060,7 @@ to determine the identity of the starting point of ownership.
 
 ### Function `disable_ungated_transfer`
 
+
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_disable_ungated_transfer">disable_ungated_transfer</a>(ref: &<a href="object.md#0x1_object_TransferRef">object::TransferRef</a>)
 </code></pre>
 
@@ -3037,6 +3076,7 @@ to determine the identity of the starting point of ownership.
 <a id="@Specification_1_set_untransferable"></a>
 
 ### Function `set_untransferable`
+
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_set_untransferable">set_untransferable</a>(ref: &<a href="object.md#0x1_object_ConstructorRef">object::ConstructorRef</a>)
 </code></pre>
@@ -3056,6 +3096,7 @@ to determine the identity of the starting point of ownership.
 
 ### Function `enable_ungated_transfer`
 
+
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_enable_ungated_transfer">enable_ungated_transfer</a>(ref: &<a href="object.md#0x1_object_TransferRef">object::TransferRef</a>)
 </code></pre>
 
@@ -3072,6 +3113,7 @@ to determine the identity of the starting point of ownership.
 <a id="@Specification_1_generate_linear_transfer_ref"></a>
 
 ### Function `generate_linear_transfer_ref`
+
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_generate_linear_transfer_ref">generate_linear_transfer_ref</a>(ref: &<a href="object.md#0x1_object_TransferRef">object::TransferRef</a>): <a href="object.md#0x1_object_LinearTransferRef">object::LinearTransferRef</a>
 </code></pre>
@@ -3094,6 +3136,7 @@ to determine the identity of the starting point of ownership.
 
 ### Function `transfer_with_ref`
 
+
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_transfer_with_ref">transfer_with_ref</a>(ref: <a href="object.md#0x1_object_LinearTransferRef">object::LinearTransferRef</a>, <b>to</b>: <b>address</b>)
 </code></pre>
 
@@ -3114,6 +3157,7 @@ to determine the identity of the starting point of ownership.
 
 ### Function `transfer_call`
 
+
 <pre><code><b>public</b> entry <b>fun</b> <a href="object.md#0x1_object_transfer_call">transfer_call</a>(owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="object.md#0x1_object">object</a>: <b>address</b>, <b>to</b>: <b>address</b>)
 </code></pre>
 
@@ -3131,6 +3175,7 @@ to determine the identity of the starting point of ownership.
 <a id="@Specification_1_transfer"></a>
 
 ### Function `transfer`
+
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="object.md#0x1_object_transfer">transfer</a>&lt;T: key&gt;(owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="object.md#0x1_object">object</a>: <a href="object.md#0x1_object_Object">object::Object</a>&lt;T&gt;, <b>to</b>: <b>address</b>)
 </code></pre>
@@ -3151,6 +3196,7 @@ to determine the identity of the starting point of ownership.
 
 ### Function `transfer_raw`
 
+
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_transfer_raw">transfer_raw</a>(owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="object.md#0x1_object">object</a>: <b>address</b>, <b>to</b>: <b>address</b>)
 </code></pre>
 
@@ -3168,6 +3214,7 @@ to determine the identity of the starting point of ownership.
 <a id="@Specification_1_transfer_to_object"></a>
 
 ### Function `transfer_to_object`
+
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="object.md#0x1_object_transfer_to_object">transfer_to_object</a>&lt;O: key, T: key&gt;(owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="object.md#0x1_object">object</a>: <a href="object.md#0x1_object_Object">object::Object</a>&lt;O&gt;, <b>to</b>: <a href="object.md#0x1_object_Object">object::Object</a>&lt;T&gt;)
 </code></pre>
@@ -3188,6 +3235,7 @@ to determine the identity of the starting point of ownership.
 
 ### Function `verify_ungated_and_descendant`
 
+
 <pre><code><b>fun</b> <a href="object.md#0x1_object_verify_ungated_and_descendant">verify_ungated_and_descendant</a>(owner: <b>address</b>, destination: <b>address</b>)
 </code></pre>
 
@@ -3205,6 +3253,7 @@ to determine the identity of the starting point of ownership.
 <a id="@Specification_1_burn"></a>
 
 ### Function `burn`
+
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="object.md#0x1_object_burn">burn</a>&lt;T: key&gt;(owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="object.md#0x1_object">object</a>: <a href="object.md#0x1_object_Object">object::Object</a>&lt;T&gt;)
 </code></pre>
@@ -3224,6 +3273,7 @@ to determine the identity of the starting point of ownership.
 <a id="@Specification_1_unburn"></a>
 
 ### Function `unburn`
+
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="object.md#0x1_object_unburn">unburn</a>&lt;T: key&gt;(original_owner: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, <a href="object.md#0x1_object">object</a>: <a href="object.md#0x1_object_Object">object::Object</a>&lt;T&gt;)
 </code></pre>
@@ -3245,6 +3295,7 @@ to determine the identity of the starting point of ownership.
 
 ### Function `ungated_transfer_allowed`
 
+
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_ungated_transfer_allowed">ungated_transfer_allowed</a>&lt;T: key&gt;(<a href="object.md#0x1_object">object</a>: <a href="object.md#0x1_object_Object">object::Object</a>&lt;T&gt;): bool
 </code></pre>
 
@@ -3260,6 +3311,7 @@ to determine the identity of the starting point of ownership.
 <a id="@Specification_1_owner"></a>
 
 ### Function `owner`
+
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_owner">owner</a>&lt;T: key&gt;(<a href="object.md#0x1_object">object</a>: <a href="object.md#0x1_object_Object">object::Object</a>&lt;T&gt;): <b>address</b>
 </code></pre>
@@ -3277,6 +3329,7 @@ to determine the identity of the starting point of ownership.
 
 ### Function `is_owner`
 
+
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_is_owner">is_owner</a>&lt;T: key&gt;(<a href="object.md#0x1_object">object</a>: <a href="object.md#0x1_object_Object">object::Object</a>&lt;T&gt;, owner: <b>address</b>): bool
 </code></pre>
 
@@ -3292,6 +3345,7 @@ to determine the identity of the starting point of ownership.
 <a id="@Specification_1_owns"></a>
 
 ### Function `owns`
+
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_owns">owns</a>&lt;T: key&gt;(<a href="object.md#0x1_object">object</a>: <a href="object.md#0x1_object_Object">object::Object</a>&lt;T&gt;, owner: <b>address</b>): bool
 </code></pre>
@@ -3312,6 +3366,7 @@ to determine the identity of the starting point of ownership.
 <a id="@Specification_1_root_owner"></a>
 
 ### Function `root_owner`
+
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x1_object_root_owner">root_owner</a>&lt;T: key&gt;(<a href="object.md#0x1_object">object</a>: <a href="object.md#0x1_object_Object">object::Object</a>&lt;T&gt;): <b>address</b>
 </code></pre>
