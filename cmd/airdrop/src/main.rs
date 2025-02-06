@@ -218,7 +218,7 @@ async fn main() -> Result<()> {
 
     // read from onchain
     let account_sequence_number = {
-        let state_key = StateKey::resource(&sender, &account_struct_tag());
+        let state_key = StateKey::resource(&sender, &account_struct_tag())?;
         let account_data: Option<Vec<u8>> = state_client
             .get(state_key)
             .await

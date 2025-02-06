@@ -69,7 +69,9 @@ impl CommandAction for GetProofCommand {
         let access_path = opt.access_path.clone();
         let state_key = match access_path.clone().path {
             DataPath::Code(module_name) => StateKey::module(&access_path.address, &module_name),
-            DataPath::Resource(struct_tag) => StateKey::resource(&access_path.address, &struct_tag),
+            DataPath::Resource(struct_tag) => {
+                StateKey::resource(&access_path.address, &struct_tag)?
+            }
             DataPath::ResourceGroup(struct_tag) => {
                 StateKey::resource_group(&access_path.address, &struct_tag)
             }

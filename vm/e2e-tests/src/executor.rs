@@ -280,7 +280,7 @@ impl FakeExecutor {
     fn read_resource<T: MoveResource>(&self, addr: &AccountAddress) -> Option<T> {
         let data_blob = TStateView::get_state_value_bytes(
             &self.data_store,
-            &StateKey::resource_typed::<T>(addr),
+            &StateKey::resource_typed::<T>(addr).expect("failed to create StateKey"),
         )
         .expect("account must exist in data store")
         .unwrap_or_else(|| panic!("Can't fetch {} resource for {}", T::STRUCT_NAME, addr));

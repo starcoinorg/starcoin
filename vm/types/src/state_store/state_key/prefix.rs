@@ -54,8 +54,8 @@ mod tests {
     fn test_state_key_prefix() {
         let address1 = AccountAddress::new([12u8; AccountAddress::LENGTH]);
         let address2 = AccountAddress::new([22u8; AccountAddress::LENGTH]);
-        let key1 = StateKey::resource_typed::<AccountResource>(&address1);
-        let key2 = StateKey::resource_typed::<CoinStoreResource>(&address2);
+        let key1 = StateKey::resource_typed::<AccountResource>(&address1).unwrap();
+        let key2 = StateKey::resource_typed::<CoinStoreResource>(&address2).unwrap();
 
         let account1_key_prefx = StateKeyPrefix::new(StateKeyTag::AccessPath, address1.to_vec());
         let account2_key_prefx = StateKeyPrefix::new(StateKeyTag::AccessPath, address2.to_vec());

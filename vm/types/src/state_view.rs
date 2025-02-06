@@ -42,7 +42,7 @@ pub trait StateReaderExt: StateView {
     /// Get Resource by StructTag
     fn get_resource(&self, address: AccountAddress, struct_tag: &StructTag) -> Result<Bytes> {
         let rsrc_bytes = self
-            .get_state_value_bytes(&StateKey::resource(&address, struct_tag))?
+            .get_state_value_bytes(&StateKey::resource(&address, struct_tag)?)?
             .ok_or_else(|| {
                 format_err!(
                     "Resource {:?} not exists at address:{}",
@@ -57,7 +57,7 @@ pub trait StateReaderExt: StateView {
     where
         R: MoveResource,
     {
-        self.get_state_value_bytes(&StateKey::resource_typed::<R>(&address))?
+        self.get_state_value_bytes(&StateKey::resource_typed::<R>(&address)?)?
             .ok_or_else(|| {
                 format_err!(
                     "Resource {:?} {:?} not exists at address:{}",
@@ -74,7 +74,7 @@ pub trait StateReaderExt: StateView {
         R: MoveResource,
     {
         let rsrc_bytes = self
-            .get_state_value_bytes(&StateKey::resource_typed::<R>(&address))?
+            .get_state_value_bytes(&StateKey::resource_typed::<R>(&address)?)?
             .ok_or_else(|| {
                 format_err!(
                     "Resource {:?} {:?} not exists at address:{}",
@@ -109,7 +109,7 @@ pub trait StateReaderExt: StateView {
             .get_state_value_bytes(&StateKey::resource(
                 &address,
                 &BalanceResource::struct_tag_for_token(type_tag.clone()),
-            ))?
+            )?)?
             .ok_or_else(|| {
                 format_err!(
                     "BalanceResource not exists at address:{} for type tag:{}",

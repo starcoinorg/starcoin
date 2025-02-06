@@ -75,7 +75,7 @@ impl StateKey {
                 let AccessPath { address, path } = bcs::from_bytes(&val[1..])?;
                 match path {
                     DataPath::Code(module_name) => Self::module(&address, &module_name),
-                    DataPath::Resource(struct_tag) => Self::resource(&address, &struct_tag),
+                    DataPath::Resource(struct_tag) => Self::resource(&address, &struct_tag)?,
                     DataPath::ResourceGroup(struct_tag) => {
                         Self::resource_group(&address, &struct_tag)
                     }
@@ -116,7 +116,7 @@ impl StateKey {
         let myself = match deserialized {
             StateKeyInner::AccessPath(AccessPath { address, path }) => match path {
                 DataPath::Code(module_name) => Self::module(&address, &module_name),
-                DataPath::Resource(struct_tag) => Self::resource(&address, &struct_tag),
+                DataPath::Resource(struct_tag) => Self::resource(&address, &struct_tag)?,
                 DataPath::ResourceGroup(struct_tag) => Self::resource_group(&address, &struct_tag),
             },
             StateKeyInner::TableItem { handle, key } => Self::table_item(&handle, &key),
@@ -126,25 +126,25 @@ impl StateKey {
         Ok(myself)
     }
 
-    pub fn resource(address: &AccountAddress, struct_tag: &StructTag) -> Self {
-        Self(
-            REGISTRY
-                .resource(struct_tag, address)
-                .get_or_add(struct_tag, address, || {
-                    Ok(StateKeyInner::AccessPath(AccessPath::resource_access_path(
-                        *address,
-                        struct_tag.clone(),
-                    )))
-                })
-                .expect("only possible error is resource path serialization"),
-        )
+    // todo: remove Result
+    pub fn resource(address: &AccountAddress, struct_tag: &StructTag) -> Result<Self> {
+        Ok(Self(REGISTRY.resource(struct_tag, address).get_or_add(
+            struct_tag,
+            address,
+            || {
+                Ok(StateKeyInner::AccessPath(AccessPath::resource_access_path(
+                    *address,
+                    struct_tag.clone(),
+                )))
+            },
+        )?))
     }
 
-    pub fn resource_typed<T: MoveResource>(address: &AccountAddress) -> Self {
+    pub fn resource_typed<T: MoveResource>(address: &AccountAddress) -> Result<Self> {
         Self::resource(address, &T::struct_tag())
     }
 
-    pub fn on_chain_config<T: OnChainConfig>() -> Self {
+    pub fn on_chain_config<T: OnChainConfig>() -> Result<Self> {
         Self::resource(T::address(), &T::struct_tag())
     }
 

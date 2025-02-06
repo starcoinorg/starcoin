@@ -125,7 +125,7 @@ impl ChainStateWriter for FakeDataStore {
             match &access_path.path {
                 DataPath::Code(name) => StateKey::module(&access_path.address, name),
                 DataPath::Resource(struct_tag) => {
-                    StateKey::resource(&access_path.address, struct_tag)
+                    StateKey::resource(&access_path.address, struct_tag)?
                 }
                 DataPath::ResourceGroup(struct_tag) => {
                     StateKey::resource_group(&access_path.address, struct_tag)
@@ -142,7 +142,7 @@ impl ChainStateWriter for FakeDataStore {
             match &access_path.path {
                 DataPath::Code(name) => StateKey::module(&access_path.address, name),
                 DataPath::Resource(struct_tag) => {
-                    StateKey::resource(&access_path.address, struct_tag)
+                    StateKey::resource(&access_path.address, struct_tag)?
                 }
                 DataPath::ResourceGroup(struct_tag) => {
                     StateKey::resource_group(&access_path.address, struct_tag)

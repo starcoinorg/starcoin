@@ -609,7 +609,7 @@ impl AccountData {
             .simple_serialize(&AccountData::layout())
             .unwrap();
         write_set.push((
-            StateKey::resource_typed::<AccountResource>(self.address()),
+            StateKey::resource_typed::<AccountResource>(self.address()).unwrap(),
             WriteOp::legacy_modification(account.into()),
         ));
 
@@ -619,7 +619,7 @@ impl AccountData {
             .simple_serialize(&CoinStore::layout())
             .unwrap();
         write_set.push((
-            StateKey::resource_typed::<BalanceResource>(self.address()),
+            StateKey::resource_typed::<BalanceResource>(self.address()).unwrap(),
             WriteOp::legacy_modification(balance.into()),
         ));
 

@@ -510,11 +510,11 @@ impl AccountData {
     pub fn to_writeset(&self) -> WriteSet {
         let write_set = vec![
             (
-                StateKey::resource_typed::<AccountResource>(self.address()),
+                StateKey::resource_typed::<AccountResource>(self.address()).unwrap(),
                 WriteOp::legacy_modification(self.to_bytes().into()),
             ),
             (
-                StateKey::resource_typed::<CoinStoreResource>(self.address()),
+                StateKey::resource_typed::<CoinStoreResource>(self.address()).unwrap(),
                 WriteOp::legacy_modification(self.coin_store.to_bytes().into()),
             ),
         ];

@@ -480,7 +480,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         let account_blob = self
             .context
             .storage
-            .get_state_value_bytes(&StateKey::resource_typed::<AccountResource>(signer_addr))
+            .get_state_value_bytes(&StateKey::resource_typed::<AccountResource>(signer_addr)?)
             .unwrap()
             .ok_or_else(|| {
                 format_err!(
@@ -500,7 +500,7 @@ impl<'a> StarcoinTestAdapter<'a> {
     ) -> Result<BalanceResource> {
         let token_code = TokenCode::from_str(balance_currency_code.as_str())?;
         let balance_resource_tag = BalanceResource::struct_tag_for_token(token_code.try_into()?);
-        let balance_access_key = StateKey::resource(signer_addr, &balance_resource_tag);
+        let balance_access_key = StateKey::resource(signer_addr, &balance_resource_tag)?;
 
         let balance_blob = self
             .context

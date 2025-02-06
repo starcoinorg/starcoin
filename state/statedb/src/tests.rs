@@ -43,7 +43,7 @@ fn test_state_proof() -> Result<()> {
         type_args: vec![],
     };
     let access_path = AccessPath::new(account_address, DataPath::Resource(struct_tag.clone()));
-    let state_key = StateKey::resource(&account_address, &struct_tag);
+    let state_key = StateKey::resource(&account_address, &struct_tag)?;
     let state0 = random_bytes();
     chain_state_db.apply_write_set(to_write_set(state_key.clone(), state0.clone()))?;
 
@@ -72,7 +72,7 @@ fn test_state_db() -> Result<()> {
         name: random_identity(),
         type_args: vec![],
     };
-    let state_key = StateKey::resource(&account_address, &struct_tag);
+    let state_key = StateKey::resource(&account_address, &struct_tag)?;
     let state0 = random_bytes();
     chain_state_db.apply_write_set(to_write_set(state_key.clone(), state0))?;
     let state_root = chain_state_db.commit()?;
@@ -95,7 +95,7 @@ fn test_state_db_dump_and_apply() -> Result<()> {
         name: random_identity(),
         type_args: vec![],
     };
-    let state_key = StateKey::resource(&account_address, &struct_tag);
+    let state_key = StateKey::resource(&account_address, &struct_tag)?;
 
     let state0 = random_bytes();
     chain_state_db.apply_write_set(to_write_set(state_key, state0))?;
@@ -130,7 +130,7 @@ fn test_state_version() -> Result<()> {
         name: random_identity(),
         type_args: vec![],
     };
-    let state_key = StateKey::resource(&account_address, &struct_tag);
+    let state_key = StateKey::resource(&account_address, &struct_tag)?;
     let old_state = random_bytes();
     chain_state_db.apply_write_set(to_write_set(state_key.clone(), old_state.clone()))?;
     chain_state_db.commit()?;
@@ -160,7 +160,7 @@ fn test_state_db_dump_iter() -> Result<()> {
         name: random_identity(),
         type_args: vec![],
     };
-    let state_key1 = StateKey::resource(&account_address, &struct_tag);
+    let state_key1 = StateKey::resource(&account_address, &struct_tag)?;
     let state1 = random_bytes();
     chain_state_db.apply_write_set(to_write_set(state_key1, state1))?;
     let state2 = random_bytes();
@@ -171,7 +171,7 @@ fn test_state_db_dump_iter() -> Result<()> {
         name: random_identity(),
         type_args: vec![],
     };
-    let state_key2 = StateKey::resource(&account_address2, &struct_tag2);
+    let state_key2 = StateKey::resource(&account_address2, &struct_tag2)?;
     chain_state_db.apply_write_set(to_write_set(state_key2, state2))?;
     chain_state_db.commit()?;
     chain_state_db.flush()?;
@@ -260,7 +260,7 @@ fn test_state_db_with_table_item_once() -> Result<()> {
         name: random_identity(),
         type_args: vec![],
     };
-    let state_key2 = StateKey::resource(&account_address2, &struct_tag2);
+    let state_key2 = StateKey::resource(&account_address2, &struct_tag2)?;
 
     let state_keys = vec![
         state_key1,
@@ -480,7 +480,7 @@ fn test_state_with_table_item_proof() -> Result<()> {
         name: random_identity(),
         type_args: vec![],
     };
-    let state_key2 = StateKey::resource(&account_address2, &struct_tag2);
+    let state_key2 = StateKey::resource(&account_address2, &struct_tag2)?;
     let state_keys = vec![
         state_key1,
         state_key2,
