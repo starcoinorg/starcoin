@@ -1,6 +1,6 @@
 use crate::data_cache::get_resource_group_member_from_metadata;
 use crate::move_vm_ext::write_op_converter::WriteOpConverter;
-use crate::move_vm_ext::StarcoinMoveResolver;
+use crate::move_vm_ext::{resource_state_key, StarcoinMoveResolver};
 use bytes::Bytes;
 use move_binary_format::{
     access::ModuleAccess,
@@ -388,7 +388,7 @@ impl<'r, 'l> SessionExt<'r, 'l> {
         for (addr, account_changeset) in change_set.into_inner() {
             let (modules, resources) = account_changeset.into_inner();
             for (struct_tag, blob_and_layout_op) in resources {
-                let state_key = StateKey::resource(&addr, &struct_tag);
+                let state_key = resource_state_key(&addr, &struct_tag)?;
                 let op = woc.convert_resource(
                     &state_key,
                     blob_and_layout_op,
