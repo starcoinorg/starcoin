@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
-use starcoin_logger::prelude::error;
+use starcoin_logger::prelude::warn;
 
 use crate::define_schema;
 use starcoin_crypto::HashValue as Hash;
@@ -82,7 +82,7 @@ impl BlockDepthInfoReader for DbBlockDepthInfoStore {
         let result = match self.block_depth_info_access.read(hash) {
             Ok(info) => Some(info),
             Err(e) => {
-                error!("get_block_depth_info error: {:?} for id: {:?}", e, hash);
+                warn!("get_block_depth_info error: {:?} for id: {:?}, the candidate in tips referring too many red blocks will not be filtered.", e, hash);
                 None
             }
         };
