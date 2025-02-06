@@ -10,7 +10,7 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 
 [dependencies]
-goldenfile = "1.1.0"
+goldenfile = "1.8.0"
 anyhow = { workspace = true }
 bcs = { workspace = true }
 hex = { workspace = true }
