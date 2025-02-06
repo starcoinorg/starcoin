@@ -19,6 +19,7 @@ use crate::process_key_already_error;
 use crate::prune::pruning_point_manager::PruningPointManagerT;
 use crate::reachability::ReachabilityError;
 use anyhow::{bail, ensure, Ok};
+use itertools::Itertools;
 use parking_lot::Mutex;
 use rocksdb::WriteBatch;
 use starcoin_config::temp_dir;
@@ -102,8 +103,12 @@ impl BlockDAG {
     }
 
     pub fn has_block_connected(&self, block_header: &BlockHeader) -> anyhow::Result<bool> {
-        let _ghostdata = match self.storage.ghost_dag_store.get_data(block_header.id()) {
-            std::result::Result::Ok(data) => data,
+        match self.storage.ghost_dag_store.has(block_header.id()) {
+            std::result::Result::Ok(true) => (),
+            std::result::Result::Ok(false) => {
+                warn!("failed to get ghostdata by hash, the block should be re-executed",);
+                return anyhow::Result::Ok(false);
+            }
             Err(e) => {
                 warn!(
                     "failed to get ghostdata by hash: {:?}, the block should be re-executed",
@@ -113,8 +118,12 @@ impl BlockDAG {
             }
         };
 
-        let _dag_header = match self.storage.header_store.get_header(block_header.id()) {
-            std::result::Result::Ok(header) => header,
+        match self.storage.header_store.has(block_header.id()) {
+            std::result::Result::Ok(true) => (),
+            std::result::Result::Ok(false) => {
+                warn!("failed to get header by hash, the block should be re-executed",);
+                return anyhow::Result::Ok(false);
+            }
             Err(e) => {
                 warn!(
                     "failed to get header by hash: {:?}, the block should be re-executed",
@@ -196,6 +205,9 @@ impl BlockDAG {
     }
 
     pub fn check_ancestor_of(&self, ancestor: Hash, descendant: Hash) -> anyhow::Result<bool> {
+        if ancestor == Hash::zero() {
+            return Ok(true);
+        }
         inquirer::is_dag_ancestor_of(
             &*self.storage.reachability_store.read(),
             ancestor,
@@ -308,8 +320,21 @@ impl BlockDAG {
             }
         };
 
-        if self.storage.reachability_store.read().get_reindex_root()? != header.pruning_point()
-            && header.pruning_point() != HashValue::zero()
+        if header.pruning_point() == HashValue::zero() {
+            info!(
+                "try to hint virtual selected parent, root index: {:?}",
+                self.storage.reachability_store.read().get_reindex_root()
+            );
+            let _ = inquirer::hint_virtual_selected_parent(
+                self.storage.reachability_store.write().deref_mut(),
+                header.parent_hash(),
+            );
+            info!(
+                "after hint virtual selected parent, root index: {:?}",
+                self.storage.reachability_store.read().get_reindex_root()
+            );
+        } else if self.storage.reachability_store.read().get_reindex_root()?
+            != header.pruning_point()
             && self
                 .storage
                 .reachability_store
@@ -320,13 +345,14 @@ impl BlockDAG {
                 "try to hint virtual selected parent, root index: {:?}",
                 self.storage.reachability_store.read().get_reindex_root()
             );
-            inquirer::hint_virtual_selected_parent(
+            let hint_result = inquirer::hint_virtual_selected_parent(
                 self.storage.reachability_store.write().deref_mut(),
                 header.pruning_point(),
-            )?;
+            );
             info!(
-                "after hint virtual selected parent, root index: {:?}",
-                self.storage.reachability_store.read().get_reindex_root()
+                "after hint virtual selected parent, root index: {:?}, hint result: {:?}",
+                self.storage.reachability_store.read().get_reindex_root(),
+                hint_result
             );
         }
 
@@ -429,11 +455,6 @@ impl BlockDAG {
         // Generate ghostdag data
         let parents = header.parents();
 
-        debug!(
-            "start to get the ghost data from block: {:?}, number: {:?}",
-            header.id(),
-            header.number()
-        );
         let ghostdata = match self.ghostdata_by_hash(header.id())? {
             None => {
                 // It must be the dag genesis if header is a format for a single chain
@@ -459,13 +480,14 @@ impl BlockDAG {
                 "try to hint virtual selected parent, root index: {:?}",
                 self.storage.reachability_store.read().get_reindex_root()
             );
-            inquirer::hint_virtual_selected_parent(
+            let hint_result = inquirer::hint_virtual_selected_parent(
                 self.storage.reachability_store.write().deref_mut(),
-                header.pruning_point(),
-            )?;
+                header.parent_hash(),
+            );
             info!(
-                "after hint virtual selected parent, root index: {:?}",
-                self.storage.reachability_store.read().get_reindex_root()
+                "after hint virtual selected parent, root index: {:?}, hint result: {:?}",
+                self.storage.reachability_store.read().get_reindex_root(),
+                hint_result
             );
         }
 
@@ -629,14 +651,48 @@ impl BlockDAG {
         previous_ghostdata: &GhostdagData,
         pruning_depth: u64,
         pruning_finality: u64,
+        max_parents_count: u64,
     ) -> anyhow::Result<MineNewDagBlockInfo> {
-        info!("start to calculate the mergeset and tips, previous pruning point: {:?}, previous ghostdata: {:?} and its red block count: {:?}", previous_pruning_point, previous_ghostdata.to_compact(), previous_ghostdata.mergeset_reds.len());
-        let dag_state = self.get_dag_state(previous_pruning_point)?;
+        let mut dag_state = self.get_dag_state(previous_pruning_point)?;
+
+        // filter
+        if dag_state.tips.len() > max_parents_count as usize {
+            dag_state.tips = dag_state
+                .tips
+                .into_iter()
+                .sorted_by(|a, b| {
+                    let a_blue_work = self
+                        .storage
+                        .ghost_dag_store
+                        .get_blue_work(*a)
+                        .unwrap_or_else(|e| {
+                            panic!(
+                                "the ghostdag data should be existed for {:?}, e: {:?}",
+                                a, e
+                            )
+                        });
+                    let b_blue_work = self
+                        .storage
+                        .ghost_dag_store
+                        .get_blue_work(*b)
+                        .unwrap_or_else(|e| {
+                            panic!(
+                                "the ghostdag data should be existed for {:?}, e: {:?}",
+                                b, e
+                            )
+                        });
+                    if a_blue_work == b_blue_work {
+                        a.cmp(b)
+                    } else {
+                        b_blue_work.cmp(&a_blue_work)
+                    }
+                })
+                .take(max_parents_count as usize)
+                .collect();
+        }
+
         let next_ghostdata = self.ghostdata(&dag_state.tips)?;
-        info!(
-            "start to calculate the mergeset and tips for tips: {:?}, and last pruning point: {:?} and next ghostdata: {:?}, red block count: {:?}",
-            dag_state.tips, previous_pruning_point, next_ghostdata.to_compact(), next_ghostdata.mergeset_reds.len()
-        );
+
         let next_pruning_point = self.pruning_point_manager().next_pruning_point(
             previous_pruning_point,
             previous_ghostdata,
@@ -644,11 +700,12 @@ impl BlockDAG {
             pruning_depth,
             pruning_finality,
         )?;
-        info!(
-            "the next pruning point is: {:?}, and the previous pruning point is: {:?}",
-            next_pruning_point, previous_pruning_point
-        );
+
         if next_pruning_point == Hash::zero() || next_pruning_point == previous_pruning_point {
+            info!(
+                "tips: {:?}, the next pruning point is: {:?}, the current ghostdata's selected parent: {:?}, blue blocks are: {:?} and its red blocks are: {:?}",
+                dag_state.tips, next_pruning_point, next_ghostdata.selected_parent, next_ghostdata.mergeset_blues, next_ghostdata.mergeset_reds.len(),
+            );
             anyhow::Ok(MineNewDagBlockInfo {
                 tips: dag_state.tips,
                 blue_blocks: (*next_ghostdata.mergeset_blues).clone(),
@@ -660,15 +717,11 @@ impl BlockDAG {
                 previous_pruning_point,
                 next_pruning_point,
             )?;
-            let mergeset_blues = (*self
-                .ghost_dag_manager()
-                .ghostdag(&pruned_tips)?
-                .mergeset_blues)
-                .clone();
+            let pruned_ghostdata = self.ghost_dag_manager().ghostdag(&pruned_tips)?;
+            let mergeset_blues = pruned_ghostdata.mergeset_blues.as_ref().clone();
             info!(
-                "previous tips are: {:?}, the pruned tips are: {:?}, the mergeset blues are: {:?}, the next pruning point is: {:?}",
-                dag_state.tips,
-                pruned_tips, mergeset_blues, next_pruning_point
+                "the pruning was triggered, before pruning, the tips: {:?}, after pruning tips: {:?}, the next pruning point is: {:?}, the current ghostdata's selected parent: {:?}, blue blocks are: {:?} and its red blocks are: {:?}",
+                pruned_tips, dag_state.tips, next_pruning_point, pruned_ghostdata.selected_parent, pruned_ghostdata.mergeset_blues, pruned_ghostdata.mergeset_reds.len(),
             );
             anyhow::Ok(MineNewDagBlockInfo {
                 tips: pruned_tips,
@@ -711,18 +764,73 @@ impl BlockDAG {
         self.pruning_point_manager().reachability_service()
     }
 
+    // return true the block processing will be going into the single chain logic,
+    // which means that this is a historical block that converge to the next pruning point
+    // return false it will be going into the ghost logic,
+    // which means that this is a new block that will be added by the ghost protocol that enhance the parallelism of the block processing.
+    // for vega, the special situation is:
+    // the pruning logic was delivered after vega running for a long time, so the historical block will be processed by the single chain logic.
+    fn check_historical_block(
+        &self,
+        header: &BlockHeader,
+        latest_pruning_point: Option<HashValue>,
+    ) -> Result<bool, anyhow::Error> {
+        if let Some(pruning_point) = latest_pruning_point {
+            match (
+                header.pruning_point() == HashValue::zero(),
+                pruning_point == HashValue::zero(),
+            ) {
+                (true, true) => {
+                    if header.chain_id().is_vega() {
+                        Ok(true)
+                    } else {
+                        Ok(false)
+                    }
+                }
+                (true, false) => Ok(true),
+                (false, true) => Ok(false),
+                (false, false) => {
+                    if header.pruning_point() == pruning_point {
+                        Ok(false)
+                    } else if self.check_ancestor_of(header.pruning_point(), pruning_point)? {
+                        Ok(true)
+                    } else {
+                        Ok(false)
+                    }
+                }
+            }
+        } else {
+            Ok(false)
+        }
+    }
+
     pub fn verify_and_ghostdata(
         &self,
         blue_blocks: &[BlockHeader],
         header: &BlockHeader,
+        latest_pruning_point: Option<HashValue>,
     ) -> Result<GhostdagData, anyhow::Error> {
-        if header.pruning_point() != HashValue::zero() {
-            self.ghost_dag_manager().ghostdag(&header.parents())
-        } else {
+        info!(
+            "checking historical block: header pruning point: {:?}, latest pruning point: {:?}",
+            header.pruning_point(),
+            latest_pruning_point
+        );
+        if self.check_historical_block(header, latest_pruning_point)? {
+            info!(
+                "the block is a historical block, the header id: {:?}",
+                header.id()
+            );
             self.ghost_dag_manager()
                 .verify_and_ghostdata(blue_blocks, header)
+        } else {
+            info!(
+                "the block is not a historical block, the header id: {:?}",
+                header.id()
+            );
+            self.ghost_dag_manager().ghostdag(&header.parents())
         }
     }
+
     pub fn check_upgrade(&self, main: &BlockHeader, genesis_id: HashValue) -> anyhow::Result<()> {
         // set the state with key 0
         if main.version() == 0 || main.version() == 1 {

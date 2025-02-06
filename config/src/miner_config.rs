@@ -7,6 +7,8 @@ use clap::Parser;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
+pub static G_MAX_PARENTS_COUNT: u64 = 16;
+
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
 pub struct MinerConfig {
@@ -34,6 +36,10 @@ pub struct MinerConfig {
     #[serde(skip)]
     #[clap(skip)]
     base: Option<Arc<BaseConfig>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(long = "maximum-parents-count")]
+    pub maximum_parents_count: Option<u64>,
 }
 
 impl MinerConfig {
@@ -59,6 +65,10 @@ impl MinerConfig {
             miner_thread: self.miner_thread.unwrap_or(1),
             enable_stderr: true,
         })
+    }
+
+    pub fn maximum_parents_count(&self) -> u64 {
+        self.maximum_parents_count.unwrap_or(G_MAX_PARENTS_COUNT)
     }
 }
 
@@ -101,6 +111,10 @@ impl ConfigModule for MinerConfig {
         }
         if opt.miner.block_gas_limit.is_some() {
             self.block_gas_limit = opt.miner.block_gas_limit;
+        }
+
+        if opt.miner.maximum_parents_count.is_some() {
+            self.maximum_parents_count = opt.miner.maximum_parents_count;
         }
 
         Ok(())

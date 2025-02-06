@@ -4,6 +4,7 @@
 use anyhow::{format_err, Result};
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
+use starcoin_config::miner_config::G_MAX_PARENTS_COUNT;
 use starcoin_config::ChainNetwork;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
@@ -266,6 +267,7 @@ impl MockChain {
             prevous_ghostdata.as_ref(),
             4,
             3,
+            G_MAX_PARENTS_COUNT,
         )?;
 
         debug!(

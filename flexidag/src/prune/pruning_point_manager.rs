@@ -1,5 +1,5 @@
 use starcoin_crypto::HashValue;
-use starcoin_logger::prelude::{debug, info};
+use starcoin_logger::prelude::info;
 
 use crate::reachability::reachability_service::ReachabilityService;
 use crate::{
@@ -42,6 +42,9 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
         current_pruning_point: HashValue,
         next_pruning_point: HashValue,
     ) -> anyhow::Result<Vec<HashValue>> {
+        if next_pruning_point == HashValue::zero() {
+            return Ok(dag_state.tips.clone());
+        }
         if current_pruning_point == next_pruning_point {
             return Ok(dag_state.tips.clone());
         }
@@ -66,19 +69,13 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
         pruning_depth: u64,
         pruning_finality: u64,
     ) -> anyhow::Result<HashValue> {
+        info!(
+            "previous_pruning_point: {:?}, previous_ghostdata: {:?}, next_ghostdata: {:?}, pruning_depth: {}, pruning_finality: {}",
+            previous_pruning_point, previous_ghostdata.to_compact(), next_ghostdata.to_compact(), pruning_depth, pruning_finality
+        );
         let min_required_blue_score_for_next_pruning_point =
             (self.finality_score(previous_ghostdata.blue_score, pruning_finality) + 1)
                 * pruning_finality;
-
-        debug!(
-            "min_required_blue_score_for_next_pruning_point: {:?}",
-            min_required_blue_score_for_next_pruning_point
-        );
-
-        debug!("previous_pruning_point: {:?}, previous_ghostdata: {:?}, next_ghostdata: {:?}, pruning_depth: {:?}, pruning_finality: {:?}", 
-            previous_pruning_point, previous_ghostdata, next_ghostdata,
-            pruning_depth, pruning_finality,
-        );
 
         let mut latest_pruning_ghost_data = previous_ghostdata.to_compact();
         if min_required_blue_score_for_next_pruning_point + pruning_depth
@@ -90,10 +87,6 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
                 true,
             ) {
                 let next_pruning_ghostdata = self.ghost_dag_store.get_data(child)?;
-                debug!(
-                    "child: {:?}, observer2.blue_score: {:?}, next_pruning_ghostdata.blue_score: {:?}",
-                    child, next_ghostdata.blue_score, next_pruning_ghostdata.blue_score
-                );
                 if next_ghostdata.blue_score - next_pruning_ghostdata.blue_score < pruning_depth {
                     break;
                 }
@@ -114,7 +107,12 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
         if latest_pruning_ghost_data.selected_parent
             == previous_ghostdata.to_compact().selected_parent
         {
-            anyhow::Ok(HashValue::zero()) // still genesis
+            // anyhow::Ok(HashValue::zero()) // still genesis
+            if previous_pruning_point == HashValue::zero() {
+                anyhow::Ok(HashValue::zero())
+            } else {
+                anyhow::Ok(previous_ghostdata.to_compact().selected_parent)
+            }
         } else {
             anyhow::Ok(latest_pruning_ghost_data.selected_parent)
         }
