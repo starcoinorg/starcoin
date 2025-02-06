@@ -40,19 +40,7 @@ pub fn get_resource_group_member_from_metadata(
     struct_tag: &StructTag,
     metadata: &[Metadata],
 ) -> Option<StructTag> {
-    // eprintln!(
-    //     "get_resource_group_member_from_metadata {} origin metadata count {}",
-    //     struct_tag,
-    //     metadata.len()
-    // );
-    if metadata.is_empty() && struct_tag.name.as_ident_str().as_str() == "ObjectCore" {
-        panic!("let's see the backtrace");
-    }
     let metadata = starcoin_framework::get_metadata(metadata)?;
-    // eprintln!(
-    //     "get_resource_group_member_from_metadata {} metadata struct_attributes {:?}",
-    //     struct_tag, metadata.struct_attributes
-    // );
     metadata
         .struct_attributes
         .get(struct_tag.name.as_ident_str().as_str())?

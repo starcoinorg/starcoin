@@ -140,10 +140,6 @@ pub fn run_integration_test(move_arg: Move, cmd: IntegrationTestCommand) -> Resu
             .compiler_config
             .known_attributes
             .clone_from(starcoin_framework::extended_checks::get_all_attribute_names());
-        eprintln!(
-            "known attributes: {:?}",
-            build_config.compiler_config.known_attributes
-        );
         let resolved_graph = build_config
             .clone()
             .resolution_graph_for_package(&rerooted_path, &mut std::io::stdout())?;
