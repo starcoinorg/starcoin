@@ -107,13 +107,9 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
         if latest_pruning_ghost_data.selected_parent
             == previous_ghostdata.to_compact().selected_parent
         {
-            // anyhow::Ok(HashValue::zero()) // still genesis
-            if previous_pruning_point == HashValue::zero() {
-                anyhow::Ok(HashValue::zero())
-            } else {
-                anyhow::Ok(previous_ghostdata.to_compact().selected_parent)
-            }
+            anyhow::Ok(previous_pruning_point)
         } else {
+            info!("jacktest: prune point is not same, previous_ghostdata: {:?}, latest pruning ghostdata: {:?}", previous_ghostdata, latest_pruning_ghost_data);
             anyhow::Ok(latest_pruning_ghost_data.selected_parent)
         }
     }
