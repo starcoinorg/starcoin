@@ -109,6 +109,7 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
         {
             anyhow::Ok(previous_pruning_point)
         } else {
+            info!("jacktest: prune point is not same, previous_ghostdata: {:?}, latest pruning ghostdata: {:?}", previous_ghostdata, latest_pruning_ghost_data);
             anyhow::Ok(latest_pruning_ghost_data.selected_parent)
         }
     }
