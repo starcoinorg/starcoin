@@ -58,6 +58,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::hash::HashValue;
 use std::fmt;
 use std::str::FromStr;
+
 #[derive(Clone, Eq, PartialEq, Hash, Ord, PartialOrd, JsonSchema)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 #[schemars(with = "String")]
@@ -328,16 +329,15 @@ impl DataPath {
     pub fn is_code(&self) -> bool {
         matches!(self, Self::Code(_))
     }
-    pub fn is_resource(&self) -> bool {
-        matches!(self, Self::Resource(_))
-    }
-    pub fn is_resource_group(&self) -> bool {
-        matches!(self, Self::ResourceGroup(_))
-    }
-    // todo(simon): handle ResourceGroup
-    pub fn as_struct_tag(&self) -> Option<&StructTag> {
+    pub fn resource_tag(&self) -> Option<&StructTag> {
         match self {
             Self::Resource(struct_tag) => Some(struct_tag),
+            _ => None,
+        }
+    }
+    pub fn resource_group_tag(&self) -> Option<&StructTag> {
+        match self {
+            Self::ResourceGroup(struct_tag) => Some(struct_tag),
             _ => None,
         }
     }
