@@ -3,6 +3,7 @@
 
 use anyhow::bail;
 use bcs_ext::BCSCodec;
+use bytes::Bytes;
 use hex::FromHex;
 use jsonrpc_core_client::RpcChannel;
 use move_core_types::u256;
@@ -36,7 +37,7 @@ use starcoin_types::transaction::authenticator::{AuthenticationKey, TransactionA
 use starcoin_types::transaction::{EntryFunction, RawUserTransaction, TransactionArgument};
 use starcoin_types::vm_error::AbortLocation;
 use starcoin_types::U256;
-use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm_types::access_path::{AccessPath, DataPath};
 use starcoin_vm_types::block_metadata::BlockMetadata;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::{parse_module_id, FunctionId, ModuleId, StructTag};
@@ -1205,6 +1206,48 @@ pub struct TransactionOutputView {
     pub table_item_write_set: Vec<TransactionOutputTableItemAction>,
 }
 
+fn merge_ap_write_set(
+    output: &mut Vec<TransactionOutputAction>,
+    access_path: AccessPath,
+    op: WriteOp,
+) {
+    match op {
+        WriteOp::Deletion { .. } => output.push(TransactionOutputAction {
+            access_path,
+            action: WriteOpView::Deletion,
+            value: None,
+        }),
+        WriteOp::Modification { data, .. } | WriteOp::Creation { data, .. } => {
+            match access_path.path {
+                DataPath::Resource(_) => output.push(TransactionOutputAction {
+                    access_path,
+                    action: WriteOpView::Value,
+                    value: Some(WriteOpValueView::Resource(data.to_vec().into())),
+                }),
+                // Parsing resources in group and expanding them into individual actions.
+                DataPath::ResourceGroup(_) => {
+                    let group_data: BTreeMap<StructTag, Bytes> =
+                        bcs_ext::from_bytes(&data).expect("resource group data must be valid");
+                    for (struct_tag, data) in group_data {
+                        let resource_ap =
+                            AccessPath::resource_access_path(access_path.address, struct_tag);
+                        output.push(TransactionOutputAction {
+                            access_path: resource_ap,
+                            action: WriteOpView::Value,
+                            value: Some(WriteOpValueView::Resource(data.to_vec().into())),
+                        });
+                    }
+                }
+                DataPath::Code(_) => output.push(TransactionOutputAction {
+                    access_path,
+                    action: WriteOpView::Value,
+                    value: Some(WriteOpValueView::Code(data.to_vec().into())),
+                }),
+            }
+        }
+    };
+}
+
 impl From<TransactionOutput> for TransactionOutputView {
     fn from(txn_output: TransactionOutput) -> Self {
         let (write_set, events, gas_used, status, _) = txn_output.into_inner();
@@ -1225,40 +1268,23 @@ impl From<TransactionOutput> for TransactionOutputView {
                 StateKeyInner::Raw(_) => todo!("not support raw key"),
             }
         }
+        let write_set =
+            access_write_set
+                .into_iter()
+                .fold(Vec::new(), |mut acc, (access_path, op)| {
+                    merge_ap_write_set(&mut acc, access_path, op);
+                    acc
+                });
+
         Self {
             events: events.into_iter().map(Into::into).collect(),
             gas_used: gas_used.into(),
             status: status.into(),
-            write_set: access_write_set
-                .into_iter()
-                .map(TransactionOutputAction::from)
-                .collect(),
+            write_set,
             table_item_write_set: table_item_write_set
                 .into_iter()
                 .map(TransactionOutputTableItemAction::from)
                 .collect(),
-        }
-    }
-}
-
-impl From<(AccessPath, WriteOp)> for TransactionOutputAction {
-    fn from((access_path, op): (AccessPath, WriteOp)) -> Self {
-        let (action, value) = match op {
-            WriteOp::Deletion { .. } => (WriteOpView::Deletion, None),
-            WriteOp::Modification { data, .. } | WriteOp::Creation { data, .. } => (
-                WriteOpView::Value,
-                Some(if access_path.path.is_resource() {
-                    WriteOpValueView::Resource(data.to_vec().into())
-                } else {
-                    WriteOpValueView::Code(data.to_vec().into())
-                }),
-            ),
-        };
-
-        Self {
-            access_path,
-            action,
-            value,
         }
     }
 }

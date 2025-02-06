@@ -165,11 +165,12 @@ impl AccountStateObject {
         if data_path.is_code() {
             bail!("Not supported remove code currently.");
         }
-        let struct_tag = data_path
-            .as_struct_tag()
-            .expect("DataPath must been struct tag at here.");
-        eprintln!("remove resource {}", struct_tag);
-        self.resource_tree.lock().remove(struct_tag);
+        if let Some(struct_tag) = data_path.resource_tag() {
+            self.resource_tree.lock().remove(struct_tag);
+        }
+        if let Some(struct_tag) = data_path.resource_group_tag() {
+            self.resource_tree.lock().remove(struct_tag);
+        }
         Ok(())
     }
 
