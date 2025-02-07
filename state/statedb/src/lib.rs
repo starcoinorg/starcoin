@@ -587,7 +587,9 @@ impl ChainStateReader for ChainStateDB {
                             DataType::RESOURCE => {
                                 Some(self.new_state_tree::<StructTag>(*storage_root).dump()?)
                             }
-                            DataType::RESOURCEGROUP => unimplemented!(),
+                            DataType::RESOURCEGROUP => {
+                                Some(self.new_state_tree::<StructTag>(*storage_root).dump()?)
+                            }
                         }
                     }
                     None => None,

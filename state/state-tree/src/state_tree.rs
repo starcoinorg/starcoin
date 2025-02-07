@@ -445,7 +445,14 @@ impl Iterator for AccountStateSetIterator {
                                 .dump()
                                 .ok()?,
                             ),
-                            DataType::RESOURCEGROUP => todo!(),
+                            DataType::RESOURCEGROUP => Some(
+                                StateTree::<StructTag>::new(
+                                    self.store.clone(),
+                                    Some(*storage_root),
+                                )
+                                .dump()
+                                .ok()?,
+                            ),
                         }
                     }
                     None => None,
