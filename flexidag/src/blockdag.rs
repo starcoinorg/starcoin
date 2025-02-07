@@ -347,27 +347,7 @@ impl BlockDAG {
             }
         };
 
-        // if header.pruning_point() == HashValue::zero() {
-        //     info!(
-        //         "try to hint virtual selected parent, root index: {:?}",
-        //         self.storage.reachability_store.read().get_reindex_root()
-        //     );
-        //     let _ = inquirer::hint_virtual_selected_parent(
-        //         self.storage.reachability_store.write().deref_mut(),
-        //         header.parent_hash(),
-        //     );
-        //     info!(
-        //         "after hint virtual selected parent, root index: {:?}",
-        //         self.storage.reachability_store.read().get_reindex_root()
-        //     );
-        // } else if self.storage.reachability_store.read().get_reindex_root()?
-        //     != header.pruning_point()
-        //     && self
-        //         .storage
-        //         .reachability_store
-        //         .read()
-        //         .has(header.pruning_point())?
-        // {
+        if header.pruning_point() == HashValue::zero() {
             info!(
                 "try to hint virtual selected parent, root index: {:?}",
                 self.storage.reachability_store.read().get_reindex_root()
@@ -401,12 +381,7 @@ impl BlockDAG {
                 self.storage.reachability_store.read().get_reindex_root(),
                 hint_result
             );
-            info!(
-                "after hint virtual selected parent, root index: {:?}, hint result: {:?}",
-                self.storage.reachability_store.read().get_reindex_root(),
-                hint_result
-            );
-        // }
+        }
 
         // Create a DB batch writer
         let mut batch = WriteBatch::default();
