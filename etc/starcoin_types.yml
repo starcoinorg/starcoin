@@ -94,7 +94,7 @@ DataType:
     1:
       RESOURCE: UNIT
     2:
-      ResourceGroup: UNIT
+      RESOURCEGROUP: UNIT
 Ed25519PrivateKey:
   NEWTYPESTRUCT: BYTES
 Ed25519PublicKey:

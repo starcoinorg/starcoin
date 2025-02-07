@@ -19,16 +19,25 @@ pub struct AccountState {
 }
 
 impl AccountState {
-    pub fn new(code_root: Option<HashValue>, resource_root: HashValue) -> Self {
+    pub fn new(
+        code_root: Option<HashValue>,
+        resource_root: HashValue,
+        resource_group_root: Option<HashValue>,
+    ) -> Self {
         let mut storage_roots = vec![None; DataType::LENGTH];
         storage_roots[DataType::CODE.storage_index()] = code_root;
         storage_roots[DataType::RESOURCE.storage_index()] = Some(resource_root);
+        storage_roots[DataType::RESOURCEGROUP.storage_index()] = resource_group_root;
         Self { storage_roots }
     }
 
     pub fn resource_root(&self) -> HashValue {
         self.storage_roots[DataType::RESOURCE.storage_index()]
             .expect("Account at least must have resource storage root")
+    }
+
+    pub fn resource_group_root(&self) -> Option<HashValue> {
+        self.storage_roots[DataType::RESOURCEGROUP.storage_index()]
     }
 
     pub fn code_root(&self) -> Option<HashValue> {

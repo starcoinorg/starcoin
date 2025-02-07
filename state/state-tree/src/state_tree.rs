@@ -445,7 +445,7 @@ impl Iterator for AccountStateSetIterator {
                                 .dump()
                                 .ok()?,
                             ),
-                            DataType::ResourceGroup => todo!(),
+                            DataType::RESOURCEGROUP => todo!(),
                         }
                     }
                     None => None,

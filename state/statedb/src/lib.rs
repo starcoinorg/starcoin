@@ -75,7 +75,7 @@ struct AccountStateObject {
     // refactor AccountStateObject to a readonly object.
     code_tree: Mutex<Option<StateTree<ModuleName>>>,
     resource_tree: Mutex<StateTree<StructTag>>,
-    // todo(simon) add resource_group_tree
+    resource_group_tree: Mutex<Option<StateTree<StructTag>>>,
     store: Arc<dyn StateNodeStore>,
 }
 
@@ -86,10 +86,14 @@ impl AccountStateObject {
             .map(|root| StateTree::<ModuleName>::new(store.clone(), Some(root)));
         let resource_tree =
             StateTree::<StructTag>::new(store.clone(), Some(account_state.resource_root()));
+        let resource_group_tree = account_state
+            .resource_group_root()
+            .map(|root| StateTree::<StructTag>::new(store.clone(), Some(root)));
 
         Self {
             code_tree: Mutex::new(code_tree),
             resource_tree: Mutex::new(resource_tree),
+            resource_group_tree: Mutex::new(resource_group_tree),
             store,
         }
     }
@@ -99,6 +103,7 @@ impl AccountStateObject {
         Self {
             code_tree: Mutex::new(None),
             resource_tree: Mutex::new(resource_tree),
+            resource_group_tree: Mutex::new(None),
             store,
         }
     }
@@ -113,7 +118,13 @@ impl AccountStateObject {
                 .transpose()?
                 .flatten()),
             DataPath::Resource(struct_tag) => self.resource_tree.lock().get(struct_tag),
-            DataPath::ResourceGroup(struct_tag) => self.resource_tree.lock().get(struct_tag),
+            DataPath::ResourceGroup(struct_tag) => Ok(self
+                .resource_group_tree
+                .lock()
+                .as_ref()
+                .map(|tree| tree.get(struct_tag))
+                .transpose()?
+                .flatten()),
         }
     }
 
@@ -132,9 +143,13 @@ impl AccountStateObject {
                 .transpose()?
                 .unwrap_or((None, SparseMerkleProof::new(None, vec![])))),
             DataPath::Resource(struct_tag) => self.resource_tree.lock().get_with_proof(struct_tag),
-            DataPath::ResourceGroup(struct_tag) => {
-                self.resource_tree.lock().get_with_proof(struct_tag)
-            }
+            DataPath::ResourceGroup(struct_tag) => Ok(self
+                .resource_group_tree
+                .lock()
+                .as_ref()
+                .map(|tree| tree.get_with_proof(struct_tag))
+                .transpose()?
+                .unwrap_or((None, SparseMerkleProof::new(None, vec![])))),
         }
     }
 
@@ -155,7 +170,15 @@ impl AccountStateObject {
                 self.resource_tree.lock().put(struct_tag, value);
             }
             DataPath::ResourceGroup(struct_tag) => {
-                self.resource_tree.lock().put(struct_tag, value);
+                if self.resource_group_tree.lock().is_none() {
+                    *self.resource_group_tree.lock() =
+                        Some(StateTree::<StructTag>::new(self.store.clone(), None));
+                }
+                self.resource_group_tree
+                    .lock()
+                    .as_ref()
+                    .expect("state tree must exist after set.")
+                    .put(struct_tag, value);
             }
         }
     }
@@ -168,7 +191,9 @@ impl AccountStateObject {
             self.resource_tree.lock().remove(struct_tag);
         }
         if let Some(struct_tag) = data_path.resource_group_tag() {
-            self.resource_tree.lock().remove(struct_tag);
+            if let Some(resource_group_tree) = self.resource_group_tree.lock().as_mut() {
+                resource_group_tree.remove(struct_tag);
+            }
         }
         Ok(())
     }
@@ -182,6 +207,12 @@ impl AccountStateObject {
                 return true;
             }
         }
+        if let Some(resource_group_tree) = self.resource_group_tree.lock().as_ref() {
+            if resource_group_tree.is_dirty() {
+                return true;
+            }
+        }
+
         false
     }
 
@@ -200,6 +231,15 @@ impl AccountStateObject {
                 resource_tree.commit()?;
             }
         }
+
+        {
+            let resource_group_tree = self.resource_group_tree.lock();
+            if let Some(resource_group_tree) = resource_group_tree.as_ref() {
+                if resource_group_tree.is_dirty() {
+                    resource_group_tree.commit()?;
+                }
+            }
+        }
         Ok(self.to_state())
     }
 
@@ -207,6 +247,9 @@ impl AccountStateObject {
         self.resource_tree.lock().flush()?;
         if let Some(code_tree) = self.code_tree.lock().as_ref() {
             code_tree.flush()?;
+        }
+        if let Some(resource_group_tree) = self.resource_group_tree.lock().as_ref() {
+            resource_group_tree.flush()?;
         }
 
         Ok(())
@@ -225,7 +268,12 @@ impl AccountStateObject {
     fn to_state(&self) -> AccountState {
         let code_root = self.code_tree.lock().as_ref().map(|tree| tree.root_hash());
         let resource_root = self.resource_tree.lock().root_hash();
-        AccountState::new(code_root, resource_root)
+        let resource_group_root = self
+            .resource_group_tree
+            .lock()
+            .as_ref()
+            .map(|tree| tree.root_hash());
+        AccountState::new(code_root, resource_root, resource_group_root)
     }
 }
 
@@ -539,7 +587,7 @@ impl ChainStateReader for ChainStateDB {
                             DataType::RESOURCE => {
                                 Some(self.new_state_tree::<StructTag>(*storage_root).dump()?)
                             }
-                            DataType::ResourceGroup => unimplemented!(),
+                            DataType::RESOURCEGROUP => unimplemented!(),
                         }
                     }
                     None => None,
@@ -673,7 +721,18 @@ impl ChainStateWriter for ChainStateDB {
             } else {
                 unreachable!("this should never happened")
             };
-            let new_account_state = AccountState::new(code_root, resource_root);
+            let resource_group_root =
+                if let Some(state_set) = account_state_set.resource_group_set() {
+                    let state_tree = StateTree::<StructTag>::new(self.store.clone(), None);
+                    state_tree.apply(state_set.clone())?;
+                    state_tree.flush()?;
+                    Some(state_tree.root_hash())
+                } else {
+                    eprintln!("resource_group_root is None");
+                    None
+                };
+            let new_account_state =
+                AccountState::new(code_root, resource_root, resource_group_root);
             self.state_tree.put(*address, new_account_state.try_into()?);
         }
         self.state_tree.commit()?;
