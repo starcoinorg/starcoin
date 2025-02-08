@@ -8,7 +8,7 @@ use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::{RpcClient, StateRootOption};
-use starcoin_state_api::StateReaderExt;
+use starcoin_state_api::{AccountStateReader, StateReaderExt};
 use starcoin_transaction_builder::{
     build_transfer_txn, DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
 };
@@ -27,8 +27,9 @@ pub fn steps() -> Steps<MyWorld> {
             let result = transfer_txn(client, to, pre_mine_address, None);
             assert!(result.is_ok());
             std::thread::sleep(Duration::from_millis(3000));
-            let chain_state_reader = client.state_reader(StateRootOption::Latest).unwrap();
-            let balances = chain_state_reader.get_balance(*to.address());
+            let account_state_reader =
+                AccountStateReader::new(&client.state_reader(StateRootOption::Latest).unwrap());
+            let balances = account_state_reader.get_balance(to.address());
             assert!(balances.is_ok());
             info!("charge into default account ok:{:?}", balances.unwrap());
         })
@@ -52,10 +53,11 @@ fn transfer_txn(
     from: AccountAddress,
     amount: Option<u128>,
 ) -> Result<HashValue, Error> {
-    let chain_state_reader = client.state_reader(StateRootOption::Latest)?;
-    let account_resource = chain_state_reader.get_account_resource(from)?;
+    let account_state_reader =
+        AccountStateReader::new(&client.state_reader(StateRootOption::Latest)?);
+    let account_resource = account_state_reader.get_account_resource(&from)?;
     let node_info = client.node_info()?;
-    let balance = chain_state_reader.get_balance(from)?;
+    let balance = account_state_reader.get_balance(&from)?;
     let amount = amount.unwrap_or(balance * 20 / 100);
     let raw_txn = build_transfer_txn(
         from,

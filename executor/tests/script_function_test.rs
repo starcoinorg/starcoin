@@ -4,6 +4,7 @@
 use anyhow::Result;
 use move_transactional_test_runner::tasks::SyntaxChoice;
 use starcoin_config::ChainNetwork;
+use starcoin_state_api::AccountStateReader;
 use starcoin_statedb::ChainStateDB;
 use starcoin_transaction_builder::{
     create_signed_txn_with_association_account, DEFAULT_MAX_GAS_AMOUNT,
@@ -14,7 +15,6 @@ use starcoin_types::transaction::Transaction;
 use starcoin_vm_types::account_config::stc_type_tag;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
-use starcoin_vm_types::state_view::StateReaderExt;
 use starcoin_vm_types::transaction::{
     EntryFunction, Package, Script, TransactionPayload, TransactionStatus,
 };
@@ -435,7 +435,7 @@ fn test_transaction_arg_verify() -> Result<()> {
         output.status().status().unwrap()
     );
 
-    let balance = chain_state.get_balance(*account1.address())?;
+    let balance = AccountStateReader::new(&chain_state).get_balance(account1.address())?;
     assert_eq!(balance, initial_amount.sub(u128::from(gas_amount)));
 
     let money = 100_000;

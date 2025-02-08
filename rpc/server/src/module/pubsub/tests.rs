@@ -9,7 +9,7 @@ use jsonrpc_pubsub::Session;
 use serde_json::Value;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::BlockChain;
-use starcoin_chain::{ChainReader, ChainWriter};
+use starcoin_chain::ChainWriter;
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::{ed25519::Ed25519PrivateKey, Genesis, HashValue, PrivateKey};
@@ -18,7 +18,7 @@ use starcoin_rpc_api::metadata::Metadata;
 use starcoin_rpc_api::pubsub::StarcoinPubSub;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::RegistryAsyncService;
-use starcoin_state_api::StateReaderExt;
+use starcoin_state_api::AccountStateReader;
 use starcoin_storage::BlockStore;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::system_events::MintBlockEvent;
@@ -70,8 +70,8 @@ pub async fn test_subscribe_to_events() -> Result<()> {
         .create_block(block_template, net.time_service().as_ref())?;
     let executed_block = block_chain.apply(new_block.clone())?;
 
-    let reader = block_chain.chain_state_reader();
-    let balance = reader.get_balance(account_address)?;
+    let reader = AccountStateReader::new(block_chain.chain_state());
+    let balance = reader.get_balance(&account_address)?;
     assert_eq!(balance, 10000);
 
     // now block is applied, we can emit events.

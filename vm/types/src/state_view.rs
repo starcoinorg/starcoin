@@ -99,10 +99,6 @@ pub trait StateReaderExt: StateView {
         T::fetch_config(self)
     }
 
-    fn get_balance(&self, address: AccountAddress) -> Result<u128> {
-        self.get_balance_by_token_code(address, G_STC_TOKEN_CODE.clone())
-    }
-
     /// Get balance by address and coin type
     fn get_balance_by_type(&self, address: AccountAddress, type_tag: StructTag) -> Result<u128> {
         let rsrc_bytes = self
@@ -119,14 +115,6 @@ pub trait StateReaderExt: StateView {
             })?;
         let rsrc = bcs_ext::from_bytes::<BalanceResource>(&rsrc_bytes)?;
         Ok(rsrc.token())
-    }
-
-    fn get_balance_by_token_code(
-        &self,
-        address: AccountAddress,
-        token_code: TokenCode,
-    ) -> Result<u128> {
-        self.get_balance_by_type(address, token_code.try_into()?)
     }
 
     fn get_epoch(&self) -> Result<Epoch> {

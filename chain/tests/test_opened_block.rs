@@ -5,7 +5,7 @@ use starcoin_config::NodeConfig;
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
-use starcoin_state_api::StateReaderExt;
+use starcoin_state_api::{AccountStateReader, StateReaderExt};
 use starcoin_transaction_builder::{
     build_transfer_from_association, build_transfer_txn, DEFAULT_EXPIRATION_TIME,
 };
@@ -55,11 +55,11 @@ pub fn test_open_block() -> Result<()> {
 
     // check state changed
     {
-        let account_reader = opened_block.state_reader();
-        let account_balance = account_reader.get_balance(receiver)?;
+        let account_reader = AccountStateReader::new(opened_block.state_reader());
+        let account_balance = account_reader.get_balance(&receiver)?;
         assert_eq!(account_balance, 50_000_000);
 
-        let account_resource = account_reader.get_account_resource(receiver)?;
+        let account_resource = account_reader.get_account_resource(&receiver)?;
         assert_eq!(account_resource.sequence_number(), 0);
     }
 

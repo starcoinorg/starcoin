@@ -10,9 +10,10 @@ use starcoin_crypto::HashValue;
 use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_config::AccountResource,
-    account_state::AccountState, language_storage::StructTag, state_set::AccountStateSet,
-    state_set::ChainStateSet, write_set::WriteSet,
+    account_state::AccountState, state_set::AccountStateSet, state_set::ChainStateSet,
+    write_set::WriteSet,
 };
+use starcoin_vm_types::account_config::G_STC_TOKEN_CODE;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::{
     account_config::TABLE_HANDLE_ADDRESS_LIST,
@@ -24,7 +25,6 @@ use starcoin_vm_types::{
         table::{TableHandle, TableInfo},
         StateView,
     },
-    token::token_code::TokenCode,
 };
 use std::convert::TryFrom;
 
@@ -197,24 +197,8 @@ where
     }
 
     pub fn get_balance(&self, address: &AccountAddress) -> Result<u128> {
-        self.reader.get_balance(*address)
-    }
-
-    /// Get balance by address and coin type
-    pub fn get_balance_by_type(
-        &self,
-        address: &AccountAddress,
-        type_tag: StructTag,
-    ) -> Result<u128> {
-        self.reader.get_balance_by_type(*address, type_tag)
-    }
-
-    pub fn get_balance_by_token_code(
-        &self,
-        address: &AccountAddress,
-        token_code: TokenCode,
-    ) -> Result<u128> {
-        self.reader.get_balance_by_token_code(*address, token_code)
+        self.reader
+            .get_balance_by_type(*address, G_STC_TOKEN_CODE.clone().try_into()?)
     }
 
     pub fn get_epoch(&self) -> Result<Epoch> {
