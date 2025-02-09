@@ -183,7 +183,10 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
             .chain_state()
             .get_resource::<FrozenConfigBurnBlockNumberResource>(association_address())?
             .unwrap();
-        assert_eq!(read_burn_block_number.block_number(), expect_burn_block_number);
+        assert_eq!(
+            read_burn_block_number.block_number(),
+            expect_burn_block_number
+        );
 
         // Check not equal 0
         assert_ne!(
@@ -208,7 +211,6 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
 
         // Block 53
         let _block6 = gen_empty_block_for_miner(&mut miner);
-
 
         // Block number: 54, Execute Succeed
         let _block7 = execute_transactions_by_miner(

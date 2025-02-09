@@ -2,10 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::access_path::AccessPath;
-use crate::{
-    account_config::constants::{CORE_CODE_ADDRESS},
-    move_resource::MoveResource,
-};
+use crate::{account_config::constants::CORE_CODE_ADDRESS, move_resource::MoveResource};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::{IdentStr, Identifier};
 use move_core_types::language_storage::{StructTag, TypeTag};
