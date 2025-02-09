@@ -1,23 +1,22 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-pub use crate::batch::WriteBatch;
-use crate::cache_storage::CacheStorage;
-use crate::db_storage::{DBStorage, SchemaIterator};
-use crate::upgrade::DBUpgrade;
+use crate::{
+    cache_storage::GCacheStorage,
+    db_storage::{ClassicIter, SchemaIterator},
+    upgrade::DBUpgrade,
+};
 use anyhow::{bail, format_err, Result};
 use byteorder::{BigEndian, ReadBytesExt};
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::info;
 use starcoin_vm_types::state_store::table::TableHandle;
-use std::convert::TryInto;
-use std::fmt::Debug;
-use std::marker::PhantomData;
-use std::sync::Arc;
-
-/// Type alias to improve readability.
-pub type ColumnFamilyName = &'static str;
+use std::{convert::TryInto, fmt::Debug, hash::Hash, marker::PhantomData, sync::Arc};
+pub use {
+    crate::batch::WriteBatch,
+    starcoin_schemadb::{db::DBStorage, ColumnFamilyName, GWriteOp as WriteOp},
+};
 
 #[allow(clippy::upper_case_acronyms)]
 pub trait KVStore: Send + Sync {
@@ -34,10 +33,10 @@ pub trait KVStore: Send + Sync {
 }
 
 pub trait InnerStore: Send + Sync {
-    fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>>;
-    fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
+    fn get_raw(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>>;
+    fn put_raw(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
     fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool>;
-    fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()>;
+    fn remove_raw(&self, prefix_name: &str, key: Vec<u8>) -> Result<()>;
     fn write_batch(&self, prefix_name: &str, batch: WriteBatch) -> Result<()>;
     fn get_len(&self) -> Result<u64>;
     fn keys(&self) -> Result<Vec<Vec<u8>>>;
@@ -46,53 +45,59 @@ pub trait InnerStore: Send + Sync {
     fn multi_get(&self, prefix_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>>;
 }
 
-///Storage instance type define
+pub type StorageInstance = GStorageInstance<Vec<u8>, Vec<u8>>;
+
+///Generic Storage instance type define
 #[derive(Clone)]
 #[allow(clippy::upper_case_acronyms)]
-pub enum StorageInstance {
+pub enum GStorageInstance<K, V>
+where
+    K: Hash + Eq + Default,
+    V: Default,
+{
     CACHE {
-        cache: Arc<CacheStorage>,
+        cache: Arc<GCacheStorage<K, V>>,
     },
     DB {
         db: Arc<DBStorage>,
     },
     CacheAndDb {
-        cache: Arc<CacheStorage>,
+        cache: Arc<GCacheStorage<K, V>>,
         db: Arc<DBStorage>,
     },
 }
 
-impl StorageInstance {
+impl<K, V> GStorageInstance<K, V>
+where
+    K: Hash + Eq + Default,
+    V: Default,
+{
     pub fn new_cache_instance() -> Self {
-        StorageInstance::CACHE {
-            cache: Arc::new(CacheStorage::new(None)),
+        GStorageInstance::CACHE {
+            cache: Arc::new(GCacheStorage::default()),
         }
     }
     pub fn new_db_instance(db: DBStorage) -> Self {
         Self::DB { db: Arc::new(db) }
     }
 
-    pub fn new_cache_and_db_instance(cache: CacheStorage, db: DBStorage) -> Self {
+    pub fn new_cache_and_db_instance(cache: GCacheStorage<K, V>, db: DBStorage) -> Self {
         Self::CacheAndDb {
             cache: Arc::new(cache),
             db: Arc::new(db),
         }
     }
 
-    pub fn cache(&self) -> Option<Arc<CacheStorage>> {
+    pub fn cache(&self) -> Option<Arc<GCacheStorage<K, V>>> {
         match self {
-            StorageInstance::CACHE { cache } | StorageInstance::CacheAndDb { cache, db: _ } => {
-                Some(cache.clone())
-            }
+            Self::CACHE { cache } | Self::CacheAndDb { cache, db: _ } => Some(cache.clone()),
             _ => None,
         }
     }
 
-    pub fn db(&self) -> Option<&DBStorage> {
+    pub fn db(&self) -> Option<&Arc<DBStorage>> {
         match self {
-            StorageInstance::DB { db } | StorageInstance::CacheAndDb { cache: _, db } => {
-                Some(db.as_ref())
-            }
+            Self::DB { db } | Self::CacheAndDb { cache: _, db } => Some(db),
             _ => None,
         }
     }
@@ -100,13 +105,13 @@ impl StorageInstance {
     // make sure Arc::strong_count(&db) == 1 unless will get None
     pub fn db_mut(&mut self) -> Option<&mut DBStorage> {
         match self {
-            StorageInstance::DB { db } | StorageInstance::CacheAndDb { cache: _, db } => {
-                Arc::get_mut(db)
-            }
+            Self::DB { db } | Self::CacheAndDb { cache: _, db } => Arc::get_mut(db),
             _ => None,
         }
     }
+}
 
+impl StorageInstance {
     pub fn check_upgrade(&mut self) -> Result<()> {
         DBUpgrade::check_upgrade(self)
     }
@@ -129,17 +134,17 @@ impl StorageInstance {
 }
 
 impl InnerStore for StorageInstance {
-    fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
+    fn get_raw(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
         match self {
-            StorageInstance::CACHE { cache } => cache.get(prefix_name, key),
-            StorageInstance::DB { db } => db.get(prefix_name, key),
+            StorageInstance::CACHE { cache } => cache.get_raw(prefix_name, key),
+            StorageInstance::DB { db } => db.get_raw(prefix_name, key),
             StorageInstance::CacheAndDb { cache, db } => {
                 // first get from cache
                 // if from cache get non-existent, query from db
-                if let Ok(Some(value)) = cache.get(prefix_name, key.clone()) {
+                if let Ok(Some(value)) = cache.get_raw(prefix_name, key.clone()) {
                     Ok(Some(value))
                 } else {
-                    match db.get(prefix_name, key)? {
+                    match db.get_raw(prefix_name, key)? {
                         Some(value) => {
                             // cache.put_obj(prefix_name, key, CacheObject::Value(value.clone()))?;
                             Ok(Some(value))
@@ -155,13 +160,13 @@ impl InnerStore for StorageInstance {
         }
     }
 
-    fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
+    fn put_raw(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
         match self {
-            StorageInstance::CACHE { cache } => cache.put(prefix_name, key, value),
-            StorageInstance::DB { db } => db.put(prefix_name, key, value),
+            StorageInstance::CACHE { cache } => cache.put_raw(prefix_name, key, value),
+            StorageInstance::DB { db } => db.put_raw(prefix_name, key, value),
             StorageInstance::CacheAndDb { cache, db } => db
-                .put(prefix_name, key.clone(), value.clone())
-                .and_then(|_| cache.put(prefix_name, key, value)),
+                .put_raw(prefix_name, key.clone(), value.clone())
+                .and_then(|_| cache.put_raw(prefix_name, key, value)),
         }
     }
 
@@ -178,13 +183,13 @@ impl InnerStore for StorageInstance {
         }
     }
 
-    fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
+    fn remove_raw(&self, prefix_name: &str, key: Vec<u8>) -> Result<()> {
         match self {
-            StorageInstance::CACHE { cache } => cache.remove(prefix_name, key),
-            StorageInstance::DB { db } => db.remove(prefix_name, key),
+            StorageInstance::CACHE { cache } => cache.remove_raw(prefix_name, key),
+            StorageInstance::DB { db } => db.remove_raw(prefix_name, key),
             StorageInstance::CacheAndDb { cache, db } => {
-                match db.remove(prefix_name, key.clone()) {
-                    Ok(_) => cache.remove(prefix_name, key),
+                match db.remove_raw(prefix_name, key.clone()) {
+                    Ok(_) => cache.remove_raw(prefix_name, key),
                     _ => bail!("db storage remove error."),
                 }
             }
@@ -221,11 +226,11 @@ impl InnerStore for StorageInstance {
 
     fn put_sync(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
         match self {
-            StorageInstance::CACHE { cache } => cache.put(prefix_name, key, value),
+            StorageInstance::CACHE { cache } => cache.put_raw(prefix_name, key, value),
             StorageInstance::DB { db } => db.put_sync(prefix_name, key, value),
             StorageInstance::CacheAndDb { cache, db } => db
                 .put_sync(prefix_name, key.clone(), value.clone())
-                .and_then(|_| cache.put(prefix_name, key, value)),
+                .and_then(|_| cache.put_raw(prefix_name, key, value)),
         }
     }
 
@@ -323,7 +328,7 @@ where
     CF: ColumnFamily,
 {
     fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        self.instance.get(self.prefix_name, key.to_vec())
+        self.instance.get_raw(self.prefix_name, key.to_vec())
     }
 
     fn multiple_get(&self, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
@@ -331,7 +336,7 @@ where
     }
 
     fn put(&self, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
-        self.instance.put(self.prefix_name, key, value)
+        self.instance.put_raw(self.prefix_name, key, value)
     }
 
     fn contains_key(&self, key: Vec<u8>) -> Result<bool> {
@@ -339,7 +344,7 @@ where
     }
 
     fn remove(&self, key: Vec<u8>) -> Result<()> {
-        self.instance.remove(self.prefix_name, key)
+        self.instance.remove_raw(self.prefix_name, key)
     }
 
     fn write_batch(&self, batch: WriteBatch) -> Result<()> {
@@ -382,30 +387,12 @@ pub trait ValueCodec: Clone + Sized + Debug + std::marker::Send + std::marker::S
 }
 
 #[derive(Debug, Clone)]
-pub enum WriteOp<V> {
-    Value(V),
-    Deletion,
-}
-
-impl<V> WriteOp<V>
-where
-    V: ValueCodec,
-{
-    pub fn into_raw_op(self) -> Result<WriteOp<Vec<u8>>> {
-        Ok(match self {
-            WriteOp::Value(v) => WriteOp::Value(v.encode_value()?),
-            WriteOp::Deletion => WriteOp::Deletion,
-        })
-    }
-}
-
-#[derive(Debug, Clone)]
 pub struct CodecWriteBatch<K, V>
 where
     K: KeyCodec,
     V: ValueCodec,
 {
-    rows: Vec<(K, WriteOp<V>)>,
+    rows: Vec<WriteOp<K, V>>,
 }
 
 impl<K, V> Default for CodecWriteBatch<K, V>
@@ -430,25 +417,25 @@ where
 
     pub fn new_puts(kvs: Vec<(K, V)>) -> Self {
         let mut rows = Vec::new();
-        rows.extend(kvs.into_iter().map(|(k, v)| (k, WriteOp::Value(v))));
+        rows.extend(kvs.into_iter().map(|(k, v)| (WriteOp::Value(k, v))));
         Self { rows }
     }
 
     pub fn new_deletes(ks: Vec<K>) -> Self {
         let mut rows = Vec::new();
-        rows.extend(ks.into_iter().map(|k| (k, WriteOp::Deletion)));
+        rows.extend(ks.into_iter().map(|k| WriteOp::Deletion(k)));
         Self { rows }
     }
 
     /// Adds an insert/update operation to the batch.
     pub fn put(&mut self, key: K, value: V) -> Result<()> {
-        self.rows.push((key, WriteOp::Value(value)));
+        self.rows.push(WriteOp::Value(key, value));
         Ok(())
     }
 
     /// Adds a delete operation to the batch.
     pub fn delete(&mut self, key: K) -> Result<()> {
-        self.rows.push((key, WriteOp::Deletion));
+        self.rows.push(WriteOp::Deletion(key));
         Ok(())
     }
 
@@ -464,8 +451,8 @@ where
     K: KeyCodec,
     V: ValueCodec,
 {
-    type Item = (K, WriteOp<V>);
-    type IntoIter = std::vec::IntoIter<(K, WriteOp<V>)>;
+    type Item = WriteOp<K, V>;
+    type IntoIter = std::vec::IntoIter<WriteOp<K, V>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.rows.into_iter()
@@ -648,6 +635,6 @@ where
             .storage()
             .db()
             .ok_or_else(|| format_err!("Only support scan on db storage instance"))?;
-        db.iter::<K, V>(self.get_store().prefix_name)
+        db.iter_raw::<K, V>(self.get_store().prefix_name)
     }
 }
