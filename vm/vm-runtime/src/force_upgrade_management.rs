@@ -16,7 +16,7 @@ pub fn get_force_upgrade_block_number(chain_id: &ChainId) -> u64 {
         300
     } else if chain_id.is_barnard() {
         // add 8000 + BARNARD_HARD_FORK_HEIGHT
-        16088000
+        16081000
     } else {
         FORCE_UPGRADE_BLOCK_NUMBER
     }
