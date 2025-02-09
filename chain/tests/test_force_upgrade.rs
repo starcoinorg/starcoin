@@ -17,10 +17,12 @@ use starcoin_transaction_builder::{
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::Block;
 use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
-use starcoin_vm_types::account_config::{association_address, FrozenConfigBurnBlockNumberResource};
-use starcoin_vm_types::on_chain_config::Version;
-use starcoin_vm_types::transaction::SignedUserTransaction;
-use starcoin_vm_types::{account_config, state_view::StateReaderExt};
+use starcoin_vm_types::{
+    account_config::{self, association_address, FrozenConfigBurnBlockNumberResource},
+    on_chain_config::Version,
+    state_view::StateReaderExt,
+    transaction::SignedUserTransaction
+};
 use test_helper::executor::get_balance;
 
 #[stest::test]
@@ -102,9 +104,6 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
     }
 
     let _forked_txn_num = txns_num;
-
-    // fork a new chain, to apply block number 2
-    let mut _chain_to_apply = miner.fork(miner.current_header().id()).unwrap();
 
     // create block number 2, then apply it to miner
     //let _block_num_2 = {
@@ -203,7 +202,7 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
             )?],
         )?;
 
-        // Block 53
+        // Block nubmer: 53, generate empty block
         let _block6 = gen_empty_block_for_miner(&mut miner);
 
         // Block number: 54, Execute Succeed
@@ -226,72 +225,8 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
             0,
             "Burning Failed, Balance of black-2 account is not 0"
         );
-
-        // 1 meta + 2 txns = 3 txns
-        // txns_num += 2;
-        // let leaves_num = miner.get_txn_accumulator().num_leaves();
-        // assert_eq!(leaves_num, txns_num);
-
-        // let black1_balance = get_balance(black1, miner.chain_state());
-        // println!("Black 1 balance is: {:?}", black1_balance);
-        // assert_eq!(
-        //     black1_balance, 0,
-        //     "Burning Failed, Balance of black-1 account is not 0"
-        // );
-        //
-        // let black2_balance = get_balance(black2, miner.chain_state());
-        // println!("Black 2 balance is: {:?}", black2_balance);
-        // assert_eq!(
-        //     black2_balance, 0,
-        //     "Burning Failed, Balance of black-2 account is not 0"
-        // );
-        // block3
     };
 
-    // apply block number 2,3 to another chain
-    // {
-    //     // !!!non-zero balance
-    //     assert_ne!(get_balance(black1, chain_to_apply.chain_state()), 0);
-    //     assert_ne!(get_balance(black2, chain_to_apply.chain_state()), 0);
-    //     assert_ne!(get_balance(rand3, chain_to_apply.chain_state()), 0);
-    //
-    //     chain_to_apply.apply(block_num_2)?;
-    //
-    //     // 1 meta + 1 extra = 2 txns
-    //     let txns_num = forked_txn_num + 2;
-    //     assert_eq!(chain_to_apply.get_txn_accumulator().num_leaves(), txns_num);
-    //
-    //     assert_eq!(
-    //         get_balance(black1, chain_to_apply.chain_state()),
-    //         initial_balance + 1
-    //     );
-    //     assert_eq!(
-    //         get_balance(black2, chain_to_apply.chain_state()),
-    //         initial_balance + 2
-    //     );
-    //     assert_eq!(
-    //         get_balance(rand3, chain_to_apply.chain_state()),
-    //         initial_balance + 3
-    //     );
-    //
-    //     chain_to_apply.apply(block_num_3)?;
-    //
-    //     // 1 meta + 2 txns = 3 txns
-    //     let txns_num = txns_num + 3;
-    //     let leaves_num = miner.get_txn_accumulator().num_leaves();
-    //     assert_eq!(leaves_num, txns_num);
-    //
-    //     assert_eq!(get_balance(black1, chain_to_apply.chain_state()), 0);
-    //     assert_eq!(get_balance(black2, chain_to_apply.chain_state()), 0);
-    //     assert_eq!(
-    //         get_balance(rand3, chain_to_apply.chain_state()),
-    //         initial_balance + 3
-    //     );
-    // }
-    //
-    // // Check on chain config for v12
-    // let upgraded_version = get_stdlib_version(chain_to_apply.chain_state())?;
-    // assert_eq!(upgraded_version, 12);
 
     Ok(())
 }
