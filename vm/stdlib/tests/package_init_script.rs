@@ -1,5 +1,8 @@
 use anyhow::{format_err, Result};
-use starcoin_vm_types::transaction::Package;
+use starcoin_vm_types::account_config::core_code_address;
+use starcoin_vm_types::identifier::Identifier;
+use starcoin_vm_types::language_storage::ModuleId;
+use starcoin_vm_types::transaction::{Package, ScriptFunction};
 use stdlib::COMPILED_MOVE_CODE_DIR;
 
 #[test]
@@ -52,6 +55,29 @@ fn test_package_init_function() -> Result<()> {
             "".to_owned()
         };
         assert_eq!(init_fun, init_strs[i]);
+        let package = COMPILED_MOVE_CODE_DIR
+            .get_file("12/11-12/stdlib.blob")
+            .map(|file| {
+                bcs_ext::from_bytes::<Package>(file.contents())
+                    .expect("Decode package should success")
+            })
+            .ok_or_else(|| format_err!("Can not find upgrade package 12/11-12/stdlib.blob"))?;
+        let init_script = ScriptFunction::new(
+            ModuleId::new(
+                core_code_address(),
+                Identifier::new("StdlibUpgradeScripts").unwrap(),
+            ),
+            Identifier::new("upgrade_from_v11_to_v12").unwrap(),
+            vec![],
+            vec![
+                bcs_ext::to_bytes(&0u64).unwrap(), // TODO(BobOng): [force-upgrade] to confirm main burn block
+                bcs_ext::to_bytes(&16090000u64).unwrap(),
+                bcs_ext::to_bytes(&5u64).unwrap(),
+                bcs_ext::to_bytes(&1000u64).unwrap(),
+            ],
+        );
+
+        assert_eq!(package.init_script().unwrap(), &init_script);
     }
     Ok(())
 }

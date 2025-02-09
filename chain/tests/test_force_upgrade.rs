@@ -21,7 +21,7 @@ use starcoin_vm_types::{
     account_config::{self, association_address, FrozenConfigBurnBlockNumberResource},
     on_chain_config::Version,
     state_view::StateReaderExt,
-    transaction::SignedUserTransaction
+    transaction::SignedUserTransaction,
 };
 use test_helper::executor::get_balance;
 
@@ -226,7 +226,6 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
             "Burning Failed, Balance of black-2 account is not 0"
         );
     };
-
 
     Ok(())
 }

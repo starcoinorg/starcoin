@@ -37,6 +37,7 @@ impl ForceUpgrade {
             })
             .ok_or_else(|| format_err!("Can not find upgrade package {}", package_file))?;
 
+        /* test in test_package_init_function
         let init_script = ScriptFunction::new(
             ModuleId::new(
                 core_code_address(),
@@ -53,6 +54,7 @@ impl ForceUpgrade {
         );
 
         assert_eq!(package.init_script().unwrap(), &init_script);
+         */
 
         Ok(account.sign_txn(RawUserTransaction::new(
             *account.address(),
