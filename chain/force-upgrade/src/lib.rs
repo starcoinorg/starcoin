@@ -3,14 +3,10 @@
 
 use anyhow::format_err;
 use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
-use starcoin_types::identifier::Identifier;
-use starcoin_types::language_storage::ModuleId;
 use starcoin_types::{
     account::{Account, DEFAULT_MAX_GAS_AMOUNT},
     transaction::SignedUserTransaction,
 };
-use starcoin_vm_types::account_config::core_code_address;
-use starcoin_vm_types::transaction::ScriptFunction;
 use starcoin_vm_types::{
     account_config::STC_TOKEN_CODE_STR,
     genesis_config::ChainId,
