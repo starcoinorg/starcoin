@@ -15,20 +15,13 @@ use starcoin_transaction_builder::{
     frozen_config_update_burn_block_number_by_association, DEFAULT_EXPIRATION_TIME,
 };
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::account_config::CORE_CODE_ADDRESS;
 use starcoin_types::block::Block;
-use starcoin_types::identifier::Identifier;
-use starcoin_types::language_storage::StructTag;
 use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
-use starcoin_vm_types::access_path::AccessPath;
-use starcoin_vm_types::account_config::{
-    association_address, genesis_address, FrozenConfigBurnBlockNumberResource,
-};
+use starcoin_vm_types::account_config::{association_address, FrozenConfigBurnBlockNumberResource};
 use starcoin_vm_types::on_chain_config::Version;
-use starcoin_vm_types::on_chain_resource::Treasury;
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use starcoin_vm_types::{account_config, state_view::StateReaderExt};
-use test_helper::executor::{execute_and_apply, get_balance};
+use test_helper::executor::get_balance;
 
 #[stest::test]
 pub fn test_force_upgrade_1() -> anyhow::Result<()> {
@@ -40,7 +33,6 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
     let initial_blocks = force_upgrade_height - 2;
 
     let mut miner = test_helper::gen_blockchain_with_blocks_for_test(initial_blocks, net)?;
-    let block_gas_limit = 10000000;
     let initial_balance = 1000000000000;
     let account_reader = miner.chain_state_reader();
     let association_sequence_num =
@@ -109,13 +101,14 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
         assert_eq!(get_balance(rand3, miner.chain_state()), initial_balance + 3);
     }
 
-    let forked_txn_num = txns_num;
+    let _forked_txn_num = txns_num;
 
     // fork a new chain, to apply block number 2
-    let mut chain_to_apply = miner.fork(miner.current_header().id()).unwrap();
+    let mut _chain_to_apply = miner.fork(miner.current_header().id()).unwrap();
 
     // create block number 2, then apply it to miner
-    let block_num_2 = {
+    //let _block_num_2 = {
+    {
         let block2 = execute_transactions_by_miner(&mut miner, vec![])?;
 
         // 1 meta + 1 extra = 2 txns
@@ -156,8 +149,9 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
     }
 
     // Apply block number 3, this will call FrozenConfigStrategy::do_burn_frozen
-    let block_num_3 = {
-        let block3 = gen_empty_block_for_miner(&mut miner)?;
+    // let _block_num_3 = {
+    {
+        let _block3 = gen_empty_block_for_miner(&mut miner)?;
         info!(
             "After gen_empty_block_for_miner, current block_number {:?}",
             miner.status().head().number()
