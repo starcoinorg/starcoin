@@ -926,33 +926,58 @@ pub fn build_signed_empty_txn(
 //
 // # Returns
 // - A `SignedUserTransaction` that is signed by the `signer` with the specified transaction details.
-pub fn build_burn_illegal_stc_txn_with_association(
-    recipient: &AccountAddress,
+pub fn frozen_config_do_burn_frozen_raw_txn(seq_num: u64, chain_id: ChainId) -> RawUserTransaction {
+    RawUserTransaction::new_with_default_gas_token(
+        association_address(),
+        seq_num,
+        TransactionPayload::ScriptFunction(ScriptFunction::new(
+            ModuleId::new(
+                core_code_address(),
+                Identifier::new("FrozenConfigStrategy").unwrap(),
+            ),
+            Identifier::new("do_burn_frozen").unwrap(),
+            vec![],
+            vec![],
+        )),
+        10000000,
+        1,
+        1000 + 60 * 60,
+        chain_id,
+    )
+}
+
+pub fn frozen_config_update_burn_block_number_by_association(
     seq_num: u64,
-    amount: u128,
     net: &ChainNetwork,
-) -> SignedUserTransaction {
+    burn_block_number: u64,
+) -> Result<SignedUserTransaction> {
     let raw_txn = RawUserTransaction::new_with_default_gas_token(
         association_address(),
         seq_num,
         TransactionPayload::ScriptFunction(ScriptFunction::new(
             ModuleId::new(
                 core_code_address(),
-                Identifier::new("StdlibUpgradeScripts").unwrap(),
+                Identifier::new("FrozenConfigStrategy")?,
             ),
-            Identifier::new("burn_illegal_token_from_frozen_address").unwrap(),
+            Identifier::new("update_burn_block_number")?,
             vec![],
-            vec![
-                bcs_ext::to_bytes(&recipient).unwrap(),
-                bcs_ext::to_bytes(&amount).unwrap(),
-            ],
+            vec![bcs_ext::to_bytes(&burn_block_number)?],
         )),
         10000000,
         1,
         1000 + 60 * 60,
         net.chain_id(),
     );
+    net.genesis_config().sign_with_association(raw_txn)
+}
+
+pub fn frozen_config_do_burn_frozen_from_association(
+    seq_num: u64,
+    net: &ChainNetwork,
+) -> Result<SignedUserTransaction> {
     net.genesis_config()
-        .sign_with_association(raw_txn)
-        .expect("Sign with association failed")
+        .sign_with_association(frozen_config_do_burn_frozen_raw_txn(
+            seq_num,
+            net.chain_id(),
+        ))
 }

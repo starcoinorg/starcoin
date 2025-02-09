@@ -44,7 +44,12 @@ impl ForceUpgrade {
             ),
             Identifier::new("upgrade_from_v11_to_v12").unwrap(),
             vec![],
-            vec![],
+            vec![
+                bcs_ext::to_bytes(&0u64).unwrap(), // TODO(BobOng): [force-upgrade] to confirm main burn block
+                bcs_ext::to_bytes(&16090000u64).unwrap(),
+                bcs_ext::to_bytes(&5u64).unwrap(),
+                bcs_ext::to_bytes(&1000u64).unwrap(),
+            ],
         );
 
         assert_eq!(package.init_script().unwrap(), &init_script);
