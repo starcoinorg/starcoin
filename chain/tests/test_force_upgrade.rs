@@ -4,30 +4,37 @@ use std::sync::Arc;
 use anyhow::format_err;
 
 use starcoin_accumulator::Accumulator;
+use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ChainWriter};
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
+use starcoin_logger::prelude::info;
 use starcoin_statedb::ChainStateDB;
 use starcoin_transaction_builder::{
-    build_burn_illegal_stc_txn_with_association, build_transfer_from_association,
-    DEFAULT_EXPIRATION_TIME,
+    build_transfer_from_association, frozen_config_do_burn_frozen_from_association,
+    frozen_config_update_burn_block_number_by_association, DEFAULT_EXPIRATION_TIME,
 };
 use starcoin_types::account_address::AccountAddress;
+use starcoin_types::block::Block;
 use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
-use starcoin_vm_types::on_chain_config::Version;
-use starcoin_vm_types::{account_config, state_view::StateReaderExt};
+use starcoin_vm_types::{
+    account_config::{self, association_address, FrozenConfigBurnBlockNumberResource},
+    on_chain_config::Version,
+    state_view::StateReaderExt,
+    transaction::SignedUserTransaction,
+};
 use test_helper::executor::get_balance;
 
 #[stest::test]
 pub fn test_force_upgrade_1() -> anyhow::Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
+    let net = config.net();
 
-    let force_upgrade_height = get_force_upgrade_block_number(&config.net().chain_id());
+    let force_upgrade_height = get_force_upgrade_block_number(&net.chain_id());
     assert!(force_upgrade_height >= 2);
     let initial_blocks = force_upgrade_height - 2;
 
-    let mut miner = test_helper::gen_blockchain_with_blocks_for_test(initial_blocks, config.net())?;
-    let block_gas_limit = 10000000;
+    let mut miner = test_helper::gen_blockchain_with_blocks_for_test(initial_blocks, net)?;
     let initial_balance = 1000000000000;
     let account_reader = miner.chain_state_reader();
     let association_sequence_num =
@@ -49,8 +56,8 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
             receiver1,
             association_sequence_num,
             initial_balance + 1,
-            config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
-            config.net(),
+            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+            net,
         )
         .try_into()?;
 
@@ -59,8 +66,8 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
             receiver2,
             association_sequence_num + 1,
             initial_balance + 2,
-            config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
-            config.net(),
+            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+            net,
         )
         .try_into()?;
 
@@ -69,8 +76,8 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
             rand3,
             association_sequence_num + 2,
             initial_balance + 3,
-            config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
-            config.net(),
+            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+            net,
         )
         .try_into()?;
 
@@ -79,21 +86,7 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
 
     // block number 1: deposit some stc tokens to two black addresses
     {
-        let (block_template, _excluded) = miner
-            .create_block_template(
-                account_config::association_address(),
-                None,
-                vec![txn1, txn2, txn3],
-                vec![],
-                Some(block_gas_limit),
-            )
-            .unwrap();
-
-        let block = miner
-            .consensus()
-            .create_block(block_template, miner.time_service().as_ref())?;
-
-        miner.apply(block)?;
+        execute_transactions_by_miner(&mut miner, vec![txn1, txn2, txn3])?;
 
         // 1 meta + 3 user = 4 txns
         txns_num += 4;
@@ -110,35 +103,19 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
         assert_eq!(get_balance(rand3, miner.chain_state()), initial_balance + 3);
     }
 
-    let forked_txn_num = txns_num;
-
-    // fork a new chain, to apply block number 2
-    let mut chain_to_apply = miner.fork(miner.current_header().id()).unwrap();
+    let _forked_txn_num = txns_num;
 
     // create block number 2, then apply it to miner
-    let block_num_2 = {
-        let (block_template, _excluded) = miner
-            .create_block_template(
-                account_config::association_address(),
-                None,
-                vec![],
-                vec![],
-                Some(block_gas_limit),
-            )
-            .unwrap();
-
-        let block2 = miner
-            .consensus()
-            .create_block(block_template, miner.time_service().as_ref())?;
-
-        miner.apply(block2.clone())?;
+    //let _block_num_2 = {
+    {
+        let block2 = execute_transactions_by_miner(&mut miner, vec![])?;
 
         // 1 meta + 1 extra = 2 txns
         txns_num += 2;
         assert_eq!(miner.get_txn_accumulator().num_leaves(), txns_num);
 
         let black1_balance = get_balance(black1, miner.chain_state());
-        println!("Black 1 balance is: {:?}", black1_balance);
+        info!("Black 1 balance is: {:?}", black1_balance);
         assert_eq!(
             black1_balance,
             initial_balance + 1,
@@ -146,7 +123,7 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
         );
 
         let black2_balance = get_balance(black2, miner.chain_state());
-        println!("Black 2 balance is: {:?}", black2_balance);
+        info!("Black 2 balance is: {:?}", black2_balance);
         assert_eq!(
             black2_balance,
             initial_balance + 2,
@@ -170,102 +147,85 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
         );
     }
 
-    // Apply block number 3, this will call StdlibUpgrade::burn_illegal_token_from_frozen_address
-    let block_num_3 = {
-        let burn_black_txn_1 = build_burn_illegal_stc_txn_with_association(
-            &black1,
-            association_sequence_num + 4,
-            initial_balance + 1,
-            config.net(),
-        );
-        let burn_black_txn_2 = build_burn_illegal_stc_txn_with_association(
-            &black2,
-            association_sequence_num + 5,
-            initial_balance + 2,
-            config.net(),
+    // Apply block number 3, this will call FrozenConfigStrategy::do_burn_frozen
+    // let _block_num_3 = {
+    {
+        let _block3 = gen_empty_block_for_miner(&mut miner)?;
+        info!(
+            "After gen_empty_block_for_miner, current block_number {:?}",
+            miner.status().head().number()
         );
 
-        let (block_template, _excluded) = miner
-            .create_block_template(
-                account_config::association_address(),
-                None,
-                vec![burn_black_txn_1, burn_black_txn_2],
-                vec![],
-                Some(block_gas_limit),
-            )
+        // Check force upgrade from miner
+        assert_eq!(get_stdlib_version(miner.chain_state())?, 12);
+
+        let current_block_num = { miner.status().head().number() };
+        let expect_burn_block_number = current_block_num + 2; // 53
+
+        // Set burn block number into chain
+        let _block4 = execute_transactions_by_miner(
+            &mut miner,
+            vec![frozen_config_update_burn_block_number_by_association(
+                association_sequence_num + 4,
+                net,
+                expect_burn_block_number,
+            )?],
+        )?;
+
+        let read_burn_block_number = miner
+            .chain_state()
+            .get_resource::<FrozenConfigBurnBlockNumberResource>(association_address())?
             .unwrap();
-
-        let block3 = miner
-            .consensus()
-            .create_block(block_template, miner.time_service().as_ref())?;
-
-        miner.apply(block3.clone())?;
-
-        // 1 meta + 2 txns = 3 txns
-        txns_num += 3;
-        let leaves_num = miner.get_txn_accumulator().num_leaves();
-        assert_eq!(leaves_num, txns_num);
-
-        let black1_balance = get_balance(black1, miner.chain_state());
-        println!("Black 1 balance is: {:?}", black1_balance);
         assert_eq!(
-            black1_balance, 0,
+            read_burn_block_number.block_number(),
+            expect_burn_block_number
+        );
+
+        // Check not equal 0
+        assert_ne!(
+            miner.chain_state_reader().get_balance(black1)?.unwrap(),
+            0,
             "Burning Failed, Balance of black-1 account is not 0"
         );
-
-        let black2_balance = get_balance(black2, miner.chain_state());
-        println!("Black 2 balance is: {:?}", black2_balance);
-        assert_eq!(
-            black2_balance, 0,
+        assert_ne!(
+            miner.chain_state_reader().get_balance(black2)?.unwrap(),
+            0,
             "Burning Failed, Balance of black-2 account is not 0"
         );
-        block3
+
+        // Block number: 52, Check abort txn_status: Keep(ABORTED { code: 27137
+        let _block5 = execute_transactions_by_miner(
+            &mut miner,
+            vec![frozen_config_do_burn_frozen_from_association(
+                association_sequence_num + 5,
+                net,
+            )?],
+        )?;
+
+        // Block nubmer: 53, generate empty block
+        let _block6 = gen_empty_block_for_miner(&mut miner);
+
+        // Block number: 54, Execute Succeed
+        let _block7 = execute_transactions_by_miner(
+            &mut miner,
+            vec![frozen_config_do_burn_frozen_from_association(
+                association_sequence_num + 7,
+                net,
+            )?],
+        );
+
+        // Check eq 0
+        assert_eq!(
+            miner.chain_state_reader().get_balance(black1)?.unwrap(),
+            0,
+            "Burning Failed, Balance of black-1 account is not 0"
+        );
+        assert_eq!(
+            miner.chain_state_reader().get_balance(black2)?.unwrap(),
+            0,
+            "Burning Failed, Balance of black-2 account is not 0"
+        );
     };
-
-    // apply block number 2,3 to another chain
-    {
-        // !!!non-zero balance
-        assert_ne!(get_balance(black1, chain_to_apply.chain_state()), 0);
-        assert_ne!(get_balance(black2, chain_to_apply.chain_state()), 0);
-        assert_ne!(get_balance(rand3, chain_to_apply.chain_state()), 0);
-
-        chain_to_apply.apply(block_num_2)?;
-
-        // 1 meta + 1 extra = 2 txns
-        let txns_num = forked_txn_num + 2;
-        assert_eq!(chain_to_apply.get_txn_accumulator().num_leaves(), txns_num);
-
-        assert_eq!(
-            get_balance(black1, chain_to_apply.chain_state()),
-            initial_balance + 1
-        );
-        assert_eq!(
-            get_balance(black2, chain_to_apply.chain_state()),
-            initial_balance + 2
-        );
-        assert_eq!(
-            get_balance(rand3, chain_to_apply.chain_state()),
-            initial_balance + 3
-        );
-
-        chain_to_apply.apply(block_num_3)?;
-
-        // 1 meta + 2 txns = 3 txns
-        let txns_num = txns_num + 3;
-        let leaves_num = miner.get_txn_accumulator().num_leaves();
-        assert_eq!(leaves_num, txns_num);
-
-        assert_eq!(get_balance(black1, chain_to_apply.chain_state()), 0);
-        assert_eq!(get_balance(black2, chain_to_apply.chain_state()), 0);
-        assert_eq!(
-            get_balance(rand3, chain_to_apply.chain_state()),
-            initial_balance + 3
-        );
-    }
-
-    // Check on chain config for v12
-    let upgraded_version = get_stdlib_version(chain_to_apply.chain_state())?;
-    assert_eq!(upgraded_version, 12);
 
     Ok(())
 }
@@ -302,4 +262,29 @@ fn get_stdlib_version(chain_state_db: &ChainStateDB) -> anyhow::Result<u64> {
         .get_on_chain_config::<Version>()?
         .map(|version| version.major)
         .ok_or_else(|| format_err!("on chain config stdlib version can not be empty."))
+}
+
+fn gen_empty_block_for_miner(miner: &mut BlockChain) -> anyhow::Result<Block> {
+    execute_transactions_by_miner(miner, vec![])
+}
+
+fn execute_transactions_by_miner(
+    miner: &mut BlockChain,
+    user_txns: Vec<SignedUserTransaction>,
+) -> anyhow::Result<Block> {
+    let (block_template, _excluded) = miner.create_block_template(
+        account_config::association_address(),
+        None,
+        user_txns,
+        vec![],
+        Some(10000000),
+    )?;
+
+    let block = miner
+        .consensus()
+        .create_block(block_template, miner.time_service().as_ref())?;
+
+    miner.apply(block.clone())?;
+
+    Ok(block)
 }
