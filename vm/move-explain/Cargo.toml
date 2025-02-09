@@ -16,5 +16,5 @@ license = { workspace = true }
 name = "starcoin-move-explain"
 publish = { workspace = true }
 repository = { workspace = true }
-version = "1.13.11"
+version = "1.13.12-alpha"
 rust-version = { workspace = true }

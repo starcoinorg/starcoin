@@ -19,6 +19,6 @@ edition = { workspace = true }
 homepage = { workspace = true }
 license = { workspace = true }
 repository = { workspace = true }
-version = "1.13.11"
+version = "1.13.12-alpha"
 publish = { workspace = true }
 rust-version = { workspace = true }

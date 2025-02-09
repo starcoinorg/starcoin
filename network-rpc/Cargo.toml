@@ -53,7 +53,7 @@ edition = { workspace = true }
 license = { workspace = true }
 name = "starcoin-network-rpc"
 publish = { workspace = true }
-version = "1.13.11"
+version = "1.13.12-alpha"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }
