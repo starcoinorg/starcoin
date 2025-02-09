@@ -11,7 +11,9 @@ use starcoin_crypto::ValidCryptoMaterialStringExt;
 use starcoin_rpc_client::StateRootOption;
 use starcoin_state_api::{ChainStateReader, StateReaderExt};
 use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::account_config::BalanceResource;
+use starcoin_vm_types::account_config::{
+    BalanceResource, G_LEGACY_STC_TOKEN_CODE, G_STC_TOKEN_CODE,
+};
 use starcoin_vm_types::token::token_code::TokenCode;
 use std::collections::HashMap;
 
@@ -79,7 +81,11 @@ impl CommandAction for ShowCommand {
                         .decode::<BalanceResource>()
                         .ok()
                         .map(|balance| balance.token());
-                    Some((token_code, balance.unwrap_or(0)))
+                    if token_code == *G_STC_TOKEN_CODE {
+                        Some((G_LEGACY_STC_TOKEN_CODE.clone(), balance.unwrap_or(0)))
+                    } else {
+                        Some((token_code, balance.unwrap_or(0)))
+                    }
                 } else {
                     None
                 }
