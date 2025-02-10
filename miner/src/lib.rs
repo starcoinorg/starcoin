@@ -6,7 +6,6 @@ use crate::task::MintTask;
 use anyhow::Result;
 use futures::executor::block_on;
 use starcoin_config::NodeConfig;
-use starcoin_consensus::Consensus;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRef,
@@ -27,7 +26,7 @@ pub use starcoin_types::block::BlockHeaderExtra;
 pub use starcoin_types::system_events::{GenerateBlockEvent, MinedBlock, MintBlockEvent};
 use std::fmt;
 use thiserror::Error;
-
+const DEFAULT_TASK_POOL_SIZE: usize = 16;
 #[derive(Debug, Error)]
 pub enum MinerError {
     #[error("Mint task is empty Error")]
@@ -47,7 +46,7 @@ impl ServiceRequest for UpdateSubscriberNumRequest {
 
 pub struct MinerService {
     config: Arc<NodeConfig>,
-    current_task: Option<MintTask>,
+    task_pool: Vec<MintTask>,
     create_block_template_service: ServiceRef<BlockBuilderService>,
     client_subscribers_num: u32,
     metrics: Option<MinerMetrics>,
@@ -95,7 +94,7 @@ impl ServiceHandler<Self, UpdateSubscriberNumRequest> for MinerService {
         if let Some(num) = req.number {
             self.client_subscribers_num = num;
         }
-        self.current_task.as_ref().map(|task| MintBlockEvent {
+        self.task_pool.last().map(|task| MintBlockEvent {
             parent_hash: task.block_template.parent_hash,
             strategy: task.block_template.strategy,
             minting_blob: task.minting_blob.clone(),
@@ -116,7 +115,7 @@ impl ServiceFactory<Self> for MinerService {
             .and_then(|registry| MinerMetrics::register(registry).ok());
         Ok(Self {
             config,
-            current_task: None,
+            task_pool: Vec::new(),
             create_block_template_service,
             client_subscribers_num: 0,
             metrics,
@@ -204,13 +203,9 @@ impl MinerService {
         let parent_hash = block_template.parent_hash;
         let task = MintTask::new(block_template, self.metrics.clone());
         let mining_blob = task.minting_blob.clone();
-        if let Some(current_task) = self.current_task.as_ref() {
-            debug!(
-                "force set mint task, current_task: {:?}, new_task: {:?}",
-                current_task, task
-            );
-        }
-        self.current_task = Some(task);
+        self.task_pool.retain(|t| t.minting_blob != mining_blob);
+        self.manage_task_pool();
+        self.task_pool.push(task);
         ctx.broadcast(MintBlockEvent::new(
             parent_hash,
             strategy,
@@ -229,43 +224,48 @@ impl MinerService {
         minting_blob: Vec<u8>,
         ctx: &mut ServiceContext<Self>,
     ) -> Result<HashValue> {
-        match self.current_task.as_ref() {
-            Some(task) => {
-                if task.minting_blob != minting_blob {
-                    return Err(MinerError::TaskMisMatchError {
-                        current: hex::encode(&task.minting_blob),
-                        real: hex::encode(minting_blob),
-                    }
-                    .into());
-                };
-                task.block_template.strategy.verify_blob(
-                    task.minting_blob.clone(),
-                    nonce,
-                    extra,
-                    task.block_template.difficulty,
-                )?
-            }
-            None => {
-                return Err(MinerError::TaskEmptyError.into());
-            }
+        if self.task_pool.is_empty() {
+            return Err(MinerError::TaskEmptyError.into());
         }
+        if let Some(index) = self
+            .task_pool
+            .iter()
+            .position(|t| t.minting_blob == minting_blob)
+        {
+            let task = self.task_pool.remove(index);
 
-        if let Some(task) = self.current_task.take() {
             let block = task.finish(nonce, extra);
             let block_hash: HashValue = block.id();
-            info!(target: "miner", "Mint new block: {}", block);
+            info!(target: "miner", "Minted new block: {}", block);
             ctx.broadcast(MinedBlock(Arc::new(block)));
             if let Some(metrics) = self.metrics.as_ref() {
                 metrics.block_mint_count.inc();
             }
+
             Ok(block_hash)
         } else {
-            Err(MinerError::TaskEmptyError.into())
+            // TODO:: Refactor TaskMisMatchError,remove current @sanlee
+            Err(MinerError::TaskMisMatchError {
+                current: "None".to_string(),
+                real: hex::encode(&minting_blob),
+            }
+            .into())
         }
     }
 
     pub fn is_minting(&self) -> bool {
-        self.current_task.is_some()
+        !self.task_pool.is_empty()
+    }
+    fn manage_task_pool(&mut self) {
+        if self.task_pool.len() > DEFAULT_TASK_POOL_SIZE {
+            self.task_pool.remove(0);
+        }
+    }
+    pub fn task_pool_len(&self) -> usize {
+        self.task_pool.len()
+    }
+    pub fn get_task_pool(&self) -> &Vec<MintTask> {
+        &self.task_pool
     }
 }
 
