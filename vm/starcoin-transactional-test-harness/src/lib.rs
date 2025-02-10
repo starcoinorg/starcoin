@@ -54,6 +54,7 @@ use starcoin_types::{
     account_config::{genesis_address, AccountResource},
     transaction::RawUserTransaction,
 };
+use starcoin_vm_runtime::data_cache::AsMoveResolver;
 use starcoin_vm_runtime::session::SerializedReturnValues;
 use starcoin_vm_runtime::{data_cache::StorageAdapter, starcoin_vm::StarcoinVM};
 use starcoin_vm_types::account_config::{
@@ -706,7 +707,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             None,
         )?;
 
-        let move_resolver = StorageAdapter::new(&self.context.storage);
+        let move_resolver = self.context.storage.as_move_resolver();
         let annotator = move_resource_viewer::MoveValueAnnotator::new(move_resolver);
         let rets = rets
             .into_iter()
@@ -1371,7 +1372,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
         resource: &IdentStr,
         type_args: Vec<TypeTag>,
     ) -> anyhow::Result<String> {
-        let s = StorageAdapter::new(&self.context.storage);
+        let s = self.context.storage.as_move_resolver();
         view_resource_in_move_storage(s, address, module, resource, type_args)
     }
 

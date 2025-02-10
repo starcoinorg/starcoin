@@ -12,7 +12,7 @@ use starcoin_config::ChainNetwork;
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::HashValue;
 use starcoin_gas_meter::{StarcoinGasMeter, StarcoinGasParameters};
-use starcoin_vm_runtime::data_cache::{AsMoveResolver, StorageAdapter};
+use starcoin_vm_runtime::data_cache::AsMoveResolver;
 use starcoin_vm_runtime::move_vm_ext::{MoveVmExt, SessionId};
 use starcoin_vm_runtime::parallel_executor::ParallelStarcoinVM;
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
@@ -535,7 +535,7 @@ impl FakeExecutor {
                 &resolver,
             )
             .unwrap();
-            let remote_view = StorageAdapter::new(&self.data_store);
+            let remote_view = self.data_store.as_move_resolver();
 
             let balance = gas_params.vm.txn.maximum_number_of_gas_units.clone();
             let mut gas_meter = StarcoinGasMeter::new(gas_params, balance);
@@ -608,7 +608,7 @@ impl FakeExecutor {
             &resolver,
         )
         .unwrap();
-        let remote_view = StorageAdapter::new(&self.data_store);
+        let remote_view = self.data_store.as_move_resolver();
 
         let balance = gas_params.vm.txn.maximum_number_of_gas_units.clone();
         let mut gas_meter = StarcoinGasMeter::new(gas_params, balance);
