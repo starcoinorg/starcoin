@@ -457,6 +457,7 @@ where
                 pruning_depth,
                 pruning_finality,
                 self.config.miner.maximum_parents_count(),
+                self.chain_service.get_main().get_genesis_hash(),
             )?
         } else {
             let genesis = ctx.get_shared::<Genesis>()?;
