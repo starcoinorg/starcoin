@@ -73,16 +73,7 @@ pub trait StateReaderExt: StateView {
     where
         R: MoveResource,
     {
-        let rsrc_bytes = self
-            .get_state_value_bytes(&StateKey::resource_typed::<R>(&address)?)?
-            .ok_or_else(|| {
-                format_err!(
-                    "Resource {:?} {:?} not exists at address:{}",
-                    R::module_identifier(),
-                    R::struct_identifier(),
-                    address
-                )
-            })?;
+        let rsrc_bytes = self.get_resource_type_bytes::<R>(address)?;
         let rsrc = bcs_ext::from_bytes::<R>(&rsrc_bytes)?;
         Ok(rsrc)
     }
