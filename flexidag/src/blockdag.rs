@@ -678,6 +678,7 @@ impl BlockDAG {
         pruning_depth: u64,
         pruning_finality: u64,
         max_parents_count: u64,
+        genesis_id: HashValue,
     ) -> anyhow::Result<MineNewDagBlockInfo> {
         let mut dag_state = self.get_dag_state(previous_pruning_point)?;
 
@@ -727,18 +728,13 @@ impl BlockDAG {
             pruning_finality,
         )?;
 
-        let (mut tips, mut ghostdata, pruning_point) = if next_pruning_point == Hash::zero()
+        let (mut tips, mut ghostdata, mut pruning_point) = if next_pruning_point == Hash::zero()
             || next_pruning_point == previous_pruning_point
         {
             info!(
                 "tips: {:?}, the next pruning point is: {:?}, the current ghostdata's selected parent: {:?}, blue blocks are: {:?} and its red blocks are: {:?}",
                 dag_state.tips, next_pruning_point, next_ghostdata.selected_parent, next_ghostdata.mergeset_blues, next_ghostdata.mergeset_reds.len(),
             );
-            // anyhow::Ok(MineNewDagBlockInfo {
-            //     tips: dag_state.tips,
-            //     blue_blocks: (*next_ghostdata.mergeset_blues).clone(),
-            //     pruning_point: next_pruning_point,
-            // })
             (dag_state.tips, next_ghostdata, next_pruning_point)
         } else {
             let pruned_tips = self.pruning_point_manager().prune(
@@ -747,19 +743,16 @@ impl BlockDAG {
                 next_pruning_point,
             )?;
             let pruned_ghostdata = self.ghost_dag_manager().ghostdag(&pruned_tips)?;
-            // let mergeset_blues = pruned_ghostdata.mergeset_blues.as_ref().clone();
             info!(
                 "the pruning was triggered, before pruning, the tips: {:?}, after pruning tips: {:?}, the next pruning point is: {:?}, the current ghostdata's selected parent: {:?}, blue blocks are: {:?} and its red blocks are: {:?}",
                 pruned_tips, dag_state.tips, next_pruning_point, pruned_ghostdata.selected_parent, pruned_ghostdata.mergeset_blues, pruned_ghostdata.mergeset_reds.len(),
             );
-            // anyhow::Ok(MineNewDagBlockInfo {
-            //     tips: pruned_tips,
-            //     blue_blocks: mergeset_blues,
-            //     pruning_point: next_pruning_point,
-            // })
             (pruned_tips, pruned_ghostdata, next_pruning_point)
         };
 
+        if pruning_point == Hash::zero() {
+            pruning_point = genesis_id;
+        }
         info!("try to remove the red blocks when mining, tips: {:?} and ghostdata: {:?}, pruning point: {:?}", tips, ghostdata, pruning_point);
         (tips, ghostdata) =
             self.remove_bounded_merge_breaking_parents(tips, ghostdata, pruning_point)?;
@@ -855,6 +848,9 @@ impl BlockDAG {
         mut ghostdata: GhostdagData,
         pruning_point: Hash,
     ) -> anyhow::Result<(Vec<Hash>, GhostdagData)> {
+        if pruning_point == Hash::zero() {
+            return anyhow::Ok((parents, ghostdata));
+        }
         let merge_depth_root = self
             .block_depth_manager
             .calc_merge_depth_root(&ghostdata, pruning_point)
@@ -970,7 +966,7 @@ impl BlockDAG {
                 header.id()
             );
             self.ghost_dag_manager()
-                .verify_and_ghostdata(blue_blocks, header)
+                .build_ghostdata(blue_blocks, header)
         } else {
             info!(
                 "the block is not a historical block, the header id: {:?}",

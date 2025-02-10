@@ -171,7 +171,7 @@ impl<
         Ok(new_block_data)
     }
 
-    pub(crate) fn verify_and_ghostdata(
+    pub(crate) fn build_ghostdata(
         &self,
         blue_blocks: &[BlockHeader],
         header: &BlockHeader,
