@@ -133,7 +133,7 @@ impl Registry {
 
     pub fn put_shared<T>(&mut self, t: T)
     where
-        T: Send + Sync + Clone + 'static,
+        T: Send + Sync  + 'static,
     {
         info!("Put shared by type: {}", type_name::<T>());
         self.shared.insert(TypeId::of::<T>(), Box::new(t));
@@ -141,7 +141,7 @@ impl Registry {
 
     pub fn remove_shared<T>(&mut self)
     where
-        T: Send + Sync + Clone + 'static,
+        T: Send + Sync  + 'static,
     {
         info!("Remove shared by type: {}", type_name::<T>());
         self.shared.remove(&TypeId::of::<T>());
@@ -490,14 +490,14 @@ where
 
 pub struct PutSharedRequest<T>
 where
-    T: Send + Sync + Clone + 'static,
+    T: Send + Sync + 'static,
 {
     value: T,
 }
 
 impl<T> Debug for PutSharedRequest<T>
 where
-    T: Send + Sync + Clone,
+    T: Send + Sync,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}<{}>", type_name::<Self>(), type_name::<T>())
@@ -506,7 +506,7 @@ where
 
 impl<T> PutSharedRequest<T>
 where
-    T: Send + Sync + Clone,
+    T: Send + Sync,
 {
     pub fn new(value: T) -> Self {
         Self { value }
@@ -515,14 +515,14 @@ where
 
 impl<T> ServiceRequest for PutSharedRequest<T>
 where
-    T: Send + Sync + Clone + 'static,
+    T: Send + Sync + 'static,
 {
     type Response = ();
 }
 
 impl<T> ServiceHandler<Self, PutSharedRequest<T>> for RegistryService
 where
-    T: Send + Sync + Clone + 'static,
+    T: Send + Sync + 'static,
 {
     fn handle(&mut self, msg: PutSharedRequest<T>, _ctx: &mut ServiceContext<Self>) {
         self.registry.put_shared(msg.value);
