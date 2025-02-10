@@ -117,6 +117,7 @@ pub trait ChainReader {
     fn is_dag_ancestor_of(&self, ancestor: HashValue, descendant: HashValue) -> Result<bool>;
     fn get_pruning_height(&self) -> BlockNumber;
     fn get_pruning_config(&self) -> (u64, u64);
+    fn get_genesis_hash(&self) -> HashValue;
 }
 
 pub trait ChainWriter {
