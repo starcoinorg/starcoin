@@ -1031,6 +1031,7 @@ fn test_prune() -> anyhow::Result<()> {
         pruning_depth,
         pruning_finality,
         G_MAX_PARENTS_COUNT,
+        genesis.id(),
     )?;
 
     assert_eq!(pruning_point, block_main_2.id());
@@ -1060,6 +1061,7 @@ fn test_prune() -> anyhow::Result<()> {
         pruning_depth,
         pruning_finality,
         G_MAX_PARENTS_COUNT,
+        genesis.id(),
     )?;
 
     assert_eq!(pruning_point, block_main_2.id());
@@ -1378,6 +1380,7 @@ fn test_merge_bounded() -> anyhow::Result<()> {
         pruning_depth,
         pruning_finality,
         G_MAX_PARENTS_COUNT,
+        genesis.id(),
     )?;
 
     assert_eq!(pruning_point, block_main_2.id());
@@ -1426,6 +1429,7 @@ fn test_merge_bounded() -> anyhow::Result<()> {
         pruning_depth,
         pruning_finality,
         G_MAX_PARENTS_COUNT,
+        genesis.id(),
     )?;
 
     assert_eq!(pruning_point, block_main_2.id());
@@ -1487,6 +1491,7 @@ fn test_merge_bounded() -> anyhow::Result<()> {
         pruning_depth,
         pruning_finality,
         G_MAX_PARENTS_COUNT,
+        genesis.id(),
     )?;
 
     assert_eq!(tips.len(), 1);
