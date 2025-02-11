@@ -232,6 +232,19 @@ impl BlockDAG {
         anyhow::Result::Ok(true)
     }
 
+    pub fn check_ancestor_of_chain(
+        &self,
+        ancestor: Hash,
+        descendant: Hash,
+    ) -> anyhow::Result<bool> {
+        inquirer::is_chain_ancestor_of(
+            &*self.storage.reachability_store.read(),
+            ancestor,
+            descendant,
+        )
+        .map_err(|e| e.into())
+    }
+
     pub fn check_ancestor_of(&self, ancestor: Hash, descendant: Hash) -> anyhow::Result<bool> {
         if ancestor == Hash::zero() {
             return Ok(true);
