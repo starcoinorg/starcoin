@@ -12,6 +12,7 @@ mod chain;
 mod errors;
 pub mod message;
 mod service;
+pub mod range_locate;
 
 #[derive(Clone, Debug)]
 pub struct ExcludedTxns {

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2
 
 use crate::message::{ChainRequest, ChainResponse};
+use crate::range_locate::RangeInPruningPoint;
 use crate::{ChainType, TransactionInfoWithProof};
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
@@ -78,6 +79,7 @@ pub trait ReadableChainService {
     fn get_dag_state(&self) -> Result<DagStateView>;
     fn check_chain_type(&self) -> Result<ChainType>;
     fn get_ghostdagdata(&self, id: HashValue) -> Result<Option<GhostdagData>>;
+    fn get_range_in_location(&self, pruning_point: HashValue) -> Result<RangeInPruningPoint>;
 }
 
 /// Writeable block chain service trait
