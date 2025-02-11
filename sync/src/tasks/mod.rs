@@ -591,6 +591,7 @@ mod accumulator_sync_task;
 mod block_sync_task;
 pub mod continue_execute_absent_block;
 mod find_ancestor_task;
+mod find_common_ancestor_task;
 mod inner_sync_task;
 #[cfg(test)]
 pub(crate) mod mock;
