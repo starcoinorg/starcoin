@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use move_core_types::resolver::{ModuleResolver, ResourceResolver};
 use move_transactional_test_runner::tasks::SyntaxChoice;
 use starcoin_config::ChainNetwork;
 use starcoin_state_api::AccountStateReader;
@@ -11,8 +12,10 @@ use starcoin_transaction_builder::{
 };
 use starcoin_types::account::Account;
 use starcoin_types::account_config::association_address;
+use starcoin_types::language_storage::StructTag;
 use starcoin_types::transaction::Transaction;
-use starcoin_vm_types::account_config::stc_type_tag;
+use starcoin_vm_runtime::data_cache::AsMoveResolver;
+use starcoin_vm_types::account_config::{genesis_address, stc_type_tag};
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::transaction::{
@@ -494,5 +497,22 @@ fn test_object_metadata() -> Result<()> {
     let payload = TransactionPayload::Script(Script::new(script, vec![], vec![]));
     let output = association_execute_should_success(&net, &chain_state, payload)?;
     assert_eq!(KeptVMStatus::Executed, output.status().status().unwrap());
+
+    let resolver = chain_state.as_move_resolver();
+    let object_core_tag = StructTag {
+        address: genesis_address(),
+        module: Identifier::new("object").unwrap(),
+        name: Identifier::new("ObjectCore").unwrap(),
+        type_args: vec![],
+    };
+    let (resource, size) = resolver.get_resource_bytes_with_metadata_and_layout(
+        &genesis_address(),
+        &object_core_tag,
+        resolver
+            .get_module_metadata(&object_core_tag.module_id())
+            .as_slice(),
+        None,
+    )?;
+    assert!(resource.is_some() && size > 0);
     Ok(())
 }

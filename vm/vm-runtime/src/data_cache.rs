@@ -11,6 +11,7 @@ use move_core_types::metadata::Metadata;
 use move_core_types::resolver::{resource_size, ModuleResolver, ResourceResolver};
 use move_core_types::value::MoveTypeLayout;
 use move_table_extension::{TableHandle, TableResolver};
+use starcoin_gas_schedule::LATEST_GAS_FEATURE_VERSION;
 use starcoin_logger::prelude::*;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::vm::config::starcoin_prod_deserializer_config;
@@ -321,7 +322,9 @@ impl<S: StateView> AsMoveResolver<S> for S {
         let deserializer_config = starcoin_prod_deserializer_config(&features);
         assert!(!features.is_resource_groups_split_in_vm_change_set_enabled());
 
-        let gas_feature_version = GasSchedule::fetch_config(self).unwrap().feature_version;
+        let gas_feature_version = GasSchedule::fetch_config(self)
+            .map(|gas| gas.feature_version)
+            .unwrap_or(LATEST_GAS_FEATURE_VERSION);
         let resource_group_adapter = ResourceGroupAdapter::new(
             None,
             self,
