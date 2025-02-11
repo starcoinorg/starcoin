@@ -11,6 +11,7 @@ use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::{BlockDAG, MineNewDagBlockInfo};
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
+use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
 use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::blockhash::KType;
@@ -50,6 +51,23 @@ impl MockChain {
             None,
             dag,
         )?;
+        let miner = AccountInfo::random();
+        Ok(Self::new_inner(net, chain, miner, storage))
+    }
+
+    pub fn new_with_genesis_for_test(net: ChainNetwork, genesis: Genesis, k: KType) -> anyhow::Result<Self> {
+        let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
+        let dag = BlockDAG::create_for_testing_with_parameters(k)?;
+        let chain_info = genesis.execute_genesis_block(&net, storage.clone(), dag.clone())?;
+
+        let chain = BlockChain::new(
+            net.time_service(),
+            chain_info.head().id(),
+            storage.clone(),
+            None,
+            dag,
+        )?;
+
         let miner = AccountInfo::random();
         Ok(Self::new_inner(net, chain, miner, storage))
     }
