@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Scratchpad for on chain values during the execution.
 
+use crate::default_gas_schedule;
 use crate::move_vm_ext::{resource_state_key, AsExecutorView, ResourceGroupResolver};
 use bytes::Bytes;
 use move_binary_format::deserializer::DeserializerConfig;
@@ -11,7 +12,6 @@ use move_core_types::metadata::Metadata;
 use move_core_types::resolver::{resource_size, ModuleResolver, ResourceResolver};
 use move_core_types::value::MoveTypeLayout;
 use move_table_extension::{TableHandle, TableResolver};
-use starcoin_gas_schedule::LATEST_GAS_FEATURE_VERSION;
 use starcoin_logger::prelude::*;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::vm::config::starcoin_prod_deserializer_config;
@@ -19,7 +19,7 @@ use starcoin_vm_runtime_types::resolver::{
     ExecutorView, ResourceGroupSize, TResourceGroupView, TResourceView,
 };
 use starcoin_vm_runtime_types::resource_group_adapter::ResourceGroupAdapter;
-use starcoin_vm_types::on_chain_config::{Features, GasSchedule, OnChainConfig};
+use starcoin_vm_types::on_chain_config::{Features, OnChainConfig, VMConfig};
 use starcoin_vm_types::state_store::{
     errors::StateviewError, state_key::StateKey, state_storage_usage::StateStorageUsage,
     state_value::StateValue, StateView, TStateView,
@@ -322,14 +322,15 @@ impl<S: StateView> AsMoveResolver<S> for S {
         let deserializer_config = starcoin_prod_deserializer_config(&features);
         assert!(!features.is_resource_groups_split_in_vm_change_set_enabled());
 
-        let gas_feature_version = GasSchedule::fetch_config(self)
-            .map(|gas| gas.feature_version)
-            .unwrap_or(LATEST_GAS_FEATURE_VERSION);
+        let gas_feature_version = VMConfig::fetch_config(self)
+            .map(|config| config.gas_schedule)
+            .unwrap_or(default_gas_schedule())
+            .feature_version;
         let resource_group_adapter = ResourceGroupAdapter::new(
             None,
             self,
             gas_feature_version,
-            // todo(simon): Currently it is disabled
+            // todo(simon): Currently it is disabled, make it real.
             features.is_resource_groups_split_in_vm_change_set_enabled(),
         );
         StorageAdapter::new(self, deserializer_config, resource_group_adapter)
