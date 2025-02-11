@@ -13,7 +13,7 @@ use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
-use starcoin_types::block::{Block, BlockHeader};
+use starcoin_types::block::{Block, BlockHeader, ExecutedBlock};
 use starcoin_types::blockhash::KType;
 use starcoin_types::startup_info::ChainInfo;
 use std::sync::Arc;
@@ -341,6 +341,11 @@ impl MockChain {
         let header = block.header().clone();
         self.apply(block)?;
         Ok(header)
+    }
+
+    pub fn connect(&mut self, block: ExecutedBlock) -> Result<()> {
+        self.head.connect(block)?;
+        Ok(())
     }
 
     pub fn produce_and_apply_times(&mut self, times: u64) -> Result<()> {
