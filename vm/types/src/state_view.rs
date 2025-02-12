@@ -8,11 +8,10 @@
 
 //! This crate defines [`trait StateView`](StateView).
 
-use crate::account_config::{fungible_store, ObjectGroupResource};
 use crate::{
     account_config::{
-        genesis_address, token_code::TokenCode, AccountResource, CoinStoreResource,
-        FungibleStoreResource, TokenInfo, G_STC_TOKEN_CODE,
+        genesis_address, token_code::TokenCode, AccountResource, CoinStoreResource, TokenInfo,
+        G_STC_TOKEN_CODE,
     },
     genesis_config::ChainId,
     move_resource::MoveResource,
@@ -27,12 +26,10 @@ use crate::{
 use anyhow::{format_err, Result};
 use bytes::Bytes;
 use log::warn;
-use move_core_types::move_resource::MoveStructType;
 use move_core_types::{
     account_address::AccountAddress,
     language_storage::{ModuleId, StructTag},
 };
-use std::collections::BTreeMap;
 
 impl<T: ?Sized> StateReaderExt for T where T: StateView {}
 
@@ -54,23 +51,6 @@ pub trait StateReaderExt: StateView {
                 )
             })?;
         Ok(rsrc_bytes)
-    }
-
-    // todo(simon): remove me for performance reason
-    fn get_resource_from_group(
-        &self,
-        group_key: &StateKey,
-        resource_tag: &StructTag,
-    ) -> Result<Option<Bytes>> {
-        Ok(
-            if let Some(group_data_blob) = self.get_state_value_bytes(group_key)? {
-                let group_data =
-                    bcs_ext::from_bytes::<BTreeMap<StructTag, Bytes>>(&group_data_blob)?;
-                group_data.get(resource_tag).cloned()
-            } else {
-                None
-            },
-        )
     }
 
     fn get_resource_type_bytes<R>(&self, address: AccountAddress) -> Result<Bytes>
@@ -140,26 +120,7 @@ pub trait StateReaderExt: StateView {
             }
         };
 
-        let primary_store_address = fungible_store::primary_store(&address, &type_tag.address);
-        // Get from coin store
-        let object_group_tag = ObjectGroupResource::struct_tag();
-        let fungible_store_tag = FungibleStoreResource::struct_tag_for_resource();
-        let fungible_store_group_key =
-            StateKey::resource_group(&primary_store_address, &object_group_tag);
-
-        let fungible_balance = match self
-            .get_resource_from_group(&fungible_store_group_key, &fungible_store_tag)?
-        {
-            Some(bytes) => bcs_ext::from_bytes::<FungibleStoreResource>(&bytes)?.balance() as u128,
-            None => {
-                warn!(
-                    "FungibleStoreResource not exists at address:{:?} for type tag:{:?}",
-                    primary_store_address, fungible_store_group_key
-                );
-                0
-            }
-        };
-        Ok(coin_balance + fungible_balance)
+        Ok(coin_balance)
     }
 
     fn get_balance_by_token_code(

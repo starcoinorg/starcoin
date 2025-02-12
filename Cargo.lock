@@ -10163,7 +10163,9 @@ version = "2.0.1"
 dependencies = [
  "anyhow",
  "bcs-ext",
+ "bytes 1.6.1",
  "forkable-jellyfish-merkle",
+ "move-core-types",
  "starcoin-cached-packages",
  "starcoin-chain",
  "starcoin-config",
@@ -10171,6 +10173,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-logger",
  "starcoin-state-api",
+ "starcoin-statedb",
  "starcoin-transaction-builder",
  "starcoin-types",
  "starcoin-vm-types",

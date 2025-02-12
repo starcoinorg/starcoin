@@ -24,3 +24,6 @@ starcoin-state-api = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 test-helper = { workspace = true }
+starcoin-statedb = { workspace = true }
+move-core-types = { workspace = true }
+bytes = { workspace = true }

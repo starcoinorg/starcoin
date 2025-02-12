@@ -1,11 +1,15 @@
 #[cfg(test)]
 mod basic_tests {
+    use std::collections::BTreeMap;
     use std::str::FromStr;
 
     use anyhow::Result;
     use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 
+    use bytes::Bytes;
     use forkable_jellyfish_merkle::{blob::Blob, node_type::SparseMerkleLeafNode, RawKey};
+    use move_core_types::language_storage::StructTag as MoveStructTag;
+    use move_core_types::move_resource::MoveStructType;
     use starcoin_cached_packages::starcoin_framework_sdk_builder::{
         asset_mapping_assign_to_account_test, asset_mapping_assign_to_account_with_proof,
     };
@@ -13,12 +17,18 @@ mod basic_tests {
         starcoin_account_create_account, transfer_scripts_peer_to_peer_v2,
     };
     use starcoin_config::{ChainNetwork, G_TEST_CONFIG};
+    use starcoin_logger::prelude::warn;
     use starcoin_state_api::ChainStateReader;
+    use starcoin_statedb::ChainStateDB;
     use starcoin_types::{
         account_address::AccountAddress, account_config::CORE_CODE_ADDRESS, identifier::Identifier,
         language_storage::StructTag,
     };
-    use starcoin_vm_types::account_config::{stc_struct_tag, CoinStoreResource};
+    use starcoin_vm_types::account_config::{
+        fungible_store, stc_struct_tag, CoinStoreResource, FungibleStoreResource,
+        ObjectGroupResource, G_STC_TOKEN_CODE,
+    };
+    use starcoin_vm_types::state_store::TStateView;
     use starcoin_vm_types::{
         access_path::AccessPath,
         account_config::{genesis_address, stc_type_tag},
@@ -29,6 +39,63 @@ mod basic_tests {
     use test_helper::executor::{
         association_execute_should_success, prepare_customized_genesis, prepare_genesis,
     };
+
+    fn get_resource_from_group(
+        statedb: &ChainStateDB,
+        group_key: &StateKey,
+        resource_tag: &StructTag,
+    ) -> Result<Option<Bytes>> {
+        Ok(
+            if let Some(group_data_blob) = statedb.get_state_value_bytes(group_key)? {
+                let group_data =
+                    bcs_ext::from_bytes::<BTreeMap<StructTag, Bytes>>(&group_data_blob)?;
+                group_data.get(resource_tag).cloned()
+            } else {
+                None
+            },
+        )
+    }
+
+    fn read_starcoin_balance(statedb: &ChainStateDB, address: AccountAddress) -> Result<u128> {
+        let type_tag: MoveStructTag = G_STC_TOKEN_CODE.clone().try_into()?;
+        // Get from coin store
+        let coin_balance = match statedb.get_state_value_bytes(&StateKey::resource(
+            &address,
+            &CoinStoreResource::struct_tag_for_token(type_tag.clone()),
+        )?)? {
+            Some(bytes) => bcs_ext::from_bytes::<CoinStoreResource>(&bytes)?.coin() as u128,
+            None => {
+                warn!(
+                    "CoinStoreResource not exists at address:{} for type tag:{}",
+                    address, type_tag
+                );
+                0
+            }
+        };
+
+        let primary_store_address = fungible_store::primary_store(&address, &type_tag.address);
+        // Get from coin store
+        let object_group_tag = ObjectGroupResource::struct_tag();
+        let fungible_store_tag = FungibleStoreResource::struct_tag();
+        let fungible_store_group_key =
+            StateKey::resource_group(&primary_store_address, &object_group_tag);
+
+        let fungible_balance = match get_resource_from_group(
+            &statedb,
+            &fungible_store_group_key,
+            &fungible_store_tag,
+        )? {
+            Some(bytes) => bcs_ext::from_bytes::<FungibleStoreResource>(&bytes)?.balance() as u128,
+            None => {
+                warn!(
+                    "FungibleStoreResource not exists at address:{:?} for type tag:{:?}",
+                    primary_store_address, fungible_store_group_key
+                );
+                0
+            }
+        };
+        Ok(coin_balance + fungible_balance)
+    }
 
     #[test]
     fn test_get_chain_id_after_genesis_with_proof_verify() -> Result<()> {
@@ -148,7 +215,7 @@ mod basic_tests {
 
         // Check alice's balance
         assert_eq!(
-            chain_state.get_balance(alice)?,
+            read_starcoin_balance(&chain_state, alice)?,
             amount,
             "alice balance not expect"
         );
@@ -164,7 +231,7 @@ mod basic_tests {
         )?;
 
         assert_eq!(
-            chain_state.get_balance(alice)?,
+            read_starcoin_balance(&chain_state, alice)?,
             amount * 2,
             "alice balance not expect after asset-mapping"
         );
@@ -191,7 +258,7 @@ mod basic_tests {
             )?;
 
             // Check balance is initial_balance
-            let balance = chain_state_1.get_balance(alice)?;
+            let balance = read_starcoin_balance(&chain_state_1, alice)?;
             assert_eq!(balance, initial_balance);
 
             let state_proof = chain_state_1.get_with_proof(&StateKey::resource(
@@ -239,7 +306,7 @@ mod basic_tests {
                 starcoin_account_create_account(alice),
             )?;
 
-            assert_eq!(chain_state_2.get_balance(alice)?, 0);
+            assert_eq!(read_starcoin_balance(&chain_state_2, alice)?, 0);
 
             // Asset mapping for alice
             association_execute_should_success(
@@ -255,7 +322,10 @@ mod basic_tests {
                 ),
             )?;
 
-            assert_eq!(chain_state_2.get_balance(alice)?, initial_balance);
+            assert_eq!(
+                read_starcoin_balance(&chain_state_2, alice)?,
+                initial_balance
+            );
         }
 
         Ok(())
