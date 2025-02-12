@@ -3,7 +3,7 @@ harness = false
 name = "bench"
 
 [build-dependencies]
-cc = "1.0"
+cc = "1.2.13"
 
 [dependencies]
 libc = { workspace = true }
