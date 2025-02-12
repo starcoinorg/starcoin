@@ -70,15 +70,15 @@ impl Package {
     }
 
     fn check_module_address(
-        _package_address: &AccountAddress,
-        _module_address: &AccountAddress,
+        package_address: &AccountAddress,
+        module_address: &AccountAddress,
     ) -> Result<()> {
-        //ensure!(
-        //    package_address == module_address,
-        //    "module's address ({:?}) not same as package module address {:?}",
-        //    module_address,
-        //    package_address,
-        //);
+        ensure!(
+            package_address == module_address,
+            "module's address ({:?}) not same as package module address {:?}",
+            module_address,
+            package_address,
+        );
         Ok(())
     }
 
