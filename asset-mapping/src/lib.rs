@@ -80,20 +80,20 @@ mod basic_tests {
         let fungible_store_group_key =
             StateKey::resource_group(&primary_store_address, &object_group_tag);
 
-        let fungible_balance = match get_resource_from_group(
-            &statedb,
-            &fungible_store_group_key,
-            &fungible_store_tag,
-        )? {
-            Some(bytes) => bcs_ext::from_bytes::<FungibleStoreResource>(&bytes)?.balance() as u128,
-            None => {
-                warn!(
-                    "FungibleStoreResource not exists at address:{:?} for type tag:{:?}",
-                    primary_store_address, fungible_store_group_key
-                );
-                0
-            }
-        };
+        let fungible_balance =
+            match get_resource_from_group(statedb, &fungible_store_group_key, &fungible_store_tag)?
+            {
+                Some(bytes) => {
+                    bcs_ext::from_bytes::<FungibleStoreResource>(&bytes)?.balance() as u128
+                }
+                None => {
+                    warn!(
+                        "FungibleStoreResource not exists at address:{:?} for type tag:{:?}",
+                        primary_store_address, fungible_store_group_key
+                    );
+                    0
+                }
+            };
         Ok(coin_balance + fungible_balance)
     }
 
