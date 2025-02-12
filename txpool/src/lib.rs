@@ -14,7 +14,7 @@ pub use pool::TxStatus;
 use starcoin_config::NodeConfig;
 use starcoin_executor::VMMetrics;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
-use starcoin_state_api::AccountStateReader;
+use starcoin_state_api::StateReaderExt;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_txpool_api::{PropagateTransactions, TxnStatusFullEvent};
 use starcoin_types::{
@@ -68,7 +68,6 @@ impl TxPoolActorService {
 
     fn transactions_to_propagate(&self) -> Result<Vec<SignedUserTransaction>> {
         let statedb = self.inner.get_chain_reader();
-        let reader = AccountStateReader::new(&statedb);
 
         // TODO: fetch from a gas constants
         //TODO optimize broadcast txn by hash, then calculate max length by block gas limit
@@ -80,7 +79,7 @@ impl TxPoolActorService {
         //     (block_gas_limit / min_tx_gas * PROPAGATE_FOR_BLOCKS) as usize,
         // );
         let max_len = 100;
-        let current_timestamp = reader.get_timestamp()?.seconds();
+        let current_timestamp = statedb.get_timestamp()?.seconds();
         Ok(self
             .inner
             .get_pending(max_len, current_timestamp)

@@ -2,7 +2,7 @@ use crate::pool::{AccountSeqNumberClient, UnverifiedUserTransaction};
 use anyhow::Result;
 use parking_lot::RwLock;
 use starcoin_executor::VMMetrics;
-use starcoin_state_api::AccountStateReader;
+use starcoin_state_api::StateReaderExt;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_types::{
@@ -73,8 +73,7 @@ impl CachedSeqNumberClient {
     }
 
     fn latest_sequence_number(&self, address: &AccountAddress) -> u64 {
-        let account_state_reader = AccountStateReader::new(self.statedb.as_ref());
-        match account_state_reader.get_account_resource(address) {
+        match self.statedb.get_account_resource(*address) {
             Err(e) => {
                 error!(
                     "Get account {} resource from statedb error: {:?}, return 0 as sequence_number",
