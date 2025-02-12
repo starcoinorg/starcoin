@@ -57,7 +57,7 @@ pub fn get_resource_group_member_from_metadata(
 /// for (non-group) resources and subsequent handling in the StorageAdapter itself.
 pub struct StorageAdapter<'e, E> {
     executor_view: &'e E,
-    _deserializer_config: DeserializerConfig,
+    deserializer_config: DeserializerConfig,
     resource_group_view: ResourceGroupAdapter<'e>,
     accessed_groups: RefCell<HashSet<StateKey>>,
 }
@@ -174,7 +174,7 @@ impl<'a, S: StateView> StorageAdapter<'a, S> {
     ) -> Self {
         Self {
             executor_view: state_store,
-            _deserializer_config: deserializer_config,
+            deserializer_config,
             resource_group_view,
             accessed_groups: RefCell::new(HashSet::new()),
         }
@@ -196,10 +196,11 @@ impl<'a, S: StateView> ModuleResolver for StorageAdapter<'a, S> {
             _ => return vec![],
         };
 
-        let compiled_module = match CompiledModule::deserialize(&module) {
-            Ok(module) => module,
-            _ => return vec![],
-        };
+        let compiled_module =
+            match CompiledModule::deserialize_with_config(&module, &self.deserializer_config) {
+                Ok(module) => module,
+                _ => return vec![],
+            };
 
         compiled_module.metadata
     }
