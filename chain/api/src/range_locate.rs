@@ -10,6 +10,7 @@ use starcoin_storage::Store;
 
 use crate::ChainReader;
 
+#[derive(Debug)]
 pub enum FindCommonHeader {
     AllInRange,                    // all in range
     InRange(HashValue, HashValue), // start in range but end not
@@ -17,12 +18,14 @@ pub enum FindCommonHeader {
     NotInRange,                    // all are not in reachability
 }
 
+#[derive(Debug)]
 pub enum FindCommonHeaderError {
     InvalidRange(String),  // the range is invalid, there must be something wrong
     CheckAncestor(String), // failed to check the hash whether in reachability
     RangeLen,              // the length of the range is not greater than 2
 }
 
+#[derive(Debug)]
 pub enum RangeInPruningPoint {
     NotInSelectedChain,
     InSelectedChain(HashValue, Vec<HashValue>),
@@ -82,33 +85,47 @@ pub fn find_common_header_in_range(
 }
 
 
-pub fn get_range_in_location(chain: &dyn ChainReader, dag: &BlockDAG, storage: Arc<dyn Store>, start_id: HashValue) -> anyhow::Result<RangeInPruningPoint> {
-        let current_pruning_point = chain.current_header().pruning_point();
-        if current_pruning_point == start_id
-            || 
-                dag.check_ancestor_of_chain(start_id, current_pruning_point)?
-        {
-            let start_block_header = storage
-                .get_block_header_by_hash(start_id)?
-                .ok_or_else(|| format_err!("Cannot find block header by hash: {}", start_id))?;
+pub fn get_range_in_location(chain: &dyn ChainReader, dag: &BlockDAG, storage: Arc<dyn Store>, start_id: HashValue, end_id: Option<HashValue>) -> anyhow::Result<RangeInPruningPoint> {
+        let start_block_header = storage
+            .get_block_header_by_hash(start_id)?
+            .ok_or_else(|| format_err!("Cannot find block header by hash: {}", start_id))?;
 
-            let mut result = vec![];
-
-            for index in 0..=17 {
-                let block_number = start_block_header.number().saturating_add(2u64.pow(index));
-                if block_number >= chain.current_header().number() {
-                    break;
+        match chain.get_block_info_by_number(start_block_header.number())? {
+            Some(block_info) => {
+                if *block_info.block_id() != start_id {
+                    return Ok(RangeInPruningPoint::NotInSelectedChain);
                 }
-                let block_id =
-                chain.get_header_by_number(index as u64)?
-                        .ok_or_else(|| 
-                            format_err!("cannot find the block by number: {:?}", block_number)
-                        )?.id();
-
-                result.push(block_id);
             }
-            return Ok(RangeInPruningPoint::InSelectedChain(start_id, result));
+            None => return Ok(RangeInPruningPoint::NotInSelectedChain),
         }
+        let mut result = vec![];
 
-        Ok(RangeInPruningPoint::NotInSelectedChain)
+        let end_number = if let Some(end_id) = end_id {
+            if let Some(end_block_header) = storage.get_block_header_by_hash(end_id)? {
+                end_block_header.number()
+            } else {
+                chain.current_header().number()
+            }
+        } else {
+            chain.current_header().number()
+        };
+
+        for index in 0..=17 {
+            let block_number = start_block_header.number().saturating_add(2u64.pow(index));
+            if block_number > chain.current_header().number() {
+                break;
+            }
+            if block_number > end_number {
+                break;
+            }
+
+            let block_id = if let Some(header) = chain.get_header_by_number(block_number)? {
+                header.id()
+            } else {
+                break;
+            };
+
+            result.push(block_id);
+        }
+        return Ok(RangeInPruningPoint::InSelectedChain(start_id, result));
 }
