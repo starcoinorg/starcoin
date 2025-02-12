@@ -106,7 +106,6 @@ fn test_range_locate() -> anyhow::Result<()> {
         });
 
         if result.len() == 1 {
-            found_common_header = Some(result.first().unwrap().clone());
             break;
         }
 
@@ -137,6 +136,11 @@ fn test_range_locate() -> anyhow::Result<()> {
     }
 
     println!("found common header: {:?}", found_common_header);
+
+    assert_eq!(
+        common_block.id(),
+        found_common_header.expect("common header not found")
+    );
 
     anyhow::Ok(())
 }
