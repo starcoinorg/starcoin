@@ -12,7 +12,7 @@ use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_logger::prelude::error;
 use starcoin_network_rpc_api::RangeInPruningPoint;
-use starcoin_storage::Store;
+use starcoin_storage::{block_info, Store};
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockNumber};
 use std::sync::Arc;
 use stest::actix_export::Arbiter;
@@ -51,7 +51,7 @@ impl FindRangeLocateTask {
 }
 
 impl TaskState for FindRangeLocateTask {
-    type Item = Option<HashValue>;
+    type Item = BlockIdAndNumber;
 
     fn new_sub_task(self) -> BoxFuture<'static, Result<Vec<Self::Item>>> {
         async move {
@@ -81,7 +81,16 @@ impl TaskState for FindRangeLocateTask {
                     }
                     RangeInPruningPoint::InSelectedChain(hash_value, hash_values) => {
                         if hash_values.len() == 0 {
-                            return Ok(vec![Some(hash_value)]);
+                            let header = self
+                                .storage
+                                .get_block_header_by_hash(hash_value)?
+                                .ok_or_else(|| {
+                                    format_err!("Cannot find block header by hash: {}", hash_value)
+                                })?;
+                            return Ok(vec![BlockIdAndNumber {
+                                id: header.id(),
+                                number: header.number(),
+                            }]);
                         } else {
                             let find_result = find_common_header_in_range(&self.dag, &hash_values)
                                 .map_err(|err| {
@@ -114,7 +123,16 @@ impl TaskState for FindRangeLocateTask {
                 }
             }
 
-            Ok(vec![found_common_header])
+            let found_id = found_common_header
+                .ok_or_else(|| format_err!("failed to find the dag common header!"))?;
+            let header = self
+                .storage
+                .get_block_header_by_hash(found_id)?
+                .ok_or_else(|| format_err!("Cannot find block header by hash: {}", found_id))?;
+            Ok(vec![BlockIdAndNumber {
+                id: header.id(),
+                number: header.number(),
+            }])
         }
         .boxed()
     }
@@ -178,11 +196,11 @@ impl DagAncestorCollector {
     }
 }
 
-impl TaskResultCollector<HashValue> for DagAncestorCollector {
+impl TaskResultCollector<BlockIdAndNumber> for DagAncestorCollector {
     type Output = BlockIdAndNumber;
 
-    fn collect(&mut self, item: HashValue) -> Result<CollectorState> {
-        let block_info = self.storage.get_block_info(item)?.ok_or_else(|| {
+    fn collect(&mut self, item: BlockIdAndNumber) -> Result<CollectorState> {
+        let block_info = self.storage.get_block_info(item.id())?.ok_or_else(|| {
             format_err!(
                 "failed to get the block info by found common ancestor id: {:?}",
                 item

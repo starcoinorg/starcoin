@@ -50,6 +50,7 @@ async fn sync_block_process(
             None,
             local_node.chain().dag().clone(),
             local_node.sync_dag_store.clone(),
+            false,
         )?;
         let branch = sync_task.await?;
         info!("checking branch in sync service is the same as target's branch");

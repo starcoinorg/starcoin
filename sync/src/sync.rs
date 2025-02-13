@@ -462,6 +462,7 @@ impl SyncService {
         let vm_metrics = self.vm_metrics.clone();
         let dag = ctx.get_shared::<BlockDAG>()?;
         let sync_dag_store = self.sync_dag_store.clone();
+        let range_locate = config.sync.range_locate();
         let fut = async move {
             let startup_info = storage
                 .get_startup_info()?
@@ -499,6 +500,7 @@ impl SyncService {
                     vm_metrics.clone(),
                     dag,
                     sync_dag_store,
+                    range_locate,
                 )?;
 
                 self_ref.notify(SyncBeginEvent {

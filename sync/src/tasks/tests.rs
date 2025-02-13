@@ -128,6 +128,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
         None,
         dag.clone(),
         node2.sync_dag_store.clone(),
+        false,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -163,6 +164,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
         None,
         dag,
         node2.sync_dag_store.clone(),
+        false,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -214,6 +216,7 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
         None,
         dag,
         node2.sync_dag_store.clone(),
+        false,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -267,6 +270,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
         None,
         dag.clone(),
         node2.sync_dag_store.clone(),
+        false,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -306,6 +310,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
         None,
         dag,
         node2.sync_dag_store.clone(),
+        false,
     )?;
 
     let join_handle = node2.process_block_connect_event(receiver).await;
@@ -360,6 +365,7 @@ pub async fn test_full_sync_cancel() -> Result<()> {
         None,
         dag,
         node2.sync_dag_store.clone(),
+        false,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let sync_join_handle = tokio::task::spawn(sync_task);
@@ -852,6 +858,7 @@ async fn test_net_rpc_err() -> Result<()> {
         None,
         dag,
         node2.sync_dag_store.clone(),
+        false,
     )?;
     let _join_handle = node2.process_block_connect_event(receiver).await;
     let sync_join_handle = tokio::task::spawn(sync_task);
@@ -1003,6 +1010,7 @@ fn sync_block_in_async_connection(
         None,
         dag,
         local_node.sync_dag_store.clone(),
+        false,
     )?;
     let branch = async_std::task::block_on(sync_task)?;
     assert_eq!(branch.current_header().number(), target.target_id.number());
