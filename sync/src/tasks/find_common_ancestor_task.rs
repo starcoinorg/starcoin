@@ -30,7 +30,7 @@ pub struct FindRangeLocateTask {
 }
 
 impl FindRangeLocateTask {
-    pub fn new<F, H>(
+    pub fn new<F>(
         start_id: HashValue,
         end_id: Option<HashValue>,
         fetcher: F,
@@ -39,7 +39,6 @@ impl FindRangeLocateTask {
     ) -> Self
     where
         F: BlockIdRangeFetcher + 'static,
-        H: ChainReader + 'static,
     {
         Self {
             start_id,
