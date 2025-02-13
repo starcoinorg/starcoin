@@ -144,3 +144,76 @@ fn test_range_locate() -> anyhow::Result<()> {
 
     anyhow::Ok(())
 }
+
+#[stest::test]
+fn test_not_in_range_locate() -> anyhow::Result<()> {
+    let net = ChainNetwork::new_test();
+    let genesis = Genesis::build(&net)?;
+    let mut mock_chain_local =
+        MockChain::new_with_genesis_for_test(net.clone(), genesis.clone(), 3)?;
+    let mut mock_chain_remote = MockChain::new_with_genesis_for_test(net, genesis.clone(), 3)?;
+
+    let count = 37;
+    let local_blocks = create_block(count, &mut mock_chain_local)?;
+    let remote_blocks = create_block(count, &mut mock_chain_remote)?;
+
+    let result = get_range_in_location(
+        mock_chain_remote.head(),
+        &mock_chain_remote.head().dag(),
+        mock_chain_remote.head().get_storage(),
+        mock_chain_local.head().current_header().id(),
+        None,
+    )?;
+
+    assert_eq!(
+        result,
+        RangeInPruningPoint::NotInSelectedChain,
+        "expect not in selected chain"
+    );
+
+    anyhow::Ok(())
+}
+
+
+#[stest::test]
+fn test_same_range_request() -> anyhow::Result<()> {
+    let net = ChainNetwork::new_test();
+    let genesis = Genesis::build(&net)?;
+    let mut mock_chain_remote = MockChain::new_with_genesis_for_test(net, genesis.clone(), 3)?;
+
+    let count = 8;
+    let _ = create_block(count, &mut mock_chain_remote)?;
+
+    match get_range_in_location(
+        mock_chain_remote.head(), 
+        &mock_chain_remote.head().dag(),
+        mock_chain_remote.head().get_storage(),
+        mock_chain_remote.head().current_header().id(),
+        Some(mock_chain_remote.head().current_header().id()),
+    )? {
+        RangeInPruningPoint::NotInSelectedChain => bail!("expect in selected chain"),
+        RangeInPruningPoint::InSelectedChain(hash_value, hash_values) => {
+            assert_eq!(hash_value, mock_chain_remote.head().current_header().id());
+            assert_eq!(hash_values.len(), 0);
+        }
+    }
+
+    let block_header = mock_chain_remote.head().get_block_info_by_number(3)?.ok_or_else(|| format_err!("block info not found"))?; 
+
+    match get_range_in_location(
+        mock_chain_remote.head(), 
+        &mock_chain_remote.head().dag(),
+        mock_chain_remote.head().get_storage(),
+        block_header.block_id().clone(),
+        Some(block_header.block_id().clone()),
+    )? {
+        RangeInPruningPoint::NotInSelectedChain => bail!("expect in selected chain"),
+        RangeInPruningPoint::InSelectedChain(hash_value, hash_values) => {
+            assert_eq!(hash_value, block_header.block_id().clone());
+            assert_eq!(hash_values.len(), 0);
+        }
+    }
+
+
+    anyhow::Ok(())
+}
