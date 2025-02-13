@@ -3,10 +3,14 @@
 
 use anyhow::format_err;
 use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
+use starcoin_types::identifier::Identifier;
+use starcoin_types::language_storage::ModuleId;
 use starcoin_types::{
     account::{Account, DEFAULT_MAX_GAS_AMOUNT},
     transaction::SignedUserTransaction,
 };
+use starcoin_vm_types::account_config::core_code_address;
+use starcoin_vm_types::transaction::ScriptFunction;
 use starcoin_vm_types::{
     account_config::STC_TOKEN_CODE_STR,
     genesis_config::ChainId,
@@ -33,7 +37,7 @@ impl ForceUpgrade {
             })
             .ok_or_else(|| format_err!("Can not find upgrade package {}", package_file))?;
 
-        /* test in test_package_init_function
+        /* NOTICE also need modify fn  test_package_init_function */
         let init_script = ScriptFunction::new(
             ModuleId::new(
                 core_code_address(),
@@ -43,14 +47,13 @@ impl ForceUpgrade {
             vec![],
             vec![
                 bcs_ext::to_bytes(&0u64).unwrap(), // TODO(BobOng): [force-upgrade] to confirm main burn block
-                bcs_ext::to_bytes(&16090000u64).unwrap(),
+                bcs_ext::to_bytes(&16083000u64).unwrap(),
                 bcs_ext::to_bytes(&5u64).unwrap(),
                 bcs_ext::to_bytes(&1000u64).unwrap(),
             ],
         );
 
         assert_eq!(package.init_script().unwrap(), &init_script);
-         */
 
         Ok(account.sign_txn(RawUserTransaction::new(
             *account.address(),
