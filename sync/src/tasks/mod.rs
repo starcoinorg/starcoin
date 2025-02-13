@@ -19,7 +19,7 @@ use starcoin_chain_api::ChainType;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_logger::prelude::*;
-use starcoin_network_rpc_api::MAX_BLOCK_IDS_REQUEST_SIZE;
+use starcoin_network_rpc_api::{RangeInPruningPoint, MAX_BLOCK_IDS_REQUEST_SIZE};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceRef};
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
@@ -232,6 +232,15 @@ pub trait BlockIdFetcher: Send + Sync {
     }
 }
 
+pub trait BlockIdRangeFetcher: Send + Sync {
+    fn fetch_range_locate(
+        &self,
+        peer: Option<PeerId>,
+        start_id: HashValue,
+        end_id: Option<HashValue>,
+    ) -> BoxFuture<Result<RangeInPruningPoint>>;
+}
+
 impl PeerOperator for VerifiedRpcClient {
     fn peer_selector(&self) -> PeerSelector {
         self.selector().clone()
@@ -254,6 +263,19 @@ impl BlockIdFetcher for VerifiedRpcClient {
         max_size: u64,
     ) -> BoxFuture<Result<Vec<HashValue>>> {
         self.get_block_ids(peer, start_number, reverse, max_size)
+            .map_err(fetcher_err_map)
+            .boxed()
+    }
+}
+
+impl BlockIdRangeFetcher for VerifiedRpcClient {
+    fn fetch_range_locate(
+        &self,
+        peer: Option<PeerId>,
+        start_id: HashValue,
+        end_id: Option<HashValue>,
+    ) -> BoxFuture<Result<RangeInPruningPoint>> {
+        self.fetch_range_locate(peer, start_id, end_id)
             .map_err(fetcher_err_map)
             .boxed()
     }

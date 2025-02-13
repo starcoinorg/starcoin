@@ -299,6 +299,12 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         peer_id: PeerId,
         request: Vec<HashValue>,
     ) -> BoxFuture<Result<Vec<HashValue>>>;
+
+    fn get_range_in_location(
+        &self,
+        peer_id: PeerId,
+        req: GetRangeInLocationRequest,
+    ) -> BoxFuture<Result<GetRangeInLocationResponse>>;
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -309,3 +315,20 @@ pub struct GetStateWithTableItemProof {
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GetTableInfo(pub AccountAddress);
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GetRangeInLocationRequest {
+    pub start_id: HashValue,
+    pub end_id: Option<HashValue>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum RangeInPruningPoint {
+    NotInSelectedChain,
+    InSelectedChain(HashValue, Vec<HashValue>),
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GetRangeInLocationResponse {
+    pub range: RangeInPruningPoint,
+}

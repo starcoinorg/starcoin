@@ -84,50 +84,53 @@ pub fn find_common_header_in_range(
     Ok(FindCommonHeader::AllInRange)
 }
 
+pub fn get_range_in_location(
+    chain: &dyn ChainReader,
+    storage: Arc<dyn Store>,
+    start_id: HashValue,
+    end_id: Option<HashValue>,
+) -> anyhow::Result<RangeInPruningPoint> {
+    let start_block_header = match storage.get_block_header_by_hash(start_id)? {
+        Some(header) => header,
+        None => return anyhow::Result::Ok(RangeInPruningPoint::NotInSelectedChain),
+    };
 
-pub fn get_range_in_location(chain: &dyn ChainReader, dag: &BlockDAG, storage: Arc<dyn Store>, start_id: HashValue, end_id: Option<HashValue>) -> anyhow::Result<RangeInPruningPoint> {
-        let start_block_header = match storage
-            .get_block_header_by_hash(start_id)? {
-                Some(header) => header,
-                None => return anyhow::Result::Ok(RangeInPruningPoint::NotInSelectedChain),
-            };
-
-        match chain.get_block_info_by_number(start_block_header.number())? {
-            Some(block_info) => {
-                if *block_info.block_id() != start_id {
-                    return Ok(RangeInPruningPoint::NotInSelectedChain);
-                }
+    match chain.get_block_info_by_number(start_block_header.number())? {
+        Some(block_info) => {
+            if *block_info.block_id() != start_id {
+                return Ok(RangeInPruningPoint::NotInSelectedChain);
             }
-            None => return Ok(RangeInPruningPoint::NotInSelectedChain),
         }
-        let mut result = vec![];
+        None => return Ok(RangeInPruningPoint::NotInSelectedChain),
+    }
+    let mut result = vec![];
 
-        let end_number = if let Some(end_id) = end_id {
-            if let Some(end_block_header) = storage.get_block_header_by_hash(end_id)? {
-                end_block_header.number()
-            } else {
-                chain.current_header().number()
-            }
+    let end_number = if let Some(end_id) = end_id {
+        if let Some(end_block_header) = storage.get_block_header_by_hash(end_id)? {
+            end_block_header.number()
         } else {
             chain.current_header().number()
+        }
+    } else {
+        chain.current_header().number()
+    };
+
+    for index in 0..=17 {
+        let block_number = start_block_header.number().saturating_add(2u64.pow(index));
+        if block_number > chain.current_header().number() {
+            break;
+        }
+        if block_number > end_number {
+            break;
+        }
+
+        let block_id = if let Some(header) = chain.get_header_by_number(block_number)? {
+            header.id()
+        } else {
+            break;
         };
 
-        for index in 0..=17 {
-            let block_number = start_block_header.number().saturating_add(2u64.pow(index));
-            if block_number > chain.current_header().number() {
-                break;
-            }
-            if block_number > end_number {
-                break;
-            }
-
-            let block_id = if let Some(header) = chain.get_header_by_number(block_number)? {
-                header.id()
-            } else {
-                break;
-            };
-
-            result.push(block_id);
-        }
-        return Ok(RangeInPruningPoint::InSelectedChain(start_id, result));
+        result.push(block_id);
+    }
+    Ok(RangeInPruningPoint::InSelectedChain(start_id, result))
 }
