@@ -17,7 +17,7 @@ pub struct KStore {
 
 impl KStore {
     pub fn new(initial_k: KType) -> Self {
-        KStore {
+        Self {
             k: Arc::new(RwLock::new(initial_k)),
         }
     }
