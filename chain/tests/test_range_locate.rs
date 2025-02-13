@@ -82,7 +82,6 @@ fn test_range_locate() -> anyhow::Result<()> {
         );
         let result = match get_range_in_location(
             mock_chain_remote.head(),
-            &mock_chain_remote.head().dag(),
             mock_chain_remote.head().get_storage(),
             remote_start_id,
             remote_end_id,
@@ -159,7 +158,6 @@ fn test_not_in_range_locate() -> anyhow::Result<()> {
 
     let result = get_range_in_location(
         mock_chain_remote.head(),
-        &mock_chain_remote.head().dag(),
         mock_chain_remote.head().get_storage(),
         mock_chain_local.head().current_header().id(),
         None,
@@ -174,7 +172,6 @@ fn test_not_in_range_locate() -> anyhow::Result<()> {
     anyhow::Ok(())
 }
 
-
 #[stest::test]
 fn test_same_range_request() -> anyhow::Result<()> {
     let net = ChainNetwork::new_test();
@@ -185,8 +182,7 @@ fn test_same_range_request() -> anyhow::Result<()> {
     let _ = create_block(count, &mut mock_chain_remote)?;
 
     match get_range_in_location(
-        mock_chain_remote.head(), 
-        &mock_chain_remote.head().dag(),
+        mock_chain_remote.head(),
         mock_chain_remote.head().get_storage(),
         mock_chain_remote.head().current_header().id(),
         Some(mock_chain_remote.head().current_header().id()),
@@ -198,11 +194,13 @@ fn test_same_range_request() -> anyhow::Result<()> {
         }
     }
 
-    let block_header = mock_chain_remote.head().get_block_info_by_number(3)?.ok_or_else(|| format_err!("block info not found"))?; 
+    let block_header = mock_chain_remote
+        .head()
+        .get_block_info_by_number(3)?
+        .ok_or_else(|| format_err!("block info not found"))?;
 
     match get_range_in_location(
-        mock_chain_remote.head(), 
-        &mock_chain_remote.head().dag(),
+        mock_chain_remote.head(),
         mock_chain_remote.head().get_storage(),
         block_header.block_id().clone(),
         Some(block_header.block_id().clone()),
@@ -213,7 +211,6 @@ fn test_same_range_request() -> anyhow::Result<()> {
             assert_eq!(hash_values.len(), 0);
         }
     }
-
 
     anyhow::Ok(())
 }

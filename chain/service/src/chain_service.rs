@@ -5,10 +5,9 @@ use anyhow::{format_err, Error, Result};
 use starcoin_accumulator::Accumulator;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
-use starcoin_chain_api::range_locate::RangeInPruningPoint;
+use starcoin_chain_api::range_locate::{self, RangeInPruningPoint};
 use starcoin_chain_api::{
-    ChainReader, ChainType, ChainWriter, ReadableChainService,
-    TransactionInfoWithProof,
+    ChainReader, ChainType, ChainWriter, ReadableChainService, TransactionInfoWithProof,
 };
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
@@ -263,6 +262,11 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             } => Ok(ChainResponse::IsAncestorOfCommand {
                 reachability_view: self.inner.dag.is_ancestor_of(ancestor, descendants)?,
             }),
+            ChainRequest::GetRangeInLocation { start_id, end_id } => {
+                Ok(ChainResponse::GetRangeInLocation {
+                    range: self.inner.get_range_in_location(start_id, end_id)?,
+                })
+            }
         }
     }
 }
@@ -485,43 +489,12 @@ impl ReadableChainService for ChainReaderServiceInner {
             })
     }
 
-    fn get_range_in_location(&self, start_id: HashValue) -> Result<RangeInPruningPoint> {
-        let current_pruning_point = self.get_main().status().head().pruning_point();
-        if current_pruning_point == start_id
-            || self
-                .dag
-                .check_ancestor_of_chain(start_id, current_pruning_point)?
-        {
-            let start_block_header = self
-                .storage
-                .get_block_header_by_hash(start_id)?
-                .ok_or_else(|| format_err!("Cannot find block header by hash: {}", start_id))?;
-            let merkle_tree = self.get_main().get_block_accumulator();
-
-            let mut result = vec![];
-
-            for index in 0..=17 {
-                let block_number = start_block_header.number().saturating_add(2u64.pow(index));
-                if block_number >= merkle_tree.num_leaves() {
-                    break;
-                }
-                let block_id =
-                    merkle_tree
-                        .get_node_by_position(block_number)?
-                        .ok_or_else(|| {
-                            format_err!(
-                                "Cannot find accumulator leaf by index: {}, num_leaves: {}",
-                                block_number,
-                                merkle_tree.num_leaves()
-                            )
-                        })?;
-
-                result.push(block_id);
-            }
-            return Ok(RangeInPruningPoint::InSelectedChain(start_id, result));
-        }
-
-        Ok(RangeInPruningPoint::NotInSelectedChain)
+    fn get_range_in_location(
+        &self,
+        start_id: HashValue,
+        end_id: Option<HashValue>,
+    ) -> Result<RangeInPruningPoint> {
+        range_locate::get_range_in_location(self.get_main(), self.storage.clone(), start_id, end_id)
     }
 }
 
