@@ -31,6 +31,8 @@ use starcoin_types::startup_info::ChainInfo;
 use std::sync::Arc;
 use std::time::Duration;
 
+use super::BlockIdRangeFetcher;
+
 #[derive(Default)]
 pub enum ErrorStrategy {
     _RateLimitErr,
@@ -426,6 +428,17 @@ impl BlockInfoFetcher for SyncNodeMocker {
             Ok(result)
         }
         .boxed()
+    }
+}
+
+impl BlockIdRangeFetcher for SyncNodeMocker {
+    fn fetch_range_locate(
+        &self,
+        peer: Option<PeerId>,
+        start_id: HashValue,
+        end_id: Option<HashValue>,
+    ) -> BoxFuture<Result<starcoin_network_rpc_api::RangeInPruningPoint>> {
+        unimplemented!()
     }
 }
 
