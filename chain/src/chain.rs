@@ -664,6 +664,9 @@ impl BlockChain {
         self.storage.save_block_info(block_info.clone())?;
 
         self.storage.save_table_infos(txn_table_infos)?;
+        self.dag()
+            .ghost_dag_manager()
+            .update_k(epoch.max_uncles_per_block().try_into().unwrap());
         let result = match verified_block.ghostdata {
             Some(trusted_ghostdata) => self
                 .dag

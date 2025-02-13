@@ -10,6 +10,27 @@ use starcoin_types::block::BlockHeader;
 use starcoin_types::blockhash::{BlockHashMap, BlockHashes, BlueWorkType, HashKTypeMap, KType};
 use std::collections::HashSet;
 use std::sync::Arc;
+#[derive(Clone)]
+pub struct KStore {
+    k: Arc<RwLock<KType>>,
+}
+
+impl KStore {
+    pub fn new(initial_k: KType) -> Self {
+        KStore {
+            k: Arc::new(RwLock::new(initial_k)),
+        }
+    }
+
+    pub fn get_k(&self) -> KType {
+        *self.k.read()
+    }
+
+    pub fn update_k(&self, new_k: KType) {
+        let mut k_lock = self.k.write();
+        *k_lock = new_k;
+    }
+}
 
 #[derive(Clone)]
 pub struct GhostdagManager<
@@ -18,7 +39,7 @@ pub struct GhostdagManager<
     U: ReachabilityService,
     V: HeaderStoreReader,
 > {
-    pub(super) k: KType,
+    pub(super) k_store: Arc<KStore>,
     pub(super) ghostdag_store: T,
     pub(super) relations_store: Arc<RwLock<S>>,
     pub(super) headers_store: V,
@@ -33,14 +54,14 @@ impl<
     > GhostdagManager<T, S, U, V>
 {
     pub fn new(
-        k: KType,
+        k_store: Arc<KStore>,
         ghostdag_store: T,
         relations_store: Arc<RwLock<S>>,
         headers_store: V,
         reachability_service: U,
     ) -> Self {
         Self {
-            k,
+            k_store,
             ghostdag_store,
             relations_store,
             reachability_service,
@@ -125,7 +146,8 @@ impl<
         // Run the GHOSTDAG parent selection algorithm
         let selected_parent = self.find_selected_parent(parents.iter().copied())?;
         // Initialize new GHOSTDAG block data with the selected parent
-        let mut new_block_data = GhostdagData::new_with_selected_parent(selected_parent, self.k);
+        let k = self.k_store.get_k();
+        let mut new_block_data = GhostdagData::new_with_selected_parent(selected_parent, k);
         // Get the mergeset in consensus-agreed topological order (topological here means forward in time from blocks to children)
         let ordered_mergeset =
             self.ordered_mergeset_without_selected_parent(selected_parent, parents)?;
@@ -182,8 +204,9 @@ impl<
             "genesis must be added via a call to init"
         );
         let selected_parent = self.find_selected_parent(header.parents_hash().into_iter())?;
+        let k = self.k_store.get_k();
         // Initialize new GHOSTDAG block data with the selected parent
-        let mut new_block_data = GhostdagData::new_with_selected_parent(selected_parent, self.k);
+        let mut new_block_data = GhostdagData::new_with_selected_parent(selected_parent, k);
         new_block_data.mergeset_blues = Arc::new(
             vec![selected_parent]
                 .into_iter()
@@ -236,7 +259,7 @@ impl<
 
     pub fn check_ghostdata_blue_block(&self, ghostdata: &GhostdagData) -> Result<()> {
         let mut check_ghostdata =
-            GhostdagData::new_with_selected_parent(ghostdata.selected_parent, self.k);
+            GhostdagData::new_with_selected_parent(ghostdata.selected_parent, self.k_store.get_k());
         for blue_candidate in ghostdata.mergeset_blues.iter().skip(1).cloned() {
             let coloring = self.check_blue_candidate(&check_ghostdata, blue_candidate)?;
             if let ColoringOutput::Blue(blue_anticone_size, blues_anticone_sizes) = coloring {
@@ -322,6 +345,7 @@ impl<
         // no point in checking it.
 
         // We check if chain_block is not the new block by checking if it has a hash.
+        let k = self.k_store.get_k();
         if let Some(hash) = chain_block.hash {
             if self
                 .reachability_service
@@ -344,12 +368,12 @@ impl<
                 .insert(block, self.blue_anticone_size(block, new_block_data)?);
 
             *candidate_blue_anticone_size = (*candidate_blue_anticone_size).checked_add(1).unwrap();
-            if *candidate_blue_anticone_size > self.k {
+            if *candidate_blue_anticone_size > k {
                 // k-cluster violation: The candidate's blue anticone exceeded k
                 return Ok(ColoringState::Red);
             }
 
-            if *candidate_blues_anticone_sizes.get(&block).unwrap() == self.k {
+            if *candidate_blues_anticone_sizes.get(&block).unwrap() == k {
                 // k-cluster violation: A block in candidate's blue anticone already
                 // has k blue blocks in its own anticone
                 return Ok(ColoringState::Red);
@@ -358,7 +382,7 @@ impl<
             // This is a sanity check that validates that a blue
             // block's blue anticone is not already larger than K.
             assert!(
-                *candidate_blues_anticone_sizes.get(&block).unwrap() <= self.k,
+                *candidate_blues_anticone_sizes.get(&block).unwrap() <= k,
                 "found blue anticone larger than K"
             );
         }
@@ -399,12 +423,13 @@ impl<
     ) -> Result<ColoringOutput> {
         // The maximum length of new_block_data.mergeset_blues can be K+1 because
         // it contains the selected parent.
-        if new_block_data.mergeset_blues.len() as KType == self.k.checked_add(1).unwrap() {
+        let k = self.k_store.get_k();
+        if new_block_data.mergeset_blues.len() as KType == k.checked_add(1).unwrap() {
             return Ok(ColoringOutput::Red);
         }
 
         let mut candidate_blues_anticone_sizes: BlockHashMap<KType> =
-            BlockHashMap::with_capacity(self.k as usize);
+            BlockHashMap::with_capacity(k as usize);
         // Iterate over all blocks in the blue past of the new block that are not in the past
         // of blue_candidate, and check for each one of them if blue_candidate potentially
         // enlarges their blue anticone to be over K, or that they enlarge the blue anticone
@@ -487,7 +512,10 @@ impl<
     }
 
     pub fn k(&self) -> KType {
-        self.k
+        self.k_store.get_k()
+    }
+    pub fn update_k(&self, k: KType) {
+        self.k_store.update_k(k);
     }
 }
 

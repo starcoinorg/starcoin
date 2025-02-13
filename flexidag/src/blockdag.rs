@@ -14,7 +14,7 @@ use crate::consensusdb::{
         HeaderStore, ReachabilityStoreReader, RelationsStore, RelationsStoreReader,
     },
 };
-use crate::ghostdag::protocol::GhostdagManager;
+use crate::ghostdag::protocol::{GhostdagManager, KStore};
 use crate::process_key_already_error;
 use crate::prune::pruning_point_manager::PruningPointManagerT;
 use crate::reachability::ReachabilityError;
@@ -70,8 +70,9 @@ impl BlockDAG {
         let relations_store = db.relations_store.clone();
         let reachability_store = db.reachability_store.clone();
         let reachability_service = MTReachabilityService::new(reachability_store);
+        let k_store = Arc::new(KStore::new(k));
         let ghostdag_manager = DbGhostdagManager::new(
-            k,
+            k_store,
             ghostdag_store.clone(),
             relations_store,
             header_store,
