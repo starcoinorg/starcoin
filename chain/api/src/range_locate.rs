@@ -25,7 +25,7 @@ pub enum FindCommonHeaderError {
     RangeLen,              // the length of the range is not greater than 2
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum RangeInPruningPoint {
     NotInSelectedChain,
     InSelectedChain(HashValue, Vec<HashValue>),
@@ -86,9 +86,11 @@ pub fn find_common_header_in_range(
 
 
 pub fn get_range_in_location(chain: &dyn ChainReader, dag: &BlockDAG, storage: Arc<dyn Store>, start_id: HashValue, end_id: Option<HashValue>) -> anyhow::Result<RangeInPruningPoint> {
-        let start_block_header = storage
-            .get_block_header_by_hash(start_id)?
-            .ok_or_else(|| format_err!("Cannot find block header by hash: {}", start_id))?;
+        let start_block_header = match storage
+            .get_block_header_by_hash(start_id)? {
+                Some(header) => header,
+                None => return anyhow::Result::Ok(RangeInPruningPoint::NotInSelectedChain),
+            };
 
         match chain.get_block_info_by_number(start_block_header.number())? {
             Some(block_info) => {
