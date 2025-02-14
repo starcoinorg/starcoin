@@ -15,7 +15,7 @@ use starcoin_network_rpc_api::{
     gen_client::NetworkRpcClient, BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeadersByNumber,
     GetBlockIds, GetTxnsWithHash, RawRpcClient,
 };
-use starcoin_network_rpc_api::{GetRangeInLocationRequest, RangeInPruningPoint};
+use starcoin_network_rpc_api::{GetRangeInLocationRequest, RangeInLocation};
 use starcoin_state_tree::StateNode;
 use starcoin_types::block::Block;
 use starcoin_types::transaction::{SignedUserTransaction, Transaction};
@@ -900,7 +900,7 @@ impl VerifiedRpcClient {
         peer: Option<PeerId>,
         start_id: HashValue,
         end_id: Option<HashValue>,
-    ) -> Result<RangeInPruningPoint> {
+    ) -> Result<RangeInLocation> {
         let peer_id = if let Some(peer) = peer {
             peer
         } else {

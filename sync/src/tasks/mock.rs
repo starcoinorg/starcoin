@@ -437,7 +437,7 @@ impl BlockIdRangeFetcher for SyncNodeMocker {
         _peer: Option<PeerId>,
         _start_id: HashValue,
         _end_id: Option<HashValue>,
-    ) -> BoxFuture<Result<starcoin_network_rpc_api::RangeInPruningPoint>> {
+    ) -> BoxFuture<Result<starcoin_network_rpc_api::RangeInLocation>> {
         unimplemented!()
     }
 }
