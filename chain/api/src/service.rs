@@ -498,7 +498,7 @@ where
                 }
             }
         } else {
-            bail!("get dag block children error")
+            bail!("get range in location error");
         }
     }
 
