@@ -211,7 +211,7 @@ impl TaskResultCollector<BlockIdAndNumber> for DagAncestorCollector {
                     block_info.block_id()
                 )
             })?;
-        if self.dag.has_block_connected(&block_header)? {
+        if !self.dag.has_block_connected(&block_header)? {
             bail!(
                 "failed to check the found common ancestor in dag, id: {:?}",
                 item
