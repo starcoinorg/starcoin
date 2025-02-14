@@ -925,7 +925,7 @@ impl VerifiedRpcClient {
                         return Err(RpcVerifyError::new(
                             peer_id.clone(),
                             format!(
-                                "failed to get block headers from peer : {:?}., error: {:?}",
+                                "failed to get range in location from peer: {:?}., error: {:?}",
                                 peer_id, e
                             ),
                         )
@@ -937,7 +937,7 @@ impl VerifiedRpcClient {
         }
         Err(RpcVerifyError::new(
             peer_id.clone(),
-            format!("failed to get block headers from peer : {:?}.", peer_id,),
+            format!("failed to get range in location from peer : {:?}.", peer_id,),
         )
         .into())
     }
