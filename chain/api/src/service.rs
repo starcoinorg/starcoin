@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 use crate::message::{ChainRequest, ChainResponse};
-use crate::range_locate::RangeInPruningPoint;
+use crate::range_locate::RangeInLocation;
 use crate::{ChainType, TransactionInfoWithProof};
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
@@ -83,7 +83,7 @@ pub trait ReadableChainService {
         &self,
         start_id: HashValue,
         end_id: Option<HashValue>,
-    ) -> Result<RangeInPruningPoint>;
+    ) -> Result<RangeInLocation>;
 }
 
 /// Writeable block chain service trait
@@ -485,12 +485,12 @@ where
             .await??;
         if let ChainResponse::GetRangeInLocation { range } = response {
             match range {
-                RangeInPruningPoint::NotInSelectedChain => Ok(GetRangeInLocationResponse {
-                    range: starcoin_network_rpc_api::RangeInPruningPoint::NotInSelectedChain,
+                RangeInLocation::NotInSelectedChain => Ok(GetRangeInLocationResponse {
+                    range: starcoin_network_rpc_api::RangeInLocation::NotInSelectedChain,
                 }),
-                RangeInPruningPoint::InSelectedChain(hash_value, hash_values) => {
+                RangeInLocation::InSelectedChain(hash_value, hash_values) => {
                     Ok(GetRangeInLocationResponse {
-                        range: starcoin_network_rpc_api::RangeInPruningPoint::InSelectedChain(
+                        range: starcoin_network_rpc_api::RangeInLocation::InSelectedChain(
                             hash_value,
                             hash_values,
                         ),

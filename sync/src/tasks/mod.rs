@@ -20,7 +20,7 @@ use starcoin_chain_api::ChainType;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_logger::prelude::*;
-use starcoin_network_rpc_api::{RangeInPruningPoint, MAX_BLOCK_IDS_REQUEST_SIZE};
+use starcoin_network_rpc_api::{RangeInLocation, MAX_BLOCK_IDS_REQUEST_SIZE};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceRef};
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
@@ -242,7 +242,7 @@ pub trait BlockIdRangeFetcher: Send + Sync {
         peer: Option<PeerId>,
         start_id: HashValue,
         end_id: Option<HashValue>,
-    ) -> BoxFuture<Result<RangeInPruningPoint>>;
+    ) -> BoxFuture<Result<RangeInLocation>>;
 }
 
 impl PeerOperator for VerifiedRpcClient {
@@ -278,7 +278,7 @@ impl BlockIdRangeFetcher for VerifiedRpcClient {
         peer: Option<PeerId>,
         start_id: HashValue,
         end_id: Option<HashValue>,
-    ) -> BoxFuture<Result<RangeInPruningPoint>> {
+    ) -> BoxFuture<Result<RangeInLocation>> {
         self.fetch_range_locate(peer, start_id, end_id)
             .map_err(fetcher_err_map)
             .boxed()
@@ -318,7 +318,7 @@ where
         peer: Option<PeerId>,
         start_id: HashValue,
         end_id: Option<HashValue>,
-    ) -> BoxFuture<Result<RangeInPruningPoint>> {
+    ) -> BoxFuture<Result<RangeInLocation>> {
         BlockIdRangeFetcher::fetch_range_locate(self.as_ref(), peer, start_id, end_id)
     }
 }

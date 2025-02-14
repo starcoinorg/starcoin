@@ -323,12 +323,12 @@ pub struct GetRangeInLocationRequest {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum RangeInPruningPoint {
+pub enum RangeInLocation {
     NotInSelectedChain,
     InSelectedChain(HashValue, Vec<HashValue>),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GetRangeInLocationResponse {
-    pub range: RangeInPruningPoint,
+    pub range: RangeInLocation,
 }

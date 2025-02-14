@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use crate::range_locate::RangeInPruningPoint;
+use crate::range_locate::RangeInLocation;
 use crate::{ChainType, TransactionInfoWithProof};
 use anyhow::Result;
 use starcoin_crypto::HashValue;
@@ -109,5 +109,5 @@ pub enum ChainResponse {
     CheckChainType(ChainType),
     GhostdagDataOption(Box<Option<GhostdagData>>),
     IsAncestorOfCommand { reachability_view: ReachabilityView },
-    GetRangeInLocation { range: RangeInPruningPoint },
+    GetRangeInLocation { range: RangeInLocation },
 }

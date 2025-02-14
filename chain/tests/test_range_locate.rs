@@ -2,7 +2,7 @@ use anyhow::{bail, format_err};
 use starcoin_chain::ChainReader;
 use starcoin_chain_api::{
     range_locate::{
-        find_common_header_in_range, get_range_in_location, FindCommonHeader, RangeInPruningPoint,
+        find_common_header_in_range, get_range_in_location, FindCommonHeader, RangeInLocation,
     },
     ExecutedBlock,
 };
@@ -84,8 +84,8 @@ fn test_range_locate() -> anyhow::Result<()> {
             remote_start_id,
             remote_end_id,
         )? {
-            RangeInPruningPoint::NotInSelectedChain => bail!("all are no in selected chain!"),
-            RangeInPruningPoint::InSelectedChain(_hash_value, hash_values) => hash_values,
+            RangeInLocation::NotInSelectedChain => bail!("all are no in selected chain!"),
+            RangeInLocation::InSelectedChain(_hash_value, hash_values) => hash_values,
         };
 
         result.iter().for_each(|block_id| {
@@ -163,7 +163,7 @@ fn test_not_in_range_locate() -> anyhow::Result<()> {
 
     assert_eq!(
         result,
-        RangeInPruningPoint::NotInSelectedChain,
+        RangeInLocation::NotInSelectedChain,
         "expect not in selected chain"
     );
 
@@ -185,8 +185,8 @@ fn test_same_range_request() -> anyhow::Result<()> {
         mock_chain_remote.head().current_header().id(),
         Some(mock_chain_remote.head().current_header().id()),
     )? {
-        RangeInPruningPoint::NotInSelectedChain => bail!("expect in selected chain"),
-        RangeInPruningPoint::InSelectedChain(hash_value, hash_values) => {
+        RangeInLocation::NotInSelectedChain => bail!("expect in selected chain"),
+        RangeInLocation::InSelectedChain(hash_value, hash_values) => {
             assert_eq!(hash_value, mock_chain_remote.head().current_header().id());
             assert_eq!(hash_values.len(), 0);
         }
@@ -203,8 +203,8 @@ fn test_same_range_request() -> anyhow::Result<()> {
         *block_header.block_id(),
         Some(*block_header.block_id()),
     )? {
-        RangeInPruningPoint::NotInSelectedChain => bail!("expect in selected chain"),
-        RangeInPruningPoint::InSelectedChain(hash_value, hash_values) => {
+        RangeInLocation::NotInSelectedChain => bail!("expect in selected chain"),
+        RangeInLocation::InSelectedChain(hash_value, hash_values) => {
             assert_eq!(hash_value, block_header.block_id().clone());
             assert_eq!(hash_values.len(), 0);
         }

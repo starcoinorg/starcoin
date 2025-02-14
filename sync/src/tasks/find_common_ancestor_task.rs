@@ -8,7 +8,7 @@ use starcoin_chain_api::range_locate::{find_common_header_in_range, FindCommonHe
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_logger::prelude::error;
-use starcoin_network_rpc_api::RangeInPruningPoint;
+use starcoin_network_rpc_api::RangeInLocation;
 use starcoin_storage::Store;
 use starcoin_types::block::BlockIdAndNumber;
 use std::sync::Arc;
@@ -60,7 +60,7 @@ impl TaskState for FindRangeLocateTask {
                     .fetch_range_locate(None, start_id, end_id)
                     .await?
                 {
-                    RangeInPruningPoint::NotInSelectedChain => {
+                    RangeInLocation::NotInSelectedChain => {
                         let block_header = self
                             .storage
                             .get_block_header_by_hash(start_id)?
@@ -75,7 +75,7 @@ impl TaskState for FindRangeLocateTask {
                             })?;
                         }
                     }
-                    RangeInPruningPoint::InSelectedChain(hash_value, hash_values) => {
+                    RangeInLocation::InSelectedChain(hash_value, hash_values) => {
                         if hash_values.is_empty() {
                             let header = self
                                 .storage

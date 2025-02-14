@@ -25,7 +25,7 @@ pub enum FindCommonHeaderError {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum RangeInPruningPoint {
+pub enum RangeInLocation {
     NotInSelectedChain,
     InSelectedChain(HashValue, Vec<HashValue>),
 }
@@ -88,19 +88,19 @@ pub fn get_range_in_location(
     storage: Arc<dyn Store>,
     start_id: HashValue,
     end_id: Option<HashValue>,
-) -> anyhow::Result<RangeInPruningPoint> {
+) -> anyhow::Result<RangeInLocation> {
     let start_block_header = match storage.get_block_header_by_hash(start_id)? {
         Some(header) => header,
-        None => return anyhow::Result::Ok(RangeInPruningPoint::NotInSelectedChain),
+        None => return anyhow::Result::Ok(RangeInLocation::NotInSelectedChain),
     };
 
     match chain.get_block_info_by_number(start_block_header.number())? {
         Some(block_info) => {
             if *block_info.block_id() != start_id {
-                return Ok(RangeInPruningPoint::NotInSelectedChain);
+                return Ok(RangeInLocation::NotInSelectedChain);
             }
         }
-        None => return Ok(RangeInPruningPoint::NotInSelectedChain),
+        None => return Ok(RangeInLocation::NotInSelectedChain),
     }
     let mut result = vec![];
 
@@ -131,5 +131,5 @@ pub fn get_range_in_location(
 
         result.push(block_id);
     }
-    Ok(RangeInPruningPoint::InSelectedChain(start_id, result))
+    Ok(RangeInLocation::InSelectedChain(start_id, result))
 }
