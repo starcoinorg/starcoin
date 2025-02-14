@@ -3,7 +3,6 @@
 
 use std::sync::Arc;
 
-use anyhow::format_err;
 use starcoin_crypto::HashValue;
 use starcoin_dag::{blockdag::BlockDAG, consensusdb::schemadb::ReachabilityStoreReader};
 use starcoin_storage::Store;
