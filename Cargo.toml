@@ -303,7 +303,7 @@ futures-channel = "0.3"
 futures-core = "0.3.4"
 futures-retry = "0.6"
 futures-timer = "3.0"
-futures-util = "~0.3"
+futures-util = "0.3.31"
 git-version = "0.3.5"
 governor = { version = "0.4.2", features = ["dashmap"] }
 heck = "0.3.3"
