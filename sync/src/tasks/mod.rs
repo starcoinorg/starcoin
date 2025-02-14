@@ -672,7 +672,7 @@ where
     let sync_task = if range_locate {
         TaskGenerator::new(
             FindRangeLocateTask::new(
-                current_block_info.block_id().clone(),
+                *current_block_info.block_id(),
                 None,
                 fetcher.clone(),
                 storage.clone(),

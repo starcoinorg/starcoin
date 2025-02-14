@@ -1,8 +1,5 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
-
-use std::result;
-
 use crate::message::{ChainRequest, ChainResponse};
 use crate::range_locate::RangeInPruningPoint;
 use crate::{ChainType, TransactionInfoWithProof};

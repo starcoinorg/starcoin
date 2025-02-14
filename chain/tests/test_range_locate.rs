@@ -1,6 +1,5 @@
 use anyhow::{bail, format_err};
-use proptest::result;
-use starcoin_chain::{BlockChain, ChainReader, ChainWriter};
+use starcoin_chain::ChainReader;
 use starcoin_chain_api::{
     range_locate::{
         find_common_header_in_range, get_range_in_location, FindCommonHeader, RangeInPruningPoint,
@@ -10,12 +9,11 @@ use starcoin_chain_api::{
 use starcoin_chain_mock::MockChain;
 use starcoin_config::ChainNetwork;
 use starcoin_storage::{block_info::BlockInfoStore, BlockStore};
-use starcoin_types::block::Block;
 use test_helper::Genesis;
 
 fn create_block(count: u64, chain: &mut MockChain) -> anyhow::Result<Vec<ExecutedBlock>> {
     let mut blocks = Vec::new();
-    for i in 0..count {
+    for _i in 0..count {
         let header = chain.produce_and_apply_by_tips(
             chain.head().current_header(),
             vec![chain.head().current_header().id()],
@@ -87,7 +85,7 @@ fn test_range_locate() -> anyhow::Result<()> {
             remote_end_id,
         )? {
             RangeInPruningPoint::NotInSelectedChain => bail!("all are no in selected chain!"),
-            RangeInPruningPoint::InSelectedChain(hash_value, hash_values) => hash_values,
+            RangeInPruningPoint::InSelectedChain(_hash_value, hash_values) => hash_values,
         };
 
         result.iter().for_each(|block_id| {
@@ -117,8 +115,8 @@ fn test_range_locate() -> anyhow::Result<()> {
 
         match find_result {
             FindCommonHeader::AllInRange => {
-                found_common_header = Some(result.last().unwrap().clone());
-                remote_start_id = result.last().unwrap().clone();
+                found_common_header = Some(*result.last().unwrap());
+                remote_start_id = *result.last().unwrap();
                 remote_end_id = None;
             }
             FindCommonHeader::InRange(start_id, end_id) => {
@@ -153,8 +151,8 @@ fn test_not_in_range_locate() -> anyhow::Result<()> {
     let mut mock_chain_remote = MockChain::new_with_genesis_for_test(net, genesis.clone(), 3)?;
 
     let count = 37;
-    let local_blocks = create_block(count, &mut mock_chain_local)?;
-    let remote_blocks = create_block(count, &mut mock_chain_remote)?;
+    let _ = create_block(count, &mut mock_chain_local)?;
+    let _ = create_block(count, &mut mock_chain_remote)?;
 
     let result = get_range_in_location(
         mock_chain_remote.head(),
@@ -202,8 +200,8 @@ fn test_same_range_request() -> anyhow::Result<()> {
     match get_range_in_location(
         mock_chain_remote.head(),
         mock_chain_remote.head().get_storage(),
-        block_header.block_id().clone(),
-        Some(block_header.block_id().clone()),
+        *block_header.block_id(),
+        Some(*block_header.block_id()),
     )? {
         RangeInPruningPoint::NotInSelectedChain => bail!("expect in selected chain"),
         RangeInPruningPoint::InSelectedChain(hash_value, hash_values) => {

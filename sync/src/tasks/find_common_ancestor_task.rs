@@ -1,21 +1,17 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::tasks::BlockIdFetcher;
 use anyhow::{bail, format_err, Result};
+use futures::future::BoxFuture;
 use futures::FutureExt;
-use futures::{executor::block_on, future::BoxFuture};
-use starcoin_accumulator::{Accumulator, MerkleAccumulator};
-use starcoin_chain::{BlockChain, ChainReader};
 use starcoin_chain_api::range_locate::{find_common_header_in_range, FindCommonHeader};
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_logger::prelude::error;
 use starcoin_network_rpc_api::RangeInPruningPoint;
-use starcoin_storage::{block_info, Store};
-use starcoin_types::block::{Block, BlockIdAndNumber, BlockNumber};
+use starcoin_storage::Store;
+use starcoin_types::block::BlockIdAndNumber;
 use std::sync::Arc;
-use stest::actix_export::Arbiter;
 use stream_task::{CollectorState, TaskResultCollector, TaskState};
 
 use super::BlockIdRangeFetcher;
@@ -80,7 +76,7 @@ impl TaskState for FindRangeLocateTask {
                         }
                     }
                     RangeInPruningPoint::InSelectedChain(hash_value, hash_values) => {
-                        if hash_values.len() == 0 {
+                        if hash_values.is_empty() {
                             let header = self
                                 .storage
                                 .get_block_header_by_hash(hash_value)?
@@ -103,8 +99,8 @@ impl TaskState for FindRangeLocateTask {
                             match find_result {
                                 FindCommonHeader::AllInRange => {
                                     found_common_header =
-                                        Some(hash_values.last().expect("cannot none!").clone());
-                                    start_id = hash_values.last().unwrap().clone();
+                                        Some(*hash_values.last().expect("cannot be none!"));
+                                    start_id = found_common_header.expect("cannot be none!");
                                     end_id = None;
                                 }
                                 FindCommonHeader::InRange(result_start_id, result_end_id) => {
