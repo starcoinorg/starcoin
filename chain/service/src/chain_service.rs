@@ -4,7 +4,7 @@
 use anyhow::{format_err, Error, Result};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
-use starcoin_chain_api::range_locate::{self, RangeInPruningPoint};
+use starcoin_chain_api::range_locate::{self, RangeInLocation};
 use starcoin_chain_api::{
     ChainReader, ChainType, ChainWriter, ReadableChainService, TransactionInfoWithProof,
 };
@@ -492,7 +492,7 @@ impl ReadableChainService for ChainReaderServiceInner {
         &self,
         start_id: HashValue,
         end_id: Option<HashValue>,
-    ) -> Result<RangeInPruningPoint> {
+    ) -> Result<RangeInLocation> {
         range_locate::get_range_in_location(self.get_main(), self.storage.clone(), start_id, end_id)
     }
 }
