@@ -1,6 +1,7 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use starcoin_executor::execute_readonly_function;
+use starcoin_logger::prelude::*;
 use starcoin_types::account::Account;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::identifier::Identifier;
@@ -24,11 +25,9 @@ struct DataProof {
 }
 
 // XXX FIXME YSG next pr
-#[ignore]
 #[stest::test]
 fn test_merkle_distributor() -> Result<()> {
     let association = Account::new_association();
-    println!("{}", association.address());
     let (chain_state, net) = prepare_genesis();
     let merkle_data = include_str!("merkle-test.json");
     let merkle_data: serde_json::Value = serde_json::from_str(merkle_data)?;
@@ -41,7 +40,9 @@ fn test_merkle_distributor() -> Result<()> {
         let source = include_str!("../modules/MerkleDistributor.move");
         let mut dep_libs = starcoin_move_stdlib::move_stdlib_files();
         let starcoin_stdlib_files = starcoin_move_stdlib::starcoin_stdlib_files();
+        let starcoin_framework_files = starcoin_move_stdlib::starcoin_framework_files();
         dep_libs.extend(starcoin_stdlib_files);
+        dep_libs.extend(starcoin_framework_files);
         let modules = compile_modules_with_address_ext(association_address(), source, &dep_libs);
 
         let package = Package::new(modules, None)?;
@@ -78,6 +79,7 @@ fn test_merkle_distributor() -> Result<()> {
             &chain_state,
             TransactionPayload::EntryFunction(script_function),
         )?;
+        info!("create merkle distributor");
     }
 
     // check I'm not claimed.
@@ -101,6 +103,7 @@ fn test_merkle_distributor() -> Result<()> {
         )?;
         let is_claimed: bool = bcs_ext::from_bytes(ret[0].as_slice()).unwrap();
         assert!(!is_claimed, "should not claimed");
+        info!("should not claimed");
     }
 
     // claim more than what you get should error.

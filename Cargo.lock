@@ -1981,6 +1981,7 @@ dependencies = [
  "serde_json",
  "starcoin-crypto",
  "starcoin-executor",
+ "starcoin-logger",
  "starcoin-move-stdlib",
  "starcoin-state-api",
  "starcoin-types",
