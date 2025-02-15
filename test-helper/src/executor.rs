@@ -7,7 +7,7 @@ use anyhow::{bail, Result};
 use starcoin_account_api::AccountPrivateKey;
 use starcoin_config::ChainNetwork;
 use starcoin_executor::{execute_readonly_function, execute_transactions};
-use starcoin_state_api::{ChainStateReader, StateReaderExt};
+use starcoin_state_api::{AccountStateReader, ChainStateReader, StateReaderExt};
 use starcoin_statedb::{ChainStateDB, ChainStateWriter};
 use starcoin_transaction_builder::DEFAULT_MAX_GAS_AMOUNT;
 use starcoin_transaction_builder::{stdlib_compiled_modules, StdlibVersion};
@@ -103,8 +103,8 @@ pub fn get_sequence_number<S: ChainStateReader>(addr: AccountAddress, chain_stat
 }
 
 pub fn get_balance<S: ChainStateReader>(address: AccountAddress, chain_state: &S) -> u128 {
-    chain_state
-        .get_balance(address)
+    AccountStateReader::new(chain_state)
+        .get_balance(&address)
         .expect("read balance resource should ok")
 }
 

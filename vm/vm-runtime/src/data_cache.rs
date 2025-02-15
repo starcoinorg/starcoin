@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Scratchpad for on chain values during the execution.
 
+use crate::default_gas_schedule;
 use crate::move_vm_ext::{resource_state_key, AsExecutorView, ResourceGroupResolver};
 use bytes::Bytes;
 use move_binary_format::deserializer::DeserializerConfig;
@@ -11,13 +12,14 @@ use move_core_types::metadata::Metadata;
 use move_core_types::resolver::{resource_size, ModuleResolver, ResourceResolver};
 use move_core_types::value::MoveTypeLayout;
 use move_table_extension::{TableHandle, TableResolver};
-use starcoin_gas_schedule::LATEST_GAS_FEATURE_VERSION;
 use starcoin_logger::prelude::*;
 use starcoin_types::account_address::AccountAddress;
+use starcoin_types::vm::config::starcoin_prod_deserializer_config;
 use starcoin_vm_runtime_types::resolver::{
     ExecutorView, ResourceGroupSize, TResourceGroupView, TResourceView,
 };
 use starcoin_vm_runtime_types::resource_group_adapter::ResourceGroupAdapter;
+use starcoin_vm_types::on_chain_config::{Features, OnChainConfig, VMConfig};
 use starcoin_vm_types::state_store::{
     errors::StateviewError, state_key::StateKey, state_storage_usage::StateStorageUsage,
     state_value::StateValue, StateView, TStateView,
@@ -55,7 +57,7 @@ pub fn get_resource_group_member_from_metadata(
 /// for (non-group) resources and subsequent handling in the StorageAdapter itself.
 pub struct StorageAdapter<'e, E> {
     executor_view: &'e E,
-    _deserializer_config: DeserializerConfig,
+    deserializer_config: DeserializerConfig,
     resource_group_view: ResourceGroupAdapter<'e>,
     accessed_groups: RefCell<HashSet<StateKey>>,
 }
@@ -142,11 +144,11 @@ impl<'block, S: StateView> ModuleResolver for StateViewCache<'block, S> {
     type Error = PartialVMError;
 
     fn get_module_metadata(&self, module_id: &ModuleId) -> Vec<Metadata> {
-        StorageAdapter::new(self).get_module_metadata(module_id)
+        self.as_move_resolver().get_module_metadata(module_id)
     }
 
     fn get_module(&self, module_id: &ModuleId) -> Result<Option<Bytes>, Self::Error> {
-        StorageAdapter::new(self).get_module(module_id)
+        self.as_move_resolver().get_module(module_id)
     }
 }
 impl<'block, S: StateView> ResourceResolver for StateViewCache<'block, S> {
@@ -159,22 +161,21 @@ impl<'block, S: StateView> ResourceResolver for StateViewCache<'block, S> {
         metadata: &[Metadata],
         layout: Option<&MoveTypeLayout>,
     ) -> Result<(Option<Bytes>, usize), Self::Error> {
-        StorageAdapter::new(self)
+        self.as_move_resolver()
             .get_resource_bytes_with_metadata_and_layout(address, struct_tag, metadata, layout)
     }
 }
 
 impl<'a, S: StateView> StorageAdapter<'a, S> {
-    pub fn new(state_store: &'a S) -> Self {
+    pub fn new(
+        state_store: &'a S,
+        deserializer_config: DeserializerConfig,
+        resource_group_view: ResourceGroupAdapter<'a>,
+    ) -> Self {
         Self {
             executor_view: state_store,
-            _deserializer_config: DeserializerConfig::new(0, 0),
-            resource_group_view: ResourceGroupAdapter::new(
-                None,
-                state_store,
-                LATEST_GAS_FEATURE_VERSION,
-                false,
-            ),
+            deserializer_config,
+            resource_group_view,
             accessed_groups: RefCell::new(HashSet::new()),
         }
     }
@@ -195,10 +196,11 @@ impl<'a, S: StateView> ModuleResolver for StorageAdapter<'a, S> {
             _ => return vec![],
         };
 
-        let compiled_module = match CompiledModule::deserialize(&module) {
-            Ok(module) => module,
-            _ => return vec![],
-        };
+        let compiled_module =
+            match CompiledModule::deserialize_with_config(&module, &self.deserializer_config) {
+                Ok(module) => module,
+                _ => return vec![],
+            };
 
         compiled_module.metadata
     }
@@ -317,7 +319,22 @@ pub trait AsMoveResolver<S> {
 
 impl<S: StateView> AsMoveResolver<S> for S {
     fn as_move_resolver(&self) -> StorageAdapter<S> {
-        StorageAdapter::new(self)
+        let features = Features::fetch_config(self).unwrap_or_default();
+        let deserializer_config = starcoin_prod_deserializer_config(&features);
+        assert!(!features.is_resource_groups_split_in_vm_change_set_enabled());
+
+        let gas_feature_version = VMConfig::fetch_config(self)
+            .map(|config| config.gas_schedule)
+            .unwrap_or(default_gas_schedule())
+            .feature_version;
+        let resource_group_adapter = ResourceGroupAdapter::new(
+            None,
+            self,
+            gas_feature_version,
+            // todo(simon): Currently it is disabled, make it real.
+            features.is_resource_groups_split_in_vm_change_set_enabled(),
+        );
+        StorageAdapter::new(self, deserializer_config, resource_group_adapter)
     }
 }
 
@@ -459,8 +476,6 @@ pub(crate) mod tests {
             resource_groups_split_in_vm_change_set_enabled,
         );
 
-        // let features = Features::fetch_config(state_view).unwrap_or_default();
-        //  let deserializer_config = aptos_prod_deserializer_config(&features);
-        StorageAdapter::new(state_view)
+        state_view.as_move_resolver()
     }
 }

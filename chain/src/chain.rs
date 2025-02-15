@@ -24,7 +24,7 @@ use starcoin_dag::consensusdb::prelude::StoreError;
 use starcoin_executor::{BlockExecutedData, VMMetrics};
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
-use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
+use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
@@ -46,6 +46,7 @@ use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::state_store::state_key::StateKey;
+use starcoin_vm_types::state_view::StateReaderExt;
 use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
@@ -2385,6 +2386,5 @@ pub(crate) fn info_2_accumulator(
 }
 
 fn get_epoch_from_statedb(statedb: &ChainStateDB) -> Result<Epoch> {
-    let account_reader = AccountStateReader::new(statedb);
-    account_reader.get_resource::<Epoch>(genesis_address())
+    statedb.get_resource_type::<Epoch>(genesis_address())
 }

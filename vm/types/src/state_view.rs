@@ -73,16 +73,7 @@ pub trait StateReaderExt: StateView {
     where
         R: MoveResource,
     {
-        let rsrc_bytes = self
-            .get_state_value_bytes(&StateKey::resource_typed::<R>(&address)?)?
-            .ok_or_else(|| {
-                format_err!(
-                    "Resource {:?} {:?} not exists at address:{}",
-                    R::module_identifier(),
-                    R::struct_identifier(),
-                    address
-                )
-            })?;
+        let rsrc_bytes = self.get_resource_type_bytes::<R>(address)?;
         let rsrc = bcs_ext::from_bytes::<R>(&rsrc_bytes)?;
         Ok(rsrc)
     }
@@ -97,10 +88,6 @@ pub trait StateReaderExt: StateView {
         Self: Sized,
     {
         T::fetch_config(self)
-    }
-
-    fn get_balance(&self, address: AccountAddress) -> Result<u128> {
-        self.get_balance_by_token_code(address, G_STC_TOKEN_CODE.clone())
     }
 
     /// Get balance by address and coin type
@@ -119,14 +106,6 @@ pub trait StateReaderExt: StateView {
             })?;
         let rsrc = bcs_ext::from_bytes::<BalanceResource>(&rsrc_bytes)?;
         Ok(rsrc.token())
-    }
-
-    fn get_balance_by_token_code(
-        &self,
-        address: AccountAddress,
-        token_code: TokenCode,
-    ) -> Result<u128> {
-        self.get_balance_by_type(address, token_code.try_into()?)
     }
 
     fn get_epoch(&self) -> Result<Epoch> {

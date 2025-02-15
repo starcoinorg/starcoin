@@ -240,11 +240,11 @@ impl From<&ModuleId> for AccessPath {
 pub enum DataType {
     CODE,
     RESOURCE,
-    ResourceGroup,
+    RESOURCEGROUP,
 }
 
 impl DataType {
-    pub const LENGTH: usize = 2;
+    pub const LENGTH: usize = 3;
 
     pub fn is_code(self) -> bool {
         matches!(self, Self::CODE)
@@ -253,7 +253,7 @@ impl DataType {
         matches!(self, Self::RESOURCE)
     }
     pub fn is_resource_group(self) -> bool {
-        matches!(self, Self::ResourceGroup)
+        matches!(self, Self::RESOURCEGROUP)
     }
 
     #[inline]
@@ -279,7 +279,7 @@ impl Arbitrary for DataType {
         prop_oneof![
             Just(Self::CODE),
             Just(Self::RESOURCE),
-            Just(Self::ResourceGroup)
+            Just(Self::RESOURCEGROUP)
         ]
         .boxed()
     }
@@ -345,7 +345,7 @@ impl DataPath {
         match self {
             Self::Code(_) => DataType::CODE,
             Self::Resource(_) => DataType::RESOURCE,
-            Self::ResourceGroup(_) => DataType::ResourceGroup,
+            Self::ResourceGroup(_) => DataType::RESOURCEGROUP,
         }
     }
 
@@ -388,7 +388,7 @@ impl FromStr for AccessPath {
         let data_path = match data_type {
             DataType::CODE => Self::code_data_path(Identifier::new(parts[2])?),
             DataType::RESOURCE => Self::resource_data_path(parse_struct_tag(parts[2])?),
-            DataType::ResourceGroup => Self::resource_group_data_path(parse_struct_tag(parts[2])?),
+            DataType::RESOURCEGROUP => Self::resource_group_data_path(parse_struct_tag(parts[2])?),
         };
         Ok(Self::new(address, data_path))
     }

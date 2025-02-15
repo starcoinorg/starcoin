@@ -9,7 +9,7 @@ use starcoin_logger::prelude::*;
 use starcoin_rpc_api::types::FactoryAction;
 use starcoin_rpc_client::RpcClient;
 use starcoin_rpc_client::StateRootOption;
-use starcoin_state_api::{ChainStateReader, StateReaderExt};
+use starcoin_state_api::{AccountStateReader, ChainStateReader, StateReaderExt};
 use starcoin_tx_factory::txn_generator::MockTxnGenerator;
 use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::account_address::AccountAddress;
@@ -95,12 +95,13 @@ fn get_account_or_default(
             }
 
             let addr = default_account.clone().unwrap().address;
-            let state_reader = client.state_reader(StateRootOption::Latest)?;
-            let mut balance = state_reader.get_balance(addr);
+            let remote_state_reader = client.state_reader(StateRootOption::Latest)?;
+            let account_reader = AccountStateReader::new(&remote_state_reader);
+            let mut balance = account_reader.get_balance(&addr);
             // balance resource has not been created
             while balance.is_err() {
                 std::thread::sleep(Duration::from_millis(1000));
-                balance = state_reader.get_balance(addr);
+                balance = account_reader.get_balance(&addr);
                 info!("account balance is null.");
             }
             default_account.unwrap()
@@ -414,7 +415,8 @@ impl TxnMocker {
         let mut account_local = self.client.account_list()?;
         let mut available_list = vec![];
         let mut index = 0;
-        let state_reader = self.client.state_reader(StateRootOption::Latest)?;
+        let remote_state_reader = self.client.state_reader(StateRootOption::Latest)?;
+        let account_reader = AccountStateReader::new(&remote_state_reader);
         while index < account_num {
             if let Some(account) = account_local.pop() {
                 if self
@@ -426,7 +428,7 @@ impl TxnMocker {
                     )
                     .is_ok()
                 {
-                    let _ = state_reader.get_balance(*account.address())?;
+                    let _ = account_reader.get_balance(account.address())?;
 
                     available_list.push(account);
                 }
@@ -441,10 +443,10 @@ impl TxnMocker {
             info!("account lack: {}", lack_len);
             // account has enough STC
             let start_balance = INITIAL_BALANCE * lack_len as u128;
-            let mut balance = state_reader.get_balance(self.account_address)?;
+            let mut balance = account_reader.get_balance(&self.account_address)?;
             while balance < start_balance {
                 std::thread::sleep(Duration::from_millis(1000));
-                balance = state_reader.get_balance(self.account_address)?;
+                balance = account_reader.get_balance(&self.account_address)?;
                 info!(
                     "account balance is {:?}, min is: {}",
                     balance, start_balance

@@ -10599,6 +10599,7 @@ dependencies = [
  "bcs-ext",
  "hex",
  "log 0.4.22",
+ "move-core-types",
  "move-transactional-test-runner",
  "once_cell",
  "serde",

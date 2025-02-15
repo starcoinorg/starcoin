@@ -24,6 +24,13 @@ pub fn get_max_binary_format_version(
     }
 }
 
+pub fn starcoin_prod_deserializer_config(features: &Features) -> DeserializerConfig {
+    DeserializerConfig::new(
+        get_max_binary_format_version(features, None),
+        get_max_identifier_size(features),
+    )
+}
+
 pub fn get_max_identifier_size(features: &Features) -> u64 {
     if features.is_enabled(FeatureFlag::LIMIT_MAX_IDENTIFIER_LENGTH) {
         IDENTIFIER_SIZE_MAX
