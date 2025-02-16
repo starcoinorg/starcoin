@@ -27,7 +27,7 @@ dependencies = [
  "once_cell",
  "parking_lot 0.12.1",
  "pin-project-lite 0.2.9",
- "smallvec 1.10.0",
+ "smallvec 1.14.0",
  "tokio",
  "tokio-util 0.7.7",
 ]
@@ -3373,7 +3373,7 @@ dependencies = [
  "parking_lot 0.12.1",
  "quanta",
  "rand 0.8.5",
- "smallvec 1.10.0",
+ "smallvec 1.14.0",
 ]
 
 [[package]]
@@ -4436,7 +4436,7 @@ dependencies = [
  "multiaddr",
  "parking_lot 0.12.1",
  "pin-project 1.0.12",
- "smallvec 1.10.0",
+ "smallvec 1.14.0",
 ]
 
 [[package]]
@@ -4467,7 +4467,7 @@ dependencies = [
  "rw-stream-sink",
  "sec1",
  "sha2 0.10.6",
- "smallvec 1.10.0",
+ "smallvec 1.14.0",
  "thiserror",
  "unsigned-varint 0.7.1",
  "void",
@@ -4484,7 +4484,7 @@ dependencies = [
  "libp2p-core",
  "log 0.4.17",
  "parking_lot 0.12.1",
- "smallvec 1.10.0",
+ "smallvec 1.14.0",
  "trust-dns-resolver",
 ]
 
@@ -4504,7 +4504,7 @@ dependencies = [
  "prost",
  "prost-build",
  "prost-codec",
- "smallvec 1.10.0",
+ "smallvec 1.14.0",
  "thiserror",
  "void",
 ]
@@ -4530,7 +4530,7 @@ dependencies = [
  "prost-build",
  "rand 0.8.5",
  "sha2 0.10.6",
- "smallvec 1.10.0",
+ "smallvec 1.14.0",
  "thiserror",
  "uint 0.9.5",
  "unsigned-varint 0.7.1",
@@ -4550,7 +4550,7 @@ dependencies = [
  "libp2p-swarm",
  "log 0.4.17",
  "rand 0.8.5",
- "smallvec 1.10.0",
+ "smallvec 1.14.0",
  "socket2",
  "tokio",
  "trust-dns-proto",
@@ -4585,7 +4585,7 @@ dependencies = [
  "nohash-hasher",
  "parking_lot 0.12.1",
  "rand 0.8.5",
- "smallvec 1.10.0",
+ "smallvec 1.14.0",
  "unsigned-varint 0.7.1",
 ]
 
@@ -4663,7 +4663,7 @@ dependencies = [
  "libp2p-swarm",
  "log 0.4.17",
  "rand 0.8.5",
- "smallvec 1.10.0",
+ "smallvec 1.14.0",
  "unsigned-varint 0.7.1",
 ]
 
@@ -4683,7 +4683,7 @@ dependencies = [
  "log 0.4.17",
  "pin-project 1.0.12",
  "rand 0.8.5",
- "smallvec 1.10.0",
+ "smallvec 1.14.0",
  "thiserror",
  "tokio",
  "void",
@@ -5885,7 +5885,7 @@ dependencies = [
  "move-vm-types",
  "sha2 0.9.9",
  "sha3",
- "smallvec 1.10.0",
+ "smallvec 1.14.0",
  "walkdir",
 ]
 
@@ -5912,7 +5912,7 @@ dependencies = [
  "move-vm-types",
  "once_cell",
  "sha3",
- "smallvec 1.10.0",
+ "smallvec 1.14.0",
 ]
 
 [[package]]
@@ -6024,7 +6024,7 @@ dependencies = [
  "move-core-types",
  "once_cell",
  "serde 1.0.205",
- "smallvec 1.10.0",
+ "smallvec 1.14.0",
 ]
 
 [[package]]
@@ -6099,7 +6099,7 @@ dependencies = [
  "futures 0.3.26",
  "log 0.4.17",
  "pin-project 1.0.12",
- "smallvec 1.10.0",
+ "smallvec 1.14.0",
  "unsigned-varint 0.7.1",
 ]
 
@@ -6277,7 +6277,7 @@ dependencies = [
  "sc-peerset",
  "serde 1.0.205",
  "serde_json",
- "smallvec 1.10.0",
+ "smallvec 1.14.0",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-metrics",
@@ -6354,7 +6354,7 @@ version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77a5d83df9f36fe23f0c3648c6bbb8b0298bb5f1939c8f2704431371f4b84d43"
 dependencies = [
- "smallvec 1.10.0",
+ "smallvec 1.14.0",
 ]
 
 [[package]]
@@ -6925,7 +6925,7 @@ dependencies = [
  "instant",
  "libc",
  "redox_syscall 0.2.16",
- "smallvec 1.10.0",
+ "smallvec 1.14.0",
  "winapi 0.3.9",
 ]
 
@@ -6938,7 +6938,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "libc",
  "redox_syscall 0.2.16",
- "smallvec 1.10.0",
+ "smallvec 1.14.0",
  "windows-sys 0.45.0",
 ]
 
@@ -7331,7 +7331,7 @@ dependencies = [
  "nix 0.24.3",
  "once_cell",
  "parking_lot 0.12.1",
- "smallvec 1.10.0",
+ "smallvec 1.14.0",
  "symbolic-demangle",
  "tempfile",
  "thiserror",
@@ -8564,7 +8564,7 @@ dependencies = [
  "nix 0.23.2",
  "radix_trie",
  "scopeguard",
- "smallvec 1.10.0",
+ "smallvec 1.14.0",
  "unicode-segmentation",
  "unicode-width",
  "utf8parse",
@@ -9248,9 +9248,9 @@ dependencies = [
 
 [[package]]
 name = "smallvec"
-version = "1.10.0"
+version = "1.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a507befe795404456341dfab10cef66ead4c041f62b8b11bbb92bffe5d0953e0"
+checksum = "7fcf8323ef1faaee30a44a340193b1ac6814fd9b7b4e88e9d4519a3e4abe1cfd"
 
 [[package]]
 name = "smawk"
@@ -10052,7 +10052,7 @@ dependencies = [
  "num_enum",
  "rand 0.8.5",
  "ripemd160",
- "smallvec 1.10.0",
+ "smallvec 1.14.0",
  "starcoin-crypto",
  "starcoin-uint",
  "tiny-keccak",
@@ -12460,7 +12460,7 @@ dependencies = [
  "ipnet",
  "lazy_static 1.4.0",
  "rand 0.8.5",
- "smallvec 1.10.0",
+ "smallvec 1.14.0",
  "socket2",
  "thiserror",
  "tinyvec",
@@ -12482,7 +12482,7 @@ dependencies = [
  "lru-cache",
  "parking_lot 0.12.1",
  "resolv-conf",
- "smallvec 1.10.0",
+ "smallvec 1.14.0",
  "thiserror",
  "tokio",
  "tracing",
