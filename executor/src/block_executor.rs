@@ -4,6 +4,7 @@
 use crate::{execute_block_transactions, execute_transactions};
 use anyhow::bail;
 use log::{info, warn};
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_force_upgrade::ForceUpgrade;
@@ -52,6 +53,13 @@ impl Default for BlockExecutedData {
     }
 }
 
+static BALANCE_EVENT_AMOUNT: Lazy<u128> = Lazy::new(|| {
+    std::env::var("BALANCE_EVENT_AMOUNT")
+        .ok()
+        .and_then(|v| v.parse::<u128>().ok())
+        .unwrap_or(1_000_000_000)
+});
+
 pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
     chain_state: &S,
     txns: Vec<Transaction>,
@@ -80,8 +88,7 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
             .filter_map(|e| BalanceEvent::try_from(e).ok())
             .for_each(|e| {
                 if e.token_code() == &G_STC_TOKEN_CODE.clone()
-                    && e.amount() > STCUnit::STC.value_of(10).scaling()
-                // 10 STC
+                    && e.amount() > STCUnit::STC.value_of(*BALANCE_EVENT_AMOUNT).scaling()
                 {
                     warn!("Logging Event: txn_hash {}, {}", txn_hash, e);
                 }
