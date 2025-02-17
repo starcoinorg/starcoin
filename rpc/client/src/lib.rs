@@ -968,6 +968,16 @@ impl RpcClient {
         .map_err(map_err)
     }
 
+    pub fn subscribe_new_transactions_full(
+        &self,
+    ) -> anyhow::Result<impl TryStream<Ok = Vec<TransactionView>, Error = anyhow::Error>> {
+        self.call_rpc_blocking(|inner| async move {
+            let res = inner.pubsub_client.subscribe_new_transactions_full().await;
+            res.map(|s| s.map_err(map_err))
+        })
+        .map_err(map_err)
+    }
+
     pub fn subscribe_new_mint_blocks(
         &self,
     ) -> anyhow::Result<impl TryStream<Ok = MintBlockEvent, Error = anyhow::Error>> {
