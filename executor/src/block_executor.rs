@@ -19,7 +19,9 @@ use starcoin_vm_runtime::force_upgrade_management::{
 };
 use starcoin_vm_runtime::metrics::VMMetrics;
 use starcoin_vm_types::access_path::AccessPath;
-use starcoin_vm_types::account_config::{genesis_address, ModuleUpgradeStrategy};
+use starcoin_vm_types::account_config::{
+    genesis_address, BalanceEvent, ModuleUpgradeStrategy, G_STC_TOKEN_CODE,
+};
 use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::on_chain_config;
@@ -72,6 +74,15 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
     {
         let txn_hash = txn.id();
         let (mut table_infos, write_set, events, gas_used, status) = output.into_inner();
+        events
+            .as_slice()
+            .iter()
+            .filter_map(|e| BalanceEvent::try_from(e).ok())
+            .for_each(|e| {
+                if e.token_code() == *G_STC_TOKEN_CODE.clone() && e.amount() > 1000000 {
+                    warn!("Logging Event: txn_hash {}, {}", txn_hash, e);
+                }
+            });
         match status {
             TransactionStatus::Discard(status) => {
                 return Err(BlockExecutorError::BlockTransactionDiscard(

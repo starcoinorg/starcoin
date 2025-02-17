@@ -9,11 +9,14 @@ pub mod block_reward;
 pub mod burn;
 pub mod config_change;
 pub mod dao;
+mod helper;
 pub mod mint;
 pub mod upgrade;
+
 pub use account_deposit::*;
 pub use account_withdraw::*;
 pub use block_reward::*;
 pub use burn::*;
 pub use dao::*;
+pub use helper::*;
 pub use mint::*;
