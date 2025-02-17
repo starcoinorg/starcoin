@@ -32,26 +32,6 @@ impl ForceUpgrade {
                     .expect("Decode package should success")
             })
             .ok_or_else(|| format_err!("Can not find upgrade package {}", package_file))?;
-
-        /* test in test_package_init_function
-        let init_script = ScriptFunction::new(
-            ModuleId::new(
-                core_code_address(),
-                Identifier::new("StdlibUpgradeScripts").unwrap(),
-            ),
-            Identifier::new("upgrade_from_v11_to_v12").unwrap(),
-            vec![],
-            vec![
-                bcs_ext::to_bytes(&0u64).unwrap(), // TODO(BobOng): [force-upgrade] to confirm main burn block
-                bcs_ext::to_bytes(&16090000u64).unwrap(),
-                bcs_ext::to_bytes(&5u64).unwrap(),
-                bcs_ext::to_bytes(&1000u64).unwrap(),
-            ],
-        );
-
-        assert_eq!(package.init_script().unwrap(), &init_script);
-         */
-
         Ok(account.sign_txn(RawUserTransaction::new(
             *account.address(),
             sequence_number,

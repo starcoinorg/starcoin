@@ -20,8 +20,6 @@ use starcoin_dag::blockdag::{BlockDAG, MineNewDagBlockInfo};
 use starcoin_dag::consensusdb::consenses_state::DagState;
 use starcoin_dag::consensusdb::prelude::StoreError;
 use starcoin_executor::VMMetrics;
-#[cfg(feature = "force-deploy")]
-use starcoin_force_upgrade::force_upgrade_management::get_force_upgrade_block_number;
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
@@ -41,6 +39,7 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, Transaction},
     U256,
 };
+use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy};
@@ -748,18 +747,11 @@ impl BlockChain {
             "invalid block: gas_used is not match"
         );
 
-        #[cfg(feature = "force-deploy")]
         let valid_txn_num = if header.number() == get_force_upgrade_block_number(chain_id)
             && executed_data.with_extra_txn
         {
             vec_transaction_info.len() == transactions.len().checked_add(1).unwrap()
         } else {
-            vec_transaction_info.len() == transactions.len()
-        };
-        #[cfg(not(feature = "force-deploy"))]
-        let valid_txn_num = {
-            // Silence unused variable warning
-            let _ = chain_id;
             vec_transaction_info.len() == transactions.len()
         };
 
