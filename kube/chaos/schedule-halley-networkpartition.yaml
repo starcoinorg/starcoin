@@ -1,0 +1,30 @@
+kind: Schedule
+apiVersion: chaos-mesh.org/v1alpha1
+metadata:
+  namespace: starcoin-halley
+  name: networkpartition
+spec:
+  schedule: '*/30 * * * *'
+  startingDeadlineSeconds: null
+  concurrencyPolicy: Forbid
+  historyLimit: 1000
+  type: NetworkChaos
+  networkChaos:
+    selector:
+      namespaces:
+        - starcoin-halley
+      pods:
+        starcoin-halley:
+          - starcoin-0
+    mode: all
+    action: partition
+    duration: 5m
+    direction: to
+    target:
+      selector:
+        namespaces:
+          - starcoin-halley
+        pods:
+          starcoin-halley:
+            - starcoin-0
+      mode: all
