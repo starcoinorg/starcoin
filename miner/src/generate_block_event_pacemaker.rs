@@ -9,13 +9,14 @@ use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, Serv
 use starcoin_txpool_api::PropagateTransactions;
 use starcoin_types::{
     sync_status::SyncStatus,
-    system_events::{NewHeadBlock, SyncStatusChangeEvent},
+    system_events::{NewDagBlockFromPeer, NewHeadBlock, SyncStatusChangeEvent},
 };
 use std::sync::Arc;
 
 pub struct GenerateBlockEventPacemaker {
     config: Arc<NodeConfig>,
     sync_status: Option<SyncStatus>,
+    last_time_received: Option<std::time::SystemTime>,
 }
 
 impl ServiceFactory<Self> for GenerateBlockEventPacemaker {
@@ -23,6 +24,7 @@ impl ServiceFactory<Self> for GenerateBlockEventPacemaker {
         Ok(Self {
             config: ctx.get_shared::<Arc<NodeConfig>>()?,
             sync_status: None,
+            last_time_received: None,
         })
     }
 }
@@ -44,6 +46,7 @@ impl ActorService for GenerateBlockEventPacemaker {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<SyncStatusChangeEvent>();
         ctx.subscribe::<NewHeadBlock>();
+        ctx.subscribe::<NewDagBlockFromPeer>();
         //if mint empty block is disabled, trigger mint event for on demand mint (Dev)
         if self.config.miner.is_disable_mint_empty_block() {
             ctx.subscribe::<PropagateTransactions>();
@@ -54,6 +57,7 @@ impl ActorService for GenerateBlockEventPacemaker {
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<SyncStatusChangeEvent>();
         ctx.unsubscribe::<NewHeadBlock>();
+        ctx.unsubscribe::<NewDagBlockFromPeer>();
         if self.config.miner.is_disable_mint_empty_block() {
             ctx.unsubscribe::<PropagateTransactions>();
         }
@@ -87,6 +91,31 @@ impl EventHandler<Self, SyncStatusChangeEvent> for GenerateBlockEventPacemaker {
         self.sync_status = Some(msg.0);
         if is_synced {
             self.send_event(false, ctx);
+        }
+    }
+}
+
+impl EventHandler<Self, NewDagBlockFromPeer> for GenerateBlockEventPacemaker {
+    fn handle_event(&mut self, _msg: NewDagBlockFromPeer, ctx: &mut ServiceContext<Self>) {
+        let now = std::time::SystemTime::now();
+        if let Some(last_time) = self.last_time_received {
+            match now.duration_since(last_time) {
+                Ok(duration) => {
+                    self.last_time_received = Some(now);
+                    if duration.as_secs() >= self.config.miner.dag_block_receive_time_window() {
+                        self.send_event(false, ctx);
+                    }
+                }
+                Err(e) => {
+                    warn!(
+                        "[pacemaker] failed to calculate the dag block receive duration: {:?}",
+                        e
+                    );
+                    self.last_time_received = Some(now);
+                }
+            }
+        } else {
+            self.last_time_received = Some(now);
         }
     }
 }
