@@ -359,6 +359,33 @@ impl MockChain {
         Ok(())
     }
 
+    pub fn produce_and_apply_with_tips_for_times(
+        &mut self,
+        times: u64,
+    ) -> Result<Vec<ExecutedBlock>> {
+        let mut blocks = Vec::new();
+        for _i in 0..times {
+            let header = self.produce_and_apply_by_tips(
+                self.head.current_header(),
+                vec![self.head.current_header().id()],
+            )?;
+            let block = self
+                .head
+                .get_storage()
+                .get_block_by_hash(header.id())?
+                .unwrap();
+            let block_info = self
+                .head
+                .get_storage()
+                .get_block_info(header.id())?
+                .unwrap();
+            let executed_block = ExecutedBlock::new(block, block_info);
+            self.connect(executed_block.clone())?;
+            blocks.push(executed_block);
+        }
+        Ok(blocks)
+    }
+
     pub fn produce_and_apply_times_for_fork(
         &mut self,
         fork_point: BlockHeader,
