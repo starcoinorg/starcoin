@@ -4,7 +4,10 @@
 #![allow(clippy::arithmetic_side_effects)]
 use crate::store::sync_dag_store::SyncDagStore;
 use crate::tasks::block_sync_task::SyncBlockData;
-use crate::tasks::mock::{ErrorStrategy, MockBlockIdFetcher, SyncNodeMocker};
+use crate::tasks::find_common_ancestor_task::{DagAncestorCollector, FindRangeLocateTask};
+use crate::tasks::mock::{
+    ErrorStrategy, MockBlockIdFetcher, MockRangeLocationFetcher, SyncNodeMocker,
+};
 use crate::tasks::{
     full_sync_task, AccumulatorCollector, AncestorCollector, BlockAccumulatorSyncTask,
     BlockCollector, BlockFetcher, BlockLocalStore, BlockSyncTask, FindAncestorTask, SyncFetcher,
@@ -1052,6 +1055,85 @@ async fn test_sync_block_in_async_connection() -> Result<()> {
         20,
         local_node.chain().dag(),
     )?;
+
+    Ok(())
+}
+
+#[stest::test]
+pub async fn test_range_location() -> Result<()> {
+    let net = ChainNetwork::new_test();
+    let genesis = Genesis::build(&net)?;
+    let mut mock_chain_local =
+        MockChain::new_with_genesis_for_test(net.clone(), genesis.clone(), 3)?;
+    let mut mock_chain_remote = MockChain::new_with_genesis_for_test(net, genesis.clone(), 3)?;
+
+    let common_number = 37;
+    let blocks = mock_chain_local.produce_and_apply_with_tips_for_times(common_number)?;
+
+    assert_eq!(
+        common_number,
+        mock_chain_local.head().current_header().number()
+    );
+
+    blocks.into_iter().try_for_each(|block| {
+        mock_chain_remote.apply(block.block.clone())?;
+        mock_chain_remote.connect(block)?;
+        anyhow::Ok(())
+    })?;
+
+    assert_eq!(
+        common_number,
+        mock_chain_remote.head().current_header().number()
+    );
+
+    assert_eq!(
+        mock_chain_remote.head().current_header().id(),
+        mock_chain_local.head().current_header().id()
+    );
+
+    let common_block = mock_chain_local
+        .get_storage()
+        .get_block_by_hash(mock_chain_local.head().current_header().id())?
+        .unwrap();
+
+    // now fork
+    let _ = mock_chain_remote.produce_and_apply_with_tips_for_times(113)?;
+    let _ = mock_chain_local.produce_and_apply_with_tips_for_times(13)?;
+
+    let remote_fetcher = MockRangeLocationFetcher::new(mock_chain_remote);
+
+    let task_state = FindRangeLocateTask::new(
+        mock_chain_local.head().current_header().id(),
+        None,
+        remote_fetcher,
+        mock_chain_local.head().get_storage(),
+        mock_chain_local.head().dag(),
+    );
+
+    let collector = DagAncestorCollector::new(
+        mock_chain_local.head().dag(),
+        mock_chain_local.head().get_storage(),
+    );
+
+    let event_handle = Arc::new(TaskEventCounterHandle::new());
+
+    let task = TaskGenerator::new(
+        task_state,
+        5,
+        3,
+        300,
+        collector,
+        event_handle.clone(),
+        Arc::new(DefaultCustomErrorHandle),
+    )
+    .generate();
+
+    let ancestor = task.await?;
+
+    assert_eq!(ancestor.id, common_block.header().id());
+
+    let report = event_handle.get_reports().pop().unwrap();
+    debug!("report: {}", report);
 
     Ok(())
 }

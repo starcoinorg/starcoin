@@ -7,7 +7,6 @@ use futures::FutureExt;
 use starcoin_chain_api::range_locate::{find_common_header_in_range, FindCommonHeader};
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
-use starcoin_logger::prelude::error;
 use starcoin_network_rpc_api::RangeInLocation;
 use starcoin_storage::Store;
 use starcoin_types::block::BlockIdAndNumber;
@@ -65,7 +64,7 @@ impl TaskState for FindRangeLocateTask {
                             .storage
                             .get_block_header_by_hash(start_id)?
                             .ok_or_else(|| {
-                                format_err!("Cannot find block header by hash: {}", start_id)
+                                format_err!("Cannot find block header by hash1: {}", start_id)
                             })?;
                         end_id = Some(start_id);
                         start_id = block_header.pruning_point();
@@ -81,13 +80,32 @@ impl TaskState for FindRangeLocateTask {
                                 .storage
                                 .get_block_header_by_hash(hash_value)?
                                 .ok_or_else(|| {
-                                    format_err!("Cannot find block header by hash: {}", hash_value)
+                                    format_err!("Cannot find block header by hash3: {}", hash_value)
                                 })?;
                             return Ok(vec![BlockIdAndNumber {
                                 id: header.id(),
                                 number: header.number(),
                             }]);
                         } else {
+                            if hash_values.len() == 1 {
+                                if let Some(found_id) = found_common_header {
+                                    let header = self
+                                        .storage
+                                        .get_block_header_by_hash(found_id)?
+                                        .ok_or_else(|| {
+                                            format_err!(
+                                                "In the last step, cannot find block header by hash2: {}",
+                                                hash_values.last().unwrap()
+                                            )
+                                        })?;
+                                    return Ok(vec![BlockIdAndNumber {
+                                        id: header.id(),
+                                        number: header.number(),
+                                    }]);
+                                } else {
+                                    bail!("failed to find the dag common header!");
+                                }
+                            }
                             let find_result = find_common_header_in_range(&self.dag, &hash_values)
                                 .map_err(|err| {
                                     format_err!(
@@ -104,7 +122,7 @@ impl TaskState for FindRangeLocateTask {
                                     end_id = None;
                                 }
                                 FindCommonHeader::InRange(result_start_id, result_end_id) => {
-                                    found_common_header = Some(start_id);
+                                    found_common_header = Some(result_start_id);
                                     start_id = result_start_id;
                                     end_id = Some(result_end_id);
                                 }
@@ -124,7 +142,7 @@ impl TaskState for FindRangeLocateTask {
             let header = self
                 .storage
                 .get_block_header_by_hash(found_id)?
-                .ok_or_else(|| format_err!("Cannot find block header by hash: {}", found_id))?;
+                .ok_or_else(|| format_err!("Cannot find block header by hash3: {}", found_id))?;
             Ok(vec![BlockIdAndNumber {
                 id: header.id(),
                 number: header.number(),
@@ -134,45 +152,7 @@ impl TaskState for FindRangeLocateTask {
     }
 
     fn next(&self) -> Option<Self> {
-        //this should never happen, because all node's genesis block should same.
-        let genesis_id = self
-            .storage
-            .get_genesis()
-            .expect("failed to get genesis in find common ancestor task next function!")
-            .expect("genesis should not be none");
-        if self.start_id == genesis_id {
-            error!("no common ancestor found!");
-            return None;
-        }
-
-        let next_start_id = match self.storage.get_block_header_by_hash(self.start_id) {
-            Ok(op_header) => {
-                let header = if let Some(header) = op_header {
-                    header
-                } else {
-                    error!(
-                        "cannot find the block header by start id: {:?}",
-                        self.start_id
-                    );
-                    return None;
-                };
-                header.pruning_point()
-            }
-            Err(e) => {
-                error!(
-                    "cannot find the block header by start id: {:?}, error: {:?}",
-                    self.start_id, e
-                );
-                return None;
-            }
-        };
-        Some(Self {
-            start_id: next_start_id,
-            end_id: Some(self.start_id),
-            fetcher: self.fetcher.clone(),
-            storage: self.storage.clone(),
-            dag: self.dag.clone(),
-        })
+        None
     }
 }
 

@@ -1,31 +1,12 @@
 use anyhow::{bail, format_err};
 use starcoin_chain::ChainReader;
-use starcoin_chain_api::{
-    range_locate::{
-        find_common_header_in_range, get_range_in_location, FindCommonHeader, RangeInLocation,
-    },
-    ExecutedBlock,
+use starcoin_chain_api::range_locate::{
+    find_common_header_in_range, get_range_in_location, FindCommonHeader, RangeInLocation,
 };
 use starcoin_chain_mock::MockChain;
 use starcoin_config::ChainNetwork;
-use starcoin_storage::{block_info::BlockInfoStore, BlockStore};
+use starcoin_storage::BlockStore;
 use test_helper::Genesis;
-
-fn create_block(count: u64, chain: &mut MockChain) -> anyhow::Result<Vec<ExecutedBlock>> {
-    let mut blocks = Vec::new();
-    for _i in 0..count {
-        let header = chain.produce_and_apply_by_tips(
-            chain.head().current_header(),
-            vec![chain.head().current_header().id()],
-        )?;
-        let block = chain.get_storage().get_block_by_hash(header.id())?.unwrap();
-        let block_info = chain.get_storage().get_block_info(header.id())?.unwrap();
-        let executed_block = ExecutedBlock::new(block, block_info);
-        chain.connect(executed_block.clone())?;
-        blocks.push(executed_block);
-    }
-    Ok(blocks)
-}
 
 #[stest::test]
 fn test_range_locate() -> anyhow::Result<()> {
@@ -36,7 +17,7 @@ fn test_range_locate() -> anyhow::Result<()> {
     let mut mock_chain_remote = MockChain::new_with_genesis_for_test(net, genesis.clone(), 3)?;
 
     let common_number = 37;
-    let blocks = create_block(common_number, &mut mock_chain_local)?;
+    let blocks = mock_chain_local.produce_and_apply_with_tips_for_times(common_number)?;
 
     assert_eq!(
         common_number,
@@ -65,8 +46,8 @@ fn test_range_locate() -> anyhow::Result<()> {
         .unwrap();
 
     // now fork
-    let _ = create_block(113, &mut mock_chain_remote)?;
-    let _ = create_block(13, &mut mock_chain_local)?;
+    let _ = mock_chain_remote.produce_and_apply_with_tips_for_times(113)?;
+    let _ = mock_chain_local.produce_and_apply_with_tips_for_times(13)?;
 
     let mut found_common_header = None;
 
@@ -151,8 +132,8 @@ fn test_not_in_range_locate() -> anyhow::Result<()> {
     let mut mock_chain_remote = MockChain::new_with_genesis_for_test(net, genesis.clone(), 3)?;
 
     let count = 37;
-    let _ = create_block(count, &mut mock_chain_local)?;
-    let _ = create_block(count, &mut mock_chain_remote)?;
+    let _ = mock_chain_local.produce_and_apply_with_tips_for_times(count)?;
+    let _ = mock_chain_remote.produce_and_apply_with_tips_for_times(count)?;
 
     let result = get_range_in_location(
         mock_chain_remote.head(),
@@ -177,7 +158,7 @@ fn test_same_range_request() -> anyhow::Result<()> {
     let mut mock_chain_remote = MockChain::new_with_genesis_for_test(net, genesis.clone(), 3)?;
 
     let count = 8;
-    let _ = create_block(count, &mut mock_chain_remote)?;
+    let _ = mock_chain_remote.produce_and_apply_with_tips_for_times(count)?;
 
     match get_range_in_location(
         mock_chain_remote.head(),
