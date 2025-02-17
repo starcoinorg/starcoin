@@ -3,7 +3,7 @@
 
 use crate::{execute_block_transactions, execute_transactions};
 use anyhow::bail;
-use log::info;
+use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_force_upgrade::ForceUpgrade;
@@ -20,7 +20,7 @@ use starcoin_vm_runtime::force_upgrade_management::{
 use starcoin_vm_runtime::metrics::VMMetrics;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::{
-    genesis_address, BalanceEvent, ModuleUpgradeStrategy, G_STC_TOKEN_CODE,
+    genesis_address, BalanceEvent, ModuleUpgradeStrategy, STCUnit, G_STC_TOKEN_CODE,
 };
 use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::move_resource::MoveResource;
@@ -79,7 +79,10 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
             .iter()
             .filter_map(|e| BalanceEvent::try_from(e).ok())
             .for_each(|e| {
-                if e.token_code() == *G_STC_TOKEN_CODE.clone() && e.amount() > 1000000 {
+                if e.token_code() == &G_STC_TOKEN_CODE.clone()
+                    && e.amount() > STCUnit::STC.value_of(10).scaling()
+                // 10 STC
+                {
                     warn!("Logging Event: txn_hash {}, {}", txn_hash, e);
                 }
             });

@@ -1,5 +1,7 @@
 use crate::account_config::token_code::TokenCode;
-use crate::account_config::{BlockRewardEvent, BurnEvent, DepositEvent, MintEvent, WithdrawEvent};
+use crate::account_config::{
+    BlockRewardEvent, BurnEvent, DepositEvent, MintEvent, WithdrawEvent, G_STC_TOKEN_CODE,
+};
 use crate::contract_event::ContractEvent;
 use crate::event::EventKey;
 
@@ -28,7 +30,7 @@ impl BalanceEvent {
             BalanceEvent::Burn((_, event)) => event.amount(),
             BalanceEvent::Deposit((_, event)) => event.amount(),
             BalanceEvent::Withdraw((_, event)) => event.amount(),
-            BalanceEvent::BlockReward((_, event)) => event.amount(),
+            BalanceEvent::BlockReward((_, event)) => event.block_reward,
         }
     }
 
@@ -38,7 +40,7 @@ impl BalanceEvent {
             BalanceEvent::Burn((_, event)) => event.token_code(),
             BalanceEvent::Deposit((_, event)) => event.token_code(),
             BalanceEvent::Withdraw((_, event)) => event.token_code(),
-            BalanceEvent::BlockReward((_, event)) => event.token_code(),
+            BalanceEvent::BlockReward((_, _)) => &G_STC_TOKEN_CODE,
         }
     }
 }
@@ -47,19 +49,19 @@ impl std::fmt::Display for BalanceEvent {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             BalanceEvent::Mint((key, event)) => {
-                write!(f, "MintEvent: key: {}, event: {}", key, event)
+                write!(f, "MintEvent: key: {}, event: {:?}", key, event)
             }
             BalanceEvent::Burn((key, event)) => {
-                write!(f, "BurnEvent: key: {}, event: {}", key, event)
+                write!(f, "BurnEvent: key: {}, event: {:?}", key, event)
             }
             BalanceEvent::Deposit((key, event)) => {
-                write!(f, "DepositEvent: key: {}, event: {}", key, event)
+                write!(f, "DepositEvent: key: {}, event: {:?}", key, event)
             }
             BalanceEvent::Withdraw((key, event)) => {
-                write!(f, "WithdrawEvent: key: {}, event: {}", key, event)
+                write!(f, "WithdrawEvent: key: {}, event: {:?}", key, event)
             }
             BalanceEvent::BlockReward((key, event)) => {
-                write!(f, "BlockRewardEvent: key: {}, event: {}", key, event)
+                write!(f, "BlockRewardEvent: key: {}, event: {:?}", key, event)
             }
         }
     }
