@@ -1,6 +1,9 @@
 [dependencies]
 anyhow = { workspace = true }
 log = { workspace = true }
+serde = { default-features = false, workspace = true }
+bcs-ext = { workspace = true }
+once_cell = { workspace = true }
 starcoin-logger = { package = "starcoin-logger", workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-state-api = { workspace = true }
@@ -9,8 +12,6 @@ starcoin-vm-types = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-force-upgrade = { workspace = true }
-serde = { default-features = false, workspace = true }
-bcs-ext = { workspace = true }
 
 [dev-dependencies]
 bcs-ext = { package = "bcs-ext", workspace = true }
