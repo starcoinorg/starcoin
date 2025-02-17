@@ -28,18 +28,16 @@ use starcoin_vm_types::on_chain_config;
 use std::convert::TryInto;
 use std::sync::Arc;
 
-use {
-    starcoin_force_upgrade::force_upgrade_management::{
-        get_force_upgrade_account, get_force_upgrade_block_number,
-    },
-    starcoin_types::{account::DEFAULT_EXPIRATION_TIME, identifier::Identifier},
-    starcoin_vm_types::{
-        access_path::AccessPath,
-        account_config::{genesis_address, ModuleUpgradeStrategy},
-        move_resource::MoveResource,
-        state_store::state_key::StateKey,
-        state_view::{StateReaderExt, StateView},
-    },
+use starcoin_types::{account::DEFAULT_EXPIRATION_TIME, identifier::Identifier};
+use starcoin_vm_runtime::force_upgrade_management::{
+    get_force_upgrade_account, get_force_upgrade_block_number,
+};
+use starcoin_vm_types::{
+    access_path::AccessPath,
+    account_config::{genesis_address, ModuleUpgradeStrategy},
+    move_resource::MoveResource,
+    state_store::state_key::StateKey,
+    state_view::{StateReaderExt, StateView},
 };
 
 pub struct OpenedBlock {
@@ -318,7 +316,7 @@ impl OpenedBlock {
                 Identifier::new("Version").unwrap(),
                 vec![],
             );
-            let version = on_chain_config::Version { major: 12 };
+            let version = on_chain_config::Version { major: 13 };
             self.state
                 .set(&version_path, bcs_ext::to_bytes(&version)?)?;
         }

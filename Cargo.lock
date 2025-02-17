@@ -10001,7 +10001,6 @@ dependencies = [
  "async-trait",
  "bcs-ext",
  "futures 0.3.26",
- "hex",
  "include_dir",
  "parking_lot 0.12.1",
  "starcoin-accumulator",
@@ -10014,6 +10013,7 @@ dependencies = [
  "starcoin-statedb",
  "starcoin-storage",
  "starcoin-types",
+ "starcoin-vm-runtime",
  "starcoin-vm-types",
  "stdlib",
  "stest",
@@ -10022,7 +10022,7 @@ dependencies = [
 [[package]]
 name = "starcoin-framework"
 version = "13.0.0"
-source = "git+https://github.com/starcoinorg/starcoin-framework?rev=441febc62a3537bc36d5bb3d606e376b0196d9d7#441febc62a3537bc36d5bb3d606e376b0196d9d7"
+source = "git+https://github.com/starcoinorg/starcoin-framework?rev=eb521c77e05de36f747838e1f7fb6b851a7e2bf5#eb521c77e05de36f747838e1f7fb6b851a7e2bf5"
 dependencies = [
  "anyhow",
  "include_dir",
@@ -10617,6 +10617,7 @@ dependencies = [
  "starcoin-statedb",
  "starcoin-storage",
  "starcoin-types",
+ "starcoin-vm-runtime",
  "starcoin-vm-types",
  "stest",
 ]

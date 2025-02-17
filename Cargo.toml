@@ -40,7 +40,7 @@ members = [
     "chain",
     "chain/api",
     "chain/open-block",
-    "vm/force-upgrade",
+    "chain/force-upgrade",
     "chain/mock",
     "chain/chain-notify",
     "chain/service",
@@ -154,7 +154,7 @@ default-members = [
     "chain",
     "chain/api",
     "chain/open-block",
-    "vm/force-upgrade",
+    "chain/force-upgrade",
     "chain/mock",
     "chain/chain-notify",
     "chain/service",
@@ -455,7 +455,7 @@ starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev 
 starcoin-decrypt = { path = "commons/decrypt" }
 starcoin-dev = { path = "vm/dev" }
 starcoin-executor = { path = "executor" }
-starcoin-framework = { git = "https://github.com/starcoinorg/starcoin-framework", rev = "441febc62a3537bc36d5bb3d606e376b0196d9d7" }
+starcoin-framework = { git = "https://github.com/starcoinorg/starcoin-framework", rev = "eb521c77e05de36f747838e1f7fb6b851a7e2bf5" }
 starcoin-genesis = { path = "genesis" }
 starcoin-logger = { path = "commons/logger" }
 starcoin-metrics = { path = "commons/metrics" }
@@ -473,7 +473,7 @@ starcoin-network-rpc-api = { path = "network-rpc/api" }
 starcoin-node = { path = "node" }
 starcoin-node-api = { path = "node/api" }
 starcoin-open-block = { path = "chain/open-block" }
-starcoin-force-upgrade = { path = "vm/force-upgrade" }
+starcoin-force-upgrade = { path = "chain/force-upgrade" }
 starcoin-resource-viewer = { path = "vm/resource-viewer" }
 starcoin-rpc-api = { path = "rpc/api" }
 starcoin-rpc-client = { path = "rpc/client" }
