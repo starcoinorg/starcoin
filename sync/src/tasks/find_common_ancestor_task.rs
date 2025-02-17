@@ -88,23 +88,24 @@ impl TaskState for FindRangeLocateTask {
                             }]);
                         } else {
                             if hash_values.len() == 1 {
-                                if let Some(found_id) = found_common_header {
-                                    let header = self
-                                        .storage
-                                        .get_block_header_by_hash(found_id)?
-                                        .ok_or_else(|| {
-                                            format_err!(
-                                                "In the last step, cannot find block header by hash2: {}",
-                                                hash_values.last().unwrap()
-                                            )
-                                        })?;
-                                    return Ok(vec![BlockIdAndNumber {
-                                        id: header.id(),
-                                        number: header.number(),
-                                    }]);
+                                let found_id = if let Some(found_id) = found_common_header {
+                                    found_id
                                 } else {
-                                    bail!("failed to find the dag common header!");
-                                }
+                                    hash_value
+                                };
+                                let header = self
+                                    .storage
+                                    .get_block_header_by_hash(found_id)?
+                                    .ok_or_else(|| {
+                                        format_err!(
+                                            "In the last step, cannot find block header by hash2: {}",
+                                            hash_values.last().unwrap()
+                                        )
+                                    })?;
+                                return Ok(vec![BlockIdAndNumber {
+                                    id: header.id(),
+                                    number: header.number(),
+                                }]);
                             }
                             let find_result = find_common_header_in_range(&self.dag, &hash_values)
                                 .map_err(|err| {
@@ -138,7 +139,7 @@ impl TaskState for FindRangeLocateTask {
             }
 
             let found_id = found_common_header
-                .ok_or_else(|| format_err!("failed to find the dag common header!"))?;
+                .ok_or_else(|| format_err!("failed to find the dag common header2!"))?;
             let header = self
                 .storage
                 .get_block_header_by_hash(found_id)?
