@@ -82,17 +82,19 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
     {
         let txn_hash = txn.id();
         let (mut table_infos, write_set, events, gas_used, status) = output.into_inner();
-        events
-            .as_slice()
-            .iter()
-            .filter_map(|e| BalanceEvent::try_from(e).ok())
-            .for_each(|e| {
-                if e.token_code() == &G_STC_TOKEN_CODE.clone()
-                    && e.amount() > STCUnit::STC.value_of(*BALANCE_EVENT_AMOUNT).scaling()
-                {
-                    warn!("Logging Event: txn_hash {}, {}", txn_hash, e);
+        events.iter().any(|e| {
+            if let Ok(balance_event) = BalanceEvent::try_from(e) {
+                let res = balance_event.token_code() == &G_STC_TOKEN_CODE.clone()
+                    && balance_event.amount()
+                        > STCUnit::STC.value_of(*BALANCE_EVENT_AMOUNT).scaling();
+                if res {
+                    warn!("Logging Event: txn_hash {}, {}", txn_hash, balance_event);
                 }
-            });
+                res
+            } else {
+                false
+            }
+        });
         match status {
             TransactionStatus::Discard(status) => {
                 return Err(BlockExecutorError::BlockTransactionDiscard(
