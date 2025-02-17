@@ -6,6 +6,7 @@ use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumu
 use starcoin_chain_api::ExcludedTxns;
 use starcoin_crypto::HashValue;
 use starcoin_executor::{execute_block_transactions, execute_transactions, VMMetrics};
+use starcoin_force_upgrade::ForceUpgrade;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
@@ -23,20 +24,19 @@ use starcoin_types::{
     },
     U256,
 };
-use std::{convert::TryInto, sync::Arc};
+use starcoin_vm_types::on_chain_config;
+use std::convert::TryInto;
+use std::sync::Arc;
 
-#[cfg(feature = "force-deploy")]
 use {
     starcoin_force_upgrade::force_upgrade_management::{
-        get_force_upgrade_account, get_force_upgrade_block_number, ForceUpgrade,
+        get_force_upgrade_account, get_force_upgrade_block_number,
     },
     starcoin_types::{account::DEFAULT_EXPIRATION_TIME, identifier::Identifier},
     starcoin_vm_types::{
         access_path::AccessPath,
         account_config::{genesis_address, ModuleUpgradeStrategy},
-        genesis_config::StdlibVersion,
         move_resource::MoveResource,
-        on_chain_config::{self, Version},
         state_store::state_key::StateKey,
         state_view::{StateReaderExt, StateView},
     },
@@ -244,7 +244,6 @@ impl OpenedBlock {
             };
         }
 
-        #[cfg(feature = "force-deploy")]
         self.execute_extra_txn()
             .expect("Extra txn must be executed successfully");
 
@@ -312,21 +311,16 @@ impl OpenedBlock {
             .apply_write_set(write_set)
             .map_err(BlockExecutorError::BlockChainStateErr)?;
         if is_extra_txn {
-            #[cfg(not(feature = "force-deploy"))]
-            panic!("never include extra txn if `force-deploy` has been disabled");
-            #[cfg(feature = "force-deploy")]
-            {
-                // update stdlib version to 12 directly
-                let version_path = on_chain_config::access_path_for_config(
-                    genesis_address(),
-                    Identifier::new("Version").unwrap(),
-                    Identifier::new("Version").unwrap(),
-                    vec![],
-                );
-                let version = on_chain_config::Version { major: 12 };
-                self.state
-                    .set(&version_path, bcs_ext::to_bytes(&version)?)?;
-            }
+            // update stdlib version to 12 directly
+            let version_path = on_chain_config::access_path_for_config(
+                genesis_address(),
+                Identifier::new("Version").unwrap(),
+                Identifier::new("Version").unwrap(),
+                vec![],
+            );
+            let version = on_chain_config::Version { major: 12 };
+            self.state
+                .set(&version_path, bcs_ext::to_bytes(&version)?)?;
         }
         let txn_state_root = self
             .state
@@ -376,19 +370,7 @@ impl OpenedBlock {
     /// The logic for handling the forced upgrade will be processed.
     /// First, set the account policy in `0x1::PackageTxnManager` to 100,
     /// Second, after the contract deployment is successful, revert it back.
-    #[cfg(feature = "force-deploy")]
     fn execute_extra_txn(&mut self) -> Result<()> {
-        // Only execute extra_txn when stdlib version is 11
-        if self
-            .state
-            .get_on_chain_config::<Version>()?
-            .map(|v| v.into_stdlib_version())
-            .map(|v| v != StdlibVersion::Version(11))
-            .unwrap_or(true)
-        {
-            return Ok(());
-        }
-
         let extra_txn =
             if self.block_meta.number() == get_force_upgrade_block_number(&self.chain_id) {
                 let account = get_force_upgrade_account(&self.chain_id)?;
@@ -399,11 +381,7 @@ impl OpenedBlock {
                     self.block_meta.timestamp() / 1000 + DEFAULT_EXPIRATION_TIME,
                     &self.chain_id,
                 )?;
-                info!(
-                    "execute_extra_txn | extra txn in opened block ({:?}), block_num: {:?}",
-                    extra_txn.id(),
-                    self.block_meta.number()
-                );
+                info!("extra txn in opened block ({:?})", extra_txn.id());
                 Transaction::UserTransaction(extra_txn)
             } else {
                 return Ok(());
