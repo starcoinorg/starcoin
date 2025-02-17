@@ -24,7 +24,7 @@ impl ForceUpgrade {
         block_timestamp_in_secs: u64,
         chain_id: &ChainId,
     ) -> anyhow::Result<SignedUserTransaction> {
-        let package_file = "12/11-12/stdlib.blob".to_string();
+        let package_file = "13/12-13/stdlib.blob".to_string();
         let package = COMPILED_MOVE_CODE_DIR
             .get_file(package_file.clone())
             .map(|file| {

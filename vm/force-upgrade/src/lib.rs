@@ -30,7 +30,7 @@ impl ForceUpgrade {
         block_timestamp_in_secs: u64,
         chain_id: &ChainId,
     ) -> anyhow::Result<SignedUserTransaction> {
-        let package_file = "12/11-12/stdlib.blob".to_string();
+        let package_file = "13/12-13/stdlib.blob".to_string();
         let package = COMPILED_MOVE_CODE_DIR
             .get_file(package_file.clone())
             .map(|file| {
@@ -44,7 +44,7 @@ impl ForceUpgrade {
                 core_code_address(),
                 Identifier::new("StdlibUpgradeScripts").unwrap(),
             ),
-            Identifier::new("upgrade_from_v11_to_v12").unwrap(),
+            Identifier::new("upgrade_from_v12_to_v13").unwrap(),
             vec![],
             vec![bcs_ext::to_bytes(&u64::MAX).unwrap()],
         );
