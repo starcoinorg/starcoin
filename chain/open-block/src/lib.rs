@@ -311,7 +311,7 @@ impl OpenedBlock {
             .apply_write_set(write_set)
             .map_err(BlockExecutorError::BlockChainStateErr)?;
         if is_extra_txn {
-            // update stdlib version to 12 directly
+            // update stdlib version to 13 directly
             let version_path = on_chain_config::access_path_for_config(
                 genesis_address(),
                 Identifier::new("Version").unwrap(),
