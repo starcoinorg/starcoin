@@ -5,7 +5,7 @@ use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_types::account::Account;
 use starcoin_vm_types::genesis_config::ChainId;
 
-pub const FORCE_UPGRADE_BLOCK_NUMBER: u64 = 100;
+pub const FORCE_UPGRADE_BLOCK_NUMBER: u64 = 200;
 
 pub fn get_force_upgrade_block_number(chain_id: &ChainId) -> u64 {
     if chain_id.is_test() || chain_id.is_dag_test() {
