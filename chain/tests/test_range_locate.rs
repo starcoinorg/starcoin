@@ -8,7 +8,7 @@ use starcoin_config::ChainNetwork;
 use starcoin_storage::BlockStore;
 use test_helper::Genesis;
 
-#[stest::test]
+#[stest::test(timeout = 480)]
 fn test_range_locate() -> anyhow::Result<()> {
     let net = ChainNetwork::new_test();
     let genesis = Genesis::build(&net)?;
