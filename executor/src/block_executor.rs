@@ -139,11 +139,12 @@ fn create_force_upgrade_extra_txn<S: ChainStateReader + ChainStateWriter>(
     {
         return Ok(None);
     }
-
     let chain_id = statedb.get_chain_id()?;
     let block_timestamp = statedb.get_timestamp()?.seconds();
-    let block_number = statedb.get_block_metadata()?.number;
-
+    let block_number = statedb
+        .get_block_metadata_v2()?
+        .ok_or_else(|| anyhow::anyhow!("Failed to get metadata"))?
+        .number;
     Ok(
         if block_number == get_force_upgrade_block_number(&chain_id) {
             let account = get_force_upgrade_account(&chain_id)?;

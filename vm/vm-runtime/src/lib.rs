@@ -11,9 +11,9 @@ use move_core_types::vm_status::VMStatus;
 pub use move_vm_runtime::{move_vm, session};
 mod access_path_cache;
 mod errors;
+pub mod force_upgrade_management;
 pub mod move_vm_ext;
 pub mod parallel_executor;
-pub mod force_upgrade_management;
 mod verifier;
 mod vm_adapter;
 

@@ -554,10 +554,16 @@ impl BlockChain {
             block_gas_used == header.gas_used(),
             "invalid block: gas_used is not match"
         );
-
+        let valid_txn_num = if header.number() == get_force_upgrade_block_number(&header.chain_id())
+            && executed_data.with_extra_txn
+        {
+            vec_transaction_info.len() == transactions.len().checked_add(1).unwrap()
+        } else {
+            vec_transaction_info.len() == transactions.len()
+        };
         verify_block!(
             VerifyBlockField::State,
-            vec_transaction_info.len() == transactions.len(),
+            valid_txn_num,
             "invalid txn num in the block"
         );
         let txn_accumulator = info_2_accumulator(
