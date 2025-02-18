@@ -39,6 +39,8 @@ pub fn get_force_upgrade_account(chain_id: &ChainId) -> anyhow::Result<Account> 
     } else if chain_id.is_barnard() || chain_id.is_proxima() || chain_id.is_halley() {
         // 0x0b1d07ae560c26af9bbb8264f4c7ee73
         create_account("6105e78821ace0676faf437fb40dd6892e72f01c09351298106bad2964edb007")
+    } else if chain_id.is_test() || chain_id.is_dag_test(){
+        Ok(Account::new_association())
     } else {
         //0x85e4c2c4859fdbf9c8ce6e046c7e310d
         create_account("d570ecf5cae04c034502474614bf0cdb7e94ee47a71e611097626aa219724fd8")

@@ -3,10 +3,11 @@ use starcoin_accumulator::Accumulator;
 use starcoin_chain_api::{ChainReader, ChainWriter};
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_consensus::Consensus;
+use starcoin_crypto::HashValue;
 use starcoin_statedb::ChainStateDB;
 use starcoin_transaction_builder::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::account_address::AccountAddress;
-use starcoin_force_upgrade::force_upgrade_management::get_force_upgrade_block_number;
+use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::on_chain_config::Version;
 use starcoin_vm_types::{account_config, state_view::StateReaderExt};
@@ -16,7 +17,7 @@ use test_helper::executor::get_balance;
 #[stest::test]
 pub fn test_force_upgrade_generate_block() -> anyhow::Result<()> {
     let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
-    genesis_config.stdlib_version = StdlibVersion::Version(11);
+    genesis_config.stdlib_version = StdlibVersion::Version(12);
     let net = ChainNetwork::new(BuiltinNetworkID::Test.into(), genesis_config);
 
     let force_upgrade_height = get_force_upgrade_block_number(&net.chain_id());
@@ -32,7 +33,7 @@ pub fn test_force_upgrade_generate_block() -> anyhow::Result<()> {
 #[stest::test]
 pub fn test_force_upgrade_1() -> anyhow::Result<()> {
     let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
-    genesis_config.stdlib_version = StdlibVersion::Version(11);
+    genesis_config.stdlib_version = StdlibVersion::Version(12);
     let net = ChainNetwork::new(BuiltinNetworkID::Test.into(), genesis_config);
 
     let force_upgrade_height = get_force_upgrade_block_number(&net.chain_id());
@@ -48,7 +49,7 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
     let miner_db = miner.chain_state();
 
     let current_version = get_stdlib_version(miner_db)?;
-    assert_eq!(current_version, 11);
+    assert_eq!(current_version, 12);
 
     // 1 genesis meta + INITIAL_BLOCKS block meta
     let mut txns_num = initial_blocks + 1;
@@ -99,7 +100,8 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
                 vec![txn1, txn2, txn3],
                 vec![],
                 Some(block_gas_limit),
-                None,
+                vec![miner.current_header().id()],
+                HashValue::zero(),
             )
             .unwrap();
 
@@ -136,7 +138,8 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
                 vec![],
                 vec![],
                 Some(block_gas_limit),
-                None,
+                vec![miner.current_header().id()],
+                HashValue::zero(),
             )
             .unwrap();
 
@@ -198,7 +201,7 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
 #[stest::test]
 fn test_force_upgrade_2() -> anyhow::Result<()> {
     let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
-    genesis_config.stdlib_version = StdlibVersion::Version(11);
+    genesis_config.stdlib_version = StdlibVersion::Version(12);
     let net = ChainNetwork::new(BuiltinNetworkID::Test.into(), genesis_config);
 
     let force_upgrade_height = get_force_upgrade_block_number(&net.chain_id());
