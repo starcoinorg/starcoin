@@ -80,7 +80,7 @@ impl TaskState for FindRangeLocateTask {
                                 .storage
                                 .get_block_header_by_hash(hash_value)?
                                 .ok_or_else(|| {
-                                    format_err!("Cannot find block header by hash3: {}", hash_value)
+                                    format_err!("Cannot find block header by hash: {}", hash_value)
                                 })?;
                             return Ok(vec![BlockIdAndNumber {
                                 id: header.id(),
@@ -98,7 +98,7 @@ impl TaskState for FindRangeLocateTask {
                                     .get_block_header_by_hash(found_id)?
                                     .ok_or_else(|| {
                                         format_err!(
-                                            "In the last step, cannot find block header by hash2: {}",
+                                            "In the last step, cannot find block header by hash: {}",
                                             hash_values.last().unwrap()
                                         )
                                     })?;
@@ -131,7 +131,10 @@ impl TaskState for FindRangeLocateTask {
                                     found_common_header = Some(hash_value);
                                     break;
                                 }
-                                FindCommonHeader::NotInRange => break,
+                                FindCommonHeader::NotInRange => {
+                                    found_common_header = Some(hash_value);
+                                    break;
+                                }
                             }
                         }
                     }
@@ -139,11 +142,11 @@ impl TaskState for FindRangeLocateTask {
             }
 
             let found_id = found_common_header
-                .ok_or_else(|| format_err!("failed to find the dag common header2!"))?;
+                .ok_or_else(|| format_err!("failed to find the dag common header!"))?;
             let header = self
                 .storage
                 .get_block_header_by_hash(found_id)?
-                .ok_or_else(|| format_err!("Cannot find block header by hash3: {}", found_id))?;
+                .ok_or_else(|| format_err!("Cannot find block header by hash: {}", found_id))?;
             Ok(vec![BlockIdAndNumber {
                 id: header.id(),
                 number: header.number(),
