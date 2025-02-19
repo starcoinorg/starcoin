@@ -30,7 +30,7 @@ pub fn get_force_upgrade_block_number(chain_id: &ChainId) -> u64 {
         // add 8000 + BARNARD_HARD_FORK_HEIGHT
         16081000
     } else {
-        panic!("Unknown chain type");
+        FORCE_UPGRADE_BLOCK_NUMBER
     }
 }
 
