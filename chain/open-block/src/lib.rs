@@ -411,7 +411,8 @@ impl AddressFilter {
     const FROZEN_BEGIN_BLOCK_NUMBER: BlockNumber = 16801958;
     const FROZEN_END_BLOCK_NUMBER: BlockNumber = 23026635;
     pub fn is_blacklisted(_raw_txn: &SignedUserTransaction, block_number: BlockNumber) -> bool {
-        block_number > Self::FROZEN_BEGIN_BLOCK_NUMBER && block_number < Self::FROZEN_END_BLOCK_NUMBER
+        block_number > Self::FROZEN_BEGIN_BLOCK_NUMBER
+            && block_number < Self::FROZEN_END_BLOCK_NUMBER
         /*&& BLACKLIST
             .iter()
             .map(|&s| AccountAddress::from_str(s).expect("account address decode must success"))
