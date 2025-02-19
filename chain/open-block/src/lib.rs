@@ -408,9 +408,9 @@ impl OpenedBlock {
 pub struct AddressFilter;
 //static BLACKLIST: [&str; 0] = [];
 impl AddressFilter {
-    const ACTIVATION_BLOCK_NUMBER: BlockNumber = 16801958;
+    const ACTIVATION_BLOCK_NUMBER: BlockNumber = 23026635;
     pub fn is_blacklisted(_raw_txn: &SignedUserTransaction, block_number: BlockNumber) -> bool {
-        block_number > Self::ACTIVATION_BLOCK_NUMBER
+        block_number < Self::ACTIVATION_BLOCK_NUMBER
         /*&& BLACKLIST
             .iter()
             .map(|&s| AccountAddress::from_str(s).expect("account address decode must success"))

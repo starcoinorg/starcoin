@@ -5,10 +5,12 @@ use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_types::account::Account;
 use starcoin_vm_types::genesis_config::ChainId;
 
-pub const FORCE_UPGRADE_BLOCK_NUMBER: u64 = 17500000;
+pub const FORCE_UPGRADE_BLOCK_NUMBER: u64 = 23009355;
 
 pub fn get_force_upgrade_block_number(chain_id: &ChainId) -> u64 {
-    if chain_id.is_test() {
+    if chain_id.is_main() {
+        FORCE_UPGRADE_BLOCK_NUMBER
+    } else if chain_id.is_test() {
         50
     } else if chain_id.is_dev() {
         5
@@ -18,7 +20,7 @@ pub fn get_force_upgrade_block_number(chain_id: &ChainId) -> u64 {
         // add 8000 + BARNARD_HARD_FORK_HEIGHT
         16081000
     } else {
-        FORCE_UPGRADE_BLOCK_NUMBER
+        panic!("Unknown chain type");
     }
 }
 
