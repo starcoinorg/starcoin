@@ -5,6 +5,16 @@ use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_types::account::Account;
 use starcoin_vm_types::genesis_config::ChainId;
 
+/// Note: There are several critical heights here:
+/// 1. Forced Upgrade Height: When the blockchain reaches this height, the forced upgrade logic will be automatically executed.
+/// 2. Transaction Opening Height: Once the blockchain height exceeds this value,
+///    the transaction function of the mainnet will be enabled.
+///     For details, please refer to `AddressFilter::is_blacklisted`.
+/// 3. Illegal STC Destruction Height: When the height exceeds this value,
+///     all STC tokens in the account balances of the blacklisted accounts will be destroyed,
+///     and anyone can initiate the destruction operation.
+///     For the specific implementation, please refer to `StarcoinFramework::do_burn_frozen`.
+///
 pub const FORCE_UPGRADE_BLOCK_NUMBER: u64 = 23009355;
 
 pub fn get_force_upgrade_block_number(chain_id: &ChainId) -> u64 {
