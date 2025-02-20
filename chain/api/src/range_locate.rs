@@ -9,6 +9,8 @@ use starcoin_storage::Store;
 
 use crate::ChainReader;
 
+const MAX_RANGE_POWER: u32 = 17; // 2^17 = 131,072 blocks
+
 #[derive(Debug)]
 pub enum FindCommonHeader {
     AllInRange,                    // all in range
@@ -106,6 +108,9 @@ pub fn get_range_in_location(
 
     let end_number = if let Some(end_id) = end_id {
         if let Some(end_block_header) = storage.get_block_header_by_hash(end_id)? {
+            if end_block_header.number() < start_block_header.number() {
+                return Ok(RangeInLocation::NotInSelectedChain);
+            }
             end_block_header.number()
         } else {
             chain.current_header().number()
@@ -114,8 +119,14 @@ pub fn get_range_in_location(
         chain.current_header().number()
     };
 
-    for index in 0..=17 {
-        let block_number = start_block_header.number().saturating_add(2u64.pow(index));
+    for index in 0..=MAX_RANGE_POWER {
+        let step = 2u64
+            .checked_pow(index)
+            .ok_or_else(|| anyhow::format_err!("Block number step calculation overflow"))?;
+        let block_number = start_block_header
+            .number()
+            .checked_add(step)
+            .ok_or_else(|| anyhow::format_err!("Block number calculation overflow"))?;
         if block_number > chain.current_header().number() {
             break;
         }
