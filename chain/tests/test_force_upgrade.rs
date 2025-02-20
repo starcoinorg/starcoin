@@ -19,7 +19,7 @@ use starcoin_transaction_builder::{
 use starcoin_types::account::Account;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::Block;
-use starcoin_types::vm_error::{StatusCode, VMStatus};
+use starcoin_types::vm_error::StatusCode;
 use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
 use starcoin_vm_types::{
     account_config::{
