@@ -4,6 +4,7 @@
 use anyhow::{format_err, Error, Result};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
+use starcoin_chain_api::range_locate::{self, RangeInLocation};
 use starcoin_chain_api::{
     ChainReader, ChainType, ChainWriter, ReadableChainService, TransactionInfoWithProof,
 };
@@ -260,6 +261,11 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             } => Ok(ChainResponse::IsAncestorOfCommand {
                 reachability_view: self.inner.dag.is_ancestor_of(ancestor, descendants)?,
             }),
+            ChainRequest::GetRangeInLocation { start_id, end_id } => {
+                Ok(ChainResponse::GetRangeInLocation {
+                    range: self.inner.get_range_in_location(start_id, end_id)?,
+                })
+            }
         }
     }
 }
@@ -480,6 +486,14 @@ impl ReadableChainService for ChainReaderServiceInner {
                     Arc::try_unwrap(arc_ghostdagdata).unwrap_or_else(|arc| (*arc).clone())
                 })
             })
+    }
+
+    fn get_range_in_location(
+        &self,
+        start_id: HashValue,
+        end_id: Option<HashValue>,
+    ) -> Result<RangeInLocation> {
+        range_locate::get_range_in_location(self.get_main(), self.storage.clone(), start_id, end_id)
     }
 }
 

@@ -15,6 +15,7 @@ use starcoin_network_rpc_api::{
     gen_client::NetworkRpcClient, BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeadersByNumber,
     GetBlockIds, GetTxnsWithHash, RawRpcClient,
 };
+use starcoin_network_rpc_api::{GetRangeInLocationRequest, RangeInLocation};
 use starcoin_state_tree::StateNode;
 use starcoin_types::block::Block;
 use starcoin_types::transaction::{SignedUserTransaction, Transaction};
@@ -890,6 +891,53 @@ impl VerifiedRpcClient {
                 "failed to get dag block children from peer : {:?}.",
                 peer_id
             ),
+        )
+        .into())
+    }
+
+    pub async fn fetch_range_locate(
+        &self,
+        peer: Option<PeerId>,
+        start_id: HashValue,
+        end_id: Option<HashValue>,
+    ) -> Result<RangeInLocation> {
+        let peer_id = if let Some(peer) = peer {
+            peer
+        } else {
+            self.select_a_peer()?
+        };
+
+        let req = GetRangeInLocationRequest { start_id, end_id };
+
+        let mut count = 0;
+        while count < G_RPC_RETRY_COUNT {
+            match self
+                .client
+                .get_range_in_location(peer_id.clone(), req.clone())
+                .await
+            {
+                Ok(result) => {
+                    return Ok(result.range);
+                }
+                Err(e) => {
+                    count = count.saturating_add(1);
+                    if count == G_RPC_RETRY_COUNT {
+                        return Err(RpcVerifyError::new(
+                            peer_id.clone(),
+                            format!(
+                                "failed to get range in location from peer: {:?}., error: {:?}",
+                                peer_id, e
+                            ),
+                        )
+                        .into());
+                    }
+                    continue;
+                }
+            }
+        }
+        Err(RpcVerifyError::new(
+            peer_id.clone(),
+            format!("failed to get range in location from peer : {:?}.", peer_id,),
         )
         .into())
     }

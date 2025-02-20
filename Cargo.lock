@@ -9585,6 +9585,7 @@ dependencies = [
  "starcoin-service-registry",
  "starcoin-state-api",
  "starcoin-statedb",
+ "starcoin-storage",
  "starcoin-time-service",
  "starcoin-types",
  "starcoin-vm-types",

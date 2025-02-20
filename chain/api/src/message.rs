@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
+use crate::range_locate::RangeInLocation;
 use crate::{ChainType, TransactionInfoWithProof};
 use anyhow::Result;
 use starcoin_crypto::HashValue;
@@ -72,6 +73,10 @@ pub enum ChainRequest {
         ancestor: HashValue,
         descendants: Vec<HashValue>,
     },
+    GetRangeInLocation {
+        start_id: HashValue,
+        end_id: Option<HashValue>,
+    },
 }
 
 impl ServiceRequest for ChainRequest {
@@ -104,4 +109,5 @@ pub enum ChainResponse {
     CheckChainType(ChainType),
     GhostdagDataOption(Box<Option<GhostdagData>>),
     IsAncestorOfCommand { reachability_view: ReachabilityView },
+    GetRangeInLocation { range: RangeInLocation },
 }

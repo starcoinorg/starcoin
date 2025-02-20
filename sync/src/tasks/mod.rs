@@ -7,6 +7,7 @@ use crate::tasks::block_sync_task::SyncBlockData;
 use crate::tasks::inner_sync_task::InnerSyncTask;
 use crate::verified_rpc_client::{RpcVerifyError, VerifiedRpcClient};
 use anyhow::{format_err, Error, Result};
+use find_common_ancestor_task::{DagAncestorCollector, FindRangeLocateTask};
 use futures::channel::mpsc::UnboundedSender;
 use futures::future::BoxFuture;
 use futures::{FutureExt, TryFutureExt};
@@ -19,7 +20,7 @@ use starcoin_chain_api::ChainType;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_logger::prelude::*;
-use starcoin_network_rpc_api::MAX_BLOCK_IDS_REQUEST_SIZE;
+use starcoin_network_rpc_api::{RangeInLocation, MAX_BLOCK_IDS_REQUEST_SIZE};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceRef};
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncTarget;
@@ -30,6 +31,7 @@ use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::U256;
+use std::future::Future;
 use std::str::FromStr;
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
@@ -39,7 +41,9 @@ use stream_task::{
     TaskHandle,
 };
 
-pub trait SyncFetcher: PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoFetcher {
+pub trait SyncFetcher:
+    PeerOperator + BlockIdFetcher + BlockFetcher + BlockInfoFetcher + BlockIdRangeFetcher
+{
     fn get_best_target(&self, min_difficulty: U256) -> Result<Option<SyncTarget>> {
         if let Some(best_peers) = self.peer_selector().bests(min_difficulty) {
             //TODO fast verify best peers by accumulator
@@ -232,6 +236,15 @@ pub trait BlockIdFetcher: Send + Sync {
     }
 }
 
+pub trait BlockIdRangeFetcher: Send + Sync {
+    fn fetch_range_locate(
+        &self,
+        peer: Option<PeerId>,
+        start_id: HashValue,
+        end_id: Option<HashValue>,
+    ) -> BoxFuture<Result<RangeInLocation>>;
+}
+
 impl PeerOperator for VerifiedRpcClient {
     fn peer_selector(&self) -> PeerSelector {
         self.selector().clone()
@@ -259,6 +272,19 @@ impl BlockIdFetcher for VerifiedRpcClient {
     }
 }
 
+impl BlockIdRangeFetcher for VerifiedRpcClient {
+    fn fetch_range_locate(
+        &self,
+        peer: Option<PeerId>,
+        start_id: HashValue,
+        end_id: Option<HashValue>,
+    ) -> BoxFuture<Result<RangeInLocation>> {
+        self.fetch_range_locate(peer, start_id, end_id)
+            .map_err(fetcher_err_map)
+            .boxed()
+    }
+}
+
 impl<T> PeerOperator for Arc<T>
 where
     T: PeerOperator,
@@ -280,6 +306,20 @@ where
         max_size: u64,
     ) -> BoxFuture<Result<Vec<HashValue>>> {
         BlockIdFetcher::fetch_block_ids(self.as_ref(), peer, start_number, reverse, max_size)
+    }
+}
+
+impl<T> BlockIdRangeFetcher for Arc<T>
+where
+    T: BlockIdRangeFetcher,
+{
+    fn fetch_range_locate(
+        &self,
+        peer: Option<PeerId>,
+        start_id: HashValue,
+        end_id: Option<HashValue>,
+    ) -> BoxFuture<Result<RangeInLocation>> {
+        BlockIdRangeFetcher::fetch_range_locate(self.as_ref(), peer, start_id, end_id)
     }
 }
 
@@ -591,6 +631,7 @@ mod accumulator_sync_task;
 mod block_sync_task;
 pub mod continue_execute_absent_block;
 mod find_ancestor_task;
+mod find_common_ancestor_task;
 mod inner_sync_task;
 #[cfg(test)]
 pub(crate) mod mock;
@@ -606,6 +647,67 @@ pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
 pub use block_sync_task::{BlockCollector, BlockSyncTask};
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
 use starcoin_executor::VMMetrics;
+
+pub fn generate_ancestor_task<F>(
+    range_locate: bool,
+    current_block_number: u64,
+    target_block_number: u64,
+    fetcher: Arc<F>,
+    max_retry_times: u64,
+    delay_milliseconds_on_error: u64,
+    current_block_info: &BlockInfo,
+    storage: Arc<dyn Store>,
+    event_handle: Arc<TaskEventCounterHandle>,
+    ext_error_handle: Arc<ExtSyncTaskErrorHandle<F>>,
+    dag: BlockDAG,
+) -> (
+    std::pin::Pin<
+        Box<dyn Future<Output = std::result::Result<BlockIdAndNumber, TaskError>> + Send>,
+    >,
+    TaskHandle,
+)
+where
+    F: SyncFetcher + 'static,
+{
+    let sync_task = if range_locate {
+        TaskGenerator::new(
+            FindRangeLocateTask::new(
+                *current_block_info.block_id(),
+                None,
+                fetcher.clone(),
+                storage.clone(),
+                dag.clone(),
+            ),
+            2,
+            max_retry_times,
+            delay_milliseconds_on_error,
+            DagAncestorCollector::new(dag, storage),
+            event_handle.clone(),
+            ext_error_handle.clone(),
+        )
+        .generate()
+    } else {
+        TaskGenerator::new(
+            FindAncestorTask::new(
+                current_block_number,
+                target_block_number,
+                MAX_BLOCK_IDS_REQUEST_SIZE,
+                fetcher.clone(),
+            ),
+            2,
+            max_retry_times,
+            delay_milliseconds_on_error,
+            AncestorCollector::new(Arc::new(MerkleAccumulator::new_with_info(
+                current_block_info.block_accumulator_info.clone(),
+                storage.get_accumulator_store(AccumulatorStoreType::Block),
+            ))),
+            event_handle.clone(),
+            ext_error_handle.clone(),
+        )
+        .generate()
+    };
+    sync_task.with_handle()
+}
 
 #[allow(clippy::too_many_arguments)]
 pub fn full_sync_task<H, A, F, N>(
@@ -623,6 +725,7 @@ pub fn full_sync_task<H, A, F, N>(
     vm_metrics: Option<VMMetrics>,
     dag: BlockDAG,
     sync_dag_store: Arc<SyncDagStore>,
+    range_locate: bool,
 ) -> Result<(
     BoxFuture<'static, Result<BlockChain, TaskError>>,
     TaskHandle,
@@ -651,32 +754,24 @@ where
 
     let target_block_number = target.target_id.number();
 
-    let current_block_accumulator_info = current_block_info.block_accumulator_info.clone();
-
     let delay_milliseconds_on_error = 100;
     //only keep the best peer for find ancestor.
     fetcher.peer_selector().retain(target.peers.as_slice());
     let ext_error_handle = Arc::new(ExtSyncTaskErrorHandle::new(fetcher.clone()));
 
-    let sync_task = TaskGenerator::new(
-        FindAncestorTask::new(
-            current_block_number,
-            target_block_number,
-            MAX_BLOCK_IDS_REQUEST_SIZE,
-            fetcher.clone(),
-        ),
-        2,
+    let (fut, _) = generate_ancestor_task(
+        range_locate,
+        current_block_number,
+        target_block_number,
+        fetcher.clone(),
         max_retry_times,
         delay_milliseconds_on_error,
-        AncestorCollector::new(Arc::new(MerkleAccumulator::new_with_info(
-            current_block_accumulator_info,
-            storage.get_accumulator_store(AccumulatorStoreType::Block),
-        ))),
+        &current_block_info,
+        storage.clone(),
         event_handle.clone(),
         ext_error_handle.clone(),
-    )
-    .generate();
-    let (fut, _) = sync_task.with_handle();
+        dag.clone(),
+    );
 
     let event_handle_clone = event_handle.clone();
     let mut max_peers = max_better_peers(target_block_number, current_block_number);
