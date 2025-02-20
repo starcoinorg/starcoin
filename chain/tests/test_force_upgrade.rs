@@ -6,7 +6,7 @@ use anyhow::format_err;
 use starcoin_accumulator::Accumulator;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ChainWriter};
-use starcoin_config::NodeConfig;
+use starcoin_config::{ChainNetwork, NodeConfig};
 use starcoin_consensus::Consensus;
 use starcoin_logger::prelude::info;
 use starcoin_statedb::ChainStateDB;
@@ -14,19 +14,24 @@ use starcoin_transaction_builder::{
     build_transfer_from_association, build_transfer_txn,
     frozen_config_do_burn_frozen_from_association,
     frozen_config_update_burn_block_number_by_association, peer_to_peer_txn_sent_as_association,
-    DEFAULT_EXPIRATION_TIME,
+    peer_to_peer_v2, DEFAULT_EXPIRATION_TIME,
 };
+use starcoin_types::account::Account;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::Block;
-use starcoin_types::vm_error::StatusCode;
+use starcoin_types::vm_error::{StatusCode, VMStatus};
 use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
 use starcoin_vm_types::{
-    account_config::{self, association_address, FrozenConfigBurnBlockNumberResource},
+    account_config::{
+        self, association_address, core_code_address, FrozenConfigBurnBlockNumberResource,
+    },
+    identifier::Identifier,
+    language_storage::ModuleId,
     on_chain_config::Version,
     state_view::StateReaderExt,
-    transaction::SignedUserTransaction,
+    transaction::{RawUserTransaction, ScriptFunction, SignedUserTransaction, TransactionPayload},
 };
-use test_helper::executor::get_balance;
+use test_helper::executor::{get_balance, get_sequence_number};
 
 #[stest::test]
 pub fn test_force_upgrade_1() -> anyhow::Result<()> {
@@ -273,7 +278,7 @@ fn test_frozen_account() -> anyhow::Result<()> {
     let net = config.net();
     let association_sequence_num = chain
         .chain_state_reader()
-        .get_sequence_number(account_config::association_address())?;
+        .get_sequence_number(association_address())?;
     let black = AccountAddress::from_str("0xd0c5a06ae6100ce115cad1600fe59e96").unwrap();
 
     // It's ok to send txn to black address
@@ -321,6 +326,110 @@ fn test_frozen_account() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[stest::test]
+fn test_frozen_for_global_frozen() -> anyhow::Result<()> {
+    let config = Arc::new(NodeConfig::random_for_test());
+
+    let force_upgrade_height = get_force_upgrade_block_number(&config.net().chain_id());
+    assert!(force_upgrade_height >= 2);
+
+    let mut chain =
+        test_helper::gen_blockchain_with_blocks_for_test(force_upgrade_height + 1, config.net())?;
+
+    let net = config.net();
+    let random_user_account = Account::new();
+    let amount = 1000000000;
+
+    let random_user_seq_num =
+        get_sequence_number(*random_user_account.address(), chain.chain_state());
+    let mut association_seq_num = get_sequence_number(association_address(), chain.chain_state());
+
+    // It's ok to send txn to black address
+    {
+        // Send STC to black user
+        execute_transactions_by_miner(
+            &mut chain,
+            vec![peer_to_peer_txn_sent_as_association(
+                *random_user_account.address(),
+                association_seq_num,
+                amount,
+                net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+                net,
+            )],
+        )?;
+        assert_eq!(
+            chain
+                .chain_state_reader()
+                .get_balance(*random_user_account.address())?
+                .unwrap(),
+            amount,
+            "Failed to get balance"
+        );
+    }
+
+    // It's not ok by switch global frozen open
+    {
+        association_seq_num += 1;
+        execute_transactions_by_miner(
+            &mut chain,
+            vec![build_global_frozen_txn_sign_with_association(
+                true,
+                association_seq_num,
+                net,
+            )?],
+        )?;
+
+        let transfer_to_association_txn = peer_to_peer_v2(
+            &random_user_account,
+            &association_address(),
+            random_user_seq_num,
+            amount,
+            net,
+        );
+
+        assert_eq!(
+            starcoin_executor::validate_transaction(
+                chain.chain_state(),
+                transfer_to_association_txn,
+                None
+            )
+            .unwrap()
+            .status_code(),
+            StatusCode::SEND_TXN_GLOBAL_FROZEN
+        );
+    }
+
+    // It's ok by switch global frozen closed
+    {
+        association_seq_num += 1;
+        execute_transactions_by_miner(
+            &mut chain,
+            vec![build_global_frozen_txn_sign_with_association(
+                false,
+                association_seq_num,
+                net,
+            )?],
+        )?;
+
+        let transfer_to_association_txn = peer_to_peer_v2(
+            &random_user_account,
+            &association_address(),
+            random_user_seq_num,
+            amount,
+            net,
+        );
+
+        assert!(starcoin_executor::validate_transaction(
+            chain.chain_state(),
+            transfer_to_association_txn,
+            None
+        )
+        .is_none());
+    }
+
+    Ok(())
+}
+
 fn get_stdlib_version(chain_state_db: &ChainStateDB) -> anyhow::Result<u64> {
     chain_state_db
         .get_on_chain_config::<Version>()?
@@ -351,4 +460,29 @@ fn execute_transactions_by_miner(
     miner.apply(block.clone())?;
 
     Ok(block)
+}
+
+pub fn build_global_frozen_txn_sign_with_association(
+    frozen: bool,
+    seq_num: u64,
+    net: &ChainNetwork,
+) -> anyhow::Result<SignedUserTransaction> {
+    net.genesis_config()
+        .sign_with_association(RawUserTransaction::new_with_default_gas_token(
+            association_address(),
+            seq_num,
+            TransactionPayload::ScriptFunction(ScriptFunction::new(
+                ModuleId::new(
+                    core_code_address(),
+                    Identifier::new("FrozenConfigStrategy").unwrap(),
+                ),
+                Identifier::new("set_global_frozen").unwrap(),
+                vec![],
+                vec![bcs_ext::to_bytes(&frozen).unwrap()],
+            )),
+            1_000_000,
+            1,
+            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+            net.chain_id(),
+        ))
 }
