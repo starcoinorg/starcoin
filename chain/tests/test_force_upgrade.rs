@@ -11,11 +11,14 @@ use starcoin_consensus::Consensus;
 use starcoin_logger::prelude::info;
 use starcoin_statedb::ChainStateDB;
 use starcoin_transaction_builder::{
-    build_transfer_from_association, frozen_config_do_burn_frozen_from_association,
-    frozen_config_update_burn_block_number_by_association, DEFAULT_EXPIRATION_TIME,
+    build_transfer_from_association, build_transfer_txn,
+    frozen_config_do_burn_frozen_from_association,
+    frozen_config_update_burn_block_number_by_association, peer_to_peer_txn_sent_as_association,
+    DEFAULT_EXPIRATION_TIME,
 };
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::Block;
+use starcoin_types::vm_error::StatusCode;
 use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
 use starcoin_vm_types::{
     account_config::{self, association_address, FrozenConfigBurnBlockNumberResource},
@@ -253,6 +256,67 @@ fn test_force_upgrade_2() -> anyhow::Result<()> {
         chain.get_txn_accumulator().num_leaves(),
         force_upgrade_height + 3
     );
+
+    Ok(())
+}
+
+#[stest::test]
+fn test_frozen_account() -> anyhow::Result<()> {
+    let config = Arc::new(NodeConfig::random_for_test());
+
+    let force_upgrade_height = get_force_upgrade_block_number(&config.net().chain_id());
+    assert!(force_upgrade_height >= 2);
+
+    let mut chain =
+        test_helper::gen_blockchain_with_blocks_for_test(force_upgrade_height + 1, config.net())?;
+
+    let net = config.net();
+    let association_sequence_num = chain
+        .chain_state_reader()
+        .get_sequence_number(account_config::association_address())?;
+    let black = AccountAddress::from_str("0xd0c5a06ae6100ce115cad1600fe59e96").unwrap();
+
+    // It's ok to send txn to black address
+    {
+        let black_as_receiver_txn = peer_to_peer_txn_sent_as_association(
+            black,
+            association_sequence_num,
+            1,
+            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+            net,
+        );
+
+        assert!(starcoin_executor::validate_transaction(
+            chain.chain_state(),
+            black_as_receiver_txn,
+            None
+        )
+        .is_none());
+    }
+
+    // It's not ok to use a black address as sender
+    {
+        let black_as_sender_txn = net
+            .genesis_config()
+            .sign_with_association(build_transfer_txn(
+                black,
+                association_address(),
+                association_sequence_num,
+                1,
+                1,
+                1_000_000,
+                net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+                net.chain_id(),
+            ))
+            .unwrap();
+
+        assert_eq!(
+            starcoin_executor::validate_transaction(chain.chain_state(), black_as_sender_txn, None)
+                .unwrap()
+                .status_code(),
+            StatusCode::SENDING_ACCOUNT_FROZEN
+        );
+    }
 
     Ok(())
 }
