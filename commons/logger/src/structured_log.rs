@@ -20,6 +20,34 @@ lazy_static! {
     static ref G_SLOG_LEVEL: Arc<Mutex<slog::Level>> = Arc::new(Mutex::new(slog::Level::Info));
 }
 
+#[derive(Debug, Clone)]
+pub enum LogConfig {
+    BalanceFilter(Option<u64>),
+}
+
+impl LogConfig {
+    fn key(&self) -> String {
+        match self {
+            LogConfig::BalanceFilter(_) => "balance_filter".to_string(),
+        }
+    }
+}
+
+lazy_static! {
+    static ref G_LOG_CONFIG_MAP: Arc<Mutex<std::collections::HashMap<String, LogConfig>>> =
+        Arc::new(Mutex::new(std::collections::HashMap::new()));
+}
+
+pub fn get_log_config(key: &str) -> Option<LogConfig> {
+    let map = G_LOG_CONFIG_MAP.lock().unwrap();
+    map.get(key).cloned()
+}
+
+pub fn update_log_config(config: LogConfig) {
+    let mut map = G_LOG_CONFIG_MAP.lock().unwrap();
+    map.insert(config.key(), config);
+}
+
 // A RuntimeLevelFilter will discard all log records whose log level is less than the level
 // specified in the struct.
 pub struct RuntimeLevelFilter<D> {

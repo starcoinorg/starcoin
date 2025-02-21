@@ -4,10 +4,10 @@
 use crate::{execute_block_transactions, execute_transactions};
 use anyhow::bail;
 use log::{info, warn};
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_force_upgrade::ForceUpgrade;
+use starcoin_logger::structured_log::{get_log_config, LogConfig};
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::error::BlockExecutorError;
@@ -53,13 +53,6 @@ impl Default for BlockExecutedData {
     }
 }
 
-static BALANCE_EVENT_AMOUNT: Lazy<u128> = Lazy::new(|| {
-    std::env::var("BALANCE_EVENT_AMOUNT")
-        .ok()
-        .and_then(|v| v.parse::<u128>().ok())
-        .unwrap_or(1_000_000_000)
-});
-
 pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
     chain_state: &S,
     txns: Vec<Transaction>,
@@ -82,19 +75,23 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
     {
         let txn_hash = txn.id();
         let (mut table_infos, write_set, events, gas_used, status) = output.into_inner();
-        events.iter().any(|e| {
-            if let Ok(balance_event) = BalanceEvent::try_from(e) {
-                let res = balance_event.token_code() == &G_STC_TOKEN_CODE.clone()
-                    && balance_event.amount()
-                        > STCUnit::STC.value_of(*BALANCE_EVENT_AMOUNT).scaling();
-                if res {
-                    warn!("Logging Event: txn_hash {}, {}", txn_hash, balance_event);
+        if let Some(balance_amount) = get_log_config("balance_filter").and_then(|c| match c {
+            LogConfig::BalanceFilter(amount) => amount.or(Some(1_000_000_000)),
+        }) {
+            events.iter().any(|e| {
+                if let Ok(balance_event) = BalanceEvent::try_from(e) {
+                    let res = balance_event.token_code() == &G_STC_TOKEN_CODE.clone()
+                        && balance_event.amount()
+                            > STCUnit::STC.value_of(balance_amount as u128).scaling();
+                    if res {
+                        warn!("Logging Event: txn_hash {}, {}", txn_hash, balance_event);
+                    }
+                    res
+                } else {
+                    false
                 }
-                res
-            } else {
-                false
-            }
-        });
+            });
+        }
         match status {
             TransactionStatus::Discard(status) => {
                 return Err(BlockExecutorError::BlockTransactionDiscard(
