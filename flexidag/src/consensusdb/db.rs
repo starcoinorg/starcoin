@@ -1,5 +1,6 @@
 use super::{
     consenses_state::{DbDagStateStore, DAG_STATE_STORE_CF},
+    consensus_block_depth::{DbBlockDepthInfoStore, DAG_BLOCK_DEPTH_INFO_STORE_CF},
     error::StoreError,
     schemadb::{
         DbGhostdagStore, DbHeadersStore, DbReachabilityStore, DbRelationsStore, CHILDREN_CF,
@@ -21,6 +22,7 @@ pub struct FlexiDagStorage {
     pub reachability_store: Arc<RwLock<DbReachabilityStore>>,
     pub relations_store: Arc<RwLock<DbRelationsStore>>,
     pub state_store: Arc<RwLock<DbDagStateStore>>,
+    pub block_depth_info_store: Arc<DbBlockDepthInfoStore>,
     pub(crate) db: Arc<DBStorage>,
 }
 
@@ -74,6 +76,7 @@ impl FlexiDagStorage {
                     GHOST_DAG_STORE_CF,
                     COMPACT_GHOST_DAG_STORE_CF,
                     DAG_STATE_STORE_CF,
+                    DAG_BLOCK_DEPTH_INFO_STORE_CF,
                 ],
                 false,
                 config.rocksdb_config,
@@ -99,6 +102,10 @@ impl FlexiDagStorage {
                 db.clone(),
                 config.cache_size,
             ))),
+            block_depth_info_store: Arc::new(DbBlockDepthInfoStore::new(
+                db.clone(),
+                config.cache_size,
+            )),
             db,
         })
     }

@@ -1,5 +1,6 @@
 use consensusdb::prelude::StoreError;
 
+mod block_depth;
 pub mod blockdag;
 pub mod consensusdb;
 pub mod ghostdag;
