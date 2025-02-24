@@ -746,7 +746,12 @@ module starcoin_framework::fungible_asset {
         constructor_ref: &ConstructorRef,
         metadata: Object<T>,
     ): Object<FungibleStore> {
+        debug::print(&string::utf8(b"fungible_asset::create_store | entered"));
+        debug::print(constructor_ref);
+
         let store_obj = &object::generate_signer(constructor_ref);
+        debug::print(&signer::address_of(store_obj));
+
         move_to(store_obj, FungibleStore {
             metadata: object::convert(metadata),
             balance: 0,
@@ -763,11 +768,16 @@ module starcoin_framework::fungible_asset {
             });
         };
 
+        debug::print(&string::utf8(b"fungible_asset::create_store | exited"));
+
         object::object_from_constructor_ref<FungibleStore>(constructor_ref)
     }
 
     /// Used to delete a store.  Requires the store to be completely empty prior to removing it
     public fun remove_store(delete_ref: &DeleteRef) acquires FungibleStore, FungibleAssetEvents, ConcurrentFungibleBalance {
+        debug::print(&string::utf8(b"fungible_asset::remove_store | entered"));
+        debug::print(delete_ref);
+
         let store = &object::object_from_delete_ref<FungibleStore>(delete_ref);
         let addr = object::object_address(store);
         let FungibleStore { metadata: _, balance, frozen: _ }
@@ -790,6 +800,7 @@ module starcoin_framework::fungible_asset {
             event::destroy_handle(withdraw_events);
             event::destroy_handle(frozen_events);
         };
+        debug::print(&string::utf8(b"fungible_asset::remove_store | exited"));
     }
 
     /// Withdraw `amount` of the fungible asset from `store` by the owner.
@@ -832,8 +843,11 @@ module starcoin_framework::fungible_asset {
 
     /// Deposit `amount` of the fungible asset to `store`.
     public fun deposit<T: key>(store: Object<T>, fa: FungibleAsset) acquires FungibleStore, DispatchFunctionStore, ConcurrentFungibleBalance {
+        debug::print(&string::utf8(b"fungible_asset::deposit | entered"));
+        debug::print(&store);
         deposit_sanity_check(store, true);
         deposit_internal(object::object_address(&store), fa);
+        debug::print(&string::utf8(b"fungible_asset::deposit | exited"));
     }
 
     /// Mint the specified `amount` of the fungible asset.
@@ -1137,8 +1151,11 @@ module starcoin_framework::fungible_asset {
     }
 
     inline fun borrow_store_resource<T: key>(store: &Object<T>): &FungibleStore acquires FungibleStore {
+        // debug::print(&string::utf8(b"fungible_asset::borrow_store_resource | entered"));
         let store_addr = object::object_address(store);
+        debug::print(&store_addr);
         assert!(exists<FungibleStore>(store_addr), error::not_found(EFUNGIBLE_STORE_EXISTENCE));
+        // debug::print(&string::utf8(b"fungible_asset::borrow_store_resource | exited"));
         borrow_global<FungibleStore>(store_addr)
     }
 
@@ -1192,6 +1209,7 @@ module starcoin_framework::fungible_asset {
         let object_signer = create_signer::create_signer(fungible_store_address);
         move_to(&object_signer, ConcurrentFungibleBalance { balance });
     }
+
 
     #[test_only]
     #[resource_group_member(group = starcoin_framework::object::ObjectGroup)]

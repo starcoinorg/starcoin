@@ -3,6 +3,8 @@
 
 use anyhow::anyhow;
 use anyhow::Result;
+use move_core_types::account_address::AccountAddress;
+use move_core_types::language_storage::StructTag;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_executor::validate_transaction;
 use starcoin_logger::prelude::*;
@@ -18,8 +20,8 @@ use starcoin_types::{
     account_config, block_metadata::BlockMetadata, transaction::Transaction,
     transaction::TransactionPayload, transaction::TransactionStatus,
 };
-use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::account_config::AccountResource;
+use starcoin_vm_types::account_config::{fungible_store, genesis_address, FungibleStoreResource};
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::on_chain_config::{ConsensusConfig, OnChainConfig};
 use starcoin_vm_types::state_store::TStateView;
@@ -33,10 +35,16 @@ use test_helper::executor::{
 };
 
 // use test_helper::Account;
+use starcoin_cached_packages::starcoin_framework_sdk_builder::starcoin_account_create_account;
 use starcoin_state_api::StateReaderExt;
 use starcoin_types::account::Account;
 use starcoin_types::account_config::G_STC_TOKEN_CODE;
+use starcoin_vm_runtime::data_cache::AsMoveResolver;
+use starcoin_vm_runtime::move_vm_ext::ResourceGroupResolver;
 use starcoin_vm_runtime::starcoin_vm::{chunk_block_transactions, StarcoinVM};
+use starcoin_vm_runtime_types::{
+    resolver::TResourceGroupView, resource_group_adapter::ResourceGroupAdapter,
+};
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::state_value::StateValue;
@@ -1131,6 +1139,93 @@ fn test_chunk_block_transactions() -> Result<()> {
     let txns3 = vec![txn1, txn2, txn3];
     let result3 = chunk_block_transactions(txns3);
     assert_eq!(result3.len(), 3);
+
+    Ok(())
+}
+
+#[test]
+fn test_genesis_writeset_for_object() -> Result<()> {
+    starcoin_logger::init_for_test();
+
+    let (chain_statedb, _network) = prepare_genesis();
+    let state_key = StateKey::resource_group(
+        &genesis_address(),
+        &StructTag {
+            address: genesis_address(),
+            module: Identifier::new("object").unwrap(),
+            name: Identifier::new("ObjectGroup").unwrap(),
+            type_args: vec![],
+        },
+    );
+    let object_core_tag = StructTag {
+        address: genesis_address(),
+        module: Identifier::new("object").unwrap(),
+        name: Identifier::new("ObjectCore").unwrap(),
+        type_args: vec![],
+    };
+    let resource_group_adapter = chain_statedb.as_move_resolver();
+    assert!(resource_group_adapter
+        .resource_exists_in_group(&state_key, &object_core_tag)
+        .unwrap());
+    Ok(())
+}
+
+#[test]
+fn test_create_new_account_and_check_primary_fungible_store() -> Result<()> {
+    starcoin_logger::init_for_test();
+
+    let (chain_state, net) = prepare_genesis();
+    let test_addr = AccountAddress::from_hex_literal("0xd0c5a06ae6100ce115cad1600fe59e96").unwrap();
+    let store_addr =
+        AccountAddress::from_hex_literal("0x786d516a2228196dff48bf39a4b085f0").unwrap();
+
+    association_execute_should_success(
+        &net,
+        &chain_state,
+        starcoin_account_create_account(test_addr),
+    )?;
+
+    let primary_store_address = fungible_store::primary_store(&test_addr, &AccountAddress::ONE);
+    assert_eq!(primary_store_address, store_addr, "store address not equal");
+
+    let object_group_tag = StructTag {
+        address: genesis_address(),
+        module: Identifier::new("object").unwrap(),
+        name: Identifier::new("ObjectGroup").unwrap(),
+        type_args: vec![],
+    };
+    let fungible_store_tag = FungibleStoreResource::struct_tag_for_resource();
+
+    let resource_group_adapter = ResourceGroupAdapter::new(
+        None,
+        &chain_state,
+        /*LATEST_GAS_FEATURE_VERSION*/ 13,
+        false,
+    );
+
+    assert!(
+        resource_group_adapter.resource_exists_in_group(
+            &StateKey::resource_group(&store_addr, &object_group_tag,),
+            &fungible_store_tag,
+        )?,
+        "should exist"
+    );
+
+    // Get resrouce from group
+    let readed_bytes = resource_group_adapter
+        .get_resource_from_group(
+            &StateKey::resource_group(&store_addr, &object_group_tag),
+            &fungible_store_tag,
+            None,
+        )
+        .unwrap();
+    assert!(readed_bytes.is_some(), "Except not none");
+
+    assert_eq!(
+        bcs_ext::from_bytes::<FungibleStoreResource>(&readed_bytes.unwrap())?.balance() as u128,
+        0,
+        "balance should be 0"
+    );
 
     Ok(())
 }

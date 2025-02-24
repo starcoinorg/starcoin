@@ -27,12 +27,16 @@ starcoin-transaction-builder = { workspace = true }
 starcoin-state-tree = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
+starcoin-vm-runtime-types = { workspace = true }
+starcoin-cached-packages = { workspace = true }
 stdlib = { workspace = true }
 stest = { workspace = true }
 tempfile = { workspace = true }
 test-helper = { workspace = true }
 move-transactional-test-runner = { workspace = true }
 move-core-types = { workspace = true }
+forkable-jellyfish-merkle = { workspace = true }
+sha3 = { workspace = true }
 
 [features]
 default = []

@@ -2593,7 +2593,12 @@ Applications can use this to create multiple stores for isolating fungible asset
     constructor_ref: &ConstructorRef,
     metadata: Object&lt;T&gt;,
 ): Object&lt;<a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">FungibleStore</a>&gt; {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="fungible_asset.md#0x1_fungible_asset_create_store">fungible_asset::create_store</a> | entered"));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(constructor_ref);
+
     <b>let</b> store_obj = &<a href="object.md#0x1_object_generate_signer">object::generate_signer</a>(constructor_ref);
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(store_obj));
+
     <b>move_to</b>(store_obj, <a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">FungibleStore</a> {
         metadata: <a href="object.md#0x1_object_convert">object::convert</a>(metadata),
         balance: 0,
@@ -2609,6 +2614,8 @@ Applications can use this to create multiple stores for isolating fungible asset
             balance: <a href="aggregator_v2.md#0x1_aggregator_v2_create_unbounded_aggregator">aggregator_v2::create_unbounded_aggregator</a>(),
         });
     };
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="fungible_asset.md#0x1_fungible_asset_create_store">fungible_asset::create_store</a> | exited"));
 
     <a href="object.md#0x1_object_object_from_constructor_ref">object::object_from_constructor_ref</a>&lt;<a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">FungibleStore</a>&gt;(constructor_ref)
 }
@@ -2635,6 +2642,9 @@ Used to delete a store.  Requires the store to be completely empty prior to remo
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="fungible_asset.md#0x1_fungible_asset_remove_store">remove_store</a>(delete_ref: &DeleteRef) <b>acquires</b> <a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">FungibleStore</a>, <a href="fungible_asset.md#0x1_fungible_asset_FungibleAssetEvents">FungibleAssetEvents</a>, <a href="fungible_asset.md#0x1_fungible_asset_ConcurrentFungibleBalance">ConcurrentFungibleBalance</a> {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="fungible_asset.md#0x1_fungible_asset_remove_store">fungible_asset::remove_store</a> | entered"));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(delete_ref);
+
     <b>let</b> store = &<a href="object.md#0x1_object_object_from_delete_ref">object::object_from_delete_ref</a>&lt;<a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">FungibleStore</a>&gt;(delete_ref);
     <b>let</b> addr = <a href="object.md#0x1_object_object_address">object::object_address</a>(store);
     <b>let</b> <a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">FungibleStore</a> { metadata: _, balance, frozen: _ }
@@ -2657,6 +2667,7 @@ Used to delete a store.  Requires the store to be completely empty prior to remo
         <a href="event.md#0x1_event_destroy_handle">event::destroy_handle</a>(withdraw_events);
         <a href="event.md#0x1_event_destroy_handle">event::destroy_handle</a>(frozen_events);
     };
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="fungible_asset.md#0x1_fungible_asset_remove_store">fungible_asset::remove_store</a> | exited"));
 }
 </code></pre>
 
@@ -2779,8 +2790,11 @@ Deposit <code>amount</code> of the fungible asset to <code>store</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="fungible_asset.md#0x1_fungible_asset_deposit">deposit</a>&lt;T: key&gt;(store: Object&lt;T&gt;, fa: <a href="fungible_asset.md#0x1_fungible_asset_FungibleAsset">FungibleAsset</a>) <b>acquires</b> <a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">FungibleStore</a>, <a href="fungible_asset.md#0x1_fungible_asset_DispatchFunctionStore">DispatchFunctionStore</a>, <a href="fungible_asset.md#0x1_fungible_asset_ConcurrentFungibleBalance">ConcurrentFungibleBalance</a> {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="fungible_asset.md#0x1_fungible_asset_deposit">fungible_asset::deposit</a> | entered"));
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&store);
     <a href="fungible_asset.md#0x1_fungible_asset_deposit_sanity_check">deposit_sanity_check</a>(store, <b>true</b>);
     <a href="fungible_asset.md#0x1_fungible_asset_deposit_internal">deposit_internal</a>(<a href="object.md#0x1_object_object_address">object::object_address</a>(&store), fa);
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="fungible_asset.md#0x1_fungible_asset_deposit">fungible_asset::deposit</a> | exited"));
 }
 </code></pre>
 
@@ -3564,8 +3578,11 @@ Decrease the supply of a fungible asset by burning.
 
 
 <pre><code>inline <b>fun</b> <a href="fungible_asset.md#0x1_fungible_asset_borrow_store_resource">borrow_store_resource</a>&lt;T: key&gt;(store: &Object&lt;T&gt;): &<a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">FungibleStore</a> <b>acquires</b> <a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">FungibleStore</a> {
+    // <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="fungible_asset.md#0x1_fungible_asset_borrow_store_resource">fungible_asset::borrow_store_resource</a> | entered"));
     <b>let</b> store_addr = <a href="object.md#0x1_object_object_address">object::object_address</a>(store);
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&store_addr);
     <b>assert</b>!(<b>exists</b>&lt;<a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">FungibleStore</a>&gt;(store_addr), <a href="../../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="fungible_asset.md#0x1_fungible_asset_EFUNGIBLE_STORE_EXISTENCE">EFUNGIBLE_STORE_EXISTENCE</a>));
+    // <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="fungible_asset.md#0x1_fungible_asset_borrow_store_resource">fungible_asset::borrow_store_resource</a> | exited"));
     <b>borrow_global</b>&lt;<a href="fungible_asset.md#0x1_fungible_asset_FungibleStore">FungibleStore</a>&gt;(store_addr)
 }
 </code></pre>

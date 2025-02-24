@@ -113,7 +113,7 @@ impl FeatureFlag {
             FeatureFlag::TRANSACTION_CONTEXT_EXTENSION,
             FeatureFlag::COIN_TO_FUNGIBLE_ASSET_MIGRATION,
             FeatureFlag::DISPATCHABLE_FUNGIBLE_ASSET,
-            //FeatureFlag::NEW_ACCOUNTS_DEFAULT_TO_FA_STC_STORE,
+            FeatureFlag::NEW_ACCOUNTS_DEFAULT_TO_FA_STC_STORE,
         ]
     }
 }

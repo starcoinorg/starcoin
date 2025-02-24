@@ -1,0 +1,29 @@
+[package]
+name = "starcoin-asset-mapping"
+version = "2.0.1"
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+anyhow = { workspace = true }
+bcs-ext = { workspace = true }
+forkable-jellyfish-merkle = { workspace = true }
+starcoin-transaction-builder = { workspace = true }
+starcoin-chain = { workspace = true }
+starcoin-config = { workspace = true }
+starcoin-consensus = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-cached-packages = { workspace = true }
+starcoin-logger = { workspace = true }
+starcoin-state-api = { workspace = true }
+starcoin-types = { workspace = true }
+starcoin-vm-types = { workspace = true }
+test-helper = { workspace = true }
+starcoin-statedb = { workspace = true }
+move-core-types = { workspace = true }
+bytes = { workspace = true }

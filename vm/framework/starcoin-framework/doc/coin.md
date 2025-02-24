@@ -1201,6 +1201,15 @@ CoinStore is frozen. Coins cannot be deposited or withdrawn
 
 
 
+<a id="0x1_coin_EMETA_DATA_NOT_FOUND"></a>
+
+
+
+<pre><code><b>const</b> <a href="coin.md#0x1_coin_EMETA_DATA_NOT_FOUND">EMETA_DATA_NOT_FOUND</a>: u64 = 30;
+</code></pre>
+
+
+
 <a id="0x1_coin_EMIGRATION_FRAMEWORK_NOT_ENABLED"></a>
 
 The migration process from coin to fungible asset is not enabled yet.
@@ -1450,17 +1459,36 @@ Create STC pairing by passing <code>StarcoinCoin</code>.
     <b>let</b> map = <b>borrow_global_mut</b>&lt;<a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a>&gt;(@starcoin_framework);
     <b>let</b> type = <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;CoinType&gt;();
     <b>if</b> (!<a href="../../starcoin-stdlib/doc/table.md#0x1_table_contains">table::contains</a>(&map.coin_to_fungible_asset_map, type)) {
+        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(
+            &std::string::utf8(b"<a href="coin.md#0x1_coin_create_and_return_paired_metadata_if_not_exist">coin::create_and_return_paired_metadata_if_not_exist</a> | map not contain type")
+        );
         <b>let</b> is_stc = <a href="coin.md#0x1_coin_is_stc">is_stc</a>&lt;CoinType&gt;();
         <b>assert</b>!(!is_stc || allow_stc_creation, <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="coin.md#0x1_coin_EAPT_PAIRING_IS_NOT_ENABLED">EAPT_PAIRING_IS_NOT_ENABLED</a>));
         <b>let</b> metadata_object_cref =
             <b>if</b> (is_stc) {
+                <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(
+                    &std::string::utf8(
+                        b"<a href="coin.md#0x1_coin_create_and_return_paired_metadata_if_not_exist">coin::create_and_return_paired_metadata_if_not_exist</a> | type is stc, create sticky <a href="object.md#0x1_object">object</a> at 0x1"
+                    )
+                );
                 <a href="object.md#0x1_object_create_sticky_object_at_address">object::create_sticky_object_at_address</a>(@starcoin_framework, @starcoin_fungible_asset)
             } <b>else</b> {
+                <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(
+                    &std::string::utf8(
+                        b"<a href="coin.md#0x1_coin_create_and_return_paired_metadata_if_not_exist">coin::create_and_return_paired_metadata_if_not_exist</a> | type is not stc, create new asset sub <a href="object.md#0x1_object">object</a>"
+                    )
+                );
                 <a href="object.md#0x1_object_create_named_object">object::create_named_object</a>(
                     &<a href="create_signer.md#0x1_create_signer_create_signer">create_signer::create_signer</a>(@starcoin_fungible_asset),
                     *<a href="../../move-stdlib/doc/string.md#0x1_string_bytes">string::bytes</a>(&<a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_name">type_info::type_name</a>&lt;CoinType&gt;())
                 )
             };
+
+        <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&metadata_object_cref);
+        <b>assert</b>!(
+            <a href="object.md#0x1_object_is_object">object::is_object</a>(<a href="object.md#0x1_object_address_from_constructor_ref">object::address_from_constructor_ref</a>(&metadata_object_cref)),
+            <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="coin.md#0x1_coin_EMETA_DATA_NOT_FOUND">EMETA_DATA_NOT_FOUND</a>)
+        );
 
         <a href="primary_fungible_store.md#0x1_primary_fungible_store_create_primary_store_enabled_fungible_asset">primary_fungible_store::create_primary_store_enabled_fungible_asset</a>(
             &metadata_object_cref,
@@ -1578,9 +1606,15 @@ Conversion from coin to fungible asset
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x1_coin_coin_to_fungible_asset">coin_to_fungible_asset</a>&lt;CoinType&gt;(
     <a href="coin.md#0x1_coin">coin</a>: <a href="coin.md#0x1_coin_Coin">Coin</a>&lt;CoinType&gt;
 ): FungibleAsset <b>acquires</b> <a href="coin.md#0x1_coin_CoinConversionMap">CoinConversionMap</a>, <a href="coin.md#0x1_coin_CoinInfo">CoinInfo</a> {
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="coin.md#0x1_coin_coin_to_fungible_asset">coin::coin_to_fungible_asset</a> | entered"));
+
     <b>let</b> metadata = <a href="coin.md#0x1_coin_ensure_paired_metadata">ensure_paired_metadata</a>&lt;CoinType&gt;();
     <b>let</b> amount = <a href="coin.md#0x1_coin_burn_internal">burn_internal</a>(<a href="coin.md#0x1_coin">coin</a>);
-    <a href="fungible_asset.md#0x1_fungible_asset_mint_internal">fungible_asset::mint_internal</a>(metadata, amount)
+
+    <b>let</b> ret = <a href="fungible_asset.md#0x1_fungible_asset_mint_internal">fungible_asset::mint_internal</a>(metadata, amount);
+
+    <a href="../../starcoin-stdlib/doc/debug.md#0x1_debug_print">debug::print</a>(&<a href="../../move-stdlib/doc/string.md#0x1_string_utf8">string::utf8</a>(b"<a href="coin.md#0x1_coin_coin_to_fungible_asset">coin::coin_to_fungible_asset</a> | exited"));
+    ret
 }
 </code></pre>
 
@@ -4675,27 +4709,6 @@ The creator of <code>CoinType</code> must be <code>@starcoin_framework</code>.
     symbol: symbol.bytes
 };
 <b>ensures</b> <b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinInfo">CoinInfo</a>&lt;CoinType&gt;&gt;(addr);
-</code></pre>
-
-
-Make sure <code>name</code> and <code>symbol</code> are legal length.
-Only the creator of <code>CoinType</code> can initialize.
-
-
-<a id="0x1_coin_InitializeInternalSchema"></a>
-
-
-<pre><code><b>schema</b> <a href="coin.md#0x1_coin_InitializeInternalSchema">InitializeInternalSchema</a>&lt;CoinType&gt; {
-    <a href="account.md#0x1_account">account</a>: <a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>;
-    name: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;;
-    symbol: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;;
-    <b>let</b> account_addr = <a href="../../move-stdlib/doc/signer.md#0x1_signer_address_of">signer::address_of</a>(<a href="account.md#0x1_account">account</a>);
-    <b>let</b> coin_address = <a href="../../starcoin-stdlib/doc/type_info.md#0x1_type_info_type_of">type_info::type_of</a>&lt;CoinType&gt;().account_address;
-    <b>aborts_if</b> coin_address != account_addr;
-    <b>aborts_if</b> <b>exists</b>&lt;<a href="coin.md#0x1_coin_CoinInfo">CoinInfo</a>&lt;CoinType&gt;&gt;(account_addr);
-    <b>aborts_if</b> len(name) &gt; <a href="coin.md#0x1_coin_MAX_COIN_NAME_LENGTH">MAX_COIN_NAME_LENGTH</a>;
-    <b>aborts_if</b> len(symbol) &gt; <a href="coin.md#0x1_coin_MAX_COIN_SYMBOL_LENGTH">MAX_COIN_SYMBOL_LENGTH</a>;
-}
 </code></pre>
 
 

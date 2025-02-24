@@ -8,11 +8,9 @@
 
 //! This crate defines [`trait StateView`](StateView).
 
-use crate::state_store::state_key::StateKey;
-use crate::state_store::StateView;
 use crate::{
     account_config::{
-        genesis_address, token_code::TokenCode, AccountResource, BalanceResource, TokenInfo,
+        genesis_address, token_code::TokenCode, AccountResource, CoinStoreResource, TokenInfo,
         G_STC_TOKEN_CODE,
     },
     genesis_config::ChainId,
@@ -23,9 +21,11 @@ use crate::{
         BlockMetadata, Epoch, EpochData, EpochInfo, Treasury,
     },
     sips::SIP,
+    state_store::{state_key::StateKey, StateView},
 };
 use anyhow::{format_err, Result};
 use bytes::Bytes;
+use log::warn;
 use move_core_types::{
     account_address::AccountAddress,
     language_storage::{ModuleId, StructTag},
@@ -92,20 +92,22 @@ pub trait StateReaderExt: StateView {
 
     /// Get balance by address and coin type
     fn get_balance_by_type(&self, address: AccountAddress, type_tag: StructTag) -> Result<u128> {
-        let rsrc_bytes = self
-            .get_state_value_bytes(&StateKey::resource(
-                &address,
-                &BalanceResource::struct_tag_for_token(type_tag.clone()),
-            )?)?
-            .ok_or_else(|| {
-                format_err!(
-                    "BalanceResource not exists at address:{} for type tag:{}",
-                    address,
-                    type_tag
-                )
-            })?;
-        let rsrc = bcs_ext::from_bytes::<BalanceResource>(&rsrc_bytes)?;
-        Ok(rsrc.token())
+        // Get from coin store
+        let coin_balance = match self.get_state_value_bytes(&StateKey::resource(
+            &address,
+            &CoinStoreResource::struct_tag_for_token(type_tag.clone()),
+        )?)? {
+            Some(bytes) => bcs_ext::from_bytes::<CoinStoreResource>(&bytes)?.coin() as u128,
+            None => {
+                warn!(
+                    "CoinStoreResource not exists at address:{} for type tag:{}",
+                    address, type_tag
+                );
+                0
+            }
+        };
+
+        Ok(coin_balance)
     }
 
     fn get_epoch(&self) -> Result<Epoch> {
