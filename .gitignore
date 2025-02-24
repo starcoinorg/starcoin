@@ -47,3 +47,4 @@ build/
 
 # CI experimental mold binary
 mold
+shell.nix
