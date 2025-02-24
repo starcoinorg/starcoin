@@ -31,6 +31,7 @@ pub fn test_force_upgrade_generate_block() -> anyhow::Result<()> {
 }
 
 #[stest::test]
+#[ignore = "for upgrade 11 to 12"]
 pub fn test_force_upgrade_1() -> anyhow::Result<()> {
     let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
     genesis_config.stdlib_version = StdlibVersion::Version(12);
