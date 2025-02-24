@@ -306,7 +306,7 @@ impl FakeExecutor {
     pub fn read_coin_store_resource_at_address(
         &self,
         addr: &AccountAddress,
-    ) -> Option<BalanceResource> {
+    ) -> Option<CoinStoreResource> {
         self.read_resource(addr)
     }
 
