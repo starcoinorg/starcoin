@@ -41,7 +41,6 @@ use std::ops::DerefMut;
 use std::sync::Arc;
 
 pub const DEFAULT_GHOSTDAG_K: KType = 8u16;
-pub static G_MERGE_DEPTH: u64 = 3600; // the merge depth should be smaller than the pruning finality
 
 pub type DbGhostdagManager = GhostdagManager<
     DbGhostdagStore,

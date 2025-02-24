@@ -20,10 +20,7 @@ pub struct BlockDepthManagerT<
     depth_store: Arc<S>,
     reachability_service: MTReachabilityService<U>,
     ghostdag_store: V,
-<<<<<<< HEAD
     merge_depth: u64,
-=======
->>>>>>> eafeaa9a7 (add remove red blocks when mining)
 }
 
 impl<S: BlockDepthInfoReader, U: ReachabilityStoreReader, V: GhostdagStoreReader>
