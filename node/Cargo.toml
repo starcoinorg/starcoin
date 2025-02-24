@@ -55,9 +55,6 @@ starcoin-chain = { workspace = true }
 [dev-dependencies]
 stest = { workspace = true }
 
-[features]
-force-deploy = ["starcoin-chain/force-deploy"]
-
 [package]
 authors = { workspace = true }
 edition = { workspace = true }
