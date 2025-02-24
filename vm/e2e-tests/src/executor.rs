@@ -20,7 +20,7 @@ use starcoin_vm_runtime::VMExecutor;
 use starcoin_vm_types::{
     account_address::AccountAddress,
     account_config::block::NewBlockEvent,
-    account_config::{AccountResource, BalanceResource, CORE_CODE_ADDRESS},
+    account_config::{AccountResource, CoinStoreResource, CORE_CODE_ADDRESS},
     block_metadata::BlockMetadata,
     errors::Location,
     genesis_config::ChainId,
@@ -297,7 +297,7 @@ impl FakeExecutor {
     }
 
     /// Reads the CoinStore resource value for an account from this executor's data store.
-    pub fn read_coin_store_resource(&self, account: &Account) -> Option<BalanceResource> {
+    pub fn read_coin_store_resource(&self, account: &Account) -> Option<CoinStoreResource> {
         self.read_coin_store_resource_at_address(account.address())
     }
 
@@ -306,7 +306,7 @@ impl FakeExecutor {
     pub fn read_coin_store_resource_at_address(
         &self,
         addr: &AccountAddress,
-    ) -> Option<BalanceResource> {
+    ) -> Option<CoinStoreResource> {
         self.read_resource(addr)
     }
 

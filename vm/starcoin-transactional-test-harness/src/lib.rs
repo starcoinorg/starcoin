@@ -66,7 +66,7 @@ use starcoin_vm_types::transaction::authenticator::AccountPrivateKey;
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use starcoin_vm_types::write_set::{WriteOp, WriteSetMut};
 use starcoin_vm_types::{
-    account_config::BalanceResource,
+    account_config::CoinStoreResource,
     block_metadata::BlockMetadata,
     genesis_config::ChainId,
     on_chain_config::VMConfig,
@@ -498,9 +498,9 @@ impl<'a> StarcoinTestAdapter<'a> {
         &self,
         signer_addr: &AccountAddress,
         balance_currency_code: String,
-    ) -> Result<BalanceResource> {
+    ) -> Result<CoinStoreResource> {
         let token_code = TokenCode::from_str(balance_currency_code.as_str())?;
-        let balance_resource_tag = BalanceResource::struct_tag_for_token(token_code.try_into()?);
+        let balance_resource_tag = CoinStoreResource::struct_tag_for_token(token_code.try_into()?);
         let balance_access_key = StateKey::resource(signer_addr, &balance_resource_tag)?;
 
         let balance_blob = self
@@ -524,7 +524,7 @@ impl<'a> StarcoinTestAdapter<'a> {
             self.fetch_balance_resource(&genesis_address(), STC_TOKEN_CODE_STR.to_string())?;
         let genesis_account_data = AccountData::with_account_and_event_counts(
             Account::new_genesis_account(genesis_address()),
-            balance.token(),
+            balance.coin() as u128,
             genesis_account.sequence_number(),
             0,
             0,
@@ -564,7 +564,7 @@ impl<'a> StarcoinTestAdapter<'a> {
         let balance = self.fetch_balance_resource(&address, STC_TOKEN_CODE_STR.to_string())?;
         let account_data = AccountData::with_account_and_event_counts(
             Account::new_genesis_account(address),
-            balance.token(),
+            balance.coin() as u128,
             account.sequence_number(),
             0,
             0,
@@ -604,7 +604,7 @@ impl<'a> StarcoinTestAdapter<'a> {
                 self.fetch_balance_resource(signer_addr, stc_type_tag().to_string())?;
             std::cmp::min(
                 max_number_of_gas_units,
-                ((account_balance.token() / gas_unit_price as u128) as u64).into(),
+                ((account_balance.coin() as u128 / gas_unit_price as u128) as u64).into(),
             )
         };
         let chain_id = self.context.storage.get_chain_id()?;
