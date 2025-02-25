@@ -268,6 +268,7 @@ impl MockChain {
             4,
             3,
             G_MAX_PARENTS_COUNT,
+            self.head().get_genesis_hash(),
         )?;
 
         debug!(
