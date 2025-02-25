@@ -369,21 +369,28 @@ impl OpenedBlock {
     /// First, set the account policy in `0x1::PackageTxnManager` to 100,
     /// Second, after the contract deployment is successful, revert it back.
     fn execute_extra_txn(&mut self) -> Result<()> {
-        let extra_txn =
-            if self.block_meta.number() == get_force_upgrade_block_number(&self.chain_id) {
-                let account = get_force_upgrade_account(&self.chain_id)?;
-                let sequence_number = self.state.get_sequence_number(*account.address())?;
-                let extra_txn = ForceUpgrade::force_deploy_txn(
-                    account,
-                    sequence_number,
-                    self.block_meta.timestamp() / 1000 + DEFAULT_EXPIRATION_TIME,
-                    &self.chain_id,
-                )?;
-                info!("extra txn in opened block ({:?})", extra_txn.id());
-                Transaction::UserTransaction(extra_txn)
-            } else {
-                return Ok(());
-            };
+        let extra_txn = if self.block_meta.number()
+            == get_force_upgrade_block_number(&self.chain_id)
+            && self
+                .state
+                .get_on_chain_config::<starcoin_vm_types::on_chain_config::Version>()?
+                .map(|v| v.into_stdlib_version())
+                .map(|v| v == starcoin_vm_types::genesis_config::StdlibVersion::Version(12))
+                .unwrap_or(true)
+        {
+            let account = get_force_upgrade_account(&self.chain_id)?;
+            let sequence_number = self.state.get_sequence_number(*account.address())?;
+            let extra_txn = ForceUpgrade::force_deploy_txn(
+                account,
+                sequence_number,
+                self.block_meta.timestamp() / 1000 + DEFAULT_EXPIRATION_TIME,
+                &self.chain_id,
+            )?;
+            info!("extra txn in opened block ({:?})", extra_txn.id());
+            Transaction::UserTransaction(extra_txn)
+        } else {
+            return Ok(());
+        };
         let extra_txn_hash = extra_txn.id();
 
         let strategy_path = AccessPath::resource_access_path(
