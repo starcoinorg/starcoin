@@ -10022,7 +10022,7 @@ dependencies = [
 [[package]]
 name = "starcoin-framework"
 version = "13.0.0"
-source = "git+https://github.com/starcoinorg/starcoin-framework?rev=631ddccd5a169f535476a62bd8145782e3d9960a#631ddccd5a169f535476a62bd8145782e3d9960a"
+source = "git+https://github.com/starcoinorg/starcoin-framework?rev=748b28ec62c7133833947dd0e27da1258efe2dd0#748b28ec62c7133833947dd0e27da1258efe2dd0"
 dependencies = [
  "anyhow",
  "include_dir",
