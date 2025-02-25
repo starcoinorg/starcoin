@@ -15,17 +15,16 @@ use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::write_set::WriteSet;
 use std::collections::BTreeMap;
 
-#[cfg(feature = "force-deploy")]
 use {
     crate::execute_transactions,
     anyhow::bail,
     log::info,
-    starcoin_force_upgrade::force_upgrade_management::{
-        get_force_upgrade_account, get_force_upgrade_block_number,
-    },
     starcoin_force_upgrade::ForceUpgrade,
     starcoin_types::account::DEFAULT_EXPIRATION_TIME,
     starcoin_types::identifier::Identifier,
+    starcoin_vm_runtime::force_upgrade_management::{
+        get_force_upgrade_account, get_force_upgrade_block_number,
+    },
     starcoin_vm_types::{
         access_path::AccessPath,
         account_config::{genesis_address, ModuleUpgradeStrategy},
@@ -45,7 +44,6 @@ pub struct BlockExecutedData {
     pub txn_events: Vec<Vec<ContractEvent>>,
     pub txn_table_infos: BTreeMap<TableHandle, TableInfo>,
     pub write_sets: Vec<WriteSet>,
-    #[cfg(feature = "force-deploy")]
     #[serde(skip)]
     pub with_extra_txn: bool,
 }
@@ -58,7 +56,6 @@ impl Default for BlockExecutedData {
             txn_infos: vec![],
             txn_table_infos: BTreeMap::new(),
             write_sets: vec![],
-            #[cfg(feature = "force-deploy")]
             with_extra_txn: false,
         }
     }
@@ -117,8 +114,6 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
             TransactionStatus::Retry => return Err(BlockExecutorError::BlockExecuteRetryErr),
         };
     }
-
-    #[cfg(feature = "force-deploy")]
     if let Some(extra_txn) = create_force_upgrade_extra_txn(chain_state)
         .map_err(BlockExecutorError::BlockChainStateErr)?
     {
@@ -132,24 +127,24 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
     Ok(executed_data)
 }
 
-#[cfg(feature = "force-deploy")]
 fn create_force_upgrade_extra_txn<S: ChainStateReader + ChainStateWriter>(
     statedb: &S,
 ) -> anyhow::Result<Option<Transaction>> {
-    // Only execute extra_txn when stdlib version is 11
+    // Only execute extra_txn when stdlib version is 12
     if statedb
         .get_on_chain_config::<Version>()?
         .map(|v| v.into_stdlib_version())
-        .map(|v| v != StdlibVersion::Version(11))
+        .map(|v| v != StdlibVersion::Version(12))
         .unwrap_or(true)
     {
         return Ok(None);
     }
-
     let chain_id = statedb.get_chain_id()?;
     let block_timestamp = statedb.get_timestamp()?.seconds();
-    let block_number = statedb.get_block_metadata()?.number;
-
+    let block_number = statedb
+        .get_block_metadata_v2()?
+        .ok_or_else(|| anyhow::anyhow!("Failed to get metadata"))?
+        .number;
     Ok(
         if block_number == get_force_upgrade_block_number(&chain_id) {
             let account = get_force_upgrade_account(&chain_id)?;
@@ -173,7 +168,6 @@ fn create_force_upgrade_extra_txn<S: ChainStateReader + ChainStateWriter>(
 }
 
 // todo: check the execute_extra_txn in OpenedBlock, and merge with it
-#[cfg(feature = "force-deploy")]
 fn execute_extra_txn<S: ChainStateReader + ChainStateWriter>(
     chain_state: &S,
     txn: Transaction,
@@ -208,14 +202,14 @@ fn execute_extra_txn<S: ChainStateReader + ChainStateWriter>(
                 .apply_write_set(write_set.clone())
                 .map_err(BlockExecutorError::BlockChainStateErr)?;
             {
-                // update stdlib version to 12 directly
+                // update stdlib version to 13 directly
                 let version_path = on_chain_config::access_path_for_config(
                     genesis_address(),
                     Identifier::new("Version").unwrap(),
                     Identifier::new("Version").unwrap(),
                     vec![],
                 );
-                let version = on_chain_config::Version { major: 12 };
+                let version = on_chain_config::Version { major: 13 };
                 chain_state.set(&version_path, bcs_ext::to_bytes(&version)?)?;
             }
 

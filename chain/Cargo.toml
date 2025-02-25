@@ -21,7 +21,7 @@ starcoin-statedb = { workspace = true }
 starcoin-time-service = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
-starcoin-vm-runtime = { workspace = true, optional = true }
+starcoin-vm-runtime = { workspace = true }
 starcoin-force-upgrade = { workspace = true }
 starcoin-storage = { workspace = true }
 thiserror = { workspace = true }
@@ -51,7 +51,6 @@ starcoin-force-upgrade = { workspace = true }
 [features]
 default = []
 fuzzing = ["proptest", "proptest-derive", "starcoin-types/fuzzing"]
-force-deploy = ["starcoin-force-upgrade/force-deploy", "starcoin-executor/force-deploy"]
 
 [package]
 authors = { workspace = true }

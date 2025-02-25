@@ -1,3 +1,15 @@
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-force-upgrade"
+publish = { workspace = true }
+version = "2.0.2"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+
 [dependencies]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
@@ -8,25 +20,16 @@ starcoin-logger = { workspace = true }
 parking_lot = { workspace = true }
 starcoin-accumulator = { workspace = true }
 starcoin-chain-api = { workspace = true }
-starcoin-executor = { workspace = true }
 starcoin-state-api = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
-starcoin-force-upgrade = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
+starcoin-move-compiler = { workspace = true }
+stdlib = { workspace = true }
+include_dir = { workspace = true }
+
 [dev-dependencies]
 starcoin-genesis = { workspace = true }
 stest = { workspace = true }
-
-[package]
-authors = { workspace = true }
-edition = { workspace = true }
-license = { workspace = true }
-name = "starcoin-open-block"
-publish = { workspace = true }
-version = { workspace = true }
-homepage = { workspace = true }
-repository = { workspace = true }
-rust-version = { workspace = true }
