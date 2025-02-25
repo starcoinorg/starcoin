@@ -505,7 +505,7 @@ where
         &self,
         new_branch: &BlockChain,
     ) -> Result<(u64, Vec<Block>, u64, Vec<Block>)> {
-        let ancestor = self.main.find_ancestor(new_branch)?.ok_or_else(|| {
+        let common_ancestor = self.main.find_ancestor(new_branch)?.ok_or_else(|| {
             format_err!(
                 "Can not find ancestors between main chain: {:?} and branch: {:?}",
                 self.main.status(),
@@ -513,28 +513,31 @@ where
             )
         })?;
 
-        let ancestor_block = self
+        let common_ancestor_block = self
             .main
-            .get_block(ancestor.id)?
-            .ok_or_else(|| format_err!("Can not find block by id:{}", ancestor.id))?;
+            .get_block(common_ancestor.id)?
+            .ok_or_else(|| format_err!("Cannot find block by id:{}", common_ancestor.id))?;
+
         let enacted_count = new_branch
             .current_header()
             .number()
-            .checked_sub(ancestor_block.header().number())
+            .checked_sub(common_ancestor_block.header().number())
             .ok_or_else(|| format_err!("current_header number should > ancestor_block number."))?;
+
         let retracted_count = self
             .main
             .current_header()
             .number()
-            .checked_sub(ancestor_block.header().number())
+            .checked_sub(common_ancestor_block.header().number())
             .ok_or_else(|| format_err!("current_header number should > ancestor_block number."))?;
 
         let block_enacted = new_branch.current_header().id();
         let block_retracted = self.main.current_header().id();
 
-        let enacted = self.find_blocks_until(block_enacted, ancestor.id, MAX_ROLL_BACK_BLOCK)?;
+        let enacted =
+            self.find_blocks_until(block_enacted, common_ancestor.id, MAX_ROLL_BACK_BLOCK)?;
         let retracted =
-            self.find_blocks_until(block_retracted, ancestor.id, MAX_ROLL_BACK_BLOCK)?;
+            self.find_blocks_until(block_retracted, common_ancestor.id, MAX_ROLL_BACK_BLOCK)?;
 
         debug!(
             "Commit block count:{}, rollback block count:{}",

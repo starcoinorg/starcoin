@@ -1399,12 +1399,13 @@ fn test_merge_bounded() -> anyhow::Result<()> {
 
     let ghostdata = dag.ghostdata(&tips)?;
 
-    let (merge_depth_root, _finality_point) =
-        dag.check_bounded_merge_depth(pruning_point, &ghostdata, pruning_depth)?;
+    let merge_depth_info =
+        dag.generate_the_block_depth(pruning_point, &ghostdata, pruning_depth)?;
+    dag.check_bounded_merge_depth(&ghostdata)?;
     assert_eq!(
         dag.ghost_dag_manager()
             .find_selected_parent(vec![block_main_3.id(), block_main_3_1.id()])?,
-        merge_depth_root
+        merge_depth_info.merge_depth_root
     );
 
     // to test the calculation
@@ -1444,12 +1445,12 @@ fn test_merge_bounded() -> anyhow::Result<()> {
     assert_eq!(tips.len(), 1);
     assert_eq!(*tips.last().unwrap(), block_main_6.id());
 
-    let (merge_depth_root, _finality_point) =
-        dag.check_bounded_merge_depth(pruning_point, &ghostdata, merge_depth)?;
+    let merge_dapth_info = dag.generate_the_block_depth(pruning_point, &ghostdata, merge_depth)?;
+    dag.check_bounded_merge_depth(&ghostdata)?;
     let mut fork = dag
         .ghost_dag_manager()
         .find_selected_parent(vec![block_main_3.id(), block_main_3_1.id()])?;
-    assert_eq!(fork, merge_depth_root);
+    assert_eq!(fork, merge_dapth_info.merge_depth_root);
 
     fork = if block_main_3.id() == fork {
         block_main_3_1.id()
