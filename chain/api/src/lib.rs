@@ -11,6 +11,7 @@ use starcoin_vm_types::transaction::{RichTransactionInfo, SignedUserTransaction}
 mod chain;
 mod errors;
 pub mod message;
+pub mod range_locate;
 mod service;
 
 #[derive(Clone, Debug)]

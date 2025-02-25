@@ -11,8 +11,9 @@ use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::{BlockDAG, MineNewDagBlockInfo};
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
+use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
-use starcoin_types::block::{Block, BlockHeader};
+use starcoin_types::block::{Block, BlockHeader, ExecutedBlock};
 use starcoin_types::blockhash::KType;
 use starcoin_types::startup_info::ChainInfo;
 use std::sync::Arc;
@@ -50,6 +51,27 @@ impl MockChain {
             None,
             dag,
         )?;
+        let miner = AccountInfo::random();
+        Ok(Self::new_inner(net, chain, miner, storage))
+    }
+
+    pub fn new_with_genesis_for_test(
+        net: ChainNetwork,
+        genesis: Genesis,
+        k: KType,
+    ) -> anyhow::Result<Self> {
+        let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
+        let dag = BlockDAG::create_for_testing_with_parameters(k)?;
+        let chain_info = genesis.execute_genesis_block(&net, storage.clone(), dag.clone())?;
+
+        let chain = BlockChain::new(
+            net.time_service(),
+            chain_info.head().id(),
+            storage.clone(),
+            None,
+            dag,
+        )?;
+
         let miner = AccountInfo::random();
         Ok(Self::new_inner(net, chain, miner, storage))
     }
@@ -268,6 +290,7 @@ impl MockChain {
             4,
             3,
             G_MAX_PARENTS_COUNT,
+            self.head().get_genesis_hash(),
         )?;
 
         debug!(
@@ -324,11 +347,43 @@ impl MockChain {
         Ok(header)
     }
 
+    pub fn connect(&mut self, block: ExecutedBlock) -> Result<()> {
+        self.head.connect(block)?;
+        Ok(())
+    }
+
     pub fn produce_and_apply_times(&mut self, times: u64) -> Result<()> {
         for _i in 0..times {
             self.produce_and_apply()?;
         }
         Ok(())
+    }
+
+    pub fn produce_and_apply_with_tips_for_times(
+        &mut self,
+        times: u64,
+    ) -> Result<Vec<ExecutedBlock>> {
+        let mut blocks = Vec::new();
+        for _i in 0..times {
+            let header = self.produce_and_apply_by_tips(
+                self.head.current_header(),
+                vec![self.head.current_header().id()],
+            )?;
+            let block = self
+                .head
+                .get_storage()
+                .get_block_by_hash(header.id())?
+                .unwrap();
+            let block_info = self
+                .head
+                .get_storage()
+                .get_block_info(header.id())?
+                .unwrap();
+            let executed_block = ExecutedBlock::new(block, block_info);
+            self.connect(executed_block.clone())?;
+            blocks.push(executed_block);
+        }
+        Ok(blocks)
     }
 
     pub fn produce_and_apply_times_for_fork(

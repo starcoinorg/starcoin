@@ -158,6 +158,7 @@ pub async fn full_sync_new_node() -> Result<()> {
         None,
         dag.clone(),
         node2.sync_dag_store.clone(),
+        false,
     )?;
     let join_handle = node2.process_block_connect_event(receiver_1).await;
     let branch = sync_task.await?;
@@ -190,6 +191,7 @@ pub async fn full_sync_new_node() -> Result<()> {
         None,
         dag,
         node2.sync_dag_store.clone(),
+        false,
     )?;
     let join_handle = node2.process_block_connect_event(receiver_1).await;
     let branch = sync_task.await?;

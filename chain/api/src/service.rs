@@ -1,12 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
-
 use crate::message::{ChainRequest, ChainResponse};
+use crate::range_locate::RangeInLocation;
 use crate::{ChainType, TransactionInfoWithProof};
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::consenses_state::{DagStateView, ReachabilityView};
 use starcoin_dag::types::ghostdata::GhostdagData;
+use starcoin_network_rpc_api::{GetRangeInLocationRequest, GetRangeInLocationResponse};
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::filter::Filter;
@@ -78,6 +79,11 @@ pub trait ReadableChainService {
     fn get_dag_state(&self) -> Result<DagStateView>;
     fn check_chain_type(&self) -> Result<ChainType>;
     fn get_ghostdagdata(&self, id: HashValue) -> Result<Option<GhostdagData>>;
+    fn get_range_in_location(
+        &self,
+        start_id: HashValue,
+        end_id: Option<HashValue>,
+    ) -> Result<RangeInLocation>;
 }
 
 /// Writeable block chain service trait
@@ -146,6 +152,10 @@ pub trait ChainAsyncService:
 
     async fn get_block_infos(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
     async fn get_dag_block_children(&self, hashes: Vec<HashValue>) -> Result<Vec<HashValue>>;
+    async fn get_range_in_location(
+        &self,
+        req: GetRangeInLocationRequest,
+    ) -> Result<GetRangeInLocationResponse>;
     async fn get_dag_state(&self) -> Result<DagStateView>;
     async fn check_chain_type(&self) -> Result<ChainType>;
     async fn get_ghostdagdata(&self, id: HashValue) -> Result<Option<GhostdagData>>;
@@ -460,6 +470,35 @@ where
             Ok(children)
         } else {
             bail!("get dag block children error")
+        }
+    }
+
+    async fn get_range_in_location(
+        &self,
+        req: GetRangeInLocationRequest,
+    ) -> Result<GetRangeInLocationResponse> {
+        let response = self
+            .send(ChainRequest::GetRangeInLocation {
+                start_id: req.start_id,
+                end_id: req.end_id,
+            })
+            .await??;
+        if let ChainResponse::GetRangeInLocation { range } = response {
+            match range {
+                RangeInLocation::NotInSelectedChain => Ok(GetRangeInLocationResponse {
+                    range: starcoin_network_rpc_api::RangeInLocation::NotInSelectedChain,
+                }),
+                RangeInLocation::InSelectedChain(hash_value, hash_values) => {
+                    Ok(GetRangeInLocationResponse {
+                        range: starcoin_network_rpc_api::RangeInLocation::InSelectedChain(
+                            hash_value,
+                            hash_values,
+                        ),
+                    })
+                }
+            }
+        } else {
+            bail!("get range in location error");
         }
     }
 

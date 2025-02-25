@@ -18,18 +18,21 @@ use rand::Rng;
 use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
+use starcoin_chain_api::range_locate::get_range_in_location;
 use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::MockChain;
 use starcoin_config::ChainNetwork;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
-use starcoin_network_rpc_api::G_RPC_INFO;
+use starcoin_network_rpc_api::{RangeInLocation, G_RPC_INFO};
 use starcoin_storage::Storage;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
 use starcoin_types::startup_info::ChainInfo;
 use std::sync::Arc;
 use std::time::Duration;
+
+use super::BlockIdRangeFetcher;
 
 #[derive(Default)]
 pub enum ErrorStrategy {
@@ -128,6 +131,49 @@ impl BlockIdFetcher for MockBlockIdFetcher {
     ) -> BoxFuture<Result<Vec<HashValue>>> {
         self.fetch_block_ids_async(start_number, reverse, max_size)
             .boxed()
+    }
+}
+
+pub struct MockRangeLocationFetcher {
+    chain: MockChain,
+}
+
+impl MockRangeLocationFetcher {
+    pub fn new(chain: MockChain) -> Self {
+        Self { chain }
+    }
+
+    async fn fetch_range_locate(
+        &self,
+        start_id: HashValue,
+        end_id: Option<HashValue>,
+    ) -> Result<starcoin_network_rpc_api::RangeInLocation> {
+        let result = match get_range_in_location(
+            self.chain.head(),
+            self.chain.head().get_storage(),
+            start_id,
+            end_id,
+        )? {
+            starcoin_chain_api::range_locate::RangeInLocation::NotInSelectedChain => {
+                RangeInLocation::NotInSelectedChain
+            }
+            starcoin_chain_api::range_locate::RangeInLocation::InSelectedChain(
+                hash_value,
+                hash_values,
+            ) => RangeInLocation::InSelectedChain(hash_value, hash_values),
+        };
+        Ok(result)
+    }
+}
+
+impl BlockIdRangeFetcher for MockRangeLocationFetcher {
+    fn fetch_range_locate(
+        &self,
+        _peer: Option<PeerId>,
+        start_id: HashValue,
+        end_id: Option<HashValue>,
+    ) -> BoxFuture<Result<starcoin_network_rpc_api::RangeInLocation>> {
+        self.fetch_range_locate(start_id, end_id).boxed()
     }
 }
 
@@ -426,6 +472,17 @@ impl BlockInfoFetcher for SyncNodeMocker {
             Ok(result)
         }
         .boxed()
+    }
+}
+
+impl BlockIdRangeFetcher for SyncNodeMocker {
+    fn fetch_range_locate(
+        &self,
+        _peer: Option<PeerId>,
+        _start_id: HashValue,
+        _end_id: Option<HashValue>,
+    ) -> BoxFuture<Result<starcoin_network_rpc_api::RangeInLocation>> {
+        unimplemented!()
     }
 }
 

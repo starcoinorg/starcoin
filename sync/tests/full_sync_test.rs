@@ -3,7 +3,6 @@ mod test_sync;
 
 use anyhow::{Ok, Result};
 use futures::executor::block_on;
-use rand::random;
 use starcoin_chain_api::ChainAsyncService;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
@@ -75,9 +74,7 @@ fn test_sync_by_notification() {
     first_node.stop().unwrap();
 }
 
-#[stest::test(timeout = 120)]
-fn test_sync_and_notification() {
-    let first_config = Arc::new(NodeConfig::random_for_test());
+fn test_sync_and_notify_by_config(first_config: Arc<NodeConfig>, second_config: Arc<NodeConfig>) {
     info!("first peer : {:?}", first_config.network.self_peer_id());
     let first_node = run_node_by_config(first_config.clone()).unwrap();
     for _i in 0..5 {
@@ -85,26 +82,71 @@ fn test_sync_and_notification() {
     }
     sleep(Duration::from_millis(500));
 
-    let mut second_config = NodeConfig::random_for_test();
-    info!("second peer : {:?}", second_config.network.self_peer_id());
-    second_config.network.seeds = vec![first_config.network.self_address()].into();
-    //second_config.miner.enable_miner_client = false;
-
-    let second_node = run_node_by_config(Arc::new(second_config)).unwrap();
+    let second_node = run_node_by_config(second_config).unwrap();
     //wait first sync.
     wait_two_node_synced(&first_node, &second_node);
 
     // generate block
     for _i in 0..10 {
-        let r: u32 = random();
-        if r % 2 == 0 {
-            let _broadcast_block = first_node.generate_block().unwrap();
-        } else {
-            let _broadcast_block = second_node.generate_block().unwrap();
-        }
+        let _broadcast_block = first_node.generate_block().unwrap();
     }
     // wait sync again.
-    wait_two_node_synced(&first_node, &second_node);
+    wait_two_node_synced_infinite(&first_node, &second_node);
+
+    // for _i in 0..10000 {
+    //     first_node.generate_block().unwrap();
+    // }
+
+    // for _i in 0..8000 {
+    //     second_node.generate_block().unwrap();
+    // }
+    // wait_two_node_synced_infinite(&first_node, &second_node);
+}
+
+#[test]
+fn test_sync_and_notification_in_fast_range_location() {
+    let mut first_config = NodeConfig::random_for_test();
+    first_config.sync.range_locate = Some(true);
+    info!("first peer : {:?}", first_config.network.self_peer_id());
+
+    let mut second_config = NodeConfig::random_for_test();
+    second_config.sync.range_locate = Some(true);
+    second_config.network.seeds = vec![first_config.network.self_address()].into();
+    info!("second peer : {:?}", second_config.network.self_peer_id());
+
+    test_sync_and_notify_by_config(Arc::new(first_config), Arc::new(second_config));
+}
+
+#[test]
+fn test_sync_and_notification_previous_version() {
+    let first_config = NodeConfig::random_for_test();
+    info!("first peer : {:?}", first_config.network.self_peer_id());
+
+    let mut second_config = NodeConfig::random_for_test();
+    second_config.network.seeds = vec![first_config.network.self_address()].into();
+    info!("second peer : {:?}", second_config.network.self_peer_id());
+
+    test_sync_and_notify_by_config(Arc::new(first_config), Arc::new(second_config));
+}
+
+fn wait_two_node_synced_infinite(first_node: &NodeHandle, second_node: &NodeHandle) {
+    let first_chain = first_node.chain_service().unwrap();
+    let second_chain = second_node.chain_service().unwrap();
+
+    loop {
+        let block_1 = block_on(async { first_chain.clone().main_head_block().await.unwrap() });
+        let block_2 = block_on(async { second_chain.clone().main_head_block().await.unwrap() });
+        debug!(
+            "first chain number is:{}, second chain number is: {}",
+            block_1.header().number(),
+            block_2.header().number()
+        );
+        if block_1 == block_2 {
+            break;
+        } else {
+            std::thread::sleep(Duration::from_millis(500));
+        }
+    }
 }
 
 fn wait_two_node_synced(first_node: &NodeHandle, second_node: &NodeHandle) {
@@ -122,7 +164,7 @@ fn wait_two_node_synced(first_node: &NodeHandle, second_node: &NodeHandle) {
         );
         if block_1 == block_2 {
             break;
-        } else if i == 100 {
+        } else if i == 99 {
             panic!(
                 "two node is not synced, first: {:?}, second: {:?}",
                 block_1.header(),
