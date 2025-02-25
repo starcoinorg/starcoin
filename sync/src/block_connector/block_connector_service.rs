@@ -38,6 +38,7 @@ use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
+use starcoin_types::system_events::NewDagBlockFromPeer;
 use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown};
 use std::sync::Arc;
 use sysinfo::{DiskExt, System, SystemExt};
@@ -380,6 +381,8 @@ where
                 }
                 Err(e) => warn!("BlockConnector fail: {:?}, peer_id:{:?}", e, peer_id),
             }
+        } else {
+            ctx.broadcast(NewDagBlockFromPeer);
         }
     }
 }
@@ -454,6 +457,7 @@ where
                 pruning_depth,
                 pruning_finality,
                 self.config.miner.maximum_parents_count(),
+                self.chain_service.get_main().get_genesis_hash(),
             )?
         } else {
             let genesis = ctx.get_shared::<Genesis>()?;
@@ -468,6 +472,7 @@ where
         if blue_blocks.is_empty() {
             bail!("failed to get the blue blocks from the DAG");
         }
+
         let selected_parent = *blue_blocks
             .first()
             .ok_or_else(|| format_err!("the blue blocks must be not be 0!"))?;

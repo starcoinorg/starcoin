@@ -1394,9 +1394,20 @@ impl ChainReader for BlockChain {
             }
         };
 
-        Ok(self
-            .dag()
-            .verify_and_ghostdata(uncles, header, latest_pruning_point)?)
+        let dag = self.dag();
+
+        let ghostdata = dag.verify_and_ghostdata(uncles, header, latest_pruning_point)?;
+
+        // it should check in the future
+        // let pruning_point = if header.pruning_point() == HashValue::zero() {
+        //     self.genesis_hash
+        // } else {
+        //     header.pruning_point()
+        // };
+
+        // dag.check_bounded_merge_depth(pruning_point, &ghostdata, self.get_pruning_config().0)?;
+
+        Ok(ghostdata)
     }
 
     fn is_dag_ancestor_of(&self, ancestor: HashValue, descendant: HashValue) -> Result<bool> {
@@ -1417,6 +1428,10 @@ impl ChainReader for BlockChain {
             .unwrap_or_default()
             .unwrap_or_default();
         (pruning_depth, pruning_finality)
+    }
+
+    fn get_genesis_hash(&self) -> HashValue {
+        self.genesis_hash
     }
 }
 

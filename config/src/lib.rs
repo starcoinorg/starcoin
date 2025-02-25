@@ -471,6 +471,15 @@ impl NodeConfig {
         Self::load_with_opt(&opt).expect("Auto generate test config should success.")
     }
 
+    pub fn random_for_test_with_path(dir: PathBuf) -> Self {
+        let opt = StarcoinOpt {
+            net: Some(BuiltinNetworkID::Test.into()),
+            base_data_dir: Some(dir),
+            ..StarcoinOpt::default()
+        };
+        Self::load_with_opt(&opt).expect("Auto generate test config should success.")
+    }
+
     pub fn random_for_dag_test() -> Self {
         let opt = StarcoinOpt {
             net: Some(BuiltinNetworkID::DagTest.into()),

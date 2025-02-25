@@ -40,6 +40,12 @@ pub struct SyncConfig {
         help = "The height difference threshold for triggering a lightweight sync."
     )]
     lightweight_sync_max_gap: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(long = "range-locate")]
+    /// the range location will be used if it is true
+    /// the range location is to find the common ancestor by log(n) time complexity
+    pub range_locate: Option<bool>,
 }
 
 impl SyncConfig {
@@ -53,6 +59,10 @@ impl SyncConfig {
 
     pub fn lightweight_sync_max_gap(&self) -> Option<u64> {
         self.lightweight_sync_max_gap
+    }
+
+    pub fn range_locate(&self) -> bool {
+        self.range_locate.unwrap_or(false)
     }
 }
 
@@ -68,6 +78,10 @@ impl ConfigModule for SyncConfig {
 
         if opt.sync.lightweight_sync_max_gap.is_some() {
             self.lightweight_sync_max_gap = opt.sync.lightweight_sync_max_gap;
+        }
+
+        if opt.sync.range_locate.is_some() {
+            self.range_locate = opt.sync.range_locate;
         }
 
         Ok(())

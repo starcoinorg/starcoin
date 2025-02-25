@@ -35,7 +35,9 @@ use starcoin_txpool::TxPoolService;
 use starcoin_types::block::{Block, BlockIdAndNumber};
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
-use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
+use starcoin_types::system_events::{
+    NewDagBlockFromPeer, NewHeadBlock, SyncStatusChangeEvent, SystemStarted,
+};
 use std::collections::{BTreeSet, HashSet};
 use std::result::Result::Ok;
 use std::sync::Arc;
@@ -219,6 +221,7 @@ impl SyncService {
         let config = self.config.clone();
         let storage = self.storage.clone();
         let dag = ctx.get_shared::<BlockDAG>()?;
+        let self_ref = ctx.self_ref();
 
         let fut = async move {
             let verified_rpc_client = Self::create_verified_client(
@@ -411,6 +414,7 @@ impl SyncService {
                 ));
             }
             info!("[sync specific] Sync specific block done");
+            self_ref.notify(SpecificSyncDone)?;
             Ok(())
         };
 
@@ -458,6 +462,7 @@ impl SyncService {
         let vm_metrics = self.vm_metrics.clone();
         let dag = ctx.get_shared::<BlockDAG>()?;
         let sync_dag_store = self.sync_dag_store.clone();
+        let range_locate = config.sync.range_locate();
         let fut = async move {
             let startup_info = storage
                 .get_startup_info()?
@@ -495,6 +500,7 @@ impl SyncService {
                     vm_metrics.clone(),
                     dag,
                     sync_dag_store,
+                    range_locate,
                 )?;
 
                 self_ref.notify(SyncBeginEvent {
@@ -688,6 +694,15 @@ impl EventHandler<Self, PeerEvent> for SyncService {
                 }
             }
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct SpecificSyncDone;
+
+impl EventHandler<Self, SpecificSyncDone> for SyncService {
+    fn handle_event(&mut self, _msg: SpecificSyncDone, ctx: &mut ServiceContext<Self>) {
+        ctx.broadcast(NewDagBlockFromPeer);
     }
 }
 
