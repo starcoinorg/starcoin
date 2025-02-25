@@ -9,6 +9,7 @@ use crate::data_cache::{AsMoveResolver, RemoteStorage, StateViewCache};
 use crate::errors::{
     convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
 };
+use crate::force_upgrade_management::FORCE_UPGRADE_BLOCK_NUMBER;
 use crate::move_vm_ext::{MoveResolverExt, MoveVmExt, SessionId, SessionOutput};
 use anyhow::{bail, format_err, Error, Result};
 use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
@@ -292,7 +293,11 @@ impl StarcoinVM {
         self.move_version
     }
 
-    fn check_move_version(&self, package_or_script_bytecode_version: u64) -> Result<(), VMStatus> {
+    fn check_move_version(
+        &self,
+        package_or_script_bytecode_version: u64,
+        block_number: u64,
+    ) -> Result<(), VMStatus> {
         // if move_version config is not exists on chain, this check will do no harm.
         if let Some(supported_move_version) = &self.move_version {
             if package_or_script_bytecode_version > supported_move_version.major {
@@ -300,6 +305,9 @@ impl StarcoinVM {
                 // return `FEATURE_UNDER_GATING` error, and the txn will not be included in blocks.
                 return Err(VMStatus::Error(StatusCode::FEATURE_UNDER_GATING));
             }
+        }
+        if block_number > FORCE_UPGRADE_BLOCK_NUMBER && package_or_script_bytecode_version < 6 {
+            return Err(VMStatus::Error(StatusCode::UNKNOWN_VERSION));
         }
         Ok(())
     }
@@ -382,6 +390,11 @@ impl StarcoinVM {
     ) -> Result<(), VMStatus> {
         let txn_data = TransactionMetadata::new(transaction)?;
         let data_cache = remote_cache.as_move_resolver();
+        let block_number = if let Ok(block_meta) = remote_cache.get_block_metadata() {
+            block_meta.number
+        } else {
+            0
+        };
         let mut session: SessionAdapter<_> = self
             .move_vm
             .new_session(&data_cache, SessionId::txn(transaction))
@@ -395,7 +408,7 @@ impl StarcoinVM {
                 for module in package.modules() {
                     if let Ok(compiled_module) = CompiledModule::deserialize(module.code()) {
                         // check module's bytecode version.
-                        self.check_move_version(compiled_module.version() as u64)?;
+                        self.check_move_version(compiled_module.version() as u64, block_number)?;
                     };
                 }
                 let enforced = match Self::is_enforced(remote_cache, package.package_address()) {
@@ -430,7 +443,7 @@ impl StarcoinVM {
             }
             TransactionPayload::Script(s) => {
                 if let Ok(s) = CompiledScript::deserialize(s.code()) {
-                    self.check_move_version(s.version() as u64)?;
+                    self.check_move_version(s.version() as u64, block_number)?;
                 };
                 session
                     .verify_script_args(
@@ -537,6 +550,11 @@ impl StarcoinVM {
         storage: &S,
     ) -> Result<(VMStatus, TransactionOutput), VMStatus> {
         let data_cache = StateViewCache::new(storage);
+        let block_number = if let Ok(block_meta) = data_cache.get_block_metadata() {
+            block_meta.number
+        } else {
+            0
+        };
         {
             // Run the validation logic
             gas_meter.set_metering(false);
@@ -561,7 +579,7 @@ impl StarcoinVM {
             for module in package.modules() {
                 if let Ok(compiled_module) = CompiledModule::deserialize(module.code()) {
                     // check module's bytecode version.
-                    self.check_move_version(compiled_module.version() as u64)?;
+                    self.check_move_version(compiled_module.version() as u64, block_number)?;
                 };
             }
 
@@ -636,13 +654,20 @@ impl StarcoinVM {
         }
     }
 
-    fn execute_script_or_script_function<S: MoveResolverExt>(
+    fn execute_script_or_script_function<S: MoveResolverExt + StateView>(
         &self,
         mut session: SessionAdapter<S>,
         gas_meter: &mut StarcoinGasMeter,
         txn_data: &TransactionMetadata,
         payload: &TransactionPayload,
+        storage: &S,
     ) -> Result<(VMStatus, TransactionOutput), VMStatus> {
+        let remote_cache = StateViewCache::new(storage);
+        let block_number = if let Ok(block_meta) = remote_cache.get_block_metadata() {
+            block_meta.number
+        } else {
+            0
+        };
         // Run the validation logic
         {
             gas_meter.set_metering(false);
@@ -661,7 +686,7 @@ impl StarcoinVM {
                 TransactionPayload::Script(script) => {
                     // we only use the ok path, let move vm handle the wrong path.
                     if let Ok(s) = CompiledScript::deserialize(script.code()) {
-                        self.check_move_version(s.version() as u64)?;
+                        self.check_move_version(s.version() as u64, block_number)?;
                     };
                     debug!("TransactionPayload::{:?}", script);
                     session.execute_script(
@@ -945,6 +970,7 @@ impl StarcoinVM {
                             &mut gas_meter,
                             &txn_data,
                             payload,
+                            storage,
                         ),
                     TransactionPayload::Package(p) => {
                         self.execute_package(session, &mut gas_meter, &txn_data, p, storage)
@@ -1008,9 +1034,14 @@ impl StarcoinVM {
         gas_meter.set_metering(false);
         let result = match txn.raw_txn.payload() {
             payload @ TransactionPayload::Script(_)
-            | payload @ TransactionPayload::ScriptFunction(_) => {
-                self.execute_script_or_script_function(session, &mut gas_meter, &txn_data, payload)
-            }
+            | payload @ TransactionPayload::ScriptFunction(_) => self
+                .execute_script_or_script_function(
+                    session,
+                    &mut gas_meter,
+                    &txn_data,
+                    payload,
+                    storage,
+                ),
             TransactionPayload::Package(p) => {
                 self.execute_package(session, &mut gas_meter, &txn_data, p, storage)
             }
