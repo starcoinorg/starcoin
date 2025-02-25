@@ -1113,8 +1113,10 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             } else {
                 None
             };
+
+            let network = init_args.network.unwrap_or(BuiltinNetworkID::Test);
             (
-                ForkContext::new_local(init_args.network.unwrap(), stdlib_modules).unwrap(),
+                ForkContext::new_local(network, stdlib_modules).unwrap(),
                 false,
             )
         };
