@@ -1082,4 +1082,65 @@ impl BlockDAG {
             descendants: de,
         })
     }
+
+    pub fn switch_selected_chain(
+        &self,
+        from: Hash,
+        to: Hash,
+        common_ancestor: Hash,
+        max_retracted_count: usize,
+    ) -> anyhow::Result<Vec<Hash>> {
+        if self.check_ancestor_of_chain(common_ancestor, from)? {
+            bail!(
+                "the common ancestor is not the ancestor of the from chain: {:?}",
+                from
+            );
+        }
+        if self.check_ancestor_of_chain(common_ancestor, to)? {
+            bail!(
+                "the common ancestor is not the ancestor of the from chain: {:?}",
+                to
+            );
+        }
+
+        let mut new_branch_block_set = HashSet::new();
+        let mut parent_id = to;
+
+        // new branch blue set
+        loop {
+            let ghostdata = self
+                .ghostdata_by_hash(parent_id)?
+                .ok_or_else(|| format_err!("the ghostdag data should be existed for {:?}", to))?;
+            new_branch_block_set.extend(ghostdata.mergeset_blues.iter().cloned());
+            if ghostdata.selected_parent == common_ancestor {
+                break;
+            } else {
+                parent_id = ghostdata.selected_parent;
+            }
+        }
+
+        let mut retracted_block_set = HashSet::new();
+
+        // current branch block set
+        loop {
+            let ghostdata = self
+                .ghostdata_by_hash(parent_id)?
+                .ok_or_else(|| format_err!("the ghostdag data should be existed for {:?}", to))?;
+            retracted_block_set.extend(ghostdata.unordered_mergeset());
+            if ghostdata.selected_parent == common_ancestor {
+                break;
+            } else {
+                parent_id = ghostdata.selected_parent;
+            }
+        }
+
+        let difference: HashSet<_> = retracted_block_set
+            .difference(&new_branch_block_set)
+            .cloned()
+            .collect();
+        let limited_difference: HashSet<_> =
+            difference.into_iter().take(max_retracted_count).collect();
+
+        Ok(limited_difference.into_iter().collect())
+    }
 }

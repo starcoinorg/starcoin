@@ -56,7 +56,7 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
     /// notify txpool about chain new blocks
     /// `enacted` is the blocks which enter the main chain.
     /// `retracted` is the blocks which belongs to previous main chain.
-    fn chain_new_block(&self, enacted: Vec<Block>, retracted: Vec<Block>) -> Result<()>;
+    fn chain_new_block(&self, enacted_block: &Block, retracted: &[Block]) -> Result<()>;
 
     /// Tx Pool status
     fn status(&self) -> TxPoolStatus;

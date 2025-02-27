@@ -305,21 +305,14 @@ where
         let parent_is_main_head = self.is_main_head(&executed_block.header().parent_hash());
 
         if branch_total_difficulty > main_total_difficulty {
-            let (enacted_count, enacted_blocks, retracted_count, retracted_blocks) =
-                if !parent_is_main_head {
-                    self.find_ancestors_from_accumulator(&new_branch)?
-                } else {
-                    (1, vec![executed_block.block.clone()], 0, vec![])
-                };
+            let retracted_blocks = if !parent_is_main_head {
+                self.find_different_blocks_from_new_branch(&new_branch)?
+            } else {
+                vec![]
+            };
             self.main = new_branch;
 
-            self.do_new_head(
-                executed_block,
-                enacted_count,
-                enacted_blocks,
-                retracted_count,
-                retracted_blocks,
-            )?;
+            self.do_new_head(executed_block, retracted_blocks)?;
         } else {
             //send new branch event
             self.broadcast_new_branch(executed_block);
@@ -330,25 +323,22 @@ where
     fn do_new_head(
         &mut self,
         executed_block: ExecutedBlock,
-        enacted_count: u64,
-        enacted_blocks: Vec<Block>,
-        retracted_count: u64,
         retracted_blocks: Vec<Block>,
     ) -> Result<()> {
-        debug_assert!(!enacted_blocks.is_empty());
-        debug_assert_eq!(enacted_blocks.last().unwrap(), executed_block.block());
         self.update_startup_info(executed_block.block().header())?;
-        if retracted_count > 0 {
+        if !retracted_blocks.is_empty() {
             if let Some(metrics) = self.metrics.as_ref() {
-                metrics.chain_rollback_block_total.inc_by(retracted_count);
+                metrics
+                    .chain_rollback_block_total
+                    .inc_by(u64::try_from(retracted_blocks.len())?);
             }
         }
-        self.commit_2_txpool(enacted_blocks, retracted_blocks);
+        self.commit_2_txpool(executed_block.block(), &retracted_blocks);
         self.config
             .net()
             .time_service()
             .adjust(executed_block.header().timestamp());
-        info!("[chain] Select new head, id: {}, number: {}, total_difficulty: {}, enacted_block_count: {}, retracted_block_count: {}", executed_block.header().id(), executed_block.header().number(), executed_block.block_info().total_difficulty, enacted_count, retracted_count);
+        info!("[chain] Select new head, id: {}, number: {}, total_difficulty: {}, retracted_block_count: {}", executed_block.header().id(), executed_block.header().number(), executed_block.block_info().total_difficulty, retracted_blocks.len());
 
         if let Some(metrics) = self.metrics.as_ref() {
             metrics
@@ -461,15 +451,7 @@ where
 
         self.main = new_branch;
 
-        let (enacted_count, enacted_blocks, retracted_count, retracted_blocks) =
-            (1, vec![executed_block.block.clone()], 0, vec![]);
-        self.do_new_head(
-            executed_block,
-            enacted_count,
-            enacted_blocks,
-            retracted_count,
-            retracted_blocks,
-        )?;
+        self.do_new_head(executed_block, vec![])?;
         Ok(())
     }
 
@@ -495,57 +477,46 @@ where
         self.storage.save_startup_info(self.startup_info.clone())
     }
 
-    fn commit_2_txpool(&self, enacted: Vec<Block>, retracted: Vec<Block>) {
-        if let Err(e) = self.txpool.chain_new_block(enacted, retracted) {
+    fn commit_2_txpool(&self, enacted_block: &Block, retracted: &[Block]) {
+        if let Err(e) = self.txpool.chain_new_block(enacted_block, retracted) {
             error!("rollback err : {:?}", e);
         }
     }
 
-    fn find_ancestors_from_accumulator(
-        &self,
-        new_branch: &BlockChain,
-    ) -> Result<(u64, Vec<Block>, u64, Vec<Block>)> {
+    fn find_different_blocks_from_new_branch(&self, new_branch: &BlockChain) -> Result<Vec<Block>> {
         let common_ancestor = self.main.find_ancestor(new_branch)?.ok_or_else(|| {
             format_err!(
-                "Can not find ancestors between main chain: {:?} and branch: {:?}",
+                "Cannot find ancestors between main chain: {:?} and branch: {:?}",
                 self.main.status(),
                 new_branch.status()
             )
         })?;
 
-        let common_ancestor_block = self
-            .main
-            .get_block(common_ancestor.id)?
-            .ok_or_else(|| format_err!("Cannot find block by id:{}", common_ancestor.id))?;
-
-        let enacted_count = new_branch
-            .current_header()
-            .number()
-            .checked_sub(common_ancestor_block.header().number())
-            .ok_or_else(|| format_err!("current_header number should > ancestor_block number."))?;
-
-        let retracted_count = self
-            .main
-            .current_header()
-            .number()
-            .checked_sub(common_ancestor_block.header().number())
-            .ok_or_else(|| format_err!("current_header number should > ancestor_block number."))?;
-
         let block_enacted = new_branch.current_header().id();
         let block_retracted = self.main.current_header().id();
 
-        let enacted =
-            self.find_blocks_until(block_enacted, common_ancestor.id, MAX_ROLL_BACK_BLOCK)?;
-        let retracted =
-            self.find_blocks_until(block_retracted, common_ancestor.id, MAX_ROLL_BACK_BLOCK)?;
+        let retracted = self.main.dag().switch_selected_chain(
+            block_retracted,
+            block_enacted,
+            common_ancestor.id,
+            MAX_ROLL_BACK_BLOCK,
+        )?;
 
-        debug!(
-            "Commit block count:{}, rollback block count:{}",
-            enacted_count, retracted_count,
-        );
-        Ok((enacted_count, enacted, retracted_count, retracted))
+        let retracted_blocks = retracted
+            .iter()
+            .map(|id| {
+                self.storage.get_block_by_hash(*id)?.ok_or_else(|| {
+                    format_err!(
+                        "failed to get the block: {:?} for find_ancestors_from_accumulator",
+                        id
+                    )
+                })
+            })
+            .collect::<Result<Vec<_>>>()?;
+        Ok(retracted_blocks)
     }
 
+    #[allow(dead_code)]
     fn find_blocks_until(
         &self,
         from: HashValue,
@@ -564,7 +535,7 @@ where
             let block = self
                 .storage
                 .get_block(block_id)?
-                .ok_or_else(|| format_err!("Can not find block {:?}.", block_id))?;
+                .ok_or_else(|| format_err!("Cannot find block {:?}.", block_id))?;
             block_id = block.header().parent_hash();
             blocks.push(block);
         }
@@ -673,13 +644,12 @@ where
             && !self.block_exist(block_id)?
         {
             let executed_block = self.main.apply(block)?;
-            let enacted_blocks = vec![executed_block.block().clone()];
-            self.do_new_head(executed_block, 1, enacted_blocks, 0, vec![])?;
+            self.do_new_head(executed_block, vec![])?;
             return Ok(ConnectOk::ExeConnectMain);
         }
         let (block_info, fork) = self.find_or_fork(block.header())?;
         match (block_info, fork) {
-            // block has been processed in some branch, so just trigger a head selection.
+            // Select the branch according to POW
             (Some(_block_info), Some(branch)) => {
                 debug!(
                     "Block {} has been processed, trigger head selection, total_difficulty: {}",
@@ -699,7 +669,7 @@ where
                     "Block {} main has been processed, trigger head selection",
                     block_id
                 );
-                self.do_new_head(executed_block, 1, vec![block], 0, vec![])?;
+                self.do_new_head(executed_block, vec![])?;
                 Ok(ConnectOk::Connect)
             }
             // the block is not processed but its parent branch exists
