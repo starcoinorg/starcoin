@@ -203,7 +203,7 @@ dependencies = [
 
 [[package]]
 name = "airdrop"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -258,7 +258,7 @@ checksum = "224afbd727c3d6e4b90103ece64b8d1b67fbb1973b1046c2281eed3f3803f800"
 
 [[package]]
 name = "api-limiter"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "dashmap",
@@ -649,7 +649,7 @@ dependencies = [
 
 [[package]]
 name = "bcs-ext"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs",
@@ -670,7 +670,7 @@ checksum = "7dfdb4953a096c551ce9ace855a604d702e6e62d77fac690575ae347571717f5"
 
 [[package]]
 name = "benchmarks"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "criterion",
@@ -1387,7 +1387,7 @@ checksum = "245097e9a4535ee1e3e3931fcfcd55a796a44c643e8596ff6566d68f09b87bbc"
 
 [[package]]
 name = "contrib-contracts"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -1721,7 +1721,7 @@ dependencies = [
 
 [[package]]
 name = "cryptonight-rs"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "bencher",
  "cc",
@@ -2112,7 +2112,7 @@ dependencies = [
 
 [[package]]
 name = "db-exporter"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "atomic-counter",
@@ -2828,7 +2828,7 @@ checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 
 [[package]]
 name = "forkable-jellyfish-merkle"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "backtrace",
@@ -3082,7 +3082,7 @@ dependencies = [
 
 [[package]]
 name = "genesis-nft-miner"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -4964,7 +4964,7 @@ dependencies = [
 
 [[package]]
 name = "merkle-generator"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -5342,7 +5342,7 @@ dependencies = [
 
 [[package]]
 name = "move-coverage"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs",
@@ -5536,7 +5536,7 @@ dependencies = [
 
 [[package]]
 name = "move-package-manager"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6084,7 +6084,7 @@ dependencies = [
 
 [[package]]
 name = "network-api"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6107,7 +6107,7 @@ dependencies = [
 
 [[package]]
 name = "network-p2p"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-std",
@@ -6155,7 +6155,7 @@ dependencies = [
 
 [[package]]
 name = "network-p2p-core"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -6171,7 +6171,7 @@ dependencies = [
 
 [[package]]
 name = "network-p2p-derive"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "proc-macro2 1.0.59",
@@ -6181,7 +6181,7 @@ dependencies = [
 
 [[package]]
 name = "network-p2p-types"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bitflags",
@@ -6199,7 +6199,7 @@ dependencies = [
 
 [[package]]
 name = "network-types"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "network-p2p-types",
@@ -8072,7 +8072,7 @@ dependencies = [
 
 [[package]]
 name = "resource-exporter"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -8456,7 +8456,7 @@ dependencies = [
 
 [[package]]
 name = "sc-peerset"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "futures 0.3.26",
  "libp2p",
@@ -8501,7 +8501,7 @@ dependencies = [
 
 [[package]]
 name = "scmd"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "clap 3.2.23",
@@ -8655,7 +8655,7 @@ dependencies = [
 
 [[package]]
 name = "serde-helpers"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "bcs-ext",
  "hex",
@@ -9133,7 +9133,7 @@ dependencies = [
 
 [[package]]
 name = "sp-utils"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "futures 0.3.26",
  "futures-core",
@@ -9168,7 +9168,7 @@ checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
 
 [[package]]
 name = "starcoin-abi-decoder"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9188,7 +9188,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-abi-resolver"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "move-model",
@@ -9202,7 +9202,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-abi-types"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "hex",
@@ -9216,7 +9216,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-account"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9240,7 +9240,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-account-api"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9261,7 +9261,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-account-provider"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "starcoin-account",
@@ -9274,7 +9274,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-account-service"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9295,7 +9295,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-accumulator"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -9317,7 +9317,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-block-relayer"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9346,7 +9346,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-chain"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -9389,7 +9389,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-chain-api"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9411,7 +9411,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-chain-mock"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9441,7 +9441,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-chain-notify"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "starcoin-crypto",
@@ -9453,7 +9453,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-chain-service"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9480,7 +9480,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-cmd"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -9538,7 +9538,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-config"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "clap 3.2.23",
@@ -9578,7 +9578,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-consensus"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "byteorder",
@@ -9636,7 +9636,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-dataformat-generator"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -9650,7 +9650,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-decrypt"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "aes-gcm 0.9.4",
  "anyhow",
@@ -9664,7 +9664,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-dev"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -9685,7 +9685,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-executor"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -9719,7 +9719,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-executor-benchmark"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "clap 3.2.23",
@@ -9743,7 +9743,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-faucet"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "ascii",
@@ -9771,7 +9771,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-force-upgrade"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9797,8 +9797,8 @@ dependencies = [
 
 [[package]]
 name = "starcoin-framework"
-version = "11.0.0"
-source = "git+https://github.com/starcoinorg/starcoin-framework?rev=fb82370664ec005c40cb1989293c9109805eccd2#fb82370664ec005c40cb1989293c9109805eccd2"
+version = "12.0.0"
+source = "git+https://github.com/starcoinorg/starcoin-framework?rev=8df206e5c974ad133c172e3f95130c2a5bbbbd49#8df206e5c974ad133c172e3f95130c2a5bbbbd49"
 dependencies = [
  "anyhow",
  "include_dir",
@@ -9810,7 +9810,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-gas"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "clap 3.2.23",
  "move-binary-format",
@@ -9825,7 +9825,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-gas-algebra-ext"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "move-binary-format",
  "move-core-types",
@@ -9839,7 +9839,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-generator"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "clap 3.2.23",
@@ -9863,7 +9863,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-genesis"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -9892,7 +9892,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-indexer"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9912,11 +9912,11 @@ dependencies = [
 
 [[package]]
 name = "starcoin-infallible"
-version = "1.13.11"
+version = "1.13.16"
 
 [[package]]
 name = "starcoin-language-e2e-tests"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9949,7 +9949,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-logger"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "arc-swap",
@@ -9968,7 +9968,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-metrics"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "futures 0.3.26",
@@ -9982,7 +9982,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-miner"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -10026,7 +10026,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-miner-client"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "actix",
  "actix-rt",
@@ -10069,7 +10069,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-miner-client-api"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -10080,7 +10080,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-move-compiler"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "move-binary-format",
@@ -10099,7 +10099,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-move-explain"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "bcs-ext",
  "clap 3.2.23",
@@ -10109,7 +10109,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-move-prover"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "atty",
@@ -10137,7 +10137,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-mvhashmap"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "arc-swap",
  "crossbeam",
@@ -10151,7 +10151,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-natives"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "arrayref",
  "hex",
@@ -10178,7 +10178,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-network"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-std",
@@ -10222,7 +10222,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-network-rpc"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "api-limiter",
@@ -10268,7 +10268,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-network-rpc-api"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -10290,7 +10290,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-node"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "actix",
  "actix-rt",
@@ -10346,7 +10346,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-node-api"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -10367,7 +10367,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-open-block"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -10392,7 +10392,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-parallel-executor"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "arc-swap",
@@ -10411,7 +10411,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-peer-watcher"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-std",
@@ -10432,7 +10432,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-proptest-helpers"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "crossbeam",
  "proptest",
@@ -10441,7 +10441,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-replay"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "clap 3.2.23",
@@ -10457,7 +10457,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-resource-viewer"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "hex",
@@ -10470,7 +10470,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-rpc-api"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -10514,7 +10514,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-rpc-client"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "actix",
  "actix-rt",
@@ -10560,7 +10560,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-rpc-middleware"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "futures 0.3.26",
@@ -10578,7 +10578,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-rpc-server"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "actix",
  "actix-rt",
@@ -10655,7 +10655,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-service-registry"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "actix",
  "actix-rt",
@@ -10675,7 +10675,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-state-api"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -10692,7 +10692,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-state-service"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -10714,7 +10714,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-state-store-api"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "forkable-jellyfish-merkle",
@@ -10725,7 +10725,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-state-tree"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -10743,7 +10743,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-statedb"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -10762,7 +10762,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-storage"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -10796,7 +10796,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-stratum"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "byteorder",
@@ -10820,7 +10820,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-sync"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-std",
@@ -10881,7 +10881,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-sync-api"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -10898,7 +10898,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-system"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "systemstat",
@@ -10906,7 +10906,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-time-service"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "log 0.4.17",
  "serde 1.0.152",
@@ -10914,7 +10914,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-transaction-benchmarks"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "criterion",
  "criterion-cpu-time",
@@ -10931,7 +10931,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-transaction-builder"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -10946,7 +10946,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-transactional-test-harness"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -11000,7 +11000,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-tx-factory"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "clap 3.2.23",
@@ -11021,7 +11021,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-txpool"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -11064,7 +11064,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-txpool-api"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -11077,7 +11077,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-txpool-mock-service"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -11091,7 +11091,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-types"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -11116,7 +11116,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-uint"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "bcs-ext",
  "hex",
@@ -11129,7 +11129,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-vm-runtime"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -11161,7 +11161,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-vm-types"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -11200,7 +11200,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "stdlib"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -11227,7 +11227,7 @@ dependencies = [
 
 [[package]]
 name = "stest"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "actix",
  "actix-rt",
@@ -11242,7 +11242,7 @@ dependencies = [
 
 [[package]]
 name = "stest-macro"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "actix",
  "actix-rt",
@@ -11266,7 +11266,7 @@ checksum = "9091b6114800a5f2141aee1d1b9d6ca3592ac062dc5decb3764ec5895a47b4eb"
 
 [[package]]
 name = "stream-task"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-std",
@@ -11618,7 +11618,7 @@ dependencies = [
 
 [[package]]
 name = "test-helper"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -11675,7 +11675,7 @@ dependencies = [
 
 [[package]]
 name = "testsuite"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "clap 3.2.23",
@@ -11839,7 +11839,7 @@ dependencies = [
 
 [[package]]
 name = "timeout-join-handler"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "thiserror",
@@ -12166,7 +12166,7 @@ checksum = "efd1f82c56340fdf16f2a953d7bda4f8fdffba13d93b00844c25572110b26079"
 
 [[package]]
 name = "transaction-builder-generator"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "bcs",
@@ -12611,7 +12611,7 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
 name = "vm-status-translator"
-version = "1.13.11"
+version = "1.13.16"
 dependencies = [
  "anyhow",
  "schemars",
