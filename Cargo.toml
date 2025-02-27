@@ -238,7 +238,7 @@ license = "Apache-2.0"
 publish = false
 repository = "https://github.com/starcoinorg/starcoin"
 rust-version = "1.64"
-version = "1.13.11"
+version = "1.13.16"
 
 [workspace.dependencies]
 actix = "0.13"
@@ -445,7 +445,7 @@ starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev 
 starcoin-decrypt = { path = "commons/decrypt" }
 starcoin-dev = { path = "vm/dev" }
 starcoin-executor = { path = "executor" }
-starcoin-framework = { git = "https://github.com/starcoinorg/starcoin-framework", rev = "fb82370664ec005c40cb1989293c9109805eccd2" }
+starcoin-framework = { git = "https://github.com/starcoinorg/starcoin-framework", rev = "8df206e5c974ad133c172e3f95130c2a5bbbbd49" }
 starcoin-genesis = { path = "genesis" }
 starcoin-logger = { path = "commons/logger" }
 starcoin-metrics = { path = "commons/metrics" }
