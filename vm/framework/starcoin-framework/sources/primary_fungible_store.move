@@ -41,6 +41,7 @@ module starcoin_framework::primary_fungible_store {
         icon_uri: String,
         project_uri: String,
     ) {
+        debug::print(&string::utf8(b"primary_fungible_store::create_primary_store_enabled_fungible_asset | entered"));
         fungible_asset::add_fungibility(
             constructor_ref,
             maximum_supply,
@@ -54,6 +55,7 @@ module starcoin_framework::primary_fungible_store {
         move_to(metadata_obj, DeriveRefPod {
             metadata_derive_ref: object::generate_derive_ref(constructor_ref),
         });
+        debug::print(&string::utf8(b"primary_fungible_store::create_primary_store_enabled_fungible_asset | exited"));
     }
 
     /// Ensure that the primary store object for the given address exists. If it doesn't, create it.
@@ -62,7 +64,12 @@ module starcoin_framework::primary_fungible_store {
         metadata: Object<T>,
     ): Object<FungibleStore> acquires DeriveRefPod {
         debug::print(&string::utf8(b"primary_fungible_store::ensure_primary_store_exists | entered"));
+        debug::print(&owner);
+
         let store_addr = primary_store_address(owner, metadata);
+
+        debug::print(&string::utf8(b"primary_fungible_store::ensure_primary_store_exists | primary store address: "));
+        debug::print(&store_addr);
         let ret = if (fungible_asset::store_exists(store_addr)) {
             object::address_to_object(store_addr)
         } else {
@@ -82,6 +89,7 @@ module starcoin_framework::primary_fungible_store {
         debug::print(&metadata);
 
         let metadata_addr = object::object_address(&metadata);
+        debug::print(&metadata_addr);
         object::address_to_object<Metadata>(metadata_addr);
         let derive_ref = &borrow_global<DeriveRefPod>(metadata_addr).metadata_derive_ref;
         let constructor_ref = &object::create_user_derived_object(owner_addr, derive_ref);

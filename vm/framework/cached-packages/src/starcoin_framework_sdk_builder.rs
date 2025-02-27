@@ -150,6 +150,21 @@ pub enum EntryFunctionCall {
         cap_update_table: Vec<u8>,
     },
 
+    AssetMappingAssignToAccountTest {
+        receiver: AccountAddress,
+        old_token_str: Vec<u8>,
+        amount: u64,
+    },
+
+    AssetMappingAssignToAccountWithProof {
+        receiper: AccountAddress,
+        old_token_str: Vec<u8>,
+        proof_path_hash: Vec<u8>,
+        proof_value_hash: Vec<u8>,
+        proof_siblings: Vec<u8>,
+        amount: u64,
+    },
+
     CoinCreateCoinConversionMap {},
 
     /// Create STC pairing by passing `StarcoinCoin`.
@@ -518,6 +533,7 @@ pub enum EntryFunctionCall {
         transaction_timeout: u64,
         dag_effective_height: u64,
         features: Vec<u8>,
+        asset_mapping_proof_root: Vec<u8>,
     },
 
     /// Batch transfer token to others.
@@ -641,6 +657,26 @@ impl EntryFunctionCall {
                 new_scheme,
                 new_public_key_bytes,
                 cap_update_table,
+            ),
+            AssetMappingAssignToAccountTest {
+                receiver,
+                old_token_str,
+                amount,
+            } => asset_mapping_assign_to_account_test(receiver, old_token_str, amount),
+            AssetMappingAssignToAccountWithProof {
+                receiper,
+                old_token_str,
+                proof_path_hash,
+                proof_value_hash,
+                proof_siblings,
+                amount,
+            } => asset_mapping_assign_to_account_with_proof(
+                receiper,
+                old_token_str,
+                proof_path_hash,
+                proof_value_hash,
+                proof_siblings,
+                amount,
             ),
             CoinCreateCoinConversionMap {} => coin_create_coin_conversion_map(),
             CoinCreatePairing { coin_type } => coin_create_pairing(coin_type),
@@ -930,6 +966,7 @@ impl EntryFunctionCall {
                 transaction_timeout,
                 dag_effective_height,
                 features,
+                asset_mapping_proof_root,
             } => stc_genesis_initialize(
                 stdlib_version,
                 reward_delay,
@@ -963,6 +1000,7 @@ impl EntryFunctionCall {
                 transaction_timeout,
                 dag_effective_height,
                 features,
+                asset_mapping_proof_root,
             ),
             TransferScriptsBatchPeerToPeer {
                 token_type,
@@ -1250,6 +1288,52 @@ pub fn account_rotate_authentication_key_with_rotation_capability(
             bcs::to_bytes(&new_scheme).unwrap(),
             bcs::to_bytes(&new_public_key_bytes).unwrap(),
             bcs::to_bytes(&cap_update_table).unwrap(),
+        ],
+    ))
+}
+
+pub fn asset_mapping_assign_to_account_test(
+    receiver: AccountAddress,
+    old_token_str: Vec<u8>,
+    amount: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("asset_mapping").to_owned(),
+        ),
+        ident_str!("assign_to_account_test").to_owned(),
+        vec![],
+        vec![
+            bcs::to_bytes(&receiver).unwrap(),
+            bcs::to_bytes(&old_token_str).unwrap(),
+            bcs::to_bytes(&amount).unwrap(),
+        ],
+    ))
+}
+
+pub fn asset_mapping_assign_to_account_with_proof(
+    receiper: AccountAddress,
+    old_token_str: Vec<u8>,
+    proof_path_hash: Vec<u8>,
+    proof_value_hash: Vec<u8>,
+    proof_siblings: Vec<u8>,
+    amount: u64,
+) -> TransactionPayload {
+    TransactionPayload::EntryFunction(EntryFunction::new(
+        ModuleId::new(
+            AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            ident_str!("asset_mapping").to_owned(),
+        ),
+        ident_str!("assign_to_account_with_proof").to_owned(),
+        vec![],
+        vec![
+            bcs::to_bytes(&receiper).unwrap(),
+            bcs::to_bytes(&old_token_str).unwrap(),
+            bcs::to_bytes(&proof_path_hash).unwrap(),
+            bcs::to_bytes(&proof_value_hash).unwrap(),
+            bcs::to_bytes(&proof_siblings).unwrap(),
+            bcs::to_bytes(&amount).unwrap(),
         ],
     ))
 }
@@ -2192,6 +2276,7 @@ pub fn stc_genesis_initialize(
     transaction_timeout: u64,
     dag_effective_height: u64,
     features: Vec<u8>,
+    asset_mapping_proof_root: Vec<u8>,
 ) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
         ModuleId::new(
@@ -2233,6 +2318,7 @@ pub fn stc_genesis_initialize(
             bcs::to_bytes(&transaction_timeout).unwrap(),
             bcs::to_bytes(&dag_effective_height).unwrap(),
             bcs::to_bytes(&features).unwrap(),
+            bcs::to_bytes(&asset_mapping_proof_root).unwrap(),
         ],
     ))
 }
@@ -2516,6 +2602,37 @@ mod decoder {
                     cap_update_table: bcs::from_bytes(script.args().get(3)?).ok()?,
                 },
             )
+        } else {
+            None
+        }
+    }
+
+    pub fn asset_mapping_assign_to_account_test(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::AssetMappingAssignToAccountTest {
+                receiver: bcs::from_bytes(script.args().get(0)?).ok()?,
+                old_token_str: bcs::from_bytes(script.args().get(1)?).ok()?,
+                amount: bcs::from_bytes(script.args().get(2)?).ok()?,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn asset_mapping_assign_to_account_with_proof(
+        payload: &TransactionPayload,
+    ) -> Option<EntryFunctionCall> {
+        if let TransactionPayload::EntryFunction(script) = payload {
+            Some(EntryFunctionCall::AssetMappingAssignToAccountWithProof {
+                receiper: bcs::from_bytes(script.args().get(0)?).ok()?,
+                old_token_str: bcs::from_bytes(script.args().get(1)?).ok()?,
+                proof_path_hash: bcs::from_bytes(script.args().get(2)?).ok()?,
+                proof_value_hash: bcs::from_bytes(script.args().get(3)?).ok()?,
+                proof_siblings: bcs::from_bytes(script.args().get(4)?).ok()?,
+                amount: bcs::from_bytes(script.args().get(5)?).ok()?,
+            })
         } else {
             None
         }
@@ -3233,6 +3350,7 @@ mod decoder {
                 transaction_timeout: bcs::from_bytes(script.args().get(29)?).ok()?,
                 dag_effective_height: bcs::from_bytes(script.args().get(30)?).ok()?,
                 features: bcs::from_bytes(script.args().get(31)?).ok()?,
+                asset_mapping_proof_root: bcs::from_bytes(script.args().get(32)?).ok()?,
             })
         } else {
             None
@@ -3406,6 +3524,14 @@ static SCRIPT_FUNCTION_DECODER_MAP: once_cell::sync::Lazy<EntryFunctionDecoderMa
         map.insert(
             "account_rotate_authentication_key_with_rotation_capability".to_string(),
             Box::new(decoder::account_rotate_authentication_key_with_rotation_capability),
+        );
+        map.insert(
+            "asset_mapping_assign_to_account_test".to_string(),
+            Box::new(decoder::asset_mapping_assign_to_account_test),
+        );
+        map.insert(
+            "asset_mapping_assign_to_account_with_proof".to_string(),
+            Box::new(decoder::asset_mapping_assign_to_account_with_proof),
         );
         map.insert(
             "coin_create_coin_conversion_map".to_string(),

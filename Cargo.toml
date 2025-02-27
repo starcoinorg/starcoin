@@ -121,6 +121,7 @@ members = [
     "cmd/db-exporter",
     "cmd/genesis-nft-miner",
     "flexidag",
+    "asset-mapping",
 ]
 
 default-members = [
@@ -236,6 +237,7 @@ default-members = [
     "cmd/miner_client/api",
     "cmd/db-exporter",
     "flexidag",
+    "asset-mapping",
 ]
 
 [workspace.lints.clippy]
@@ -525,7 +527,7 @@ starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev 
 starcoin-decrypt = { path = "commons/decrypt" }
 starcoin-dev = { path = "vm/dev" }
 starcoin-executor = { path = "executor" }
-starcoin-framework = { path = "vm/framework" }
+starcoin-framework = { path = "vm/framework", features = ["testing"] }
 starcoin-sdk-builder = { path = "vm/starcoin-sdk-builder" }
 starcoin-genesis = { path = "genesis" }
 starcoin-logger = { path = "commons/logger" }
