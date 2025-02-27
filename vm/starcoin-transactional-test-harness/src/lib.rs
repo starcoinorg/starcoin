@@ -1113,6 +1113,7 @@ impl<'a> MoveTestAdapter<'a> for StarcoinTestAdapter<'a> {
             } else {
                 None
             };
+
             (
                 ForkContext::new_local(init_args.network.unwrap(), stdlib_modules).unwrap(),
                 false,
