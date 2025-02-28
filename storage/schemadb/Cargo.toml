@@ -1,0 +1,25 @@
+[package]
+name = "starcoin-schemadb"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+thiserror = { workspace = true }
+starcoin-config = { workspace = true }
+starcoin-metrics = { workspace = true }
+parking_lot = { workspace = true }
+anyhow = { workspace = true }
+coarsetime = { workspace = true }
+num_enum = { workspace = true }
+once_cell = { workspace = true }
+
+[dependencies.rocksdb]
+default-features = false
+features = ["lz4"]
+workspace = true
+
+[dev-dependencies]
+byteorder = { workspace = true }
+starcoin-temppath = { workspace = true }

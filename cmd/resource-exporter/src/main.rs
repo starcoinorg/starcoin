@@ -33,6 +33,7 @@ pub fn export(
     fields: &[String],
 ) -> anyhow::Result<()> {
     let db_storage = DBStorage::open_with_cfs(
+        "starcoindb",
         db,
         StorageVersion::current_version()
             .get_column_family_names()

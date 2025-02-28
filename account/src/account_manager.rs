@@ -148,6 +148,7 @@ impl AccountManager {
             None => Account::create_readonly(address, public_key, self.store.clone())?,
         };
 
+        // todo: merge following single writes to one schema-batch-write: add_address + set_default
         self.store.add_address(*account.address())?;
 
         // if it's the first address, set it default.
@@ -195,7 +196,8 @@ impl AccountManager {
                     "Can not find account_info by address:{}, clear it from address list.",
                     account
                 );
-                self.store.remove_address(account)?;
+                // todo: merge single writes to one batch-write
+                self.store.remove_address_from_all(account)?;
             }
         }
         Ok(res)
@@ -254,6 +256,7 @@ impl AccountManager {
         }
     }
 
+    // todo: merge single writes to one batch-write
     pub fn set_default_account(&self, address: AccountAddress) -> AccountResult<AccountInfo> {
         let mut account_info = self
             .account_info(address)?
