@@ -30,9 +30,7 @@ impl CommandAction for SetLoggerBalanceAmoutCommand {
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
         let client = ctx.state().client();
-        const STC_SCALE: u64 = 1_000_000_000;
-        let balance_amount = opt.balance_amount * STC_SCALE;
-        client.set_logger_balance_amount(balance_amount)?;
+        client.set_logger_balance_amount(opt.balance_amount)?;
         Ok(format!(
             "set logger balance amount {} STC",
             opt.balance_amount

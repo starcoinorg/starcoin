@@ -32,7 +32,7 @@ use starcoin_vm_types::write_set::WriteSet;
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-static LOGGER_BALANCE_AMOUNT: AtomicU64 = AtomicU64::new(1_000_000_u64 * 1_000_000_000);
+static LOGGER_BALANCE_AMOUNT: AtomicU64 = AtomicU64::new(1_000_000_u64);
 
 /// Sets LOGGER_BALANCE_AMOUNT when invoked the first time.
 pub fn set_logger_balance_amount_once(logger_balance_amount: u64) {
