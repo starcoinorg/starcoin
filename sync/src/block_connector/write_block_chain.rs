@@ -370,56 +370,6 @@ where
             self.dag.clone(),
         )?;
 
-        // let start = new_head_block.header().id();
-        // let lastest = self.main.status().head.clone();
-
-        // let lastest_dag_state = if lastest.pruning_point() == HashValue::zero() {
-        //     let genesis = self
-        //         .main
-        //         .get_storage()
-        //         .get_genesis()?
-        //         .ok_or_else(|| format_err!("Cannot get the genesis in storage!"))?;
-        //     self.main.dag().get_dag_state(genesis)?
-        // } else {
-        //     self.main.dag().get_dag_state(lastest.pruning_point())?
-        // };
-
-        // let mut deleted_chain = lastest_dag_state.tips.into_iter().collect::<HashSet<_>>();
-        // let mut ready_to_delete = HashSet::new();
-        // loop {
-        //     let loop_to_delete = deleted_chain.clone();
-        //     deleted_chain.clear();
-        //     for descendant in loop_to_delete.into_iter() {
-        //         if descendant == start {
-        //             continue;
-        //         }
-        //         if self.main.dag().check_ancestor_of(descendant, start)? {
-        //             continue;
-        //         }
-
-        //         let descendant_header = self
-        //             .storage
-        //             .get_block_header_by_hash(descendant)?
-        //             .ok_or_else(|| {
-        //                 format_err!(
-        //                     "in resetting, cannot find the block header for {:?}",
-        //                     descendant
-        //                 )
-        //             })?;
-        //         deleted_chain.extend(descendant_header.parents_hash());
-
-        //         ready_to_delete.insert(descendant);
-        //     }
-
-        //     if deleted_chain.is_empty() {
-        //         for candidate in ready_to_delete.into_iter() {
-        //             self.storage.delete_block(candidate)?;
-        //             self.storage.delete_block_info(candidate)?;
-        //         }
-        //         break;
-        //     }
-        // }
-
         if new_head_block.header().pruning_point() == HashValue::zero() {
             let genesis = self
                 .main

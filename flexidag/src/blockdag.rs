@@ -1104,6 +1104,8 @@ impl BlockDAG {
         }
 
         let mut new_branch_block_set = HashSet::new();
+        let mut retracted_block_set = HashSet::new();
+
         let mut parent_id = to;
 
         // new branch blue set
@@ -1112,14 +1114,13 @@ impl BlockDAG {
                 .ghostdata_by_hash(parent_id)?
                 .ok_or_else(|| format_err!("the ghostdag data should be existed for {:?}", to))?;
             new_branch_block_set.extend(ghostdata.mergeset_blues.iter().cloned());
+            retracted_block_set.extend(ghostdata.mergeset_reds.iter().cloned());
             if ghostdata.selected_parent == common_ancestor {
                 break;
             } else {
                 parent_id = ghostdata.selected_parent;
             }
         }
-
-        let mut retracted_block_set = HashSet::new();
 
         // current branch block set
         loop {
@@ -1138,9 +1139,23 @@ impl BlockDAG {
             .difference(&new_branch_block_set)
             .cloned()
             .collect();
-        let limited_difference: HashSet<_> =
-            difference.into_iter().take(max_retracted_count).collect();
+        let limited_difference = difference
+            .into_iter()
+            .map(|block_id| {
+                Ok((
+                    block_id,
+                    self.ghostdata_by_hash(block_id)?.ok_or_else(|| {
+                        format_err!("the ghostdag data should be existed for {:?}", block_id)
+                    })?,
+                ))
+            })
+            .collect::<anyhow::Result<Vec<_>>>()?
+            .into_iter()
+            .sorted_by(|a, b| a.1.blue_score.cmp(&b.1.blue_score))
+            .take(max_retracted_count)
+            .map(|ghostdata| ghostdata.0)
+            .collect::<Vec<_>>();
 
-        Ok(limited_difference.into_iter().collect())
+        Ok(limited_difference)
     }
 }
