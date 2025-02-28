@@ -36,6 +36,14 @@ pub trait DebugApi {
     /// Get vm concurrency level
     #[rpc(name = "debug.get_concurrency_level")]
     fn get_concurrency_level(&self) -> Result<usize>;
+
+    /// Update logger balance amount
+    #[rpc(name = "debug.set_logger_balance_amount")]
+    fn set_logger_balance_amount(&self, balance_amount: u64) -> Result<()>;
+
+    /// Get logger balance amount
+    #[rpc(name = "debug.get_logger_balance_amount")]
+    fn get_logger_balance_amount(&self) -> Result<u64>;
 }
 #[test]
 fn test() {

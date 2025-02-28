@@ -3,7 +3,7 @@
 
 use crate::{execute_block_transactions, execute_transactions};
 use anyhow::bail;
-use log::info;
+use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_force_upgrade::ForceUpgrade;
@@ -19,7 +19,9 @@ use starcoin_vm_runtime::force_upgrade_management::{
 };
 use starcoin_vm_runtime::metrics::VMMetrics;
 use starcoin_vm_types::access_path::AccessPath;
-use starcoin_vm_types::account_config::{genesis_address, ModuleUpgradeStrategy};
+use starcoin_vm_types::account_config::{
+    genesis_address, BalanceEvent, ModuleUpgradeStrategy, STCUnit, G_STC_TOKEN_CODE,
+};
 use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::on_chain_config;
@@ -28,6 +30,21 @@ use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_view::StateReaderExt;
 use starcoin_vm_types::write_set::WriteSet;
 use std::collections::BTreeMap;
+use std::sync::atomic::{AtomicU64, Ordering};
+
+static LOGGER_BALANCE_AMOUNT: AtomicU64 = AtomicU64::new(1_000_000_u64);
+
+/// Sets LOGGER_BALANCE_AMOUNT when invoked the first time.
+pub fn set_logger_balance_amount_once(logger_balance_amount: u64) {
+    // Only the first call succeeds, due to OnceCell semantics.
+    LOGGER_BALANCE_AMOUNT.store(logger_balance_amount, Ordering::Relaxed);
+    info!("LOGGER_BALANCE_AMOUNT set {}", logger_balance_amount);
+}
+
+/// Get the LOGGER_BALANCE_AMOUNT if already set, otherwise return default 1_000_000
+pub fn get_logger_balance_amount() -> u64 {
+    LOGGER_BALANCE_AMOUNT.load(Ordering::Relaxed)
+}
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct BlockExecutedData {
@@ -72,6 +89,21 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
     {
         let txn_hash = txn.id();
         let (mut table_infos, write_set, events, gas_used, status) = output.into_inner();
+        let balance_amount = get_logger_balance_amount();
+        events.iter().any(|e| {
+            if let Ok(balance_event) = BalanceEvent::try_from(e) {
+                let res = balance_event.token_code() == &G_STC_TOKEN_CODE.clone()
+                    && balance_event.amount()
+                        > STCUnit::STC.value_of(balance_amount as u128).scaling();
+                if res {
+                    warn!("Logging Event: txn_hash {}, {}", txn_hash, balance_event);
+                }
+                res
+            } else {
+                false
+            }
+        });
+
         match status {
             TransactionStatus::Discard(status) => {
                 return Err(BlockExecutorError::BlockTransactionDiscard(

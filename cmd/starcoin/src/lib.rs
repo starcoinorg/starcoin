@@ -143,7 +143,9 @@ pub fn add_command(
                 .subcommand(dev::sleep_cmd::SleepCommand)
                 .subcommand(dev::gen_block_cmd::GenBlockCommand)
                 .subcommand(dev::SetConcurrencyLevelCommand)
-                .subcommand(dev::GetConcurrencyLevelCommand),
+                .subcommand(dev::GetConcurrencyLevelCommand)
+                .subcommand(dev::SetLoggerBalanceAmoutCommand)
+                .subcommand(dev::GetLoggerBalanceAmountCommand),
         )
         .command(CustomCommand::with_name("contract").subcommand(contract::GetContractDataCommand))
 }

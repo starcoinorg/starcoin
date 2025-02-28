@@ -5,7 +5,9 @@
 #[macro_use]
 extern crate log;
 
-pub use block_executor::{block_execute, BlockExecutedData};
+pub use block_executor::{
+    block_execute, get_logger_balance_amount, set_logger_balance_amount_once, BlockExecutedData,
+};
 pub use executor::*;
 // pub use starcoin_transaction_builder::{
 //     build_accept_token_txn, build_batch_transfer_txn, build_transfer_from_association,
