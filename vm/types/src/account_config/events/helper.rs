@@ -5,6 +5,7 @@ use crate::account_config::{
 use crate::contract_event::ContractEvent;
 use crate::event::EventKey;
 
+#[derive(Debug)]
 pub enum BalanceEvent {
     Mint((EventKey, MintEvent)),
     Burn((EventKey, BurnEvent)),

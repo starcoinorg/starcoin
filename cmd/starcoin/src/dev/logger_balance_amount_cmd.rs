@@ -12,7 +12,7 @@ use starcoin_logger::prelude::*;
 #[derive(Debug, Parser)]
 #[clap(name = "set_logger_balance_amount")]
 pub struct SetLoggerBalanceAmountCommandOpt {
-    #[clap(name = "balance_amount", help = "set logger balance_amount")]
+    #[clap(name = "balance_amount", help = "set logger balance amount in STC")]
     balance_amount: u64,
 }
 
@@ -30,8 +30,13 @@ impl CommandAction for SetLoggerBalanceAmoutCommand {
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
         let client = ctx.state().client();
-        client.set_logger_balance_amount(opt.balance_amount)?;
-        Ok(format!("set logger balance amount {}", opt.balance_amount))
+        const STC_SCALE: u64 = 1_000_000_000;
+        let balance_amount = opt.balance_amount * STC_SCALE;
+        client.set_logger_balance_amount(balance_amount)?;
+        Ok(format!(
+            "set logger balance amount {} STC",
+            opt.balance_amount
+        ))
     }
 }
 
