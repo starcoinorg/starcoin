@@ -19,7 +19,7 @@ use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
 use starcoin_genesis::{Genesis, GenesisError};
 use starcoin_logger::prelude::*;
-use starcoin_logger::structured_log::{init_slog_logger, update_log_config, LogConfig};
+use starcoin_logger::structured_log::init_slog_logger;
 use starcoin_logger::LoggerHandle;
 use starcoin_miner::generate_block_event_pacemaker::GenerateBlockEventPacemaker;
 use starcoin_miner::{BlockBuilderService, MinerService};
@@ -231,9 +231,6 @@ impl NodeService {
         } else {
             logger_handle.enable_stderr();
         }
-
-        let balance_amount = LogConfig::BalanceFilter(config.logger.balance_amount());
-        update_log_config(balance_amount);
 
         // XXX FIXME YSG add execute_config
         // StarcoinVM::set_concurrency_level_once(num_cpus::get());

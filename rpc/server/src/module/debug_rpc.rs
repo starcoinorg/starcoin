@@ -92,4 +92,13 @@ impl DebugApi for DebugRpcImpl {
     fn get_concurrency_level(&self) -> Result<usize> {
         Ok(StarcoinVM::get_concurrency_level())
     }
+
+    fn set_logger_balance_amount(&self, balance_amount: u64) -> Result<()> {
+        starcoin_executor::set_logger_balance_amount_once(balance_amount);
+        Ok(())
+    }
+
+    fn get_logger_balance_amount(&self) -> Result<u64> {
+        Ok(starcoin_executor::get_logger_balance_amount())
+    }
 }

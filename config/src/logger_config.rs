@@ -33,14 +33,6 @@ pub struct LoggerConfig {
     #[clap(name = "logger-max-backup", long)]
     pub max_backup: Option<u32>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(
-        name = "logger-balance-amount",
-        long,
-        help = "logging large stc balance updates"
-    )]
-    pub balance_amount: Option<u64>,
-
     #[clap(skip)]
     #[serde(skip)]
     base: Option<Arc<BaseConfig>>,
@@ -95,10 +87,6 @@ impl LoggerConfig {
             }
         })
     }
-
-    pub fn balance_amount(&self) -> Option<u64> {
-        self.balance_amount
-    }
 }
 
 impl ConfigModule for LoggerConfig {
@@ -115,9 +103,6 @@ impl ConfigModule for LoggerConfig {
         }
         if opt.logger.max_backup.is_some() {
             self.max_backup = opt.logger.max_backup;
-        }
-        if opt.logger.balance_amount.is_some() {
-            self.balance_amount = opt.logger.balance_amount;
         }
         Ok(())
     }

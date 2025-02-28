@@ -175,6 +175,43 @@
           "minimum": 0.0
         }
       }
+    },
+    {
+      "name": "debug.set_logger_balance_amount",
+      "params": [
+        {
+          "name": "balance_amount",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "uint64",
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      ],
+      "result": {
+        "name": "()",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Null",
+          "type": "null"
+        }
+      }
+    },
+    {
+      "name": "debug.get_logger_balance_amount",
+      "params": [],
+      "result": {
+        "name": "u64",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "uint64",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        }
+      }
     }
   ]
 }

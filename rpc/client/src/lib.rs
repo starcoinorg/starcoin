@@ -741,6 +741,16 @@ impl RpcClient {
             .map_err(map_err)
     }
 
+    pub fn set_logger_balance_amount(&self, balance_amount: u64) -> anyhow::Result<()> {
+        self.call_rpc_blocking(|inner| inner.debug_client.set_logger_balance_amount(balance_amount))
+            .map_err(map_err)
+    }
+
+    pub fn get_logger_balance_amount(&self) -> anyhow::Result<u64> {
+        self.call_rpc_blocking(|inner| inner.debug_client.get_logger_balance_amount())
+            .map_err(map_err)
+    }
+
     pub fn chain_id(&self) -> anyhow::Result<ChainId> {
         self.call_rpc_blocking(|inner| inner.chain_client.id())
             .map_err(map_err)
