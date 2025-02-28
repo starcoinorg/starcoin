@@ -71,7 +71,7 @@ impl TryFrom<&ContractEvent> for BalanceEvent {
     type Error = ();
 
     fn try_from(event: &ContractEvent) -> Result<BalanceEvent, Self::Error> {
-        balance_event(&event).ok_or(())
+        balance_event(event).ok_or(())
     }
 }
 
@@ -79,19 +79,19 @@ fn balance_event(event: &ContractEvent) -> Option<BalanceEvent> {
     if event.is::<DepositEvent>() {
         DepositEvent::try_from_bytes(event.event_data())
             .ok()
-            .map(|e| BalanceEvent::Deposit((event.key().clone(), e)))
+            .map(|e| BalanceEvent::Deposit((*event.key(), e)))
     } else if event.is::<WithdrawEvent>() {
         WithdrawEvent::try_from_bytes(event.event_data())
             .ok()
-            .map(|e| BalanceEvent::Withdraw((event.key().clone(), e)))
+            .map(|e| BalanceEvent::Withdraw((*event.key(), e)))
     } else if event.is::<MintEvent>() {
         MintEvent::try_from_bytes(event.event_data())
             .ok()
-            .map(|e| BalanceEvent::Mint((event.key().clone(), e)))
+            .map(|e| BalanceEvent::Mint((*event.key(), e)))
     } else if event.is::<BlockRewardEvent>() {
         BlockRewardEvent::try_from_bytes(event.event_data())
             .ok()
-            .map(|e| BalanceEvent::BlockReward((event.key().clone(), e)))
+            .map(|e| BalanceEvent::BlockReward((*event.key(), e)))
     } else {
         None
     }
