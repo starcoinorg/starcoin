@@ -16,10 +16,9 @@ pub fn get_force_upgrade_block_number(chain_id: &ChainId) -> u64 {
         300
     } else if chain_id.is_barnard() {
         16085000
-    } else if chain_id.is_vega(){
+    } else if chain_id.is_vega() {
         8500000
-    } 
-    else {
+    } else {
         FORCE_UPGRADE_BLOCK_NUMBER
     }
 }
