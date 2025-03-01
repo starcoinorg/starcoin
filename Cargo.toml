@@ -243,7 +243,7 @@ license = "Apache-2.0"
 publish = false
 repository = "https://github.com/starcoinorg/starcoin"
 rust-version = "1.64"
-version = "2.0.2"
+version = "2.0.7"
 
 [workspace.dependencies]
 actix = "0.13"
