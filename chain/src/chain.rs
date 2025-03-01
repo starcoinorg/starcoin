@@ -1605,28 +1605,39 @@ impl BlockChain {
             self.epoch = get_epoch_from_statedb(&self.statedb)?;
         }
 
-        if parent_header.pruning_point() == block.header().pruning_point() {
-            info!("pruning point not changed, save dag state without prune. tips are {:?}, pruning point is {:?}", tips, block.header().pruning_point());
-            if block.header().pruning_point() == HashValue::zero() {
+        self.renew_tips(&parent_header, new_tip_block.header(), tips)?;
+
+        Ok(executed_block)
+    }
+
+    fn renew_tips(
+        &self,
+        parent_header: &BlockHeader,
+        tip_header: &BlockHeader,
+        tips: Vec<HashValue>,
+    ) -> Result<()> {
+        if parent_header.pruning_point() == tip_header.pruning_point() {
+            info!("pruning point not changed, save dag state without prune. tips are {:?}, pruning point is {:?}", tips, tip_header.pruning_point());
+            if tip_header.pruning_point() == HashValue::zero() {
                 self.dag
                     .save_dag_state(self.genesis_hash, DagState { tips })?;
             } else {
                 self.dag
-                    .save_dag_state(block.header().pruning_point(), DagState { tips })?;
+                    .save_dag_state(tip_header.pruning_point(), DagState { tips })?;
             }
         } else {
-            let new_tips = dag.pruning_point_manager().prune(
+            let new_tips = self.dag.pruning_point_manager().prune(
                 &DagState { tips: tips.clone() },
                 parent_header.pruning_point(),
-                block.header().pruning_point(),
+                tip_header.pruning_point(),
             )?;
             info!("pruning point changed, previous tips are: {:?}, save dag state with prune. tips are {:?}, previous  pruning point is  {:?}, current pruning point is {:?}", 
-            tips, new_tips, parent_header.pruning_point(), block.header().pruning_point());
-            self.dag
-                .save_dag_state(block.header().pruning_point(), DagState { tips: new_tips })?;
-        }
+            tips, new_tips, parent_header.pruning_point(), tip_header.pruning_point());
 
-        Ok(executed_block)
+            self.dag
+                .save_dag_state(tip_header.pruning_point(), DagState { tips: new_tips })?;
+        }
+        Ok(())
     }
 
     pub fn get_pruning_height(&self) -> BlockNumber {
