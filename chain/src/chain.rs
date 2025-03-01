@@ -1552,7 +1552,23 @@ impl BlockChain {
         let mut tips = if parent_header.pruning_point() == HashValue::zero() {
             self.current_tips_hash(self.genesis_hash)?
         } else {
-            self.current_tips_hash(parent_header.pruning_point())?
+            match self.current_tips_hash(parent_header.pruning_point()) {
+                anyhow::Result::Ok(tips) => tips,
+                Err(e) => match e.downcast::<StoreError>()? {
+                    StoreError::KeyNotFound(_) => {
+                        self.dag().save_dag_state(
+                            parent_header.pruning_point(),
+                            DagState {
+                                tips: vec![parent_header.id()],
+                            },
+                        )?;
+                        vec![parent_header.id()]
+                    }
+                    e => {
+                        return Err(e.into());
+                    }
+                },
+            }
         };
 
         let mut new_tips = vec![];
