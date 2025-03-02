@@ -238,7 +238,7 @@ license = "Apache-2.0"
 publish = false
 repository = "https://github.com/starcoinorg/starcoin"
 rust-version = "1.64"
-version = "1.13.16"
+version = "1.13.17"
 
 [workspace.dependencies]
 actix = "0.13"
@@ -314,7 +314,9 @@ jsonrpc-client-transports = "18"
 jsonrpc-core = "18"
 jsonrpc-core-client = "18"
 jsonrpc-derive = "18"
-openrpc-derive = { git = "https://github.com/starcoinorg/openrpc-rs", rev = "f8ab047e30927cdf2f605b61a219c975d6c4f666", features = ["jsonrpc"] }
+openrpc-derive = { git = "https://github.com/starcoinorg/openrpc-rs", rev = "f8ab047e30927cdf2f605b61a219c975d6c4f666", features = [
+    "jsonrpc",
+] }
 openrpc-schema = { git = "https://github.com/starcoinorg/openrpc-rs", rev = "f8ab047e30927cdf2f605b61a219c975d6c4f666" }
 
 jsonrpc-http-server = "18"
@@ -326,7 +328,21 @@ jsonrpc-ws-server = "18"
 lazy_static = "1.4.0"
 libc = "^0.2"
 libloading = "0.7.2"
-libp2p = { version = "0.50.0", features = ["dns", "identify", "kad", "macros", "mdns", "mplex", "noise", "ping", "tcp", "tokio", "yamux", "websocket", "secp256k1"] }
+libp2p = { version = "0.50.0", features = [
+    "dns",
+    "identify",
+    "kad",
+    "macros",
+    "mdns",
+    "mplex",
+    "noise",
+    "ping",
+    "tcp",
+    "tokio",
+    "yamux",
+    "websocket",
+    "secp256k1",
+] }
 libp2p-core = { version = "0.50.0" }
 libsecp256k1 = "0.7.1"
 linked-hash-map = "0.5.6"
@@ -356,11 +372,15 @@ move-prover-test-utils = { git = "https://github.com/starcoinorg/move", rev = "7
 move-resource-viewer = { git = "https://github.com/starcoinorg/move", rev = "7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc" }
 move-stdlib = { git = "https://github.com/starcoinorg/move", rev = "7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc" }
 move-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc" }
-move-unit-test = { git = "https://github.com/starcoinorg/move", rev = "7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc", features = ["table-extension"] }
+move-unit-test = { git = "https://github.com/starcoinorg/move", rev = "7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc", features = [
+    "table-extension",
+] }
 move-vm-runtime = { git = "https://github.com/starcoinorg/move", rev = "7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc" }
 move-vm-types = { git = "https://github.com/starcoinorg/move", rev = "7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc" }
 move-table-extension = { git = "https://github.com/starcoinorg/move", rev = "7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc" }
-move-vm-test-utils = { git = "https://github.com/starcoinorg/move", rev = "7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc", features = ["table-extension"] }
+move-vm-test-utils = { git = "https://github.com/starcoinorg/move", rev = "7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc", features = [
+    "table-extension",
+] }
 
 names = { version = "0.14.0", default-features = false }
 network-api = { path = "network/api", package = "network-api" }
