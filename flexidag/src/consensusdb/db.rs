@@ -8,7 +8,7 @@ use super::{
         HEADERS_STORE_CF, PARENTS_CF, REACHABILITY_DATA_CF,
     },
 };
-use parking_lot::RwLock;
+use parking_lot::{lock_api::MutexGuard, Mutex, RwLock};
 use rocksdb::WriteBatch;
 use starcoin_config::{RocksdbConfig, StorageConfig};
 pub(crate) use starcoin_storage::db_storage::DBStorage;
@@ -23,7 +23,7 @@ pub struct FlexiDagStorage {
     pub relations_store: Arc<RwLock<DbRelationsStore>>,
     pub state_store: Arc<RwLock<DbDagStateStore>>,
     pub block_depth_info_store: Arc<DbBlockDepthInfoStore>,
-    pub(crate) db: Arc<DBStorage>,
+    db: Arc<Mutex<Arc<DBStorage>>>,
 }
 
 #[derive(Clone)]
@@ -106,16 +106,24 @@ impl FlexiDagStorage {
                 db.clone(),
                 config.cache_size,
             )),
-            db,
+            db: Arc::new(Mutex::new(db)),
         })
     }
 
-    pub fn write_batch(&self, batch: WriteBatch) -> Result<(), StoreError> {
-        self.db.raw_write_batch(batch).map_err(|e| {
+    pub fn write_batch(
+        &self,
+        lock_guard: MutexGuard<'_, parking_lot::RawMutex, Arc<DBStorage>>,
+        batch: WriteBatch,
+    ) -> Result<(), StoreError> {
+        lock_guard.raw_write_batch(batch).map_err(|e| {
             StoreError::DBIoError(format!(
                 "failed to write in batch for dag data, error: {:?}",
                 e.to_string()
             ))
         })
+    }
+
+    pub(crate) fn lock(&self) -> MutexGuard<'_, parking_lot::RawMutex, Arc<DBStorage>> {
+        self.db.lock()
     }
 }
