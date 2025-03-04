@@ -263,7 +263,13 @@ impl<'a> StagingReachabilityStore<'a> {
         }
     }
 
-    pub fn commit(self, batch: &mut WriteBatch) -> Result<(), StoreError> {
+    pub fn commit(
+        self,
+        batch: &mut WriteBatch,
+    ) -> Result<
+        parking_lot::lock_api::RwLockWriteGuard<'a, parking_lot::RawRwLock, DbReachabilityStore>,
+        StoreError,
+    > {
         let mut store_write = RwLockUpgradableReadGuard::upgrade(self.store_read);
         for (k, v) in self.staging_writes {
             let data = Arc::new(v);
@@ -277,7 +283,7 @@ impl<'a> StagingReachabilityStore<'a> {
                 .reindex_root
                 .write(BatchDbWriter::new(batch, &self.db), &root)?;
         }
-        Ok(())
+        Ok(store_write)
     }
 }
 

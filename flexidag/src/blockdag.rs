@@ -25,6 +25,7 @@ use crate::reachability::reachability_service::ReachabilityService;
 use crate::reachability::ReachabilityError;
 use anyhow::{bail, ensure, Ok};
 use itertools::Itertools;
+use parking_lot::Mutex;
 use rocksdb::WriteBatch;
 use starcoin_config::miner_config::G_MERGE_DEPTH;
 use starcoin_config::temp_dir;
@@ -64,6 +65,7 @@ pub struct BlockDAG {
     ghostdag_manager: DbGhostdagManager,
     pruning_point_manager: PruningPointManager,
     block_depth_manager: BlockDepthManager,
+    commit_lock: Arc<Mutex<FlexiDagStorage>>,
 }
 
 impl BlockDAG {
@@ -95,9 +97,10 @@ impl BlockDAG {
         );
         Self {
             ghostdag_manager,
-            storage: db,
+            storage: db.clone(),
             pruning_point_manager,
             block_depth_manager,
+            commit_lock: Arc::new(Mutex::new(db)),
         }
     }
 
@@ -396,14 +399,14 @@ impl BlockDAG {
         let mut batch = WriteBatch::default();
 
         info!("start to commit via batch, header id: {:?}", header.id());
-        let lock_guard = self.storage.lock();
+        let lock_guard = self.commit_lock.lock();
 
         // lock the dag data to write in batch
         // the cache will be written at the same time
         // when the batch is written before flush to the disk and
         // if the writing process abort the starcoin process will/should restart.
         let mut stage = StagingReachabilityStore::new(
-            lock_guard.clone(),
+            self.storage.db.clone(),
             self.storage.reachability_store.upgradable_read(),
         );
 
@@ -422,11 +425,7 @@ impl BlockDAG {
             header.number()
         );
 
-        let mut merge_set = ghostdata
-            .unordered_mergeset_without_selected_parent()
-            .filter(|hash| self.storage.reachability_store.read().has(*hash).unwrap())
-            .collect::<Vec<_>>()
-            .into_iter();
+        let mut merge_set = ghostdata.unordered_mergeset_without_selected_parent();
 
         match inquirer::add_block(
             &mut stage,
@@ -449,7 +448,8 @@ impl BlockDAG {
             },
         }
 
-        process_key_already_error(self.storage.relations_store.write().insert_batch(
+        let mut relations_write = self.storage.relations_store.write();
+        process_key_already_error(relations_write.insert_batch(
             &mut batch,
             header.id(),
             BlockHashes::new(parents),
@@ -467,16 +467,20 @@ impl BlockDAG {
         // the read lock will be updated to the write lock
         // and then write the batch
         // and then release the lock
-        stage
+        let stage_write = stage
             .commit(&mut batch)
             .expect("failed to write the stage reachability in batch");
 
         // write the data just one time
         self.storage
-            .write_batch(lock_guard, batch)
+            .write_batch(batch)
             .expect("failed to write dag data in batch");
 
         info!("finish writing the batch, head id: {:?}", header.id());
+
+        drop(stage_write);
+        drop(relations_write);
+        drop(lock_guard);
 
         Ok(())
     }
@@ -532,14 +536,14 @@ impl BlockDAG {
         let mut batch = WriteBatch::default();
 
         info!("start to commit via batch, header id: {:?}", header.id());
-        let lock_guard = self.storage.lock();
+        let lock_guard = self.commit_lock.lock();
 
         // lock the dag data to write in batch, read lock.
         // the cache will be written at the same time
         // when the batch is written before flush to the disk and
         // if the writing process abort the starcoin process will/should restart.
         let mut stage = StagingReachabilityStore::new(
-            lock_guard.clone(),
+            self.storage.db.clone(),
             self.storage.reachability_store.upgradable_read(),
         );
 
@@ -558,11 +562,7 @@ impl BlockDAG {
             header.number()
         );
 
-        let mut merge_set = ghostdata
-            .unordered_mergeset_without_selected_parent()
-            .filter(|hash| self.storage.reachability_store.read().has(*hash).unwrap())
-            .collect::<Vec<_>>()
-            .into_iter();
+        let mut merge_set = ghostdata.unordered_mergeset_without_selected_parent();
 
         match inquirer::add_block(
             &mut stage,
@@ -585,7 +585,8 @@ impl BlockDAG {
             },
         }
 
-        process_key_already_error(self.storage.relations_store.write().insert_batch(
+        let mut relations_write = self.storage.relations_store.write();
+        process_key_already_error(relations_write.insert_batch(
             &mut batch,
             header.id(),
             BlockHashes::new(parents),
@@ -604,16 +605,20 @@ impl BlockDAG {
         // the read lock will be updated to the write lock
         // and then write the batch
         // and then release the lock
-        stage
+        let stage_write = stage
             .commit(&mut batch)
             .expect("failed to write the stage reachability in batch");
 
         // write the data just one time
         self.storage
-            .write_batch(lock_guard, batch)
+            .write_batch(batch)
             .expect("failed to write dag data in batch");
 
         info!("finish writing the batch, head id: {:?}", header.id());
+
+        drop(stage_write);
+        drop(relations_write);
+        drop(lock_guard);
 
         Ok(())
     }
