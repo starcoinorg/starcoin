@@ -10388,6 +10388,7 @@ dependencies = [
  "starcoin-vm-runtime",
  "starcoin-vm-types",
  "stest",
+ "test-helper",
 ]
 
 [[package]]

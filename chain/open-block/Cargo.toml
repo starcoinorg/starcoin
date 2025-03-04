@@ -20,6 +20,7 @@ starcoin-force-upgrade = { workspace = true }
 [dev-dependencies]
 starcoin-genesis = { workspace = true }
 stest = { workspace = true }
+test-helper = { workspace = true }
 
 [package]
 authors = { workspace = true }
