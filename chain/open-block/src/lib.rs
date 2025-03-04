@@ -420,3 +420,21 @@ impl AddressFilter {
         */
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use starcoin_state_api::StateReaderExt;
+    use starcoin_vm_runtime::force_upgrade_management::create_account;
+    use test_helper::executor::prepare_genesis;
+
+    // the test related fn execute_extra_txn
+    #[test]
+    fn test_execute_extra_txn_seq() {
+        let account =
+            create_account("70ec43d39c812e0c0f7b7b83e22fd0c70cf136f74c29bded7379e0d9589e4485")
+                .unwrap();
+        let (chain_state, _net) = prepare_genesis();
+        let sequence_num = chain_state.get_sequence_number(*account.address());
+        assert!(sequence_num.is_err());
+    }
+}
