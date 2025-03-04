@@ -64,10 +64,10 @@ mod tests {
 
     #[test]
     fn test_get_force_upgrade_account() -> anyhow::Result<()> {
-        // Main TODO(BobOng): To fixed
+        // Main 1
         assert_eq!(
-            get_force_upgrade_account(&ChainId::new(1))?.address(),
-            AccountAddress::from_hex_literal("0xed9ea1f3533c14e1b52d9ff6475776ba")
+            *get_force_upgrade_account(&ChainId::new(1))?.address(),
+            AccountAddress::from_hex_literal("0xed9ea1f3533c14e1b52d9ff6475776ba")?
         );
         // Barnard 251
         assert_eq!(
