@@ -42,6 +42,7 @@ stest = { workspace = true }
 stream-task = { workspace = true }
 sysinfo = { workspace = true }
 thiserror = { workspace = true }
+timeout-join-handler = { workspace = true }
 
 [dev-dependencies]
 hex = { workspace = true }
