@@ -25,7 +25,6 @@ use crate::reachability::reachability_service::ReachabilityService;
 use crate::reachability::ReachabilityError;
 use anyhow::{bail, ensure, Ok};
 use itertools::Itertools;
-use parking_lot::Mutex;
 use rocksdb::WriteBatch;
 use starcoin_config::miner_config::G_MERGE_DEPTH;
 use starcoin_config::temp_dir;
@@ -64,7 +63,6 @@ pub struct BlockDAG {
     pub storage: FlexiDagStorage,
     ghostdag_manager: DbGhostdagManager,
     pruning_point_manager: PruningPointManager,
-    commit_lock: Arc<Mutex<FlexiDagStorage>>,
     block_depth_manager: BlockDepthManager,
 }
 
@@ -89,7 +87,6 @@ impl BlockDAG {
         );
         let pruning_point_manager =
             PruningPointManager::new(reachability_service.clone(), ghostdag_store.clone());
-        let commit_lock = Arc::new(Mutex::new(db.clone()));
         let block_depth_manager = BlockDepthManager::new(
             db.block_depth_info_store.clone(),
             reachability_service,
@@ -100,7 +97,6 @@ impl BlockDAG {
             ghostdag_manager,
             storage: db,
             pruning_point_manager,
-            commit_lock,
             block_depth_manager,
         }
     }
@@ -400,14 +396,14 @@ impl BlockDAG {
         let mut batch = WriteBatch::default();
 
         info!("start to commit via batch, header id: {:?}", header.id());
-        let lock_guard = self.commit_lock.lock();
+        let lock_guard = self.storage.lock();
 
         // lock the dag data to write in batch
         // the cache will be written at the same time
         // when the batch is written before flush to the disk and
         // if the writing process abort the starcoin process will/should restart.
         let mut stage = StagingReachabilityStore::new(
-            self.storage.db.clone(),
+            lock_guard.clone(),
             self.storage.reachability_store.upgradable_read(),
         );
 
@@ -477,10 +473,9 @@ impl BlockDAG {
 
         // write the data just one time
         self.storage
-            .write_batch(batch)
+            .write_batch(lock_guard, batch)
             .expect("failed to write dag data in batch");
 
-        drop(lock_guard);
         info!("finish writing the batch, head id: {:?}", header.id());
 
         Ok(())
@@ -537,14 +532,14 @@ impl BlockDAG {
         let mut batch = WriteBatch::default();
 
         info!("start to commit via batch, header id: {:?}", header.id());
-        let lock_guard = self.commit_lock.lock();
+        let lock_guard = self.storage.lock();
 
         // lock the dag data to write in batch, read lock.
         // the cache will be written at the same time
         // when the batch is written before flush to the disk and
         // if the writing process abort the starcoin process will/should restart.
         let mut stage = StagingReachabilityStore::new(
-            self.storage.db.clone(),
+            lock_guard.clone(),
             self.storage.reachability_store.upgradable_read(),
         );
 
@@ -615,10 +610,9 @@ impl BlockDAG {
 
         // write the data just one time
         self.storage
-            .write_batch(batch)
+            .write_batch(lock_guard, batch)
             .expect("failed to write dag data in batch");
 
-        drop(lock_guard);
         info!("finish writing the batch, head id: {:?}", header.id());
 
         Ok(())
