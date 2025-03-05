@@ -565,8 +565,8 @@ impl StarcoinVM {
             // Run the validation logic
             gas_meter.set_metering(false);
 
-            // // genesis txn skip check gas and txn prologue.
-            if !data_cache.is_genesis() {
+            // // genesis txn and force upgrade txn skip check gas and txn prologue.
+            if !data_cache.is_genesis() && !is_force_upgrade {
                 //let _timer = TXN_VERIFICATION_SECONDS.start_timer();
                 self.check_gas(txn_data)?;
                 self.run_prologue(&mut session, gas_meter, txn_data)?;

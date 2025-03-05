@@ -2,7 +2,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use anyhow::format_err;
-
+use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::Accumulator;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ChainWriter};
@@ -34,6 +34,7 @@ use starcoin_vm_types::{
     transaction::{RawUserTransaction, ScriptFunction, SignedUserTransaction, TransactionPayload},
 };
 use test_helper::executor::{get_balance, get_sequence_number};
+use test_helper::gen_blockchain_for_test;
 
 #[stest::test]
 pub fn test_force_upgrade_1() -> anyhow::Result<()> {
@@ -58,9 +59,11 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
     let mut txns_num = initial_blocks + 1;
     assert_eq!(miner.get_txn_accumulator().num_leaves(), txns_num);
 
+    let upgrade_account = get_force_upgrade_account(&config.net().chain_id()).unwrap();
+
     // create two txns to deposit some tokens to two black addresses
     // and a third random address which should not in black address list.
-    let (black1, txn1, black2, txn2, rand3, txn3) = {
+    let (black1, txn1, black2, txn2, rand3, txn3, txn4) = {
         let receiver1 = AccountAddress::from_str("0xd0c5a06ae6100ce115cad1600fe59e96").unwrap();
         let txn1 = build_transfer_from_association(
             receiver1,
@@ -91,15 +94,24 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
         )
         .try_into()?;
 
-        (receiver1, txn1, receiver2, txn2, rand3, txn3)
+        let txn4 = build_transfer_from_association(
+            *upgrade_account.address(),
+            association_sequence_num + 3,
+            0,
+            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+            net,
+        )
+        .try_into()?;
+
+        (receiver1, txn1, receiver2, txn2, rand3, txn3, txn4)
     };
 
     // block number 1: deposit some stc tokens to two black addresses
     {
-        execute_transactions_by_miner(&mut miner, vec![txn1, txn2, txn3])?;
+        execute_transactions_by_miner(&mut miner, vec![txn1, txn2, txn3, txn4])?;
 
         // 1 meta + 3 user = 4 txns
-        txns_num += 4;
+        txns_num += 5;
         assert_eq!(miner.get_txn_accumulator().num_leaves(), txns_num);
 
         assert_eq!(
@@ -111,6 +123,11 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
             initial_balance + 2
         );
         assert_eq!(get_balance(rand3, miner.chain_state()), initial_balance + 3);
+
+        assert_eq!(
+            get_balance(*upgrade_account.address(), miner.chain_state()),
+            0
+        );
     }
 
     let _forked_txn_num = txns_num;
@@ -118,11 +135,8 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
     // create block number 2, then apply it to miner
     //let _block_num_2 = {
     {
-        let account = get_force_upgrade_account(&config.net().chain_id()).unwrap();
-
-        let balance1 = get_balance(*account.address(), miner.chain_state());
         let block2 = execute_transactions_by_miner(&mut miner, vec![])?;
-        let balance2 = get_balance(*account.address(), miner.chain_state());
+        let balance2 = get_balance(*upgrade_account.address(), miner.chain_state());
 
         // 1 meta + 1 extra = 2 txns
         txns_num += 2;
@@ -146,7 +160,7 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
 
         assert_eq!(get_balance(rand3, miner.chain_state()), initial_balance + 3);
 
-        assert_eq!(balance1, balance2);
+        assert_eq!(0, balance2);
 
         block2
     };
@@ -253,21 +267,19 @@ fn test_force_upgrade_2() -> anyhow::Result<()> {
     let force_upgrade_height = get_force_upgrade_block_number(&config.net().chain_id());
     assert!(force_upgrade_height >= 2);
 
-    let chain =
-        test_helper::gen_blockchain_with_blocks_for_test(force_upgrade_height, config.net())?;
+    let chain = gen_chain_for_upgrade_test(force_upgrade_height, config.net())?;
 
-    // genesis 1 + 1meta in each blocks  + special block 1meta+1extra.txn
-    assert_eq!(
-        chain.get_txn_accumulator().num_leaves(),
-        force_upgrade_height + 2
-    );
-
-    let chain =
-        test_helper::gen_blockchain_with_blocks_for_test(force_upgrade_height + 1, config.net())?;
-    // genesis 1 + 1meta in each blocks + special block 2 + 1 meta in last block
+    // genesis 1 + 1txn to create account + 1meta in each blocks  + special block 1meta+1extra.txn
     assert_eq!(
         chain.get_txn_accumulator().num_leaves(),
         force_upgrade_height + 3
+    );
+
+    let chain = gen_chain_for_upgrade_test(force_upgrade_height + 1, config.net())?;
+    // genesis 1 + 1 txn to create account + 1meta in each blocks + special block 2 + 1 meta in last block
+    assert_eq!(
+        chain.get_txn_accumulator().num_leaves(),
+        force_upgrade_height + 4
     );
 
     Ok(())
@@ -280,8 +292,7 @@ fn test_frozen_account() -> anyhow::Result<()> {
     let force_upgrade_height = get_force_upgrade_block_number(&config.net().chain_id());
     assert!(force_upgrade_height >= 2);
 
-    let mut chain =
-        test_helper::gen_blockchain_with_blocks_for_test(force_upgrade_height + 1, config.net())?;
+    let mut chain = gen_chain_for_upgrade_test(force_upgrade_height + 1, config.net())?;
 
     let net = config.net();
     let association_sequence_num = chain
@@ -341,8 +352,7 @@ fn test_frozen_for_global_frozen() -> anyhow::Result<()> {
     let force_upgrade_height = get_force_upgrade_block_number(&config.net().chain_id());
     assert!(force_upgrade_height >= 2);
 
-    let mut chain =
-        test_helper::gen_blockchain_with_blocks_for_test(force_upgrade_height + 1, config.net())?;
+    let mut chain = gen_chain_for_upgrade_test(force_upgrade_height + 1, config.net())?;
 
     let net = config.net();
     let random_user_account = Account::new();
@@ -494,4 +504,49 @@ pub fn build_global_frozen_txn_sign_with_association(
             net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
             net.chain_id(),
         ))
+}
+
+fn gen_chain_for_upgrade_test(count: u64, net: &ChainNetwork) -> anyhow::Result<BlockChain> {
+    let force_upgrade_height = get_force_upgrade_block_number(&net.chain_id());
+    let force_upgrade_account = get_force_upgrade_account(&net.chain_id())?;
+    assert!(force_upgrade_height >= 2 && count >= force_upgrade_height);
+
+    // transaction to create force upgrade account
+    let txn: SignedUserTransaction = build_transfer_from_association(
+        *force_upgrade_account.address(),
+        0,
+        0,
+        net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+        net,
+    )
+    .try_into()?;
+
+    let mut block_chain = gen_blockchain_for_test(net)?;
+    let miner_account = AccountInfo::random();
+    for i in 0..count {
+        let (block_template, _) = block_chain.create_block_template(
+            *miner_account.address(),
+            None,
+            if i == 0 { vec![txn.clone()] } else { vec![] },
+            vec![],
+            None,
+        )?;
+        let block = block_chain
+            .consensus()
+            .create_block(block_template, net.time_service().as_ref())?;
+        block_chain.apply(block)?;
+
+        if i == 0 {
+            // check if the force upgrade account is created and has 0 balance
+            assert_eq!(
+                block_chain
+                    .chain_state_reader()
+                    .get_balance(*force_upgrade_account.address())?
+                    .unwrap(),
+                0
+            );
+        }
+    }
+
+    Ok(block_chain)
 }
