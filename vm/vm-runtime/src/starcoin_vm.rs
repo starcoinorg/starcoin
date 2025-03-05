@@ -1092,28 +1092,6 @@ impl StarcoinVM {
         let mut data_cache = StateViewCache::new(storage);
         let mut result = vec![];
 
-        let is_force_deploy = if data_cache.is_genesis() {
-            false
-        } else {
-            data_cache
-                .get_block_metadata()
-                .map_err(|e| {
-                    warn!(
-                        "[VM] execute_block_transactions error, get_block_metadata error: {:?}",
-                        e
-                    );
-                    VMStatus::Error(StatusCode::STORAGE_ERROR)
-                })?
-                .number
-                == get_force_upgrade_block_number(&data_cache.get_chain_id().map_err(|e| {
-                    warn!(
-                        "[VM] execute_block_transactions error, get_chain_id error: {:?}",
-                        e
-                    );
-                    VMStatus::Error(StatusCode::STORAGE_ERROR)
-                })?)
-        };
-
         // TODO load config by config change event
         self.load_configs(&data_cache)
             .map_err(|_err| VMStatus::Error(StatusCode::STORAGE_ERROR))?;
@@ -1147,7 +1125,7 @@ impl StarcoinVM {
                         }
 
                         if let TransactionStatus::Keep(_) = output.status() {
-                            if gas_unit_price > 0 && !is_force_deploy {
+                            if gas_unit_price > 0 {
                                 debug_assert_ne!(
                                     output.gas_used(),
                                     0,
