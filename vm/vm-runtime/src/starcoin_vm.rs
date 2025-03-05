@@ -9,7 +9,7 @@ use crate::data_cache::{AsMoveResolver, RemoteStorage, StateViewCache};
 use crate::errors::{
     convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
 };
-use crate::force_upgrade_management::FORCE_UPGRADE_BLOCK_NUMBER;
+use crate::force_upgrade_management::{get_force_upgrade_block_number, FORCE_UPGRADE_BLOCK_NUMBER};
 use crate::move_vm_ext::{MoveResolverExt, MoveVmExt, SessionId, SessionOutput};
 use anyhow::{bail, format_err, Error, Result};
 use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
@@ -555,6 +555,12 @@ impl StarcoinVM {
         } else {
             0
         };
+        let is_force_upgrade = !data_cache.is_genesis()
+            && block_number
+                == get_force_upgrade_block_number(&data_cache.get_chain_id().map_err(|e| {
+                    warn!("[VM] execute_package error, get_chain_id error: {:?}", e);
+                    VMStatus::Error(StatusCode::STORAGE_ERROR)
+                })?);
         {
             // Run the validation logic
             gas_meter.set_metering(false);
@@ -567,8 +573,8 @@ impl StarcoinVM {
             }
         }
         {
-            // Genesis txn not enable gas charge.
-            if !data_cache.is_genesis() {
+            // Genesis txn and force upgrade txn not enable gas charge.
+            if !data_cache.is_genesis() && !is_force_upgrade {
                 gas_meter.set_metering(true);
             }
 
@@ -1086,6 +1092,28 @@ impl StarcoinVM {
         let mut data_cache = StateViewCache::new(storage);
         let mut result = vec![];
 
+        let is_force_deploy = if data_cache.is_genesis() {
+            false
+        } else {
+            data_cache
+                .get_block_metadata()
+                .map_err(|e| {
+                    warn!(
+                        "[VM] execute_block_transactions error, get_block_metadata error: {:?}",
+                        e
+                    );
+                    VMStatus::Error(StatusCode::STORAGE_ERROR)
+                })?
+                .number
+                == get_force_upgrade_block_number(&data_cache.get_chain_id().map_err(|e| {
+                    warn!(
+                        "[VM] execute_block_transactions error, get_chain_id error: {:?}",
+                        e
+                    );
+                    VMStatus::Error(StatusCode::STORAGE_ERROR)
+                })?)
+        };
+
         // TODO load config by config change event
         self.load_configs(&data_cache)
             .map_err(|_err| VMStatus::Error(StatusCode::STORAGE_ERROR))?;
@@ -1119,7 +1147,7 @@ impl StarcoinVM {
                         }
 
                         if let TransactionStatus::Keep(_) = output.status() {
-                            if gas_unit_price > 0 {
+                            if gas_unit_price > 0 && !is_force_deploy {
                                 debug_assert_ne!(
                                     output.gas_used(),
                                     0,

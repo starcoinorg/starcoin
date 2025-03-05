@@ -20,7 +20,9 @@ use starcoin_types::account::Account;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::Block;
 use starcoin_types::vm_error::StatusCode;
-use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
+use starcoin_vm_runtime::force_upgrade_management::{
+    get_force_upgrade_account, get_force_upgrade_block_number,
+};
 use starcoin_vm_types::{
     account_config::{
         self, association_address, core_code_address, FrozenConfigBurnBlockNumberResource,
@@ -116,7 +118,11 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
     // create block number 2, then apply it to miner
     //let _block_num_2 = {
     {
+        let account = get_force_upgrade_account(&config.net().chain_id()).unwrap();
+
+        let balance1 = get_balance(*account.address(), miner.chain_state());
         let block2 = execute_transactions_by_miner(&mut miner, vec![])?;
+        let balance2 = get_balance(*account.address(), miner.chain_state());
 
         // 1 meta + 1 extra = 2 txns
         txns_num += 2;
@@ -139,6 +145,8 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
         );
 
         assert_eq!(get_balance(rand3, miner.chain_state()), initial_balance + 3);
+
+        assert_eq!(balance1, balance2);
 
         block2
     };
@@ -445,8 +453,9 @@ fn execute_transactions_by_miner(
     miner: &mut BlockChain,
     user_txns: Vec<SignedUserTransaction>,
 ) -> anyhow::Result<Block> {
+    let miner_account = Account::new();
     let (block_template, _excluded) = miner.create_block_template(
-        account_config::association_address(),
+        *miner_account.address(),
         None,
         user_txns,
         vec![],
