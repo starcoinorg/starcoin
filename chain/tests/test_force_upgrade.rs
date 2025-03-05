@@ -6,7 +6,7 @@ use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::Accumulator;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ChainWriter};
-use starcoin_config::{ChainNetwork, NodeConfig};
+use starcoin_config::{BuiltinNetworkID, ChainNetwork, ChainNetworkID, NodeConfig, StarcoinOpt};
 use starcoin_consensus::Consensus;
 use starcoin_logger::prelude::info;
 use starcoin_statedb::ChainStateDB;
@@ -38,7 +38,7 @@ use test_helper::gen_blockchain_for_test;
 
 #[stest::test]
 pub fn test_force_upgrade_1() -> anyhow::Result<()> {
-    let config = Arc::new(NodeConfig::random_for_test());
+    let config = Arc::new(test_node_config());
     let net = config.net();
 
     let force_upgrade_height = get_force_upgrade_block_number(&net.chain_id());
@@ -262,7 +262,7 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
 
 #[stest::test]
 fn test_force_upgrade_2() -> anyhow::Result<()> {
-    let config = Arc::new(NodeConfig::random_for_test());
+    let config = Arc::new(test_node_config());
 
     let force_upgrade_height = get_force_upgrade_block_number(&config.net().chain_id());
     assert!(force_upgrade_height >= 2);
@@ -287,7 +287,7 @@ fn test_force_upgrade_2() -> anyhow::Result<()> {
 
 #[stest::test]
 fn test_frozen_account() -> anyhow::Result<()> {
-    let config = Arc::new(NodeConfig::random_for_test());
+    let config = Arc::new(test_node_config());
 
     let force_upgrade_height = get_force_upgrade_block_number(&config.net().chain_id());
     assert!(force_upgrade_height >= 2);
@@ -347,7 +347,7 @@ fn test_frozen_account() -> anyhow::Result<()> {
 
 #[stest::test]
 fn test_frozen_for_global_frozen() -> anyhow::Result<()> {
-    let config = Arc::new(NodeConfig::random_for_test());
+    let config = Arc::new(test_node_config());
 
     let force_upgrade_height = get_force_upgrade_block_number(&config.net().chain_id());
     assert!(force_upgrade_height >= 2);
@@ -504,6 +504,16 @@ pub fn build_global_frozen_txn_sign_with_association(
             net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
             net.chain_id(),
         ))
+}
+
+fn test_node_config() -> NodeConfig {
+    let net = ChainNetworkID::from_str("test123:123").unwrap();
+    let opt = StarcoinOpt {
+        net: Some(net),
+        genesis_config: Some(BuiltinNetworkID::Test.to_string()),
+        ..StarcoinOpt::default()
+    };
+    NodeConfig::load_with_opt(&opt).unwrap()
 }
 
 fn gen_chain_for_upgrade_test(count: u64, net: &ChainNetwork) -> anyhow::Result<BlockChain> {

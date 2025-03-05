@@ -29,6 +29,8 @@ pub fn get_force_upgrade_block_number(chain_id: &ChainId) -> u64 {
     } else if chain_id.is_barnard() {
         // add 8000 + BARNARD_HARD_FORK_HEIGHT
         16081000
+    } else if chain_id.id() == 123 {
+        5
     } else {
         FORCE_UPGRADE_BLOCK_NUMBER
     }
@@ -52,9 +54,11 @@ pub fn get_force_upgrade_account(chain_id: &ChainId) -> anyhow::Result<Account> 
     } else if chain_id.is_barnard() || chain_id.is_proxima() || chain_id.is_halley() {
         // 0x0b1d07ae560c26af9bbb8264f4c7ee73
         create_account("6105e78821ace0676faf437fb40dd6892e72f01c09351298106bad2964edb007")
-    } else {
+    } else if chain_id.id() == 123 {
         // 0xed9ea1f3533c14e1b52d9ff6475776ba
         create_account("650a4e2222996b607bbed13e1de45ad946cd0e66167f45efaa943a58e692e280")
+    } else {
+        Ok(Account::new_association())
     }
 }
 
@@ -68,6 +72,11 @@ mod tests {
         // Main 1
         assert_eq!(
             *get_force_upgrade_account(&ChainId::new(1))?.address(),
+            AccountAddress::from_hex_literal("0xed9ea1f3533c14e1b52d9ff6475776ba")?
+        );
+        // Test 123
+        assert_eq!(
+            *get_force_upgrade_account(&ChainId::new(123))?.address(),
             AccountAddress::from_hex_literal("0xed9ea1f3533c14e1b52d9ff6475776ba")?
         );
         // Barnard 251
@@ -92,7 +101,7 @@ mod tests {
         );
         // Test 255
         assert_eq!(
-            get_force_upgrade_account(&ChainId::new(254))?.address(),
+            get_force_upgrade_account(&ChainId::new(255))?.address(),
             &AccountAddress::from_hex_literal("0xA550C18")?
         );
 
