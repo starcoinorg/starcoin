@@ -274,7 +274,7 @@ bytes = "1"
 chrono = { version = "0.4.19", default-features = false, features = ["clock"] }
 clap = { version = "3", features = ["derive"] }
 cli-table = "0.3.2"
-coarsetime = "0.1.22"
+coarsetime = "0.1.36"
 codespan = { version = "0.8.0", features = ["serialization"] }
 codespan-reporting = "0.11"
 colored = "2.0.0"
