@@ -2119,6 +2119,7 @@ dependencies = [
  "bcs-ext",
  "clap 3.2.23",
  "csv",
+ "forkable-jellyfish-merkle",
  "futures 0.3.26",
  "hex",
  "indicatif",

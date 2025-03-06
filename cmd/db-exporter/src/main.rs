@@ -10,6 +10,7 @@ use db_exporter::{
     verify_header::{verify_header_via_export_file, VerifyHeaderOptions},
     verify_module::{verify_modules_via_export_file, VerifyModuleOptions},
 };
+use forkable_jellyfish_merkle::RawKey;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use serde::{ser::SerializeMap, Serialize, Serializer};
 use starcoin_account_api::AccountInfo;
@@ -39,7 +40,6 @@ use starcoin_storage::{
 use starcoin_transaction_builder::{
     build_signed_empty_txn, create_signed_txn_with_association_account, DEFAULT_MAX_GAS_AMOUNT,
 };
-use starcoin_types::proof::SparseMerkleProof;
 use starcoin_types::{
     account::{peer_to_peer_txn, Account, DEFAULT_EXPIRATION_TIME},
     account_address::AccountAddress,
@@ -2552,21 +2552,6 @@ fn token_supply(
     Ok(())
 }
 
-fn get_sparse_merkle_proof(proof: SparseMerkleProof) -> Vec<u8> {
-    let mut proof2 = Vec::with_capacity((proof.siblings.len() + 2) * 32);
-    if let Some(leaf) = proof.leaf {
-        proof2.extend(leaf.0.to_vec());
-        proof2.extend(leaf.1.to_vec());
-    } else {
-        proof2.extend(HashValue::zero().to_vec());
-        proof2.extend(HashValue::zero().to_vec());
-    }
-    for sibling in proof.siblings {
-        proof2.extend(sibling.to_vec());
-    }
-    proof2
-}
-
 fn tokens_info(
     from_dir: PathBuf,
     output: PathBuf,
@@ -2663,14 +2648,19 @@ fn tokens_info(
     let now = Instant::now();
     let mut sum: u128 = 0;
     let mut account_list = vec![];
-    let mut state_proof_list = vec![];
+    // small tree
+    // expected_root_hash, access_path, element_blob,
+    // leaf: Option<(HashValue, HashValue)>,siblings: Vec<HashValue>,
+    let mut resource_proof_list = vec![];
+    // global tree
+    let mut account_proof_list = vec![];
     for (address_bytes, account_state_bytes) in global_states.iter() {
         let account: AccountAddress = bcs_ext::from_bytes(address_bytes)?;
         let account_state: AccountState = account_state_bytes.as_slice().try_into()?;
         let resource_root = account_state.storage_roots()[DataType::RESOURCE.storage_index()];
         let resource = match resource_root {
             None => None,
-            Some(root) => {
+            Some(resource_root) => {
                 let account_tree = StateTree::<StructTag>::new(storage.clone(), Some(root));
                 let data = account_tree.get(&resource_struct_tag)?;
 
@@ -2679,25 +2669,33 @@ fn tokens_info(
                         value_annotator.view_struct(resource_struct_tag.clone(), d.as_slice())?;
                     let resource = annotated_struct;
                     let resource_json_value = serde_json::to_value(MoveStruct(resource))?;
-                    let state_proof = statedb.get_with_proof(&AccessPath::resource_access_path(
-                        account,
-                        resource_struct_tag.clone(),
-                    ))?;
-
-                    let blob = if let Some(blob) = state_proof.proof.account_state {
+                    let data_path = AccessPath::resource_data_path(resource_struct_tag.clone());
+                    let data_path_hash = data_path.key_hash();
+                    let state_with_proof = statedb.get_with_proof(
+                        &AccessPath::resource_access_path(account, resource_struct_tag.clone()),
+                    )?;
+                    let access_res_blob = state_with_proof.state.unwrap_or(vec![0; 32]);
+                    let blob = if let Some(blob) = state_with_proof.proof.account_state {
                         blob.into()
                     } else {
                         vec![0; 32]
                     };
-                    let account_proof = get_sparse_merkle_proof(state_proof.proof.account_proof);
-                    let account_state_proof =
-                        get_sparse_merkle_proof(state_proof.proof.account_state_proof);
-                    state_proof_list.push((
-                        account,
-                        state_proof.state.unwrap_or(vec![0; 32]),
+
+                    let res_mer_proof = state_with_proof.proof.account_state_proof;
+                    let account_mer_proof = state_with_proof.proof.account_proof;
+                    resource_proof_list.push((
+                        resource_root,
+                        data_path_hash.to_vec(),
+                        access_res_blob,
+                        res_mer_proof.leaf.unwrap(),
+                        res_mer_proof.siblings,
+                    ));
+                    account_proof_list.push((
+                        root,
+                        account.key_hash().to_vec(),
                         blob,
-                        account_proof,
-                        account_state_proof,
+                        account_mer_proof.leaf.unwrap(),
+                        account_mer_proof.siblings,
                     ));
                     account_list.push((account, resource_json_value.clone()));
                     Some(resource_json_value)
@@ -2736,18 +2734,43 @@ fn tokens_info(
     for (account, resource) in account_list {
         writeln!(file, "{} {}", account, resource)?;
     }
-    writeln!(file, "state_root {}", statedb.state_root())?;
-    for (account, state, blob, account_proof, account_state_proof) in state_proof_list {
+    // state/api/src/chain_state.rs
+    // output account address tree, then output resource tree
+
+    for (state_root, address_key, blob, leaf, siblings) in account_proof_list {
         writeln!(
             file,
-            "{} {} {} {} {}",
-            account,
-            hex::encode(state),
+            "{} {} {} {} {} {}",
+            hex::encode(state_root.to_vec()),
+            hex::encode(address_key),
             hex::encode(blob),
-            hex::encode(account_proof),
-            hex::encode(account_state_proof)
+            hex::encode(leaf.0.to_vec()),
+            hex::encode(leaf.1.to_vec()),
+            siblings
+                .iter()
+                .map(|s| hex::encode(s.to_vec()))
+                .collect::<Vec<String>>()
+                .join(" ")
         )?;
     }
+
+    for (resource_root, data_path_hash, access_res_blob, leaf, siblings) in resource_proof_list {
+        writeln!(
+            file,
+            "{} {} {} {} {} {}",
+            hex::encode(resource_root.to_vec()),
+            hex::encode(data_path_hash),
+            hex::encode(access_res_blob),
+            hex::encode(leaf.0.to_vec()),
+            hex::encode(leaf.1.to_vec()),
+            siblings
+                .iter()
+                .map(|s| hex::encode(s.to_vec()))
+                .collect::<Vec<String>>()
+                .join(" ")
+        )?;
+    }
+
     file.flush()?;
     Ok(())
 }

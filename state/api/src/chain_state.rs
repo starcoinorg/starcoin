@@ -70,6 +70,7 @@ impl StateProof {
                             "accessed resource should not exists"
                         );
                     }
+                    // this is resource tree, expected_hash, data_path.hash access_resource_blob
                     Some(expected_hash) => {
                         let blob = access_resource_blob.map(|data| Blob::from(data.to_vec()));
                         self.account_state_proof.verify(
@@ -81,6 +82,7 @@ impl StateProof {
                 }
             }
         }
+        // this is global tree, expected_root_hash, account_address.key_hash(), self.account_state.as_ref()
         self.account_proof.verify(
             expected_root_hash,
             account_address.key_hash(),

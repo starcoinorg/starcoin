@@ -40,6 +40,7 @@ starcoin-vm-runtime = { workspace = true }
 futures = { workspace = true }
 rayon = { workspace = true }
 num_cpus = { workspace = true }
+forkable-jellyfish-merkle = { workspace = true }
 
 [package]
 authors = { workspace = true }
