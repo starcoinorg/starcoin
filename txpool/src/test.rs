@@ -267,7 +267,7 @@ async fn test_rollback() -> Result<()> {
         assert_eq!(root, enacted_block.header().state_root());
         chain_state.flush()?;
     }
-    pool.chain_new_block(vec![enacted_block], vec![retracted_block])
+    pool.chain_new_block(&enacted_block, &vec![retracted_block])
         .unwrap();
     let txns = pool.get_pending_txns(Some(100), Some(start_timestamp + 60 * 10));
     assert_eq!(txns.len(), 0);

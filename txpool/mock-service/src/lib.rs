@@ -82,7 +82,7 @@ impl TxPoolSyncService for MockTxPoolService {
     fn subscribe_pending_txn(&self) -> mpsc::UnboundedReceiver<Arc<[HashValue]>> {
         todo!()
     }
-    fn chain_new_block(&self, _enacted: Vec<Block>, _retracted: Vec<Block>) -> Result<()> {
+    fn chain_new_block(&self, _enacted: &Block, _retracted: &[Block]) -> Result<()> {
         Ok(())
     }
 

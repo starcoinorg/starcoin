@@ -23,7 +23,7 @@ use crate::process_key_already_error;
 use crate::prune::pruning_point_manager::PruningPointManagerT;
 use crate::reachability::reachability_service::ReachabilityService;
 use crate::reachability::ReachabilityError;
-use anyhow::{bail, ensure, Ok};
+use anyhow::{bail, ensure, format_err, Ok};
 use itertools::Itertools;
 use parking_lot::Mutex;
 use rocksdb::WriteBatch;
@@ -765,7 +765,10 @@ impl BlockDAG {
 
         if pruning_point == Hash::zero() {
             pruning_point = genesis_id;
+        } else {
+            self.generate_the_block_depth(pruning_point, &ghostdata, pruning_depth)?;
         }
+
         info!("try to remove the red blocks when mining, tips: {:?} and ghostdata: {:?}, pruning point: {:?}", tips, ghostdata, pruning_point);
         (tips, ghostdata) =
             self.remove_bounded_merge_breaking_parents(tips, ghostdata, pruning_point)?;
@@ -803,23 +806,50 @@ impl BlockDAG {
         anyhow::Ok(())
     }
 
-    pub fn check_bounded_merge_depth(
+    pub fn generate_the_block_depth(
         &self,
         pruning_point: Hash,
         ghostdata: &GhostdagData,
         finality_depth: u64,
-    ) -> anyhow::Result<(Hash, Hash)> {
+    ) -> anyhow::Result<BlockDepthInfo> {
         let merge_depth_root = self
             .block_depth_manager
             .calc_merge_depth_root(ghostdata, pruning_point)?;
         if merge_depth_root == Hash::zero() {
-            return anyhow::Ok((Hash::zero(), Hash::zero()));
+            return anyhow::Ok(BlockDepthInfo {
+                merge_depth_root,
+                finality_point: Hash::zero(),
+            });
         }
         let finality_point = self.block_depth_manager.calc_finality_point(
             ghostdata,
             pruning_point,
             finality_depth,
         )?;
+        self.storage.block_depth_info_store.insert(
+            ghostdata.selected_parent,
+            BlockDepthInfo {
+                merge_depth_root,
+                finality_point,
+            },
+        )?;
+        info!(
+            "the merge depth root is: {:?}, the finality point is: {:?}",
+            merge_depth_root, finality_point
+        );
+        Ok(BlockDepthInfo {
+            merge_depth_root,
+            finality_point,
+        })
+    }
+
+    pub fn check_bounded_merge_depth(&self, ghostdata: &GhostdagData) -> anyhow::Result<()> {
+        let merge_depth_root = self
+            .block_depth_manager
+            .get_block_depth_info(ghostdata.selected_parent)?
+            .ok_or_else(|| format_err!("failed to get block depth info"))?
+            .merge_depth_root;
+
         let mut kosherizing_blues: Option<Vec<Hash>> = None;
 
         for red in ghostdata.mergeset_reds.iter().copied() {
@@ -845,14 +875,7 @@ impl BlockDAG {
             }
         }
 
-        self.storage.block_depth_info_store.insert(
-            ghostdata.selected_parent,
-            BlockDepthInfo {
-                merge_depth_root,
-                finality_point,
-            },
-        )?;
-        Ok((merge_depth_root, finality_point))
+        Ok(())
     }
 
     pub fn remove_bounded_merge_breaking_parents(
@@ -1057,5 +1080,81 @@ impl BlockDAG {
             ancestor,
             descendants: de,
         })
+    }
+
+    pub fn switch_selected_chain(
+        &self,
+        from: Hash,
+        to: Hash,
+        common_ancestor: Hash,
+        max_retracted_count: usize,
+    ) -> anyhow::Result<Vec<Hash>> {
+        if self.check_ancestor_of_chain(common_ancestor, from)? {
+            bail!(
+                "the common ancestor is not the ancestor of the from chain: {:?}",
+                from
+            );
+        }
+        if self.check_ancestor_of_chain(common_ancestor, to)? {
+            bail!(
+                "the common ancestor is not the ancestor of the from chain: {:?}",
+                to
+            );
+        }
+
+        let mut new_branch_block_set = HashSet::new();
+        let mut retracted_block_set = HashSet::new();
+
+        let mut parent_id = to;
+
+        // new branch blue set
+        loop {
+            let ghostdata = self
+                .ghostdata_by_hash(parent_id)?
+                .ok_or_else(|| format_err!("the ghostdag data should be existed for {:?}", to))?;
+            new_branch_block_set.extend(ghostdata.mergeset_blues.iter().cloned());
+            retracted_block_set.extend(ghostdata.mergeset_reds.iter().cloned());
+            if ghostdata.selected_parent == common_ancestor {
+                break;
+            } else {
+                parent_id = ghostdata.selected_parent;
+            }
+        }
+
+        // current branch block set
+        loop {
+            let ghostdata = self
+                .ghostdata_by_hash(parent_id)?
+                .ok_or_else(|| format_err!("the ghostdag data should be existed for {:?}", to))?;
+            retracted_block_set.extend(ghostdata.unordered_mergeset());
+            if ghostdata.selected_parent == common_ancestor {
+                break;
+            } else {
+                parent_id = ghostdata.selected_parent;
+            }
+        }
+
+        let difference: HashSet<_> = retracted_block_set
+            .difference(&new_branch_block_set)
+            .cloned()
+            .collect();
+        let limited_difference = difference
+            .into_iter()
+            .map(|block_id| {
+                Ok((
+                    block_id,
+                    self.ghostdata_by_hash(block_id)?.ok_or_else(|| {
+                        format_err!("the ghostdag data should be existed for {:?}", block_id)
+                    })?,
+                ))
+            })
+            .collect::<anyhow::Result<Vec<_>>>()?
+            .into_iter()
+            .sorted_by(|a, b| a.1.blue_score.cmp(&b.1.blue_score))
+            .take(max_retracted_count)
+            .map(|ghostdata| ghostdata.0)
+            .collect::<Vec<_>>();
+
+        Ok(limited_difference)
     }
 }

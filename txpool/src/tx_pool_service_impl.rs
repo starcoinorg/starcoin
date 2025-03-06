@@ -176,14 +176,14 @@ impl TxPoolSyncService for TxPoolService {
     }
 
     /// rollback
-    fn chain_new_block(&self, enacted: Vec<Block>, retracted: Vec<Block>) -> Result<()> {
+    fn chain_new_block(&self, enacted_block: &Block, retracted: &[Block]) -> Result<()> {
         let _timer = self.inner.metrics.as_ref().map(|metrics| {
             metrics
                 .txpool_service_time
                 .with_label_values(&["rollback"])
                 .start_timer()
         });
-        self.inner.chain_new_block(enacted, retracted);
+        self.inner.chain_new_block(enacted_block, retracted);
         Ok(())
     }
 
@@ -317,13 +317,10 @@ impl Inner {
         rx
     }
 
-    pub(crate) fn chain_new_block(&self, enacted: Vec<Block>, retracted: Vec<Block>) {
+    pub(crate) fn chain_new_block(&self, enacted_block: &Block, retracted: &[Block]) {
         debug!(
             "receive chain_new_block msg, enacted: {:?}, retracted: {:?}",
-            enacted
-                .iter()
-                .map(|b| b.header().number())
-                .collect::<Vec<_>>(),
+            enacted_block.header.number(),
             retracted
                 .iter()
                 .map(|b| b.header().number())
@@ -331,20 +328,15 @@ impl Inner {
         );
 
         // new head block, update chain header
-        if let Some(block) = enacted.last() {
-            self.notify_new_chain_header(block.header().clone());
-        }
+        self.notify_new_chain_header(enacted_block.header().clone());
 
         // remove outdated txns.
         self.cull();
 
         // import retracted txns.
         let txns = retracted
-            .into_iter()
-            .flat_map(|b| {
-                let txns: Vec<SignedUserTransaction> = b.into_inner().1.into();
-                txns.into_iter()
-            })
+            .iter()
+            .flat_map(|b| b.body.transactions.iter().cloned())
             .map(|t| PoolTransaction::Retracted(UnverifiedUserTransaction::from(t)));
         let results = self.queue.import(self.get_pool_client(), txns);
         for result in results {
