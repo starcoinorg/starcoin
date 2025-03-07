@@ -1501,7 +1501,6 @@ fn test_merge_bounded() -> anyhow::Result<()> {
     anyhow::Result::Ok(())
 }
 
-
 #[test]
 fn test_check_ancestor_of() -> anyhow::Result<()> {
     // initialzie the dag firstly
@@ -1516,7 +1515,7 @@ fn test_check_ancestor_of() -> anyhow::Result<()> {
     let mut parent = genesis.clone();
     for i in 0..3 {
         parent = add_and_print(i + 1, parent.id(), vec![parent.id()], &mut dag)?;
-    } 
+    }
 
     let common_ancestor = add_and_print(4, parent.id(), vec![parent.id()], &mut dag)?;
     let mut child = common_ancestor.clone();
@@ -1524,22 +1523,43 @@ fn test_check_ancestor_of() -> anyhow::Result<()> {
     child = add_and_print(6, child.id(), vec![child.id()], &mut dag)?;
     child = add_and_print(7, child.id(), vec![child.id()], &mut dag)?;
 
-
     let mut another_child = common_ancestor.clone();
     another_child = add_and_print(5, another_child.id(), vec![another_child.id()], &mut dag)?;
     another_child = add_and_print(6, another_child.id(), vec![another_child.id()], &mut dag)?;
 
-    assert!(dag.check_ancestor_of(common_ancestor.id(), child.id())?, "common ancestor should be the ancestor of the child");
-    assert!(dag.check_ancestor_of_chain(common_ancestor.id(), child.id())?, "common ancestor should be the ancestor of the child");
+    assert!(
+        dag.check_ancestor_of(common_ancestor.id(), child.id())?,
+        "common ancestor should be the ancestor of the child"
+    );
+    assert!(
+        dag.check_ancestor_of_chain(common_ancestor.id(), child.id())?,
+        "common ancestor should be the ancestor of the child"
+    );
 
-    assert!(dag.check_ancestor_of(common_ancestor.id(), another_child.id())?, "common ancestor should be the ancestor of the child");
-    assert!(dag.check_ancestor_of_chain(common_ancestor.id(), another_child.id())?, "common ancestor should be the ancestor of the child");
+    assert!(
+        dag.check_ancestor_of(common_ancestor.id(), another_child.id())?,
+        "common ancestor should be the ancestor of the child"
+    );
+    assert!(
+        dag.check_ancestor_of_chain(common_ancestor.id(), another_child.id())?,
+        "common ancestor should be the ancestor of the child"
+    );
 
+    another_child = add_and_print(
+        7,
+        another_child.id(),
+        vec![child.id(), another_child.id()],
+        &mut dag,
+    )?;
 
-    another_child = add_and_print(7, another_child.id(), vec![child.id(), another_child.id()], &mut dag)?;
-
-    assert!(dag.check_ancestor_of(common_ancestor.id(), another_child.id())?, "common ancestor should be the ancestor of the child");
-    assert!(dag.check_ancestor_of_chain(common_ancestor.id(), another_child.id())?, "common ancestor should be the ancestor of the child");
+    assert!(
+        dag.check_ancestor_of(common_ancestor.id(), another_child.id())?,
+        "common ancestor should be the ancestor of the child"
+    );
+    assert!(
+        dag.check_ancestor_of_chain(common_ancestor.id(), another_child.id())?,
+        "common ancestor should be the ancestor of the child"
+    );
 
     Ok(())
 }
