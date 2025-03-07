@@ -1089,13 +1089,13 @@ impl BlockDAG {
         common_ancestor: Hash,
         max_retracted_count: usize,
     ) -> anyhow::Result<Vec<Hash>> {
-        if self.check_ancestor_of_chain(common_ancestor, from)? {
+        if self.check_ancestor_of(common_ancestor, from)? {
             bail!(
                 "the common ancestor is not the ancestor of the from chain: {:?}",
                 from
             );
         }
-        if self.check_ancestor_of_chain(common_ancestor, to)? {
+        if self.check_ancestor_of(common_ancestor, to)? {
             bail!(
                 "the common ancestor is not the ancestor of the from chain: {:?}",
                 to
