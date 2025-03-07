@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
       - name: starcoin
-        image: ghcr.io/starcoinorg/starcoin:sha-e2b4b9c
+        image: ghcr.io/starcoinorg/starcoin:sha-053d376
         imagePullPolicy: Always
         command:
           - bash
