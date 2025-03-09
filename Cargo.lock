@@ -9690,6 +9690,7 @@ version = "1.13.11"
 dependencies = [
  "anyhow",
  "bcs-ext",
+ "forkable-jellyfish-merkle",
  "hex",
  "log 0.4.17",
  "move-transactional-test-runner",

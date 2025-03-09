@@ -3,6 +3,7 @@
 
 use anyhow::anyhow;
 use anyhow::Result;
+use forkable_jellyfish_merkle::RawKey;
 use starcoin_executor::validate_transaction;
 use starcoin_logger::prelude::*;
 use starcoin_transaction_builder::{
@@ -12,7 +13,8 @@ use starcoin_transaction_builder::{
 };
 use starcoin_types::account::peer_to_peer_txn;
 use starcoin_types::identifier::Identifier;
-use starcoin_types::language_storage::ModuleId;
+use starcoin_types::language_storage::StructTag;
+use starcoin_types::language_storage::{ModuleId, TypeTag};
 use starcoin_types::transaction::{RawUserTransaction, ScriptFunction, TransactionArgument};
 use starcoin_types::{
     account_config, block_metadata::BlockMetadata, transaction::Transaction,
@@ -39,8 +41,9 @@ use test_helper::executor::{
 // use test_helper::Account;
 use starcoin_state_api::{ChainStateReader, StateReaderExt};
 use starcoin_types::account::Account;
-use starcoin_types::account_config::G_STC_TOKEN_CODE;
+use starcoin_types::account_config::{CORE_CODE_ADDRESS, G_STC_TOKEN_CODE};
 use starcoin_vm_runtime::starcoin_vm::{chunk_block_transactions, StarcoinVM};
+use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use test_helper::txn::create_account_txn_sent_as_association;
@@ -1106,5 +1109,94 @@ fn get_vm_version_verify() -> Result<()> {
     assert!(state_proof
         .verify(chain_state.state_root(), version_path)
         .is_err());
+    Ok(())
+}
+
+#[test]
+fn get_vm_version_proof_detail() -> Result<()> {
+    let (chain_state, _net) = prepare_genesis();
+    let version_path = on_chain_config::access_path_for_config(
+        genesis_address(),
+        Identifier::new("Version").unwrap(),
+        Identifier::new("Version").unwrap(),
+        vec![],
+    );
+    let resource_struct_tag = StructTag {
+        address: CORE_CODE_ADDRESS,
+        module: Identifier::new("Config").unwrap(),
+        name: Identifier::new("Config").unwrap(),
+        type_params: vec![TypeTag::Struct(Box::new(StructTag {
+            address: CORE_CODE_ADDRESS,
+            module: Identifier::new("Version").unwrap(),
+            name: Identifier::new("Version").unwrap(),
+            type_params: vec![],
+        }))],
+    };
+    let root = chain_state.state_root();
+
+    let state_with_proof = chain_state.get_with_proof(&version_path)?;
+    let data_path = AccessPath::resource_data_path(resource_struct_tag);
+    let data_path_hash = data_path.key_hash();
+    let account_state = chain_state.get_account_state(&genesis_address())?.unwrap();
+    let resource_root = account_state.resource_root();
+
+    let mut resource_proof_list = vec![];
+    let access_res_blob = state_with_proof.state.unwrap_or(vec![0; 32]);
+    let res_mer_proof = state_with_proof.proof.account_state_proof;
+    resource_proof_list.push((
+        resource_root,
+        data_path_hash.to_vec(),
+        access_res_blob,
+        res_mer_proof.leaf.unwrap(),
+        res_mer_proof.siblings,
+    ));
+
+    let mut account_proof_list = vec![];
+    let account_mer_proof = state_with_proof.proof.account_proof;
+    let blob = if let Some(blob) = state_with_proof.proof.account_state {
+        blob.into()
+    } else {
+        vec![0; 32]
+    };
+    account_proof_list.push((
+        root,
+        genesis_address().key_hash().to_vec(),
+        blob,
+        account_mer_proof.leaf.unwrap(),
+        account_mer_proof.siblings,
+    ));
+
+    for (state_root, address_key, blob, leaf, siblings) in account_proof_list {
+        println!(
+            "{} {} {} {} {} {}",
+            hex::encode(state_root.to_vec()),
+            hex::encode(address_key),
+            hex::encode(blob),
+            hex::encode(leaf.0.to_vec()),
+            hex::encode(leaf.1.to_vec()),
+            siblings
+                .iter()
+                .map(|s| hex::encode(s.to_vec()))
+                .collect::<Vec<String>>()
+                .join(" ")
+        );
+    }
+
+    for (resource_root, data_path_hash, access_res_blob, leaf, siblings) in resource_proof_list {
+        println!(
+            "{} {} {} {} {} {}",
+            hex::encode(resource_root.to_vec()),
+            hex::encode(data_path_hash),
+            hex::encode(access_res_blob),
+            hex::encode(leaf.0.to_vec()),
+            hex::encode(leaf.1.to_vec()),
+            siblings
+                .iter()
+                .map(|s| hex::encode(s.to_vec()))
+                .collect::<Vec<String>>()
+                .join(" ")
+        );
+    }
+
     Ok(())
 }
