@@ -173,16 +173,27 @@ module starcoin_framework::asset_mapping {
         proof_path_hash: vector<u8>,
         proof_value_hash: vector<u8>,
         proof_siblings: vector<u8>,
+        resource_root: vector<u8>,
+        resource_path_hash: vector<u8>,
+        resource_value_hash: vector<u8>,
+        resource_siblings: vector<u8>,
         amount: u64
     ) acquires AssetMappingPool, AssetMappingStore {
         assert!(
             exists<AssetMappingPool>(system_addresses::get_starcoin_framework()),
             error::invalid_state(EINVALID_PROOF_ROOT)
         );
+        let expect_proof_root =
+            borrow_global_mut<AssetMappingPool>(system_addresses::get_starcoin_framework()).proof_root;
 
         // Verify that the token type of the request mapping is the passed-in verification type
         assert!(
-            calculation_proof(proof_path_hash, proof_value_hash, starcoin_proof_verifier::split(proof_siblings)),
+            calculation_proof(expect_proof_root, proof_path_hash, proof_value_hash, starcoin_proof_verifier::split(proof_siblings)),
+            error::unauthenticated(EINVALID_NOT_PROOF)
+        );
+
+        assert!(
+            calculation_proof(resource_root, resource_path_hash, resource_value_hash, starcoin_proof_verifier::split(resource_siblings)),
             error::unauthenticated(EINVALID_NOT_PROOF)
         );
 
@@ -267,12 +278,13 @@ module starcoin_framework::asset_mapping {
 
     /// Computes and verifies the provided proof
     fun calculation_proof(
+        expect_proof_root: vector<u8>,
         proof_path_hash: vector<u8>,
         blob_hash: vector<u8>,
         proof_siblings: vector<vector<u8>>
-    ): bool acquires AssetMappingPool {
-        let expect_proof_root =
-            borrow_global_mut<AssetMappingPool>(system_addresses::get_starcoin_framework()).proof_root;
+    ): bool {
+        //let expect_proof_root =
+          //  borrow_global_mut<AssetMappingPool>(system_addresses::get_starcoin_framework()).proof_root;
         let actual_root = starcoin_proof_verifier::computer_root_hash(
             proof_path_hash,
             blob_hash,
@@ -390,10 +402,14 @@ module starcoin_framework::asset_mapping {
 
         let siblings = starcoin_proof_verifier::split(siblings_data);
 
+        let expect_proof_root =
+            borrow_global_mut<AssetMappingPool>(system_addresses::get_starcoin_framework()).proof_root;
+
         let element_key = x"4cc8bd9df94b37c233555d9a3bba0a712c3c709f047486d1e624b2bcd3b83266";
         Self::initialize(framework, x"f65860f575bf2a198c069adb4e7872037e3a329b63ef617e40afa39b87b067c8");
         assert!(
             Self::calculation_proof(
+                expect_proof_root,
                 element_key,
                 x"4f2b59b9af93b435e0a33b6ab7a8a90e471dba936be2bc2937629b7782b8ebd0",
                 siblings
