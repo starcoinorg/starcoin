@@ -81,10 +81,13 @@ impl BlockDepthInfoReader for DbBlockDepthInfoStore {
     fn get_block_depth_info(&self, hash: Hash) -> Result<Option<BlockDepthInfo>, StoreError> {
         let result = match self.block_depth_info_access.read(hash) {
             Ok(info) => Some(info),
-            Err(e) => {
-                warn!("get_block_depth_info error: {:?} for id: {:?}, the candidate in tips referring too many red blocks will not be filtered.", e, hash);
-                None
-            }
+            Err(e) => match e {
+                StoreError::KeyNotFound(_) => None,
+                _ => {
+                    warn!("get_block_depth_info error: {:?} for id: {:?}, the candidate in tips referring too many red blocks will not be filtered.", e, hash);
+                    None
+                }
+            },
         };
         Ok(result)
     }
