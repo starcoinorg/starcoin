@@ -1399,12 +1399,13 @@ fn test_merge_bounded() -> anyhow::Result<()> {
 
     let ghostdata = dag.ghostdata(&tips)?;
 
-    let (merge_depth_root, _finality_point) =
-        dag.check_bounded_merge_depth(pruning_point, &ghostdata, pruning_depth)?;
+    let merge_depth_info =
+        dag.generate_the_block_depth(pruning_point, &ghostdata, pruning_depth)?;
+    dag.check_bounded_merge_depth(&ghostdata)?;
     assert_eq!(
         dag.ghost_dag_manager()
             .find_selected_parent(vec![block_main_3.id(), block_main_3_1.id()])?,
-        merge_depth_root
+        merge_depth_info.merge_depth_root
     );
 
     // to test the calculation
@@ -1444,12 +1445,12 @@ fn test_merge_bounded() -> anyhow::Result<()> {
     assert_eq!(tips.len(), 1);
     assert_eq!(*tips.last().unwrap(), block_main_6.id());
 
-    let (merge_depth_root, _finality_point) =
-        dag.check_bounded_merge_depth(pruning_point, &ghostdata, merge_depth)?;
+    let merge_dapth_info = dag.generate_the_block_depth(pruning_point, &ghostdata, merge_depth)?;
+    dag.check_bounded_merge_depth(&ghostdata)?;
     let mut fork = dag
         .ghost_dag_manager()
         .find_selected_parent(vec![block_main_3.id(), block_main_3_1.id()])?;
-    assert_eq!(fork, merge_depth_root);
+    assert_eq!(fork, merge_dapth_info.merge_depth_root);
 
     fork = if block_main_3.id() == fork {
         block_main_3_1.id()
@@ -1498,4 +1499,67 @@ fn test_merge_bounded() -> anyhow::Result<()> {
     assert_eq!(tips, vec![block_main_6.id()]);
 
     anyhow::Result::Ok(())
+}
+
+#[test]
+fn test_check_ancestor_of() -> anyhow::Result<()> {
+    // initialzie the dag firstly
+    let mut dag = BlockDAG::create_for_testing().unwrap();
+
+    let origin = BlockHeaderBuilder::random().with_number(0).build();
+    let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;
+
+    dag.init_with_genesis(genesis.clone()).unwrap();
+
+    // one
+    let mut parent = genesis.clone();
+    for i in 0..3 {
+        parent = add_and_print(i + 1, parent.id(), vec![parent.id()], &mut dag)?;
+    }
+
+    let common_ancestor = add_and_print(4, parent.id(), vec![parent.id()], &mut dag)?;
+    let mut child = common_ancestor.clone();
+    child = add_and_print(5, child.id(), vec![child.id()], &mut dag)?;
+    child = add_and_print(6, child.id(), vec![child.id()], &mut dag)?;
+    child = add_and_print(7, child.id(), vec![child.id()], &mut dag)?;
+
+    let mut another_child = common_ancestor.clone();
+    another_child = add_and_print(5, another_child.id(), vec![another_child.id()], &mut dag)?;
+    another_child = add_and_print(6, another_child.id(), vec![another_child.id()], &mut dag)?;
+
+    assert!(
+        dag.check_ancestor_of(common_ancestor.id(), child.id())?,
+        "common ancestor should be the ancestor of the child"
+    );
+    assert!(
+        dag.check_ancestor_of_chain(common_ancestor.id(), child.id())?,
+        "common ancestor should be the ancestor of the child"
+    );
+
+    assert!(
+        dag.check_ancestor_of(common_ancestor.id(), another_child.id())?,
+        "common ancestor should be the ancestor of the child"
+    );
+    assert!(
+        dag.check_ancestor_of_chain(common_ancestor.id(), another_child.id())?,
+        "common ancestor should be the ancestor of the child"
+    );
+
+    another_child = add_and_print(
+        7,
+        another_child.id(),
+        vec![child.id(), another_child.id()],
+        &mut dag,
+    )?;
+
+    assert!(
+        dag.check_ancestor_of(common_ancestor.id(), another_child.id())?,
+        "common ancestor should be the ancestor of the child"
+    );
+    assert!(
+        dag.check_ancestor_of_chain(common_ancestor.id(), another_child.id())?,
+        "common ancestor should be the ancestor of the child"
+    );
+
+    Ok(())
 }

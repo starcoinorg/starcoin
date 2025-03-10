@@ -23,7 +23,7 @@ use crate::process_key_already_error;
 use crate::prune::pruning_point_manager::PruningPointManagerT;
 use crate::reachability::reachability_service::ReachabilityService;
 use crate::reachability::ReachabilityError;
-use anyhow::{bail, ensure, Ok};
+use anyhow::{bail, ensure, format_err, Ok};
 use itertools::Itertools;
 use parking_lot::Mutex;
 use rocksdb::WriteBatch;
@@ -765,7 +765,10 @@ impl BlockDAG {
 
         if pruning_point == Hash::zero() {
             pruning_point = genesis_id;
+        } else {
+            self.generate_the_block_depth(pruning_point, &ghostdata, pruning_depth)?;
         }
+
         info!("try to remove the red blocks when mining, tips: {:?} and ghostdata: {:?}, pruning point: {:?}", tips, ghostdata, pruning_point);
         (tips, ghostdata) =
             self.remove_bounded_merge_breaking_parents(tips, ghostdata, pruning_point)?;
@@ -803,23 +806,50 @@ impl BlockDAG {
         anyhow::Ok(())
     }
 
-    pub fn check_bounded_merge_depth(
+    pub fn generate_the_block_depth(
         &self,
         pruning_point: Hash,
         ghostdata: &GhostdagData,
         finality_depth: u64,
-    ) -> anyhow::Result<(Hash, Hash)> {
+    ) -> anyhow::Result<BlockDepthInfo> {
         let merge_depth_root = self
             .block_depth_manager
             .calc_merge_depth_root(ghostdata, pruning_point)?;
         if merge_depth_root == Hash::zero() {
-            return anyhow::Ok((Hash::zero(), Hash::zero()));
+            return anyhow::Ok(BlockDepthInfo {
+                merge_depth_root,
+                finality_point: Hash::zero(),
+            });
         }
         let finality_point = self.block_depth_manager.calc_finality_point(
             ghostdata,
             pruning_point,
             finality_depth,
         )?;
+        self.storage.block_depth_info_store.insert(
+            ghostdata.selected_parent,
+            BlockDepthInfo {
+                merge_depth_root,
+                finality_point,
+            },
+        )?;
+        info!(
+            "the merge depth root is: {:?}, the finality point is: {:?}",
+            merge_depth_root, finality_point
+        );
+        Ok(BlockDepthInfo {
+            merge_depth_root,
+            finality_point,
+        })
+    }
+
+    pub fn check_bounded_merge_depth(&self, ghostdata: &GhostdagData) -> anyhow::Result<()> {
+        let merge_depth_root = self
+            .block_depth_manager
+            .get_block_depth_info(ghostdata.selected_parent)?
+            .ok_or_else(|| format_err!("failed to get block depth info"))?
+            .merge_depth_root;
+
         let mut kosherizing_blues: Option<Vec<Hash>> = None;
 
         for red in ghostdata.mergeset_reds.iter().copied() {
@@ -845,14 +875,7 @@ impl BlockDAG {
             }
         }
 
-        self.storage.block_depth_info_store.insert(
-            ghostdata.selected_parent,
-            BlockDepthInfo {
-                merge_depth_root,
-                finality_point,
-            },
-        )?;
-        Ok((merge_depth_root, finality_point))
+        Ok(())
     }
 
     pub fn remove_bounded_merge_breaking_parents(
