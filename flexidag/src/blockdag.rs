@@ -56,6 +56,7 @@ pub type BlockDepthManager =
 pub struct MineNewDagBlockInfo {
     pub tips: Vec<HashValue>,
     pub blue_blocks: Vec<HashValue>,
+    pub red_blocks: Vec<HashValue>,
     pub pruning_point: HashValue,
 }
 
@@ -779,6 +780,7 @@ impl BlockDAG {
         anyhow::Ok(MineNewDagBlockInfo {
             tips,
             blue_blocks: ghostdata.mergeset_blues.as_ref().clone(),
+            red_blocks: ghostdata.mergeset_blues.as_ref().clone(),
             pruning_point,
         })
     }

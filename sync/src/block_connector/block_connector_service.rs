@@ -426,6 +426,7 @@ where
         let MineNewDagBlockInfo {
             tips,
             blue_blocks,
+            red_blocks,
             pruning_point,
         } = if main_header.number() >= self.chain_service.get_main().get_pruning_height() {
             let (previous_ghostdata, pruning_point) = if main_header.pruning_point()
@@ -462,9 +463,11 @@ where
         } else {
             let genesis = ctx.get_shared::<Genesis>()?;
             let tips = dag.get_dag_state(genesis.block().id())?.tips;
+            let ghostdata = dag.ghostdata(&tips)?;
             MineNewDagBlockInfo {
                 tips: tips.clone(),
-                blue_blocks: dag.ghostdata(&tips)?.mergeset_blues.as_ref().clone(),
+                blue_blocks: ghostdata.mergeset_blues.as_ref().clone(),
+                red_blocks: ghostdata.mergeset_reds.as_ref().clone(),
                 pruning_point: HashValue::zero(),
             }
         };
@@ -496,11 +499,12 @@ where
             previous_header,
             on_chain_block_gas_limit,
             tips_hash: tips,
-            blues_hash: blue_blocks[1..].to_vec(),
+            blue_blocks_hash: blue_blocks[1..].to_vec(),
             strategy,
             next_difficulty,
             now_milliseconds,
             pruning_point,
+            red_blocks_hash: red_blocks,
         }))
     }
 }
