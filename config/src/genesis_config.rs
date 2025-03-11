@@ -960,7 +960,7 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             max_block_time_target: G_MAX_BLOCK_TIME_TARGET,
             base_max_uncles_per_block: 16,
             base_block_gas_limit: G_BASE_BLOCK_GAS_LIMIT * 10,
-            strategy: ConsensusStrategy::CryptoNight.value(),
+            strategy: ConsensusStrategy::Argon.value(),
         },
         association_key_pair: (
             None,
