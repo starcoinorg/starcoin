@@ -19,7 +19,7 @@ starcoin-uint = { workspace = true }
 starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
 lazy_static = { workspace = true }
-bincode = { version = "1", default-features = false }
+bincode = { version = "2", default-features = false }
 serde_bytes = { workspace = true }
 starcoin-logger = { workspace = true }
 
