@@ -9,7 +9,7 @@ use crate::data_cache::{AsMoveResolver, RemoteStorage, StateViewCache};
 use crate::errors::{
     convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
 };
-use crate::force_upgrade_management::FORCE_UPGRADE_BLOCK_NUMBER;
+use crate::force_upgrade_management::{get_force_upgrade_block_number, FORCE_UPGRADE_BLOCK_NUMBER};
 use crate::move_vm_ext::{MoveResolverExt, MoveVmExt, SessionId, SessionOutput};
 use anyhow::{bail, format_err, Error, Result};
 use move_core_types::gas_algebra::{InternalGasPerByte, NumBytes};
@@ -555,20 +555,26 @@ impl StarcoinVM {
         } else {
             0
         };
+        let is_force_upgrade = !data_cache.is_genesis()
+            && block_number
+                == get_force_upgrade_block_number(&data_cache.get_chain_id().map_err(|e| {
+                    warn!("[VM] execute_package error, get_chain_id error: {:?}", e);
+                    VMStatus::Error(StatusCode::STORAGE_ERROR)
+                })?);
         {
             // Run the validation logic
             gas_meter.set_metering(false);
 
-            // // genesis txn skip check gas and txn prologue.
-            if !data_cache.is_genesis() {
+            // // genesis txn and force upgrade txn skip check gas and txn prologue.
+            if !data_cache.is_genesis() && !is_force_upgrade {
                 //let _timer = TXN_VERIFICATION_SECONDS.start_timer();
                 self.check_gas(txn_data)?;
                 self.run_prologue(&mut session, gas_meter, txn_data)?;
             }
         }
         {
-            // Genesis txn not enable gas charge.
-            if !data_cache.is_genesis() {
+            // Genesis txn and force upgrade txn not enable gas charge.
+            if !data_cache.is_genesis() && !is_force_upgrade {
                 gas_meter.set_metering(true);
             }
 

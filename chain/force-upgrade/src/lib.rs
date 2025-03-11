@@ -60,7 +60,7 @@ impl ForceUpgrade {
             sequence_number,
             TransactionPayload::Package(package),
             DEFAULT_MAX_GAS_AMOUNT,
-            1,
+            0,
             block_timestamp_in_secs + DEFAULT_EXPIRATION_TIME,
             *chain_id,
             STC_TOKEN_CODE_STR.to_string(),
