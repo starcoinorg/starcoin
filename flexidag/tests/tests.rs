@@ -1025,6 +1025,7 @@ fn test_prune() -> anyhow::Result<()> {
         tips,
         blue_blocks: _,
         pruning_point,
+        red_blocks: _,
     } = dag.calc_mergeset_and_tips(
         previous_pruning_point,
         previous_ghostdata.as_ref(),
@@ -1055,6 +1056,7 @@ fn test_prune() -> anyhow::Result<()> {
         tips,
         blue_blocks: _,
         pruning_point,
+        red_blocks: _,
     } = dag.calc_mergeset_and_tips(
         previous_pruning_point,
         previous_ghostdata.as_ref(),
@@ -1374,6 +1376,7 @@ fn test_merge_bounded() -> anyhow::Result<()> {
         tips,
         blue_blocks: _,
         pruning_point,
+        red_blocks: _,
     } = dag.calc_mergeset_and_tips(
         previous_pruning_point,
         previous_ghostdata.as_ref(),
@@ -1421,6 +1424,7 @@ fn test_merge_bounded() -> anyhow::Result<()> {
         tips,
         blue_blocks: _,
         pruning_point,
+        red_blocks: _,
     } = dag.calc_mergeset_and_tips(
         pruning_point,
         dag.storage
@@ -1483,6 +1487,7 @@ fn test_merge_bounded() -> anyhow::Result<()> {
         tips,
         blue_blocks: _,
         pruning_point: _,
+        red_blocks: _,
     } = dag.calc_mergeset_and_tips(
         pruning_point,
         dag.storage
