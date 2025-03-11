@@ -9,12 +9,14 @@ pub mod create_signer;
 pub mod cryptography;
 pub mod debug;
 pub mod dispatchable_fungible_asset;
+mod ecrecover;
 pub mod event;
 pub mod function_info;
 pub mod hash;
 pub mod object;
 pub mod object_code_deployment;
 pub mod randomness;
+pub mod signature;
 pub mod state_storage;
 pub mod string_utils;
 pub mod transaction_context;
@@ -88,6 +90,7 @@ pub fn all_natives(
         "dispatchable_fungible_asset",
         dispatchable_fungible_asset::make_all(builder)
     );
+    add_natives_from_module!("signature", signature::make_all(builder));
 
     make_table_from_iter(framework_addr, natives)
 }

@@ -10688,6 +10688,7 @@ dependencies = [
  "ark-ff",
  "ark-serialize",
  "ark-std",
+ "arrayref",
  "bcs 0.1.5",
  "better_any",
  "blake2-rfc",

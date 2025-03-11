@@ -79,6 +79,7 @@ smallvec = { workspace = true }
 tempfile = { workspace = true }
 thiserror = { workspace = true }
 tiny-keccak = { workspace = true }
+arrayref = { workspace = true }
 
 [dev-dependencies]
 starcoin-aggregator = { workspace = true, features = ["testing"] }
