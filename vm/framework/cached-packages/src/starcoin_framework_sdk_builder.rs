@@ -162,6 +162,10 @@ pub enum EntryFunctionCall {
         proof_path_hash: Vec<u8>,
         proof_value_hash: Vec<u8>,
         proof_siblings: Vec<u8>,
+        resource_root: Vec<u8>,
+        resource_path_hash: Vec<u8>,
+        resource_value_hash: Vec<u8>,
+        resource_siblings: Vec<u8>,
         amount: u64,
     },
 
@@ -669,6 +673,10 @@ impl EntryFunctionCall {
                 proof_path_hash,
                 proof_value_hash,
                 proof_siblings,
+                resource_root,
+                resource_path_hash,
+                resource_value_hash,
+                resource_siblings,
                 amount,
             } => asset_mapping_assign_to_account_with_proof(
                 receiper,
@@ -676,6 +684,10 @@ impl EntryFunctionCall {
                 proof_path_hash,
                 proof_value_hash,
                 proof_siblings,
+                resource_root,
+                resource_path_hash,
+                resource_value_hash,
+                resource_siblings,
                 amount,
             ),
             CoinCreateCoinConversionMap {} => coin_create_coin_conversion_map(),
@@ -1318,6 +1330,10 @@ pub fn asset_mapping_assign_to_account_with_proof(
     proof_path_hash: Vec<u8>,
     proof_value_hash: Vec<u8>,
     proof_siblings: Vec<u8>,
+    resource_root: Vec<u8>,
+    resource_path_hash: Vec<u8>,
+    resource_value_hash: Vec<u8>,
+    resource_siblings: Vec<u8>,
     amount: u64,
 ) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
@@ -1333,6 +1349,10 @@ pub fn asset_mapping_assign_to_account_with_proof(
             bcs::to_bytes(&proof_path_hash).unwrap(),
             bcs::to_bytes(&proof_value_hash).unwrap(),
             bcs::to_bytes(&proof_siblings).unwrap(),
+            bcs::to_bytes(&resource_root).unwrap(),
+            bcs::to_bytes(&resource_path_hash).unwrap(),
+            bcs::to_bytes(&resource_value_hash).unwrap(),
+            bcs::to_bytes(&resource_siblings).unwrap(),
             bcs::to_bytes(&amount).unwrap(),
         ],
     ))
@@ -2631,7 +2651,11 @@ mod decoder {
                 proof_path_hash: bcs::from_bytes(script.args().get(2)?).ok()?,
                 proof_value_hash: bcs::from_bytes(script.args().get(3)?).ok()?,
                 proof_siblings: bcs::from_bytes(script.args().get(4)?).ok()?,
-                amount: bcs::from_bytes(script.args().get(5)?).ok()?,
+                resource_root: bcs::from_bytes(script.args().get(5)?).ok()?,
+                resource_path_hash: bcs::from_bytes(script.args().get(6)?).ok()?,
+                resource_value_hash: bcs::from_bytes(script.args().get(7)?).ok()?,
+                resource_siblings: bcs::from_bytes(script.args().get(8)?).ok()?,
+                amount: bcs::from_bytes(script.args().get(9)?).ok()?,
             })
         } else {
             None

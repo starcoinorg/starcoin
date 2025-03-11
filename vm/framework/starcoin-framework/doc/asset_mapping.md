@@ -398,7 +398,7 @@ Retrieves the balance for a specific token type
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_assign_to_account_with_proof">assign_to_account_with_proof</a>(token_issuer: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, receiper: <b>address</b>, old_token_str: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, proof_path_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, proof_value_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, proof_siblings: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, amount: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_assign_to_account_with_proof">assign_to_account_with_proof</a>(token_issuer: &<a href="../../move-stdlib/doc/signer.md#0x1_signer">signer</a>, receiper: <b>address</b>, old_token_str: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, proof_path_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, proof_value_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, proof_siblings: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, resource_root: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, resource_path_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, resource_value_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, resource_siblings: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, amount: u64)
 </code></pre>
 
 
@@ -414,16 +414,27 @@ Retrieves the balance for a specific token type
     proof_path_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     proof_value_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     proof_siblings: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    resource_root: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    resource_path_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    resource_value_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    resource_siblings: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     amount: u64
 ) <b>acquires</b> <a href="asset_mapping.md#0x1_asset_mapping_AssetMappingPool">AssetMappingPool</a>, <a href="asset_mapping.md#0x1_asset_mapping_AssetMappingStore">AssetMappingStore</a> {
     <b>assert</b>!(
         <b>exists</b>&lt;<a href="asset_mapping.md#0x1_asset_mapping_AssetMappingPool">AssetMappingPool</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()),
         <a href="../../move-stdlib/doc/error.md#0x1_error_invalid_state">error::invalid_state</a>(<a href="asset_mapping.md#0x1_asset_mapping_EINVALID_PROOF_ROOT">EINVALID_PROOF_ROOT</a>)
     );
+    <b>let</b> expect_proof_root =
+        <b>borrow_global_mut</b>&lt;<a href="asset_mapping.md#0x1_asset_mapping_AssetMappingPool">AssetMappingPool</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()).proof_root;
 
     // Verify that the token type of the request mapping is the passed-in verification type
     <b>assert</b>!(
-        <a href="asset_mapping.md#0x1_asset_mapping_calculation_proof">calculation_proof</a>(proof_path_hash, proof_value_hash, <a href="starcoin_proof.md#0x1_starcoin_proof_verifier_split">starcoin_proof_verifier::split</a>(proof_siblings)),
+        <a href="asset_mapping.md#0x1_asset_mapping_calculation_proof">calculation_proof</a>(expect_proof_root, proof_path_hash, proof_value_hash, <a href="starcoin_proof.md#0x1_starcoin_proof_verifier_split">starcoin_proof_verifier::split</a>(proof_siblings)),
+        <a href="../../move-stdlib/doc/error.md#0x1_error_unauthenticated">error::unauthenticated</a>(<a href="asset_mapping.md#0x1_asset_mapping_EINVALID_NOT_PROOF">EINVALID_NOT_PROOF</a>)
+    );
+
+    <b>assert</b>!(
+        <a href="asset_mapping.md#0x1_asset_mapping_calculation_proof">calculation_proof</a>(resource_root, resource_path_hash, resource_value_hash, <a href="starcoin_proof.md#0x1_starcoin_proof_verifier_split">starcoin_proof_verifier::split</a>(resource_siblings)),
         <a href="../../move-stdlib/doc/error.md#0x1_error_unauthenticated">error::unauthenticated</a>(<a href="asset_mapping.md#0x1_asset_mapping_EINVALID_NOT_PROOF">EINVALID_NOT_PROOF</a>)
     );
 
@@ -558,7 +569,7 @@ Requirements:
 Computes and verifies the provided proof
 
 
-<pre><code><b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_calculation_proof">calculation_proof</a>(proof_path_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, blob_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, proof_siblings: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;): bool
+<pre><code><b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_calculation_proof">calculation_proof</a>(expect_proof_root: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, proof_path_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, blob_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;, proof_siblings: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;): bool
 </code></pre>
 
 
@@ -568,12 +579,13 @@ Computes and verifies the provided proof
 
 
 <pre><code><b>fun</b> <a href="asset_mapping.md#0x1_asset_mapping_calculation_proof">calculation_proof</a>(
+    expect_proof_root: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     proof_path_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     blob_hash: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     proof_siblings: <a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;<a href="../../move-stdlib/doc/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;
-): bool <b>acquires</b> <a href="asset_mapping.md#0x1_asset_mapping_AssetMappingPool">AssetMappingPool</a> {
-    <b>let</b> expect_proof_root =
-        <b>borrow_global_mut</b>&lt;<a href="asset_mapping.md#0x1_asset_mapping_AssetMappingPool">AssetMappingPool</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()).proof_root;
+): bool {
+    //<b>let</b> expect_proof_root =
+      //  <b>borrow_global_mut</b>&lt;<a href="asset_mapping.md#0x1_asset_mapping_AssetMappingPool">AssetMappingPool</a>&gt;(<a href="system_addresses.md#0x1_system_addresses_get_starcoin_framework">system_addresses::get_starcoin_framework</a>()).proof_root;
     <b>let</b> actual_root = <a href="starcoin_proof.md#0x1_starcoin_proof_verifier_computer_root_hash">starcoin_proof_verifier::computer_root_hash</a>(
         proof_path_hash,
         blob_hash,
