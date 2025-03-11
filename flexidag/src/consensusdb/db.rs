@@ -23,7 +23,7 @@ pub struct FlexiDagStorage {
     pub relations_store: Arc<RwLock<DbRelationsStore>>,
     pub state_store: Arc<RwLock<DbDagStateStore>>,
     pub block_depth_info_store: Arc<DbBlockDepthInfoStore>,
-    pub db: Arc<DBStorage>,
+    pub(crate) db: Arc<DBStorage>,
 }
 
 #[derive(Clone)]

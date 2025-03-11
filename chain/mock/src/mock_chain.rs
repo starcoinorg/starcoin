@@ -284,6 +284,7 @@ impl MockChain {
             tips: pruned_tips,
             blue_blocks,
             pruning_point,
+            red_blocks: _,
         } = self.head.dag().calc_mergeset_and_tips(
             previous_pruning,
             prevous_ghostdata.as_ref(),
