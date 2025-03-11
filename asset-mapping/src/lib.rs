@@ -248,7 +248,16 @@ mod basic_tests {
         let alice = AccountAddress::from_str("0xd0c5a06ae6100ce115cad1600fe59e96").unwrap();
 
         // Create a source BlockChain
-        let (proof_root_hash, proof_path_hash, proof_value_hash, proof_siblings) = {
+        let (
+            proof_root_hash,
+            proof_path_hash,
+            proof_value_hash,
+            proof_siblings,
+            res_root_hash,
+            res_path_hash,
+            res_value_hash,
+            res_siblings,
+        ) = {
             let (chain_state_1, net_1) = prepare_genesis();
 
             association_execute_should_success(
@@ -265,12 +274,18 @@ mod basic_tests {
                 &alice,
                 &CoinStoreResource::struct_tag_for_token(stc_struct_tag()),
             )?)?;
+            let account_state = chain_state_1.get_account_state(&alice)?;
+            let resource_root = account_state.resource_root();
 
             (
                 chain_state_1.state_root(),
                 state_proof.proof.account_proof.leaf().unwrap().0,
                 state_proof.proof.account_proof.leaf().unwrap().1,
                 state_proof.proof.account_proof.siblings,
+                resource_root,
+                state_proof.proof.account_state_proof.leaf().unwrap().0,
+                state_proof.proof.account_state_proof.leaf().unwrap().1,
+                state_proof.proof.account_state_proof.siblings,
             )
         };
 
@@ -299,6 +314,12 @@ mod basic_tests {
                 proof_encoded_siblings.push(0x7c);
             });
 
+            let mut res_encoded_siblings: Vec<u8> = Vec::new();
+            res_siblings.iter().for_each(|hash| {
+                res_encoded_siblings.extend_from_slice(hash.as_ref());
+                res_encoded_siblings.push(0x7c);
+            });
+
             // Create account
             association_execute_should_success(
                 &net,
@@ -318,6 +339,10 @@ mod basic_tests {
                     proof_path_hash.to_vec(),
                     proof_value_hash.to_vec(),
                     proof_encoded_siblings,
+                    res_root_hash.to_vec(),
+                    res_path_hash.to_vec(),
+                    res_value_hash.to_vec(),
+                    res_encoded_siblings,
                     initial_balance as u64,
                 ),
             )?;
