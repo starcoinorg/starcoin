@@ -804,8 +804,6 @@ impl EventHandler<Self, CheckSyncEvent> for SyncService {
 
 impl EventHandler<Self, SystemStarted> for SyncService {
     fn handle_event(&mut self, _msg: SystemStarted, ctx: &mut ServiceContext<Self>) {
-        // change from prepare to Synchronized
-        self.sync_status.sync_done();
         ctx.notify(CheckSyncEvent::default());
         ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
     }
