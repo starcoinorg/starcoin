@@ -19,7 +19,6 @@ module starcoin_framework::object {
     use std::error;
     use std::hash;
     use std::signer;
-    use std::string;
     use std::vector;
 
     use starcoin_framework::account;

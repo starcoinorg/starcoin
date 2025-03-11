@@ -161,7 +161,7 @@ module starcoin_framework::starcoin_coin {
 
     #[test_only]
     public fun mint_stc_fa_for_test(amount: u64): FungibleAsset acquires MintCapStore {
-        ensure_initialized_with_apt_fa_metadata_for_test();
+        ensure_initialized_with_stc_fa_metadata_for_test();
         coin::coin_to_fungible_asset(
             coin::mint(
                 amount,
