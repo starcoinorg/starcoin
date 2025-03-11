@@ -287,13 +287,15 @@ impl OpenedBlock {
             // update stdlib version to 12 directly
             let version_path = on_chain_config::access_path_for_config(
                 genesis_address(),
-                Identifier::new("Version").unwrap(),
-                Identifier::new("Version").unwrap(),
+                Identifier::new("Version")?,
+                Identifier::new("Version")?,
                 vec![],
             );
             let version = on_chain_config::Version { major: 12 };
             self.state
                 .set(&version_path, bcs_ext::to_bytes(&version)?)?;
+
+            assert_eq!(gas_used, 0);
         }
         let txn_state_root = self
             .state
@@ -304,7 +306,7 @@ impl OpenedBlock {
             txn_hash,
             txn_state_root,
             events.as_slice(),
-            if is_extra_txn { 0 } else { gas_used },
+            gas_used,
             status,
         );
         let accumulator_root = self.txn_accumulator.append(&[txn_info.id()])?;
@@ -393,7 +395,7 @@ impl OpenedBlock {
             }
             TransactionStatus::Keep(_) => {
                 // Do not add extra_txn to included_user_txns
-                // treat it like BlockMeta txn
+                // treat it like Genesis txn
                 let _ = self.push_txn_and_state_opt(extra_txn_hash, output, true)?;
             }
             TransactionStatus::Retry => {
