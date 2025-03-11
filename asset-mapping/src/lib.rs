@@ -240,7 +240,7 @@ mod basic_tests {
     }
 
     #[test]
-    fn test_asset_mapping_whole_process() -> Result<()> {
+    fn  s() -> Result<()> {
         starcoin_logger::init_for_test();
 
         // let _block_gas_limit: u64 = 10000000;
