@@ -62,6 +62,7 @@ pub struct MinerResponse {
     pub next_difficulty: U256,
     pub now_milliseconds: u64,
     pub pruning_point: HashValue,
+    pub red_blocks_hash: Vec<HashValue>,
 }
 
 impl ServiceRequest for MinerRequest {

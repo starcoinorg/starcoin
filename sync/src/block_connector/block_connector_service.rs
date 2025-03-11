@@ -426,6 +426,7 @@ where
         let MineNewDagBlockInfo {
             tips,
             blue_blocks,
+            red_blocks,
             pruning_point,
         } = if main_header.number() >= self.chain_service.get_main().get_pruning_height() {
             let (previous_ghostdata, pruning_point) = if main_header.pruning_point()
@@ -466,6 +467,7 @@ where
             MineNewDagBlockInfo {
                 tips: tips.clone(),
                 blue_blocks: ghostdata.mergeset_blues.as_ref().clone(),
+                red_blocks: ghostdata.mergeset_reds.as_ref().clone(),
                 pruning_point: HashValue::zero(),
             }
         };
@@ -502,6 +504,7 @@ where
             next_difficulty,
             now_milliseconds,
             pruning_point,
+            red_blocks_hash: red_blocks,
         }))
     }
 }
