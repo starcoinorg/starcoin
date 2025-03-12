@@ -30,7 +30,7 @@ module starcoin_framework::object {
     use starcoin_std::from_bcs;
 
     #[test_only]
-    use std::debug;
+    use starcoin_std::debug;
     #[test_only]
     use std::option::{Self, Option};
 
@@ -258,11 +258,9 @@ module starcoin_framework::object {
     /// Create a new named object and return the ConstructorRef. Named objects can be queried globally
     /// by knowing the user generated seed used to create them. Named objects cannot be deleted.
     public fun create_named_object(creator: &signer, seed: vector<u8>): ConstructorRef {
-        // debug::print(&string::utf8(b"object::create_named_object | entered"));
         let creator_address = signer::address_of(creator);
         let obj_addr = create_object_address(&creator_address, seed);
         let ret = create_object_internal(creator_address, obj_addr, false);
-        // debug::print(&string::utf8(b"object::create_named_object | exited"));
         ret
     }
 
@@ -332,7 +330,7 @@ module starcoin_framework::object {
         object: address,
         can_delete: bool,
     ): ConstructorRef {
-        // debug::print(&string::utf8(b"object::create_object_internal | entered"));
+        //debug::print(&string::utf8(b"object::create_object_internal | entered"));
 
         assert!(!exists<ObjectCore>(object), error::already_exists(EOBJECT_EXISTS));
 
