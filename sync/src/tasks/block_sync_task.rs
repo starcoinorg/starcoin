@@ -342,7 +342,7 @@ where
                     }
                     Err(_) => {
                         info!("Waiting for last block to be processed");
-                        async_std::task::block_on(async_std::task::sleep(Duration::from_secs(10)));
+                        //async_std::task::block_on(async_std::task::sleep(Duration::from_secs(10)));
                     }
                 }
             }
