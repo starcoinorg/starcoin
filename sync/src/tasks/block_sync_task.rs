@@ -330,22 +330,6 @@ where
             );
         }
 
-        // finally, if it is the last one, wait for the last block to be processed.
-        // if block_connect_event.feedback.is_some() && receiver.is_some() {
-        //     let mut count: i32 = 0;
-        //     while count < 3 {
-        //         count = count.saturating_add(1);
-        //         match receiver.as_mut().unwrap().try_next() {
-        //             Ok(_) => {
-        //                 break;
-        //             }
-        //             Err(_) => {
-        //                 info!("Waiting for last block to be processed");
-        //                 async_std::task::block_on(async_std::task::sleep(Duration::from_secs(10)));
-        //             }
-        //         }
-        //     }
-        // }
         Ok(state)
     }
 
