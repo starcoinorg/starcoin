@@ -69,6 +69,7 @@ pub struct SyncService {
     config: Arc<NodeConfig>,
     storage: Arc<Storage>,
     sync_dag_store: Arc<SyncDagStore>,
+    dag: BlockDAG,
     metrics: Option<SyncMetrics>,
     peer_score_metrics: Option<PeerScoreMetrics>,
     vm_metrics: Option<VMMetrics>,
@@ -78,6 +79,7 @@ impl SyncService {
     pub fn new(
         config: Arc<NodeConfig>,
         storage: Arc<Storage>,
+        dag: BlockDAG,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         let startup_info = storage
@@ -112,6 +114,7 @@ impl SyncService {
             config,
             storage,
             sync_dag_store,
+            dag,
             metrics,
             peer_score_metrics,
             vm_metrics,
@@ -463,11 +466,14 @@ impl SyncService {
         let dag = ctx.get_shared::<BlockDAG>()?;
         let sync_dag_store = self.sync_dag_store.clone();
         let range_locate = config.sync.range_locate();
+        let sync_status = self.sync_status.clone();
         let fut = async move {
             let startup_info = storage
                 .get_startup_info()?
                 .ok_or_else(|| format_err!("Startup info should exist."))?;
-            let current_block_id = startup_info.main;
+            let current_block_id = dag.ghost_dag_manager().find_selected_parent(
+                [startup_info.main, sync_status.chain_status().head().id()].into_iter(),
+            )?;
             let current_block_info =
                 storage.get_block_info(current_block_id)?.ok_or_else(|| {
                     format_err!("Can not find block info by id: {}", current_block_id)
@@ -532,12 +538,14 @@ impl SyncService {
 
         ctx.spawn(fut.then(
             |result: Result<Option<BlockChain>, anyhow::Error>| async move {
+                let mut chain_status = None;
                 let cancel = match result {
                     Ok(Some(chain)) => {
                         info!("[sync] Sync to latest block: {:?}", chain.current_header());
                         if let Some(sync_task_total) = sync_task_total.as_ref() {
                             sync_task_total.with_label_values(&["done"]).inc();
                         }
+                        chain_status = Some(chain.status());
                         false
                     }
                     Ok(None) => {
@@ -601,7 +609,7 @@ impl SyncService {
                         }
                     }
                 };
-                if let Err(e) = self_ref.notify(SyncDoneEvent{ cancel }) {
+                if let Err(e) = self_ref.notify(SyncDoneEvent{ cancel, chain_status, }) {
                     error!("[sync] Broadcast SyncDone event error: {:?}", e);
                 }
             },
@@ -625,14 +633,34 @@ impl SyncService {
             }
         }
     }
+
+    fn update_sync_status(&mut self, chain_status: Option<ChainStatus>) -> Result<()> {
+        let pre_chain_status = self.sync_status.chain_status();
+        let new_chain_status = if let Some(status) = chain_status {
+            status
+        } else {
+            return Ok(());
+        };
+
+        let selected_header = self.dag.ghost_dag_manager().find_selected_parent(
+            [pre_chain_status.head().id(), new_chain_status.head().id()].into_iter(),
+        )?;
+        if selected_header == pre_chain_status.head().id() {
+            return Ok(());
+        }
+        self.sync_status.update_chain_status(new_chain_status);
+
+        Ok(())
+    }
 }
 
 impl ServiceFactory<Self> for SyncService {
     fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
+        let dag = ctx.get_shared::<BlockDAG>()?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
-        Self::new(config, storage, vm_metrics)
+        Self::new(config, storage, dag, vm_metrics)
     }
 }
 
@@ -813,10 +841,11 @@ impl EventHandler<Self, SystemStarted> for SyncService {
 pub struct SyncDoneEvent {
     #[allow(unused)]
     cancel: bool,
+    chain_status: Option<ChainStatus>,
 }
 
 impl EventHandler<Self, SyncDoneEvent> for SyncService {
-    fn handle_event(&mut self, _msg: SyncDoneEvent, ctx: &mut ServiceContext<Self>) {
+    fn handle_event(&mut self, msg: SyncDoneEvent, ctx: &mut ServiceContext<Self>) {
         match std::mem::replace(&mut self.stage, SyncStage::Done) {
             SyncStage::NotStart | SyncStage::Done => {
                 warn!(
@@ -830,6 +859,14 @@ impl EventHandler<Self, SyncDoneEvent> for SyncService {
                         "[sync] Current SyncStatus is invalid, receive sync done event ,but sync task not done.",
                     )
                 }
+
+                self.update_sync_status(msg.chain_status.clone())
+                    .unwrap_or_else(|_| {
+                        panic!(
+                            "update sync status failed, status header id:{:?}",
+                            msg.chain_status
+                        )
+                    });
                 self.sync_status.sync_done();
                 ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
                 // check sync again
