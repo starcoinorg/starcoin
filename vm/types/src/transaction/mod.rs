@@ -400,6 +400,50 @@ pub struct RawUserTransactionWithType {
     type_id: u8,
 }
 
+impl RawUserTransactionWithType {
+    pub fn from_hex<T: AsRef<[u8]>>(hex: T) -> Result<Self> {
+        Self::from_bytes(hex::decode(hex)?)
+    }
+
+    pub fn from_bytes<T: AsRef<[u8]>>(bytes: T) -> Result<Self> {
+        bcs_ext::from_bytes(bytes.as_ref())
+    }
+
+    pub fn to_hex(&self) -> String {
+        format!(
+            "0x{}",
+            hex::encode(
+                bcs_ext::to_bytes(&self).expect("Serialize RawUserTransaction should success.")
+            )
+        )
+    }
+}
+
+impl FromStr for RawUserTransactionWithType {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.strip_prefix("0x").unwrap_or(s);
+        Self::from_hex(s)
+    }
+}
+
+impl TryFrom<&[u8]> for RawUserTransactionWithType {
+    type Error = anyhow::Error;
+
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        Self::from_bytes(bytes)
+    }
+}
+
+impl TryFrom<Vec<u8>> for RawUserTransactionWithType {
+    type Error = anyhow::Error;
+
+    fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
+        Self::from_bytes(bytes)
+    }
+}
+
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub enum TransactionPayload {
     /// A transaction that executes code.
@@ -652,16 +696,19 @@ pub struct SignedUserTransactionWithType {
 
 impl SignedUserTransactionWithType {
     pub fn new(
-        raw_txn: RawUserTransactionWithType,
+        raw_txn_type: RawUserTransactionWithType,
         authenticator: TransactionAuthenticator,
     ) -> SignedUserTransactionWithType {
         let mut txn = Self {
             id: None,
-            raw_txn,
+            raw_txn: raw_txn_type,
             authenticator,
         };
         txn.id = Some(txn.crypto_hash());
         txn
+    }
+    pub fn sender(&self) -> AccountAddress {
+        self.raw_txn.sender
     }
 
     pub fn id(&self) -> HashValue {
@@ -675,7 +722,7 @@ impl fmt::Debug for SignedUserTransactionWithType {
         write!(
             f,
             "SignedUserTransactionWithType {{ \n \
-             {{ raw_txn: {:#?}, \n \
+             {{ raw_txn_type: {:#?}, \n \
              authenticator: {:#?}, \n \
              }} \n \
              }}",
@@ -690,7 +737,7 @@ impl<'de> Deserialize<'de> for SignedUserTransactionWithType {
         D: Deserializer<'de>,
     {
         #[derive(Deserialize)]
-        #[serde(rename = "SignedUserTransaction")]
+        #[serde(rename = "SignedUserTransactionWithType")]
         struct SignedUserTransactionWithTypeData {
             raw_txn: RawUserTransactionWithType,
             authenticator: TransactionAuthenticator,
