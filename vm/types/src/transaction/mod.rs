@@ -370,6 +370,36 @@ impl Sample for RawUserTransaction {
     }
 }
 
+#[derive(
+    Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash, JsonSchema,
+)]
+pub struct RawUserTransactionWithType {
+    /// Sender's address.
+    #[schemars(with = "String")]
+    sender: AccountAddress,
+    // Sequence number of this transaction corresponding to sender's account.
+    sequence_number: u64,
+    // The transaction script to execute.
+    payload: TransactionPayload,
+
+    // Maximal total gas specified by wallet to spend for this transaction.
+    max_gas_amount: u64,
+    // Maximal price can be paid per gas.
+    gas_unit_price: u64,
+    // The token code for pay transaction gas, Default is STC token code.
+    gas_token_code: String,
+    // Expiration timestamp for this transaction. timestamp is represented
+    // as u64 in seconds from Unix Epoch. If storage is queried and
+    // the time returned is greater than or equal to this time and this
+    // transaction has not been included, you can be certain that it will
+    // never be included.
+    // A transaction that doesn't expire is represented by a very large value like
+    // u64::max_value().
+    expiration_timestamp_secs: u64,
+    chain_id: ChainId,
+    type_id: u8,
+}
+
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub enum TransactionPayload {
     /// A transaction that executes code.
@@ -605,6 +635,68 @@ impl Sample for SignedUserTransaction {
         let (private_key, public_key) = genesis_key_pair();
         let signature = private_key.sign(&raw_txn);
         Self::ed25519(raw_txn, public_key, signature)
+    }
+}
+#[derive(Clone, Eq, PartialEq, Hash, Serialize, CryptoHasher, CryptoHash, JsonSchema)]
+pub struct SignedUserTransactionWithType {
+    #[serde(skip)]
+    #[schemars(skip)]
+    id: Option<HashValue>,
+
+    /// The raw transaction
+    raw_txn: RawUserTransactionWithType,
+
+    /// Public key and signature to authenticate
+    authenticator: TransactionAuthenticator,
+}
+
+impl SignedUserTransactionWithType {
+    pub fn new(
+        raw_txn: RawUserTransactionWithType,
+        authenticator: TransactionAuthenticator,
+    ) -> SignedUserTransactionWithType {
+        let mut txn = Self {
+            id: None,
+            raw_txn,
+            authenticator,
+        };
+        txn.id = Some(txn.crypto_hash());
+        txn
+    }
+
+    pub fn id(&self) -> HashValue {
+        self.id
+            .expect("SignedUserTransactionWithType's id should be Some after init.")
+    }
+}
+
+impl fmt::Debug for SignedUserTransactionWithType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "SignedUserTransactionWithType {{ \n \
+             {{ raw_txn: {:#?}, \n \
+             authenticator: {:#?}, \n \
+             }} \n \
+             }}",
+            self.raw_txn, self.authenticator
+        )
+    }
+}
+
+impl<'de> Deserialize<'de> for SignedUserTransactionWithType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(rename = "SignedUserTransaction")]
+        struct SignedUserTransactionWithTypeData {
+            raw_txn: RawUserTransactionWithType,
+            authenticator: TransactionAuthenticator,
+        }
+        let data = SignedUserTransactionWithTypeData::deserialize(deserializer)?;
+        Ok(Self::new(data.raw_txn, data.authenticator))
     }
 }
 
@@ -882,6 +974,10 @@ pub enum Transaction {
     UserTransaction(SignedUserTransaction),
     /// Transaction to update the block metadata resource at the beginning of a block.
     BlockMetadata(BlockMetadata),
+
+    /// Transaction submitted by the user. e.g: P2P payment transaction, publishing module
+    /// transaction, etc.
+    UserTransactionExt(SignedUserTransactionWithType),
 }
 
 impl Transaction {
@@ -896,6 +992,7 @@ impl Transaction {
         match self {
             Transaction::UserTransaction(signed) => signed.id(),
             Transaction::BlockMetadata(block_metadata) => block_metadata.id(),
+            Transaction::UserTransactionExt(signed_with_type) => signed_with_type.id(),
         }
     }
 }
