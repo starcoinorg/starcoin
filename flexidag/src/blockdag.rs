@@ -780,7 +780,7 @@ impl BlockDAG {
         anyhow::Ok(MineNewDagBlockInfo {
             tips,
             blue_blocks: ghostdata.mergeset_blues.as_ref().clone(),
-            red_blocks: ghostdata.mergeset_blues.as_ref().clone(),
+            red_blocks: ghostdata.mergeset_reds.as_ref().clone(),
             pruning_point,
         })
     }
