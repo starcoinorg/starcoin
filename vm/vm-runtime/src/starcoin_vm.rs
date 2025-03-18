@@ -56,7 +56,9 @@ use starcoin_vm_types::on_chain_config::{
 };
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::StateReaderExt;
-use starcoin_vm_types::transaction::{DryRunTransaction, Package, TransactionPayloadType};
+use starcoin_vm_types::transaction::{
+    DryRunTransaction, Package, SignedUserTransactionWithType, TransactionPayloadType,
+};
 use starcoin_vm_types::transaction_metadata::TransactionPayloadMetadata;
 use starcoin_vm_types::value::{serialize_values, MoveValue};
 use starcoin_vm_types::vm_status::KeptVMStatus;
@@ -1203,6 +1205,7 @@ impl StarcoinVM {
                     }
                     result.push((status, output));
                 }
+                TransactionBlock::UserTransactionExt(_) => todo!(),
             }
         }
         Ok(result)
@@ -1413,6 +1416,7 @@ impl StarcoinVM {
 pub enum TransactionBlock {
     UserTransaction(Vec<SignedUserTransaction>),
     BlockPrologue(BlockMetadata),
+    UserTransactionExt(Vec<SignedUserTransactionWithType>),
 }
 
 impl TransactionBlock {
@@ -1420,6 +1424,7 @@ impl TransactionBlock {
         match self {
             TransactionBlock::UserTransaction(_) => "UserTransaction",
             TransactionBlock::BlockPrologue(_) => "BlockMetadata",
+            TransactionBlock::UserTransactionExt(_) => "UserTransactionExt",
         }
     }
 }
@@ -1428,6 +1433,7 @@ impl TransactionBlock {
 pub fn chunk_block_transactions(txns: Vec<Transaction>) -> Vec<TransactionBlock> {
     let mut blocks = vec![];
     let mut buf = vec![];
+    let mut buf1 = vec![];
     for txn in txns {
         match txn {
             Transaction::BlockMetadata(data) => {
@@ -1435,15 +1441,25 @@ pub fn chunk_block_transactions(txns: Vec<Transaction>) -> Vec<TransactionBlock>
                     blocks.push(TransactionBlock::UserTransaction(buf));
                     buf = vec![];
                 }
+                if !buf1.is_empty() {
+                    blocks.push(TransactionBlock::UserTransactionExt(buf1));
+                    buf1 = vec![];
+                }
                 blocks.push(TransactionBlock::BlockPrologue(data));
             }
             Transaction::UserTransaction(txn) => {
                 buf.push(txn);
             }
+            Transaction::UserTransactionExt(txn) => {
+                buf1.push(txn);
+            }
         }
     }
     if !buf.is_empty() {
         blocks.push(TransactionBlock::UserTransaction(buf));
+    }
+    if !buf1.is_empty() {
+        blocks.push(TransactionBlock::UserTransactionExt(buf1));
     }
     blocks
 }
@@ -1609,8 +1625,6 @@ impl VMAdapter for StarcoinVM {
             PreprocessedTransaction::UserTransaction(txn) => {
                 let sender = txn.sender().to_string();
                 let (vm_status, output) = self.execute_user_transaction(data_cache, *txn.clone());
-                // XXX FIXME YSG
-                // let gas_unit_price = transaction.gas_unit_price(); think about gas_used OutOfGas
                 (vm_status, output, Some(sender))
             }
             PreprocessedTransaction::BlockMetadata(block_meta) => {
@@ -1621,6 +1635,7 @@ impl VMAdapter for StarcoinVM {
                     };
                 (vm_status, output, Some("block_meta".to_string()))
             }
+            PreprocessedTransaction::UserTransactionExt(_) => todo!(),
         })
     }
 }

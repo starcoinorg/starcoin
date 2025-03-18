@@ -112,6 +112,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
         let account_address = match &txn {
             Transaction::UserTransaction(user_txn) => user_txn.sender(),
             Transaction::BlockMetadata(metadata_txn) => metadata_txn.author(),
+            Transaction::UserTransactionExt(user_txn_ext) => user_txn_ext.sender(),
         };
         let access_path: Option<AccessPath> = Some(AccessPath::resource_access_path(
             account_address,
