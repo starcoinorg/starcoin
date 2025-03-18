@@ -756,6 +756,7 @@ impl TransactionView {
         let (meta, txn) = match txn {
             Transaction::BlockMetadata(meta) => (Some(meta.into()), None),
             Transaction::UserTransaction(t) => (None, Some(t.try_into()?)),
+            Transaction::UserTransactionExt(_) => todo!(),
         };
         Ok(Self {
             block_hash,

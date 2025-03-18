@@ -39,7 +39,7 @@ use starcoin_types::{
 };
 use starcoin_vm_runtime_types::storage::change_set_configs::ChangeSetConfigs;
 use starcoin_vm_types::on_chain_config::{Features, TimedFeaturesBuilder};
-use starcoin_vm_types::transaction::TransactionAuxiliaryData;
+use starcoin_vm_types::transaction::{SignedUserTransactionWithType, TransactionAuxiliaryData};
 use starcoin_vm_types::{
     access::{ModuleAccess, ScriptAccess},
     account_address::AccountAddress,
@@ -1252,6 +1252,7 @@ impl StarcoinVM {
                     }
                     result.push((status, output));
                 }
+                TransactionBlock::UserTransactionExt(_) => todo!(),
             }
         }
         Ok(result)
@@ -1450,6 +1451,7 @@ impl StarcoinVM {
             Some(match txns.first().unwrap() {
                 Transaction::UserTransaction(txn) => txn.chain_id().id(),
                 Transaction::BlockMetadata(meta) => meta.chain_id().id(),
+                Transaction::UserTransactionExt(txn_ext) => txn_ext.chain_id().id(),
             })
         } else {
             None
@@ -1471,6 +1473,7 @@ impl StarcoinVM {
 pub enum TransactionBlock {
     UserTransaction(Vec<SignedUserTransaction>),
     BlockPrologue(BlockMetadata),
+    UserTransactionExt(Vec<SignedUserTransactionWithType>),
 }
 
 impl TransactionBlock {
@@ -1478,6 +1481,7 @@ impl TransactionBlock {
         match self {
             Self::UserTransaction(_) => "UserTransaction",
             Self::BlockPrologue(_) => "BlockMetadata",
+            Self::UserTransactionExt(_) => "UserTransactionExt",
         }
     }
 }
@@ -1486,6 +1490,7 @@ impl TransactionBlock {
 pub fn chunk_block_transactions(txns: Vec<Transaction>) -> Vec<TransactionBlock> {
     let mut blocks = vec![];
     let mut buf = vec![];
+    let mut buf1 = vec![];
     for txn in txns {
         match txn {
             Transaction::BlockMetadata(data) => {
@@ -1493,15 +1498,25 @@ pub fn chunk_block_transactions(txns: Vec<Transaction>) -> Vec<TransactionBlock>
                     blocks.push(TransactionBlock::UserTransaction(buf));
                     buf = vec![];
                 }
+                if !buf1.is_empty() {
+                    blocks.push(TransactionBlock::UserTransactionExt(buf1));
+                    buf1 = vec![];
+                }
                 blocks.push(TransactionBlock::BlockPrologue(data));
             }
             Transaction::UserTransaction(txn) => {
                 buf.push(txn);
             }
+            Transaction::UserTransactionExt(txn) => {
+                buf1.push(txn);
+            }
         }
     }
     if !buf.is_empty() {
         blocks.push(TransactionBlock::UserTransaction(buf));
+    }
+    if !buf1.is_empty() {
+        blocks.push(TransactionBlock::UserTransactionExt(buf1));
     }
     blocks
 }
@@ -1666,6 +1681,7 @@ impl StarcoinVM {
                     };
                 (vm_status, output, Some("block_meta".to_string()))
             }
+            PreprocessedTransaction::UserTransactionExt(_) => todo!(),
         })
     }
 }

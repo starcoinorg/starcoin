@@ -164,6 +164,20 @@ RawUserTransaction:
     - expiration_timestamp_secs: U64
     - chain_id:
         TYPENAME: ChainId
+RawUserTransactionWithType:
+  STRUCT:
+    - sender:
+        TYPENAME: AccountAddress
+    - sequence_number: U64
+    - payload:
+        TYPENAME: TransactionPayload
+    - max_gas_amount: U64
+    - gas_unit_price: U64
+    - gas_token_code: STR
+    - expiration_timestamp_secs: U64
+    - chain_id:
+        TYPENAME: ChainId
+    - type_id: U8
 Script:
   STRUCT:
     - code: BYTES
@@ -208,6 +222,12 @@ SignedUserTransaction:
   STRUCT:
     - raw_txn:
         TYPENAME: RawUserTransaction
+    - authenticator:
+        TYPENAME: TransactionAuthenticator
+SignedUserTransactionWithType:
+  STRUCT:
+    - raw_txn:
+        TYPENAME: RawUserTransactionWithType
     - authenticator:
         TYPENAME: TransactionAuthenticator
 SigningMessage:
@@ -265,6 +285,10 @@ Transaction:
       BlockMetadata:
         NEWTYPE:
           TYPENAME: BlockMetadata
+    2:
+      UserTransactionExt:
+        NEWTYPE:
+          TYPENAME: SignedUserTransactionWithType
 TransactionArgument:
   ENUM:
     0:

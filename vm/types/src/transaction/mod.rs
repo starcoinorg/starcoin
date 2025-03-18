@@ -378,6 +378,80 @@ impl Sample for RawUserTransaction {
     }
 }
 
+#[derive(
+    Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash, JsonSchema,
+)]
+pub struct RawUserTransactionWithType {
+    /// Sender's address.
+    #[schemars(with = "String")]
+    sender: AccountAddress,
+    // Sequence number of this transaction corresponding to sender's account.
+    sequence_number: u64,
+    // The transaction script to execute.
+    payload: TransactionPayload,
+
+    // Maximal total gas specified by wallet to spend for this transaction.
+    max_gas_amount: u64,
+    // Maximal price can be paid per gas.
+    gas_unit_price: u64,
+    // The token code for pay transaction gas, Default is STC token code.
+    gas_token_code: String,
+    // Expiration timestamp for this transaction. timestamp is represented
+    // as u64 in seconds from Unix Epoch. If storage is queried and
+    // the time returned is greater than or equal to this time and this
+    // transaction has not been included, you can be certain that it will
+    // never be included.
+    // A transaction that doesn't expire is represented by a very large value like
+    // u64::max_value().
+    expiration_timestamp_secs: u64,
+    chain_id: ChainId,
+    type_id: u8,
+}
+
+impl RawUserTransactionWithType {
+    pub fn from_hex<T: AsRef<[u8]>>(hex: T) -> Result<Self> {
+        Self::from_bytes(hex::decode(hex)?)
+    }
+
+    pub fn from_bytes<T: AsRef<[u8]>>(bytes: T) -> Result<Self> {
+        bcs_ext::from_bytes(bytes.as_ref())
+    }
+
+    pub fn to_hex(&self) -> String {
+        format!(
+            "0x{}",
+            hex::encode(
+                bcs_ext::to_bytes(&self).expect("Serialize RawUserTransaction should success.")
+            )
+        )
+    }
+}
+
+impl FromStr for RawUserTransactionWithType {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.strip_prefix("0x").unwrap_or(s);
+        Self::from_hex(s)
+    }
+}
+
+impl TryFrom<&[u8]> for RawUserTransactionWithType {
+    type Error = anyhow::Error;
+
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        Self::from_bytes(bytes)
+    }
+}
+
+impl TryFrom<Vec<u8>> for RawUserTransactionWithType {
+    type Error = anyhow::Error;
+
+    fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
+        Self::from_bytes(bytes)
+    }
+}
+
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub enum TransactionPayload {
     /// A transaction that executes code.
@@ -612,6 +686,76 @@ impl Sample for SignedUserTransaction {
         // It's ok to unwrap for a sample.
         let signature = private_key.sign(&raw_txn).unwrap();
         Self::ed25519(raw_txn, public_key, signature)
+    }
+}
+
+#[derive(Clone, Eq, PartialEq, Hash, Serialize, CryptoHasher, CryptoHash, JsonSchema)]
+pub struct SignedUserTransactionWithType {
+    #[serde(skip)]
+    #[schemars(skip)]
+    id: Option<HashValue>,
+
+    /// The raw transaction
+    raw_txn: RawUserTransactionWithType,
+
+    /// Public key and signature to authenticate
+    authenticator: TransactionAuthenticator,
+}
+
+impl SignedUserTransactionWithType {
+    pub fn new(
+        raw_txn_type: RawUserTransactionWithType,
+        authenticator: TransactionAuthenticator,
+    ) -> SignedUserTransactionWithType {
+        let mut txn = Self {
+            id: None,
+            raw_txn: raw_txn_type,
+            authenticator,
+        };
+        txn.id = Some(txn.crypto_hash());
+        txn
+    }
+
+    pub fn chain_id(&self) -> ChainId {
+        self.raw_txn.chain_id
+    }
+    pub fn sender(&self) -> AccountAddress {
+        self.raw_txn.sender
+    }
+
+    pub fn id(&self) -> HashValue {
+        self.id
+            .expect("SignedUserTransactionWithType's id should be Some after init.")
+    }
+}
+
+impl fmt::Debug for SignedUserTransactionWithType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "SignedUserTransactionWithType {{ \n \
+             {{ raw_txn_type: {:#?}, \n \
+             authenticator: {:#?}, \n \
+             }} \n \
+             }}",
+            self.raw_txn, self.authenticator
+        )
+    }
+}
+
+impl<'de> Deserialize<'de> for SignedUserTransactionWithType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(rename = "SignedUserTransactionWithType")]
+        struct SignedUserTransactionWithTypeData {
+            raw_txn: RawUserTransactionWithType,
+            authenticator: TransactionAuthenticator,
+        }
+        let data = SignedUserTransactionWithTypeData::deserialize(deserializer)?;
+        Ok(Self::new(data.raw_txn, data.authenticator))
     }
 }
 
@@ -981,6 +1125,8 @@ pub enum Transaction {
     UserTransaction(SignedUserTransaction),
     /// Transaction to update the block metadata resource at the beginning of a block.
     BlockMetadata(BlockMetadata),
+    /// UserTransactionExt
+    UserTransactionExt(SignedUserTransactionWithType),
 }
 
 #[allow(clippy::large_enum_variant)]
@@ -1021,6 +1167,7 @@ impl Transaction {
         match self {
             Self::UserTransaction(signed) => signed.id(),
             Self::BlockMetadata(block_metadata) => block_metadata.id(),
+            Self::UserTransactionExt(txn) => txn.id(),
         }
     }
 }

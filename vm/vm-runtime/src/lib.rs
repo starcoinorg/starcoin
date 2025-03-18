@@ -26,7 +26,8 @@ use crate::metrics::VMMetrics;
 use starcoin_vm_types::block_metadata::BlockMetadata;
 use starcoin_vm_types::on_chain_config::GasSchedule;
 use starcoin_vm_types::transaction::{
-    SignedUserTransaction, TransactionAuxiliaryData, TransactionStatus,
+    SignedUserTransaction, SignedUserTransactionWithType, TransactionAuxiliaryData,
+    TransactionStatus,
 };
 use starcoin_vm_types::write_set::WriteSet;
 use starcoin_vm_types::{
@@ -54,6 +55,7 @@ pub trait VMExecutor: Send + Sync {
 pub enum PreprocessedTransaction {
     UserTransaction(Box<SignedUserTransaction>),
     BlockMetadata(BlockMetadata),
+    UserTransactionExt(Box<SignedUserTransactionWithType>),
 }
 
 #[inline]
@@ -62,6 +64,9 @@ pub fn preprocess_transaction(txn: Transaction) -> PreprocessedTransaction {
         Transaction::BlockMetadata(b) => PreprocessedTransaction::BlockMetadata(b),
         Transaction::UserTransaction(txn) => {
             PreprocessedTransaction::UserTransaction(Box::new(txn))
+        }
+        Transaction::UserTransactionExt(txn) => {
+            PreprocessedTransaction::UserTransactionExt(Box::new(txn))
         }
     }
 }
