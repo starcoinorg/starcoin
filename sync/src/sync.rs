@@ -832,6 +832,7 @@ impl EventHandler<Self, CheckSyncEvent> for SyncService {
 
 impl EventHandler<Self, SystemStarted> for SyncService {
     fn handle_event(&mut self, _msg: SystemStarted, ctx: &mut ServiceContext<Self>) {
+        // self.sync_status.sync_done();
         ctx.notify(CheckSyncEvent::default());
         ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
     }
@@ -852,7 +853,12 @@ impl EventHandler<Self, SyncDoneEvent> for SyncService {
                     "[sync] Unexpect sync stage, current is NotStart|Done, but got SyncDoneEvent"
                 );
             }
-            SyncStage::Checking => debug!("[sync] Sync task is Done in checking stage."),
+            SyncStage::Checking => {
+                debug!("[sync] Sync task is Done in checking stage.");
+                self.sync_status.sync_done();
+                ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
+                ctx.notify(CheckSyncEvent::default());
+            }
             SyncStage::Synchronizing(task_handle) => {
                 if !task_handle.task_handle.is_done() {
                     warn!(
