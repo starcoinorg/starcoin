@@ -35,6 +35,7 @@ pub trait VMExecutor: Send + Sync {
     fn execute_block(
         transactions: Vec<Transaction>,
         state_view: &impl StateView,
+        state_view1: &impl StateView,
         block_gas_limit: Option<u64>,
         metrics: Option<VMMetrics>,
     ) -> Result<Vec<TransactionOutput>, VMStatus>;

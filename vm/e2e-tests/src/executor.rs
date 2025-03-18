@@ -391,8 +391,13 @@ impl FakeExecutor {
             }
         }
 
-        let output =
-            StarcoinVM::execute_block(txn_block.clone(), &self.get_state_view(), None, None);
+        let output = StarcoinVM::execute_block(
+            txn_block.clone(),
+            &self.get_state_view(),
+            &self.get_state_view(),
+            None,
+            None,
+        );
         let parallel_output = self.execute_transaction_block_parallel(txn_block);
         assert_eq!(output, parallel_output);
 
