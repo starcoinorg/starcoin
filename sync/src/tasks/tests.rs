@@ -973,15 +973,9 @@ fn sync_block_in_async_connection(
                 match result {
                     Some(event) => {
                         chain
-                            .select_head(event.block)
+                            .select_head(event.block.clone())
                             .expect("select head must be successful");
-                        if event.feedback.is_some() {
-                            event
-                                .feedback
-                                .unwrap()
-                                .unbounded_send(super::BlockConnectedFinishEvent)
-                                .unwrap();
-                            assert_eq!(target_id, chain.head().status().head.id());
+                        if target_id == chain.head().status().head.id() {
                             break;
                         }
                     }
