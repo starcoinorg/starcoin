@@ -538,7 +538,7 @@ impl SyncService {
 
         ctx.spawn(fut.then(
             |result: Result<Option<BlockChain>, anyhow::Error>| async move {
-                let mut chain_status = None;
+                let mut chain_status: Option<ChainStatus> = None;
                 let cancel = match result {
                     Ok(Some(chain)) => {
                         info!("[sync] Sync to latest block: {:?}", chain.current_header());
@@ -849,9 +849,7 @@ impl EventHandler<Self, SyncDoneEvent> for SyncService {
     fn handle_event(&mut self, msg: SyncDoneEvent, ctx: &mut ServiceContext<Self>) {
         match std::mem::replace(&mut self.stage, SyncStage::Done) {
             SyncStage::NotStart | SyncStage::Done => {
-                warn!(
-                    "[sync] Unexpect sync stage, current is NotStart|Done, but got SyncDoneEvent"
-                );
+                warn!("[sync] Unexpect sync stage, current is NotStart|Done, but got SyncDoneEvent")
             }
             SyncStage::Checking => {
                 debug!("[sync] Sync task is Done in checking stage.");
