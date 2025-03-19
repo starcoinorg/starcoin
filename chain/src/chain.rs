@@ -314,15 +314,12 @@ impl BlockChain {
             tips,
             blue_blocks,
             pruning_point: _,
-            red_blocks: _,
         } = {
             let blue_blocks = ghostdata.mergeset_blues.clone()[1..].to_vec();
-            let red_blocks = ghostdata.mergeset_reds.as_ref().clone();
             MineNewDagBlockInfo {
                 tips,
                 blue_blocks,
                 pruning_point, // TODO: new test cases will need pass this field if they have some special requirements.
-                red_blocks,
             }
         };
 

@@ -24,7 +24,6 @@ use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::{Block, BlockHeader, BlockTemplate, Version};
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::cmp::min;
-use std::collections::HashSet;
 use std::sync::Arc;
 
 mod metrics;
@@ -190,7 +189,6 @@ where
             next_difficulty: difficulty,
             now_milliseconds: mut now_millis,
             pruning_point,
-            red_blocks_hash,
         } = *block_on(self.block_connector_service.send(MinerRequest { version }))??;
 
         let block_gas_limit = self
@@ -214,16 +212,6 @@ where
         }
 
         let blue_blocks = blues
-            .into_iter()
-            .map(|hash| self.storage.get_block_by_hash(hash))
-            .collect::<Result<Vec<Option<Block>>>>()?
-            .into_iter()
-            .map(|op_block_header| {
-                op_block_header.ok_or_else(|| format_err!("uncle block header not found."))
-            })
-            .collect::<Result<Vec<Block>>>()?;
-
-        let red_blocks = red_blocks_hash
             .into_iter()
             .map(|hash| self.storage.get_block_by_hash(hash))
             .collect::<Result<Vec<Option<Block>>>>()?
@@ -278,15 +266,6 @@ where
         for invalid_txn in excluded_txns.discarded_txns {
             self.tx_provider.remove_invalid_txn(invalid_txn.id());
         }
-
-        let red_transactions = red_blocks
-            .into_iter()
-            .flat_map(|block| block.body.transactions)
-            .collect::<HashSet<_>>()
-            .into_iter()
-            .collect::<Vec<_>>();
-
-        self.tx_provider.add_txns(red_transactions);
 
         Ok(BlockTemplateResponse {
             parent: previous_header,
