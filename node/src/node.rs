@@ -327,7 +327,7 @@ impl NodeService {
         let txpool_service = registry.register::<TxPoolActorService>().await?;
 
         //wait TxPoolService put shared..
-        Delay::new(Duration::from_millis(200)).await;
+        Delay::new(Duration::from_millis(500)).await;
         // TxPoolActorService auto put shared TxPoolService,
 
         registry.register::<ChainReaderService>().await?;
