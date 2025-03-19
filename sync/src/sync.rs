@@ -14,7 +14,7 @@ use network_api::{PeerId, PeerProvider, PeerSelector, PeerStrategy, ReputationCh
 use starcoin_chain::verifier::DagVerifier;
 use starcoin_chain::{BlockChain, ChainWriter};
 use starcoin_chain_api::{ChainReader, ExecutedBlock};
-use starcoin_config::{NodeConfig, RocksdbConfig};
+use starcoin_config::{ChainNetworkID, NodeConfig, RocksdbConfig};
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
@@ -832,6 +832,10 @@ impl EventHandler<Self, CheckSyncEvent> for SyncService {
 
 impl EventHandler<Self, SystemStarted> for SyncService {
     fn handle_event(&mut self, _msg: SystemStarted, ctx: &mut ServiceContext<Self>) {
+        match *self.config.base().net().id() {
+            ChainNetworkID::DEV | ChainNetworkID::TEST => self.sync_status.sync_done(),
+            _ => (),
+        }
         // self.sync_status.sync_done();
         ctx.notify(CheckSyncEvent::default());
         ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
