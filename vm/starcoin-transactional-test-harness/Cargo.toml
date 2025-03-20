@@ -62,7 +62,7 @@ starcoin-vm-runtime = { workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-gas-meter = { workspace = true }
 starcoin-gas-schedule = { workspace = true }
-starcoin-framework-legecy-stdlib = { workspace = true }
+starcoin-framework-legacy-stdlib = { workspace = true }
 starcoin-dag = { workspace = true }
 bytes = { workspace = true }
 starcoin-framework = { workspace = true }

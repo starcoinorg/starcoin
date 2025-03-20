@@ -41,7 +41,7 @@ starcoin-resource-viewer = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
 starcoin-types = { features = ["fuzzing"], workspace = true }
 starcoin-vm-runtime = { workspace = true }
-starcoin-framework-legecy-stdlib = { workspace = true}
+starcoin-framework-legacy-stdlib = { workspace = true}
 stest = { workspace = true }
 test-helper = { workspace = true }
 tokio = { features = ["full"], workspace = true }

@@ -58,7 +58,7 @@ starcoin-vm-runtime = { features = ["testing"], workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-gas-schedule = { workspace = true }
 starcoin-framework = { workspace = true, features = ["testing"] }
-starcoin-framework-legecy-stdlib = { workspace = true }
+starcoin-framework-legacy-stdlib = { workspace = true }
 vm-status-translator = { workspace = true }
 move-vm-test-utils = { workspace = true }
 

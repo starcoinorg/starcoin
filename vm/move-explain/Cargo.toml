@@ -2,7 +2,7 @@
 bcs-ext = { workspace = true }
 clap = { features = ["derive"], workspace = true }
 move-core-types = { workspace = true }
-starcoin-framework-legecy-stdlib = { workspace = true }
+starcoin-framework-legacy-stdlib = { workspace = true }
 
 [features]
 default = []

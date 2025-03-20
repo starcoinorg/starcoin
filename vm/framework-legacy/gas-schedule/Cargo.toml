@@ -1,5 +1,5 @@
 [package]
-name = "starcoin-framework-legecy-gas-schedule"
+name = "starcoin-framework-legacy-gas-schedule"
 authors = { workspace = true }
 description = "starcoin Move VM gas algebra ext"
 edition = { workspace = true }
@@ -17,7 +17,7 @@ move-stdlib = { workspace = true }
 move-table-extension = { workspace = true }
 move-vm-types = { workspace = true }
 move-vm-test-utils = { workspace = true }
-starcoin-framework-legecy-natives = { workspace = true }
+starcoin-framework-legacy-natives = { workspace = true }
 serde = { workspace = true }
 
 [features]

@@ -27,7 +27,7 @@ starcoin-transaction-builder = { workspace = true }
 starcoin-state-tree = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
-starcoin-framework-legecy-stdlib = { workspace = true }
+starcoin-framework-legacy-stdlib = { workspace = true }
 stest = { workspace = true }
 tempfile = { workspace = true }
 test-helper = { workspace = true }

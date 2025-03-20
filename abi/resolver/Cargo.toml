@@ -7,7 +7,7 @@ starcoin-vm-types = { workspace = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
-starcoin-framework-legecy-stdlib = { workspace = true }
+starcoin-framework-legacy-stdlib = { workspace = true }
 test-helper = { workspace = true }
 
 [package]

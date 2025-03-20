@@ -33,7 +33,7 @@ move-ir-compiler = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
 starcoin-parallel-executor = { workspace = true }
 test-helper = { workspace = true }
-starcoin-framework-legecy-stdlib = { workspace = true }
+starcoin-framework-legacy-stdlib = { workspace = true }
 starcoin-gas-meter = { workspace = true }
 move-table-extension = { workspace = true }
 starcoin-statedb = { workspace = true }

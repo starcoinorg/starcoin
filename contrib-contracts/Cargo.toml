@@ -15,7 +15,7 @@ rlp = { workspace = true }
 rlp-derive = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-starcoin-framework-legecy-stdlib = { workspace = true }
+starcoin-framework-legacy-stdlib = { workspace = true }
 stest = { workspace = true }
 starcoin-move-stdlib = { workspace = true }
 tempfile = { workspace = true }

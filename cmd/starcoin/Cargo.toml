@@ -50,7 +50,7 @@ starcoin-txpool-api = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
 starcoin-vm-types = { workspace = true }
-starcoin-framework-legecy-stdlib = { workspace = true }
+starcoin-framework-legacy-stdlib = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 vm-status-translator = { workspace = true }
 num_cpus = { workspace = true }
