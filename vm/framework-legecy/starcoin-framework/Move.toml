@@ -1,0 +1,11 @@
+[package]
+name = "StarcoinFramework"
+version = "0.1.0"
+
+[addresses]
+StarcoinFramework = "0x1"
+StarcoinAssociation = "0xA550C18"
+VMReserved = "0x0"
+
+[dev-dependencies]
+UnitTest = {local = "./unit-test"}

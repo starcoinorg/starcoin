@@ -1,0 +1,18 @@
+processed 5 tasks
+
+task 3 'run'. lines 7-18:
+{
+  "gas_used": 84990,
+  "status": {
+    "MoveAbort": {
+      "location": "Script",
+      "abort_code": "41"
+    }
+  }
+}
+
+task 4 'run'. lines 20-30:
+{
+  "gas_used": 16313,
+  "status": "Executed"
+}

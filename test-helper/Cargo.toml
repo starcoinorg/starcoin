@@ -45,7 +45,7 @@ starcoin-txpool = { workspace = true }
 starcoin-txpool-api = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
-stdlib = { workspace = true }
+starcoin-framework-legecy-stdlib = { workspace = true }
 thiserror = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 move-ir-compiler = { workspace = true }

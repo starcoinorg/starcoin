@@ -1981,11 +1981,11 @@ dependencies = [
  "serde_json",
  "starcoin-crypto",
  "starcoin-executor",
+ "starcoin-framework-legecy-stdlib",
  "starcoin-move-stdlib",
  "starcoin-state-api",
  "starcoin-types",
  "starcoin-vm-types",
- "stdlib",
  "stest",
  "tempfile",
  "test-helper",
@@ -6276,6 +6276,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-framework",
+ "starcoin-framework-legecy-stdlib",
  "starcoin-gas-schedule",
  "starcoin-logger",
  "starcoin-move-compiler",
@@ -6285,7 +6286,6 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-runtime",
  "starcoin-vm-types",
- "stdlib",
  "tempfile",
  "tokio",
  "vm-status-translator",
@@ -8937,6 +8937,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "ripemd160"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2eca4ecc81b7f313189bf73ce724400a07da2a6dac19588b03c8bd76a2dcc251"
+dependencies = [
+ "block-buffer 0.9.0",
+ "digest 0.9.0",
+ "opaque-debug 0.3.0",
+]
+
+[[package]]
 name = "rlp"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10019,9 +10030,9 @@ dependencies = [
  "move-model",
  "serde_json",
  "starcoin-abi-types",
+ "starcoin-framework-legecy-stdlib",
  "starcoin-resource-viewer",
  "starcoin-vm-types",
- "stdlib",
  "test-helper",
 ]
 
@@ -10226,6 +10237,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-dag",
  "starcoin-executor",
+ "starcoin-framework-legecy-stdlib",
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-network-rpc-api",
@@ -10240,7 +10252,6 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-runtime",
  "starcoin-vm-types",
- "stdlib",
  "stest",
  "test-helper",
  "thiserror",
@@ -10382,6 +10393,7 @@ dependencies = [
  "starcoin-dag",
  "starcoin-dev",
  "starcoin-executor",
+ "starcoin-framework-legecy-stdlib",
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-move-compiler",
@@ -10400,7 +10412,6 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-runtime",
  "starcoin-vm-types",
- "stdlib",
  "stest",
  "test-helper",
  "tokio",
@@ -10610,6 +10621,7 @@ dependencies = [
  "starcoin-consensus",
  "starcoin-crypto",
  "starcoin-dev",
+ "starcoin-framework-legecy-stdlib",
  "starcoin-logger",
  "starcoin-resource-viewer",
  "starcoin-state-api",
@@ -10619,7 +10631,6 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-runtime",
  "starcoin-vm-types",
- "stdlib",
  "stest",
  "tempfile",
  "test-helper",
@@ -10751,6 +10762,72 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-framework-legecy-gas-schedule"
+version = "2.0.1"
+dependencies = [
+ "move-binary-format",
+ "move-core-types",
+ "move-stdlib",
+ "move-table-extension",
+ "move-vm-test-utils",
+ "move-vm-types",
+ "serde",
+ "starcoin-framework-legecy-natives",
+]
+
+[[package]]
+name = "starcoin-framework-legecy-natives"
+version = "2.0.1"
+dependencies = [
+ "arrayref",
+ "hex",
+ "libsecp256k1",
+ "log 0.4.22",
+ "move-binary-format",
+ "move-command-line-common",
+ "move-core-types",
+ "move-docgen",
+ "move-errmapgen",
+ "move-prover",
+ "move-stdlib",
+ "move-vm-runtime",
+ "move-vm-types",
+ "num_enum",
+ "rand 0.8.5",
+ "ripemd160",
+ "smallvec 1.10.0",
+ "starcoin-crypto",
+ "starcoin-uint",
+ "tiny-keccak",
+ "walkdir",
+]
+
+[[package]]
+name = "starcoin-framework-legecy-stdlib"
+version = "2.0.1"
+dependencies = [
+ "anyhow",
+ "bcs-ext",
+ "clap 4.5.13",
+ "datatest-stable 0.1.3",
+ "fs_extra",
+ "include_dir",
+ "itertools 0.10.5",
+ "log 0.4.22",
+ "move-bytecode-verifier",
+ "move-compiler",
+ "move-prover",
+ "once_cell",
+ "sha2 0.9.9",
+ "simplelog",
+ "starcoin-cached-packages",
+ "starcoin-crypto",
+ "starcoin-framework",
+ "starcoin-move-compiler",
+ "starcoin-vm-types",
+]
+
+[[package]]
 name = "starcoin-gas-algebra"
 version = "2.0.1"
 dependencies = [
@@ -10837,6 +10914,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-dag",
  "starcoin-executor",
+ "starcoin-framework-legecy-stdlib",
  "starcoin-logger",
  "starcoin-state-api",
  "starcoin-statedb",
@@ -10845,7 +10923,6 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-runtime",
  "starcoin-vm-types",
- "stdlib",
  "stest",
  "tempfile",
  "thiserror",
@@ -10898,6 +10975,7 @@ dependencies = [
  "serde",
  "starcoin-config",
  "starcoin-crypto",
+ "starcoin-framework-legecy-stdlib",
  "starcoin-gas-algebra",
  "starcoin-gas-meter",
  "starcoin-gas-schedule",
@@ -10910,7 +10988,6 @@ dependencies = [
  "starcoin-vm-runtime",
  "starcoin-vm-runtime-types",
  "starcoin-vm-types",
- "stdlib",
  "test-helper",
 ]
 
@@ -11074,7 +11151,7 @@ dependencies = [
  "bcs-ext",
  "clap 4.5.13",
  "move-core-types",
- "stdlib",
+ "starcoin-framework-legecy-stdlib",
 ]
 
 [[package]]
@@ -11984,10 +12061,10 @@ dependencies = [
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-framework",
+ "starcoin-framework-legecy-stdlib",
  "starcoin-logger",
  "starcoin-types",
  "starcoin-vm-types",
- "stdlib",
  "stest",
 ]
 
@@ -12033,6 +12110,7 @@ dependencies = [
  "starcoin-dag",
  "starcoin-dev",
  "starcoin-framework",
+ "starcoin-framework-legecy-stdlib",
  "starcoin-gas-meter",
  "starcoin-gas-schedule",
  "starcoin-genesis",
@@ -12047,7 +12125,6 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-runtime",
  "starcoin-vm-types",
- "stdlib",
  "tempfile",
  "tokio",
 ]
@@ -12093,6 +12170,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-executor",
+ "starcoin-framework-legecy-stdlib",
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-metrics",
@@ -12105,7 +12183,6 @@ dependencies = [
  "starcoin-transaction-builder",
  "starcoin-txpool-api",
  "starcoin-types",
- "stdlib",
  "stest",
  "tempfile",
  "test-helper",
@@ -12216,6 +12293,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-framework",
+ "starcoin-framework-legecy-stdlib",
  "starcoin-gas-algebra",
  "starcoin-gas-meter",
  "starcoin-gas-schedule",
@@ -12228,7 +12306,6 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-runtime-types",
  "starcoin-vm-types",
- "stdlib",
  "tracing",
 ]
 
@@ -12245,11 +12322,11 @@ dependencies = [
  "rand 0.8.5",
  "serde",
  "starcoin-aggregator",
+ "starcoin-framework-legecy-stdlib",
  "starcoin-gas-meter",
  "starcoin-gas-schedule",
  "starcoin-types",
  "starcoin-vm-types",
- "stdlib",
  "test-case",
 ]
 
@@ -12303,31 +12380,6 @@ name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
-
-[[package]]
-name = "stdlib"
-version = "2.0.1"
-dependencies = [
- "anyhow",
- "bcs-ext",
- "clap 4.5.13",
- "datatest-stable 0.1.3",
- "fs_extra",
- "include_dir",
- "itertools 0.10.5",
- "log 0.4.22",
- "move-bytecode-verifier",
- "move-compiler",
- "move-prover",
- "once_cell",
- "sha2 0.9.9",
- "simplelog",
- "starcoin-cached-packages",
- "starcoin-crypto",
- "starcoin-framework",
- "starcoin-move-compiler",
- "starcoin-vm-types",
-]
 
 [[package]]
 name = "stest"
@@ -12780,6 +12832,7 @@ dependencies = [
  "starcoin-dag",
  "starcoin-dev",
  "starcoin-executor",
+ "starcoin-framework-legecy-stdlib",
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-metrics",
@@ -12803,7 +12856,6 @@ dependencies = [
  "starcoin-txpool-api",
  "starcoin-types",
  "starcoin-vm-types",
- "stdlib",
  "stest",
  "thiserror",
  "tokio",

@@ -6,7 +6,7 @@ starcoin-crypto = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-types = { workspace = true }
-stdlib = { workspace = true }
+starcoin-framework-legecy-stdlib = { workspace = true }
 starcoin-framework = { workspace = true }
 starcoin-cached-packages = { workspace = true }
 

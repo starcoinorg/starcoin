@@ -1,0 +1,25 @@
+[package]
+name = "starcoin-framework-legecy-gas-schedule"
+authors = { workspace = true }
+description = "starcoin Move VM gas algebra ext"
+edition = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+version = "2.0.1"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+move-core-types = { workspace = true }
+move-binary-format = { workspace = true }
+move-stdlib = { workspace = true }
+move-table-extension = { workspace = true }
+move-vm-types = { workspace = true }
+move-vm-test-utils = { workspace = true }
+starcoin-framework-legecy-natives = { workspace = true }
+serde = { workspace = true }
+
+[features]
+default = []
+testing = ["move-stdlib/testing"]

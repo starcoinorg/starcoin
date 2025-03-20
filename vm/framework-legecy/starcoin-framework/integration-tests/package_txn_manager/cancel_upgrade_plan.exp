@@ -1,0 +1,41 @@
+processed 8 tasks
+
+task 3 'run'. lines 8-19:
+{
+  "gas_used": 25441,
+  "status": "Executed"
+}
+
+task 4 'run'. lines 21-35:
+{
+  "gas_used": 143983,
+  "status": "Executed"
+}
+
+task 5 'run'. lines 36-46:
+{
+  "gas_used": 29039,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "PackageTxnManager"
+        }
+      },
+      "abort_code": "26119"
+    }
+  }
+}
+
+task 6 'run'. lines 48-57:
+{
+  "gas_used": 46014,
+  "status": "Executed"
+}
+
+task 7 'run'. lines 59-67:
+{
+  "gas_used": 31514,
+  "status": "Executed"
+}

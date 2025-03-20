@@ -1,0 +1,103 @@
+processed 20 tasks
+
+task 5 'run'. lines 13-22:
+{
+  "gas_used": 71566,
+  "status": "Executed"
+}
+
+task 6 'run'. lines 24-33:
+{
+  "gas_used": 71566,
+  "status": "Executed"
+}
+
+task 7 'run'. lines 36-47:
+{
+  "gas_used": 28878,
+  "status": "Executed"
+}
+
+task 8 'run'. lines 49-61:
+{
+  "gas_used": 37069,
+  "status": "Executed"
+}
+
+task 10 'run'. lines 66-73:
+{
+  "gas_used": 42143,
+  "status": "Executed"
+}
+
+task 11 'run'. lines 76-84:
+{
+  "gas_used": 19817,
+  "status": "Executed"
+}
+
+task 13 'run'. lines 89-103:
+{
+  "gas_used": 48457,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "PriceOracleAggregator"
+        }
+      },
+      "abort_code": "25857"
+    }
+  }
+}
+
+task 14 'run'. lines 106-120:
+{
+  "gas_used": 48457,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "PriceOracleAggregator"
+        }
+      },
+      "abort_code": "25857"
+    }
+  }
+}
+
+task 16 'run'. lines 146-155:
+{
+  "gas_used": 20159,
+  "status": "Executed"
+}
+
+task 17 'run'. lines 158-167:
+{
+  "gas_used": 22122,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "Oracle"
+        }
+      },
+      "abort_code": "26116"
+    }
+  }
+}
+
+task 18 'run'. lines 169-178:
+{
+  "gas_used": 42855,
+  "status": "Executed"
+}
+
+task 19 'run'. lines 180-189:
+{
+  "gas_used": 14128,
+  "status": "Executed"
+}

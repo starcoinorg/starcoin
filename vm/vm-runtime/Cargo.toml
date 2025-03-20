@@ -50,7 +50,7 @@ move-bytecode-utils = { workspace = true }
 move-unit-test = { workspace = true, optional = true }
 
 [dev-dependencies]
-stdlib = { workspace = true }
+starcoin-framework-legecy-stdlib = { workspace = true }
 claims = { workspace = true }
 starcoin-cached-packages = { workspace = true }
 

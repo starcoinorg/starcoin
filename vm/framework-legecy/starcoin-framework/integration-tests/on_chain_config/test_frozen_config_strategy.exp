@@ -1,0 +1,99 @@
+processed 19 tasks
+
+task 4 'run'. lines 10-18:
+{
+  "gas_used": 58073,
+  "status": "Executed"
+}
+
+task 5 'run'. lines 21-30:
+{
+  "gas_used": 118911,
+  "status": "Executed"
+}
+
+task 6 'run'. lines 33-37:
+{
+  "gas_used": 0,
+  "status": {
+    "Discard": {
+      "status_code": "40",
+      "status_code_name": "SEND_TXN_GLOBAL_FROZEN"
+    }
+  }
+}
+
+task 7 'run'. lines 39-48:
+{
+  "gas_used": 118913,
+  "status": "Executed"
+}
+
+task 8 'run'. lines 50-54:
+{
+  "gas_used": 8439,
+  "status": "Executed"
+}
+
+task 9 'run'. lines 56-64:
+{
+  "gas_used": 157680,
+  "status": "Executed"
+}
+
+task 10 'run'. lines 66-70:
+{
+  "gas_used": 0,
+  "status": {
+    "Discard": {
+      "status_code": "18",
+      "status_code_name": "SENDING_ACCOUNT_FROZEN"
+    }
+  }
+}
+
+task 11 'run'. lines 72-80:
+{
+  "gas_used": 153882,
+  "status": "Executed"
+}
+
+task 12 'run'. lines 82-88:
+{
+  "gas_used": 8439,
+  "status": "Executed"
+}
+
+task 14 'run'. lines 92-102:
+{
+  "gas_used": 35987,
+  "status": "Executed"
+}
+
+task 15 'run'. lines 104-112:
+{
+  "gas_used": 157680,
+  "status": "Executed"
+}
+
+task 16 'run'. lines 115-123:
+{
+  "gas_used": 19233,
+  "status": {
+    "MoveAbort": {
+      "location": {
+        "Module": {
+          "address": "0x00000000000000000000000000000001",
+          "name": "FrozenConfigStrategy"
+        }
+      },
+      "abort_code": "27137"
+    }
+  }
+}
+
+task 18 'run'. lines 128-142:
+{
+  "gas_used": 152881,
+  "status": "Executed"
+}

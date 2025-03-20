@@ -71,9 +71,7 @@ members = [
     "vm/types",
     "vm/vm-runtime-types",
     "vm/vm-runtime",
-    "vm/framework/cached-packages",
     "vm/starcoin-native-interface",
-    "vm/stdlib",
     "vm/compiler",
     "vm/move-prover",
     "vm/mvhashmap",
@@ -91,7 +89,11 @@ members = [
     "vm/move-package-manager",
     "vm/vm-status-translator",
     "vm/framework",
+    "vm/framework/cached-packages",
     "vm/framework/table-natives",
+    "vm/framework-legecy/gas-schedule",
+    "vm/framework-legecy/natives",
+    "vm/framework-legecy/stdlib",
     "vm/starcoin-sdk-builder",
     "vm/starcoin-transactional-test-harness",
     "vm/starcoin-aggregator",
@@ -196,7 +198,6 @@ default-members = [
     "vm/framework/table-natives",
     "vm/starcoin-sdk-builder",
     "vm/package-builder",
-    "vm/stdlib",
     "vm/compiler",
     "vm/move-prover",
     "vm/mvhashmap",
@@ -526,6 +527,9 @@ starcoin-decrypt = { path = "commons/decrypt" }
 starcoin-dev = { path = "vm/dev" }
 starcoin-executor = { path = "executor" }
 starcoin-framework = { path = "vm/framework" }
+starcoin-framework-legecy-gas-schedule = { path = "vm/framework-legecy/gas-schedule" }
+starcoin-framework-legecy-natives = { path = "vm/framework-legecy/natives" }
+starcoin-framework-legecy-stdlib = { path = "vm/framework-legecy/stdlib" }
 starcoin-sdk-builder = { path = "vm/starcoin-sdk-builder" }
 starcoin-genesis = { path = "genesis" }
 starcoin-logger = { path = "commons/logger" }
@@ -577,7 +581,6 @@ starcoin-uint = { path = "types/uint" }
 starcoin-vm-runtime = { path = "vm/vm-runtime" }
 starcoin-vm-runtime-types = { path = "vm/vm-runtime-types" }
 starcoin-vm-types = { path = "vm/types" }
-stdlib = { path = "vm/stdlib" }
 stest = { path = "commons/stest" }
 stest-macro = { path = "commons/stest/stest-macro" }
 stream-task = { path = "commons/stream-task" }
