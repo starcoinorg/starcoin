@@ -13,7 +13,6 @@ rust-version = { workspace = true }
 anyhow = { workspace = true }
 bcs-ext = { workspace = true }
 starcoin-crypto = { workspace = true }
-starcoin-config = { workspace = true }
 move-core-types = { workspace = true }
 once_cell = { workspace = true }
 tracing = { workspace = true }

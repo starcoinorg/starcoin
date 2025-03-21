@@ -250,7 +250,6 @@ starcoin-time-service = { git = "https://github.com/starcoinorg/starcoin", branc
 starcoin-logger = { git = "https://github.com/starcoinorg/starcoin", branch = "multi-move-vm" }
 forkable-jellyfish-merkle = { path = "commons/forkable-jellyfish-merkle" }
 bcs-ext = { git = "https://github.com/starcoinorg/starcoin", branch = "multi-move-vm" }
-starcoin-config = { git = "https://github.com/starcoinorg/starcoin", branch = "multi-move-vm" }
 starcoin-metrics = { path = "commons/metrics" }
 timeout-join-handler = { path = "commons/timeout-join-handler" }
 
