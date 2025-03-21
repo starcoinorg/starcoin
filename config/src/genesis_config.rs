@@ -1167,9 +1167,6 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     }
 });
 
-pub static G_LATEST_GAS_PARAMS: Lazy<StarcoinGasParameters> =
-    Lazy::new(StarcoinGasParameters::initial);
-
 pub static G_VEGA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let stdlib_version = StdlibVersion::Version(12);
     let publishing_option = TransactionPublishOption::locked();

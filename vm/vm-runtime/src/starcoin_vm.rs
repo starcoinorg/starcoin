@@ -19,13 +19,12 @@ use move_vm_runtime::move_vm_adapter::PublishModuleBundleOption;
 use move_vm_types::gas::{GasMeter, UnmeteredGasMeter};
 use num_cpus;
 use once_cell::sync::OnceCell;
-use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
 use starcoin_crypto::HashValue;
 use starcoin_gas_algebra::Gas;
 use starcoin_gas_meter::StarcoinGasMeter;
 use starcoin_gas_schedule::{
     FromOnChainGasSchedule, InitialGasSchedule, NativeGasParameters, StarcoinGasParameters,
-    LATEST_GAS_FEATURE_VERSION,
+    G_LATEST_GAS_PARAMS, LATEST_GAS_FEATURE_VERSION,
 };
 use starcoin_logger::prelude::*;
 use starcoin_types::account_config::config_change::ConfigChangeEvent;

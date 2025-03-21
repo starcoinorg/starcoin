@@ -8,6 +8,7 @@ move-vm-test-utils = { workspace = true }
 serde = { workspace = true }
 paste = { workspace = true }
 starcoin-gas-algebra = { workspace = true }
+once_cell = { workspace = true }
 
 
 [package]

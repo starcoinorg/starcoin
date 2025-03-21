@@ -17,6 +17,7 @@ pub use instr::InstructionGasParameters;
 pub use misc::{AbstractValueSizeGasParameters, MiscGasParameters};
 pub use move_stdlib::MoveStdlibGasParameters;
 pub use nursery::NurseryGasParameters;
+use once_cell::sync::Lazy;
 pub use starcoin_framework::StarcoinFrameworkGasParameters;
 use std::collections::BTreeMap;
 pub use table::TableGasParameters;
@@ -211,3 +212,6 @@ impl InitialGasSchedule for NativeGasParameters {
         }
     }
 }
+
+pub static G_LATEST_GAS_PARAMS: Lazy<StarcoinGasParameters> =
+    Lazy::new(StarcoinGasParameters::initial);
