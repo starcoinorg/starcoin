@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#[cfg(testing)]
+#[cfg(feature = "testing")]
 #[macro_use]
 extern crate log;
 
@@ -22,3 +22,4 @@ pub use starcoin_vm_runtime::metrics::VMMetrics;
 mod block_executor;
 
 mod executor;
+mod executor2;
