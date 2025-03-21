@@ -13480,3 +13480,13 @@ dependencies = [
  "syn 1.0.107",
  "synstructure",
 ]
+
+[[patch.unused]]
+name = "merlin"
+version = "3.0.0"
+source = "git+https://github.com/aptos-labs/merlin#3454ccc85e37355c729ba40e6dac6e867ddf59f5"
+
+[[patch.unused]]
+name = "x25519-dalek"
+version = "1.2.0"
+source = "git+https://github.com/aptos-labs/x25519-dalek?branch=zeroize_v1#762a9501668d213daa4a1864fa1f9db22716b661"

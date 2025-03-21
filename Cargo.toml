@@ -521,6 +521,9 @@ starcoin-transaction-benchmarks = { path = "vm/transaction-benchmarks" }
 starcoin-language-e2e-tests = { path = "vm/e2e-tests" }
 starcoin-proptest-helpers = { path = "vm/proptest-helpers" }
 
+starcoin-vm2 = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-vm-runtime" }
+starcoin-vm2-types = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-vm-types" }
+
 syn = { version = "1.0.107", features = [
     "full",
     "extra-traits",
@@ -577,3 +580,7 @@ debug = false
 
 #[profile.release.package.cryptonight-rs]
 #opt-level = 2
+
+[patch.crates-io]
+x25519-dalek = { git = "https://github.com/aptos-labs/x25519-dalek", branch = "zeroize_v1" }
+merlin = { git = "https://github.com/aptos-labs/merlin" }
