@@ -276,7 +276,7 @@ clap = { version = "3", features = ["derive"] }
 cli-table = "0.3.2"
 coarsetime = "0.1.22"
 codespan = { version = "0.8.0", features = ["serialization"] }
-codespan-reporting = "0.11"
+codespan-reporting = "0.12"
 colored = "2.0.0"
 criterion = "0.3"
 crossbeam = "0.8.1"
