@@ -18,7 +18,7 @@ use starcoin_vm_types::account_address::AccountAddress;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
-use stdlib::stdlib_files;
+use starcoin_framework_legacy_stdlib::stdlib_files;
 
 /// Compile module or script, support compile source dir.
 #[derive(Debug, Parser)]

@@ -426,7 +426,7 @@ mod tests {
 
     #[test]
     fn test_resolver_abi() {
-        let modules = stdlib::load_latest_compiled_modules();
+        let modules = starcoin_framework_legacy_stdlib::load_latest_compiled_modules();
         let view = InMemoryStateView::new(modules);
         let r = ABIResolver::new(&view);
         // test module ok
@@ -466,7 +466,7 @@ mod tests {
 
     #[test]
     fn test_normalized() {
-        let modules = stdlib::load_latest_compiled_modules();
+        let modules = starcoin_framework_legacy_stdlib::load_latest_compiled_modules();
         let dao = modules
             .iter()
             .find(|m| {
@@ -492,7 +492,7 @@ mod tests {
             test_helper::executor::compile_modules_with_address(address, test_source)
                 .pop()
                 .unwrap();
-        let modules = stdlib::load_latest_compiled_modules();
+        let modules = starcoin_framework_legacy_stdlib::load_latest_compiled_modules();
         let view = InMemoryStateView::new(modules);
         let r = ABIResolver::new(&view);
         let _abi = r.resolve_module_code(module.code()).unwrap();

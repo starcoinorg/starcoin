@@ -37,8 +37,8 @@ use starcoin_vm_types::{
         TransactionPayload,
     },
 };
-use stdlib::{module_to_package, stdlib_package};
-pub use stdlib::{stdlib_compiled_modules, stdlib_modules, StdLibOptions, StdlibVersion};
+use starcoin_framework_legacy_stdlib::{module_to_package, stdlib_package};
+pub use starcoin_framework_legacy_stdlib::{stdlib_compiled_modules, stdlib_modules, StdLibOptions, StdlibVersion};
 
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
 pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 40000000;

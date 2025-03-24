@@ -24,7 +24,7 @@ use starcoin_vm_types::{
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::path::Path;
 use std::{collections::BTreeMap, fs::File, io::Read, path::PathBuf};
-use stdlib::{
+use starcoin_framework_legacy_stdlib::{
     build_stdlib, build_stdlib_error_code_map, load_compiled_modules,
     load_latest_stable_compiled_modules, save_binary, COMPILED_EXTENSION, COMPILED_OUTPUT_PATH,
     LATEST_COMPILED_OUTPUT_PATH, STDLIB_DIR_NAME,
@@ -33,7 +33,7 @@ use stdlib::{
 fn compiled_modules(stdlib_path: &mut PathBuf) -> BTreeMap<ModuleId, CompiledModule> {
     let mut compiled_modules = BTreeMap::new();
     stdlib_path.push(STDLIB_DIR_NAME);
-    for f in stdlib::iterate_directory(stdlib_path) {
+    for f in starcoin_framework_legacy_stdlib::iterate_directory(stdlib_path) {
         let mut bytes = Vec::new();
         File::open(f)
             .expect("Failed to open module bytecode file")
@@ -44,6 +44,7 @@ fn compiled_modules(stdlib_path: &mut PathBuf) -> BTreeMap<ModuleId, CompiledMod
     }
     compiled_modules
 }
+
 //TODO refactor this with module diff.
 fn incremental_update_with_version(
     pre_dir: &mut PathBuf,
@@ -367,9 +368,9 @@ fn main() {
     // Write the stdlib blob
     let module_path = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH).join(STDLIB_DIR_NAME);
     replace_stdlib_by_path(module_path.as_path(), new_modules.clone());
-    let stdlib_versions = &stdlib::G_STDLIB_VERSIONS;
+    let stdlib_versions = &starcoin_framework_legacy_stdlib::G_STDLIB_VERSIONS;
     for version in stdlib_versions.iter() {
-        let modules = stdlib::load_compiled_modules(*version);
+        let modules = starcoin_framework_legacy_stdlib::load_compiled_modules(*version);
         println!(
             "Check compiled stdlib version: {}, modules:{}",
             version,

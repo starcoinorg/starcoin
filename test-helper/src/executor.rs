@@ -26,7 +26,7 @@ use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::state_store::StateView;
 use starcoin_vm_types::vm_status::KeptVMStatus;
-use stdlib::stdlib_files;
+use starcoin_framework_legacy_stdlib::stdlib_files;
 
 //TODO warp to A MockTxnExecutor
 

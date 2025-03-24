@@ -91,7 +91,6 @@ members = [
     "vm/framework",
     "vm/framework/cached-packages",
     "vm/framework/table-natives",
-    "vm/framework-legacy/gas-schedule",
     "vm/framework-legacy/natives",
     "vm/framework-legacy/stdlib",
     "vm/starcoin-sdk-builder",
@@ -527,7 +526,6 @@ starcoin-decrypt = { path = "commons/decrypt" }
 starcoin-dev = { path = "vm/dev" }
 starcoin-executor = { path = "executor" }
 starcoin-framework = { path = "vm/framework" }
-starcoin-framework-legacy-gas-schedule = { path = "vm/framework-legacy/gas-schedule" }
 starcoin-framework-legacy-natives = { path = "vm/framework-legacy/natives" }
 starcoin-framework-legacy-stdlib = { path = "vm/framework-legacy/stdlib" }
 starcoin-sdk-builder = { path = "vm/starcoin-sdk-builder" }

@@ -81,7 +81,7 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::sync::Mutex;
 use std::{collections::BTreeMap, convert::TryInto, path::Path, str::FromStr};
-use stdlib::starcoin_framework_named_addresses;
+use starcoin_framework_legacy_stdlib::starcoin_framework_named_addresses;
 use tempfile::{NamedTempFile, TempDir};
 
 pub mod context;

@@ -12,7 +12,9 @@ use crate::ver::gas_feature_versions::*;
 // see starcoin/vm/types/src/on_chain_config/genesis_gas_schedule.rs
 // same order as from https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#native_schedule
 // modify should with impl From<VMConfig> for GasSchedule
-crate::gas_schedule::macros::define_gas_parameters!(StarcoinFrameworkGasParameters, "starcoin_framework",
+crate::gas_schedule::macros::define_gas_parameters!(
+  StarcoinFrameworkGasParameters,
+  "starcoin_framework",
     NativeGasParameters => .starcoin_framework,
     [
       [signature_ed25519_pubkey_base: InternalGas,  "signature.ed25519.pubkey.base", 0],

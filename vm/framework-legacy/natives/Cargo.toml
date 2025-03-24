@@ -3,21 +3,17 @@ arrayref = { workspace = true }
 libsecp256k1 = { workspace = true }
 log = { workspace = true }
 move-binary-format = { workspace = true }
-move-command-line-common = { workspace = true }
 move-core-types = { workspace = true }
-move-docgen = { workspace = true }
-move-errmapgen = { workspace = true }
-move-prover = { workspace = true }
 move-stdlib = { workspace = true }
 move-vm-runtime = { workspace = true }
 move-vm-types = { workspace = true }
-num_enum = { workspace = true }
 ripemd160 = { workspace = true }
 smallvec = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-uint = { workspace = true }
+starcoin-native-interface = { workspace = true}
+starcoin-gas-schedule = { workspace = true }
 tiny-keccak = { features = ["keccak"], workspace = true }
-walkdir = { workspace = true }
 
 [dev-dependencies]
 hex = { workspace = true }

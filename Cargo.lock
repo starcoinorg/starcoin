@@ -10762,20 +10762,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "starcoin-framework-legacy-gas-schedule"
-version = "2.0.1"
-dependencies = [
- "move-binary-format",
- "move-core-types",
- "move-stdlib",
- "move-table-extension",
- "move-vm-test-utils",
- "move-vm-types",
- "serde",
- "starcoin-framework-legacy-natives",
-]
-
-[[package]]
 name = "starcoin-framework-legacy-natives"
 version = "2.0.1"
 dependencies = [
@@ -10784,22 +10770,18 @@ dependencies = [
  "libsecp256k1",
  "log 0.4.22",
  "move-binary-format",
- "move-command-line-common",
  "move-core-types",
- "move-docgen",
- "move-errmapgen",
- "move-prover",
  "move-stdlib",
  "move-vm-runtime",
  "move-vm-types",
- "num_enum",
  "rand 0.8.5",
  "ripemd160",
  "smallvec 1.10.0",
  "starcoin-crypto",
+ "starcoin-gas-schedule",
+ "starcoin-native-interface",
  "starcoin-uint",
  "tiny-keccak",
- "walkdir",
 ]
 
 [[package]]

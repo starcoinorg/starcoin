@@ -7,7 +7,7 @@ use move_ir_compiler::Compiler;
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::genesis_config::StdlibVersion::Latest;
 use starcoin_vm_types::transaction::{Module, Script};
-use stdlib::{stdlib_compiled_modules, StdLibOptions};
+use starcoin_framework_legacy_stdlib::{stdlib_compiled_modules, StdLibOptions};
 
 /// Compile the provided Move code into a blob which can be used as the code to be published
 /// (a Module).

@@ -10,6 +10,7 @@ mod starcoin_framework;
 mod table;
 
 mod nursery;
+mod starcoin_framework_legacy;
 mod transaction;
 
 use crate::{FromOnChainGasSchedule, InitialGasSchedule, ToOnChainGasSchedule};
@@ -18,6 +19,7 @@ pub use misc::{AbstractValueSizeGasParameters, MiscGasParameters};
 pub use move_stdlib::MoveStdlibGasParameters;
 pub use nursery::NurseryGasParameters;
 pub use starcoin_framework::StarcoinFrameworkGasParameters;
+pub use starcoin_framework_legacy::StarcoinFrameworkLegacyGasParameters;
 use std::collections::BTreeMap;
 pub use table::TableGasParameters;
 pub use transaction::TransactionGasParameters;
@@ -33,6 +35,7 @@ pub mod gas_params {
         pub use move_stdlib::gas_params as move_stdlib;
         pub use nursery::gas_params as nursery;
         pub use starcoin_framework::gas_params as starcoin_framework;
+        pub use starcoin_framework_legacy::gas_params as starcoin_framework_legacy;
         pub use table::gas_params as table;
     }
 }
@@ -149,6 +152,7 @@ pub struct NativeGasParameters {
     pub table: TableGasParameters,
     pub nursery: NurseryGasParameters,
     pub starcoin_framework: StarcoinFrameworkGasParameters,
+    pub starcoin_framework_legacy: StarcoinFrameworkLegacyGasParameters,
 }
 
 impl FromOnChainGasSchedule for NativeGasParameters {
@@ -170,6 +174,10 @@ impl FromOnChainGasSchedule for NativeGasParameters {
                 feature_version,
             )?,
             starcoin_framework: FromOnChainGasSchedule::from_on_chain_gas_schedule(
+                gas_schedule,
+                feature_version,
+            )?,
+            starcoin_framework_legacy: FromOnChainGasSchedule::from_on_chain_gas_schedule(
                 gas_schedule,
                 feature_version,
             )?,
@@ -197,6 +205,7 @@ impl NativeGasParameters {
             nursery: NurseryGasParameters::zeros(),
             table: TableGasParameters::zeros(),
             starcoin_framework: StarcoinFrameworkGasParameters::zeros(),
+            starcoin_framework_legacy: StarcoinFrameworkLegacyGasParameters::zeros(),
         }
     }
 }
@@ -208,6 +217,7 @@ impl InitialGasSchedule for NativeGasParameters {
             nursery: InitialGasSchedule::initial(),
             table: InitialGasSchedule::initial(),
             starcoin_framework: StarcoinFrameworkGasParameters::initial(),
+            starcoin_framework_legacy: StarcoinFrameworkLegacyGasParameters::initial(),
         }
     }
 }
