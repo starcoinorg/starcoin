@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+pub mod chain_state_db_v2;
 use crate::StateError::AccountNotExist;
 use anyhow::{bail, ensure, format_err, Result};
 use bcs_ext::BCSCodec;

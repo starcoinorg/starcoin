@@ -35,6 +35,11 @@ pub static TABLE_HANDLE_ADDRESS_LIST: Lazy<Vec<AccountAddress>> = Lazy::new(|| {
     arr
 });
 
+pub fn multi_vm_address() -> AccountAddress {
+    AccountAddress::from_hex_literal("0x51")
+        .expect("Parsing valid hex literal should always succeed")
+}
+
 #[cfg(test)]
 mod tests {
     use crate::account_config::{TABLE_ADDRESS_LIST, TABLE_ADDRESS_LIST_LEN};

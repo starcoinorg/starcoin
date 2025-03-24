@@ -12,6 +12,7 @@ starcoin-state-tree = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
+once_cell = "1.17.1"
 
 [package]
 authors = { workspace = true }
