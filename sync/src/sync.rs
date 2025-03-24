@@ -859,7 +859,6 @@ impl EventHandler<Self, SyncDoneEvent> for SyncService {
                 debug!("[sync] Sync task is Done in checking stage.");
                 self.sync_status.sync_done();
                 ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
-                ctx.notify(CheckSyncEvent::default());
             }
             SyncStage::Synchronizing(task_handle) => {
                 if !task_handle.task_handle.is_done() {
