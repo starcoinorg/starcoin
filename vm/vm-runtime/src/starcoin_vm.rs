@@ -1560,7 +1560,8 @@ impl VMExecutor for StarcoinVM {
     /// transaction output.
     fn execute_block(
         transactions: Vec<Transaction>,
-        state_views: &[impl StateView],
+        state_view: &impl StateView,
+        state_view1: &impl StateView,
         block_gas_limit: Option<u64>,
         metrics: Option<VMMetrics>,
     ) -> Result<Vec<TransactionOutput>, VMStatus> {
@@ -1569,7 +1570,7 @@ impl VMExecutor for StarcoinVM {
             // todo: handle parallel execution
             let (result, _) = crate::parallel_executor::ParallelStarcoinVM::execute_block(
                 transactions,
-                state_views.first().unwrap(),
+                state_view,
                 concurrency_level,
                 block_gas_limit,
                 metrics,
@@ -1578,29 +1579,22 @@ impl VMExecutor for StarcoinVM {
             Ok(result)
         } else {
             let mut block_outputs = vec![];
-            let state_view = state_views.first().expect("state view is empty");
-            let txns = if state_views.len() == 2 {
-                let state_view1 = state_views.last().expect("state view1 is empty");
-                let (ext_txns, txns) = {
-                    let mut ext_txns = vec![];
-                    let mut txns = vec![];
-                    transactions.into_iter().for_each(|txn| match txn {
-                        Transaction::UserTransaction(_) => txns.push(txn),
-                        Transaction::BlockMetadata(_) => ext_txns.push(txn),
-                        Transaction::UserTransactionExt(_) => ext_txns.push(txn),
-                    });
-                    (ext_txns, txns)
-                };
-                if !ext_txns.is_empty() {
-                    let mut vm = StarcoinVM::new(metrics.clone());
-                    let mut output =
-                        vm.execute_block_transactions(state_view1, ext_txns, block_gas_limit)?;
-                    block_outputs.append(&mut output);
-                }
-                txns
-            } else {
-                transactions
+            let (ext_txns, txns) = {
+                let mut ext_txns = vec![];
+                let mut txns = vec![];
+                transactions.into_iter().for_each(|txn| match txn {
+                    Transaction::UserTransaction(_) => txns.push(txn),
+                    Transaction::BlockMetadata(_) => ext_txns.push(txn),
+                    Transaction::UserTransactionExt(_) => ext_txns.push(txn),
+                });
+                (ext_txns, txns)
             };
+            if !ext_txns.is_empty() {
+                let mut vm = StarcoinVM::new(metrics.clone());
+                let mut output =
+                    vm.execute_block_transactions(state_view1, ext_txns, block_gas_limit)?;
+                block_outputs.append(&mut output);
+            }
 
             if !txns.is_empty() {
                 let gas_used: u64 = block_outputs

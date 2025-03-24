@@ -201,7 +201,8 @@ impl TransactionBenchState {
         // to assert correctness.
         StarcoinVM::execute_block(
             self.transactions,
-            &[self.executor.get_state_view()],
+            self.executor.get_state_view(),
+            self.executor.get_state_view(),
             None,
             None,
         )
