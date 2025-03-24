@@ -322,67 +322,71 @@ where
             debug!("[connector] Ignore PeerNewBlock event because the node has not been synchronized yet.");
             return;
         }
-        let peer_id = msg.get_peer_id();
-        if let Err(e) = self.chain_service.try_connect(msg.get_block().clone()) {
-            match e.downcast::<ConnectBlockError>() {
-                std::result::Result::Ok(connect_error) => {
-                    match connect_error {
-                        ConnectBlockError::FutureBlock(block) => {
-                            //TODO cache future block
-                            if let std::result::Result::Ok(sync_service) =
-                                ctx.service_ref::<SyncService>()
-                            {
-                                info!(
-                                    "BlockConnector try connect future block ({:?},{}), peer_id:{:?}, notify Sync service check sync.",
-                                    block.id(),
-                                    block.header().number(),
-                                    peer_id
-                                );
-                                if !self.is_near_block(block.as_ref().header()) {
-                                    let _ = sync_service.notify(CheckSyncEvent::default());
-                                } else {
-                                    let _ = sync_service.notify(SyncSpecificTargretRequest {
-                                        block: Some(block.as_ref().clone()),
-                                        block_id: block.id(),
-                                        peer_id: Some(peer_id),
-                                    });
+        match self.chain_service.try_connect(msg.get_block().clone()) {
+            anyhow::Result::Ok(()) => {
+
+                ctx.broadcast(NewDagBlockFromPeer);
+            }
+            Err(e) => {
+                let peer_id = msg.get_peer_id();
+                match e.downcast::<ConnectBlockError>() {
+                    std::result::Result::Ok(connect_error) => {
+                        match connect_error {
+                            ConnectBlockError::FutureBlock(block) => {
+                                //TODO cache future block
+                                if let std::result::Result::Ok(sync_service) =
+                                    ctx.service_ref::<SyncService>()
+                                {
+                                    info!(
+                                        "BlockConnector try connect future block ({:?},{}), peer_id:{:?}, notify Sync service check sync.",
+                                        block.id(),
+                                        block.header().number(),
+                                        peer_id
+                                    );
+                                    if !self.is_near_block(block.as_ref().header()) {
+                                        let _ = sync_service.notify(CheckSyncEvent::default());
+                                    } else {
+                                        let _ = sync_service.notify(SyncSpecificTargretRequest {
+                                            block: Some(block.as_ref().clone()),
+                                            block_id: block.id(),
+                                            peer_id: Some(peer_id),
+                                        });
+                                    }
+                                }
+                            }
+                            e => {
+                                warn!("BlockConnector fail: {:?}, peer_id:{:?}", e, peer_id);
+                                if let Err(err) = self
+                                    .chain_service
+                                    .get_main()
+                                    .get_storage()
+                                    .save_failed_block(
+                                        msg.get_block().id(),
+                                        msg.get_block().clone(),
+                                        Some(peer_id.clone()),
+                                        format!("{:?}", e),
+                                        G_CRATE_VERSION.to_string(),
+                                    )
+                                {
+                                    warn!(
+                                        "Save FailedBlock err: {:?}, block_id:{:?}.",
+                                        err,
+                                        msg.get_block().id()
+                                    );
+                                }
+
+                                if let Err(e1) = ctx
+                                    .get_shared::<NetworkServiceRef>()
+                                    .map(|network| network.report_peer(peer_id, e.reputation()))
+                                {
+                                    warn!("Get NetworkServiceRef err: {:?}.", e1);
                                 }
                             }
                         }
-                        e => {
-                            warn!("BlockConnector fail: {:?}, peer_id:{:?}", e, peer_id);
-                            if let Err(err) = self
-                                .chain_service
-                                .get_main()
-                                .get_storage()
-                                .save_failed_block(
-                                    msg.get_block().id(),
-                                    msg.get_block().clone(),
-                                    Some(peer_id.clone()),
-                                    format!("{:?}", e),
-                                    G_CRATE_VERSION.to_string(),
-                                )
-                            {
-                                warn!(
-                                    "Save FailedBlock err: {:?}, block_id:{:?}.",
-                                    err,
-                                    msg.get_block().id()
-                                );
-                            }
-
-                            if let Err(e1) = ctx
-                                .get_shared::<NetworkServiceRef>()
-                                .map(|network| network.report_peer(peer_id, e.reputation()))
-                            {
-                                warn!("Get NetworkServiceRef err: {:?}.", e1);
-                            }
-                        }
-                    }
                 }
                 Err(e) => warn!("BlockConnector fail: {:?}, peer_id:{:?}", e, peer_id),
             }
-        } else {
-            ctx.broadcast(NewDagBlockFromPeer);
+            }
         }
     }
 }

@@ -6,6 +6,7 @@ use anyhow::Result;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
+use starcoin_storage::Storage;
 use starcoin_txpool_api::PropagateTransactions;
 use starcoin_types::{
     sync_status::SyncStatus,
@@ -16,7 +17,7 @@ use std::sync::Arc;
 pub struct GenerateBlockEventPacemaker {
     config: Arc<NodeConfig>,
     sync_status: Option<SyncStatus>,
-    last_time_received: Option<std::time::SystemTime>,
+    storage: Arc<Storage>,
 }
 
 impl ServiceFactory<Self> for GenerateBlockEventPacemaker {
@@ -24,7 +25,7 @@ impl ServiceFactory<Self> for GenerateBlockEventPacemaker {
         Ok(Self {
             config: ctx.get_shared::<Arc<NodeConfig>>()?,
             sync_status: None,
-            last_time_received: None,
+            storage: ctx.get_shared::<Arc<Storage>>()?,
         })
     }
 }
@@ -97,25 +98,29 @@ impl EventHandler<Self, SyncStatusChangeEvent> for GenerateBlockEventPacemaker {
 
 impl EventHandler<Self, NewDagBlockFromPeer> for GenerateBlockEventPacemaker {
     fn handle_event(&mut self, _msg: NewDagBlockFromPeer, ctx: &mut ServiceContext<Self>) {
-        let now = std::time::SystemTime::now();
-        if let Some(last_time) = self.last_time_received {
-            match now.duration_since(last_time) {
-                Ok(duration) => {
-                    self.last_time_received = Some(now);
-                    if duration.as_secs() >= self.config.miner.dag_block_receive_time_window() {
-                        self.send_event(false, ctx);
-                    }
-                }
-                Err(e) => {
-                    warn!(
-                        "[pacemaker] failed to calculate the dag block receive duration: {:?}",
-                        e
-                    );
-                    self.last_time_received = Some(now);
-                }
-            }
-        } else {
-            self.last_time_received = Some(now);
-        }
+        // let state_root = head_block.header().state_root();
+        // let chain_state = ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root));
+        // let epoch = get_epoch_from_statedb(&chain_state)?;
+        self.send_event(false, ctx);
+        // let now = std::time::SystemTime::now();
+        // if let Some(last_time) = self.last_time_received {
+        //     match now.duration_since(last_time) {
+        //         Ok(duration) => {
+        //             self.last_time_received = Some(now);
+        //             if duration.as_secs() >= self.config.miner.dag_block_receive_time_window() {
+        //                 self.send_event(false, ctx);
+        //             }
+        //         }
+        //         Err(e) => {
+        //             warn!(
+        //                 "[pacemaker] failed to calculate the dag block receive duration: {:?}",
+        //                 e
+        //             );
+        //             self.last_time_received = Some(now);
+        //         }
+        //     }
+        // } else {
+        //     self.last_time_received = Some(now);
+        // }
     }
 }
