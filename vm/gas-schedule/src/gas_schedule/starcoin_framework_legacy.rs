@@ -1,8 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use move_core_types::gas_algebra::InternalGasPerByte;
-use starcoin_gas_algebra::InternalGas;
+use starcoin_gas_algebra::{InternalGas, InternalGasPerByte};
 
 use crate::gas_schedule::NativeGasParameters;
 use crate::traits::EXECUTION_GAS_MULTIPLIER as MUL;
@@ -20,9 +19,9 @@ crate::gas_schedule::macros::define_gas_parameters!(
     [account_create_signer_base: InternalGas, "account.create_signer_base", (24 + 1) * MUL],
     [account_destroy_signer_base: InternalGas, "account.destroy_signer_base", (212 + 1)* MUL],
     [token_name_of_base:InternalGas,  "token.name_of_base", (2002 + 1) * MUL],
-    [hash_keccak256_per_byte:InternalGas,  "hash.keccak256_per_byte",  (64 + 1) *MUL],
-    [hash_ripemd160_per_byte:InternalGas ,  "hash.ripemd160_per_byte", (64 + 1) * MUL],
-    [signature_ec_recover_per_byte:InternalGas,   "signature.ec_recover_per_byte", (128 + 1) * MUL],
+    [hash_keccak256_per_byte:InternalGasPerByte,  "hash.keccak256_per_byte",  (64 + 1) *MUL],
+    [hash_ripemd160_per_byte:InternalGasPerByte ,  "hash.ripemd160_per_byte", (64 + 1) * MUL],
+    [signature_ec_recover_per_byte:InternalGasPerByte,   "signature.ec_recover_per_byte", (128 + 1) * MUL],
 
     [u256_from_bytes_per_byte: InternalGasPerByte,   "u256.from_bytes.per_byte", (2 + 1) * MUL],
     [u256_add_base: InternalGas,   "u256.add.base", (4 + 1) * MUL],

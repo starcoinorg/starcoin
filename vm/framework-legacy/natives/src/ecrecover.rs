@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use arrayref::array_ref;
-use libsecp256k1::curve::Scalar;
-use libsecp256k1::{recover, Message, PublicKey, RecoveryId, Signature};
+use libsecp256k1::{curve::Scalar, recover, Message, PublicKey, RecoveryId, Signature};
 use log::debug;
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
@@ -11,7 +10,12 @@ use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
     loaded_data::runtime_types::Type, natives::function::NativeResult, pop_arg, values::Value,
 };
-use smallvec::smallvec;
+use smallvec::{smallvec, SmallVec};
+use starcoin_gas_schedule::gas_params::natives::starcoin_framework_legacy::*;
+use starcoin_native_interface::{
+    safely_pop_arg, SafeNativeBuilder, SafeNativeContext, SafeNativeError, SafeNativeResult,
+};
+use starcoin_types::error;
 use std::collections::VecDeque;
 use std::sync::Arc;
 use tiny_keccak::Hasher;
@@ -28,60 +32,76 @@ const ZERO_ADDR: [u8; 0] = [0; 0];
  *   gas cost: base_cost + unit_cost * data_length
  *
  **************************************************************************************************/
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct EcrecoverGasParameters {
-    pub base: InternalGas,
-    pub per_byte: InternalGasPerByte,
+// #[derive(Debug, Clone, PartialEq, Eq)]
+// pub struct EcrecoverGasParameters {
+//     pub base: InternalGas,
+//     pub per_byte: InternalGasPerByte,
+// }
+
+pub mod abort_codes {
+    pub const NFE_DESERIALIZE: u64 = 0x01_0001;
 }
 
 /// recover address from signature, if recover fail, return an zero address
 pub fn native_ecrecover(
-    gas_params: &EcrecoverGasParameters,
-    _context: &mut NativeContext,
-    _ty_args: Vec<Type>,
+    context: &mut SafeNativeContext,
+    mut ty_args: Vec<Type>,
     mut arguments: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
-    debug_assert!(_ty_args.is_empty());
+) -> SafeNativeResult<SmallVec<[Value; 1]>> {
+    debug_assert!(ty_args.is_empty());
     debug_assert!(arguments.len() == 2);
 
     // second arg is sig
-    let sig_arg = pop_arg!(arguments, Vec<u8>);
+    let sig_arg = safely_pop_arg!(arguments, Vec<u8>);
     // first arg is hash
-    let hash_arg = pop_arg!(arguments, Vec<u8>);
+    let hash_arg = safely_pop_arg!(arguments, Vec<u8>);
 
-    let cost = gas_params.base + gas_params.per_byte * NumBytes::new(hash_arg.len() as u64);
+    // let cost = gas_params.base + gas_params.per_byte * NumBytes::new(hash_arg.len() as u64);
+
+    let cost =
+        HASH_KECCAK256_PER_BYTE + HASH_KECCAK256_PER_BYTE * NumBytes::new(hash_arg.len() as u64);
+    context.charge(cost)?;
+
     if hash_arg.len() != HASH_LENGTH || sig_arg.len() != SIG_REC_LENGTH {
         debug!("ecrecover failed, invalid hash or sig");
-        return Ok(NativeResult::ok(
-            cost,
-            smallvec![Value::vector_u8(ZERO_ADDR)],
-        ));
+        // return Ok(SafeNativeResult::ok(
+        //     cost,
+        //     smallvec![Value::vector_u8(ZERO_ADDR)],
+        // ));
+        return Ok(smallvec![Value::vector_u8(ZERO_ADDR)])
     }
 
     if sig_arg.len() != SIG_REC_LENGTH {
-        return Ok(NativeResult::ok(
-            cost,
-            smallvec![Value::vector_u8(ZERO_ADDR)],
-        ));
+        // return Err(SafeNativeError::Abort {
+        //     abort_code: error::invalid_state(abort_codes::NFE_DESERIALIZE),
+        // });
+        // return Ok(NativeResult::ok(
+        //     cost,
+        //     smallvec![Value::vector_u8(ZERO_ADDR)],
+        // ));
+        return Ok(smallvec![Value::vector_u8(ZERO_ADDR)])
     }
 
     match ecrecover_address(
         array_ref![hash_arg, 0, HASH_LENGTH],
         array_ref![sig_arg, 0, SIG_REC_LENGTH],
     ) {
-        Ok(output) => Ok(NativeResult::ok(cost, smallvec![Value::vector_u8(output)])),
+        Ok(output) => {
+            //Ok(NativeResult::ok(cost, smallvec![Value::vector_u8(output)]))
+            Ok(smallvec![Value::vector_u8(output)])
+        }
         Err(err) => {
             debug!("ecrecover error: {:?}", err);
-            Ok(NativeResult::ok(
-                cost,
-                smallvec![Value::vector_u8(ZERO_ADDR)],
-            ))
+            Err(SafeNativeError::Abort {
+                abort_code: error::invalid_state(abort_codes::NFE_DESERIALIZE),
+            })
         }
     }
 }
 
-pub fn make_native_ecrecover(gas_params: EcrecoverGasParameters) -> NativeFunction {
-    Arc::new(move |context, ty_args, args| native_ecrecover(&gas_params, context, ty_args, args))
+pub fn make_native_ecrecover(builder: &SafeNativeBuilder) -> NativeFunction {
+    //Arc::new(move |context, ty_args, args| native_ecrecover(&gas_params, context, ty_args, args))
+    builder.make_native(native_ecrecover)
 }
 
 pub(crate) fn keccak(input: &[u8]) -> [u8; 32] {

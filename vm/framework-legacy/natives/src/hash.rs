@@ -12,7 +12,9 @@ use ripemd160::digest::Output;
 use ripemd160::{Digest, Ripemd160};
 use smallvec::smallvec;
 use std::collections::VecDeque;
-
+use tiny_keccak::Keccak;
+use starcoin_gas_schedule::gas_params::natives::starcoin_framework::{HASH_KECCAK256_BASE, HASH_KECCAK256_PER_BYTE};
+use starcoin_native_interface::safely_pop_arg;
 /***************************************************************************************************
  * native fun native_keccak_256
  *
@@ -27,20 +29,24 @@ pub struct Keccak256HashGasParameters {
 
 pub fn native_keccak_256(
     gas_params: &Keccak256HashGasParameters,
-    _context: &mut NativeContext,
+    context: &mut NativeContext,
     _ty_args: Vec<Type>,
-    mut arguments: VecDeque<Value>,
+    mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     debug_assert!(_ty_args.is_empty());
-    debug_assert!(arguments.len() == 1);
+    debug_assert!(args.len() == 1);
 
-    let input_arg = pop_arg!(arguments, Vec<u8>);
+    let bytes = safely_pop_arg!(args, Vec<u8>);
 
-    let cost = gas_params.base + gas_params.per_byte * NumBytes::new(input_arg.len() as u64);
+    let cost = HASH_KECCAK256_BASE + HASH_KECCAK256_PER_BYTE * NumBytes::new(bytes.len() as u64);
+    context.charge(cost)?;
 
-    let output = crate::ecrecover::keccak(input_arg.as_slice());
+    let mut hasher = Keccak::v256();
+    hasher.update(&bytes);
+    let mut output = [0u8; 32];
+    hasher.finalize(&mut output);
 
-    Ok(NativeResult::ok(cost, smallvec![Value::vector_u8(output)]))
+    Ok(smallvec![Value::vector_u8(output)])
 }
 
 /***************************************************************************************************
@@ -100,7 +106,7 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
         ),
     ];
 
-    crate::helpers::make_module_natives(natives)
+    //move_stdlib::natives::make_module_natives(natives)
 }
 
 #[cfg(test)]

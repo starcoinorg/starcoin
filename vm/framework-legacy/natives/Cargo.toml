@@ -13,6 +13,7 @@ starcoin-crypto = { workspace = true }
 starcoin-uint = { workspace = true }
 starcoin-native-interface = { workspace = true}
 starcoin-gas-schedule = { workspace = true }
+starcoin-types = { workspace = true }
 tiny-keccak = { features = ["keccak"], workspace = true }
 
 [dev-dependencies]

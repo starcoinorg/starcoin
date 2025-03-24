@@ -10780,6 +10780,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-gas-schedule",
  "starcoin-native-interface",
+ "starcoin-types",
  "starcoin-uint",
  "tiny-keccak",
 ]
