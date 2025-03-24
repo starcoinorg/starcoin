@@ -15,7 +15,6 @@ pub mod ecrecover;
 pub mod from_bcs;
 pub mod secp256k1;
 
-// mod helpers;
 pub mod util;
 
 pub mod status {
@@ -24,7 +23,6 @@ pub mod status {
     // Failure in address parsing (likely no correct length)
     pub const NFE_UNABLE_TO_PARSE_ADDRESS: u64 = 0x2;
 }
-
 
 pub fn all_natives(
     framework_addr: AccountAddress,

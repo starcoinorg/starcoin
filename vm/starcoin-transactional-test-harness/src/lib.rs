@@ -37,6 +37,7 @@ use starcoin_config::{genesis_key_pair, BuiltinNetworkID};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_dev::playground::call_contract;
+use starcoin_framework_legacy_stdlib::starcoin_framework_named_addresses;
 use starcoin_gas_meter::StarcoinGasParameters;
 use starcoin_gas_schedule::FromOnChainGasSchedule;
 use starcoin_rpc_api::types::{
@@ -81,7 +82,6 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::sync::Mutex;
 use std::{collections::BTreeMap, convert::TryInto, path::Path, str::FromStr};
-use starcoin_framework_legacy_stdlib::starcoin_framework_named_addresses;
 use tempfile::{NamedTempFile, TempDir};
 
 pub mod context;

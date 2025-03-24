@@ -1,11 +1,11 @@
 use anyhow::Result;
 use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
 use starcoin_framework::get_metadata_from_compiled_module;
+use starcoin_framework_legacy_stdlib::StdLibOptions;
 use starcoin_gas_schedule::LATEST_GAS_FEATURE_VERSION;
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::normalized::Function;
 use std::collections::{HashMap, HashSet};
-use starcoin_framework_legacy_stdlib::StdLibOptions;
 
 #[test]
 pub fn test_native_function_matches() -> Result<()> {

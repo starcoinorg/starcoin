@@ -6,6 +6,7 @@ use crate::StarcoinOpt;
 use anyhow::{bail, ensure, format_err, Result};
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
+use starcoin_framework_legacy_stdlib::stdlib_files;
 use starcoin_move_compiler::move_command_line_common::files::{
     MOVE_COMPILED_EXTENSION, MOVE_EXTENSION,
 };
@@ -18,7 +19,6 @@ use starcoin_vm_types::account_address::AccountAddress;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
-use starcoin_framework_legacy_stdlib::stdlib_files;
 
 /// Compile module or script, support compile source dir.
 #[derive(Debug, Parser)]

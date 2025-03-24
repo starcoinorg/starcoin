@@ -3,11 +3,11 @@
 
 use move_compiler::construct_pre_compiled_lib;
 use move_compiler::shared::PackagePaths;
+use starcoin_framework_legacy_stdlib::stdlib_files;
 use starcoin_move_compiler::starcoin_framework_named_addresses;
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 use std::process::Command;
-use starcoin_framework_legacy_stdlib::stdlib_files;
 
 fn assert_that_version_control_has_no_unstaged_changes() {
     let output = Command::new("git")

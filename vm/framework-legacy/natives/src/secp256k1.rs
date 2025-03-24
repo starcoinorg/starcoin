@@ -8,15 +8,17 @@
  *
  **************************************************************************************************/
 
-use crate::util::make_native_from_func;
-use move_binary_format::errors::PartialVMResult;
-use move_core_types::gas_algebra::{InternalGas, InternalGasPerArg, NumArgs};
-use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
-use move_vm_types::loaded_data::runtime_types::Type;
-use move_vm_types::natives::function::NativeResult;
-use move_vm_types::pop_arg;
-use move_vm_types::values::Value;
-use smallvec::smallvec;
+use move_vm_runtime::native_functions::NativeFunction;
+use move_vm_types::{
+    loaded_data::runtime_types::Type, values::Value,
+};
+use smallvec::{smallvec, SmallVec};
+use starcoin_gas_schedule::gas_params::natives::starcoin_framework_legacy::*;
+use starcoin_native_interface::{
+    safely_pop_arg, RawSafeNative, SafeNativeBuilder, SafeNativeContext, SafeNativeError,
+    SafeNativeResult,
+};
+use starcoin_types::error;
 use std::collections::VecDeque;
 
 /// Abort code when deserialization fails (0x01 == INVALID_ARGUMENT)
@@ -27,19 +29,18 @@ pub mod abort_codes {
 }
 
 fn native_ecdsa_recover(
-    gas_params: &GasParameters,
-    _context: &mut NativeContext,
-    _ty_args: Vec<Type>,
+    context: &mut SafeNativeContext,
+    ty_args: Vec<Type>,
     mut arguments: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
-    debug_assert!(_ty_args.is_empty());
+) -> SafeNativeResult<SmallVec<[Value; 1]>> {
+    debug_assert!(ty_args.is_empty());
     debug_assert!(arguments.len() == 3);
 
-    let signature = pop_arg!(arguments, Vec<u8>);
-    let recovery_id = pop_arg!(arguments, u8);
-    let msg = pop_arg!(arguments, Vec<u8>);
+    let signature = safely_pop_arg!(arguments, Vec<u8>);
+    let recovery_id = safely_pop_arg!(arguments, u8);
+    let msg = safely_pop_arg!(arguments, Vec<u8>);
 
-    let mut cost = gas_params.base;
+    let mut cost = SIGNATURE_EC_RECOVER_PER_BYTE; //gas_params.base;
 
     // NOTE(Gas): O(1) cost
     // (In reality, O(|msg|) deserialization cost, with |msg| < libsecp256k1_core::util::MESSAGE_SIZE
@@ -47,7 +48,10 @@ fn native_ecdsa_recover(
     let msg = match libsecp256k1::Message::parse_slice(&msg) {
         Ok(msg) => msg,
         Err(_) => {
-            return Ok(NativeResult::err(cost, abort_codes::NFE_DESERIALIZE));
+            //return Ok(NativeResult::err(cost, abort_codes::NFE_DESERIALIZE));
+            return Err(SafeNativeError::Abort {
+                abort_code: error::invalid_state(crate::ecrecover::abort_codes::NFE_DESERIALIZE),
+            });
         }
     };
 
@@ -55,7 +59,10 @@ fn native_ecdsa_recover(
     let rid = match libsecp256k1::RecoveryId::parse(recovery_id) {
         Ok(rid) => rid,
         Err(_) => {
-            return Ok(NativeResult::err(cost, abort_codes::NFE_DESERIALIZE));
+            //return Ok(NativeResult::err(cost, abort_codes::NFE_DESERIALIZE));
+            return Err(SafeNativeError::Abort {
+                abort_code: error::invalid_state(crate::ecrecover::abort_codes::NFE_DESERIALIZE),
+            });
         }
     };
 
@@ -64,25 +71,23 @@ fn native_ecdsa_recover(
     let sig = match libsecp256k1::Signature::parse_standard_slice(&signature) {
         Ok(sig) => sig,
         Err(_) => {
-            return Ok(NativeResult::err(cost, abort_codes::NFE_DESERIALIZE));
+            // return Ok(NativeResult::err(cost, abort_codes::NFE_DESERIALIZE));
+            return Err(SafeNativeError::Abort {
+                abort_code: error::invalid_state(crate::ecrecover::abort_codes::NFE_DESERIALIZE),
+            });
         }
     };
 
-    cost += gas_params.ecdsa_recover * NumArgs::one();
+    // cost += gas_params.ecdsa_recover * NumArgs::one();
+    context.charge(cost)?;
 
     // NOTE(Gas): O(1) cost: a size-2 multi-scalar multiplication
     match libsecp256k1::recover(&msg, &sig, &rid) {
-        Ok(pk) => Ok(NativeResult::ok(
-            cost,
-            smallvec![
-                Value::vector_u8(pk.serialize()[1..].to_vec()),
-                Value::bool(true)
-            ],
-        )),
-        Err(_) => Ok(NativeResult::ok(
-            cost,
-            smallvec![Value::vector_u8([0u8; 0]), Value::bool(false)],
-        )),
+        Ok(pk) => Ok(smallvec![
+            Value::vector_u8(pk.serialize()[1..].to_vec()),
+            Value::bool(true)
+        ]),
+        Err(_) => Ok(smallvec![Value::vector_u8([0u8; 0]), Value::bool(false)]),
     }
 }
 
@@ -90,17 +95,10 @@ fn native_ecdsa_recover(
  * module
  *
  **************************************************************************************************/
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct GasParameters {
-    pub base: InternalGas,
-    pub ecdsa_recover: InternalGasPerArg,
-}
-
-pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
+pub fn make_all(builder: SafeNativeBuilder) -> impl Iterator<Item = (String, NativeFunction)> {
     let natives = [(
         "ecdsa_recover_internal",
-        make_native_from_func(gas_params, native_ecdsa_recover),
+        native_ecdsa_recover as RawSafeNative,
     )];
-
-    crate::helpers::make_module_natives(natives)
+    builder.make_named_natives(natives)
 }

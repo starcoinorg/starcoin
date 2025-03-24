@@ -15,6 +15,10 @@ use starcoin_cached_packages::{
 };
 
 use starcoin_config::{genesis_config::G_TOTAL_STC_AMOUNT, ChainNetwork};
+use starcoin_framework_legacy_stdlib::{module_to_package, stdlib_package};
+pub use starcoin_framework_legacy_stdlib::{
+    stdlib_compiled_modules, stdlib_modules, StdLibOptions, StdlibVersion,
+};
 use starcoin_types::account::Account;
 use starcoin_vm_types::on_chain_config::Features;
 use starcoin_vm_types::{
@@ -37,8 +41,6 @@ use starcoin_vm_types::{
         TransactionPayload,
     },
 };
-use starcoin_framework_legacy_stdlib::{module_to_package, stdlib_package};
-pub use starcoin_framework_legacy_stdlib::{stdlib_compiled_modules, stdlib_modules, StdLibOptions, StdlibVersion};
 
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
 pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 40000000;

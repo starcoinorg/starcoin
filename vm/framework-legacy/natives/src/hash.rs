@@ -1,39 +1,35 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::util::make_native_from_func;
-use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
-    loaded_data::runtime_types::Type, natives::function::NativeResult, pop_arg, values::Value,
+    loaded_data::runtime_types::Type, natives::function::NativeResult, values::Value,
 };
 use ripemd160::digest::Output;
 use ripemd160::{Digest, Ripemd160};
-use smallvec::smallvec;
+use smallvec::{smallvec, SmallVec};
+use starcoin_gas_schedule::gas_params::natives::starcoin_framework::{
+    HASH_KECCAK256_BASE, HASH_KECCAK256_PER_BYTE,
+};
+use starcoin_native_interface::{
+    safely_pop_arg, RawSafeNative, SafeNativeBuilder, SafeNativeContext, SafeNativeResult,
+};
 use std::collections::VecDeque;
 use tiny_keccak::Keccak;
-use starcoin_gas_schedule::gas_params::natives::starcoin_framework::{HASH_KECCAK256_BASE, HASH_KECCAK256_PER_BYTE};
-use starcoin_native_interface::safely_pop_arg;
 /***************************************************************************************************
  * native fun native_keccak_256
  *
  *   gas cost: base_cost + per_byte * data_length
  *
  **************************************************************************************************/
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Keccak256HashGasParameters {
-    pub base: InternalGas,
-    pub per_byte: InternalGasPerByte,
-}
 
 pub fn native_keccak_256(
-    gas_params: &Keccak256HashGasParameters,
-    context: &mut NativeContext,
-    _ty_args: Vec<Type>,
+    context: &mut SafeNativeContext,
+    ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
-    debug_assert!(_ty_args.is_empty());
+) -> SafeNativeResult<SmallVec<[Value; 1]>> {
+    debug_assert!(ty_args.is_empty());
     debug_assert!(args.len() == 1);
 
     let bytes = safely_pop_arg!(args, Vec<u8>);
@@ -55,27 +51,23 @@ pub fn native_keccak_256(
  *   gas cost: base_cost + per_byte * data_length
  *
  **************************************************************************************************/
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Ripemd160HashGasParameters {
-    pub base: InternalGas,
-    pub per_byte: InternalGasPerByte,
-}
 
 pub fn native_ripemd160(
-    gas_params: &Ripemd160HashGasParameters,
-    _context: &mut NativeContext,
-    _ty_args: Vec<Type>,
+    context: &mut SafeNativeContext,
+    ty_args: Vec<Type>,
     mut arguments: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
-    debug_assert!(_ty_args.is_empty());
+) -> SafeNativeResult<SmallVec<[Value; 1]>> {
+    debug_assert!(ty_args.is_empty());
     debug_assert!(arguments.len() == 1);
 
-    let input_arg = pop_arg!(arguments, Vec<u8>);
+    let input_arg = safely_pop_arg!(arguments, Vec<u8>);
 
-    let cost = gas_params.base + gas_params.per_byte * NumBytes::new(input_arg.len() as u64);
+    //let cost = gas_params.base + gas_params.per_byte * NumBytes::new(input_arg.len() as u64);
+    let cost = HASH_KECCAK256_PER_BYTE * NumBytes::new(input_arg.len() as u64);
+    context.charge(cost)?;
 
     let result = ripemd160(input_arg.as_slice());
-    Ok(NativeResult::ok(cost, smallvec![Value::vector_u8(result)]))
+    Ok(smallvec![Value::vector_u8(result)])
 }
 
 fn ripemd160(input: &[u8]) -> Output<Ripemd160> {
@@ -88,25 +80,21 @@ fn ripemd160(input: &[u8]) -> Output<Ripemd160> {
  * module
  *
  **************************************************************************************************/
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct GasParameters {
-    pub keccak256: Keccak256HashGasParameters,
-    pub ripemd160: Ripemd160HashGasParameters,
-}
+// #[derive(Debug, Clone, PartialEq, Eq)]
+// pub struct GasParameters {
+//     pub keccak256: Keccak256HashGasParameters,
+//     pub ripemd160: Ripemd160HashGasParameters,
+// }
 
-pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
+pub fn make_all(
+    builder: &SafeNativeBuilder,
+) -> impl Iterator<Item = (String, NativeFunction)> + '_ {
     let natives = [
-        (
-            "keccak_256",
-            make_native_from_func(gas_params.keccak256, native_keccak_256),
-        ),
-        (
-            "ripemd160",
-            make_native_from_func(gas_params.ripemd160, native_ripemd160),
-        ),
+        ("keccak_256", native_keccak_256 as RawSafeNative),
+        ("ripemd160", native_ripemd160 as RawSafeNative),
     ];
 
-    //move_stdlib::natives::make_module_natives(natives)
+    builder.make_named_natives(natives)
 }
 
 #[cfg(test)]

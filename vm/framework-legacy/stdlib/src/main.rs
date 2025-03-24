@@ -8,6 +8,11 @@ use itertools::Itertools;
 use log::LevelFilter;
 use simplelog::{Config, SimpleLogger};
 use starcoin_crypto::hash::PlainCryptoHash;
+use starcoin_framework_legacy_stdlib::{
+    build_stdlib, build_stdlib_error_code_map, load_compiled_modules,
+    load_latest_stable_compiled_modules, save_binary, COMPILED_EXTENSION, COMPILED_OUTPUT_PATH,
+    LATEST_COMPILED_OUTPUT_PATH, STDLIB_DIR_NAME,
+};
 use starcoin_move_compiler::check_compiled_module_compat;
 use starcoin_vm_types::account_config::core_code_address;
 use starcoin_vm_types::file_format::CompiledModule;
@@ -24,11 +29,6 @@ use starcoin_vm_types::{
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::path::Path;
 use std::{collections::BTreeMap, fs::File, io::Read, path::PathBuf};
-use starcoin_framework_legacy_stdlib::{
-    build_stdlib, build_stdlib_error_code_map, load_compiled_modules,
-    load_latest_stable_compiled_modules, save_binary, COMPILED_EXTENSION, COMPILED_OUTPUT_PATH,
-    LATEST_COMPILED_OUTPUT_PATH, STDLIB_DIR_NAME,
-};
 
 fn compiled_modules(stdlib_path: &mut PathBuf) -> BTreeMap<ModuleId, CompiledModule> {
     let mut compiled_modules = BTreeMap::new();

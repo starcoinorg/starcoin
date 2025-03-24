@@ -37,7 +37,8 @@ fn native_from_bytes(
 
     let bytes = safely_pop_arg!(arguments, Vec<u8>);
 
-    let cost = FROM_BCS_BASE + FROM_BCS_BASE * NumBytes::new(bytes.len() as u64);
+    //let cost = U256_FROM_BYTES_PER_BYTE * NumBytes::new(bytes.len() as u64);
+    let cost = FROM_BCS_BASE + U256_FROM_BYTES_PER_BYTE * NumBytes::new(bytes.len() as u64);
     context.charge(cost)?;
 
     let layout = context.type_to_type_layout(&ty_args[0])?;

@@ -1,6 +1,6 @@
 use anyhow::{format_err, Result};
-use starcoin_vm_types::transaction::Package;
 use starcoin_framework_legacy_stdlib::COMPILED_MOVE_CODE_DIR;
+use starcoin_vm_types::transaction::Package;
 
 // todo: enable this test when we have more releases
 #[ignore]

@@ -68,7 +68,7 @@ pub fn native_ecrecover(
         //     cost,
         //     smallvec![Value::vector_u8(ZERO_ADDR)],
         // ));
-        return Ok(smallvec![Value::vector_u8(ZERO_ADDR)])
+        return Ok(smallvec![Value::vector_u8(ZERO_ADDR)]);
     }
 
     if sig_arg.len() != SIG_REC_LENGTH {
@@ -79,7 +79,7 @@ pub fn native_ecrecover(
         //     cost,
         //     smallvec![Value::vector_u8(ZERO_ADDR)],
         // ));
-        return Ok(smallvec![Value::vector_u8(ZERO_ADDR)])
+        return Ok(smallvec![Value::vector_u8(ZERO_ADDR)]);
     }
 
     match ecrecover_address(
