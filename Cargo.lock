@@ -10750,6 +10750,7 @@ dependencies = [
  "bcs-ext",
  "forkable-jellyfish-merkle",
  "lru 0.7.8",
+ "once_cell",
  "parking_lot 0.12.1",
  "serde 1.0.152",
  "starcoin-crypto",

@@ -21,6 +21,8 @@ pub mod account;
 
 pub mod account_state;
 
+pub mod multi_state;
+
 #[allow(clippy::too_many_arguments)]
 pub mod block;
 pub mod compact_block;
