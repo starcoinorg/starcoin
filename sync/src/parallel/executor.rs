@@ -16,6 +16,7 @@ use tokio::{
 
 const MAX_TOTAL_WAITING_TIME: u64 = 3600000; // an hour
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum ExecuteState {
     Executing(HashValue),

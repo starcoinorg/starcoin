@@ -948,7 +948,7 @@ impl StarcoinVM {
         storage: &S,
         block_metadata: BlockMetadata,
     ) -> Result<TransactionOutput, VMStatus> {
-        #[cfg(testing)]
+        #[cfg(feature = "testing")]
         info!("process_block_meta begin");
         let stdlib_version = self.version.clone().map(|v| v.into_stdlib_version());
         let txn_sender = account_config::genesis_address();
@@ -1007,7 +1007,7 @@ impl StarcoinVM {
             )
             .map(|_return_vals| ())
             .or_else(convert_prologue_runtime_error)?;
-        #[cfg(testing)]
+        #[cfg(feature = "testing")]
         info!("process_block_meta end");
         get_transaction_output(
             &mut (),
@@ -1573,7 +1573,7 @@ pub(crate) fn charge_global_write_gas_usage<R: MoveResolverExt>(
     let write_set_gas = u64::from(gas_meter.cal_write_set_gas());
     let total_cost = InternalGasPerByte::from(write_set_gas)
         * NumBytes::new(session.as_ref().num_mutated_accounts(sender));
-    #[cfg(testing)]
+    #[cfg(feature = "testing")]
     info!(
         "charge_global_write_gas_usage {} {}",
         total_cost,

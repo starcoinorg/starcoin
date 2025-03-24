@@ -4,6 +4,7 @@ use starcoin_metrics::{
     UIntCounterVec, UIntGauge, UIntGaugeVec,
 };
 
+#[allow(dead_code)]
 #[derive(Clone)]
 pub struct Metrics {
     // This list is ordered alphabetically
