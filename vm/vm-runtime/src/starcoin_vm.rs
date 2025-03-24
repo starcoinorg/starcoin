@@ -1429,7 +1429,7 @@ impl TransactionBlock {
     }
 }
 
-/// UserTransaction | BlockPrologue | UserTransaction | UserTransactionExt
+/// TransactionBlock::UserTransaction | TransactionBlock::BlockPrologue | TransactionBlock::UserTransaction
 pub fn chunk_block_transactions(txns: Vec<Transaction>) -> Vec<TransactionBlock> {
     let mut blocks = vec![];
     let mut buf = vec![];
@@ -1561,13 +1561,11 @@ impl VMExecutor for StarcoinVM {
     fn execute_block(
         transactions: Vec<Transaction>,
         state_view: &impl StateView,
-        state_view1: &impl StateView,
         block_gas_limit: Option<u64>,
         metrics: Option<VMMetrics>,
     ) -> Result<Vec<TransactionOutput>, VMStatus> {
         let concurrency_level = Self::get_concurrency_level();
         if concurrency_level > 1 {
-            // todo: handle parallel execution
             let (result, _) = crate::parallel_executor::ParallelStarcoinVM::execute_block(
                 transactions,
                 state_view,
@@ -1578,39 +1576,13 @@ impl VMExecutor for StarcoinVM {
             // debug!("TurboSTM executor concurrency_level {}", concurrency_level);
             Ok(result)
         } else {
-            let mut block_outputs = vec![];
-            let (ext_txns, txns) = {
-                let mut ext_txns = vec![];
-                let mut txns = vec![];
-                transactions.into_iter().for_each(|txn| match txn {
-                    Transaction::UserTransaction(_) => txns.push(txn),
-                    Transaction::BlockMetadata(_) => ext_txns.push(txn),
-                    Transaction::UserTransactionExt(_) => ext_txns.push(txn),
-                });
-                (ext_txns, txns)
-            };
-            if !ext_txns.is_empty() {
-                let mut vm = StarcoinVM::new(metrics.clone());
-                let mut output =
-                    vm.execute_block_transactions(state_view1, ext_txns, block_gas_limit)?;
-                block_outputs.append(&mut output);
-            }
-
-            if !txns.is_empty() {
-                let gas_used: u64 = block_outputs
-                    .iter()
-                    .map(|(_, output)| output.gas_used())
-                    .sum();
-                let mut vm = StarcoinVM::new(metrics);
-                let mut output = vm.execute_block_transactions(
-                    state_view,
-                    txns,
-                    block_gas_limit.map(|limit| limit - gas_used),
-                )?;
-                block_outputs.append(&mut output);
-            }
-
-            Ok(block_outputs
+            let output = Self::execute_block_and_keep_vm_status(
+                transactions,
+                state_view,
+                block_gas_limit,
+                metrics,
+            )?;
+            Ok(output
                 .into_iter()
                 .map(|(_vm_status, txn_output)| txn_output)
                 .collect())
