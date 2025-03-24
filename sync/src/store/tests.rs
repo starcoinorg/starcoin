@@ -8,7 +8,6 @@ use starcoin_types::{
     transaction::{authenticator::AuthenticationKey, SignedUserTransaction},
     U256,
 };
-use std::u64;
 
 use crate::store::sync_absent_ancestor::DagSyncBlockKey;
 

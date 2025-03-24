@@ -224,7 +224,7 @@ default-members = [
 ]
 
 [workspace.lints.clippy]
-use_self = "warn"
+doc_lazy_continuation = "allow"
 
 [profile.dev]
 panic = "unwind"

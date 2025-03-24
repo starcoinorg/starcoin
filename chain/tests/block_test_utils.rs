@@ -161,7 +161,7 @@ prop_compose! {
         parent_header.txn_accumulator_root(),
         parent_header.state_root(),
         txns,
-        u64::max_value(), /*block_gas_limit*/
+        u64::MAX, /*block_gas_limit*/
     );
     let body = BlockBody::new(user_txns, None);
     let header = gen_header(parent_header, state_root, acc_root, body.hash());

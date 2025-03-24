@@ -202,7 +202,7 @@ pub struct TransactionRequest {
     // transaction has not been included, you can be certain that it will
     // never be included.
     // A transaction that doesn't expire is represented by a very large value like
-    // u64::max_value().
+    // u64::MAX.
     pub expiration_timestamp_secs: Option<u64>,
     pub chain_id: Option<u8>,
 }
@@ -524,7 +524,7 @@ pub struct RawUserTransactionView {
     // transaction has not been included, you can be certain that it will
     // never be included.
     // A transaction that doesn't expire is represented by a very large value like
-    // u64::max_value().
+    // u64::MAX.
     pub expiration_timestamp_secs: StrView<u64>,
     pub chain_id: u8,
 }

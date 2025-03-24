@@ -84,7 +84,7 @@ impl EventHandler<Self, PeerAnnouncementMessage> for AnnouncementService {
                                             err, peer_id
                                         );
                                         if let TransactionError::InvalidSignature(_) = err {
-                                            network.report_peer(peer_id.clone(), ReputationChange::new(i32::min_value() / 2, "InvalidSignature"))
+                                            network.report_peer(peer_id.clone(), ReputationChange::new(i32::MIN / 2, "InvalidSignature"))
                                         }
                                     }
                                 }

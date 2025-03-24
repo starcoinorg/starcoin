@@ -83,7 +83,7 @@ impl CounterCollector {
     pub fn new_with_counter(counter: Arc<AtomicU64>) -> Self {
         Self {
             counter,
-            max: u64::max_value(),
+            max: u64::MAX,
         }
     }
 
