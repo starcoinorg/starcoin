@@ -44,7 +44,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
             "block difficulty count should eq block_difficulty_window"
         );
     }
-    let target = get_next_target_helper(blocks, 5_00)?;
+    let target = get_next_target_helper(blocks, 2_00)?;
     debug!(
         "get_next_work_required current_number: {}, epoch: {:?}, target: {}",
         current_header.number(),
