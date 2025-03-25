@@ -14,9 +14,7 @@ use starcoin_miner::SubmitSealRequest as MinerSubmitSealRequest;
 use starcoin_service_registry::{ServiceRef, ServiceRequest};
 use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::system_events::MintBlockEvent;
-use std::borrow::BorrowMut;
 use std::convert::TryInto;
-use std::io::Write;
 use std::sync::Arc;
 use std::sync::RwLock;
 

@@ -7,7 +7,6 @@ use crate::cn::CryptoNightConsensus;
 use crate::dummy::DummyConsensus;
 use crate::keccak::KeccakConsensus;
 use anyhow::{format_err, Result};
-use byteorder::{LittleEndian, WriteBytesExt};
 use once_cell::sync::Lazy;
 use rand::Rng;
 use starcoin_chain_api::ChainReader;
@@ -16,7 +15,6 @@ use starcoin_time_service::TimeService;
 use starcoin_types::block::{BlockHeader, BlockHeaderExtra};
 use starcoin_types::U256;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
-use std::io::Write;
 
 pub mod argon;
 pub mod cn;
