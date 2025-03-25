@@ -265,7 +265,7 @@ impl StratumJobResponse {
         target: String,
     ) -> Self {
         let mut minting_blob = e.minting_blob.clone();
-        let _ = minting_blob[35..39].borrow_mut().write_all(&worker_id.buff);
+        minting_blob[35..39].copy_from_slice(&worker_id.buff);
 
         let job_id = JobId::from_bob(&e.minting_blob).encode();
         Self {
