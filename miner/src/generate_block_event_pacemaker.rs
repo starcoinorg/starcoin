@@ -112,6 +112,10 @@ impl EventHandler<Self, NewDagBlockFromPeer> for GenerateBlockEventPacemaker {
             .executed_block
             .number()
             .saturating_sub(epoch_info.epoch().start_block_number());
+        if blocks == 0 {
+            debug!("[pacemaker] Zero blocks in the epoch, skipping uncle rate computation.");
+            return;
+        }
         let uncle_rate = total_uncles * 1000 / blocks;
         let uncle_rate_in_confing = self
             .config
