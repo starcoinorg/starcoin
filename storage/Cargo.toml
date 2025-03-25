@@ -18,20 +18,18 @@ starcoin-state-store-api = { workspace = true }
 coarsetime = { workspace = true }
 forkable-jellyfish-merkle = { workspace = true }
 starcoin-logger = { workspace = true }
-network-types = { workspace = true }
-network-p2p-types = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-metrics = { workspace = true }
 starcoin-uint = { workspace = true }
 starcoin-vm-types = { workspace = true }
 
 [dev-dependencies]
-proptest = { workspace = true }
-proptest-derive = { workspace = true }
-rand = { workspace = true }
-starcoin-types = { features = ["fuzzing"], workspace = true }
-starcoin-crypto = { workspace = true }
-stest = { workspace = true }
+#proptest = { workspace = true }
+#proptest-derive = { workspace = true }
+#rand = { workspace = true }
+#starcoin-types = { features = ["fuzzing"], workspace = true }
+#starcoin-crypto = { workspace = true }
+#stest = { workspace = true }
 
 [features]
 default = []

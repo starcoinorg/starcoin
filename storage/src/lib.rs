@@ -15,13 +15,14 @@ use crate::transaction::TransactionStorage;
 use crate::transaction_info::{TransactionInfoHashStorage, TransactionInfoStorage};
 use anyhow::{bail, format_err, Error, Result};
 use block::DagSyncBlock;
-use network_p2p_types::peer_id::PeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorTreeStore;
 use starcoin_crypto::HashValue;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
+//use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use starcoin_types::account_address::AccountAddress;
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus, SnapshotRange};
 use starcoin_types::transaction::{RichTransactionInfo, Transaction};
@@ -29,8 +30,6 @@ use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
     startup_info::StartupInfo,
 };
-//use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
-use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Display, Formatter};
@@ -275,7 +274,7 @@ pub trait BlockStore {
         &self,
         block_id: HashValue,
         block: Block,
-        peer_id: Option<PeerId>,
+        peer_id: Option<String>,
         failed: String,
         version: String,
     ) -> Result<()>;
@@ -285,7 +284,7 @@ pub trait BlockStore {
     fn get_failed_block_by_id(
         &self,
         block_id: HashValue,
-    ) -> Result<Option<(Block, Option<PeerId>, String, String)>>;
+    ) -> Result<Option<(Block, Option<String>, String, String)>>;
 
     fn get_snapshot_range(&self) -> Result<Option<SnapshotRange>>;
     fn save_snapshot_range(&self, snapshot_height: SnapshotRange) -> Result<()>;
@@ -514,7 +513,7 @@ impl BlockStore for Storage {
         &self,
         block_id: HashValue,
         block: Block,
-        peer_id: Option<PeerId>,
+        peer_id: Option<String>,
         failed: String,
         version: String,
     ) -> Result<()> {
@@ -529,7 +528,7 @@ impl BlockStore for Storage {
     fn get_failed_block_by_id(
         &self,
         block_id: HashValue,
-    ) -> Result<Option<(Block, Option<PeerId>, String, String)>> {
+    ) -> Result<Option<(Block, Option<String>, String, String)>> {
         self.block_storage.get_failed_block_by_id(block_id)
     }
 

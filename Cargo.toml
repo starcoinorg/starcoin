@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "types",
+    "storage",
     "state/api",
     "state/state-tree",
     "state/statedb",
@@ -41,6 +42,7 @@ members = [
 
 default-members = [
     "types",
+    "storage",
     "state/api",
     "state/state-tree",
     "state/statedb",
@@ -123,6 +125,7 @@ clap = { version = "4.5", features = [
 cli-table = "0.3.2"
 claims = "0.7"
 test-case = "3.1.0"
+coarsetime = "0.1.36"
 codespan = { version = "0.8.0", features = ["serialization"] }
 codespan-reporting = "0.11"
 colored = "2.0.0"
@@ -206,6 +209,7 @@ rand_0_7_3 = { package = "rand", version = "0.7.3" }
 rand_core = { version = "0.6.3", default-features = false }
 rand_core_0_5_1 = { package = "rand_core", version = "0.5.1" }
 rayon = "1.6.1"
+rocksdb = { default-features = false, features = ["lz4"], version = "0.21.0" }
 schemars = { git = "https://github.com/starcoinorg/schemars", rev = "a64c6ddf7ca4796e090208b1476de2e53772042f" }
 serde = { version = "1.0.130", features = ["derive"] }
 serde-generate = { git = "https://github.com/starcoinorg/serde-reflection", rev = "eb95fd4e3b67e08d71432b522c53833a0b855d80" }
@@ -256,6 +260,8 @@ starcoin-state-api = { path = "state/api" }
 starcoin-state-store-api = { path = "state/state-store-api" }
 starcoin-state-tree = { path = "state/state-tree" }
 starcoin-statedb = { path = "state/statedb" }
+starcoin-storage = { path = "storage" }
+starcoin-config = { git = "https://github.com/starcoinorg/starcoin", branch = "multi-move-vm" }
 starcoin-accumulator = { path = "commons/accumulator" }
 starcoin-infallible = { path = "commons/infallible" }
 starcoin-time-service = { git = "https://github.com/starcoinorg/starcoin", branch = "multi-move-vm" }

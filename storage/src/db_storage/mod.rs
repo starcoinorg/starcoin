@@ -215,9 +215,10 @@ impl DBStorage {
         // write buffer size
         db_opts.set_max_write_buffer_number(5);
         db_opts.set_max_background_jobs(5);
-        if config.parallelism > 1 {
-            db_opts.increase_parallelism(config.parallelism as i32);
-        }
+        // fixme:
+        //if config.parallelism > 1 {
+        //    db_opts.increase_parallelism(config.parallelism as i32);
+        //}
         // cache
         // let cache = Cache::new_lru_cache(2 * 1024 * 1024 * 1024);
         // db_opts.set_row_cache(&cache.unwrap());

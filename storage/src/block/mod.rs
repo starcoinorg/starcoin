@@ -10,7 +10,6 @@ use crate::{
 };
 use anyhow::{bail, Result};
 use bcs_ext::{BCSCodec, Sample};
-use network_p2p_types::peer_id::PeerId;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
@@ -19,12 +18,12 @@ use starcoin_types::block::{Block, BlockBody, BlockHeader, LegacyBlock, LegacyBl
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct OldFailedBlock {
     block: Block,
-    peer_id: Option<PeerId>,
+    peer_id: Option<String>,
     failed: String,
 }
 
-impl From<(Block, Option<PeerId>, String)> for OldFailedBlock {
-    fn from(block: (Block, Option<PeerId>, String)) -> Self {
+impl From<(Block, Option<String>, String)> for OldFailedBlock {
+    fn from(block: (Block, Option<String>, String)) -> Self {
         Self {
             block: block.0,
             peer_id: block.1,
@@ -34,8 +33,8 @@ impl From<(Block, Option<PeerId>, String)> for OldFailedBlock {
 }
 
 #[allow(clippy::from_over_into)]
-impl Into<(Block, Option<PeerId>, String, String)> for OldFailedBlock {
-    fn into(self) -> (Block, Option<PeerId>, String, String) {
+impl Into<(Block, Option<String>, String, String)> for OldFailedBlock {
+    fn into(self) -> (Block, Option<String>, String, String) {
         (self.block, self.peer_id, self.failed, "".to_string())
     }
 }
@@ -49,7 +48,7 @@ pub struct DagSyncBlock {
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct FailedBlock {
     block: Block,
-    peer_id: Option<PeerId>,
+    peer_id: Option<String>,
     failed: String,
     version: String,
 }
@@ -58,7 +57,7 @@ pub struct FailedBlock {
 #[serde(rename(deserialize = "FailedBlock"))]
 pub struct OldFailedBlockV2 {
     block: LegacyBlock,
-    peer_id: Option<PeerId>,
+    peer_id: Option<String>,
     failed: String,
     version: String,
 }
@@ -86,14 +85,14 @@ impl From<FailedBlock> for OldFailedBlockV2 {
 }
 
 #[allow(clippy::from_over_into)]
-impl Into<(Block, Option<PeerId>, String, String)> for FailedBlock {
-    fn into(self) -> (Block, Option<PeerId>, String, String) {
+impl Into<(Block, Option<String>, String, String)> for FailedBlock {
+    fn into(self) -> (Block, Option<String>, String, String) {
         (self.block, self.peer_id, self.failed, self.version)
     }
 }
 
-impl From<(Block, Option<PeerId>, String, String)> for FailedBlock {
-    fn from(block: (Block, Option<PeerId>, String, String)) -> Self {
+impl From<(Block, Option<String>, String, String)> for FailedBlock {
+    fn from(block: (Block, Option<String>, String, String)) -> Self {
         Self {
             block: block.0,
             peer_id: block.1,
@@ -107,7 +106,7 @@ impl Sample for FailedBlock {
     fn sample() -> Self {
         Self {
             block: Block::sample(),
-            peer_id: Some(PeerId::random()),
+            peer_id: None,
             failed: "Unknown reason".to_string(),
             version: "Unknown version".to_string(),
         }
@@ -118,7 +117,7 @@ impl FailedBlock {
     pub fn random() -> Self {
         Self {
             block: Block::random(),
-            peer_id: Some(PeerId::random()),
+            peer_id: None,
             failed: "Unknown reason".to_string(),
             version: "Unknown version".to_string(),
         }
@@ -420,7 +419,7 @@ impl BlockStorage {
         &self,
         block_id: HashValue,
         block: Block,
-        peer_id: Option<PeerId>,
+        peer_id: Option<String>,
         failed: String,
         version: String,
     ) -> Result<()> {
@@ -435,7 +434,7 @@ impl BlockStorage {
     pub fn get_failed_block_by_id(
         &self,
         block_id: HashValue,
-    ) -> Result<Option<(Block, Option<PeerId>, String, String)>> {
+    ) -> Result<Option<(Block, Option<String>, String, String)>> {
         let res = self.failed_block_storage.get_raw(block_id)?;
         match res {
             Some(res) => {
@@ -454,7 +453,7 @@ impl BlockStorage {
         &self,
         block_id: HashValue,
         block: Block,
-        peer_id: Option<PeerId>,
+        peer_id: Option<String>,
         failed: String,
     ) -> Result<()> {
         let old_block: OldFailedBlock = (block, peer_id, failed).into();
