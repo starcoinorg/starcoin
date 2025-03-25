@@ -2,6 +2,10 @@
 resolver = "2"
 members = [
     "types",
+    "state/api",
+    "state/state-tree",
+    "state/statedb",
+    "state/state-store-api",
     "vm/types",
     "vm/vm-runtime-types",
     "vm/vm-runtime",
@@ -37,6 +41,10 @@ members = [
 
 default-members = [
     "types",
+    "state/api",
+    "state/state-tree",
+    "state/statedb",
+    "state/state-store-api",
     "vm/types",
     "vm/vm-runtime-types",
     "vm/vm-runtime",
@@ -244,6 +252,10 @@ starcoin-parallel-executor = { path = "vm/parallel-executor" }
 # starcoin shared dependencies
 starcoin-types = { path = "types" }
 starcoin-uint = { path = "types/uint" }
+starcoin-state-api = { path = "state/api" }
+starcoin-state-store-api = { path = "state/state-store-api" }
+starcoin-state-tree = { path = "state/state-tree" }
+starcoin-statedb = { path = "state/statedb" }
 starcoin-accumulator = { path = "commons/accumulator" }
 starcoin-infallible = { path = "commons/infallible" }
 starcoin-time-service = { git = "https://github.com/starcoinorg/starcoin", branch = "multi-move-vm" }

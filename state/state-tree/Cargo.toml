@@ -11,8 +11,8 @@ starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 
 [dev-dependencies]
-starcoin-config = { workspace = true }
-starcoin-storage = { workspace = true }
+#starcoin-config = { workspace = true }
+#starcoin-storage = { workspace = true }
 
 [package]
 authors = { workspace = true }
