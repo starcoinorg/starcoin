@@ -104,9 +104,13 @@ impl EventHandler<Self, NewDagBlockFromPeer> for GenerateBlockEventPacemaker {
         let chain_state =
             ChainStateDB::new(self.storage.clone().into_super_arc(), Some(state_root));
         let account_reader = AccountStateReader::new(&chain_state);
-        let epoch_info = account_reader
-            .get_epoch_info()
-            .unwrap_or_else(|e| panic!("Epoch is none. error: {:?}", e));
+        let epoch_info = match account_reader.get_epoch_info() {
+            Ok(info) => info,
+            Err(e) => {
+                error!("[pacemaker] Failed to get epoch info: {:?}", e);
+                return;
+            }
+        };
         let total_uncles = epoch_info.epoch_data().uncles();
         let blocks = msg
             .executed_block
