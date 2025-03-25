@@ -462,9 +462,10 @@ where
         } else {
             let genesis = ctx.get_shared::<Genesis>()?;
             let tips = dag.get_dag_state(genesis.block().id())?.tips;
+            let ghostdata = dag.ghostdata(&tips)?;
             MineNewDagBlockInfo {
                 tips: tips.clone(),
-                blue_blocks: dag.ghostdata(&tips)?.mergeset_blues.as_ref().clone(),
+                blue_blocks: ghostdata.mergeset_blues.as_ref().clone(),
                 pruning_point: HashValue::zero(),
             }
         };
@@ -496,7 +497,7 @@ where
             previous_header,
             on_chain_block_gas_limit,
             tips_hash: tips,
-            blues_hash: blue_blocks[1..].to_vec(),
+            blue_blocks_hash: blue_blocks[1..].to_vec(),
             strategy,
             next_difficulty,
             now_milliseconds,

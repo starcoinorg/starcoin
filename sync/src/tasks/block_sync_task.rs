@@ -26,7 +26,6 @@ use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::Duration;
 use stream_task::{CollectorState, TaskError, TaskResultCollector, TaskState};
 
 use super::continue_execute_absent_block::ContinueChainOperator;
@@ -307,7 +306,7 @@ where
         // first, create the sender and receiver for ensuring that
         // the last block is connected before the next synchronization is triggered.
         // if the block is not the last one, we do not want to do this.
-        let (sender, mut receiver) = match state {
+        let (sender, _) = match state {
             CollectorState::Enough => {
                 let (s, r) = futures::channel::mpsc::unbounded::<BlockConnectedFinishEvent>();
                 (Some(s), Some(r))
@@ -332,21 +331,21 @@ where
         }
 
         // finally, if it is the last one, wait for the last block to be processed.
-        if block_connect_event.feedback.is_some() && receiver.is_some() {
-            let mut count: i32 = 0;
-            while count < 3 {
-                count = count.saturating_add(1);
-                match receiver.as_mut().unwrap().try_next() {
-                    Ok(_) => {
-                        break;
-                    }
-                    Err(_) => {
-                        info!("Waiting for last block to be processed");
-                        async_std::task::block_on(async_std::task::sleep(Duration::from_secs(10)));
-                    }
-                }
-            }
-        }
+        // if block_connect_event.feedback.is_some() && receiver.is_some() {
+        //     let mut count: i32 = 0;
+        //     while count < 3 {
+        //         count = count.saturating_add(1);
+        //         match receiver.as_mut().unwrap().try_next() {
+        //             Ok(_) => {
+        //                 break;
+        //             }
+        //             Err(_) => {
+        //                 info!("Waiting for last block to be processed");
+        //                 async_std::task::block_on(async_std::task::sleep(Duration::from_secs(10)));
+        //             }
+        //         }
+        //     }
+        // }
         Ok(state)
     }
 

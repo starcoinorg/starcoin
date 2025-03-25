@@ -4,7 +4,7 @@ use starcoin_crypto::HashValue;
 
 use crate::{
     consensusdb::{
-        consensus_block_depth::BlockDepthInfoReader,
+        consensus_block_depth::{BlockDepthInfo, BlockDepthInfoReader},
         schemadb::{GhostdagStoreReader, ReachabilityStoreReader},
     },
     reachability::reachability_service::{MTReachabilityService, ReachabilityService},
@@ -57,6 +57,10 @@ impl<S: BlockDepthInfoReader, U: ReachabilityStoreReader, V: GhostdagStoreReader
         self.calculate_block_at_depth(ghostdag_data, finality_depth, pruning_point)
     }
 
+    pub fn get_block_depth_info(&self, hash: HashValue) -> anyhow::Result<Option<BlockDepthInfo>> {
+        Ok(self.depth_store.get_block_depth_info(hash)?)
+    }
+
     // return hash zero if no requiring merge depth
     fn calculate_block_at_depth(
         &self,
@@ -81,10 +85,7 @@ impl<S: BlockDepthInfoReader, U: ReachabilityStoreReader, V: GhostdagStoreReader
             return anyhow::Ok(HashValue::zero());
         }
 
-        let mut current = match self
-            .depth_store
-            .get_block_depth_info(ghostdag_data.selected_parent)?
-        {
+        let mut current = match self.get_block_depth_info(ghostdag_data.selected_parent)? {
             Some(block_depth_info) => block_depth_info.merge_depth_root,
             None => HashValue::zero(),
         };

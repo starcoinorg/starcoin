@@ -156,7 +156,7 @@ pub struct Inner<P, T: TxPoolSyncService + 'static> {
 
 impl<P, T> Inner<P, T>
 where
-    P: TemplateTxProvider,
+    P: TemplateTxProvider + TxPoolSyncService,
     T: TxPoolSyncService,
 {
     pub fn new(
@@ -183,7 +183,7 @@ where
         let MinerResponse {
             previous_header,
             tips_hash,
-            blues_hash: blues,
+            blue_blocks_hash: blues,
             strategy,
             on_chain_block_gas_limit,
             next_difficulty: difficulty,

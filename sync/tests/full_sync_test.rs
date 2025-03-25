@@ -103,7 +103,7 @@ fn test_sync_and_notify_by_config(first_config: Arc<NodeConfig>, second_config: 
     // wait_two_node_synced_infinite(&first_node, &second_node);
 }
 
-#[test]
+#[stest::test(timeout = 120)]
 fn test_sync_and_notification_in_fast_range_location() {
     let mut first_config = NodeConfig::random_for_test();
     first_config.sync.range_locate = Some(true);
@@ -117,7 +117,7 @@ fn test_sync_and_notification_in_fast_range_location() {
     test_sync_and_notify_by_config(Arc::new(first_config), Arc::new(second_config));
 }
 
-#[test]
+#[stest::test(timeout = 120)]
 fn test_sync_and_notification_previous_version() {
     let first_config = NodeConfig::random_for_test();
     info!("first peer : {:?}", first_config.network.self_peer_id());
