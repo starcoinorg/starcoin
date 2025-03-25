@@ -22,6 +22,7 @@ starcoin-metrics = { workspace = true }
 starcoin-open-block = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-state-api = { workspace = true }
+starcoin-statedb = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-txpool = { workspace = true }
 starcoin-txpool-api = { workspace = true }

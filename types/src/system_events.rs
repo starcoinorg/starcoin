@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block::{Block, BlockHeaderExtra, ExecutedBlock};
+use crate::block::{Block, BlockHeader, BlockHeaderExtra, ExecutedBlock};
 use crate::sync_status::SyncStatus;
 use crate::U256;
 use schemars::JsonSchema;
@@ -38,7 +38,7 @@ pub struct SyncStatusChangeEvent(pub SyncStatus);
 
 #[derive(Clone, Debug)]
 pub struct NewDagBlockFromPeer {
-    pub executed_block: Arc<Block>,
+    pub executed_block: Arc<BlockHeader>,
 }
 
 ///Fire this event for generate a new block

@@ -6,7 +6,9 @@ use anyhow::Result;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
-use starcoin_storage::Storage;
+use starcoin_state_api::AccountStateReader;
+use starcoin_statedb::ChainStateDB;
+use starcoin_storage::{IntoSuper, Storage};
 use starcoin_txpool_api::PropagateTransactions;
 use starcoin_types::{
     sync_status::SyncStatus,
@@ -97,30 +99,29 @@ impl EventHandler<Self, SyncStatusChangeEvent> for GenerateBlockEventPacemaker {
 }
 
 impl EventHandler<Self, NewDagBlockFromPeer> for GenerateBlockEventPacemaker {
-    fn handle_event(&mut self, _msg: NewDagBlockFromPeer, ctx: &mut ServiceContext<Self>) {
-        // let state_root = head_block.header().state_root();
-        // let chain_state = ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root));
-        // let epoch = get_epoch_from_statedb(&chain_state)?;
-        self.send_event(false, ctx);
-        // let now = std::time::SystemTime::now();
-        // if let Some(last_time) = self.last_time_received {
-        //     match now.duration_since(last_time) {
-        //         Ok(duration) => {
-        //             self.last_time_received = Some(now);
-        //             if duration.as_secs() >= self.config.miner.dag_block_receive_time_window() {
-        //                 self.send_event(false, ctx);
-        //             }
-        //         }
-        //         Err(e) => {
-        //             warn!(
-        //                 "[pacemaker] failed to calculate the dag block receive duration: {:?}",
-        //                 e
-        //             );
-        //             self.last_time_received = Some(now);
-        //         }
-        //     }
-        // } else {
-        //     self.last_time_received = Some(now);
-        // }
+    fn handle_event(&mut self, msg: NewDagBlockFromPeer, ctx: &mut ServiceContext<Self>) {
+        let state_root = msg.executed_block.state_root();
+        let chain_state =
+            ChainStateDB::new(self.storage.clone().into_super_arc(), Some(state_root));
+        let account_reader = AccountStateReader::new(&chain_state);
+        let epoch_info = account_reader
+            .get_epoch_info()
+            .unwrap_or_else(|e| panic!("Epoch is none. error: {:?}", e));
+        let total_uncles = epoch_info.epoch_data().uncles();
+        let blocks = msg
+            .executed_block
+            .number()
+            .saturating_sub(epoch_info.epoch().start_block_number());
+        let uncle_rate = total_uncles * 1000 / blocks;
+        let uncle_rate_in_confing = self
+            .config
+            .net()
+            .genesis_config()
+            .consensus_config
+            .uncle_rate_target;
+        info!("NewDagBlockFromPeer, epoch data: {:?}, blocks in this epoch: {:?}, uncle rate for now: {:?}, uncle rate in config: {:?}", epoch_info.epoch_data(), blocks, uncle_rate, uncle_rate_in_confing);
+        if uncle_rate < uncle_rate_in_confing {
+            self.send_event(false, ctx);
+        }
     }
 }

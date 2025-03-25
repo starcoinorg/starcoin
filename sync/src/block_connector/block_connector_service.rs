@@ -142,7 +142,7 @@ where
             .config
             .sync
             .lightweight_sync_max_gap()
-            .map_or(k.saturating_mul(2), |max_gap| max_gap);
+            .map_or(k.saturating_mul(k), |max_gap| max_gap);
         debug!(
             "is-near-block: current_number: {:?}, block_number: {:?}, gap: {:?}, config_gap: {:?}",
             current_number,
@@ -324,8 +324,9 @@ where
         }
         match self.chain_service.try_connect(msg.get_block().clone()) {
             anyhow::Result::Ok(()) => {
-
-                ctx.broadcast(NewDagBlockFromPeer);
+                ctx.broadcast(NewDagBlockFromPeer {
+                    executed_block: Arc::new(msg.get_block().header().clone()),
+                });
             }
             Err(e) => {
                 let peer_id = msg.get_peer_id();
@@ -383,9 +384,9 @@ where
                                 }
                             }
                         }
+                    }
+                    Err(e) => warn!("BlockConnector fail: {:?}, peer_id:{:?}", e, peer_id),
                 }
-                Err(e) => warn!("BlockConnector fail: {:?}, peer_id:{:?}", e, peer_id),
-            }
             }
         }
     }
