@@ -11,7 +11,7 @@ use anyhow::{Error, Result};
 use core::hash::Hash;
 use lru::LruCache;
 use parking_lot::Mutex;
-use starcoin_config::DEFAULT_CACHE_SIZE;
+const DEFAULT_CACHE_SIZE: usize = 20000;
 
 pub type CacheStorage = GCacheStorage<Vec<u8>, Vec<u8>>;
 

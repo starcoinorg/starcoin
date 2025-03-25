@@ -18,7 +18,6 @@ starcoin-state-store-api = { workspace = true }
 coarsetime = { workspace = true }
 forkable-jellyfish-merkle = { workspace = true }
 starcoin-logger = { workspace = true }
-starcoin-config = { workspace = true }
 starcoin-metrics = { workspace = true }
 starcoin-uint = { workspace = true }
 starcoin-vm-types = { workspace = true }

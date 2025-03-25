@@ -16,7 +16,6 @@ use rocksdb::{
     DBIterator, DBPinnableSlice, IteratorMode, Options, ReadOptions, WriteBatch as DBWriteBatch,
     WriteOptions, DB,
 };
-use starcoin_config::check_open_fds_limit;
 use std::{collections::HashSet, iter, marker::PhantomData, path::Path};
 
 const RES_FDS: u64 = 4096;
@@ -100,7 +99,8 @@ impl DBStorage {
             rocksdb_opts.create_missing_column_families(true);
             Self::open_inner(&rocksdb_opts, path, column_families.clone())?
         };
-        check_open_fds_limit(rocksdb_config.max_open_files as u64 + RES_FDS)?;
+        //fixme
+        //check_open_fds_limit(rocksdb_config.max_open_files as u64 + RES_FDS)?;
         Ok(Self {
             db,
             cfs: column_families,
