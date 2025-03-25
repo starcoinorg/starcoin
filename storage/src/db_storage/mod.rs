@@ -32,7 +32,7 @@ impl DBStorage {
         metrics: Option<StorageMetrics>,
     ) -> Result<Self> {
         //TODO find a compat way to remove the `starcoindb` path
-        let path = db_root_path.as_ref().join("starcoindb");
+        let path = db_root_path.as_ref().join("starcoindb_v2");
         Self::open_with_cfs(
             path,
             StorageVersion::current_version()
