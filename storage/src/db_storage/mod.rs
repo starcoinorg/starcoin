@@ -1,6 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+mod helper;
+
 use crate::{
     batch::WriteBatch,
     errors::StorageInitError,
@@ -9,11 +11,12 @@ use crate::{
     StorageVersion, DEFAULT_PREFIX_NAME,
 };
 use anyhow::{ensure, format_err, Error, Result};
+pub use helper::*;
 use rocksdb::{
     DBIterator, DBPinnableSlice, IteratorMode, Options, ReadOptions, WriteBatch as DBWriteBatch,
     WriteOptions, DB,
 };
-use starcoin_config::{check_open_fds_limit, RocksdbConfig};
+use starcoin_config::check_open_fds_limit;
 use std::{collections::HashSet, iter, marker::PhantomData, path::Path};
 
 const RES_FDS: u64 = 4096;
