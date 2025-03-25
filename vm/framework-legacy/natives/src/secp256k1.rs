@@ -9,9 +9,7 @@
  **************************************************************************************************/
 
 use move_vm_runtime::native_functions::NativeFunction;
-use move_vm_types::{
-    loaded_data::runtime_types::Type, values::Value,
-};
+use move_vm_types::{loaded_data::runtime_types::Type, values::Value};
 use smallvec::{smallvec, SmallVec};
 use starcoin_gas_schedule::gas_params::natives::starcoin_framework_legacy::*;
 use starcoin_native_interface::{
@@ -40,7 +38,7 @@ fn native_ecdsa_recover(
     let recovery_id = safely_pop_arg!(arguments, u8);
     let msg = safely_pop_arg!(arguments, Vec<u8>);
 
-    let mut cost = SIGNATURE_EC_RECOVER_PER_BYTE; //gas_params.base;
+    let mut cost = SECP256K1_BASE; //gas_params.base;
 
     // NOTE(Gas): O(1) cost
     // (In reality, O(|msg|) deserialization cost, with |msg| < libsecp256k1_core::util::MESSAGE_SIZE
@@ -95,7 +93,9 @@ fn native_ecdsa_recover(
  * module
  *
  **************************************************************************************************/
-pub fn make_all(builder: SafeNativeBuilder) -> impl Iterator<Item = (String, NativeFunction)> {
+pub fn make_all(
+    builder: &SafeNativeBuilder,
+) -> impl Iterator<Item = (String, NativeFunction)> + '_ {
     let natives = [(
         "ecdsa_recover_internal",
         native_ecdsa_recover as RawSafeNative,

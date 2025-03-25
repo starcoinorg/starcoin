@@ -1,22 +1,18 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
-use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
-use move_vm_types::{
-    loaded_data::runtime_types::Type, natives::function::NativeResult, values::Value,
-};
+use move_core_types::gas_algebra::NumBytes;
+use move_vm_runtime::native_functions::NativeFunction;
+use move_vm_types::{loaded_data::runtime_types::Type, values::Value};
 use ripemd160::digest::Output;
 use ripemd160::{Digest, Ripemd160};
 use smallvec::{smallvec, SmallVec};
-use starcoin_gas_schedule::gas_params::natives::starcoin_framework::{
-    HASH_KECCAK256_BASE, HASH_KECCAK256_PER_BYTE,
-};
+use starcoin_gas_schedule::gas_params::natives::starcoin_framework_legacy::*;
 use starcoin_native_interface::{
     safely_pop_arg, RawSafeNative, SafeNativeBuilder, SafeNativeContext, SafeNativeResult,
 };
 use std::collections::VecDeque;
-use tiny_keccak::Keccak;
+
 /***************************************************************************************************
  * native fun native_keccak_256
  *
@@ -27,20 +23,16 @@ use tiny_keccak::Keccak;
 pub fn native_keccak_256(
     context: &mut SafeNativeContext,
     ty_args: Vec<Type>,
-    mut args: VecDeque<Value>,
+    mut arguments: VecDeque<Value>,
 ) -> SafeNativeResult<SmallVec<[Value; 1]>> {
     debug_assert!(ty_args.is_empty());
-    debug_assert!(args.len() == 1);
+    debug_assert!(arguments.len() == 1);
 
-    let bytes = safely_pop_arg!(args, Vec<u8>);
-
-    let cost = HASH_KECCAK256_BASE + HASH_KECCAK256_PER_BYTE * NumBytes::new(bytes.len() as u64);
+    let input_arg = safely_pop_arg!(arguments, Vec<u8>);
+    let cost = HASH_KECCAK256_PER_BYTE * NumBytes::new(input_arg.len() as u64);
     context.charge(cost)?;
 
-    let mut hasher = Keccak::v256();
-    hasher.update(&bytes);
-    let mut output = [0u8; 32];
-    hasher.finalize(&mut output);
+    let output = crate::ecrecover::keccak(input_arg.as_slice());
 
     Ok(smallvec![Value::vector_u8(output)])
 }

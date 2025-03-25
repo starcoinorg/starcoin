@@ -1,36 +1,41 @@
-use crate::util::make_native_from_func;
-use move_binary_format::errors::{PartialVMError, PartialVMResult};
-use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
-use move_core_types::vm_status::StatusCode;
-use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
-use move_vm_types::loaded_data::runtime_types::Type;
-use move_vm_types::natives::function::NativeResult;
-use move_vm_types::pop_arg;
-use move_vm_types::values::{Reference, Struct, StructRef, VMValueCast, Value};
-use smallvec::smallvec;
+use move_core_types::gas_algebra::NumBytes;
+use move_vm_runtime::native_functions::NativeFunction;
+use move_vm_types::{
+    loaded_data::runtime_types::Type,
+    values::{Reference, Struct, StructRef, VMValueCast, Value},
+};
+use smallvec::{smallvec, SmallVec};
+use starcoin_gas_schedule::gas_params::natives::starcoin_framework_legacy::*;
+use starcoin_native_interface::{
+    safely_pop_arg, RawSafeNative, SafeNativeBuilder, SafeNativeContext, SafeNativeError,
+    SafeNativeResult,
+};
+use starcoin_types::error;
 use starcoin_uint::U256;
-use std::collections::VecDeque;
-use std::convert::TryFrom;
+use std::{collections::VecDeque, convert::TryFrom};
+
+pub mod abort_codes {
+    pub const NFE_ARITHMETIC_ERROR: u64 = 0x01_0001;
+}
 
 macro_rules! impl_native {
-    ($func:ident,$params: ident, $op:ident) => {
-        pub fn $func(
-            gas_params: &$params,
-            _context: &mut NativeContext,
-            _ty_args: Vec<Type>,
+    ($func_name: ident, $op: ident, $gas_const_var: ident) => {
+        pub fn $func_name(
+            context: &mut SafeNativeContext,
+            ty_args: Vec<Type>,
             mut arguments: VecDeque<Value>,
-        ) -> PartialVMResult<NativeResult> {
-            debug_assert!(_ty_args.is_empty());
+        ) -> SafeNativeResult<SmallVec<[Value; 1]>> {
+            debug_assert!(ty_args.is_empty());
             debug_assert!(arguments.len() == 2);
+
             let b = {
-                let b = pop_arg!(arguments, StructRef);
+                let b = safely_pop_arg!(arguments, StructRef);
                 let field_ref: Reference = b.borrow_field(0)?.cast()?;
                 let field: Vec<u64> = field_ref.read_ref()?.cast()?;
                 field
             };
 
-            let a_ref = pop_arg!(arguments, StructRef);
-
+            let a_ref = safely_pop_arg!(arguments, StructRef);
             let a = {
                 let field_ref: Reference = a_ref.borrow_field(0)?.cast()?;
                 let field_value = field_ref.read_ref()?;
@@ -41,7 +46,12 @@ macro_rules! impl_native {
             let b = U256(<[u64; 4]>::try_from(b).unwrap());
 
             let res = match a.$op(b) {
-                None => return Err(PartialVMError::new(StatusCode::ARITHMETIC_ERROR)),
+                None => {
+                    return Err(SafeNativeError::Abort {
+                        abort_code: error::invalid_state(abort_codes::NFE_ARITHMETIC_ERROR),
+                    })
+                }
+                // None => return Err(PartialVMError::new(StatusCode::ARITHMETIC_ERROR)),
                 Some(r) => r,
             }
             .0
@@ -51,73 +61,19 @@ macro_rules! impl_native {
                 let field_ref: Reference = a_ref.borrow_field(0)?.cast()?;
                 field_ref.write_ref(Value::vector_u64(res))?;
             }
-            let cost = gas_params.base;
-            Ok(NativeResult::ok(cost, smallvec![]))
+            // let cost = gas_params.base;
+            context.charge($gas_const_var)?;
+            Ok(smallvec![])
         }
     };
 }
 
-impl_native!(native_u256_add, U256AddGasParameters, checked_add);
-impl_native!(native_u256_sub, U256SubGasParameters, checked_sub);
-impl_native!(native_u256_mul, U256MulGasParameters, checked_mul);
-impl_native!(native_u256_div, U256DivGasParameters, checked_div);
-impl_native!(native_u256_rem, U256RemGasParameters, checked_rem);
-impl_native!(native_u256_pow, U256PowGasParameters, checked_pow);
-
-/***************************************************************************************************
- * native fun native_u256_add
- *
- *   gas cost: base_cost
- *
- **************************************************************************************************/
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct U256AddGasParameters {
-    pub base: InternalGas,
-}
-
-/***************************************************************************************************
- * native fun native_u256_sub
- *
- *   gas cost: base_cost
- *
- **************************************************************************************************/
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct U256SubGasParameters {
-    pub base: InternalGas,
-}
-
-/***************************************************************************************************
- * native fun native_u256_mul
- *
- *   gas cost: base_cost
- *
- **************************************************************************************************/
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct U256MulGasParameters {
-    pub base: InternalGas,
-}
-
-/***************************************************************************************************
- * native fun native_u256_div
- *
- *   gas cost: base_cost
- *
- **************************************************************************************************/
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct U256DivGasParameters {
-    pub base: InternalGas,
-}
-
-/***************************************************************************************************
- * native fun native_u256_rem
- *
- *   gas cost: base_cost
- *
- **************************************************************************************************/
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct U256RemGasParameters {
-    pub base: InternalGas,
-}
+impl_native!(native_u256_add, checked_add, U256_ADD_BASE);
+impl_native!(native_u256_sub, checked_sub, U256_SUB_BASE);
+impl_native!(native_u256_mul, checked_mul, U256_MUL_BASE);
+impl_native!(native_u256_div, checked_div, U256_DIV_BASE);
+impl_native!(native_u256_rem, checked_rem, U256_REM_BASE);
+impl_native!(native_u256_pow, checked_pow, U256_POW_BASE);
 
 /***************************************************************************************************
  * native fun native_u256_pow
@@ -125,34 +81,16 @@ pub struct U256RemGasParameters {
  *   gas cost: base_cost
  *
  **************************************************************************************************/
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct U256PowGasParameters {
-    pub base: InternalGas,
-}
-
-/***************************************************************************************************
- * native fun native_u256_pow
- *
- *   gas cost: base_cost
- *
- **************************************************************************************************/
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct U256FromBytesGasParameters {
-    pub base: InternalGas,
-    pub per_byte: InternalGasPerByte,
-}
-
 pub fn native_u256_from_bytes(
-    gas_params: &U256FromBytesGasParameters,
-    _context: &mut NativeContext,
-    _ty_args: Vec<Type>,
+    context: &mut SafeNativeContext,
+    ty_args: Vec<Type>,
     mut arguments: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
-    debug_assert!(_ty_args.is_empty());
+) -> SafeNativeResult<SmallVec<[Value; 1]>> {
+    debug_assert!(ty_args.is_empty());
     debug_assert!(arguments.len() == 2);
-    let big_endian = pop_arg!(arguments, bool);
+    let big_endian = safely_pop_arg!(arguments, bool);
     let bytes: Vec<u8> = {
-        let byte_ref = pop_arg!(arguments, Reference);
+        let byte_ref = safely_pop_arg!(arguments, Reference);
         byte_ref.read_ref()?.cast()?
     };
 
@@ -164,56 +102,27 @@ pub fn native_u256_from_bytes(
     };
 
     let ret = Value::struct_(Struct::pack(vec![Value::vector_u64(ret.0)]));
-    let cost = gas_params.base + gas_params.per_byte * NumBytes::new(ret.legacy_size().into());
-    Ok(NativeResult::ok(cost, smallvec![ret]))
+    // let cost = gas_params.base + gas_params.per_byte * NumBytes::new(ret.legacy_size().into());
+    context.charge(U256_FROM_BYTES_PER_BYTE * NumBytes::new(ret.legacy_size().into()))?;
+    Ok(smallvec![ret])
 }
 
 /***************************************************************************************************
  * module
  *
  **************************************************************************************************/
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct GasParameters {
-    pub add: U256AddGasParameters,
-    pub sub: U256SubGasParameters,
-    pub mul: U256MulGasParameters,
-    pub div: U256DivGasParameters,
-    pub rem: U256RemGasParameters,
-    pub pow: U256PowGasParameters,
-    pub from_bytes: U256FromBytesGasParameters,
-}
 
-pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
+pub fn make_all(
+    builder: &SafeNativeBuilder,
+) -> impl Iterator<Item = (String, NativeFunction)> + '_ {
     let natives = [
-        (
-            "native_add",
-            make_native_from_func(gas_params.add, native_u256_add),
-        ),
-        (
-            "native_sub",
-            make_native_from_func(gas_params.sub, native_u256_sub),
-        ),
-        (
-            "native_mul",
-            make_native_from_func(gas_params.mul, native_u256_mul),
-        ),
-        (
-            "native_div",
-            make_native_from_func(gas_params.div, native_u256_div),
-        ),
-        (
-            "native_rem",
-            make_native_from_func(gas_params.rem, native_u256_rem),
-        ),
-        (
-            "native_pow",
-            make_native_from_func(gas_params.pow, native_u256_pow),
-        ),
-        (
-            "from_bytes",
-            make_native_from_func(gas_params.from_bytes, native_u256_from_bytes),
-        ),
+        ("native_add", native_u256_add as RawSafeNative),
+        ("native_sub", native_u256_sub as RawSafeNative),
+        ("native_mul", native_u256_mul as RawSafeNative),
+        ("native_div", native_u256_div as RawSafeNative),
+        ("native_rem", native_u256_rem as RawSafeNative),
+        ("native_pow", native_u256_pow as RawSafeNative),
+        ("from_bytes", native_u256_from_bytes as RawSafeNative),
     ];
-
-    crate::helpers::make_module_natives(natives)
+    builder.make_named_natives(natives)
 }

@@ -4,12 +4,9 @@
 use arrayref::array_ref;
 use libsecp256k1::{curve::Scalar, recover, Message, PublicKey, RecoveryId, Signature};
 use log::debug;
-use move_binary_format::errors::PartialVMResult;
-use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
-use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
-use move_vm_types::{
-    loaded_data::runtime_types::Type, natives::function::NativeResult, pop_arg, values::Value,
-};
+use move_core_types::gas_algebra::NumBytes;
+use move_vm_runtime::native_functions::NativeFunction;
+use move_vm_types::{loaded_data::runtime_types::Type, values::Value};
 use smallvec::{smallvec, SmallVec};
 use starcoin_gas_schedule::gas_params::natives::starcoin_framework_legacy::*;
 use starcoin_native_interface::{
@@ -17,7 +14,6 @@ use starcoin_native_interface::{
 };
 use starcoin_types::error;
 use std::collections::VecDeque;
-use std::sync::Arc;
 use tiny_keccak::Hasher;
 
 const HASH_LENGTH: usize = 32;
@@ -32,11 +28,6 @@ const ZERO_ADDR: [u8; 0] = [0; 0];
  *   gas cost: base_cost + unit_cost * data_length
  *
  **************************************************************************************************/
-// #[derive(Debug, Clone, PartialEq, Eq)]
-// pub struct EcrecoverGasParameters {
-//     pub base: InternalGas,
-//     pub per_byte: InternalGasPerByte,
-// }
 
 pub mod abort_codes {
     pub const NFE_DESERIALIZE: u64 = 0x01_0001;
@@ -58,8 +49,7 @@ pub fn native_ecrecover(
 
     // let cost = gas_params.base + gas_params.per_byte * NumBytes::new(hash_arg.len() as u64);
 
-    let cost =
-        HASH_KECCAK256_PER_BYTE + HASH_KECCAK256_PER_BYTE * NumBytes::new(hash_arg.len() as u64);
+    let cost = HASH_KECCAK256_PER_BYTE * NumBytes::new(hash_arg.len() as u64);
     context.charge(cost)?;
 
     if hash_arg.len() != HASH_LENGTH || sig_arg.len() != SIG_REC_LENGTH {

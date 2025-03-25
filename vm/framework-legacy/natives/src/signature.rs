@@ -1,12 +1,10 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::ecrecover::make_native_ecrecover;
+use crate::ecrecover::native_ecrecover;
 use move_core_types::gas_algebra::NumBytes;
 use move_vm_runtime::native_functions::NativeFunction;
-use move_vm_types::{
-    loaded_data::runtime_types::Type, values::Value,
-};
+use move_vm_types::{loaded_data::runtime_types::Type, values::Value};
 use smallvec::{smallvec, SmallVec};
 use starcoin_crypto::{ed25519, traits::*};
 use starcoin_gas_schedule::gas_params::natives::starcoin_framework_legacy::*;
@@ -86,7 +84,9 @@ pub fn native_ed25519_signature_verification(
  *
  **************************************************************************************************/
 
-pub fn make_all(builder: &SafeNativeBuilder) -> impl Iterator<Item = (String, NativeFunction)> {
+pub fn make_all(
+    builder: &SafeNativeBuilder,
+) -> impl Iterator<Item = (String, NativeFunction)> + '_ {
     let natives = [
         (
             "ed25519_validate_pubkey",
@@ -96,10 +96,7 @@ pub fn make_all(builder: &SafeNativeBuilder) -> impl Iterator<Item = (String, Na
             "ed25519_verify",
             native_ed25519_signature_verification as RawSafeNative,
         ),
-        (
-            "native_ecrecover",
-            make_native_ecrecover(builder) as RawSafeNative,
-        ),
+        ("native_ecrecover", native_ecrecover as RawSafeNative),
     ];
     builder.make_named_natives(natives)
 }
