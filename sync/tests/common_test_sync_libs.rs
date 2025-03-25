@@ -7,6 +7,7 @@ use starcoin_node::NodeHandle;
 use starcoin_types::block::BlockHeader;
 use std::sync::Arc;
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct DagBlockInfo {
     pub header: BlockHeader,

@@ -278,7 +278,7 @@ impl PendingSettings {
         Self {
             block_number,
             current_timestamp,
-            max_len: usize::max_value(),
+            max_len: usize::MAX,
             ordering: PendingOrdering::Priority,
         }
     }

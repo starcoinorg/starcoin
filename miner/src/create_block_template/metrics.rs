@@ -3,6 +3,7 @@
 
 use starcoin_metrics::{register, Opts, PrometheusError, Registry, UIntGauge};
 
+#[allow(dead_code)]
 #[derive(Clone)]
 pub struct BlockBuilderMetrics {
     pub current_epoch_maybe_uncles: UIntGauge,

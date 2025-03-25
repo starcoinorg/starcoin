@@ -9,6 +9,9 @@ move-vm-types = { workspace = true }
 starcoin-frameworks = { workspace = true }
 starcoin-logger = { workspace = true }
 
+[features]
+testing = []
+
 [package]
 authors = { workspace = true }
 description = "starcoin Move VM starcoin-gas-meter"

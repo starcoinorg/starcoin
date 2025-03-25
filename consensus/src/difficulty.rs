@@ -118,7 +118,7 @@ pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo>, time_plan: u64) -> Res
         }
     } else {
         warn!("target large than max value, set to 1_difficulty");
-        U256::max_value()
+        U256::MAX
     };
     debug!(
         "avg_time:{:?} mills, time_plan:{:?} mills, target: {:?}",

@@ -461,7 +461,7 @@ SCRIPT_FUNCTION_ENCODER_MAP: typing.Dict[typing.Type[ScriptFunctionCall], typing
 
     fn prepare_doc_string(doc: &str) -> String {
         let doc = crate::common::prepare_doc_string(doc);
-        let s: Vec<_> = doc.splitn(2, |c| c == '.').collect();
+        let s: Vec<_> = doc.splitn(2, ['.']).collect();
         if s.len() <= 1 || s[1].is_empty() {
             format!("{}.", s[0])
         } else {
