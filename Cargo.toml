@@ -26,7 +26,7 @@ members = [
     #"vm/dev",
     "vm/gas-algebra",
     "vm/gas-schedule",
-    "vm/move-explain",
+    #"vm/move-explain",
     #"vm/move-package-manager",
     "vm/vm-status-translator",
     "vm/framework",
@@ -68,7 +68,7 @@ default-members = [
     #"vm/dev",
     "vm/gas-algebra",
     "vm/gas-schedule",
-    "vm/move-explain",
+    #"vm/move-explain",
     #"vm/move-package-manager",
     "vm/vm-status-translator",
     #"vm/starcoin-transactional-test-harness",
@@ -230,7 +230,7 @@ starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev 
 starcoin-framework = { path = "vm/framework" }
 starcoin-sdk-builder = { path = "vm/starcoin-sdk-builder" }
 #starcoin-move-compiler = { path = "vm/compiler" }
-starcoin-move-explain = { path = "vm/move-explain" }
+#starcoin-move-explain = { path = "vm/move-explain" }
 starcoin-gas-algebra = { path = "vm/gas-algebra" }
 starcoin-gas-schedule = { path = "vm/gas-schedule" }
 starcoin-gas-meter = { path = "vm/starcoin-gas-meter" }

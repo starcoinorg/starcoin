@@ -9010,15 +9010,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "starcoin-move-explain"
-version = "2.0.1"
-dependencies = [
- "bcs-ext",
- "clap 4.5.32",
- "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
-]
-
-[[package]]
 name = "starcoin-move-prover"
 version = "2.0.1"
 dependencies = [
@@ -10650,7 +10641,6 @@ dependencies = [
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "schemars 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=a64c6ddf7ca4796e090208b1476de2e53772042f)",
  "serde",
- "starcoin-move-explain",
  "starcoin-vm-types 2.0.1",
 ]
 
