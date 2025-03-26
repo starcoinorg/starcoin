@@ -2,6 +2,7 @@
 bcs-ext = { workspace = true }
 clap = { features = ["derive"], workspace = true }
 move-core-types = { workspace = true }
+stdlib = { workspace = true }
 
 [features]
 default = []
