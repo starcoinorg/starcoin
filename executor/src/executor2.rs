@@ -15,7 +15,7 @@ fn do_execute_block_transactions<S: StateView>(
     block_gas_limit: Option<u64>,
     metrics: Option<VMMetrics>,
 ) -> anyhow::Result<Vec<TransactionOutput>> {
-    let mut vm = StarcoinVM::new(metrics);
+    let mut vm = StarcoinVM::new(metrics, chain_state);
     let output = vm.execute_block_transactions(chain_state, txns, block_gas_limit)?;
 
     Ok(output.into_iter().map(|r| r.1).collect())
@@ -27,7 +27,7 @@ pub fn validate_transaction<S: StateView>(
     txn: SignedUserTransaction,
     metrics: Option<VMMetrics>,
 ) -> Option<VMStatus> {
-    let mut vm = StarcoinVM::new(metrics);
+    let mut vm = StarcoinVM::new(metrics, chain_state);
     vm.verify_transaction(chain_state, txn)
 }
 
@@ -39,6 +39,6 @@ pub fn execute_readonly_function<S: StateView>(
     args: Vec<Vec<u8>>,
     metrics: Option<VMMetrics>,
 ) -> anyhow::Result<Vec<Vec<u8>>, VMStatus> {
-    let mut vm = StarcoinVM::new(metrics);
+    let mut vm = StarcoinVM::new(metrics, chain_state);
     vm.execute_readonly_function(chain_state, module, function_name, type_params, args)
 }
