@@ -6,12 +6,11 @@ starcoin-crypto = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-types = { workspace = true }
-stdlib = { workspace = true }
 starcoin-framework = { workspace = true }
 starcoin-cached-packages = { workspace = true }
 
 [dev-dependencies]
-stest = { workspace = true }
+#stest = { workspace = true }
 
 [package]
 authors = { workspace = true }

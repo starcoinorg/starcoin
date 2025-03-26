@@ -1,8 +1,25 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+//use network_p2p_types::MultiaddrWithPeerId;
+use crate::{
+    account_config::genesis_address,
+    event::{EventHandle, EventKey},
+    gas_schedule::{
+        G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_GAS_CONSTANTS_V3, G_TEST_GAS_CONSTANTS,
+    },
+    genesis_config::{ChainId, ConsensusStrategy, StdlibVersion},
+    on_chain_config::{
+        instruction_table_v1, instruction_table_v2, native_table_v1, native_table_v2,
+        v4_native_table, ConsensusConfig, DaoConfig, GasSchedule, TransactionPublishOption,
+        VMConfig, Version,
+    },
+    on_chain_resource::Epoch,
+    token::stc::STCUnit,
+    token::token_value::TokenValue,
+    transaction::{RawUserTransaction, SignedUserTransaction},
+};
 use anyhow::{bail, ensure, format_err, Result};
-use network_p2p_types::MultiaddrWithPeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
 use schemars::{self, JsonSchema};
@@ -19,20 +36,6 @@ use starcoin_gas_meter::StarcoinGasParameters;
 use starcoin_gas_schedule::{InitialGasSchedule, ToOnChainGasSchedule, LATEST_GAS_FEATURE_VERSION};
 use starcoin_time_service::{TimeService, TimeServiceType};
 use starcoin_uint::U256;
-use starcoin_vm_types::account_config::genesis_address;
-use starcoin_vm_types::event::{EventHandle, EventKey};
-use starcoin_vm_types::gas_schedule::{
-    G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_GAS_CONSTANTS_V3, G_TEST_GAS_CONSTANTS,
-};
-use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy, StdlibVersion};
-use starcoin_vm_types::on_chain_config::{
-    instruction_table_v1, instruction_table_v2, native_table_v1, native_table_v2, v4_native_table,
-    ConsensusConfig, DaoConfig, GasSchedule, TransactionPublishOption, VMConfig, Version,
-};
-use starcoin_vm_types::on_chain_resource::Epoch;
-use starcoin_vm_types::token::stc::STCUnit;
-use starcoin_vm_types::token::token_value::TokenValue;
-use starcoin_vm_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use std::convert::TryFrom;
 use std::fmt::Debug;
 use std::fmt::{self, Display, Formatter};
@@ -202,18 +205,18 @@ impl BuiltinNetworkID {
         }
     }
 
-    pub fn boot_nodes(self) -> &'static [MultiaddrWithPeerId] {
-        match self {
-            Self::Test => G_EMPTY_BOOT_NODES.as_slice(),
-            Self::Dev => G_EMPTY_BOOT_NODES.as_slice(),
-            Self::Halley => G_HALLEY_BOOT_NODES.as_slice(),
-            Self::Proxima => G_PROXIMA_BOOT_NODES.as_slice(),
-            Self::Barnard => G_BARNARD_BOOT_NODES.as_slice(),
-            Self::Main => G_MAIN_BOOT_NODES.as_slice(),
-            Self::DagTest => G_EMPTY_BOOT_NODES.as_slice(),
-            Self::Vega => G_VEGA_BOOT_NODES.as_slice(),
-        }
-    }
+    //pub fn boot_nodes(self) -> &'static [MultiaddrWithPeerId] {
+    //    match self {
+    //        Self::Test => G_EMPTY_BOOT_NODES.as_slice(),
+    //        Self::Dev => G_EMPTY_BOOT_NODES.as_slice(),
+    //        Self::Halley => G_HALLEY_BOOT_NODES.as_slice(),
+    //        Self::Proxima => G_PROXIMA_BOOT_NODES.as_slice(),
+    //        Self::Barnard => G_BARNARD_BOOT_NODES.as_slice(),
+    //        Self::Main => G_MAIN_BOOT_NODES.as_slice(),
+    //        Self::DagTest => G_EMPTY_BOOT_NODES.as_slice(),
+    //        Self::Vega => G_VEGA_BOOT_NODES.as_slice(),
+    //    }
+    //}
 
     pub fn boot_nodes_domain(self) -> String {
         match self {
@@ -403,12 +406,12 @@ impl ChainNetworkID {
         }
     }
 
-    pub fn boot_nodes(&self) -> &[MultiaddrWithPeerId] {
-        match self {
-            Self::Builtin(b) => b.boot_nodes(),
-            _ => &[],
-        }
-    }
+    //pub fn boot_nodes(&self) -> &[MultiaddrWithPeerId] {
+    //    match self {
+    //        Self::Builtin(b) => b.boot_nodes(),
+    //        _ => &[],
+    //    }
+    //}
 
     pub fn as_builtin(&self) -> Option<&BuiltinNetworkID> {
         match self {
@@ -530,9 +533,9 @@ impl ChainNetwork {
         self.id.is_custom()
     }
 
-    pub fn boot_nodes(&self) -> &[MultiaddrWithPeerId] {
-        self.id.boot_nodes()
-    }
+    //pub fn boot_nodes(&self) -> &[MultiaddrWithPeerId] {
+    //    self.id.boot_nodes()
+    //}
 
     /// Please ensure network is_ready() before genesis_block_parameter
     pub fn genesis_block_parameter(&self) -> &GenesisBlockParameter {
@@ -744,7 +747,7 @@ static G_DEFAULT_BASE_REWARD_PER_BLOCK: Lazy<TokenValue<STCUnit>> =
 
 pub static G_BASE_BLOCK_GAS_LIMIT: u64 = 50_000_000; //must big than maximum_number_of_gas_units
 
-static G_EMPTY_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(Vec::new);
+//static G_EMPTY_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(Vec::new);
 const ONE_DAY: u64 = 86400;
 
 pub static G_DAG_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
@@ -915,9 +918,9 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     }
 });
 
-pub static G_HALLEY_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
-    vec!["/dns4/halley1.seed.starcoin.org/tcp/9840/p2p/12D3KooW9yQoKZrByqrUjmmPHXtR23qCXRQvF5KowYgoqypuhuCn".parse().expect("parse multi addr should be ok"), ]
-});
+//pub static G_HALLEY_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
+//    vec!["/dns4/halley1.seed.starcoin.org/tcp/9840/p2p/12D3KooW9yQoKZrByqrUjmmPHXtR23qCXRQvF5KowYgoqypuhuCn".parse().expect("parse multi addr should be ok"), ]
+//});
 
 pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     // let stdlib_version = StdlibVersion::Latest;
@@ -978,10 +981,10 @@ pub static G_HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     }
 });
 
-pub static G_PROXIMA_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
-    vec!["/dns4/proxima1.seed.starcoin.org/tcp/9840/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU".parse().expect("parse multi addr should be ok"),
-      ]
-});
+//pub static G_PROXIMA_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
+//    vec!["/dns4/proxima1.seed.starcoin.org/tcp/9840/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU".parse().expect("parse multi addr should be ok"),
+//      ]
+//});
 
 pub static G_PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let stdlib_version = StdlibVersion::Version(12);
@@ -1037,13 +1040,13 @@ pub static G_PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     }
 });
 
-pub static G_BARNARD_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
-    vec![
-        "/dns4/barnard4.seed.starcoin.org/tcp/9840/p2p/12D3KooWRUQ4CZ6tiy2kZo5vVjm27ksYJAqMwB2QPfqpB5WEfzy4".parse().expect("parse multi addr should be ok"),
-        "/dns4/barnard5.seed.starcoin.org/tcp/9840/p2p/12D3KooWPwRSY555ycvo8BNiEqWqaJRvgtkv7BfJhq9JWHty6e2R".parse().expect("parse multi addr should be ok"),
-        "/dns4/barnard6.seed.starcoin.org/tcp/9840/p2p/12D3KooWSMJRCgT4inuEZNxvjSCHY1d3DwVX3SQ6qrvqAZCLLMwJ".parse().expect("parse multi addr should be ok"),
-    ]
-});
+//pub static G_BARNARD_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
+//    vec![
+//        "/dns4/barnard4.seed.starcoin.org/tcp/9840/p2p/12D3KooWRUQ4CZ6tiy2kZo5vVjm27ksYJAqMwB2QPfqpB5WEfzy4".parse().expect("parse multi addr should be ok"),
+//        "/dns4/barnard5.seed.starcoin.org/tcp/9840/p2p/12D3KooWPwRSY555ycvo8BNiEqWqaJRvgtkv7BfJhq9JWHty6e2R".parse().expect("parse multi addr should be ok"),
+//        "/dns4/barnard6.seed.starcoin.org/tcp/9840/p2p/12D3KooWSMJRCgT4inuEZNxvjSCHY1d3DwVX3SQ6qrvqAZCLLMwJ".parse().expect("parse multi addr should be ok"),
+//    ]
+//});
 
 pub static G_BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     // This is a test config,
@@ -1095,27 +1098,27 @@ pub static G_BARNARD_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     }
 });
 
-pub static G_MAIN_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
-    vec![
-    "/dns4/main1.seed.starcoin.org/tcp/9840/p2p/12D3KooWSW8t32L6VyjPZxxe3VSD7H6Ffgh69eCaDnDyab2M6tfK".parse().expect("parse multi addr should be ok"),
-    "/dns4/main2.seed.starcoin.org/tcp/9840/p2p/12D3KooWBWsibdKdogDpFUfSVejPdK6t4s1eEvcqjuPVJ3gSpypx".parse().expect("parse multi addr should be ok"),
-    "/dns4/main3.seed.starcoin.org/tcp/9840/p2p/12D3KooWB9vGtpgqyD2cG4PTEU1SHSuWV6PErMPJFbbi5vYpkj3H".parse().expect("parse multi addr should be ok"),
-    "/dns4/main4.seed.starcoin.org/tcp/9840/p2p/12D3KooWKqZ2k2qQWY1khPH6WV2qFD5X2TZrpRMj75MHxCd8VH5r".parse().expect("parse multi addr should be ok"),
-    "/dns4/main5.seed.starcoin.org/tcp/9840/p2p/12D3KooW9quK2EEjeyTs3csNRWPnfMw4M3afGE1SHm1dCZDRWSAj".parse().expect("parse multi addr should be ok"),
-    "/dns4/main6.seed.starcoin.org/tcp/9840/p2p/12D3KooWH13WqMtEPQfEHHU8riaHt6L2oPLvN7GTin14AziTdukw".parse().expect("parse multi addr should be ok"),
-    "/dns4/main7.seed.starcoin.org/tcp/9840/p2p/12D3KooWMuvSkk51syDSSesKs4QmApETBBfC2FWfA4b59vEpqtH9".parse().expect("parse multi addr should be ok"),
-    "/dns4/main8.seed.starcoin.org/tcp/9840/p2p/12D3KooWQajuoiuY1Ba4Cz2Z7fGpNK38hKwzECGJQyCWnRb17JJ4".parse().expect("parse multi addr should be ok"),
-    "/dns4/main9.seed.starcoin.org/tcp/9840/p2p/12D3KooWLKo5X7yntEaAhUTh62ksD8pwsSu7CyTgZ76bRcStHF7x".parse().expect("parse multi addr should be ok"),
-]
-});
-pub static G_VEGA_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
-    vec![
-    "/dns4/vega1.seed.starcoin.org/tcp/9840/p2p/12D3KooWE41rox2ErznPf7iGgnLaU24sm4yHfagxwz7gUqgt8y6B".parse().expect("parse multi addr should be ok"),
-    "/dns4/vega2.seed.starcoin.org/tcp/9840/p2p/12D3KooWK11Dxx97igwPoVoUkDPUsbdaeXgJjxWzaX1NW4Beci9U".parse().expect("parse multi addr should be ok"),
-    "/dns4/vega3.seed.starcoin.org/tcp/9840/p2p/12D3KooWM5GVvUPxqJXkoxjPoiPbBk8jCSwCmKF78N42aV97zuZy".parse().expect("parse multi addr should be ok"),
-    "/dns4/vega4.seed.starcoin.org/tcp/9840/p2p/12D3KooWAr8PQGBJSvjNp7L93VJGXZKwLXjryHBbrswgxbRxvgES".parse().expect("parse multi addr should be ok"),
-]
-});
+//pub static G_MAIN_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
+//    vec![
+//    "/dns4/main1.seed.starcoin.org/tcp/9840/p2p/12D3KooWSW8t32L6VyjPZxxe3VSD7H6Ffgh69eCaDnDyab2M6tfK".parse().expect("parse multi addr should be ok"),
+//    "/dns4/main2.seed.starcoin.org/tcp/9840/p2p/12D3KooWBWsibdKdogDpFUfSVejPdK6t4s1eEvcqjuPVJ3gSpypx".parse().expect("parse multi addr should be ok"),
+//    "/dns4/main3.seed.starcoin.org/tcp/9840/p2p/12D3KooWB9vGtpgqyD2cG4PTEU1SHSuWV6PErMPJFbbi5vYpkj3H".parse().expect("parse multi addr should be ok"),
+//    "/dns4/main4.seed.starcoin.org/tcp/9840/p2p/12D3KooWKqZ2k2qQWY1khPH6WV2qFD5X2TZrpRMj75MHxCd8VH5r".parse().expect("parse multi addr should be ok"),
+//    "/dns4/main5.seed.starcoin.org/tcp/9840/p2p/12D3KooW9quK2EEjeyTs3csNRWPnfMw4M3afGE1SHm1dCZDRWSAj".parse().expect("parse multi addr should be ok"),
+//    "/dns4/main6.seed.starcoin.org/tcp/9840/p2p/12D3KooWH13WqMtEPQfEHHU8riaHt6L2oPLvN7GTin14AziTdukw".parse().expect("parse multi addr should be ok"),
+//    "/dns4/main7.seed.starcoin.org/tcp/9840/p2p/12D3KooWMuvSkk51syDSSesKs4QmApETBBfC2FWfA4b59vEpqtH9".parse().expect("parse multi addr should be ok"),
+//    "/dns4/main8.seed.starcoin.org/tcp/9840/p2p/12D3KooWQajuoiuY1Ba4Cz2Z7fGpNK38hKwzECGJQyCWnRb17JJ4".parse().expect("parse multi addr should be ok"),
+//    "/dns4/main9.seed.starcoin.org/tcp/9840/p2p/12D3KooWLKo5X7yntEaAhUTh62ksD8pwsSu7CyTgZ76bRcStHF7x".parse().expect("parse multi addr should be ok"),
+//]
+//});
+//pub static G_VEGA_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
+//    vec![
+//    "/dns4/vega1.seed.starcoin.org/tcp/9840/p2p/12D3KooWE41rox2ErznPf7iGgnLaU24sm4yHfagxwz7gUqgt8y6B".parse().expect("parse multi addr should be ok"),
+//    "/dns4/vega2.seed.starcoin.org/tcp/9840/p2p/12D3KooWK11Dxx97igwPoVoUkDPUsbdaeXgJjxWzaX1NW4Beci9U".parse().expect("parse multi addr should be ok"),
+//    "/dns4/vega3.seed.starcoin.org/tcp/9840/p2p/12D3KooWM5GVvUPxqJXkoxjPoiPbBk8jCSwCmKF78N42aV97zuZy".parse().expect("parse multi addr should be ok"),
+//    "/dns4/vega4.seed.starcoin.org/tcp/9840/p2p/12D3KooWAr8PQGBJSvjNp7L93VJGXZKwLXjryHBbrswgxbRxvgES".parse().expect("parse multi addr should be ok"),
+//]
+//});
 pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let stdlib_version = StdlibVersion::Version(4);
     let publishing_option = TransactionPublishOption::locked();
@@ -1220,19 +1223,21 @@ pub static G_VEGA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
 
 #[cfg(test)]
 mod tests {
+    use crate::{
+        gas_schedule::{
+            latest_cost_table, G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_LATEST_GAS_COST_TABLE,
+            G_TEST_GAS_CONSTANTS,
+        },
+        on_chain_config::{
+            instruction_gas_schedule_v1, instruction_gas_schedule_v2, instruction_table_v1,
+            native_gas_schedule_v1, native_gas_schedule_v2, native_gas_schedule_v4,
+            native_table_v1, native_table_v2, txn_gas_schedule_test, txn_gas_schedule_v1,
+            txn_gas_schedule_v2, txn_gas_schedule_v3, GasSchedule,
+        },
+    };
     use starcoin_gas_algebra::CostTable;
     use starcoin_gas_meter::StarcoinGasParameters;
     use starcoin_gas_schedule::FromOnChainGasSchedule;
-    use starcoin_vm_types::gas_schedule::{
-        latest_cost_table, G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_LATEST_GAS_COST_TABLE,
-        G_TEST_GAS_CONSTANTS,
-    };
-    use starcoin_vm_types::on_chain_config::{
-        instruction_gas_schedule_v1, instruction_gas_schedule_v2, instruction_table_v1,
-        native_gas_schedule_v1, native_gas_schedule_v2, native_gas_schedule_v4, native_table_v1,
-        native_table_v2, txn_gas_schedule_test, txn_gas_schedule_v1, txn_gas_schedule_v2,
-        txn_gas_schedule_v3, GasSchedule,
-    };
 
     fn config_entries(
         instrs: Vec<(String, u64)>,

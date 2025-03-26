@@ -17,7 +17,7 @@ members = [
     "vm/move-prover",
     "vm/mvhashmap",
     "vm/parallel-executor",
-    #"vm/transaction-builder",
+    "vm/transaction-builder",
     #"vm/transaction-builder-generator",
     "vm/move-coverage",
     "vm/package-builder",
@@ -60,7 +60,7 @@ default-members = [
     "vm/move-prover",
     "vm/mvhashmap",
     "vm/parallel-executor",
-    #"vm/transaction-builder",
+    "vm/transaction-builder",
     #"vm/transaction-builder-generator",
     "vm/move-coverage",
     #"vm/resource-viewer",
@@ -241,7 +241,7 @@ starcoin-package-builder = { path = "vm/package-builder" }
 starcoin-move-stdlib = { path = "vm/framework/move-stdlib" }
 starcoin-table-natives = { path = "vm/framework/table-natives" }
 starcoin-cached-packages = { path = "vm/framework/cached-packages" }
-#starcoin-transaction-builder = { path = "transaction-builder" }
+starcoin-transaction-builder = { path = "vm/transaction-builder" }
 #starcoin-transactional-test-harness = { path = "starcoin-transactional-test-harness" }
 starcoin-vm-runtime = { path = "vm/vm-runtime" }
 starcoin-vm-runtime-types = { path = "vm/vm-runtime-types" }

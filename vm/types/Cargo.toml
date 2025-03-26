@@ -18,14 +18,17 @@ move-vm-types = { workspace = true }
 move-table-extension = { workspace = true }
 proptest = { features = ["std"], optional = true, workspace = true }
 proptest-derive = { optional = true, workspace = true }
-starcoin-time-service = { optional = true, workspace = true }
+starcoin-time-service = { workspace = true }
 bcs-ext = { workspace = true }
 starcoin-gas-algebra = { workspace = true }
+starcoin-gas-schedule = { workspace = true }
+starcoin-gas-meter = { workspace = true }
 fxhash = { workspace = true }
 forkable-jellyfish-merkle = { workspace = true }
 schemars = { workspace = true }
 starcoin-accumulator = { workspace = true }
 starcoin-crypto = { workspace = true }
+starcoin-uint = { workspace = true }
 vm = { workspace = true }
 bytes = { workspace = true }
 strum = { workspace = true }
@@ -35,7 +38,7 @@ thiserror = { workspace = true }
 num-traits = { workspace = true }
 num-derive = { workspace = true }
 hashbrown = { workspace = true }
-arr_macro = { workspace = true}
+arr_macro = { workspace = true }
 rayon = { workspace = true }
 starcoin-infallible = { workspace = true }
 
@@ -43,7 +46,6 @@ starcoin-infallible = { workspace = true }
 proptest = { workspace = true }
 proptest-derive = { workspace = true }
 starcoin-crypto = { workspace = true }
-starcoin-time-service = { workspace = true }
 starcoin-gas-algebra = { workspace = true, features = ["testing"] }
 
 [features]
@@ -52,7 +54,6 @@ fuzzing = [
     "proptest",
     "proptest-derive",
     "vm/fuzzing",
-    "starcoin-time-service",
     "starcoin-crypto/fuzzing",
     "move-core-types/fuzzing",
 ]

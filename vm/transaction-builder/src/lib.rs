@@ -6,16 +6,15 @@ use std::convert::TryInto;
 use anyhow::Result;
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 
-use starcoin_cached_packages::{
-    starcoin_framework_sdk_builder::{empty_scripts_empty_script, stc_genesis_initialize},
-    starcoin_stdlib::{
-        on_chain_config_scripts_propose_update_vm_config, transfer_scripts_batch_peer_to_peer_v2,
-        transfer_scripts_peer_to_peer, transfer_scripts_peer_to_peer_v2,
-    },
+use starcoin_cached_packages::starcoin_framework_sdk_builder::{
+    empty_scripts_empty_script, on_chain_config_scripts_propose_update_vm_config,
+    stc_genesis_initialize, transfer_scripts_batch_peer_to_peer_v2, transfer_scripts_peer_to_peer,
+    transfer_scripts_peer_to_peer_v2,
 };
 
-use starcoin_config::{genesis_config::G_TOTAL_STC_AMOUNT, ChainNetwork};
+use starcoin_config::genesis_config::G_TOTAL_STC_AMOUNT;
 use starcoin_types::account::Account;
+use starcoin_vm_types::genesis_config::ChainNetwork;
 use starcoin_vm_types::on_chain_config::Features;
 use starcoin_vm_types::{
     access::ModuleAccess,
@@ -37,8 +36,6 @@ use starcoin_vm_types::{
         TransactionPayload,
     },
 };
-use stdlib::{module_to_package, stdlib_package};
-pub use stdlib::{stdlib_compiled_modules, stdlib_modules, StdLibOptions, StdlibVersion};
 
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
 pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 40000000;
@@ -215,7 +212,7 @@ pub fn raw_accept_token_txn(
 }
 
 pub fn encode_create_account_script_function(
-    _version: StdlibVersion,
+    _version: u64,
     token_type: TypeTag,
     account_address: &AccountAddress,
     auth_key: AuthenticationKey,
@@ -325,9 +322,14 @@ pub fn create_signed_txn_with_association_account(
         .expect("Sign txn should work.")
 }
 
-pub fn build_stdlib_package(net: &ChainNetwork, stdlib_option: StdLibOptions) -> Result<Package> {
+// fixme: enable stdlib_option
+pub fn build_stdlib_package(net: &ChainNetwork, _stdlib_option: u64) -> Result<Package> {
     let init_script = build_init_script(net);
-    stdlib_package(stdlib_option, Some(init_script))
+    let modules = starcoin_cached_packages::head_release_bundle().legacy_copy_code();
+    Package::new(
+        modules.into_iter().map(Module::new).collect(),
+        Some(init_script),
+    )
 }
 
 pub fn build_stdlib_package_with_modules(
@@ -335,7 +337,10 @@ pub fn build_stdlib_package_with_modules(
     modules: Vec<Vec<u8>>,
 ) -> Result<Package> {
     let init_script = build_init_script(net);
-    module_to_package(modules, Some(init_script))
+    Package::new(
+        modules.into_iter().map(Module::new).collect(),
+        Some(init_script),
+    )
 }
 
 pub fn build_init_script(net: &ChainNetwork) -> EntryFunction {
@@ -404,11 +409,11 @@ pub fn build_init_script(net: &ChainNetwork) -> EntryFunction {
 }
 
 pub fn build_package_with_stdlib_module(
-    stdlib_option: StdLibOptions,
+    _stdlib_option: u64,
     module_names: Vec<&str>,
     init_script: Option<EntryFunction>,
 ) -> Result<Package> {
-    let modules = stdlib_modules(stdlib_option);
+    let modules = starcoin_cached_packages::head_release_bundle().legacy_copy_code();
     let mut package = Package::new_with_modules(
         modules
             .iter()
@@ -438,10 +443,11 @@ pub fn build_package_with_stdlib_module(
 }
 
 pub fn build_stdlib_package_for_test(
-    stdlib_option: StdLibOptions,
+    _stdlib_option: u64,
     init_script: Option<EntryFunction>,
 ) -> Result<Package> {
-    stdlib_package(stdlib_option, init_script)
+    let modules = starcoin_cached_packages::head_release_bundle().legacy_copy_code();
+    Package::new(modules.into_iter().map(Module::new).collect(), init_script)
 }
 
 pub fn build_module_upgrade_proposal(
@@ -450,11 +456,11 @@ pub fn build_module_upgrade_proposal(
     exec_delay: u64,
     enforced: bool,
     token_code: TokenCode,
-    stdlib_version: StdlibVersion,
+    stdlib_2_or_bigger: bool,
 ) -> (EntryFunction, HashValue) {
     let package_hash = package.crypto_hash();
     // propose_module_upgrade_v2 is available after v2 upgrade.
-    let (function_name, args) = if stdlib_version >= StdlibVersion::Version(2) {
+    let (function_name, args) = if stdlib_2_or_bigger {
         (
             "propose_module_upgrade_v2",
             vec![
@@ -518,9 +524,9 @@ pub fn build_module_upgrade_queue(
     proposal_address: AccountAddress,
     proposal_id: u64,
     token_code: TokenCode,
-    stdlib_version: StdlibVersion,
+    stdlib_2_or_bigger: bool,
 ) -> EntryFunction {
-    let upgrade_module = if stdlib_version >= StdlibVersion::Version(2) {
+    let upgrade_module = if stdlib_2_or_bigger {
         TypeTag::Struct(Box::new(StructTag {
             address: genesis_address(),
             module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),

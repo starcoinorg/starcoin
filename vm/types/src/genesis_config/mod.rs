@@ -1,6 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+mod genesis_config;
+
+pub use genesis_config::*;
+
 use anyhow::{format_err, Result};
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
