@@ -7,7 +7,6 @@ use crate::cn::CryptoNightConsensus;
 use crate::dummy::DummyConsensus;
 use crate::keccak::KeccakConsensus;
 use anyhow::{format_err, Result};
-use byteorder::{LittleEndian, WriteBytesExt};
 use once_cell::sync::Lazy;
 use rand::Rng;
 use starcoin_chain_api::ChainReader;
@@ -16,7 +15,6 @@ use starcoin_time_service::TimeService;
 use starcoin_types::block::{BlockHeader, BlockHeaderExtra};
 use starcoin_types::U256;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
-use std::io::Write;
 
 pub mod argon;
 pub mod cn;
@@ -48,9 +46,8 @@ pub fn set_header_nonce(header: &[u8], nonce: u32, extra: &BlockHeaderExtra) -> 
         return vec![];
     }
     let mut header = header.to_owned();
-    // XXX FIXME YSG, why need change code?
-    let _ = <[u8] as AsMut<[u8]>>::as_mut(&mut header[39..]).write_u32::<LittleEndian>(nonce);
-    let _ = <[u8] as AsMut<[u8]>>::as_mut(&mut header[35..39]).write_all(extra.as_slice());
+    header[35..39].copy_from_slice(extra.as_slice());
+    header[39..43].copy_from_slice(&nonce.to_le_bytes());
     header
 }
 
