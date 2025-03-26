@@ -525,6 +525,7 @@ starcoin-storage2 = { git = "https://github.com/starcoinorg/starcoin", branch = 
 starcoin-crypto2 = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "a14be64c9cd5889389730c76f00a7f82ad5c99cf" }
 starcoin-vm2 = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-vm-runtime" }
 starcoin-vm2-types = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-vm-types" }
+starcoin-types2 = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-types" }
 starcoin-state2-store-api = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-state-store-api" }
 
 syn = { version = "1.0.107", features = [
