@@ -274,7 +274,7 @@ dependencies = [
  "hex",
  "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rpassword",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
  "starcoin-logger 1.13.19",
@@ -431,7 +431,7 @@ dependencies = [
  "rand 0.7.3",
  "rand_core 0.5.1",
  "ring 0.16.20",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde-name 0.1.2",
  "serde_bytes",
  "sha2 0.10.8",
@@ -1078,7 +1078,7 @@ name = "bcs"
 version = "0.1.4"
 source = "git+https://github.com/aptos-labs/bcs.git?rev=d31fab9d81748e2594be5cd5cdf845786a30562d#d31fab9d81748e2594be5cd5cdf845786a30562d"
 dependencies = [
- "serde 1.0.219",
+ "serde 1.0.195",
  "thiserror 1.0.69",
 ]
 
@@ -1088,7 +1088,7 @@ version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "85b6598a2f5d564fb7855dc6b06fd1c38cff5a72bd8b863a4d021938497b440a"
 dependencies = [
- "serde 1.0.219",
+ "serde 1.0.195",
  "thiserror 1.0.69",
 ]
 
@@ -1098,7 +1098,7 @@ version = "1.13.19"
 dependencies = [
  "anyhow",
  "bcs 0.1.6",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -1108,7 +1108,7 @@ source = "git+https://github.com/starcoinorg/starcoin?branch=multi-move-vm#f8fba
 dependencies = [
  "anyhow",
  "bcs 0.1.6",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -1137,7 +1137,7 @@ dependencies = [
  "blake2s_simd",
  "byteorder",
  "ff 0.13.1",
- "serde 1.0.219",
+ "serde 1.0.195",
  "thiserror 1.0.69",
 ]
 
@@ -1208,7 +1208,7 @@ version = "1.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1f45e9417d87227c7a56d22e471c6206462cba514c7590c09aff4cf6d1ddcad"
 dependencies = [
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -1470,7 +1470,7 @@ dependencies = [
  "group 0.13.0",
  "pairing",
  "rand_core 0.6.4",
- "serde 1.0.219",
+ "serde 1.0.195",
  "subtle",
 ]
 
@@ -1494,7 +1494,7 @@ checksum = "531a9155a481e2ee699d4f98f43c0ca4ff8ee1bfd55c31e9e98fb29d2b176fe0"
 dependencies = [
  "memchr",
  "regex-automata",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -1510,7 +1510,7 @@ dependencies = [
  "merlin",
  "rand 0.8.5",
  "rand_core 0.6.4",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_derive",
  "sha3",
  "subtle-ng",
@@ -1581,7 +1581,7 @@ version = "1.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d71b6127be86fdcfddb610f7182ac57211d4b18a3e9c82eb2d17662f2227ad6a"
 dependencies = [
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -1932,7 +1932,7 @@ version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "52899426b69706219a1aaee2e95868fd01a0bd8006bb163f069578a0af5b5bb2"
 dependencies = [
- "serde 1.0.219",
+ "serde 1.0.195",
  "unicode-segmentation",
 ]
 
@@ -1943,7 +1943,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3362992a0d9f1dd7c3d0e89e0ab2bb540b7a95fea8cd798090e758fda2899b5e"
 dependencies = [
  "codespan-reporting",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -1952,7 +1952,7 @@ version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3538270d33cc669650c4b093848450d380def10c331d38c768e34cac80576e6e"
 dependencies = [
- "serde 1.0.219",
+ "serde 1.0.195",
  "termcolor",
  "unicode-width",
 ]
@@ -2001,7 +2001,7 @@ dependencies = [
  "lazy_static 1.5.0",
  "nom 5.1.3",
  "rust-ini",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde-hjson",
  "serde_json",
  "toml 0.5.11",
@@ -2048,7 +2048,7 @@ dependencies = [
  "hex",
  "rlp",
  "rlp-derive",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
  "starcoin-executor",
@@ -2158,7 +2158,7 @@ dependencies = [
  "plotters",
  "rayon",
  "regex",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_cbor",
  "serde_derive",
  "serde_json",
@@ -2425,7 +2425,7 @@ dependencies = [
  "csv-core",
  "itoa",
  "ryu",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -2553,7 +2553,7 @@ dependencies = [
  "byteorder",
  "digest 0.9.0",
  "rand_core 0.6.4",
- "serde 1.0.219",
+ "serde 1.0.195",
  "subtle-ng",
  "zeroize",
 ]
@@ -2754,7 +2754,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "18e4fdb82bd54a12e42fb58a800dcae6b9e13982238ce2296dc3570b92148e1f"
 dependencies = [
  "data-encoding",
- "syn 2.0.100",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -2796,7 +2796,7 @@ dependencies = [
  "num_cpus",
  "pprof",
  "rayon",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "starcoin-account",
  "starcoin-account-api",
@@ -3018,7 +3018,7 @@ dependencies = [
  "proptest-derive 0.3.0",
  "rand 0.8.5",
  "rand_core 0.6.4",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde-name 0.1.2",
  "serde_bytes",
  "sha2 0.9.9",
@@ -3181,7 +3181,7 @@ version = "1.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "91cff35c70bba8a626e3185d8cd48cc11b5437e1a5bcd15b9b5fa3c64b6dfee7"
 dependencies = [
- "serde 1.0.219",
+ "serde 1.0.195",
  "signature 1.6.4",
 ]
 
@@ -3204,7 +3204,7 @@ dependencies = [
  "curve25519-dalek 3.2.0",
  "ed25519 1.5.3",
  "rand 0.7.3",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_bytes",
  "sha2 0.9.9",
  "zeroize",
@@ -3219,7 +3219,7 @@ dependencies = [
  "curve25519-dalek 4.1.3",
  "ed25519 2.2.3",
  "rand_core 0.6.4",
- "serde 1.0.219",
+ "serde 1.0.195",
  "sha2 0.10.8",
  "subtle",
  "zeroize",
@@ -3234,7 +3234,7 @@ dependencies = [
  "curve25519-dalek-fiat",
  "ed25519 1.5.3",
  "rand 0.8.5",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_bytes",
  "sha2 0.9.9",
  "zeroize",
@@ -3259,7 +3259,7 @@ dependencies = [
  "percent-encoding 2.3.1",
  "reqwest 0.11.27",
  "rustc_version 0.2.3",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "serde_with",
  "url 2.5.4",
@@ -3674,7 +3674,7 @@ dependencies = [
  "proptest-derive 0.3.0",
  "rand 0.8.5",
  "rand_core 0.6.4",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_bytes",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
  "starcoin-logger 1.13.19",
@@ -3694,7 +3694,7 @@ dependencies = [
  "mirai-annotations",
  "num-derive",
  "num-traits 0.2.19",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_bytes",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a14be64c9cd5889389730c76f00a7f82ad5c99cf)",
  "starcoin-logger 1.13.19 (git+https://github.com/starcoinorg/starcoin?branch=multi-move-vm)",
@@ -3954,7 +3954,7 @@ dependencies = [
  "hex",
  "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rpassword",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
  "starcoin-rpc-api",
@@ -4302,7 +4302,7 @@ version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 dependencies = [
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -4875,7 +4875,7 @@ version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4551f042f3438e64dbd6226b20527fc84a6e1fe65688b58746a2f53623f25f5c"
 dependencies = [
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -5106,7 +5106,7 @@ dependencies = [
  "jsonpath-plus",
  "once_cell",
  "regex",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
 ]
 
@@ -5129,7 +5129,7 @@ dependencies = [
  "error-chain 0.11.0",
  "pest 1.0.6",
  "pest_derive 1.0.8",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
 ]
 
@@ -5159,7 +5159,7 @@ dependencies = [
  "jsonrpc-server-utils 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.27",
  "parity-tokio-ipc",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "tokio",
  "url 1.7.2",
@@ -5176,7 +5176,7 @@ dependencies = [
  "jsonrpc-core 18.0.0 (git+https://github.com/starcoinorg/jsonrpc?rev=e895b6cc5897f3813a953a9a6bb4718b4856ab19)",
  "jsonrpc-pubsub 18.0.0 (git+https://github.com/starcoinorg/jsonrpc?rev=e895b6cc5897f3813a953a9a6bb4718b4856ab19)",
  "log 0.4.27",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
 ]
 
@@ -5190,7 +5190,7 @@ dependencies = [
  "futures-executor",
  "futures-util",
  "log 0.4.27",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_derive",
  "serde_json",
 ]
@@ -5204,7 +5204,7 @@ dependencies = [
  "futures-executor",
  "futures-util",
  "log 0.4.27",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_derive",
  "serde_json",
 ]
@@ -5294,7 +5294,7 @@ dependencies = [
  "log 0.4.27",
  "parking_lot 0.11.2",
  "rand 0.7.3",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -5308,7 +5308,7 @@ dependencies = [
  "log 0.4.27",
  "parking_lot 0.11.2",
  "rand 0.7.3",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
 ]
 
@@ -5884,7 +5884,7 @@ dependencies = [
  "prost-codec",
  "rand 0.8.5",
  "rcgen 0.9.3",
- "serde 1.0.219",
+ "serde 1.0.195",
  "stun",
  "thiserror 1.0.69",
  "tinytemplate",
@@ -5965,7 +5965,7 @@ dependencies = [
  "libsecp256k1-gen-ecmult",
  "libsecp256k1-gen-genmult",
  "rand 0.8.5",
- "serde 1.0.219",
+ "serde 1.0.195",
  "sha2 0.9.9",
  "typenum",
 ]
@@ -6088,7 +6088,7 @@ version = "0.4.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13dc2df351e3202783a1fe0d44375f7295ffb4049267b0f3018346dc122a1d94"
 dependencies = [
- "serde 1.0.219",
+ "serde 1.0.195",
  "value-bag",
 ]
 
@@ -6117,7 +6117,7 @@ dependencies = [
  "once_cell",
  "parking_lot 0.12.3",
  "rand 0.8.5",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde-value",
  "serde_json",
  "serde_yaml 0.9.34+deprecated",
@@ -6244,7 +6244,7 @@ dependencies = [
  "csv",
  "hex",
  "merkletree",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "sha3",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
@@ -6263,7 +6263,7 @@ dependencies = [
  "memmap2",
  "positioned-io",
  "rayon",
- "serde 1.0.219",
+ "serde 1.0.195",
  "tempfile",
  "typenum",
 ]
@@ -6423,7 +6423,7 @@ dependencies = [
  "move-command-line-common 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "move-model 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -6440,7 +6440,7 @@ dependencies = [
  "move-command-line-common 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-model 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -6455,7 +6455,7 @@ dependencies = [
  "proptest",
  "proptest-derive 0.3.0",
  "ref-cast",
- "serde 1.0.219",
+ "serde 1.0.195",
  "variant_count",
 ]
 
@@ -6472,7 +6472,7 @@ dependencies = [
  "proptest",
  "proptest-derive 0.4.0",
  "ref-cast",
- "serde 1.0.219",
+ "serde 1.0.195",
  "variant_count",
 ]
 
@@ -6498,7 +6498,7 @@ dependencies = [
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "move-ir-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "move-symbol-pool 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -6513,7 +6513,7 @@ dependencies = [
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-ir-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-symbol-pool 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -6563,7 +6563,7 @@ dependencies = [
  "move-borrow-graph 0.0.1 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "petgraph 0.5.1",
- "serde 1.0.219",
+ "serde 1.0.195",
  "typed-arena",
 ]
 
@@ -6637,7 +6637,7 @@ dependencies = [
  "read-write-set",
  "read-write-set-dynamic",
  "reqwest 0.11.27",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "serde_yaml 0.8.26",
  "tempfile",
@@ -6687,7 +6687,7 @@ dependencies = [
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "num-bigint 0.4.6",
  "once_cell",
- "serde 1.0.219",
+ "serde 1.0.195",
  "sha2 0.9.9",
  "walkdir",
 ]
@@ -6704,7 +6704,7 @@ dependencies = [
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "num-bigint 0.3.3",
  "once_cell",
- "serde 1.0.219",
+ "serde 1.0.195",
  "sha2 0.9.9",
  "walkdir",
 ]
@@ -6814,7 +6814,7 @@ dependencies = [
  "proptest-derive 0.3.0",
  "rand 0.8.5",
  "ref-cast",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_bytes",
  "uint 0.9.5",
 ]
@@ -6840,7 +6840,7 @@ dependencies = [
  "proptest-derive 0.4.0",
  "rand 0.8.5",
  "ref-cast",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_bytes",
  "thiserror 1.0.69",
  "uint 0.9.5",
@@ -6863,7 +6863,7 @@ dependencies = [
  "move-ir-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "once_cell",
  "petgraph 0.5.1",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -6882,7 +6882,7 @@ dependencies = [
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-ir-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "petgraph 0.5.1",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -6899,7 +6899,7 @@ dependencies = [
  "move-command-line-common 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "move-coverage 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "petgraph 0.5.1",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -6952,7 +6952,7 @@ dependencies = [
  "num",
  "once_cell",
  "regex",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -6971,7 +6971,7 @@ dependencies = [
  "move-model 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "once_cell",
  "regex",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -6985,7 +6985,7 @@ dependencies = [
  "move-command-line-common 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "move-model 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -6997,7 +6997,7 @@ dependencies = [
  "move-command-line-common 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-model 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -7093,7 +7093,7 @@ dependencies = [
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "move-symbol-pool 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "once_cell",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -7106,7 +7106,7 @@ dependencies = [
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-symbol-pool 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "once_cell",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -7132,7 +7132,7 @@ dependencies = [
  "num",
  "once_cell",
  "regex",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -7158,7 +7158,7 @@ dependencies = [
  "num-traits 0.2.19",
  "once_cell",
  "regex",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -7188,7 +7188,7 @@ dependencies = [
  "ptree",
  "regex",
  "reqwest 0.11.27",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_yaml 0.8.26",
  "sha2 0.9.9",
  "tempfile",
@@ -7221,7 +7221,7 @@ dependencies = [
  "once_cell",
  "petgraph 0.5.1",
  "regex",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_yaml 0.8.26",
  "sha2 0.9.9",
  "tempfile",
@@ -7309,7 +7309,7 @@ dependencies = [
  "once_cell",
  "pretty",
  "rand 0.8.5",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "simplelog",
  "tokio",
@@ -7338,7 +7338,7 @@ dependencies = [
  "move-prover-bytecode-pipeline",
  "move-stackless-bytecode 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "once_cell",
- "serde 1.0.219",
+ "serde 1.0.195",
  "simplelog",
  "toml 0.7.8",
 ]
@@ -7365,7 +7365,7 @@ dependencies = [
  "pretty",
  "rand 0.8.5",
  "regex",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "tera",
  "tokio",
@@ -7395,7 +7395,7 @@ dependencies = [
  "pretty",
  "rand 0.7.3",
  "regex",
- "serde 1.0.219",
+ "serde 1.0.195",
  "tera",
  "tokio",
 ]
@@ -7414,7 +7414,7 @@ dependencies = [
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-model 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-stackless-bytecode 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -7436,7 +7436,7 @@ dependencies = [
  "anyhow",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -7451,7 +7451,7 @@ dependencies = [
  "move-bytecode-utils 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "once_cell",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -7464,7 +7464,7 @@ dependencies = [
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-bytecode-utils 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -7491,7 +7491,7 @@ dependencies = [
  "once_cell",
  "paste",
  "petgraph 0.5.1",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -7528,7 +7528,7 @@ dependencies = [
  "move-model 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "move-stackless-bytecode 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "num",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -7583,7 +7583,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc#7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc"
 dependencies = [
  "once_cell",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -7592,7 +7592,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5#7c0ec30b6dd783cc0377b5b2c85650130028d3b5"
 dependencies = [
  "once_cell",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -7755,7 +7755,7 @@ dependencies = [
  "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "once_cell",
  "parking_lot 0.12.3",
- "serde 1.0.219",
+ "serde 1.0.195",
  "sha3",
  "tracing",
  "triomphe",
@@ -7773,7 +7773,7 @@ dependencies = [
  "move-table-extension 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "once_cell",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -7789,7 +7789,7 @@ dependencies = [
  "move-table-extension 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "once_cell",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -7801,7 +7801,7 @@ dependencies = [
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "once_cell",
- "serde 1.0.219",
+ "serde 1.0.195",
  "smallvec 1.14.0",
 ]
 
@@ -7815,7 +7815,7 @@ dependencies = [
  "itertools 0.12.1",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "smallbitvec",
  "smallvec 1.14.0",
  "triomphe",
@@ -7833,7 +7833,7 @@ dependencies = [
  "multibase",
  "multihash 0.16.3",
  "percent-encoding 2.3.1",
- "serde 1.0.219",
+ "serde 1.0.195",
  "static_assertions",
  "unsigned-varint 0.7.2",
  "url 2.5.4",
@@ -7852,7 +7852,7 @@ dependencies = [
  "multibase",
  "multihash 0.17.0",
  "percent-encoding 2.3.1",
- "serde 1.0.219",
+ "serde 1.0.195",
  "static_assertions",
  "unsigned-varint 0.7.2",
  "url 2.5.4",
@@ -7982,7 +7982,7 @@ dependencies = [
  "generic-array 0.14.7",
  "log 0.4.27",
  "pasta_curves",
- "serde 1.0.219",
+ "serde 1.0.195",
  "trait-set",
 ]
 
@@ -8076,7 +8076,7 @@ dependencies = [
  "parking_lot 0.12.3",
  "rand 0.8.5",
  "schemars 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=9b3705780b8fe9c8676ff82919869ba7405b1062)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
  "starcoin-logger 1.13.19",
  "starcoin-metrics 1.13.19",
@@ -8115,7 +8115,7 @@ dependencies = [
  "prometheus",
  "rand 0.8.5",
  "sc-peerset",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "smallvec 1.14.0",
  "starcoin-config",
@@ -8143,7 +8143,7 @@ dependencies = [
  "network-p2p-derive",
  "network-p2p-types",
  "num_enum",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-types 1.13.19",
  "stest",
 ]
@@ -8170,7 +8170,7 @@ dependencies = [
  "rand 0.8.5",
  "sc-peerset",
  "schemars 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=9b3705780b8fe9c8676ff82919869ba7405b1062)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
  "starcoin-types 1.13.19",
@@ -8183,7 +8183,7 @@ dependencies = [
  "anyhow",
  "network-p2p-types",
  "schemars 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=9b3705780b8fe9c8676ff82919869ba7405b1062)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
  "starcoin-types 1.13.19",
 ]
@@ -8546,7 +8546,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/openrpc-rs?rev=1f2f7d3495e3bd3ef3b6fcf7c4e0602cad090d5e#1f2f7d3495e3bd3ef3b6fcf7c4e0602cad090d5e"
 dependencies = [
  "schemars 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=a64c6ddf7ca4796e090208b1476de2e53772042f)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
 ]
 
@@ -8556,7 +8556,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/openrpc-rs?rev=f8ab047e30927cdf2f605b61a219c975d6c4f666#f8ab047e30927cdf2f605b61a219c975d6c4f666"
 dependencies = [
  "schemars 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=9b3705780b8fe9c8676ff82919869ba7405b1062)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
 ]
 
@@ -8726,7 +8726,7 @@ dependencies = [
  "arrayvec 0.5.2",
  "bitvec 0.17.4",
  "byte-slice-cast 0.3.5",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -8740,7 +8740,7 @@ dependencies = [
  "byte-slice-cast 1.2.3",
  "impl-trait-for-tuples",
  "parity-scale-codec-derive",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -8899,7 +8899,7 @@ dependencies = [
  "hex",
  "lazy_static 1.5.0",
  "rand 0.8.5",
- "serde 1.0.219",
+ "serde 1.0.195",
  "static_assertions",
  "subtle",
 ]
@@ -9678,7 +9678,7 @@ dependencies = [
  "config",
  "directories",
  "petgraph 0.6.5",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde-value",
  "tint",
 ]
@@ -10216,7 +10216,7 @@ dependencies = [
  "percent-encoding 2.3.1",
  "pin-project-lite 0.2.16",
  "rustls-pemfile 1.0.4",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "serde_urlencoded",
  "sync_wrapper",
@@ -10260,7 +10260,7 @@ dependencies = [
  "percent-encoding 2.3.1",
  "pin-project-lite 0.2.16",
  "rustls-pemfile 2.2.0",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "serde_urlencoded",
  "sync_wrapper",
@@ -10294,7 +10294,7 @@ dependencies = [
  "csv",
  "hex",
  "pprof",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
  "starcoin-resource-viewer",
@@ -10462,7 +10462,7 @@ dependencies = [
  "async-trait",
  "bytes 1.10.1",
  "rand 0.8.5",
- "serde 1.0.219",
+ "serde 1.0.195",
  "thiserror 1.0.69",
  "webrtc-util",
 ]
@@ -10770,7 +10770,7 @@ dependencies = [
  "dyn-clone",
  "multiaddr 0.16.0",
  "schemars_derive 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=9b3705780b8fe9c8676ff82919869ba7405b1062)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
 ]
 
@@ -10783,7 +10783,7 @@ dependencies = [
  "dyn-clone",
  "multiaddr 0.16.0",
  "schemars_derive 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=a64c6ddf7ca4796e090208b1476de2e53772042f)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
 ]
 
@@ -10823,7 +10823,7 @@ dependencies = [
  "rust-flatten-json",
  "rustyline",
  "rustyline-derive",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "thiserror 1.0.69",
 ]
@@ -10946,29 +10946,11 @@ checksum = "9dad3f759919b92c3068c696c15c3d17238234498bbdcc80f2c469606f948ac8"
 
 [[package]]
 name = "serde"
-version = "1.0.219"
+version = "1.0.195"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f0e2c6ed6606019b4e29e69dbaba95b11854410e5347d525002456dbbb786b6"
+checksum = "63261df402c67811e9ac6def069e4786148c4563f4b50fd4bf30aa370d626b02"
 dependencies = [
  "serde_derive",
-]
-
-[[package]]
-name = "serde-generate"
-version = "0.19.1"
-source = "git+https://github.com/starcoinorg/serde-reflection?rev=694048797338ff7385006d968e786b6d9dbdeb8b#694048797338ff7385006d968e786b6d9dbdeb8b"
-dependencies = [
- "bcs 0.1.6",
- "bincode",
- "heck 0.3.3",
- "include_dir",
- "maplit",
- "serde 1.0.219",
- "serde-reflection 0.3.2 (git+https://github.com/starcoinorg/serde-reflection?rev=694048797338ff7385006d968e786b6d9dbdeb8b)",
- "serde_bytes",
- "serde_yaml 0.8.26",
- "structopt 0.3.26",
- "textwrap 0.13.4",
 ]
 
 [[package]]
@@ -10981,8 +10963,8 @@ dependencies = [
  "heck 0.3.3",
  "include_dir",
  "maplit",
- "serde 1.0.219",
- "serde-reflection 0.3.2 (git+https://github.com/starcoinorg/serde-reflection?rev=eb95fd4e3b67e08d71432b522c53833a0b855d80)",
+ "serde 1.0.195",
+ "serde-reflection 0.3.2",
  "serde_bytes",
  "serde_yaml 0.8.26",
  "structopt 0.3.26",
@@ -10995,7 +10977,7 @@ version = "1.13.19"
 dependencies = [
  "bcs-ext 1.13.19",
  "hex",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_bytes",
  "serde_json",
 ]
@@ -11018,7 +11000,7 @@ version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "12c47087018ec281d1cdab673d36aea22d816b54d498264029c05d5fa1910da6"
 dependencies = [
- "serde 1.0.219",
+ "serde 1.0.195",
  "thiserror 1.0.69",
 ]
 
@@ -11028,16 +11010,7 @@ version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3b5b14ebbcc4e4f2b3642fa99c388649da58d1dc3308c7d109f39f565d1710f0"
 dependencies = [
- "serde 1.0.219",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "serde-reflection"
-version = "0.3.2"
-source = "git+https://github.com/starcoinorg/serde-reflection?rev=694048797338ff7385006d968e786b6d9dbdeb8b#694048797338ff7385006d968e786b6d9dbdeb8b"
-dependencies = [
- "serde 1.0.219",
+ "serde 1.0.195",
  "thiserror 1.0.69",
 ]
 
@@ -11046,7 +11019,7 @@ name = "serde-reflection"
 version = "0.3.2"
 source = "git+https://github.com/starcoinorg/serde-reflection?rev=eb95fd4e3b67e08d71432b522c53833a0b855d80#eb95fd4e3b67e08d71432b522c53833a0b855d80"
 dependencies = [
- "serde 1.0.219",
+ "serde 1.0.195",
  "thiserror 1.0.69",
 ]
 
@@ -11056,7 +11029,7 @@ version = "0.3.5"
 source = "git+https://github.com/aptos-labs/serde-reflection?rev=73b6bbf748334b71ff6d7d09d06a29e3062ca075#73b6bbf748334b71ff6d7d09d06a29e3062ca075"
 dependencies = [
  "once_cell",
- "serde 1.0.219",
+ "serde 1.0.195",
  "thiserror 1.0.69",
 ]
 
@@ -11067,7 +11040,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f05a5f801ac62a51a49d378fdb3884480041b99aced450b28990673e8ff99895"
 dependencies = [
  "once_cell",
- "serde 1.0.219",
+ "serde 1.0.195",
  "thiserror 1.0.69",
 ]
 
@@ -11078,7 +11051,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f3a1a3341211875ef120e117ea7fd5228530ae7e7036a779fdc9117be6b3282c"
 dependencies = [
  "ordered-float",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -11087,7 +11060,7 @@ version = "0.11.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8437fd221bde2d4ca316d61b90e337e9e702b3820b87d63caa9ba6c02bd06d96"
 dependencies = [
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -11097,14 +11070,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2bef2ebfde456fb76bbcf9f59315333decc4fda0b2b44b420243c11e0f5ec1f5"
 dependencies = [
  "half",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.219"
+version = "1.0.195"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b0276cf7f2c73365f7157c8123c21cd9a50fbbd844757af28ca1f5925fc2a00"
+checksum = "46fe8f8603d81ba86327b23a2e9cdf49e1255fb94a4c5f297f6ee0547178ea2c"
 dependencies = [
  "proc-macro2 1.0.94",
  "quote 1.0.40",
@@ -11131,7 +11104,7 @@ dependencies = [
  "itoa",
  "memchr",
  "ryu",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -11140,7 +11113,7 @@ version = "0.6.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "87607cb1398ed59d48732e575a4c28a7a8ebf2454b964fe3f224f2afc07909e1"
 dependencies = [
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -11152,7 +11125,7 @@ dependencies = [
  "form_urlencoded",
  "itoa",
  "ryu",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -11161,7 +11134,7 @@ version = "1.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "678b5a069e50bf00ecd22d0cd8ddf7c236f68581b03db652061ed5eb13a312ff"
 dependencies = [
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_with_macros",
 ]
 
@@ -11185,7 +11158,7 @@ checksum = "578a7433b776b56a35785ed5ce9a7e777ac0598aac5a6dd1b4b18a307c7fc71b"
 dependencies = [
  "indexmap 1.9.3",
  "ryu",
- "serde 1.0.219",
+ "serde 1.0.195",
  "yaml-rust",
 ]
 
@@ -11198,7 +11171,7 @@ dependencies = [
  "indexmap 2.8.0",
  "itoa",
  "ryu",
- "serde 1.0.219",
+ "serde 1.0.195",
  "unsafe-libyaml",
 ]
 
@@ -11616,7 +11589,7 @@ dependencies = [
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "ordinal",
  "schemars 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=9b3705780b8fe9c8676ff82919869ba7405b1062)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_bytes",
  "serde_json",
  "starcoin-abi-resolver",
@@ -11647,7 +11620,7 @@ dependencies = [
  "hex",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "schemars 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=9b3705780b8fe9c8676ff82919869ba7405b1062)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_bytes",
  "serde_json",
  "starcoin-vm-types 1.13.19",
@@ -11665,7 +11638,7 @@ dependencies = [
  "parking_lot 0.12.3",
  "rand 0.8.5",
  "rand_core 0.6.4",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "starcoin-account-api",
  "starcoin-config",
@@ -11689,7 +11662,7 @@ dependencies = [
  "rand 0.8.5",
  "rand_core 0.6.4",
  "schemars 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=9b3705780b8fe9c8676ff82919869ba7405b1062)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_bytes",
  "serde_json",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
@@ -11749,7 +11722,7 @@ dependencies = [
  "rand 0.8.5",
  "rand_core 0.6.4",
  "schemars 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=9b3705780b8fe9c8676ff82919869ba7405b1062)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
  "starcoin-logger 1.13.19",
 ]
@@ -11768,7 +11741,7 @@ dependencies = [
  "once_cell",
  "parking_lot 0.12.3",
  "schemars 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=a64c6ddf7ca4796e090208b1476de2e53772042f)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a14be64c9cd5889389730c76f00a7f82ad5c99cf)",
  "starcoin-logger 1.13.19 (git+https://github.com/starcoinorg/starcoin?branch=multi-move-vm)",
 ]
@@ -11871,7 +11844,7 @@ dependencies = [
  "network-api",
  "rand 0.8.5",
  "rand_core 0.6.4",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-accumulator 1.13.19",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
  "starcoin-service-registry",
@@ -11934,7 +11907,7 @@ dependencies = [
  "futures 0.3.31",
  "rand 0.8.5",
  "rand_core 0.6.4",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-chain",
  "starcoin-chain-api",
  "starcoin-config",
@@ -11972,7 +11945,7 @@ dependencies = [
  "num_cpus",
  "rand 0.8.5",
  "scmd",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "starcoin-abi-decoder",
  "starcoin-abi-resolver",
@@ -12031,7 +12004,7 @@ dependencies = [
  "rand 0.8.5",
  "rand_core 0.6.4",
  "schemars 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=9b3705780b8fe9c8676ff82919869ba7405b1062)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "starcoin-account-api",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
@@ -12065,7 +12038,7 @@ dependencies = [
  "rand 0.8.5",
  "rand_core 0.6.4",
  "rust-argon2",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "sha3",
  "starcoin-chain-api",
@@ -12092,7 +12065,7 @@ dependencies = [
  "once_cell",
  "rand 0.7.3",
  "rand_core 0.5.1",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde-name 0.1.2",
  "serde_bytes",
  "starcoin-crypto-macro 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a14be64c9cd5889389730c76f00a7f82ad5c99cf)",
@@ -12111,7 +12084,7 @@ dependencies = [
  "once_cell",
  "rand 0.8.5",
  "rand_core 0.6.4",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde-name 0.2.1",
  "serde_bytes",
  "starcoin-crypto-macro 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
@@ -12135,6 +12108,20 @@ dependencies = [
  "proc-macro2 1.0.94",
  "quote 1.0.40",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "starcoin-dataformat-generator"
+version = "1.13.19"
+dependencies = [
+ "anyhow",
+ "bcs-ext 1.13.19",
+ "serde 1.0.195",
+ "serde-reflection 0.3.2",
+ "serde_yaml 0.8.26",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
+ "starcoin-types 1.13.19",
+ "starcoin-vm-types 1.13.19",
 ]
 
 [[package]]
@@ -12182,7 +12169,7 @@ dependencies = [
  "log 0.4.27",
  "move-transactional-test-runner",
  "once_cell",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "starcoin-abi-resolver",
  "starcoin-abi-types",
@@ -12245,7 +12232,7 @@ dependencies = [
  "hex",
  "once_cell",
  "rust-embed",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "starcoin-account-api",
  "starcoin-config",
@@ -12335,7 +12322,7 @@ dependencies = [
  "rand 0.8.5",
  "rand_core 0.5.1",
  "ripemd",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_bytes",
  "sha2 0.10.8",
  "sha2 0.9.9",
@@ -12398,7 +12385,7 @@ dependencies = [
  "move-vm-test-utils 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "paste",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -12411,7 +12398,7 @@ dependencies = [
  "move-table-extension 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "move-vm-test-utils 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-natives",
 ]
 
@@ -12444,7 +12431,7 @@ dependencies = [
  "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "once_cell",
  "paste",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-gas-algebra",
 ]
 
@@ -12458,7 +12445,7 @@ dependencies = [
  "futures-timer",
  "hex",
  "scmd",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "starcoin-account",
  "starcoin-account-api",
@@ -12481,7 +12468,7 @@ dependencies = [
  "clap 3.2.25",
  "include_dir",
  "once_cell",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-accumulator 1.13.19",
  "starcoin-chain",
  "starcoin-config",
@@ -12512,7 +12499,7 @@ dependencies = [
  "futures-retry",
  "futures-util",
  "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
  "starcoin-logger 1.13.19",
@@ -12549,7 +12536,7 @@ dependencies = [
  "proptest",
  "proptest-derive 0.3.0",
  "rand 0.8.5",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
  "starcoin-gas",
@@ -12579,7 +12566,7 @@ dependencies = [
  "once_cell",
  "parking_lot 0.12.3",
  "schemars 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=9b3705780b8fe9c8676ff82919869ba7405b1062)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "slog",
  "slog-async",
  "slog-term",
@@ -12599,7 +12586,7 @@ dependencies = [
  "once_cell",
  "parking_lot 0.12.3",
  "schemars 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=9b3705780b8fe9c8676ff82919869ba7405b1062)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "slog",
  "slog-async",
  "slog-term",
@@ -12643,7 +12630,7 @@ dependencies = [
  "hex",
  "once_cell",
  "parking_lot 0.12.3",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-account-api",
  "starcoin-account-service",
  "starcoin-accumulator 1.13.19",
@@ -12700,7 +12687,7 @@ dependencies = [
  "rand 0.8.5",
  "rand_core 0.6.4",
  "rust-argon2",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "starcoin-config",
  "starcoin-consensus",
@@ -12778,7 +12765,7 @@ dependencies = [
  "once_cell",
  "pretty",
  "rand 0.8.5",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "shell-words",
  "simplelog",
@@ -12903,7 +12890,7 @@ dependencies = [
  "prometheus",
  "rand 0.8.5",
  "sc-peerset",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
@@ -12939,7 +12926,7 @@ dependencies = [
  "network-p2p-types",
  "once_cell",
  "prometheus",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "starcoin-account-api",
  "starcoin-accumulator 1.13.19",
@@ -12980,7 +12967,7 @@ dependencies = [
  "network-p2p-types",
  "network-types",
  "once_cell",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-accumulator 1.13.19",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
  "starcoin-logger 1.13.19",
@@ -13055,7 +13042,7 @@ dependencies = [
  "async-trait",
  "backtrace",
  "futures 0.3.31",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
@@ -13184,7 +13171,7 @@ dependencies = [
  "hex",
  "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "starcoin-vm-types 1.13.19",
 ]
@@ -13211,7 +13198,7 @@ dependencies = [
  "openrpc-derive",
  "openrpc-schema 0.1.0 (git+https://github.com/starcoinorg/openrpc-rs?rev=f8ab047e30927cdf2f605b61a219c975d6c4f666)",
  "schemars 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=9b3705780b8fe9c8676ff82919869ba7405b1062)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde-helpers",
  "serde_json",
  "starcoin-abi-decoder",
@@ -13257,7 +13244,7 @@ dependencies = [
  "network-types",
  "parity-tokio-ipc",
  "parking_lot 0.12.3",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "starcoin-abi-types",
  "starcoin-account-api",
@@ -13327,7 +13314,7 @@ dependencies = [
  "network-p2p-types",
  "network-types",
  "parking_lot 0.12.3",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "starcoin-abi-decoder",
  "starcoin-abi-resolver",
@@ -13385,8 +13372,8 @@ dependencies = [
  "heck 0.5.0",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "once_cell",
- "serde-generate 0.19.1 (git+https://github.com/starcoinorg/serde-reflection?rev=eb95fd4e3b67e08d71432b522c53833a0b855d80)",
- "serde-reflection 0.3.2 (git+https://github.com/starcoinorg/serde-reflection?rev=eb95fd4e3b67e08d71432b522c53833a0b855d80)",
+ "serde-generate",
+ "serde-reflection 0.3.2",
  "serde_yaml 0.8.26",
  "starcoin-vm-types 2.0.1",
  "textwrap 0.14.2",
@@ -13406,7 +13393,7 @@ dependencies = [
  "log 0.4.27",
  "once_cell",
  "schemars 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=9b3705780b8fe9c8676ff82919869ba7405b1062)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "stest",
  "thiserror 1.0.69",
  "tokio",
@@ -13421,7 +13408,7 @@ dependencies = [
  "bcs-ext 1.13.19",
  "forkable-jellyfish-merkle 1.13.19",
  "once_cell",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
  "starcoin-service-registry",
  "starcoin-state-tree",
@@ -13457,7 +13444,7 @@ version = "1.13.19"
 dependencies = [
  "anyhow",
  "forkable-jellyfish-merkle 1.13.19",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
  "starcoin-vm-types 1.13.19",
 ]
@@ -13469,7 +13456,7 @@ source = "git+https://github.com/starcoinorg/starcoin?branch=starcoin-vm2#35acf1
 dependencies = [
  "anyhow",
  "forkable-jellyfish-merkle 2.0.1",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a14be64c9cd5889389730c76f00a7f82ad5c99cf)",
  "starcoin-vm-types 2.0.1",
 ]
@@ -13482,7 +13469,7 @@ dependencies = [
  "bcs-ext 1.13.19",
  "forkable-jellyfish-merkle 1.13.19",
  "parking_lot 0.12.3",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
  "starcoin-logger 1.13.19",
@@ -13502,7 +13489,7 @@ dependencies = [
  "lru 0.7.8",
  "once_cell",
  "parking_lot 0.12.3",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
  "starcoin-logger 1.13.19",
  "starcoin-state-api",
@@ -13532,7 +13519,7 @@ dependencies = [
  "proptest-derive 0.3.0",
  "rand 0.8.5",
  "rocksdb",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-accumulator 1.13.19",
  "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
@@ -13562,7 +13549,7 @@ dependencies = [
  "once_cell",
  "parking_lot 0.12.3",
  "rocksdb",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-accumulator 2.0.1",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a14be64c9cd5889389730c76f00a7f82ad5c99cf)",
  "starcoin-logger 1.13.19 (git+https://github.com/starcoinorg/starcoin?branch=multi-move-vm)",
@@ -13587,7 +13574,7 @@ dependencies = [
  "jsonrpc-derive 18.0.0 (git+https://github.com/starcoinorg/jsonrpc?rev=e895b6cc5897f3813a953a9a6bb4718b4856ab19)",
  "jsonrpc-pubsub 18.0.0 (git+https://github.com/starcoinorg/jsonrpc?rev=e895b6cc5897f3813a953a9a6bb4718b4856ab19)",
  "jsonrpc-tcp-server 18.0.0 (git+https://github.com/starcoinorg/jsonrpc?rev=e895b6cc5897f3813a953a9a6bb4718b4856ab19)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
@@ -13667,7 +13654,7 @@ dependencies = [
  "async-trait",
  "network-api",
  "schemars 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=9b3705780b8fe9c8676ff82919869ba7405b1062)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-accumulator 1.13.19",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
  "starcoin-logger 1.13.19",
@@ -13707,7 +13694,7 @@ name = "starcoin-time-service"
 version = "1.13.19"
 dependencies = [
  "log 0.4.27",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -13771,7 +13758,7 @@ dependencies = [
  "move-table-extension 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "move-transactional-test-runner",
  "once_cell",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "starcoin-abi-decoder",
  "starcoin-accumulator 1.13.19",
@@ -13834,7 +13821,7 @@ dependencies = [
  "proptest-derive 0.3.0",
  "rand 0.8.5",
  "rand_core 0.6.4",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_derive",
  "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
@@ -13868,7 +13855,7 @@ dependencies = [
  "async-trait",
  "futures-channel",
  "schemars 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=9b3705780b8fe9c8676ff82919869ba7405b1062)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
  "starcoin-types 1.13.19",
 ]
@@ -13903,7 +13890,7 @@ dependencies = [
  "rand 0.8.5",
  "rand_core 0.6.4",
  "schemars 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=9b3705780b8fe9c8676ff82919869ba7405b1062)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "starcoin-accumulator 1.13.19",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
@@ -13931,7 +13918,7 @@ dependencies = [
  "once_cell",
  "rand 0.8.5",
  "schemars 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=a64c6ddf7ca4796e090208b1476de2e53772042f)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_bytes",
  "serde_json",
  "starcoin-accumulator 2.0.1",
@@ -13947,7 +13934,7 @@ version = "1.13.19"
 dependencies = [
  "bcs-ext 1.13.19",
  "hex",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
  "starcoin-types 1.13.19",
@@ -13960,7 +13947,7 @@ version = "2.0.1"
 source = "git+https://github.com/starcoinorg/starcoin?branch=starcoin-vm2#35acf177c61bc2400f5d758d03bbaa48343f07a9"
 dependencies = [
  "hex",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a14be64c9cd5889389730c76f00a7f82ad5c99cf)",
  "uint 0.9.5",
 ]
@@ -13982,7 +13969,7 @@ dependencies = [
  "rand 0.8.5",
  "rand_core 0.6.4",
  "rayon",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
  "starcoin-gas",
@@ -14020,7 +14007,7 @@ dependencies = [
  "rand 0.8.5",
  "rand_core 0.6.4",
  "rayon",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_bytes",
  "starcoin-aggregator",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a14be64c9cd5889389730c76f00a7f82ad5c99cf)",
@@ -14051,7 +14038,7 @@ dependencies = [
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "move-vm-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
  "rand 0.8.5",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-aggregator",
  "starcoin-gas-meter",
  "starcoin-gas-schedule",
@@ -14083,7 +14070,7 @@ dependencies = [
  "proptest-derive 0.3.0",
  "rand 0.8.5",
  "schemars 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=9b3705780b8fe9c8676ff82919869ba7405b1062)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_bytes",
  "serde_json",
  "starcoin-accumulator 1.13.19",
@@ -14123,7 +14110,7 @@ dependencies = [
  "rand 0.8.5",
  "rayon",
  "schemars 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=a64c6ddf7ca4796e090208b1476de2e53772042f)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_bytes",
  "serde_json",
  "starcoin-accumulator 2.0.1",
@@ -14157,7 +14144,7 @@ dependencies = [
  "move-compiler 0.0.1 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "move-prover 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "once_cell",
- "serde 1.0.219",
+ "serde 1.0.195",
  "sha2 0.10.8",
  "simplelog",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
@@ -14221,7 +14208,7 @@ dependencies = [
  "pin-project 0.4.30",
  "pin-utils",
  "schemars 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=9b3705780b8fe9c8676ff82919869ba7405b1062)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-logger 1.13.19",
  "stest",
  "thiserror 1.0.69",
@@ -14580,7 +14567,7 @@ dependencies = [
  "pest_derive 2.8.0",
  "rand 0.8.5",
  "regex",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "slug",
  "unic-segment",
@@ -14643,7 +14630,7 @@ dependencies = [
  "network-p2p-core",
  "network-p2p-types",
  "rand 0.8.5",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "starcoin-account-api",
  "starcoin-account-service",
@@ -14695,7 +14682,7 @@ dependencies = [
  "jsonpath",
  "regex",
  "scmd",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_bytes",
  "serde_json",
  "starcoin-account-api",
@@ -14848,7 +14835,7 @@ dependencies = [
  "itoa",
  "num-conv",
  "powerfmt",
- "serde 1.0.219",
+ "serde 1.0.195",
  "time-core",
  "time-macros",
 ]
@@ -14932,7 +14919,7 @@ version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be4d6b5f19ff7664e8c98d03e2139cb510db9b0a60b55f8e8709b689d939b6bc"
 dependencies = [
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
 ]
 
@@ -15143,7 +15130,7 @@ version = "0.5.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f4f7f0dd8d50a853a531c426359045b1998f04219d88799810762cd4ad314234"
 dependencies = [
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -15152,7 +15139,7 @@ version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dd79e69d3b627db300ff956027cc6c3798cef26d22526befdfcd12feeb6d2257"
 dependencies = [
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_spanned",
  "toml_datetime",
  "toml_edit 0.19.15",
@@ -15164,7 +15151,7 @@ version = "0.6.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0dd7358ecb8fc2f8d014bf86f6f638ce72ba252a2c3a2572f2a795f1d23efb41"
 dependencies = [
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -15176,7 +15163,7 @@ dependencies = [
  "combine",
  "indexmap 1.9.3",
  "itertools 0.10.5",
- "serde 1.0.219",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -15186,7 +15173,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1b5bb770da30e5cbfde35a2d7b9b8a2c4b8ef89548a7a6aeab5c9a576e3e7421"
 dependencies = [
  "indexmap 2.8.0",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_spanned",
  "toml_datetime",
  "winnow",
@@ -15275,8 +15262,8 @@ dependencies = [
  "heck 0.3.3",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "regex",
- "serde-generate 0.19.1 (git+https://github.com/starcoinorg/serde-reflection?rev=694048797338ff7385006d968e786b6d9dbdeb8b)",
- "serde-reflection 0.3.2 (git+https://github.com/starcoinorg/serde-reflection?rev=694048797338ff7385006d968e786b6d9dbdeb8b)",
+ "serde-generate",
+ "serde-reflection 0.3.2",
  "serde_yaml 0.8.26",
  "starcoin-vm-types 1.13.19",
  "tempfile",
@@ -15301,7 +15288,7 @@ version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ef8f7726da4807b58ea5c96fdc122f80702030edc33b35aff9190a51148ccc85"
 dependencies = [
- "serde 1.0.219",
+ "serde 1.0.195",
  "stable_deref_trait",
 ]
 
@@ -15759,7 +15746,7 @@ version = "1.13.19"
 dependencies = [
  "anyhow",
  "schemars 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=9b3705780b8fe9c8676ff82919869ba7405b1062)",
- "serde 1.0.219",
+ "serde 1.0.195",
  "starcoin-move-explain",
  "starcoin-vm-types 1.13.19",
 ]
@@ -15995,7 +15982,7 @@ dependencies = [
  "rtp",
  "rustls 0.19.1",
  "sdp",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "sha2 0.10.8",
  "stun",
@@ -16057,7 +16044,7 @@ dependencies = [
  "ring 0.16.20",
  "rustls 0.19.1",
  "sec1 0.3.0",
- "serde 1.0.219",
+ "serde 1.0.195",
  "sha1 0.10.6",
  "sha2 0.10.8",
  "signature 1.6.4",
@@ -16081,7 +16068,7 @@ dependencies = [
  "crc",
  "log 0.4.27",
  "rand 0.8.5",
- "serde 1.0.219",
+ "serde 1.0.195",
  "serde_json",
  "stun",
  "thiserror 1.0.69",
@@ -16596,7 +16583,7 @@ checksum = "c7e468321c81fb07fa7f4c636c3972b9100f0346e5b6a9f2bd0603a52f7ed277"
 dependencies = [
  "curve25519-dalek 4.1.3",
  "rand_core 0.6.4",
- "serde 1.0.219",
+ "serde 1.0.195",
  "zeroize",
 ]
 
@@ -16692,7 +16679,7 @@ version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "120e6aef9aa629e3d4f52dc8cc43a015c7724194c97dfaf45180d2daf2b77f40"
 dependencies = [
- "serde 1.0.219",
+ "serde 1.0.195",
  "stable_deref_trait",
  "yoke-derive",
  "zerofrom",
