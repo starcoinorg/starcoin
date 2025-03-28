@@ -17,6 +17,7 @@ use starcoin_vm_types::{
 };
 use std::collections::BTreeMap;
 
+#[allow(dead_code)]
 /// TODO: bring more of the execution logic in starcoin_vm into this file.
 pub trait VMAdapter {
     /// Creates a new Session backed by the given storage.

@@ -9,6 +9,7 @@ use starcoin_vm2_types::{
     StateView,
 };
 
+#[allow(dead_code)]
 fn do_execute_block_transactions<S: StateView>(
     chain_state: &S,
     txns: Vec<Transaction>,
@@ -31,6 +32,7 @@ pub fn validate_transaction<S: StateView>(
     vm.verify_transaction(chain_state, txn)
 }
 
+#[allow(dead_code)]
 pub fn execute_readonly_function<S: StateView>(
     chain_state: &S,
     module: &ModuleId,

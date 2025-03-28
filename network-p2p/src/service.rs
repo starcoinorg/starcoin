@@ -79,12 +79,6 @@ use std::num::NonZeroUsize;
 use std::time::Duration;
 const REQUEST_RESPONSE_TIMEOUT_SECONDS: u64 = 60 * 5;
 
-/// Minimum Requirements for a Hash within Networking
-pub trait ExHashT: std::hash::Hash + Eq + std::fmt::Debug + Clone + Send + Sync + 'static {}
-
-impl<T> ExHashT for T where T: std::hash::Hash + Eq + std::fmt::Debug + Clone + Send + Sync + 'static
-{}
-
 /// A cloneable handle for reporting cost/benefits of peers.
 #[derive(Clone)]
 pub struct ReportHandle {
