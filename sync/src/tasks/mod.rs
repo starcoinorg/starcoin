@@ -338,6 +338,12 @@ pub trait BlockFetcher: Send + Sync {
         &self,
         block_ids: Vec<HashValue>,
     ) -> BoxFuture<Result<Vec<HashValue>>>;
+
+    fn fetch_dag_block_in_batch(
+        &self,
+        block_ids: Vec<HashValue>,
+        exp: u64,
+    ) -> BoxFuture<Result<Vec<Block>>>;
 }
 
 impl<T> BlockFetcher for Arc<T>
@@ -363,6 +369,14 @@ where
         block_ids: Vec<HashValue>,
     ) -> BoxFuture<Result<Vec<HashValue>>> {
         BlockFetcher::fetch_dag_block_children(self.as_ref(), block_ids)
+    }
+    
+    fn fetch_dag_block_in_batch(
+        &self,
+        block_ids: Vec<HashValue>,
+        exp: u64,
+    ) -> BoxFuture<Result<Vec<Block>>> {
+        BlockFetcher::fetch_dag_block_in_batch(self.as_ref(), block_ids, exp)
     }
 }
 
@@ -403,6 +417,14 @@ impl BlockFetcher for VerifiedRpcClient {
         self.get_dag_block_children(block_ids)
             .map_err(fetcher_err_map)
             .boxed()
+    }
+    
+    fn fetch_dag_block_in_batch(
+        &self,
+        block_ids: Vec<HashValue>,
+        exp: u64,
+    ) -> BoxFuture<Result<Vec<Block>>> {
+        self.get_absent_blocks(block_ids, exp).map_err(fetcher_err_map).boxed()
     }
 }
 

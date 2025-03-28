@@ -15,7 +15,7 @@ use starcoin_network_rpc_api::{
     gen_client::NetworkRpcClient, BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeadersByNumber,
     GetBlockIds, GetTxnsWithHash, RawRpcClient,
 };
-use starcoin_network_rpc_api::{GetRangeInLocationRequest, RangeInLocation};
+use starcoin_network_rpc_api::{GetAbsentBlockRequest, GetRangeInLocationRequest, RangeInLocation};
 use starcoin_state_tree::StateNode;
 use starcoin_types::block::Block;
 use starcoin_types::transaction::{SignedUserTransaction, Transaction};
@@ -868,6 +868,37 @@ impl VerifiedRpcClient {
             })
             .collect())
     }
+
+    pub async fn get_absent_blocks(&self, req: Vec<HashValue>, exp: u64) -> Result<Vec<Block>> {
+        let mut count = 0;
+        let peer_id = self.select_a_peer()?;
+        while count < G_RPC_RETRY_COUNT {
+            match self
+                .client
+                .get_absent_blocks(peer_id.clone(), GetAbsentBlockRequest {
+                    absent_id: req.clone(),
+                    exp,
+                })
+                .await
+            {
+                Ok(result) => return Ok(result.absent_blocks),
+                Err(_) => {
+                    count = count.saturating_add(1);
+                    continue;
+                }
+            }
+        }
+        Err(RpcVerifyError::new(
+            peer_id.clone(),
+            format!(
+                "failed to get dag block children from peer : {:?}.",
+                peer_id
+            ),
+        )
+        .into())
+    }
+
+
 
     pub async fn get_dag_block_children(&self, req: Vec<HashValue>) -> Result<Vec<HashValue>> {
         let mut count = 0;
