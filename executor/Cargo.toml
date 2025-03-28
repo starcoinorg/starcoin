@@ -1,7 +1,7 @@
 [dependencies]
 anyhow = { workspace = true }
 log = { workspace = true }
-serde = { default-features = false, workspace = true }
+serde = { workspace = true }
 bcs-ext = { workspace = true }
 once_cell = { workspace = true }
 starcoin-logger = { workspace = true }

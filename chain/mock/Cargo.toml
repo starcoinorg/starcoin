@@ -7,8 +7,8 @@ futures = { workspace = true }
 futures-timer = { workspace = true }
 starcoin-logger = { workspace = true }
 parking_lot = { workspace = true }
-proptest = { default-features = false, optional = true, workspace = true }
-proptest-derive = { default-features = false, optional = true, workspace = true }
+proptest = { optional = true, workspace = true }
+proptest-derive = { optional = true, workspace = true }
 starcoin-account-api = { workspace = true }
 starcoin-accumulator = { workspace = true }
 starcoin-chain = { workspace = true }

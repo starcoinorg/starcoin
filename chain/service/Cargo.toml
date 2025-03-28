@@ -3,8 +3,8 @@ anyhow = { workspace = true }
 async-trait = { workspace = true }
 futures = { workspace = true }
 rand = { workspace = true }
-rand_core = { default-features = false, workspace = true }
-serde = { default-features = false, workspace = true }
+rand_core = { workspace = true }
+serde = { workspace = true }
 starcoin-chain = { workspace = true }
 starcoin-chain-api = { workspace = true }
 starcoin-config = { workspace = true }

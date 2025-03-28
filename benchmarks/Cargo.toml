@@ -21,7 +21,7 @@ starcoin-logger = { workspace = true }
 parking_lot = { workspace = true }
 proptest = { workspace = true }
 rand = { workspace = true }
-rand_core = { default-features = false, workspace = true }
+rand_core = { workspace = true }
 starcoin-account-api = { workspace = true }
 starcoin-accumulator = { workspace = true }
 starcoin-chain = { workspace = true }

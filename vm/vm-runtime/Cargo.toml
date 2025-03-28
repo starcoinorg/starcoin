@@ -20,7 +20,7 @@ tracing = { workspace = true }
 move-vm-runtime = { workspace = true }
 num_enum = { workspace = true }
 rand = { workspace = true }
-rand_core = { default-features = false, workspace = true }
+rand_core = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-natives = { workspace = true }
 starcoin-types = { workspace = true }

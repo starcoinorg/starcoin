@@ -25,7 +25,7 @@ criterion = { workspace = true }
 proptest = { workspace = true }
 proptest-derive = { workspace = true }
 rand = { workspace = true }
-rand_core = { default-features = false, workspace = true }
+rand_core = { workspace = true }
 starcoin-crypto = { workspace = true }
 
 [features]
