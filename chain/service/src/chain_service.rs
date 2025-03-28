@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{format_err, Error, Result};
+use anyhow::{bail, format_err, Error, Result};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_api::range_locate::{self, RangeInLocation};
@@ -13,6 +13,7 @@ use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_dag::consensusdb::consenses_state::DagStateView;
 use starcoin_dag::types::ghostdata::GhostdagData;
+use starcoin_dag::GetAbsentBlock;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
@@ -266,6 +267,11 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                     range: self.inner.get_range_in_location(start_id, end_id)?,
                 })
             }
+            ChainRequest::GetAbsentBlocks { absent_id, exp } => {
+                Ok(ChainResponse::GetAbsentBlocks {
+                    absent_blocks: self.inner.get_absent_blocks(absent_id, exp)?,
+                })
+            }
         }
     }
 }
@@ -324,6 +330,23 @@ impl ChainReaderServiceInner {
             self.dag.clone(),
         )?;
         Ok(())
+    }
+
+    fn get_absent_blocks(&self, absent_id: Vec<HashValue>, exp: u64) -> Result<Vec<Block>> {
+        let result = self
+            .dag
+            .get_absent_blocks(GetAbsentBlock { absent_id, exp })?;
+
+        result
+            .absent_blocks
+            .into_iter()
+            .map(|block_id| match self.storage.get_block(block_id) {
+                Ok(op_block) => {
+                    op_block.ok_or_else(|| format_err!("block {:?} should exist", block_id))
+                }
+                Err(e) => bail!("get block {:?} err: {:?}", block_id, e),
+            })
+            .collect::<anyhow::Result<Vec<Block>>>()
     }
 }
 

@@ -17,7 +17,7 @@ use starcoin_state_tree::StateNode;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
-use starcoin_types::block::{BlockHeader, BlockInfo, BlockNumber};
+use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionInfo};
 use starcoin_vm_types::state_store::table::TableInfo;
 
@@ -305,6 +305,12 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         peer_id: PeerId,
         req: GetRangeInLocationRequest,
     ) -> BoxFuture<Result<GetRangeInLocationResponse>>;
+
+    fn get_absent_blocks(
+        &self,
+        peer_id: PeerId,
+        req: GetAbsentBlockRequest,
+    ) -> BoxFuture<Result<GetAbsentBlockResponse>>;
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -331,4 +337,15 @@ pub enum RangeInLocation {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GetRangeInLocationResponse {
     pub range: RangeInLocation,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GetAbsentBlockRequest {
+    pub absent_id: Vec<HashValue>,
+    pub exp: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GetAbsentBlockResponse {
+    pub absent_blocks: Vec<Block>,
 }

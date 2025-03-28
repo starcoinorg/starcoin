@@ -77,6 +77,10 @@ pub enum ChainRequest {
         start_id: HashValue,
         end_id: Option<HashValue>,
     },
+    GetAbsentBlocks {
+        absent_id: Vec<HashValue>,
+        exp: u64,
+    },
 }
 
 impl ServiceRequest for ChainRequest {
@@ -110,4 +114,5 @@ pub enum ChainResponse {
     GhostdagDataOption(Box<Option<GhostdagData>>),
     IsAncestorOfCommand { reachability_view: ReachabilityView },
     GetRangeInLocation { range: RangeInLocation },
+    GetAbsentBlocks { absent_blocks: Vec<Block> },
 }
