@@ -1,14 +1,14 @@
 [dependencies]
 anyhow = { workspace = true }
 bech32 = { workspace = true }
-chrono = { default-features = false, features = ["clock"], workspace = true }
+chrono = { features = ["clock"], workspace = true }
 hex = { workspace = true }
 log = { workspace = true }
 mirai-annotations = { workspace = true }
 num_enum = { workspace = true }
 once_cell = { workspace = true }
 rand = { workspace = true }
-serde = { default-features = false, workspace = true }
+serde = { workspace = true }
 serde_bytes = { workspace = true }
 serde_json = { features = ["arbitrary_precision"], workspace = true }
 move-bytecode-verifier = { workspace = true }
@@ -16,8 +16,8 @@ move-core-types = { workspace = true }
 move-ir-types = { workspace = true }
 move-vm-types = { workspace = true }
 move-table-extension = { workspace = true }
-proptest = { default-features = false, optional = true, workspace = true }
-proptest-derive = { default-features = false, optional = true, workspace = true }
+proptest = { optional = true, workspace = true }
+proptest-derive = { optional = true, workspace = true }
 starcoin-time-service = { optional = true, workspace = true }
 bcs-ext = { workspace = true }
 starcoin-gas-algebra-ext = { workspace = true }

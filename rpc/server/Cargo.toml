@@ -9,7 +9,7 @@ dashmap = { workspace = true }
 futures = { workspace = true }
 futures-channel = { workspace = true }
 governor = { features = ["dashmap"], workspace = true }
-hex = { default-features = false, workspace = true }
+hex = { workspace = true }
 jsonrpc-core = { features = ["arbitrary_precision"], workspace = true }
 jsonrpc-core-client = { features = [
     "http",

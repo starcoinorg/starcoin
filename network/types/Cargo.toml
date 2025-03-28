@@ -1,6 +1,6 @@
 [dependencies]
 anyhow = { workspace = true }
-serde = { default-features = false, workspace = true }
+serde = { workspace = true }
 network-p2p-types = { workspace = true }
 schemars = { workspace = true }
 starcoin-crypto = { workspace = true }

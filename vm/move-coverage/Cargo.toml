@@ -5,7 +5,7 @@ clap = { features = ["derive"], workspace = true }
 codespan = { features = ["serialization"], workspace = true }
 colored = { workspace = true }
 petgraph = { workspace = true }
-serde = { default-features = false, workspace = true }
+serde = { workspace = true }
 move-binary-format = { workspace = true }
 move-bytecode-source-map = { workspace = true }
 move-command-line-common = { workspace = true }

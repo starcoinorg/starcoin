@@ -5,7 +5,7 @@ byteorder = { workspace = true }
 hmac = { workspace = true }
 pbkdf2 = { workspace = true }
 rand = { workspace = true }
-rand_core = { default-features = false, workspace = true }
+rand_core = { workspace = true }
 sha2 = { workspace = true }
 
 [package]

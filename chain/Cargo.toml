@@ -4,10 +4,10 @@ bcs-ext = { workspace = true }
 clap = { features = ["derive"], workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-logger = { workspace = true }
-proptest = { default-features = false, optional = true, workspace = true }
-proptest-derive = { default-features = false, optional = true, workspace = true }
+proptest = { optional = true, workspace = true }
+proptest-derive = { optional = true, workspace = true }
 rand = { workspace = true }
-rand_core = { default-features = false, workspace = true }
+rand_core = { workspace = true }
 sp-utils = { workspace = true }
 starcoin-accumulator = { workspace = true }
 starcoin-consensus = { workspace = true }

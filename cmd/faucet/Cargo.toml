@@ -8,7 +8,7 @@ ascii = { workspace = true }
 clap = { features = ["derive"], workspace = true }
 futures = { workspace = true }
 futures-timer = { workspace = true }
-hex = { default-features = false, workspace = true }
+hex = { workspace = true }
 once_cell = { workspace = true }
 rust-embed = { workspace = true }
 serde = { workspace = true }

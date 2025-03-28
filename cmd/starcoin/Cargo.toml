@@ -9,7 +9,7 @@ clap = { features = ["derive"], workspace = true }
 crossbeam-channel = { workspace = true }
 forkable-jellyfish-merkle = { workspace = true }
 futures = { workspace = true }
-hex = { default-features = false, workspace = true }
+hex = { workspace = true }
 itertools = { workspace = true }
 move-command-line-common = { workspace = true }
 move-errmapgen = { workspace = true }

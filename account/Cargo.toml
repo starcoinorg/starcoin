@@ -5,7 +5,7 @@ bcs-ext = { workspace = true }
 futures = { workspace = true }
 parking_lot = { workspace = true }
 rand = { workspace = true }
-rand_core = { default-features = false, workspace = true }
+rand_core = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 starcoin-account-api = { workspace = true }

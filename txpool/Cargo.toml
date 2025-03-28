@@ -9,7 +9,7 @@ log = { workspace = true }
 network-api = { workspace = true }
 parking_lot = { workspace = true }
 rand = { workspace = true }
-rand_core = { default-features = false, workspace = true }
+rand_core = { workspace = true }
 serde = { workspace = true }
 serde_derive = { workspace = true }
 starcoin-config = { workspace = true }
@@ -28,8 +28,8 @@ stest = { workspace = true }
 tokio = { workspace = true }
 trace-time = { workspace = true }
 transaction-pool = { workspace = true }
-proptest = { default-features = false, optional = true, workspace = true }
-proptest-derive = { default-features = false, optional = true, workspace = true }
+proptest = { optional = true, workspace = true }
+proptest-derive = { optional = true, workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

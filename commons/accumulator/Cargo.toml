@@ -2,7 +2,7 @@
 anyhow = { workspace = true }
 bcs-ext = { workspace = true }
 byteorder = { workspace = true }
-itertools = { default-features = false, workspace = true }
+itertools = { workspace = true }
 starcoin-logger = { workspace = true }
 lru = { workspace = true }
 mirai-annotations = { workspace = true }
@@ -16,7 +16,7 @@ starcoin-crypto = { workspace = true }
 proptest = { workspace = true }
 proptest-derive = { workspace = true }
 rand = { workspace = true }
-rand_core = { default-features = false, workspace = true }
+rand_core = { workspace = true }
 
 [features]
 default = []

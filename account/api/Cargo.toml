@@ -5,9 +5,9 @@ bcs-ext = { workspace = true }
 futures = { workspace = true }
 hex = { workspace = true }
 rand = { workspace = true }
-rand_core = { default-features = false, workspace = true }
+rand_core = { workspace = true }
 schemars = { workspace = true }
-serde = { default-features = false, workspace = true }
+serde = { workspace = true }
 serde_bytes = { workspace = true }
 serde_json = { workspace = true }
 starcoin-crypto = { workspace = true }

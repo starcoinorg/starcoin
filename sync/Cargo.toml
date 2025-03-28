@@ -7,7 +7,7 @@ forkable-jellyfish-merkle = { workspace = true }
 futures = { workspace = true }
 futures-retry = { workspace = true }
 futures-timer = { workspace = true }
-itertools = { default-features = false, workspace = true }
+itertools = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-network = { workspace = true }
