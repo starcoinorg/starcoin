@@ -4,6 +4,7 @@ use starcoin_config::{MinerClientConfig, TimeService};
 use starcoin_miner_client_api::Solver;
 use std::sync::Arc;
 
+#[allow(improper_ctypes_definitions)]
 type CreateSolver = extern "C" fn() -> Box<dyn Solver>;
 
 const SOLVER_CREATOR: &[u8] = b"create_solver";

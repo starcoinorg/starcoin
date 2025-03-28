@@ -94,7 +94,7 @@ impl CommandAction for NFTCommand {
                     true,
                     None,
                     0,
-                    std::usize::MAX,
+                    usize::MAX,
                     None,
                 )?;
                 let galleries: Result<Vec<NFTGallery>> = all_resources
@@ -129,7 +129,7 @@ impl CommandAction for NFTCommand {
                     true,
                     None,
                     0,
-                    std::usize::MAX,
+                    usize::MAX,
                     None,
                 )?;
                 let ident_nfts: Result<Vec<IdentifierNFT>> = all_resources

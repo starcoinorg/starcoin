@@ -14,7 +14,7 @@ use libp2p::swarm::behaviour::FromSwarm;
 use libp2p::swarm::{ConnectionHandler, IntoConnectionHandler};
 use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
 use libp2p::PeerId;
-use log::Level;
+use log::{debug, error, log, trace, warn, Level};
 use sc_peerset::{peersstate::PeersState, SetId};
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
@@ -25,7 +25,6 @@ use std::sync::Arc;
 use std::task::Poll;
 use std::time;
 use std::time::Duration;
-
 //const REQUEST_TIMEOUT_SEC: u64 = 40;
 /// Interval at which we perform time based maintenance
 const TICK_TIMEOUT: time::Duration = time::Duration::from_millis(1100);
@@ -347,7 +346,7 @@ impl<T: 'static + BusinessLayerHandle + Send> Protocol<T> {
             let notif_protocol_wth_handshake = notif_protocols
                 .clone()
                 .into_iter()
-                .map(|protocol| (protocol, handshake_message.clone(), u64::max_value()));
+                .map(|protocol| (protocol, handshake_message.clone(), u64::MAX));
 
             debug!(
                 "Handshake message: {}",

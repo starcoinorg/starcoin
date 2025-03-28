@@ -6,7 +6,6 @@ hex = { workspace = true }
 once_cell = { workspace = true }
 parking_lot = { workspace = true }
 thiserror = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
 starcoin-consensus = { package = "starcoin-consensus", workspace = true }
 starcoin-crypto = { package = "starcoin-crypto", workspace = true }
 starcoin-logger = { package = "starcoin-logger", workspace = true }

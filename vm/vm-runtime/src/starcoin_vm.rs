@@ -413,10 +413,8 @@ impl StarcoinVM {
                         self.check_move_version(compiled_module.version() as u64, block_number)?;
                     };
                 }
-                let enforced = match Self::is_enforced(remote_cache, package.package_address()) {
-                    Ok(is_enforced) => is_enforced,
-                    _ => false,
-                };
+                let enforced =
+                    Self::is_enforced(remote_cache, package.package_address()).unwrap_or_default();
                 let only_new_module =
                     match Self::only_new_module_strategy(remote_cache, package.package_address()) {
                         Err(e) => {
@@ -591,10 +589,7 @@ impl StarcoinVM {
                 };
             }
 
-            let enforced = match Self::is_enforced(&data_cache, package_address) {
-                Ok(is_enforced) => is_enforced,
-                _ => false,
-            };
+            let enforced = Self::is_enforced(&data_cache, package_address).unwrap_or_default();
             let only_new_module = match Self::only_new_module_strategy(&data_cache, package_address)
             {
                 Err(e) => {
@@ -1403,10 +1398,10 @@ impl StarcoinVM {
         vm.execute_block_transactions(state_view, txns, block_gas_limit)
     }
 
-    pub fn load_module<'r, R: MoveResolverExt>(
+    pub fn load_module<R: MoveResolverExt>(
         &self,
         module_id: &ModuleId,
-        remote: &'r R,
+        remote: &R,
     ) -> VMResult<Arc<CompiledModule>> {
         self.move_vm.load_module(module_id, remote)
     }

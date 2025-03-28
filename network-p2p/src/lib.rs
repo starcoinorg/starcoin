@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 extern crate prometheus;
-#[macro_use]
+
 extern crate starcoin_metrics;
 
 pub use crate::protocol::event::{DhtEvent, Event};
@@ -44,6 +44,7 @@ const MAX_CONNECTIONS_PER_PEER: usize = 2;
 /// The maximum number of concurrent established connections that were incoming.
 const MAX_CONNECTIONS_ESTABLISHED_INCOMING: u32 = 10_000;
 
+#[allow(dead_code)]
 trait DiscoveryNetBehaviour {
     /// Notify the protocol that we have learned about the existence of nodes.
     ///

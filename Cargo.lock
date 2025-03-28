@@ -12624,7 +12624,6 @@ name = "starcoin-miner"
 version = "1.13.19"
 dependencies = [
  "anyhow",
- "bcs-ext 1.13.19",
  "futures 0.3.31",
  "futures-timer",
  "hex",

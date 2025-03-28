@@ -12,6 +12,7 @@ use bcs_ext::BCSCodec;
 use futures::prelude::*;
 use futures::stream::StreamExt;
 use libp2p::PeerId;
+use log::debug;
 use network_p2p_types::MultiaddrWithPeerId;
 use once_cell::sync::Lazy;
 use sc_peerset::ReputationChange;
@@ -176,7 +177,7 @@ async fn lots_of_incoming_peers_works() {
     let (main_node, _) = build_test_full_node(config::NetworkConfiguration {
         notifications_protocols: vec![From::from(PROTOCOL_NAME)],
         listen_addresses: vec![listen_addr.clone()],
-        in_peers: u32::max_value(),
+        in_peers: u32::MAX,
         transport: config::TransportConfig::MemoryOnly,
         ..config::NetworkConfiguration::new_local()
     });
@@ -521,7 +522,7 @@ async fn test_handshake_fail() {
     .unwrap();
     let service1 = worker1.service().clone();
 
-    let _ = tokio::task::spawn(worker1);
+    tokio::task::spawn(worker1);
 
     let seed = config::MultiaddrWithPeerId {
         multiaddr: config1.listen_addresses[0].clone(),
@@ -540,7 +541,7 @@ async fn test_handshake_fail() {
     .unwrap();
     let service2 = worker2.service().clone();
 
-    let _ = tokio::task::spawn(worker2);
+    tokio::task::spawn(worker2);
     tokio::time::sleep(Duration::from_secs(1)).await;
 
     debug!(
@@ -619,7 +620,7 @@ async fn test_support_protocol() {
     .unwrap();
     let service1 = worker1.service().clone();
     let stream1 = service1.event_stream("test1");
-    let _ = tokio::task::spawn(worker1);
+    tokio::task::spawn(worker1);
 
     let seed = MultiaddrWithPeerId {
         multiaddr: config1.listen_addresses[0].clone(),
@@ -637,7 +638,7 @@ async fn test_support_protocol() {
     .unwrap();
     let service2 = worker2.service().clone();
     let stream2 = service2.event_stream("test1");
-    let _ = tokio::task::spawn(worker2);
+    tokio::task::spawn(worker2);
 
     tokio::time::sleep(Duration::from_secs(1)).await;
 

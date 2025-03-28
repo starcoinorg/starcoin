@@ -58,18 +58,13 @@ impl Serialize for Result {
 }
 
 /// Subscription kind.
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize)]
+#[derive(Debug, Default, PartialEq, Eq, Hash, Clone, Serialize)]
 pub enum Params {
     /// No parameters passed.
+    #[default]
     None,
     /// Log parameters.
     Events(EventParams),
-}
-
-impl Default for Params {
-    fn default() -> Self {
-        Params::None
-    }
 }
 
 impl<'a> Deserialize<'a> for Params {
@@ -141,7 +136,7 @@ impl TryInto<Filter> for EventFilter {
         }
         Ok(Filter {
             from_block: self.from_block.unwrap_or(0),
-            to_block: self.to_block.unwrap_or(std::u64::MAX),
+            to_block: self.to_block.unwrap_or(u64::MAX),
             event_keys: self.event_keys.unwrap_or_default(),
             addrs: self.addrs.unwrap_or_default(),
             type_tags: self

@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#![deny(clippy::integer_arithmetic)]
+#![allow(clippy::arithmetic_side_effects)]
 use crate::argon::ArgonConsensus;
 use crate::cn::CryptoNightConsensus;
 use crate::dummy::DummyConsensus;
@@ -29,11 +29,11 @@ pub use consensus::{Consensus, ConsensusVerifyError};
 pub use starcoin_time_service::duration_since_epoch;
 
 pub fn target_to_difficulty(target: U256) -> U256 {
-    U256::max_value() / target
+    U256::MAX / target
 }
 
 pub fn difficult_to_target(difficulty: U256) -> U256 {
-    U256::max_value() / difficulty
+    U256::MAX / difficulty
 }
 
 pub fn set_header_nonce(header: &[u8], nonce: u32, extra: &BlockHeaderExtra) -> Vec<u8> {
@@ -113,5 +113,5 @@ impl Consensus for ConsensusStrategy {
 pub fn generate_nonce() -> u32 {
     let mut rng = rand::thread_rng();
     rng.gen::<u32>();
-    rng.gen_range(0..u32::max_value())
+    rng.gen_range(0..u32::MAX)
 }
