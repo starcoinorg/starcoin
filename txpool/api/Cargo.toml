@@ -5,7 +5,7 @@ futures-channel = { workspace = true }
 schemars = { workspace = true }
 serde = { default-features = false, workspace = true }
 starcoin-crypto = { workspace = true }
-starcoin-types = { package = "starcoin-types", workspace = true }
+starcoin-types = { workspace = true }
 
 [package]
 authors = { workspace = true }

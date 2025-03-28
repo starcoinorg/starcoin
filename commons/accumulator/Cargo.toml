@@ -1,9 +1,9 @@
 [dependencies]
 anyhow = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
+bcs-ext = { workspace = true }
 byteorder = { workspace = true }
 itertools = { default-features = false, workspace = true }
-starcoin-logger = { package = "starcoin-logger", workspace = true }
+starcoin-logger = { workspace = true }
 lru = { workspace = true }
 mirai-annotations = { workspace = true }
 once_cell = { workspace = true }

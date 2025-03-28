@@ -1,25 +1,25 @@
 [dependencies]
 anyhow = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
+bcs-ext = { workspace = true }
 clap = { features = ["derive"], workspace = true }
-starcoin-crypto = { package = "starcoin-crypto", workspace = true }
-starcoin-logger = { package = "starcoin-logger", workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-logger = { workspace = true }
 proptest = { default-features = false, optional = true, workspace = true }
 proptest-derive = { default-features = false, optional = true, workspace = true }
 rand = { workspace = true }
 rand_core = { default-features = false, workspace = true }
 sp-utils = { workspace = true }
-starcoin-accumulator = { package = "starcoin-accumulator", workspace = true }
+starcoin-accumulator = { workspace = true }
 starcoin-consensus = { workspace = true }
 starcoin-chain-api = { workspace = true }
 starcoin-config = { workspace = true }
-starcoin-executor = { package = "starcoin-executor", workspace = true }
+starcoin-executor = { workspace = true }
 starcoin-open-block = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-state-api = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-time-service = { workspace = true }
-starcoin-types = { package = "starcoin-types", workspace = true }
+starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
 starcoin-force-upgrade = { workspace = true }
@@ -36,7 +36,7 @@ starcoin-chain-mock = { workspace = true }
 starcoin-genesis = { workspace = true }
 starcoin-resource-viewer = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
-starcoin-types = { package = "starcoin-types", features = [
+starcoin-types = { features = [
     "fuzzing",
 ], workspace = true }
 stdlib = { workspace = true }

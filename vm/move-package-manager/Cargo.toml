@@ -26,7 +26,7 @@ walkdir = { workspace = true }
 futures = { workspace = true }
 tempfile = { workspace = true }
 tokio = { features = ["full"], workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
+bcs-ext = { workspace = true }
 datatest-stable = { git = "https://github.com/starcoinorg/diem-devtools", branch = "feature/pub-test-opts" }
 move-binary-format = { workspace = true }
 move-bytecode-verifier = { workspace = true }

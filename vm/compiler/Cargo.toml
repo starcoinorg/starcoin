@@ -2,7 +2,7 @@
 anyhow = { workspace = true }
 move-binary-format = { workspace = true }
 move-command-line-common = { workspace = true }
-move-compiler = { package = "move-compiler", workspace = true }
+move-compiler = { workspace = true }
 once_cell = { workspace = true }
 petgraph = { workspace = true }
 regex = { default-features = false, features = [
