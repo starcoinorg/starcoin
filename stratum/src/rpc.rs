@@ -115,6 +115,7 @@ pub(crate) struct SubscribeJobEvent(
     pub(crate) LoginRequest,
 );
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub(crate) struct Unsubscribe(pub(crate) SubscriptionId);
 

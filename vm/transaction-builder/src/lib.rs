@@ -378,7 +378,7 @@ pub fn build_init_script_v1(net: &ChainNetwork) -> ScriptFunction {
         .genesis_key_pair
         .as_ref()
         .map(|(_, public_key)| AuthenticationKey::ed25519(public_key).to_vec())
-        .unwrap_or_else(Vec::new);
+        .unwrap_or_default();
 
     let association_auth_key =
         AuthenticationKey::multi_ed25519(&genesis_config.association_key_pair.1).to_vec();
@@ -541,7 +541,7 @@ pub fn build_init_script_v2(net: &ChainNetwork) -> ScriptFunction {
         .genesis_key_pair
         .as_ref()
         .map(|(_, public_key)| AuthenticationKey::ed25519(public_key).to_vec())
-        .unwrap_or_else(Vec::new);
+        .unwrap_or_default();
 
     let association_auth_key =
         AuthenticationKey::multi_ed25519(&genesis_config.association_key_pair.1).to_vec();

@@ -25,7 +25,7 @@ use std::sync::Arc;
 use std::task::Poll;
 use std::time;
 use std::time::Duration;
-
+#[allow(private_macro_use)]
 //const REQUEST_TIMEOUT_SEC: u64 = 40;
 /// Interval at which we perform time based maintenance
 const TICK_TIMEOUT: time::Duration = time::Duration::from_millis(1100);

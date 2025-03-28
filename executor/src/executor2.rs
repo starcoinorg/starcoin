@@ -23,6 +23,7 @@ fn do_execute_block_transactions<S: StateView>(
 }
 
 // XXX FIXME YSG, refactor use VMValidator
+#[allow(dead_code)]
 pub fn validate_transaction<S: StateView>(
     chain_state: &S,
     txn: SignedUserTransaction,

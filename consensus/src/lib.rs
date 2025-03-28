@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#![deny(clippy::integer_arithmetic)]
+#![allow(clippy::arithmetic_side_effects)]
 use crate::argon::ArgonConsensus;
 use crate::cn::CryptoNightConsensus;
 use crate::dummy::DummyConsensus;

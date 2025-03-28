@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use starcoin_logger::prelude::*;
-use starcoin_vm_types::account_config::G_ACCOUNT_MODULE;
 use starcoin_vm_types::errors::VMError;
-use starcoin_vm_types::vm_status::{AbortLocation, StatusCode, VMStatus};
+use starcoin_vm_types::vm_status::{StatusCode, VMStatus};
 
 //should be consistent with ErrorCode.move
 const PROLOGUE_ACCOUNT_DOES_NOT_EXIST: u64 = 0;
@@ -118,10 +117,7 @@ pub fn convert_normal_success_epilogue_error(error: VMError) -> Result<(), VMSta
         VMStatus::MoveAbort(location, code) => {
             let (category, reason) = error_split(code);
             match (category, reason) {
-                (LIMIT_EXCEEDED, EINSUFFICIENT_BALANCE) => {
-                    if location != account_module_abort() {}
-                    VMStatus::MoveAbort(location, code)
-                }
+                (LIMIT_EXCEEDED, EINSUFFICIENT_BALANCE) => VMStatus::MoveAbort(location, code),
                 (category, reason) => {
                     error!(
                         "[starcoin_vm] Unexpected success epilogue Move abort: {:?}::{:?} (Category: {:?} Reason: {:?})",
@@ -142,8 +138,4 @@ pub fn convert_normal_success_epilogue_error(error: VMError) -> Result<(), VMSta
             VMStatus::Error(StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION)
         }
     })
-}
-
-fn account_module_abort() -> AbortLocation {
-    AbortLocation::Module(G_ACCOUNT_MODULE.clone())
 }

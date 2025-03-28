@@ -53,7 +53,7 @@ proptest! {
         .unwrap();
         let txns = init_store(universe, gens, &storage);
 
-        for (_ver, txn) in txns.iter().enumerate() {
+        for  txn in txns.iter() {
             prop_assert_eq!(storage
                             .transaction_storage
                             .get_transaction(txn.id()).unwrap().unwrap(), txn.clone());

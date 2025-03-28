@@ -880,6 +880,7 @@ impl NetworkService {
 }
 
 /// Trait for providing information about the local network state
+#[allow(dead_code)]
 pub trait NetworkStateInfo {
     /// Returns the local external addresses.
     fn external_addresses(&self) -> Vec<Multiaddr>;

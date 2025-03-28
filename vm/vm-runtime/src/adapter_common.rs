@@ -45,6 +45,7 @@ pub trait VMAdapter {
     ) -> Result<(VMStatus, TransactionOutput, Option<String>), VMStatus>;
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum PreprocessedTransaction {
     UserTransaction(Box<SignedUserTransaction>),

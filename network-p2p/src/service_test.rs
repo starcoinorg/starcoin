@@ -521,7 +521,7 @@ async fn test_handshake_fail() {
     .unwrap();
     let service1 = worker1.service().clone();
 
-    let _ = tokio::task::spawn(worker1);
+    tokio::task::spawn(worker1);
 
     let seed = config::MultiaddrWithPeerId {
         multiaddr: config1.listen_addresses[0].clone(),
@@ -540,7 +540,7 @@ async fn test_handshake_fail() {
     .unwrap();
     let service2 = worker2.service().clone();
 
-    let _ = tokio::task::spawn(worker2);
+    tokio::task::spawn(worker2);
     tokio::time::sleep(Duration::from_secs(1)).await;
 
     debug!(
@@ -619,7 +619,7 @@ async fn test_support_protocol() {
     .unwrap();
     let service1 = worker1.service().clone();
     let stream1 = service1.event_stream("test1");
-    let _ = tokio::task::spawn(worker1);
+    tokio::task::spawn(worker1);
 
     let seed = MultiaddrWithPeerId {
         multiaddr: config1.listen_addresses[0].clone(),
@@ -637,7 +637,7 @@ async fn test_support_protocol() {
     .unwrap();
     let service2 = worker2.service().clone();
     let stream2 = service2.event_stream("test1");
-    let _ = tokio::task::spawn(worker2);
+    tokio::task::spawn(worker2);
 
     tokio::time::sleep(Duration::from_secs(1)).await;
 

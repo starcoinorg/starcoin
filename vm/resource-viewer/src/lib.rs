@@ -168,10 +168,7 @@ impl<'a> MoveValueAnnotator<'a> {
         Ok(AnnotatedMoveStruct {
             abilities: ty.abilities.0,
             type_: struct_tag,
-            value: field_names
-                .into_iter()
-                .zip(annotated_fields.into_iter())
-                .collect(),
+            value: field_names.into_iter().zip(annotated_fields).collect(),
         })
     }
 
