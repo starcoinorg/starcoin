@@ -11,10 +11,12 @@ use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
+use starcoin_storage2::Store as Store2;
 use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::block::BlockNumber;
 use starcoin_types::genesis_config::{ChainId, ConsensusStrategy};
 use starcoin_types::identifier::Identifier;
+use starcoin_types::utils::to_hash_value2;
 use starcoin_types::vm_error::KeptVMStatus;
 use starcoin_types::{
     account_address::AccountAddress,
@@ -26,6 +28,7 @@ use starcoin_types::{
     },
     U256,
 };
+use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm_runtime::force_upgrade_management::{
     get_force_upgrade_account, get_force_upgrade_block_number,
 };
@@ -42,7 +45,7 @@ pub struct OpenedBlock {
     block_meta: BlockMetadata,
     gas_limit: u64,
 
-    state: ChainStateDB,
+    state: (ChainStateDB, ChainStateDB2),
     txn_accumulator: MerkleAccumulator,
 
     gas_used: u64,
@@ -57,6 +60,7 @@ pub struct OpenedBlock {
 impl OpenedBlock {
     pub fn new(
         storage: Arc<dyn Store>,
+        storage2: Arc<dyn Store2>,
         previous_header: BlockHeader,
         block_gas_limit: u64,
         author: AccountAddress,
@@ -75,9 +79,11 @@ impl OpenedBlock {
             txn_accumulator_info.clone(),
             storage.get_accumulator_store(AccumulatorStoreType::Transaction),
         );
-
+        let state_root2 = block_info.state_root().map(|x| to_hash_value2(x));
         let chain_state =
             ChainStateDB::new(storage.into_super_arc(), Some(previous_header.state_root()));
+        let chain_state2 = ChainStateDB2::new(storage2.into_super_arc(), state_root2);
+
         let chain_id = previous_header.chain_id();
         let block_meta = BlockMetadata::new(
             previous_block_id,
@@ -94,7 +100,7 @@ impl OpenedBlock {
             previous_block_info: block_info,
             block_meta,
             gas_limit: block_gas_limit,
-            state: chain_state,
+            state: (chain_state, chain_state2),
             txn_accumulator,
             gas_used: 0,
             included_user_txns: vec![],
@@ -127,7 +133,7 @@ impl OpenedBlock {
         &self.included_user_txns
     }
     pub fn state_root(&self) -> HashValue {
-        self.state.state_root()
+        self.state.0.state_root()
     }
     pub fn accumulator_root(&self) -> HashValue {
         self.txn_accumulator.root_hash()
@@ -141,7 +147,7 @@ impl OpenedBlock {
     }
 
     pub fn state_reader(&self) -> &impl ChainStateReader {
-        &self.state
+        &self.state.0
     }
 
     pub fn chain_id(&self) -> ChainId {
@@ -154,6 +160,7 @@ impl OpenedBlock {
     /// as the internal state may be corrupted.
     /// TODO: make the function can be called again even last call returns error.  
     pub fn push_txns(&mut self, user_txns: Vec<SignedUserTransaction>) -> Result<ExcludedTxns> {
+        let (state, _state2) = &self.state;
         let mut discard_txns: Vec<SignedUserTransaction> = Vec::new();
         let mut txns: Vec<_> = user_txns
             .into_iter()
@@ -176,12 +183,7 @@ impl OpenedBlock {
                     self.gas_limit
                 )
             })?;
-            execute_block_transactions(
-                &self.state,
-                txns.clone(),
-                gas_left,
-                self.vm_metrics.clone(),
-            )?
+            execute_block_transactions(state, txns.clone(), gas_left, self.vm_metrics.clone())?
         };
 
         let untouched_user_txns: Vec<SignedUserTransaction> = if txn_outputs.len() >= txns.len() {
@@ -227,14 +229,12 @@ impl OpenedBlock {
 
     /// Run blockmeta first
     fn initialize(&mut self) -> Result<()> {
+        let (state, _state2) = &self.state;
         let block_metadata_txn = Transaction::BlockMetadata(self.block_meta.clone());
         let block_meta_txn_hash = block_metadata_txn.id();
-        let mut results = execute_transactions(
-            &self.state,
-            vec![block_metadata_txn],
-            self.vm_metrics.clone(),
-        )
-        .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
+        let mut results =
+            execute_transactions(state, vec![block_metadata_txn], self.vm_metrics.clone())
+                .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
         let output = results.pop().expect("execute txn has output");
 
         match output.status() {
@@ -272,6 +272,7 @@ impl OpenedBlock {
         output: TransactionOutput,
         is_extra_txn: bool,
     ) -> Result<(HashValue, HashValue)> {
+        let (state, _state2) = &mut self.state;
         // Ignore the newly created table_infos.
         // Because they are not needed to calculate state_root, or included to TransactionInfo.
         // This auxiliary function is used to create a new block for mining, nothing need to be persisted to storage.
@@ -280,7 +281,7 @@ impl OpenedBlock {
         let status = status
             .status()
             .expect("TransactionStatus at here must been KeptVMStatus");
-        self.state
+        state
             .apply_write_set(write_set)
             .map_err(BlockExecutorError::BlockChainStateErr)?;
         if is_extra_txn {
@@ -292,13 +293,11 @@ impl OpenedBlock {
                 vec![],
             );
             let version = on_chain_config::Version { major: 12 };
-            self.state
-                .set(&version_path, bcs_ext::to_bytes(&version)?)?;
+            state.set(&version_path, bcs_ext::to_bytes(&version)?)?;
 
             assert_eq!(gas_used, 0);
         }
-        let txn_state_root = self
-            .state
+        let txn_state_root = state
             .commit()
             .map_err(BlockExecutorError::BlockChainStateErr)?;
 
@@ -316,7 +315,7 @@ impl OpenedBlock {
     /// Construct a block template for mining.
     pub fn finalize(self) -> Result<BlockTemplate> {
         let accumulator_root = self.txn_accumulator.root_hash();
-        let state_root = self.state.state_root();
+        let state_root = self.state.0.state_root();
         let uncles = if !self.uncles.is_empty() {
             Some(self.uncles)
         } else {
@@ -343,10 +342,11 @@ impl OpenedBlock {
     /// First, set the account policy in `0x1::PackageTxnManager` to 100,
     /// Second, after the contract deployment is successful, revert it back.
     fn execute_extra_txn(&mut self) -> Result<()> {
+        let (state, _state2) = &self.state;
         let extra_txn =
             if self.block_meta.number() == get_force_upgrade_block_number(&self.chain_id) {
                 let account = get_force_upgrade_account(&self.chain_id)?;
-                let sequence_number = self.state.get_sequence_number(*account.address())?;
+                let sequence_number = state.get_sequence_number(*account.address())?;
                 let extra_txn = ForceUpgrade::force_deploy_txn(
                     account,
                     sequence_number,
@@ -366,23 +366,19 @@ impl OpenedBlock {
         );
 
         // retrieve old strategy value
-        let old_val = self
-            .state
+        let old_val = state
             .get_state_value(&StateKey::AccessPath(strategy_path.clone()))?
             .expect("module upgrade strategy should exist");
         // Set strategy to 100 to execute force-deploy-txn directly
-        self.state.set(&strategy_path, vec![100])?;
+        state.set(&strategy_path, vec![100])?;
 
         // execute this special txn without gas limit
-        let mut results = execute_transactions(
-            &self.state,
-            vec![extra_txn.clone()],
-            self.vm_metrics.clone(),
-        )
-        .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
+        let mut results =
+            execute_transactions(state, vec![extra_txn.clone()], self.vm_metrics.clone())
+                .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
 
         // Restore the old value
-        self.state.set(&strategy_path, old_val)?;
+        state.set(&strategy_path, old_val)?;
 
         let output = results.pop().expect("executed txn should has output");
         match output.status() {

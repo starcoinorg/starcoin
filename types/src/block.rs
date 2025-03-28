@@ -786,6 +786,8 @@ pub struct BlockInfo {
     pub txn_accumulator_info: AccumulatorInfo,
     /// The block accumulator info.
     pub block_accumulator_info: AccumulatorInfo,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vm2_state_root: Option<HashValue>,
 }
 
 impl BlockInfo {
@@ -800,6 +802,7 @@ impl BlockInfo {
             total_difficulty,
             txn_accumulator_info,
             block_accumulator_info,
+            vm2_state_root: None,
         }
     }
 
@@ -822,6 +825,10 @@ impl BlockInfo {
     pub fn block_id(&self) -> &HashValue {
         &self.block_id
     }
+
+    pub fn state_root(&self) -> Option<HashValue> {
+        self.vm2_state_root
+    }
 }
 
 impl Sample for BlockInfo {
@@ -831,6 +838,7 @@ impl Sample for BlockInfo {
             total_difficulty: 0.into(),
             txn_accumulator_info: AccumulatorInfo::sample(),
             block_accumulator_info: AccumulatorInfo::sample(),
+            vm2_state_root: None,
         }
     }
 }
