@@ -130,9 +130,6 @@ impl ServiceFactory<Self> for MinerService {
 impl ActorService for MinerService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<GenerateBlockEvent>();
-        ctx.run_interval(Duration::from_secs(1), |_ctx| {
-            info!("MinerService is alive");
-        });
         Ok(())
     }
 
@@ -226,7 +223,7 @@ impl ServiceRequest for DelayGenerateBlockEvent {
 
 impl ServiceHandler<Self, DelayGenerateBlockEvent> for MinerService {
     fn handle(&mut self, msg: DelayGenerateBlockEvent, ctx: &mut ServiceContext<Self>) {
-        ctx.run_later(std::time::Duration::from_secs(msg.delay_secs), |ctx| {
+        ctx.run_later(Duration::from_secs(msg.delay_secs), |ctx| {
             ctx.notify(GenerateBlockEvent::default());
         });
     }
