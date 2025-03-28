@@ -42,10 +42,6 @@ use starcoin_storage::{
     errors::StorageInitError, metrics::StorageMetrics, storage::StorageInstance, BlockStore,
     Storage,
 };
-use starcoin_storage2::{
-    cache_storage::CacheStorage as CacheStorage2, db_storage::DBStorage as DBStorage2,
-    storage::StorageInstance as StorageInstance2, BlockStore as BlockStore2, Storage as Storage2,
-};
 use starcoin_stratum::service::{StratumService, StratumServiceFactory};
 use starcoin_stratum::stratum::{Stratum, StratumFactory};
 use starcoin_sync::announcement::AnnouncementService;
@@ -55,6 +51,10 @@ use starcoin_sync::txn_sync::TxnSyncService;
 use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
 use starcoin_txpool::TxPoolActorService;
 use starcoin_types::system_events::{SystemShutdown, SystemStarted};
+use starcoin_vm2_storage::{
+    cache_storage::CacheStorage as CacheStorage2, db_storage::DBStorage as DBStorage2,
+    storage::StorageInstance as StorageInstance2, BlockStore as BlockStore2, Storage as Storage2,
+};
 use starcoin_vm_runtime::metrics::VMMetrics;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
@@ -307,7 +307,7 @@ impl NodeService {
             )?,
         );
 
-        let config2 = starcoin_storage2::db_storage::RocksdbConfig {
+        let config2 = starcoin_vm2_storage::db_storage::RocksdbConfig {
             max_open_files: config.storage.rocksdb_config().max_open_files,
             max_total_wal_size: config.storage.rocksdb_config().max_total_wal_size,
             bytes_per_sync: config.storage.rocksdb_config().bytes_per_sync,

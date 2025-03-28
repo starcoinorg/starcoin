@@ -16,6 +16,8 @@ starcoin-force-upgrade = { workspace = true }
 starcoin-vm2 = { workspace = true }
 starcoin-vm2-types = { workspace = true }
 starcoin-types2 = { workspace = true }
+starcoin-vm2-transaction-builder = { workspace = true }
+starcoin-vm2-storage = { workspace = true }
 
 [dev-dependencies]
 bcs-ext = { package = "bcs-ext", workspace = true }
@@ -39,6 +41,9 @@ stest = { workspace = true }
 tempfile = { workspace = true }
 test-helper = { workspace = true }
 move-transactional-test-runner = { workspace = true }
+starcoin-vm2-crypto = { workspace = true }
+starcoin-vm2-statedb = { workspace = true }
+
 
 [features]
 default = []

@@ -9,6 +9,7 @@ pub use block_executor::{
     block_execute, get_logger_balance_amount, set_logger_balance_amount_once, BlockExecutedData,
 };
 pub use executor::*;
+
 // pub use starcoin_transaction_builder::{
 //     build_accept_token_txn, build_batch_transfer_txn, build_transfer_from_association,
 //     build_transfer_txn, build_transfer_txn_by_token_type,
@@ -22,4 +23,4 @@ pub use starcoin_vm_runtime::metrics::VMMetrics;
 mod block_executor;
 
 mod executor;
-mod executor2;
+pub mod executor2;

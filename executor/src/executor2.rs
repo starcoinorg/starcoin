@@ -9,6 +9,23 @@ use starcoin_vm2_types::{
     StateView,
 };
 
+pub fn execute_transactions<S: StateView>(
+    chain_state: &S,
+    txns: Vec<Transaction>,
+    metrics: Option<VMMetrics>,
+) -> anyhow::Result<Vec<TransactionOutput>> {
+    do_execute_block_transactions(chain_state, txns, None, metrics)
+}
+
+pub fn execute_block_transactions<S: StateView>(
+    chain_state: &S,
+    txns: Vec<Transaction>,
+    block_gas_limit: u64,
+    metrics: Option<VMMetrics>,
+) -> anyhow::Result<Vec<TransactionOutput>> {
+    do_execute_block_transactions(chain_state, txns, Some(block_gas_limit), metrics)
+}
+
 fn do_execute_block_transactions<S: StateView>(
     chain_state: &S,
     txns: Vec<Transaction>,

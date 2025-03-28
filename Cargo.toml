@@ -521,12 +521,15 @@ starcoin-transaction-benchmarks = { path = "vm/transaction-benchmarks" }
 starcoin-language-e2e-tests = { path = "vm/e2e-tests" }
 starcoin-proptest-helpers = { path = "vm/proptest-helpers" }
 
-starcoin-storage2 = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-storage" }
-starcoin-crypto2 = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "a14be64c9cd5889389730c76f00a7f82ad5c99cf" }
+starcoin-vm2-storage = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-storage" }
 starcoin-vm2 = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-vm-runtime" }
 starcoin-vm2-types = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-vm-types" }
 starcoin-types2 = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-types" }
 starcoin-state2-store-api = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-state-store-api" }
+starcoin-vm2-transaction-builder = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-transaction-builder" }
+starcoin-vm2-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "a14be64c9cd5889389730c76f00a7f82ad5c99cf", package = "starcoin-crypto" }
+starcoin-vm2-statedb = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-statedb" }
+
 
 syn = { version = "1.0.107", features = [
     "full",
