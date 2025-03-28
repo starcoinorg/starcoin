@@ -19,7 +19,7 @@
 pub use self::collec::UpgradeCollec;
 pub use self::notifications::{
     NotificationsHandshakeError, NotificationsIn, NotificationsInSubstream, NotificationsOut,
-    NotificationsOutError, NotificationsOutSubstream,
+    NotificationsOutSubstream,
 };
 
 mod collec;

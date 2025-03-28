@@ -37,11 +37,11 @@ impl CpuSolver {
     }
 
     fn partition_nonce(id: u32, total: u32) -> Range<u32> {
-        let span = u32::max_value() / total;
+        let span = u32::MAX / total;
         let start = span * id;
         let end = match id {
             x if x < total - 1 => start + span,
-            x if x == total - 1 => u32::max_value(),
+            x if x == total - 1 => u32::MAX,
             _ => unreachable!(),
         };
         Range { start, end }

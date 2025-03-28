@@ -82,9 +82,10 @@ impl FromStr for Api {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub enum ApiSet {
     // Unsafe context (like jsonrpc over http)
+    #[default]
     UnsafeContext,
     // All possible APIs (safe context like token-protected WS interface)
     All,
@@ -94,12 +95,6 @@ pub enum ApiSet {
     PubSub,
     // Fixed list of APis
     List(HashSet<Api>),
-}
-
-impl Default for ApiSet {
-    fn default() -> Self {
-        ApiSet::UnsafeContext
-    }
 }
 
 impl PartialEq for ApiSet {

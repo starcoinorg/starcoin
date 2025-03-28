@@ -162,7 +162,7 @@ where
     }
 
     fn block_exist(&self, block_id: HashValue) -> Result<bool> {
-        Ok(matches!(self.storage.get_block_info(block_id)?, Some(_)))
+        Ok(self.storage.get_block_info(block_id)?.is_some())
     }
 
     pub fn get_main(&self) -> &BlockChain {

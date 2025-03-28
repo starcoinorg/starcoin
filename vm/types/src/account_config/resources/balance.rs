@@ -47,7 +47,7 @@ impl BalanceResource {
             && struct_tag.module.as_str() == Self::MODULE_NAME
             && struct_tag.name.as_str() == Self::STRUCT_NAME
         {
-            if let Some(TypeTag::Struct(token_tag)) = struct_tag.type_params.get(0) {
+            if let Some(TypeTag::Struct(token_tag)) = struct_tag.type_params.first() {
                 Some((*(token_tag.clone())).into())
             } else {
                 None

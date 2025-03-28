@@ -53,7 +53,7 @@ use futures::channel::oneshot::{Receiver, Sender};
 pub use libp2p::PeerId;
 
 /// We don't accept nodes whose reputation is under this value.
-pub const BANNED_THRESHOLD: i32 = 82 * (i32::min_value() / 100);
+pub const BANNED_THRESHOLD: i32 = 82 * (i32::MIN / 100);
 /// unbanned peer after seconds
 pub const UNBANNED_AFTER: Duration = Duration::from_secs(60 * 5);
 /// Reputation change for a node when we get disconnected from it.
@@ -119,7 +119,7 @@ impl ReputationChange {
     /// New reputation change that forces minimum possible reputation.
     pub const fn new_fatal(reason: &'static str) -> ReputationChange {
         ReputationChange {
-            value: i32::min_value(),
+            value: i32::MIN,
             reason,
         }
     }

@@ -15,17 +15,12 @@ use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::str::FromStr;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy)]
 pub enum StateRootOption {
+    #[default]
     Latest,
     BlockHash(HashValue),
     BlockNumber(BlockNumber),
-}
-
-impl Default for StateRootOption {
-    fn default() -> Self {
-        StateRootOption::Latest
-    }
 }
 
 impl FromStr for StateRootOption {

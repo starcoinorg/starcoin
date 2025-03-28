@@ -85,18 +85,13 @@ impl From<(PeerInfo, u64)> for PeerDetail {
     }
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Serialize, JsonSchema)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq, Serialize, JsonSchema)]
 pub enum PeerStrategy {
+    #[default]
     Random,
     WeightedRandom,
     Best,
     Avg,
-}
-
-impl Default for PeerStrategy {
-    fn default() -> Self {
-        PeerStrategy::WeightedRandom
-    }
 }
 
 impl std::fmt::Display for PeerStrategy {
@@ -436,7 +431,7 @@ impl PeerSelector {
         }
 
         if self.len() == 1 {
-            return self.details.lock().get(0).map(|peer| peer.peer_id());
+            return self.details.lock().first().map(|peer| peer.peer_id());
         }
 
         let mut random = rand::thread_rng();
@@ -463,7 +458,7 @@ impl PeerSelector {
     pub fn first_peer(&self) -> Option<PeerInfo> {
         self.details
             .lock()
-            .get(0)
+            .first()
             .map(|peer| peer.peer_info.clone())
     }
 

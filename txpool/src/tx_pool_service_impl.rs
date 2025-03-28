@@ -204,7 +204,7 @@ impl TxPoolSyncService for TxPoolService {
     ) -> Vec<SignedUserTransaction> {
         self.inner
             .queue
-            .txns_of_sender(sender, max_len.unwrap_or(usize::max_value()))
+            .txns_of_sender(sender, max_len.unwrap_or(usize::MAX))
             .into_iter()
             .map(|t| t.signed().clone())
             .collect()
@@ -289,16 +289,13 @@ impl Inner {
         current_timestamp_secs: u64,
     ) -> Vec<Arc<VerifiedTransaction>> {
         let pending_settings = PendingSettings {
-            block_number: u64::max_value(),
+            block_number: u64::MAX,
             current_timestamp: current_timestamp_secs,
             max_len: max_len as usize,
             ordering: PendingOrdering::Priority,
         };
-        self.queue.inner_status(
-            self.get_pool_client(),
-            u64::max_value(),
-            current_timestamp_secs,
-        );
+        self.queue
+            .inner_status(self.get_pool_client(), u64::MAX, current_timestamp_secs);
         self.queue.pending(self.get_pool_client(), pending_settings)
     }
     pub(crate) fn next_sequence_number(&self, address: AccountAddress) -> Option<u64> {

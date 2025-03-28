@@ -128,7 +128,7 @@ pub fn test_put_blob_continue_commit_flush_same() -> Result<()> {
     assert_eq!(updates2.stale_node_index_batch.len(), 2);
 
     let account13 = update_nibble(&account11, 2, 3);
-    for (k, v) in vec![(account11, vec![1, 1, 0]), (account13, vec![0, 0, 0])] {
+    for (k, v) in [(account11, vec![1, 1, 0]), (account13, vec![0, 0, 0])] {
         state1.put(k, v);
     }
     assert_eq!(state1.get(&account11)?, Some(vec![1, 1, 0]));
@@ -146,7 +146,7 @@ pub fn test_put_blob_continue_commit_flush_same() -> Result<()> {
     assert_eq!(updates1.stale_node_index_batch.len(), 2);
 
     let account23 = update_nibble(&account21, 2, 3);
-    for (k, v) in vec![(account21, vec![1, 1, 0]), (account23, vec![0, 0, 0])] {
+    for (k, v) in [(account21, vec![1, 1, 0]), (account23, vec![0, 0, 0])] {
         state2.put(k, v);
     }
     assert_eq!(state2.get(&account21)?, Some(vec![1, 1, 0]));
@@ -190,7 +190,7 @@ pub fn test_state_proof() -> Result<()> {
     let account1 = update_nibble(&account1, 2, 1);
 
     let account2 = update_nibble(&account1, 2, 2);
-    for (k, v) in vec![(account1, vec![0, 0, 0]), (account2, vec![1, 1, 1])] {
+    for (k, v) in [(account1, vec![0, 0, 0]), (account2, vec![1, 1, 1])] {
         state.put(k, v);
     }
     let (value, _) = state.get_with_proof(&account1)?;
@@ -225,7 +225,7 @@ pub fn test_state_commit() -> Result<()> {
     let _new_root_hash = state.commit()?;
 
     let account3 = update_nibble(&account1, 2, 3);
-    for (k, v) in vec![(account1, vec![1, 1, 0]), (account3, vec![0, 0, 0])] {
+    for (k, v) in [(account1, vec![1, 1, 0]), (account3, vec![0, 0, 0])] {
         state.put(k, v);
     }
     let new_root_hash = state.commit()?;

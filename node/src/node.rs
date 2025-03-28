@@ -44,7 +44,7 @@ use starcoin_storage::{
 };
 use starcoin_storage2::{
     cache_storage::CacheStorage as CacheStorage2, db_storage::DBStorage as DBStorage2,
-    storage::StorageInstance as StorageInstance2, BlockStore as BlockStore2, Storage as Storage2,
+    storage::StorageInstance as StorageInstance2, Storage as Storage2,
 };
 use starcoin_stratum::service::{StratumService, StratumServiceFactory};
 use starcoin_stratum::stratum::{Stratum, StratumFactory};
@@ -269,8 +269,7 @@ impl NodeService {
             });
             system.run().map_err(|e| e.into())
         });
-        let (registry, node_service) =
-            block_on(async { start_receiver.await }).expect("Wait node start error.")?;
+        let (registry, node_service) = block_on(start_receiver).expect("Wait node start error.")?;
         Ok(NodeHandle::new(join_handle, node_service, registry))
     }
 
@@ -313,7 +312,7 @@ impl NodeService {
             bytes_per_sync: config.storage.rocksdb_config().bytes_per_sync,
             wal_bytes_per_sync: config.storage.rocksdb_config().wal_bytes_per_sync,
         };
-        let mut storage_instance2 = StorageInstance2::new_cache_and_db_instance(
+        let storage_instance2 = StorageInstance2::new_cache_and_db_instance(
             CacheStorage2::new_with_capacity(config.storage.cache_size(), None),
             DBStorage2::new(config.storage.dir(), config2, None)?,
         );

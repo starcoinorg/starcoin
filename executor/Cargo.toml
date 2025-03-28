@@ -43,6 +43,7 @@ move-transactional-test-runner = { workspace = true }
 [features]
 default = []
 fuzzing = ["starcoin-types/fuzzing"]
+testing = []
 
 [package]
 authors = { workspace = true }
