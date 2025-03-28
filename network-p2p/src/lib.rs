@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 extern crate prometheus;
-#[macro_use]
+
 extern crate starcoin_metrics;
 
 pub use crate::protocol::event::{DhtEvent, Event};

@@ -12,6 +12,7 @@ use bcs_ext::BCSCodec;
 use futures::prelude::*;
 use futures::stream::StreamExt;
 use libp2p::PeerId;
+use log::debug;
 use network_p2p_types::MultiaddrWithPeerId;
 use once_cell::sync::Lazy;
 use sc_peerset::ReputationChange;

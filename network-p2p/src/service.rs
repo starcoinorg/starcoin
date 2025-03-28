@@ -69,7 +69,7 @@ use libp2p::{
     },
     PeerId,
 };
-use log::{error, info, trace, warn};
+use log::{debug, error, info, trace, warn};
 use network_p2p_types::IfDisconnected;
 use parking_lot::Mutex;
 use sc_peerset::{peersstate, PeersetHandle, ReputationChange};

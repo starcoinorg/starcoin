@@ -51,6 +51,7 @@ use libp2p::{
         handler::multi::MultiHandler, NetworkBehaviour, NetworkBehaviourAction, PollParameters,
     },
 };
+use log::{error, info};
 pub use network_p2p_types::{
     IfDisconnected, InboundFailure, IncomingRequest, OutboundFailure, OutgoingResponse,
     RequestFailure, ResponseFailure,
