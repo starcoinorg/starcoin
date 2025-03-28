@@ -1,23 +1,23 @@
 [dependencies]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
-starcoin-crypto = { package = "starcoin-crypto", workspace = true }
+bcs-ext = { workspace = true }
+starcoin-crypto = { workspace = true }
 futures = { workspace = true }
-starcoin-logger = { package = "starcoin-logger", workspace = true }
-network-api = { package = "network-api", workspace = true }
+starcoin-logger = { workspace = true }
+network-api = { workspace = true }
 starcoin-chain = { workspace = true }
 starcoin-chain-api = { workspace = true }
 starcoin-metrics = { workspace = true }
 starcoin-network = { workspace = true }
 starcoin-network-rpc-api = { workspace = true }
 starcoin-service-registry = { workspace = true }
-starcoin-sync = { package = "starcoin-sync", workspace = true }
-starcoin-sync-api = { package = "starcoin-sync-api", workspace = true }
+starcoin-sync = { workspace = true }
+starcoin-sync-api = { workspace = true }
 starcoin-time-service = { workspace = true }
 starcoin-txpool = { workspace = true }
 starcoin-txpool-api = { workspace = true }
-starcoin-types = { package = "starcoin-types", workspace = true }
+starcoin-types = { workspace = true }
 starcoin-config = { workspace = true }
 
 [dev-dependencies]

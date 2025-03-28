@@ -6,7 +6,7 @@ git-version = { workspace = true }
 hex = { workspace = true }
 libc = { workspace = true }
 names = { default-features = false, workspace = true }
-network-api = { package = "network-api", workspace = true }
+network-api = { workspace = true }
 network-p2p-types = { workspace = true }
 network-types = { workspace = true }
 num_cpus = { workspace = true }
@@ -20,9 +20,9 @@ serde = { features = ["derive"], workspace = true }
 serde_json = { features = ["arbitrary_precision"], workspace = true }
 starcoin-account-api = { workspace = true }
 starcoin-crypto = { workspace = true }
-starcoin-logger = { package = "starcoin-logger", workspace = true }
+starcoin-logger = { workspace = true }
 starcoin-metrics = { workspace = true }
-starcoin-system = { package = "starcoin-system", workspace = true }
+starcoin-system = { workspace = true }
 starcoin-time-service = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-uint = { workspace = true }

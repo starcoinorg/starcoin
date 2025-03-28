@@ -4,7 +4,7 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
+bcs-ext = { workspace = true }
 clap = { features = ["derive"], workspace = true }
 crossbeam-channel = { workspace = true }
 forkable-jellyfish-merkle = { workspace = true }
@@ -13,7 +13,7 @@ hex = { default-features = false, workspace = true }
 itertools = { workspace = true }
 move-command-line-common = { workspace = true }
 move-errmapgen = { workspace = true }
-network-api = { package = "network-api", workspace = true }
+network-api = { workspace = true }
 network-p2p-types = { workspace = true }
 network-types = { workspace = true }
 rand = { workspace = true }

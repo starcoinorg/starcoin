@@ -19,7 +19,7 @@ move-table-extension = { workspace = true }
 proptest = { default-features = false, optional = true, workspace = true }
 proptest-derive = { default-features = false, optional = true, workspace = true }
 starcoin-time-service = { optional = true, workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
+bcs-ext = { workspace = true }
 starcoin-gas-algebra-ext = { workspace = true }
 forkable-jellyfish-merkle = { workspace = true }
 schemars = { workspace = true }

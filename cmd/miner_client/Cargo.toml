@@ -7,8 +7,8 @@ actix = { workspace = true }
 actix-rt = { workspace = true }
 anyhow = { workspace = true }
 async-std = { workspace = true }
-starcoin-consensus = { package = "starcoin-consensus", workspace = true }
-starcoin-crypto = { package = "starcoin-crypto", workspace = true }
+starcoin-consensus = { workspace = true }
+starcoin-crypto = { workspace = true }
 futures = { workspace = true }
 futures-channel = { workspace = true }
 
@@ -16,7 +16,7 @@ jsonrpc-server-utils = { git = "https://github.com/starcoinorg/jsonrpc", rev = "
 jsonrpc-core = { git = "https://github.com/starcoinorg/jsonrpc", rev = "e895b6cc5897f3813a953a9a6bb4718b4856ab19", features = ["arbitrary_precision"] }
 jsonrpc-core-client = { git = "https://github.com/starcoinorg/jsonrpc", rev = "e895b6cc5897f3813a953a9a6bb4718b4856ab19" }
 
-starcoin-logger = { package = "starcoin-logger", workspace = true }
+starcoin-logger = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-time-service = { workspace = true }
 starcoin-types = { workspace = true }
