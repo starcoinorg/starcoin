@@ -541,9 +541,11 @@ where
                 Err(_) => true, // need retaining
             }
         });
+
+        let mut exp: u64 = 1;
         for chunk in block_ids.chunks(usize::try_from(MAX_BLOCK_REQUEST_SIZE)?) {
-            let remote_dag_sync_blocks = self.fetcher.fetch_blocks(chunk.to_vec()).await?;
-            for (block, _) in remote_dag_sync_blocks {
+            let remote_dag_sync_blocks = self.fetcher.fetch_dag_block_in_batch(chunk.to_vec() ,exp).await?;
+            for block in remote_dag_sync_blocks {
                 self.local_store
                     .save_dag_sync_block(starcoin_storage::block::DagSyncBlock {
                         block: block.clone(),
@@ -552,7 +554,15 @@ where
                 self.sync_dag_store.save_block(block.clone())?;
                 result.push(block.header().clone());
             }
+            if exp < 16 {
+                exp = exp.saturating_mul(2);
+            }
         }
+
+        // result.into_iter().filter(|block_header| {
+
+        // })
+
         Ok(result)
     }
 
