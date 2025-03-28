@@ -156,9 +156,9 @@ pub trait Bus {
     where
         M: Send + Clone + Debug + 'static;
 
-    fn broadcast<M: 'static>(&self, msg: M) -> Result<(), TrySendError<M>>
+    fn broadcast<M>(&self, msg: M) -> Result<(), TrySendError<M>>
     where
-        M: Send + Clone + Debug;
+        M: Send + Clone + Debug + 'static;
 }
 
 #[async_trait::async_trait]

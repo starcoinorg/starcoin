@@ -347,7 +347,7 @@ impl<T: 'static + BusinessLayerHandle + Send> Protocol<T> {
             let notif_protocol_wth_handshake = notif_protocols
                 .clone()
                 .into_iter()
-                .map(|protocol| (protocol, handshake_message.clone(), u64::max_value()));
+                .map(|protocol| (protocol, handshake_message.clone(), u64::MAX));
 
             debug!(
                 "Handshake message: {}",

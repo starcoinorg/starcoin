@@ -176,7 +176,7 @@ async fn lots_of_incoming_peers_works() {
     let (main_node, _) = build_test_full_node(config::NetworkConfiguration {
         notifications_protocols: vec![From::from(PROTOCOL_NAME)],
         listen_addresses: vec![listen_addr.clone()],
-        in_peers: u32::max_value(),
+        in_peers: u32::MAX,
         transport: config::TransportConfig::MemoryOnly,
         ..config::NetworkConfiguration::new_local()
     });

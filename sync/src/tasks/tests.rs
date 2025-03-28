@@ -133,7 +133,7 @@ pub async fn test_sync_invalid_target() -> Result<()> {
 
     let mut target = arc_node1.sync_target();
 
-    target.block_info.total_difficulty = U256::max_value();
+    target.block_info.total_difficulty = U256::MAX;
 
     let current_block_header = node2.chain().current_header();
 

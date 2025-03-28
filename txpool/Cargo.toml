@@ -13,7 +13,7 @@ rand_core = { default-features = false, workspace = true }
 serde = { workspace = true }
 serde_derive = { workspace = true }
 starcoin-config = { workspace = true }
-starcoin-crypto = { package = "starcoin-crypto", workspace = true }
+#starcoin-crypto = { package = "starcoin-crypto", workspace = true }
 starcoin-executor = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-metrics = { workspace = true }
@@ -23,7 +23,7 @@ starcoin-state-tree = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-types = { package = "starcoin-types", workspace = true }
 starcoin-storage = { workspace = true }
-starcoin-txpool-api = { package = "starcoin-txpool-api", workspace = true }
+#starcoin-txpool-api = { package = "starcoin-txpool-api", workspace = true }
 stest = { workspace = true }
 tokio = { workspace = true }
 trace-time = { workspace = true }

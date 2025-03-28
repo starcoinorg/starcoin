@@ -810,7 +810,7 @@ impl RequestResponseCodec for GenericCodec {
         let length = unsigned_varint::aio::read_usize(&mut io)
             .await
             .map_err(|err| io::Error::new(io::ErrorKind::InvalidInput, err))?;
-        if length > usize::try_from(self.max_request_size).unwrap_or(usize::max_value()) {
+        if length > usize::try_from(self.max_request_size).unwrap_or(usize::MAX) {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
                 format!(
@@ -850,7 +850,7 @@ impl RequestResponseCodec for GenericCodec {
             Err(err) => return Err(io::Error::new(io::ErrorKind::InvalidInput, err)),
         };
 
-        if length > usize::try_from(self.max_response_size).unwrap_or(usize::max_value()) {
+        if length > usize::try_from(self.max_response_size).unwrap_or(usize::MAX) {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
                 format!(

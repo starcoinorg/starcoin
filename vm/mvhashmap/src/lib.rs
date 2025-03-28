@@ -77,7 +77,7 @@ impl<K: Hash + Clone + Eq, V> MVHashMap<K, V> {
     pub fn write(&self, key: &K, version: Version, data: V) {
         let (txn_idx, incarnation) = version;
 
-        let mut map = self.data.entry(key.clone()).or_insert(BTreeMap::new());
+        let mut map = self.data.entry(key.clone()).or_default();
         let prev_cell = map.insert(
             txn_idx,
             CachePadded::new(WriteCell::new_from(FLAG_DONE, incarnation, data)),
