@@ -208,11 +208,13 @@ impl<T: BusinessLayerHandle + Send> NetworkBehaviour for Protocol<T> {
                     .handshake(peer_id, received_handshake.clone());
                 match result_handshake {
                     Ok(handshake_info) => {
+                        #[allow(private_macro_use)]
                         debug!(target: "network-p2p", "Connected {}", peer_id);
                         let peer = Peer {
                             info: received_handshake,
                         };
                         self.context_data.peers.insert(peer_id, peer);
+                        #[allow(private_macro_use)]
                         debug!(target: "network-p2p", "Connected {}, Set id {:?}", peer_id, set_id);
                         CustomMessageOutcome::NotificationStreamOpened {
                             remote: handshake_info.who,
@@ -224,6 +226,7 @@ impl<T: BusinessLayerHandle + Send> NetworkBehaviour for Protocol<T> {
                         }
                     }
                     Err(err) => {
+                        #[allow(private_macro_use)]
                         error!("business layer handle returned a failure: {:?}", err);
                         if err == rep::BAD_MESSAGE {
                             self.bad_handshake_substreams.insert((peer_id, set_id));
@@ -232,12 +235,14 @@ impl<T: BusinessLayerHandle + Send> NetworkBehaviour for Protocol<T> {
                                 .disconnect_peer(&peer_id, HARD_CORE_PROTOCOL_ID);
                         } else if err == rep::GENESIS_MISMATCH {
                             if self.boot_node_ids.contains(&peer_id) {
+                                #[allow(private_macro_use)]
                                 error!(
                                     target: "network-p2p",
                                     "Bootnode with peer id `{}` is on a different chain",
                                     peer_id,
                                 );
                             } else {
+                                #[allow(private_macro_use)]
                                 log!(
                                     target: "network-p2p",
                                     if self.important_peers.contains(&peer_id) { Level::Warn } else { Level::Debug },
