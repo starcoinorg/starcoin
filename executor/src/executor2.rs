@@ -32,7 +32,8 @@ fn do_execute_block_transactions<S: StateView>(
     block_gas_limit: Option<u64>,
     metrics: Option<VMMetrics>,
 ) -> anyhow::Result<Vec<TransactionOutput>> {
-    let mut vm = StarcoinVM::new(metrics, chain_state);
+    // TODO(Bob): To determine chain id while execute genesis transaction
+    let mut vm = StarcoinVM::new_with_config(metrics, chain_state, Some(255));
     let output = vm.execute_block_transactions(chain_state, txns, block_gas_limit)?;
 
     Ok(output.into_iter().map(|r| r.1).collect())
