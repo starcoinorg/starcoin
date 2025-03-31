@@ -370,7 +370,7 @@ where
     ) -> BoxFuture<Result<Vec<HashValue>>> {
         BlockFetcher::fetch_dag_block_children(self.as_ref(), block_ids)
     }
-    
+
     fn fetch_dag_block_in_batch(
         &self,
         block_ids: Vec<HashValue>,
