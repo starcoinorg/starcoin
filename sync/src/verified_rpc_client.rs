@@ -875,10 +875,13 @@ impl VerifiedRpcClient {
         while count < G_RPC_RETRY_COUNT {
             match self
                 .client
-                .get_absent_blocks(peer_id.clone(), GetAbsentBlockRequest {
-                    absent_id: req.clone(),
-                    exp,
-                })
+                .get_absent_blocks(
+                    peer_id.clone(),
+                    GetAbsentBlockRequest {
+                        absent_id: req.clone(),
+                        exp,
+                    },
+                )
                 .await
             {
                 Ok(result) => return Ok(result.absent_blocks),
@@ -897,8 +900,6 @@ impl VerifiedRpcClient {
         )
         .into())
     }
-
-
 
     pub async fn get_dag_block_children(&self, req: Vec<HashValue>) -> Result<Vec<HashValue>> {
         let mut count = 0;

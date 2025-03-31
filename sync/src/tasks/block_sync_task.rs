@@ -531,7 +531,10 @@ where
 
         let mut exp: u64 = 1;
         for chunk in block_ids.chunks(usize::try_from(MAX_BLOCK_REQUEST_SIZE)?) {
-            let remote_dag_sync_blocks = self.fetcher.fetch_dag_block_in_batch(chunk.to_vec() ,exp).await?;
+            let remote_dag_sync_blocks = self
+                .fetcher
+                .fetch_dag_block_in_batch(chunk.to_vec(), exp)
+                .await?;
             for block in remote_dag_sync_blocks {
                 self.local_store
                     .save_dag_sync_block(starcoin_storage::block::DagSyncBlock {
@@ -546,11 +549,18 @@ where
             }
         }
 
-        // result.into_iter().filter(|block_header| {
-
-        // })
-
-        Ok(result)
+        Ok(result
+            .into_iter()
+            .filter(|block_header| {
+                !block_header.parents_hash().iter().all(|parent_id| {
+                    self.local_store
+                        .get_dag_sync_block(*parent_id)
+                        .unwrap_or(None)
+                        .is_none()
+                        || self.chain.has_dag_block(*parent_id).unwrap_or(true)
+                })
+            })
+            .collect())
     }
 
     pub fn check_enough_by_info(&self, block_info: BlockInfo) -> Result<CollectorState> {

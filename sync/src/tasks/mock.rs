@@ -24,8 +24,9 @@ use starcoin_chain_mock::MockChain;
 use starcoin_config::ChainNetwork;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
+use starcoin_dag::GetAbsentBlock;
 use starcoin_network_rpc_api::{RangeInLocation, G_RPC_INFO};
-use starcoin_storage::Storage;
+use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
 use starcoin_types::startup_info::ChainInfo;
@@ -451,6 +452,35 @@ impl BlockFetcher for SyncNodeMocker {
                 result.extend(self.chain().dag().get_children(block.0.id())?);
             }
             Ok(result)
+        }
+        .boxed()
+    }
+
+    fn fetch_dag_block_in_batch(
+        &self,
+        block_ids: Vec<HashValue>,
+        exp: u64,
+    ) -> BoxFuture<Result<Vec<Block>>> {
+        let dag = self.chain().dag();
+        let result = match dag.get_absent_blocks(GetAbsentBlock {
+            absent_id: block_ids,
+            exp,
+        }) {
+            anyhow::Result::Ok(result) => result
+                .absent_blocks
+                .into_iter()
+                .map(|id| {
+                    self.get_storage()
+                        .get_block(id)?
+                        .ok_or_else(|| format_err!("Block {:?} should exist", id))
+                })
+                .collect::<anyhow::Result<Vec<Block>>>(),
+            Err(e) => anyhow::Result::Err(e),
+        };
+        async move {
+            let _ = self.select_a_peer()?;
+            self.err_mocker.random_err().await?;
+            result
         }
         .boxed()
     }

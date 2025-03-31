@@ -370,7 +370,7 @@ where
     ) -> BoxFuture<Result<Vec<HashValue>>> {
         BlockFetcher::fetch_dag_block_children(self.as_ref(), block_ids)
     }
-    
+
     fn fetch_dag_block_in_batch(
         &self,
         block_ids: Vec<HashValue>,
@@ -418,13 +418,15 @@ impl BlockFetcher for VerifiedRpcClient {
             .map_err(fetcher_err_map)
             .boxed()
     }
-    
+
     fn fetch_dag_block_in_batch(
         &self,
         block_ids: Vec<HashValue>,
         exp: u64,
     ) -> BoxFuture<Result<Vec<Block>>> {
-        self.get_absent_blocks(block_ids, exp).map_err(fetcher_err_map).boxed()
+        self.get_absent_blocks(block_ids, exp)
+            .map_err(fetcher_err_map)
+            .boxed()
     }
 }
 
