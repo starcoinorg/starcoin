@@ -418,23 +418,15 @@ impl BlockFetcher for VerifiedRpcClient {
             .map_err(fetcher_err_map)
             .boxed()
     }
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 77791dac5 (add sync call)
     fn fetch_dag_block_in_batch(
         &self,
         block_ids: Vec<HashValue>,
         exp: u64,
     ) -> BoxFuture<Result<Vec<Block>>> {
-<<<<<<< HEAD
         self.get_absent_blocks(block_ids, exp)
             .map_err(fetcher_err_map)
             .boxed()
-=======
-        self.get_absent_blocks(block_ids, exp).map_err(fetcher_err_map).boxed()
->>>>>>> 77791dac5 (add sync call)
     }
 }
 
