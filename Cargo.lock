@@ -11841,6 +11841,7 @@ dependencies = [
  "starcoin-types 1.13.19",
  "starcoin-vm-runtime 1.13.19",
  "starcoin-vm-types 1.13.19",
+ "starcoin-vm-types 2.0.1",
  "stdlib",
  "stest",
  "test-helper",
@@ -12493,6 +12494,7 @@ dependencies = [
  "starcoin-state-api 1.13.19",
  "starcoin-statedb 1.13.19",
  "starcoin-storage 1.13.19",
+ "starcoin-storage 2.0.1",
  "starcoin-transaction-builder",
  "starcoin-types 1.13.19",
  "starcoin-vm-runtime 1.13.19",
@@ -13092,6 +13094,7 @@ dependencies = [
  "starcoin-types 1.13.19",
  "starcoin-vm-runtime 1.13.19",
  "starcoin-vm-types 1.13.19",
+ "starcoin-vm-types 2.0.1",
  "stest",
  "test-helper",
 ]
@@ -13975,6 +13978,7 @@ dependencies = [
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
  "starcoin-uint 1.13.19",
  "starcoin-vm-types 1.13.19",
+ "starcoin-vm-types 2.0.1",
  "thiserror 1.0.69",
 ]
 

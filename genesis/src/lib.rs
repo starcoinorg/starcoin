@@ -41,6 +41,8 @@ use starcoin_storage::table_info::TableInfoStore;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_view::StateView;
 
+use starcoin_storage2::Store as Store2;
+
 pub static G_GENESIS_GENERATED_DIR: &str = "generated";
 pub const GENESIS_DIR: Dir = include_dir!("generated");
 
@@ -138,6 +140,7 @@ impl Genesis {
                 transaction_info.state_root_hash(),
                 *difficulty,
                 txn,
+                None,
             ))
         } else {
             bail!("{}'s genesis config not ready to build genesis block", net);
@@ -254,11 +257,13 @@ impl Genesis {
         &self,
         net: &ChainNetwork,
         storage: Arc<dyn Store>,
+        storage2: Arc<dyn Store2>,
     ) -> Result<ChainInfo> {
         storage.save_genesis(self.block.id())?;
         let genesis_chain = BlockChain::new_with_genesis(
             net.time_service(),
             storage.clone(),
+            storage2.clone(),
             net.genesis_epoch(),
             self.block.clone(),
         )?;

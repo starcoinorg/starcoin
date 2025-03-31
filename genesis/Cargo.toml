@@ -23,6 +23,9 @@ stdlib = { workspace = true }
 stest = { workspace = true }
 thiserror = { workspace = true }
 
+# dependencies for move2
+starcoin-storage2 = { workspace = true }
+
 [features]
 default = []
 fuzzing = ["starcoin-types/fuzzing"]

@@ -39,6 +39,9 @@ use starcoin_types::{
     U256,
 };
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
+use starcoin_vm2_types::transaction::{
+    SignedUserTransaction as SignedUserTransaction2, Transaction as Transaction2,
+};
 use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
@@ -919,7 +922,7 @@ impl BlockChain {
         vm_metrics: Option<VMMetrics>,
     ) -> Result<ExecutedBlock> {
         let (storage, _storage2) = storage;
-        let (statedb, _statedb2) = statedb;
+        let (statedb, statedb2) = statedb;
         let header = block.header();
         debug_assert!(header.is_genesis() || parent_status.is_some());
         debug_assert!(!header.is_genesis() || parent_status.is_none());
@@ -942,6 +945,16 @@ impl BlockChain {
             );
             t
         };
+
+        let _transactions2 = block
+            .transactions2()
+            .iter()
+            .cloned()
+            .map(|t| {
+                use bcs_ext::BCSCodec;
+                Transaction2::UserTransaction(SignedUserTransaction2::decode(&t).unwrap())
+            })
+            .collect::<Vec<_>>();
 
         watch(CHAIN_WATCH_NAME, "n21");
         let executed_data = starcoin_executor::block_execute(

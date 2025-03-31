@@ -12,32 +12,35 @@ use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_storage2::Store as Store2;
-use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
-use starcoin_types::block::BlockNumber;
-use starcoin_types::genesis_config::{ChainId, ConsensusStrategy};
-use starcoin_types::identifier::Identifier;
-use starcoin_types::utils::to_hash_value2;
-use starcoin_types::vm_error::KeptVMStatus;
 use starcoin_types::{
+    account::DEFAULT_EXPIRATION_TIME,
     account_address::AccountAddress,
+    block::BlockNumber,
     block::{BlockBody, BlockHeader, BlockInfo, BlockTemplate},
     block_metadata::BlockMetadata,
     error::BlockExecutorError,
+    genesis_config::{ChainId, ConsensusStrategy},
+    identifier::Identifier,
     transaction::{
         SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput, TransactionStatus,
     },
+    utils::to_hash_value2,
+    vm_error::KeptVMStatus,
     U256,
 };
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
+use starcoin_vm2_types::transaction::SignedUserTransaction as SignedUserTransactionV2;
 use starcoin_vm_runtime::force_upgrade_management::{
     get_force_upgrade_account, get_force_upgrade_block_number,
 };
-use starcoin_vm_types::access_path::AccessPath;
-use starcoin_vm_types::account_config::{genesis_address, ModuleUpgradeStrategy};
-use starcoin_vm_types::move_resource::MoveResource;
-use starcoin_vm_types::on_chain_config;
-use starcoin_vm_types::state_store::state_key::StateKey;
-use starcoin_vm_types::state_view::{StateReaderExt, StateView};
+use starcoin_vm_types::{
+    access_path::AccessPath,
+    account_config::{genesis_address, ModuleUpgradeStrategy},
+    move_resource::MoveResource,
+    on_chain_config,
+    state_store::state_key::StateKey,
+    state_view::{StateReaderExt, StateView},
+};
 use std::{convert::TryInto, sync::Arc};
 
 pub struct OpenedBlock {
@@ -50,6 +53,7 @@ pub struct OpenedBlock {
 
     gas_used: u64,
     included_user_txns: Vec<SignedUserTransaction>,
+    included_user_txns2: Vec<SignedUserTransactionV2>,
     uncles: Vec<BlockHeader>,
     chain_id: ChainId,
     difficulty: U256,
@@ -104,6 +108,7 @@ impl OpenedBlock {
             txn_accumulator,
             gas_used: 0,
             included_user_txns: vec![],
+            included_user_txns2: vec![],
             uncles,
             chain_id,
             difficulty,
@@ -321,7 +326,7 @@ impl OpenedBlock {
         } else {
             None
         };
-        let body = BlockBody::new(self.included_user_txns, uncles);
+        let body = BlockBody::new(self.included_user_txns, self.included_user_txns2, uncles);
         let block_template = BlockTemplate::new(
             self.previous_block_info
                 .block_accumulator_info
