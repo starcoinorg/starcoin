@@ -10,7 +10,7 @@ use starcoin_vm2_types::{
 };
 
 #[allow(dead_code)]
-fn do_execute_block_transactions<S: StateView>(
+pub fn do_execute_block_transactions<S: StateView>(
     chain_state: &S,
     txns: Vec<Transaction>,
     block_gas_limit: Option<u64>,

@@ -17,6 +17,8 @@ starcoin-force-upgrade = { workspace = true }
 starcoin-vm2 = { workspace = true }
 starcoin-vm2-types = { workspace = true }
 starcoin-types2 = { workspace = true }
+starcoin-crypto2 = { workspace = true }
+starcoin-state2-api = { workspace = true }
 
 [dev-dependencies]
 bcs-ext = { workspace = true }
