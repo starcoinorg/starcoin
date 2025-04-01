@@ -531,9 +531,23 @@ where
 
         let mut exp: u64 = 1;
         for chunk in block_ids.chunks(usize::try_from(MAX_BLOCK_REQUEST_SIZE)?) {
+            let filtered_chunk = chunk
+                .iter()
+                .filter(|id| {
+                    self.local_store
+                        .get_dag_sync_block(**id)
+                        .unwrap_or(None)
+                        .is_none()
+                        || self.chain.has_dag_block(**id).unwrap_or(true)
+                })
+                .cloned()
+                .collect::<Vec<_>>();
+            if filtered_chunk.is_empty() {
+                continue;
+            }
             let remote_dag_sync_blocks = self
                 .fetcher
-                .fetch_dag_block_in_batch(chunk.to_vec(), exp)
+                .fetch_dag_block_in_batch(filtered_chunk.to_vec(), exp)
                 .await?;
             for block in remote_dag_sync_blocks {
                 self.local_store
