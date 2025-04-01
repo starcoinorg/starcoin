@@ -13,7 +13,7 @@ members = [
     "vm/framework/cached-packages",
     "vm/starcoin-native-interface",
     #"vm/stdlib",
-    #"vm/compiler",
+    "vm/compiler",
     "vm/move-prover",
     "vm/mvhashmap",
     "vm/parallel-executor",
@@ -56,7 +56,7 @@ default-members = [
     "vm/starcoin-sdk-builder",
     "vm/package-builder",
     #"vm/stdlib",
-    #"vm/compiler",
+    "vm/compiler",
     "vm/move-prover",
     "vm/mvhashmap",
     "vm/parallel-executor",
@@ -209,6 +209,7 @@ rand_0_7_3 = { package = "rand", version = "0.7.3" }
 rand_core = { version = "0.6.3", default-features = false }
 rand_core_0_5_1 = { package = "rand_core", version = "0.5.1" }
 rayon = "1.6.1"
+regex = "1.6.0"
 rocksdb = { default-features = false, features = ["lz4"], version = "0.21.0" }
 schemars = { git = "https://github.com/starcoinorg/schemars", rev = "a64c6ddf7ca4796e090208b1476de2e53772042f" }
 serde = { version = "1.0.130", features = ["derive"] }
@@ -229,7 +230,7 @@ starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev 
 #starcoin-dev = { path = "vm/dev" }
 starcoin-framework = { path = "vm/framework" }
 starcoin-sdk-builder = { path = "vm/starcoin-sdk-builder" }
-#starcoin-move-compiler = { path = "vm/compiler" }
+starcoin-move-compiler = { path = "vm/compiler" }
 #starcoin-move-explain = { path = "vm/move-explain" }
 starcoin-gas-algebra = { path = "vm/gas-algebra" }
 starcoin-gas-schedule = { path = "vm/gas-schedule" }

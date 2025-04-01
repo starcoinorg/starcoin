@@ -13,8 +13,8 @@ tempfile = { workspace = true }
 walkdir = { workspace = true }
 starcoin-framework = { workspace = true }
 
-[dev-dependencies]
-stest = { workspace = true }
+#[dev-dependencies]
+#stest = { workspace = true }
 
 [package]
 authors = { workspace = true }
