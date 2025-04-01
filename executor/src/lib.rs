@@ -22,4 +22,3 @@ pub use starcoin_vm_runtime::metrics::VMMetrics;
 
 mod block_executor;
 mod executor;
-pub mod executor2;
