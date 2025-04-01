@@ -624,9 +624,9 @@ where
                 !block_header.parents_hash().iter().all(|parent_id| {
                     self.local_store
                         .get_dag_sync_block(*parent_id)
-                        .unwrap_or(None)
-                        .is_none()
-                        || self.chain.has_dag_block(*parent_id).unwrap_or(true)
+                        .map(|opt_block| opt_block.is_none())
+                        .unwrap_or(true)
+                        || self.chain.has_dag_block(*parent_id).unwrap_or(false)
                 })
             })
             .collect())
