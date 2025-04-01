@@ -7040,6 +7040,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "move-ir-compiler"
+version = "0.1.0"
+source = "git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5#7c0ec30b6dd783cc0377b5b2c85650130028d3b5"
+dependencies = [
+ "anyhow",
+ "bcs 0.1.4",
+ "clap 4.5.32",
+ "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
+ "move-command-line-common 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
+ "move-ir-to-bytecode 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
+ "serde_json",
+]
+
+[[package]]
 name = "move-ir-to-bytecode"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc#7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc"
@@ -7666,7 +7682,7 @@ dependencies = [
  "move-compiler 0.0.1 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "move-disassembler 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
- "move-ir-compiler",
+ "move-ir-compiler 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "move-ir-types 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "move-resource-viewer 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "move-stackless-bytecode-interpreter",
@@ -11190,6 +11206,7 @@ version = "1.0.140"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "20068b6e96dc6c9bd23e01df8827e6c7e1f2fddd43c21810382803c136b99373"
 dependencies = [
+ "indexmap 2.8.0",
  "itoa",
  "memchr",
  "ryu",
@@ -12764,7 +12781,7 @@ dependencies = [
  "goldenfile",
  "hex",
  "move-core-types 0.0.4 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
- "move-ir-compiler",
+ "move-ir-compiler 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "move-table-extension 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "num_cpus",
  "once_cell",
@@ -14640,9 +14657,16 @@ name = "starcoin-vm2-test-helper"
 version = "1.13.19"
 dependencies = [
  "anyhow",
+ "bcs-ext 1.13.19",
+ "move-ir-compiler 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
+ "starcoin-framework 0.1.0",
+ "starcoin-state-api 2.0.1",
  "starcoin-statedb 2.0.1",
+ "starcoin-transaction-builder 2.0.1",
+ "starcoin-types 2.0.1",
  "starcoin-vm-runtime 2.0.1",
  "starcoin-vm-types 2.0.1",
+ "starcoin-vm2-executor",
  "starcoin-vm2-genesis",
  "stest",
 ]
@@ -15177,7 +15201,7 @@ dependencies = [
  "futures 0.3.31",
  "futures-timer",
  "hex",
- "move-ir-compiler",
+ "move-ir-compiler 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
  "network-api 1.13.19",
  "network-p2p-core",
  "network-p2p-types 1.13.19",
