@@ -528,6 +528,44 @@ where
                 Err(_) => true, // need retaining
             }
         });
+        for chunk in block_ids.chunks(usize::try_from(MAX_BLOCK_REQUEST_SIZE)?) {
+            let remote_dag_sync_blocks = self.fetcher.fetch_blocks(chunk.to_vec()).await?;
+            for (block, _) in remote_dag_sync_blocks {
+                self.local_store
+                    .save_dag_sync_block(starcoin_storage::block::DagSyncBlock {
+                        block: block.clone(),
+                        children: vec![],
+                    })?;
+                self.sync_dag_store.save_block(block.clone())?;
+                result.push(block.header().clone());
+            }
+        }
+        Ok(result)
+    }
+
+    async fn fetch_blocks_in_batch(&self, mut block_ids: Vec<HashValue>) -> Result<Vec<BlockHeader>> {
+        let mut result = vec![];
+        block_ids.retain(|id| {
+            match self.local_store.get_dag_sync_block(*id) {
+                Ok(op_dag_sync_block) => {
+                    if let Some(dag_sync_block) = op_dag_sync_block {
+                        match self.sync_dag_store.save_block(dag_sync_block.block.clone()) {
+                            Ok(_) => {
+                                result.push(dag_sync_block.block.header().clone());
+                                false // read from local store, remove from p2p request
+                            }
+                            Err(e) => {
+                                debug!("failed to save block for: {:?}", e);
+                                true // need retaining
+                            }
+                        }
+                    } else {
+                        true // need retaining
+                    }
+                }
+                Err(_) => true, // need retaining
+            }
+        });
 
         let mut exp: u64 = 1;
         for chunk in block_ids.chunks(usize::try_from(MAX_BLOCK_REQUEST_SIZE)?) {
