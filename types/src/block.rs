@@ -827,6 +827,10 @@ impl BlockInfo {
         }
     }
 
+    pub fn add_vm2_state_root(&mut self, vm2_state_root: HashValue) {
+        self.vm2_state_root = Some(vm2_state_root);
+    }
+
     pub fn id(&self) -> HashValue {
         self.crypto_hash()
     }

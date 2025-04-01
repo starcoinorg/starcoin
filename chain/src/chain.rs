@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::verifier::{BlockVerifier, FullVerifier};
+use crate::vm2;
 use anyhow::{bail, ensure, format_err, Result};
 use once_cell::sync::Lazy;
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
@@ -29,7 +30,7 @@ use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::RichTransactionInfo;
-use starcoin_types::utils::to_hash_value2;
+use starcoin_types::utils::{to_hash_value, to_hash_value2};
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
@@ -921,7 +922,7 @@ impl BlockChain {
         chain_id: &ChainId,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<ExecutedBlock> {
-        let (storage, _storage2) = storage;
+        let (storage, storage2) = storage;
         let (statedb, statedb2) = statedb;
         let header = block.header();
         debug_assert!(header.is_genesis() || parent_status.is_some());
@@ -946,7 +947,7 @@ impl BlockChain {
             t
         };
 
-        let _transactions2 = block
+        let transactions2 = block
             .transactions2()
             .iter()
             .cloned()
@@ -963,9 +964,29 @@ impl BlockChain {
             epoch.block_gas_limit(),
             vm_metrics,
         )?;
+        let (state_root2, included_txn_info_hashes2) = if !transactions2.is_empty() {
+            let (state_root, hashes) = vm2::execute_vm2_txns_and_save(
+                to_hash_value2(block_id),
+                block.header.number(),
+                storage2,
+                &statedb2,
+                transactions2,
+                // fixme: set txn info properly
+                txn_accumulator.num_leaves(),
+                epoch.block_gas_limit() - executed_data.gas_used(),
+                None,
+            );
+            (
+                state_root.map(to_hash_value),
+                hashes.into_iter().map(to_hash_value).collect(),
+            )
+        } else {
+            (None, vec![])
+        };
         watch(CHAIN_WATCH_NAME, "n22");
         let state_root = executed_data.state_root;
         let vec_transaction_info = &executed_data.txn_infos;
+        // todo: how to verify move2.0 state_root?
         verify_block!(
             VerifyBlockField::State,
             state_root == header.state_root(),
@@ -999,7 +1020,12 @@ impl BlockChain {
         let executed_accumulator_root = {
             let included_txn_info_hashes: Vec<_> =
                 vec_transaction_info.iter().map(|info| info.id()).collect();
-            txn_accumulator.append(&included_txn_info_hashes)?
+            txn_accumulator.append(&included_txn_info_hashes)?;
+
+            if !included_txn_info_hashes2.is_empty() {
+                txn_accumulator.append(&included_txn_info_hashes2)?;
+            }
+            txn_accumulator.root_hash()
         };
 
         verify_block!(
@@ -1030,12 +1056,15 @@ impl BlockChain {
 
         let txn_accumulator_info: AccumulatorInfo = txn_accumulator.get_info();
         let block_accumulator_info: AccumulatorInfo = block_accumulator.get_info();
-        let block_info = BlockInfo::new(
+        let mut block_info = BlockInfo::new(
             block_id,
             total_difficulty,
             txn_accumulator_info,
             block_accumulator_info,
         );
+        if let Some(state_root2) = state_root2 {
+            block_info.add_vm2_state_root(state_root2);
+        }
 
         watch(CHAIN_WATCH_NAME, "n25");
 
