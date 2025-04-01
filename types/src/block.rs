@@ -22,6 +22,7 @@ use starcoin_vm_types::{
     account_config::genesis_address, transaction::authenticator::AuthenticationKey,
 };
 use std::fmt::Formatter;
+use std::hash::Hash;
 
 /// Type for block number.
 pub type BlockNumber = u64;
@@ -594,8 +595,18 @@ impl BlockHeaderBuilder {
 pub struct BlockBody {
     /// The transactions in this block.
     pub transactions: Vec<SignedUserTransaction>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub transactions2: Vec<Vec<u8>>,
+    /// uncles block header
+    pub uncles: Option<Vec<BlockHeader>>,
+}
+
+#[derive(
+    Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash,
+)]
+#[serde(rename = "BlockBody")]
+pub struct LegacyBlockBody {
+    /// The transactions in this block.
+    pub transactions: Vec<SignedUserTransaction>,
     /// uncles block header
     pub uncles: Option<Vec<BlockHeader>>,
 }
@@ -670,6 +681,15 @@ pub struct Block {
     pub body: BlockBody,
 }
 
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
+#[serde(rename = "Block")]
+pub struct LegacyBlock {
+    /// The header of this block.
+    pub header: BlockHeader,
+    /// The body of this block.
+    pub body: LegacyBlockBody,
+}
+
 impl Block {
     pub fn new<B>(header: BlockHeader, body: B) -> Self
     where
@@ -721,15 +741,24 @@ impl Block {
         genesis_txn2: Option<SignedUserTransactionV2>,
     ) -> Self {
         let chain_id = genesis_txn.chain_id();
-        let txns2 = genesis_txn2.map(|x| vec![x]).unwrap_or_default();
-        let block_body = BlockBody::new(vec![genesis_txn], txns2, None);
+        let txns2 = genesis_txn2.clone().map(|x| vec![x]).unwrap_or_default();
+        let block_body = BlockBody::new(vec![genesis_txn.clone()], txns2, None);
+        let body_hash = if genesis_txn2.is_none() {
+            let b = LegacyBlockBody {
+                transactions: vec![genesis_txn],
+                uncles: None,
+            };
+            b.crypto_hash()
+        } else {
+            block_body.hash()
+        };
         let header = BlockHeader::genesis_block_header(
             parent_hash,
             timestamp,
             accumulator_root,
             state_root,
             difficulty,
-            block_body.hash(),
+            body_hash,
             chain_id,
         );
         Self {

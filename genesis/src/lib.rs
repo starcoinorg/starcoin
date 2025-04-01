@@ -46,6 +46,7 @@ use starcoin_vm_types::state_view::StateView;
 use starcoin_storage2::{
     storage::StorageInstance as StorageInstance2, Storage as Storage2, Store as Store2,
 };
+use starcoin_types::block::{BlockBody, LegacyBlock, LegacyBlockBody};
 use starcoin_types::utils::to_hash_value;
 
 pub static G_GENESIS_GENERATED_DIR: &str = "generated";
@@ -54,6 +55,41 @@ pub const GENESIS_DIR: Dir = include_dir!("generated");
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Genesis {
     block: Block,
+}
+
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename = "Genesis")]
+pub struct LegacyGenesis {
+    block: LegacyBlock,
+}
+
+impl From<LegacyGenesis> for Genesis {
+    fn from(legacy_genesis: LegacyGenesis) -> Self {
+        Genesis {
+            block: Block {
+                header: legacy_genesis.block.header,
+                body: BlockBody::new(
+                    legacy_genesis.block.body.transactions,
+                    vec![],
+                    legacy_genesis.block.body.uncles,
+                ),
+            },
+        }
+    }
+}
+
+impl From<Genesis> for LegacyGenesis {
+    fn from(genesis: Genesis) -> Self {
+        LegacyGenesis {
+            block: LegacyBlock {
+                header: genesis.block.header,
+                body: LegacyBlockBody {
+                    transactions: genesis.block.body.transactions,
+                    uncles: genesis.block.body.uncles,
+                },
+            },
+        }
+    }
 }
 
 impl Display for Genesis {
@@ -74,6 +110,10 @@ impl Display for Genesis {
         write!(f, "}}")?;
         Ok(())
     }
+}
+
+pub fn net_with_legacy_genesis(net: &BuiltinNetworkID) -> bool {
+    !(net.is_test_or_dev() || net.is_proxima())
 }
 
 impl Genesis {
@@ -118,7 +158,12 @@ impl Genesis {
             difficulty,
         }) = genesis_config.genesis_block_parameter()
         {
-            let (txn2, txn2_info_hash) = if net.is_dev() || net.is_test() {
+            let (txn2, txn2_info_hash) = if net
+                .id()
+                .as_builtin()
+                .map(|b| !net_with_legacy_genesis(&b))
+                .unwrap_or(true)
+            {
                 let (user_txn, txn_info_hash) =
                     vm2::build_and_execute_genesis_transaction(net.chain_id().id());
                 (Some(user_txn), Some(to_hash_value(txn_info_hash)))
@@ -241,7 +286,7 @@ impl Genesis {
         &self.block
     }
 
-    pub fn load_from_dir<P>(data_dir: P) -> Result<Option<Self>>
+    pub fn load_from_dir<P>(data_dir: P, legacy: bool) -> Result<Option<Self>>
     where
         P: AsRef<Path>,
     {
@@ -252,7 +297,12 @@ impl Genesis {
         let mut genesis_file = File::open(genesis_file_path)?;
         let mut content = vec![];
         genesis_file.read_to_end(&mut content)?;
-        let genesis = bcs_ext::from_bytes(&content)?;
+        let genesis = if legacy {
+            let legacy_genesis = bcs_ext::from_bytes::<LegacyGenesis>(&content)?;
+            legacy_genesis.into()
+        } else {
+            bcs_ext::from_bytes(&content)?
+        };
         Ok(Some(genesis))
     }
 
@@ -265,7 +315,14 @@ impl Genesis {
 
     pub fn load_generated(net: BuiltinNetworkID) -> Result<Option<Self>> {
         match Self::genesis_bytes(net) {
-            Some(bytes) => Ok(Some(bcs_ext::from_bytes::<Genesis>(bytes)?)),
+            Some(bytes) => {
+                if net_with_legacy_genesis(&net) {
+                    let genesis = bcs_ext::from_bytes::<LegacyGenesis>(bytes)?;
+                    Ok(Some(genesis.into()))
+                } else {
+                    Ok(Some(bcs_ext::from_bytes::<Genesis>(bytes)?))
+                }
+            }
             None => Ok(None),
         }
     }
@@ -291,7 +348,7 @@ impl Genesis {
             .ok_or_else(|| format_err!("ChainInfo should exist after genesis block executed."))
     }
 
-    pub fn save<P>(&self, data_dir: P) -> Result<()>
+    pub fn save<P>(&self, data_dir: P, legacy: bool) -> Result<()>
     where
         P: AsRef<Path>,
     {
@@ -301,13 +358,24 @@ impl Genesis {
         }
         let genesis_file = data_dir.join(Self::GENESIS_FILE_NAME);
         let mut file = File::create(genesis_file)?;
-        let contents = bcs_ext::to_bytes(self)?;
+        let contents = if legacy {
+            let legacy_genesis = LegacyGenesis::from(self.clone());
+            bcs_ext::to_bytes(&legacy_genesis)?
+        } else {
+            bcs_ext::to_bytes(self)?
+        };
         file.write_all(&contents)?;
         Ok(())
     }
 
     fn load_and_check_genesis(net: &ChainNetwork, data_dir: &Path, init: bool) -> Result<Genesis> {
-        let genesis = match Genesis::load_from_dir(data_dir) {
+        // for custom network or test/dev/proxima network, using new format genesis
+        let legacy_genesis = net
+            .id()
+            .as_builtin()
+            .map(|b| net_with_legacy_genesis(b))
+            .unwrap_or_default();
+        let genesis = match Genesis::load_from_dir(data_dir, legacy_genesis) {
             Ok(Some(genesis)) => {
                 let expect_genesis = Genesis::load_or_build(net)?;
                 if genesis.block().header().id() != expect_genesis.block().header().id() {
@@ -323,7 +391,7 @@ impl Genesis {
             Ok(None) => {
                 if init {
                     let genesis = Genesis::load_or_build(net)?;
-                    genesis.save(data_dir)?;
+                    genesis.save(data_dir, legacy_genesis)?;
                     info!("Build and save new genesis: {}", genesis);
                     genesis
                 } else {

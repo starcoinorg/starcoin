@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::executor2::do_execute_block_transactions;
+use crate::executor2::{do_execute_block_transactions, execute_block_transactions};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto2::HashValue;
 use starcoin_state2_api::{ChainStateReader, ChainStateWriter};
@@ -43,11 +43,17 @@ impl Default for BlockExecutedData {
 pub fn execute_genesis_transaction<S: StateView + ChainStateWriter + Sync>(
     chain_state: &S,
     genesis_txn: Transaction,
+    chain_id: u8,
 ) -> ExecutorResult<BlockExecutedData> {
     let txn_hash = genesis_txn.id();
-    let txn_outputs =
-        do_execute_block_transactions(chain_state, vec![genesis_txn], Some(u64::MAX), None)
-            .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
+    let txn_outputs = execute_block_transactions(
+        chain_state,
+        chain_id,
+        vec![genesis_txn],
+        Some(u64::MAX),
+        None,
+    )
+    .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
     assert_eq!(
         txn_outputs.len(),
         1,

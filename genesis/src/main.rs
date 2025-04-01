@@ -4,7 +4,7 @@
 use clap::Parser;
 use starcoin_config::BuiltinNetworkID;
 use starcoin_config::ChainNetwork;
-use starcoin_genesis::{Genesis, G_GENESIS_GENERATED_DIR};
+use starcoin_genesis::{net_with_legacy_genesis, Genesis, G_GENESIS_GENERATED_DIR};
 use starcoin_logger::prelude::*;
 use std::path::Path;
 
@@ -20,7 +20,9 @@ fn main() {
     let _logger = starcoin_logger::init();
     let opts = GenesisGeneratorOpt::parse();
     let networks: Vec<BuiltinNetworkID> = match opts.net {
-        Some(network) => vec![network],
+        Some(network) => {
+            vec![network]
+        }
         None => BuiltinNetworkID::networks(),
     };
     for id in networks {
@@ -75,7 +77,9 @@ fn main() {
             std::env::set_current_dir(base_path).expect("failed to change directory");
 
             let path = Path::new(G_GENESIS_GENERATED_DIR).join(net.to_string());
-            new_genesis.save(path.as_path()).expect("save genesis fail");
+            new_genesis
+                .save(path.as_path(), net_with_legacy_genesis(&id))
+                .expect("save genesis fail");
         } else {
             info!(
                 "Chain net {} previous generated genesis same as new genesis, do nothing. id: {:?}",

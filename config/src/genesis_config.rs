@@ -160,6 +160,10 @@ impl BuiltinNetworkID {
         matches!(self, BuiltinNetworkID::Halley)
     }
 
+    pub fn is_proxima(self) -> bool {
+        matches!(self, BuiltinNetworkID::Proxima)
+    }
+
     pub fn networks() -> Vec<BuiltinNetworkID> {
         vec![
             BuiltinNetworkID::Test,
