@@ -15,7 +15,7 @@ pub fn execute_transactions<S: StateView>(
     txns: Vec<Transaction>,
     metrics: Option<VMMetrics>,
 ) -> anyhow::Result<Vec<TransactionOutput>> {
-    do_execute_block_transactions(chain_state, txns, None, metrics)
+    do_execute_block_transactions(chain_state, txns, None, metrics, None)
 }
 
 pub fn execute_block_transactions_with_chain_id<S: StateView>(

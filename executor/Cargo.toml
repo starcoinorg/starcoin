@@ -18,6 +18,7 @@ starcoin-vm2-types = { workspace = true }
 starcoin-types2 = { workspace = true }
 starcoin-vm2-transaction-builder = { workspace = true }
 starcoin-vm2-storage = { workspace = true }
+starcoin-vm2-state-api = { workspace = true }
 
 [dev-dependencies]
 bcs-ext = { package = "bcs-ext", workspace = true }

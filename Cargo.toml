@@ -92,6 +92,9 @@ members = [
     "vm/transaction-benchmarks",
     "vm/e2e-tests",
     "vm/proptest-helpers",
+    "vm2/executor",
+    "vm2/genesis",
+    "vm2/test-helper",
     "abi/types",
     "abi/decoder",
     "abi/resolver",
@@ -111,7 +114,7 @@ members = [
     "stratum",
     "cmd/miner_client/api",
     "cmd/db-exporter",
-    "cmd/genesis-nft-miner",
+    "cmd/genesis-nft-miner", "vm2/executor", "vm2/test-helper",
 ]
 
 default-members = [
@@ -199,6 +202,9 @@ default-members = [
     "vm/move-package-manager",
     "vm/vm-status-translator",
     "vm/starcoin-transactional-test-harness",
+    "vm2/executor",
+    "vm2/genesis",
+    "vm2/test-helper",
     "abi/types",
     "abi/decoder",
     "abi/resolver",
@@ -526,9 +532,13 @@ starcoin-vm2 = { git = "https://github.com/starcoinorg/starcoin", branch = "star
 starcoin-vm2-types = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-vm-types" }
 starcoin-types2 = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-types" }
 starcoin-state2-store-api = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-state-store-api" }
+starcoin-vm2-state-api = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-state-api" }
 starcoin-vm2-transaction-builder = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-transaction-builder" }
 starcoin-vm2-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "a14be64c9cd5889389730c76f00a7f82ad5c99cf", package = "starcoin-crypto" }
 starcoin-vm2-statedb = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-statedb" }
+starcoin-vm2-genesis = { path = "vm2/genesis" }
+starcoin-vm2-executor = { path = "vm2/executor" }
+starcoin-vm2-test-helper = { path = "vm2/test-helper" }
 
 
 syn = { version = "1.0.107", features = [
