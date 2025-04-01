@@ -36,12 +36,17 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 mod errors;
+mod vm2;
+
 pub use errors::GenesisError;
 use starcoin_storage::table_info::TableInfoStore;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_view::StateView;
 
-use starcoin_storage2::Store as Store2;
+use starcoin_storage2::{
+    storage::StorageInstance as StorageInstance2, Storage as Storage2, Store as Store2,
+};
+use starcoin_types::utils::to_hash_value;
 
 pub static G_GENESIS_GENERATED_DIR: &str = "generated";
 pub const GENESIS_DIR: Dir = include_dir!("generated");
@@ -113,6 +118,14 @@ impl Genesis {
             difficulty,
         }) = genesis_config.genesis_block_parameter()
         {
+            let (txn2, txn2_info_hash) = if net.is_dev() || net.is_test() {
+                let (user_txn, txn_info_hash) =
+                    vm2::build_and_execute_genesis_transaction(net.chain_id().id());
+                (Some(user_txn), Some(to_hash_value(txn_info_hash)))
+            } else {
+                (None, None)
+            };
+
             let txn = Self::build_genesis_transaction(net)?;
 
             let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
@@ -125,9 +138,13 @@ impl Genesis {
                 AccumulatorInfo::default(),
                 storage.get_accumulator_store(AccumulatorStoreType::Transaction),
             );
-            let txn_info_hash = transaction_info.id();
+            let txn_info_hash_vec = if let Some(txn2_info_hash) = txn2_info_hash {
+                vec![transaction_info.id(), txn2_info_hash]
+            } else {
+                vec![transaction_info.id()]
+            };
 
-            let accumulator_root = accumulator.append(vec![txn_info_hash].as_slice())?;
+            let accumulator_root = accumulator.append(txn_info_hash_vec.as_slice())?;
             accumulator.flush()?;
 
             // Persist newly created table_infos to storage
@@ -140,7 +157,7 @@ impl Genesis {
                 transaction_info.state_root_hash(),
                 *difficulty,
                 txn,
-                None,
+                txn2,
             ))
         } else {
             bail!("{}'s genesis config not ready to build genesis block", net);
@@ -320,6 +337,7 @@ impl Genesis {
     pub fn init_and_check_storage(
         net: &ChainNetwork,
         storage: Arc<Storage>,
+        storage2: Arc<Storage2>,
         data_dir: &Path,
     ) -> Result<(ChainInfo, Genesis)> {
         debug!("load startup_info.");
@@ -349,7 +367,8 @@ impl Genesis {
             }
             Ok(None) => {
                 let genesis = Self::load_and_check_genesis(net, data_dir, true)?;
-                let chain_info = genesis.execute_genesis_block(net, storage.clone())?;
+                let chain_info =
+                    genesis.execute_genesis_block(net, storage.clone(), storage2.clone())?;
                 (chain_info, genesis)
             }
             Err(e) => return Err(GenesisError::GenesisLoadFailure(e).into()),
@@ -361,8 +380,9 @@ impl Genesis {
     pub fn init_storage_for_test(net: &ChainNetwork) -> Result<(Arc<Storage>, ChainInfo, Genesis)> {
         debug!("init storage by genesis for test.");
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
+        let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
         let genesis = Genesis::load_or_build(net)?;
-        let chain_info = genesis.execute_genesis_block(net, storage.clone())?;
+        let chain_info = genesis.execute_genesis_block(net, storage.clone(), storage2.clone())?;
         Ok((storage, chain_info, genesis))
     }
 }

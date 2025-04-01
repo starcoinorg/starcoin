@@ -528,6 +528,7 @@ starcoin-vm2-types = { git = "https://github.com/starcoinorg/starcoin", rev = "d
 starcoin-types2 = { git = "https://github.com/starcoinorg/starcoin", rev = "deb71a07b893511a629aa52b24aa7947aa8e99e5", package = "starcoin-types" }
 starcoin-vm2-statedb = { git = "https://github.com/starcoinorg/starcoin", rev = "deb71a07b893511a629aa52b24aa7947aa8e99e5", package = "starcoin-statedb" }
 starcoin-state2-api = { git = "https://github.com/starcoinorg/starcoin", rev = "deb71a07b893511a629aa52b24aa7947aa8e99e5", package = "starcoin-state-api" }
+starcoin-transaction2-builder = { git = "https://github.com/starcoinorg/starcoin", rev = "deb71a07b893511a629aa52b24aa7947aa8e99e5", package = "starcoin-transaction-builder" }
 
 syn = { version = "1.0.107", features = [
     "full",
