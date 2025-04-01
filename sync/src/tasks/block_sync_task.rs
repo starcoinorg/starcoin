@@ -556,7 +556,11 @@ where
         Ok(result)
     }
 
-    async fn fetch_blocks_in_batch(&self, mut block_ids: Vec<HashValue>) -> Result<Vec<BlockHeader>> {
+    #[allow(dead_code)]
+    async fn fetch_blocks_in_batch(
+        &self,
+        mut block_ids: Vec<HashValue>,
+    ) -> Result<Vec<BlockHeader>> {
         let mut result = vec![];
         block_ids.retain(|id| {
             match self.local_store.get_dag_sync_block(*id) {
