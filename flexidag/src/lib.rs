@@ -1,4 +1,5 @@
 use consensusdb::prelude::StoreError;
+use starcoin_crypto::HashValue;
 
 mod block_depth;
 pub mod blockdag;
@@ -14,4 +15,13 @@ pub fn process_key_already_error(result: Result<(), StoreError>) -> Result<(), S
     } else {
         result
     }
+}
+
+pub struct GetAbsentBlock {
+    pub absent_id: Vec<HashValue>,
+    pub exp: u64,
+}
+
+pub struct GetAbsentBlockResult {
+    pub absent_blocks: Vec<HashValue>,
 }

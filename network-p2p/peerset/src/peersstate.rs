@@ -505,7 +505,7 @@ impl<'a> NotConnectedPeer<'a> {
     /// the slots are full, the node stays "not connected" and we return `Err`.
     ///
     /// Non-slot-occupying nodes don't count towards the number of slots.
-    pub fn try_outgoing(self) -> Result<ConnectedPeer<'a>, NotConnectedPeer<'a>> {
+    pub fn try_outgoing(self) -> Result<ConnectedPeer<'a>, Self> {
         let is_no_slot_occupy = self.state.sets[self.set]
             .no_slot_nodes
             .contains(&*self.peer_id);
@@ -543,7 +543,7 @@ impl<'a> NotConnectedPeer<'a> {
     /// the slots are full, the node stays "not connected" and we return `Err`.
     ///
     /// Non-slot-occupying nodes don't count towards the number of slots.
-    pub fn try_accept_incoming(self) -> Result<ConnectedPeer<'a>, NotConnectedPeer<'a>> {
+    pub fn try_accept_incoming(self) -> Result<ConnectedPeer<'a>, Self> {
         let is_no_slot_occupy = self.state.sets[self.set]
             .no_slot_nodes
             .contains(&*self.peer_id);

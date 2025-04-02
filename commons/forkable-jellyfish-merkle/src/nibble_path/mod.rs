@@ -277,14 +277,14 @@ impl<'a> NibbleIterator<'a> {
     }
 
     /// Returns a nibble iterator that iterates all visited nibbles.
-    pub fn visited_nibbles(&self) -> NibbleIterator<'a> {
+    pub fn visited_nibbles(&self) -> Self {
         assume!(self.start <= self.pos.start); // invariant
         assume!(self.pos.start <= ROOT_NIBBLE_HEIGHT); // invariant
         Self::new(self.nibble_path, self.start, self.pos.start)
     }
 
     /// Returns a nibble iterator that iterates all remaining nibbles.
-    pub fn remaining_nibbles(&self) -> NibbleIterator<'a> {
+    pub fn remaining_nibbles(&self) -> Self {
         assume!(self.pos.start <= self.pos.end); // invariant
         assume!(self.pos.end <= ROOT_NIBBLE_HEIGHT); // invariant
         Self::new(self.nibble_path, self.pos.start, self.pos.end)

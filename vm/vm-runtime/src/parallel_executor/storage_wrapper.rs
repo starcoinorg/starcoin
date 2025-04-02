@@ -16,7 +16,7 @@ impl<'a, S: StateView> VersionedView<'a, S> {
     pub fn new_view(
         base_view: &'a S,
         hashmap_view: &'a MVHashMapView<'a, StateKey, WriteOp>,
-    ) -> RemoteStorageOwned<VersionedView<'a, S>> {
+    ) -> RemoteStorageOwned<Self> {
         VersionedView {
             base_view,
             hashmap_view,

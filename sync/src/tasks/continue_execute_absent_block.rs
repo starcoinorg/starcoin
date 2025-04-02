@@ -27,7 +27,7 @@ impl<'a> ContinueExecuteAbsentBlock<'a> {
         operator: &'a mut dyn ContinueChainOperator,
         local_store: Arc<dyn Store>,
         sync_dag_store: Arc<SyncDagStore>,
-    ) -> anyhow::Result<ContinueExecuteAbsentBlock<'a>> {
+    ) -> anyhow::Result<Self> {
         anyhow::Result::Ok(ContinueExecuteAbsentBlock {
             operator,
             local_store,

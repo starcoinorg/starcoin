@@ -37,7 +37,7 @@ use starcoin_types::{
     block::{Block, BlockBody, BlockHeaderBuilder, BlockIdAndNumber, BlockInfo},
     U256,
 };
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex};
 use stream_task::{DefaultCustomErrorHandle, Generator, TaskEventCounterHandle, TaskGenerator};
 use test_helper::DummyNetworkService;
@@ -647,6 +647,36 @@ impl BlockFetcher for MockBlockFetcher {
         async {
             Delay::new(Duration::from_millis(100)).await;
             Ok(result)
+        }
+        .boxed()
+    }
+
+    fn fetch_dag_block_in_batch(
+        &self,
+        block_ids: Vec<HashValue>,
+        exp: u64,
+    ) -> BoxFuture<Result<Vec<Block>>> {
+        let mut round = block_ids.into_iter().collect::<HashSet<HashValue>>();
+        let blocks = self.blocks.lock().unwrap();
+        let mut result = HashSet::new();
+        for _ in 0..exp {
+            let find = round
+                .iter()
+                .map(|block_id| {
+                    if let Some(block) = blocks.get(block_id).cloned() {
+                        Ok(block)
+                    } else {
+                        Err(format_err!("Can not find block by id: {:?}", block_id))
+                    }
+                })
+                .collect::<Result<Vec<Block>>>()
+                .unwrap();
+            round = find.iter().map(|block| block.id()).collect();
+            result.extend(find.iter().cloned());
+        }
+        async {
+            Delay::new(Duration::from_millis(100)).await;
+            Ok(result.into_iter().collect())
         }
         .boxed()
     }

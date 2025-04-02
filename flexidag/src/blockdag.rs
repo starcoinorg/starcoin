@@ -19,10 +19,10 @@ use crate::consensusdb::{
     },
 };
 use crate::ghostdag::protocol::{GhostdagManager, KStore};
-use crate::process_key_already_error;
 use crate::prune::pruning_point_manager::PruningPointManagerT;
 use crate::reachability::reachability_service::ReachabilityService;
 use crate::reachability::ReachabilityError;
+use crate::{process_key_already_error, GetAbsentBlock, GetAbsentBlockResult};
 use anyhow::{bail, ensure, format_err, Ok};
 use itertools::Itertools;
 use parking_lot::Mutex;
@@ -1079,6 +1079,29 @@ impl BlockDAG {
         anyhow::Ok(ReachabilityView {
             ancestor,
             descendants: de,
+        })
+    }
+
+    pub fn get_absent_blocks(&self, req: GetAbsentBlock) -> anyhow::Result<GetAbsentBlockResult> {
+        let relation = self.storage.relations_store.read();
+        let mut result = HashSet::from_iter(req.absent_id.clone());
+        let mut roud = req.absent_id.into_iter().collect::<HashSet<HashValue>>();
+        for _ in 0..req.exp {
+            let next_round = roud
+                .into_iter()
+                .map(|parent| relation.get_parents(parent))
+                .collect::<std::result::Result<Vec<_>, _>>()?
+                .into_iter()
+                .flat_map(|v| (*v).clone())
+                .collect::<HashSet<HashValue>>();
+            roud = next_round.difference(&result).cloned().collect();
+            result = result.union(&next_round).cloned().collect();
+        }
+
+        drop(relation);
+
+        Ok(GetAbsentBlockResult {
+            absent_blocks: result.into_iter().collect(),
         })
     }
 }
