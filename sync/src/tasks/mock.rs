@@ -460,7 +460,7 @@ impl BlockFetcher for SyncNodeMocker {
         &self,
         block_ids: Vec<HashValue>,
         exp: u64,
-    ) -> BoxFuture<Result<Vec<Block>>> {
+    ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>)>>> {
         let dag = self.chain().dag();
         let result = match dag.get_absent_blocks(GetAbsentBlock {
             absent_id: block_ids,
@@ -470,11 +470,13 @@ impl BlockFetcher for SyncNodeMocker {
                 .absent_blocks
                 .into_iter()
                 .map(|id| {
-                    self.get_storage()
+                    let block = self
+                        .get_storage()
                         .get_block(id)?
-                        .ok_or_else(|| format_err!("Block {:?} should exist", id))
+                        .ok_or_else(|| format_err!("Block {:?} should exist", id))?;
+                    Ok((block, None))
                 })
-                .collect::<anyhow::Result<Vec<Block>>>(),
+                .collect::<anyhow::Result<Vec<(Block, Option<PeerId>)>>>(),
             Err(e) => anyhow::Result::Err(e),
         };
         async move {

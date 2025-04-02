@@ -604,7 +604,7 @@ where
                 .fetcher
                 .fetch_dag_block_in_batch(filtered_chunk.to_vec(), exp)
                 .await?;
-            for block in remote_dag_sync_blocks {
+            for (block, _) in remote_dag_sync_blocks {
                 self.local_store
                     .save_dag_sync_block(starcoin_storage::block::DagSyncBlock {
                         block: block.clone(),
