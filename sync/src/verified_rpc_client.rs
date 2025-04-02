@@ -869,7 +869,11 @@ impl VerifiedRpcClient {
             .collect())
     }
 
-    pub async fn get_absent_blocks(&self, req: Vec<HashValue>, exp: u64) -> Result<Vec<Block>> {
+    pub async fn get_absent_blocks(
+        &self,
+        req: Vec<HashValue>,
+        exp: u64,
+    ) -> Result<Vec<(Block, Option<PeerId>)>> {
         let mut count = 0;
         let peer_id = self.select_a_peer()?;
         while count < G_RPC_RETRY_COUNT {
@@ -884,7 +888,13 @@ impl VerifiedRpcClient {
                 )
                 .await
             {
-                Ok(result) => return Ok(result.absent_blocks),
+                Ok(result) => {
+                    return Ok(result
+                        .absent_blocks
+                        .into_iter()
+                        .map(|block| (block, Some(peer_id.clone())))
+                        .collect())
+                }
                 Err(_) => {
                     count = count.saturating_add(1);
                     continue;
