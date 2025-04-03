@@ -15,6 +15,7 @@ use starcoin_dag::{
     },
     reachability::{inquirer, ReachabilityError},
     types::{ghostdata::GhostdagData, interval::Interval},
+    GetAbsentBlock,
 };
 use starcoin_logger::prelude::debug;
 use starcoin_types::{
@@ -1562,4 +1563,67 @@ fn test_check_ancestor_of() -> anyhow::Result<()> {
     );
 
     Ok(())
+}
+
+#[test]
+fn test_get_blocks_in_batch() -> anyhow::Result<()> {
+    // initialzie the dag firstly
+    let mut dag = BlockDAG::create_for_testing().unwrap();
+
+    let origin = BlockHeaderBuilder::random().with_number(0).build();
+    let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;
+
+    dag.init_with_genesis(genesis.clone()).unwrap();
+
+    // one
+    let mut parent = genesis.clone();
+    parent = add_and_print(1, parent.id(), vec![parent.id()], &mut dag)?;
+    let mut number: u64 = 1;
+    let mut pre = vec![parent.id()];
+    let mut next = vec![];
+    for _ in 1..=10 {
+        for parent_id in pre {
+            number = number.saturating_add(1);
+            let one = add_and_print(number, parent_id, vec![parent_id], &mut dag)?;
+            number = number.saturating_add(1);
+            let two = add_and_print(number, parent_id, vec![parent_id], &mut dag)?;
+            next.extend([one.id(), two.id()]);
+        }
+
+        if next.len() >= 8 {
+            number = number.saturating_add(1);
+            let one = add_and_print(number, *next.first().unwrap(), next, &mut dag)?;
+            next = vec![one.id()];
+        }
+        pre = next;
+        next = vec![];
+    }
+
+    number = number.saturating_add(1);
+    let start_point = add_and_print(number, *pre.first().unwrap(), pre, &mut dag)?;
+    let mut pre = vec![start_point.id()];
+    let mut all_results = vec![];
+    for exp in 1..=100u64 {
+        println!("now get absent blocks: {:?}, exp: {:?}", pre.len(), exp);
+        let result = dag.get_absent_blocks(GetAbsentBlock {
+            absent_id: pre,
+            exp,
+        })?;
+        println!(
+            "returned absent blocks: {:?}, exp: {:?}",
+            result.absent_blocks.len(),
+            exp
+        );
+        if result.absent_blocks.is_empty() {
+            break;
+        }
+        all_results.extend(result.absent_blocks.clone());
+        pre = result
+            .absent_blocks
+            .into_iter()
+            .flat_map(|id| (*dag.storage.relations_store.read().get_parents(id).unwrap()).clone())
+            .collect();
+    }
+    assert!(all_results.contains(&genesis.id()));
+    anyhow::Result::Ok(())
 }

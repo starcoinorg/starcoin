@@ -7,7 +7,10 @@ use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::consenses_state::{DagStateView, ReachabilityView};
 use starcoin_dag::types::ghostdata::GhostdagData;
-use starcoin_network_rpc_api::{GetRangeInLocationRequest, GetRangeInLocationResponse};
+use starcoin_network_rpc_api::{
+    GetAbsentBlockRequest, GetAbsentBlockResponse, GetRangeInLocationRequest,
+    GetRangeInLocationResponse,
+};
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::filter::Filter;
@@ -164,6 +167,8 @@ pub trait ChainAsyncService:
         ancestor: HashValue,
         descendants: Vec<HashValue>,
     ) -> Result<starcoin_dag::consensusdb::consenses_state::ReachabilityView>;
+    async fn get_absent_blocks(&self, req: GetAbsentBlockRequest)
+        -> Result<GetAbsentBlockResponse>;
 }
 
 #[async_trait::async_trait]
@@ -497,6 +502,23 @@ where
                     })
                 }
             }
+        } else {
+            bail!("get range in location error");
+        }
+    }
+
+    async fn get_absent_blocks(
+        &self,
+        req: GetAbsentBlockRequest,
+    ) -> Result<GetAbsentBlockResponse> {
+        let response = self
+            .send(ChainRequest::GetAbsentBlocks {
+                absent_id: req.absent_id,
+                exp: req.exp,
+            })
+            .await??;
+        if let ChainResponse::GetAbsentBlocks { absent_blocks } = response {
+            Ok(GetAbsentBlockResponse { absent_blocks })
         } else {
             bail!("get range in location error");
         }
