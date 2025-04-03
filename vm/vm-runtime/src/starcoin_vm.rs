@@ -87,21 +87,6 @@ pub struct StarcoinVM {
 impl StarcoinVM {
     #[cfg(feature = "metrics")]
     pub fn new<S: StateView>(metrics: Option<VMMetrics>, state: &S) -> Self {
-        Self::new_with_config(metrics, state, None)
-    }
-
-    #[cfg(feature = "metrics")]
-    pub fn new_with_config<S: StateView>(
-        metrics: Option<VMMetrics>,
-        state: &S,
-        chain_id: Option<u8>,
-    ) -> Self {
-        let chain_id = chain_id.unwrap_or_else(|| {
-            state
-                .get_chain_id()
-                .expect("Failed to get chain id, please check statedb")
-                .id()
-        });
         let gas_params = StarcoinGasParameters::initial();
         let native_params = gas_params.natives.clone();
         let resolver = state.as_move_resolver();
@@ -109,7 +94,6 @@ impl StarcoinVM {
             native_params.clone(),
             gas_params.vm.misc.clone(),
             LATEST_GAS_FEATURE_VERSION,
-            chain_id,
             Features::default(),
             TimedFeaturesBuilder::enable_all().build(),
             &resolver,
@@ -130,7 +114,6 @@ impl StarcoinVM {
 
     #[cfg(not(feature = "metrics"))]
     pub fn new<S: StateView>(state: &S) -> Self {
-        let chain_id = state.get_chain_id().id();
         let gas_params = StarcoinGasParameters::initial();
         let native_params = gas_params.natives.clone();
         // todo: double check if it's ok to use RemoteStorage as StarcoinMoveResolver
@@ -139,7 +122,6 @@ impl StarcoinVM {
             native_params.clone(),
             gas_params.vm.misc.clone(),
             1,
-            chain_id,
             Features::default(),
             TimedFeaturesBuilder::enable_all().build(),
             resolver,
@@ -1444,16 +1426,7 @@ impl StarcoinVM {
         block_gas_limit: Option<u64>,
         metrics: Option<VMMetrics>,
     ) -> Result<Vec<(VMStatus, TransactionOutput)>, VMStatus> {
-        // todo: retrieve chain_id properly
-        let chain_id = if state_view.is_genesis() {
-            Some(match txns.first().unwrap() {
-                Transaction::UserTransaction(txn) => txn.chain_id().id(),
-                Transaction::BlockMetadata(meta) => meta.chain_id().id(),
-            })
-        } else {
-            None
-        };
-        let mut vm = Self::new_with_config(metrics, state_view, chain_id);
+        let mut vm = Self::new(metrics, state_view);
         vm.execute_block_transactions(state_view, txns, block_gas_limit)
     }
 

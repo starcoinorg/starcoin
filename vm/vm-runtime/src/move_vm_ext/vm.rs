@@ -28,7 +28,6 @@ use std::sync::Arc;
 
 pub struct MoveVmExt {
     inner: MoveVM,
-    _chain_id: u8,
     features: Arc<Features>,
 }
 
@@ -37,7 +36,6 @@ impl MoveVmExt {
         native_gas_parameters: NativeGasParameters,
         misc_gas_parameters: MiscGasParameters,
         gas_feature_version: u64,
-        _chain_id: u8,
         features: Features,
         timed_features: TimedFeatures,
         gas_hook: Option<F>,
@@ -65,7 +63,6 @@ impl MoveVmExt {
         }
         Ok(Self {
             inner: WarmVmCache::get_warm_vm(builder, vm_config, resolver)?,
-            _chain_id,
             features: Arc::new(features),
         })
     }
@@ -73,7 +70,6 @@ impl MoveVmExt {
         native_gas_params: NativeGasParameters,
         misc_gas_parameters: MiscGasParameters,
         gas_feature_version: u64,
-        chain_id: u8,
         features: Features,
         timed_features: TimedFeatures,
         resolver: &impl StarcoinMoveResolver,
@@ -82,7 +78,6 @@ impl MoveVmExt {
             native_gas_params,
             misc_gas_parameters,
             gas_feature_version,
-            chain_id,
             features,
             timed_features,
             None,
@@ -94,7 +89,6 @@ impl MoveVmExt {
         native_gas_params: NativeGasParameters,
         misc_gas_params: MiscGasParameters,
         gas_feature_version: u64,
-        chain_id: u8,
         features: Features,
         timed_features: TimedFeatures,
         gas_hook: Option<F>,
@@ -107,7 +101,6 @@ impl MoveVmExt {
             native_gas_params,
             misc_gas_params,
             gas_feature_version,
-            chain_id,
             features,
             timed_features,
             gas_hook,
