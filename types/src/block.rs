@@ -843,7 +843,6 @@ pub struct BlockInfo {
     pub txn_accumulator_info: AccumulatorInfo,
     /// The block accumulator info.
     pub block_accumulator_info: AccumulatorInfo,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub vm2_state_root: Option<HashValue>,
 }
 

@@ -9,20 +9,6 @@ use starcoin_vm2_types::{
     StateView,
 };
 
-// for genesis
-pub fn execute_block_transactions<S: StateView>(
-    chain_state: &S,
-    chain_id: u8,
-    txns: Vec<Transaction>,
-    block_gas_limit: Option<u64>,
-    metrics: Option<VMMetrics>,
-) -> anyhow::Result<Vec<TransactionOutput>> {
-    let mut vm = StarcoinVM::new_with_config(metrics, chain_state, Some(chain_id));
-    let output = vm.execute_block_transactions(chain_state, txns, block_gas_limit)?;
-
-    Ok(output.into_iter().map(|r| r.1).collect())
-}
-
 pub fn do_execute_block_transactions<S: StateView>(
     chain_state: &S,
     txns: Vec<Transaction>,

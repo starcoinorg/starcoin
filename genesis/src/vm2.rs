@@ -48,7 +48,7 @@ pub(crate) fn build_and_execute_genesis_transaction(
 
     (
         user_txn,
-        execute_genesis_transaction(&chain_state, txn, chain_id)
+        execute_genesis_transaction(&chain_state, txn)
             .unwrap()
             .txn_infos
             .pop()
