@@ -23,7 +23,7 @@ spec:
         starcoin/node-pool: seed-pool
       containers:
       - name: starcoin
-        image: starcoin/starcoin:batch-pull-absent-blocks
+        image: starcoin/starcoin:block_time_target
         imagePullPolicy: Always
         command:
           - bash
