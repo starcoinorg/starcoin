@@ -142,7 +142,7 @@ where
             .config
             .sync
             .lightweight_sync_max_gap()
-            .map_or(k.saturating_mul(2), |max_gap| max_gap);
+            .map_or(k.saturating_mul(k), |max_gap| max_gap);
         debug!(
             "is-near-block: current_number: {:?}, block_number: {:?}, gap: {:?}, config_gap: {:?}",
             current_number,
