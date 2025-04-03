@@ -94,7 +94,7 @@ impl SyncStatus {
             SyncState::Synchronized => true,
             SyncState::Synchronizing {
                 target,
-                total_difficulty,
+                total_difficulty: _,
             } => {
                 if target.number() < self.chain_status.head().number() {
                     false
