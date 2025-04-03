@@ -412,7 +412,7 @@ where
             if absent_blocks.is_empty() {
                 return Ok(());
             }
-            block_headers = self.fetch_blocks(absent_blocks).await?;
+            block_headers = self.fetch_blocks_in_batch(absent_blocks).await?;
         }
     }
 
@@ -489,6 +489,7 @@ where
         anyhow::Result::Ok(())
     }
 
+    #[allow(dead_code)]
     async fn fetch_blocks(&self, mut block_ids: Vec<HashValue>) -> Result<Vec<BlockHeader>> {
         let mut result = vec![];
         block_ids.retain(|id| {
@@ -527,7 +528,6 @@ where
         Ok(result)
     }
 
-    #[allow(dead_code)]
     async fn fetch_blocks_in_batch(
         &self,
         mut block_ids: Vec<HashValue>,
