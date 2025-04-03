@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "benchmarks",
+    #"benchmarks",
     "commons/stest",
     "commons/bcs_ext",
     "commons/decrypt",
@@ -100,22 +100,22 @@ members = [
     "cmd/faucet",
     "cmd/tx-factory",
     "cmd/miner_client",
-    "cmd/generator",
+    #"cmd/generator",
     "dataformat-generator",
     "cmd/indexer",
     "cmd/resource-exporter",
     "cmd/merkle-generator",
-    "cmd/peer-watcher",
+    #"cmd/peer-watcher",
     "cmd/airdrop",
-    "cmd/replay",
+    #"cmd/replay",
     "stratum",
     "cmd/miner_client/api",
-    "cmd/db-exporter",
+    #"cmd/db-exporter",
     "cmd/genesis-nft-miner",
 ]
 
 default-members = [
-    "benchmarks",
+    #"benchmarks",
     "commons/stest",
     "commons/bcs_ext",
     "commons/decrypt",
@@ -207,18 +207,18 @@ default-members = [
     "cmd/faucet",
     "cmd/tx-factory",
     "cmd/miner_client",
-    "cmd/generator",
+    #"cmd/generator",
     "dataformat-generator",
     "cmd/indexer",
     "cmd/resource-exporter",
     "cmd/merkle-generator",
-    "cmd/peer-watcher",
+    #"cmd/peer-watcher",
     "cmd/airdrop",
-    "cmd/replay",
+    #"cmd/replay",
     "cmd/genesis-nft-miner",
     "stratum",
     "cmd/miner_client/api",
-    "cmd/db-exporter",
+    #"cmd/db-exporter",
 ]
 
 [profile.dev]

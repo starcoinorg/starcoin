@@ -954,12 +954,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "atomic-counter"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62f447d68cfa5a9ab0c1c862a703da2a65b5ed1b7ce1153c9eb0169506d56019"
-
-[[package]]
 name = "atomic-waker"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1146,41 +1140,6 @@ name = "bencher"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7dfdb4953a096c551ce9ace855a604d702e6e62d77fac690575ae347571717f5"
-
-[[package]]
-name = "benchmarks"
-version = "1.13.19"
-dependencies = [
- "anyhow",
- "criterion",
- "forkable-jellyfish-merkle 1.13.19",
- "futures 0.3.31",
- "futures-timer",
- "network-api 1.13.19",
- "parking_lot 0.12.3",
- "pprof",
- "proptest",
- "rand 0.8.5",
- "rand_core 0.6.4",
- "starcoin-account-api 1.13.19",
- "starcoin-accumulator 1.13.19",
- "starcoin-chain",
- "starcoin-config 1.13.19",
- "starcoin-consensus",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
- "starcoin-executor",
- "starcoin-executor-benchmark",
- "starcoin-genesis",
- "starcoin-logger 1.13.19",
- "starcoin-service-registry 1.13.19",
- "starcoin-state-store-api 1.13.19",
- "starcoin-state-tree 1.13.19",
- "starcoin-storage 1.13.19",
- "starcoin-transaction-builder 1.13.19",
- "starcoin-types 1.13.19",
- "starcoin-vm-runtime 1.13.19",
- "starcoin-vm-types 1.13.19",
-]
 
 [[package]]
 name = "better_any"
@@ -2777,49 +2736,6 @@ dependencies = [
  "libtest-mimic",
  "regex",
  "walkdir",
-]
-
-[[package]]
-name = "db-exporter"
-version = "1.13.19"
-dependencies = [
- "anyhow",
- "atomic-counter",
- "bcs-ext 1.13.19",
- "clap 3.2.25",
- "csv",
- "futures 0.3.31",
- "hex",
- "indicatif",
- "move-binary-format 0.0.3 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
- "move-bytecode-verifier 0.1.0 (git+https://github.com/starcoinorg/move?rev=7b6ac7bb04515ee4ced5b1c1cdafb6ea6cb4eadc)",
- "num_cpus",
- "pprof",
- "rayon",
- "serde 1.0.195",
- "serde_json",
- "starcoin-account",
- "starcoin-account-api 1.13.19",
- "starcoin-accumulator 1.13.19",
- "starcoin-chain",
- "starcoin-cmd",
- "starcoin-config 1.13.19",
- "starcoin-consensus",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
- "starcoin-executor",
- "starcoin-genesis",
- "starcoin-logger 1.13.19",
- "starcoin-resource-viewer",
- "starcoin-rpc-api",
- "starcoin-state-api 1.13.19",
- "starcoin-state-tree 1.13.19",
- "starcoin-statedb 1.13.19",
- "starcoin-storage 1.13.19",
- "starcoin-transaction-builder 1.13.19",
- "starcoin-types 1.13.19",
- "starcoin-vm-runtime 1.13.19",
- "starcoin-vm-types 1.13.19",
- "tokio",
 ]
 
 [[package]]
@@ -4951,18 +4867,6 @@ checksum = "3954d50fe15b02142bf25d3b8bdadb634ec3948f103d04ffe3031bc8fe9d7058"
 dependencies = [
  "equivalent",
  "hashbrown 0.15.2",
-]
-
-[[package]]
-name = "indicatif"
-version = "0.16.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d207dc617c7a380ab07ff572a6e52fa202a2a8f355860ac9c38e23f8196be1b"
-dependencies = [
- "console",
- "lazy_static 1.5.0",
- "number_prefix",
- "regex",
 ]
 
 [[package]]
@@ -8546,12 +8450,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "number_prefix"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "830b246a0e5f20af87141b25c173cd1b609bd7779a4617d6ec582abaf90870f3"
-
-[[package]]
 name = "object"
 version = "0.36.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9394,7 +9292,6 @@ checksum = "d6472bfed9475542ac46c518734a8d06d71b0f6cb2c17f904aa301711a57786f"
 dependencies = [
  "backtrace",
  "cfg-if 1.0.0",
- "criterion",
  "findshlibs",
  "inferno",
  "libc",
@@ -12683,30 +12580,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "starcoin-generator"
-version = "1.13.19"
-dependencies = [
- "anyhow",
- "clap 3.2.25",
- "futures 0.3.31",
- "futures-timer",
- "hex",
- "scmd",
- "serde 1.0.195",
- "serde_json",
- "starcoin-account",
- "starcoin-account-api 1.13.19",
- "starcoin-chain",
- "starcoin-chain-mock",
- "starcoin-config 1.13.19",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
- "starcoin-genesis",
- "starcoin-logger 1.13.19",
- "starcoin-storage 1.13.19",
- "starcoin-types 1.13.19",
-]
-
-[[package]]
 name = "starcoin-genesis"
 version = "1.13.19"
 dependencies = [
@@ -12915,6 +12788,7 @@ dependencies = [
  "starcoin-state-api 1.13.19",
  "starcoin-state-service",
  "starcoin-storage 1.13.19",
+ "starcoin-storage 2.0.1",
  "starcoin-sync",
  "starcoin-sync-api",
  "starcoin-time-service 1.13.19",
@@ -12922,6 +12796,7 @@ dependencies = [
  "starcoin-txpool-api",
  "starcoin-types 1.13.19",
  "starcoin-vm-types 1.13.19",
+ "starcoin-vm-types 2.0.1",
  "stest",
  "test-helper",
  "thiserror 1.0.69",
@@ -13444,49 +13319,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "starcoin-peer-watcher"
-version = "1.13.19"
-dependencies = [
- "anyhow",
- "async-std",
- "bcs-ext 1.13.19",
- "clap 3.2.25",
- "futures 0.3.31",
- "network-p2p",
- "network-p2p-types 1.13.19",
- "network-types 1.13.19",
- "starcoin-config 1.13.19",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=a742ddc0674022800341182cbb4c3681807b2f00)",
- "starcoin-genesis",
- "starcoin-logger 1.13.19",
- "starcoin-network",
- "starcoin-storage 1.13.19",
- "starcoin-types 1.13.19",
-]
-
-[[package]]
 name = "starcoin-proptest-helpers"
 version = "1.13.19"
 dependencies = [
  "crossbeam",
  "proptest",
  "proptest-derive 0.3.0",
-]
-
-[[package]]
-name = "starcoin-replay"
-version = "1.13.19"
-dependencies = [
- "anyhow",
- "clap 3.2.25",
- "sp-utils 1.13.19",
- "starcoin-chain",
- "starcoin-config 1.13.19",
- "starcoin-genesis",
- "starcoin-logger 1.13.19",
- "starcoin-storage 1.13.19",
- "starcoin-types 1.13.19",
- "starcoin-vm-types 1.13.19",
 ]
 
 [[package]]

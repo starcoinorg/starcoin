@@ -856,6 +856,7 @@ impl BlockView {
         let (header, body) = block.into_inner();
         let BlockBody {
             transactions,
+            transactions2: _,
             uncles,
         } = body;
         let txns_view = if thin {

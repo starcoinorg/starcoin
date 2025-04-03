@@ -70,7 +70,6 @@ impl From<LegacyGenesis> for Genesis {
                 header: legacy_genesis.block.header,
                 body: BlockBody::new(
                     legacy_genesis.block.body.transactions,
-                    vec![],
                     legacy_genesis.block.body.uncles,
                 ),
             },
@@ -446,12 +445,19 @@ impl Genesis {
     }
 
     pub fn init_storage_for_test(net: &ChainNetwork) -> Result<(Arc<Storage>, ChainInfo, Genesis)> {
+        let ret = Self::init_storage_for_test_v2(net)?;
+        Ok((ret.0, ret.2, ret.3))
+    }
+
+    pub fn init_storage_for_test_v2(
+        net: &ChainNetwork,
+    ) -> Result<(Arc<Storage>, Arc<Storage2>, ChainInfo, Genesis)> {
         debug!("init storage by genesis for test.");
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
         let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
         let genesis = Genesis::load_or_build(net)?;
         let chain_info = genesis.execute_genesis_block(net, storage.clone(), storage2.clone())?;
-        Ok((storage, chain_info, genesis))
+        Ok((storage, storage2, chain_info, genesis))
     }
 }
 

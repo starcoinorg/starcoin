@@ -23,7 +23,9 @@ use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
-use starcoin_storage2::Store as Store2;
+use starcoin_storage2::{
+    storage::StorageInstance as StorageInstance2, Storage as Storage2, Store as Store2,
+};
 use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::contract_event::ContractEventInfo;
@@ -606,6 +608,19 @@ impl BlockChain {
         time_service: Arc<dyn TimeService>,
         head_block_hash: HashValue,
         storage: Arc<dyn Store>,
+        vm_metrics: Option<VMMetrics>,
+    ) -> Result<Self> {
+        let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
+        let head = storage
+            .get_block_by_hash(head_block_hash)?
+            .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
+        Self::new_with_uncles(time_service, head, None, storage, storage2, vm_metrics)
+    }
+
+    pub fn new_v2(
+        time_service: Arc<dyn TimeService>,
+        head_block_hash: HashValue,
+        storage: Arc<dyn Store>,
         storage2: Arc<dyn Store2>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
@@ -698,7 +713,7 @@ impl BlockChain {
             &chain_id,
             None,
         )?;
-        Self::new(
+        Self::new_v2(
             time_service,
             executed_block.block.id(),
             storage,

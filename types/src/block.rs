@@ -612,7 +612,14 @@ pub struct LegacyBlockBody {
 }
 
 impl BlockBody {
-    pub fn new(
+    pub fn new(transactions: Vec<SignedUserTransaction>, uncles: Option<Vec<BlockHeader>>) -> Self {
+        Self {
+            transactions,
+            transactions2: vec![],
+            uncles,
+        }
+    }
+    pub fn new_v2(
         transactions: Vec<SignedUserTransaction>,
         transactions2: Vec<SignedUserTransactionV2>,
         uncles: Option<Vec<BlockHeader>>,
@@ -742,7 +749,7 @@ impl Block {
     ) -> Self {
         let chain_id = genesis_txn.chain_id();
         let txns2 = genesis_txn2.clone().map(|x| vec![x]).unwrap_or_default();
-        let block_body = BlockBody::new(vec![genesis_txn.clone()], txns2, None);
+        let block_body = BlockBody::new_v2(vec![genesis_txn.clone()], txns2, None);
         let body_hash = if genesis_txn2.is_none() {
             let b = LegacyBlockBody {
                 transactions: vec![genesis_txn],

@@ -326,7 +326,7 @@ impl OpenedBlock {
         } else {
             None
         };
-        let body = BlockBody::new(self.included_user_txns, self.included_user_txns2, uncles);
+        let body = BlockBody::new_v2(self.included_user_txns, self.included_user_txns2, uncles);
         let block_template = BlockTemplate::new(
             self.previous_block_info
                 .block_accumulator_info
