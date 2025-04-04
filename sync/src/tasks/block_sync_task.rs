@@ -564,6 +564,10 @@ where
                         .get_dag_sync_block(**id)
                         .unwrap_or(None)
                         .is_none()
+                        && match self.chain.has_dag_block(**id) {
+                            Ok(exist) => !exist,
+                            Err(_) => true,
+                        }
                 })
                 .cloned()
                 .collect::<Vec<_>>();
@@ -592,6 +596,10 @@ where
                             .get_dag_sync_block(*id)
                             .unwrap_or(None)
                             .is_none()
+                            && match self.chain.has_dag_block(*id) {
+                                Ok(exist) => !exist,
+                                Err(_) => true,
+                            }
                     }));
                 }
                 if filtered_set.is_empty() {
