@@ -643,7 +643,7 @@ impl BlockChain {
             .ok_or_else(|| format_err!("Can not find block info by hash {:?}", head_block.id()))?;
         debug!("Init chain with block_info: {:?}", block_info);
         let state_root = head_block.header().state_root();
-        let state_root2 = block_info.state_root().map(|h| to_hash_value2(h));
+        let state_root2 = block_info.state_root().map(to_hash_value2);
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
         let chain_state = ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root));
@@ -1912,7 +1912,7 @@ impl ChainWriter for BlockChain {
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
         let state_root = block.header().state_root();
-        let state_root2 = block_info.state_root().map(|h| to_hash_value2(h));
+        let state_root2 = block_info.state_root().map(to_hash_value2);
         self.txn_accumulator = info_2_accumulator(
             txn_accumulator_info.clone(),
             AccumulatorStoreType::Transaction,

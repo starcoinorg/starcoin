@@ -160,7 +160,7 @@ impl Genesis {
             let (txn2, txn2_info_hash) = if net
                 .id()
                 .as_builtin()
-                .map(|b| !net_with_legacy_genesis(&b))
+                .map(|b| !net_with_legacy_genesis(b))
                 .unwrap_or(true)
             {
                 let (user_txn, txn_info_hash) =
@@ -372,7 +372,7 @@ impl Genesis {
         let legacy_genesis = net
             .id()
             .as_builtin()
-            .map(|b| net_with_legacy_genesis(b))
+            .map(net_with_legacy_genesis)
             .unwrap_or_default();
         let genesis = match Genesis::load_from_dir(data_dir, legacy_genesis) {
             Ok(Some(genesis)) => {
