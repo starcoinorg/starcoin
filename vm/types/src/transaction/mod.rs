@@ -400,6 +400,21 @@ pub struct RawUserTransactionWithType {
     type_id: u8,
 }
 
+impl Sample for RawUserTransactionWithType {
+    fn sample() -> Self {
+        Self::new_module(
+            genesis_address(),
+            0,
+            Module::sample(),
+            0,
+            1,
+            3600,
+            ChainId::test(),
+            1,
+        )
+    }
+}
+
 impl RawUserTransactionWithType {
     /// Create a new `RawUserTransaction` with a payload.
     ///
@@ -651,6 +666,10 @@ impl RawUserTransactionWithType {
             1,
         )
     }
+
+    pub fn type_id(&self) -> u8 {
+        self.type_id
+    }
 }
 
 impl FromStr for RawUserTransactionWithType {
@@ -678,6 +697,84 @@ impl TryFrom<Vec<u8>> for RawUserTransactionWithType {
     }
 }
 
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub enum RawUserTransactionV2 {
+    RawUserTransaction(RawUserTransaction),
+    RawUserTransactionWithType(RawUserTransactionWithType),
+}
+
+impl From<RawUserTransaction> for RawUserTransactionV2 {
+    fn from(tx: RawUserTransaction) -> Self {
+        Self::RawUserTransaction(tx)
+    }
+}
+
+impl From<RawUserTransactionWithType> for RawUserTransactionV2 {
+    fn from(tx: RawUserTransactionWithType) -> Self {
+        Self::RawUserTransactionWithType(tx)
+    }
+}
+
+impl RawUserTransactionV2 {
+    pub fn sender(&self) -> AccountAddress {
+        match self {
+            Self::RawUserTransaction(txn) => txn.sender,
+            Self::RawUserTransactionWithType(txn) => txn.sender,
+        }
+    }
+
+    pub fn sequence_number(&self) -> u64 {
+        match self {
+            Self::RawUserTransaction(txn) => txn.sequence_number,
+            Self::RawUserTransactionWithType(txn) => txn.sequence_number,
+        }
+    }
+    pub fn max_gas_amount(&self) -> u64 {
+        match self {
+            Self::RawUserTransaction(txn) => txn.max_gas_amount,
+            Self::RawUserTransactionWithType(txn) => txn.max_gas_amount,
+        }
+    }
+    pub fn gas_unit_price(&self) -> u64 {
+        match self {
+            Self::RawUserTransaction(txn) => txn.gas_unit_price,
+            Self::RawUserTransactionWithType(txn) => txn.gas_unit_price,
+        }
+    }
+    pub fn gas_token_code(&self) -> String {
+        match self {
+            Self::RawUserTransaction(txn) => txn.gas_token_code.clone(),
+            Self::RawUserTransactionWithType(txn) => txn.gas_token_code.clone(),
+        }
+    }
+    pub fn expiration_timestamp_secs(&self) -> u64 {
+        match self {
+            Self::RawUserTransaction(txn) => txn.expiration_timestamp_secs,
+            Self::RawUserTransactionWithType(txn) => txn.expiration_timestamp_secs,
+        }
+    }
+
+    pub fn chain_id(&self) -> ChainId {
+        match self {
+            Self::RawUserTransaction(txn) => txn.chain_id,
+            RawUserTransactionV2::RawUserTransactionWithType(txn) => txn.chain_id,
+        }
+    }
+
+    pub fn payload(&self) -> &TransactionPayload {
+        match self {
+            Self::RawUserTransaction(txn) => txn.payload(),
+            Self::RawUserTransactionWithType(txn) => txn.payload(),
+        }
+    }
+
+    pub fn txn_size(&self) -> usize {
+        match self {
+            Self::RawUserTransaction(txn) => txn.txn_size(),
+            Self::RawUserTransactionWithType(txn) => txn.txn_size(),
+        }
+    }
+}
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub enum TransactionPayload {
     /// A transaction that executes code.
@@ -771,6 +868,38 @@ impl SignatureCheckedTransaction {
 
 impl Deref for SignatureCheckedTransaction {
     type Target = SignedUserTransaction;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+/// A transaction for which the signature has been verified. Created by
+/// [`SignedUserTransactionWithType::check_signature`] and [`RawUserTransactionWithType::sign`].
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+pub struct SignatureCheckedTransactionV2(SignedUserTransactionV2);
+
+impl SignatureCheckedTransactionV2 {
+    /// Returns the `SignedUserTransactionV2` within.
+    pub fn into_inner(self) -> SignedUserTransactionV2 {
+        self.0
+    }
+
+    /// Returns the `RawUserTransaction` within.
+    pub fn into_raw_transaction(self) -> RawUserTransactionV2 {
+        match self.0 {
+            SignedUserTransactionV2::SignedUserTransaction(signed_tx) => {
+                signed_tx.into_raw_transaction().into()
+            }
+            SignedUserTransactionV2::SignedUserTransactionWithType(signed_tx_type) => {
+                signed_tx_type.into_raw_transaction_with_type().into()
+            }
+        }
+    }
+}
+
+impl Deref for SignatureCheckedTransactionV2 {
+    type Target = SignedUserTransactionV2;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -1028,6 +1157,15 @@ impl SignedUserTransactionWithType {
     }
 }
 
+impl Sample for SignedUserTransactionWithType {
+    fn sample() -> Self {
+        let raw_txn = RawUserTransactionWithType::sample();
+        let (private_key, public_key) = genesis_key_pair();
+        let signature = private_key.sign(&raw_txn);
+        Self::ed25519(raw_txn, public_key, signature)
+    }
+}
+
 impl fmt::Debug for SignedUserTransactionWithType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
@@ -1057,7 +1195,6 @@ impl<'de> Deserialize<'de> for SignedUserTransactionWithType {
         Ok(Self::new(data.raw_txn, data.authenticator))
     }
 }
-
 /// A transaction for which the signature has been verified. Created by
 /// [`SignedUserTransactionWithType::check_signature`] and [`RawUserTransactionWithType::sign`].
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
@@ -1372,12 +1509,37 @@ impl Transaction {
     }
 }
 
+impl From<SignedUserTransactionV2> for Transaction {
+    fn from(txn: SignedUserTransactionV2) -> Self {
+        match txn {
+            SignedUserTransactionV2::SignedUserTransaction(txn) => {
+                Transaction::UserTransaction(txn)
+            }
+            SignedUserTransactionV2::SignedUserTransactionWithType(txn) => {
+                Transaction::UserTransactionExt(txn)
+            }
+        }
+    }
+}
+
 impl TryFrom<Transaction> for SignedUserTransaction {
     type Error = Error;
 
     fn try_from(txn: Transaction) -> Result<Self> {
         match txn {
             Transaction::UserTransaction(txn) => Ok(txn),
+            _ => Err(format_err!("Not a user transaction.")),
+        }
+    }
+}
+
+impl TryFrom<Transaction> for SignedUserTransactionV2 {
+    type Error = Error;
+
+    fn try_from(txn: Transaction) -> Result<Self> {
+        match txn {
+            Transaction::UserTransaction(txn) => Ok(Self::SignedUserTransaction(txn)),
+            Transaction::UserTransactionExt(txn) => Ok(Self::SignedUserTransactionWithType(txn)),
             _ => Err(format_err!("Not a user transaction.")),
         }
     }
@@ -1412,5 +1574,136 @@ impl std::fmt::Display for TxStatus {
             TxStatus::Culled => "culled",
         };
         write!(f, "{}", s)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
+pub enum SignedUserTransactionV2 {
+    SignedUserTransaction(SignedUserTransaction),
+    SignedUserTransactionWithType(SignedUserTransactionWithType),
+}
+
+impl Sample for SignedUserTransactionV2 {
+    fn sample() -> Self {
+        Self::SignedUserTransaction(SignedUserTransaction::sample())
+    }
+}
+
+impl From<SignedUserTransaction> for SignedUserTransactionV2 {
+    fn from(txn: SignedUserTransaction) -> Self {
+        Self::SignedUserTransaction(txn)
+    }
+}
+
+impl From<SignedUserTransactionWithType> for SignedUserTransactionV2 {
+    fn from(txn: SignedUserTransactionWithType) -> Self {
+        Self::SignedUserTransactionWithType(txn)
+    }
+}
+
+impl SignedUserTransactionV2 {
+    pub fn id(&self) -> HashValue {
+        match self {
+            SignedUserTransactionV2::SignedUserTransaction(sign) => sign.id(),
+            SignedUserTransactionV2::SignedUserTransactionWithType(sign_with_type) => {
+                sign_with_type.id()
+            }
+        }
+    }
+
+    pub fn sequence_number(&self) -> u64 {
+        match self {
+            SignedUserTransactionV2::SignedUserTransaction(sign) => sign.sequence_number(),
+            SignedUserTransactionV2::SignedUserTransactionWithType(sign_with_type) => {
+                sign_with_type.sequence_number()
+            }
+        }
+    }
+
+    pub fn expiration_timestamp_secs(&self) -> u64 {
+        match self {
+            Self::SignedUserTransaction(sign) => sign.expiration_timestamp_secs(),
+            Self::SignedUserTransactionWithType(sign_with_type) => {
+                sign_with_type.expiration_timestamp_secs()
+            }
+        }
+    }
+
+    pub fn check_signature(self) -> Result<SignatureCheckedTransactionV2> {
+        match self {
+            Self::SignedUserTransaction(sign) => sign.check_signature().map(|tx| {
+                let txn = Self::from(tx.0);
+                SignatureCheckedTransactionV2(txn)
+            }),
+            Self::SignedUserTransactionWithType(sign_with_type) => {
+                sign_with_type.check_signature().map(|tx| {
+                    let txn = Self::from(tx.0);
+                    SignatureCheckedTransactionV2(txn)
+                })
+            }
+        }
+    }
+
+    pub fn authenticator(&self) -> TransactionAuthenticator {
+        match self {
+            Self::SignedUserTransaction(sign) => sign.authenticator(),
+            Self::SignedUserTransactionWithType(sign_with_type) => sign_with_type.authenticator(),
+        }
+    }
+
+    pub fn sender(&self) -> AccountAddress {
+        match self {
+            Self::SignedUserTransaction(sign) => sign.sender(),
+            Self::SignedUserTransactionWithType(sign_with_type) => sign_with_type.sender(),
+        }
+    }
+
+    pub fn max_gas_amount(&self) -> u64 {
+        match self {
+            Self::SignedUserTransaction(sign) => sign.max_gas_amount(),
+            Self::SignedUserTransactionWithType(sign_with_type) => sign_with_type.max_gas_amount(),
+        }
+    }
+
+    pub fn gas_unit_price(&self) -> u64 {
+        match self {
+            Self::SignedUserTransaction(sign) => sign.gas_unit_price(),
+            Self::SignedUserTransactionWithType(sign) => sign.gas_unit_price(),
+        }
+    }
+
+    pub fn gas_token_code(&self) -> String {
+        match self {
+            Self::SignedUserTransaction(sign) => sign.raw_txn.gas_token_code(),
+            Self::SignedUserTransactionWithType(sign) => sign.raw_txn.gas_token_code(),
+        }
+    }
+
+    pub fn txn_size(&self) -> usize {
+        match self {
+            Self::SignedUserTransaction(sign) => sign.raw_txn.txn_size(),
+            Self::SignedUserTransactionWithType(sign) => sign.raw_txn.txn_size(),
+        }
+    }
+
+    pub fn chain_id(&self) -> ChainId {
+        match self {
+            Self::SignedUserTransaction(sign) => sign.chain_id(),
+            Self::SignedUserTransactionWithType(sign) => sign.chain_id(),
+        }
+    }
+
+    pub fn payload(&self) -> &TransactionPayload {
+        match self {
+            Self::SignedUserTransaction(sign) => sign.raw_txn.payload(),
+            Self::SignedUserTransactionWithType(sign) => sign.raw_txn.payload(),
+        }
+    }
+
+    pub fn raw_txn_bytes_len(&self) -> usize {
+        match self {
+            Self::SignedUserTransaction(sign) => sign.raw_txn_bytes_len(),
+            Self::SignedUserTransactionWithType(sign) => sign.raw_txn_bytes_len(),
+        }
     }
 }

@@ -4,7 +4,7 @@
 use crate::genesis_config::ChainId;
 use crate::token::token_code::TokenCode;
 use crate::transaction::authenticator::AuthenticationKeyPreimage;
-use crate::transaction::RawUserTransaction;
+use crate::transaction::{RawUserTransaction, RawUserTransactionWithType, SignedUserTransactionV2};
 use crate::vm_status::{StatusCode, VMStatus};
 use crate::{
     account_address::AccountAddress,
@@ -53,6 +53,51 @@ impl TransactionMetadata {
             txn.raw_txn(),
             txn.authenticator().authentication_key_preimage(),
         )
+    }
+
+    pub fn new_v2(txn: &SignedUserTransactionV2) -> Result<Self, VMStatus> {
+        match txn {
+            SignedUserTransactionV2::SignedUserTransaction(signed_txn) => {
+                Self::from_raw_txn_and_preimage(
+                    signed_txn.raw_txn(),
+                    txn.authenticator().authentication_key_preimage(),
+                )
+            }
+            SignedUserTransactionV2::SignedUserTransactionWithType(signed_txn) => {
+                Self::new_from_raw_txn_and_preimage_with_type(
+                    signed_txn.raw_txn(),
+                    txn.authenticator().authentication_key_preimage(),
+                )
+            }
+        }
+    }
+
+    pub fn new_from_raw_txn_and_preimage_with_type(
+        txn: &RawUserTransactionWithType,
+        auth_preimage: AuthenticationKeyPreimage,
+    ) -> Result<Self, VMStatus> {
+        Ok(Self {
+            sender: txn.sender(),
+            authentication_key_preimage: auth_preimage.into_vec(),
+            sequence_number: txn.sequence_number(),
+            max_gas_amount: txn.max_gas_amount().into(),
+            gas_unit_price: txn.gas_unit_price().into(),
+            gas_token_code: TokenCode::from_str(txn.gas_token_code().as_str())
+                .map_err(|_e| VMStatus::Error(StatusCode::BAD_TRANSACTION_FEE_CURRENCY))?,
+            transaction_size: (txn.txn_size() as u64).into(),
+            expiration_timestamp_secs: txn.expiration_timestamp_secs(),
+            chain_id: txn.chain_id(),
+            payload: match txn.payload() {
+                TransactionPayload::Script(script) => {
+                    TransactionPayloadMetadata::Script(HashValue::sha3_256_of(script.code()))
+                }
+                TransactionPayload::Package(package) => TransactionPayloadMetadata::Package(
+                    package.crypto_hash(),
+                    package.package_address(),
+                ),
+                TransactionPayload::ScriptFunction(_) => TransactionPayloadMetadata::ScriptFunction,
+            },
+        })
     }
 
     pub fn from_raw_txn_and_preimage(

@@ -89,7 +89,7 @@ impl Faucet {
             self.faucet_account_password.clone(),
             Duration::from_secs(30),
         )?;
-        let signed_tx = self.client.account_sign_txn(raw_tx)?;
+        let signed_tx = self.client.account_sign_txn(raw_tx)?.into();
         //ignore lock result
         let _res = self.client.account_lock(self.faucet_account.address);
         self.client.submit_transaction(signed_tx)

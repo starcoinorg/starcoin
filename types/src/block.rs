@@ -5,7 +5,6 @@ use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
 use crate::genesis_config::{ChainId, ConsensusStrategy};
 use crate::language_storage::CORE_CODE_ADDRESS;
-use crate::transaction::SignedUserTransaction;
 use crate::U256;
 use bcs_ext::Sample;
 use schemars::{self, JsonSchema};
@@ -19,7 +18,9 @@ use starcoin_crypto::{
 };
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
+use starcoin_vm_types::transaction::SignedUserTransactionV2;
 use std::fmt::Formatter;
+
 /// Type for block number.
 pub type BlockNumber = u64;
 
@@ -590,19 +591,22 @@ impl BlockHeaderBuilder {
 )]
 pub struct BlockBody {
     /// The transactions in this block.
-    pub transactions: Vec<SignedUserTransaction>,
+    pub transactions: Vec<SignedUserTransactionV2>,
     /// uncles block header
     pub uncles: Option<Vec<BlockHeader>>,
 }
 
 impl BlockBody {
-    pub fn new(transactions: Vec<SignedUserTransaction>, uncles: Option<Vec<BlockHeader>>) -> Self {
+    pub fn new(
+        transactions: Vec<SignedUserTransactionV2>,
+        uncles: Option<Vec<BlockHeader>>,
+    ) -> Self {
         Self {
             transactions,
             uncles,
         }
     }
-    pub fn get_txn(&self, index: usize) -> Option<&SignedUserTransaction> {
+    pub fn get_txn(&self, index: usize) -> Option<&SignedUserTransactionV2> {
         self.transactions.get(index)
     }
 
@@ -620,7 +624,7 @@ impl BlockBody {
 }
 
 #[allow(clippy::from_over_into)]
-impl Into<BlockBody> for Vec<SignedUserTransaction> {
+impl Into<BlockBody> for Vec<SignedUserTransactionV2> {
     fn into(self) -> BlockBody {
         BlockBody {
             transactions: self,
@@ -630,8 +634,8 @@ impl Into<BlockBody> for Vec<SignedUserTransaction> {
 }
 
 #[allow(clippy::from_over_into)]
-impl Into<Vec<SignedUserTransaction>> for BlockBody {
-    fn into(self) -> Vec<SignedUserTransaction> {
+impl Into<Vec<SignedUserTransactionV2>> for BlockBody {
+    fn into(self) -> Vec<SignedUserTransactionV2> {
         self.transactions
     }
 }
@@ -671,7 +675,7 @@ impl Block {
     pub fn header(&self) -> &BlockHeader {
         &self.header
     }
-    pub fn transactions(&self) -> &[SignedUserTransaction] {
+    pub fn transactions(&self) -> &[SignedUserTransactionV2] {
         self.body.transactions.as_slice()
     }
 
@@ -698,7 +702,7 @@ impl Block {
         accumulator_root: HashValue,
         state_root: HashValue,
         difficulty: U256,
-        genesis_txn: SignedUserTransaction,
+        genesis_txn: SignedUserTransactionV2,
     ) -> Self {
         let chain_id = genesis_txn.chain_id();
         let block_body = BlockBody::new(vec![genesis_txn], None);

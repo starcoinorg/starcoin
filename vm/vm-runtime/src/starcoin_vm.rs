@@ -57,7 +57,8 @@ use starcoin_vm_types::on_chain_config::{
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::StateReaderExt;
 use starcoin_vm_types::transaction::{
-    DryRunTransaction, Package, SignedUserTransactionWithType, TransactionPayloadType,
+    DryRunTransaction, Package, SignatureCheckedTransactionV2, SignedUserTransactionV2,
+    SignedUserTransactionWithType, TransactionPayloadType,
 };
 use starcoin_vm_types::transaction_metadata::TransactionPayloadMetadata;
 use starcoin_vm_types::value::{serialize_values, MoveValue};
@@ -387,10 +388,10 @@ impl StarcoinVM {
 
     fn verify_transaction_impl<S: StateView>(
         &mut self,
-        transaction: &SignatureCheckedTransaction,
+        transaction: &SignatureCheckedTransactionV2,
         remote_cache: &StateViewCache<S>,
     ) -> Result<(), VMStatus> {
-        let txn_data = TransactionMetadata::new(transaction)?;
+        let txn_data = TransactionMetadata::new_v2(transaction)?;
         let data_cache = remote_cache.as_move_resolver();
         let block_number = if let Ok(block_meta) = remote_cache.get_block_metadata() {
             block_meta.number
@@ -472,7 +473,7 @@ impl StarcoinVM {
     pub fn verify_transaction<S: StateView>(
         &mut self,
         state_view: &S,
-        txn: SignedUserTransaction,
+        txn: SignedUserTransactionV2,
     ) -> Option<VMStatus> {
         #[cfg(feature = "metrics")]
         let _timer = self.metrics.as_ref().map(|metrics| {
@@ -934,7 +935,8 @@ impl StarcoinVM {
         storage: &S,
         txn: SignedUserTransaction,
     ) -> (VMStatus, TransactionOutput) {
-        let txn_data = match TransactionMetadata::new(&txn) {
+        let txn2 = SignedUserTransactionV2::SignedUserTransaction(txn.clone());
+        let txn_data = match TransactionMetadata::new_v2(&txn2) {
             Ok(txn_data) => txn_data,
             Err(e) => {
                 return discard_error_vm_status(e);
@@ -1022,6 +1024,7 @@ impl StarcoinVM {
                 }
             }
         };
+
         let txn_data = match TransactionMetadata::from_raw_txn_and_preimage(
             &txn.raw_txn,
             txn.public_key.authentication_key_preimage(),

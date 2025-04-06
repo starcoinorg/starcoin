@@ -44,8 +44,8 @@ use starcoin_vm_types::parser::{parse_transaction_argument, parse_type_tag};
 use starcoin_vm_types::sign_message::SignedMessage;
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
 use starcoin_vm_types::transaction::{
-    RichTransactionInfo, Script, SignedUserTransaction, Transaction, TransactionInfo,
-    TransactionOutput, TransactionPayload, TransactionStatus,
+    RawUserTransactionWithType, RichTransactionInfo, Script, SignedUserTransaction, Transaction,
+    TransactionInfo, TransactionOutput, TransactionPayload, TransactionStatus,
 };
 use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::vm_status::{DiscardedVMStatus, KeptVMStatus, StatusCode};
@@ -550,6 +550,77 @@ impl From<RawUserTransactionView> for RawUserTransaction {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct RawUserTransactionWithTypeView {
+    /// Sender's address.
+    pub sender: AccountAddress,
+    // Sequence number of this transaction corresponding to sender's account.
+    pub sequence_number: StrView<u64>,
+
+    // The transaction payload in bcs_ext bytes.
+    pub payload: StrView<Vec<u8>>,
+    // decoded transaction payload
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub decoded_payload: Option<TransactionPayloadView>,
+    // Maximal total gas specified by wallet to spend for this transaction.
+    pub max_gas_amount: StrView<u64>,
+    // Maximal price can be paid per gas.
+    pub gas_unit_price: StrView<u64>,
+    // The token code for pay transaction gas, Default is STC token code.
+    pub gas_token_code: String,
+    // Expiration timestamp for this transaction. timestamp is represented
+    // as u64 in seconds from Unix Epoch. If storage is queried and
+    // the time returned is greater than or equal to this time and this
+    // transaction has not been included, you can be certain that it will
+    // never be included.
+    // A transaction that doesn't expire is represented by a very large value like
+    // u64::MAX.
+    pub expiration_timestamp_secs: StrView<u64>,
+    pub chain_id: u8,
+    pub type_id: u8,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub enum RawUserTransactionV2View {
+    RawUserTransaction(RawUserTransactionView),
+    RawUserTransactionWithTypeView(RawUserTransactionWithTypeView),
+}
+
+impl TryFrom<RawUserTransactionWithType> for RawUserTransactionWithTypeView {
+    type Error = anyhow::Error;
+
+    fn try_from(origin: RawUserTransactionWithType) -> Result<Self, Self::Error> {
+        Ok(RawUserTransactionWithTypeView {
+            sender: origin.sender(),
+            sequence_number: origin.sequence_number().into(),
+            max_gas_amount: origin.max_gas_amount().into(),
+            gas_unit_price: origin.gas_unit_price().into(),
+            gas_token_code: origin.gas_token_code(),
+            expiration_timestamp_secs: origin.expiration_timestamp_secs().into(),
+            chain_id: origin.chain_id().id(),
+            type_id: origin.type_id(),
+            payload: StrView(origin.into_payload().encode()?),
+            decoded_payload: None,
+        })
+    }
+}
+
+impl From<RawUserTransactionWithTypeView> for RawUserTransactionWithType {
+    fn from(transaction_view: RawUserTransactionWithTypeView) -> Self {
+        RawUserTransactionWithType::new(
+            transaction_view.sender,
+            transaction_view.sequence_number.0,
+            TransactionPayload::decode(transaction_view.payload.0.as_slice()).unwrap(),
+            transaction_view.max_gas_amount.0,
+            transaction_view.gas_unit_price.0,
+            transaction_view.expiration_timestamp_secs.0,
+            genesis_config::ChainId::new(transaction_view.chain_id),
+            transaction_view.gas_token_code.clone(),
+            transaction_view.type_id,
+        )
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub enum TransactionPayloadView {
     /// A transaction that executes code.
     Script(DecodedScriptView),
@@ -652,6 +723,31 @@ impl TryFrom<SignedUserTransaction> for SignedUserTransactionView {
         })
     }
 }
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct SignedUserTransactionV2View {
+    pub transaction_hash: HashValue,
+    /// The raw transaction
+    pub raw_txn: RawUserTransactionV2View,
+
+    /// Public key and signature to authenticate
+    pub authenticator: TransactionAuthenticator,
+}
+
+/*
+impl TryFrom<SignedUserTransactionV2> for SignedUserTransactionV2View {
+    type Error = anyhow::Error;
+
+    fn try_from(txn: SignedUserTransactionV2) -> Result<Self, Self::Error> {
+        let auth = txn.authenticator();
+        let txn_hash = txn.id();
+        Ok(SignedUserTransactionView {
+            transaction_hash: txn_hash,
+            raw_txn: txn.into_raw_transaction().try_into()?,
+            authenticator: auth,
+        })
+    }
+} */
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
 pub struct BlockMetadataView {

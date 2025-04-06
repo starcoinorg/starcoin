@@ -21,9 +21,7 @@ use starcoin_types::{
     block::{BlockBody, BlockHeader, BlockInfo, BlockTemplate},
     block_metadata::BlockMetadata,
     error::BlockExecutorError,
-    transaction::{
-        SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput, TransactionStatus,
-    },
+    transaction::{Transaction, TransactionInfo, TransactionOutput, TransactionStatus},
     U256,
 };
 use starcoin_vm_runtime::force_upgrade_management::{
@@ -35,6 +33,7 @@ use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::on_chain_config;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::{StateReaderExt, StateView};
+use starcoin_vm_types::transaction::SignedUserTransactionV2;
 use std::{convert::TryInto, sync::Arc};
 
 pub struct OpenedBlock {
@@ -46,7 +45,7 @@ pub struct OpenedBlock {
     txn_accumulator: MerkleAccumulator,
 
     gas_used: u64,
-    included_user_txns: Vec<SignedUserTransaction>,
+    included_user_txns: Vec<SignedUserTransactionV2>,
     uncles: Vec<BlockHeader>,
     chain_id: ChainId,
     difficulty: U256,
@@ -123,7 +122,7 @@ impl OpenedBlock {
         self.gas_limit - self.gas_used
     }
 
-    pub fn included_user_txns(&self) -> &[SignedUserTransaction] {
+    pub fn included_user_txns(&self) -> &[SignedUserTransactionV2] {
         &self.included_user_txns
     }
     pub fn state_root(&self) -> HashValue {
@@ -153,19 +152,19 @@ impl OpenedBlock {
     /// If error occurs during the processing, the `open_block` should be dropped,
     /// as the internal state may be corrupted.
     /// TODO: make the function can be called again even last call returns error.  
-    pub fn push_txns(&mut self, user_txns: Vec<SignedUserTransaction>) -> Result<ExcludedTxns> {
-        let mut discard_txns: Vec<SignedUserTransaction> = Vec::new();
+    pub fn push_txns(&mut self, user_txns: Vec<SignedUserTransactionV2>) -> Result<ExcludedTxns> {
+        let mut discard_txns: Vec<SignedUserTransactionV2> = Vec::new();
         let mut txns: Vec<_> = user_txns
             .into_iter()
             .filter(|txn| {
-                let is_blacklisted = AddressFilter::is_blacklisted(txn, self.block_number());
+                let is_blacklisted = AddressFilter::is_blacklisted(self.block_number());
                 // Discard the txns send by the account in black list after a block number.
                 if is_blacklisted {
                     discard_txns.push(txn.clone());
                 }
                 !is_blacklisted
             })
-            .map(Transaction::UserTransaction)
+            .map(|txn| txn.into())
             .collect();
 
         let txn_outputs = {
@@ -184,7 +183,7 @@ impl OpenedBlock {
             )?
         };
 
-        let untouched_user_txns: Vec<SignedUserTransaction> = if txn_outputs.len() >= txns.len() {
+        let untouched_user_txns: Vec<SignedUserTransactionV2> = if txn_outputs.len() >= txns.len() {
             vec![]
         } else {
             txns.drain(txn_outputs.len()..)
@@ -412,7 +411,7 @@ pub struct AddressFilter;
 impl AddressFilter {
     const FROZEN_BEGIN_BLOCK_NUMBER: BlockNumber = 16801958;
     const FROZEN_END_BLOCK_NUMBER: BlockNumber = 23026635;
-    pub fn is_blacklisted(_raw_txn: &SignedUserTransaction, block_number: BlockNumber) -> bool {
+    pub fn is_blacklisted(block_number: BlockNumber) -> bool {
         block_number > Self::FROZEN_BEGIN_BLOCK_NUMBER
             && block_number < Self::FROZEN_END_BLOCK_NUMBER
         /*&& BLACKLIST

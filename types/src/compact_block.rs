@@ -1,8 +1,8 @@
 use crate::block::{Block, BlockHeader};
-use crate::transaction::SignedUserTransaction;
 use bcs_ext::Sample;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
+use starcoin_vm_types::transaction::SignedUserTransactionV2;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct CompactBlock {
@@ -15,7 +15,7 @@ pub struct CompactBlock {
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct PrefilledTxn {
     pub index: u64,
-    pub tx: SignedUserTransaction,
+    pub tx: SignedUserTransactionV2,
 }
 
 // TODO: change to siphash24 of 6bites

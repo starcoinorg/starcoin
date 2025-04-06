@@ -14,7 +14,7 @@ use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::event::EventKey;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
-use starcoin_vm_types::transaction::SignatureCheckedTransaction;
+use starcoin_vm_types::transaction::SignatureCheckedTransactionV2;
 use starcoin_vm_types::transaction_metadata::TransactionMetadata;
 use starcoin_vm_types::write_set::{WriteOp, WriteSet, WriteSetMut};
 use std::collections::BTreeMap;
@@ -33,7 +33,7 @@ pub enum SessionId {
 }
 
 impl SessionId {
-    pub fn txn(txn: &SignatureCheckedTransaction) -> Self {
+    pub fn txn(txn: &SignatureCheckedTransactionV2) -> Self {
         Self::Txn {
             sender: txn.sender(),
             sequence_number: txn.sequence_number(),

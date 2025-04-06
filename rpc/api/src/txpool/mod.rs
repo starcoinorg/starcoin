@@ -3,7 +3,7 @@
 
 use crate::FutureResult;
 use openrpc_derive::openrpc;
-use starcoin_types::transaction::SignedUserTransaction;
+use starcoin_types::transaction::SignedUserTransactionV2;
 
 pub use self::gen_client::Client as TxPoolClient;
 use crate::types::{SignedUserTransactionView, StrView};
@@ -14,7 +14,7 @@ use starcoin_types::account_address::AccountAddress;
 #[openrpc]
 pub trait TxPoolApi {
     #[rpc(name = "txpool.submit_transaction")]
-    fn submit_transaction(&self, tx: SignedUserTransaction) -> FutureResult<HashValue>;
+    fn submit_transaction(&self, tx: SignedUserTransactionV2) -> FutureResult<HashValue>;
 
     #[rpc(name = "txpool.submit_hex_transaction")]
     fn submit_hex_transaction(&self, tx: String) -> FutureResult<HashValue>;

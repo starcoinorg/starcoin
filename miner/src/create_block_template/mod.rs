@@ -25,7 +25,7 @@ use starcoin_types::{
     block::{BlockHeader, BlockTemplate, ExecutedBlock},
     system_events::{NewBranch, NewHeadBlock},
 };
-use starcoin_vm_types::transaction::SignedUserTransaction;
+use starcoin_vm_types::transaction::SignedUserTransactionV2;
 use std::cmp::min;
 use std::{collections::HashMap, sync::Arc};
 
@@ -157,14 +157,14 @@ impl ServiceHandler<Self, GetHeadRequest> for BlockBuilderService {
 }
 
 pub trait TemplateTxProvider {
-    fn get_txns(&self, max: u64) -> Vec<SignedUserTransaction>;
+    fn get_txns(&self, max: u64) -> Vec<SignedUserTransactionV2>;
     fn remove_invalid_txn(&self, txn_hash: HashValue);
 }
 
 pub struct EmptyProvider;
 
 impl TemplateTxProvider for EmptyProvider {
-    fn get_txns(&self, _max: u64) -> Vec<SignedUserTransaction> {
+    fn get_txns(&self, _max: u64) -> Vec<SignedUserTransactionV2> {
         vec![]
     }
 
@@ -172,7 +172,7 @@ impl TemplateTxProvider for EmptyProvider {
 }
 
 impl TemplateTxProvider for TxPoolService {
-    fn get_txns(&self, max: u64) -> Vec<SignedUserTransaction> {
+    fn get_txns(&self, max: u64) -> Vec<SignedUserTransactionV2> {
         self.get_pending_txns(Some(max), None)
     }
 

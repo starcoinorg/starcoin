@@ -21,11 +21,11 @@ use starcoin_executor::VMMetrics;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService, TxnStatusFullEvent};
+use starcoin_types::transaction::SignedUserTransactionV2;
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader},
     transaction,
-    transaction::SignedUserTransaction,
 };
 use std::sync::Arc;
 
@@ -86,8 +86,8 @@ impl TxPoolService {
 
     pub fn verify_transaction(
         &self,
-        tx: SignedUserTransaction,
-    ) -> Result<transaction::SignatureCheckedTransaction, transaction::TransactionError> {
+        tx: SignedUserTransactionV2,
+    ) -> Result<transaction::SignatureCheckedTransactionV2, transaction::TransactionError> {
         self.get_inner()
             .get_pool_client()
             .verify_transaction(tx.into())
@@ -97,7 +97,7 @@ impl TxPoolService {
 impl TxPoolSyncService for TxPoolService {
     fn add_txns(
         &self,
-        txns: Vec<SignedUserTransaction>,
+        txns: Vec<SignedUserTransactionV2>,
     ) -> Vec<Result<(), transaction::TransactionError>> {
         // _timer will observe_duration when it's dropped.
         // We don't need to call it explicitly.
@@ -110,7 +110,7 @@ impl TxPoolSyncService for TxPoolService {
         self.inner.import_txns(txns)
     }
 
-    fn remove_txn(&self, txn_hash: HashValue, is_invalid: bool) -> Option<SignedUserTransaction> {
+    fn remove_txn(&self, txn_hash: HashValue, is_invalid: bool) -> Option<SignedUserTransactionV2> {
         let _timer = self.inner.metrics.as_ref().map(|metrics| {
             metrics
                 .txpool_service_time
@@ -127,7 +127,7 @@ impl TxPoolSyncService for TxPoolService {
         &self,
         max_len: Option<u64>,
         current_timestamp_secs: Option<u64>,
-    ) -> Vec<SignedUserTransaction> {
+    ) -> Vec<SignedUserTransactionV2> {
         let _timer = self.inner.metrics.as_ref().map(|metrics| {
             metrics
                 .txpool_service_time
@@ -191,7 +191,7 @@ impl TxPoolSyncService for TxPoolService {
         self.inner.queue.status().into()
     }
 
-    fn find_txn(&self, hash: &HashValue) -> Option<SignedUserTransaction> {
+    fn find_txn(&self, hash: &HashValue) -> Option<SignedUserTransactionV2> {
         self.inner
             .queue
             .find(hash)
@@ -201,7 +201,7 @@ impl TxPoolSyncService for TxPoolService {
         &self,
         sender: &AccountAddress,
         max_len: Option<usize>,
-    ) -> Vec<SignedUserTransaction> {
+    ) -> Vec<SignedUserTransactionV2> {
         self.inner
             .queue
             .txns_of_sender(sender, max_len.unwrap_or(usize::MAX))
@@ -266,7 +266,7 @@ impl Inner {
 
     pub(crate) fn import_txns(
         &self,
-        txns: Vec<transaction::SignedUserTransaction>,
+        txns: Vec<transaction::SignedUserTransactionV2>,
     ) -> Vec<Result<(), transaction::TransactionError>> {
         let txns = txns
             .into_iter()
@@ -339,7 +339,7 @@ impl Inner {
         let txns = retracted
             .into_iter()
             .flat_map(|b| {
-                let txns: Vec<SignedUserTransaction> = b.into_inner().1.into();
+                let txns: Vec<SignedUserTransactionV2> = b.into_inner().1.into();
                 txns.into_iter()
             })
             .map(|t| PoolTransaction::Retracted(UnverifiedUserTransaction::from(t)));

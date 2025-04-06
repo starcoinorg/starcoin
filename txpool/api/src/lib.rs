@@ -7,7 +7,8 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::HashValue;
 use starcoin_types::{
-    account_address::AccountAddress, block::Block, transaction, transaction::SignedUserTransaction,
+    account_address::AccountAddress, block::Block, transaction,
+    transaction::SignedUserTransactionV2,
 };
 use std::fmt::Debug;
 use std::sync::Arc;
@@ -26,14 +27,14 @@ pub struct TxPoolStatus {
 pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
     fn add_txns(
         &self,
-        txns: Vec<SignedUserTransaction>,
+        txns: Vec<SignedUserTransactionV2>,
     ) -> Vec<Result<(), transaction::TransactionError>>;
 
     /// Removes transaction from the pool.
     ///
     /// Attempts to "cancel" a transaction. If it was not propagated yet (or not accepted by other peers)
     /// there is a good chance that the transaction will actually be removed.
-    fn remove_txn(&self, txn_hash: HashValue, is_invalid: bool) -> Option<SignedUserTransaction>;
+    fn remove_txn(&self, txn_hash: HashValue, is_invalid: bool) -> Option<SignedUserTransactionV2>;
 
     /// Get all pending txns which is ok to be packaged to mining.
     /// `now` is the current timestamp in secs, if it's None, it default to real world's current timestamp.
@@ -42,7 +43,7 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
         &self,
         max_len: Option<u64>,
         now: Option<u64>,
-    ) -> Vec<SignedUserTransaction>;
+    ) -> Vec<SignedUserTransactionV2>;
 
     /// Returns next valid sequence number for given sender
     /// or `None` if there are no pending transactions from that sender.
@@ -61,25 +62,25 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
     /// Tx Pool status
     fn status(&self) -> TxPoolStatus;
 
-    fn find_txn(&self, hash: &HashValue) -> Option<SignedUserTransaction>;
+    fn find_txn(&self, hash: &HashValue) -> Option<SignedUserTransactionV2>;
     fn txns_of_sender(
         &self,
         sender: &AccountAddress,
         max_len: Option<usize>,
-    ) -> Vec<SignedUserTransaction>;
+    ) -> Vec<SignedUserTransactionV2>;
 }
 
 #[derive(Clone, Debug)]
 pub struct PropagateTransactions {
-    txns: Vec<SignedUserTransaction>,
+    txns: Vec<SignedUserTransactionV2>,
 }
 
 impl PropagateTransactions {
-    pub fn new(txns: Vec<SignedUserTransaction>) -> Self {
+    pub fn new(txns: Vec<SignedUserTransactionV2>) -> Self {
         Self { txns }
     }
 
-    pub fn transaction_to_propagate(&self) -> Vec<SignedUserTransaction> {
+    pub fn transaction_to_propagate(&self) -> Vec<SignedUserTransactionV2> {
         self.txns.clone()
     }
 }

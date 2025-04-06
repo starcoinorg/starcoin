@@ -25,11 +25,11 @@ pub type Gas = u64;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct UnverifiedUserTransaction {
-    txn: transaction::SignedUserTransaction,
+    txn: transaction::SignedUserTransactionV2,
 }
 
 impl UnverifiedUserTransaction {
-    pub fn txn(&self) -> &transaction::SignedUserTransaction {
+    pub fn txn(&self) -> &transaction::SignedUserTransactionV2 {
         &self.txn
     }
 
@@ -38,20 +38,20 @@ impl UnverifiedUserTransaction {
     }
 }
 
-impl From<UnverifiedUserTransaction> for transaction::SignedUserTransaction {
-    fn from(txn: UnverifiedUserTransaction) -> transaction::SignedUserTransaction {
+impl From<UnverifiedUserTransaction> for transaction::SignedUserTransactionV2 {
+    fn from(txn: UnverifiedUserTransaction) -> transaction::SignedUserTransactionV2 {
         txn.txn
     }
 }
 
-impl From<transaction::SignedUserTransaction> for UnverifiedUserTransaction {
-    fn from(user_txn: transaction::SignedUserTransaction) -> Self {
+impl From<transaction::SignedUserTransactionV2> for UnverifiedUserTransaction {
+    fn from(user_txn: transaction::SignedUserTransactionV2) -> Self {
         UnverifiedUserTransaction { txn: user_txn }
     }
 }
 
 impl Deref for UnverifiedUserTransaction {
-    type Target = transaction::SignedUserTransaction;
+    type Target = transaction::SignedUserTransactionV2;
 
     fn deref(&self) -> &Self::Target {
         &self.txn
@@ -109,7 +109,7 @@ impl PoolTransaction {
         }
     }
 
-    pub fn signed(&self) -> &transaction::SignedUserTransaction {
+    pub fn signed(&self) -> &transaction::SignedUserTransactionV2 {
         match self {
             PoolTransaction::Unverified(t) => t.txn(),
             PoolTransaction::Retracted(t) => t.txn(),
@@ -131,14 +131,6 @@ impl PoolTransaction {
             PoolTransaction::Unverified(ref tx) => tx.max_gas_amount(),
             PoolTransaction::Retracted(ref tx) => tx.max_gas_amount(),
             PoolTransaction::Local(ref tx) => tx.max_gas_amount(),
-        }
-    }
-
-    fn transaction(&self) -> &transaction::RawUserTransaction {
-        match self {
-            PoolTransaction::Unverified(ref tx) => tx.raw_txn(),
-            PoolTransaction::Retracted(ref tx) => tx.raw_txn(),
-            PoolTransaction::Local(ref tx) => tx.raw_txn(),
         }
     }
 
@@ -168,7 +160,7 @@ impl VerifiedTransaction {
     /// This method should be used only:
     /// 1. for tests
     /// 2. In case we are converting pending block transactions that are already in the queue to match the function signature.
-    pub fn from_pending_block_transaction(tx: transaction::SignedUserTransaction) -> Self {
+    pub fn from_pending_block_transaction(tx: transaction::SignedUserTransactionV2) -> Self {
         let hash = tx.id();
         let sender = tx.sender();
         VerifiedTransaction {
@@ -186,7 +178,7 @@ impl VerifiedTransaction {
     }
 
     /// Gets wrapped `SignedUserTransaction`
-    pub fn signed(&self) -> &transaction::SignedUserTransaction {
+    pub fn signed(&self) -> &transaction::SignedUserTransactionV2 {
         &self.transaction
     }
 

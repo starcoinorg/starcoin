@@ -33,7 +33,7 @@ use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     contract_event::ContractEvent,
     error::BlockExecutorError,
-    transaction::{SignedUserTransaction, Transaction},
+    transaction::Transaction,
     U256,
 };
 use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
@@ -41,6 +41,7 @@ use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy};
 use starcoin_vm_types::on_chain_resource::Epoch;
+use starcoin_vm_types::transaction::SignedUserTransactionV2;
 use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
@@ -750,7 +751,7 @@ impl BlockChain {
         &self,
         author: AccountAddress,
         parent_hash: Option<HashValue>,
-        user_txns: Vec<SignedUserTransaction>,
+        user_txns: Vec<SignedUserTransactionV2>,
         uncles: Vec<BlockHeader>,
         block_gas_limit: Option<u64>,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
@@ -777,7 +778,7 @@ impl BlockChain {
         &self,
         author: AccountAddress,
         previous_header: BlockHeader,
-        user_txns: Vec<SignedUserTransaction>,
+        user_txns: Vec<SignedUserTransactionV2>,
         uncles: Vec<BlockHeader>,
         block_gas_limit: Option<u64>,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
@@ -915,13 +916,7 @@ impl BlockChain {
                     vec![Transaction::BlockMetadata(block_metadata)]
                 }
             };
-            t.extend(
-                block
-                    .transactions()
-                    .iter()
-                    .cloned()
-                    .map(Transaction::UserTransaction),
-            );
+            t.extend(block.transactions().iter().cloned().map(|txn| txn.into()));
             t
         };
 
@@ -1087,13 +1082,7 @@ impl BlockChain {
                     vec![Transaction::BlockMetadata(block_metadata)]
                 }
             };
-            t.extend(
-                block
-                    .transactions()
-                    .iter()
-                    .cloned()
-                    .map(Transaction::UserTransaction),
-            );
+            t.extend(block.transactions().iter().cloned().map(|txn| txn.into()));
             t
         };
         for write_set in executed_data.write_sets {
@@ -1235,13 +1224,7 @@ impl BlockChain {
                     vec![Transaction::BlockMetadata(block_metadata)]
                 }
             };
-            t.extend(
-                block
-                    .transactions()
-                    .iter()
-                    .cloned()
-                    .map(Transaction::UserTransaction),
-            );
+            t.extend(block.transactions().iter().cloned().map(|txn| txn.into()));
             t
         };
 

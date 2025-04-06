@@ -23,6 +23,7 @@ use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewBranch, SyncStatusChangeEvent};
+use starcoin_types::transaction::SignedUserTransactionV2;
 use starcoin_types::{
     block::{Block, BlockBody},
     compact_block::{CompactBlock, ShortId},
@@ -106,7 +107,7 @@ impl BlockRelayer {
         let txns = if expect_txn_len == 0 {
             vec![]
         } else {
-            let mut txns: Vec<Option<SignedUserTransaction>> = vec![None; expect_txn_len];
+            let mut txns: Vec<Option<SignedUserTransactionV2>> = vec![None; expect_txn_len];
 
             let mut missing_txn_short_ids = HashSet::new();
             // Fill the block txns by tx pool
@@ -156,7 +157,7 @@ impl BlockRelayer {
             for (index, short_id) in compact_block.short_ids.iter().enumerate() {
                 if txns[index].is_none() {
                     if let Some(txn) = fetched_missing_txn_map.remove(short_id) {
-                        txns[index] = Some(txn?);
+                        txns[index] = Some(txn?.into());
                         filled_from_network += 1;
                     }
                 }

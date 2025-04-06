@@ -9,7 +9,7 @@ use starcoin_rpc_api::types::{SignedUserTransactionView, StrView};
 use starcoin_rpc_api::{txpool::TxPoolApi, FutureResult};
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService};
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::transaction::SignedUserTransaction;
+use starcoin_vm_types::transaction::SignedUserTransactionV2;
 use std::convert::TryInto;
 
 /// Re-export the API
@@ -34,7 +34,7 @@ impl<S> TxPoolApi for TxPoolRpcImpl<S>
 where
     S: TxPoolSyncService,
 {
-    fn submit_transaction(&self, txn: SignedUserTransaction) -> FutureResult<HashValue> {
+    fn submit_transaction(&self, txn: SignedUserTransactionV2) -> FutureResult<HashValue> {
         let txn_hash = txn.id();
         let result: Result<(), jsonrpc_core::Error> = self
             .service
@@ -50,7 +50,7 @@ where
         let tx = tx.strip_prefix("0x").unwrap_or(tx.as_str());
         let result = hex::decode(tx)
             .map_err(convert_to_rpc_error)
-            .and_then(|txn_bytes| SignedUserTransaction::decode(&txn_bytes).map_err(map_err))
+            .and_then(|txn_bytes| SignedUserTransactionV2::decode(&txn_bytes).map_err(map_err))
             .and_then(|txn| {
                 let txn_hash = txn.id();
                 self.service

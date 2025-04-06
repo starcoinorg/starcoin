@@ -1,4 +1,4 @@
-use super::SignedUserTransaction;
+use super::SignedUserTransactionV2;
 use std::ops::Deref;
 
 type BlockNumber = u64;
@@ -16,14 +16,14 @@ pub enum Condition {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PendingTransaction {
     /// Signed transaction data.
-    pub transaction: SignedUserTransaction,
+    pub transaction: SignedUserTransactionV2,
     /// To be activated at this condition. `None` for immediately.
     pub condition: Option<Condition>,
 }
 
 impl PendingTransaction {
     /// Create a new pending transaction from signed transaction.
-    pub fn new(signed: SignedUserTransaction, condition: Option<Condition>) -> Self {
+    pub fn new(signed: SignedUserTransactionV2, condition: Option<Condition>) -> Self {
         PendingTransaction {
             transaction: signed,
             condition,
@@ -32,15 +32,15 @@ impl PendingTransaction {
 }
 
 impl Deref for PendingTransaction {
-    type Target = SignedUserTransaction;
+    type Target = SignedUserTransactionV2;
 
     fn deref(&self) -> &Self::Target {
         &self.transaction
     }
 }
 
-impl From<SignedUserTransaction> for PendingTransaction {
-    fn from(t: SignedUserTransaction) -> Self {
+impl From<SignedUserTransactionV2> for PendingTransaction {
+    fn from(t: SignedUserTransactionV2) -> Self {
         PendingTransaction {
             transaction: t,
             condition: None,

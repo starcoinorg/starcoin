@@ -34,5 +34,5 @@ pub trait Client: fmt::Debug {
     fn verify_transaction(
         &self,
         tx: UnverifiedUserTransaction,
-    ) -> Result<transaction::SignatureCheckedTransaction, transaction::TransactionError>;
+    ) -> Result<transaction::SignatureCheckedTransactionV2, transaction::TransactionError>;
 }

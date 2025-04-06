@@ -60,7 +60,7 @@ use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 use starcoin_vm_types::state_store::table::TableHandle;
 use starcoin_vm_types::token::token_code::TokenCode;
-use starcoin_vm_types::transaction::DryRunTransaction;
+use starcoin_vm_types::transaction::{DryRunTransaction, SignedUserTransactionV2};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::thread::JoinHandle;
@@ -296,7 +296,7 @@ impl RpcClient {
             .map_err(map_err)
     }
 
-    pub fn submit_transaction(&self, txn: SignedUserTransaction) -> anyhow::Result<HashValue> {
+    pub fn submit_transaction(&self, txn: SignedUserTransactionV2) -> anyhow::Result<HashValue> {
         self.call_rpc_blocking(|inner| inner.txpool_client.submit_transaction(txn))
             .map_err(map_err)
     }

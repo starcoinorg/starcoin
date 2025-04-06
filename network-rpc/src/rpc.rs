@@ -26,9 +26,10 @@ use starcoin_types::block::Block;
 use starcoin_types::{
     account_state::AccountState,
     block::{BlockHeader, BlockInfo, BlockNumber},
-    transaction::{SignedUserTransaction, Transaction, TransactionInfo},
+    transaction::{Transaction, TransactionInfo},
 };
 use starcoin_vm_types::state_store::table::TableInfo;
+use starcoin_vm_types::transaction::SignedUserTransactionV2;
 use std::sync::Arc;
 
 pub struct NetworkRpcImpl {
@@ -59,7 +60,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         &self,
         _peer_id: PeerId,
         req: GetTxnsWithSize,
-    ) -> BoxFuture<Result<Vec<SignedUserTransaction>>> {
+    ) -> BoxFuture<Result<Vec<SignedUserTransactionV2>>> {
         let txpool = self.txpool_service.clone();
         let max_size = if req.max_size < MAX_TXN_REQUEST_SIZE {
             req.max_size
@@ -74,7 +75,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         &self,
         _peer_id: PeerId,
         req: GetTxnsWithHash,
-    ) -> BoxFuture<Result<Vec<Option<SignedUserTransaction>>>> {
+    ) -> BoxFuture<Result<Vec<Option<SignedUserTransactionV2>>>> {
         let txpool = self.txpool_service.clone();
         let fut = async move {
             let mut data = vec![];

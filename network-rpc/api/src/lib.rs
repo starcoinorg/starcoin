@@ -18,7 +18,7 @@ use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
-use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionInfo};
+use starcoin_types::transaction::{SignedUserTransactionV2, Transaction, TransactionInfo};
 use starcoin_vm_types::state_store::table::TableInfo;
 
 mod remote_chain_state;
@@ -204,14 +204,14 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         &self,
         peer_id: PeerId,
         req: GetTxnsWithSize,
-    ) -> BoxFuture<Result<Vec<SignedUserTransaction>>>;
+    ) -> BoxFuture<Result<Vec<SignedUserTransactionV2>>>;
 
     ///Get txns with hash from txpool
     fn get_txns_with_hash_from_pool(
         &self,
         peer_id: PeerId,
         req: GetTxnsWithHash,
-    ) -> BoxFuture<Result<Vec<Option<SignedUserTransaction>>>>;
+    ) -> BoxFuture<Result<Vec<Option<SignedUserTransactionV2>>>>;
 
     fn get_txns(
         &self,

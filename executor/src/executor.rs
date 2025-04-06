@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionOutput};
+use starcoin_types::transaction::{Transaction, TransactionOutput};
 use starcoin_vm_runtime::{metrics::VMMetrics, starcoin_vm::StarcoinVM, VMExecutor};
+use starcoin_vm_types::transaction::SignedUserTransactionV2;
 use starcoin_vm_types::{
     identifier::Identifier,
     language_storage::{ModuleId, TypeTag},
@@ -43,7 +44,7 @@ fn do_execute_block_transactions<S: StateView>(
 // XXX FIXME YSG, refactor use VMValidator
 pub fn validate_transaction<S: StateView>(
     chain_state: &S,
-    txn: SignedUserTransaction,
+    txn: SignedUserTransactionV2,
     metrics: Option<VMMetrics>,
 ) -> Option<VMStatus> {
     let mut vm = StarcoinVM::new(metrics);

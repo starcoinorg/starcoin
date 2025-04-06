@@ -137,7 +137,7 @@ impl Genesis {
                 accumulator_root,
                 transaction_info.state_root_hash(),
                 *difficulty,
-                txn,
+                txn.into(),
             ))
         } else {
             bail!("{}'s genesis config not ready to build genesis block", net);
