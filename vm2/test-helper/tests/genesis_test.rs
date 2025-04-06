@@ -1,10 +1,8 @@
-use starcoin_types2::account_address::AccountAddress;
-use starcoin_types2::vm_error::{StatusCode, VMStatus};
 use starcoin_types2::{account::Account, vm_error::KeptVMStatus};
-use starcoin_vm2_test_helper::executor::{
-    compile_modules_with_address, execute_and_apply, prepare_genesis,
+use starcoin_vm2_test_helper::{
+    executor::{compile_modules_with_address, execute_and_apply, prepare_genesis},
+    txn::create_account_txn_sent_as_association,
 };
-
 use starcoin_vm2_types::{
     genesis_config::ChainNetwork,
     state_view::StateReaderExt,
@@ -15,7 +13,10 @@ use starcoin_vm2_types::{
 pub fn test_prepare_genesis() -> anyhow::Result<()> {
     let (statedb, network) = prepare_genesis()?;
     assert_eq!(network.chain_id(), ChainNetwork::new_test().chain_id());
-    assert!(statedb.get_stc_info()?.total_value() > 0);
+    let stc_info = statedb.get_stc_info()?;
+    assert!(stc_info.total_value() > 0);
+
+    Ok(())
 }
 
 #[stest::test]

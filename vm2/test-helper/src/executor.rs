@@ -44,7 +44,7 @@ pub const TEST_MODULE_2: &str = r#"
     }
     "#;
 
-pub fn prepare_genesis() -> Result<(ChainStateDB, ChainNetwork)> {
+pub fn prepare_genesis() -> anyhow::Result<(ChainStateDB, ChainNetwork)> {
     let net = ChainNetwork::new_test();
     let chain_state = ChainStateDB::mock();
     let genesis_txn = build_genesis_transaction(&net).unwrap();

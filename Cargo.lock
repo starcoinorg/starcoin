@@ -14681,6 +14681,7 @@ dependencies = [
  "anyhow",
  "bcs-ext 1.13.19",
  "move-ir-compiler 0.1.0 (git+https://github.com/starcoinorg/move?rev=7c0ec30b6dd783cc0377b5b2c85650130028d3b5)",
+ "rand 0.8.5",
  "starcoin-framework 0.1.0",
  "starcoin-move-compiler 2.0.1",
  "starcoin-state-api 2.0.1",

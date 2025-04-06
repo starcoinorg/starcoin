@@ -25,3 +25,4 @@ starcoin-vm2-statedb = { workspace = true }
 starcoin-vm2-move-compiler = { workspace = true }
 starcoin-vm2-move-ir-compiler = { workspace = true }
 starcoin-vm2-framework = { workspace = true }
+rand = "0.8.5"
