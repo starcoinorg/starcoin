@@ -293,7 +293,7 @@ fn generate_old_db(path: &Path) -> Result<Vec<HashValue>> {
     let txn = SignedUserTransaction::mock();
     let block = Block::new(
         block_header.clone(),
-        BlockBody::new(vec![txn.clone()], None),
+        BlockBody::new(vec![txn.clone().into()], None),
     );
     let mut txn_inf_ids = vec![];
     let block_metadata = block.to_metadata(0);

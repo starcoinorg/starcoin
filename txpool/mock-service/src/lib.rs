@@ -111,12 +111,13 @@ impl TxPoolSyncService for MockTxPoolService {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use starcoin_types::transaction::SignedUserTransaction;
 
     #[stest::test]
     async fn test_txpool() {
         let pool = MockTxPoolService::new();
 
-        pool.add_txns(vec![SignedUserTransaction::mock()])
+        pool.add_txns(vec![SignedUserTransaction::mock().into()])
             .pop()
             .unwrap()
             .unwrap();

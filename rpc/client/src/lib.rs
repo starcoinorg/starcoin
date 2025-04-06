@@ -36,7 +36,7 @@ use starcoin_rpc_api::types::{
     ChainId, ChainInfoView, CodeView, ContractCall, DecodedMoveValue, DryRunOutputView,
     DryRunTransactionRequest, FactoryAction, FunctionIdView, ListCodeView, ListResourceView,
     MintedBlockView, ModuleIdView, PeerInfoView, ResourceView, SignedMessageView,
-    SignedUserTransactionView, StateWithProofView, StateWithTableItemProofView, StrView,
+    SignedUserTransactionV2View, StateWithProofView, StateWithTableItemProofView, StrView,
     StructTagView, TableInfoView, TransactionEventResponse, TransactionInfoView,
     TransactionInfoWithProofView, TransactionRequest, TransactionView,
 };
@@ -309,7 +309,7 @@ impl RpcClient {
     pub fn get_pending_txn_by_hash(
         &self,
         txn_hash: HashValue,
-    ) -> anyhow::Result<Option<SignedUserTransactionView>> {
+    ) -> anyhow::Result<Option<SignedUserTransactionV2View>> {
         self.call_rpc_blocking(|inner| inner.txpool_client.pending_txn(txn_hash))
             .map_err(map_err)
     }
@@ -318,7 +318,7 @@ impl RpcClient {
         &self,
         sender: AccountAddress,
         max_len: Option<u32>,
-    ) -> anyhow::Result<Vec<SignedUserTransactionView>> {
+    ) -> anyhow::Result<Vec<SignedUserTransactionV2View>> {
         self.call_rpc_blocking(|inner| inner.txpool_client.pending_txns(sender, max_len))
             .map_err(map_err)
     }

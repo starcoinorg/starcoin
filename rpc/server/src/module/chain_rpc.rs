@@ -15,7 +15,7 @@ use starcoin_rpc_api::chain::{
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
     BlockHeaderView, BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,
-    SignedUserTransactionView, StrView, TransactionEventResponse, TransactionInfoView,
+    SignedUserTransactionV2View, StrView, TransactionEventResponse, TransactionInfoView,
     TransactionInfoWithProofView, TransactionView,
 };
 use starcoin_rpc_api::FutureResult;
@@ -482,20 +482,38 @@ fn try_decode_block_txns(state: &dyn StateView, block: &mut BlockView) -> anyhow
 
 fn try_decode_txn_payload(
     state: &dyn StateView,
-    txn: &mut SignedUserTransactionView,
+    txn: &mut SignedUserTransactionV2View,
 ) -> anyhow::Result<()> {
-    let txn_payload = bcs_ext::from_bytes(txn.raw_txn.payload.0.as_slice())?;
+    let txn_payload = match txn {
+        SignedUserTransactionV2View::SignedUserTransaction(txn) => {
+            bcs_ext::from_bytes(txn.raw_txn.payload.0.as_slice())?
+        }
+        SignedUserTransactionV2View::SignedUserTransactionWithType(txn) => {
+            bcs_ext::from_bytes(txn.raw_txn.payload.0.as_slice())?
+        }
+    };
     match decode_txn_payload(state, &txn_payload) {
         // ignore decode failure, as txns may has invalid payload here.
         Err(e) => {
+            let transaction_hash = match txn {
+                SignedUserTransactionV2View::SignedUserTransaction(txn) => txn.transaction_hash,
+                SignedUserTransactionV2View::SignedUserTransactionWithType(txn) => {
+                    txn.transaction_hash
+                }
+            };
             debug!(
                 "decode payload of txn {} failure, {:?}",
-                txn.transaction_hash, e
+                transaction_hash, e
             );
         }
-        Ok(d) => {
-            txn.raw_txn.decoded_payload = Some(d.into());
-        }
+        Ok(d) => match txn {
+            SignedUserTransactionV2View::SignedUserTransaction(txn) => {
+                txn.raw_txn.decoded_payload = Some(d.into())
+            }
+            SignedUserTransactionV2View::SignedUserTransactionWithType(txn) => {
+                txn.raw_txn.decoded_payload = Some(d.into())
+            }
+        },
     }
     Ok(())
 }

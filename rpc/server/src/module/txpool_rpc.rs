@@ -5,7 +5,7 @@ use crate::module::{convert_to_rpc_error, map_err};
 use bcs_ext::BCSCodec;
 use starcoin_crypto::HashValue;
 /// Re-export the API
-use starcoin_rpc_api::types::{SignedUserTransactionView, StrView};
+use starcoin_rpc_api::types::{SignedUserTransactionV2View, StrView};
 use starcoin_rpc_api::{txpool::TxPoolApi, FutureResult};
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService};
 use starcoin_types::account_address::AccountAddress;
@@ -72,8 +72,8 @@ where
         &self,
         addr: AccountAddress,
         max_len: Option<u32>,
-    ) -> FutureResult<Vec<SignedUserTransactionView>> {
-        let txns: Result<Vec<SignedUserTransactionView>, _> = self
+    ) -> FutureResult<Vec<SignedUserTransactionV2View>> {
+        let txns: Result<Vec<SignedUserTransactionV2View>, _> = self
             .service
             .txns_of_sender(&addr, max_len.map(|v| v as usize))
             .into_iter()
@@ -82,7 +82,10 @@ where
         Box::pin(futures::future::ready(txns.map_err(map_err)))
     }
 
-    fn pending_txn(&self, txn_hash: HashValue) -> FutureResult<Option<SignedUserTransactionView>> {
+    fn pending_txn(
+        &self,
+        txn_hash: HashValue,
+    ) -> FutureResult<Option<SignedUserTransactionV2View>> {
         let txn = self
             .service
             .find_txn(&txn_hash)

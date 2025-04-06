@@ -44,7 +44,8 @@ use starcoin_vm_types::parser::{parse_transaction_argument, parse_type_tag};
 use starcoin_vm_types::sign_message::SignedMessage;
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
 use starcoin_vm_types::transaction::{
-    RawUserTransactionWithType, RichTransactionInfo, Script, SignedUserTransaction, Transaction,
+    RawUserTransactionV2, RawUserTransactionWithType, RichTransactionInfo, Script,
+    SignedUserTransaction, SignedUserTransactionV2, SignedUserTransactionWithType, Transaction,
     TransactionInfo, TransactionOutput, TransactionPayload, TransactionStatus,
 };
 use starcoin_vm_types::transaction_argument::convert_txn_args;
@@ -620,6 +621,20 @@ impl From<RawUserTransactionWithTypeView> for RawUserTransactionWithType {
     }
 }
 
+impl TryFrom<RawUserTransactionV2> for RawUserTransactionV2View {
+    type Error = anyhow::Error;
+    fn try_from(txn: RawUserTransactionV2) -> Result<Self, Self::Error> {
+        match txn {
+            RawUserTransactionV2::RawUserTransaction(txn) => {
+                Ok(Self::RawUserTransaction(txn.try_into()?))
+            }
+            RawUserTransactionV2::RawUserTransactionWithType(txn) => {
+                Ok(Self::RawUserTransactionWithTypeView(txn.try_into()?))
+            }
+        }
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub enum TransactionPayloadView {
     /// A transaction that executes code.
@@ -725,29 +740,53 @@ impl TryFrom<SignedUserTransaction> for SignedUserTransactionView {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
-pub struct SignedUserTransactionV2View {
+pub struct SignedUserTransactionWithTypeView {
     pub transaction_hash: HashValue,
     /// The raw transaction
-    pub raw_txn: RawUserTransactionV2View,
+    pub raw_txn: RawUserTransactionWithTypeView,
 
     /// Public key and signature to authenticate
     pub authenticator: TransactionAuthenticator,
 }
 
-/*
-impl TryFrom<SignedUserTransactionV2> for SignedUserTransactionV2View {
+impl TryFrom<SignedUserTransactionWithType> for SignedUserTransactionWithTypeView {
     type Error = anyhow::Error;
 
-    fn try_from(txn: SignedUserTransactionV2) -> Result<Self, Self::Error> {
+    fn try_from(txn: SignedUserTransactionWithType) -> Result<Self, Self::Error> {
         let auth = txn.authenticator();
         let txn_hash = txn.id();
-        Ok(SignedUserTransactionView {
+        Ok(SignedUserTransactionWithTypeView {
             transaction_hash: txn_hash,
             raw_txn: txn.into_raw_transaction().try_into()?,
             authenticator: auth,
         })
     }
-} */
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub enum SignedUserTransactionV2View {
+    SignedUserTransaction(SignedUserTransactionView),
+    SignedUserTransactionWithType(SignedUserTransactionWithTypeView),
+}
+
+impl TryFrom<SignedUserTransactionV2> for SignedUserTransactionV2View {
+    type Error = anyhow::Error;
+
+    fn try_from(txn: SignedUserTransactionV2) -> Result<Self, Self::Error> {
+        match txn {
+            SignedUserTransactionV2::SignedUserTransaction(txn) => {
+                let txn = SignedUserTransactionView::try_from(txn)?;
+                Ok(SignedUserTransactionV2View::SignedUserTransaction(txn))
+            }
+            SignedUserTransactionV2::SignedUserTransactionWithType(txn) => {
+                let txn = SignedUserTransactionWithTypeView::try_from(txn)?;
+                Ok(SignedUserTransactionV2View::SignedUserTransactionWithType(
+                    txn,
+                ))
+            }
+        }
+    }
+}
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
 pub struct BlockMetadataView {
@@ -820,7 +859,7 @@ pub struct TransactionView {
     pub transaction_hash: HashValue,
     pub transaction_index: u32,
     pub block_metadata: Option<BlockMetadataView>,
-    pub user_transaction: Option<SignedUserTransactionView>,
+    pub user_transaction: Option<SignedUserTransactionV2View>,
 }
 
 impl TransactionView {
@@ -847,7 +886,10 @@ impl TransactionView {
 
         let (meta, txn) = match txn {
             Transaction::BlockMetadata(meta) => (Some(meta.into()), None),
-            Transaction::UserTransaction(t) => (None, Some(t.try_into()?)),
+            Transaction::UserTransaction(t) => {
+                let txn = SignedUserTransactionV2::SignedUserTransaction(t);
+                (None, Some(txn.try_into()?))
+            }
             Transaction::UserTransactionExt(_) => todo!(),
         };
         Ok(Self {
@@ -864,22 +906,30 @@ impl TransactionView {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub enum BlockTransactionsView {
     Hashes(Vec<HashValue>),
-    Full(Vec<SignedUserTransactionView>),
+    Full(Vec<SignedUserTransactionV2View>),
 }
 
 impl BlockTransactionsView {
     pub fn txn_hashes(&self) -> Vec<HashValue> {
         match self {
             Self::Hashes(h) => h.clone(),
-            Self::Full(f) => f.iter().map(|t| t.transaction_hash).collect(),
+            Self::Full(f) => f
+                .iter()
+                .map(|t| match t {
+                    SignedUserTransactionV2View::SignedUserTransaction(txn) => txn.transaction_hash,
+                    SignedUserTransactionV2View::SignedUserTransactionWithType(txn) => {
+                        txn.transaction_hash
+                    }
+                })
+                .collect(),
         }
     }
 }
 
-impl TryFrom<Vec<SignedUserTransaction>> for BlockTransactionsView {
+impl TryFrom<Vec<SignedUserTransactionV2>> for BlockTransactionsView {
     type Error = anyhow::Error;
 
-    fn try_from(txns: Vec<SignedUserTransaction>) -> Result<Self, Self::Error> {
+    fn try_from(txns: Vec<SignedUserTransactionV2>) -> Result<Self, Self::Error> {
         Ok(BlockTransactionsView::Full(
             txns.into_iter()
                 .map(TryInto::try_into)
@@ -888,18 +938,25 @@ impl TryFrom<Vec<SignedUserTransaction>> for BlockTransactionsView {
     }
 }
 
-impl TryFrom<BlockTransactionsView> for Vec<SignedUserTransaction> {
+impl TryFrom<BlockTransactionsView> for Vec<SignedUserTransactionV2> {
     type Error = anyhow::Error;
 
     fn try_from(tx_view: BlockTransactionsView) -> Result<Self, Self::Error> {
         match tx_view {
             BlockTransactionsView::Full(full) => Ok(full
                 .into_iter()
-                .map(|transaction_view| {
-                    SignedUserTransaction::new(
-                        transaction_view.raw_txn.into(),
-                        transaction_view.authenticator,
-                    )
+                .map(|transaction_view| match transaction_view {
+                    SignedUserTransactionV2View::SignedUserTransaction(txn) => {
+                        let txn = SignedUserTransaction::new(txn.raw_txn.into(), txn.authenticator);
+                        SignedUserTransactionV2::SignedUserTransaction(txn)
+                    }
+                    SignedUserTransactionV2View::SignedUserTransactionWithType(txn) => {
+                        let txn = SignedUserTransactionWithType::new(
+                            txn.raw_txn.into(),
+                            txn.authenticator,
+                        );
+                        SignedUserTransactionV2::SignedUserTransactionWithType(txn)
+                    }
                 })
                 .collect()),
             _ => Err(anyhow::Error::msg("not support")),

@@ -892,7 +892,7 @@ impl SignatureCheckedTransactionV2 {
                 signed_tx.into_raw_transaction().into()
             }
             SignedUserTransactionV2::SignedUserTransactionWithType(signed_tx_type) => {
-                signed_tx_type.into_raw_transaction_with_type().into()
+                signed_tx_type.into_raw_transaction().into()
             }
         }
     }
@@ -1101,7 +1101,7 @@ impl SignedUserTransactionWithType {
         self.raw_txn.sender
     }
 
-    pub fn into_raw_transaction_with_type(self) -> RawUserTransactionWithType {
+    pub fn into_raw_transaction(self) -> RawUserTransactionWithType {
         self.raw_txn
     }
 
@@ -1208,7 +1208,7 @@ impl SignatureCheckedTransactionWithType {
 
     /// Returns the `RawUserTransaction` within.
     pub fn into_raw_transaction_with_type(self) -> RawUserTransactionWithType {
-        self.0.into_raw_transaction_with_type()
+        self.0.into_raw_transaction()
     }
 }
 
@@ -1704,6 +1704,15 @@ impl SignedUserTransactionV2 {
         match self {
             Self::SignedUserTransaction(sign) => sign.raw_txn_bytes_len(),
             Self::SignedUserTransactionWithType(sign) => sign.raw_txn_bytes_len(),
+        }
+    }
+
+    pub fn into_raw_transaction(self) -> RawUserTransactionV2 {
+        match self {
+            Self::SignedUserTransaction(signed_tx) => signed_tx.into_raw_transaction().into(),
+            Self::SignedUserTransactionWithType(signed_tx_type) => {
+                signed_tx_type.into_raw_transaction().into()
+            }
         }
     }
 }

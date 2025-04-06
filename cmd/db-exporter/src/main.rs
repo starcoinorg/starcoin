@@ -1042,7 +1042,7 @@ pub fn execute_transaction_with_create_account(
             net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
             net,
         ));
-        txns.push(txn.as_signed_user_txn()?.clone());
+        txns.push(txn.as_signed_user_txn()?.clone().into());
         sequence += 1;
         for (send_sequence, _j) in (0..trans_num).enumerate() {
             let receiver = Account::new();
@@ -1053,7 +1053,7 @@ pub fn execute_transaction_with_create_account(
                 net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
                 net,
             ));
-            txns.push(txn1.as_signed_user_txn()?.clone());
+            txns.push(txn1.as_signed_user_txn()?.clone().into());
             sequence += 1;
             let txn1 = Transaction::UserTransaction(peer_to_peer_txn(
                 &miner_account,
@@ -1063,7 +1063,7 @@ pub fn execute_transaction_with_create_account(
                 net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
                 net.chain_id(),
             ));
-            txns.push(txn1.as_signed_user_txn()?.clone());
+            txns.push(txn1.as_signed_user_txn()?.clone().into());
         }
 
         let (block_template, _) =
@@ -1113,7 +1113,7 @@ pub fn execute_transaction_with_miner_create_account(
                 net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
                 net.chain_id(),
             ));
-            txns.push(txn1.as_signed_user_txn()?.clone());
+            txns.push(txn1.as_signed_user_txn()?.clone().into());
             sequence += 1;
         }
 
@@ -1163,7 +1163,7 @@ pub fn execute_empty_transaction_with_miner(
                 net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
                 net.chain_id(),
             );
-            txns.push(txn);
+            txns.push(txn.into());
             sequence += 1;
         }
 
@@ -1215,7 +1215,7 @@ pub fn execute_transaction_with_fixed_account(
                 net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
                 net.chain_id(),
             ));
-            txns.push(txn1.as_signed_user_txn()?.clone());
+            txns.push(txn1.as_signed_user_txn()?.clone().into());
             sequence += 1;
         }
 
@@ -1274,8 +1274,8 @@ pub fn execute_turbo_stm_transaction_with_fixed_account(
             seq += 1;
             receivers.push(receiver1);
             receivers.push(receiver2);
-            txns.push(txn1.as_signed_user_txn()?.clone());
-            txns.push(txn2.as_signed_user_txn()?.clone());
+            txns.push(txn1.as_signed_user_txn()?.clone().into());
+            txns.push(txn2.as_signed_user_txn()?.clone().into());
         }
 
         let (block_template, _) =
@@ -1302,7 +1302,7 @@ pub fn execute_turbo_stm_transaction_with_fixed_account(
                 net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
                 net.chain_id(),
             ));
-            txns.push(txn1.as_signed_user_txn()?.clone());
+            txns.push(txn1.as_signed_user_txn()?.clone().into());
         }
         sequence += 1;
         let (block_template, _) =
