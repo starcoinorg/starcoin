@@ -537,6 +537,7 @@ starcoin-vm2-transaction-builder = { git = "https://github.com/starcoinorg/starc
 starcoin-vm2-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "a14be64c9cd5889389730c76f00a7f82ad5c99cf", package = "starcoin-crypto" }
 starcoin-vm2-statedb = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-statedb" }
 starcoin-vm2-move-compiler = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-move-compiler" }
+#starcoin-vm2-move-compiler = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-move-compiler" }
 starcoin-vm2-move-ir-compiler = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", package = "move-ir-compiler" }
 starcoin-vm2-genesis = { path = "vm2/genesis" }
 starcoin-vm2-executor = { path = "vm2/executor" }

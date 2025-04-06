@@ -29,7 +29,7 @@ use starcoin_types::write_set::{WriteOp, WriteSet};
 use starcoin_vm_types::state_store::state_key::StateKey;
 
 fn main() {
-    generate().unwrap();
+    // generate().unwrap();
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize, CryptoHasher, CryptoHash)]
