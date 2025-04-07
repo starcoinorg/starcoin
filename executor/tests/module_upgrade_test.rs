@@ -38,11 +38,13 @@ use test_helper::Account;
 fn test_init_script() -> Result<()> {
     let alice = Account::new();
     let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
+    let genesis_config2 = BuiltinNetworkID::Test.genesis_config2().clone();
     genesis_config.stdlib_version = StdlibVersion::Version(1);
     let net = ChainNetwork::new_custom(
         "init_script_test".to_string(),
         ChainId::new(100),
         genesis_config,
+        genesis_config2,
     )?;
     let chain_state = prepare_customized_genesis(&net);
 
@@ -116,11 +118,13 @@ fn test_init_script() -> Result<()> {
 fn test_upgrade_stdlib_with_incremental_package() -> Result<()> {
     let alice = Account::new();
     let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
+    let genesis_config2 = BuiltinNetworkID::Test.genesis_config2().clone();
     genesis_config.stdlib_version = StdlibVersion::Version(1);
     let net = ChainNetwork::new_custom(
         "test_stdlib_upgrade".to_string(),
         ChainId::new(100),
         genesis_config,
+        genesis_config2,
     )?;
     let chain_state = prepare_customized_genesis(&net);
 
@@ -183,6 +187,7 @@ fn test_upgrade_stdlib_with_incremental_package() -> Result<()> {
 #[stest::test(timeout = 300)]
 fn test_stdlib_upgrade() -> Result<()> {
     let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
+    let genesis_config2 = BuiltinNetworkID::Test.genesis_config2().clone();
     let stdlib_versions = G_STDLIB_VERSIONS.clone();
     let mut current_version = stdlib_versions[0];
     genesis_config.stdlib_version = current_version;
@@ -304,6 +309,7 @@ fn test_stdlib_upgrade() -> Result<()> {
 #[stest::test(timeout = 3000)]
 fn test_stdlib_upgrade_since_v12() -> Result<()> {
     let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
+    let genesis_config2 = BuiltinNetworkID::Test.genesis_config2().clone();
     let stdlib_versions = G_STDLIB_VERSIONS.clone();
     let mut current_version = stdlib_versions[0];
     genesis_config.stdlib_version = StdlibVersion::Version(12);
@@ -311,6 +317,7 @@ fn test_stdlib_upgrade_since_v12() -> Result<()> {
         "test_stdlib_upgrade".to_string(),
         ChainId::new(100),
         genesis_config,
+        genesis_config2,
     )?;
     let chain_state = prepare_customized_genesis(&net);
     let mut proposal_id: u64 = 1; // 1-based
@@ -706,11 +713,13 @@ where
 fn test_upgrade_stdlib_with_disallowed_publish_option() -> Result<()> {
     let _alice = Account::new();
     let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
+    let genesis_config2 = BuiltinNetworkID::Test.genesis_config2().clone();
     genesis_config.publishing_option = TransactionPublishOption::locked();
     let net = ChainNetwork::new_custom(
         "test_stdlib_upgrade".to_string(),
         ChainId::new(100),
         genesis_config,
+        genesis_config2,
     )?;
     let _chain_state = prepare_customized_genesis(&net);
 

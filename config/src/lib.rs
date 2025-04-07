@@ -67,6 +67,7 @@ pub use rpc_config::{
 };
 pub use starcoin_crypto::ed25519::genesis_key_pair;
 pub use starcoin_time_service::{MockTimeService, RealTimeService, TimeService};
+use starcoin_vm2_types::genesis_config::GenesisConfig as GenesisConfig2;
 pub use storage_config::{RocksdbConfig, StorageConfig, DEFAULT_CACHE_SIZE};
 pub use txpool_config::TxPoolConfig;
 
@@ -96,6 +97,7 @@ pub static G_DEFAULT_BASE_DATA_DIR: Lazy<PathBuf> = Lazy::new(|| {
 });
 pub static G_CONFIG_FILE_PATH: &str = "config.toml";
 pub static G_GENESIS_CONFIG_FILE_NAME: &str = "genesis_config.json";
+pub static G_GENESIS_CONFIG_FILE_NAME_2: &str = "genesis_config2.json";
 
 pub fn load_config_with_opt(opt: &StarcoinOpt) -> Result<NodeConfig> {
     NodeConfig::load_with_opt(opt)
@@ -299,12 +301,12 @@ impl BaseConfig {
             create_dir_all(data_dir.as_path())?;
         }
 
-        let genesis_config = Self::load_genesis_config_by_opt(
+        let (genesis_config, genesis_config2) = Self::load_genesis_config_by_opt(
             id.clone(),
             data_dir.as_path(),
             opt.genesis_config.clone(),
         )?;
-        let net = ChainNetwork::new(id, genesis_config);
+        let net = ChainNetwork::new(id, genesis_config, genesis_config2);
         Ok(Self {
             net,
             base_data_dir,
@@ -316,15 +318,19 @@ impl BaseConfig {
         id: ChainNetworkID,
         data_dir: &Path,
         genesis_config_name: Option<String>,
-    ) -> Result<GenesisConfig> {
+    ) -> Result<(GenesisConfig, GenesisConfig2)> {
         let config_path = data_dir.join(G_GENESIS_CONFIG_FILE_NAME);
-        let config_in_file = if config_path.exists() {
-            Some(GenesisConfig::load(config_path.as_path())?)
+        let config_path2 = data_dir.join(G_GENESIS_CONFIG_FILE_NAME_2);
+        let configs_in_file = if config_path.exists() {
+            Some((
+                GenesisConfig::load(config_path.as_path())?,
+                GenesisConfig2::load(config_path2.as_path())?,
+            ))
         } else {
             None
         };
-        let genesis_config = match (config_in_file, id) {
-            (Some(config_in_file), ChainNetworkID::Builtin(net)) => {
+        let genesis_config = match (configs_in_file, id) {
+            (Some((config_in_file, config2_in_file)), ChainNetworkID::Builtin(net)) => {
                 // only check the genesis config is resolved.
                 if config_in_file.is_ready() && net.genesis_config().is_ready() {
                     ensure!(
@@ -336,27 +342,34 @@ impl BaseConfig {
                         net.genesis_config(),
                     );
                 }
-                config_in_file
+                (config_in_file, config2_in_file)
             }
-            (Some(config_in_file), ChainNetworkID::Custom(_net)) => config_in_file,
+            (Some((config_in_file, config2_in_file)), ChainNetworkID::Custom(_net)) => {
+                (config_in_file, config2_in_file)
+            }
             (None, ChainNetworkID::Builtin(net)) => {
                 //write genesis config to data_dir
                 let genesis_config = net.genesis_config().clone();
+                let genesis_config2 = net.genesis_config2().clone();
                 genesis_config.save(config_path.as_path())?;
-                genesis_config
+                genesis_config2.save(config_path2.as_path())?;
+                (genesis_config, genesis_config2)
             }
             (None, ChainNetworkID::Custom(_net)) => {
-                let config_name_or_path = genesis_config_name.ok_or_else(|| format_err!("Can not load genesis config from {:?}, please set `genesis-config` cli option.", config_path))?;
-                let genesis_config = match BuiltinNetworkID::from_str(config_name_or_path.as_str())
+                let config_name_or_path = genesis_config_name.clone().ok_or_else(|| format_err!("Can not load genesis config from {:?}, please set `genesis-config` cli option.", config_path))?;
+                let config_name_or_path2 = genesis_config_name.map(|mut name| {name.push_str(".2"); name}).ok_or_else(|| format_err!("Can not load genesis config from {:?}, please set `genesis-config` cli option.", config_path))?;
+                let genesis_configs = match BuiltinNetworkID::from_str(config_name_or_path.as_str())
                 {
-                    Ok(net) => net.genesis_config().clone(),
+                    Ok(net) => (net.genesis_config().clone(), net.genesis_config2().clone()),
                     Err(_) => {
                         let path = Path::new(config_name_or_path.as_str());
-                        GenesisConfig::load(path)?
+                        let path2 = Path::new(config_name_or_path2.as_str());
+                        (GenesisConfig::load(path)?, GenesisConfig2::load(path2)?)
                     }
                 };
-                genesis_config.save(config_path.as_path())?;
-                genesis_config
+                genesis_configs.0.save(config_path.as_path())?;
+                genesis_configs.1.save(config_path2.as_path())?;
+                genesis_configs
             }
         };
         Ok(genesis_config)
