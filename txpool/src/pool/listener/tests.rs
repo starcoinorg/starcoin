@@ -93,5 +93,5 @@ fn new_tx() -> Arc<Transaction> {
     let public_key = (&private_key).into();
 
     let signed = raw.sign(&private_key, public_key).unwrap().into_inner();
-    Arc::new(Transaction::from_pending_block_transaction(signed))
+    Arc::new(Transaction::from_pending_block_transaction(signed.into()))
 }

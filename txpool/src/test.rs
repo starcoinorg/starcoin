@@ -58,7 +58,7 @@ impl AccountSeqNumberClient for MockNonceClient {
 async fn test_txn_expire() -> Result<()> {
     let (txpool_service, _storage, config, _, _) = test_helper::start_txpool().await;
     let txn = generate_txn(config, 0);
-    txpool_service.add_txns(vec![txn]).pop().unwrap()?;
+    txpool_service.add_txns(vec![txn.into()]).pop().unwrap()?;
     let pendings = txpool_service.get_pending_txns(None, Some(0));
     assert_eq!(pendings.len(), 1);
 
@@ -82,7 +82,7 @@ async fn test_tx_pool() -> Result<()> {
     );
     let txn = txn.as_signed_user_txn()?.clone();
     let txn_hash = txn.id();
-    let mut result = txpool_service.add_txns(vec![txn]);
+    let mut result = txpool_service.add_txns(vec![txn.into()]);
     assert!(result.pop().unwrap().is_ok());
     let mut pending_txns = txpool_service.get_pending_txns(Some(10), Some(0));
     assert_eq!(pending_txns.pop().unwrap().id(), txn_hash);
@@ -108,7 +108,7 @@ async fn test_pool_pending() -> Result<()> {
     let metrics_config: &MetricsConfig = &node_config.metrics;
 
     let txn_vec = (0..pool_size + expect_reject)
-        .map(|index| generate_txn(node_config.clone(), index))
+        .map(|index| generate_txn(node_config.clone(), index).into())
         .collect::<Vec<_>>();
 
     let _ = txpool_service.add_txns(txn_vec.clone());
@@ -151,7 +151,7 @@ async fn test_pool_pending() -> Result<()> {
     );
 
     let txn_vec = (pool_size..(pool_size + expect_reject))
-        .map(|index| generate_txn(node_config.clone(), index))
+        .map(|index| generate_txn(node_config.clone(), index).into())
         .collect::<Vec<_>>();
 
     let _ = txpool_service.add_txns(txn_vec.clone());
@@ -193,7 +193,7 @@ async fn test_rollback() -> Result<()> {
         );
         txn.as_signed_user_txn()?.clone()
     };
-    let _ = pool.add_txns(vec![retracted_txn.clone()]);
+    let _ = pool.add_txns(vec![retracted_txn.clone().into()]);
 
     let enacted_txn = {
         let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
@@ -226,7 +226,7 @@ async fn test_rollback() -> Result<()> {
             config.net().genesis_config().consensus(),
             None,
         )?;
-        let excluded_txns = open_block.push_txns(vec![txn])?;
+        let excluded_txns = open_block.push_txns(vec![txn.into()])?;
         assert_eq!(excluded_txns.discarded_txns.len(), 0);
         assert_eq!(excluded_txns.untouched_txns.len(), 0);
 
@@ -247,7 +247,7 @@ async fn test_rollback() -> Result<()> {
         let mut txns: Vec<_> = enacted_block
             .transactions()
             .iter()
-            .map(|t| Transaction::UserTransaction(t.clone()))
+            .map(|t| t.clone().into())
             .collect();
         let parent_block_header = storage
             .get_block_header_by_hash(enacted_block.header().parent_hash())
@@ -278,7 +278,7 @@ async fn test_txpool_actor_service() {
     tx_pool_actor
         .notify(PeerTransactionsMessage::new(
             PeerId::random(),
-            TransactionsMessage::new(vec![txn.clone()]),
+            TransactionsMessage::new(vec![txn.clone().into()]),
         ))
         .unwrap();
 

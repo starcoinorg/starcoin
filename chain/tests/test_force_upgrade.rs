@@ -23,6 +23,7 @@ use starcoin_types::vm_error::StatusCode;
 use starcoin_vm_runtime::force_upgrade_management::{
     get_force_upgrade_account, get_force_upgrade_block_number,
 };
+use starcoin_vm_types::transaction::SignedUserTransactionV2;
 use starcoin_vm_types::{
     account_config::{
         self, association_address, core_code_address, FrozenConfigBurnBlockNumberResource,
@@ -199,7 +200,8 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
                 association_sequence_num + 4,
                 net,
                 expect_burn_block_number,
-            )?],
+            )?
+            .into()],
         )?;
 
         let read_burn_block_number = miner
@@ -226,10 +228,10 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
         // Block number: 52, Check abort txn_status: Keep(ABORTED { code: 27137
         let _block5 = execute_transactions_by_miner(
             &mut miner,
-            vec![frozen_config_do_burn_frozen_from_association(
-                association_sequence_num + 5,
-                net,
-            )?],
+            vec![
+                frozen_config_do_burn_frozen_from_association(association_sequence_num + 5, net)?
+                    .into(),
+            ],
         )?;
 
         // Block nubmer: 53, generate empty block
@@ -238,10 +240,10 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
         // Block number: 54, Execute Succeed
         let _block7 = execute_transactions_by_miner(
             &mut miner,
-            vec![frozen_config_do_burn_frozen_from_association(
-                association_sequence_num + 7,
-                net,
-            )?],
+            vec![
+                frozen_config_do_burn_frozen_from_association(association_sequence_num + 7, net)?
+                    .into(),
+            ],
         );
 
         // Check eq 0
@@ -312,7 +314,7 @@ fn test_frozen_account() -> anyhow::Result<()> {
 
         assert!(starcoin_executor::validate_transaction(
             chain.chain_state(),
-            black_as_receiver_txn,
+            black_as_receiver_txn.into(),
             None
         )
         .is_none());
@@ -335,9 +337,13 @@ fn test_frozen_account() -> anyhow::Result<()> {
             .unwrap();
 
         assert_eq!(
-            starcoin_executor::validate_transaction(chain.chain_state(), black_as_sender_txn, None)
-                .unwrap()
-                .status_code(),
+            starcoin_executor::validate_transaction(
+                chain.chain_state(),
+                black_as_sender_txn.into(),
+                None
+            )
+            .unwrap()
+            .status_code(),
             StatusCode::SENDING_ACCOUNT_FROZEN
         );
     }
@@ -373,7 +379,8 @@ fn test_frozen_for_global_frozen() -> anyhow::Result<()> {
                 amount,
                 net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
                 net,
-            )],
+            )
+            .into()],
         )?;
         assert_eq!(
             chain
@@ -390,11 +397,10 @@ fn test_frozen_for_global_frozen() -> anyhow::Result<()> {
         association_seq_num += 1;
         execute_transactions_by_miner(
             &mut chain,
-            vec![build_global_frozen_txn_sign_with_association(
-                true,
-                association_seq_num,
-                net,
-            )?],
+            vec![
+                build_global_frozen_txn_sign_with_association(true, association_seq_num, net)?
+                    .into(),
+            ],
         )?;
 
         let transfer_to_association_txn = peer_to_peer_v2(
@@ -408,7 +414,7 @@ fn test_frozen_for_global_frozen() -> anyhow::Result<()> {
         assert_eq!(
             starcoin_executor::validate_transaction(
                 chain.chain_state(),
-                transfer_to_association_txn,
+                transfer_to_association_txn.into(),
                 None
             )
             .unwrap()
@@ -422,11 +428,10 @@ fn test_frozen_for_global_frozen() -> anyhow::Result<()> {
         association_seq_num += 1;
         execute_transactions_by_miner(
             &mut chain,
-            vec![build_global_frozen_txn_sign_with_association(
-                false,
-                association_seq_num,
-                net,
-            )?],
+            vec![
+                build_global_frozen_txn_sign_with_association(false, association_seq_num, net)?
+                    .into(),
+            ],
         )?;
 
         let transfer_to_association_txn = peer_to_peer_v2(
@@ -435,7 +440,8 @@ fn test_frozen_for_global_frozen() -> anyhow::Result<()> {
             random_user_seq_num,
             amount,
             net,
-        );
+        )
+        .into();
 
         assert!(starcoin_executor::validate_transaction(
             chain.chain_state(),
@@ -461,7 +467,7 @@ fn gen_empty_block_for_miner(miner: &mut BlockChain) -> anyhow::Result<Block> {
 
 fn execute_transactions_by_miner(
     miner: &mut BlockChain,
-    user_txns: Vec<SignedUserTransaction>,
+    user_txns: Vec<SignedUserTransactionV2>,
 ) -> anyhow::Result<Block> {
     let miner_account = Account::new();
     let (block_template, _excluded) = miner.create_block_template(
@@ -537,7 +543,11 @@ fn gen_chain_for_upgrade_test(count: u64, net: &ChainNetwork) -> anyhow::Result<
         let (block_template, _) = block_chain.create_block_template(
             *miner_account.address(),
             None,
-            if i == 0 { vec![txn.clone()] } else { vec![] },
+            if i == 0 {
+                vec![txn.clone().into()]
+            } else {
+                vec![]
+            },
             vec![],
             None,
         )?;

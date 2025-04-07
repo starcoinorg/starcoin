@@ -19,7 +19,7 @@ use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::language_storage::TypeTag;
 use starcoin_vm_types::on_chain_config::consensus_config_type_tag;
-use starcoin_vm_types::transaction::RawUserTransaction;
+use starcoin_vm_types::transaction::{RawUserTransaction, SignedUserTransactionV2};
 use std::sync::Arc;
 use test_helper::dao::{
     min_action_delay, proposal_state, quorum_vote, voting_delay, voting_period, ACTIVE, AGREED,
@@ -30,7 +30,7 @@ use test_helper::executor::{get_balance, get_sequence_number};
 pub fn create_new_block(
     chain: &BlockChain,
     account: &Account,
-    txns: Vec<SignedUserTransaction>,
+    txns: Vec<SignedUserTransactionV2>,
 ) -> Result<Block> {
     let (template, _) =
         chain.create_block_template(*account.address(), None, txns, vec![], None)?;
@@ -63,7 +63,7 @@ fn create_user_txn(
     alice: &Account,
     pre_mint_amount: u128,
     expire_time: u64,
-) -> Result<Vec<SignedUserTransaction>> {
+) -> Result<Vec<SignedUserTransactionV2>> {
     let script_function = encode_create_account_script_function(
         net.stdlib_version(),
         stc_type_tag(),
@@ -79,7 +79,7 @@ fn create_user_txn(
             TransactionPayload::ScriptFunction(script_function),
             expire_time + 60 * 60,
         ))?;
-    Ok(vec![txn])
+    Ok(vec![txn.into()])
 }
 
 fn build_create_vote_txn(
@@ -216,12 +216,10 @@ pub fn modify_on_chain_config_by_dao_block(
         let block2 = create_new_block(
             &chain,
             &alice,
-            vec![build_create_vote_txn(
-                &alice,
-                alice_seq,
-                vote_script,
-                block_timestamp / 1000,
-            )],
+            vec![
+                build_create_vote_txn(&alice, alice_seq, vote_script, block_timestamp / 1000)
+                    .into(),
+            ],
         )?;
         chain.apply(block2)?;
 
@@ -253,7 +251,8 @@ pub fn modify_on_chain_config_by_dao_block(
                 action_type_tag.clone(),
                 voting_power,
                 block_timestamp / 1000,
-            )],
+            )
+            .into()],
         )?;
         chain.apply(block3)?;
     }
@@ -309,7 +308,8 @@ pub fn modify_on_chain_config_by_dao_block(
                 net,
                 action_type_tag.clone(),
                 block_timestamp / 1000,
-            )],
+            )
+            .into()],
         )?;
         chain.apply(block6)?;
         let chain_state = chain.chain_state();
@@ -346,12 +346,9 @@ pub fn modify_on_chain_config_by_dao_block(
         let block8 = create_new_block(
             &chain,
             &alice,
-            vec![build_execute_txn(
-                alice_seq,
-                &alice,
-                execute_script,
-                block_timestamp / 1000,
-            )],
+            vec![
+                build_execute_txn(alice_seq, &alice, execute_script, block_timestamp / 1000).into(),
+            ],
         )?;
         chain.apply(block8)?;
     }

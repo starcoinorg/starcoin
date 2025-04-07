@@ -23,6 +23,7 @@ use starcoin_types::{
 };
 use std::convert::TryFrom;
 use std::sync::Arc;
+use starcoin_vm_types::transaction::SignedUserTransactionV2;
 
 type LinearizedBlockForest = Vec<Block>;
 
@@ -53,6 +54,7 @@ prop_compose! {
         header in Just(header),
         // block in block_strategy
     ) -> Block {
+        let user_txns = user_txns.into_iter().map(SignedUserTransactionV2::from).collect();
         let body = BlockBody::new(user_txns, None);
         Block::new(header, body)
     }
@@ -133,7 +135,7 @@ prop_compose! {
                 txns
                     .iter()
                     .cloned()
-                    .map(|txn| SignedUserTransaction::try_from(txn).unwrap()),
+                    .map(|txn| SignedUserTransaction::try_from(txn).unwrap().into()),
             );
             t
         };

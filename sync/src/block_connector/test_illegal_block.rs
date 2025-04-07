@@ -528,7 +528,7 @@ async fn test_verify_block_used_gas_failed() {
 async fn test_verify_txn_count_failed() {
     // TODO: fix me
     let (mut new_block, mut main) = new_block_and_main().await;
-    let txns = vec![SignedUserTransaction::mock()];
+    let txns = vec![SignedUserTransaction::mock().into()];
     let mut body = new_block.body.clone();
     body.transactions = txns;
     new_block.body = body;

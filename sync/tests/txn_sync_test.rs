@@ -25,7 +25,7 @@ fn test_txn_sync_actor() {
 
     // add txn to node1
     let user_txn = gen_user_txn(&first_config);
-    let import_result = txpool_1.add_txns(vec![user_txn.clone()]).pop();
+    let import_result = txpool_1.add_txns(vec![user_txn.clone().into()]).pop();
     assert!(import_result.unwrap().is_ok());
 
     let mut second_config = NodeConfig::random_for_test();

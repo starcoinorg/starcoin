@@ -58,7 +58,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     let (block_template, _) = block_chain.create_block_template(
         *miner_account.address(),
         None,
-        vec![txn.clone()],
+        vec![txn.clone().into()],
         vec![],
         None,
     )?;
@@ -173,7 +173,11 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
         txn.as_signed_user_txn()?.clone()
     };
     let txn_id = txn.id();
-    txpool_service.add_txns(vec![txn]).pop().unwrap().unwrap();
+    txpool_service
+        .add_txns(vec![txn.into()])
+        .pop()
+        .unwrap()
+        .unwrap();
     let mut receiver = receiver;
     let res = receiver.next().await.unwrap();
     let prefix = r#"{"jsonrpc":"2.0","method":"starcoin_subscription","params":{"result":[""#;

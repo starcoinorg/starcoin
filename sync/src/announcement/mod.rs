@@ -143,7 +143,7 @@ mod tests {
         let txpool = service1.txpool();
         let txns = test_helper::txn::create_account(config_1.net(), 0, 1);
         txpool
-            .add_txns(txns.into_iter().map(|(_, txn)| txn).collect())
+            .add_txns(txns.into_iter().map(|(_, txn)| txn.into()).collect())
             .into_iter()
             .for_each(|r| r.unwrap());
 

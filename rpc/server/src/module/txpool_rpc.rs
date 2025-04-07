@@ -112,18 +112,19 @@ mod tests {
     use futures::executor::block_on;
     use jsonrpc_core::IoHandler;
     use starcoin_txpool_mock_service::MockTxPoolService;
+    use starcoin_vm_types::transaction::SignedUserTransaction;
 
     #[test]
     fn test_submit_transaction() {
-        let txn = SignedUserTransaction::mock();
+        let txn: SignedUserTransactionV2 = SignedUserTransaction::mock().into();
         let result = serde_json::to_string(&txn).unwrap();
-        let txn1 = serde_json::from_str::<SignedUserTransaction>(result.as_str()).unwrap();
+        let txn1 = serde_json::from_str::<SignedUserTransactionV2>(result.as_str()).unwrap();
         assert_eq!(txn, txn1);
 
         let mut io = IoHandler::new();
         let txpool_service = MockTxPoolService::new();
         io.extend_with(TxPoolRpcImpl::new(txpool_service).to_delegate());
-        let txn = SignedUserTransaction::mock();
+        let txn: SignedUserTransactionV2 = SignedUserTransaction::mock().into();
         let txn_hash = txn.id();
         let prefix = r#"{"jsonrpc":"2.0","method":"txpool.submit_transaction","params":["#;
         let suffix = r#"],"id":0}"#;

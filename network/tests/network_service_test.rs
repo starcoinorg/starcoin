@@ -144,7 +144,7 @@ async fn test_event_notify_receive() {
     // transaction
     let msg_send = PeerMessage::new_transactions(
         network2.peer_id(),
-        TransactionsMessage::new(vec![SignedUserTransaction::mock()]),
+        TransactionsMessage::new(vec![SignedUserTransaction::mock().into()]),
     );
     let mut receiver = network2.message_handler.channel();
     network1.service_ref.send_peer_message(msg_send.clone());
@@ -202,17 +202,17 @@ async fn test_event_notify_receive_repeat_transaction() {
 
     let msg_send1 = PeerMessage::new_transactions(
         network2.peer_id(),
-        TransactionsMessage::new(vec![txn1.clone(), txn2.clone()]),
+        TransactionsMessage::new(vec![txn1.clone().into(), txn2.clone().into()]),
     );
 
     let msg_send2 = PeerMessage::new_transactions(
         network2.peer_id(),
-        TransactionsMessage::new(vec![txn2.clone(), txn3.clone()]),
+        TransactionsMessage::new(vec![txn2.clone().into(), txn3.clone().into()]),
     );
 
     let msg_send3 = PeerMessage::new_transactions(
         network2.peer_id(),
-        TransactionsMessage::new(vec![txn1.clone(), txn3.clone()]),
+        TransactionsMessage::new(vec![txn1.clone().into(), txn3.clone().into()]),
     );
 
     let mut receiver = network2.message_handler.channel();
@@ -355,7 +355,7 @@ async fn test_filter_protocol() {
     let mut receiver2 = service2.message_handler.channel();
     let mut receiver3 = service3.message_handler.channel();
 
-    let txns = vec![SignedUserTransaction::mock()];
+    let txns = vec![SignedUserTransaction::mock().into()];
     let notification = NotificationMessage::Transactions(TransactionsMessage::new(txns));
     service1.service_ref.broadcast(notification.clone());
 
