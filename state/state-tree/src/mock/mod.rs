@@ -40,7 +40,7 @@ impl StateNodeStore for MockStateNodeStore {
 
     fn write_nodes(&self, nodes: BTreeMap<HashValue, StateNode>) -> Result<(), Error> {
         let mut store_nodes = self.nodes.write();
-        store_nodes.extend(nodes.into_iter());
+        store_nodes.extend(nodes);
         Ok(())
     }
 

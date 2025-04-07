@@ -413,10 +413,8 @@ impl StarcoinVM {
                         self.check_move_version(compiled_module.version() as u64, block_number)?;
                     };
                 }
-                let enforced = match Self::is_enforced(remote_cache, package.package_address()) {
-                    Ok(is_enforced) => is_enforced,
-                    _ => false,
-                };
+                let enforced =
+                    Self::is_enforced(remote_cache, package.package_address()).unwrap_or_default();
                 let only_new_module =
                     match Self::only_new_module_strategy(remote_cache, package.package_address()) {
                         Err(e) => {
@@ -591,10 +589,7 @@ impl StarcoinVM {
                 };
             }
 
-            let enforced = match Self::is_enforced(&data_cache, package_address) {
-                Ok(is_enforced) => is_enforced,
-                _ => false,
-            };
+            let enforced = Self::is_enforced(&data_cache, package_address).unwrap_or_default();
             let only_new_module = match Self::only_new_module_strategy(&data_cache, package_address)
             {
                 Err(e) => {
@@ -877,7 +872,7 @@ impl StarcoinVM {
         storage: &S,
         block_metadata: BlockMetadata,
     ) -> Result<TransactionOutput, VMStatus> {
-        #[cfg(testing)]
+        #[cfg(feature = "testing")]
         info!("process_block_meta begin");
         let txn_sender = account_config::genesis_address();
         // always use 0 gas for system.
@@ -923,7 +918,7 @@ impl StarcoinVM {
             )
             .map(|_return_vals| ())
             .or_else(convert_prologue_runtime_error)?;
-        #[cfg(testing)]
+        #[cfg(feature = "testing")]
         info!("process_block_meta end");
         get_transaction_output(
             &mut (),
@@ -1403,10 +1398,10 @@ impl StarcoinVM {
         vm.execute_block_transactions(state_view, txns, block_gas_limit)
     }
 
-    pub fn load_module<'r, R: MoveResolverExt>(
+    pub fn load_module<R: MoveResolverExt>(
         &self,
         module_id: &ModuleId,
-        remote: &'r R,
+        remote: &R,
     ) -> VMResult<Arc<CompiledModule>> {
         self.move_vm.load_module(module_id, remote)
     }
@@ -1429,7 +1424,7 @@ impl TransactionBlock {
     }
 }
 
-/// UserTransaction | BlockPrologue | UserTransaction | UserTransactionExt
+/// TransactionBlock::UserTransaction | TransactionBlock::BlockPrologue | TransactionBlock::UserTransaction
 pub fn chunk_block_transactions(txns: Vec<Transaction>) -> Vec<TransactionBlock> {
     let mut blocks = vec![];
     let mut buf = vec![];
@@ -1472,7 +1467,7 @@ pub(crate) fn charge_global_write_gas_usage<R: MoveResolverExt>(
     let write_set_gas = u64::from(gas_meter.cal_write_set_gas());
     let total_cost = InternalGasPerByte::from(write_set_gas)
         * NumBytes::new(session.as_ref().num_mutated_accounts(sender));
-    #[cfg(testing)]
+    #[cfg(feature = "testing")]
     info!(
         "charge_global_write_gas_usage {} {}",
         total_cost,
@@ -1560,16 +1555,15 @@ impl VMExecutor for StarcoinVM {
     /// transaction output.
     fn execute_block(
         transactions: Vec<Transaction>,
-        state_views: &[impl StateView],
+        state_view: &impl StateView,
         block_gas_limit: Option<u64>,
         metrics: Option<VMMetrics>,
     ) -> Result<Vec<TransactionOutput>, VMStatus> {
         let concurrency_level = Self::get_concurrency_level();
         if concurrency_level > 1 {
-            // todo: handle parallel execution
             let (result, _) = crate::parallel_executor::ParallelStarcoinVM::execute_block(
                 transactions,
-                state_views.first().unwrap(),
+                state_view,
                 concurrency_level,
                 block_gas_limit,
                 metrics,
@@ -1577,46 +1571,13 @@ impl VMExecutor for StarcoinVM {
             // debug!("TurboSTM executor concurrency_level {}", concurrency_level);
             Ok(result)
         } else {
-            let mut block_outputs = vec![];
-            let state_view = state_views.first().expect("state view is empty");
-            let txns = if state_views.len() == 2 {
-                let state_view1 = state_views.last().expect("state view1 is empty");
-                let (ext_txns, txns) = {
-                    let mut ext_txns = vec![];
-                    let mut txns = vec![];
-                    transactions.into_iter().for_each(|txn| match txn {
-                        Transaction::UserTransaction(_) => txns.push(txn),
-                        Transaction::BlockMetadata(_) => ext_txns.push(txn),
-                        Transaction::UserTransactionExt(_) => ext_txns.push(txn),
-                    });
-                    (ext_txns, txns)
-                };
-                if !ext_txns.is_empty() {
-                    let mut vm = StarcoinVM::new(metrics.clone());
-                    let mut output =
-                        vm.execute_block_transactions(state_view1, ext_txns, block_gas_limit)?;
-                    block_outputs.append(&mut output);
-                }
-                txns
-            } else {
-                transactions
-            };
-
-            if !txns.is_empty() {
-                let gas_used: u64 = block_outputs
-                    .iter()
-                    .map(|(_, output)| output.gas_used())
-                    .sum();
-                let mut vm = StarcoinVM::new(metrics);
-                let mut output = vm.execute_block_transactions(
-                    state_view,
-                    txns,
-                    block_gas_limit.map(|limit| limit - gas_used),
-                )?;
-                block_outputs.append(&mut output);
-            }
-
-            Ok(block_outputs
+            let output = Self::execute_block_and_keep_vm_status(
+                transactions,
+                state_view,
+                block_gas_limit,
+                metrics,
+            )?;
+            Ok(output
                 .into_iter()
                 .map(|(_vm_status, txn_output)| txn_output)
                 .collect())

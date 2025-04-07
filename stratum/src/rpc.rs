@@ -14,9 +14,7 @@ use starcoin_miner::SubmitSealRequest as MinerSubmitSealRequest;
 use starcoin_service_registry::{ServiceRef, ServiceRequest};
 use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::system_events::MintBlockEvent;
-use std::borrow::BorrowMut;
 use std::convert::TryInto;
-use std::io::Write;
 use std::sync::Arc;
 use std::sync::RwLock;
 
@@ -117,6 +115,7 @@ pub(crate) struct SubscribeJobEvent(
     pub(crate) LoginRequest,
 );
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub(crate) struct Unsubscribe(pub(crate) SubscriptionId);
 
@@ -272,7 +271,7 @@ impl StratumJobResponse {
         target: String,
     ) -> Self {
         let mut minting_blob = e.minting_blob.clone();
-        let _ = minting_blob[35..39].borrow_mut().write_all(&worker_id.buff);
+        minting_blob[35..39].copy_from_slice(&worker_id.buff);
 
         let job_id = JobId::from_bob(&e.minting_blob).encode();
         Self {

@@ -11,8 +11,8 @@ rust-version = { workspace = true }
 
 [dependencies]
 anyhow = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
-starcoin-crypto = { package = "starcoin-crypto", workspace = true }
+bcs-ext = { workspace = true }
+starcoin-crypto = { workspace = true }
 starcoin-config = { workspace = true }
 move-core-types = { workspace = true }
 once_cell = { workspace = true }
@@ -20,7 +20,7 @@ tracing = { workspace = true }
 move-vm-runtime = { workspace = true }
 num_enum = { workspace = true }
 rand = { workspace = true }
-rand_core = { default-features = false, workspace = true }
+rand_core = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-natives = { workspace = true }
 starcoin-types = { workspace = true }
@@ -37,9 +37,10 @@ num_cpus = { workspace = true }
 hex = "0.4.3"
 
 [dev-dependencies]
-stdlib = { package = "stdlib", workspace = true }
+stdlib = { workspace = true }
 
 [features]
 default = ["metrics"]
 metrics = ["starcoin-metrics"]
 testing = ["move-stdlib/testing", "starcoin-natives/testing"]
+print_gas_info = []

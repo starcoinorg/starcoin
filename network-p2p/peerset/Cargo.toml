@@ -1,6 +1,6 @@
 [dependencies]
 futures = { workspace = true }
-libp2p = { default-features = false, workspace = true }
+libp2p = { workspace = true }
 log = { workspace = true }
 serde_json = { features = ["arbitrary_precision"], workspace = true }
 sp-utils = { workspace = true }

@@ -163,7 +163,7 @@ mod test {
             parse_type_tag(token).unwrap(),
             TypeTag::Struct(Box::new(type_tag.clone()))
         );
-        assert_eq!(tc, type_tag.try_into().unwrap());
+        assert_eq!(tc, type_tag.into());
     }
 
     #[derive(Serialize, Deserialize, Debug, Clone, PartialOrd, Eq, PartialEq)]

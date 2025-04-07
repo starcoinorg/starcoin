@@ -60,8 +60,9 @@ pub struct TestOpts {
     format: Format,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Default, Eq, PartialEq)]
 enum Format {
+    #[default]
     Pretty,
     Terse,
     Json,
@@ -93,12 +94,6 @@ impl FromStr for Format {
             "json" => Ok(Format::Json),
             _ => Err(format!("Unsupported format: {}", s)),
         }
-    }
-}
-
-impl Default for Format {
-    fn default() -> Self {
-        Format::Pretty
     }
 }
 

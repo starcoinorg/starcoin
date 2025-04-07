@@ -5,7 +5,7 @@ name = "bench_merkle_tree"
 [dependencies]
 anyhow = { workspace = true }
 backtrace = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
+bcs-ext = { workspace = true }
 byteorder = { workspace = true }
 hex = { workspace = true }
 mirai-annotations = { workspace = true }
@@ -25,7 +25,7 @@ criterion = { workspace = true }
 proptest = { workspace = true }
 proptest-derive = { workspace = true }
 rand = { workspace = true }
-rand_core = { default-features = false, workspace = true }
+rand_core = { workspace = true }
 starcoin-crypto = { workspace = true }
 
 [features]

@@ -36,7 +36,7 @@ fn do_execute_block_transactions<S: StateView>(
     metrics: Option<VMMetrics>,
 ) -> Result<Vec<TransactionOutput>> {
     let result =
-        <StarcoinVM as VMExecutor>::execute_block(txns, &[chain_state], block_gas_limit, metrics)?;
+        <StarcoinVM as VMExecutor>::execute_block(txns, chain_state, block_gas_limit, metrics)?;
     Ok(result)
 }
 

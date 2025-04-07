@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#![allow(clippy::integer_arithmetic)]
+#![allow(clippy::arithmetic_side_effects)]
 use crate::tasks::block_sync_task::SyncBlockData;
 use crate::tasks::mock::{ErrorStrategy, MockBlockIdFetcher, SyncNodeMocker};
 use crate::tasks::{
@@ -133,7 +133,7 @@ pub async fn test_sync_invalid_target() -> Result<()> {
 
     let mut target = arc_node1.sync_target();
 
-    target.block_info.total_difficulty = U256::max_value();
+    target.block_info.total_difficulty = U256::MAX;
 
     let current_block_header = node2.chain().current_header();
 

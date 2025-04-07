@@ -6,6 +6,7 @@ mod get_proof_cmd;
 mod get_root_cmd;
 mod list_cmd;
 
+#[allow(ambiguous_glob_reexports)]
 pub use get_cmd::*;
 pub use get_proof_cmd::*;
 pub use get_root_cmd::*;

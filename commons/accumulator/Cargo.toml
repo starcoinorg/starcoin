@@ -1,9 +1,9 @@
 [dependencies]
 anyhow = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
+bcs-ext = { workspace = true }
 byteorder = { workspace = true }
-itertools = { default-features = false, workspace = true }
-starcoin-logger = { package = "starcoin-logger", workspace = true }
+itertools = { workspace = true }
+starcoin-logger = { workspace = true }
 lru = { workspace = true }
 mirai-annotations = { workspace = true }
 once_cell = { workspace = true }
@@ -16,7 +16,7 @@ starcoin-crypto = { workspace = true }
 proptest = { workspace = true }
 proptest-derive = { workspace = true }
 rand = { workspace = true }
-rand_core = { default-features = false, workspace = true }
+rand_core = { workspace = true }
 
 [features]
 default = []

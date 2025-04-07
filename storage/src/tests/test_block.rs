@@ -31,7 +31,7 @@ fn test_block() {
 
     let block_header1 = BlockHeader::new(
         HashValue::random(),
-        dt.timestamp_nanos() as u64,
+        dt.timestamp_nanos_opt().expect("") as u64,
         1,
         AccountAddress::random(),
         HashValue::zero(),
@@ -90,7 +90,7 @@ fn test_block_number() {
 
     let block_header1 = BlockHeader::new(
         HashValue::random(),
-        dt.timestamp_nanos() as u64,
+        dt.timestamp_nanos_opt().expect("") as u64,
         0,
         AccountAddress::random(),
         HashValue::zero(),
@@ -137,7 +137,7 @@ fn test_old_failed_block_decode() {
     let dt = Local::now();
     let block_header = BlockHeader::new(
         HashValue::random(),
-        dt.timestamp_nanos() as u64,
+        dt.timestamp_nanos_opt().expect("") as u64,
         2,
         AccountAddress::random(),
         HashValue::zero(),
@@ -173,7 +173,7 @@ fn test_save_failed_block() {
 
     let block_header = BlockHeader::new(
         HashValue::random(),
-        dt.timestamp_nanos() as u64,
+        dt.timestamp_nanos_opt().expect("") as u64,
         3,
         AccountAddress::random(),
         HashValue::zero(),

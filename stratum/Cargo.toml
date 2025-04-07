@@ -2,7 +2,7 @@
 anyhow = { workspace = true }
 byteorder = { workspace = true }
 futures = { workspace = true }
-hex = { default-features = false, workspace = true }
+hex = { workspace = true }
 jsonrpc-tcp-server = { git = "https://github.com/starcoinorg/jsonrpc", rev = "e895b6cc5897f3813a953a9a6bb4718b4856ab19" }
 jsonrpc-derive = { git = "https://github.com/starcoinorg/jsonrpc", rev = "e895b6cc5897f3813a953a9a6bb4718b4856ab19" }
 jsonrpc-core = { git = "https://github.com/starcoinorg/jsonrpc", rev = "e895b6cc5897f3813a953a9a6bb4718b4856ab19", features = ["arbitrary_precision"] }

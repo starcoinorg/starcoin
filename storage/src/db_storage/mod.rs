@@ -61,6 +61,7 @@ impl DBStorage {
         if Self::db_exists(path) {
             let cf_vec = Self::list_cf(path)?;
             let mut db_cfs_set: HashSet<_> = cf_vec.iter().collect();
+            #[allow(clippy::unnecessary_to_owned)]
             db_cfs_set.remove(&DEFAULT_PREFIX_NAME.to_string());
             ensure!(
                 db_cfs_set.len() <= cfs_set.len(),

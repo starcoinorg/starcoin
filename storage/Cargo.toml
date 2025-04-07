@@ -1,6 +1,6 @@
 [dependencies]
 anyhow = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
+bcs-ext = { workspace = true }
 byteorder = { workspace = true }
 chrono = { workspace = true }
 lru = { workspace = true }
@@ -13,11 +13,11 @@ serde = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-crypto = { workspace = true }
 thiserror = { workspace = true }
-starcoin-accumulator = { package = "starcoin-accumulator", workspace = true }
+starcoin-accumulator = { workspace = true }
 starcoin-state-store-api = { workspace = true }
 coarsetime = { workspace = true }
-forkable-jellyfish-merkle = { package = "forkable-jellyfish-merkle", workspace = true }
-starcoin-logger = { package = "starcoin-logger", workspace = true }
+forkable-jellyfish-merkle = { workspace = true }
+starcoin-logger = { workspace = true }
 network-types = { workspace = true }
 network-p2p-types = { workspace = true }
 starcoin-config = { workspace = true }

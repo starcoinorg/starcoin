@@ -226,7 +226,7 @@ async fn main() -> Result<()> {
             .map(|r| r.sequence_number())
             .unwrap_or_default()
     };
-    for (i, airdrops) in airdrop_infos.chunks(batch_size).into_iter().enumerate() {
+    for (i, airdrops) in airdrop_infos.chunks(batch_size).enumerate() {
         let addresses = MoveValue::Vector(
             airdrops
                 .iter()

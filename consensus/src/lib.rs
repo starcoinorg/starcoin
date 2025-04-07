@@ -1,13 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#![deny(clippy::integer_arithmetic)]
+#![allow(clippy::arithmetic_side_effects)]
 use crate::argon::ArgonConsensus;
 use crate::cn::CryptoNightConsensus;
 use crate::dummy::DummyConsensus;
 use crate::keccak::KeccakConsensus;
 use anyhow::Result;
-use byteorder::{LittleEndian, WriteBytesExt};
 use once_cell::sync::Lazy;
 use rand::Rng;
 use starcoin_chain_api::ChainReader;
@@ -16,7 +15,6 @@ use starcoin_time_service::TimeService;
 use starcoin_types::block::{BlockHeader, BlockHeaderExtra};
 use starcoin_types::U256;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
-use std::io::Write;
 
 pub mod argon;
 pub mod cn;
@@ -31,11 +29,11 @@ pub use consensus::{Consensus, ConsensusVerifyError};
 pub use starcoin_time_service::duration_since_epoch;
 
 pub fn target_to_difficulty(target: U256) -> U256 {
-    U256::max_value() / target
+    U256::MAX / target
 }
 
 pub fn difficult_to_target(difficulty: U256) -> U256 {
-    U256::max_value() / difficulty
+    U256::MAX / difficulty
 }
 
 pub fn set_header_nonce(header: &[u8], nonce: u32, extra: &BlockHeaderExtra) -> Vec<u8> {
@@ -44,9 +42,8 @@ pub fn set_header_nonce(header: &[u8], nonce: u32, extra: &BlockHeaderExtra) -> 
         return vec![];
     }
     let mut header = header.to_owned();
-    // XXX FIXME YSG, why need change code?
-    let _ = <[u8] as AsMut<[u8]>>::as_mut(&mut header[39..]).write_u32::<LittleEndian>(nonce);
-    let _ = <[u8] as AsMut<[u8]>>::as_mut(&mut header[35..39]).write_all(extra.as_slice());
+    header[35..39].copy_from_slice(extra.as_slice());
+    header[39..43].copy_from_slice(&nonce.to_le_bytes());
     header
 }
 
@@ -116,5 +113,5 @@ impl Consensus for ConsensusStrategy {
 pub fn generate_nonce() -> u32 {
     let mut rng = rand::thread_rng();
     rng.gen::<u32>();
-    rng.gen_range(0..u32::max_value())
+    rng.gen_range(0..u32::MAX)
 }

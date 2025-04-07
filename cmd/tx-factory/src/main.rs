@@ -133,7 +133,7 @@ fn main() {
     let batch_size = opts.batch_size;
 
     let mut connected = RpcClient::connect_ipc(opts.ipc_path.clone());
-    while matches!(connected, Err(_)) {
+    while connected.is_err() {
         std::thread::sleep(Duration::from_millis(1000));
         connected = RpcClient::connect_ipc(opts.ipc_path.clone());
         info!("re connecting...");
@@ -316,7 +316,7 @@ impl TxnMocker {
         let result = self.client.submit_transaction(user_txn);
 
         // increase sequence number if added in pool.
-        if matches!(result, Ok(_)) {
+        if result.is_ok() {
             self.next_sequence_number += 1;
         }
         if blocking {
@@ -374,7 +374,7 @@ impl TxnMocker {
         let txn_hash = user_txn.id();
         let result = self.client.submit_transaction(user_txn);
 
-        if matches!(result, Ok(_)) && blocking {
+        if result.is_ok() && blocking {
             self.client.watch_txn(
                 txn_hash,
                 Some(Duration::from_secs(self.watch_timeout as u64)),
@@ -495,7 +495,7 @@ impl TxnMocker {
                     expiration_timestamp,
                 )?;
                 let result = self.submit_txn(txn, self.account_address, true);
-                if matches!(result, Ok(_)) {
+                if result.is_ok() {
                     info!("account transfer submit ok.");
                 } else {
                     info!("error: {:?}", result);

@@ -6,8 +6,8 @@ hex = { workspace = true }
 itertools = { workspace = true }
 parking_lot = { workspace = true }
 rand = { workspace = true }
-serde = { default-features = false, workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
+serde = { workspace = true }
+bcs-ext = { workspace = true }
 network-p2p-types = { workspace = true }
 network-types = { workspace = true }
 schemars = { workspace = true }
