@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "benchmarks",
+    #"benchmarks",
     "commons/stest",
     "commons/bcs_ext",
     "commons/decrypt",
@@ -100,22 +100,22 @@ members = [
     "cmd/faucet",
     "cmd/tx-factory",
     "cmd/miner_client",
-    "cmd/generator",
+    #"cmd/generator",
     "dataformat-generator",
     "cmd/indexer",
     "cmd/resource-exporter",
     "cmd/merkle-generator",
-    "cmd/peer-watcher",
+    #"cmd/peer-watcher",
     "cmd/airdrop",
-    "cmd/replay",
+    #"cmd/replay",
     "stratum",
     "cmd/miner_client/api",
-    "cmd/db-exporter",
+    #"cmd/db-exporter",
     "cmd/genesis-nft-miner",
 ]
 
 default-members = [
-    "benchmarks",
+    #"benchmarks",
     "commons/stest",
     "commons/bcs_ext",
     "commons/decrypt",
@@ -207,18 +207,18 @@ default-members = [
     "cmd/faucet",
     "cmd/tx-factory",
     "cmd/miner_client",
-    "cmd/generator",
+    #"cmd/generator",
     "dataformat-generator",
     "cmd/indexer",
     "cmd/resource-exporter",
     "cmd/merkle-generator",
-    "cmd/peer-watcher",
+    #"cmd/peer-watcher",
     "cmd/airdrop",
-    "cmd/replay",
+    #"cmd/replay",
     "cmd/genesis-nft-miner",
     "stratum",
     "cmd/miner_client/api",
-    "cmd/db-exporter",
+    #"cmd/db-exporter",
 ]
 
 [profile.dev]
@@ -521,12 +521,14 @@ starcoin-transaction-benchmarks = { path = "vm/transaction-benchmarks" }
 starcoin-language-e2e-tests = { path = "vm/e2e-tests" }
 starcoin-proptest-helpers = { path = "vm/proptest-helpers" }
 
-starcoin-storage2 = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-storage" }
-starcoin-crypto2 = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "a14be64c9cd5889389730c76f00a7f82ad5c99cf" }
-starcoin-vm2 = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-vm-runtime" }
-starcoin-vm2-types = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-vm-types" }
-starcoin-types2 = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-types" }
-starcoin-state2-store-api = { git = "https://github.com/starcoinorg/starcoin", branch = "starcoin-vm2", package = "starcoin-state-store-api" }
+starcoin-crypto2 = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "a14be64c9cd5889389730c76f00a7f82ad5c99cf", package = "starcoin-crypto" }
+starcoin-storage2 = { git = "https://github.com/starcoinorg/starcoin", rev = "cb75a0b9f1ddd02357424b8b55d0c6352761c079", package = "starcoin-storage" }
+starcoin-vm2 = { git = "https://github.com/starcoinorg/starcoin", rev = "cb75a0b9f1ddd02357424b8b55d0c6352761c079", package = "starcoin-vm-runtime" }
+starcoin-vm2-types = { git = "https://github.com/starcoinorg/starcoin", rev = "cb75a0b9f1ddd02357424b8b55d0c6352761c079", package = "starcoin-vm-types" }
+starcoin-types2 = { git = "https://github.com/starcoinorg/starcoin", rev = "cb75a0b9f1ddd02357424b8b55d0c6352761c079", package = "starcoin-types" }
+starcoin-vm2-statedb = { git = "https://github.com/starcoinorg/starcoin", rev = "cb75a0b9f1ddd02357424b8b55d0c6352761c079", package = "starcoin-statedb" }
+starcoin-state2-api = { git = "https://github.com/starcoinorg/starcoin", rev = "cb75a0b9f1ddd02357424b8b55d0c6352761c079", package = "starcoin-state-api" }
+starcoin-transaction2-builder = { git = "https://github.com/starcoinorg/starcoin", rev = "cb75a0b9f1ddd02357424b8b55d0c6352761c079", package = "starcoin-transaction-builder" }
 
 syn = { version = "1.0.107", features = [
     "full",

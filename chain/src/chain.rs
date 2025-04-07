@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::verifier::{BlockVerifier, FullVerifier};
+use crate::vm2;
 use anyhow::{bail, ensure, format_err, Result};
 use once_cell::sync::Lazy;
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
@@ -22,12 +23,16 @@ use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
+use starcoin_storage2::{
+    storage::StorageInstance as StorageInstance2, Storage as Storage2, Store as Store2,
+};
 use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::RichTransactionInfo;
+use starcoin_types::utils::{to_hash_value, to_hash_value2};
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
@@ -35,6 +40,10 @@ use starcoin_types::{
     error::BlockExecutorError,
     transaction::{SignedUserTransaction, Transaction},
     U256,
+};
+use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
+use starcoin_vm2_types::transaction::{
+    SignedUserTransaction as SignedUserTransaction2, Transaction as Transaction2,
 };
 use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
 use starcoin_vm_types::access_path::AccessPath;
@@ -586,8 +595,8 @@ pub struct BlockChain {
     txn_accumulator: MerkleAccumulator,
     block_accumulator: MerkleAccumulator,
     status: ChainStatusWithBlock,
-    statedb: ChainStateDB,
-    storage: Arc<dyn Store>,
+    statedb: (ChainStateDB, ChainStateDB2),
+    storage: (Arc<dyn Store>, Arc<dyn Store2>),
     time_service: Arc<dyn TimeService>,
     uncles: HashMap<HashValue, MintedUncleNumber>,
     epoch: Epoch,
@@ -601,10 +610,24 @@ impl BlockChain {
         storage: Arc<dyn Store>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
+        let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
         let head = storage
             .get_block_by_hash(head_block_hash)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
-        Self::new_with_uncles(time_service, head, None, storage, vm_metrics)
+        Self::new_with_uncles(time_service, head, None, storage, storage2, vm_metrics)
+    }
+
+    pub fn new_v2(
+        time_service: Arc<dyn TimeService>,
+        head_block_hash: HashValue,
+        storage: Arc<dyn Store>,
+        storage2: Arc<dyn Store2>,
+        vm_metrics: Option<VMMetrics>,
+    ) -> Result<Self> {
+        let head = storage
+            .get_block_by_hash(head_block_hash)?
+            .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
+        Self::new_with_uncles(time_service, head, None, storage, storage2, vm_metrics)
     }
 
     fn new_with_uncles(
@@ -612,6 +635,7 @@ impl BlockChain {
         head_block: Block,
         uncles: Option<HashMap<HashValue, MintedUncleNumber>>,
         storage: Arc<dyn Store>,
+        storage2: Arc<dyn Store2>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         let block_info = storage
@@ -619,9 +643,11 @@ impl BlockChain {
             .ok_or_else(|| format_err!("Can not find block info by hash {:?}", head_block.id()))?;
         debug!("Init chain with block_info: {:?}", block_info);
         let state_root = head_block.header().state_root();
+        let state_root2 = block_info.state_root().map(to_hash_value2);
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
         let chain_state = ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root));
+        let chain_state2 = ChainStateDB2::new(storage2.clone().into_super_arc(), state_root2);
         let epoch = get_epoch_from_statedb(&chain_state)?;
         let genesis = storage
             .get_genesis()?
@@ -644,8 +670,8 @@ impl BlockChain {
                 status: ChainStatus::new(head_block.header.clone(), block_info),
                 head: head_block,
             },
-            statedb: chain_state,
-            storage,
+            statedb: (chain_state, chain_state2),
+            storage: (storage, storage2),
             uncles: HashMap::new(),
             epoch,
             vm_metrics,
@@ -662,6 +688,7 @@ impl BlockChain {
     pub fn new_with_genesis(
         time_service: Arc<dyn TimeService>,
         storage: Arc<dyn Store>,
+        storage2: Arc<dyn Store2>,
         genesis_epoch: Epoch,
         genesis_block: Block,
     ) -> Result<Self> {
@@ -674,9 +701,10 @@ impl BlockChain {
         );
         let chain_id = genesis_block.header().chain_id();
         let statedb = ChainStateDB::new(storage.clone().into_super_arc(), None);
+        let statedb2 = ChainStateDB2::new(storage2.clone().into_super_arc(), None);
         let executed_block = Self::execute_block_and_save(
-            storage.as_ref(),
-            statedb,
+            (storage.as_ref(), storage2.as_ref()),
+            (statedb, statedb2),
             txn_accumulator,
             block_accumulator,
             &genesis_epoch,
@@ -685,7 +713,13 @@ impl BlockChain {
             &chain_id,
             None,
         )?;
-        Self::new(time_service, executed_block.block.id(), storage, None)
+        Self::new_v2(
+            time_service,
+            executed_block.block.id(),
+            storage,
+            storage2,
+            None,
+        )
     }
 
     pub fn current_epoch_uncles_size(&self) -> u64 {
@@ -790,7 +824,8 @@ impl BlockChain {
         let strategy = epoch.strategy();
         let difficulty = strategy.calculate_next_difficulty(self)?;
         let mut opened_block = OpenedBlock::new(
-            self.storage.clone(),
+            self.storage.0.clone(),
+            self.storage.1.clone(),
             previous_header,
             final_block_gas_limit,
             author,
@@ -847,7 +882,11 @@ impl BlockChain {
     }
 
     pub fn get_storage(&self) -> Arc<dyn Store> {
-        self.storage.clone()
+        self.storage.0.clone()
+    }
+
+    pub fn get_storage2(&self) -> Arc<dyn Store2> {
+        self.storage.1.clone()
     }
 
     pub fn can_be_uncle(&self, block_header: &BlockHeader) -> Result<bool> {
@@ -883,8 +922,8 @@ impl BlockChain {
 
     //TODO remove this function.
     pub fn update_chain_head(&mut self, block: Block) -> Result<ExecutedBlock> {
-        let block_info = self
-            .storage
+        let (storage, _storage2) = &self.storage;
+        let block_info = storage
             .get_block_info(block.id())?
             .ok_or_else(|| format_err!("Can not find block info by hash {:?}", block.id()))?;
         self.connect(ExecutedBlock { block, block_info })
@@ -892,8 +931,8 @@ impl BlockChain {
 
     //TODO consider move this logic to BlockExecutor
     fn execute_block_and_save(
-        storage: &dyn Store,
-        statedb: ChainStateDB,
+        storage: (&dyn Store, &dyn Store2),
+        statedb: (ChainStateDB, ChainStateDB2),
         txn_accumulator: MerkleAccumulator,
         block_accumulator: MerkleAccumulator,
         epoch: &Epoch,
@@ -902,6 +941,8 @@ impl BlockChain {
         chain_id: &ChainId,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<ExecutedBlock> {
+        let (storage, storage2) = storage;
+        let (statedb, statedb2) = statedb;
         let header = block.header();
         debug_assert!(header.is_genesis() || parent_status.is_some());
         debug_assert!(!header.is_genesis() || parent_status.is_none());
@@ -925,6 +966,16 @@ impl BlockChain {
             t
         };
 
+        let transactions2 = block
+            .transactions2()
+            .iter()
+            .cloned()
+            .map(|t| {
+                use bcs_ext::BCSCodec;
+                Transaction2::UserTransaction(SignedUserTransaction2::decode(&t).unwrap())
+            })
+            .collect::<Vec<_>>();
+
         watch(CHAIN_WATCH_NAME, "n21");
         let executed_data = starcoin_executor::block_execute(
             &statedb,
@@ -932,9 +983,29 @@ impl BlockChain {
             epoch.block_gas_limit(),
             vm_metrics,
         )?;
+        let (state_root2, included_txn_info_hashes2) = if !transactions2.is_empty() {
+            let (state_root, hashes) = vm2::execute_vm2_txns_and_save(
+                to_hash_value2(block_id),
+                block.header.number(),
+                storage2,
+                &statedb2,
+                transactions2,
+                // fixme: set txn info properly
+                txn_accumulator.num_leaves(),
+                epoch.block_gas_limit() - executed_data.gas_used(),
+                None,
+            );
+            (
+                state_root.map(to_hash_value),
+                hashes.into_iter().map(to_hash_value).collect(),
+            )
+        } else {
+            (None, vec![])
+        };
         watch(CHAIN_WATCH_NAME, "n22");
         let state_root = executed_data.state_root;
         let vec_transaction_info = &executed_data.txn_infos;
+        // todo: how to verify move2.0 state_root?
         verify_block!(
             VerifyBlockField::State,
             state_root == header.state_root(),
@@ -968,7 +1039,12 @@ impl BlockChain {
         let executed_accumulator_root = {
             let included_txn_info_hashes: Vec<_> =
                 vec_transaction_info.iter().map(|info| info.id()).collect();
-            txn_accumulator.append(&included_txn_info_hashes)?
+            txn_accumulator.append(&included_txn_info_hashes)?;
+
+            if !included_txn_info_hashes2.is_empty() {
+                txn_accumulator.append(&included_txn_info_hashes2)?;
+            }
+            txn_accumulator.root_hash()
         };
 
         verify_block!(
@@ -999,12 +1075,15 @@ impl BlockChain {
 
         let txn_accumulator_info: AccumulatorInfo = txn_accumulator.get_info();
         let block_accumulator_info: AccumulatorInfo = block_accumulator.get_info();
-        let block_info = BlockInfo::new(
+        let mut block_info = BlockInfo::new(
             block_id,
             total_difficulty,
             txn_accumulator_info,
             block_accumulator_info,
         );
+        if let Some(state_root2) = state_root2 {
+            block_info.add_vm2_state_root(state_root2);
+        }
 
         watch(CHAIN_WATCH_NAME, "n25");
 
@@ -1358,24 +1437,27 @@ impl ChainReader for BlockChain {
     }
 
     fn get_header(&self, hash: HashValue) -> Result<Option<BlockHeader>> {
-        self.storage
+        let (storage, _storage2) = &self.storage;
+        storage
             .get_block_header_by_hash(hash)
             .and_then(|block_header| self.exist_header_filter(block_header))
     }
 
     fn get_header_by_number(&self, number: BlockNumber) -> Result<Option<BlockHeader>> {
+        let (storage, _storage2) = &self.storage;
         self.get_hash_by_number(number)
             .and_then(|block_id| match block_id {
                 None => Ok(None),
-                Some(block_id) => self.storage.get_block_header_by_hash(block_id),
+                Some(block_id) => storage.get_block_header_by_hash(block_id),
             })
     }
 
     fn get_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>> {
+        let (storage, _storage2) = &self.storage;
         self.get_hash_by_number(number)
             .and_then(|block_id| match block_id {
                 None => Ok(None),
-                Some(block_id) => self.storage.get_block_by_hash(block_id),
+                Some(block_id) => storage.get_block_by_hash(block_id),
             })
     }
 
@@ -1385,6 +1467,7 @@ impl ChainReader for BlockChain {
         reverse: bool,
         count: u64,
     ) -> Result<Vec<Block>> {
+        let (storage, _storage2) = &self.storage;
         let end_num = match number {
             None => self.current_header().number(),
             Some(number) => number,
@@ -1403,7 +1486,7 @@ impl ChainReader for BlockChain {
         };
 
         let ids = self.get_block_ids(end_num, reverse, len)?;
-        let block_opts = self.storage.get_blocks(ids)?;
+        let block_opts = storage.get_blocks(ids)?;
         let mut blocks = vec![];
         for (idx, block) in block_opts.into_iter().enumerate() {
             match block {
@@ -1418,7 +1501,8 @@ impl ChainReader for BlockChain {
     }
 
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>> {
-        self.storage
+        let (storage, _storage2) = &self.storage;
+        storage
             .get_block_by_hash(hash)
             .and_then(|block| self.exist_block_filter(block))
     }
@@ -1428,16 +1512,16 @@ impl ChainReader for BlockChain {
     }
 
     fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>> {
+        let (storage, _storage2) = &self.storage;
         //TODO check txn should exist on current chain.
-        self.storage.get_transaction(txn_hash)
+        storage.get_transaction(txn_hash)
     }
 
     fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<RichTransactionInfo>> {
-        let txn_info_ids = self
-            .storage
-            .get_transaction_info_ids_by_txn_hash(txn_hash)?;
+        let (storage, _storage2) = &self.storage;
+        let txn_info_ids = storage.get_transaction_info_ids_by_txn_hash(txn_hash)?;
         for txn_info_id in txn_info_ids {
-            let txn_info = self.storage.get_transaction_info(txn_info_id)?;
+            let txn_info = storage.get_transaction_info(txn_info_id)?;
             if let Some(txn_info) = txn_info {
                 if self.exist_block(txn_info.block_id())? {
                     return Ok(Some(txn_info));
@@ -1451,19 +1535,21 @@ impl ChainReader for BlockChain {
         &self,
         transaction_global_index: u64,
     ) -> Result<Option<RichTransactionInfo>> {
+        let (storage, _storage2) = &self.storage;
         match self.txn_accumulator.get_leaf(transaction_global_index)? {
             None => Ok(None),
-            Some(hash) => self.storage.get_transaction_info(hash),
+            Some(hash) => storage.get_transaction_info(hash),
         }
     }
 
     fn chain_state_reader(&self) -> &dyn ChainStateReader {
-        &self.statedb
+        &self.statedb.0
     }
 
     fn get_block_info(&self, block_id: Option<HashValue>) -> Result<Option<BlockInfo>> {
+        let (storage, _storage2) = &self.storage;
         match block_id {
-            Some(block_id) => self.storage.get_block_info(block_id),
+            Some(block_id) => storage.get_block_info(block_id),
             None => Ok(Some(self.status.status.info().clone())),
         }
     }
@@ -1473,7 +1559,8 @@ impl ChainReader for BlockChain {
     }
 
     fn exist_block(&self, block_id: HashValue) -> Result<bool> {
-        if let Some(header) = self.storage.get_block_header_by_hash(block_id)? {
+        let (storage, _storage2) = &self.storage;
+        if let Some(header) = storage.get_block_header_by_hash(block_id)? {
             return self.check_exist_block(block_id, header.number());
         }
         Ok(false)
@@ -1506,13 +1593,13 @@ impl ChainReader for BlockChain {
     }
 
     fn fork(&self, block_id: HashValue) -> Result<Self> {
+        let (storage, storage2) = &self.storage;
         ensure!(
             self.exist_block(block_id)?,
             "Block with id{} do not exists in current chain.",
             block_id
         );
-        let head = self
-            .storage
+        let head = storage
             .get_block_by_hash(block_id)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", block_id))?;
         // if fork block_id is at same epoch, try to reuse uncles cache.
@@ -1531,7 +1618,8 @@ impl ChainReader for BlockChain {
             self.time_service.clone(),
             head,
             uncles,
-            self.storage.clone(),
+            storage.clone(),
+            storage2.clone(),
             self.vm_metrics.clone(),
         )
     }
@@ -1572,8 +1660,8 @@ impl ChainReader for BlockChain {
             MAIN_DIRECT_SAVE_BLOCK_HASH_MAP.get(&verified_block.0.header.id())
         {
             Self::execute_save_directly(
-                self.storage.as_ref(),
-                self.statedb.fork(),
+                self.storage.0.as_ref(),
+                self.statedb.0.fork(),
                 self.txn_accumulator.fork(None),
                 self.block_accumulator.fork(None),
                 Some(self.status.status.clone()),
@@ -1583,8 +1671,8 @@ impl ChainReader for BlockChain {
             )
         } else {
             Self::execute_block_and_save(
-                self.storage.as_ref(),
-                self.statedb.fork(),
+                (self.storage.0.as_ref(), self.storage.1.as_ref()),
+                (self.statedb.0.fork(), self.statedb.1.fork()),
                 self.txn_accumulator.fork(None),
                 self.block_accumulator.fork(None),
                 &self.epoch,
@@ -1598,7 +1686,7 @@ impl ChainReader for BlockChain {
 
     fn execute_without_save(&self, verified_block: VerifiedBlock) -> Result<ExecutedBlock> {
         Self::execute_block_without_save(
-            self.statedb.fork(),
+            self.statedb.0.fork(),
             self.txn_accumulator.fork(None),
             self.block_accumulator.fork(None),
             &self.epoch,
@@ -1614,12 +1702,13 @@ impl ChainReader for BlockChain {
         reverse: bool,
         max_size: u64,
     ) -> Result<Vec<RichTransactionInfo>> {
+        let (storage, _storage2) = &self.storage;
         let chain_header = self.current_header();
         let hashes = self
             .txn_accumulator
             .get_leaves(start_index, reverse, max_size)?;
         let mut infos = vec![];
-        let txn_infos = self.storage.get_transaction_infos(hashes.clone())?;
+        let txn_infos = storage.get_transaction_infos(hashes.clone())?;
         for (i, info) in txn_infos.into_iter().enumerate() {
             match info {
                 Some(info) => infos.push(info),
@@ -1634,7 +1723,8 @@ impl ChainReader for BlockChain {
     }
 
     fn get_events(&self, txn_info_id: HashValue) -> Result<Option<Vec<ContractEvent>>> {
-        self.storage.get_contract_events(txn_info_id)
+        let (storage, _storage2) = &self.storage;
+        storage.get_contract_events(txn_info_id)
     }
 
     fn get_transaction_proof(
@@ -1644,6 +1734,8 @@ impl ChainReader for BlockChain {
         event_index: Option<u64>,
         access_path: Option<AccessPath>,
     ) -> Result<Option<TransactionInfoWithProof>> {
+        let (storage, _storage2) = &self.storage;
+        let (statedb, _statedb2) = &self.statedb;
         let block_info = match self.get_block_info(Some(block_id))? {
             Some(block_info) => block_info,
             None => return Ok(None),
@@ -1666,14 +1758,12 @@ impl ChainReader for BlockChain {
                     transaction_global_index
                 )
             })?;
-        let transaction_info = self
-            .storage
+        let transaction_info = storage
             .get_transaction_info(txn_info_hash)?
             .ok_or_else(|| format_err!("Can not find txn info by hash:{}", txn_info_hash))?;
 
         let event_proof = if let Some(event_index) = event_index {
-            let events = self
-                .storage
+            let events = storage
                 .get_contract_events(txn_info_hash)?
                 .unwrap_or_default();
             let event = events.get(event_index as usize).cloned().ok_or_else(|| {
@@ -1691,9 +1781,7 @@ impl ChainReader for BlockChain {
             None
         };
         let state_proof = if let Some(access_path) = access_path {
-            let statedb = self
-                .statedb
-                .fork_at(transaction_info.txn_info().state_root_hash());
+            let statedb = statedb.fork_at(transaction_info.txn_info().state_root_hash());
             Some(statedb.get_with_proof(&access_path)?)
         } else {
             None
@@ -1709,6 +1797,7 @@ impl ChainReader for BlockChain {
 
 impl BlockChain {
     pub fn filter_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>> {
+        let (storage, _storage2) = &self.storage;
         let reverse = filter.reverse;
         let chain_header = self.current_header();
         let max_block_number = chain_header.number().min(filter.to_block);
@@ -1734,12 +1823,12 @@ impl BlockChain {
             })?;
             let block_id = block.id();
             let block_number = block.header().number();
-            let mut txn_info_ids = self.storage.get_block_txn_info_ids(block_id)?;
+            let mut txn_info_ids = storage.get_block_txn_info_ids(block_id)?;
             if reverse {
                 txn_info_ids.reverse();
             }
             for id in txn_info_ids.iter() {
-                let events = self.storage.get_contract_events(*id)?.ok_or_else(|| {
+                let events = storage.get_contract_events(*id)?.ok_or_else(|| {
                     anyhow::anyhow!(format!(
                         "cannot find events of txn with txn_info_id {} on main chain(header: {})",
                         id,
@@ -1755,7 +1844,7 @@ impl BlockChain {
                     continue;
                 }
 
-                let txn_info = self.storage.get_transaction_info(*id)?.ok_or_else(|| {
+                let txn_info = storage.get_transaction_info(*id)?.ok_or_else(|| {
                     anyhow::anyhow!(format!(
                         "cannot find txn info with txn_info_id {} on main chain(head: {})",
                         id,
@@ -1816,30 +1905,35 @@ impl ChainWriter for BlockChain {
     }
 
     fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
+        let (storage, storage2) = &self.storage;
         let (block, block_info) = (executed_block.block(), executed_block.block_info());
         debug_assert!(block.header().parent_hash() == self.status.status.head().id());
         //TODO try reuse accumulator and state db.
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
         let state_root = block.header().state_root();
+        let state_root2 = block_info.state_root().map(to_hash_value2);
         self.txn_accumulator = info_2_accumulator(
             txn_accumulator_info.clone(),
             AccumulatorStoreType::Transaction,
-            self.storage.as_ref(),
+            storage.as_ref(),
         );
         self.block_accumulator = info_2_accumulator(
             block_accumulator_info.clone(),
             AccumulatorStoreType::Block,
-            self.storage.as_ref(),
+            storage.as_ref(),
         );
 
-        self.statedb = ChainStateDB::new(self.storage.clone().into_super_arc(), Some(state_root));
+        self.statedb = (
+            ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root)),
+            ChainStateDB2::new(storage2.clone().into_super_arc(), state_root2),
+        );
         self.status = ChainStatusWithBlock {
             status: ChainStatus::new(block.header().clone(), block_info.clone()),
             head: block.clone(),
         };
         if self.epoch.end_block_number() == block.header().number() {
-            self.epoch = get_epoch_from_statedb(&self.statedb)?;
+            self.epoch = get_epoch_from_statedb(&self.statedb.0)?;
             self.update_uncle_cache()?;
         } else if let Some(block_uncles) = block.uncles() {
             block_uncles.iter().for_each(|uncle_header| {
@@ -1855,7 +1949,7 @@ impl ChainWriter for BlockChain {
     }
 
     fn chain_state(&mut self) -> &ChainStateDB {
-        &self.statedb
+        &self.statedb.0
     }
 }
 

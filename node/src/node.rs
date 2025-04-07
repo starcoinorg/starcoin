@@ -327,8 +327,12 @@ impl NodeService {
         let storage2 = Arc::new(Storage2::new(storage_instance2).unwrap());
         registry.put_shared(storage.clone()).await?;
         registry.put_shared(storage2.clone()).await?;
-        let (chain_info, genesis) =
-            Genesis::init_and_check_storage(config.net(), storage.clone(), config.data_dir())?;
+        let (chain_info, genesis) = Genesis::init_and_check_storage(
+            config.net(),
+            storage.clone(),
+            storage2,
+            config.data_dir(),
+        )?;
 
         info!(
             "Start node with chain info: {}, number {}, dragon fork disabled, upgrade_time cost {} secs, ",

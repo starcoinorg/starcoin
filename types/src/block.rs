@@ -7,7 +7,7 @@ use crate::genesis_config::{ChainId, ConsensusStrategy};
 use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::transaction::SignedUserTransaction;
 use crate::U256;
-use bcs_ext::Sample;
+use bcs_ext::{BCSCodec, Sample};
 use schemars::{self, JsonSchema};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -17,9 +17,13 @@ use starcoin_crypto::{
     hash::{CryptoHash, CryptoHasher, PlainCryptoHash},
     HashValue,
 };
-use starcoin_vm_types::account_config::genesis_address;
-use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
+use starcoin_vm2_types::transaction::SignedUserTransaction as SignedUserTransactionV2;
+use starcoin_vm_types::{
+    account_config::genesis_address, transaction::authenticator::AuthenticationKey,
+};
 use std::fmt::Formatter;
+use std::hash::Hash;
+
 /// Type for block number.
 pub type BlockNumber = u64;
 
@@ -591,6 +595,18 @@ impl BlockHeaderBuilder {
 pub struct BlockBody {
     /// The transactions in this block.
     pub transactions: Vec<SignedUserTransaction>,
+    pub transactions2: Vec<Vec<u8>>,
+    /// uncles block header
+    pub uncles: Option<Vec<BlockHeader>>,
+}
+
+#[derive(
+    Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash,
+)]
+#[serde(rename = "BlockBody")]
+pub struct LegacyBlockBody {
+    /// The transactions in this block.
+    pub transactions: Vec<SignedUserTransaction>,
     /// uncles block header
     pub uncles: Option<Vec<BlockHeader>>,
 }
@@ -599,6 +615,21 @@ impl BlockBody {
     pub fn new(transactions: Vec<SignedUserTransaction>, uncles: Option<Vec<BlockHeader>>) -> Self {
         Self {
             transactions,
+            transactions2: vec![],
+            uncles,
+        }
+    }
+    pub fn new_v2(
+        transactions: Vec<SignedUserTransaction>,
+        transactions2: Vec<SignedUserTransactionV2>,
+        uncles: Option<Vec<BlockHeader>>,
+    ) -> Self {
+        Self {
+            transactions,
+            transactions2: transactions2
+                .into_iter()
+                .map(|txn| txn.encode().unwrap())
+                .collect::<Vec<_>>(),
             uncles,
         }
     }
@@ -610,6 +641,7 @@ impl BlockBody {
     pub fn new_empty() -> BlockBody {
         BlockBody {
             transactions: Vec::new(),
+            transactions2: Vec::new(),
             uncles: None,
         }
     }
@@ -624,6 +656,7 @@ impl Into<BlockBody> for Vec<SignedUserTransaction> {
     fn into(self) -> BlockBody {
         BlockBody {
             transactions: self,
+            transactions2: vec![],
             uncles: None,
         }
     }
@@ -640,6 +673,7 @@ impl Sample for BlockBody {
     fn sample() -> Self {
         Self {
             transactions: vec![],
+            transactions2: vec![],
             uncles: None,
         }
     }
@@ -652,6 +686,15 @@ pub struct Block {
     pub header: BlockHeader,
     /// The body of this block.
     pub body: BlockBody,
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
+#[serde(rename = "Block")]
+pub struct LegacyBlock {
+    /// The header of this block.
+    pub header: BlockHeader,
+    /// The body of this block.
+    pub body: LegacyBlockBody,
 }
 
 impl Block {
@@ -673,6 +716,9 @@ impl Block {
     }
     pub fn transactions(&self) -> &[SignedUserTransaction] {
         self.body.transactions.as_slice()
+    }
+    pub fn transactions2(&self) -> &[Vec<u8>] {
+        self.body.transactions2.as_slice()
     }
 
     pub fn uncles(&self) -> Option<&[BlockHeader]> {
@@ -699,16 +745,27 @@ impl Block {
         state_root: HashValue,
         difficulty: U256,
         genesis_txn: SignedUserTransaction,
+        genesis_txn2: Option<SignedUserTransactionV2>,
     ) -> Self {
         let chain_id = genesis_txn.chain_id();
-        let block_body = BlockBody::new(vec![genesis_txn], None);
+        let txns2 = genesis_txn2.clone().map(|x| vec![x]).unwrap_or_default();
+        let block_body = BlockBody::new_v2(vec![genesis_txn.clone()], txns2, None);
+        let body_hash = if genesis_txn2.is_none() {
+            let b = LegacyBlockBody {
+                transactions: vec![genesis_txn],
+                uncles: None,
+            };
+            b.crypto_hash()
+        } else {
+            block_body.hash()
+        };
         let header = BlockHeader::genesis_block_header(
             parent_hash,
             timestamp,
             accumulator_root,
             state_root,
             difficulty,
-            block_body.hash(),
+            body_hash,
             chain_id,
         );
         Self {
@@ -786,6 +843,7 @@ pub struct BlockInfo {
     pub txn_accumulator_info: AccumulatorInfo,
     /// The block accumulator info.
     pub block_accumulator_info: AccumulatorInfo,
+    pub vm2_state_root: Option<HashValue>,
 }
 
 impl BlockInfo {
@@ -800,7 +858,12 @@ impl BlockInfo {
             total_difficulty,
             txn_accumulator_info,
             block_accumulator_info,
+            vm2_state_root: None,
         }
+    }
+
+    pub fn add_vm2_state_root(&mut self, vm2_state_root: HashValue) {
+        self.vm2_state_root = Some(vm2_state_root);
     }
 
     pub fn id(&self) -> HashValue {
@@ -822,6 +885,10 @@ impl BlockInfo {
     pub fn block_id(&self) -> &HashValue {
         &self.block_id
     }
+
+    pub fn state_root(&self) -> Option<HashValue> {
+        self.vm2_state_root
+    }
 }
 
 impl Sample for BlockInfo {
@@ -831,6 +898,7 @@ impl Sample for BlockInfo {
             total_difficulty: 0.into(),
             txn_accumulator_info: AccumulatorInfo::sample(),
             block_accumulator_info: AccumulatorInfo::sample(),
+            vm2_state_root: None,
         }
     }
 }

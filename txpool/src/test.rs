@@ -56,7 +56,7 @@ impl AccountSeqNumberClient for MockNonceClient {
 
 #[stest::test]
 async fn test_txn_expire() -> Result<()> {
-    let (txpool_service, _storage, config, _, _) = test_helper::start_txpool().await;
+    let (txpool_service, _storage, _, config, _, _) = test_helper::start_txpool().await;
     let txn = generate_txn(config, 0);
     txpool_service.add_txns(vec![txn]).pop().unwrap()?;
     let pendings = txpool_service.get_pending_txns(None, Some(0));
@@ -70,7 +70,7 @@ async fn test_txn_expire() -> Result<()> {
 
 #[stest::test]
 async fn test_tx_pool() -> Result<()> {
-    let (txpool_service, _storage, config, _, _) = test_helper::start_txpool().await;
+    let (txpool_service, _storage, _, config, _, _) = test_helper::start_txpool().await;
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let account_address = account_address::from_public_key(&public_key);
     let txn = starcoin_transaction_builder::build_transfer_from_association(
@@ -103,7 +103,7 @@ async fn test_subscribe_txns() {
 async fn test_pool_pending() -> Result<()> {
     let pool_size = 5;
     let expect_reject = 3;
-    let (txpool_service, _storage, node_config, _, _) =
+    let (txpool_service, _storage, _, node_config, _, _) =
         test_helper::start_txpool_with_size(pool_size).await;
     let metrics_config: &MetricsConfig = &node_config.metrics;
 
@@ -179,7 +179,7 @@ async fn test_pool_pending() -> Result<()> {
 
 #[stest::test]
 async fn test_rollback() -> Result<()> {
-    let (pool, storage, config, _, _) = test_helper::start_txpool().await;
+    let (pool, storage, storage2, config, _, _) = test_helper::start_txpool().await;
     let start_timestamp = 0;
     let retracted_txn = {
         let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
@@ -212,11 +212,13 @@ async fn test_rollback() -> Result<()> {
         let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
         let account_address = account_address::from_public_key(&public_key);
         let storage = storage.clone();
+        let storage2 = storage2.clone();
         let main = storage.get_startup_info()?.unwrap().main;
         let block_header = storage.get_block_header_by_hash(main)?.unwrap();
 
         let mut open_block = OpenedBlock::new(
             storage,
+            storage2,
             block_header,
             u64::MAX,
             account_address,
@@ -271,7 +273,7 @@ async fn test_rollback() -> Result<()> {
 
 #[stest::test(timeout = 480)]
 async fn test_txpool_actor_service() {
-    let (_txpool_service, _storage, config, tx_pool_actor, _registry) =
+    let (_txpool_service, _storage, _, config, tx_pool_actor, _registry) =
         test_helper::start_txpool().await;
     let txn = generate_txn(config, 0);
 

@@ -70,8 +70,8 @@ pub fn channel(name: &'static str) -> (Sender, Receiver) {
 /// Must be associated with an [`OutChannels`] before anything can be sent on it
 ///
 /// > **Note**: Contrary to regular channels, this `Sender` is purposefully designed to not
-/// implement the `Clone` trait e.g. in Order to not complicate the logic keeping the metrics in
-/// sync on drop. If someone adds a `#[derive(Clone)]` below, it is **wrong**.
+/// > implement the `Clone` trait e.g. in Order to not complicate the logic keeping the metrics in
+/// > sync on drop. If someone adds a `#[derive(Clone)]` below, it is **wrong**.
 pub struct Sender {
     inner: mpsc::UnboundedSender<Event>,
     name: &'static str,

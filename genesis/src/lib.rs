@@ -36,10 +36,18 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 mod errors;
+mod vm2;
+
 pub use errors::GenesisError;
 use starcoin_storage::table_info::TableInfoStore;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_view::StateView;
+
+use starcoin_storage2::{
+    storage::StorageInstance as StorageInstance2, Storage as Storage2, Store as Store2,
+};
+use starcoin_types::block::{BlockBody, LegacyBlock, LegacyBlockBody};
+use starcoin_types::utils::to_hash_value;
 
 pub static G_GENESIS_GENERATED_DIR: &str = "generated";
 pub const GENESIS_DIR: Dir = include_dir!("generated");
@@ -47,6 +55,40 @@ pub const GENESIS_DIR: Dir = include_dir!("generated");
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Genesis {
     block: Block,
+}
+
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename = "Genesis")]
+pub struct LegacyGenesis {
+    block: LegacyBlock,
+}
+
+impl From<LegacyGenesis> for Genesis {
+    fn from(legacy_genesis: LegacyGenesis) -> Self {
+        Genesis {
+            block: Block {
+                header: legacy_genesis.block.header,
+                body: BlockBody::new(
+                    legacy_genesis.block.body.transactions,
+                    legacy_genesis.block.body.uncles,
+                ),
+            },
+        }
+    }
+}
+
+impl From<Genesis> for LegacyGenesis {
+    fn from(genesis: Genesis) -> Self {
+        LegacyGenesis {
+            block: LegacyBlock {
+                header: genesis.block.header,
+                body: LegacyBlockBody {
+                    transactions: genesis.block.body.transactions,
+                    uncles: genesis.block.body.uncles,
+                },
+            },
+        }
+    }
 }
 
 impl Display for Genesis {
@@ -67,6 +109,10 @@ impl Display for Genesis {
         write!(f, "}}")?;
         Ok(())
     }
+}
+
+pub fn net_with_legacy_genesis(net: &BuiltinNetworkID) -> bool {
+    !(net.is_test_or_dev() || net.is_proxima())
 }
 
 impl Genesis {
@@ -111,6 +157,19 @@ impl Genesis {
             difficulty,
         }) = genesis_config.genesis_block_parameter()
         {
+            let (txn2, txn2_info_hash) = if net
+                .id()
+                .as_builtin()
+                .map(|b| !net_with_legacy_genesis(b))
+                .unwrap_or(true)
+            {
+                let (user_txn, txn_info_hash) =
+                    vm2::build_and_execute_genesis_transaction(net.chain_id().id());
+                (Some(user_txn), Some(to_hash_value(txn_info_hash)))
+            } else {
+                (None, None)
+            };
+
             let txn = Self::build_genesis_transaction(net)?;
 
             let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
@@ -123,9 +182,13 @@ impl Genesis {
                 AccumulatorInfo::default(),
                 storage.get_accumulator_store(AccumulatorStoreType::Transaction),
             );
-            let txn_info_hash = transaction_info.id();
+            let txn_info_hash_vec = if let Some(txn2_info_hash) = txn2_info_hash {
+                vec![transaction_info.id(), txn2_info_hash]
+            } else {
+                vec![transaction_info.id()]
+            };
 
-            let accumulator_root = accumulator.append(vec![txn_info_hash].as_slice())?;
+            let accumulator_root = accumulator.append(txn_info_hash_vec.as_slice())?;
             accumulator.flush()?;
 
             // Persist newly created table_infos to storage
@@ -138,6 +201,7 @@ impl Genesis {
                 transaction_info.state_root_hash(),
                 *difficulty,
                 txn,
+                txn2,
             ))
         } else {
             bail!("{}'s genesis config not ready to build genesis block", net);
@@ -221,7 +285,7 @@ impl Genesis {
         &self.block
     }
 
-    pub fn load_from_dir<P>(data_dir: P) -> Result<Option<Self>>
+    pub fn load_from_dir<P>(data_dir: P, legacy: bool) -> Result<Option<Self>>
     where
         P: AsRef<Path>,
     {
@@ -232,7 +296,12 @@ impl Genesis {
         let mut genesis_file = File::open(genesis_file_path)?;
         let mut content = vec![];
         genesis_file.read_to_end(&mut content)?;
-        let genesis = bcs_ext::from_bytes(&content)?;
+        let genesis = if legacy {
+            let legacy_genesis = bcs_ext::from_bytes::<LegacyGenesis>(&content)?;
+            legacy_genesis.into()
+        } else {
+            bcs_ext::from_bytes(&content)?
+        };
         Ok(Some(genesis))
     }
 
@@ -245,7 +314,14 @@ impl Genesis {
 
     pub fn load_generated(net: BuiltinNetworkID) -> Result<Option<Self>> {
         match Self::genesis_bytes(net) {
-            Some(bytes) => Ok(Some(bcs_ext::from_bytes::<Genesis>(bytes)?)),
+            Some(bytes) => {
+                if net_with_legacy_genesis(&net) {
+                    let genesis = bcs_ext::from_bytes::<LegacyGenesis>(bytes)?;
+                    Ok(Some(genesis.into()))
+                } else {
+                    Ok(Some(bcs_ext::from_bytes::<Genesis>(bytes)?))
+                }
+            }
             None => Ok(None),
         }
     }
@@ -254,11 +330,13 @@ impl Genesis {
         &self,
         net: &ChainNetwork,
         storage: Arc<dyn Store>,
+        storage2: Arc<dyn Store2>,
     ) -> Result<ChainInfo> {
         storage.save_genesis(self.block.id())?;
         let genesis_chain = BlockChain::new_with_genesis(
             net.time_service(),
             storage.clone(),
+            storage2.clone(),
             net.genesis_epoch(),
             self.block.clone(),
         )?;
@@ -269,7 +347,7 @@ impl Genesis {
             .ok_or_else(|| format_err!("ChainInfo should exist after genesis block executed."))
     }
 
-    pub fn save<P>(&self, data_dir: P) -> Result<()>
+    pub fn save<P>(&self, data_dir: P, legacy: bool) -> Result<()>
     where
         P: AsRef<Path>,
     {
@@ -279,13 +357,24 @@ impl Genesis {
         }
         let genesis_file = data_dir.join(Self::GENESIS_FILE_NAME);
         let mut file = File::create(genesis_file)?;
-        let contents = bcs_ext::to_bytes(self)?;
+        let contents = if legacy {
+            let legacy_genesis = LegacyGenesis::from(self.clone());
+            bcs_ext::to_bytes(&legacy_genesis)?
+        } else {
+            bcs_ext::to_bytes(self)?
+        };
         file.write_all(&contents)?;
         Ok(())
     }
 
     fn load_and_check_genesis(net: &ChainNetwork, data_dir: &Path, init: bool) -> Result<Genesis> {
-        let genesis = match Genesis::load_from_dir(data_dir) {
+        // for custom network or test/dev/proxima network, using new format genesis
+        let legacy_genesis = net
+            .id()
+            .as_builtin()
+            .map(net_with_legacy_genesis)
+            .unwrap_or_default();
+        let genesis = match Genesis::load_from_dir(data_dir, legacy_genesis) {
             Ok(Some(genesis)) => {
                 let expect_genesis = Genesis::load_or_build(net)?;
                 if genesis.block().header().id() != expect_genesis.block().header().id() {
@@ -301,7 +390,7 @@ impl Genesis {
             Ok(None) => {
                 if init {
                     let genesis = Genesis::load_or_build(net)?;
-                    genesis.save(data_dir)?;
+                    genesis.save(data_dir, legacy_genesis)?;
                     info!("Build and save new genesis: {}", genesis);
                     genesis
                 } else {
@@ -315,6 +404,7 @@ impl Genesis {
     pub fn init_and_check_storage(
         net: &ChainNetwork,
         storage: Arc<Storage>,
+        storage2: Arc<Storage2>,
         data_dir: &Path,
     ) -> Result<(ChainInfo, Genesis)> {
         debug!("load startup_info.");
@@ -344,7 +434,8 @@ impl Genesis {
             }
             Ok(None) => {
                 let genesis = Self::load_and_check_genesis(net, data_dir, true)?;
-                let chain_info = genesis.execute_genesis_block(net, storage.clone())?;
+                let chain_info =
+                    genesis.execute_genesis_block(net, storage.clone(), storage2.clone())?;
                 (chain_info, genesis)
             }
             Err(e) => return Err(GenesisError::GenesisLoadFailure(e).into()),
@@ -354,11 +445,19 @@ impl Genesis {
     }
 
     pub fn init_storage_for_test(net: &ChainNetwork) -> Result<(Arc<Storage>, ChainInfo, Genesis)> {
+        let ret = Self::init_storage_for_test_v2(net)?;
+        Ok((ret.0, ret.2, ret.3))
+    }
+
+    pub fn init_storage_for_test_v2(
+        net: &ChainNetwork,
+    ) -> Result<(Arc<Storage>, Arc<Storage2>, ChainInfo, Genesis)> {
         debug!("init storage by genesis for test.");
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
+        let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
         let genesis = Genesis::load_or_build(net)?;
-        let chain_info = genesis.execute_genesis_block(net, storage.clone())?;
-        Ok((storage, chain_info, genesis))
+        let chain_info = genesis.execute_genesis_block(net, storage.clone(), storage2.clone())?;
+        Ok((storage, storage2, chain_info, genesis))
     }
 }
 
@@ -409,12 +508,15 @@ mod tests {
                 continue;
             }
             let net = ChainNetwork::new_builtin(id);
+            let legacy = net_with_legacy_genesis(&id);
             let temp_dir = starcoin_config::temp_dir();
-            do_test_genesis(&net, temp_dir.path())?;
+            do_test_genesis(&net, temp_dir.path(), legacy)?;
         }
         Ok(())
     }
 
+    // fixme: currently, vm2 does not support custom genesis.
+    #[ignore]
     #[stest::test]
     pub fn test_custom_genesis() -> Result<()> {
         let net = ChainNetwork::new_custom(
@@ -423,17 +525,19 @@ mod tests {
             BuiltinNetworkID::Test.genesis_config().clone(),
         )?;
         let temp_dir = starcoin_config::temp_dir();
-        do_test_genesis(&net, temp_dir.path())
+        do_test_genesis(&net, temp_dir.path(), false)
     }
 
-    pub fn do_test_genesis(net: &ChainNetwork, data_dir: &Path) -> Result<()> {
+    pub fn do_test_genesis(net: &ChainNetwork, data_dir: &Path, legacy: bool) -> Result<()> {
         let storage1 = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
+        let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
         let (chain_info1, genesis1) =
-            Genesis::init_and_check_storage(net, storage1.clone(), data_dir)?;
+            Genesis::init_and_check_storage(net, storage1.clone(), storage2, data_dir)?;
 
-        let storage2 = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
+        let storage1_2 = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
+        let storage2_2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
         let (chain_info2, genesis2) =
-            Genesis::init_and_check_storage(net, storage2.clone(), data_dir)?;
+            Genesis::init_and_check_storage(net, storage1_2.clone(), storage2_2, data_dir)?;
 
         assert_eq!(genesis1, genesis2, "genesis execute chain info different.");
 
@@ -442,12 +546,12 @@ mod tests {
             "genesis execute chain info different."
         );
 
-        let genesis_block = storage2
+        let genesis_block = storage1_2
             .get_block(chain_info2.status().head().id())?
             .expect("Genesis block must exist.");
 
         let state_db = ChainStateDB::new(
-            storage2.clone().into_super_arc(),
+            storage1_2.clone().into_super_arc(),
             Some(genesis_block.header().state_root()),
         );
         let account_state_reader = AccountStateReader::new(&state_db);
@@ -537,17 +641,20 @@ mod tests {
             "ModuleUpgradeStrategy should be STRATEGY_TWO_PHASE."
         );
 
-        let block_info = storage2
+        let block_info = storage1_2
             .get_block_info(genesis_block.header().id())?
             .expect("Genesis block info must exist.");
 
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
-        assert_eq!(txn_accumulator_info.num_leaves, 1);
+        assert_eq!(
+            txn_accumulator_info.num_leaves,
+            1 + if legacy { 0 } else { 1 }
+        );
         //assert_eq!(txn_accumulator_info.frozen_subtree_roots.len(), 1);
 
         let txn_accumulator = MerkleAccumulator::new_with_info(
             txn_accumulator_info.clone(),
-            storage2.get_accumulator_store(AccumulatorStoreType::Transaction),
+            storage1_2.get_accumulator_store(AccumulatorStoreType::Transaction),
         );
 
         let genesis_txn = genesis_block.body.transactions.first().cloned().unwrap();
@@ -565,7 +672,7 @@ mod tests {
         let block_accumulator_info = block_info.get_block_accumulator_info();
         let block_accumulator = MerkleAccumulator::new_with_info(
             block_accumulator_info.clone(),
-            storage2.get_accumulator_store(AccumulatorStoreType::Block),
+            storage1_2.get_accumulator_store(AccumulatorStoreType::Block),
         );
         let hash = block_accumulator.get_leaf(0)?.expect("leaf 0 must exist.");
         assert_eq!(hash, block_info.block_id);

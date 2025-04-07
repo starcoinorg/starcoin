@@ -27,6 +27,10 @@ starcoin-vm-types = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 starcoin-types = { workspace = true }
 
+# dependencies for move 2.0
+starcoin-storage2 = { workspace = true }
+starcoin-vm2-types = { workspace = true }
+
 [dev-dependencies]
 starcoin-network-rpc = { workspace = true }
 starcoin-genesis = { workspace = true }

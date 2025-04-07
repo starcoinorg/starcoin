@@ -67,6 +67,15 @@ impl Default for BlockExecutedData {
     }
 }
 
+impl BlockExecutedData {
+    pub fn gas_used(&self) -> u64 {
+        self.txn_infos
+            .iter()
+            .map(|txn_info| txn_info.gas_used())
+            .sum()
+    }
+}
+
 pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
     chain_state: &S,
     txns: Vec<Transaction>,

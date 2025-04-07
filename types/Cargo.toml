@@ -2,7 +2,6 @@
 anyhow = { workspace = true }
 bcs-ext = { workspace = true }
 byteorder = { workspace = true }
-bytes = { workspace = true }
 forkable-jellyfish-merkle = { workspace = true }
 hex = { features = ["serde"], workspace = true }
 num_enum = { workspace = true }
@@ -18,6 +17,11 @@ starcoin-crypto = { workspace = true }
 starcoin-uint = { workspace = true }
 starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
+
+# dependencies for move2
+starcoin-crypto2 = { workspace = true }
+starcoin-vm2-types = { workspace = true }
+bytes = { workspace = true }
 
 [features]
 default = []

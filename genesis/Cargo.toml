@@ -23,6 +23,14 @@ stdlib = { workspace = true }
 stest = { workspace = true }
 thiserror = { workspace = true }
 
+# dependencies for move2
+starcoin-storage2 = { workspace = true }
+starcoin-transaction2-builder = { workspace = true }
+starcoin-vm2-types = { workspace = true }
+starcoin-types2 = { workspace = true }
+starcoin-crypto2 = { workspace = true }
+starcoin-vm2-statedb = { workspace = true }
+
 [features]
 default = []
 fuzzing = ["starcoin-types/fuzzing"]
