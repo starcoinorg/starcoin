@@ -23,6 +23,7 @@ pub fn test_open_block() -> Result<()> {
         let miner_account = AccountInfo::random();
         OpenedBlock::new(
             chain.get_storage(),
+            chain.get_storage2(),
             header,
             block_gas_limit,
             miner_account.address,

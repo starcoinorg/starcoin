@@ -885,6 +885,10 @@ impl BlockChain {
         self.storage.0.clone()
     }
 
+    pub fn get_storage2(&self) -> Arc<dyn Store2> {
+        self.storage.1.clone()
+    }
+
     pub fn can_be_uncle(&self, block_header: &BlockHeader) -> Result<bool> {
         FullVerifier::can_be_uncle(self, block_header)
     }
