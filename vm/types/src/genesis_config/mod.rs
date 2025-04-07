@@ -3,7 +3,10 @@
 
 mod genesis_config;
 
-pub use genesis_config::*;
+pub use genesis_config::{
+    GenesisConfig, G_BARNARD_CONFIG, G_DAG_TEST_CONFIG, G_DEV_CONFIG, G_HALLEY_CONFIG,
+    G_MAIN_CONFIG, G_PROXIMA_CONFIG, G_TEST_CONFIG, G_VEGA_CONFIG,
+};
 
 use anyhow::{format_err, Result};
 use move_core_types::ident_str;
@@ -178,6 +181,13 @@ impl ChainId {
         //TODO find way share the id define with BuiltinNetworkID
         self.id == 1
     }
+    pub fn is_vega(self) -> bool {
+        self.id == 2
+    }
+
+    pub fn is_dag_test(self) -> bool {
+        self.id == 250
+    }
 
     pub fn is_barnard(self) -> bool {
         self.id == 251
@@ -197,14 +207,6 @@ impl ChainId {
 
     pub fn is_test(self) -> bool {
         self.id == 255
-    }
-
-    pub fn is_dag_test(self) -> bool {
-        self.id == 250
-    }
-
-    pub fn is_vega(self) -> bool {
-        self.id == 2
     }
 }
 

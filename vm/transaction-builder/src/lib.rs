@@ -14,14 +14,13 @@ use starcoin_cached_packages::starcoin_framework_sdk_builder::{
 
 use starcoin_config::genesis_config::G_TOTAL_STC_AMOUNT;
 use starcoin_types::account::Account;
-use starcoin_vm_types::genesis_config::ChainNetwork;
 use starcoin_vm_types::on_chain_config::Features;
 use starcoin_vm_types::{
     access::ModuleAccess,
     account_address::AccountAddress,
     account_config::{self, core_code_address, genesis_address},
     file_format::CompiledModule,
-    genesis_config::ChainId,
+    genesis_config::{ChainId, GenesisConfig},
     identifier::Identifier,
     language_storage::{ModuleId, StructTag, TypeTag},
     on_chain_config::VMConfig,
@@ -45,14 +44,16 @@ pub fn build_transfer_from_association(
     association_sequence_num: u64,
     amount: u128,
     expiration_timestamp_secs: u64,
-    net: &ChainNetwork,
+    chain_id: ChainId,
+    genesis_config: &GenesisConfig,
 ) -> Transaction {
     Transaction::UserTransaction(peer_to_peer_txn_sent_as_association(
         addr,
         association_sequence_num,
         amount,
         expiration_timestamp_secs,
-        net,
+        chain_id,
+        genesis_config,
     ))
 }
 
@@ -266,7 +267,8 @@ pub fn peer_to_peer_txn_sent_as_association(
     seq_num: u64,
     amount: u128,
     expiration_timestamp_secs: u64,
-    net: &ChainNetwork,
+    chain_id: ChainId,
+    genesis_config: &GenesisConfig,
 ) -> SignedUserTransaction {
     create_signed_txn_with_association_account(
         transfer_scripts_peer_to_peer(stc_type_tag(), recipient, vec![], amount),
@@ -274,7 +276,8 @@ pub fn peer_to_peer_txn_sent_as_association(
         DEFAULT_MAX_GAS_AMOUNT,
         1,
         expiration_timestamp_secs,
-        net,
+        chain_id,
+        genesis_config,
     )
 }
 
@@ -283,7 +286,7 @@ pub fn peer_to_peer_v2(
     recipient: &AccountAddress,
     seq_num: u64,
     amount: u128,
-    net: &ChainNetwork,
+    chain_id: ChainId,
 ) -> SignedUserTransaction {
     // It's ok to unwrap here, because we know the script exists in the stdlib.
     sender
@@ -294,7 +297,7 @@ pub fn peer_to_peer_v2(
             10000000,
             1,
             1000 + 60 * 60,
-            net.chain_id(),
+            chain_id,
         ))
         .unwrap()
 }
@@ -306,7 +309,8 @@ pub fn create_signed_txn_with_association_account(
     max_gas_amount: u64,
     gas_unit_price: u64,
     expiration_timestamp_secs: u64,
-    net: &ChainNetwork,
+    chain_id: ChainId,
+    genesis_config: &GenesisConfig,
 ) -> SignedUserTransaction {
     let raw_txn = RawUserTransaction::new_with_default_gas_token(
         account_config::association_address(),
@@ -315,16 +319,20 @@ pub fn create_signed_txn_with_association_account(
         max_gas_amount,
         gas_unit_price,
         expiration_timestamp_secs,
-        net.chain_id(),
+        chain_id,
     );
-    net.genesis_config()
+    genesis_config
         .sign_with_association(raw_txn)
         .expect("Sign txn should work.")
 }
 
 // fixme: enable stdlib_option
-pub fn build_stdlib_package(net: &ChainNetwork, _stdlib_option: u64) -> Result<Package> {
-    let init_script = build_init_script(net);
+pub fn build_stdlib_package(
+    chain_id: ChainId,
+    genesis_config: &GenesisConfig,
+    _stdlib_option: Option<u64>,
+) -> Result<Package> {
+    let init_script = build_init_script(chain_id.id(), genesis_config);
     let modules = starcoin_cached_packages::head_release_bundle().legacy_copy_code();
     Package::new(
         modules.into_iter().map(Module::new).collect(),
@@ -333,21 +341,23 @@ pub fn build_stdlib_package(net: &ChainNetwork, _stdlib_option: u64) -> Result<P
 }
 
 pub fn build_stdlib_package_with_modules(
-    net: &ChainNetwork,
+    chain_id: ChainId,
+    genesis_config: &GenesisConfig,
     modules: Vec<Vec<u8>>,
 ) -> Result<Package> {
-    let init_script = build_init_script(net);
+    let init_script = build_init_script(chain_id.id(), genesis_config);
     Package::new(
         modules.into_iter().map(Module::new).collect(),
         Some(init_script),
     )
 }
 
-pub fn build_init_script(net: &ChainNetwork) -> EntryFunction {
-    let genesis_config = net.genesis_config();
-    let chain_id = net.chain_id().id();
-    let genesis_timestamp = net.genesis_block_parameter().timestamp;
-    let genesis_parent_hash = net.genesis_block_parameter().parent_hash;
+fn build_init_script(chain_id: u8, genesis_config: &GenesisConfig) -> EntryFunction {
+    let genesis_timestamp = genesis_config.genesis_block_parameter().unwrap().timestamp;
+    let genesis_parent_hash = genesis_config
+        .genesis_block_parameter()
+        .unwrap()
+        .parent_hash;
 
     let genesis_auth_key = genesis_config
         .genesis_key_pair
@@ -359,7 +369,7 @@ pub fn build_init_script(net: &ChainNetwork) -> EntryFunction {
         AuthenticationKey::multi_ed25519(&genesis_config.association_key_pair.1).to_vec();
 
     let payload = stc_genesis_initialize(
-        net.genesis_config().stdlib_version.version(),
+        genesis_config.stdlib_version.version(),
         genesis_config.reward_delay,
         G_TOTAL_STC_AMOUNT.scaling(),
         genesis_config.pre_mine_amount,
@@ -409,7 +419,7 @@ pub fn build_init_script(net: &ChainNetwork) -> EntryFunction {
 }
 
 pub fn build_package_with_stdlib_module(
-    _stdlib_option: u64,
+    _stdlib_option: Option<u64>,
     module_names: Vec<&str>,
     init_script: Option<EntryFunction>,
 ) -> Result<Package> {
@@ -443,7 +453,7 @@ pub fn build_package_with_stdlib_module(
 }
 
 pub fn build_stdlib_package_for_test(
-    _stdlib_option: u64,
+    _stdlib_option: Option<u64>,
     init_script: Option<EntryFunction>,
 ) -> Result<Package> {
     let modules = starcoin_cached_packages::head_release_bundle().legacy_copy_code();
