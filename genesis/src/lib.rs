@@ -151,6 +151,7 @@ impl Genesis {
 
     fn build_genesis_block(net: &ChainNetwork) -> Result<Block> {
         let genesis_config = net.genesis_config();
+        let genesis_config2 = net.genesis_config2();
         if let Some(GenesisBlockParameter {
             parent_hash,
             timestamp,
@@ -163,8 +164,10 @@ impl Genesis {
                 .map(|b| !net_with_legacy_genesis(b))
                 .unwrap_or(true)
             {
-                let (user_txn, txn_info_hash) =
-                    vm2::build_and_execute_genesis_transaction(net.chain_id().id());
+                let (user_txn, txn_info_hash) = vm2::build_and_execute_genesis_transaction(
+                    net.chain_id().id(),
+                    genesis_config2,
+                );
                 (Some(user_txn), Some(to_hash_value(txn_info_hash)))
             } else {
                 (None, None)
@@ -516,13 +519,13 @@ mod tests {
     }
 
     // fixme: currently, vm2 does not support custom genesis.
-    #[ignore]
     #[stest::test]
     pub fn test_custom_genesis() -> Result<()> {
         let net = ChainNetwork::new_custom(
             "testx".to_string(),
             ChainId::new(123),
             BuiltinNetworkID::Test.genesis_config().clone(),
+            BuiltinNetworkID::Test.genesis_config2().clone(),
         )?;
         let temp_dir = starcoin_config::temp_dir();
         do_test_genesis(&net, temp_dir.path(), false)

@@ -422,6 +422,7 @@ async fn test_verify_illegal_uncle_future_timestamp_failed() {
 
 async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
     let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
+    let genesis_config2 = BuiltinNetworkID::Test.genesis_config2().clone();
     genesis_config.genesis_block_parameter =
         GenesisBlockParameterConfig::Static(GenesisBlockParameter {
             parent_hash: Default::default(),
@@ -430,8 +431,12 @@ async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
         });
     genesis_config.time_service_type = TimeServiceType::RealTimeService;
     genesis_config.consensus_config.strategy = ConsensusStrategy::CryptoNight.value();
-    let net =
-        ChainNetwork::new_custom("block_test".to_string(), ChainId::new(100), genesis_config)?;
+    let net = ChainNetwork::new_custom(
+        "block_test".to_string(),
+        ChainId::new(100),
+        genesis_config,
+        genesis_config2,
+    )?;
     let mut mock_chain = MockChain::new(net.clone()).unwrap();
     let mut times = 3;
     mock_chain.produce_and_apply_times(times).unwrap();

@@ -34,6 +34,9 @@ tempfile = { workspace = true }
 thiserror = { workspace = true }
 toml = { workspace = true }
 
+# dependencies for move 2.0
+starcoin-vm2-types = { workspace = true }
+
 [package]
 authors = { workspace = true }
 edition = { workspace = true }
