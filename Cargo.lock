@@ -11950,6 +11950,7 @@ dependencies = [
  "starcoin-state-api 1.13.19",
  "starcoin-statedb 1.13.19",
  "starcoin-storage 1.13.19",
+ "starcoin-storage 2.0.1",
  "starcoin-types 1.13.19",
  "starcoin-vm-types 1.13.19",
  "thiserror 1.0.69",

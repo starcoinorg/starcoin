@@ -10,6 +10,7 @@ use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_storage::Storage;
+use starcoin_storage2::Storage as Storage2;
 use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::startup_info::ChainInfo;
 use std::sync::Arc;
@@ -22,10 +23,16 @@ pub struct MockChain {
 
 impl MockChain {
     pub fn new(net: ChainNetwork) -> Result<Self> {
-        let (storage, chain_info, _) =
-            Genesis::init_storage_for_test(&net).expect("init storage by genesis fail.");
+        let (storage, storage2, chain_info, _) =
+            Genesis::init_storage_for_test_v2(&net).expect("init storage by genesis fail.");
 
-        let chain = BlockChain::new(net.time_service(), chain_info.head().id(), storage, None)?;
+        let chain = BlockChain::new_v2(
+            net.time_service(),
+            chain_info.head().id(),
+            storage,
+            storage2,
+            None,
+        )?;
         let miner = AccountInfo::random();
         Ok(Self::new_inner(net, chain, miner))
     }
@@ -33,10 +40,12 @@ impl MockChain {
     pub fn new_with_storage(
         net: ChainNetwork,
         storage: Arc<Storage>,
+        storage2: Arc<Storage2>,
         head_block_hash: HashValue,
         miner: AccountInfo,
     ) -> Result<Self> {
-        let chain = BlockChain::new(net.time_service(), head_block_hash, storage, None)?;
+        let chain =
+            BlockChain::new_v2(net.time_service(), head_block_hash, storage, storage2, None)?;
         Ok(Self::new_inner(net, chain, miner))
     }
 
@@ -67,10 +76,11 @@ impl MockChain {
             None => self.head.current_header().id(),
         };
         assert!(self.head.exist_block(block_id)?);
-        BlockChain::new(
+        BlockChain::new_v2(
             self.head.time_service(),
             block_id,
             self.head.get_storage(),
+            self.head.get_storage2(),
             None,
         )
     }
@@ -88,10 +98,11 @@ impl MockChain {
         //TODO reuse WriteChainService's select_head logic.
         // new block should be execute and save to storage.
         let new_block_id = new_block.id();
-        let branch = BlockChain::new(
+        let branch = BlockChain::new_v2(
             self.net.time_service(),
             new_block_id,
             self.head.get_storage(),
+            self.head.get_storage2(),
             None,
         )?;
         let branch_total_difficulty = branch.get_total_difficulty()?;
