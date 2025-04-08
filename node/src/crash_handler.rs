@@ -4,19 +4,19 @@
 use backtrace::Backtrace;
 use starcoin_logger::prelude::*;
 use std::{
-    panic::{self, PanicInfo},
+    panic::{self, PanicHookInfo},
     process, thread, time,
 };
 
 /// Invoke to ensure process exits on a thread panic.
 pub fn setup_panic_handler() {
-    panic::set_hook(Box::new(move |pi: &PanicInfo<'_>| {
+    panic::set_hook(Box::new(move |pi: &PanicHookInfo<'_>| {
         handle_panic(pi);
     }));
 }
 
 // Formats and logs panic information
-fn handle_panic(panic_info: &PanicInfo<'_>) {
+fn handle_panic(panic_info: &PanicHookInfo<'_>) {
     let details = format!("{}", panic_info);
     let backtrace = format!("{:#?}", Backtrace::new());
 

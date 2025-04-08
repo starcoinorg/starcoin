@@ -294,7 +294,7 @@ impl NFTGallery {
         {
             if struct_tag.type_params.len() == 2 {
                 let (meta_type, body_type) = (
-                    struct_tag.type_params.get(0).cloned().unwrap(),
+                    struct_tag.type_params.first().cloned().unwrap(),
                     struct_tag.type_params.get(1).cloned().unwrap(),
                 );
                 Some(NFTType {
@@ -346,7 +346,7 @@ impl IdentifierNFT {
         {
             if struct_tag.type_params.len() == 2 {
                 let (meta_type, body_type) = (
-                    struct_tag.type_params.get(0).cloned().unwrap(),
+                    struct_tag.type_params.first().cloned().unwrap(),
                     struct_tag.type_params.get(1).cloned().unwrap(),
                 );
                 Some(NFTType {

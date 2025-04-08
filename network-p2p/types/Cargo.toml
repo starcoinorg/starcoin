@@ -2,7 +2,7 @@
 bitflags = { workspace = true }
 bytes = { workspace = true }
 derive_more = { workspace = true }
-libp2p = { default-features = false, features = [
+libp2p = { features = [
     "request-response",
 ], workspace = true }
 rand = { workspace = true }

@@ -77,7 +77,7 @@ fn test_better_peer() {
         peers.push(PeerInfo::random());
     }
 
-    let first_peer = peers.get(0).cloned().expect("first peer must exist.");
+    let first_peer = peers.first().cloned().expect("first peer must exist.");
 
     let peer_selector = PeerSelector::new(peers, PeerStrategy::default(), None);
     let better_selector = peer_selector.betters(first_peer.total_difficulty(), 10);

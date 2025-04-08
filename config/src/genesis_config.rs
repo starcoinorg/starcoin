@@ -18,6 +18,9 @@ use starcoin_gas::StarcoinGasParameters;
 use starcoin_gas_algebra_ext::{CostTable, FromOnChainGasSchedule};
 use starcoin_time_service::{TimeService, TimeServiceType};
 use starcoin_uint::U256;
+use starcoin_vm2_types::genesis_config::{
+    self as genesis_config2, GenesisConfig as GenesisConfig2,
+};
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::event::EventHandle;
 use starcoin_vm_types::gas_schedule::{
@@ -59,6 +62,7 @@ use std::sync::Arc;
 )]
 #[repr(u8)]
 #[allow(clippy::upper_case_acronyms)]
+#[derive(Default)]
 pub enum BuiltinNetworkID {
     /// A ephemeral network just for unit test.
     Test = 255,
@@ -76,6 +80,7 @@ pub enum BuiltinNetworkID {
     /// Barnard's Star is a red dwarf about six light-years away from Earth in the constellation of Ophiuchus.
     Barnard = 251,
     /// Starcoin main net.
+    #[default]
     Main = 1,
 }
 
@@ -158,6 +163,10 @@ impl BuiltinNetworkID {
         matches!(self, BuiltinNetworkID::Halley)
     }
 
+    pub fn is_proxima(self) -> bool {
+        matches!(self, BuiltinNetworkID::Proxima)
+    }
+
     pub fn networks() -> Vec<BuiltinNetworkID> {
         vec![
             BuiltinNetworkID::Test,
@@ -170,6 +179,18 @@ impl BuiltinNetworkID {
     }
 
     pub fn genesis_config(self) -> &'static GenesisConfig {
+        match self {
+            BuiltinNetworkID::Test => &G_TEST_CONFIG,
+            BuiltinNetworkID::Dev => &G_DEV_CONFIG,
+            BuiltinNetworkID::Halley => &G_HALLEY_CONFIG,
+            BuiltinNetworkID::Proxima => &G_PROXIMA_CONFIG,
+            BuiltinNetworkID::Barnard => &G_BARNARD_CONFIG,
+            BuiltinNetworkID::Main => &G_MAIN_CONFIG,
+        }
+    }
+
+    pub fn genesis_config2(self) -> &'static GenesisConfig2 {
+        use genesis_config2::*;
         match self {
             BuiltinNetworkID::Test => &G_TEST_CONFIG,
             BuiltinNetworkID::Dev => &G_DEV_CONFIG,
@@ -198,18 +219,12 @@ impl BuiltinNetworkID {
         }
     }
 }
-
-impl Default for BuiltinNetworkID {
-    fn default() -> Self {
-        BuiltinNetworkID::Main
-    }
-}
-
 impl From<BuiltinNetworkID> for ChainNetwork {
     fn from(network: BuiltinNetworkID) -> Self {
         ChainNetwork::new(
             ChainNetworkID::Builtin(network),
             network.genesis_config().clone(),
+            network.genesis_config2().clone(),
         )
     }
 }
@@ -418,7 +433,9 @@ impl Default for ChainNetworkID {
 #[derive(Clone, Debug)]
 pub struct ChainNetwork {
     id: ChainNetworkID,
+    // todo: deduplicate same items in both configurations
     genesis_config: GenesisConfig,
+    genesis_config2: GenesisConfig2,
     time_service: Arc<dyn TimeService>,
 }
 
@@ -435,27 +452,38 @@ impl PartialEq for ChainNetwork {
 }
 
 impl ChainNetwork {
-    pub fn new(id: ChainNetworkID, genesis_config: GenesisConfig) -> Self {
+    pub fn new(
+        id: ChainNetworkID,
+        genesis_config: GenesisConfig,
+        genesis_config2: GenesisConfig2,
+    ) -> Self {
         let time_service = genesis_config.time_service_type.new_time_service();
         Self {
             id,
             genesis_config,
+            genesis_config2,
             time_service,
         }
     }
 
     pub fn new_builtin(builtin_id: BuiltinNetworkID) -> Self {
-        Self::new(builtin_id.into(), builtin_id.genesis_config().clone())
+        Self::new(
+            builtin_id.into(),
+            builtin_id.genesis_config().clone(),
+            builtin_id.genesis_config2().clone(),
+        )
     }
 
     pub fn new_custom(
         chain_name: String,
         chain_id: ChainId,
         genesis_config: GenesisConfig,
+        genesis_config2: GenesisConfig2,
     ) -> Result<Self> {
         Ok(Self::new(
             ChainNetworkID::new_custom(chain_name, chain_id)?,
             genesis_config,
+            genesis_config2,
         ))
     }
 
@@ -469,6 +497,10 @@ impl ChainNetwork {
 
     pub fn genesis_config(&self) -> &GenesisConfig {
         &self.genesis_config
+    }
+
+    pub fn genesis_config2(&self) -> &GenesisConfig2 {
+        &self.genesis_config2
     }
 
     pub fn time_service(&self) -> Arc<dyn TimeService> {

@@ -1,26 +1,26 @@
 [dependencies]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
-starcoin-crypto = { package = "starcoin-crypto", workspace = true }
+bcs-ext = { workspace = true }
+starcoin-crypto = { workspace = true }
 futures = { workspace = true }
 futures-timer = { workspace = true }
-starcoin-logger = { package = "starcoin-logger", workspace = true }
+starcoin-logger = { workspace = true }
 parking_lot = { workspace = true }
-proptest = { default-features = false, optional = true, workspace = true }
-proptest-derive = { default-features = false, optional = true, workspace = true }
+proptest = { optional = true, workspace = true }
+proptest-derive = { optional = true, workspace = true }
 starcoin-account-api = { workspace = true }
-starcoin-accumulator = { package = "starcoin-accumulator", workspace = true }
+starcoin-accumulator = { workspace = true }
 starcoin-chain = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-consensus = { workspace = true }
-starcoin-executor = { package = "starcoin-executor", workspace = true }
+starcoin-executor = { workspace = true }
 starcoin-genesis = { workspace = true }
 starcoin-open-block = { workspace = true }
 starcoin-state-api = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-storage = { workspace = true }
-starcoin-types = { package = "starcoin-types", workspace = true }
+starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
 

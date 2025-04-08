@@ -6,14 +6,13 @@ hex = { workspace = true }
 once_cell = { workspace = true }
 parking_lot = { workspace = true }
 thiserror = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
-starcoin-consensus = { package = "starcoin-consensus", workspace = true }
-starcoin-crypto = { package = "starcoin-crypto", workspace = true }
-starcoin-logger = { package = "starcoin-logger", workspace = true }
+starcoin-consensus = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-logger = { workspace = true }
 serde = { workspace = true }
 starcoin-account-api = { workspace = true }
 starcoin-account-service = { workspace = true }
-starcoin-accumulator = { package = "starcoin-accumulator", workspace = true }
+starcoin-accumulator = { workspace = true }
 starcoin-chain = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-executor = { workspace = true }
@@ -26,18 +25,22 @@ starcoin-txpool = { workspace = true }
 starcoin-txpool-api = { workspace = true }
 starcoin-vm-types = { workspace = true }
 tokio = { features = ["full"], workspace = true }
-starcoin-types = { package = "starcoin-types", workspace = true }
+starcoin-types = { workspace = true }
+
+# dependencies for move 2.0
+starcoin-storage2 = { workspace = true }
+starcoin-vm2-types = { workspace = true }
 
 [dev-dependencies]
-starcoin-network-rpc = { package = "starcoin-network-rpc", workspace = true }
+starcoin-network-rpc = { workspace = true }
 starcoin-genesis = { workspace = true }
 starcoin-network-rpc-api = { workspace = true }
 starcoin-node = { workspace = true }
 starcoin-state-service = { workspace = true }
-starcoin-sync-api = { package = "starcoin-sync-api", workspace = true }
+starcoin-sync-api = { workspace = true }
 starcoin-time-service = { workspace = true }
 stest = { workspace = true }
-starcoin-sync = { package = "starcoin-sync", workspace = true }
+starcoin-sync = { workspace = true }
 test-helper = { workspace = true }
 
 [package]

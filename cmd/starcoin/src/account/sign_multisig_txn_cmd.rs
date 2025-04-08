@@ -10,7 +10,9 @@ use clap::Parser;
 
 use scmd::{CommandAction, ExecContext};
 use starcoin_account_api::AccountPublicKey;
-use starcoin_rpc_api::types::{FunctionIdView, RawUserTransactionView, TransactionStatusView};
+use starcoin_rpc_api::types::{
+    FunctionIdView, RawUserTransactionView, TransactionPayloadView, TransactionStatusView,
+};
 use starcoin_rpc_client::StateRootOption;
 use starcoin_state_api::StateReaderExt;
 use starcoin_types::transaction::{
@@ -146,11 +148,9 @@ impl CommandAction for GenerateMultisigTxnCommand {
                 unreachable!()
             };
         let mut raw_txn_view: RawUserTransactionView = raw_txn.clone().try_into()?;
-        raw_txn_view.decoded_payload = Some(
-            ctx.state()
-                .decode_txn_payload(raw_txn.payload())?
-                .try_into()?,
-        );
+        raw_txn_view.decoded_payload = Some(TransactionPayloadView::from(
+            ctx.state().decode_txn_payload(raw_txn.payload())?,
+        ));
         // Use `eprintln` instead of `println`, for keep the cli stdout's format(such as json) is not broken by print.
         eprintln!(
             "Prepare to sign the transaction: \n {}",

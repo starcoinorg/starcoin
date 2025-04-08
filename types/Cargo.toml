@@ -1,23 +1,27 @@
 [dependencies]
 anyhow = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
-byteorder = { default-features = false, workspace = true }
-bytes = { workspace = true }
+bcs-ext = { workspace = true }
+byteorder = { workspace = true }
 forkable-jellyfish-merkle = { workspace = true }
-hex = { default-features = false, features = ["serde"], workspace = true }
+hex = { features = ["serde"], workspace = true }
 num_enum = { workspace = true }
-proptest = { default-features = false, optional = true, workspace = true }
-proptest-derive = { default-features = false, optional = true, workspace = true }
+proptest = { optional = true, workspace = true }
+proptest-derive = { optional = true, workspace = true }
 rand = { workspace = true }
-rand_core = { default-features = false, workspace = true }
+rand_core = { workspace = true }
 schemars = { workspace = true }
-serde = { default-features = false, workspace = true }
+serde = { workspace = true }
 serde_json = { workspace = true }
 starcoin-accumulator = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-uint = { workspace = true }
 starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
+
+# dependencies for move2
+starcoin-crypto2 = { workspace = true }
+starcoin-vm2-types = { workspace = true }
+bytes = { workspace = true }
 
 [features]
 default = []

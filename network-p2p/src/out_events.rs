@@ -70,8 +70,8 @@ pub fn channel(name: &'static str) -> (Sender, Receiver) {
 /// Must be associated with an [`OutChannels`] before anything can be sent on it
 ///
 /// > **Note**: Contrary to regular channels, this `Sender` is purposefully designed to not
-/// implement the `Clone` trait e.g. in Order to not complicate the logic keeping the metrics in
-/// sync on drop. If someone adds a `#[derive(Clone)]` below, it is **wrong**.
+/// > implement the `Clone` trait e.g. in Order to not complicate the logic keeping the metrics in
+/// > sync on drop. If someone adds a `#[derive(Clone)]` below, it is **wrong**.
 pub struct Sender {
     inner: mpsc::UnboundedSender<Event>,
     name: &'static str,
@@ -257,9 +257,9 @@ impl Metrics {
                         .inc_by(num);
                     self.notifications_sizes
                         .with_label_values(&[protocol_name, "sent"])
-                        .inc_by(num.saturating_mul(
-                            u64::try_from(message.len()).unwrap_or(u64::max_value()),
-                        ));
+                        .inc_by(
+                            num.saturating_mul(u64::try_from(message.len()).unwrap_or(u64::MAX)),
+                        );
                 }
             }
         }
@@ -289,7 +289,7 @@ impl Metrics {
                         .inc();
                     self.notifications_sizes
                         .with_label_values(&[protocol_name, "received"])
-                        .inc_by(u64::try_from(message.len()).unwrap_or(u64::max_value()));
+                        .inc_by(u64::try_from(message.len()).unwrap_or(u64::MAX));
                 }
             }
         }

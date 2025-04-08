@@ -5,18 +5,14 @@ use starcoin_types::account_config::token_code::TokenCode;
 use starcoin_types::sign_message::{SignedMessage, SigningMessage};
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum AccountProviderStrategy {
+    #[default]
     RPC,
     Local,
     PrivateKey,
 }
 
-impl Default for AccountProviderStrategy {
-    fn default() -> Self {
-        AccountProviderStrategy::RPC
-    }
-}
 pub trait AccountProvider {
     fn create_account(&self, password: String) -> Result<AccountInfo>;
 

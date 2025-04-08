@@ -322,10 +322,10 @@ impl<'a> NibbleIterator<'a> {
 
 /// Advance both iterators if their next nibbles are the same until either reaches the end or
 /// the find a mismatch. Return the number of matched nibbles.
-pub fn skip_common_prefix<'a, 'b, I1: 'a, I2: 'b>(x: &'a mut I1, y: &mut I2) -> usize
+pub fn skip_common_prefix<'a, 'b, I1, I2>(x: &'a mut I1, y: &mut I2) -> usize
 where
-    I1: Iterator + Peekable,
-    I2: Iterator + Peekable,
+    I1: Iterator + Peekable + 'a,
+    I2: Iterator + Peekable + 'a,
     <I1 as Iterator>::Item: std::cmp::PartialEq<<I2 as Iterator>::Item>,
 {
     let mut count = 0;

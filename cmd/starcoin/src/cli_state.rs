@@ -23,7 +23,8 @@ use starcoin_dev::playground;
 use starcoin_node::NodeHandle;
 use starcoin_rpc_api::chain::GetEventOption;
 use starcoin_rpc_api::types::{
-    DryRunOutputView, RawUserTransactionView, SignedUserTransactionView, TransactionStatusView,
+    DryRunOutputView, RawUserTransactionView, SignedUserTransactionView, TransactionPayloadView,
+    TransactionStatusView,
 };
 use starcoin_rpc_client::{RpcClient, StateRootOption};
 use starcoin_state_api::StateReaderExt;
@@ -287,8 +288,9 @@ impl CliState {
             raw_txn: raw_txn.clone(),
         })?;
         let mut raw_txn_view: RawUserTransactionView = raw_txn.clone().try_into()?;
-        raw_txn_view.decoded_payload =
-            Some(self.decode_txn_payload(raw_txn.payload())?.try_into()?);
+        raw_txn_view.decoded_payload = Some(TransactionPayloadView::from(
+            self.decode_txn_payload(raw_txn.payload())?,
+        ));
 
         let mut execute_result = ExecuteResultView::new(raw_txn_view, raw_txn.to_hex(), dry_output);
         if only_dry_run

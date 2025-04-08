@@ -87,7 +87,7 @@ pub struct RawUserTransaction {
     // transaction has not been included, you can be certain that it will
     // never be included.
     // A transaction that doesn't expire is represented by a very large value like
-    // u64::max_value().
+    // u64::MAX.
     expiration_timestamp_secs: u64,
     chain_id: ChainId,
 }
@@ -313,7 +313,7 @@ impl RawUserTransaction {
             TransactionPayload::Script(Script::new(vec![], vec![], vec![])),
             0,
             0,
-            u64::max_value(),
+            u64::MAX,
             ChainId::test(),
         )
     }
@@ -325,7 +325,7 @@ impl RawUserTransaction {
             TransactionPayload::Script(Script::new(compiled_script, vec![], vec![])),
             600,
             0,
-            u64::max_value(),
+            u64::MAX,
             ChainId::test(),
         )
     }
@@ -394,13 +394,217 @@ pub struct RawUserTransactionWithType {
     // transaction has not been included, you can be certain that it will
     // never be included.
     // A transaction that doesn't expire is represented by a very large value like
-    // u64::max_value().
+    // u64::MAX.
     expiration_timestamp_secs: u64,
     chain_id: ChainId,
     type_id: u8,
 }
 
 impl RawUserTransactionWithType {
+    /// Create a new `RawUserTransaction` with a payload.
+    ///
+    /// It can be either to publish a module, to execute a script, or to issue a writeset
+    /// transaction.
+    pub fn new(
+        sender: AccountAddress,
+        sequence_number: u64,
+        payload: TransactionPayload,
+        max_gas_amount: u64,
+        gas_unit_price: u64,
+        expiration_timestamp_secs: u64,
+        chain_id: ChainId,
+        gas_token_code: String,
+        type_id: u8,
+    ) -> Self {
+        Self {
+            sender,
+            sequence_number,
+            payload,
+            max_gas_amount,
+            gas_unit_price,
+            gas_token_code,
+            expiration_timestamp_secs,
+            chain_id,
+            type_id,
+        }
+    }
+
+    pub fn new_with_default_gas_token(
+        sender: AccountAddress,
+        sequence_number: u64,
+        payload: TransactionPayload,
+        max_gas_amount: u64,
+        gas_unit_price: u64,
+        expiration_timestamp_secs: u64,
+        chain_id: ChainId,
+        type_id: u8,
+    ) -> Self {
+        Self {
+            sender,
+            sequence_number,
+            payload,
+            max_gas_amount,
+            gas_unit_price,
+            gas_token_code: STC_TOKEN_CODE_STR.to_string(),
+            expiration_timestamp_secs,
+            chain_id,
+            type_id,
+        }
+    }
+
+    /// Create a new `RawUserTransaction` with a script.
+    ///
+    /// A script transaction contains only code to execute. No publishing is allowed in scripts.
+    pub fn new_script(
+        sender: AccountAddress,
+        sequence_number: u64,
+        script: Script,
+        max_gas_amount: u64,
+        gas_unit_price: u64,
+        expiration_timestamp_secs: u64,
+        chain_id: ChainId,
+        type_id: u8,
+    ) -> Self {
+        Self {
+            sender,
+            sequence_number,
+            payload: TransactionPayload::Script(script),
+            max_gas_amount,
+            gas_unit_price,
+            gas_token_code: STC_TOKEN_CODE_STR.to_string(),
+            expiration_timestamp_secs,
+            chain_id,
+            type_id,
+        }
+    }
+
+    /// Create a new `RawTransaction` with a script function.
+    ///
+    /// A script transaction contains only code to execute. No publishing is allowed in scripts.
+    pub fn new_script_function(
+        sender: AccountAddress,
+        sequence_number: u64,
+        script_function: ScriptFunction,
+        max_gas_amount: u64,
+        gas_unit_price: u64,
+        expiration_timestamp_secs: u64,
+        chain_id: ChainId,
+        type_id: u8,
+    ) -> Self {
+        Self {
+            sender,
+            sequence_number,
+            payload: TransactionPayload::ScriptFunction(script_function),
+            max_gas_amount,
+            gas_unit_price,
+            gas_token_code: STC_TOKEN_CODE_STR.to_string(),
+            expiration_timestamp_secs,
+            chain_id,
+            type_id,
+        }
+    }
+
+    /// Create a new `RawUserTransaction` with a package to publish.
+    pub fn new_package(
+        sender: AccountAddress,
+        sequence_number: u64,
+        package: Package,
+        max_gas_amount: u64,
+        gas_unit_price: u64,
+        expiration_timestamp_secs: u64,
+        chain_id: ChainId,
+        type_id: u8,
+    ) -> Self {
+        Self {
+            sender,
+            sequence_number,
+            payload: TransactionPayload::Package(package),
+            max_gas_amount,
+            gas_unit_price,
+            gas_token_code: STC_TOKEN_CODE_STR.to_string(),
+            expiration_timestamp_secs,
+            chain_id,
+            type_id,
+        }
+    }
+
+    /// Create a new `RawUserTransaction` with a module to publish.
+    ///
+    /// A module transaction is the only way to publish code. Only one module per transaction
+    /// can be published.
+    pub fn new_module(
+        sender: AccountAddress,
+        sequence_number: u64,
+        module: Module,
+        max_gas_amount: u64,
+        gas_unit_price: u64,
+        expiration_timestamp_secs: u64,
+        chain_id: ChainId,
+        type_id: u8,
+    ) -> Self {
+        Self::new_package(
+            sender,
+            sequence_number,
+            Package::new_with_module(module).expect("build package with module should success."),
+            max_gas_amount,
+            gas_unit_price,
+            expiration_timestamp_secs,
+            chain_id,
+            type_id,
+        )
+    }
+
+    /// Signs the given `RawUserTransaction`. Note that this consumes the `RawUserTransaction` and turns it
+    /// into a `SignatureCheckedTransaction`.
+    ///
+    /// For a transaction that has just been signed, its signature is expected to be valid.
+    pub fn sign(
+        self,
+        private_key: &Ed25519PrivateKey,
+        public_key: Ed25519PublicKey,
+    ) -> Result<SignatureCheckedTransactionWithType> {
+        let signature = private_key.sign(&self);
+        Ok(SignatureCheckedTransactionWithType(
+            SignedUserTransactionWithType::ed25519(self, public_key, signature),
+        ))
+    }
+
+    pub fn into_payload(self) -> TransactionPayload {
+        self.payload
+    }
+
+    /// Return the sender of this transaction.
+    pub fn sender(&self) -> AccountAddress {
+        self.sender
+    }
+    pub fn sequence_number(&self) -> u64 {
+        self.sequence_number
+    }
+    pub fn max_gas_amount(&self) -> u64 {
+        self.max_gas_amount
+    }
+    pub fn gas_unit_price(&self) -> u64 {
+        self.gas_unit_price
+    }
+    pub fn gas_token_code(&self) -> String {
+        self.gas_token_code.clone()
+    }
+    pub fn expiration_timestamp_secs(&self) -> u64 {
+        self.expiration_timestamp_secs
+    }
+    pub fn chain_id(&self) -> ChainId {
+        self.chain_id
+    }
+    pub fn payload(&self) -> &TransactionPayload {
+        &self.payload
+    }
+
+    pub fn txn_size(&self) -> usize {
+        bcs_ext::to_bytes(self)
+            .expect("Unable to serialize RawUserTransaction")
+            .len()
+    }
+
     pub fn from_hex<T: AsRef<[u8]>>(hex: T) -> Result<Self> {
         Self::from_bytes(hex::decode(hex)?)
     }
@@ -415,6 +619,36 @@ impl RawUserTransactionWithType {
             hex::encode(
                 bcs_ext::to_bytes(&self).expect("Serialize RawUserTransaction should success.")
             )
+        )
+    }
+
+    pub fn mock() -> Self {
+        Self::mock_by_sender(AccountAddress::random())
+    }
+
+    pub fn mock_by_sender(sender: AccountAddress) -> Self {
+        Self::new_with_default_gas_token(
+            sender,
+            0,
+            TransactionPayload::Script(Script::new(vec![], vec![], vec![])),
+            0,
+            0,
+            u64::MAX,
+            ChainId::test(),
+            1,
+        )
+    }
+
+    pub fn mock_from(compiled_script: Vec<u8>) -> Self {
+        Self::new_with_default_gas_token(
+            AccountAddress::ZERO,
+            0,
+            TransactionPayload::Script(Script::new(compiled_script, vec![], vec![])),
+            600,
+            0,
+            u64::MAX,
+            ChainId::test(),
+            1,
         )
     }
 }
@@ -696,19 +930,96 @@ pub struct SignedUserTransactionWithType {
 
 impl SignedUserTransactionWithType {
     pub fn new(
-        raw_txn_type: RawUserTransactionWithType,
+        raw_txn: RawUserTransactionWithType,
         authenticator: TransactionAuthenticator,
     ) -> SignedUserTransactionWithType {
         let mut txn = Self {
             id: None,
-            raw_txn: raw_txn_type,
+            raw_txn,
             authenticator,
         };
         txn.id = Some(txn.crypto_hash());
         txn
     }
+
+    pub fn ed25519(
+        raw_txn: RawUserTransactionWithType,
+        public_key: Ed25519PublicKey,
+        signature: Ed25519Signature,
+    ) -> SignedUserTransactionWithType {
+        let authenticator = TransactionAuthenticator::ed25519(public_key, signature);
+        Self::new(raw_txn, authenticator)
+    }
+
+    pub fn multi_ed25519(
+        raw_txn: RawUserTransactionWithType,
+        public_key: MultiEd25519PublicKey,
+        signature: MultiEd25519Signature,
+    ) -> SignedUserTransactionWithType {
+        let authenticator = TransactionAuthenticator::multi_ed25519(public_key, signature);
+        Self::new(raw_txn, authenticator)
+    }
+
+    pub fn authenticator(&self) -> TransactionAuthenticator {
+        self.authenticator.clone()
+    }
+
+    pub fn raw_txn(&self) -> &RawUserTransactionWithType {
+        &self.raw_txn
+    }
+
     pub fn sender(&self) -> AccountAddress {
         self.raw_txn.sender
+    }
+
+    pub fn into_raw_transaction_with_type(self) -> RawUserTransactionWithType {
+        self.raw_txn
+    }
+
+    pub fn sequence_number(&self) -> u64 {
+        self.raw_txn.sequence_number
+    }
+
+    pub fn chain_id(&self) -> ChainId {
+        self.raw_txn.chain_id
+    }
+
+    pub fn payload(&self) -> &TransactionPayload {
+        &self.raw_txn.payload
+    }
+
+    pub fn max_gas_amount(&self) -> u64 {
+        self.raw_txn.max_gas_amount
+    }
+
+    pub fn gas_unit_price(&self) -> u64 {
+        self.raw_txn.gas_unit_price
+    }
+
+    pub fn gas_token_code(&self) -> &str {
+        self.raw_txn.gas_token_code.as_str()
+    }
+
+    pub fn expiration_timestamp_secs(&self) -> u64 {
+        self.raw_txn.expiration_timestamp_secs
+    }
+
+    pub fn raw_txn_bytes_len(&self) -> usize {
+        self.raw_txn.txn_size()
+    }
+
+    /// Checks that the signature of given transaction. Returns `Ok(SignatureCheckedTransaction)` if
+    /// the signature is valid.
+    pub fn check_signature(self) -> Result<SignatureCheckedTransactionWithType> {
+        self.authenticator.verify(&self.raw_txn)?;
+        Ok(SignatureCheckedTransactionWithType(self))
+    }
+
+    ///TODO cfg test
+    pub fn mock() -> Self {
+        let (private_key, public_key) = genesis_key_pair();
+        let raw_txn = RawUserTransactionWithType::mock();
+        raw_txn.sign(&private_key, public_key).unwrap().into_inner()
     }
 
     pub fn id(&self) -> HashValue {
@@ -744,6 +1055,23 @@ impl<'de> Deserialize<'de> for SignedUserTransactionWithType {
         }
         let data = SignedUserTransactionWithTypeData::deserialize(deserializer)?;
         Ok(Self::new(data.raw_txn, data.authenticator))
+    }
+}
+
+/// A transaction for which the signature has been verified. Created by
+/// [`SignedUserTransactionWithType::check_signature`] and [`RawUserTransactionWithType::sign`].
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+pub struct SignatureCheckedTransactionWithType(SignedUserTransactionWithType);
+
+impl SignatureCheckedTransactionWithType {
+    /// Returns the `SignedUserTransactionWithType` within.
+    pub fn into_inner(self) -> SignedUserTransactionWithType {
+        self.0
+    }
+
+    /// Returns the `RawUserTransaction` within.
+    pub fn into_raw_transaction_with_type(self) -> RawUserTransactionWithType {
+        self.0.into_raw_transaction_with_type()
     }
 }
 

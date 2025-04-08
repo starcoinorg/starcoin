@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 pub struct NodeIndex(u64);
 pub const MAX_ACCUMULATOR_PROOF_DEPTH: usize = 63;
 pub static G_NODE_ERROR_INDEX: Lazy<NodeIndex> =
-    Lazy::new(|| NodeIndex::from_inorder_index(u64::max_value()));
+    Lazy::new(|| NodeIndex::from_inorder_index(u64::MAX));
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum NodeDirection {
@@ -122,7 +122,7 @@ impl NodeIndex {
 
     /// What is the parent of this node?
     pub fn parent(self) -> Self {
-        assume!(self.0 < u64::max_value() - 1); // invariant
+        assume!(self.0 < u64::MAX - 1); // invariant
         Self(
             (self.0 | isolate_rightmost_zero_bit(self.0))
                 & !(isolate_rightmost_zero_bit(self.0) << 1),
@@ -143,7 +143,7 @@ impl NodeIndex {
 
     fn child(self, dir: NodeDirection) -> Self {
         checked_precondition!(!self.is_leaf());
-        assume!(self.0 < u64::max_value() - 1); // invariant
+        assume!(self.0 < u64::MAX - 1); // invariant
 
         let direction_bit = match dir {
             NodeDirection::Left => 0,
@@ -159,14 +159,14 @@ impl NodeIndex {
     /// To find out the right-most common bits, first remove all the right-most ones
     /// because they are corresponding to level's indicator. Then remove next zero right after.
     pub fn sibling(self) -> Self {
-        assume!(self.0 < u64::max_value() - 1); // invariant
+        assume!(self.0 < u64::MAX - 1); // invariant
         Self(self.0 ^ (isolate_rightmost_zero_bit(self.0) << 1))
     }
     /// Whether this node_index is a left child of its parent.  The observation is that,
     /// after stripping out all right-most 1 bits, a left child will have a bit pattern
     /// of xxx00(11..), while a right child will be represented by xxx10(11..)
     pub fn is_left_child(self) -> bool {
-        assume!(self.0 < u64::max_value() - 1); // invariant
+        assume!(self.0 < u64::MAX - 1); // invariant
         self.0 & (isolate_rightmost_zero_bit(self.0) << 1) == 0
     }
 
@@ -196,7 +196,7 @@ impl NodeIndex {
 pub struct FrozenSubTreeIterator {
     bitmap: u64,
     seen_leaves: u64,
-    // invariant seen_leaves < u64::max_value() - bitmap
+    // invariant seen_leaves < u64::MAX - bitmap
 }
 
 impl FrozenSubTreeIterator {
@@ -212,7 +212,7 @@ impl Iterator for FrozenSubTreeIterator {
     type Item = NodeIndex;
 
     fn next(&mut self) -> Option<NodeIndex> {
-        assume!(self.seen_leaves < u64::max_value() - self.bitmap); // invariant
+        assume!(self.seen_leaves < u64::MAX - self.bitmap); // invariant
 
         if self.bitmap == 0 {
             return None;

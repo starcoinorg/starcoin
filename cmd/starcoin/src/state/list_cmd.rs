@@ -130,7 +130,7 @@ impl CommandAction for ListCmd {
                         false,
                         state_root,
                         start_index.unwrap_or_default(),
-                        max_size.unwrap_or_else(|| std::usize::MAX),
+                        max_size.unwrap_or_else(|| usize::MAX),
                         resource_type.as_ref().map(|a| vec![a.clone()]),
                     )?,
                 ))

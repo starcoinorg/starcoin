@@ -5,8 +5,8 @@ dirs-next = { workspace = true }
 git-version = { workspace = true }
 hex = { workspace = true }
 libc = { workspace = true }
-names = { default-features = false, workspace = true }
-network-api = { package = "network-api", workspace = true }
+names = { workspace = true }
+network-api = { workspace = true }
 network-p2p-types = { workspace = true }
 network-types = { workspace = true }
 num_cpus = { workspace = true }
@@ -14,15 +14,15 @@ num_enum = { workspace = true }
 once_cell = { workspace = true }
 parking_lot = { workspace = true }
 rand = { workspace = true }
-rand_core = { default-features = false, workspace = true }
+rand_core = { workspace = true }
 schemars = { workspace = true }
 serde = { features = ["derive"], workspace = true }
 serde_json = { features = ["arbitrary_precision"], workspace = true }
 starcoin-account-api = { workspace = true }
 starcoin-crypto = { workspace = true }
-starcoin-logger = { package = "starcoin-logger", workspace = true }
+starcoin-logger = { workspace = true }
 starcoin-metrics = { workspace = true }
-starcoin-system = { package = "starcoin-system", workspace = true }
+starcoin-system = { workspace = true }
 starcoin-time-service = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-uint = { workspace = true }
@@ -32,7 +32,10 @@ starcoin-gas = { workspace = true }
 stdlib = { workspace = true }
 tempfile = { workspace = true }
 thiserror = { workspace = true }
-toml = { default-features = false, workspace = true }
+toml = { workspace = true }
+
+# dependencies for move 2.0
+starcoin-vm2-types = { workspace = true }
 
 [package]
 authors = { workspace = true }

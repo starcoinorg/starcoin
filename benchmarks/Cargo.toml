@@ -13,21 +13,21 @@ rust-version = { workspace = true }
 [dependencies]
 anyhow = { workspace = true }
 criterion = { workspace = true }
-starcoin-crypto = { package = "starcoin-crypto", workspace = true }
+starcoin-crypto = { workspace = true }
 forkable-jellyfish-merkle = { workspace = true }
 futures = { workspace = true }
 futures-timer = { workspace = true }
-starcoin-logger = { package = "starcoin-logger", workspace = true }
+starcoin-logger = { workspace = true }
 parking_lot = { workspace = true }
 proptest = { workspace = true }
 rand = { workspace = true }
-rand_core = { default-features = false, workspace = true }
+rand_core = { workspace = true }
 starcoin-account-api = { workspace = true }
-starcoin-accumulator = { package = "starcoin-accumulator", workspace = true }
+starcoin-accumulator = { workspace = true }
 starcoin-chain = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-consensus = { workspace = true }
-starcoin-executor = { package = "starcoin-executor", workspace = true }
+starcoin-executor = { workspace = true }
 starcoin-genesis = { workspace = true }
 network-api = { workspace = true }
 starcoin-service-registry = { workspace = true }

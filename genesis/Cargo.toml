@@ -1,6 +1,6 @@
 [dependencies]
 anyhow = { workspace = true }
-bcs-ext = { package = "bcs-ext", workspace = true }
+bcs-ext = { workspace = true }
 clap = { features = ["derive"], workspace = true }
 include_dir = { workspace = true }
 once_cell = { workspace = true }
@@ -22,6 +22,14 @@ starcoin-vm-runtime = { workspace = true }
 stdlib = { workspace = true }
 stest = { workspace = true }
 thiserror = { workspace = true }
+
+# dependencies for move2
+starcoin-storage2 = { workspace = true }
+starcoin-transaction2-builder = { workspace = true }
+starcoin-vm2-types = { workspace = true }
+starcoin-types2 = { workspace = true }
+starcoin-crypto2 = { workspace = true }
+starcoin-vm2-statedb = { workspace = true }
 
 [features]
 default = []

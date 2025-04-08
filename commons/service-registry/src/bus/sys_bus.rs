@@ -88,7 +88,7 @@ impl SysBus {
         M: Send + Clone + Debug + 'static,
     {
         let type_id = TypeId::of::<M>();
-        let topic_subscribes = self.subscriptions.entry(type_id).or_insert_with(Vec::new);
+        let topic_subscribes = self.subscriptions.entry(type_id).or_default();
         debug!("do_subscribe: {:?}", subscription);
         topic_subscribes.push(Box::new(subscription));
     }
@@ -249,7 +249,7 @@ mod tests {
         let mut bus = SysBus::new();
         let receiver = bus.oneshot::<Message>();
         assert_eq!(1, bus.len_by_type::<Message>());
-        let job = task::spawn(async { receiver.await });
+        let job = task::spawn(receiver);
         Delay::new(Duration::from_millis(10)).await;
         bus.broadcast(Message {});
         let result = job.await;

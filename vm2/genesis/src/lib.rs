@@ -1,20 +1,22 @@
+use starcoin_config::genesis_config::ChainNetwork;
+use starcoin_crypto2::ed25519::genesis_key_pair;
 use starcoin_types2::{
     account_config::CORE_CODE_ADDRESS,
     error::{BlockExecutorError, ExecutorResult},
     vm_error::KeptVMStatus,
 };
-use starcoin_vm2_crypto::ed25519::genesis_key_pair;
 use starcoin_vm2_executor::{
-    block_executor2::BlockExecutedData, executor2::execute_block_transactions,
+    block_executor2::BlockExecutedData, executor2::do_execute_block_transactions,
 };
 use starcoin_vm2_state_api::ChainStateWriter;
-use starcoin_vm2_transaction_builder::{build_init_script, build_stdlib_package_for_test};
-use starcoin_vm2_types::{
-    genesis_config::ChainNetwork,
-    transaction::{Package, RawUserTransaction, SignedUserTransaction, TransactionPayload},
+use starcoin_vm2_transaction_builder::{
+    build_stdlib_package as build_stdlib_package_2, build_stdlib_package_for_test,
 };
 use starcoin_vm2_types::{
-    transaction::{Transaction, TransactionInfo, TransactionStatus},
+    transaction::{
+        Package, RawUserTransaction, SignedUserTransaction, Transaction, TransactionInfo,
+        TransactionPayload, TransactionStatus,
+    },
     write_set::WriteSet,
     StateView,
 };
@@ -30,7 +32,7 @@ pub fn build_genesis_transaction_with_package(
         0,
         0,
         1, // init to 1 to pass time check
-        net.chain_id(),
+        net.chain_id().id().into(),
     );
     let (genesis_private_key, genesis_public_key) = genesis_key_pair();
     let sign_txn = txn.sign(&genesis_private_key, genesis_public_key)?;
@@ -38,8 +40,9 @@ pub fn build_genesis_transaction_with_package(
 }
 
 pub fn build_genesis_transaction(net: &ChainNetwork) -> anyhow::Result<SignedUserTransaction> {
-    let entry_func = build_init_script(&net);
-    let package = build_stdlib_package_for_test(0, Some(entry_func))?;
+    let entry_func =
+        build_stdlib_package_2(net.chain_id().id().into(), net.genesis_config2(), None);
+    let package = build_stdlib_package_for_test(None, Some(entry_func))?;
     build_genesis_transaction_with_package(&net, package)
 }
 
@@ -48,7 +51,7 @@ pub fn execute_genesis_transaction<S: StateView + ChainStateWriter + Sync>(
     genesis_txn: Transaction,
 ) -> ExecutorResult<BlockExecutedData> {
     let txn_hash = genesis_txn.id();
-    let txn_outputs = execute_block_transactions(chain_state, vec![genesis_txn], u64::MAX, None)
+    let txn_outputs = do_execute_block_transactions(chain_state, vec![genesis_txn], None, None)
         .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
     assert_eq!(
         txn_outputs.len(),

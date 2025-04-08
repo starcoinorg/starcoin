@@ -27,14 +27,13 @@ impl WriteOp {
 impl std::fmt::Debug for WriteOp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            WriteOp::Value(value) => write!(
-                f,
-                "Value({})",
-                value
-                    .iter()
-                    .map(|byte| format!("{:02x}", byte))
-                    .collect::<String>()
-            ),
+            WriteOp::Value(value) => {
+                write!(f, "Value(")?;
+                for byte in value {
+                    write!(f, "{:02x}", byte)?;
+                }
+                write!(f, ")")
+            }
             WriteOp::Deletion => write!(f, "Deletion"),
         }
     }

@@ -2,10 +2,10 @@
 anyhow = { workspace = true }
 async-trait = { workspace = true }
 futures = { workspace = true }
-network-api = { package = "network-api", workspace = true }
+network-api = { workspace = true }
 rand = { workspace = true }
-rand_core = { default-features = false, workspace = true }
-serde = { default-features = false, workspace = true }
+rand_core = { workspace = true }
+serde = { workspace = true }
 starcoin-accumulator = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-service-registry = { workspace = true }

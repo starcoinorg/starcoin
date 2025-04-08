@@ -9,6 +9,7 @@ use starcoin_miner::{BlockBuilderService, MinerService};
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
 use starcoin_storage::Storage;
+use starcoin_storage2::Storage as Storage2;
 use starcoin_txpool::{TxPoolActorService, TxPoolService};
 use std::sync::Arc;
 use std::time::Duration;
@@ -18,6 +19,7 @@ pub async fn start_txpool_with_size(
 ) -> (
     TxPoolService,
     Arc<Storage>,
+    Arc<Storage2>,
     Arc<NodeConfig>,
     ServiceRef<TxPoolActorService>,
     ServiceRef<RegistryService>,
@@ -31,6 +33,7 @@ pub async fn start_txpool_with_miner(
 ) -> (
     TxPoolService,
     Arc<Storage>,
+    Arc<Storage2>,
     Arc<NodeConfig>,
     ServiceRef<TxPoolActorService>,
     ServiceRef<RegistryService>,
@@ -41,11 +44,12 @@ pub async fn start_txpool_with_miner(
 
     let node_config = Arc::new(config);
 
-    let (storage, _chain_info, _) =
-        Genesis::init_storage_for_test(node_config.net()).expect("init storage by genesis fail.");
+    let (storage, storage2, _chain_info, _) = Genesis::init_storage_for_test_v2(node_config.net())
+        .expect("init storage by genesis fail.");
     let registry = RegistryService::launch();
     registry.put_shared(node_config.clone()).await.unwrap();
     registry.put_shared(storage.clone()).await.unwrap();
+    registry.put_shared(storage2.clone()).await.unwrap();
     let bus = registry.service_ref::<BusService>().await.unwrap();
     registry.put_shared(bus).await.unwrap();
 
@@ -68,12 +72,20 @@ pub async fn start_txpool_with_miner(
     Delay::new(Duration::from_millis(200)).await;
     let txpool_service = registry.get_shared::<TxPoolService>().await.unwrap();
 
-    (txpool_service, storage, node_config, pool_actor, registry)
+    (
+        txpool_service,
+        storage,
+        storage2,
+        node_config,
+        pool_actor,
+        registry,
+    )
 }
 
 pub async fn start_txpool() -> (
     TxPoolService,
     Arc<Storage>,
+    Arc<Storage2>,
     Arc<NodeConfig>,
     ServiceRef<TxPoolActorService>,
     ServiceRef<RegistryService>,

@@ -17,7 +17,7 @@ serde_json = { features = ["arbitrary_precision"], workspace = true }
 starcoin-account-api = { workspace = true }
 starcoin-account-provider = { workspace = true }
 starcoin-chain = { workspace = true }
-starcoin-cmd = { package = "starcoin-cmd", workspace = true }
+starcoin-cmd = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-consensus = { workspace = true }
 starcoin-crypto = { workspace = true }

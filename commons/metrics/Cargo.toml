@@ -1,6 +1,6 @@
 [dependencies]
 anyhow = { workspace = true }
-prometheus = { default-features = false, workspace = true }
+prometheus = { workspace = true }
 serde_json = { features = ["arbitrary_precision"], workspace = true }
 starcoin-logger = { workspace = true }
 futures = { optional = true, workspace = true }
@@ -22,7 +22,7 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 
 [target."cfg(any(target_os = \"macos\", target_os=\"linux\"))".dependencies]
-psutil = { version = "3.2", default-features = false, features = [
+psutil = { version = "3.2", features = [
     "cpu",
     "memory",
     "process",

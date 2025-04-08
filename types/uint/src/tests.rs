@@ -9,16 +9,16 @@ fn test() {
     let encoded = u.encode().unwrap();
     let u_decoded = U256::decode(&encoded).unwrap();
     assert_eq!(u, u_decoded);
-    let max_hash: HashValue = U256::max_value().into();
+    let max_hash: HashValue = U256::MAX.into();
     let max_u256: U256 = max_hash.into();
-    assert_eq!(max_u256, U256::max_value());
+    assert_eq!(max_u256, U256::MAX);
     let h = BlockHeader::random();
     let h_encode = h.encode().unwrap();
     let h_decode = BlockHeader::decode(&h_encode).unwrap();
     assert_eq!(h, h_decode);
-    let human_encode = serde_json::to_string_pretty(&U256::max_value()).unwrap();
+    let human_encode = serde_json::to_string_pretty(&U256::MAX).unwrap();
     let human_decode: U256 = serde_json::from_str(&human_encode).unwrap();
-    assert_eq!(human_decode, U256::max_value());
+    assert_eq!(human_decode, U256::MAX);
     assert_eq!(
         "\"0x0400\"",
         serde_json::to_string_pretty(&U256::from(1024)).unwrap()

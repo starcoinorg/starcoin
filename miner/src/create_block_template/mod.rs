@@ -19,12 +19,14 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
 };
 use starcoin_storage::{BlockStore, Storage, Store};
+use starcoin_storage2::{Storage as Storage2, Store as Store2};
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::{
     block::{BlockHeader, BlockTemplate, ExecutedBlock},
     system_events::{NewBranch, NewHeadBlock},
 };
+use starcoin_vm2_types::transaction::SignedUserTransaction as SignedUserTransactionV2;
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::cmp::min;
 use std::{collections::HashMap, sync::Arc};
@@ -63,6 +65,7 @@ impl ServiceFactory<Self> for BlockBuilderService {
     fn create(ctx: &mut ServiceContext<BlockBuilderService>) -> Result<BlockBuilderService> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
+        let storage2 = ctx.get_shared::<Arc<Storage2>>()?;
         let startup_info = storage
             .get_startup_info()?
             .expect("Startup info should exist when service start.");
@@ -82,6 +85,7 @@ impl ServiceFactory<Self> for BlockBuilderService {
         let inner = Inner::new(
             config.net(),
             storage,
+            storage2,
             startup_info.main,
             txpool,
             config.miner.block_gas_limit,
@@ -158,6 +162,7 @@ impl ServiceHandler<Self, GetHeadRequest> for BlockBuilderService {
 
 pub trait TemplateTxProvider {
     fn get_txns(&self, max: u64) -> Vec<SignedUserTransaction>;
+    fn get_txns_v2(&self, max: u64) -> Vec<SignedUserTransactionV2>;
     fn remove_invalid_txn(&self, txn_hash: HashValue);
 }
 
@@ -165,6 +170,10 @@ pub struct EmptyProvider;
 
 impl TemplateTxProvider for EmptyProvider {
     fn get_txns(&self, _max: u64) -> Vec<SignedUserTransaction> {
+        vec![]
+    }
+
+    fn get_txns_v2(&self, _max: u64) -> Vec<SignedUserTransactionV2> {
         vec![]
     }
 
@@ -176,6 +185,11 @@ impl TemplateTxProvider for TxPoolService {
         self.get_pending_txns(Some(max), None)
     }
 
+    fn get_txns_v2(&self, _max: u64) -> Vec<SignedUserTransactionV2> {
+        // todo: implement this
+        vec![]
+    }
+
     fn remove_invalid_txn(&self, txn_hash: HashValue) {
         self.remove_txn(txn_hash, true);
     }
@@ -183,6 +197,7 @@ impl TemplateTxProvider for TxPoolService {
 
 pub struct Inner<P> {
     storage: Arc<dyn Store>,
+    storage2: Arc<dyn Store2>,
     chain: BlockChain,
     tx_provider: P,
     parent_uncle: HashMap<HashValue, Vec<HashValue>>,
@@ -200,6 +215,7 @@ where
     pub fn new(
         net: &ChainNetwork,
         storage: Arc<dyn Store>,
+        storage2: Arc<dyn Store2>,
         block_id: HashValue,
         tx_provider: P,
         local_block_gas_limit: Option<u64>,
@@ -207,15 +223,17 @@ where
         metrics: Option<BlockBuilderMetrics>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
-        let chain = BlockChain::new(
+        let chain = BlockChain::new_v2(
             net.time_service(),
             block_id,
             storage.clone(),
+            storage2.clone(),
             vm_metrics.clone(),
         )?;
 
         Ok(Inner {
             storage,
+            storage2,
             chain,
             tx_provider,
             parent_uncle: HashMap::new(),
@@ -230,7 +248,7 @@ where
     pub fn insert_uncle(&mut self, uncle: BlockHeader) {
         self.parent_uncle
             .entry(uncle.parent_hash())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(uncle.id());
         self.uncles.insert(uncle.id(), uncle);
         if let Some(metrics) = self.metrics.as_ref() {
@@ -309,6 +327,7 @@ where
         let max_txns = (block_gas_limit / 200) * 2;
 
         let txns = self.tx_provider.get_txns(max_txns);
+        let txns2 = self.tx_provider.get_txns_v2(max_txns - txns.len() as u64);
 
         let author = *self.miner_account.address();
         let previous_header = self.chain.current_header();
@@ -322,11 +341,12 @@ where
             now_millis = previous_header.timestamp() + 1;
         }
         info!(
-            "[CreateBlockTemplate] previous_header: {:?}, block_gas_limit: {}, max_txns: {}, txn len: {}, uncles len: {}, timestamp: {}",
+            "[CreateBlockTemplate] previous_header: {:?}, block_gas_limit: {}, max_txns: {}, txn len: {}, txn2 len: {}, uncles len: {}, timestamp: {}",
             previous_header,
             block_gas_limit,
             max_txns,
             txns.len(),
+            txns2.len(),
             uncles.len(),
             now_millis,
         );
@@ -337,6 +357,7 @@ where
 
         let mut opened_block = OpenedBlock::new(
             self.storage.clone(),
+            self.storage2.clone(),
             previous_header.clone(),
             block_gas_limit,
             author,

@@ -263,6 +263,7 @@ impl Scheduler {
         };
 
         // Mark dependencies as resolved and find the minimum index among them.
+        #[allow(clippy::manual_inspect)]
         let min_dep = txn_deps
             .into_iter()
             .map(|dep| {

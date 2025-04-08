@@ -26,19 +26,14 @@ use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
 use std::sync::Arc;
 use std::time::Duration;
 
+#[derive(Default)]
 pub enum ErrorStrategy {
     _RateLimitErr,
     Timeout(u64),
+    #[default]
     RandomErr,
     MethodNotFound,
 }
-
-impl Default for ErrorStrategy {
-    fn default() -> Self {
-        ErrorStrategy::RandomErr
-    }
-}
-
 pub struct ErrorMocker {
     strategy: ErrorStrategy,
     pub random_error_percent: u32,

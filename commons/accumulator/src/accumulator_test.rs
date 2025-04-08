@@ -314,13 +314,11 @@ fn test_get_leaves_overflow() {
     let _root_hash = accumulator.append(leaves.as_slice()).unwrap();
     accumulator.flush().unwrap();
 
-    let leaves0 = accumulator.get_leaves(0, false, u64::max_value()).unwrap();
+    let leaves0 = accumulator.get_leaves(0, false, u64::MAX).unwrap();
     assert_eq!(leaves0.len(), 100);
     assert_eq!(leaves.as_slice(), leaves0.as_slice());
 
-    let leaves1 = accumulator
-        .get_leaves(u64::max_value(), true, u64::max_value())
-        .unwrap();
+    let leaves1 = accumulator.get_leaves(u64::MAX, true, u64::MAX).unwrap();
     assert_eq!(leaves1.len(), 100);
 }
 
