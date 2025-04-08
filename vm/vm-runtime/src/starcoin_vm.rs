@@ -37,6 +37,7 @@ use starcoin_types::{
         TransactionPayload, TransactionStatus,
     },
 };
+use starcoin_vm2_vm_types::transaction::SignedUserTransaction as SignedUserTransactionV2;
 use starcoin_vm_types::access::{ModuleAccess, ScriptAccess};
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::upgrade::UpgradeEvent;
@@ -56,9 +57,7 @@ use starcoin_vm_types::on_chain_config::{
 };
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_view::StateReaderExt;
-use starcoin_vm_types::transaction::{
-    DryRunTransaction, Package, SignedUserTransactionWithType, TransactionPayloadType,
-};
+use starcoin_vm_types::transaction::{DryRunTransaction, Package, TransactionPayloadType};
 use starcoin_vm_types::transaction_metadata::TransactionPayloadMetadata;
 use starcoin_vm_types::value::{serialize_values, MoveValue};
 use starcoin_vm_types::vm_status::KeptVMStatus;
@@ -1200,7 +1199,7 @@ impl StarcoinVM {
                     }
                     result.push((status, output));
                 }
-                TransactionBlock::UserTransactionExt(_) => todo!(),
+                TransactionBlock::UserTransactionV2(_) => todo!(),
             }
         }
         Ok(result)
@@ -1411,7 +1410,7 @@ impl StarcoinVM {
 pub enum TransactionBlock {
     UserTransaction(Vec<SignedUserTransaction>),
     BlockPrologue(BlockMetadata),
-    UserTransactionExt(Vec<SignedUserTransactionWithType>),
+    UserTransactionV2(Vec<SignedUserTransactionV2>),
 }
 
 impl TransactionBlock {
@@ -1419,7 +1418,7 @@ impl TransactionBlock {
         match self {
             TransactionBlock::UserTransaction(_) => "UserTransaction",
             TransactionBlock::BlockPrologue(_) => "BlockMetadata",
-            TransactionBlock::UserTransactionExt(_) => "UserTransactionExt",
+            TransactionBlock::UserTransactionV2(_) => "UserTransactionV2",
         }
     }
 }
@@ -1437,7 +1436,7 @@ pub fn chunk_block_transactions(txns: Vec<Transaction>) -> Vec<TransactionBlock>
                     buf = vec![];
                 }
                 if !buf1.is_empty() {
-                    blocks.push(TransactionBlock::UserTransactionExt(buf1));
+                    blocks.push(TransactionBlock::UserTransactionV2(buf1));
                     buf1 = vec![];
                 }
                 blocks.push(TransactionBlock::BlockPrologue(data));
@@ -1445,7 +1444,7 @@ pub fn chunk_block_transactions(txns: Vec<Transaction>) -> Vec<TransactionBlock>
             Transaction::UserTransaction(txn) => {
                 buf.push(txn);
             }
-            Transaction::UserTransactionExt(txn) => {
+            Transaction::UserTransactionV2(txn) => {
                 buf1.push(txn);
             }
         }
@@ -1454,7 +1453,7 @@ pub fn chunk_block_transactions(txns: Vec<Transaction>) -> Vec<TransactionBlock>
         blocks.push(TransactionBlock::UserTransaction(buf));
     }
     if !buf1.is_empty() {
-        blocks.push(TransactionBlock::UserTransactionExt(buf1));
+        blocks.push(TransactionBlock::UserTransactionV2(buf1));
     }
     blocks
 }
@@ -1599,7 +1598,6 @@ impl VMAdapter for StarcoinVM {
     }
 
     fn should_restart_execution(output: &TransactionOutput) -> bool {
-        // XXX FIXME YSG if GasSchedule.move UpgradeEvent
         for event in output.events() {
             if event.key().get_creator_address() == genesis_address()
                 && (event.is::<UpgradeEvent>() || event.is::<ConfigChangeEvent<Version>>())
@@ -1630,7 +1628,6 @@ impl VMAdapter for StarcoinVM {
                     };
                 (vm_status, output, Some("block_meta".to_string()))
             }
-            PreprocessedTransaction::UserTransactionExt(_) => todo!(),
         })
     }
 }

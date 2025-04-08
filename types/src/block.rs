@@ -5,9 +5,10 @@ use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
 use crate::genesis_config::{ChainId, ConsensusStrategy};
 use crate::language_storage::CORE_CODE_ADDRESS;
+use crate::multi_transaction::MultiSignedUserTransaction;
 use crate::transaction::SignedUserTransaction;
 use crate::U256;
-use bcs_ext::{BCSCodec, Sample};
+use bcs_ext::Sample;
 use schemars::{self, JsonSchema};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -17,7 +18,7 @@ use starcoin_crypto::{
     hash::{CryptoHash, CryptoHasher, PlainCryptoHash},
     HashValue,
 };
-use starcoin_vm2_types::transaction::SignedUserTransaction as SignedUserTransactionV2;
+use starcoin_vm2_vm_types::transaction::SignedUserTransaction as SignedUserTransactionV2;
 use starcoin_vm_types::{
     account_config::genesis_address, transaction::authenticator::AuthenticationKey,
 };
@@ -595,7 +596,7 @@ impl BlockHeaderBuilder {
 pub struct BlockBody {
     /// The transactions in this block.
     pub transactions: Vec<SignedUserTransaction>,
-    pub transactions2: Vec<Vec<u8>>,
+    pub transactions2: Vec<SignedUserTransactionV2>,
     /// uncles block header
     pub uncles: Option<Vec<BlockHeader>>,
 }
@@ -612,10 +613,25 @@ pub struct LegacyBlockBody {
 }
 
 impl BlockBody {
-    pub fn new(transactions: Vec<SignedUserTransaction>, uncles: Option<Vec<BlockHeader>>) -> Self {
+    pub fn new(
+        multi_transactions: Vec<MultiSignedUserTransaction>,
+        uncles: Option<Vec<BlockHeader>>,
+    ) -> Self {
+        let mut transactions = vec![];
+        let mut transactions2 = vec![];
+        for txn in multi_transactions {
+            match txn {
+                MultiSignedUserTransaction::VM1(txn) => {
+                    transactions.push(txn);
+                }
+                MultiSignedUserTransaction::VM2(txn) => {
+                    transactions2.push(txn);
+                }
+            }
+        }
         Self {
             transactions,
-            transactions2: vec![],
+            transactions2,
             uncles,
         }
     }
@@ -626,10 +642,7 @@ impl BlockBody {
     ) -> Self {
         Self {
             transactions,
-            transactions2: transactions2
-                .into_iter()
-                .map(|txn| txn.encode().unwrap())
-                .collect::<Vec<_>>(),
+            transactions2,
             uncles,
         }
     }
@@ -666,6 +679,20 @@ impl Into<BlockBody> for Vec<SignedUserTransaction> {
 impl Into<Vec<SignedUserTransaction>> for BlockBody {
     fn into(self) -> Vec<SignedUserTransaction> {
         self.transactions
+    }
+}
+
+#[allow(clippy::from_over_into)]
+impl Into<Vec<MultiSignedUserTransaction>> for BlockBody {
+    fn into(self) -> Vec<MultiSignedUserTransaction> {
+        let mut txns: Vec<MultiSignedUserTransaction> = vec![];
+        for tx in self.transactions {
+            txns.push(tx.into());
+        }
+        for tx2 in self.transactions2 {
+            txns.push(tx2.into());
+        }
+        txns
     }
 }
 
@@ -717,7 +744,7 @@ impl Block {
     pub fn transactions(&self) -> &[SignedUserTransaction] {
         self.body.transactions.as_slice()
     }
-    pub fn transactions2(&self) -> &[Vec<u8>] {
+    pub fn transactions2(&self) -> &[SignedUserTransactionV2] {
         self.body.transactions2.as_slice()
     }
 

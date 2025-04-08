@@ -35,6 +35,7 @@ starcoin-parallel-executor = { workspace = true }
 rayon = { workspace = true }
 num_cpus = { workspace = true }
 hex = "0.4.3"
+starcoin-vm2-vm-types = { workspace = true }
 
 [dev-dependencies]
 stdlib = { workspace = true }

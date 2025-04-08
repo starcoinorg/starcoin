@@ -65,7 +65,7 @@ impl BlockClient {
             txns_data.push(TransactionData {
                 info: txn_info.into(),
                 block_metadata: txn.block_metadata,
-                user_transaction: txn.user_transaction,
+                user_transaction: txn.user_transaction.into(),
                 events: events.iter().map(|event| event.clone().into()).collect(),
                 timestamp: block.header.timestamp.0,
             })

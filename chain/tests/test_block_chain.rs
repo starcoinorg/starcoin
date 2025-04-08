@@ -395,7 +395,7 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let (template_b2, excluded) = block_chain.create_block_template(
         *miner_account.address(),
         Some(block_b1.id()),
-        vec![signed_txn_t2.clone()],
+        vec![signed_txn_t2.clone().into()],
         vec![],
         None,
     )?;
@@ -408,7 +408,7 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let (template_b3, excluded) = block_chain2.create_block_template(
         *miner_account.address(),
         Some(block_b1.id()),
-        vec![signed_txn_t2],
+        vec![signed_txn_t2.into()],
         vec![],
         None,
     )?;

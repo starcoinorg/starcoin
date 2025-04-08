@@ -8,10 +8,12 @@
 //!
 //! May have some overlap with `Readiness` since we don't want to keep around
 //! stalled transactions.
+use crate::pending_transaction::PendingTransaction;
 use crate::pool::{
     client::Client, scoring, PoolTransaction, Priority, UnverifiedUserTransaction,
     VerifiedTransaction,
 };
+use starcoin_types::multi_transaction::MultiAccountAddress;
 use starcoin_types::transaction;
 use std::sync::{atomic::AtomicUsize, Arc};
 
@@ -74,7 +76,7 @@ impl<C: Client> tx_pool::Verifier<PoolTransaction>
         let verified_txn = match tx {
             PoolTransaction::Unverified(unverified) | PoolTransaction::Retracted(unverified) => {
                 match self.client.verify_transaction(unverified) {
-                    Ok(txn) => transaction::PendingTransaction::from(txn.into_inner()),
+                    Ok(txn) => PendingTransaction::from(txn.into_inner()),
                     Err(err) => {
                         warn!(target: "txqueue", "[{:?}] Rejected tx {:?}", hash, err);
                         return Err(err);
@@ -96,7 +98,11 @@ impl<C: Client> tx_pool::Verifier<PoolTransaction>
             }
         };
 
-        let sender = verified_txn.sender();
+        // XXX FIXME YSG
+        let sender = match verified_txn.sender() {
+            MultiAccountAddress::VM1(sender) => sender,
+            _ => panic!("[{:?}] VerifiedTransaction must have a VM1 sender", hash),
+        };
         let priority = match (is_local_txn, is_retracted) {
             (true, _) => Priority::Local,
             (false, true) => Priority::Retracted,

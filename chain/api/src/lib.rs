@@ -6,7 +6,8 @@ use anyhow::{bail, format_err, Result};
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::proof::AccumulatorProof;
 use starcoin_state_api::StateWithProof;
-use starcoin_vm_types::transaction::{RichTransactionInfo, SignedUserTransaction};
+use starcoin_types::multi_transaction::MultiSignedUserTransaction;
+use starcoin_vm_types::transaction::RichTransactionInfo;
 
 mod chain;
 mod errors;
@@ -15,8 +16,8 @@ mod service;
 
 #[derive(Clone, Debug)]
 pub struct ExcludedTxns {
-    pub discarded_txns: Vec<SignedUserTransaction>,
-    pub untouched_txns: Vec<SignedUserTransaction>,
+    pub discarded_txns: Vec<MultiSignedUserTransaction>,
+    pub untouched_txns: Vec<MultiSignedUserTransaction>,
 }
 
 pub use chain::{Chain, ChainReader, ChainWriter, ExecutedBlock, MintedUncleNumber, VerifiedBlock};

@@ -5,11 +5,14 @@ use starcoin_executor::VMMetrics;
 use starcoin_state_api::AccountStateReader;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
+use starcoin_types::multi_transaction::{
+    MultiSignatureCheckedTransaction, MultiSignedUserTransaction,
+};
 use starcoin_types::{
     account_address::AccountAddress,
     block::BlockHeader,
     transaction,
-    transaction::{CallError, SignedUserTransaction, TransactionError},
+    transaction::{CallError, TransactionError},
 };
 use std::{collections::HashMap, fmt::Debug, sync::Arc};
 
@@ -153,8 +156,8 @@ impl crate::pool::Client for PoolClient {
     fn verify_transaction(
         &self,
         tx: UnverifiedUserTransaction,
-    ) -> Result<transaction::SignatureCheckedTransaction, transaction::TransactionError> {
-        let txn = SignedUserTransaction::from(tx);
+    ) -> Result<MultiSignatureCheckedTransaction, transaction::TransactionError> {
+        let txn = MultiSignedUserTransaction::from(tx);
         let checked_txn = txn
             .clone()
             .check_signature()

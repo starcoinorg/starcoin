@@ -11,6 +11,7 @@ use starcoin_logger::prelude::*;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
+use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::{
     account::DEFAULT_EXPIRATION_TIME,
     account_address::AccountAddress,
@@ -164,20 +165,23 @@ impl OpenedBlock {
     /// If error occurs during the processing, the `open_block` should be dropped,
     /// as the internal state may be corrupted.
     /// TODO: make the function can be called again even last call returns error.  
-    pub fn push_txns(&mut self, user_txns: Vec<SignedUserTransaction>) -> Result<ExcludedTxns> {
+    pub fn push_txns(
+        &mut self,
+        user_txns: Vec<MultiSignedUserTransaction>,
+    ) -> Result<ExcludedTxns> {
         let (state, _state2) = &self.state;
-        let mut discard_txns: Vec<SignedUserTransaction> = Vec::new();
+        let mut discard_txns: Vec<MultiSignedUserTransaction> = Vec::new();
         let mut txns: Vec<_> = user_txns
             .into_iter()
             .filter(|txn| {
-                let is_blacklisted = AddressFilter::is_blacklisted(txn, self.block_number());
+                let is_blacklisted = AddressFilter::is_blacklisted(self.block_number());
                 // Discard the txns send by the account in black list after a block number.
                 if is_blacklisted {
                     discard_txns.push(txn.clone());
                 }
                 !is_blacklisted
             })
-            .map(Transaction::UserTransaction)
+            .map(|txn| txn.into())
             .collect();
 
         let txn_outputs = {
@@ -191,13 +195,14 @@ impl OpenedBlock {
             execute_block_transactions(state, txns.clone(), gas_left, self.vm_metrics.clone())?
         };
 
-        let untouched_user_txns: Vec<SignedUserTransaction> = if txn_outputs.len() >= txns.len() {
-            vec![]
-        } else {
-            txns.drain(txn_outputs.len()..)
-                .map(|t| t.try_into().expect("user txn"))
-                .collect()
-        };
+        let untouched_user_txns: Vec<MultiSignedUserTransaction> =
+            if txn_outputs.len() >= txns.len() {
+                vec![]
+            } else {
+                txns.drain(txn_outputs.len()..)
+                    .map(|t| t.try_into().expect("user txn"))
+                    .collect()
+            };
         debug_assert_eq!(txns.len(), txn_outputs.len());
         for (txn, output) in txns.into_iter().zip(txn_outputs.into_iter()) {
             let txn_hash = txn.id();
@@ -413,7 +418,7 @@ pub struct AddressFilter;
 impl AddressFilter {
     const FROZEN_BEGIN_BLOCK_NUMBER: BlockNumber = 16801958;
     const FROZEN_END_BLOCK_NUMBER: BlockNumber = 23026635;
-    pub fn is_blacklisted(_raw_txn: &SignedUserTransaction, block_number: BlockNumber) -> bool {
+    pub fn is_blacklisted(block_number: BlockNumber) -> bool {
         block_number > Self::FROZEN_BEGIN_BLOCK_NUMBER
             && block_number < Self::FROZEN_END_BLOCK_NUMBER
         /*&& BLACKLIST

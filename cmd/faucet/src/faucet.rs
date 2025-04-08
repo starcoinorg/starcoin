@@ -92,6 +92,6 @@ impl Faucet {
         let signed_tx = self.client.account_sign_txn(raw_tx)?;
         //ignore lock result
         let _res = self.client.account_lock(self.faucet_account.address);
-        self.client.submit_transaction(signed_tx)
+        self.client.submit_transaction(signed_tx.into())
     }
 }

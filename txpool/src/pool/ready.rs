@@ -27,10 +27,10 @@
 
 use std::{cmp, collections::HashMap};
 
-use starcoin_types::{account_address::AccountAddress as Address, transaction};
-use tx_pool::{self, VerifiedTransaction as PoolVerifiedTransaction};
-
 use super::{client::AccountSeqNumberClient, SeqNumber, VerifiedTransaction};
+use crate::pending_transaction;
+use starcoin_types::account_address::AccountAddress as Address;
+use tx_pool::{self, VerifiedTransaction as PoolVerifiedTransaction};
 
 /// Checks readiness of transactions by comparing the nonce to state nonce.
 #[derive(Debug)]
@@ -127,10 +127,10 @@ impl Condition {
 impl tx_pool::Ready<VerifiedTransaction> for Condition {
     fn is_ready(&mut self, tx: &VerifiedTransaction) -> tx_pool::Readiness {
         match tx.transaction.condition {
-            Some(transaction::Condition::Number(block)) if block > self.block_number => {
+            Some(pending_transaction::Condition::Number(block)) if block > self.block_number => {
                 tx_pool::Readiness::Future
             }
-            Some(transaction::Condition::Timestamp(time)) if time > self.now => {
+            Some(pending_transaction::Condition::Timestamp(time)) if time > self.now => {
                 tx_pool::Readiness::Future
             }
             _ => tx_pool::Readiness::Ready,

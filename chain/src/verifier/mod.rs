@@ -86,13 +86,13 @@ pub trait BlockVerifier {
 
     fn verify_blacklisted_txns(new_block: &Block) -> Result<()> {
         let block_number = new_block.header().number();
-        for txn in new_block.transactions() {
-            verify_block!(
-                VerifyBlockField::Body,
-                !AddressFilter::is_blacklisted(txn, block_number),
-                "Invalid block: the sender of transaction in block must be not blacklisted"
-            );
-        }
+
+        verify_block!(
+            VerifyBlockField::Body,
+            !AddressFilter::is_blacklisted(block_number),
+            "Invalid block: the sender of transaction in block must be not blacklisted"
+        );
+
         Ok(())
     }
 

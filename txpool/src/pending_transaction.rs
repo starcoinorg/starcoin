@@ -1,4 +1,4 @@
-use super::SignedUserTransaction;
+use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use std::ops::Deref;
 
 type BlockNumber = u64;
@@ -16,14 +16,14 @@ pub enum Condition {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PendingTransaction {
     /// Signed transaction data.
-    pub transaction: SignedUserTransaction,
+    pub transaction: MultiSignedUserTransaction,
     /// To be activated at this condition. `None` for immediately.
     pub condition: Option<Condition>,
 }
 
 impl PendingTransaction {
     /// Create a new pending transaction from signed transaction.
-    pub fn new(signed: SignedUserTransaction, condition: Option<Condition>) -> Self {
+    pub fn new(signed: MultiSignedUserTransaction, condition: Option<Condition>) -> Self {
         PendingTransaction {
             transaction: signed,
             condition,
@@ -32,15 +32,15 @@ impl PendingTransaction {
 }
 
 impl Deref for PendingTransaction {
-    type Target = SignedUserTransaction;
+    type Target = MultiSignedUserTransaction;
 
     fn deref(&self) -> &Self::Target {
         &self.transaction
     }
 }
 
-impl From<SignedUserTransaction> for PendingTransaction {
-    fn from(t: SignedUserTransaction) -> Self {
+impl From<MultiSignedUserTransaction> for PendingTransaction {
+    fn from(t: MultiSignedUserTransaction) -> Self {
         PendingTransaction {
             transaction: t,
             condition: None,

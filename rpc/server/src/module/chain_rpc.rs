@@ -12,11 +12,12 @@ use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_rpc_api::chain::{
     ChainApi, GetBlockOption, GetBlocksOption, GetEventOption, GetTransactionOption,
 };
+use starcoin_rpc_api::multi_types::MultiSignedUserTransactionView;
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
     BlockHeaderView, BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,
-    SignedUserTransactionView, StrView, TransactionEventResponse, TransactionInfoView,
-    TransactionInfoWithProofView, TransactionView,
+    StrView, TransactionEventResponse, TransactionInfoView, TransactionInfoWithProofView,
+    TransactionView,
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::StateView;
@@ -482,20 +483,33 @@ fn try_decode_block_txns(state: &dyn StateView, block: &mut BlockView) -> anyhow
 
 fn try_decode_txn_payload(
     state: &dyn StateView,
-    txn: &mut SignedUserTransactionView,
+    txn: &mut MultiSignedUserTransactionView,
 ) -> anyhow::Result<()> {
-    let txn_payload = bcs_ext::from_bytes(txn.raw_txn.payload.0.as_slice())?;
+    let txn_payload = match txn {
+        MultiSignedUserTransactionView::VM1(txn) => {
+            bcs_ext::from_bytes(txn.raw_txn.payload.0.as_slice())?
+        }
+        _ => panic!("XXX FIXME YSG"),
+    };
+
     match decode_txn_payload(state, &txn_payload) {
         // ignore decode failure, as txns may has invalid payload here.
         Err(e) => {
+            let transaction_hash = match txn {
+                MultiSignedUserTransactionView::VM1(txn) => txn.transaction_hash,
+                MultiSignedUserTransactionView::VM2(txn) => txn.transaction_hash,
+            };
             debug!(
                 "decode payload of txn {} failure, {:?}",
-                txn.transaction_hash, e
+                transaction_hash, e
             );
         }
-        Ok(d) => {
-            txn.raw_txn.decoded_payload = Some(d.into());
-        }
+        Ok(d) => match txn {
+            MultiSignedUserTransactionView::VM1(txn) => {
+                txn.raw_txn.decoded_payload = Some(d.into());
+            }
+            _ => panic!("XXX FIXME YSG"),
+        },
     }
     Ok(())
 }

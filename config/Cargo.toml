@@ -35,7 +35,7 @@ thiserror = { workspace = true }
 toml = { workspace = true }
 
 # dependencies for move 2.0
-starcoin-vm2-types = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
 
 [package]
 authors = { workspace = true }

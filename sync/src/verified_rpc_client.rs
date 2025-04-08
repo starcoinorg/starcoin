@@ -16,7 +16,8 @@ use starcoin_network_rpc_api::{
 };
 use starcoin_state_tree::StateNode;
 use starcoin_types::block::Block;
-use starcoin_types::transaction::{SignedUserTransaction, Transaction};
+use starcoin_types::multi_transaction::MultiSignedUserTransaction;
+use starcoin_types::transaction::Transaction;
 use starcoin_types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
     transaction::TransactionInfo,
@@ -148,7 +149,7 @@ impl VerifiedRpcClient {
         &self,
         peer_id: Option<PeerId>,
         req: GetTxnsWithHash,
-    ) -> Result<(Vec<HashValue>, Vec<SignedUserTransaction>)> {
+    ) -> Result<(Vec<HashValue>, Vec<MultiSignedUserTransaction>)> {
         let peer_id = if let Some(peer) = peer_id {
             peer
         } else {
@@ -160,7 +161,7 @@ impl VerifiedRpcClient {
             .await?;
         if data.len() == req.len() {
             let mut none_txn_vec = Vec::new();
-            let mut verified_txns: Vec<SignedUserTransaction> = Vec::new();
+            let mut verified_txns: Vec<MultiSignedUserTransaction> = Vec::new();
             for (id, data) in req.ids.into_iter().zip(data.into_iter()) {
                 match data {
                     Some(txn) => {

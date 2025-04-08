@@ -5,6 +5,7 @@ pub use es_sinker::{EsSinker, IndexConfig, LocalTipInfo};
 
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
+use starcoin_rpc_api::multi_types::MultiSignedUserTransactionView;
 use starcoin_rpc_api::types::{
     BlockHeaderView, BlockMetadataView, BlockView, SignedUserTransactionView, StrView,
     TransactionEventView, TransactionInfoView, TransactionStatusView, TypeTagView,
@@ -20,7 +21,7 @@ pub struct TransactionData {
     #[serde(flatten)]
     pub info: TransactionInfoEsView,
     pub block_metadata: Option<BlockMetadataView>,
-    pub user_transaction: Option<SignedUserTransactionView>,
+    pub user_transaction: Option<MultiSignedUserTransactionView>,
     pub events: Vec<TransactionEventEsView>,
     pub timestamp: u64,
 }

@@ -18,7 +18,7 @@ use starcoin_gas::StarcoinGasParameters;
 use starcoin_gas_algebra_ext::{CostTable, FromOnChainGasSchedule};
 use starcoin_time_service::{TimeService, TimeServiceType};
 use starcoin_uint::U256;
-use starcoin_vm2_types::genesis_config::{
+use starcoin_vm2_vm_types::genesis_config::{
     self as genesis_config2, GenesisConfig as GenesisConfig2,
 };
 use starcoin_vm_types::account_config::genesis_address;
