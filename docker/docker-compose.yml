@@ -1,6 +1,6 @@
 services:
   starcoin_1:
-    image: starcoin:v2.4
+    image: starcoin:v2.9
     container_name: starcoin_1
     networks:
       - starcoin_network
@@ -11,11 +11,11 @@ services:
       - "9870"
       - "9101"
       - "9880"
-    command: ["/bin/sh", "-c", "/starcoin/starcoin -n dag:24 --discover-local true --genesis-config halley -d /starcoin/data account import -i d570ecf5cae04c034502474614bf0cdb7e94ee47a71e611097626aa219724fd8 ; /starcoin/starcoin -n dag:24 --discover-local true --genesis-config halley -d /starcoin/data account default 0x85e4c2c4859fdbf9c8ce6e046c7e310d ; /starcoin/starcoin -n dag:24 --discover-local true --genesis-config halley -d /starcoin/data"]
+    command: ["/bin/sh", "-c", "/starcoin/starcoin -n dag:24 --discover-local true --genesis-config halley -d /starcoin/data"]
     volumes:
       - starcoin_data_1:/starcoin/data
   starcoin_2:
-    image: starcoin:v2.4
+    image: starcoin:v2.9
     container_name: starcoin_2
     networks:
       - starcoin_network
@@ -26,11 +26,11 @@ services:
       - "9870"
       - "9101"
       - "9880"
-    command: /starcoin/starcoin -n dag:24 --discover-local true --genesis-config halley --seed /dns/starcoin_1/tcp/9840/p2p/12D3KooWReBQ3pirsxBAuB3FR61zYd8Sc6j2QvqLWNKzvmug9Fo8 -d /starcoin/data
+    command: /starcoin/starcoin -n dag:24 --discover-local true --genesis-config halley -d /starcoin/data
     volumes:
       - starcoin_data_2:/starcoin/data
   starcoin_3:
-    image: starcoin:v2.4
+    image: starcoin:v2.9
     container_name: starcoin_3
     networks:
       - starcoin_network
@@ -41,11 +41,11 @@ services:
       - "9870"
       - "9101"
       - "9880"
-    command: /starcoin/starcoin -n dag:24 --discover-local true --genesis-config halley --seed /dns/starcoin_1/tcp/9840/p2p/12D3KooWReBQ3pirsxBAuB3FR61zYd8Sc6j2QvqLWNKzvmug9Fo8 -d /starcoin/data
+    command: /starcoin/starcoin -n dag:24 --discover-local true --genesis-config halley  -d /starcoin/data
     volumes:
       - starcoin_data_3:/starcoin/data
   starcoin_4:
-    image: starcoin:v2.4
+    image: starcoin:v2.9
     container_name: starcoin_4
     networks:
       - starcoin_network
