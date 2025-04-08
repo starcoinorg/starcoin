@@ -133,24 +133,17 @@ where
     // return true will trigger the specific(light) sync operation.
     fn is_near_block(&self, block_header: &BlockHeader) -> bool {
         let current_number = self.chain_service.get_main().status().head().number();
-        if current_number <= block_header.number() {
-            return false;
-        }
-        let gap = current_number.saturating_sub(block_header.number());
-        let k = self.chain_service.get_dag().ghost_dag_manager().k() as u64;
-        let config_gap = self
-            .config
-            .sync
-            .lightweight_sync_max_gap()
-            .map_or(k.saturating_mul(2), |max_gap| max_gap);
+        let (_pruning_depth, pruning_finality) = self.chain_service.get_main().get_pruning_config();
+        let gap = current_number.abs_diff(block_header.number());
+
         debug!(
-            "is-near-block: current_number: {:?}, block_number: {:?}, gap: {:?}, config_gap: {:?}",
+            "is-near-block: current_number: {:?}, block_number: {:?}, gap: {:?}, pruning_finality: {:?}",
             current_number,
             block_header.number(),
             gap,
-            config_gap
+            pruning_finality,
         );
-        gap <= config_gap
+        gap <= pruning_finality
     }
 }
 
