@@ -321,12 +321,17 @@ impl BaseConfig {
     ) -> Result<(GenesisConfig, GenesisConfig2)> {
         let config_path = data_dir.join(G_GENESIS_CONFIG_FILE_NAME);
         let config_path2 = data_dir.join(G_GENESIS_CONFIG_FILE_NAME_2);
-        let configs_in_file = if config_path.exists() {
+        // todo: handle the case with only one genesis_config missed
+        let configs_in_file = if config_path.exists() && config_path2.exists() {
             Some((
                 GenesisConfig::load(config_path.as_path())?,
                 GenesisConfig2::load(config_path2.as_path())?,
             ))
         } else {
+            ensure!(
+                !config_path.exists() && !config_path2.exists(),
+                "One GenesisConfig file is missed."
+            );
             None
         };
         let genesis_config = match (configs_in_file, id) {
@@ -340,6 +345,16 @@ impl BaseConfig {
                         net,
                         config_in_file,
                         net.genesis_config(),
+                    );
+                }
+                if config2_in_file.is_ready() && net.genesis_config2().is_ready() {
+                    ensure!(
+                        &config2_in_file == net.genesis_config2(),
+                        "GenesisConfig in file:{:?} is not same with builtin config: {:?}\n{:?}\n*****\n{:?}",
+                        config_path.as_path(),
+                        net,
+                        config2_in_file,
+                        net.genesis_config2(),
                     );
                 }
                 (config_in_file, config2_in_file)
