@@ -164,7 +164,7 @@ pub struct SyncBlockTemplateRequest {
 impl ServiceRequest for SyncBlockTemplateRequest {
     type Response = ();
 }
-impl ServiceHandler<MinerService, SyncBlockTemplateRequest> for MinerService {
+impl ServiceHandler<Self, SyncBlockTemplateRequest> for MinerService {
     fn handle(&mut self, msg: SyncBlockTemplateRequest, ctx: &mut ServiceContext<Self>) {
         let config = self.config.clone();
         let create_block_template_service = self.create_block_template_service.clone();
@@ -243,7 +243,7 @@ impl MinerService {
 
         let create_block_template_service = self.create_block_template_service.clone();
         let config = self.config.clone();
-        let addr = ctx.service_ref::<MinerService>()?.clone();
+        let addr = ctx.service_ref::<Self>()?.clone();
         let flag = self.task_flag.clone();
         ctx.spawn(async move {
             let result = tokio::time::timeout(
