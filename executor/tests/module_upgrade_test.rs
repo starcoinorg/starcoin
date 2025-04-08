@@ -195,6 +195,7 @@ fn test_stdlib_upgrade() -> Result<()> {
         "test_stdlib_upgrade".to_string(),
         ChainId::new(100),
         genesis_config,
+        genesis_config2,
     )?;
     let chain_state = prepare_customized_genesis(&net);
     let mut proposal_id: u64 = 0;
