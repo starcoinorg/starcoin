@@ -12,13 +12,16 @@ use starcoin_vm2_transaction_builder::{
 // use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_vm2_types::{
     // account::peer_to_peer_txn,
-    account_address::AccountAddress, language_storage::TypeTag,
-    transaction::SignedUserTransaction, account_config::stc_type_tag,
-    account_config::{core_code_address, G_STC_TOKEN_CODE}, genesis_config::ChainId,
-    identifier::Identifier, language_storage::ModuleId,
-    transaction::{EntryFunction, RawUserTransaction, TransactionPayload},
+    account_address::AccountAddress,
+    account_config::stc_type_tag,
+    account_config::{core_code_address, G_STC_TOKEN_CODE},
+    genesis_config::ChainId,
     genesis_config::ChainNetwork,
-
+    identifier::Identifier,
+    language_storage::ModuleId,
+    language_storage::TypeTag,
+    transaction::SignedUserTransaction,
+    transaction::{EntryFunction, RawUserTransaction, TransactionPayload},
 };
 
 // const NEW_ACCOUNT_AMOUNT: u128 = 1_000_000_000;

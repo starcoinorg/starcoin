@@ -146,18 +146,19 @@ pub fn compile_script(code: impl AsRef<str>) -> Result<Vec<u8>> {
         .serialize(None))
 }
 
-// TODO(BobOng): [dual-vm] genesis for stdlib
-// pub fn compile_ir_script(code: impl AsRef<str>) -> Result<Vec<u8>> {
-//     use starcoin_vm2_move_ir_compiler::Compiler as IRCompiler;
-//     let modules = starcoin_vm2_move_compiler::stdlib_compiled_modules(
-//         starcoin_vm2_transaction_builder::StdLibOptions::Compiled(StdlibVersion::Latest),
-//     );
-//     let (script, _) = IRCompiler::new(modules.iter().collect())
-//         .into_compiled_script_and_source_map(code.as_ref())?;
-//     let mut bytes = vec![];
-//     script.serialize(&mut bytes)?;
-//     Ok(bytes)
-// }
+pub fn compile_ir_script(code: impl AsRef<str>) -> Result<Vec<u8>> {
+    // TODO(BobOng): [dual-vm] genesis for stdlib
+    // use starcoin_vm2_move_ir_compiler::Compiler as IRCompiler;
+    // let modules = starcoin_vm2_move_compiler::stdlib_compiled_modules(
+    //     starcoin_vm2_transaction_builder::StdLibOptions::Compiled(StdlibVersion::Latest),
+    // );
+    // let (script, _) = IRCompiler::new(modules.iter().collect())
+    //     .into_compiled_script_and_source_map(code.as_ref())?;
+    // let mut bytes = vec![];
+    // script.serialize(&mut bytes)?;
+    let bytes = Vec::new();
+    Ok(bytes)
+}
 
 pub fn association_execute(
     net: &ChainNetwork,

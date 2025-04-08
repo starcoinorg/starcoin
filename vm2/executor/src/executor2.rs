@@ -4,8 +4,8 @@ use starcoin_types2::{
     vm_error::VMStatus,
 };
 use starcoin_vm2::{metrics::VMMetrics, starcoin_vm::StarcoinVM};
-use starcoin_vm2_types::genesis_config::ChainId;
 use starcoin_vm2_types::{
+    genesis_config::ChainId,
     transaction::{SignedUserTransaction, Transaction, TransactionOutput},
     StateView,
 };

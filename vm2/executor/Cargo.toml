@@ -20,4 +20,9 @@ starcoin-vm2-transaction-builder = { workspace = true }
 starcoin-vm2-statedb = { workspace = true }
 starcoin-vm2-state-api = { workspace = true }
 starcoin-vm2-crypto = { workspace = true }
+
+[dev-dependencies]
+starcoin-vm2-move-transactional-test-runner = { workspace = true }
+starcoin-vm2-test-helper = { workspace = true }
 stest = { workspace = true }
+bcs-ext = { workspace = true }
