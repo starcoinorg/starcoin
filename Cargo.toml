@@ -225,7 +225,7 @@ simplelog = "0.9.0"
 smallvec = "1.10.0"
 strum = "0.26.3"
 strum_macros = "0.26.3"
-starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "a14be64c9cd5889389730c76f00a7f82ad5c99cf" }
+starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "902a064b8ea2974bb9b2d7ffcd4761af13997ae0" }
 
 #starcoin-dev = { path = "vm/dev" }
 starcoin-framework = { path = "vm/framework" }
