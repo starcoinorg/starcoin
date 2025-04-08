@@ -337,14 +337,25 @@ impl ChainReaderServiceInner {
             .dag
             .get_absent_blocks(GetAbsentBlock { absent_id, exp })?;
 
+        let origin_id = self.config.net().genesis_block_parameter().parent_hash;
+        let genesis_id = self
+            .storage
+            .get_genesis()?
+            .unwrap_or_else(|| panic!("genesis not exist"));
+
         result
             .absent_blocks
             .into_iter()
+            .filter(|id| *id != origin_id && *id != genesis_id)
             .map(|block_id| match self.storage.get_block(block_id) {
                 Ok(op_block) => {
                     op_block.ok_or_else(|| format_err!("block {:?} should exist", block_id))
                 }
-                Err(e) => bail!("get block {:?} err: {:?}", block_id, e),
+                Err(e) => bail!(
+                    "in get absent blocks, get block {:?} err: {:?}",
+                    block_id,
+                    e
+                ),
             })
             .collect::<anyhow::Result<Vec<Block>>>()
     }
