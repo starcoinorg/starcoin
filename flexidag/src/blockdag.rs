@@ -31,11 +31,17 @@ use starcoin_config::miner_config::G_MERGE_DEPTH;
 use starcoin_config::temp_dir;
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_logger::prelude::{debug, info, warn};
+use starcoin_state_api::AccountStateReader;
+use starcoin_statedb::ChainStateDB;
+use starcoin_storage::{IntoSuper, Storage};
+use starcoin_types::account_config::genesis_address;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::{
     blockhash::{BlockHashes, KType},
     consensus_header::ConsensusHeader,
 };
+use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
+use starcoin_vm_types::on_chain_resource::Epoch;
 use std::collections::HashSet;
 use std::ops::DerefMut;
 use std::sync::Arc;
@@ -1012,7 +1018,12 @@ impl BlockDAG {
         }
     }
 
-    pub fn check_upgrade(&self, main: &BlockHeader, genesis_id: HashValue) -> anyhow::Result<()> {
+    pub fn check_upgrade(
+        &self,
+        main: &BlockHeader,
+        genesis_id: HashValue,
+        storage: Arc<Storage>,
+    ) -> anyhow::Result<()> {
         // set the state with key 0
         if main.version() == 0 || main.version() == 1 {
             let result_dag_state = self
@@ -1054,6 +1065,19 @@ impl BlockDAG {
                     }
                 }
             }
+        }
+
+        // update k
+        if main.number() >= get_force_upgrade_block_number(&main.chain_id()) {
+            let state_root = main.state_root();
+            let state_db = ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root));
+            let account_reader = AccountStateReader::new(&state_db);
+            let epoch = account_reader
+                .get_resource::<Epoch>(genesis_address())?
+                .ok_or_else(|| format_err!("Epoch is none."))?;
+
+            self.ghost_dag_manager()
+                .update_k(u16::try_from(epoch.max_uncles_per_block())?);
         }
 
         anyhow::Ok(())
