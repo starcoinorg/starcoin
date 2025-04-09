@@ -44,7 +44,7 @@ fn test_init_script() -> Result<()> {
         "init_script_test".to_string(),
         ChainId::new(100),
         genesis_config,
-        genesis_config2,
+        Some(genesis_config2),
     )?;
     let chain_state = prepare_customized_genesis(&net);
 
@@ -124,7 +124,7 @@ fn test_upgrade_stdlib_with_incremental_package() -> Result<()> {
         "test_stdlib_upgrade".to_string(),
         ChainId::new(100),
         genesis_config,
-        genesis_config2,
+        Some(genesis_config2),
     )?;
     let chain_state = prepare_customized_genesis(&net);
 
@@ -195,7 +195,7 @@ fn test_stdlib_upgrade() -> Result<()> {
         "test_stdlib_upgrade".to_string(),
         ChainId::new(100),
         genesis_config,
-        genesis_config2,
+        Some(genesis_config2),
     )?;
     let chain_state = prepare_customized_genesis(&net);
     let mut proposal_id: u64 = 0;
@@ -318,7 +318,7 @@ fn test_stdlib_upgrade_since_v12() -> Result<()> {
         "test_stdlib_upgrade".to_string(),
         ChainId::new(100),
         genesis_config,
-        genesis_config2,
+        Some(genesis_config2),
     )?;
     let chain_state = prepare_customized_genesis(&net);
     let mut proposal_id: u64 = 1; // 1-based
@@ -720,7 +720,7 @@ fn test_upgrade_stdlib_with_disallowed_publish_option() -> Result<()> {
         "test_stdlib_upgrade".to_string(),
         ChainId::new(100),
         genesis_config,
-        genesis_config2,
+        Some(genesis_config2),
     )?;
     let _chain_state = prepare_customized_genesis(&net);
 

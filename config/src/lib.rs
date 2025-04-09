@@ -306,7 +306,7 @@ impl BaseConfig {
             data_dir.as_path(),
             opt.genesis_config.clone(),
         )?;
-        let net = ChainNetwork::new(id, genesis_config, genesis_config2);
+        let net = ChainNetwork::new(id, genesis_config, Some(genesis_config2));
         Ok(Self {
             net,
             base_data_dir,

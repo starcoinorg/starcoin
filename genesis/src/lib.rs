@@ -163,10 +163,11 @@ impl Genesis {
                 .as_builtin()
                 .map(|b| !net_with_legacy_genesis(b))
                 .unwrap_or(true)
+                && genesis_config2.is_some()
             {
                 let (user_txn, txn_info_hash) = vm2::build_and_execute_genesis_transaction(
                     net.chain_id().id(),
-                    genesis_config2,
+                    genesis_config2.as_ref().unwrap(),
                 );
                 (Some(user_txn), Some(to_hash_value(txn_info_hash)))
             } else {
@@ -525,7 +526,7 @@ mod tests {
             "testx".to_string(),
             ChainId::new(123),
             BuiltinNetworkID::Test.genesis_config().clone(),
-            BuiltinNetworkID::Test.genesis_config2().clone(),
+            Some(BuiltinNetworkID::Test.genesis_config2().clone()),
         )?;
         let temp_dir = starcoin_config::temp_dir();
         do_test_genesis(&net, temp_dir.path(), false)
