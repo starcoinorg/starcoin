@@ -11,6 +11,7 @@ use starcoin_genesis::Genesis as StarcoinGenesis;
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::Store;
+use starcoin_storage2::Store as Store2;
 use starcoin_time_service::TimeService;
 use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::Block;
@@ -21,6 +22,7 @@ pub async fn create_writeable_block_chain() -> (
     WriteBlockChainService<MockTxPoolService>,
     Arc<NodeConfig>,
     Arc<dyn Store>,
+    Arc<dyn Store2>,
 ) {
     let node_config = NodeConfig::random_for_test();
     let node_config = Arc::new(node_config);
@@ -44,6 +46,7 @@ pub async fn create_writeable_block_chain() -> (
         .unwrap(),
         node_config,
         storage,
+        storage2,
     )
 }
 
@@ -88,7 +91,8 @@ pub fn new_block(
 #[stest::test]
 async fn test_block_chain_apply() {
     let times = 10;
-    let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain().await;
+    let (mut writeable_block_chain_service, node_config, _, _) =
+        create_writeable_block_chain().await;
     let net = node_config.net();
     gen_blocks(
         times,
@@ -144,7 +148,8 @@ fn gen_fork_block_chain(
 #[stest::test]
 async fn test_block_chain_forks() {
     let times = 10;
-    let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain().await;
+    let (mut writeable_block_chain_service, node_config, _, _) =
+        create_writeable_block_chain().await;
     let net = node_config.net();
     gen_blocks(
         times,
@@ -178,7 +183,8 @@ async fn test_block_chain_forks() {
 #[stest::test(timeout = 120)]
 async fn test_block_chain_switch_main() {
     let times = 10;
-    let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain().await;
+    let (mut writeable_block_chain_service, node_config, _, _) =
+        create_writeable_block_chain().await;
     let net = node_config.net();
     gen_blocks(
         times,
@@ -212,7 +218,8 @@ async fn test_block_chain_switch_main() {
 #[stest::test]
 async fn test_block_chain_reset() -> anyhow::Result<()> {
     let times = 10;
-    let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain().await;
+    let (mut writeable_block_chain_service, node_config, _, _) =
+        create_writeable_block_chain().await;
     let net = node_config.net();
     gen_blocks(
         times,
