@@ -264,10 +264,11 @@ where
         if self.chain.can_connect(&block) {
             self.chain.connect(block)?;
         } else {
-            self.chain = BlockChain::new(
+            self.chain = BlockChain::new_v2(
                 self.chain.time_service(),
                 block.header().id(),
                 self.storage.clone(),
+                self.storage2.clone(),
                 self.vm_metrics.clone(),
             )?;
             //current block possible be uncle.

@@ -15,6 +15,7 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
 use starcoin_storage::{BlockStore, Storage};
+use starcoin_storage2::Storage as Storage2;
 use starcoin_sync_api::PeerNewBlock;
 use starcoin_txpool::TxPoolService;
 use starcoin_types::block::ExecutedBlock;
@@ -103,6 +104,7 @@ impl ServiceFactory<Self> for BlockConnectorService {
         let bus = ctx.bus_ref().clone();
         let txpool = ctx.get_shared::<TxPoolService>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
+        let storage2 = ctx.get_shared::<Arc<Storage2>>()?;
         let startup_info = storage
             .get_startup_info()?
             .ok_or_else(|| format_err!("Startup info should exist."))?;
@@ -111,6 +113,7 @@ impl ServiceFactory<Self> for BlockConnectorService {
             config.clone(),
             startup_info,
             storage,
+            storage2,
             txpool,
             bus,
             vm_metrics,
