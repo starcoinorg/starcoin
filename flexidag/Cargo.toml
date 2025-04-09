@@ -28,6 +28,8 @@ starcoin-config = { workspace = true }
 bcs-ext = { workspace = true }
 starcoin-accumulator = { workspace = true }
 schemars = { workspace = true }
+starcoin-statedb = { workspace = true }
+starcoin-vm-runtime ={ workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }
