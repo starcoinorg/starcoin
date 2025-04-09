@@ -6,10 +6,11 @@ use anyhow::{format_err, Result};
 use futures::executor::block_on;
 use starcoin_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
 use starcoin_account_service::AccountService;
+use std::sync::RwLock;
 
+use futures::Future;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::hash::HashValue;
-
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
@@ -24,8 +25,8 @@ use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::{Block, BlockHeader, BlockTemplate, Version};
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::cmp::min;
+use std::pin::Pin;
 use std::sync::Arc;
-
 mod metrics;
 //#[cfg(test)]
 //mod test_create_block_template;
@@ -34,7 +35,7 @@ mod metrics;
 pub struct BlockTemplateRequest;
 
 impl ServiceRequest for BlockTemplateRequest {
-    type Response = Result<BlockTemplateResponse>;
+    type Response = Pin<Box<dyn Future<Output = Result<BlockTemplateResponse>> + Send + 'static>>;
 }
 
 #[derive(Debug)]
@@ -44,7 +45,7 @@ pub struct BlockTemplateResponse {
 }
 
 pub struct BlockBuilderService {
-    inner: Inner<TxPoolService, TxPoolService>,
+    inner: Arc<Inner<TxPoolService, TxPoolService>>,
 }
 
 impl BlockBuilderService {}
@@ -70,7 +71,7 @@ impl ServiceFactory<Self> for BlockBuilderService {
 
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
 
-        let inner = Inner::new(
+        let inner = Arc::new(Inner::new(
             connector_service,
             storage,
             txpool,
@@ -78,7 +79,7 @@ impl ServiceFactory<Self> for BlockBuilderService {
             miner_account,
             metrics,
             vm_metrics,
-        )?;
+        )?);
         Ok(Self { inner })
     }
 }
@@ -98,7 +99,12 @@ impl ActorService for BlockBuilderService {
 impl EventHandler<Self, DefaultAccountChangeEvent> for BlockBuilderService {
     fn handle_event(&mut self, msg: DefaultAccountChangeEvent, _ctx: &mut ServiceContext<Self>) {
         info!("Miner account change to {}", msg.new_account.address);
-        self.inner.miner_account = msg.new_account;
+
+        if let Ok(mut account) = self.inner.miner_account.write() {
+            *account = msg.new_account;
+        } else {
+            warn!("Failed to acquire write lock for miner_account");
+        }
     }
 }
 
@@ -107,14 +113,15 @@ impl ServiceHandler<Self, BlockTemplateRequest> for BlockBuilderService {
         &mut self,
         _msg: BlockTemplateRequest,
         ctx: &mut ServiceContext<Self>,
-    ) -> Result<BlockTemplateResponse> {
-        let header_version = ctx
-            .get_shared::<Arc<NodeConfig>>()?
-            .net()
-            .genesis_config()
-            .block_header_version;
+    ) -> Pin<Box<dyn Future<Output = Result<BlockTemplateResponse>> + Send + 'static>> {
+        let inner = self.inner.clone();
+        let config = match ctx.get_shared::<Arc<NodeConfig>>() {
+            Ok(cfg) => cfg,
+            Err(e) => return Box::pin(async move { Err(e) }),
+        };
 
-        self.inner.create_block_template(header_version)
+        let header_version = config.net().genesis_config().block_header_version;
+        Box::pin(async move { inner.create_block_template(header_version).await })
     }
 }
 
@@ -148,7 +155,7 @@ pub struct Inner<P, T: TxPoolSyncService + 'static> {
     block_connector_service: ServiceRef<BlockConnectorService<T>>,
     tx_provider: P,
     local_block_gas_limit: Option<u64>,
-    miner_account: AccountInfo,
+    miner_account: RwLock<AccountInfo>,
     #[allow(unused)]
     metrics: Option<BlockBuilderMetrics>,
     vm_metrics: Option<VMMetrics>,
@@ -173,13 +180,13 @@ where
             block_connector_service,
             tx_provider,
             local_block_gas_limit,
-            miner_account,
+            miner_account: RwLock::new(miner_account),
             metrics,
             vm_metrics,
         })
     }
 
-    pub fn create_block_template(&self, version: Version) -> Result<BlockTemplateResponse> {
+    pub async fn create_block_template(&self, version: Version) -> Result<BlockTemplateResponse> {
         let MinerResponse {
             previous_header,
             tips_hash,
@@ -189,7 +196,10 @@ where
             next_difficulty: difficulty,
             now_milliseconds: mut now_millis,
             pruning_point,
-        } = *block_on(self.block_connector_service.send(MinerRequest { version }))??;
+        } = *self
+            .block_connector_service
+            .send(MinerRequest { version })
+            .await??;
 
         let block_gas_limit = self
             .local_block_gas_limit
@@ -201,7 +211,7 @@ where
         let max_txns = (block_gas_limit / 200) * 2;
 
         let txns = self.tx_provider.get_txns(max_txns);
-        let author = *self.miner_account.address();
+        let author = *self.miner_account.read().unwrap().address();
 
         if now_millis <= previous_header.timestamp() {
             info!(

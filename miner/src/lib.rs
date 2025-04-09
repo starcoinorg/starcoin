@@ -4,7 +4,6 @@
 use crate::metrics::MinerMetrics;
 use crate::task::MintTask;
 use anyhow::Result;
-use futures::executor::block_on;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
@@ -175,8 +174,8 @@ impl ServiceHandler<Self, SyncBlockTemplateRequest> for MinerService {
                 let res = create_block_template_service
                     .send(BlockTemplateRequest)
                     .await
-                    .map_err(|e| anyhow::anyhow!("send BlockTemplateRequest failed: {}", e))??;
-
+                    .map_err(|e| anyhow::anyhow!("send BlockTemplateRequest failed: {}", e))?
+                    .await?;
                 let parent = res.parent;
                 let block_template = res.template;
                 let block_time_gap = block_template.timestamp - parent.timestamp();
@@ -246,62 +245,65 @@ impl MinerService {
         let addr = ctx.service_ref::<Self>()?.clone();
         let flag = self.task_flag.clone();
         ctx.spawn(async move {
-            let result = tokio::time::timeout(
+            let timeout_result = tokio::time::timeout(
                 Duration::from_millis(2000),
                 create_block_template_service.send(BlockTemplateRequest),
             )
             .await;
-            match result {
-                Ok(inner) => match inner {
-                    Ok(Ok(response)) => {
-                        let parent = response.parent;
-                        let block_template = response.template;
-                        let block_time_gap = block_template.timestamp - parent.timestamp();
 
-                        let should_skip = !event.skip_empty_block_check
-                            && block_template.body.transactions.is_empty()
-                            && config.miner.is_disable_mint_empty_block()
-                            && block_time_gap < 3600 * 1000;
-
-                        if !should_skip {
-                            let _ = addr
-                                .send(DispatchMintBlockTemplate { block_template })
-                                .await;
-                        } else {
-                            info!("Skipping minting empty block");
-                        }
-                    }
-                    Ok(Err(e)) => {
-                        warn!("BlockTemplateRequest failed: {}", e);
-                        let _ = addr.send(DelayGenerateBlockEvent { delay_secs: 2 }).await;
-                    }
-                    Err(e) => {
-                        warn!("ServiceRef send failed: {}", e);
-                        let _ = addr.send(DelayGenerateBlockEvent { delay_secs: 2 }).await;
-                    }
-                },
+            let send_result = match timeout_result {
+                Ok(res) => res,
                 Err(elapsed) => {
                     warn!(
-                        "Timeout waiting BlockTemplateRequest: {}. Retrying.",
+                        "Timeout waiting BlockTemplateRequest: {:?}. Retrying.",
                         elapsed
                     );
                     let _ = addr.send(DelayGenerateBlockEvent { delay_secs: 2 }).await;
+                    flag.store(false, Ordering::Relaxed);
+                    return;
                 }
+            };
+
+            let response_future = match send_result {
+                Ok(fut) => fut,
+                Err(e) => {
+                    warn!("BlockTemplateRequest delivery failed: {}", e);
+                    let _ = addr.send(DelayGenerateBlockEvent { delay_secs: 2 }).await;
+                    flag.store(false, Ordering::Relaxed);
+                    return;
+                }
+            };
+
+            let response = match response_future.await {
+                Ok(resp) => resp,
+                Err(e) => {
+                    warn!("BlockTemplateRequest handler failed: {}", e);
+                    let _ = addr.send(DelayGenerateBlockEvent { delay_secs: 2 }).await;
+                    flag.store(false, Ordering::Relaxed);
+                    return;
+                }
+            };
+
+            let parent = response.parent;
+            let block_template = response.template;
+            let block_time_gap = block_template.timestamp - parent.timestamp();
+
+            let should_skip = !event.skip_empty_block_check
+                && block_template.body.transactions.is_empty()
+                && config.miner.is_disable_mint_empty_block()
+                && block_time_gap < 3600 * 1000;
+            if should_skip {
+                info!("Skipping minting empty block");
+            } else if let Err(e) = addr
+                .send(DispatchMintBlockTemplate { block_template })
+                .await
+            {
+                warn!("Failed to dispatch block template: {}", e);
             }
+
             flag.store(false, Ordering::Relaxed);
         });
-
         Ok(())
-    }
-
-    pub fn dispatch_sleep_task(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        //create block template should block_on for avoid mint same block template.
-        let response = block_on(async {
-            self.create_block_template_service
-                .send(BlockTemplateRequest)
-                .await?
-        })?;
-        self.dispatch_mint_block_event(ctx, response.template)
     }
 
     fn dispatch_mint_block_event(
