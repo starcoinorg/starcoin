@@ -53,6 +53,7 @@ async fn test_miner_service() {
         .send(BlockTemplateRequest)
         .await
         .unwrap()
+        .await
         .unwrap()
         .template;
     assert_eq!(response.number, 1);
