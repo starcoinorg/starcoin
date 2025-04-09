@@ -12,7 +12,6 @@ use starcoin_logger::prelude::*;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
-use starcoin_storage2::{storage::StorageInstance as StorageInstance2, Storage as Storage2};
 use starcoin_transaction_builder::{build_empty_script, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::proptest_types::{AccountInfoUniverse, Index, SignatureCheckedTransactionGen};
@@ -22,6 +21,7 @@ use starcoin_types::{
     block_metadata::BlockMetadata,
     U256,
 };
+use starcoin_vm2_storage::{storage::StorageInstance as StorageInstance2, Storage as Storage2};
 use std::convert::TryFrom;
 use std::sync::Arc;
 

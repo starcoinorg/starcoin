@@ -43,11 +43,11 @@ use starcoin_storage::table_info::TableInfoStore;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_view::StateView;
 
-use starcoin_storage2::{
-    storage::StorageInstance as StorageInstance2, Storage as Storage2, Store as Store2,
-};
 use starcoin_types::block::{BlockBody, LegacyBlock, LegacyBlockBody};
 use starcoin_types::utils::to_hash_value;
+use starcoin_vm2_storage::{
+    storage::StorageInstance as StorageInstance2, Storage as Storage2, Store as Store2,
+};
 
 pub static G_GENESIS_GENERATED_DIR: &str = "generated";
 pub const GENESIS_DIR: Dir = include_dir!("generated");

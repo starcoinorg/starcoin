@@ -23,9 +23,6 @@ use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
-use starcoin_storage2::{
-    storage::StorageInstance as StorageInstance2, Storage as Storage2, Store as Store2,
-};
 use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::contract_event::ContractEventInfo;
@@ -42,6 +39,9 @@ use starcoin_types::{
     U256,
 };
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
+use starcoin_vm2_storage::{
+    storage::StorageInstance as StorageInstance2, Storage as Storage2, Store as Store2,
+};
 use starcoin_vm2_types::transaction::{
     SignedUserTransaction as SignedUserTransaction2, Transaction as Transaction2,
 };

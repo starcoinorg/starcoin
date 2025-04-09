@@ -5,16 +5,15 @@ use crate::executor2::do_execute_block_transactions;
 use serde::{Deserialize, Serialize};
 use starcoin_vm2_crypto::HashValue;
 use starcoin_vm2_state_api::{ChainStateReader, ChainStateWriter};
+use starcoin_vm2_types::{contract_event::ContractEvent, write_set::WriteSet};
 use starcoin_vm2_types::{
     error::{BlockExecutorError, ExecutorResult},
     transaction::{Transaction, TransactionInfo, TransactionStatus},
     vm_error::KeptVMStatus,
 };
 pub use starcoin_vm2_vm_runtime::metrics::VMMetrics;
-use starcoin_vm2_types::{
-    contract_event::ContractEvent,
+use starcoin_vm2_vm_types::{
     state_store::table::{TableHandle, TableInfo},
-    write_set::WriteSet,
     StateView,
 };
 use std::collections::BTreeMap;
