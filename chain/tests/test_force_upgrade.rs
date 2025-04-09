@@ -38,14 +38,19 @@ use test_helper::gen_blockchain_for_test;
 
 #[stest::test]
 pub fn test_force_upgrade_1() -> anyhow::Result<()> {
-    let config = Arc::new(test_node_config());
-    let net = config.net();
+    let net = ChainNetwork::new_custom(
+        "test123".to_string(),
+        123.into(),
+        BuiltinNetworkID::Test.genesis_config().clone(),
+        None,
+    )
+    .unwrap();
 
     let force_upgrade_height = get_force_upgrade_block_number(&net.chain_id());
     assert!(force_upgrade_height >= 2);
     let initial_blocks = force_upgrade_height - 2;
 
-    let mut miner = test_helper::gen_blockchain_with_blocks_for_test(initial_blocks, net)?;
+    let mut miner = test_helper::gen_blockchain_with_blocks_for_test(initial_blocks, &net)?;
     let initial_balance = 1000000000000;
     let account_reader = miner.chain_state_reader();
     let association_sequence_num =
@@ -59,7 +64,7 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
     let mut txns_num = initial_blocks + 1;
     assert_eq!(miner.get_txn_accumulator().num_leaves(), txns_num);
 
-    let upgrade_account = get_force_upgrade_account(&config.net().chain_id()).unwrap();
+    let upgrade_account = get_force_upgrade_account(&net.chain_id()).unwrap();
 
     // create two txns to deposit some tokens to two black addresses
     // and a third random address which should not in black address list.
@@ -70,7 +75,7 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
             association_sequence_num,
             initial_balance + 1,
             net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
-            net,
+            &net,
         )
         .try_into()?;
 
@@ -80,7 +85,7 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
             association_sequence_num + 1,
             initial_balance + 2,
             net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
-            net,
+            &net,
         )
         .try_into()?;
 
@@ -90,7 +95,7 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
             association_sequence_num + 2,
             initial_balance + 3,
             net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
-            net,
+            &net,
         )
         .try_into()?;
 
@@ -99,7 +104,7 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
             association_sequence_num + 3,
             0,
             net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
-            net,
+            &net,
         )
         .try_into()?;
 
@@ -197,7 +202,7 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
             &mut miner,
             vec![frozen_config_update_burn_block_number_by_association(
                 association_sequence_num + 4,
-                net,
+                &net,
                 expect_burn_block_number,
             )?],
         )?;
@@ -228,7 +233,7 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
             &mut miner,
             vec![frozen_config_do_burn_frozen_from_association(
                 association_sequence_num + 5,
-                net,
+                &net,
             )?],
         )?;
 
@@ -240,7 +245,7 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
             &mut miner,
             vec![frozen_config_do_burn_frozen_from_association(
                 association_sequence_num + 7,
-                net,
+                &net,
             )?],
         );
 
@@ -262,12 +267,18 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
 
 #[stest::test]
 fn test_force_upgrade_2() -> anyhow::Result<()> {
-    let config = Arc::new(test_node_config());
+    let net = ChainNetwork::new_custom(
+        "test123".to_string(),
+        123.into(),
+        BuiltinNetworkID::Test.genesis_config().clone(),
+        None,
+    )
+    .unwrap();
 
-    let force_upgrade_height = get_force_upgrade_block_number(&config.net().chain_id());
+    let force_upgrade_height = get_force_upgrade_block_number(&net.chain_id());
     assert!(force_upgrade_height >= 2);
 
-    let chain = gen_chain_for_upgrade_test(force_upgrade_height, config.net())?;
+    let chain = gen_chain_for_upgrade_test(force_upgrade_height, &net)?;
 
     // genesis 1 + 1txn to create account + 1meta in each blocks  + special block 1meta+1extra.txn
     assert_eq!(
@@ -275,7 +286,7 @@ fn test_force_upgrade_2() -> anyhow::Result<()> {
         force_upgrade_height + 3
     );
 
-    let chain = gen_chain_for_upgrade_test(force_upgrade_height + 1, config.net())?;
+    let chain = gen_chain_for_upgrade_test(force_upgrade_height + 1, &net)?;
     // genesis 1 + 1 txn to create account + 1meta in each blocks + special block 2 + 1 meta in last block
     assert_eq!(
         chain.get_txn_accumulator().num_leaves(),

@@ -22,6 +22,7 @@ use starcoin_service_registry::{
 };
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::{BlockStore, Storage};
+use starcoin_storage2::Storage as Storage2;
 use starcoin_sync_api::{
     PeerScoreRequest, PeerScoreResponse, SyncCancelRequest, SyncProgressReport,
     SyncProgressRequest, SyncServiceHandler, SyncStartRequest, SyncStatusRequest, SyncTarget,
@@ -58,6 +59,7 @@ pub struct SyncService {
     stage: SyncStage,
     config: Arc<NodeConfig>,
     storage: Arc<Storage>,
+    storage2: Arc<Storage2>,
     metrics: Option<SyncMetrics>,
     peer_score_metrics: Option<PeerScoreMetrics>,
     vm_metrics: Option<VMMetrics>,
@@ -67,6 +69,7 @@ impl SyncService {
     pub fn new(
         config: Arc<NodeConfig>,
         storage: Arc<Storage>,
+        storage2: Arc<Storage2>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         let startup_info = storage
@@ -93,6 +96,7 @@ impl SyncService {
             stage: SyncStage::NotStart,
             config,
             storage,
+            storage2,
             metrics,
             peer_score_metrics,
             vm_metrics,
@@ -143,6 +147,7 @@ impl SyncService {
 
         let network = ctx.get_shared::<NetworkServiceRef>()?;
         let storage = self.storage.clone();
+        let storage2 = self.storage2.clone();
         let self_ref = ctx.self_ref();
         let connector_service = ctx.service_ref::<BlockConnectorService>()?.clone();
         let config = self.config.clone();
@@ -228,6 +233,7 @@ impl SyncService {
                     skip_pow_verify,
                     config.net().time_service(),
                     storage.clone(),
+                    storage2.clone(),
                     connector_service.clone(),
                     rpc_client.clone(),
                     self_ref.clone(),
@@ -365,8 +371,9 @@ impl ServiceFactory<Self> for SyncService {
     fn create(ctx: &mut ServiceContext<Self>) -> Result<SyncService> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
+        let storage2 = ctx.get_shared::<Arc<Storage2>>()?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
-        Self::new(config, storage, vm_metrics)
+        Self::new(config, storage, storage2, vm_metrics)
     }
 }
 

@@ -17,6 +17,7 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceRef};
 use starcoin_storage::Store;
+use starcoin_storage2::Store as Store2;
 use starcoin_sync_api::SyncTarget;
 use starcoin_time_service::TimeService;
 use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
@@ -523,6 +524,7 @@ pub fn full_sync_task<H, A, F, N>(
     skip_pow_verify: bool,
     time_service: Arc<dyn TimeService>,
     storage: Arc<dyn Store>,
+    storage2: Arc<dyn Store2>,
     block_event_handle: H,
     fetcher: Arc<F>,
     ancestor_event_handle: A,
@@ -629,6 +631,7 @@ where
                 latest_ancestor,
                 sub_target,
                 storage.clone(),
+                storage2.clone(),
                 block_event_handle.clone(),
                 fetcher.clone(),
                 event_handle_clone.clone(),

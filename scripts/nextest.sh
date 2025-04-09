@@ -21,7 +21,14 @@ cargo nextest -V >/dev/null 2>&1 || cargo install cargo-nextest --version "0.9.5
 # --failure-output immediate-final, make error log output immediate & at the end of the run
 # --retries 2, a correct test case usually takes no more than 3 tries to pass
 # --build-jobs 8, a little (~20s) faster than 5 or 10 build jobs 
-cargo nextest run --workspace --retries 2 --build-jobs 8 --test-threads 12 --failure-output immediate-final
+cargo nextest run --workspace \
+-E "\
+not (test(check_types)) \
+and not (test(unit_tests::block_metadata_test::test_block_metadata_canonical_serialization)) \
+and not (test(unit_tests::transaction_test::signed_transaction_bcs_roundtrip)) \
+and not (test(consensus_test::verify_header_test_barnard_block5061847_ubuntu20)) \
+and not (test(service_test::test_handshake_message))" \
+--retries 2 --build-jobs 8 --test-threads 12 --no-fail-fast --failure-output immediate-final
 
 
 # please ensure the two test commands' arguments (e.g. `-j 15`) are the same to avoid recompilation

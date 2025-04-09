@@ -8,6 +8,7 @@ use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_chain::BlockChain;
 use starcoin_executor::VMMetrics;
 use starcoin_storage::Store;
+use starcoin_storage2::Store as Store2;
 use starcoin_sync_api::SyncTarget;
 use starcoin_time_service::TimeService;
 use starcoin_types::block::{BlockIdAndNumber, BlockInfo};
@@ -26,6 +27,7 @@ where
     ancestor: BlockIdAndNumber,
     target: SyncTarget,
     storage: Arc<dyn Store>,
+    storage2: Arc<dyn Store2>,
     block_event_handle: H,
     fetcher: Arc<F>,
     event_handle: Arc<dyn TaskEventHandle>,
@@ -44,6 +46,7 @@ where
         ancestor: BlockIdAndNumber,
         target: SyncTarget,
         storage: Arc<dyn Store>,
+        storage2: Arc<dyn Store2>,
         block_event_handle: H,
         fetcher: Arc<F>,
         event_handle: Arc<dyn TaskEventHandle>,
@@ -55,6 +58,7 @@ where
             ancestor,
             target,
             storage,
+            storage2,
             block_event_handle,
             fetcher,
             event_handle,
@@ -127,10 +131,11 @@ where
                 self.storage.clone(),
                 1,
             );
-            let chain = BlockChain::new(
+            let chain = BlockChain::new_v2(
                 self.time_service.clone(),
                 ancestor.id,
                 self.storage.clone(),
+                self.storage2.clone(),
                 vm_metrics,
             )?;
             let block_collector = BlockCollector::new_with_handle(

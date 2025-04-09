@@ -3,7 +3,7 @@ use rand::Rng;
 use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::Accumulator;
 use starcoin_chain_api::{ChainReader, ChainWriter};
-use starcoin_config::NodeConfig;
+use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::debug;
@@ -14,12 +14,17 @@ use starcoin_vm_types::account_config::AccountResource;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::transaction::{SignedUserTransaction, Transaction};
 use std::collections::HashMap;
-use std::sync::Arc;
 
 #[stest::test(timeout = 480)]
 fn test_transaction_info_and_proof() -> Result<()> {
-    let config = Arc::new(NodeConfig::random_for_test());
-    let mut block_chain = test_helper::gen_blockchain_for_test(config.net())?;
+    let net = ChainNetwork::new_custom(
+        "test123".to_string(),
+        123.into(),
+        BuiltinNetworkID::Test.genesis_config().clone(),
+        None,
+    )
+    .unwrap();
+    let mut block_chain = test_helper::gen_blockchain_for_test(&net)?;
     let mut current_header = block_chain.current_header();
     let miner_account = AccountInfo::random();
 
@@ -47,8 +52,8 @@ fn test_transaction_info_and_proof() -> Result<()> {
                     account_address,
                     seq_number,
                     10000,
-                    config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
-                    config.net(),
+                    net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+                    &net,
                 );
                 all_address.insert(txn.id(), account_address);
                 seq_number += 1;
@@ -68,7 +73,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
 
         let block = block_chain
             .consensus()
-            .create_block(template, config.net().time_service().as_ref())
+            .create_block(template, net.time_service().as_ref())
             .unwrap();
         block_chain.apply(block.clone()).unwrap();
         all_txns.push(Transaction::BlockMetadata(

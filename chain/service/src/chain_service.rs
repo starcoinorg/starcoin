@@ -14,6 +14,7 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
 use starcoin_storage::{BlockStore, Storage, Store};
+use starcoin_storage2::{Storage as Storage2, Store as Store2};
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
@@ -39,10 +40,17 @@ impl ChainReaderService {
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
+        storage2: Arc<dyn Store2>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         Ok(Self {
-            inner: ChainReaderServiceInner::new(config, startup_info, storage, vm_metrics)?,
+            inner: ChainReaderServiceInner::new(
+                config,
+                startup_info,
+                storage,
+                storage2,
+                vm_metrics,
+            )?,
         })
     }
 }
@@ -51,11 +59,12 @@ impl ServiceFactory<Self> for ChainReaderService {
     fn create(ctx: &mut ServiceContext<ChainReaderService>) -> Result<ChainReaderService> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
+        let storage2 = ctx.get_shared::<Arc<Storage2>>()?;
         let startup_info = storage
             .get_startup_info()?
             .ok_or_else(|| format_err!("StartupInfo should exist at service init."))?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
-        Self::new(config, startup_info, storage, vm_metrics)
+        Self::new(config, startup_info, storage, storage2, vm_metrics)
     }
 }
 
@@ -241,6 +250,7 @@ pub struct ChainReaderServiceInner {
     startup_info: StartupInfo,
     main: BlockChain,
     storage: Arc<dyn Store>,
+    storage2: Arc<dyn Store2>,
     vm_metrics: Option<VMMetrics>,
 }
 
@@ -249,13 +259,15 @@ impl ChainReaderServiceInner {
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
+        storage2: Arc<dyn Store2>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         let net = config.net();
-        let main = BlockChain::new(
+        let main = BlockChain::new_v2(
             net.time_service(),
             startup_info.main,
             storage.clone(),
+            storage2.clone(),
             vm_metrics.clone(),
         )?;
         Ok(Self {
@@ -263,6 +275,7 @@ impl ChainReaderServiceInner {
             startup_info,
             main,
             storage,
+            storage2,
             vm_metrics,
         })
     }
@@ -278,10 +291,11 @@ impl ChainReaderServiceInner {
 
     pub fn switch_main(&mut self, new_head_id: HashValue) -> Result<()> {
         let net = self.config.net();
-        self.main = BlockChain::new(
+        self.main = BlockChain::new_v2(
             net.time_service(),
             new_head_id,
             self.storage.clone(),
+            self.storage2.clone(),
             self.vm_metrics.clone(),
         )?;
         Ok(())
@@ -428,10 +442,12 @@ mod tests {
     #[stest::test]
     async fn test_actor_launch() -> Result<()> {
         let config = Arc::new(NodeConfig::random_for_test());
-        let (storage, chain_info, _) = test_helper::Genesis::init_storage_for_test(config.net())?;
+        let (storage, storage2, chain_info, _) =
+            test_helper::Genesis::init_storage_for_test_v2(config.net())?;
         let registry = RegistryService::launch();
         registry.put_shared(config).await?;
         registry.put_shared(storage).await?;
+        registry.put_shared(storage2).await?;
         let service_ref = registry.register::<ChainReaderService>().await?;
         let chain_status = service_ref.main_status().await?;
         assert_eq!(&chain_status, chain_info.status());

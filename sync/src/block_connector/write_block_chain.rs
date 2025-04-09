@@ -12,6 +12,7 @@ use starcoin_logger::prelude::*;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::ServiceRef;
 use starcoin_storage::Store;
+use starcoin_storage2::Store as Store2;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::BlockInfo;
 use starcoin_types::{
@@ -32,6 +33,7 @@ where
     startup_info: StartupInfo,
     main: BlockChain,
     storage: Arc<dyn Store>,
+    storage2: Arc<dyn Store2>,
     txpool: P,
     bus: ServiceRef<BusService>,
     metrics: Option<ChainMetrics>,
@@ -101,15 +103,17 @@ where
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
+        storage2: Arc<dyn Store2>,
         txpool: P,
         bus: ServiceRef<BusService>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         let net = config.net();
-        let main = BlockChain::new(
+        let main = BlockChain::new_v2(
             net.time_service(),
             startup_info.main,
             storage.clone(),
+            storage2.clone(),
             vm_metrics.clone(),
         )?;
         let metrics = config
@@ -122,6 +126,7 @@ where
             startup_info,
             main,
             storage,
+            storage2,
             txpool,
             bus,
             metrics,
@@ -140,19 +145,21 @@ where
                 None
             } else {
                 let net = self.config.net();
-                Some(BlockChain::new(
+                Some(BlockChain::new_v2(
                     net.time_service(),
                     block_id,
                     self.storage.clone(),
+                    self.storage2.clone(),
                     self.vm_metrics.clone(),
                 )?)
             }
         } else if self.block_exist(header.parent_hash())? {
             let net = self.config.net();
-            Some(BlockChain::new(
+            Some(BlockChain::new_v2(
                 net.time_service(),
                 header.parent_hash(),
                 self.storage.clone(),
+                self.storage2.clone(),
                 self.vm_metrics.clone(),
             )?)
         } else {
@@ -242,10 +249,11 @@ where
             .main
             .get_block(block_id)?
             .ok_or_else(|| format_err!("Can not find block {} in main chain", block_id,))?;
-        let new_branch = BlockChain::new(
+        let new_branch = BlockChain::new_v2(
             self.config.net().time_service(),
             block_id,
             self.storage.clone(),
+            self.storage2.clone(),
             self.vm_metrics.clone(),
         )?;
 
@@ -279,10 +287,11 @@ where
 
     ///Directly execute the block and save result, do not try to connect.
     pub fn execute(&mut self, block: Block) -> Result<ExecutedBlock> {
-        let chain = BlockChain::new(
+        let chain = BlockChain::new_v2(
             self.config.net().time_service(),
             block.header().parent_hash(),
             self.storage.clone(),
+            self.storage2.clone(),
             self.vm_metrics.clone(),
         )?;
         let verify_block = chain.verify(block)?;

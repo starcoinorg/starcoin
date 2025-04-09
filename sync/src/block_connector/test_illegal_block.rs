@@ -18,6 +18,7 @@ use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_storage::Store;
+use starcoin_storage2::Store as Store2;
 use starcoin_time_service::{duration_since_epoch, TimeServiceType};
 use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::BlockHeader;
@@ -38,7 +39,7 @@ async fn new_block_and_main_with_halley() -> (Block, MockChain) {
 
 async fn new_block_and_main() -> (Block, BlockChain) {
     let times = 5;
-    let (mut writeable_block_chain_service, node_config, storage) =
+    let (mut writeable_block_chain_service, node_config, storage, storage2) =
         create_writeable_block_chain().await;
     let net = node_config.net();
     gen_blocks(
@@ -50,7 +51,7 @@ async fn new_block_and_main() -> (Block, BlockChain) {
         .get_main()
         .current_header()
         .id();
-    let main = BlockChain::new(net.time_service(), head_id, storage, None).unwrap();
+    let main = BlockChain::new_v2(net.time_service(), head_id, storage, storage2, None).unwrap();
     let new_block = new_block(
         None,
         &mut writeable_block_chain_service,
@@ -67,9 +68,10 @@ async fn uncle_block_and_writeable_block_chain(
     WriteBlockChainService<MockTxPoolService>,
     Arc<NodeConfig>,
     Arc<dyn Store>,
+    Arc<dyn Store2>,
 ) {
     // 1. chain
-    let (mut writeable_block_chain_service, node_config, storage) =
+    let (mut writeable_block_chain_service, node_config, storage, storage2) =
         create_writeable_block_chain().await;
     let net = node_config.net();
     gen_blocks(
@@ -87,7 +89,14 @@ async fn uncle_block_and_writeable_block_chain(
         .unwrap()
         .id();
 
-    let new_branch = BlockChain::new(net.time_service(), tmp_head, storage.clone(), None).unwrap();
+    let new_branch = BlockChain::new_v2(
+        net.time_service(),
+        tmp_head,
+        storage.clone(),
+        storage2.clone(),
+        None,
+    )
+    .unwrap();
     let (block_template, _) = new_branch
         .create_block_template(*miner_account.address(), None, Vec::new(), vec![], None)
         .unwrap();
@@ -102,6 +111,7 @@ async fn uncle_block_and_writeable_block_chain(
         writeable_block_chain_service,
         node_config,
         storage,
+        storage2,
     )
 }
 
@@ -110,6 +120,7 @@ fn apply_with_illegal_uncle(
     uncles: Vec<BlockHeader>,
     writeable_block_chain_service: &mut WriteBlockChainService<MockTxPoolService>,
     storage: Arc<dyn Store>,
+    storage2: Arc<dyn Store2>,
 ) -> Result<Block> {
     let miner_account = AccountInfo::random();
     let (block_template, _) = writeable_block_chain_service
@@ -122,7 +133,7 @@ fn apply_with_illegal_uncle(
         .get_main()
         .current_header()
         .id();
-    let mut main = BlockChain::new(net.time_service(), head_id, storage, None)?;
+    let mut main = BlockChain::new_v2(net.time_service(), head_id, storage, storage2, None)?;
     main.apply(new_block.clone())?;
     Ok(new_block)
 }
@@ -312,7 +323,7 @@ async fn test_verify_new_epoch_block_uncle_should_none_failed() {
 #[stest::test]
 async fn test_verify_can_not_be_uncle_is_member_failed() {
     let times = 5;
-    let (mut writeable_block_chain_service, node_config, storage) =
+    let (mut writeable_block_chain_service, node_config, storage, storage2) =
         create_writeable_block_chain().await;
     let net = node_config.net();
     gen_blocks(
@@ -332,6 +343,7 @@ async fn test_verify_can_not_be_uncle_is_member_failed() {
         uncles,
         &mut writeable_block_chain_service,
         storage,
+        storage2,
     );
     assert!(apply_failed.is_err());
     if let Err(apply_err) = apply_failed {
@@ -343,7 +355,7 @@ async fn test_verify_can_not_be_uncle_is_member_failed() {
 async fn test_verify_can_not_be_uncle_check_ancestor_failed() {
     // 1. chain
     let times = 7;
-    let (mut writeable_block_chain_service, node_config, storage) =
+    let (mut writeable_block_chain_service, node_config, storage, storage2) =
         create_writeable_block_chain().await;
     let net = node_config.net();
     gen_blocks(
@@ -360,8 +372,14 @@ async fn test_verify_can_not_be_uncle_check_ancestor_failed() {
         .unwrap()
         .unwrap()
         .id();
-    let mut new_branch =
-        BlockChain::new(net.time_service(), tmp_head, storage.clone(), None).unwrap();
+    let mut new_branch = BlockChain::new_v2(
+        net.time_service(),
+        tmp_head,
+        storage.clone(),
+        storage2.clone(),
+        None,
+    )
+    .unwrap();
 
     for _i in 0..2 {
         let (block_template, _) = new_branch
@@ -382,6 +400,7 @@ async fn test_verify_can_not_be_uncle_check_ancestor_failed() {
         uncles,
         &mut writeable_block_chain_service,
         storage,
+        storage2,
     );
     assert!(apply_failed.is_err());
     if let Err(apply_err) = apply_failed {
@@ -391,7 +410,7 @@ async fn test_verify_can_not_be_uncle_check_ancestor_failed() {
 
 async fn test_verify_illegal_uncle_future_timestamp(succ: bool) -> Result<Block> {
     let count = 5;
-    let (mut uncle_header, mut writeable_block_chain_service, node_config, storage) =
+    let (mut uncle_header, mut writeable_block_chain_service, node_config, storage, storage2) =
         uncle_block_and_writeable_block_chain(count, count - 2).await;
     if !succ {
         uncle_header = uncle_header
@@ -405,6 +424,7 @@ async fn test_verify_illegal_uncle_future_timestamp(succ: bool) -> Result<Block>
         uncles,
         &mut writeable_block_chain_service,
         storage,
+        storage2,
     )
 }
 
@@ -435,7 +455,7 @@ async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
         "block_test".to_string(),
         ChainId::new(100),
         genesis_config,
-        genesis_config2,
+        Some(genesis_config2),
     )?;
     let mut mock_chain = MockChain::new(net.clone()).unwrap();
     let mut times = 3;
@@ -627,7 +647,7 @@ async fn test_verify_block_illegal_number_failed() {
 
 async fn test_verify_uncles_count(succ: bool) -> Result<Block> {
     let count = 5;
-    let (uncle_header, mut writeable_block_chain_service, node_config, storage) =
+    let (uncle_header, mut writeable_block_chain_service, node_config, storage, storage2) =
         uncle_block_and_writeable_block_chain(count, count - 2).await;
     let mut uncles = Vec::new();
     let times = if succ { 2 } else { 3 };
@@ -643,6 +663,7 @@ async fn test_verify_uncles_count(succ: bool) -> Result<Block> {
         uncles,
         &mut writeable_block_chain_service,
         storage,
+        storage2,
     )
 }
 
@@ -656,7 +677,7 @@ async fn test_verify_uncles_count_failed() {
 
 async fn test_verify_uncles_number(succ: bool) -> Result<Block> {
     let count = 5;
-    let (mut uncle_header, mut writeable_block_chain_service, node_config, storage) =
+    let (mut uncle_header, mut writeable_block_chain_service, node_config, storage, storage2) =
         uncle_block_and_writeable_block_chain(count, count - 2).await;
     if !succ {
         uncle_header = uncle_header
@@ -676,6 +697,7 @@ async fn test_verify_uncles_number(succ: bool) -> Result<Block> {
         uncles,
         &mut writeable_block_chain_service,
         storage,
+        storage2,
     )
 }
 
@@ -691,7 +713,7 @@ async fn test_verify_uncles_number_failed() {
 
 async fn test_verify_uncles_in_old_epoch(begin_epoch: bool) -> Result<Block> {
     let count = 5;
-    let (uncle_header, mut writeable_block_chain_service, node_config, storage) =
+    let (uncle_header, mut writeable_block_chain_service, node_config, storage, storage2) =
         uncle_block_and_writeable_block_chain(count, count - 2).await;
 
     let end_number = if begin_epoch {
@@ -729,6 +751,7 @@ async fn test_verify_uncles_in_old_epoch(begin_epoch: bool) -> Result<Block> {
         uncles,
         &mut writeable_block_chain_service,
         storage,
+        storage2,
     )
 }
 
@@ -744,7 +767,7 @@ async fn test_verify_uncles_in_old_epoch_failed() {
 #[stest::test(timeout = 120)]
 async fn test_verify_uncles_uncle_exist_failed() {
     let count = 5;
-    let (uncle_header, mut writeable_block_chain_service, node_config, storage) =
+    let (uncle_header, mut writeable_block_chain_service, node_config, storage, storage2) =
         uncle_block_and_writeable_block_chain(count, count - 2).await;
     let net = node_config.net();
     let uncles = vec![uncle_header];
@@ -788,6 +811,7 @@ async fn test_verify_uncles_uncle_exist_failed() {
         uncles,
         &mut writeable_block_chain_service,
         storage,
+        storage2,
     );
     assert!(apply_failed.is_err());
     if let Err(apply_err) = apply_failed {
@@ -798,7 +822,7 @@ async fn test_verify_uncles_uncle_exist_failed() {
 #[stest::test]
 async fn test_some_uncles_in_block_failed() {
     let count = 5;
-    let (uncle_header, mut writeable_block_chain_service, node_config, storage) =
+    let (uncle_header, mut writeable_block_chain_service, node_config, storage, storage2) =
         uncle_block_and_writeable_block_chain(count, count - 2).await;
     let mut uncles = Vec::new();
     for _i in 0..2 {
@@ -809,6 +833,7 @@ async fn test_some_uncles_in_block_failed() {
         uncles,
         &mut writeable_block_chain_service,
         storage,
+        storage2,
     );
     assert!(apply_failed.is_err());
     if let Err(apply_err) = apply_failed {
@@ -819,7 +844,7 @@ async fn test_some_uncles_in_block_failed() {
 #[stest::test]
 async fn test_verify_uncle_and_parent_number_failed() {
     let count = 5;
-    let (mut uncle_header, mut writeable_block_chain_service, node_config, storage) =
+    let (mut uncle_header, mut writeable_block_chain_service, node_config, storage, storage2) =
         uncle_block_and_writeable_block_chain(count, count - 2).await;
     let net = node_config.net();
     uncle_header = uncle_header
@@ -858,6 +883,7 @@ async fn test_verify_uncle_and_parent_number_failed() {
         uncles,
         &mut writeable_block_chain_service,
         storage,
+        storage2,
     );
     assert!(apply_failed.is_err());
     if let Err(apply_err) = apply_failed {
@@ -868,7 +894,7 @@ async fn test_verify_uncle_and_parent_number_failed() {
 #[stest::test(timeout = 120)]
 async fn test_verify_uncle_which_parent_is_end_block_in_last_epoch() {
     let count = G_TEST_CONFIG.consensus_config.epoch_block_count;
-    let (uncle_header, mut writeable_block_chain_service, node_config, storage) =
+    let (uncle_header, mut writeable_block_chain_service, node_config, storage, storage2) =
         uncle_block_and_writeable_block_chain(count, count - 1).await;
 
     let epoch = writeable_block_chain_service.get_main().epoch();
@@ -897,6 +923,7 @@ async fn test_verify_uncle_which_parent_is_end_block_in_last_epoch() {
         uncles,
         &mut writeable_block_chain_service,
         storage,
+        storage2,
     );
     assert!(apply_failed.is_ok());
 }

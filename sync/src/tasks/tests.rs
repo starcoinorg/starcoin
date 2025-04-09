@@ -57,6 +57,7 @@ pub async fn test_full_sync_new_node() -> Result<()> {
     let current_block_header = node2.chain().current_header();
 
     let storage = node2.chain().get_storage();
+    let storage2 = node2.chain().get_storage2();
     let (sender_1, receiver_1) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
@@ -65,6 +66,7 @@ pub async fn test_full_sync_new_node() -> Result<()> {
         false,
         net2.time_service(),
         storage.clone(),
+        storage2.clone(),
         sender_1,
         arc_node1.clone(),
         sender_2,
@@ -96,6 +98,7 @@ pub async fn test_full_sync_new_node() -> Result<()> {
         false,
         net2.time_service(),
         storage.clone(),
+        storage2.clone(),
         sender_1,
         arc_node1.clone(),
         sender_2,
@@ -138,6 +141,7 @@ pub async fn test_sync_invalid_target() -> Result<()> {
     let current_block_header = node2.chain().current_header();
 
     let storage = node2.chain().get_storage();
+    let storage2 = node2.chain().get_storage2();
     let (sender_1, receiver_1) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
     let (sync_task, _task_handle, _task_event_counter) = full_sync_task(
@@ -146,6 +150,7 @@ pub async fn test_sync_invalid_target() -> Result<()> {
         false,
         net2.time_service(),
         storage.clone(),
+        storage2.clone(),
         sender_1,
         arc_node1.clone(),
         sender_2,
@@ -174,12 +179,13 @@ pub async fn test_sync_invalid_target() -> Result<()> {
 #[stest::test]
 pub async fn test_failed_block() -> Result<()> {
     let net = ChainNetwork::new_builtin(BuiltinNetworkID::Halley);
-    let (storage, chain_info, _) = Genesis::init_storage_for_test(&net)?;
+    let (storage, storage2, chain_info, _) = Genesis::init_storage_for_test_v2(&net)?;
 
-    let chain = BlockChain::new(
+    let chain = BlockChain::new_v2(
         net.time_service(),
         chain_info.head().id(),
         storage.clone(),
+        storage2.clone(),
         None,
     )?;
     let (sender, _) = unbounded();
@@ -226,6 +232,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
     let current_block_header = node2.chain().current_header();
 
     let storage = node2.chain().get_storage();
+    let storage2 = node2.chain().get_storage2();
     let (sender, receiver) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
@@ -234,6 +241,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
         false,
         net2.time_service(),
         storage.clone(),
+        storage2.clone(),
         sender,
         arc_node1.clone(),
         sender_2,
@@ -267,6 +275,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
         false,
         net2.time_service(),
         storage,
+        storage2,
         sender,
         arc_node1.clone(),
         sender_2,
@@ -308,6 +317,7 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
     let current_block_header = node2.chain().current_header();
 
     let storage = node2.chain().get_storage();
+    let storage2 = node2.chain().get_storage2();
     let (sender, receiver) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
@@ -316,6 +326,7 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
         false,
         net2.time_service(),
         storage.clone(),
+        storage2.clone(),
         sender,
         arc_node1.clone(),
         sender_2,
@@ -362,6 +373,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
     let current_block_header = node2.chain().current_header();
 
     let storage = node2.chain().get_storage();
+    let storage2 = node2.chain().get_storage2();
     let (sender, receiver) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
@@ -370,6 +382,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
         false,
         net2.time_service(),
         storage.clone(),
+        storage2.clone(),
         sender,
         arc_node1.clone(),
         sender_2,
@@ -405,6 +418,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
         false,
         net2.time_service(),
         storage.clone(),
+        storage2.clone(),
         sender,
         arc_node1.clone(),
         sender_2,
@@ -449,6 +463,7 @@ pub async fn test_full_sync_cancel() -> Result<()> {
     let current_block_header = node2.chain().current_header();
 
     let storage = node2.chain().get_storage();
+    let storage2 = node2.chain().get_storage2();
     let (sender, receiver) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
     let (sync_task, task_handle, task_event_counter) = full_sync_task(
@@ -457,6 +472,7 @@ pub async fn test_full_sync_cancel() -> Result<()> {
         false,
         net2.time_service(),
         storage.clone(),
+        storage2.clone(),
         sender,
         arc_node1.clone(),
         sender_2,
@@ -892,6 +908,7 @@ async fn test_net_rpc_err() -> Result<()> {
     let current_block_header = node2.chain().current_header();
 
     let storage = node2.chain().get_storage();
+    let storage2 = node2.chain().get_storage2();
     let (sender, receiver) = unbounded();
     let (sender_2, _receiver_2) = unbounded();
     let (sync_task, _task_handle, _task_event_counter) = full_sync_task(
@@ -900,6 +917,7 @@ async fn test_net_rpc_err() -> Result<()> {
         false,
         net2.time_service(),
         storage.clone(),
+        storage2.clone(),
         sender,
         arc_node1.clone(),
         sender_2,

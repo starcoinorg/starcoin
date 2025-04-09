@@ -43,6 +43,9 @@ stream-task = { workspace = true }
 sysinfo = { workspace = true }
 thiserror = { workspace = true }
 
+#dependencies for move2.0
+starcoin-storage2 = { workspace = true }
+
 [dev-dependencies]
 hex = { workspace = true }
 starcoin-miner = { workspace = true }

@@ -23,8 +23,10 @@ async fn test_miner_service() {
     let registry = RegistryService::launch();
     let node_config = Arc::new(config.clone());
     registry.put_shared(node_config.clone()).await.unwrap();
-    let (storage, _chain_info, genesis) = Genesis::init_storage_for_test(config.net()).unwrap();
+    let (storage, storage2, _chain_info, genesis) =
+        Genesis::init_storage_for_test_v2(config.net()).unwrap();
     registry.put_shared(storage.clone()).await.unwrap();
+    registry.put_shared(storage2.clone()).await.unwrap();
 
     let genesis_hash = genesis.block().id();
     let chain_header = storage
