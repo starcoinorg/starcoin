@@ -223,6 +223,13 @@
                           "minimum": 0.0
                         }
                       }
+                    },
+                    "vm2_state_root": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "HashValue"
                     }
                   }
                 }
