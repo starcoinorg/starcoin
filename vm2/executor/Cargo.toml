@@ -23,3 +23,7 @@ starcoin-state2-api = { workspace = true }
 starcoin-vm2-test-helper = { workspace = true }
 stest = { workspace = true }
 bcs-ext = { workspace = true }
+move2-transactional-test-runner = { workspace = true }
+starcoin-transaction2-builder = { workspace = true }
+starcoin-config = { workspace = true }
+move2-core-types = { workspace = true }

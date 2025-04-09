@@ -2,15 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use starcoin_types2::language_storage::StructTag;
+
 use starcoin_types2::{
     account::{Account, DEFAULT_MAX_GAS_AMOUNT},
     identifier::Identifier,
     vm_error::KeptVMStatus,
 };
 use starcoin_vm2::data_cache::AsMoveResolver;
-use starcoin_vm2_move_transactional_test_runner::tasks::SyntaxChoice;
-use starcoin_vm2_state_api::AccountStateReader;
+
+use starcoin_state2_api::AccountStateReader;
+use starcoin_transaction2_builder::create_signed_txn_with_association_account;
 use starcoin_vm2_statedb::ChainStateDB;
 use starcoin_vm2_test_helper::executor::{
     association_execute_should_success, compile_ir_script, compile_script,
@@ -19,16 +20,18 @@ use starcoin_vm2_test_helper::{
     executor::{compile_modules_with_address, execute_and_apply, prepare_genesis},
     txn::create_account_txn_sent_as_association,
 };
-use starcoin_vm2_transaction_builder::create_signed_txn_with_association_account;
 use starcoin_vm2_types::{
     account_config::{association_address, genesis_address, stc_type_tag},
-    genesis_config::ChainNetwork,
-    language_storage::ModuleId,
+    language_storage::{ModuleId, StructTag},
     transaction::{
         EntryFunction, Package, Script, Transaction, TransactionPayload, TransactionStatus,
     },
 };
 use std::ops::Sub;
+
+use move2_core_types::resolver::{ModuleResolver, ResourceResolver};
+use move2_transactional_test_runner::tasks::SyntaxChoice;
+use starcoin_config::genesis_config::ChainNetwork;
 
 fn prepare_module(chain_state: &ChainStateDB, net: &ChainNetwork) -> ModuleId {
     let module_source = r#"
@@ -62,7 +65,8 @@ fn prepare_module(chain_state: &ChainStateDB, net: &ChainNetwork) -> ModuleId {
         DEFAULT_MAX_GAS_AMOUNT,
         1,
         1,
-        net,
+        net.chain_id().id().into(),
+        net.genesis_config2(),
     );
 
     //publish the module
@@ -105,7 +109,7 @@ fn test_invoke_script_function() -> Result<()> {
         100_000,
         1,
         1,
-        net.chain_id(),
+        net.chain_id().id().into(),
     ));
 
     let output = execute_and_apply(&chain_state, txn);
@@ -138,7 +142,7 @@ fn test_invoke_public_function() -> Result<()> {
         100_000,
         1,
         1,
-        net.chain_id(),
+        net.chain_id().id().into(),
     ));
 
     let output = execute_and_apply(&chain_state, txn);
@@ -174,7 +178,7 @@ fn test_invoke_private_function() -> Result<()> {
         100_000,
         1,
         1,
-        net.chain_id(),
+        net.chain_id().id().into(),
     ));
 
     let output = execute_and_apply(&chain_state, txn);
@@ -245,7 +249,7 @@ fn test_signer_cap_internal_type_error() -> Result<()> {
         10_000_000,
         1,
         1,
-        net.chain_id(),
+        net.chain_id().id().into(),
     ));
 
     let output = execute_and_apply(&chain_state, txn);
@@ -287,7 +291,7 @@ fn test_execute_script() -> Result<()> {
         100_000,
         1,
         1,
-        net.chain_id(),
+        net.chain_id().id().into(),
     ));
 
     let output = execute_and_apply(&chain_state, txn);
@@ -327,7 +331,7 @@ fn test_execute_script_verify() -> Result<()> {
         100_000,
         1,
         1,
-        net.chain_id(),
+        net.chain_id().id().into(),
     ));
 
     let output = execute_and_apply(&chain_state, txn);
@@ -357,7 +361,8 @@ fn test_struct_republish_backward_incompatible() -> Result<()> {
         DEFAULT_MAX_GAS_AMOUNT,
         1,
         1,
-        &net,
+        net.chain_id().id().into(),
+        net.genesis_config2(),
     );
 
     //publish the module
@@ -380,7 +385,8 @@ fn test_struct_republish_backward_incompatible() -> Result<()> {
         DEFAULT_MAX_GAS_AMOUNT,
         1,
         1,
-        &net,
+        net.chain_id().id().into(),
+        net.genesis_config2(),
     );
 
     //publish the module
@@ -431,7 +437,7 @@ fn test_transaction_arg_verify() -> Result<()> {
         gas_amount,
         1,
         1,
-        net.chain_id(),
+        net.chain_id().id().into(),
     ));
     let output = execute_and_apply(&chain_state, txn1);
     assert_eq!(
@@ -457,7 +463,7 @@ fn test_transaction_arg_verify() -> Result<()> {
         money,
         1,
         1,
-        net.chain_id(),
+        net.chain_id().id().into(),
     ));
 
     let output = execute_and_apply(&chain_state, txn);

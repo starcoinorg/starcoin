@@ -1,9 +1,7 @@
 use starcoin_config::genesis_config::ChainNetwork;
 use starcoin_crypto2::ed25519::genesis_key_pair;
 use starcoin_state2_api::ChainStateWriter;
-use starcoin_transaction2_builder::{
-    build_stdlib_package as build_stdlib_package_2,
-};
+use starcoin_transaction2_builder::build_stdlib_package as build_stdlib_package_2;
 use starcoin_types2::{
     account_config::CORE_CODE_ADDRESS,
     error::{BlockExecutorError, ExecutorResult},
