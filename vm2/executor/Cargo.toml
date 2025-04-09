@@ -15,15 +15,11 @@ anyhow = { workspace = true }
 starcoin-vm2 = { workspace = true }
 starcoin-vm2-types = { workspace = true }
 starcoin-types2 = { workspace = true }
-starcoin-vm2-transaction-builder = { workspace = true }
-# starcoin-vm2-storage = { workspace = true }
 starcoin-vm2-statedb = { workspace = true }
-starcoin-vm2-state-api = { workspace = true }
 starcoin-crypto2 = { workspace = true }
 starcoin-state2-api = { workspace = true }
 
 [dev-dependencies]
-starcoin-vm2-move-transactional-test-runner = { workspace = true }
 starcoin-vm2-test-helper = { workspace = true }
 stest = { workspace = true }
 bcs-ext = { workspace = true }

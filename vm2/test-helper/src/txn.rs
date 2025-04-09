@@ -1,29 +1,20 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use starcoin_types2::account::Account;
-// use crate::Account;
-// use starcoin_vm2_config::ChainNetwork;
-use starcoin_vm2_transaction_builder::{
+use starcoin_config::ChainNetwork;
+use starcoin_transaction2_builder::{
     create_signed_txn_with_association_account, encode_transfer_script_by_token_code,
     DEFAULT_MAX_GAS_AMOUNT,
 };
-// use starcoin_txpool::TxPoolService;
-// use starcoin_txpool_api::TxPoolSyncService;
+use starcoin_types2::account::Account;
 use starcoin_vm2_types::{
-    // account::peer_to_peer_txn,
     account_address::AccountAddress,
-    account_config::stc_type_tag,
-    account_config::{core_code_address, G_STC_TOKEN_CODE},
+    account_config::{core_code_address, stc_type_tag, G_STC_TOKEN_CODE},
     genesis_config::ChainId,
-    genesis_config::ChainNetwork,
     identifier::Identifier,
-    language_storage::ModuleId,
-    language_storage::TypeTag,
-    transaction::SignedUserTransaction,
-    transaction::{EntryFunction, RawUserTransaction, TransactionPayload},
+    language_storage::{ModuleId, TypeTag},
+    transaction::{EntryFunction, RawUserTransaction, SignedUserTransaction, TransactionPayload},
 };
-
 // const NEW_ACCOUNT_AMOUNT: u128 = 1_000_000_000;
 // const TRANSFER_AMOUNT: u128 = 1_000;
 
@@ -130,7 +121,8 @@ pub fn create_account_txn_sent_as_association(
         DEFAULT_MAX_GAS_AMOUNT,
         1,
         expiration_timestamp_secs,
-        net,
+        net.chain_id().id().into(),
+        net.genesis_config2(),
     )
 }
 
@@ -165,7 +157,7 @@ pub fn create_user_txn(
         G_STC_TOKEN_CODE.clone(),
     );
     let txn = net
-        .genesis_config()
+        .genesis_config2()
         .sign_with_association(build_transaction(
             address,
             seq_number,

@@ -1,5 +1,9 @@
 use starcoin_config::genesis_config::ChainNetwork;
 use starcoin_crypto2::ed25519::genesis_key_pair;
+use starcoin_state2_api::ChainStateWriter;
+use starcoin_transaction2_builder::{
+    build_stdlib_package as build_stdlib_package_2,
+};
 use starcoin_types2::{
     account_config::CORE_CODE_ADDRESS,
     error::{BlockExecutorError, ExecutorResult},
@@ -7,10 +11,6 @@ use starcoin_types2::{
 };
 use starcoin_vm2_executor::{
     block_executor2::BlockExecutedData, executor2::do_execute_block_transactions,
-};
-use starcoin_vm2_state_api::ChainStateWriter;
-use starcoin_vm2_transaction_builder::{
-    build_stdlib_package as build_stdlib_package_2, build_stdlib_package_for_test,
 };
 use starcoin_vm2_types::{
     transaction::{
@@ -40,9 +40,7 @@ pub fn build_genesis_transaction_with_package(
 }
 
 pub fn build_genesis_transaction(net: &ChainNetwork) -> anyhow::Result<SignedUserTransaction> {
-    let entry_func =
-        build_stdlib_package_2(net.chain_id().id().into(), net.genesis_config2(), None);
-    let package = build_stdlib_package_for_test(None, Some(entry_func))?;
+    let package = build_stdlib_package_2(net.chain_id().id().into(), net.genesis_config2(), None)?;
     build_genesis_transaction_with_package(&net, package)
 }
 

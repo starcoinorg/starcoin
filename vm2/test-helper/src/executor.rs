@@ -1,15 +1,14 @@
 use anyhow::{bail, Result};
 use starcoin_types2::account::Account;
-use starcoin_vm2_executor::executor2::{execute_readonly_function, execute_transactions};
+use starcoin_vm2_executor::executor2::{execute_readonly_function, do_execute_block_transactions};
 use starcoin_vm2_genesis::{build_genesis_transaction, execute_genesis_transaction};
-use starcoin_vm2_state_api::AccountStateReader;
+use starcoin_state2_api::AccountStateReader;
 use starcoin_vm2_statedb::{ChainStateDB, ChainStateReader, ChainStateWriter};
 use starcoin_vm2_types::{
     account_address::AccountAddress,
     account_config::{association_address, genesis_address},
     block_metadata::BlockMetadata,
     contract_event::ContractEvent,
-    genesis_config::{ChainNetwork, StdlibVersion},
     identifier::Identifier,
     language_storage::ModuleId,
     move_resource::MoveResource,
@@ -21,7 +20,7 @@ use starcoin_vm2_types::{
     vm_status::KeptVMStatus,
     StateView,
 };
-
+use starcoin_config::ChainNetwork;
 //TODO warp to A MockTxnExecutor
 
 pub const TEST_MODULE: &str = r#"
@@ -62,7 +61,7 @@ pub fn prepare_customized_genesis(net: &ChainNetwork) -> Result<ChainStateDB> {
 }
 
 pub fn execute_and_apply(chain_state: &ChainStateDB, txn: Transaction) -> TransactionOutput {
-    let output = execute_transactions(chain_state, vec![txn], None)
+    let output = do_execute_block_transactions(chain_state, vec![txn], None, None)
         .unwrap()
         .pop()
         .expect("Output must exist.");
@@ -146,7 +145,7 @@ pub fn compile_script(code: impl AsRef<str>) -> Result<Vec<u8>> {
         .serialize(None))
 }
 
-pub fn compile_ir_script(code: impl AsRef<str>) -> Result<Vec<u8>> {
+pub fn compile_ir_script(_code: impl AsRef<str>) -> Result<Vec<u8>> {
     // TODO(BobOng): [dual-vm] genesis for stdlib
     // use starcoin_vm2_move_ir_compiler::Compiler as IRCompiler;
     // let modules = starcoin_vm2_move_compiler::stdlib_compiled_modules(
@@ -166,7 +165,7 @@ pub fn association_execute(
     payload: TransactionPayload,
 ) -> Result<TransactionOutput> {
     let txn = build_raw_txn(association_address(), state, payload, None);
-    let txn = net.genesis_config().sign_with_association(txn)?;
+    let txn = net.genesis_config2().sign_with_association(txn)?;
     execute_signed_txn(state, txn)
 }
 
@@ -176,7 +175,7 @@ pub fn association_execute_should_success(
     payload: TransactionPayload,
 ) -> Result<TransactionOutput> {
     let txn = build_raw_txn(association_address(), state, payload, None);
-    let txn = net.genesis_config().sign_with_association(txn)?;
+    let txn = net.genesis_config2().sign_with_association(txn)?;
     execute_signed_txn_should_success(state, txn)
 }
 
@@ -230,7 +229,7 @@ pub fn build_raw_txn(
         user_address,
         seq_number,
         payload,
-        starcoin_vm2_transaction_builder::DEFAULT_MAX_GAS_AMOUNT,
+        starcoin_transaction2_builder::DEFAULT_MAX_GAS_AMOUNT,
         1,
         expiration_timestamp_secs,
         chain_id,

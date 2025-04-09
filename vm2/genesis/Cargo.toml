@@ -14,9 +14,8 @@ anyhow = { workspace = true }
 starcoin-vm2 = { workspace = true }
 starcoin-vm2-types = { workspace = true }
 starcoin-types2 = { workspace = true }
-starcoin-vm2-state-api = { workspace = true }
 starcoin-crypto2 = { workspace = true }
 starcoin-vm2-executor = { workspace = true }
-starcoin-vm2-transaction-builder = { workspace = true }
 starcoin-config = { workspace = true }
-starcoin-vm-types = { workspace = true }
+starcoin-state2-api = { workspace = true }
+starcoin-transaction2-builder = { workspace = true }
