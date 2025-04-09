@@ -1,16 +1,14 @@
 use anyhow::Result;
 
+use starcoin_crypto2::ed25519::genesis_key_pair;
+use starcoin_transaction2_builder::build_stdlib_package;
 use starcoin_types2::account_config::CORE_CODE_ADDRESS;
-use starcoin_vm2_crypto::ed25519::genesis_key_pair;
-use starcoin_vm2_executor::executor2::execute_block_transactions_with_chain_id;
+use starcoin_vm2_executor::executor2::do_execute_block_transactions;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
-use starcoin_vm2_transaction_builder::{build_init_script, build_stdlib_package_for_test};
 
-use starcoin_vm2_types::{
-    genesis_config::ChainNetwork,
-    transaction::{
-        Package, RawUserTransaction, SignedUserTransaction, Transaction, TransactionPayload,
-    },
+use starcoin_config::ChainNetwork;
+use starcoin_vm2_types::transaction::{
+    Package, RawUserTransaction, SignedUserTransaction, Transaction, TransactionPayload,
 };
 
 fn test_build_genesis_transaction_with_package(
@@ -24,7 +22,7 @@ fn test_build_genesis_transaction_with_package(
         0,
         0,
         1, // init to 1 to pass time check
-        net.chain_id(),
+        net.chain_id().id().into(),
     );
     let (genesis_private_key, genesis_public_key) = genesis_key_pair();
     let sign_txn = txn.sign(&genesis_private_key, genesis_public_key)?;
@@ -36,19 +34,18 @@ pub fn test_build_framework_2_genesis() -> Result<()> {
     // Read all packages from testnet.mrb
     let net = ChainNetwork::new_test();
 
-    let entry_func = build_init_script(&net);
-    let package = build_stdlib_package_for_test(0, Some(entry_func))?;
+    // let entry_func = build_init_script(&net);
+    let package = build_stdlib_package(net.chain_id().id().into(), net.genesis_config2(), None)?;
     let genesis_txn = test_build_genesis_transaction_with_package(&net, package)?;
 
     // Execute with vm 2
     // let storage = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
     let statedb = ChainStateDB2::mock();
-    let txn_outputs = execute_block_transactions_with_chain_id(
+    let txn_outputs = do_execute_block_transactions(
         &statedb,
         vec![Transaction::UserTransaction(genesis_txn)],
-        0,
         None,
-        &net.chain_id(),
+        None,
     )?;
     assert!(txn_outputs.len() > 0);
 

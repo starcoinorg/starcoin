@@ -1,24 +1,30 @@
 [dependencies]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
+backtrace = { workspace = true }
 bcs-ext = { workspace = true }
 futures = { workspace = true }
 futures-timer = { workspace = true }
 hex = { workspace = true }
 network-api = { workspace = true }
 network-p2p-types = { workspace = true }
+network-p2p-core = { workspace = true }
 rand = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 starcoin-account-api = { workspace = true }
 starcoin-account-service = { workspace = true }
+starcoin-block-relayer = { workspace = true }
 starcoin-chain = { workspace = true }
+starcoin-chain-notify = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-consensus = { workspace = true }
 starcoin-crypto = { workspace = true }
+starcoin-dev = { workspace = true }
 starcoin-executor = { workspace = true }
 starcoin-genesis = { workspace = true }
 starcoin-logger = { workspace = true }
+starcoin-metrics = { workspace = true }
 starcoin-miner = { workspace = true }
 starcoin-move-compiler = { workspace = true }
 starcoin-network = { workspace = true }
@@ -26,27 +32,26 @@ starcoin-network-rpc = { workspace = true }
 starcoin-network-rpc-api = { workspace = true }
 starcoin-node = { workspace = true }
 starcoin-node-api = { workspace = true }
+starcoin-rpc-server = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-state-api = { workspace = true }
+starcoin-state-service = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-storage = { workspace = true }
+starcoin-sync = { workspace = true }
+starcoin-sync-api = { workspace = true }
 starcoin-transaction-builder = { workspace = true }
 starcoin-txpool = { workspace = true }
 starcoin-txpool-api = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 stdlib = { workspace = true }
+thiserror = { workspace = true }
+tokio = { features = ["full"], workspace = true }
 move-ir-compiler = { workspace = true }
-
-# starcoin-vm2-statedb = { workspace = true }
-# starcoin-vm2-types = { workspace = true }
-# starcoin-vm2-crypto = { workspace = true }
-# starcoin-crypto2 = { workspace = true }
-# starcoin-vm2-transaction-builder = { workspace = true}
 
 # dependencies for move 2.0
 starcoin-storage2 = { workspace = true }
-
 
 [dev-dependencies]
 stest = { workspace = true }
