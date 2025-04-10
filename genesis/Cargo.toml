@@ -27,6 +27,9 @@ thiserror = { workspace = true }
 starcoin-vm2-storage = { workspace = true }
 starcoin-vm2-genesis = { workspace = true }
 
+[dev-dependencies]
+test-helper = { workspace = true }
+
 [features]
 default = []
 fuzzing = ["starcoin-types/fuzzing"]

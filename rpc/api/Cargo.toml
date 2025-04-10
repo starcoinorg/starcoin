@@ -48,6 +48,9 @@ thiserror = { workspace = true }
 vm-status-translator = { workspace = true }
 move-core-types = { workspace = true }
 
+[dev-dependencies]
+test-helper = { workspace = true }
+
 [package]
 authors = { workspace = true }
 edition = { workspace = true }

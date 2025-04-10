@@ -3,6 +3,8 @@ use starcoin_vm_types::token::stc::stc_type_tag;
 use starcoin_vm_types::transaction_argument::TransactionArgument;
 use std::path::PathBuf;
 use std::process::Command;
+use test_helper::assert_that_version_control_has_no_unstaged_changes;
+
 #[test]
 fn test_view_of_type_tag() {
     let ty_tag = stc_type_tag();
@@ -32,26 +34,6 @@ fn test_deserialize() {
         "#;
     let v = serde_json::from_str::<ContractCall>(s).unwrap();
     println!("{:?}", v);
-}
-
-fn assert_that_version_control_has_no_unstaged_changes() {
-    let output = Command::new("git")
-        .arg("status")
-        .arg("--porcelain")
-        .output()
-        .unwrap();
-    let output_string = String::from_utf8(output.stdout).unwrap();
-    // remove .cargo/config.toml from output
-    let output_string = output_string.replace("M .cargo/config.toml", "");
-    let output_string = output_string.trim().to_string();
-    if !output_string.is_empty() {
-        println!("git status output:\n {}", output_string)
-    }
-    assert!(
-        output_string.is_empty(),
-        "Git repository should be in a clean state"
-    );
-    assert!(output.status.success());
 }
 
 #[test]
