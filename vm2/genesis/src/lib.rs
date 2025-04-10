@@ -43,7 +43,7 @@ pub fn build_genesis_transaction(net: &ChainNetwork) -> anyhow::Result<SignedUse
         net.genesis_config2().as_ref().unwrap(),
         None,
     )?;
-    build_genesis_transaction_with_package(&net, package)
+    build_genesis_transaction_with_package(net, package)
 }
 
 pub fn execute_genesis_transaction<S: StateView + ChainStateWriter + Sync>(

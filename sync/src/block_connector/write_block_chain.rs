@@ -12,7 +12,6 @@ use starcoin_logger::prelude::*;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::ServiceRef;
 use starcoin_storage::Store;
-use starcoin_vm2_storage::Store as Store2;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::BlockInfo;
 use starcoin_types::{
@@ -20,6 +19,7 @@ use starcoin_types::{
     startup_info::StartupInfo,
     system_events::{NewBranch, NewHeadBlock},
 };
+use starcoin_vm2_storage::Store as Store2;
 use std::fmt::Formatter;
 use std::sync::Arc;
 

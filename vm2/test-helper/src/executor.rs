@@ -166,7 +166,11 @@ pub fn association_execute(
     payload: TransactionPayload,
 ) -> Result<TransactionOutput> {
     let txn = build_raw_txn(association_address(), state, payload, None);
-    let txn = net.genesis_config2().as_ref().unwrap().sign_with_association(txn)?;
+    let txn = net
+        .genesis_config2()
+        .as_ref()
+        .unwrap()
+        .sign_with_association(txn)?;
     execute_signed_txn(state, txn)
 }
 
@@ -176,7 +180,11 @@ pub fn association_execute_should_success(
     payload: TransactionPayload,
 ) -> Result<TransactionOutput> {
     let txn = build_raw_txn(association_address(), state, payload, None);
-    let txn = net.genesis_config2().as_ref().unwrap().sign_with_association(txn)?;
+    let txn = net
+        .genesis_config2()
+        .as_ref()
+        .unwrap()
+        .sign_with_association(txn)?;
     execute_signed_txn_should_success(state, txn)
 }
 

@@ -15,12 +15,12 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
 use starcoin_storage::{BlockStore, Storage};
-use starcoin_vm2_storage::Storage as Storage2;
 use starcoin_sync_api::PeerNewBlock;
 use starcoin_txpool::TxPoolService;
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown};
+use starcoin_vm2_storage::Storage as Storage2;
 use std::sync::Arc;
 use sysinfo::{DiskExt, System, SystemExt};
 

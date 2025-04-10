@@ -35,7 +35,11 @@ pub fn test_build_framework_2_genesis() -> Result<()> {
     let net = ChainNetwork::new_test();
 
     // let entry_func = build_init_script(&net);
-    let package = build_stdlib_package(net.chain_id().id().into(), net.genesis_config2(), None)?;
+    let package = build_stdlib_package(
+        net.chain_id().id().into(),
+        net.genesis_config2().as_ref().unwrap(),
+        None,
+    )?;
     let genesis_txn = test_build_genesis_transaction_with_package(&net, package)?;
 
     // Execute with vm 2
@@ -47,7 +51,7 @@ pub fn test_build_framework_2_genesis() -> Result<()> {
         None,
         None,
     )?;
-    assert!(txn_outputs.len() > 0);
+    assert!(!txn_outputs.is_empty());
 
     Ok(())
 }
