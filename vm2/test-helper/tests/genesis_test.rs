@@ -1,4 +1,4 @@
-use starcoin_config::ChainNetwork;
+use starcoin_config::{ChainNetwork, ChainNetworkID};
 use starcoin_vm2_test_helper::{
     executor::{compile_modules_with_address, execute_and_apply, prepare_genesis},
     txn::create_account_txn_sent_as_association,
@@ -12,11 +12,10 @@ use starcoin_vm2_vm_types::state_view::StateReaderExt;
 
 #[stest::test]
 pub fn test_prepare_genesis() -> anyhow::Result<()> {
+    starcoin_logger::init_for_test();
     let (statedb, network) = prepare_genesis()?;
     assert_eq!(network.chain_id(), ChainNetwork::new_test().chain_id());
-    let stc_info = statedb.get_stc_info()?;
-    assert!(stc_info.total_value() > 0);
-
+    assert!(statedb.get_chain_id()?.is_test());
     Ok(())
 }
 

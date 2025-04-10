@@ -14584,6 +14584,7 @@ dependencies = [
  "bcs-ext 1.13.19",
  "starcoin-config 1.13.19",
  "starcoin-framework 0.1.0",
+ "starcoin-logger 1.13.19",
  "starcoin-move-compiler 2.0.1",
  "starcoin-state-api 2.0.1",
  "starcoin-statedb 2.0.1",
