@@ -22,6 +22,7 @@ use starcoin_abi_types::{FunctionABI, ModuleABI, StructInstantiation};
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::consenses_state::{DagStateView, ReachabilityView};
+use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_logger::{prelude::*, LogPattern};
 use starcoin_rpc_api::chain::{
     GetBlockOption, GetBlocksOption, GetEventOption, GetTransactionOption,
@@ -795,6 +796,11 @@ impl RpcClient {
 
     pub fn get_dag_state(&self) -> anyhow::Result<DagStateView> {
         self.call_rpc_blocking(|inner| inner.chain_client.get_dag_state())
+            .map_err(map_err)
+    }
+
+    pub fn get_ghost_dag_data(&self, id: HashValue) -> anyhow::Result<Option<GhostdagData>> {
+        self.call_rpc_blocking(|inner| inner.chain_client.get_ghostdagdata(id))
             .map_err(map_err)
     }
 
