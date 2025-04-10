@@ -1,4 +1,4 @@
-use starcoin_config::{ChainNetwork, ChainNetworkID};
+use starcoin_config::ChainNetwork;
 use starcoin_vm2_test_helper::{
     executor::{compile_modules_with_address, execute_and_apply, prepare_genesis},
     txn::create_account_txn_sent_as_association,
