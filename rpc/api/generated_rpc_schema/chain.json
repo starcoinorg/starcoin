@@ -2165,6 +2165,114 @@
       }
     },
     {
+      "name": "chain.get_block_info_by_hash",
+      "params": [
+        {
+          "name": "id",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "HashValue",
+            "type": "string",
+            "format": "HashValue"
+          }
+        }
+      ],
+      "result": {
+        "name": "Option < BlockInfoView >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Nullable_BlockInfoView",
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "block_accumulator_info",
+            "block_hash",
+            "total_difficulty",
+            "txn_accumulator_info"
+          ],
+          "properties": {
+            "block_accumulator_info": {
+              "description": "The block accumulator info.",
+              "type": "object",
+              "required": [
+                "accumulator_root",
+                "frozen_subtree_roots",
+                "num_leaves",
+                "num_nodes"
+              ],
+              "properties": {
+                "accumulator_root": {
+                  "description": "Accumulator root hash",
+                  "type": "string",
+                  "format": "HashValue"
+                },
+                "frozen_subtree_roots": {
+                  "description": "Frozen subtree roots of this accumulator.",
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "HashValue"
+                  }
+                },
+                "num_leaves": {
+                  "description": "The total number of leaves in this accumulator.",
+                  "type": "string"
+                },
+                "num_nodes": {
+                  "description": "The total number of nodes in this accumulator.",
+                  "type": "string"
+                }
+              }
+            },
+            "block_hash": {
+              "description": "Block hash",
+              "type": "string",
+              "format": "HashValue"
+            },
+            "total_difficulty": {
+              "description": "The total difficulty.",
+              "type": "string"
+            },
+            "txn_accumulator_info": {
+              "description": "The transaction accumulator info",
+              "type": "object",
+              "required": [
+                "accumulator_root",
+                "frozen_subtree_roots",
+                "num_leaves",
+                "num_nodes"
+              ],
+              "properties": {
+                "accumulator_root": {
+                  "description": "Accumulator root hash",
+                  "type": "string",
+                  "format": "HashValue"
+                },
+                "frozen_subtree_roots": {
+                  "description": "Frozen subtree roots of this accumulator.",
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "HashValue"
+                  }
+                },
+                "num_leaves": {
+                  "description": "The total number of leaves in this accumulator.",
+                  "type": "string"
+                },
+                "num_nodes": {
+                  "description": "The total number of nodes in this accumulator.",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "name": "chain.get_transaction",
       "params": [
         {

@@ -6,6 +6,7 @@ mod get_block_cmd;
 mod get_block_info_cmd;
 mod get_dag_state_cmd;
 mod get_events_cmd;
+mod get_ghost_dag_data;
 mod get_txn_cmd;
 mod get_txn_info_cmd;
 mod get_txn_info_list_cmd;

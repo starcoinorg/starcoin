@@ -51,6 +51,8 @@ pub trait ChainApi {
     ) -> FutureResult<Vec<BlockView>>;
     #[rpc(name = "chain.get_block_info_by_number")]
     fn get_block_info_by_number(&self, number: BlockNumber) -> FutureResult<Option<BlockInfoView>>;
+    #[rpc(name = "chain.get_block_info_by_hash")]
+    fn get_block_info_by_hash(&self, id: HashValue) -> FutureResult<Option<BlockInfoView>>;
     /// Get chain transactions
     #[rpc(name = "chain.get_transaction")]
     fn get_transaction(

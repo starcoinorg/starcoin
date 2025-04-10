@@ -308,6 +308,19 @@ impl ChainApi for MockChainApi {
         Box::pin(fut.boxed().map_err(map_err))
     }
 
+    fn get_block_info_by_hash(&self, id: HashValue) -> FutureResult<Option<BlockInfoView>> {
+        let chain = self.chain.lock().unwrap();
+        let client = chain.remote_chain_client();
+        let fut = async move {
+            client
+                .unwrap()
+                .get_block_info_by_hash(id)
+                .await
+                .map_err(|e| anyhow!("{}", e))
+        };
+        Box::pin(fut.boxed().map_err(map_err))
+    }
+
     fn get_block_info_by_number(&self, number: BlockNumber) -> FutureResult<Option<BlockInfoView>> {
         let chain = self.chain.lock().unwrap();
         let client = chain.remote_chain_client();
