@@ -66,7 +66,7 @@ fn prepare_module(chain_state: &ChainStateDB, net: &ChainNetwork) -> ModuleId {
         1,
         1,
         net.chain_id().id().into(),
-        net.genesis_config2(),
+        net.genesis_config2().as_ref().unwrap(),
     );
 
     //publish the module
@@ -362,7 +362,7 @@ fn test_struct_republish_backward_incompatible() -> Result<()> {
         1,
         1,
         net.chain_id().id().into(),
-        net.genesis_config2(),
+        net.genesis_config2().as_ref().unwrap(),
     );
 
     //publish the module
@@ -386,7 +386,7 @@ fn test_struct_republish_backward_incompatible() -> Result<()> {
         1,
         1,
         net.chain_id().id().into(),
-        net.genesis_config2(),
+        net.genesis_config2().as_ref().unwrap(),
     );
 
     //publish the module

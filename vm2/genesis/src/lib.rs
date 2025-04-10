@@ -38,7 +38,11 @@ pub fn build_genesis_transaction_with_package(
 }
 
 pub fn build_genesis_transaction(net: &ChainNetwork) -> anyhow::Result<SignedUserTransaction> {
-    let package = build_stdlib_package_2(net.chain_id().id().into(), net.genesis_config2(), None)?;
+    let package = build_stdlib_package_2(
+        net.chain_id().id().into(),
+        net.genesis_config2().as_ref().unwrap(),
+        None,
+    )?;
     build_genesis_transaction_with_package(&net, package)
 }
 

@@ -15,7 +15,7 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
 use starcoin_storage::{BlockStore, Storage};
-use starcoin_storage2::Storage as Storage2;
+use starcoin_vm2_storage::Storage as Storage2;
 use starcoin_sync_api::PeerNewBlock;
 use starcoin_txpool::TxPoolService;
 use starcoin_types::block::ExecutedBlock;

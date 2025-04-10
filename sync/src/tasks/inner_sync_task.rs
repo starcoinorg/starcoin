@@ -8,7 +8,7 @@ use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_chain::BlockChain;
 use starcoin_executor::VMMetrics;
 use starcoin_storage::Store;
-use starcoin_storage2::Store as Store2;
+use starcoin_vm2_storage::Store as Store2;
 use starcoin_sync_api::SyncTarget;
 use starcoin_time_service::TimeService;
 use starcoin_types::block::{BlockIdAndNumber, BlockInfo};

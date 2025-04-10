@@ -14,7 +14,7 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
 use starcoin_storage::{BlockStore, Storage, Store};
-use starcoin_storage2::{Storage as Storage2, Store as Store2};
+use starcoin_vm2_storage::{Storage as Storage2, Store as Store2};
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;

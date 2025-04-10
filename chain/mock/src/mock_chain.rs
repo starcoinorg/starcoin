@@ -10,7 +10,7 @@ use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_storage::Storage;
-use starcoin_storage2::Storage as Storage2;
+use starcoin_vm2_storage::Storage as Storage2;
 use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::startup_info::ChainInfo;
 use std::sync::Arc;

@@ -25,7 +25,7 @@ starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
 
 # dependencies for move 2.0
-starcoin-storage2 = { workspace = true }
+starcoin-vm2-storage = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }
