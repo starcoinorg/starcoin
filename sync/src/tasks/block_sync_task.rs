@@ -26,6 +26,7 @@ use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::Duration;
 use stream_task::{CollectorState, TaskError, TaskResultCollector, TaskState};
 
 use super::continue_execute_absent_block::ContinueChainOperator;
@@ -322,14 +323,26 @@ where
         };
 
         // third, broadcast it.
-        if let Err(e) = self.event_handle.handle(block_connect_event.clone()) {
-            error!(
-                "Send BlockConnectedEvent error: {:?}, block_id: {}",
-                e,
-                block_info.block_id()
-            );
+        let mut time_to_wait = 100; // wait 200 ms for the next retry
+        while time_to_wait <= 10000 {
+            // no more than 10 seconds
+            match self.event_handle.handle(block_connect_event.clone()) {
+                Ok(_) => {
+                    break;
+                }
+                Err(e) => {
+                    error!(
+                        "Send BlockConnectedEvent error: {:?}, block_id: {}",
+                        e,
+                        block_info.block_id()
+                    );
+                    async_std::task::block_on(async_std::task::sleep(Duration::from_millis(
+                        time_to_wait,
+                    )));
+                    time_to_wait = time_to_wait.saturating_mul(2);
+                }
+            }
         }
-
         // finally, if it is the last one, wait for the last block to be processed.
         // if block_connect_event.feedback.is_some() && receiver.is_some() {
         //     let mut count: i32 = 0;
