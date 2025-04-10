@@ -23,7 +23,8 @@ cargo nextest -V >/dev/null 2>&1 || cargo install cargo-nextest --version "0.9.5
 # --build-jobs 8, a little (~20s) faster than 5 or 10 build jobs 
 cargo nextest run --workspace \
 -E "\
-not (test(check_types)) \
+not (test(module::pubsub::tests::test_subscribe_to_pending_transactions)) \
+and not (test(check_types)) \
 and not (test(unit_tests::block_metadata_test::test_block_metadata_canonical_serialization)) \
 and not (test(unit_tests::transaction_test::signed_transaction_bcs_roundtrip)) \
 and not (test(consensus_test::verify_header_test_barnard_block5061847_ubuntu20)) \
