@@ -22,7 +22,6 @@ use starcoin_service_registry::{
 };
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::{BlockStore, Storage};
-use starcoin_storage2::Storage as Storage2;
 use starcoin_sync_api::{
     PeerScoreRequest, PeerScoreResponse, SyncCancelRequest, SyncProgressReport,
     SyncProgressRequest, SyncServiceHandler, SyncStartRequest, SyncStatusRequest, SyncTarget,
@@ -31,6 +30,7 @@ use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
+use starcoin_vm2_storage::Storage as Storage2;
 use std::sync::Arc;
 use std::time::Duration;
 use stream_task::{TaskError, TaskEventCounterHandle, TaskHandle};

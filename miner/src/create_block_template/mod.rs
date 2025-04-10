@@ -19,13 +19,13 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
 };
 use starcoin_storage::{BlockStore, Storage, Store};
-use starcoin_storage2::{Storage as Storage2, Store as Store2};
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::{
     block::{BlockHeader, BlockTemplate, ExecutedBlock},
     system_events::{NewBranch, NewHeadBlock},
 };
+use starcoin_vm2_storage::{Storage as Storage2, Store as Store2};
 use starcoin_vm2_types::transaction::SignedUserTransaction as SignedUserTransactionV2;
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::cmp::min;

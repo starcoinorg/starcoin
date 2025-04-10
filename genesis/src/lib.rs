@@ -36,18 +36,17 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 mod errors;
-mod vm2;
 
 pub use errors::GenesisError;
 use starcoin_storage::table_info::TableInfoStore;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_view::StateView;
 
-use starcoin_storage2::{
-    storage::StorageInstance as StorageInstance2, Storage as Storage2, Store as Store2,
-};
 use starcoin_types::block::{BlockBody, LegacyBlock, LegacyBlockBody};
 use starcoin_types::utils::to_hash_value;
+use starcoin_vm2_storage::{
+    storage::StorageInstance as StorageInstance2, Storage as Storage2, Store as Store2,
+};
 
 pub static G_GENESIS_GENERATED_DIR: &str = "generated";
 pub const GENESIS_DIR: Dir = include_dir!("generated");
@@ -165,10 +164,11 @@ impl Genesis {
                 .unwrap_or(true)
                 && genesis_config2.is_some()
             {
-                let (user_txn, txn_info_hash) = vm2::build_and_execute_genesis_transaction(
-                    net.chain_id().id(),
-                    genesis_config2.as_ref().unwrap(),
-                );
+                let (user_txn, txn_info_hash) =
+                    starcoin_vm2_genesis::build_and_execute_genesis_transaction(
+                        net.chain_id().id(),
+                        genesis_config2.as_ref().unwrap(),
+                    );
                 (Some(user_txn), Some(to_hash_value(txn_info_hash)))
             } else {
                 (None, None)

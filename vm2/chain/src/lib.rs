@@ -1,10 +1,13 @@
-use starcoin_crypto2::HashValue;
-use starcoin_executor::block_executor2::{self, VMMetrics};
-use starcoin_storage2::Store;
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
+use starcoin_vm2_crypto::HashValue;
+use starcoin_vm2_executor::block_executor2::{self, VMMetrics};
 use starcoin_vm2_statedb::{ChainStateDB, ChainStateWriter};
+use starcoin_vm2_storage::Store;
 use starcoin_vm2_types::transaction::{RichTransactionInfo, Transaction};
 
-pub(crate) fn execute_vm2_txns_and_save(
+pub fn execute_vm2_txns_and_save(
     block_id: HashValue,
     block_number: u64,
     storage: &dyn Store,

@@ -30,9 +30,9 @@ serde_json = { features = ["arbitrary_precision"], workspace = true }
 
 # dependencies for move2
 starcoin-vm2-statedb = { workspace = true }
-starcoin-storage2 = { workspace = true }
-starcoin-crypto2 = { workspace = true }
+starcoin-vm2-storage = { workspace = true }
 starcoin-vm2-types = { workspace = true }
+starcoin-vm2-chain = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

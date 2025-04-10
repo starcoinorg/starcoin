@@ -9,8 +9,8 @@ use starcoin_miner::{BlockBuilderService, MinerService};
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
 use starcoin_storage::Storage;
-use starcoin_storage2::Storage as Storage2;
 use starcoin_txpool::{TxPoolActorService, TxPoolService};
+use starcoin_vm2_storage::Storage as Storage2;
 use std::sync::Arc;
 use std::time::Duration;
 

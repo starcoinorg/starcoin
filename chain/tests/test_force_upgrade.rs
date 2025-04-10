@@ -1,12 +1,11 @@
 use std::str::FromStr;
-use std::sync::Arc;
 
 use anyhow::format_err;
 use starcoin_account_api::AccountInfo;
 use starcoin_accumulator::Accumulator;
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::{ChainReader, ChainWriter};
-use starcoin_config::{BuiltinNetworkID, ChainNetwork, ChainNetworkID, NodeConfig, StarcoinOpt};
+use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_consensus::Consensus;
 use starcoin_logger::prelude::info;
 use starcoin_statedb::ChainStateDB;
@@ -298,14 +297,19 @@ fn test_force_upgrade_2() -> anyhow::Result<()> {
 
 #[stest::test]
 fn test_frozen_account() -> anyhow::Result<()> {
-    let config = Arc::new(test_node_config());
+    let net = ChainNetwork::new_custom(
+        "test123".to_string(),
+        123.into(),
+        BuiltinNetworkID::Test.genesis_config().clone(),
+        None,
+    )
+    .unwrap();
 
-    let force_upgrade_height = get_force_upgrade_block_number(&config.net().chain_id());
+    let force_upgrade_height = get_force_upgrade_block_number(&net.chain_id());
     assert!(force_upgrade_height >= 2);
 
-    let mut chain = gen_chain_for_upgrade_test(force_upgrade_height + 1, config.net())?;
+    let mut chain = gen_chain_for_upgrade_test(force_upgrade_height + 1, &net)?;
 
-    let net = config.net();
     let association_sequence_num = chain
         .chain_state_reader()
         .get_sequence_number(association_address())?;
@@ -318,7 +322,7 @@ fn test_frozen_account() -> anyhow::Result<()> {
             association_sequence_num,
             1,
             net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
-            net,
+            &net,
         );
 
         assert!(starcoin_executor::validate_transaction(
@@ -358,14 +362,19 @@ fn test_frozen_account() -> anyhow::Result<()> {
 
 #[stest::test]
 fn test_frozen_for_global_frozen() -> anyhow::Result<()> {
-    let config = Arc::new(test_node_config());
+    let net = ChainNetwork::new_custom(
+        "test123".to_string(),
+        123.into(),
+        BuiltinNetworkID::Test.genesis_config().clone(),
+        None,
+    )
+    .unwrap();
 
-    let force_upgrade_height = get_force_upgrade_block_number(&config.net().chain_id());
+    let force_upgrade_height = get_force_upgrade_block_number(&net.chain_id());
     assert!(force_upgrade_height >= 2);
 
-    let mut chain = gen_chain_for_upgrade_test(force_upgrade_height + 1, config.net())?;
+    let mut chain = gen_chain_for_upgrade_test(force_upgrade_height + 1, &net)?;
 
-    let net = config.net();
     let random_user_account = Account::new();
     let amount = 1000000000;
 
@@ -383,7 +392,7 @@ fn test_frozen_for_global_frozen() -> anyhow::Result<()> {
                 association_seq_num,
                 amount,
                 net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
-                net,
+                &net,
             )],
         )?;
         assert_eq!(
@@ -404,7 +413,7 @@ fn test_frozen_for_global_frozen() -> anyhow::Result<()> {
             vec![build_global_frozen_txn_sign_with_association(
                 true,
                 association_seq_num,
-                net,
+                &net,
             )?],
         )?;
 
@@ -413,7 +422,7 @@ fn test_frozen_for_global_frozen() -> anyhow::Result<()> {
             &association_address(),
             random_user_seq_num,
             amount,
-            net,
+            &net,
         );
 
         assert_eq!(
@@ -436,7 +445,7 @@ fn test_frozen_for_global_frozen() -> anyhow::Result<()> {
             vec![build_global_frozen_txn_sign_with_association(
                 false,
                 association_seq_num,
-                net,
+                &net,
             )?],
         )?;
 
@@ -445,7 +454,7 @@ fn test_frozen_for_global_frozen() -> anyhow::Result<()> {
             &association_address(),
             random_user_seq_num,
             amount,
-            net,
+            &net,
         );
 
         assert!(starcoin_executor::validate_transaction(
@@ -515,16 +524,6 @@ pub fn build_global_frozen_txn_sign_with_association(
             net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
             net.chain_id(),
         ))
-}
-
-fn test_node_config() -> NodeConfig {
-    let net = ChainNetworkID::from_str("test123:123").unwrap();
-    let opt = StarcoinOpt {
-        net: Some(net),
-        genesis_config: Some(BuiltinNetworkID::Test.to_string()),
-        ..StarcoinOpt::default()
-    };
-    NodeConfig::load_with_opt(&opt).unwrap()
 }
 
 fn gen_chain_for_upgrade_test(count: u64, net: &ChainNetwork) -> anyhow::Result<BlockChain> {

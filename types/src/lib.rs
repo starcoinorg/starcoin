@@ -109,12 +109,12 @@ pub mod proof {
 
 pub mod utils {
     use bytes::Bytes;
-    pub fn to_hash_value2(hash: starcoin_crypto::HashValue) -> starcoin_crypto2::HashValue {
+    pub fn to_hash_value2(hash: starcoin_crypto::HashValue) -> starcoin_vm2_crypto::HashValue {
         let raw_vec = hash.to_vec();
-        starcoin_crypto2::HashValue::from_slice(Bytes::from(raw_vec)).unwrap()
+        starcoin_vm2_crypto::HashValue::from_slice(Bytes::from(raw_vec)).unwrap()
     }
 
-    pub fn to_hash_value(hash: starcoin_crypto2::HashValue) -> starcoin_crypto::HashValue {
+    pub fn to_hash_value(hash: starcoin_vm2_crypto::HashValue) -> starcoin_crypto::HashValue {
         starcoin_crypto::HashValue::from_slice(hash.to_vec()).unwrap()
     }
 }

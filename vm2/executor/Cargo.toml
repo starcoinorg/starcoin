@@ -1,0 +1,29 @@
+[package]
+name = "starcoin-vm2-executor"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+publish.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+anyhow = { workspace = true }
+starcoin-vm2-vm-runtime = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
+starcoin-vm2-types = { workspace = true }
+starcoin-vm2-statedb = { workspace = true }
+starcoin-vm2-crypto = { workspace = true }
+starcoin-vm2-state-api = { workspace = true }
+
+[dev-dependencies]
+stest = { workspace = true }
+bcs-ext = { workspace = true }
+starcoin-config = { workspace = true }
+starcoin-vm2-test-helper = { workspace = true }
+starcoin-vm2-transaction-builder = { workspace = true }
+move-vm2-transactional-test-runner = { workspace = true }
+move-vm2-core-types = { workspace = true }
