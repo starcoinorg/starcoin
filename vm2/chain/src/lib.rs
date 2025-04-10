@@ -7,7 +7,7 @@ use starcoin_vm2_statedb::{ChainStateDB, ChainStateWriter};
 use starcoin_vm2_storage::Store;
 use starcoin_vm2_types::transaction::{RichTransactionInfo, Transaction};
 
-pub(crate) fn execute_vm2_txns_and_save(
+pub fn execute_vm2_txns_and_save(
     block_id: HashValue,
     block_number: u64,
     storage: &dyn Store,

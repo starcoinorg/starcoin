@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::verifier::{BlockVerifier, FullVerifier};
-use crate::vm2;
 use anyhow::{bail, ensure, format_err, Result};
 use once_cell::sync::Lazy;
 use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
@@ -984,7 +983,7 @@ impl BlockChain {
             vm_metrics,
         )?;
         let (state_root2, included_txn_info_hashes2) = if !transactions2.is_empty() {
-            let (state_root, hashes) = vm2::execute_vm2_txns_and_save(
+            let (state_root, hashes) = starcoin_vm2_chain::execute_vm2_txns_and_save(
                 to_hash_value2(block_id),
                 block.header.number(),
                 storage2,
