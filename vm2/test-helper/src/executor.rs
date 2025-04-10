@@ -1,7 +1,7 @@
 use anyhow::{bail, Result};
 use starcoin_config::ChainNetwork;
 use starcoin_vm2_executor::executor2::{do_execute_block_transactions, execute_readonly_function};
-use starcoin_vm2_genesis::{build_genesis_transaction, execute_genesis_transaction};
+use starcoin_vm2_genesis::{build_and_execute_genesis_transaction, execute_genesis_transaction};
 use starcoin_vm2_state_api::AccountStateReader;
 use starcoin_vm2_statedb::{ChainStateDB, ChainStateReader, ChainStateWriter};
 use starcoin_vm2_transaction_builder::DEFAULT_MAX_GAS_AMOUNT;
@@ -47,7 +47,11 @@ pub const TEST_MODULE_2: &str = r#"
 pub fn prepare_genesis() -> anyhow::Result<(ChainStateDB, ChainNetwork)> {
     let net = ChainNetwork::new_test();
     let chain_state = ChainStateDB::mock();
-    let genesis_txn = build_genesis_transaction(&net).unwrap();
+    let genesis_txn = build_and_execute_genesis_transaction(
+        net.chain_id().id(),
+        net.genesis_config2().as_ref().unwrap(),
+    )
+    .0;
     // execute_genesis_txn(&chain_state, genesis_txn).unwrap();
     execute_genesis_transaction(&chain_state, Transaction::UserTransaction(genesis_txn))?;
     Ok((chain_state, net))
@@ -55,7 +59,11 @@ pub fn prepare_genesis() -> anyhow::Result<(ChainStateDB, ChainNetwork)> {
 
 pub fn prepare_customized_genesis(net: &ChainNetwork) -> Result<ChainStateDB> {
     let chain_state = ChainStateDB::mock();
-    let genesis_txn = build_genesis_transaction(net).unwrap();
+    let genesis_txn = build_and_execute_genesis_transaction(
+        net.chain_id().id(),
+        net.genesis_config2().as_ref().unwrap(),
+    )
+    .0;
     // execute_genesis_txn(&chain_state, genesis_txn).unwrap();
     execute_genesis_transaction(&chain_state, Transaction::UserTransaction(genesis_txn))?;
     Ok(chain_state)

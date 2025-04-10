@@ -36,7 +36,6 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 mod errors;
-mod vm2;
 
 pub use errors::GenesisError;
 use starcoin_storage::table_info::TableInfoStore;
@@ -165,10 +164,11 @@ impl Genesis {
                 .unwrap_or(true)
                 && genesis_config2.is_some()
             {
-                let (user_txn, txn_info_hash) = vm2::build_and_execute_genesis_transaction(
-                    net.chain_id().id(),
-                    genesis_config2.as_ref().unwrap(),
-                );
+                let (user_txn, txn_info_hash) =
+                    starcoin_vm2_genesis::build_and_execute_genesis_transaction(
+                        net.chain_id().id(),
+                        genesis_config2.as_ref().unwrap(),
+                    );
                 (Some(user_txn), Some(to_hash_value(txn_info_hash)))
             } else {
                 (None, None)
