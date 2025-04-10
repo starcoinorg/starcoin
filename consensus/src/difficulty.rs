@@ -124,10 +124,14 @@ pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo>, time_plan: u64) -> Res
         "avg_time:{:?} mills, time_plan:{:?} mills, target: {:?}",
         avg_time, time_plan, new_target
     );
+    debug!(
+        "jacktest: avg_time:{:?} mills, time_plan:{:?} mills, target: {:?}, blocks: {:?}, total_target: {:?}, avg_target: {:?}",
+        avg_time, time_plan, new_target, blocks, total_target, avg_target
+    );
     Ok(new_target)
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct BlockDiffInfo {
     pub timestamp: u64,
     pub target: U256,
