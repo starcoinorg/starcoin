@@ -22,6 +22,7 @@ walkdir = { workspace = true }
 
 [dev-dependencies]
 datatest-stable = { workspace = true }
+test-helper = { workspace = true }
 
 [package]
 authors = { workspace = true }

@@ -13202,6 +13202,7 @@ dependencies = [
  "starcoin-vm2-genesis",
  "stdlib 1.13.19",
  "stest",
+ "test-helper",
  "thiserror 1.0.69",
 ]
 
@@ -13991,6 +13992,7 @@ dependencies = [
  "starcoin-txpool-api",
  "starcoin-types 1.13.19",
  "starcoin-vm-types 1.13.19",
+ "test-helper",
  "thiserror 1.0.69",
  "vm-status-translator",
 ]
@@ -15175,6 +15177,7 @@ dependencies = [
  "starcoin-move-compiler 1.13.19",
  "starcoin-vm-types 1.13.19",
  "tempfile",
+ "test-helper",
  "walkdir",
 ]
 
