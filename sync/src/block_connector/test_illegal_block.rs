@@ -98,7 +98,7 @@ async fn uncle_block_and_writeable_block_chain(
     )
     .unwrap();
     let (block_template, _) = new_branch
-        .create_block_template(*miner_account.address(), None, Vec::new(), vec![], None)
+        .create_block_template_simple(*miner_account.address())
         .unwrap();
     let new_block = writeable_block_chain_service
         .get_main()
@@ -125,7 +125,7 @@ fn apply_with_illegal_uncle(
     let miner_account = AccountInfo::random();
     let (block_template, _) = writeable_block_chain_service
         .get_main()
-        .create_block_template(*miner_account.address(), None, Vec::new(), uncles, None)?;
+        .create_block_template_simple_with_uncles(*miner_account.address(), uncles)?;
     let consensus_strategy = writeable_block_chain_service.get_main().consensus();
     let new_block = consensus_strategy.create_block(block_template, net.time_service().as_ref())?;
 
@@ -146,7 +146,7 @@ fn apply_legal_block(
     let miner_account = AccountInfo::random();
     let (block_template, _) = writeable_block_chain_service
         .get_main()
-        .create_block_template(*miner_account.address(), None, Vec::new(), uncles, None)
+        .create_block_template_simple_with_uncles(*miner_account.address(), uncles)
         .unwrap();
     let new_block = consensus_strategy
         .create_block(
@@ -383,7 +383,7 @@ async fn test_verify_can_not_be_uncle_check_ancestor_failed() {
 
     for _i in 0..2 {
         let (block_template, _) = new_branch
-            .create_block_template(*miner_account.address(), None, Vec::new(), vec![], None)
+            .create_block_template_simple(*miner_account.address())
             .unwrap();
         let new_block = new_branch
             .consensus()
@@ -470,7 +470,7 @@ async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
     let fork_block_chain = mock_chain.fork_new_branch(Some(fork_id)).unwrap();
     let miner = mock_chain.miner();
     let (block_template, _) = fork_block_chain
-        .create_block_template(*miner.address(), None, Vec::new(), Vec::new(), None)
+        .create_block_template_simple(*miner.address())
         .unwrap();
     let uncle_block = fork_block_chain
         .consensus()
@@ -486,7 +486,7 @@ async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
     let uncles = vec![uncle_block_header];
     let mut main_block_chain = mock_chain.fork_new_branch(None).unwrap();
     let (block_template, _) = main_block_chain
-        .create_block_template(*miner.address(), None, Vec::new(), uncles, None)
+        .create_block_template_simple_with_uncles(*miner.address(), uncles)
         .unwrap();
     let new_block = main_block_chain
         .consensus()
@@ -782,13 +782,7 @@ async fn test_verify_uncles_uncle_exist_failed() {
     let miner_account = AccountInfo::random();
     let (block_template, _) = writeable_block_chain_service
         .get_main()
-        .create_block_template(
-            *miner_account.address(),
-            None,
-            Vec::new(),
-            uncles.clone(),
-            None,
-        )
+        .create_block_template_simple_with_uncles(*miner_account.address(), uncles.clone())
         .unwrap();
     let new_block = writeable_block_chain_service
         .get_main()
@@ -860,7 +854,7 @@ async fn test_verify_uncle_and_parent_number_failed() {
     let miner_account = AccountInfo::random();
     let (block_template, _) = writeable_block_chain_service
         .get_main()
-        .create_block_template(*miner_account.address(), None, Vec::new(), Vec::new(), None)
+        .create_block_template_simple(*miner_account.address())
         .unwrap();
     let new_block = writeable_block_chain_service
         .get_main()

@@ -382,14 +382,8 @@ where
             strategy,
             self.vm_metrics.clone(),
         )?;
-        let mut multi_txns = vec![];
-        for txn in txns {
-            multi_txns.push(txn.into());
-        }
-        for txn in txns2 {
-            multi_txns.push(txn.into());
-        }
-        let excluded_txns = opened_block.push_txns(multi_txns)?;
+        let excluded_txns = opened_block.push_txns(txns)?;
+        let _ = opened_block.push_txns2(txns2)?;
         let template = opened_block.finalize()?;
         for invalid_txn in excluded_txns.discarded_txns {
             self.tx_provider.remove_invalid_txn(invalid_txn.id());

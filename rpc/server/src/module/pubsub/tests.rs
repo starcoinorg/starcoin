@@ -61,12 +61,9 @@ pub async fn test_subscribe_to_events() -> Result<()> {
         );
         txn.as_signed_user_txn()?.clone()
     };
-    let (block_template, _) = block_chain.create_block_template(
+    let (block_template, _) = block_chain.create_block_template_simple_with_txns(
         *miner_account.address(),
-        None,
         vec![txn.clone().into()],
-        vec![],
-        None,
     )?;
     debug!("block_template: gas_used: {}", block_template.gas_used);
     let new_block = block_chain
