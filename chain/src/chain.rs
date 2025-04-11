@@ -1655,21 +1655,15 @@ impl BlockChain {
         }
         Ok(())
     }
-
+    // legacy: pruning height should alawys start from genesis.
     pub fn get_pruning_height(&self) -> BlockNumber {
         let chain_id = self.status().head().chain_id();
         if chain_id.is_vega() {
             3500000
-        } else if chain_id.is_proxima() {
-            850000
-        } else if chain_id.is_halley() {
-            4090000
-        } else if chain_id.is_main() {
-            1
         } else if chain_id.is_dag_test() || chain_id.is_test() || chain_id.is_dev() {
             BlockNumber::MAX
         } else {
-            1
+            0
         }
     }
 }
