@@ -741,7 +741,7 @@ impl BlockDAG {
             pruning_finality,
         )?;
 
-        let (mut tips, mut ghostdata, mut pruning_point) = if next_pruning_point == Hash::zero()
+        let (tips, ghostdata, mut pruning_point) = if next_pruning_point == Hash::zero()
             || next_pruning_point == previous_pruning_point
         {
             info!(
@@ -765,17 +765,18 @@ impl BlockDAG {
 
         if pruning_point == Hash::zero() {
             pruning_point = genesis_id;
-        } else {
-            self.generate_the_block_depth(pruning_point, &ghostdata, pruning_depth)?;
-        }
+        } 
+        // else {
+        //     self.generate_the_block_depth(pruning_point, &ghostdata, pruning_depth)?;
+        // }
 
-        info!("try to remove the red blocks when mining, tips: {:?} and ghostdata: {:?}, pruning point: {:?}", tips, ghostdata, pruning_point);
-        (tips, ghostdata) =
-            self.remove_bounded_merge_breaking_parents(tips, ghostdata, pruning_point)?;
-        info!(
-            "after removing the bounded merge breaking parents, tips: {:?} and ghostdata: {:?}",
-            tips, ghostdata
-        );
+        // info!("try to remove the red blocks when mining, tips: {:?} and ghostdata: {:?}, pruning point: {:?}", tips, ghostdata, pruning_point);
+        // (tips, ghostdata) =
+        //     self.remove_bounded_merge_breaking_parents(tips, ghostdata, pruning_point)?;
+        // info!(
+        //     "after removing the bounded merge breaking parents, tips: {:?} and ghostdata: {:?}",
+        //     tips, ghostdata
+        // );
         anyhow::Ok(MineNewDagBlockInfo {
             tips,
             blue_blocks: ghostdata.mergeset_blues.as_ref().clone(),
