@@ -653,6 +653,23 @@ impl TryFrom<SignedUserTransaction> for SignedUserTransactionView {
     }
 }
 
+impl From<SignedUserTransactionView> for SignedUserTransaction {
+    fn from(txn: SignedUserTransactionView) -> Self {
+        Self::new(txn.raw_txn.into(), txn.authenticator)
+    }
+}
+
+impl TryFrom<MultiSignedUserTransaction> for SignedUserTransactionView {
+    type Error = anyhow::Error;
+    fn try_from(txn: MultiSignedUserTransaction) -> Result<Self, Self::Error> {
+        match txn {
+            MultiSignedUserTransaction::VM1(txn) => txn.try_into(),
+            // XXX FIXME YSG
+            MultiSignedUserTransaction::VM2(_txn) => panic!("not supported"),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
 pub struct BlockMetadataView {
     /// Parent block hash.
@@ -724,7 +741,7 @@ pub struct TransactionView {
     pub transaction_hash: HashValue,
     pub transaction_index: u32,
     pub block_metadata: Option<BlockMetadataView>,
-    pub user_transaction: Option<SignedUserTransactionView>,
+    pub user_transaction: Option<MultiSignedUserTransactionView>,
 }
 
 impl TransactionView {
@@ -751,8 +768,11 @@ impl TransactionView {
 
         let (meta, txn) = match txn {
             Transaction::BlockMetadata(meta) => (Some(meta.into()), None),
-            Transaction::UserTransaction(t) => (None, Some(t.try_into()?)),
-            Transaction::UserTransactionExt(_) => todo!(),
+            Transaction::UserTransaction(t) => {
+                let t = MultiSignedUserTransaction::VM1(t);
+                (None, Some(t.try_into()?))
+            }
+            Transaction::UserTransactionV2(_) => todo!(),
         };
         Ok(Self {
             block_hash,
@@ -768,14 +788,20 @@ impl TransactionView {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub enum BlockTransactionsView {
     Hashes(Vec<HashValue>),
-    Full(Vec<SignedUserTransactionView>),
+    Full(Vec<MultiSignedUserTransactionView>),
 }
 
 impl BlockTransactionsView {
     pub fn txn_hashes(&self) -> Vec<HashValue> {
         match self {
             Self::Hashes(h) => h.clone(),
-            Self::Full(f) => f.iter().map(|t| t.transaction_hash).collect(),
+            Self::Full(f) => f
+                .iter()
+                .map(|t| match t {
+                    MultiSignedUserTransactionView::VM1(txn) => txn.transaction_hash,
+                    MultiSignedUserTransactionView::VM2(txn) => txn.transaction_hash,
+                })
+                .collect(),
         }
     }
 }
@@ -786,12 +812,28 @@ impl TryFrom<Vec<SignedUserTransaction>> for BlockTransactionsView {
     fn try_from(txns: Vec<SignedUserTransaction>) -> Result<Self, Self::Error> {
         Ok(BlockTransactionsView::Full(
             txns.into_iter()
+                .map(|txn| {
+                    let txn = MultiSignedUserTransaction::from(txn);
+                    txn.try_into()
+                })
+                .collect::<Result<Vec<_>, _>>()?,
+        ))
+    }
+}
+
+impl TryFrom<Vec<MultiSignedUserTransaction>> for BlockTransactionsView {
+    type Error = anyhow::Error;
+
+    fn try_from(txns: Vec<MultiSignedUserTransaction>) -> Result<Self, Self::Error> {
+        Ok(BlockTransactionsView::Full(
+            txns.into_iter()
                 .map(TryInto::try_into)
                 .collect::<Result<Vec<_>, _>>()?,
         ))
     }
 }
 
+/*
 impl TryFrom<BlockTransactionsView> for Vec<SignedUserTransaction> {
     type Error = anyhow::Error;
 
@@ -806,6 +848,24 @@ impl TryFrom<BlockTransactionsView> for Vec<SignedUserTransaction> {
                     )
                 })
                 .collect()),
+            _ => Err(anyhow::Error::msg("not support")),
+        }
+    }
+} */
+
+impl TryFrom<BlockTransactionsView> for Vec<MultiSignedUserTransaction> {
+    type Error = anyhow::Error;
+
+    fn try_from(tx_view: BlockTransactionsView) -> Result<Self, Self::Error> {
+        match tx_view {
+            BlockTransactionsView::Full(full) => {
+                let mut result = Vec::with_capacity(full.len());
+                for txn in full {
+                    let txn = txn.try_into()?;
+                    result.push(txn);
+                }
+                Ok(result)
+            }
             _ => Err(anyhow::Error::msg("not support")),
         }
     }
@@ -1174,12 +1234,14 @@ impl TransactionEventView {
     }
 }
 
+use crate::multi_types::MultiSignedUserTransactionView;
 use crate::types::TransactionStatusView::Retry;
 use schemars::gen::SchemaGenerator;
 use schemars::schema::{InstanceType, Schema, SchemaObject};
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_chain_api::{EventWithProof, TransactionInfoWithProof};
 use starcoin_types::account_address::AccountAddress;
+use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::state_store::state_key::{StateKey, TableItem};
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};

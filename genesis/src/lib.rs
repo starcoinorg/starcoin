@@ -64,13 +64,18 @@ pub struct LegacyGenesis {
 
 impl From<LegacyGenesis> for Genesis {
     fn from(legacy_genesis: LegacyGenesis) -> Self {
+        let txns = legacy_genesis
+            .block
+            .body
+            .transactions
+            .into_iter()
+            .map(|tx| tx.into())
+            .collect();
         Genesis {
             block: Block {
                 header: legacy_genesis.block.header,
-                body: BlockBody::new(
-                    legacy_genesis.block.body.transactions,
-                    legacy_genesis.block.body.uncles,
-                ),
+
+                body: BlockBody::new(txns, legacy_genesis.block.body.uncles),
             },
         }
     }

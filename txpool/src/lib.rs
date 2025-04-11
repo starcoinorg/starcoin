@@ -17,10 +17,8 @@ use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, Serv
 use starcoin_state_api::AccountStateReader;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_txpool_api::{PropagateTransactions, TxnStatusFullEvent};
-use starcoin_types::{
-    sync_status::SyncStatus, system_events::SyncStatusChangeEvent,
-    transaction::SignedUserTransaction,
-};
+use starcoin_types::multi_transaction::MultiSignedUserTransaction;
+use starcoin_types::{sync_status::SyncStatus, system_events::SyncStatusChangeEvent};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
@@ -28,11 +26,13 @@ use tx_pool_service_impl::Inner;
 pub use tx_pool_service_impl::TxPoolService;
 
 mod metrics;
+mod pending_transaction;
 mod pool;
 mod pool_client;
 #[cfg(test)]
 mod test;
 mod tx_pool_service_impl;
+
 //TODO refactor TxPoolService and rename.
 #[derive(Clone)]
 pub struct TxPoolActorService {
@@ -66,7 +66,7 @@ impl TxPoolActorService {
         }
     }
 
-    fn transactions_to_propagate(&self) -> Result<Vec<SignedUserTransaction>> {
+    fn transactions_to_propagate(&self) -> Result<Vec<MultiSignedUserTransaction>> {
         let statedb = self.inner.get_chain_reader();
         let reader = AccountStateReader::new(&statedb);
 

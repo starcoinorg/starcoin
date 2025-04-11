@@ -14,6 +14,7 @@ use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
 use starcoin_transaction_builder::{build_empty_script, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::block::BlockHeaderExtra;
+use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::proptest_types::{AccountInfoUniverse, Index, SignatureCheckedTransactionGen};
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionPayload};
 use starcoin_types::{
@@ -58,6 +59,7 @@ prop_compose! {
         header in Just(header),
         // block in block_strategy
     ) -> Block {
+        let user_txns = user_txns.into_iter().map(MultiSignedUserTransaction::from).collect();
         let body = BlockBody::new(user_txns, None);
         Block::new(header, body)
     }
@@ -138,7 +140,7 @@ prop_compose! {
                 txns
                     .iter()
                     .cloned()
-                    .map(|txn| SignedUserTransaction::try_from(txn).unwrap()),
+                    .map(|txn| MultiSignedUserTransaction::try_from(txn).unwrap()),
             );
             t
         };

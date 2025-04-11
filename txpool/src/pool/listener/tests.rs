@@ -92,6 +92,10 @@ fn new_tx() -> Arc<Transaction> {
     let private_key = ed25519::Ed25519PrivateKey::generate(&mut rng);
     let public_key = (&private_key).into();
 
-    let signed = raw.sign(&private_key, public_key).unwrap().into_inner();
+    let signed = raw
+        .sign(&private_key, public_key)
+        .unwrap()
+        .into_inner()
+        .into();
     Arc::new(Transaction::from_pending_block_transaction(signed))
 }

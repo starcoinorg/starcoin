@@ -18,6 +18,7 @@ use starcoin_transaction_builder::{
 use starcoin_types::account::Account;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::Block;
+use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::vm_error::StatusCode;
 use starcoin_vm_runtime::force_upgrade_management::{
     get_force_upgrade_account, get_force_upgrade_block_number,
@@ -203,7 +204,8 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
                 association_sequence_num + 4,
                 &net,
                 expect_burn_block_number,
-            )?],
+            )?
+            .into()],
         )?;
 
         let read_burn_block_number = miner
@@ -233,7 +235,8 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
             vec![frozen_config_do_burn_frozen_from_association(
                 association_sequence_num + 5,
                 &net,
-            )?],
+            )?
+            .into()],
         )?;
 
         // Block nubmer: 53, generate empty block
@@ -245,7 +248,8 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
             vec![frozen_config_do_burn_frozen_from_association(
                 association_sequence_num + 7,
                 &net,
-            )?],
+            )?
+            .into()],
         );
 
         // Check eq 0
@@ -323,7 +327,8 @@ fn test_frozen_account() -> anyhow::Result<()> {
             1,
             net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
             &net,
-        );
+        )
+        .into();
 
         assert!(starcoin_executor::validate_transaction(
             chain.chain_state(),
@@ -347,7 +352,8 @@ fn test_frozen_account() -> anyhow::Result<()> {
                 net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
                 net.chain_id(),
             ))
-            .unwrap();
+            .unwrap()
+            .into();
 
         assert_eq!(
             starcoin_executor::validate_transaction(chain.chain_state(), black_as_sender_txn, None)
@@ -393,7 +399,8 @@ fn test_frozen_for_global_frozen() -> anyhow::Result<()> {
                 amount,
                 net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
                 &net,
-            )],
+            )
+            .into()],
         )?;
         assert_eq!(
             chain
@@ -410,11 +417,10 @@ fn test_frozen_for_global_frozen() -> anyhow::Result<()> {
         association_seq_num += 1;
         execute_transactions_by_miner(
             &mut chain,
-            vec![build_global_frozen_txn_sign_with_association(
-                true,
-                association_seq_num,
-                &net,
-            )?],
+            vec![
+                build_global_frozen_txn_sign_with_association(true, association_seq_num, &net)?
+                    .into(),
+            ],
         )?;
 
         let transfer_to_association_txn = peer_to_peer_v2(
@@ -423,7 +429,8 @@ fn test_frozen_for_global_frozen() -> anyhow::Result<()> {
             random_user_seq_num,
             amount,
             &net,
-        );
+        )
+        .into();
 
         assert_eq!(
             starcoin_executor::validate_transaction(
@@ -442,11 +449,10 @@ fn test_frozen_for_global_frozen() -> anyhow::Result<()> {
         association_seq_num += 1;
         execute_transactions_by_miner(
             &mut chain,
-            vec![build_global_frozen_txn_sign_with_association(
-                false,
-                association_seq_num,
-                &net,
-            )?],
+            vec![
+                build_global_frozen_txn_sign_with_association(false, association_seq_num, &net)?
+                    .into(),
+            ],
         )?;
 
         let transfer_to_association_txn = peer_to_peer_v2(
@@ -455,7 +461,8 @@ fn test_frozen_for_global_frozen() -> anyhow::Result<()> {
             random_user_seq_num,
             amount,
             &net,
-        );
+        )
+        .into();
 
         assert!(starcoin_executor::validate_transaction(
             chain.chain_state(),
@@ -481,7 +488,7 @@ fn gen_empty_block_for_miner(miner: &mut BlockChain) -> anyhow::Result<Block> {
 
 fn execute_transactions_by_miner(
     miner: &mut BlockChain,
-    user_txns: Vec<SignedUserTransaction>,
+    user_txns: Vec<MultiSignedUserTransaction>,
 ) -> anyhow::Result<Block> {
     let miner_account = Account::new();
     let (block_template, _excluded) = miner.create_block_template(
@@ -547,7 +554,11 @@ fn gen_chain_for_upgrade_test(count: u64, net: &ChainNetwork) -> anyhow::Result<
         let (block_template, _) = block_chain.create_block_template(
             *miner_account.address(),
             None,
-            if i == 0 { vec![txn.clone()] } else { vec![] },
+            if i == 0 {
+                vec![txn.clone().into()]
+            } else {
+                vec![]
+            },
             vec![],
             None,
         )?;

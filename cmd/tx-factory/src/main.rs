@@ -313,7 +313,7 @@ impl TxnMocker {
             user_txn.sequence_number(),
         );
         let txn_hash = user_txn.id();
-        let result = self.client.submit_transaction(user_txn);
+        let result = self.client.submit_transaction(user_txn.into());
 
         // increase sequence number if added in pool.
         if result.is_ok() {
@@ -372,7 +372,7 @@ impl TxnMocker {
             user_txn.sequence_number(),
         );
         let txn_hash = user_txn.id();
-        let result = self.client.submit_transaction(user_txn);
+        let result = self.client.submit_transaction(user_txn.into());
 
         if result.is_ok() && blocking {
             self.client.watch_txn(

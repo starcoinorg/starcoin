@@ -58,6 +58,8 @@ pub mod startup_info;
 pub mod state_set;
 pub mod system_events;
 
+pub mod multi_transaction;
+
 pub mod transaction {
     pub use starcoin_vm_types::transaction::*;
 

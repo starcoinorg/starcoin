@@ -5,11 +5,11 @@ use crate::module::{convert_to_rpc_error, map_err};
 use bcs_ext::BCSCodec;
 use starcoin_crypto::HashValue;
 /// Re-export the API
-use starcoin_rpc_api::types::{SignedUserTransactionView, StrView};
+use starcoin_rpc_api::{multi_types::MultiSignedUserTransactionView, types::StrView};
 use starcoin_rpc_api::{txpool::TxPoolApi, FutureResult};
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService};
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::transaction::SignedUserTransaction;
+use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use std::convert::TryInto;
 
 /// Re-export the API
@@ -34,7 +34,7 @@ impl<S> TxPoolApi for TxPoolRpcImpl<S>
 where
     S: TxPoolSyncService,
 {
-    fn submit_transaction(&self, txn: SignedUserTransaction) -> FutureResult<HashValue> {
+    fn submit_transaction(&self, txn: MultiSignedUserTransaction) -> FutureResult<HashValue> {
         let txn_hash = txn.id();
         let result: Result<(), jsonrpc_core::Error> = self
             .service
@@ -50,7 +50,7 @@ where
         let tx = tx.strip_prefix("0x").unwrap_or(tx.as_str());
         let result = hex::decode(tx)
             .map_err(convert_to_rpc_error)
-            .and_then(|txn_bytes| SignedUserTransaction::decode(&txn_bytes).map_err(map_err))
+            .and_then(|txn_bytes| MultiSignedUserTransaction::decode(&txn_bytes).map_err(map_err))
             .and_then(|txn| {
                 let txn_hash = txn.id();
                 self.service
@@ -72,8 +72,8 @@ where
         &self,
         addr: AccountAddress,
         max_len: Option<u32>,
-    ) -> FutureResult<Vec<SignedUserTransactionView>> {
-        let txns: Result<Vec<SignedUserTransactionView>, _> = self
+    ) -> FutureResult<Vec<MultiSignedUserTransactionView>> {
+        let txns: Result<Vec<MultiSignedUserTransactionView>, _> = self
             .service
             .txns_of_sender(&addr, max_len.map(|v| v as usize))
             .into_iter()
@@ -82,7 +82,10 @@ where
         Box::pin(futures::future::ready(txns.map_err(map_err)))
     }
 
-    fn pending_txn(&self, txn_hash: HashValue) -> FutureResult<Option<SignedUserTransactionView>> {
+    fn pending_txn(
+        &self,
+        txn_hash: HashValue,
+    ) -> FutureResult<Option<MultiSignedUserTransactionView>> {
         let txn = self
             .service
             .find_txn(&txn_hash)
@@ -112,15 +115,15 @@ mod tests {
 
     #[test]
     fn test_submit_transaction() {
-        let txn = SignedUserTransaction::mock();
+        let txn = MultiSignedUserTransaction::mock();
         let result = serde_json::to_string(&txn).unwrap();
-        let txn1 = serde_json::from_str::<SignedUserTransaction>(result.as_str()).unwrap();
+        let txn1 = serde_json::from_str::<MultiSignedUserTransaction>(result.as_str()).unwrap();
         assert_eq!(txn, txn1);
 
         let mut io = IoHandler::new();
         let txpool_service = MockTxPoolService::new();
         io.extend_with(TxPoolRpcImpl::new(txpool_service).to_delegate());
-        let txn = SignedUserTransaction::mock();
+        let txn = MultiSignedUserTransaction::mock();
         let txn_hash = txn.id();
         let prefix = r#"{"jsonrpc":"2.0","method":"txpool.submit_transaction","params":["#;
         let suffix = r#"],"id":0}"#;

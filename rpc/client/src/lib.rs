@@ -36,15 +36,16 @@ use starcoin_rpc_api::types::{
     ChainId, ChainInfoView, CodeView, ContractCall, DecodedMoveValue, DryRunOutputView,
     DryRunTransactionRequest, FactoryAction, FunctionIdView, ListCodeView, ListResourceView,
     MintedBlockView, ModuleIdView, PeerInfoView, ResourceView, SignedMessageView,
-    SignedUserTransactionView, StateWithProofView, StateWithTableItemProofView, StrView,
-    StructTagView, TableInfoView, TransactionEventResponse, TransactionInfoView,
-    TransactionInfoWithProofView, TransactionRequest, TransactionView,
+    StateWithProofView, StateWithTableItemProofView, StrView, StructTagView, TableInfoView,
+    TransactionEventResponse, TransactionInfoView, TransactionInfoWithProofView,
+    TransactionRequest, TransactionView,
 };
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, contract_api::ContractClient, debug::DebugClient,
-    miner::MinerClient, network_manager::NetworkManagerClient, node::NodeClient,
-    node_manager::NodeManagerClient, state::StateClient, sync_manager::SyncManagerClient,
-    txpool::TxPoolClient, types::TransactionEventView,
+    miner::MinerClient, multi_types::MultiSignedUserTransactionView,
+    network_manager::NetworkManagerClient, node::NodeClient, node_manager::NodeManagerClient,
+    state::StateClient, sync_manager::SyncManagerClient, txpool::TxPoolClient,
+    types::TransactionEventView,
 };
 use starcoin_service_registry::{ServiceInfo, ServiceStatus};
 use starcoin_sync_api::{PeerScoreResponse, SyncProgressReport};
@@ -53,6 +54,7 @@ use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::block::BlockNumber;
+use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::sign_message::SigningMessage;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::MintBlockEvent;
@@ -296,7 +298,7 @@ impl RpcClient {
             .map_err(map_err)
     }
 
-    pub fn submit_transaction(&self, txn: SignedUserTransaction) -> anyhow::Result<HashValue> {
+    pub fn submit_transaction(&self, txn: MultiSignedUserTransaction) -> anyhow::Result<HashValue> {
         self.call_rpc_blocking(|inner| inner.txpool_client.submit_transaction(txn))
             .map_err(map_err)
     }
@@ -309,7 +311,7 @@ impl RpcClient {
     pub fn get_pending_txn_by_hash(
         &self,
         txn_hash: HashValue,
-    ) -> anyhow::Result<Option<SignedUserTransactionView>> {
+    ) -> anyhow::Result<Option<MultiSignedUserTransactionView>> {
         self.call_rpc_blocking(|inner| inner.txpool_client.pending_txn(txn_hash))
             .map_err(map_err)
     }
@@ -318,7 +320,7 @@ impl RpcClient {
         &self,
         sender: AccountAddress,
         max_len: Option<u32>,
-    ) -> anyhow::Result<Vec<SignedUserTransactionView>> {
+    ) -> anyhow::Result<Vec<MultiSignedUserTransactionView>> {
         self.call_rpc_blocking(|inner| inner.txpool_client.pending_txns(sender, max_len))
             .map_err(map_err)
     }

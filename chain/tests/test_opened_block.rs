@@ -86,7 +86,7 @@ pub fn test_open_block() -> Result<()> {
     // pre-run a txn to get gas_used
     // transferring to an non-exists account uses about 30w gas.
     let transfer_txn_gas = {
-        let txn = build_transfer_txn(0);
+        let txn = build_transfer_txn(0).into();
         let excluded = opened_block.push_txns(vec![txn])?;
         assert_eq!(excluded.discarded_txns.len(), 0);
         assert_eq!(excluded.untouched_txns.len(), 0);
@@ -98,7 +98,7 @@ pub fn test_open_block() -> Result<()> {
     let max_include_txn_num: u64 = gas_left / transfer_txn_gas;
     {
         let user_txns = (0u64..(max_include_txn_num + 1))
-            .map(|idx| build_transfer_txn(idx + 1))
+            .map(|idx| build_transfer_txn(idx + 1).into())
             .collect::<Vec<_>>();
 
         assert_eq!(max_include_txn_num + 1, user_txns.len() as u64);

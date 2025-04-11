@@ -26,6 +26,7 @@ use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
+use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::utils::{to_hash_value, to_hash_value2};
@@ -34,16 +35,14 @@ use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     contract_event::ContractEvent,
     error::BlockExecutorError,
-    transaction::{SignedUserTransaction, Transaction},
+    transaction::Transaction,
     U256,
 };
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_storage::{
     storage::StorageInstance as StorageInstance2, Storage as Storage2, Store as Store2,
 };
-use starcoin_vm2_types::transaction::{
-    SignedUserTransaction as SignedUserTransaction2, Transaction as Transaction2,
-};
+use starcoin_vm2_vm_types::transaction::Transaction as Transaction2;
 use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
@@ -783,7 +782,7 @@ impl BlockChain {
         &self,
         author: AccountAddress,
         parent_hash: Option<HashValue>,
-        user_txns: Vec<SignedUserTransaction>,
+        user_txns: Vec<MultiSignedUserTransaction>,
         uncles: Vec<BlockHeader>,
         block_gas_limit: Option<u64>,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
@@ -810,7 +809,7 @@ impl BlockChain {
         &self,
         author: AccountAddress,
         previous_header: BlockHeader,
-        user_txns: Vec<SignedUserTransaction>,
+        user_txns: Vec<MultiSignedUserTransaction>,
         uncles: Vec<BlockHeader>,
         block_gas_limit: Option<u64>,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
@@ -969,10 +968,7 @@ impl BlockChain {
             .transactions2()
             .iter()
             .cloned()
-            .map(|t| {
-                use bcs_ext::BCSCodec;
-                Transaction2::UserTransaction(SignedUserTransaction2::decode(&t).unwrap())
-            })
+            .map(Transaction2::UserTransaction)
             .collect::<Vec<_>>();
 
         watch(CHAIN_WATCH_NAME, "n21");

@@ -15,8 +15,8 @@ use starcoin_logger::prelude::*;
 use starcoin_network::build_network_worker;
 use starcoin_types::block::{AccumulatorInfo, Block, BlockBody, BlockHeader, BlockInfo};
 use starcoin_types::compact_block::CompactBlock;
+use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
-use starcoin_types::transaction::SignedUserTransaction;
 use starcoin_types::U256;
 use std::sync::Arc;
 use std::time::Duration;
@@ -144,7 +144,7 @@ async fn test_event_notify_receive() {
     // transaction
     let msg_send = PeerMessage::new_transactions(
         network2.peer_id(),
-        TransactionsMessage::new(vec![SignedUserTransaction::mock()]),
+        TransactionsMessage::new(vec![MultiSignedUserTransaction::mock()]),
     );
     let mut receiver = network2.message_handler.channel();
     network1.service_ref.send_peer_message(msg_send.clone());
@@ -196,9 +196,9 @@ async fn test_event_notify_receive_repeat_block() {
 async fn test_event_notify_receive_repeat_transaction() {
     let (network1, network2) = test_helper::build_network_pair().await.unwrap();
 
-    let txn1 = SignedUserTransaction::mock();
-    let txn2 = SignedUserTransaction::mock();
-    let txn3 = SignedUserTransaction::mock();
+    let txn1 = MultiSignedUserTransaction::mock();
+    let txn2 = MultiSignedUserTransaction::mock();
+    let txn3 = MultiSignedUserTransaction::mock();
 
     let msg_send1 = PeerMessage::new_transactions(
         network2.peer_id(),
@@ -355,7 +355,7 @@ async fn test_filter_protocol() {
     let mut receiver2 = service2.message_handler.channel();
     let mut receiver3 = service3.message_handler.channel();
 
-    let txns = vec![SignedUserTransaction::mock()];
+    let txns = vec![MultiSignedUserTransaction::mock()];
     let notification = NotificationMessage::Transactions(TransactionsMessage::new(txns));
     service1.service_ref.broadcast(notification.clone());
 

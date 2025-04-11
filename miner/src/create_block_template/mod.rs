@@ -21,12 +21,13 @@ use starcoin_service_registry::{
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
+use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::{
     block::{BlockHeader, BlockTemplate, ExecutedBlock},
     system_events::{NewBranch, NewHeadBlock},
 };
 use starcoin_vm2_storage::{Storage as Storage2, Store as Store2};
-use starcoin_vm2_types::transaction::SignedUserTransaction as SignedUserTransactionV2;
+use starcoin_vm2_vm_types::transaction::SignedUserTransaction as SignedUserTransactionV2;
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::cmp::min;
 use std::{collections::HashMap, sync::Arc};
@@ -182,12 +183,25 @@ impl TemplateTxProvider for EmptyProvider {
 
 impl TemplateTxProvider for TxPoolService {
     fn get_txns(&self, max: u64) -> Vec<SignedUserTransaction> {
-        self.get_pending_txns(Some(max), None)
+        let txns = self.get_pending_txns(Some(max), None);
+        let mut res = vec![];
+        for txn in txns {
+            if let MultiSignedUserTransaction::VM1(txn) = txn {
+                res.push(txn)
+            }
+        }
+        res
     }
 
-    fn get_txns_v2(&self, _max: u64) -> Vec<SignedUserTransactionV2> {
-        // todo: implement this
-        vec![]
+    fn get_txns_v2(&self, max: u64) -> Vec<SignedUserTransactionV2> {
+        let txns = self.get_pending_txns(Some(max), None);
+        let mut res = vec![];
+        for txn in txns {
+            if let MultiSignedUserTransaction::VM2(txn) = txn {
+                res.push(txn)
+            }
+        }
+        res
     }
 
     fn remove_invalid_txn(&self, txn_hash: HashValue) {
@@ -368,7 +382,14 @@ where
             strategy,
             self.vm_metrics.clone(),
         )?;
-        let excluded_txns = opened_block.push_txns(txns)?;
+        let mut multi_txns = vec![];
+        for txn in txns {
+            multi_txns.push(txn.into());
+        }
+        for txn in txns2 {
+            multi_txns.push(txn.into());
+        }
+        let excluded_txns = opened_block.push_txns(multi_txns)?;
         let template = opened_block.finalize()?;
         for invalid_txn in excluded_txns.discarded_txns {
             self.tx_provider.remove_invalid_txn(invalid_txn.id());

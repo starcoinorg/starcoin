@@ -12,8 +12,8 @@ use starcoin_crypto::HashValue;
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::block::BlockInfo;
 use starcoin_types::compact_block::CompactBlock;
+use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::startup_info::ChainInfo;
-use starcoin_types::transaction::SignedUserTransaction;
 use std::borrow::Cow;
 use std::convert::{TryFrom, TryInto};
 use std::result::Result::Ok;
@@ -24,22 +24,22 @@ pub const ANNOUNCEMENT_PROTOCOL_NAME: &str = "/starcoin/announcement/1";
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TransactionsMessage {
-    pub txns: Vec<SignedUserTransaction>,
+    pub txns: Vec<MultiSignedUserTransaction>,
 }
 
 impl TransactionsMessage {
-    pub fn new(txns: Vec<SignedUserTransaction>) -> Self {
+    pub fn new(txns: Vec<MultiSignedUserTransaction>) -> Self {
         Self { txns }
     }
 
-    pub fn transactions(self) -> Vec<SignedUserTransaction> {
+    pub fn transactions(self) -> Vec<MultiSignedUserTransaction> {
         self.txns
     }
 }
 
 impl Sample for TransactionsMessage {
     fn sample() -> Self {
-        Self::new(vec![SignedUserTransaction::sample()])
+        Self::new(vec![MultiSignedUserTransaction::sample()])
     }
 }
 

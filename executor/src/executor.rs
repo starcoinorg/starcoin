@@ -1,8 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-
 use anyhow::Result;
-use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionOutput};
+use starcoin_types::multi_transaction::MultiSignedUserTransaction;
+use starcoin_types::transaction::{Transaction, TransactionOutput};
 use starcoin_vm_runtime::{metrics::VMMetrics, starcoin_vm::StarcoinVM, VMExecutor};
 use starcoin_vm_types::{
     identifier::Identifier,
@@ -43,11 +43,16 @@ fn do_execute_block_transactions<S: StateView>(
 // XXX FIXME YSG, refactor use VMValidator
 pub fn validate_transaction<S: StateView>(
     chain_state: &S,
-    txn: SignedUserTransaction,
+    txn: MultiSignedUserTransaction,
     metrics: Option<VMMetrics>,
 ) -> Option<VMStatus> {
-    let mut vm = StarcoinVM::new(metrics);
-    vm.verify_transaction(chain_state, txn)
+    match txn {
+        MultiSignedUserTransaction::VM1(txn) => {
+            let mut vm = StarcoinVM::new(metrics);
+            vm.verify_transaction(chain_state, txn)
+        }
+        _ => panic!("invalid transaction"),
+    }
 }
 
 pub fn execute_readonly_function<S: StateView>(

@@ -7,7 +7,7 @@ use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
-use starcoin_rpc_api::types::SignedUserTransactionView;
+use starcoin_rpc_api::multi_types::MultiSignedUserTransactionView;
 use starcoin_txpool_api::TxPoolStatus;
 use starcoin_vm_types::account_address::AccountAddress;
 
@@ -25,7 +25,7 @@ impl CommandAction for PendingTxnCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = PendingTxnOpt;
-    type ReturnItem = Option<SignedUserTransactionView>;
+    type ReturnItem = Option<MultiSignedUserTransactionView>;
 
     fn run(
         &self,
@@ -54,7 +54,7 @@ impl CommandAction for PendingTxnsCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = PendingTxnsOpt;
-    type ReturnItem = Vec<SignedUserTransactionView>;
+    type ReturnItem = Vec<MultiSignedUserTransactionView>;
 
     fn run(
         &self,

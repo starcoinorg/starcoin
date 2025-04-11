@@ -26,8 +26,8 @@ use starcoin_types::system_events::{NewBranch, SyncStatusChangeEvent};
 use starcoin_types::{
     block::{Block, BlockBody},
     compact_block::{CompactBlock, ShortId},
+    multi_transaction::MultiSignedUserTransaction,
     system_events::NewHeadBlock,
-    transaction::SignedUserTransaction,
 };
 use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
@@ -106,7 +106,7 @@ impl BlockRelayer {
         let txns = if expect_txn_len == 0 {
             vec![]
         } else {
-            let mut txns: Vec<Option<SignedUserTransaction>> = vec![None; expect_txn_len];
+            let mut txns: Vec<Option<MultiSignedUserTransaction>> = vec![None; expect_txn_len];
 
             let mut missing_txn_short_ids = HashSet::new();
             // Fill the block txns by tx pool
@@ -136,7 +136,7 @@ impl BlockRelayer {
                 .iter()
                 .map(|&short_id| short_id.0)
                 .collect();
-            let mut fetched_missing_txn_map: HashMap<ShortId, Result<SignedUserTransaction>> =
+            let mut fetched_missing_txn_map: HashMap<ShortId, Result<MultiSignedUserTransaction>> =
                 if missing_txn_ids.is_empty() {
                     HashMap::new()
                 } else {

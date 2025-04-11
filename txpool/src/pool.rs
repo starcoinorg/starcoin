@@ -10,10 +10,12 @@ pub(crate) mod replace;
 pub(crate) mod scoring;
 pub(crate) mod verifier;
 
+use crate::pending_transaction::PendingTransaction;
 pub use client::{AccountSeqNumberClient, Client};
 pub use queue::{Status, TransactionQueue};
 use starcoin_crypto::hash::HashValue;
-use starcoin_types::{account_address::AccountAddress, transaction};
+use starcoin_types::account_address::AccountAddress;
+use starcoin_types::multi_transaction::{MultiAccountAddress, MultiSignedUserTransaction};
 use std::ops::Deref;
 use transaction_pool as tx_pool;
 pub use verifier::Options as VerifierOptions;
@@ -25,11 +27,11 @@ pub type Gas = u64;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct UnverifiedUserTransaction {
-    txn: transaction::SignedUserTransaction,
+    txn: MultiSignedUserTransaction,
 }
 
 impl UnverifiedUserTransaction {
-    pub fn txn(&self) -> &transaction::SignedUserTransaction {
+    pub fn txn(&self) -> &MultiSignedUserTransaction {
         &self.txn
     }
 
@@ -38,20 +40,20 @@ impl UnverifiedUserTransaction {
     }
 }
 
-impl From<UnverifiedUserTransaction> for transaction::SignedUserTransaction {
-    fn from(txn: UnverifiedUserTransaction) -> transaction::SignedUserTransaction {
+impl From<UnverifiedUserTransaction> for MultiSignedUserTransaction {
+    fn from(txn: UnverifiedUserTransaction) -> MultiSignedUserTransaction {
         txn.txn
     }
 }
 
-impl From<transaction::SignedUserTransaction> for UnverifiedUserTransaction {
-    fn from(user_txn: transaction::SignedUserTransaction) -> Self {
+impl From<MultiSignedUserTransaction> for UnverifiedUserTransaction {
+    fn from(user_txn: MultiSignedUserTransaction) -> Self {
         UnverifiedUserTransaction { txn: user_txn }
     }
 }
 
 impl Deref for UnverifiedUserTransaction {
-    type Target = transaction::SignedUserTransaction;
+    type Target = MultiSignedUserTransaction;
 
     fn deref(&self) -> &Self::Target {
         &self.txn
@@ -96,7 +98,7 @@ pub enum PoolTransaction {
     /// Locally signed or retracted transaction.
     ///
     /// We can skip consistency verifications and just verify readiness.
-    Local(transaction::PendingTransaction),
+    Local(PendingTransaction),
 }
 
 impl PoolTransaction {
@@ -109,7 +111,7 @@ impl PoolTransaction {
         }
     }
 
-    pub fn signed(&self) -> &transaction::SignedUserTransaction {
+    pub fn signed(&self) -> &MultiSignedUserTransaction {
         match self {
             PoolTransaction::Unverified(t) => t.txn(),
             PoolTransaction::Retracted(t) => t.txn(),
@@ -134,14 +136,6 @@ impl PoolTransaction {
         }
     }
 
-    fn transaction(&self) -> &transaction::RawUserTransaction {
-        match self {
-            PoolTransaction::Unverified(ref tx) => tx.raw_txn(),
-            PoolTransaction::Retracted(ref tx) => tx.raw_txn(),
-            PoolTransaction::Local(ref tx) => tx.raw_txn(),
-        }
-    }
-
     fn is_local(&self) -> bool {
         matches!(self, PoolTransaction::Local(..))
     }
@@ -154,7 +148,7 @@ impl PoolTransaction {
 /// Verified transaction stored in the pool.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VerifiedTransaction {
-    transaction: transaction::PendingTransaction,
+    transaction: PendingTransaction,
     // TODO: use transaction's hash/sender
     hash: HashValue,
     sender: AccountAddress,
@@ -168,9 +162,13 @@ impl VerifiedTransaction {
     /// This method should be used only:
     /// 1. for tests
     /// 2. In case we are converting pending block transactions that are already in the queue to match the function signature.
-    pub fn from_pending_block_transaction(tx: transaction::SignedUserTransaction) -> Self {
+    pub fn from_pending_block_transaction(tx: MultiSignedUserTransaction) -> Self {
         let hash = tx.id();
-        let sender = tx.sender();
+        // XXX FIXME YSG
+        let sender = match tx.sender() {
+            MultiAccountAddress::VM1(sender) => sender,
+            _ => panic!("[{:?}] VerifiedTransaction must have a VM1 sender", hash),
+        };
         VerifiedTransaction {
             transaction: tx.into(),
             hash,
@@ -186,12 +184,12 @@ impl VerifiedTransaction {
     }
 
     /// Gets wrapped `SignedUserTransaction`
-    pub fn signed(&self) -> &transaction::SignedUserTransaction {
+    pub fn signed(&self) -> &MultiSignedUserTransaction {
         &self.transaction
     }
 
     /// Gets wrapped `PendingTransaction`
-    pub fn pending(&self) -> &transaction::PendingTransaction {
+    pub fn pending(&self) -> &PendingTransaction {
         &self.transaction
     }
 }

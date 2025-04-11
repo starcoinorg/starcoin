@@ -470,7 +470,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
 fn test_validate_sequence_number_too_new() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
     let account1 = Account::new();
-    let txn = create_account_txn_sent_as_association(&account1, 10000, 50_000_000, 1, &net);
+    let txn = create_account_txn_sent_as_association(&account1, 10000, 50_000_000, 1, &net).into();
     let output = starcoin_executor::validate_transaction(&chain_state, txn, None);
     assert_eq!(output, None);
     Ok(())
@@ -483,7 +483,7 @@ fn test_validate_sequence_number_too_old() -> Result<()> {
     let txn1 = create_account_txn_sent_as_association(&account1, 0, 50_000_000, 1, &net);
     let output1 = execute_and_apply(&chain_state, Transaction::UserTransaction(txn1));
     assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
-    let txn2 = create_account_txn_sent_as_association(&account1, 0, 50_000_000, 1, &net);
+    let txn2 = create_account_txn_sent_as_association(&account1, 0, 50_000_000, 1, &net).into();
     let output = starcoin_executor::validate_transaction(&chain_state, txn2, None);
     assert!(
         output.is_some(),
@@ -523,7 +523,7 @@ fn test_validate_txn_args() -> Result<()> {
         );
         account1.sign_txn(txn)
     };
-    assert!(validate_transaction(&chain_state, txn, None).is_some());
+    assert!(validate_transaction(&chain_state, txn.into(), None).is_some());
 
     let txn = {
         let action = ScriptFunction::new(
@@ -543,7 +543,7 @@ fn test_validate_txn_args() -> Result<()> {
         );
         account1.sign_txn(txn)
     };
-    assert!(validate_transaction(&chain_state, txn, None).is_some());
+    assert!(validate_transaction(&chain_state, txn.into(), None).is_some());
 
     let txn = {
         let action = ScriptFunction::new(
@@ -563,7 +563,7 @@ fn test_validate_txn_args() -> Result<()> {
         );
         account1.sign_txn(txn)
     };
-    assert!(validate_transaction(&chain_state, txn, None).is_some());
+    assert!(validate_transaction(&chain_state, txn.into(), None).is_some());
     Ok(())
 }
 
@@ -591,7 +591,7 @@ fn test_validate_txn() -> Result<()> {
         net.chain_id(),
     );
     let txn2 = account1.sign_txn(raw_txn);
-    let output = validate_transaction(&chain_state, txn2, None);
+    let output = validate_transaction(&chain_state, txn2.into(), None);
     assert_eq!(output, None);
     Ok(())
 }

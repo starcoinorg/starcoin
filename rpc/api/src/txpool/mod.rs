@@ -3,10 +3,11 @@
 
 use crate::FutureResult;
 use openrpc_derive::openrpc;
-use starcoin_types::transaction::SignedUserTransaction;
+use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 
 pub use self::gen_client::Client as TxPoolClient;
-use crate::types::{SignedUserTransactionView, StrView};
+use crate::multi_types::MultiSignedUserTransactionView;
+use crate::types::StrView;
 use starcoin_crypto::HashValue;
 use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::account_address::AccountAddress;
@@ -14,7 +15,7 @@ use starcoin_types::account_address::AccountAddress;
 #[openrpc]
 pub trait TxPoolApi {
     #[rpc(name = "txpool.submit_transaction")]
-    fn submit_transaction(&self, tx: SignedUserTransaction) -> FutureResult<HashValue>;
+    fn submit_transaction(&self, tx: MultiSignedUserTransaction) -> FutureResult<HashValue>;
 
     #[rpc(name = "txpool.submit_hex_transaction")]
     fn submit_hex_transaction(&self, tx: String) -> FutureResult<HashValue>;
@@ -29,11 +30,14 @@ pub trait TxPoolApi {
         &self,
         addr: AccountAddress,
         max_len: Option<u32>,
-    ) -> FutureResult<Vec<SignedUserTransactionView>>;
+    ) -> FutureResult<Vec<MultiSignedUserTransactionView>>;
 
     /// get pending txn in txpool by its hash value
     #[rpc(name = "txpool.pending_txn")]
-    fn pending_txn(&self, txn_hash: HashValue) -> FutureResult<Option<SignedUserTransactionView>>;
+    fn pending_txn(
+        &self,
+        txn_hash: HashValue,
+    ) -> FutureResult<Option<MultiSignedUserTransactionView>>;
 
     /// Returns next valid sequence number for given sender
     /// or `None` if there are no pending transactions from that sender in txpool.

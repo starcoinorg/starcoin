@@ -24,3 +24,5 @@ pub mod sync_manager;
 mod tests;
 pub mod txpool;
 pub mod types;
+
+pub mod multi_types;

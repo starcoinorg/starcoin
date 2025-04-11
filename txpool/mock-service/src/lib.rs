@@ -5,9 +5,8 @@ use anyhow::Result;
 use futures_channel::mpsc;
 use starcoin_crypto::hash::HashValue;
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService, TxnStatusFullEvent};
-use starcoin_types::{
-    account_address::AccountAddress, block::Block, transaction, transaction::SignedUserTransaction,
-};
+use starcoin_types::multi_transaction::MultiSignedUserTransaction;
+use starcoin_types::{account_address::AccountAddress, block::Block, transaction};
 use std::{
     iter::Iterator,
     sync::{Arc, Mutex},
@@ -15,7 +14,7 @@ use std::{
 
 #[derive(Clone, Default)]
 pub struct MockTxPoolService {
-    pool: Arc<Mutex<Vec<SignedUserTransaction>>>,
+    pool: Arc<Mutex<Vec<MultiSignedUserTransaction>>>,
 }
 
 impl MockTxPoolService {
@@ -23,7 +22,7 @@ impl MockTxPoolService {
         Self::default()
     }
 
-    pub fn new_with_txns(txns: Vec<SignedUserTransaction>) -> Self {
+    pub fn new_with_txns(txns: Vec<MultiSignedUserTransaction>) -> Self {
         MockTxPoolService {
             pool: Arc::new(Mutex::new(txns)),
         }
@@ -33,7 +32,7 @@ impl MockTxPoolService {
 impl TxPoolSyncService for MockTxPoolService {
     fn add_txns(
         &self,
-        mut txns: Vec<SignedUserTransaction>,
+        mut txns: Vec<MultiSignedUserTransaction>,
     ) -> Vec<Result<(), transaction::TransactionError>> {
         let len = txns.len();
         self.pool.lock().unwrap().append(&mut txns);
@@ -46,7 +45,11 @@ impl TxPoolSyncService for MockTxPoolService {
     ///
     /// Attempts to "cancel" a transaction. If it was not propagated yet (or not accepted by other peers)
     /// there is a good chance that the transaction will actually be removed.
-    fn remove_txn(&self, _txn_hash: HashValue, _is_invalid: bool) -> Option<SignedUserTransaction> {
+    fn remove_txn(
+        &self,
+        _txn_hash: HashValue,
+        _is_invalid: bool,
+    ) -> Option<MultiSignedUserTransaction> {
         unimplemented!()
     }
 
@@ -55,7 +58,7 @@ impl TxPoolSyncService for MockTxPoolService {
         &self,
         max_len: Option<u64>,
         _now: Option<u64>,
-    ) -> Vec<SignedUserTransaction> {
+    ) -> Vec<MultiSignedUserTransaction> {
         match max_len {
             Some(max) => self
                 .pool
@@ -90,7 +93,7 @@ impl TxPoolSyncService for MockTxPoolService {
         unimplemented!()
     }
 
-    fn find_txn(&self, _hash: &HashValue) -> Option<SignedUserTransaction> {
+    fn find_txn(&self, _hash: &HashValue) -> Option<MultiSignedUserTransaction> {
         unimplemented!()
     }
 
@@ -98,7 +101,7 @@ impl TxPoolSyncService for MockTxPoolService {
         &self,
         _sender: &AccountAddress,
         _max_len: Option<usize>,
-    ) -> Vec<SignedUserTransaction> {
+    ) -> Vec<MultiSignedUserTransaction> {
         todo!()
     }
 }
@@ -106,12 +109,13 @@ impl TxPoolSyncService for MockTxPoolService {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 
     #[stest::test]
     async fn test_txpool() {
         let pool = MockTxPoolService::new();
 
-        pool.add_txns(vec![SignedUserTransaction::mock()])
+        pool.add_txns(vec![MultiSignedUserTransaction::mock()])
             .pop()
             .unwrap()
             .unwrap();

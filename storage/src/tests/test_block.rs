@@ -57,7 +57,7 @@ fn test_block() {
             .unwrap()
             .unwrap()
     );
-    let block_body1 = BlockBody::new(vec![SignedUserTransaction::mock()], None);
+    let block_body1 = BlockBody::new(vec![SignedUserTransaction::mock().into()], None);
     storage
         .block_storage
         .save_body(block_id, block_body1.clone())
@@ -116,7 +116,7 @@ fn test_block_number() {
             .unwrap(),
         block_header1
     );
-    let block_body1 = BlockBody::new(vec![SignedUserTransaction::mock()], None);
+    let block_body1 = BlockBody::new(vec![SignedUserTransaction::mock().into()], None);
     storage
         .block_storage
         .save_body(block_id, block_body1.clone())
@@ -150,7 +150,7 @@ fn test_old_failed_block_decode() {
         0,
         BlockHeaderExtra::new([0u8; 4]),
     );
-    let block_body = BlockBody::new(vec![SignedUserTransaction::mock()], None);
+    let block_body = BlockBody::new(vec![SignedUserTransaction::mock().into()], None);
 
     let block = Block::new(block_header, block_body);
 
@@ -187,7 +187,7 @@ fn test_save_failed_block() {
         BlockHeaderExtra::new([0u8; 4]),
     );
 
-    let block_body = BlockBody::new(vec![SignedUserTransaction::mock()], None);
+    let block_body = BlockBody::new(vec![SignedUserTransaction::mock().into()], None);
 
     let block = Block::new(block_header, block_body);
 
