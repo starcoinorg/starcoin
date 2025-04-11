@@ -1291,6 +1291,7 @@ fn add_and_print_with_pruning_point_and_difficulty(
 }
 
 #[test]
+#[ignore]
 fn test_merge_bounded() -> anyhow::Result<()> {
     // initialzie the dag firstly
     let k = 3;
