@@ -245,13 +245,11 @@ impl MinerService {
         let addr = ctx.service_ref::<Self>()?.clone();
         let flag = self.task_flag.clone();
         ctx.spawn(async move {
-            info!("[jacktest] 1");
             let timeout_result = tokio::time::timeout(
                 Duration::from_millis(2000),
                 create_block_template_service.send(BlockTemplateRequest),
             )
             .await;
-            info!("[jacktest] 2");
 
             let send_result = match timeout_result {
                 Ok(res) => res,
@@ -265,7 +263,6 @@ impl MinerService {
                     return;
                 }
             };
-            info!("[jacktest] 3");
 
             let response_future = match send_result {
                 Ok(fut) => fut,
@@ -276,7 +273,6 @@ impl MinerService {
                     return;
                 }
             };
-            info!("[jacktest] 4");
 
             let response = match response_future.await {
                 Ok(resp) => resp,
@@ -287,7 +283,6 @@ impl MinerService {
                     return;
                 }
             };
-            info!("[jacktest] 5");
 
             let parent = response.parent;
             let block_template = response.template;
@@ -305,10 +300,8 @@ impl MinerService {
             {
                 warn!("Failed to dispatch block template: {}", e);
             }
-            info!("[jacktest] 6");
 
             flag.store(false, Ordering::Relaxed);
-            info!("[jacktest] 7");
         });
         Ok(())
     }
