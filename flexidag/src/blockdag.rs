@@ -772,7 +772,7 @@ impl BlockDAG {
         if pruning_point == Hash::zero() {
             pruning_point = genesis_id;
         } else {
-            self.generate_the_block_depth(pruning_point, &ghostdata, pruning_depth)?;
+            self.generate_the_block_depth(pruning_point, &ghostdata, pruning_finality)?;
         }
 
         info!("try to remove the red blocks when mining, tips: {:?} and ghostdata: {:?}, pruning point: {:?}", tips, ghostdata, pruning_point);
