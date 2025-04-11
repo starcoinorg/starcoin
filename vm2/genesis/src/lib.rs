@@ -3,7 +3,7 @@
 
 use starcoin_vm2_crypto::{ed25519::genesis_key_pair, HashValue};
 use starcoin_vm2_executor::{
-    block_executor2::BlockExecutedData, executor2::do_execute_block_transactions,
+    block_executor::BlockExecutedData, executor::do_execute_block_transactions,
 };
 use starcoin_vm2_state_api::ChainStateWriter;
 use starcoin_vm2_statedb::ChainStateDB;
