@@ -127,7 +127,7 @@ pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo>, time_plan: u64) -> Res
     Ok(new_target)
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct BlockDiffInfo {
     pub timestamp: u64,
     pub target: U256,
