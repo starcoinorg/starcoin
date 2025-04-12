@@ -120,7 +120,6 @@ fn test_transaction_info_and_proof() -> Result<()> {
         let account_address = match &txn {
             Transaction::UserTransaction(user_txn) => user_txn.sender(),
             Transaction::BlockMetadata(metadata_txn) => metadata_txn.author(),
-            Transaction::UserTransactionV2(_user_txn_ext) => panic!("XXX FIXME YSG"),
         };
         let access_path: Option<AccessPath> = Some(AccessPath::resource_access_path(
             account_address,

@@ -58,9 +58,6 @@ pub(crate) fn preprocess_transaction(txn: Transaction) -> PreprocessedTransactio
         Transaction::UserTransaction(txn) => {
             PreprocessedTransaction::UserTransaction(Box::new(txn))
         }
-        Transaction::UserTransactionV2(txn) => {
-            panic!("not supported txns: {:?}", txn);
-        }
     }
 }
 
