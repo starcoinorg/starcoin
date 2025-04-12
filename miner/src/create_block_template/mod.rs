@@ -27,8 +27,6 @@ use starcoin_types::{
     system_events::{NewBranch, NewHeadBlock},
 };
 use starcoin_vm2_storage::{Storage as Storage2, Store as Store2};
-use starcoin_vm2_vm_types::transaction::SignedUserTransaction as SignedUserTransactionV2;
-use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::cmp::min;
 use std::{collections::HashMap, sync::Arc};
 
@@ -162,46 +160,22 @@ impl ServiceHandler<Self, GetHeadRequest> for BlockBuilderService {
 }
 
 pub trait TemplateTxProvider {
-    fn get_txns(&self, max: u64) -> Vec<SignedUserTransaction>;
-    fn get_txns_v2(&self, max: u64) -> Vec<SignedUserTransactionV2>;
+    fn get_txns(&self, max: u64) -> Vec<MultiSignedUserTransaction>;
     fn remove_invalid_txn(&self, txn_hash: HashValue);
 }
 
 pub struct EmptyProvider;
 
 impl TemplateTxProvider for EmptyProvider {
-    fn get_txns(&self, _max: u64) -> Vec<SignedUserTransaction> {
+    fn get_txns(&self, _max: u64) -> Vec<MultiSignedUserTransaction> {
         vec![]
     }
-
-    fn get_txns_v2(&self, _max: u64) -> Vec<SignedUserTransactionV2> {
-        vec![]
-    }
-
     fn remove_invalid_txn(&self, _txn_hash: HashValue) {}
 }
 
 impl TemplateTxProvider for TxPoolService {
-    fn get_txns(&self, max: u64) -> Vec<SignedUserTransaction> {
-        let txns = self.get_pending_txns(Some(max), None);
-        let mut res = vec![];
-        for txn in txns {
-            if let MultiSignedUserTransaction::VM1(txn) = txn {
-                res.push(txn)
-            }
-        }
-        res
-    }
-
-    fn get_txns_v2(&self, max: u64) -> Vec<SignedUserTransactionV2> {
-        let txns = self.get_pending_txns(Some(max), None);
-        let mut res = vec![];
-        for txn in txns {
-            if let MultiSignedUserTransaction::VM2(txn) = txn {
-                res.push(txn)
-            }
-        }
-        res
+    fn get_txns(&self, max: u64) -> Vec<MultiSignedUserTransaction> {
+        self.get_pending_txns(Some(max), None)
     }
 
     fn remove_invalid_txn(&self, txn_hash: HashValue) {
@@ -341,8 +315,14 @@ where
         // block_gas_limit / min_gas_per_txn
         let max_txns = (block_gas_limit / 200) * 2;
 
-        let txns = self.tx_provider.get_txns(max_txns);
-        let txns2 = self.tx_provider.get_txns_v2(max_txns - txns.len() as u64);
+        let user_txns = self.tx_provider.get_txns(max_txns);
+
+        let mut txns = vec![];
+        let mut txns2 = vec![];
+        user_txns.into_iter().for_each(|txn| match txn {
+            MultiSignedUserTransaction::VM1(txn) => txns.push(txn),
+            MultiSignedUserTransaction::VM2(txn) => txns2.push(txn),
+        });
 
         let author = *self.miner_account.address();
         let previous_header = self.chain.current_header();
