@@ -13,7 +13,9 @@ use starcoin_vm2_types::{
     genesis_config::ChainId,
     identifier::Identifier,
     language_storage::{ModuleId, TypeTag},
-    transaction::{EntryFunction, RawUserTransaction, SignedUserTransaction, TransactionPayload},
+    transaction::{
+        EntryFunction, RawUserTransaction, SignedUserTransaction, Transaction, TransactionPayload,
+    },
 };
 // const NEW_ACCOUNT_AMOUNT: u128 = 1_000_000_000;
 // const TRANSFER_AMOUNT: u128 = 1_000;
@@ -103,6 +105,23 @@ use starcoin_vm2_types::{
 //     }
 //     gen_random_txn(net, accounts_with_seq_num, txn_count_per_account)
 // }
+
+pub fn build_transfer_from_association(
+    receiver: AccountAddress,
+    seq_number: u64,
+    amount: u128,
+    expire_time: u64,
+    net: &ChainNetwork,
+) -> Transaction {
+    starcoin_vm2_transaction_builder::build_transfer_from_association(
+        receiver,
+        seq_number,
+        amount,
+        expire_time,
+        net.chain_id().id().into(),
+        net.genesis_config2().as_ref().unwrap(),
+    )
+}
 
 pub fn create_account_txn_sent_as_association(
     new_account: &Account,

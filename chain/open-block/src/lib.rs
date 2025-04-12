@@ -30,6 +30,7 @@ use starcoin_types::{
     U256,
 };
 use starcoin_vm2_crypto::HashValue as HashValue2;
+use starcoin_vm2_state_api::ChainStateReader as ChainStateReader2;
 use starcoin_vm2_statedb::{ChainStateDB as ChainStateDB2, ChainStateWriter as ChainStateWriter2};
 use starcoin_vm2_storage::Store as Store2;
 use starcoin_vm2_types::transaction::{
@@ -160,6 +161,10 @@ impl OpenedBlock {
 
     pub fn state_reader(&self) -> &impl ChainStateReader {
         &self.state.0
+    }
+
+    pub fn state_reader2(&self) -> &impl ChainStateReader2 {
+        &self.state.1
     }
 
     pub fn chain_id(&self) -> ChainId {
