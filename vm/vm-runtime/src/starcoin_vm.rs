@@ -37,7 +37,6 @@ use starcoin_types::{
         TransactionPayload, TransactionStatus,
     },
 };
-use starcoin_vm2_vm_types::transaction::SignedUserTransaction as SignedUserTransactionV2;
 use starcoin_vm_types::access::{ModuleAccess, ScriptAccess};
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::upgrade::UpgradeEvent;

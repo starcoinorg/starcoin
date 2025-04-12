@@ -181,7 +181,6 @@ impl TryFrom<Transaction> for MultiSignedUserTransaction {
     fn try_from(txn: Transaction) -> Result<Self, Self::Error> {
         match txn {
             Transaction::UserTransaction(txn) => Ok(Self::VM1(txn)),
-            Transaction::UserTransactionV2(txn) => Ok(Self::VM2(txn)),
             _ => Err(format_err!("Not a user transaction.")),
         }
     }
@@ -191,7 +190,7 @@ impl From<MultiSignedUserTransaction> for Transaction {
     fn from(txn: MultiSignedUserTransaction) -> Self {
         match txn {
             MultiSignedUserTransaction::VM1(txn) => Transaction::UserTransaction(txn),
-            MultiSignedUserTransaction::VM2(txn) => Transaction::UserTransactionV2(txn),
+            _ => panic!("Not a vm1 transaction."),
         }
     }
 }
