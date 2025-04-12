@@ -16,13 +16,11 @@ use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::transaction::Transaction;
 use std::collections::HashMap;
 
-// XXX FIXME YSG
 #[stest::test(timeout = 480)]
-#[ignore]
 fn test_transaction_info_and_proof() -> Result<()> {
     let net = ChainNetwork::new_custom(
-        "test123".to_string(),
-        123.into(),
+        "test128".to_string(),
+        128.into(),
         BuiltinNetworkID::Test.genesis_config().clone(),
         None,
     )
