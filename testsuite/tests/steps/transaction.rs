@@ -72,7 +72,7 @@ fn transfer_txn(
     );
 
     let txn = sign_txn(client, raw_txn).unwrap();
-    client.submit_transaction(txn.clone())
+    client.submit_transaction(txn.clone().into())
 }
 fn sign_txn(
     client: &RpcClient,
