@@ -126,7 +126,7 @@ version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d122413f284cf2d62fb1b7db97e02edb8cda96d769b16e443a4f6195e35662b0"
 dependencies = [
- "crypto-common",
+ "crypto-common 0.1.6",
  "generic-array",
 ]
 
@@ -353,7 +353,7 @@ checksum = "dcfed56ad506cb2c684a14971b8861fdc3baaaae314b9e5f9bb532cbe3ba7a4f"
 [[package]]
 name = "aptos-crypto"
 version = "0.0.3"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=902a064b8ea2974bb9b2d7ffcd4761af13997ae0#902a064b8ea2974bb9b2d7ffcd4761af13997ae0"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588#5417dce574142c3da24adf987194a6931869f588"
 dependencies = [
  "aes-gcm 0.10.3",
  "anyhow",
@@ -368,6 +368,7 @@ dependencies = [
  "blst",
  "bulletproofs",
  "bytes",
+ "crypto-common 0.1.0",
  "curve25519-dalek 3.2.0",
  "curve25519-dalek-ng",
  "digest 0.9.0",
@@ -407,7 +408,7 @@ dependencies = [
 [[package]]
 name = "aptos-crypto-derive"
 version = "0.0.3"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=902a064b8ea2974bb9b2d7ffcd4761af13997ae0#902a064b8ea2974bb9b2d7ffcd4761af13997ae0"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588#5417dce574142c3da24adf987194a6931869f588"
 dependencies = [
  "proc-macro2 1.0.94",
  "quote 1.0.40",
@@ -1379,7 +1380,7 @@ version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "773f3b9af64447d2ce9850330c473515014aa235e6a783b02db81ff39e4a3dad"
 dependencies = [
- "crypto-common",
+ "crypto-common 0.1.6",
  "inout",
  "zeroize",
 ]
@@ -1823,6 +1824,30 @@ dependencies = [
  "rand_core 0.6.4",
  "subtle",
  "zeroize",
+]
+
+[[package]]
+name = "crypto-common"
+version = "0.1.0"
+source = "git+https://github.com/starcoinorg/crypto-common?rev=c350ab8d2b61f24d4a6102e5797a29b3950b92b2#c350ab8d2b61f24d4a6102e5797a29b3950b92b2"
+dependencies = [
+ "bcs 0.1.4",
+ "byteorder",
+ "bytes",
+ "hex",
+ "more-asserts",
+ "once_cell",
+ "openrpc-schema 0.1.0 (git+https://github.com/starcoinorg/openrpc-rs?rev=1f2f7d3495e3bd3ef3b6fcf7c4e0602cad090d5e)",
+ "proptest",
+ "proptest-derive 0.4.0",
+ "rand 0.7.3",
+ "rand_core 0.5.1",
+ "serde",
+ "serde_bytes",
+ "serde_json",
+ "static_assertions",
+ "thiserror 1.0.69",
+ "tiny-keccak",
 ]
 
 [[package]]
@@ -2292,7 +2317,7 @@ checksum = "9ed9a281f7bc9b7576e61468ba615a66a5c8cfdff42420a70aa82701a3b1e292"
 dependencies = [
  "block-buffer 0.10.4",
  "const-oid",
- "crypto-common",
+ "crypto-common 0.1.6",
  "subtle",
 ]
 
@@ -2767,7 +2792,7 @@ dependencies = [
  "rand_core 0.6.4",
  "serde",
  "serde_bytes",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=902a064b8ea2974bb9b2d7ffcd4761af13997ae0)",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-logger",
  "thiserror 1.0.69",
 ]
@@ -8190,6 +8215,7 @@ version = "1.0.140"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "20068b6e96dc6c9bd23e01df8827e6c7e1f2fddd43c21810382803c136b99373"
 dependencies = [
+ "indexmap 2.8.0",
  "itoa",
  "memchr",
  "ryu",
@@ -8638,7 +8664,7 @@ dependencies = [
  "rand_core 0.6.4",
  "schemars 0.8.8 (git+https://github.com/starcoinorg/schemars?rev=a64c6ddf7ca4796e090208b1476de2e53772042f)",
  "serde",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=902a064b8ea2974bb9b2d7ffcd4761af13997ae0)",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-logger",
 ]
 
@@ -8718,7 +8744,7 @@ dependencies = [
 [[package]]
 name = "starcoin-crypto"
 version = "1.10.0-rc.2"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=902a064b8ea2974bb9b2d7ffcd4761af13997ae0#902a064b8ea2974bb9b2d7ffcd4761af13997ae0"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588#5417dce574142c3da24adf987194a6931869f588"
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -8731,7 +8757,7 @@ dependencies = [
  "serde",
  "serde-name 0.1.2",
  "serde_bytes",
- "starcoin-crypto-macro 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=902a064b8ea2974bb9b2d7ffcd4761af13997ae0)",
+ "starcoin-crypto-macro 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
 ]
 
 [[package]]
@@ -8756,7 +8782,7 @@ dependencies = [
 [[package]]
 name = "starcoin-crypto-macro"
 version = "1.10.0-rc.2"
-source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=902a064b8ea2974bb9b2d7ffcd4761af13997ae0#902a064b8ea2974bb9b2d7ffcd4761af13997ae0"
+source = "git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588#5417dce574142c3da24adf987194a6931869f588"
 dependencies = [
  "proc-macro2 1.0.94",
  "quote 1.0.40",
@@ -8831,7 +8857,7 @@ dependencies = [
  "siphasher 0.3.11",
  "smallvec",
  "starcoin-aggregator",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=902a064b8ea2974bb9b2d7ffcd4761af13997ae0)",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-gas-algebra",
  "starcoin-gas-schedule",
  "starcoin-move-stdlib",
@@ -9020,7 +9046,7 @@ dependencies = [
  "once_cell",
  "petgraph 0.5.1",
  "regex",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=902a064b8ea2974bb9b2d7ffcd4761af13997ae0)",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-framework 0.1.0",
  "starcoin-logger",
  "starcoin-vm-types 2.0.1",
@@ -9214,7 +9240,7 @@ dependencies = [
  "forkable-jellyfish-merkle 2.0.1",
  "once_cell",
  "serde",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=902a064b8ea2974bb9b2d7ffcd4761af13997ae0)",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-state-tree",
  "starcoin-types 2.0.1",
  "starcoin-vm-types 2.0.1",
@@ -9227,7 +9253,7 @@ dependencies = [
  "anyhow",
  "forkable-jellyfish-merkle 2.0.1",
  "serde",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=902a064b8ea2974bb9b2d7ffcd4761af13997ae0)",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-vm-types 2.0.1",
 ]
 
@@ -9240,7 +9266,7 @@ dependencies = [
  "forkable-jellyfish-merkle 2.0.1",
  "parking_lot 0.12.3",
  "serde",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=902a064b8ea2974bb9b2d7ffcd4761af13997ae0)",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-logger",
  "starcoin-state-store-api",
  "starcoin-types 2.0.1",
@@ -9257,7 +9283,7 @@ dependencies = [
  "lru 0.7.8",
  "parking_lot 0.12.3",
  "serde",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=902a064b8ea2974bb9b2d7ffcd4761af13997ae0)",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-logger",
  "starcoin-state-api",
  "starcoin-state-tree",
@@ -9285,7 +9311,7 @@ dependencies = [
  "rocksdb",
  "serde",
  "starcoin-accumulator 2.0.1",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=902a064b8ea2974bb9b2d7ffcd4761af13997ae0)",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-logger",
  "starcoin-metrics 2.0.1",
  "starcoin-state-store-api",
@@ -9338,7 +9364,7 @@ dependencies = [
  "bcs-ext",
  "starcoin-cached-packages",
  "starcoin-config",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=902a064b8ea2974bb9b2d7ffcd4761af13997ae0)",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-framework 0.1.0",
  "starcoin-logger",
  "starcoin-types 2.0.1",
@@ -9394,7 +9420,7 @@ dependencies = [
  "serde_bytes",
  "serde_json",
  "starcoin-accumulator 2.0.1",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=902a064b8ea2974bb9b2d7ffcd4761af13997ae0)",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-uint 2.0.1",
  "starcoin-vm-types 2.0.1",
  "thiserror 1.0.69",
@@ -9419,7 +9445,7 @@ dependencies = [
  "hex",
  "serde",
  "serde_json",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=902a064b8ea2974bb9b2d7ffcd4761af13997ae0)",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-types 2.0.1",
  "uint",
 ]
@@ -9452,7 +9478,7 @@ dependencies = [
  "serde_bytes",
  "starcoin-aggregator",
  "starcoin-cached-packages",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=902a064b8ea2974bb9b2d7ffcd4761af13997ae0)",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-framework 0.1.0",
  "starcoin-gas-algebra",
  "starcoin-gas-meter",
@@ -9556,7 +9582,7 @@ dependencies = [
  "serde_bytes",
  "serde_json",
  "starcoin-accumulator 2.0.1",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=902a064b8ea2974bb9b2d7ffcd4761af13997ae0)",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-gas-algebra",
  "starcoin-gas-meter",
  "starcoin-gas-schedule",
@@ -10537,7 +10563,7 @@ version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc1de2c688dc15305988b563c3854064043356019f97a4b46276fe734c4f07ea"
 dependencies = [
- "crypto-common",
+ "crypto-common 0.1.6",
  "subtle",
 ]
 
