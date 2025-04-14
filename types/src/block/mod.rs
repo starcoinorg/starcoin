@@ -598,7 +598,7 @@ impl<'de> Deserialize<'de> for BlockHeader {
                         value.map_or(Some(vec![]), |value| value)
                     });
 
-		// legacy
+                // legacy
                 let (version, pruning_point) = if !BlockHeader::check_upgrade(number, chain_id) {
                     (0, HashValue::zero())
                 } else {

@@ -765,7 +765,7 @@ impl BlockDAG {
 
         if pruning_point == Hash::zero() {
             pruning_point = genesis_id;
-        } 
+        }
         // else {
         //     self.generate_the_block_depth(pruning_point, &ghostdata, pruning_depth)?;
         // }
