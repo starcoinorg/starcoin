@@ -14710,6 +14710,7 @@ dependencies = [
  "starcoin-state-tree 1.13.19",
  "starcoin-statedb 1.13.19",
  "starcoin-storage 1.13.19",
+ "starcoin-storage 2.0.1",
  "starcoin-transaction-builder 1.13.19",
  "starcoin-txpool-api",
  "starcoin-types 1.13.19",
