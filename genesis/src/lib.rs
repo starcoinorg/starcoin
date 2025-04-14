@@ -43,7 +43,6 @@ use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_view::StateView;
 
 use starcoin_types::block::{BlockBody, LegacyBlock, LegacyBlockBody};
-use starcoin_types::utils::to_hash_value;
 use starcoin_vm2_storage::{
     storage::StorageInstance as StorageInstance2, Storage as Storage2, Store as Store2,
 };
@@ -174,7 +173,7 @@ impl Genesis {
                         net.chain_id().id(),
                         genesis_config2.as_ref().unwrap(),
                     );
-                (Some(user_txn), Some(to_hash_value(txn_info_hash)))
+                (Some(user_txn), Some(txn_info_hash))
             } else {
                 (None, None)
             };

@@ -25,7 +25,6 @@ use starcoin_types::{
     transaction::{
         SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput, TransactionStatus,
     },
-    utils::to_hash_value2,
     vm_error::KeptVMStatus,
     U256,
 };
@@ -91,7 +90,7 @@ impl OpenedBlock {
             txn_accumulator_info.clone(),
             storage.get_accumulator_store(AccumulatorStoreType::Transaction),
         );
-        let state_root2 = block_info.state_root().map(to_hash_value2);
+        let state_root2 = block_info.state_root();
         let chain_state =
             ChainStateDB::new(storage.into_super_arc(), Some(previous_header.state_root()));
         let chain_state2 = ChainStateDB2::new(storage2.into_super_arc(), state_root2);
