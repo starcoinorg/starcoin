@@ -34,7 +34,13 @@ async fn test_miner_service() {
         .unwrap()
         .unwrap();
 
-    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header, None);
+    let txpool = TxPoolService::new(
+        node_config.clone(),
+        storage.clone(),
+        storage2.clone(),
+        chain_header,
+        None,
+    );
     registry.put_shared(txpool).await.unwrap();
     registry
         .register_mocker(AccountService::mock().unwrap())

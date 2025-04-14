@@ -778,6 +778,29 @@ impl BlockChain {
         Ok(uncles)
     }
 
+    pub fn create_block_template_simple(
+        &self,
+        author: AccountAddress,
+    ) -> Result<(BlockTemplate, ExcludedTxns)> {
+        self.create_block_template(author, None, vec![], vec![], None)
+    }
+
+    pub fn create_block_template_simple_with_txns(
+        &self,
+        author: AccountAddress,
+        user_txns: Vec<MultiSignedUserTransaction>,
+    ) -> Result<(BlockTemplate, ExcludedTxns)> {
+        self.create_block_template(author, None, user_txns, vec![], None)
+    }
+
+    pub fn create_block_template_simple_with_uncles(
+        &self,
+        author: AccountAddress,
+        uncles: Vec<BlockHeader>,
+    ) -> Result<(BlockTemplate, ExcludedTxns)> {
+        self.create_block_template(author, None, vec![], uncles, None)
+    }
+
     pub fn create_block_template(
         &self,
         author: AccountAddress,
@@ -833,7 +856,17 @@ impl BlockChain {
             strategy,
             None,
         )?;
-        let excluded_txns = opened_block.push_txns(user_txns)?;
+        // split user_txns to two parts
+        let mut vm1_txns = vec![];
+        let mut vm2_txns = vec![];
+        for txn in user_txns {
+            match txn {
+                MultiSignedUserTransaction::VM1(txn) => vm1_txns.push(txn),
+                MultiSignedUserTransaction::VM2(txn) => vm2_txns.push(txn),
+            }
+        }
+        let excluded_txns = opened_block.push_txns(vm1_txns)?;
+        let _ = opened_block.push_txns2(vm2_txns)?;
         let template = opened_block.finalize()?;
         Ok((template, excluded_txns))
     }
@@ -979,7 +1012,7 @@ impl BlockChain {
             vm_metrics,
         )?;
         let (state_root2, included_txn_info_hashes2) = if !transactions2.is_empty() {
-            let (state_root, hashes) = starcoin_vm2_chain::execute_vm2_txns_and_save(
+            let (state_root, hashes) = starcoin_vm2_chain::execute_txns_and_save(
                 to_hash_value2(block_id),
                 block.header.number(),
                 storage2,

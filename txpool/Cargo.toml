@@ -31,6 +31,9 @@ transaction-pool = { workspace = true }
 proptest = { optional = true, workspace = true }
 proptest-derive = { optional = true, workspace = true }
 
+# dependencies for Move 2.0
+starcoin-vm2-storage = { workspace = true }
+
 [dev-dependencies]
 proptest = { workspace = true }
 proptest-derive = { workspace = true }

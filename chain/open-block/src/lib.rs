@@ -12,6 +12,7 @@ use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
+use starcoin_types::utils::to_hash_value;
 use starcoin_types::{
     account::DEFAULT_EXPIRATION_TIME,
     account_address::AccountAddress,
@@ -28,9 +29,15 @@ use starcoin_types::{
     vm_error::KeptVMStatus,
     U256,
 };
-use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
+use starcoin_vm2_crypto::HashValue as HashValue2;
+use starcoin_vm2_state_api::ChainStateReader as ChainStateReader2;
+use starcoin_vm2_statedb::{ChainStateDB as ChainStateDB2, ChainStateWriter as ChainStateWriter2};
 use starcoin_vm2_storage::Store as Store2;
-use starcoin_vm2_types::transaction::SignedUserTransaction as SignedUserTransactionV2;
+use starcoin_vm2_types::transaction::{
+    SignedUserTransaction as SignedUserTransaction2, Transaction as Transaction2,
+    TransactionInfo as TransactionInfo2, TransactionOutput as TransactionOutput2,
+    TransactionStatus as TransactionStatus2,
+};
 use starcoin_vm_runtime::force_upgrade_management::{
     get_force_upgrade_account, get_force_upgrade_block_number,
 };
@@ -54,7 +61,7 @@ pub struct OpenedBlock {
 
     gas_used: u64,
     included_user_txns: Vec<SignedUserTransaction>,
-    included_user_txns2: Vec<SignedUserTransactionV2>,
+    included_user_txns2: Vec<SignedUserTransaction2>,
     uncles: Vec<BlockHeader>,
     chain_id: ChainId,
     difficulty: U256,
@@ -156,6 +163,10 @@ impl OpenedBlock {
         &self.state.0
     }
 
+    pub fn state_reader2(&self) -> &impl ChainStateReader2 {
+        &self.state.1
+    }
+
     pub fn chain_id(&self) -> ChainId {
         self.chain_id
     }
@@ -165,23 +176,20 @@ impl OpenedBlock {
     /// If error occurs during the processing, the `open_block` should be dropped,
     /// as the internal state may be corrupted.
     /// TODO: make the function can be called again even last call returns error.  
-    pub fn push_txns(
-        &mut self,
-        user_txns: Vec<MultiSignedUserTransaction>,
-    ) -> Result<ExcludedTxns> {
+    pub fn push_txns(&mut self, user_txns: Vec<SignedUserTransaction>) -> Result<ExcludedTxns> {
         let (state, _state2) = &self.state;
-        let mut discard_txns: Vec<MultiSignedUserTransaction> = Vec::new();
+        let mut discard_txns = Vec::new();
         let mut txns: Vec<_> = user_txns
             .into_iter()
             .filter(|txn| {
                 let is_blacklisted = AddressFilter::is_blacklisted(self.block_number());
                 // Discard the txns send by the account in black list after a block number.
                 if is_blacklisted {
-                    discard_txns.push(txn.clone());
+                    discard_txns.push(txn.clone().into());
                 }
                 !is_blacklisted
             })
-            .map(|txn| txn.into())
+            .map(Transaction::UserTransaction)
             .collect();
 
         let txn_outputs = {
@@ -234,6 +242,53 @@ impl OpenedBlock {
         Ok(ExcludedTxns {
             discarded_txns: discard_txns,
             untouched_txns: untouched_user_txns,
+        })
+    }
+
+    // todo: construct ExcludedTxns
+    pub fn push_txns2(&mut self, user_txns: Vec<SignedUserTransaction2>) -> Result<ExcludedTxns> {
+        let state = &self.state.1;
+        let txns = user_txns
+            .into_iter()
+            .map(Transaction2::UserTransaction)
+            .collect::<Vec<_>>();
+        let mut discard_txns: Vec<SignedUserTransaction2> = Vec::new();
+
+        let txn_outputs = starcoin_vm2_executor::do_execute_block_transactions(
+            state,
+            txns.clone(),
+            Some(self.gas_limit),
+            None,
+        )
+        .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
+
+        for (txn, output) in txns.into_iter().zip(txn_outputs.into_iter()) {
+            let txn_hash = txn.id();
+            match output.status() {
+                TransactionStatus2::Discard(status) => {
+                    debug!("discard txn {}, vm status: {:?}", txn_hash, status);
+                    discard_txns.push(txn.try_into().expect("user txn"));
+                }
+                TransactionStatus2::Keep(status) => {
+                    if !status.is_success() {
+                        debug!("txn {:?} execute error: {:?}", txn_hash, status);
+                    }
+                    let gas_used = output.gas_used();
+                    self.push_txn_and_state2(txn_hash, output)?;
+                    self.gas_used += gas_used;
+                    self.included_user_txns2
+                        .push(txn.try_into().expect("user txn"));
+                }
+                TransactionStatus2::Retry => {
+                    debug!("impossible retry txn {}", txn_hash);
+                    discard_txns.push(txn.try_into().expect("user txn"));
+                }
+            };
+        }
+
+        Ok(ExcludedTxns {
+            discarded_txns: vec![],
+            untouched_txns: vec![],
         })
     }
 
@@ -320,6 +375,37 @@ impl OpenedBlock {
         );
         let accumulator_root = self.txn_accumulator.append(&[txn_info.id()])?;
         Ok((txn_state_root, accumulator_root))
+    }
+
+    fn push_txn_and_state2(
+        &mut self,
+        txn_hash: HashValue2,
+        output: TransactionOutput2,
+    ) -> Result<()> {
+        let state = &mut self.state.1;
+        let (write_set, events, gas_used, status, _) = output.into_inner();
+        debug_assert!(matches!(status, TransactionStatus2::Keep(_)));
+        let status = status
+            .status()
+            .expect("TransactionStatus at here must been KeptVMStatus");
+        state
+            .apply_write_set(write_set)
+            .map_err(BlockExecutorError::BlockChainStateErr)?;
+        let txn_state_root = state
+            .commit()
+            .map_err(BlockExecutorError::BlockChainStateErr)?;
+
+        let txn_info = TransactionInfo2::new(
+            txn_hash,
+            txn_state_root,
+            events.as_slice(),
+            gas_used,
+            status,
+        );
+        let _accumulator_root = self
+            .txn_accumulator
+            .append(&[to_hash_value(txn_info.id())])?;
+        Ok(())
     }
 
     /// Construct a block template for mining.

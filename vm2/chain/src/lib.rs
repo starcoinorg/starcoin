@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use starcoin_vm2_crypto::HashValue;
-use starcoin_vm2_executor::block_executor2::{self, VMMetrics};
+use starcoin_vm2_executor::block_executor::{self, VMMetrics};
 use starcoin_vm2_statedb::{ChainStateDB, ChainStateWriter};
 use starcoin_vm2_storage::Store;
 use starcoin_vm2_types::transaction::{RichTransactionInfo, Transaction};
 
-pub fn execute_vm2_txns_and_save(
+pub fn execute_txns_and_save(
     block_id: HashValue,
     block_number: u64,
     storage: &dyn Store,
@@ -20,7 +20,7 @@ pub fn execute_vm2_txns_and_save(
     // This function will execute the transactions in the block using vm2 and save the results.
     // Note: The actual implementation of VM2 execution and saving logic will depend on your VM2 setup.
     let executed_data =
-        block_executor2::block_execute(statedb, transactions.clone(), gas_limit, vm_metrics)
+        block_executor::block_execute(statedb, transactions.clone(), gas_limit, vm_metrics)
             .unwrap();
 
     statedb.flush().unwrap();

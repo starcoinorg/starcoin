@@ -123,9 +123,9 @@ impl MockChain {
     }
 
     pub fn produce(&self) -> Result<Block> {
-        let (template, _) =
-            self.head
-                .create_block_template(*self.miner.address(), None, vec![], vec![], None)?;
+        let (template, _) = self
+            .head
+            .create_block_template_simple(*self.miner.address())?;
         self.head
             .consensus()
             .create_block(template, self.net.time_service().as_ref())

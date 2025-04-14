@@ -28,7 +28,7 @@ pub fn gen_blockchain_with_blocks_for_test(count: u64, net: &ChainNetwork) -> Re
     let miner_account = AccountInfo::random();
     for _i in 0..count {
         let (block_template, _) = block_chain
-            .create_block_template(*miner_account.address(), None, Vec::new(), vec![], None)
+            .create_block_template_simple(*miner_account.address())
             .unwrap();
         let block = block_chain
             .consensus()

@@ -16,13 +16,11 @@ use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::transaction::Transaction;
 use std::collections::HashMap;
 
-// XXX FIXME YSG
 #[stest::test(timeout = 480)]
-#[ignore]
 fn test_transaction_info_and_proof() -> Result<()> {
     let net = ChainNetwork::new_custom(
-        "test123".to_string(),
-        123.into(),
+        "test128".to_string(),
+        128.into(),
         BuiltinNetworkID::Test.genesis_config().clone(),
         None,
     )
@@ -120,7 +118,6 @@ fn test_transaction_info_and_proof() -> Result<()> {
         let account_address = match &txn {
             Transaction::UserTransaction(user_txn) => user_txn.sender(),
             Transaction::BlockMetadata(metadata_txn) => metadata_txn.author(),
-            Transaction::UserTransactionV2(_user_txn_ext) => panic!("XXX FIXME YSG"),
         };
         let access_path: Option<AccessPath> = Some(AccessPath::resource_access_path(
             account_address,

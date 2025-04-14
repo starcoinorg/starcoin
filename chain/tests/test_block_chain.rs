@@ -206,7 +206,7 @@ fn gen_uncle() -> (MockChain, BlockChain, BlockHeader) {
 
 fn product_a_block(branch: &BlockChain, miner: &AccountInfo, uncles: Vec<BlockHeader>) -> Block {
     let (block_template, _) = branch
-        .create_block_template(*miner.address(), None, Vec::new(), uncles, None)
+        .create_block_template_simple_with_uncles(*miner.address(), uncles)
         .unwrap();
     branch
         .consensus()

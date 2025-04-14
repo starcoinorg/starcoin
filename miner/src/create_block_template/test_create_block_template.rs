@@ -78,7 +78,13 @@ fn test_switch_main() {
         .get_block_header_by_hash(genesis_id)
         .unwrap()
         .unwrap();
-    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header, None);
+    let txpool = TxPoolService::new(
+        node_config.clone(),
+        storage.clone(),
+        storage2.clone(),
+        chain_header,
+        None,
+    );
 
     let net = node_config.net();
     for i in 0..times {
@@ -211,7 +217,13 @@ fn test_do_uncles() {
         .get_block_header_by_hash(genesis_id)
         .unwrap()
         .unwrap();
-    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header, None);
+    let txpool = TxPoolService::new(
+        node_config.clone(),
+        storage.clone(),
+        storage2.clone(),
+        chain_header,
+        None,
+    );
 
     let net = node_config.net();
     for _i in 0..times {
@@ -337,7 +349,13 @@ fn test_new_head() {
         .unwrap()
         .unwrap();
 
-    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header, None);
+    let txpool = TxPoolService::new(
+        node_config.clone(),
+        storage.clone(),
+        storage2.clone(),
+        chain_header,
+        None,
+    );
 
     let mut main_inner = Inner::new(
         node_config.net(),
@@ -381,7 +399,13 @@ fn test_new_branch() {
         .unwrap()
         .unwrap();
 
-    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header, None);
+    let txpool = TxPoolService::new(
+        node_config.clone(),
+        storage.clone(),
+        storage2.clone(),
+        chain_header,
+        None,
+    );
 
     let miner_account = AccountInfo::random();
     // main
@@ -463,7 +487,13 @@ async fn test_create_block_template_actor() {
         .unwrap();
 
     //TODO mock txpool.
-    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header, None);
+    let txpool = TxPoolService::new(
+        node_config.clone(),
+        storage.clone(),
+        storage2.clone(),
+        chain_header,
+        None,
+    );
     registry.put_shared(txpool).await.unwrap();
 
     registry.put_shared(storage).await.unwrap();

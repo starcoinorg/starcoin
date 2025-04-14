@@ -1,7 +1,7 @@
 use anyhow::Result;
 
 use starcoin_vm2_crypto::ed25519::genesis_key_pair;
-use starcoin_vm2_executor::executor2::do_execute_block_transactions;
+use starcoin_vm2_executor::executor::do_execute_block_transactions;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_transaction_builder::build_stdlib_package;
 use starcoin_vm2_types::account_config::CORE_CODE_ADDRESS;

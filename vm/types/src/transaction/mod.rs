@@ -43,7 +43,6 @@ pub use script::{
     TypeArgumentABI,
 };
 use starcoin_crypto::hash::SPARSE_MERKLE_PLACEHOLDER_HASH;
-use starcoin_vm2_vm_types::transaction::SignedUserTransaction as SignedUserTransactionV2;
 use std::str::FromStr;
 pub use transaction_argument::{
     parse_transaction_argument, parse_transaction_arguments, TransactionArgument,
@@ -881,10 +880,6 @@ pub enum Transaction {
     UserTransaction(SignedUserTransaction),
     /// Transaction to update the block metadata resource at the beginning of a block.
     BlockMetadata(BlockMetadata),
-
-    /// Transaction submitted by the user. e.g: P2P payment transaction, publishing module
-    /// transaction, etc.
-    UserTransactionV2(SignedUserTransactionV2),
 }
 
 impl Transaction {
@@ -899,7 +894,6 @@ impl Transaction {
         match self {
             Transaction::UserTransaction(signed) => signed.id(),
             Transaction::BlockMetadata(block_metadata) => block_metadata.id(),
-            Transaction::UserTransactionV2(sigend) => HashValue::new(sigend.id().to_inner()),
         }
     }
 }

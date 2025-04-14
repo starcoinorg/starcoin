@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::executor2::do_execute_block_transactions;
+use crate::executor::do_execute_block_transactions;
 use serde::{Deserialize, Serialize};
 use starcoin_vm2_crypto::HashValue;
 use starcoin_vm2_state_api::{ChainStateReader, ChainStateWriter};

@@ -551,16 +551,13 @@ fn gen_chain_for_upgrade_test(count: u64, net: &ChainNetwork) -> anyhow::Result<
     let mut block_chain = gen_blockchain_for_test(net)?;
     let miner_account = AccountInfo::random();
     for i in 0..count {
-        let (block_template, _) = block_chain.create_block_template(
+        let (block_template, _) = block_chain.create_block_template_simple_with_txns(
             *miner_account.address(),
-            None,
             if i == 0 {
                 vec![txn.clone().into()]
             } else {
                 vec![]
             },
-            vec![],
-            None,
         )?;
         let block = block_chain
             .consensus()

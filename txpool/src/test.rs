@@ -229,7 +229,7 @@ async fn test_rollback() -> Result<()> {
             config.net().genesis_config().consensus(),
             None,
         )?;
-        let excluded_txns = open_block.push_txns(vec![txn.into()])?;
+        let excluded_txns = open_block.push_txns(vec![txn])?;
         assert_eq!(excluded_txns.discarded_txns.len(), 0);
         assert_eq!(excluded_txns.untouched_txns.len(), 0);
 

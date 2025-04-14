@@ -1,6 +1,6 @@
 use anyhow::{bail, Result};
 use starcoin_config::ChainNetwork;
-use starcoin_vm2_executor::executor2::{do_execute_block_transactions, execute_readonly_function};
+use starcoin_vm2_executor::executor::{do_execute_block_transactions, execute_readonly_function};
 use starcoin_vm2_genesis::{build_and_execute_genesis_transaction, execute_genesis_transaction};
 use starcoin_vm2_state_api::AccountStateReader;
 use starcoin_vm2_statedb::{ChainStateDB, ChainStateReader, ChainStateWriter};

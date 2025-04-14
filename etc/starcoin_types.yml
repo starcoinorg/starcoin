@@ -238,10 +238,6 @@ Transaction:
       BlockMetadata:
         NEWTYPE:
           TYPENAME: BlockMetadata
-    2:
-      UserTransactionV2:
-        NEWTYPE:
-          TYPENAME: SignedUserTransaction
 TransactionArgument:
   ENUM:
     0:

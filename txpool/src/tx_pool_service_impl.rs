@@ -29,6 +29,7 @@ use starcoin_types::{
     block::{Block, BlockHeader},
     transaction,
 };
+use starcoin_vm2_storage::Store as Store2;
 use std::sync::Arc;
 
 #[derive(Clone, Debug)]
@@ -39,6 +40,7 @@ impl TxPoolService {
     pub fn new(
         node_config: Arc<NodeConfig>,
         storage: Arc<dyn Store>,
+        storage2: Arc<dyn Store2>,
         chain_header: BlockHeader,
         vm_metrics: Option<VMMetrics>,
     ) -> Self {
@@ -66,6 +68,7 @@ impl TxPoolService {
             node_config,
             queue,
             storage,
+            storage2,
             chain_header: Arc::new(RwLock::new(chain_header)),
             sequence_number_cache: NonceCache::new(128),
             metrics,
@@ -224,6 +227,7 @@ pub(crate) struct Inner {
     queue: Arc<TxnQueue>,
     chain_header: Arc<RwLock<BlockHeader>>,
     storage: Arc<dyn Store>,
+    storage2: Arc<dyn Store2>,
     sequence_number_cache: NonceCache,
     pub(crate) metrics: Option<TxPoolMetrics>,
     vm_metrics: Option<VMMetrics>,

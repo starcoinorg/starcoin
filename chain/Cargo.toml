@@ -52,6 +52,8 @@ stest = { workspace = true }
 test-helper = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 starcoin-force-upgrade = { workspace = true }
+starcoin-vm2-test-helper = { workspace = true }
+starcoin-vm2-state-api = { workspace = true }
 
 [features]
 default = []
