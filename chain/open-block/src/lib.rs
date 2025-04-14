@@ -12,7 +12,6 @@ use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
-use starcoin_types::utils::to_hash_value;
 use starcoin_types::{
     account::DEFAULT_EXPIRATION_TIME,
     account_address::AccountAddress,
@@ -403,7 +402,7 @@ impl OpenedBlock {
         );
         let _accumulator_root = self
             .txn_accumulator
-            .append(&[to_hash_value(txn_info.id())])?;
+            .append(&[txn_info.id()])?;
         Ok(())
     }
 
