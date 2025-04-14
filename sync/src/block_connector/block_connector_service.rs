@@ -42,7 +42,6 @@ use starcoin_types::system_events::NewDagBlockFromPeer;
 use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown};
 use std::sync::Arc;
 use sysinfo::{DiskExt, System, SystemExt};
-
 const DISK_CHECKPOINT_FOR_PANIC: u64 = 1024 * 1024 * 1024 * 3;
 const DISK_CHECKPOINT_FOR_WARN: u64 = 1024 * 1024 * 1024 * 5;
 
@@ -53,6 +52,9 @@ where
     chain_service: WriteBlockChainService<TransactionPoolServiceT>,
     sync_status: Option<SyncStatus>,
     config: Arc<NodeConfig>,
+    storage: Arc<Storage>,
+    vm_metrics: Option<VMMetrics>,
+    genesis: Genesis,
 }
 
 impl<TransactionPoolServiceT> BlockConnectorService<TransactionPoolServiceT>
@@ -62,11 +64,17 @@ where
     pub fn new(
         chain_service: WriteBlockChainService<TransactionPoolServiceT>,
         config: Arc<NodeConfig>,
+        storage: Arc<Storage>,
+        vm_metrics: Option<VMMetrics>,
+        genesis: Genesis,
     ) -> Self {
         Self {
             chain_service,
             sync_status: None,
             config,
+            storage,
+            vm_metrics,
+            genesis,
         }
     }
 
@@ -169,17 +177,24 @@ where
             .ok_or_else(|| format_err!("Startup info should exist."))?;
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
         let dag = ctx.get_shared::<BlockDAG>()?;
+        let genesis = ctx.get_shared::<Genesis>()?;
         let chain_service = WriteBlockChainService::new(
             config.clone(),
             startup_info,
-            storage,
+            storage.clone(),
             txpool,
             bus,
-            vm_metrics,
+            vm_metrics.clone(),
             dag,
         )?;
 
-        Ok(Self::new(chain_service, config))
+        Ok(Self::new(
+            chain_service,
+            config,
+            storage,
+            vm_metrics,
+            genesis,
+        ))
     }
 }
 
@@ -418,11 +433,11 @@ where
     fn handle(
         &mut self,
         _msg: MinerRequest,
-        ctx: &mut ServiceContext<Self>,
+        _ctx: &mut ServiceContext<Self>,
     ) -> <MinerRequest as ServiceRequest>::Response {
         let main_header = self.chain_service.get_main().status().head().clone();
         let dag = self.chain_service.get_dag();
-
+        let genesis = self.genesis.clone();
         let MineNewDagBlockInfo {
             tips,
             blue_blocks,
@@ -431,7 +446,6 @@ where
             let (previous_ghostdata, pruning_point) = if main_header.pruning_point()
                 == HashValue::zero()
             {
-                let genesis = ctx.get_shared::<Genesis>()?;
                 (
                         self.chain_service
                             .get_dag()
@@ -460,7 +474,6 @@ where
                 self.chain_service.get_main().get_genesis_hash(),
             )?
         } else {
-            let genesis = ctx.get_shared::<Genesis>()?;
             let tips = dag.get_dag_state(genesis.block().id())?.tips;
             let ghostdata = dag.ghostdata(&tips)?;
             MineNewDagBlockInfo {
@@ -479,8 +492,8 @@ where
             .ok_or_else(|| format_err!("the blue blocks must be not be 0!"))?;
 
         let time_service = self.config.net().time_service();
-        let storage = ctx.get_shared::<Arc<Storage>>()?;
-        let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
+        let storage = self.storage.clone();
+        let vm_metrics = self.vm_metrics.clone();
         let main = BlockChain::new(time_service, selected_parent, storage, vm_metrics, dag)?;
 
         let epoch = main.epoch().clone();
