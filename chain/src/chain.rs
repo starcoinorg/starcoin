@@ -1012,7 +1012,7 @@ impl BlockChain {
         )?;
         let (state_root2, included_txn_info_hashes2) = if !transactions2.is_empty() {
             let (state_root, hashes) = starcoin_vm2_chain::execute_txns_and_save(
-              block_id,
+                block_id,
                 block.header.number(),
                 storage2,
                 &statedb2,

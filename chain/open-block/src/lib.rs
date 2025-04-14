@@ -400,9 +400,7 @@ impl OpenedBlock {
             gas_used,
             status,
         );
-        let _accumulator_root = self
-            .txn_accumulator
-            .append(&[txn_info.id()])?;
+        let _accumulator_root = self.txn_accumulator.append(&[txn_info.id()])?;
         Ok(())
     }
 
