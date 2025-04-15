@@ -1,4 +1,3 @@
-use std::str::FromStr;
 use crate::view::{scripts_data::ScriptData, str_view::StrView, ByteCode};
 use move_core_types::account_address::AccountAddress;
 use schemars::JsonSchema;
@@ -7,6 +6,7 @@ use starcoin_crypto::{CryptoMaterialError, ValidCryptoMaterialStringExt};
 use starcoin_vm_types::transaction::{
     authenticator::AccountPublicKey, RawUserTransaction, TransactionPayload,
 };
+use std::str::FromStr;
 
 #[derive(Default, Clone, Debug, Eq, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub struct TransactionRequest {
@@ -88,7 +88,6 @@ impl FromStr for StrView<Vec<u8>> {
         Ok(Self(hex::decode(s.strip_prefix("0x").unwrap_or(s))?))
     }
 }
-
 
 impl std::fmt::Display for StrView<AccountPublicKey> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

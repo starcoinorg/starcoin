@@ -23,7 +23,6 @@ impl From<Vec<u8>> for ResourceView {
     }
 }
 
-
 #[derive(Default, Clone, Debug, Deserialize, Serialize, JsonSchema)]
 pub struct ListResourceView {
     pub resources: BTreeMap<StructTagView, ResourceView>,

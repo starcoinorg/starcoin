@@ -1,7 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::view::{function_arg_type_view::{ModuleIdView, TypeTagView}, str_view::StrView};
+use crate::view::{
+    function_arg_type_view::{ModuleIdView, TypeTagView},
+    str_view::StrView,
+};
 use move_core_types::{account_address::AccountAddress, identifier::Identifier};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};

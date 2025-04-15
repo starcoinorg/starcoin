@@ -7,8 +7,7 @@ use starcoin_vm_types::{
     access_path::AccessPath,
     language_storage::{parse_module_id, FunctionId, ModuleId, StructTag, TypeTag},
     parser::parse_type_tag,
-    sign_message::SignedMessage
-    ,
+    sign_message::SignedMessage,
     transaction_argument::TransactionArgument,
 };
 use std::str::FromStr;
@@ -110,9 +109,6 @@ impl FromStr for TransactionArgumentView {
         Ok(Self(arg))
     }
 }
-
-
-
 
 macro_rules! impl_str_view_for {
     ($($t:ty)*) => {$(

@@ -5,8 +5,8 @@ use crate::view::str_view::StrView;
 use move_core_types::identifier::Identifier;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
 use starcoin_abi_types::ModuleABI;
+use std::collections::BTreeMap;
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct CodeView {
