@@ -8,7 +8,7 @@ use starcoin_abi_types::TypeInstantiation;
 use starcoin_crypto::HashValue;
 use starcoin_resource_viewer::module_cache::ModuleCache;
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
-use starcoin_rpc_api::types::{DryRunOutputView, TransactionOutputView, WriteOpValueView};
+// use starcoin_types::types::{DryRunOutputView, TransactionOutputView, WriteOpValueView};
 use starcoin_state_api::StateNodeStore;
 use starcoin_statedb::ChainStateDB;
 use starcoin_vm_runtime::data_cache::{AsMoveResolver, StateViewCache};
@@ -23,6 +23,9 @@ use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::transaction_argument::TransactionArgument;
 use starcoin_vm_types::vm_status::VMStatus;
 use std::sync::Arc;
+use starcoin_types::view::dry_run_output_view::DryRunOutputView;
+use starcoin_types::view::transaction_output_view::TransactionOutputView;
+use starcoin_types::view::write_op_value_view::WriteOpValueView;
 
 #[derive(Clone)]
 pub struct PlaygroudService {

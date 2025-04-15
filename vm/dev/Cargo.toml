@@ -15,6 +15,7 @@ bcs-ext = { workspace = true }
 starcoin-abi-decoder = { workspace = true }
 starcoin-abi-resolver = { workspace = true }
 starcoin-abi-types = { workspace = true }
+starcoin-types = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-resource-viewer = { workspace = true }
 # starcoin-rpc-api = { workspace = true }
