@@ -1,31 +1,48 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::GenerateBlockEvent;
-use anyhow::Result;
+use crate::{GenerateBlockEvent, TryMintBlockEvent};
+use anyhow::{anyhow, Result};
+use core::panic;
 use starcoin_config::NodeConfig;
+use starcoin_dag::{
+    blockdag::BlockDAG,
+    consensusdb::{consenses_state::DagState, schemadb::GhostdagStoreReader},
+};
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
+use starcoin_storage::{BlockStore, Storage};
 use starcoin_txpool_api::PropagateTransactions;
 use starcoin_types::{
     sync_status::SyncStatus,
-    system_events::{NewDagBlockFromPeer, NewHeadBlock, SyncStatusChangeEvent},
+    system_events::{NewDagBlockFromPeer, NewHeadBlock, SyncStatusChangeEvent, SystemStarted},
 };
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
+#[derive(Clone)]
 pub struct GenerateBlockEventPacemaker {
     config: Arc<NodeConfig>,
     sync_status: Option<SyncStatus>,
-    last_time_received: Option<std::time::SystemTime>,
+    dag: BlockDAG,
+    storage: Arc<Storage>,
 }
 
 impl ServiceFactory<Self> for GenerateBlockEventPacemaker {
     fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
-        Ok(Self {
+        let dag = ctx
+            .get_shared::<BlockDAG>()
+            .unwrap_or_else(|e| panic!("BlockDAG should exist, error: {:?}", e));
+        let storage = ctx
+            .get_shared::<Arc<Storage>>()
+            .unwrap_or_else(|e| panic!("Storage should exist, error: {:?}", e));
+        let self_ref = Self {
             config: ctx.get_shared::<Arc<NodeConfig>>()?,
             sync_status: None,
-            last_time_received: None,
-        })
+            dag,
+            storage,
+        };
+        ctx.put_shared(self_ref.clone())?;
+        Ok(self_ref)
     }
 }
 
@@ -40,6 +57,44 @@ impl GenerateBlockEventPacemaker {
             None => false,
         }
     }
+
+    fn dag_current_state(&self) -> Result<DagState> {
+        let startup_info = self
+            .storage
+            .get_startup_info()?
+            .ok_or_else(|| anyhow!("StartupInfo not found, maybe the node is not started yet"))?;
+        let head_block = self
+            .storage
+            .get_block_header_by_hash(startup_info.main)?
+            .ok_or_else(|| anyhow!("BlockHeader should exist"))?;
+        self.dag.get_dag_state(head_block.pruning_point())
+    }
+
+    fn try_mint_later(&self, ctx: &mut ServiceContext<'_, Self>, try_count: u32) {
+        ctx.run_later(Duration::from_secs(1), move |ctx| {
+            let self_ref = match ctx.get_shared::<Self>() {
+                Ok(self_ref) => self_ref,
+                Err(e) => {
+                    warn!(
+                        "Failed to get self reference when trying to mint block event: {:?}",
+                        e
+                    );
+                    return;
+                }
+            };
+            let dag_state = match self_ref.dag_current_state() {
+                Ok(state) => Arc::new(state),
+                Err(e) => {
+                    warn!(
+                        "Failed to get dag state when trying to mint block event: {:?}",
+                        e
+                    );
+                    return;
+                }
+            };
+            ctx.notify(TryMintBlockEvent { dag_state, try_count });
+        });
+    }
 }
 
 impl ActorService for GenerateBlockEventPacemaker {
@@ -47,6 +102,8 @@ impl ActorService for GenerateBlockEventPacemaker {
         ctx.subscribe::<SyncStatusChangeEvent>();
         ctx.subscribe::<NewHeadBlock>();
         ctx.subscribe::<NewDagBlockFromPeer>();
+        ctx.subscribe::<SystemStarted>();
+        ctx.subscribe::<TryMintBlockEvent>();
         //if mint empty block is disabled, trigger mint event for on demand mint (Dev)
         if self.config.miner.is_disable_mint_empty_block() {
             ctx.subscribe::<PropagateTransactions>();
@@ -58,10 +115,77 @@ impl ActorService for GenerateBlockEventPacemaker {
         ctx.unsubscribe::<SyncStatusChangeEvent>();
         ctx.unsubscribe::<NewHeadBlock>();
         ctx.unsubscribe::<NewDagBlockFromPeer>();
+        ctx.unsubscribe::<SystemStarted>();
+        ctx.unsubscribe::<TryMintBlockEvent>();
         if self.config.miner.is_disable_mint_empty_block() {
             ctx.unsubscribe::<PropagateTransactions>();
         }
         Ok(())
+    }
+}
+
+impl EventHandler<Self, SystemStarted> for GenerateBlockEventPacemaker {
+    fn handle_event(&mut self, _msg: SystemStarted, ctx: &mut ServiceContext<Self>) {
+        self.try_mint_later(ctx);
+    }
+}
+
+impl EventHandler<Self, TryMintBlockEvent> for GenerateBlockEventPacemaker {
+    fn handle_event(&mut self, msg: TryMintBlockEvent, ctx: &mut ServiceContext<Self>) {
+        if self.is_synced() {
+            let last_dag_ghost_data = match self
+                .dag
+                .ghost_dag_manager()
+                .find_selected_parent(msg.dag_state.tips.clone())
+            {
+                Ok(id) => match self.dag.storage.ghost_dag_store.get_data(id) {
+                    Ok(data) => data,
+                    Err(e) => {
+                        warn!("Failed to get ghost dag data when trying to mint: {}", e);
+                        return;
+                    }
+                },
+                Err(e) => {
+                    warn!("Failed to find selected parent when trying to mint: {}", e);
+                    return;
+                }
+            };
+
+            let tips = match self.dag_current_state() {
+                Ok(state) => state.tips,
+                Err(e) => {
+                    warn!("Failed to get dag state when trying to mint for now: {}", e);
+                    return;
+                }
+            };
+            let current_dag_ghost_data =
+                match self.dag.ghost_dag_manager().find_selected_parent(tips) {
+                    Ok(id) => match self.dag.storage.ghost_dag_store.get_data(id) {
+                        Ok(data) => data,
+                        Err(e) => {
+                            warn!(
+                                "Failed to get ghost dag data when trying to mint for now: {}",
+                                e
+                            );
+                            return;
+                        }
+                    },
+                    Err(e) => {
+                        warn!(
+                            "Failed to find selected parent when trying to mint for now: {}",
+                            e
+                        );
+                        return;
+                    }
+                };
+            let blue_count = current_dag_ghost_data
+                .blue_score
+                .saturating_sub(last_dag_ghost_data.blue_score);
+            if blue_count < 10 {
+                self.send_event(true, ctx);
+            }
+        }
+        self.try_mint_later(ctx);
     }
 }
 
@@ -97,25 +221,6 @@ impl EventHandler<Self, SyncStatusChangeEvent> for GenerateBlockEventPacemaker {
 
 impl EventHandler<Self, NewDagBlockFromPeer> for GenerateBlockEventPacemaker {
     fn handle_event(&mut self, _msg: NewDagBlockFromPeer, ctx: &mut ServiceContext<Self>) {
-        let now = std::time::SystemTime::now();
-        if let Some(last_time) = self.last_time_received {
-            match now.duration_since(last_time) {
-                Ok(duration) => {
-                    self.last_time_received = Some(now);
-                    if duration.as_secs() >= self.config.miner.dag_block_receive_time_window() {
-                        self.send_event(false, ctx);
-                    }
-                }
-                Err(e) => {
-                    warn!(
-                        "[pacemaker] failed to calculate the dag block receive duration: {:?}",
-                        e
-                    );
-                    self.last_time_received = Some(now);
-                }
-            }
-        } else {
-            self.last_time_received = Some(now);
-        }
+        self.send_event(true, ctx);
     }
 }

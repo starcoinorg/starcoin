@@ -5,6 +5,7 @@ use crate::metrics::MinerMetrics;
 use crate::task::MintTask;
 use anyhow::Result;
 use starcoin_config::NodeConfig;
+use starcoin_dag::consensusdb::consenses_state::DagState;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRef,
@@ -34,6 +35,12 @@ pub enum MinerError {
     TaskEmptyError,
     #[error("Mint task is mismatch Error, current blob: {current}, got blob: {real}")]
     TaskMisMatchError { current: String, real: String },
+}
+
+#[derive(Clone, Debug)]
+pub struct TryMintBlockEvent {
+    pub dag_state: Arc<DagState>,
+    pub try_count: u32,
 }
 
 #[derive(Debug)]
