@@ -1621,6 +1621,15 @@ impl BlockChain {
         if self.epoch.end_block_number() == block.header().number() {
             self.epoch = get_epoch_from_statedb(&self.statedb)?;
         } else if self.epoch.end_block_number() == block.header().number().saturating_add(1) {
+            let start_block_id = self
+                .get_block_by_number(self.epoch.start_block_number())?
+                .unwrap_or_else(|| {
+                    panic!(
+                        "the block: {:?} should exist",
+                        self.epoch.start_block_number()
+                    )
+                });
+            let end_block_id = block.id();
             let epoch_info = self.chain_state().get_epoch_info()?;
             let total_selectd_chain_blocks = block
                 .header()
@@ -1675,8 +1684,8 @@ impl BlockChain {
                 0
             };
 
-            info!("the epoch data will be updated, this epoch data: total blue blocks: {:?}, total difficulty: {:?}, avg total difficulty: {:?}, BPS: {:?}, eclapse time: {:?}", 
-                total_blocks, total_difficulty, avg_total_difficulty, bps, eclapse_time);
+            info!("the epoch data will be updated, this epoch data: total blue blocks: {:?}, total difficulty: {:?}, avg total difficulty: {:?}, BPS: {:?}, eclapse time: {:?}, start block id: {:?}, end block id: {:?}", 
+                total_blocks, total_difficulty, avg_total_difficulty, bps, eclapse_time, start_block_id, end_block_id);
         }
 
         self.renew_tips(&parent_header, new_tip_block.header(), tips)?;
