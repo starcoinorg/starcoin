@@ -37,6 +37,7 @@ use starcoin_types::{
     transaction::Transaction,
     U256,
 };
+use starcoin_vm2_state_api::ChainStateWriter as ChainStateWriter2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_storage::{
     storage::StorageInstance as StorageInstance2, Storage as Storage2, Store as Store2,
@@ -1010,19 +1011,14 @@ impl BlockChain {
             epoch.block_gas_limit(),
             vm_metrics,
         )?;
-        let (state_root2, included_txn_info_hashes2) = if !transactions2.is_empty() {
-            let (state_root, hashes) = starcoin_vm2_chain::execute_txns_and_save(
-                block_id,
-                block.header.number(),
-                storage2,
+        let (executed_data2, included_txn_info_hashes2) = if !transactions2.is_empty() {
+            let (executed_data, hashes) = starcoin_vm2_chain::execute_txns(
                 &statedb2,
-                transactions2,
-                // fixme: set txn info properly
-                txn_accumulator.num_leaves(),
+                transactions2.clone(),
                 epoch.block_gas_limit() - executed_data.gas_used(),
                 None,
             );
-            (state_root, hashes)
+            (executed_data, hashes)
         } else {
             (None, vec![])
         };
@@ -1066,6 +1062,7 @@ impl BlockChain {
             txn_accumulator.append(&included_txn_info_hashes)?;
 
             if !included_txn_info_hashes2.is_empty() {
+                assert!(executed_data2.is_some());
                 txn_accumulator.append(&included_txn_info_hashes2)?;
             }
             txn_accumulator.root_hash()
@@ -1078,9 +1075,13 @@ impl BlockChain {
         );
 
         watch(CHAIN_WATCH_NAME, "n23");
+        statedb2
+            .flush()
+            .map_err(BlockExecutorError::BlockChainStateErr)?;
         statedb
             .flush()
             .map_err(BlockExecutorError::BlockChainStateErr)?;
+
         // If chain state is matched, and accumulator is matched,
         // then, we save flush states, and save block data.
         watch(CHAIN_WATCH_NAME, "n24");
@@ -1105,8 +1106,20 @@ impl BlockChain {
             txn_accumulator_info,
             block_accumulator_info,
         );
-        if let Some(state_root2) = state_root2 {
-            block_info.add_vm2_state_root(state_root2);
+
+        // save transaction relationship and save transaction to storage2
+        if let Some(executed_data2) = executed_data2 {
+            let state_root = executed_data2.state_root;
+            block_info.add_vm2_state_root(state_root);
+
+            starcoin_vm2_chain::save_executed_transactions(
+                block_id,
+                header.number(),
+                storage2,
+                transactions2,
+                executed_data2,
+                transaction_global_index + executed_data.txn_infos.len() as u64,
+            );
         }
 
         watch(CHAIN_WATCH_NAME, "n25");

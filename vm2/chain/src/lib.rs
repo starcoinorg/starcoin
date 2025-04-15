@@ -2,29 +2,40 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use starcoin_vm2_crypto::HashValue;
-use starcoin_vm2_executor::block_executor::{self, VMMetrics};
-use starcoin_vm2_statedb::{ChainStateDB, ChainStateWriter};
+use starcoin_vm2_executor::block_executor::{self, BlockExecutedData, VMMetrics};
+use starcoin_vm2_statedb::ChainStateDB;
 use starcoin_vm2_storage::Store;
 use starcoin_vm2_types::transaction::{RichTransactionInfo, Transaction};
 
-pub fn execute_txns_and_save(
-    block_id: HashValue,
-    block_number: u64,
-    storage: &dyn Store,
+pub fn execute_txns(
     statedb: &ChainStateDB,
     transactions: Vec<Transaction>,
     gas_limit: u64,
-    transaction_global_index: u64,
     vm_metrics: Option<VMMetrics>,
-) -> (Option<HashValue>, Vec<HashValue>) {
-    // This function will execute the transactions in the block using vm2 and save the results.
+) -> (Option<BlockExecutedData>, Vec<HashValue>) {
+    // This function will execute the transactions in the block using vm2
     // Note: The actual implementation of VM2 execution and saving logic will depend on your VM2 setup.
     let executed_data =
-        block_executor::block_execute(statedb, transactions.clone(), gas_limit, vm_metrics)
-            .unwrap();
+        block_executor::block_execute(statedb, transactions, gas_limit, vm_metrics).unwrap();
 
-    statedb.flush().unwrap();
+    let included_txn_info_hashes: Vec<_> = executed_data
+        .txn_infos
+        .iter()
+        .map(|info| info.id())
+        .collect::<Vec<_>>();
 
+    (Some(executed_data), included_txn_info_hashes)
+}
+
+pub fn save_executed_transactions(
+    block_id: HashValue,
+    block_number: u64,
+    storage: &dyn Store,
+    transactions: Vec<Transaction>,
+    executed_data: BlockExecutedData,
+    transaction_global_index: u64,
+) {
+    // Save the state root and transaction info to the database.
     let txn_infos = executed_data.txn_infos;
     let txn_events = executed_data.txn_events;
     let txn_table_infos = executed_data
@@ -76,8 +87,4 @@ pub fn execute_txns_and_save(
         .save_block_txn_info_ids(block_id, txn_info_ids)
         .unwrap();
     storage.save_table_infos(txn_table_infos).unwrap();
-
-    let included_txn_info_hashes: Vec<_> =
-        txn_infos.iter().map(|info| info.id()).collect::<Vec<_>>();
-    (Some(executed_data.state_root), included_txn_info_hashes)
 }

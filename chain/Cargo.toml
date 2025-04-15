@@ -33,8 +33,8 @@ starcoin-vm2-statedb = { workspace = true }
 starcoin-vm2-storage = { workspace = true }
 starcoin-vm2-types = { workspace = true }
 starcoin-vm2-chain = { workspace = true }
-starcoin-vm2-crypto = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
+starcoin-vm2-state-api = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }
