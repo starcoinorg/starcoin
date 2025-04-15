@@ -263,7 +263,7 @@ starcoin-state-tree = { path = "state/state-tree" }
 starcoin-statedb = { path = "state/statedb" }
 starcoin-storage = { path = "storage" }
 starcoin-config = { git = "https://github.com/starcoinorg/starcoin", branch = "multi-move-vm" }
-starcoin-accumulator = { path = "commons/accumulator" }
+starcoin-accumulator = { git = "https://github.com/starcoinorg/starcoin", branch = "multi-move-vm" }
 starcoin-infallible = { path = "commons/infallible" }
 starcoin-time-service = { git = "https://github.com/starcoinorg/starcoin", branch = "multi-move-vm" }
 starcoin-logger = { git = "https://github.com/starcoinorg/starcoin", branch = "multi-move-vm" }
