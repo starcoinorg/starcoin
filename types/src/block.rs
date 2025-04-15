@@ -870,7 +870,8 @@ pub struct BlockInfo {
     pub txn_accumulator_info: AccumulatorInfo,
     /// The block accumulator info.
     pub block_accumulator_info: AccumulatorInfo,
-    pub vm2_state_root: Option<HashValue>,
+    /// The vm state accumulator info for dual-vm
+    pub vm_state_accumulator_info: AccumulatorInfo,
 }
 
 impl BlockInfo {
@@ -879,18 +880,15 @@ impl BlockInfo {
         total_difficulty: U256,
         txn_accumulator_info: AccumulatorInfo,
         block_accumulator_info: AccumulatorInfo,
+        vm_state_accumulator_info: AccumulatorInfo,
     ) -> Self {
         Self {
             block_id,
             total_difficulty,
             txn_accumulator_info,
             block_accumulator_info,
-            vm2_state_root: None,
+            vm_state_accumulator_info,
         }
-    }
-
-    pub fn add_vm2_state_root(&mut self, vm2_state_root: HashValue) {
-        self.vm2_state_root = Some(vm2_state_root);
     }
 
     pub fn id(&self) -> HashValue {
@@ -909,12 +907,12 @@ impl BlockInfo {
         &self.txn_accumulator_info
     }
 
-    pub fn block_id(&self) -> &HashValue {
-        &self.block_id
+    pub fn get_vm_state_accumulator_info(&self) -> &AccumulatorInfo {
+        &self.vm_state_accumulator_info
     }
 
-    pub fn state_root(&self) -> Option<HashValue> {
-        self.vm2_state_root
+    pub fn block_id(&self) -> &HashValue {
+        &self.block_id
     }
 }
 
@@ -925,7 +923,7 @@ impl Sample for BlockInfo {
             total_difficulty: 0.into(),
             txn_accumulator_info: AccumulatorInfo::sample(),
             block_accumulator_info: AccumulatorInfo::sample(),
-            vm2_state_root: None,
+            vm_state_accumulator_info: AccumulatorInfo::sample(),
         }
     }
 }

@@ -590,6 +590,7 @@ pub struct BlockChain {
     genesis_hash: HashValue,
     txn_accumulator: MerkleAccumulator,
     block_accumulator: MerkleAccumulator,
+    vm_state_accumulator: MerkleAccumulator,
     status: ChainStatusWithBlock,
     statedb: (ChainStateDB, ChainStateDB2),
     storage: (Arc<dyn Store>, Arc<dyn Store2>),
@@ -626,9 +627,36 @@ impl BlockChain {
             .ok_or_else(|| format_err!("Can not find block info by hash {:?}", head_block.id()))?;
         debug!("Init chain with block_info: {:?}", block_info);
         let state_root = head_block.header().state_root();
-        let state_root2 = block_info.state_root();
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
+        let vm_state_accumulator_info = block_info.get_vm_state_accumulator_info();
+
+        let txn_accumulator = info_2_accumulator(
+            txn_accumulator_info.clone(),
+            AccumulatorStoreType::Transaction,
+            storage.as_ref(),
+        );
+        let block_accumulator = info_2_accumulator(
+            block_accumulator_info.clone(),
+            AccumulatorStoreType::Block,
+            storage.as_ref(),
+        );
+        let vm_state_accumulator = info_2_accumulator(
+            vm_state_accumulator_info.clone(),
+            AccumulatorStoreType::VMState,
+            storage.as_ref(),
+        );
+
+        let state_root2 = if vm_state_accumulator.num_leaves() == 0 {
+            None
+        } else {
+            Some(
+                vm_state_accumulator
+                    .get_leaf(vm_state_accumulator.num_leaves() - 1)?
+                    .unwrap(),
+            )
+        };
+
         let chain_state = ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root));
         let chain_state2 = ChainStateDB2::new(storage2.clone().into_super_arc(), state_root2);
         let epoch = get_epoch_from_statedb(&chain_state)?;
@@ -639,16 +667,8 @@ impl BlockChain {
         let mut chain = Self {
             genesis_hash: genesis,
             time_service,
-            txn_accumulator: info_2_accumulator(
-                txn_accumulator_info.clone(),
-                AccumulatorStoreType::Transaction,
-                storage.as_ref(),
-            ),
-            block_accumulator: info_2_accumulator(
-                block_accumulator_info.clone(),
-                AccumulatorStoreType::Block,
-                storage.as_ref(),
-            ),
+            txn_accumulator,
+            block_accumulator,
             status: ChainStatusWithBlock {
                 status: ChainStatus::new(head_block.header.clone(), block_info),
                 head: head_block,
@@ -682,6 +702,9 @@ impl BlockChain {
         let block_accumulator = MerkleAccumulator::new_empty(
             storage.get_accumulator_store(AccumulatorStoreType::Block),
         );
+        let vm_state_accumulator = MerkleAccumulator::new_empty(
+            storage.get_accumulator_store(AccumulatorStoreType::VMState),
+        );
         let chain_id = genesis_block.header().chain_id();
         let statedb = ChainStateDB::new(storage.clone().into_super_arc(), None);
         let statedb2 = ChainStateDB2::new(storage2.clone().into_super_arc(), None);
@@ -690,6 +713,7 @@ impl BlockChain {
             (statedb, statedb2),
             txn_accumulator,
             block_accumulator,
+            vm_state_accumulator,
             &genesis_epoch,
             None,
             genesis_block,
@@ -951,6 +975,7 @@ impl BlockChain {
         statedb: (ChainStateDB, ChainStateDB2),
         txn_accumulator: MerkleAccumulator,
         block_accumulator: MerkleAccumulator,
+        vm_state_accumulator: MerkleAccumulator,
         epoch: &Epoch,
         parent_status: Option<ChainStatus>,
         block: Block,
@@ -1008,9 +1033,25 @@ impl BlockChain {
             (None, vec![])
         };
         watch(CHAIN_WATCH_NAME, "n22");
-        let state_root = executed_data.state_root;
+
+        let state_root = {
+            let state_root = executed_data.state_root;
+            // todo: make sure state_root2 always be updated
+            if let Some(state_root2) = state_root2 {
+                vm_state_accumulator.append(&[state_root, state_root2])?;
+                vm_state_accumulator.root_hash()
+            } else if vm_state_accumulator.num_leaves() != 0 {
+                let state_root2 = vm_state_accumulator
+                    .get_leaf(vm_state_accumulator.num_leaves() - 1)?
+                    .unwrap();
+                vm_state_accumulator.append(&[state_root, state_root2])?;
+                vm_state_accumulator.root_hash()
+            } else {
+                state_root
+            }
+        };
+
         let vec_transaction_info = &executed_data.txn_infos;
-        // todo: how to verify move2.0 state_root?
         verify_block!(
             VerifyBlockField::State,
             state_root == header.state_root(),
@@ -1707,6 +1748,7 @@ impl ChainReader for BlockChain {
                 (self.statedb.0.fork(), self.statedb.1.fork()),
                 self.txn_accumulator.fork(None),
                 self.block_accumulator.fork(None),
+                self.vm_state_accumulator.fork(None),
                 &self.epoch,
                 Some(self.status.status.clone()),
                 verified_block.0,
