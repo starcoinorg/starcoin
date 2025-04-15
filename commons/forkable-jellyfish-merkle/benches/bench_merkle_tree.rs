@@ -2,7 +2,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use forkable_jellyfish_merkle::{
     blob::Blob, mock_tree_store::MockTreeStore, HashValueKey, JellyfishMerkleTree, RawKey,
 };
-use rand::{rngs::StdRng, SeedableRng};
+use rand_0_7_3::{rngs::StdRng, SeedableRng};
 use starcoin_crypto::hash::*;
 use std::collections::HashMap;
 

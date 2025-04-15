@@ -13,7 +13,7 @@ use proptest::{
     collection::{btree_map, hash_map, vec},
     prelude::*,
 };
-use rand::{rngs::StdRng, Rng, SeedableRng};
+use rand_0_7_3::{rngs::StdRng, Rng, SeedableRng};
 use starcoin_crypto::hash::{HashValue, *};
 use std::collections::HashMap;
 use std::ops::Bound;
@@ -669,7 +669,7 @@ fn many_versions_get_proof_and_verify_tree_root(seed: &[u8], num_versions: usize
     }
 
     for (i, (k, v, _)) in kvs.iter().enumerate() {
-        let random_version = rng.gen_range(i..i + num_versions);
+        let random_version = rng.gen_range(i, i + num_versions);
         let history_root = roots[random_version];
         let (value, proof) = tree.get_with_proof(history_root, *k).unwrap();
         assert_eq!(value.unwrap(), *v);
@@ -677,7 +677,7 @@ fn many_versions_get_proof_and_verify_tree_root(seed: &[u8], num_versions: usize
     }
 
     for (i, (k, _, v)) in kvs.iter().enumerate() {
-        let random_version = rng.gen_range(i + num_versions..2 * num_versions);
+        let random_version = rng.gen_range(i + num_versions, 2 * num_versions);
         let history_root = roots[random_version];
         let (value, proof) = tree.get_with_proof(history_root, *k).unwrap();
         assert_eq!(value.unwrap(), *v);

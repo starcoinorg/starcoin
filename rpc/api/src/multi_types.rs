@@ -15,9 +15,8 @@ impl TryFrom<SignedUserTransactionV2> for SignedUserTransactionV2View {
     type Error = anyhow::Error;
 
     fn try_from(txn: SignedUserTransactionV2) -> Result<Self, Self::Error> {
-        let id = txn.id().to_inner();
         Ok(Self {
-            transaction_hash: HashValue::new(id),
+            transaction_hash: txn.id(),
         })
     }
 }

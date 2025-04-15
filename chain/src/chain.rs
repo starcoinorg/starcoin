@@ -29,7 +29,6 @@ use starcoin_types::filter::Filter;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::RichTransactionInfo;
-use starcoin_types::utils::{to_hash_value, to_hash_value2};
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
@@ -641,7 +640,7 @@ impl BlockChain {
             .ok_or_else(|| format_err!("Can not find block info by hash {:?}", head_block.id()))?;
         debug!("Init chain with block_info: {:?}", block_info);
         let state_root = head_block.header().state_root();
-        let state_root2 = block_info.state_root().map(to_hash_value2);
+        let state_root2 = block_info.state_root();
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
         let chain_state = ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root));
@@ -1013,7 +1012,7 @@ impl BlockChain {
         )?;
         let (state_root2, included_txn_info_hashes2) = if !transactions2.is_empty() {
             let (state_root, hashes) = starcoin_vm2_chain::execute_txns_and_save(
-                to_hash_value2(block_id),
+                block_id,
                 block.header.number(),
                 storage2,
                 &statedb2,
@@ -1023,10 +1022,7 @@ impl BlockChain {
                 epoch.block_gas_limit() - executed_data.gas_used(),
                 None,
             );
-            (
-                state_root.map(to_hash_value),
-                hashes.into_iter().map(to_hash_value).collect(),
-            )
+            (state_root, hashes)
         } else {
             (None, vec![])
         };
@@ -1940,7 +1936,7 @@ impl ChainWriter for BlockChain {
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
         let state_root = block.header().state_root();
-        let state_root2 = block_info.state_root().map(to_hash_value2);
+        let state_root2 = block_info.state_root();
         self.txn_accumulator = info_2_accumulator(
             txn_accumulator_info.clone(),
             AccumulatorStoreType::Transaction,

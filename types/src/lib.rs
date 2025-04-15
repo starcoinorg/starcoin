@@ -108,15 +108,3 @@ pub mod sync_status;
 pub mod proof {
     pub use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 }
-
-pub mod utils {
-    use bytes::Bytes;
-    pub fn to_hash_value2(hash: starcoin_crypto::HashValue) -> starcoin_vm2_crypto::HashValue {
-        let raw_vec = hash.to_vec();
-        starcoin_vm2_crypto::HashValue::from_slice(Bytes::from(raw_vec)).unwrap()
-    }
-
-    pub fn to_hash_value(hash: starcoin_vm2_crypto::HashValue) -> starcoin_crypto::HashValue {
-        starcoin_crypto::HashValue::from_slice(hash.to_vec()).unwrap()
-    }
-}
