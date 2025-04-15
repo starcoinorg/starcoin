@@ -14,6 +14,7 @@ starcoin-accumulator = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-uint = { workspace = true }
 starcoin-vm-types = { workspace = true }
+starcoin-resource-viewer = { workspace = true }
 thiserror = { workspace = true }
 lazy_static = { workspace = true }
 move-binary-format = { workspace = true }
@@ -23,6 +24,7 @@ move-vm-runtime = { workspace = true }
 move-vm-types = { workspace = true }
 once_cell = { workspace = true }
 serde_bytes = { workspace = true }
+
 
 [dev-dependencies]
 claims = { workspace = true }

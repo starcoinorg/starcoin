@@ -1,20 +1,3 @@
-[dependencies]
-anyhow = { workspace = true }
-bcs-ext = { workspace = true }
-starcoin-abi-decoder = { workspace = true }
-starcoin-abi-resolver = { workspace = true }
-starcoin-abi-types = { workspace = true }
-starcoin-crypto = { workspace = true }
-starcoin-logger = { workspace = true }
-starcoin-resource-viewer = { workspace = true }
-starcoin-rpc-api = { workspace = true }
-starcoin-state-api = { workspace = true }
-starcoin-statedb = { workspace = true }
-starcoin-vm-runtime = { workspace = true }
-starcoin-vm-types = { workspace = true }
-thiserror = { workspace = true }
-vm-status-translator = { workspace = true }
-
 [package]
 authors = { workspace = true }
 edition = { workspace = true }
@@ -25,3 +8,22 @@ version = "2.0.1"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }
+
+[dependencies]
+anyhow = { workspace = true }
+bcs-ext = { workspace = true }
+starcoin-abi-decoder = { workspace = true }
+starcoin-abi-resolver = { workspace = true }
+starcoin-abi-types = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-resource-viewer = { workspace = true }
+# starcoin-rpc-api = { workspace = true }
+starcoin-state-api = { workspace = true }
+starcoin-statedb = { workspace = true }
+starcoin-vm-runtime = { workspace = true }
+starcoin-vm-types = { workspace = true }
+vm-status-translator = { workspace = true }
+serde = { version = "1.0.219", features = ["derive"] }
+schemars = { workspace = true }
+bytes = "1.10.1"
+hex = "0.4.3"
