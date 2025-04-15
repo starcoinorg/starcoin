@@ -5,8 +5,8 @@ use crate::{
     block::{Block, BlockNumber},
     view::{
         block_metadata_view::BlockMetadataView,
-        signed_user_transaction_view::SignedUserTransactionView, str_view::StrView
-    }
+        signed_user_transaction_view::SignedUserTransactionView, str_view::StrView,
+    },
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};

@@ -3,13 +3,12 @@
 
 use crate::view::{byte_code_or_script_function::ByteCodeOrScriptFunction, str_view::StrView};
 use move_core_types::{parser::parse_transaction_argument, u256};
-use starcoin_crypto::{CryptoMaterialError, ValidCryptoMaterialStringExt};
 use starcoin_vm_types::{
     access_path::AccessPath,
     language_storage::{parse_module_id, FunctionId, ModuleId, StructTag, TypeTag},
     parser::parse_type_tag,
-    sign_message::SignedMessage,
-    transaction::authenticator::AccountPublicKey,
+    sign_message::SignedMessage
+    ,
     transaction_argument::TransactionArgument,
 };
 use std::str::FromStr;
@@ -112,25 +111,8 @@ impl FromStr for TransactionArgumentView {
     }
 }
 
-impl std::fmt::Display for StrView<Vec<u8>> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "0x{}", hex::encode(&self.0))
-    }
-}
 
-impl FromStr for StrView<Vec<u8>> {
-    type Err = anyhow::Error;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(hex::decode(s.strip_prefix("0x").unwrap_or(s))?))
-    }
-}
 
-impl FromStr for StrView<AccountPublicKey> {
-    type Err = CryptoMaterialError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        AccountPublicKey::from_encoded_string(s).map(StrView)
-    }
-}
 
 macro_rules! impl_str_view_for {
     ($($t:ty)*) => {$(

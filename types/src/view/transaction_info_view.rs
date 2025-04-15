@@ -1,10 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::view::str_view::StrView;
+use crate::view::{str_view::StrView, transaction_status_view::TransactionStatusView};
+use anyhow::bail;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
+use starcoin_vm_types::transaction::{RichTransactionInfo, TransactionInfo, TransactionStatus};
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionInfoView {

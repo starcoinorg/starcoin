@@ -6,6 +6,7 @@ use move_core_types::identifier::Identifier;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use starcoin_abi_types::ModuleABI;
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct CodeView {

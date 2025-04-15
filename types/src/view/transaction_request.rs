@@ -1,7 +1,9 @@
+use std::str::FromStr;
 use crate::view::{scripts_data::ScriptData, str_view::StrView, ByteCode};
 use move_core_types::account_address::AccountAddress;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use starcoin_crypto::{CryptoMaterialError, ValidCryptoMaterialStringExt};
 use starcoin_vm_types::transaction::{
     authenticator::AccountPublicKey, RawUserTransaction, TransactionPayload,
 };
@@ -72,4 +74,34 @@ pub struct DryRunTransactionRequest {
     pub transaction: TransactionRequest,
     /// Sender's public key
     pub sender_public_key: StrView<AccountPublicKey>,
+}
+
+impl std::fmt::Display for StrView<Vec<u8>> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "0x{}", hex::encode(&self.0))
+    }
+}
+
+impl FromStr for StrView<Vec<u8>> {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(hex::decode(s.strip_prefix("0x").unwrap_or(s))?))
+    }
+}
+
+
+impl std::fmt::Display for StrView<AccountPublicKey> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.0.to_encoded_string().map_err(|_| std::fmt::Error)?
+        )
+    }
+}
+impl FromStr for StrView<AccountPublicKey> {
+    type Err = CryptoMaterialError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        AccountPublicKey::from_encoded_string(s).map(StrView)
+    }
 }
