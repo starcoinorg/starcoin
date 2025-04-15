@@ -4,6 +4,7 @@ members = [
     "abi/decoder",
     "abi/resolver",
     "abi/types",
+    "dev",
     "types",
     "storage",
     "state/api",
@@ -26,7 +27,6 @@ members = [
     "vm/package-builder",
     "vm/resource-viewer",
     "vm/starcoin-gas-meter",
-    "vm/dev",
     "vm/gas-algebra",
     "vm/gas-schedule",
     #"vm/move-explain",
@@ -47,6 +47,7 @@ default-members = [
     "abi/decoder",
     "abi/resolver",
     "abi/types",
+    "dev",
     "types",
     "storage",
     "state/api",
@@ -71,7 +72,6 @@ default-members = [
     "vm/move-coverage",
     "vm/resource-viewer",
     "vm/starcoin-gas-meter",
-    "vm/dev",
     "vm/gas-algebra",
     "vm/gas-schedule",
     #"vm/move-explain",
@@ -237,7 +237,7 @@ starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev 
 starcoin-abi-decoder = { path = "abi/decoder"}
 starcoin-abi-resolver = { path = "abi/resolver"}
 starcoin-abi-types = { path = "abi/types" }
-starcoin-dev = { path = "vm/dev" }
+starcoin-dev = { path = "dev" }
 starcoin-framework = { path = "vm/framework" }
 starcoin-sdk-builder = { path = "vm/starcoin-sdk-builder" }
 starcoin-move-compiler = { path = "vm/compiler" }
