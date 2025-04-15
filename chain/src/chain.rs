@@ -22,7 +22,7 @@ use starcoin_dag::consensusdb::prelude::StoreError;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
-use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
+use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter, StateReaderExt};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
@@ -46,6 +46,7 @@ use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy};
 use starcoin_vm_types::on_chain_config::FlexiDagConfigV2;
 use starcoin_vm_types::on_chain_resource::Epoch;
 use std::cmp::min;
+use std::collections::HashSet;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -1619,6 +1620,63 @@ impl BlockChain {
         };
         if self.epoch.end_block_number() == block.header().number() {
             self.epoch = get_epoch_from_statedb(&self.statedb)?;
+        } else if self.epoch.end_block_number() == block.header().number().saturating_add(1) {
+            let epoch_info = self.chain_state().get_epoch_info()?;
+            let total_selectd_chain_blocks = block
+                .header()
+                .number()
+                .saturating_sub(self.epoch.start_block_number())
+                .saturating_add(1);
+            let total_blocks = epoch_info
+                .uncles()
+                .saturating_add(total_selectd_chain_blocks);
+
+            let mut block_set = HashSet::new();
+            let blocks = (self.epoch.start_block_number()..=block.header().number())
+                .map(|block_number| {
+                    self.get_block_by_number(block_number)
+                        .unwrap_or_else(|e| {
+                            panic!(
+                                "the block: {:?} should exist, for error: {:?}",
+                                block_number, e
+                            )
+                        })
+                        .unwrap_or_else(|| panic!("the block: {:?} should exist", block_number))
+                })
+                .collect::<Vec<_>>();
+            block_set.extend(blocks.iter().map(|block| block.header()).cloned());
+            block_set.extend(blocks.iter().flat_map(|block| {
+                if let Some(uncles) = &block.body.uncles {
+                    uncles.clone()
+                } else {
+                    vec![]
+                }
+            }));
+            let total_difficulty: U256 = block_set
+                .iter()
+                .map(|block_header| block_header.difficulty())
+                .sum();
+            let avg_total_difficulty = if let Some(avg_total_difficulty) =
+                total_difficulty.checked_div(U256::from(total_blocks))
+            {
+                info!("avg_total_difficulty overflow");
+                avg_total_difficulty
+            } else {
+                U256::MAX
+            };
+
+            let eclapse_time = u64::try_from(
+                std::time::Duration::from_millis(self.epoch.start_time()).as_millis(),
+            )?;
+            let bps = if let Some(bps) = total_blocks.checked_div(eclapse_time) {
+                bps
+            } else {
+                info!("BPS overflow");
+                0
+            };
+
+            info!("the epoch data will be updated, this epoch data: total blue blocks: {:?}, total difficulty: {:?}, avg total difficulty: {:?}, BPS: {:?}, eclapse time: {:?}", 
+                total_blocks, total_difficulty, avg_total_difficulty, bps, eclapse_time);
         }
 
         self.renew_tips(&parent_header, new_tip_block.header(), tips)?;
