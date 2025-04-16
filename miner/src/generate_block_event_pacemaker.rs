@@ -182,10 +182,8 @@ impl EventHandler<Self, TryMintBlockEvent> for GenerateBlockEventPacemaker {
             }
         };
 
-        if blue_count < 5 {
-            self.send_event(true, ctx);
-        }
         if blue_count < msg.try_count {
+            self.send_event(true, ctx);
             self.try_mint_later(ctx, msg.try_count.saturating_sub(blue_count), 200);
         } else {
             self.try_mint_later(ctx, 5, 1000);
