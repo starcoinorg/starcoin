@@ -52,7 +52,7 @@ pub trait TokenUnit: Clone + Copy {
     }
 
     fn max(&self) -> u128 {
-        u128::max_value() / self.scaling_factor()
+        u128::MAX / self.scaling_factor()
     }
 }
 
