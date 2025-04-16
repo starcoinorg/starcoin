@@ -58,3 +58,4 @@ starcoin-cached-packages = { workspace = true }
 default = ["metrics"]
 metrics = ["starcoin-metrics"]
 testing = ["move-stdlib/testing", "starcoin-framework/testing", "starcoin-aggregator/testing", "move-unit-test", "starcoin-gas-meter/testing"]
+print_gas_info = ["starcoin-vm-types/print_gas_info"]
