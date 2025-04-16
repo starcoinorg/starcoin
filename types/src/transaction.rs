@@ -1,8 +1,17 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::{identifier::Identifier, language_storage::ModuleId};
+use bcs_ext::Sample;
 use serde::{Deserialize, Serialize};
+use starcoin_accumulator::inmemory::InMemoryAccumulator;
+use starcoin_crypto::hash::{
+    CryptoHash, CryptoHasher, PlainCryptoHash, SPARSE_MERKLE_PLACEHOLDER_HASH,
+};
 use starcoin_crypto::HashValue;
+use starcoin_vm2_types::transaction::TransactionInfo as TransactionInfoV2;
+use starcoin_vm2_types::vm_error::{AbortLocation, KeptVMStatus};
+use starcoin_vm_types::contract_event::ContractEvent;
 pub use starcoin_vm_types::transaction::*;
 use std::ops::Deref;
 
@@ -19,6 +28,94 @@ pub fn parse_transaction_argument_advance(s: &str) -> anyhow::Result<Transaction
         }
     };
     Ok(arg)
+}
+
+/// `TransactionInfo` is the object we store in the transaction accumulator. It consists of the
+/// transaction as well as the execution result of this transaction.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
+pub struct TransactionInfo {
+    /// The hash of this transaction.
+    pub transaction_hash: HashValue,
+
+    /// The root hash of Sparse Merkle Tree describing the world state at the end of this
+    /// transaction.
+    pub state_root_hash: HashValue,
+
+    /// The root hash of Merkle Accumulator storing all events emitted during this transaction.
+    pub event_root_hash: HashValue,
+
+    /// The amount of gas used.
+    pub gas_used: u64,
+
+    /// The vm status. If it is not `Executed`, this will provide the general error class. Execution
+    /// failures and Move abort's receive more detailed information. But other errors are generally
+    /// categorized with no status code or other information
+    pub status: crate::vm_error::KeptVMStatus,
+}
+
+impl TransactionInfo {
+    /// Constructs a new `TransactionInfo` object using transaction hash, state root hash and event
+    /// root hash.
+    pub fn new(
+        transaction_hash: HashValue,
+        state_root_hash: HashValue,
+        events: &[ContractEvent],
+        gas_used: u64,
+        status: crate::vm_error::KeptVMStatus,
+    ) -> TransactionInfo {
+        let event_hashes: Vec<_> = events.iter().map(|e| e.crypto_hash()).collect();
+        let events_accumulator_hash =
+            InMemoryAccumulator::from_leaves(event_hashes.as_slice()).root_hash();
+        TransactionInfo {
+            transaction_hash,
+            state_root_hash,
+            event_root_hash: events_accumulator_hash,
+            gas_used,
+            status,
+        }
+    }
+
+    pub fn id(&self) -> HashValue {
+        self.crypto_hash()
+    }
+
+    /// Returns the hash of this transaction.
+    pub fn transaction_hash(&self) -> HashValue {
+        self.transaction_hash
+    }
+
+    /// Returns root hash of Sparse Merkle Tree describing the world state at the end of this
+    /// transaction.
+    pub fn state_root_hash(&self) -> HashValue {
+        self.state_root_hash
+    }
+
+    /// Returns the root hash of Merkle Accumulator storing all events emitted during this
+    /// transaction.
+    pub fn event_root_hash(&self) -> HashValue {
+        self.event_root_hash
+    }
+
+    /// Returns the amount of gas used by this transaction.
+    pub fn gas_used(&self) -> u64 {
+        self.gas_used
+    }
+
+    pub fn status(&self) -> &crate::vm_error::KeptVMStatus {
+        &self.status
+    }
+}
+
+impl Sample for TransactionInfo {
+    fn sample() -> Self {
+        Self::new(
+            SignedUserTransaction::sample().id(),
+            *SPARSE_MERKLE_PLACEHOLDER_HASH,
+            &[],
+            0,
+            crate::vm_error::KeptVMStatus::Executed,
+        )
+    }
 }
 
 /// `RichTransactionInfo` is a wrapper of `TransactionInfo` with more info,
@@ -69,10 +166,6 @@ impl RichTransactionInfo {
     }
 }
 
-use crate::{identifier::Identifier, language_storage::ModuleId};
-use starcoin_vm2_types::transaction::RichTransactionInfo as RichTransactionInfoV2;
-use starcoin_vm2_types::vm_error::{AbortLocation, KeptVMStatus};
-
 fn lo_convert(lo: AbortLocation) -> starcoin_vm_types::vm_status::AbortLocation {
     match lo {
         AbortLocation::Script => starcoin_vm_types::vm_status::AbortLocation::Script,
@@ -86,39 +179,30 @@ fn lo_convert(lo: AbortLocation) -> starcoin_vm_types::vm_status::AbortLocation 
     }
 }
 
-impl From<RichTransactionInfoV2> for RichTransactionInfo {
-    fn from(value: RichTransactionInfoV2) -> Self {
+impl From<TransactionInfoV2> for TransactionInfo {
+    fn from(value: TransactionInfoV2) -> Self {
+        use starcoin_vm_types::vm_status::KeptVMStatus::*;
         Self {
-            block_id: value.block_id,
-            block_number: value.block_number,
-            transaction_info: TransactionInfo {
-                transaction_hash: value.transaction_info.transaction_hash,
-                state_root_hash: value.transaction_info.state_root_hash,
-                event_root_hash: value.transaction_info.event_root_hash,
-                gas_used: value.transaction_info.gas_used,
-                status: match value.transaction_info.status {
-                    KeptVMStatus::Executed => starcoin_vm_types::vm_status::KeptVMStatus::Executed,
-                    KeptVMStatus::OutOfGas => starcoin_vm_types::vm_status::KeptVMStatus::OutOfGas,
-                    KeptVMStatus::MoveAbort(lo, code) => {
-                        starcoin_vm_types::vm_status::KeptVMStatus::MoveAbort(lo_convert(lo), code)
-                    }
-                    KeptVMStatus::ExecutionFailure {
-                        location,
-                        function,
-                        code_offset,
-                        message: _,
-                    } => starcoin_vm_types::vm_status::KeptVMStatus::ExecutionFailure {
-                        location: lo_convert(location),
-                        function,
-                        code_offset,
-                    },
-                    KeptVMStatus::MiscellaneousError => {
-                        starcoin_vm_types::vm_status::KeptVMStatus::MiscellaneousError
-                    }
+            transaction_hash: value.transaction_hash,
+            state_root_hash: value.state_root_hash,
+            event_root_hash: value.event_root_hash,
+            gas_used: value.gas_used,
+            status: match value.status {
+                KeptVMStatus::Executed => Executed,
+                KeptVMStatus::OutOfGas => OutOfGas,
+                KeptVMStatus::MoveAbort(lo, code) => MoveAbort(lo_convert(lo), code),
+                KeptVMStatus::ExecutionFailure {
+                    location,
+                    function,
+                    code_offset,
+                    message: _,
+                } => ExecutionFailure {
+                    location: lo_convert(location),
+                    function,
+                    code_offset,
                 },
+                KeptVMStatus::MiscellaneousError => MiscellaneousError,
             },
-            transaction_index: value.transaction_index,
-            transaction_global_index: value.transaction_global_index,
         }
     }
 }
