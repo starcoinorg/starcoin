@@ -28,7 +28,7 @@ use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
-use starcoin_types::transaction::RichTransactionInfo;
+use starcoin_types::transaction::{RichTransactionInfo, TransactionInfo};
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
@@ -1107,10 +1107,18 @@ impl BlockChain {
             block_accumulator_info,
         );
 
+        let mut vm2_txn_infos = vec![];
         // save transaction relationship and save transaction to storage2
         if let Some(executed_data2) = executed_data2 {
             let state_root = executed_data2.state_root;
             block_info.add_vm2_state_root(state_root);
+
+            vm2_txn_infos = executed_data2
+                .txn_infos
+                .clone()
+                .into_iter()
+                .map(Into::into)
+                .collect::<Vec<TransactionInfo>>();
 
             starcoin_vm2_chain::save_executed_transactions(
                 block_id,
@@ -1118,6 +1126,7 @@ impl BlockChain {
                 storage2,
                 transactions2,
                 executed_data2,
+                // todo: how to track vm2 transaction global index?
                 transaction_global_index + executed_data.txn_infos.len() as u64,
             );
         }
@@ -1146,6 +1155,7 @@ impl BlockChain {
         storage.save_transaction_infos(
             txn_infos
                 .into_iter()
+                .chain(vm2_txn_infos)
                 .enumerate()
                 .map(|(transaction_index, info)| {
                     RichTransactionInfo::new(
