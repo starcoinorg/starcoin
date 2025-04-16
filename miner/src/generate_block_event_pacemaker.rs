@@ -70,8 +70,8 @@ impl GenerateBlockEventPacemaker {
         self.dag.get_dag_state(head_block.pruning_point())
     }
 
-    fn try_mint_later(&self, ctx: &mut ServiceContext<'_, Self>, try_count: u32) {
-        ctx.run_later(Duration::from_secs(1), move |ctx| {
+    fn try_mint_later(&self, ctx: &mut ServiceContext<'_, Self>, try_count: u64, delay: u64) {
+        ctx.run_later(Duration::from_millis(delay), move |ctx| {
             let self_ref = match ctx.get_shared::<Self>() {
                 Ok(self_ref) => self_ref,
                 Err(e) => {
@@ -92,8 +92,43 @@ impl GenerateBlockEventPacemaker {
                     return;
                 }
             };
-            ctx.notify(TryMintBlockEvent { dag_state, try_count });
+            ctx.notify(TryMintBlockEvent {
+                dag_state,
+                try_count,
+            });
         });
+    }
+
+    fn diff_blue_score(&self, last_dag_state: &DagState) -> Result<u64> {
+        let last_dag_ghost_data = self
+            .dag
+            .ghost_dag_manager()
+            .find_selected_parent(last_dag_state.tips.clone())
+            .and_then(|id| {
+                self.dag.storage.ghost_dag_store.get_data(id).map_err(|e| {
+                    anyhow!(
+                        "failed to get the ghost dag data when trying to mint for now: {:?}",
+                        e
+                    )
+                })
+            })?;
+        let tips = self.dag_current_state()?.tips;
+        let current_dag_ghost_data = self
+            .dag
+            .ghost_dag_manager()
+            .find_selected_parent(tips)
+            .and_then(|id| {
+                self.dag.storage.ghost_dag_store.get_data(id).map_err(|e| {
+                    anyhow!(
+                        "failed to get the ghost dag data when trying to mint for now: {:?}",
+                        e
+                    )
+                })
+            })?;
+
+        Ok(current_dag_ghost_data
+            .blue_score
+            .saturating_sub(last_dag_ghost_data.blue_score))
     }
 }
 
@@ -126,66 +161,35 @@ impl ActorService for GenerateBlockEventPacemaker {
 
 impl EventHandler<Self, SystemStarted> for GenerateBlockEventPacemaker {
     fn handle_event(&mut self, _msg: SystemStarted, ctx: &mut ServiceContext<Self>) {
-        self.try_mint_later(ctx);
+        self.try_mint_later(ctx, 5, 1000);
     }
 }
 
 impl EventHandler<Self, TryMintBlockEvent> for GenerateBlockEventPacemaker {
     fn handle_event(&mut self, msg: TryMintBlockEvent, ctx: &mut ServiceContext<Self>) {
-        if self.is_synced() {
-            let last_dag_ghost_data = match self
-                .dag
-                .ghost_dag_manager()
-                .find_selected_parent(msg.dag_state.tips.clone())
-            {
-                Ok(id) => match self.dag.storage.ghost_dag_store.get_data(id) {
-                    Ok(data) => data,
-                    Err(e) => {
-                        warn!("Failed to get ghost dag data when trying to mint: {}", e);
-                        return;
-                    }
-                },
-                Err(e) => {
-                    warn!("Failed to find selected parent when trying to mint: {}", e);
-                    return;
-                }
-            };
-
-            let tips = match self.dag_current_state() {
-                Ok(state) => state.tips,
-                Err(e) => {
-                    warn!("Failed to get dag state when trying to mint for now: {}", e);
-                    return;
-                }
-            };
-            let current_dag_ghost_data =
-                match self.dag.ghost_dag_manager().find_selected_parent(tips) {
-                    Ok(id) => match self.dag.storage.ghost_dag_store.get_data(id) {
-                        Ok(data) => data,
-                        Err(e) => {
-                            warn!(
-                                "Failed to get ghost dag data when trying to mint for now: {}",
-                                e
-                            );
-                            return;
-                        }
-                    },
-                    Err(e) => {
-                        warn!(
-                            "Failed to find selected parent when trying to mint for now: {}",
-                            e
-                        );
-                        return;
-                    }
-                };
-            let blue_count = current_dag_ghost_data
-                .blue_score
-                .saturating_sub(last_dag_ghost_data.blue_score);
-            if blue_count < 10 {
-                self.send_event(true, ctx);
-            }
+        if !self.is_synced() {
+            self.try_mint_later(ctx, 5, 1000);
+            return;
         }
-        self.try_mint_later(ctx);
+        let blue_count = match self.diff_blue_score(&msg.dag_state) {
+            Ok(count) => count,
+            Err(e) => {
+                warn!(
+                    "Failed to get diff blue score when trying to mint block event: {:?}",
+                    e
+                );
+                return;
+            }
+        };
+
+        if blue_count < 5 {
+            self.send_event(true, ctx);
+        }
+        if blue_count < msg.try_count {
+            self.try_mint_later(ctx, msg.try_count.saturating_sub(blue_count), 200);
+        } else {
+            self.try_mint_later(ctx, 5, 1000);
+        }
     }
 }
 

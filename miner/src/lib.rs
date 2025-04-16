@@ -40,7 +40,7 @@ pub enum MinerError {
 #[derive(Clone, Debug)]
 pub struct TryMintBlockEvent {
     pub dag_state: Arc<DagState>,
-    pub try_count: u32,
+    pub try_count: u64,
 }
 
 #[derive(Debug)]
