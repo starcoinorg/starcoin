@@ -3,8 +3,6 @@
 
 //use network_p2p_types::MultiaddrWithPeerId;
 use crate::{
-    account_config::genesis_address,
-    event::{EventHandle, EventKey},
     gas_schedule::{
         G_GAS_CONSTANTS_V1, G_GAS_CONSTANTS_V2, G_GAS_CONSTANTS_V3, G_TEST_GAS_CONSTANTS,
     },
@@ -14,7 +12,6 @@ use crate::{
         v4_native_table, ConsensusConfig, DaoConfig, GasSchedule, TransactionPublishOption,
         VMConfig, Version,
     },
-    on_chain_resource::Epoch,
     token::stc::STCUnit,
     token::token_value::TokenValue,
     transaction::{RawUserTransaction, SignedUserTransaction},
@@ -23,8 +20,7 @@ use anyhow::{bail, ensure, format_err, Result};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
 use schemars::{self, JsonSchema};
-use serde::de::Error;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use starcoin_crypto::multi_ed25519::multi_shard::MultiEd25519KeyShard;
 use starcoin_crypto::{
     ed25519::*,
@@ -34,7 +30,7 @@ use starcoin_crypto::{
 use starcoin_gas_algebra::CostTable;
 use starcoin_gas_meter::StarcoinGasParameters;
 use starcoin_gas_schedule::{InitialGasSchedule, ToOnChainGasSchedule, LATEST_GAS_FEATURE_VERSION};
-use starcoin_time_service::{TimeService, TimeServiceType};
+use starcoin_time_service::TimeServiceType;
 use starcoin_uint::U256;
 use std::convert::TryFrom;
 use std::fmt::Debug;
@@ -226,15 +222,6 @@ impl BuiltinNetworkID {
     }
 }
 
-impl From<BuiltinNetworkID> for ChainNetwork {
-    fn from(network: BuiltinNetworkID) -> Self {
-        Self::new(
-            ChainNetworkID::Builtin(network),
-            network.genesis_config().clone(),
-        )
-    }
-}
-
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct CustomNetworkID {
@@ -255,14 +242,6 @@ impl CustomNetworkID {
             chain_id,
         }
     }
-
-    pub fn chain_id(&self) -> ChainId {
-        self.chain_id
-    }
-
-    pub fn chain_name(&self) -> &str {
-        self.chain_name.as_str()
-    }
 }
 
 impl FromStr for CustomNetworkID {
@@ -277,322 +256,6 @@ impl FromStr for CustomNetworkID {
         let chain_id = ChainId::from_str(parts[1])?;
         Ok(Self::new(chain_name, chain_id))
     }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[allow(clippy::upper_case_acronyms)]
-pub enum ChainNetworkID {
-    Builtin(BuiltinNetworkID),
-    Custom(CustomNetworkID),
-}
-
-impl Display for ChainNetworkID {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let name = match self {
-            Self::Builtin(b) => b.to_string(),
-            Self::Custom(c) => c.to_string(),
-        };
-        write!(f, "{}", name)
-    }
-}
-
-impl From<BuiltinNetworkID> for ChainNetworkID {
-    fn from(network: BuiltinNetworkID) -> Self {
-        Self::Builtin(network)
-    }
-}
-
-impl FromStr for ChainNetworkID {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match BuiltinNetworkID::from_str(s) {
-            Ok(net) => Ok(Self::Builtin(net)),
-            Err(_e) => Ok(Self::Custom(CustomNetworkID::from_str(s)?)),
-        }
-    }
-}
-
-impl Serialize for ChainNetworkID {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(self.to_string().as_str())
-    }
-}
-
-impl<'de> Deserialize<'de> for ChainNetworkID {
-    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s = <String>::deserialize(deserializer)?;
-        Self::from_str(s.as_str()).map_err(D::Error::custom)
-    }
-}
-
-impl ChainNetworkID {
-    pub const TEST: Self = Self::Builtin(BuiltinNetworkID::Test);
-    pub const DEV: Self = Self::Builtin(BuiltinNetworkID::Dev);
-    pub const HALLEY: Self = Self::Builtin(BuiltinNetworkID::Halley);
-    pub const PROXIMA: Self = Self::Builtin(BuiltinNetworkID::Proxima);
-    pub const BARNARD: Self = Self::Builtin(BuiltinNetworkID::Barnard);
-    pub const MAIN: Self = Self::Builtin(BuiltinNetworkID::Main);
-    pub const DAGTEST: Self = Self::Builtin(BuiltinNetworkID::DagTest);
-
-    pub fn new_builtin(network: BuiltinNetworkID) -> Self {
-        Self::Builtin(network)
-    }
-    pub fn new_custom(chain_name: String, chain_id: ChainId) -> Result<Self> {
-        for net in BuiltinNetworkID::networks() {
-            if net.chain_id() == chain_id {
-                bail!("Chain id {} has used for builtin {}", chain_id, net);
-            }
-            if net.chain_name() == chain_name {
-                bail!("Chain name {} has used for builtin {}", chain_name, net);
-            }
-        }
-        Ok(Self::Custom(CustomNetworkID::new(chain_name, chain_id)))
-    }
-
-    pub fn chain_id(&self) -> ChainId {
-        match self {
-            Self::Builtin(b) => b.chain_id(),
-            Self::Custom(c) => c.chain_id(),
-        }
-    }
-
-    pub fn assert_test_or_dev(&self) -> Result<()> {
-        if !self.is_test_or_dev() {
-            bail!("Only support test or dev network.")
-        }
-        Ok(())
-    }
-
-    pub fn is_test_or_dev(&self) -> bool {
-        self.is_test() || self.is_dev() || self.is_dag_test()
-    }
-
-    pub fn is_dag_test(&self) -> bool {
-        matches!(self, Self::Builtin(BuiltinNetworkID::DagTest))
-    }
-
-    pub fn is_test(&self) -> bool {
-        matches!(self, Self::Builtin(BuiltinNetworkID::Test))
-    }
-
-    pub fn is_dev(&self) -> bool {
-        matches!(self, Self::Builtin(BuiltinNetworkID::Dev))
-    }
-
-    pub fn is_main(&self) -> bool {
-        matches!(self, Self::Builtin(BuiltinNetworkID::Main))
-    }
-
-    pub fn is_halley(&self) -> bool {
-        matches!(self, Self::Builtin(BuiltinNetworkID::Halley))
-    }
-
-    pub fn is_custom(&self) -> bool {
-        matches!(self, Self::Custom(_))
-    }
-
-    /// Default data dir name of this network
-    pub fn dir_name(&self) -> String {
-        match self {
-            Self::Builtin(net) => net.to_string(),
-            Self::Custom(net) => net.chain_name().to_string(),
-        }
-    }
-
-    //pub fn boot_nodes(&self) -> &[MultiaddrWithPeerId] {
-    //    match self {
-    //        Self::Builtin(b) => b.boot_nodes(),
-    //        _ => &[],
-    //    }
-    //}
-
-    pub fn as_builtin(&self) -> Option<&BuiltinNetworkID> {
-        match self {
-            Self::Builtin(net) => Some(net),
-            _ => None,
-        }
-    }
-
-    pub fn as_custom(&self) -> Option<&CustomNetworkID> {
-        match self {
-            Self::Custom(net) => Some(net),
-            _ => None,
-        }
-    }
-
-    pub fn limit_peers(&self) -> u8 {
-        match self {
-            Self::Builtin(BuiltinNetworkID::Main) => 5,
-            _ => 1,
-        }
-    }
-}
-
-impl Default for ChainNetworkID {
-    fn default() -> Self {
-        Self::Builtin(BuiltinNetworkID::default())
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct ChainNetwork {
-    id: ChainNetworkID,
-    genesis_config: GenesisConfig,
-    time_service: Arc<dyn TimeService>,
-}
-
-impl Display for ChainNetwork {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.id)
-    }
-}
-
-impl PartialEq for ChainNetwork {
-    fn eq(&self, other: &Self) -> bool {
-        self.id.eq(&other.id)
-    }
-}
-
-impl ChainNetwork {
-    pub fn new(id: ChainNetworkID, genesis_config: GenesisConfig) -> Self {
-        let time_service = genesis_config.time_service_type.new_time_service();
-        Self {
-            id,
-            genesis_config,
-            time_service,
-        }
-    }
-
-    pub fn new_builtin(builtin_id: BuiltinNetworkID) -> Self {
-        Self::new(builtin_id.into(), builtin_id.genesis_config().clone())
-    }
-
-    pub fn new_custom(
-        chain_name: String,
-        chain_id: ChainId,
-        genesis_config: GenesisConfig,
-    ) -> Result<Self> {
-        Ok(Self::new(
-            ChainNetworkID::new_custom(chain_name, chain_id)?,
-            genesis_config,
-        ))
-    }
-
-    pub fn new_test() -> Self {
-        Self::new_builtin(BuiltinNetworkID::Test)
-    }
-
-    pub fn id(&self) -> &ChainNetworkID {
-        &self.id
-    }
-
-    pub fn genesis_config(&self) -> &GenesisConfig {
-        &self.genesis_config
-    }
-
-    pub fn time_service(&self) -> Arc<dyn TimeService> {
-        self.time_service.clone()
-    }
-
-    pub fn stdlib_version(&self) -> StdlibVersion {
-        self.genesis_config().stdlib_version
-    }
-
-    pub fn chain_id(&self) -> ChainId {
-        self.id.chain_id()
-    }
-
-    pub fn is_test(&self) -> bool {
-        self.id.is_test()
-    }
-
-    pub fn is_dev(&self) -> bool {
-        self.id.is_dev()
-    }
-
-    pub fn is_halley(&self) -> bool {
-        self.id.is_halley()
-    }
-
-    pub fn is_dag_test(&self) -> bool {
-        self.id.is_dag_test()
-    }
-
-    pub fn is_main(&self) -> bool {
-        self.id.is_main()
-    }
-
-    pub fn is_custom(&self) -> bool {
-        self.id.is_custom()
-    }
-
-    //pub fn boot_nodes(&self) -> &[MultiaddrWithPeerId] {
-    //    self.id.boot_nodes()
-    //}
-
-    /// Please ensure network is_ready() before genesis_block_parameter
-    pub fn genesis_block_parameter(&self) -> &GenesisBlockParameter {
-        self.genesis_config
-            .genesis_block_parameter()
-            .expect("Genesis block parameter is not ready")
-    }
-
-    /// This network is ready to launch
-    pub fn is_ready(&self) -> bool {
-        self.genesis_config.is_ready()
-    }
-
-    /// resolve the FutureBlockParameter to static GenesisBlockParameter.
-    pub fn resolve(&mut self, resolver: &dyn FutureBlockParameterResolver) -> Result<()> {
-        match &self.genesis_config.genesis_block_parameter {
-            GenesisBlockParameterConfig::Static(_) => {}
-            GenesisBlockParameterConfig::FutureBlock(future_block_parameter) => {
-                let parameter = resolver.resolve(future_block_parameter)?;
-                self.genesis_config.genesis_block_parameter =
-                    GenesisBlockParameterConfig::Static(parameter);
-            }
-        }
-        Ok(())
-    }
-
-    pub fn genesis_epoch(&self) -> Epoch {
-        Epoch::new(
-            0,
-            self.genesis_block_parameter().timestamp,
-            0,
-            self.genesis_config.consensus_config.epoch_block_count,
-            self.genesis_config.consensus_config.base_block_time_target,
-            self.genesis_config.consensus_config.base_reward_per_block,
-            self.genesis_config
-                .consensus_config
-                .base_reward_per_uncle_percent,
-            self.genesis_config
-                .consensus_config
-                .base_block_difficulty_window,
-            self.genesis_config
-                .consensus_config
-                .base_max_uncles_per_block,
-            self.genesis_config.consensus_config.base_block_gas_limit,
-            self.genesis_config.consensus_config.strategy,
-            //TODO conform new Epoch events salt value.
-            EventHandle::new(EventKey::new(0, genesis_address()), 0),
-        )
-    }
-
-    pub fn min_peers(&self) -> u8 {
-        self.id.limit_peers()
-    }
-}
-
-pub trait FutureBlockParameterResolver {
-    fn resolve(&self, parameter: &FutureBlockParameter) -> Result<GenesisBlockParameter>;
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
@@ -727,9 +390,6 @@ static G_BASE_REWARD_PER_UNCLE_PERCENT: u64 = 10;
 static G_MIN_BLOCK_TIME_TARGET: u64 = 2000;
 static G_MAX_BLOCK_TIME_TARGET: u64 = 60000;
 pub static G_BASE_MAX_UNCLES_PER_BLOCK: u64 = 2;
-
-pub static G_TOTAL_STC_AMOUNT: Lazy<TokenValue<STCUnit>> =
-    Lazy::new(|| STCUnit::STC.value_of(3185136000));
 
 //for Private funding
 static G_DEFAULT_PRE_MINT_AMOUNT: Lazy<TokenValue<STCUnit>> =
