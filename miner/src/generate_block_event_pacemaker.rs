@@ -162,7 +162,7 @@ impl EventHandler<Self, TryMintBlockEvent> for GenerateBlockEventPacemaker {
         let diff_blue_score = current_blue_score.saturating_sub(msg.last_blue_score);
         info!(
             "jacktest: TryMintBlockEvent, last state blue score: {:?}, current: {:?}, sub: {:?}",
-            msg.last_blue_score, current_blue_score, diff_blue_score
+            msg.last_blue_score, current_blue_score, diff_blue_score 
         );
 
         if diff_blue_score < msg.try_count {
