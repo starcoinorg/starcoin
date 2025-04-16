@@ -67,7 +67,14 @@ impl GenerateBlockEventPacemaker {
             .storage
             .get_block_header_by_hash(startup_info.main)?
             .ok_or_else(|| anyhow!("BlockHeader should exist"))?;
-        self.dag.get_dag_state(head_block.pruning_point())
+
+        if head_block.is_genesis() {
+            Ok(DagState {
+                tips: vec![head_block.id()],
+            })
+        } else {
+            self.dag.get_dag_state(head_block.pruning_point())
+        }
     }
 
     fn try_mint_later(&self, ctx: &mut ServiceContext<'_, Self>, try_count: u64, delay: u64) {
@@ -167,10 +174,10 @@ impl EventHandler<Self, SystemStarted> for GenerateBlockEventPacemaker {
 
 impl EventHandler<Self, TryMintBlockEvent> for GenerateBlockEventPacemaker {
     fn handle_event(&mut self, msg: TryMintBlockEvent, ctx: &mut ServiceContext<Self>) {
-        if !self.is_synced() {
-            self.try_mint_later(ctx, 5, 1000);
-            return;
-        }
+        // if !self.is_synced() {
+        //     self.try_mint_later(ctx, 5, 1000);
+        //     return;
+        // }
         let blue_count = match self.diff_blue_score(&msg.dag_state) {
             Ok(count) => count,
             Err(e) => {
