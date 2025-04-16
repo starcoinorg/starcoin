@@ -24,7 +24,7 @@ pub struct GenerateBlockEventPacemaker {
     config: Arc<NodeConfig>,
     sync_status: Option<SyncStatus>,
     dag: BlockDAG,
-    storage: Arc<Storage>,
+    dag_state: DagState,
 }
 
 impl ServiceFactory<Self> for GenerateBlockEventPacemaker {
@@ -35,11 +35,30 @@ impl ServiceFactory<Self> for GenerateBlockEventPacemaker {
         let storage = ctx
             .get_shared::<Arc<Storage>>()
             .unwrap_or_else(|e| panic!("Storage should exist, error: {:?}", e));
+        let startup_info = storage
+            .get_startup_info()?
+            .ok_or_else(|| anyhow!("StartupInfo not found, maybe the node is not started yet"))?;
+        let head_block = storage
+            .get_block_header_by_hash(startup_info.main)?
+            .ok_or_else(|| anyhow!("BlockHeader should exist"))?;
+
+        let dag_state = if head_block.is_genesis() {
+            DagState {
+                tips: vec![head_block.id()],
+            }
+        } else {
+            match dag.get_dag_state(head_block.pruning_point()) {
+                Ok(state) => state,
+                Err(_) => DagState {
+                    tips: vec![head_block.id()],
+                },
+            }
+        };
         let self_ref = Self {
             config: ctx.get_shared::<Arc<NodeConfig>>()?,
             sync_status: None,
             dag,
-            storage,
+            dag_state,
         };
         ctx.put_shared(self_ref.clone())?;
         Ok(self_ref)
@@ -58,72 +77,26 @@ impl GenerateBlockEventPacemaker {
         }
     }
 
-    fn dag_current_state(&self) -> Result<DagState> {
-        let startup_info = self
-            .storage
-            .get_startup_info()?
-            .ok_or_else(|| anyhow!("StartupInfo not found, maybe the node is not started yet"))?;
-        let head_block = self
-            .storage
-            .get_block_header_by_hash(startup_info.main)?
-            .ok_or_else(|| anyhow!("BlockHeader should exist"))?;
-
-        if head_block.is_genesis() {
-            Ok(DagState {
-                tips: vec![head_block.id()],
-            })
-        } else {
-            self.dag.get_dag_state(head_block.pruning_point())
-        }
-    }
-
-    fn try_mint_later(&self, ctx: &mut ServiceContext<'_, Self>, try_count: u64, delay: u64) {
+    fn try_mint_later(
+        &self,
+        ctx: &mut ServiceContext<'_, Self>,
+        current_blue_score: u64,
+        try_count: u64,
+        delay: u64,
+    ) {
         ctx.run_later(Duration::from_millis(delay), move |ctx| {
-            let self_ref = match ctx.get_shared::<Self>() {
-                Ok(self_ref) => self_ref,
-                Err(e) => {
-                    warn!(
-                        "Failed to get self reference when trying to mint block event: {:?}",
-                        e
-                    );
-                    return;
-                }
-            };
-            let dag_state = match self_ref.dag_current_state() {
-                Ok(state) => Arc::new(state),
-                Err(e) => {
-                    warn!(
-                        "Failed to get dag state when trying to mint block event: {:?}",
-                        e
-                    );
-                    return;
-                }
-            };
             ctx.notify(TryMintBlockEvent {
-                dag_state,
+                last_blue_score: current_blue_score,
                 try_count,
             });
         });
     }
 
-    fn diff_blue_score(&self, last_dag_state: &DagState) -> Result<u64> {
-        let last_dag_ghost_data = self
-            .dag
-            .ghost_dag_manager()
-            .find_selected_parent(last_dag_state.tips.clone())
-            .and_then(|id| {
-                self.dag.storage.ghost_dag_store.get_data(id).map_err(|e| {
-                    anyhow!(
-                        "failed to get the ghost dag data when trying to mint for now: {:?}",
-                        e
-                    )
-                })
-            })?;
-        let tips = self.dag_current_state()?.tips;
+    fn current_blue_score(&self) -> Result<u64> {
         let current_dag_ghost_data = self
             .dag
             .ghost_dag_manager()
-            .find_selected_parent(tips)
+            .find_selected_parent(self.dag_state.tips.clone())
             .and_then(|id| {
                 self.dag.storage.ghost_dag_store.get_data(id).map_err(|e| {
                     anyhow!(
@@ -132,10 +105,7 @@ impl GenerateBlockEventPacemaker {
                     )
                 })
             })?;
-
-        Ok(current_dag_ghost_data
-            .blue_score
-            .saturating_sub(last_dag_ghost_data.blue_score))
+        Ok(current_dag_ghost_data.blue_score)
     }
 }
 
@@ -168,7 +138,7 @@ impl ActorService for GenerateBlockEventPacemaker {
 
 impl EventHandler<Self, SystemStarted> for GenerateBlockEventPacemaker {
     fn handle_event(&mut self, _msg: SystemStarted, ctx: &mut ServiceContext<Self>) {
-        self.try_mint_later(ctx, 5, 1000);
+        self.try_mint_later(ctx, self.current_blue_score().unwrap_or(0), 5, 1000);
     }
 }
 
@@ -178,28 +148,53 @@ impl EventHandler<Self, TryMintBlockEvent> for GenerateBlockEventPacemaker {
         //     self.try_mint_later(ctx, 5, 1000);
         //     return;
         // }
-        let blue_count = match self.diff_blue_score(&msg.dag_state) {
-            Ok(count) => count,
+        info!("jacktest: TryMintBlockEvent, msg: {:?}", msg);
+        let current_blue_score = match self.current_blue_score() {
+            Ok(score) => score,
             Err(e) => {
                 warn!(
-                    "Failed to get diff blue score when trying to mint block event: {:?}",
+                    "failed to get the current score when trying to mint block event: {:?}",
                     e
                 );
                 return;
             }
         };
+        let diff_blue_score = current_blue_score.saturating_sub(msg.last_blue_score);
+        info!(
+            "jacktest: TryMintBlockEvent, last state blue score: {:?}, current: {:?}, sub: {:?}",
+            msg.last_blue_score, current_blue_score, diff_blue_score
+        );
 
-        if blue_count < msg.try_count {
+        if diff_blue_score < msg.try_count {
+            info!("jacktest: TryMintBlockEvent, send mint event");
             self.send_event(true, ctx);
-            self.try_mint_later(ctx, msg.try_count.saturating_sub(blue_count), 25);
+            self.try_mint_later(
+                ctx,
+                current_blue_score,
+                msg.try_count.saturating_sub(diff_blue_score),
+                25,
+            );
         } else {
-            self.try_mint_later(ctx, 5, 1000);
+            info!("jacktest: TryMintBlockEvent, do not send mint event");
+            self.try_mint_later(ctx, current_blue_score, 5, 1000);
         }
     }
 }
 
 impl EventHandler<Self, NewHeadBlock> for GenerateBlockEventPacemaker {
-    fn handle_event(&mut self, _msg: NewHeadBlock, ctx: &mut ServiceContext<Self>) {
+    fn handle_event(&mut self, msg: NewHeadBlock, ctx: &mut ServiceContext<Self>) {
+        self.dag_state = match self
+            .dag
+            .get_dag_state(msg.executed_block.block().header().pruning_point())
+        {
+            Ok(state) => state,
+            Err(_) => {
+                warn!("cannot find the dag state in new head block!");
+                DagState {
+                    tips: vec![msg.executed_block.block().header().id()],
+                }
+            }
+        };
         if self.is_synced() {
             self.send_event(true, ctx)
         } else {

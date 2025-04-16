@@ -5,7 +5,6 @@ use crate::metrics::MinerMetrics;
 use crate::task::MintTask;
 use anyhow::Result;
 use starcoin_config::NodeConfig;
-use starcoin_dag::consensusdb::consenses_state::DagState;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRef,
@@ -39,7 +38,7 @@ pub enum MinerError {
 
 #[derive(Clone, Debug)]
 pub struct TryMintBlockEvent {
-    pub dag_state: Arc<DagState>,
+    pub last_blue_score: u64,
     pub try_count: u64,
 }
 
