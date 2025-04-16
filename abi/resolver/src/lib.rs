@@ -356,145 +356,145 @@ fn find_struct_def_in_module(
     ))
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use crate::ABIResolver;
-//     use anyhow::Result;
-//     use starcoin_vm_types::access_path::DataPath;
-//     use starcoin_vm_types::account_address::AccountAddress;
-//     use starcoin_vm_types::account_config::genesis_address;
-//     use starcoin_vm_types::file_format::CompiledModule;
-//     use starcoin_vm_types::identifier::Identifier;
-//     use starcoin_vm_types::language_storage::ModuleId;
-//     use starcoin_vm_types::normalized::Module;
-//     use starcoin_vm_types::parser::parse_struct_tag;
-//     use starcoin_vm_types::state_store::errors::StateviewError;
-//     use starcoin_vm_types::state_store::state_key::inner::StateKeyInner;
-//     use starcoin_vm_types::state_store::state_key::StateKey;
-//     use starcoin_vm_types::state_store::state_storage_usage::StateStorageUsage;
-//     use starcoin_vm_types::state_store::state_value::StateValue;
-//     use starcoin_vm_types::state_store::TStateView;
-//     use std::collections::BTreeMap;
-//
-//     pub struct InMemoryStateView {
-//         modules: BTreeMap<ModuleId, CompiledModule>,
-//     }
-//     impl InMemoryStateView {
-//         pub fn new(modules: Vec<CompiledModule>) -> Self {
-//             Self {
-//                 modules: modules.into_iter().map(|m| (m.self_id(), m)).collect(),
-//             }
-//         }
-//     }
-//     impl TStateView for InMemoryStateView {
-//         type Key = StateKey;
-//         fn get_state_value(
-//             &self,
-//             state_key: &StateKey,
-//         ) -> Result<Option<StateValue>, StateviewError> {
-//             match state_key.inner() {
-//                 StateKeyInner::AccessPath(access_path) => {
-//                     let module_id = match &access_path.path {
-//                         DataPath::Code(name) => ModuleId::new(access_path.address, name.clone()),
-//                         _ => return Err(StateviewError::Other("no data".to_string())),
-//                     };
-//                     Ok(self
-//                         .modules
-//                         .get(&module_id)
-//                         .map(|m| {
-//                             let mut data = vec![];
-//                             m.serialize(&mut data).unwrap();
-//                             data
-//                         })
-//                         .map(StateValue::from))
-//                 }
-//                 StateKeyInner::TableItem { .. } => {
-//                     Err(StateviewError::Other("no need table_item".to_string()))
-//                 }
-//                 StateKeyInner::Raw(_) => Err(StateviewError::Other("no need raw".to_string())),
-//             }
-//         }
-//
-//         fn get_usage(&self) -> starcoin_vm_types::state_store::Result<StateStorageUsage> {
-//             todo!()
-//         }
-//
-//         fn is_genesis(&self) -> bool {
-//             todo!()
-//         }
-//     }
-//
-//     #[test]
-//     fn test_resolver_abi() {
-//         let modules = stdlib::load_latest_compiled_modules();
-//         let view = InMemoryStateView::new(modules);
-//         let r = ABIResolver::new(&view);
-//         // test module ok
-//         {
-//             let m = ModuleId::new(genesis_address(), Identifier::new("dao").unwrap());
-//             r.resolve_module(&m).unwrap();
-//         }
-//         // test struct tag
-//         {
-//             let st = parse_struct_tag(
-//                 "0x1::dao::Proposal<0x1::starcoin_coin::STC, 0x1::dao_features_proposal::FeaturesUpdate>",
-//             )
-//             .unwrap();
-//             r.resolve_struct_tag(&st).unwrap();
-//         }
-//         // test struct def
-//         {
-//             let m = ModuleId::new(genesis_address(), Identifier::new("dao").unwrap());
-//             let s = Identifier::new("Proposal").unwrap();
-//             let func_abi = r.resolve_struct(&m, s.as_ident_str()).unwrap();
-//             println!("{}", serde_json::to_string_pretty(&func_abi).unwrap());
-//         }
-//
-//         // test resolve module function index
-//         {
-//             let m = ModuleId::new(genesis_address(), Identifier::new("dao").unwrap());
-//             let f = r.resolve_module_function_index(&m, 0).unwrap();
-//             assert_eq!(f.name(), "cast_vote");
-//         }
-//
-//         // test resolve module function index overflow
-//         {
-//             let m = ModuleId::new(genesis_address(), Identifier::new("dao").unwrap());
-//             assert!(r.resolve_module_function_index(&m, 31).is_err())
-//         }
-//     }
-//
-//     #[test]
-//     fn test_normalized() {
-//         let modules = stdlib::load_latest_compiled_modules();
-//         let dao = modules
-//             .iter()
-//             .find(|m| {
-//                 m.self_id() == ModuleId::new(genesis_address(), Identifier::new("dao").unwrap())
-//             })
-//             .unwrap();
-//         let _m = Module::new(dao);
-//     }
-//
-//     #[test]
-//     fn test_resolve_self_dep_module_code() {
-//         let test_source = r#"
-//         module {{sender}}::TestModule {
-//             struct A has copy, store{
-//             }
-//             struct B has key{
-//                 a: vector<A>,
-//             }
-//         }
-//         "#;
-//         let address = AccountAddress::random();
-//         let module: starcoin_vm_types::transaction::Module =
-//             test_helper::executor::compile_modules_with_address(address, test_source)
-//                 .pop()
-//                 .unwrap();
-//         let modules = stdlib::load_latest_compiled_modules();
-//         let view = InMemoryStateView::new(modules);
-//         let r = ABIResolver::new(&view);
-//         let _abi = r.resolve_module_code(module.code()).unwrap();
-//     }
-// }
+#[cfg(test)]
+mod tests {
+    use crate::ABIResolver;
+    use anyhow::Result;
+    use starcoin_vm_types::access_path::DataPath;
+    use starcoin_vm_types::account_address::AccountAddress;
+    use starcoin_vm_types::account_config::genesis_address;
+    use starcoin_vm_types::file_format::CompiledModule;
+    use starcoin_vm_types::identifier::Identifier;
+    use starcoin_vm_types::language_storage::ModuleId;
+    use starcoin_vm_types::normalized::Module;
+    use starcoin_vm_types::parser::parse_struct_tag;
+    use starcoin_vm_types::state_store::errors::StateviewError;
+    use starcoin_vm_types::state_store::state_key::inner::StateKeyInner;
+    use starcoin_vm_types::state_store::state_key::StateKey;
+    use starcoin_vm_types::state_store::state_storage_usage::StateStorageUsage;
+    use starcoin_vm_types::state_store::state_value::StateValue;
+    use starcoin_vm_types::state_store::TStateView;
+    use std::collections::BTreeMap;
+
+    pub struct InMemoryStateView {
+        modules: BTreeMap<ModuleId, CompiledModule>,
+    }
+    impl InMemoryStateView {
+        pub fn new(modules: Vec<CompiledModule>) -> Self {
+            Self {
+                modules: modules.into_iter().map(|m| (m.self_id(), m)).collect(),
+            }
+        }
+    }
+    impl TStateView for InMemoryStateView {
+        type Key = StateKey;
+        fn get_state_value(
+            &self,
+            state_key: &StateKey,
+        ) -> Result<Option<StateValue>, StateviewError> {
+            match state_key.inner() {
+                StateKeyInner::AccessPath(access_path) => {
+                    let module_id = match &access_path.path {
+                        DataPath::Code(name) => ModuleId::new(access_path.address, name.clone()),
+                        _ => return Err(StateviewError::Other("no data".to_string())),
+                    };
+                    Ok(self
+                        .modules
+                        .get(&module_id)
+                        .map(|m| {
+                            let mut data = vec![];
+                            m.serialize(&mut data).unwrap();
+                            data
+                        })
+                        .map(StateValue::from))
+                }
+                StateKeyInner::TableItem { .. } => {
+                    Err(StateviewError::Other("no need table_item".to_string()))
+                }
+                StateKeyInner::Raw(_) => Err(StateviewError::Other("no need raw".to_string())),
+            }
+        }
+
+        fn get_usage(&self) -> starcoin_vm_types::state_store::Result<StateStorageUsage> {
+            todo!()
+        }
+
+        fn is_genesis(&self) -> bool {
+            todo!()
+        }
+    }
+
+    #[test]
+    fn test_resolver_abi() {
+        let modules = stdlib::load_latest_compiled_modules();
+        let view = InMemoryStateView::new(modules);
+        let r = ABIResolver::new(&view);
+        // test module ok
+        {
+            let m = ModuleId::new(genesis_address(), Identifier::new("dao").unwrap());
+            r.resolve_module(&m).unwrap();
+        }
+        // test struct tag
+        {
+            let st = parse_struct_tag(
+                "0x1::dao::Proposal<0x1::starcoin_coin::STC, 0x1::dao_features_proposal::FeaturesUpdate>",
+            )
+            .unwrap();
+            r.resolve_struct_tag(&st).unwrap();
+        }
+        // test struct def
+        {
+            let m = ModuleId::new(genesis_address(), Identifier::new("dao").unwrap());
+            let s = Identifier::new("Proposal").unwrap();
+            let func_abi = r.resolve_struct(&m, s.as_ident_str()).unwrap();
+            println!("{}", serde_json::to_string_pretty(&func_abi).unwrap());
+        }
+
+        // test resolve module function index
+        {
+            let m = ModuleId::new(genesis_address(), Identifier::new("dao").unwrap());
+            let f = r.resolve_module_function_index(&m, 0).unwrap();
+            assert_eq!(f.name(), "cast_vote");
+        }
+
+        // test resolve module function index overflow
+        {
+            let m = ModuleId::new(genesis_address(), Identifier::new("dao").unwrap());
+            assert!(r.resolve_module_function_index(&m, 31).is_err())
+        }
+    }
+
+    #[test]
+    fn test_normalized() {
+        let modules = stdlib::load_latest_compiled_modules();
+        let dao = modules
+            .iter()
+            .find(|m| {
+                m.self_id() == ModuleId::new(genesis_address(), Identifier::new("dao").unwrap())
+            })
+            .unwrap();
+        let _m = Module::new(dao);
+    }
+
+    #[test]
+    fn test_resolve_self_dep_module_code() {
+        let test_source = r#"
+        module {{sender}}::TestModule {
+            struct A has copy, store{
+            }
+            struct B has key{
+                a: vector<A>,
+            }
+        }
+        "#;
+        let address = AccountAddress::random();
+        let module: starcoin_vm_types::transaction::Module =
+            test_helper::executor::compile_modules_with_address(address, test_source)
+                .pop()
+                .unwrap();
+        let modules = stdlib::load_latest_compiled_modules();
+        let view = InMemoryStateView::new(modules);
+        let r = ABIResolver::new(&view);
+        let _abi = r.resolve_module_code(module.code()).unwrap();
+    }
+}
