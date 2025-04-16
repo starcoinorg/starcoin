@@ -5,7 +5,7 @@ use crate::executor::do_execute_block_transactions;
 use serde::{Deserialize, Serialize};
 use starcoin_vm2_crypto::HashValue;
 use starcoin_vm2_state_api::{ChainStateReader, ChainStateWriter};
-use starcoin_vm2_types::{contract_event::ContractEvent, write_set::WriteSet};
+use starcoin_vm2_types::contract_event::ContractEvent;
 use starcoin_vm2_types::{
     error::{BlockExecutorError, ExecutorResult},
     transaction::{Transaction, TransactionInfo, TransactionStatus},
@@ -20,7 +20,6 @@ pub struct BlockExecutedData {
     pub txn_infos: Vec<TransactionInfo>,
     pub txn_events: Vec<Vec<ContractEvent>>,
     pub txn_table_infos: BTreeMap<TableHandle, TableInfo>,
-    pub write_sets: Vec<WriteSet>,
 }
 
 impl Default for BlockExecutedData {
@@ -30,7 +29,6 @@ impl Default for BlockExecutedData {
             txn_events: vec![],
             txn_infos: vec![],
             txn_table_infos: BTreeMap::new(),
-            write_sets: vec![],
         }
     }
 }
@@ -65,7 +63,7 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter + Sync>(
             }
             TransactionStatus::Keep(status) => {
                 chain_state
-                    .apply_write_set(write_set.clone())
+                    .apply_write_set(write_set)
                     .map_err(BlockExecutorError::BlockChainStateErr)?;
 
                 let txn_state_root = chain_state
@@ -79,7 +77,6 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter + Sync>(
                     status,
                 ));
                 executed_data.txn_events.push(events);
-                executed_data.write_sets.push(write_set);
             }
             TransactionStatus::Retry => return Err(BlockExecutorError::BlockExecuteRetryErr),
         };

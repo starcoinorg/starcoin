@@ -7,7 +7,7 @@ use starcoin_vm2_statedb::ChainStateDB;
 use starcoin_vm2_storage::Store;
 use starcoin_vm2_types::transaction::{RichTransactionInfo, Transaction};
 
-pub fn execute_txns(
+pub fn execute_transactions(
     statedb: &ChainStateDB,
     transactions: Vec<Transaction>,
     gas_limit: u64,

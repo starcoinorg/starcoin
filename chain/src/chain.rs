@@ -997,7 +997,7 @@ impl BlockChain {
             vm_metrics,
         )?;
         let (executed_data2, included_txn_info_hashes2) = if !transactions2.is_empty() {
-            let (executed_data, hashes) = starcoin_vm2_chain::execute_txns(
+            let (executed_data, hashes) = starcoin_vm2_chain::execute_transactions(
                 &statedb2,
                 transactions2.clone(),
                 epoch.block_gas_limit() - executed_data.gas_used(),
