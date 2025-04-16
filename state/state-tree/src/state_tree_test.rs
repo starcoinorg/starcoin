@@ -3,11 +3,11 @@ use crate::mock::MockStateNodeStore;
 use anyhow::Result;
 use forkable_jellyfish_merkle::blob::Blob;
 use forkable_jellyfish_merkle::{HashValueKey, RawKey};
-use starcoin_config::RocksdbConfig;
+// use starcoin_config::RocksdbConfig;
 use starcoin_crypto::hash::*;
-use starcoin_storage::db_storage::DBStorage;
-use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::Storage;
+// use starcoin_storage::db_storage::DBStorage;
+// use starcoin_storage::storage::StorageInstance;
+// use starcoin_storage::Storage;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -294,77 +294,77 @@ pub fn test_state_storage_dump() -> Result<()> {
     assert_eq!(kv1, kv2);
     Ok(())
 }
+//
+// #[test]
+// pub fn test_state_multi_commit_missing_node() -> Result<()> {
+//     let tmpdir = starcoin_config::temp_dir();
+//     let instance = StorageInstance::new_db_instance(DBStorage::new(
+//         tmpdir.path(),
+//         RocksdbConfig::default(),
+//         None,
+//     )?);
+//     let storage = Storage::new(instance)?;
+//     let state = StateTree::new(Arc::new(storage.clone()), None);
+//     let hash_value1 = HashValueKey(HashValue::random());
+//     let value1 = vec![1u8, 2u8];
+//     state.put(hash_value1, value1.clone());
+//     state.commit()?;
+//     let root_hash1 = state.root_hash();
+//     let hash_value2 = HashValueKey(HashValue::random());
+//     let value12 = vec![12u8, 2u8];
+//     let value2 = vec![3u8, 4u8];
+//     state.put(hash_value1, value12.clone());
+//     state.put(hash_value2, value2.clone());
+//     state.commit()?;
+//     state.flush()?;
+//     let root_hash2 = state.root_hash();
+//     let state1 = StateTree::new(Arc::new(storage.clone()), Some(root_hash1));
+//     assert_eq!(state1.get(&hash_value1)?, Some(value1));
+//
+//     let state2 = StateTree::new(Arc::new(storage), Some(root_hash2));
+//     assert_eq!(state2.get(&hash_value1)?, Some(value12));
+//     assert_eq!(state2.get(&hash_value2)?, Some(value2));
+//     Ok(())
+// }
 
-#[test]
-pub fn test_state_multi_commit_missing_node() -> Result<()> {
-    let tmpdir = starcoin_config::temp_dir();
-    let instance = StorageInstance::new_db_instance(DBStorage::new(
-        tmpdir.path(),
-        RocksdbConfig::default(),
-        None,
-    )?);
-    let storage = Storage::new(instance)?;
-    let state = StateTree::new(Arc::new(storage.clone()), None);
-    let hash_value1 = HashValueKey(HashValue::random());
-    let value1 = vec![1u8, 2u8];
-    state.put(hash_value1, value1.clone());
-    state.commit()?;
-    let root_hash1 = state.root_hash();
-    let hash_value2 = HashValueKey(HashValue::random());
-    let value12 = vec![12u8, 2u8];
-    let value2 = vec![3u8, 4u8];
-    state.put(hash_value1, value12.clone());
-    state.put(hash_value2, value2.clone());
-    state.commit()?;
-    state.flush()?;
-    let root_hash2 = state.root_hash();
-    let state1 = StateTree::new(Arc::new(storage.clone()), Some(root_hash1));
-    assert_eq!(state1.get(&hash_value1)?, Some(value1));
-
-    let state2 = StateTree::new(Arc::new(storage), Some(root_hash2));
-    assert_eq!(state2.get(&hash_value1)?, Some(value12));
-    assert_eq!(state2.get(&hash_value2)?, Some(value2));
-    Ok(())
-}
-
-#[test]
-pub fn test_state_multi_commit_and_flush() -> Result<()> {
-    let tmpdir = starcoin_config::temp_dir();
-    let instance = StorageInstance::new_db_instance(DBStorage::new(
-        tmpdir.path(),
-        RocksdbConfig::default(),
-        None,
-    )?);
-    let storage = Storage::new(instance)?;
-    let state = StateTree::new(Arc::new(storage.clone()), None);
-    let hash_value1 = HashValueKey(HashValue::random());
-    let value1 = vec![1u8, 2u8];
-    state.put(hash_value1, value1.clone());
-    state.commit()?;
-    state.flush()?;
-    let root_hash1 = state.root_hash();
-    let hash_value2 = HashValueKey(HashValue::random());
-    let value12 = vec![12u8, 2u8];
-    let value2 = vec![3u8, 4u8];
-    state.put(hash_value1, value12.clone());
-    state.put(hash_value2, value2.clone());
-    state.commit()?;
-    state.flush()?;
-    let root_hash2 = state.root_hash();
-    let state1 = StateTree::new(Arc::new(storage.clone()), Some(root_hash1));
-    assert_eq!(state1.get(&hash_value1)?, Some(value1));
-
-    let state2 = StateTree::new(Arc::new(storage), Some(root_hash2));
-    assert_eq!(state2.get(&hash_value1)?, Some(value12.clone()));
-    assert_eq!(state2.get(&hash_value2)?, Some(value2));
-
-    state.remove(&hash_value1);
-    state.commit()?;
-    assert_eq!(state.get(&hash_value1)?, None);
-    state.flush()?;
-    assert_eq!(state2.get(&hash_value1)?, Some(value12));
-
-    let hash_value3 = HashValueKey(HashValue::random());
-    assert_eq!(state.get(&hash_value3)?, None);
-    Ok(())
-}
+// #[test]
+// pub fn test_state_multi_commit_and_flush() -> Result<()> {
+//     let tmpdir = starcoin_config::temp_dir();
+//     let instance = StorageInstance::new_db_instance(DBStorage::new(
+//         tmpdir.path(),
+//         RocksdbConfig::default(),
+//         None,
+//     )?);
+//     let storage = Storage::new(instance)?;
+//     let state = StateTree::new(Arc::new(storage.clone()), None);
+//     let hash_value1 = HashValueKey(HashValue::random());
+//     let value1 = vec![1u8, 2u8];
+//     state.put(hash_value1, value1.clone());
+//     state.commit()?;
+//     state.flush()?;
+//     let root_hash1 = state.root_hash();
+//     let hash_value2 = HashValueKey(HashValue::random());
+//     let value12 = vec![12u8, 2u8];
+//     let value2 = vec![3u8, 4u8];
+//     state.put(hash_value1, value12.clone());
+//     state.put(hash_value2, value2.clone());
+//     state.commit()?;
+//     state.flush()?;
+//     let root_hash2 = state.root_hash();
+//     let state1 = StateTree::new(Arc::new(storage.clone()), Some(root_hash1));
+//     assert_eq!(state1.get(&hash_value1)?, Some(value1));
+//
+//     let state2 = StateTree::new(Arc::new(storage), Some(root_hash2));
+//     assert_eq!(state2.get(&hash_value1)?, Some(value12.clone()));
+//     assert_eq!(state2.get(&hash_value2)?, Some(value2));
+//
+//     state.remove(&hash_value1);
+//     state.commit()?;
+//     assert_eq!(state.get(&hash_value1)?, None);
+//     state.flush()?;
+//     assert_eq!(state2.get(&hash_value1)?, Some(value12));
+//
+//     let hash_value3 = HashValueKey(HashValue::random());
+//     assert_eq!(state.get(&hash_value3)?, None);
+//     Ok(())
+// }

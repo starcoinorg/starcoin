@@ -30,19 +30,21 @@ impl TransactionView {
         let block_number = block.header.number();
         let transaction_index = match &txn {
             Transaction::BlockMetadata(_) => 0,
-            _ => {
-                1 + block
-                    .transactions()
-                    .iter()
-                    .position(|t| t.id() == transaction_hash)
-                    .ok_or_else(|| {
-                        anyhow::anyhow!(
-                            "cannot find txn {} in block {}",
-                            transaction_hash,
-                            block_hash
-                        )
-                    })? as u32
-            }
+            _ => 1u32
+                .checked_add(
+                    block
+                        .transactions()
+                        .iter()
+                        .position(|t| t.id() == transaction_hash)
+                        .ok_or_else(|| {
+                            anyhow::anyhow!(
+                                "cannot find txn {} in block {}",
+                                transaction_hash,
+                                block_hash
+                            )
+                        })? as u32,
+                )
+                .ok_or_else(|| anyhow::anyhow!("Transaction index overflow "))?,
         };
 
         let (meta, txn) = match txn {
