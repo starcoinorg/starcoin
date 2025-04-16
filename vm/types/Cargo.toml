@@ -57,6 +57,7 @@ fuzzing = [
     "starcoin-crypto/fuzzing",
     "move-core-types/fuzzing",
 ]
+print_gas_info = []
 
 [package]
 authors = { workspace = true }

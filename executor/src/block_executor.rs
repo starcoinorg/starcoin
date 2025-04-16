@@ -131,7 +131,7 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter + Sync>(
                 let txn_state_root = chain_state
                     .commit()
                     .map_err(BlockExecutorError::BlockChainStateErr)?;
-                #[cfg(testing)]
+                #[cfg(feature = "testing")]
                 info!("txn_hash {} gas_used {}", txn_hash, gas_used);
                 executed_data.txn_infos.push(TransactionInfo::new(
                     txn_hash,
