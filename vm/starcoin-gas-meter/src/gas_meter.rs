@@ -4,10 +4,13 @@
 //! This module contains the official gas meter implementation, along with some top-level gas
 //! parameters and traits to help manipulate them.
 
+#[cfg(feature = "testing")]
+use move_binary_format::file_format_common::Opcodes;
 use move_binary_format::{
     errors::{Location, PartialVMError, PartialVMResult, VMResult},
     file_format::CodeOffset,
 };
+
 use move_core_types::{
     account_address::AccountAddress,
     gas_algebra::{
@@ -266,10 +269,7 @@ impl GasMeter for StarcoinGasMeter {
 
     fn charge_pop(&mut self, _popped_val: impl ValueView) -> PartialVMResult<()> {
         #[cfg(feature = "testing")]
-        info!(
-            "simple_instr pop cost InternalGasUnits({}) {}",
-            cost, self.charge
-        );
+        info!("simple_instr pop cost InternalGasUnits {}", self.charge);
         self.charge_execution(POP)
     }
 
