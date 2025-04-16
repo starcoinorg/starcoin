@@ -197,16 +197,16 @@ impl MinerService {
         ctx: &mut ServiceContext<Self>,
         event: GenerateBlockEvent,
     ) -> anyhow::Result<()> {
-        if self.task_flag.load(Ordering::Relaxed) {
-            debug!("Mint task already running, skip dispatch");
-            return Ok(());
-        }
-        self.task_flag.store(true, Ordering::Relaxed);
+        // if self.task_flag.load(Ordering::Relaxed) {
+        //     info!("Mint task already running, skip dispatch");
+        //     return Ok(());
+        // }
+        // self.task_flag.store(true, Ordering::Relaxed);
 
         let create_block_template_service = self.create_block_template_service.clone();
         let config = self.config.clone();
         let addr = ctx.service_ref::<Self>()?.clone();
-        let flag = self.task_flag.clone();
+        // let flag = self.task_flag.clone();
         ctx.spawn(async move {
             let timeout_result = tokio::time::timeout(
                 Duration::from_millis(2000),
@@ -222,7 +222,7 @@ impl MinerService {
                         elapsed
                     );
                     let _ = addr.send(DelayGenerateBlockEvent { delay_secs: 2 }).await;
-                    flag.store(false, Ordering::Relaxed);
+                    // flag.store(false, Ordering::Relaxed);
                     return;
                 }
             };
@@ -232,7 +232,7 @@ impl MinerService {
                 Err(e) => {
                     warn!("BlockTemplateRequest delivery failed: {}", e);
                     let _ = addr.send(DelayGenerateBlockEvent { delay_secs: 2 }).await;
-                    flag.store(false, Ordering::Relaxed);
+                    // flag.store(false, Ordering::Relaxed);
                     return;
                 }
             };
@@ -242,7 +242,7 @@ impl MinerService {
                 Err(e) => {
                     warn!("BlockTemplateRequest handler failed: {}", e);
                     let _ = addr.send(DelayGenerateBlockEvent { delay_secs: 2 }).await;
-                    flag.store(false, Ordering::Relaxed);
+                    // flag.store(false, Ordering::Relaxed);
                     return;
                 }
             };
@@ -264,7 +264,7 @@ impl MinerService {
                 warn!("Failed to dispatch block template: {}", e);
             }
 
-            flag.store(false, Ordering::Relaxed);
+            // flag.store(false, Ordering::Relaxed);
         });
         Ok(())
     }
