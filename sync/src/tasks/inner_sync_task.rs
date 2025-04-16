@@ -131,7 +131,7 @@ where
                 self.storage.clone(),
                 1,
             );
-            let chain = BlockChain::new_v2(
+            let chain = BlockChain::new(
                 self.time_service.clone(),
                 ancestor.id,
                 self.storage.clone(),

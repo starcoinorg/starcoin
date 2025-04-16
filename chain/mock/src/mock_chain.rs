@@ -26,7 +26,7 @@ impl MockChain {
         let (storage, storage2, chain_info, _) =
             Genesis::init_storage_for_test_v2(&net).expect("init storage by genesis fail.");
 
-        let chain = BlockChain::new_v2(
+        let chain = BlockChain::new(
             net.time_service(),
             chain_info.head().id(),
             storage,
@@ -44,8 +44,7 @@ impl MockChain {
         head_block_hash: HashValue,
         miner: AccountInfo,
     ) -> Result<Self> {
-        let chain =
-            BlockChain::new_v2(net.time_service(), head_block_hash, storage, storage2, None)?;
+        let chain = BlockChain::new(net.time_service(), head_block_hash, storage, storage2, None)?;
         Ok(Self::new_inner(net, chain, miner))
     }
 
@@ -76,7 +75,7 @@ impl MockChain {
             None => self.head.current_header().id(),
         };
         assert!(self.head.exist_block(block_id)?);
-        BlockChain::new_v2(
+        BlockChain::new(
             self.head.time_service(),
             block_id,
             self.head.get_storage(),
@@ -98,7 +97,7 @@ impl MockChain {
         //TODO reuse WriteChainService's select_head logic.
         // new block should be execute and save to storage.
         let new_block_id = new_block.id();
-        let branch = BlockChain::new_v2(
+        let branch = BlockChain::new(
             self.net.time_service(),
             new_block_id,
             self.head.get_storage(),

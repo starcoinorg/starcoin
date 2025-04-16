@@ -211,7 +211,7 @@ where
         metrics: Option<BlockBuilderMetrics>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
-        let chain = BlockChain::new_v2(
+        let chain = BlockChain::new(
             net.time_service(),
             block_id,
             storage.clone(),
@@ -252,7 +252,7 @@ where
         if self.chain.can_connect(&block) {
             self.chain.connect(block)?;
         } else {
-            self.chain = BlockChain::new_v2(
+            self.chain = BlockChain::new(
                 self.chain.time_service(),
                 block.header().id(),
                 self.storage.clone(),

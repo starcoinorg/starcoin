@@ -39,9 +39,7 @@ use starcoin_types::{
 };
 use starcoin_vm2_state_api::ChainStateWriter as ChainStateWriter2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
-use starcoin_vm2_storage::{
-    storage::StorageInstance as StorageInstance2, Storage as Storage2, Store as Store2,
-};
+use starcoin_vm2_storage::Store as Store2;
 use starcoin_vm2_vm_types::transaction::Transaction as Transaction2;
 use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
 use starcoin_vm_types::access_path::AccessPath;
@@ -606,19 +604,6 @@ impl BlockChain {
         time_service: Arc<dyn TimeService>,
         head_block_hash: HashValue,
         storage: Arc<dyn Store>,
-        vm_metrics: Option<VMMetrics>,
-    ) -> Result<Self> {
-        let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
-        let head = storage
-            .get_block_by_hash(head_block_hash)?
-            .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
-        Self::new_with_uncles(time_service, head, None, storage, storage2, vm_metrics)
-    }
-
-    pub fn new_v2(
-        time_service: Arc<dyn TimeService>,
-        head_block_hash: HashValue,
-        storage: Arc<dyn Store>,
         storage2: Arc<dyn Store2>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
@@ -711,7 +696,7 @@ impl BlockChain {
             &chain_id,
             None,
         )?;
-        Self::new_v2(
+        Self::new(
             time_service,
             executed_block.block.id(),
             storage,
