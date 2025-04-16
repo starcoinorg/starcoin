@@ -32,8 +32,12 @@ use starcoin_types::genesis_config;
 use starcoin_types::language_storage::TypeTag;
 use starcoin_types::proof::SparseMerkleProof;
 use starcoin_types::startup_info::ChainInfo;
-use starcoin_types::transaction::authenticator::{AuthenticationKey, TransactionAuthenticator};
-use starcoin_types::transaction::{RawUserTransaction, ScriptFunction, TransactionArgument};
+use starcoin_types::transaction::{
+    authenticator::{AccountPublicKey, AuthenticationKey, TransactionAuthenticator},
+    RawUserTransaction, RichTransactionInfo, Script, ScriptFunction, SignedUserTransaction,
+    Transaction, TransactionArgument, TransactionInfo, TransactionOutput, TransactionPayload,
+    TransactionStatus,
+};
 use starcoin_types::vm_error::AbortLocation;
 use starcoin_types::U256;
 use starcoin_vm_types::access_path::AccessPath;
@@ -42,11 +46,6 @@ use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::{parse_module_id, FunctionId, ModuleId, StructTag};
 use starcoin_vm_types::parser::{parse_transaction_argument, parse_type_tag};
 use starcoin_vm_types::sign_message::SignedMessage;
-use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
-use starcoin_vm_types::transaction::{
-    RichTransactionInfo, Script, SignedUserTransaction, Transaction, TransactionInfo,
-    TransactionOutput, TransactionPayload, TransactionStatus,
-};
 use starcoin_vm_types::transaction_argument::convert_txn_args;
 use starcoin_vm_types::vm_status::{DiscardedVMStatus, KeptVMStatus, StatusCode};
 use starcoin_vm_types::write_set::WriteOp;

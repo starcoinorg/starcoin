@@ -99,8 +99,8 @@ impl From<RichTransactionInfoV2> for RichTransactionInfo {
                 status: match value.transaction_info.status {
                     KeptVMStatus::Executed => starcoin_vm_types::vm_status::KeptVMStatus::Executed,
                     KeptVMStatus::OutOfGas => starcoin_vm_types::vm_status::KeptVMStatus::OutOfGas,
-                    KeptVMStatus::MoveAbort(Lo, code) => {
-                        starcoin_vm_types::vm_status::KeptVMStatus::MoveAbort(lo_convert(Lo), code)
+                    KeptVMStatus::MoveAbort(lo, code) => {
+                        starcoin_vm_types::vm_status::KeptVMStatus::MoveAbort(lo_convert(lo), code)
                     }
                     KeptVMStatus::ExecutionFailure {
                         location,
