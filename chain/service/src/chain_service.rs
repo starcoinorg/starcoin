@@ -82,6 +82,7 @@ impl ActorService for ChainReaderService {
 
 impl EventHandler<Self, NewHeadBlock> for ChainReaderService {
     fn handle_event(&mut self, event: NewHeadBlock, _ctx: &mut ServiceContext<Self>) {
+        info!("NewDagBlock in chain reader service");
         let new_head = event.executed_block.block().header().clone();
         if let Err(e) = if self
             .inner

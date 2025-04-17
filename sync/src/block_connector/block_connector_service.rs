@@ -211,6 +211,7 @@ where
         ctx.set_mailbox_capacity(1024);
         ctx.subscribe::<SyncStatusChangeEvent>();
         ctx.subscribe::<MinedBlock>();
+        ctx.subscribe::<NewDagBlock>();
 
         ctx.run_interval(std::time::Duration::from_secs(3), move |ctx| {
             ctx.notify(crate::tasks::BlockDiskCheckEvent {});
@@ -222,6 +223,7 @@ where
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<SyncStatusChangeEvent>();
         ctx.unsubscribe::<MinedBlock>();
+        ctx.unsubscribe::<NewDagBlock>();
         Ok(())
     }
 }
@@ -351,6 +353,7 @@ where
     TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
     fn handle_event(&mut self, msg: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
+        info!("NewDagBlock in block connect service");
         let chain = self
             .chain_service
             .get_main()

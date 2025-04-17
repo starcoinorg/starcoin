@@ -15,7 +15,7 @@ use starcoin_storage::{BlockStore, Storage};
 use starcoin_txpool_api::PropagateTransactions;
 use starcoin_types::{
     sync_status::SyncStatus,
-    system_events::{NewDagBlockFromPeer, NewHeadBlock, SyncStatusChangeEvent, SystemStarted},
+    system_events::{NewDagBlock, NewDagBlockFromPeer, NewHeadBlock, SyncStatusChangeEvent, SystemStarted},
 };
 use std::{sync::Arc, time::Duration};
 
@@ -165,7 +165,7 @@ impl EventHandler<Self, TryMintBlockEvent> for GenerateBlockEventPacemaker {
             msg.last_blue_score, current_blue_score, diff_blue_score
         );
 
-        if diff_blue_score < msg.try_count {
+        if diff_blue_score < msg.try_count && diff_blue_score != 0 {
             info!("jacktest: TryMintBlockEvent, send mint event");
             self.send_event(true, ctx);
             self.try_mint_later(
@@ -178,6 +178,13 @@ impl EventHandler<Self, TryMintBlockEvent> for GenerateBlockEventPacemaker {
             info!("jacktest: TryMintBlockEvent, do not send mint event");
             self.try_mint_later(ctx, current_blue_score, 10, 1000);
         }
+    }
+}
+
+impl EventHandler<Self, NewDagBlock> for GenerateBlockEventPacemaker {
+    fn handle_event(&mut self, msg: NewDagBlock, ctx: &mut ServiceContext<Self>) {
+        info!("NewDagBlock in pacemaker");
+        self.send_event(true, ctx)
     }
 }
 
