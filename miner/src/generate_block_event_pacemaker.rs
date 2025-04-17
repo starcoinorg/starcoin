@@ -177,11 +177,11 @@ impl EventHandler<Self, TryMintBlockEvent> for GenerateBlockEventPacemaker {
                 ctx,
                 current_blue_score,
                 next_try_count,
-                25,
+                200,
             );
         } else {
             info!("jacktest: TryMintBlockEvent, do not send mint event");
-            self.try_mint_later(ctx, current_blue_score, 10, 1000);
+            self.try_mint_later(ctx, current_blue_score, 5, 1000);
         }
     }
 }

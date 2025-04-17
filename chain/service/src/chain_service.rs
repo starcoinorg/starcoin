@@ -101,6 +101,7 @@ impl EventHandler<Self, NewHeadBlock> for ChainReaderService {
 
 impl EventHandler<Self, NewDagBlock> for ChainReaderService {
     fn handle_event(&mut self, event: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
+        info!("NewDagBlock in chain reader service");
         let main = self
             .inner
             .get_main()

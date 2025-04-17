@@ -48,7 +48,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
         blocks,
         epoch
             .block_time_target()
-            .checked_div(10)
+            .checked_div(2)
             .ok_or_else(|| format_err!("block_time_target overflow"))?,
     )?;
     debug!(
