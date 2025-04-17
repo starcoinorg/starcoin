@@ -15,6 +15,9 @@ stest = { workspace = true }
 tokio = { workspace = true }
 starcoin-vm-types = { workspace = true }
 
+starcoin-vm2-statedb = { workspace = true }
+starcoin-types-glue = { workspace = true }
+
 [dev-dependencies]
 test-helper = { workspace = true }
 

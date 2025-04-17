@@ -20,6 +20,7 @@ members = [
     "commons/infallible",
     "types",
     "types/uint",
+    "types-glue",
     "genesis",
     "state/api",
     "state/state-tree",
@@ -136,6 +137,7 @@ default-members = [
     "commons/infallible",
     "types",
     "types/uint",
+    "types-glue",
     "genesis",
     "state/api",
     "state/state-tree",
@@ -514,6 +516,7 @@ starcoin-txpool = { path = "txpool" }
 starcoin-txpool-api = { path = "txpool/api" }
 starcoin-txpool-mock-service = { path = "txpool/mock-service" }
 starcoin-types = { path = "types" }
+starcoin-types-glue = { path = "types-glue" }
 starcoin-uint = { path = "types/uint" }
 starcoin-vm-runtime = { path = "vm/vm-runtime" }
 starcoin-vm-types = { path = "vm/types" }

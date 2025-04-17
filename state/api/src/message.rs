@@ -12,20 +12,27 @@ use starcoin_types::{
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 
 #[derive(Debug, Clone)]
+pub enum StateRequestVMType {
+    MoveVm1,
+    MoveVm2,
+}
+
+#[derive(Debug, Clone)]
 pub enum StateRequest {
-    Get(AccessPath),
-    GetWithProof(AccessPath),
-    GetWithProofByRoot(AccessPath, HashValue),
-    GetAccountState(AccountAddress),
+    Get(StateRequestVMType, AccessPath),
+    GetWithProof(StateRequestVMType, AccessPath),
+    GetWithProofByRoot(StateRequestVMType, AccessPath, HashValue),
+    GetAccountState(StateRequestVMType, AccountAddress),
     GetAccountStateSet {
+        vm_type: StateRequestVMType,
         address: AccountAddress,
         state_root: Option<HashValue>,
     },
-    GetAccountStateByRoot(AccountAddress, HashValue),
-    StateRoot(),
-    GetWithTableItemProof(TableHandle, Vec<u8>),
-    GetWithTableItemProofByRoot(TableHandle, Vec<u8>, HashValue),
-    GetTableInfo(AccountAddress),
+    GetAccountStateByRoot(StateRequestVMType, AccountAddress, HashValue),
+    StateRoot(StateRequestVMType),
+    GetWithTableItemProof(StateRequestVMType, TableHandle, Vec<u8>),
+    GetWithTableItemProofByRoot(StateRequestVMType, TableHandle, Vec<u8>, HashValue),
+    GetTableInfo(StateRequestVMType, AccountAddress),
 }
 
 impl ServiceRequest for StateRequest {

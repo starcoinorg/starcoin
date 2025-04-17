@@ -13832,8 +13832,10 @@ dependencies = [
  "starcoin-state-api 1.13.19",
  "starcoin-state-tree 1.13.19",
  "starcoin-statedb 1.13.19",
+ "starcoin-statedb 2.0.1",
  "starcoin-storage 1.13.19",
  "starcoin-types 1.13.19",
+ "starcoin-types-glue",
  "starcoin-vm-types 1.13.19",
  "stest",
  "test-helper",
@@ -14473,6 +14475,16 @@ dependencies = [
  "starcoin-uint 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=b739edb97e78caae599c93740e0da98f9564da3e)",
  "starcoin-vm-types 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=b739edb97e78caae599c93740e0da98f9564da3e)",
  "thiserror 1.0.69",
+]
+
+[[package]]
+name = "starcoin-types-glue"
+version = "1.13.19"
+dependencies = [
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
+ "starcoin-vm-types 1.13.19",
+ "starcoin-vm-types 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=b70f16aa1cbc1246bdccea614a1a54cd1711f550)",
 ]
 
 [[package]]

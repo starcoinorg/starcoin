@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::{inner::Inner, inner_vm2::InnerVM2};
 use anyhow::{format_err, Result};
 use starcoin_config::{NodeConfig, TimeService};
 use starcoin_crypto::HashValue;
@@ -8,6 +9,7 @@ use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
+use starcoin_state_api::message::StateRequestVMType::{MoveVm1, MoveVm2};
 use starcoin_state_api::message::{StateRequest, StateResponse};
 use starcoin_state_api::{
     ChainStateReader, StateNodeStore, StateReaderExt, StateView, StateWithProof,
@@ -27,17 +29,22 @@ use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::sync::Arc;
 
 pub struct ChainStateService {
-    service: Inner,
+    service: (Inner, InnerVM2),
 }
 
 impl ChainStateService {
     pub fn new(
         store: Arc<dyn StateNodeStore>,
         root_hash: Option<HashValue>,
+        store_vm2: Arc<dyn StateNodeStore>,
+        root_hash_vm2: Option<HashValue>,
         time_service: Arc<dyn TimeService>,
     ) -> Self {
         Self {
-            service: Inner::new(store, root_hash, time_service),
+            service: (
+                Inner::new(store, root_hash, time_service.clone()),
+                InnerVM2::new(store_vm2, root_hash_vm2, time_service.clone()),
+            ),
         }
     }
 }
@@ -63,7 +70,9 @@ impl ServiceFactory<Self> for ChainStateService {
 impl ActorService for ChainStateService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<NewHeadBlock>();
-        self.service.adjust_time();
+        // self.service.0.adjust_time();
+        // TODO(BobOng): [dual-vm] Here the timestamp of the new VM is used as the reference
+        self.service.1.adjust_time();
         Ok(())
     }
 
@@ -80,50 +89,98 @@ impl ServiceHandler<Self, StateRequest> for ChainStateService {
         _ctx: &mut ServiceContext<ChainStateService>,
     ) -> Result<StateResponse> {
         let response = match msg {
-            StateRequest::Get(access_path) => StateResponse::State(
-                self.service
+            StateRequest::Get(vm_type, access_path) => StateResponse::State(match vm_type {
+                MoveVm1 => self
+                    .service
+                    .0
                     .get_state_value(&StateKey::AccessPath(access_path))?,
-            ),
-            StateRequest::GetWithProof(access_path) => {
-                StateResponse::StateWithProof(Box::new(self.service.get_with_proof(&access_path)?))
-            }
-            StateRequest::GetAccountState(address) => {
-                StateResponse::AccountState(self.service.get_account_state(&address)?)
-            }
-            StateRequest::StateRoot() => StateResponse::StateRoot(self.service.state_root()),
-            StateRequest::GetWithProofByRoot(access_path, state_root) => {
-                StateResponse::StateWithProof(Box::new(
+                MoveVm2 => self
+                    .service
+                    .1
+                    .get_state_value(&StateKey::AccessPath(access_path))?,
+            }),
+            StateRequest::GetWithProof(vm_type, access_path) => match vm_type {
+                MoveVm1 => StateResponse::StateWithProof(Box::new(
+                    self.service.0.get_with_proof(&access_path)?,
+                )),
+                MoveVm2 => StateResponse::StateWithProof(Box::new(
+                    self.service.1.get_with_proof(&access_path)?,
+                )),
+            },
+            StateRequest::GetAccountState(vm_type, address) => match vm_type {
+                MoveVm1 => StateResponse::AccountState(self.service.0.get_account_state(&address)?),
+                MoveVm2 => StateResponse::AccountState(self.service.1.get_account_state(&address)?),
+            },
+            StateRequest::StateRoot(vm_type) => match vm_type {
+                MoveVm1 => StateResponse::StateRoot(self.service.0.state_root()),
+                MoveVm2 => StateResponse::StateRoot(self.service.1.state_root()),
+            },
+            StateRequest::GetWithProofByRoot(vm_type, access_path, state_root) => match vm_type {
+                MoveVm1 => StateResponse::StateWithProof(Box::new(
                     self.service
+                        .0
                         .get_with_proof_by_root(access_path, state_root)?,
-                ))
-            }
-            StateRequest::GetAccountStateByRoot(account, state_root) => {
-                StateResponse::AccountState(
+                )),
+                MoveVm2 => StateResponse::StateWithProof(Box::new(
                     self.service
+                        .1
+                        .get_with_proof_by_root(access_path, state_root)?,
+                )),
+            },
+            StateRequest::GetAccountStateByRoot(vm_type, account, state_root) => match vm_type {
+                MoveVm1 => StateResponse::AccountState(
+                    self.service
+                        .0
                         .get_account_state_by_root(account, state_root)?,
-                )
-            }
+                ),
+                MoveVm2 => StateResponse::AccountState(
+                    self.service
+                        .1
+                        .get_account_state_by_root(account, state_root)?,
+                ),
+            },
             StateRequest::GetAccountStateSet {
+                vm_type,
                 address,
                 state_root,
-            } => StateResponse::AccountStateSet(
-                self.service
-                    .get_account_state_set_with_root(address, state_root)?,
-            ),
-            StateRequest::GetWithTableItemProof(handle, key) => {
-                StateResponse::StateWithTableItemProof(Box::new(
-                    self.service.get_with_table_item_proof(&handle, &key)?,
-                ))
-            }
-            StateRequest::GetWithTableItemProofByRoot(handle, key, state_root) => {
-                StateResponse::StateWithTableItemProof(Box::new(
+            } => match vm_type {
+                MoveVm1 => StateResponse::AccountStateSet(
                     self.service
-                        .get_with_table_item_proof_by_root(handle, key, state_root)?,
-                ))
+                        .0
+                        .get_account_state_set_with_root(address, state_root)?,
+                ),
+                MoveVm2 => StateResponse::AccountStateSet(
+                    self.service
+                        .1
+                        .get_account_state_set_with_root(address, state_root)?,
+                ),
+            },
+            StateRequest::GetWithTableItemProof(vm_type, handle, key) => match vm_type {
+                MoveVm1 => StateResponse::StateWithTableItemProof(Box::new(
+                    self.service.0.get_with_table_item_proof(&handle, &key)?,
+                )),
+                MoveVm2 => StateResponse::StateWithTableItemProof(Box::new(
+                    self.service.1.get_with_table_item_proof(&handle, &key)?,
+                )),
+            },
+            StateRequest::GetWithTableItemProofByRoot(vm_type, handle, key, state_root) => {
+                match vm_type {
+                    MoveVm1 => StateResponse::StateWithTableItemProof(Box::new(
+                        self.service
+                            .0
+                            .get_with_table_item_proof_by_root(handle, key, state_root)?,
+                    )),
+                    MoveVm2 => StateResponse::StateWithTableItemProof(Box::new(
+                        self.service
+                            .1
+                            .get_with_table_item_proof_by_root(handle, key, state_root)?,
+                    )),
+                }
             }
-            StateRequest::GetTableInfo(address) => {
-                StateResponse::TableInfo(self.service.get_table_info(address)?)
-            }
+            StateRequest::GetTableInfo(vm_type, address) => match vm_type {
+                MoveVm1 => StateResponse::TableInfo(self.service.0.get_table_info(address)?),
+                MoveVm2 => StateResponse::TableInfo(self.service.1.get_table_info(address)?),
+            },
         };
         Ok(response)
     }
@@ -135,131 +192,10 @@ impl EventHandler<Self, NewHeadBlock> for ChainStateService {
 
         let state_root = block.header().state_root();
         debug!("ChainStateActor change StateRoot to : {:?}", state_root);
-        self.service.change_root(state_root);
-    }
-}
 
-pub struct Inner {
-    state_db: ChainStateDB,
-    //for adjust local time by on chain time.
-    time_service: Arc<dyn TimeService>,
-}
-
-impl Inner {
-    pub fn new(
-        store: Arc<dyn StateNodeStore>,
-        root_hash: Option<HashValue>,
-        time_service: Arc<dyn TimeService>,
-    ) -> Self {
-        Self {
-            state_db: ChainStateDB::new(store, root_hash),
-            time_service,
-        }
-    }
-
-    pub(crate) fn get_account_state_set_with_root(
-        &self,
-        address: AccountAddress,
-        state_root: Option<HashValue>,
-    ) -> Result<Option<AccountStateSet>> {
-        match state_root {
-            Some(root) => {
-                let reader = self.state_db.fork_at(root);
-                reader.get_account_state_set(&address)
-            }
-            None => self.get_account_state_set(&address),
-        }
-    }
-
-    pub(crate) fn get_with_proof_by_root(
-        &self,
-        access_path: AccessPath,
-        state_root: HashValue,
-    ) -> Result<StateWithProof> {
-        let reader = self.state_db.fork_at(state_root);
-        reader.get_with_proof(&access_path)
-    }
-
-    pub(crate) fn get_with_table_item_proof_by_root(
-        &self,
-        handle: TableHandle,
-        key: Vec<u8>,
-        state_root: HashValue,
-    ) -> Result<StateWithTableItemProof> {
-        let reader = self.state_db.fork_at(state_root);
-        reader.get_with_table_item_proof(&handle, &key)
-    }
-
-    pub(crate) fn get_account_state_by_root(
-        &self,
-        account: AccountAddress,
-        state_root: HashValue,
-    ) -> Result<Option<AccountState>> {
-        let reader = self.state_db.fork_at(state_root);
-        reader.get_account_state(&account)
-    }
-
-    pub(crate) fn change_root(&mut self, state_root: HashValue) {
-        self.state_db = self.state_db.fork_at(state_root);
-        self.adjust_time();
-    }
-
-    pub fn adjust_time(&self) {
-        match self.state_db.get_timestamp() {
-            Ok(on_chain_time) => {
-                self.time_service.adjust(on_chain_time.milliseconds);
-            }
-            Err(e) => {
-                error!("Get global time on chain fail: {:?}", e);
-            }
-        }
-    }
-}
-
-impl ChainStateReader for Inner {
-    fn get_with_proof(&self, access_path: &AccessPath) -> Result<StateWithProof> {
-        self.state_db.get_with_proof(access_path)
-    }
-
-    fn get_account_state(&self, address: &AccountAddress) -> Result<Option<AccountState>> {
-        self.state_db.get_account_state(address)
-    }
-    fn get_account_state_set(&self, address: &AccountAddress) -> Result<Option<AccountStateSet>> {
-        self.state_db.get_account_state_set(address)
-    }
-
-    fn state_root(&self) -> HashValue {
-        self.state_db.state_root()
-    }
-
-    fn dump(&self) -> Result<ChainStateSet> {
-        unimplemented!()
-    }
-
-    fn dump_iter(&self) -> Result<AccountStateSetIterator> {
-        unimplemented!()
-    }
-
-    fn get_with_table_item_proof(
-        &self,
-        handle: &TableHandle,
-        key: &[u8],
-    ) -> Result<StateWithTableItemProof> {
-        self.state_db.get_with_table_item_proof(handle, key)
-    }
-
-    fn get_table_info(&self, address: AccountAddress) -> Result<Option<TableInfo>> {
-        self.state_db.get_table_info(address)
-    }
-}
-
-impl StateView for Inner {
-    fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
-        self.state_db.get_state_value(state_key)
-    }
-
-    fn is_genesis(&self) -> bool {
-        false
+        // TODO(BobOng): [dual-vm] There should be two state roots passed here
+        self.service.0.change_root(state_root);
+        self.service.1.change_root(state_root);
     }
 }
 
