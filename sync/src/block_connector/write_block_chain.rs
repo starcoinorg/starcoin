@@ -209,6 +209,10 @@ where
         &self.main
     }
 
+    pub fn get_bus(&self) -> ServiceRef<BusService> {
+        self.bus.clone()
+    }
+
     //todo: return a reference
     pub fn get_dag(&self) -> BlockDAG {
         self.dag.clone()
@@ -325,6 +329,10 @@ where
             self.broadcast_new_branch(executed_block);
         }
         Ok(())
+    }
+
+    pub fn switch_header(&mut self, chain: BlockChain) {
+        self.main = chain;
     }
 
     fn do_new_head(
