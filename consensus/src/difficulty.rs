@@ -55,7 +55,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
         "get_next_work_required current_number: {}, epoch: {:?}, target: {}",
         current_header.number(),
         epoch,
-        target
+        200,
     );
     Ok(target)
 }
