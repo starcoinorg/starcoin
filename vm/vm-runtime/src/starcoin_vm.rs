@@ -364,10 +364,9 @@ impl StarcoinVM {
                         self.check_move_version(compiled_module.version() as u64)?;
                     };
                 }
-                let enforced = match Self::is_enforced(remote_cache, package.package_address()) {
-                    Ok(is_enforced) => is_enforced,
-                    _ => false,
-                };
+
+                let enforced =
+                    Self::is_enforced(remote_cache, package.package_address()).unwrap_or_default();
                 let only_new_module =
                     match Self::only_new_module_strategy(remote_cache, package.package_address()) {
                         Err(e) => {
@@ -534,10 +533,7 @@ impl StarcoinVM {
                 };
             }
 
-            let enforced = match Self::is_enforced(&data_cache, package_address) {
-                Ok(is_enforced) => is_enforced,
-                _ => false,
-            };
+            let enforced = Self::is_enforced(&data_cache, package_address).unwrap_or_default();
             let only_new_module = match Self::only_new_module_strategy(&data_cache, package_address)
             {
                 Err(e) => {
@@ -909,7 +905,7 @@ impl StarcoinVM {
         storage: &S,
         block_metadata: BlockMetadata,
     ) -> Result<TransactionOutput, VMStatus> {
-        #[cfg(testing)]
+        #[cfg(feature = "testing")]
         info!("process_block_meta begin");
         let txn_sender = account_config::genesis_address();
         let mut gas_meter = UnmeteredGasMeter;
@@ -946,7 +942,7 @@ impl StarcoinVM {
             )
             .map(|_return_vals| ())
             .or_else(convert_prologue_runtime_error)?;
-        #[cfg(testing)]
+        #[cfg(feature = "testing")]
         info!("process_block_meta end");
         get_transaction_output(&mut (), session, 0.into(), 0.into(), KeptVMStatus::Executed)
     }
@@ -1486,7 +1482,7 @@ pub(crate) fn charge_global_write_gas_usage(
     let write_set_gas = u64::from(gas_meter.cal_write_set_gas());
     let total_cost = InternalGasPerByte::from(write_set_gas)
         * NumBytes::new(session.num_mutated_accounts(sender));
-    #[cfg(testing)]
+    #[cfg(feature = "testing")]
     info!(
         "charge_global_write_gas_usage {} {}",
         total_cost,

@@ -37,6 +37,7 @@ move-core-types = { workspace = true }
 [features]
 default = []
 fuzzing = ["starcoin-types/fuzzing"]
+testing = ["starcoin-vm-runtime/testing"]
 
 [package]
 authors = { workspace = true }
