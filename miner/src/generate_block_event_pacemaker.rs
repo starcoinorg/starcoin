@@ -165,13 +165,18 @@ impl EventHandler<Self, TryMintBlockEvent> for GenerateBlockEventPacemaker {
             msg.last_blue_score, current_blue_score, diff_blue_score
         );
 
-        if diff_blue_score < msg.try_count && diff_blue_score != 0 {
+        if diff_blue_score < msg.try_count {
             info!("jacktest: TryMintBlockEvent, send mint event");
             self.send_event(true, ctx);
+            let next_try_count = if diff_blue_score == 0 {
+                1
+            } else {
+                msg.try_count.saturating_sub(diff_blue_score)
+            };
             self.try_mint_later(
                 ctx,
                 current_blue_score,
-                msg.try_count.saturating_sub(diff_blue_score),
+                next_try_count,
                 25,
             );
         } else {
