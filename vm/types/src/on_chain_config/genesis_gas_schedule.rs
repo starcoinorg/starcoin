@@ -403,7 +403,6 @@ pub fn v4_native_table() -> Vec<GasCost> {
         (N::VEC_APPEND, GasCost::new(40, 1)),
         (N::VEC_REMOVE, GasCost::new(20, 1)),
         (N::VEC_REVERSE, GasCost::new(10, 1)),
-        // XXX FIXME YSG instr_gas
         (N::TABLE_NEW, GasCost::new(4, 1)),
         (N::TABLE_INSERT, GasCost::new(4, 1)),
         (N::TABLE_BORROW, GasCost::new(10, 1)),
@@ -459,7 +458,6 @@ pub fn v5_native_table() -> Vec<GasCost> {
         (N::VEC_APPEND, GasCost::new(40, 1)),
         (N::VEC_REMOVE, GasCost::new(20, 1)),
         (N::VEC_REVERSE, GasCost::new(10, 1)),
-        // XXX FIXME YSG instr_gas
         (N::TABLE_NEW, GasCost::new(4, 1)),
         (N::TABLE_INSERT, GasCost::new(4, 1)),
         (N::TABLE_BORROW, GasCost::new(10, 1)),

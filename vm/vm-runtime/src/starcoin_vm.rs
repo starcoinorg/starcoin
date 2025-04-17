@@ -1604,7 +1604,6 @@ impl VMAdapter for StarcoinVM {
             PreprocessedTransaction::UserTransaction(txn) => {
                 let sender = txn.sender().to_string();
                 let (vm_status, output) = self.execute_user_transaction(data_cache, *txn.clone());
-                // XXX FIXME YSG
                 // let gas_unit_price = transaction.gas_unit_price(); think about gas_used OutOfGas
                 (vm_status, output, Some(sender))
             }

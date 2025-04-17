@@ -22,7 +22,6 @@ pub trait VMAdapter {
     /// Creates a new Session backed by the given storage.
     /// TODO: this doesn't belong in this trait. We should be able to remove
     /// this after redesigning cache ownership model.
-    // XXX FIXME YSG, this place we use SessionAdapter, we don't have move_vm_ext::SessionExt
     fn new_session<'r, R: MoveResolverExt>(
         &self,
         remote: &'r R,

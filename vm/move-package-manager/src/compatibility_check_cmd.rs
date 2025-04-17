@@ -74,7 +74,6 @@ pub fn handle_compatibility_check(
             "Modules {} is incompatible with remote chain: {}!",
             incompatible_module_ids
                 .into_iter()
-                // XXX FIXME YSG
                 .map(|(module_id, compat)| format!("{} {}", module_id, compat.is_err()))
                 .join(","),
             &rpc
