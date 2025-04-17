@@ -1737,8 +1737,8 @@ impl BlockChain {
     pub fn selecte_dag_state(self, executed_block: ExecutedBlock) -> Result<BlockChain> {
         let new_pruning_point = executed_block.header().pruning_point();
         let current_pruning_point = self.status().head().pruning_point();
-        let chain = if current_pruning_point == new_pruning_point {
-            let state = self.dag.get_dag_state(current_pruning_point).unwrap();
+        let chain = if current_pruning_point == new_pruning_point || current_pruning_point == HashValue::zero() {
+            let state = self.dag.get_dag_state(new_pruning_point).unwrap();
             let block_id = self
                 .dag
                 .ghost_dag_manager()
