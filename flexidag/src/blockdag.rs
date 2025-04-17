@@ -693,10 +693,13 @@ impl BlockDAG {
         max_parents_count: u64,
         genesis_id: HashValue,
     ) -> anyhow::Result<MineNewDagBlockInfo> {
+        info!("jacktest: calc_mergeset_and_tips start, 1");
         let mut dag_state = self.get_dag_state(previous_pruning_point)?;
+        info!("jacktest: calc_mergeset_and_tips start, 2");
 
         // filter
         if dag_state.tips.len() > max_parents_count as usize {
+        info!("jacktest: calc_mergeset_and_tips start, 3");
             dag_state.tips = dag_state
                 .tips
                 .into_iter()
@@ -731,7 +734,9 @@ impl BlockDAG {
                 .collect();
         }
 
+        info!("jacktest: calc_mergeset_and_tips start, 4");
         let next_ghostdata = self.ghostdata(&dag_state.tips)?;
+        info!("jacktest: calc_mergeset_and_tips start, 5");
 
         let next_pruning_point = self.pruning_point_manager().next_pruning_point(
             previous_pruning_point,
@@ -740,28 +745,35 @@ impl BlockDAG {
             pruning_depth,
             pruning_finality,
         )?;
+        info!("jacktest: calc_mergeset_and_tips start, 6");
 
         let (tips, ghostdata, mut pruning_point) = if next_pruning_point == Hash::zero()
             || next_pruning_point == previous_pruning_point
         {
+        info!("jacktest: calc_mergeset_and_tips start, 6.1");
             info!(
                 "tips: {:?}, the next pruning point is: {:?}, the current ghostdata's selected parent: {:?}, blue blocks are: {:?} and its red blocks are: {:?}",
                 dag_state.tips, next_pruning_point, next_ghostdata.selected_parent, next_ghostdata.mergeset_blues, next_ghostdata.mergeset_reds.len(),
             );
+        info!("jacktest: calc_mergeset_and_tips start, 6.2");
             (dag_state.tips, next_ghostdata, next_pruning_point)
         } else {
+        info!("jacktest: calc_mergeset_and_tips start, 6.3");
             let pruned_tips = self.pruning_point_manager().prune(
                 &dag_state,
                 previous_pruning_point,
                 next_pruning_point,
             )?;
+        info!("jacktest: calc_mergeset_and_tips start, 6.4");
             let pruned_ghostdata = self.ghost_dag_manager().ghostdag(&pruned_tips)?;
             info!(
                 "the pruning was triggered, before pruning, the tips: {:?}, after pruning tips: {:?}, the next pruning point is: {:?}, the current ghostdata's selected parent: {:?}, blue blocks are: {:?} and its red blocks are: {:?}",
                 pruned_tips, dag_state.tips, next_pruning_point, pruned_ghostdata.selected_parent, pruned_ghostdata.mergeset_blues, pruned_ghostdata.mergeset_reds.len(),
             );
+        info!("jacktest: calc_mergeset_and_tips start, 6.5");
             (pruned_tips, pruned_ghostdata, next_pruning_point)
         };
+        info!("jacktest: calc_mergeset_and_tips start, 7");
 
         if pruning_point == Hash::zero() {
             pruning_point = genesis_id;
@@ -776,6 +788,7 @@ impl BlockDAG {
         // info!(
         //     "after removing the bounded merge breaking parents, tips: {:?} and ghostdata: {:?}",
         //     tips, ghostdata
+        info!("jacktest: calc_mergeset_and_tips start, 8");
         // );
         anyhow::Ok(MineNewDagBlockInfo {
             tips,
