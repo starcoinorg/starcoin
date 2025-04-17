@@ -699,7 +699,7 @@ impl BlockDAG {
 
         // filter
         if dag_state.tips.len() > max_parents_count as usize {
-        info!("jacktest: calc_mergeset_and_tips start, 3");
+            info!("jacktest: calc_mergeset_and_tips start, 3");
             dag_state.tips = dag_state
                 .tips
                 .into_iter()
@@ -750,27 +750,27 @@ impl BlockDAG {
         let (tips, ghostdata, mut pruning_point) = if next_pruning_point == Hash::zero()
             || next_pruning_point == previous_pruning_point
         {
-        info!("jacktest: calc_mergeset_and_tips start, 6.1");
+            info!("jacktest: calc_mergeset_and_tips start, 6.1");
             info!(
                 "tips: {:?}, the next pruning point is: {:?}, the current ghostdata's selected parent: {:?}, blue blocks are: {:?} and its red blocks are: {:?}",
                 dag_state.tips, next_pruning_point, next_ghostdata.selected_parent, next_ghostdata.mergeset_blues, next_ghostdata.mergeset_reds.len(),
             );
-        info!("jacktest: calc_mergeset_and_tips start, 6.2");
+            info!("jacktest: calc_mergeset_and_tips start, 6.2");
             (dag_state.tips, next_ghostdata, next_pruning_point)
         } else {
-        info!("jacktest: calc_mergeset_and_tips start, 6.3");
+            info!("jacktest: calc_mergeset_and_tips start, 6.3");
             let pruned_tips = self.pruning_point_manager().prune(
                 &dag_state,
                 previous_pruning_point,
                 next_pruning_point,
             )?;
-        info!("jacktest: calc_mergeset_and_tips start, 6.4");
+            info!("jacktest: calc_mergeset_and_tips start, 6.4");
             let pruned_ghostdata = self.ghost_dag_manager().ghostdag(&pruned_tips)?;
             info!(
                 "the pruning was triggered, before pruning, the tips: {:?}, after pruning tips: {:?}, the next pruning point is: {:?}, the current ghostdata's selected parent: {:?}, blue blocks are: {:?} and its red blocks are: {:?}",
                 pruned_tips, dag_state.tips, next_pruning_point, pruned_ghostdata.selected_parent, pruned_ghostdata.mergeset_blues, pruned_ghostdata.mergeset_reds.len(),
             );
-        info!("jacktest: calc_mergeset_and_tips start, 6.5");
+            info!("jacktest: calc_mergeset_and_tips start, 6.5");
             (pruned_tips, pruned_ghostdata, next_pruning_point)
         };
         info!("jacktest: calc_mergeset_and_tips start, 7");

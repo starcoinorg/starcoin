@@ -306,14 +306,23 @@ where
         debug!("try connect mined block: {}", id);
 
         let main = self.chain_service.get_main();
-        let mut chain = BlockChain::new(main.time_service(), new_block.header().parent_hash(), main.get_storage(), None, main.dag()).unwrap();
+        let mut chain = BlockChain::new(
+            main.time_service(),
+            new_block.header().parent_hash(),
+            main.get_storage(),
+            None,
+            main.dag(),
+        )
+        .unwrap();
         let bus = self.chain_service.get_bus();
 
         ctx.spawn(async move {
-            let executed_block = chain.execute(VerifiedBlock {
-                block: new_block.as_ref().clone(),
-                ghostdata: None,
-            }).unwrap();
+            let executed_block = chain
+                .execute(VerifiedBlock {
+                    block: new_block.as_ref().clone(),
+                    ghostdata: None,
+                })
+                .unwrap();
             chain.connect(executed_block.clone()).unwrap();
             let _ = bus.broadcast(NewDagBlock {
                 executed_block: Arc::new(executed_block),
@@ -342,28 +351,16 @@ where
     TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
     fn handle_event(&mut self, msg: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
-
-        let new_pruning_point = msg.executed_block.header().pruning_point();
-        let current_pruning_point = self.chain_service.get_main().status().head().pruning_point();
-        let dag = self.chain_service.get_dag();
-        let main = self.chain_service.get_main();
-        if current_pruning_point == new_pruning_point {
-            let main = self.chain_service.get_main();
-            let state = dag.get_dag_state(current_pruning_point).unwrap();
-            self.chain_service.switch_header(main.fork(dag.ghost_dag_manager().find_selected_parent(state.tips).unwrap()).unwrap());
-        } else {
-            let new_state = dag.get_dag_state(new_pruning_point).unwrap();
-            let current_state = dag.get_dag_state(current_pruning_point).unwrap();
-
-            let new_header = dag.ghost_dag_manager().find_selected_parent(new_state.tips).unwrap();
-            let current_header = dag.ghost_dag_manager().find_selected_parent(current_state.tips).unwrap();
-
-            let selected_header = dag.ghost_dag_manager().find_selected_parent([new_header, current_header]).unwrap();
-
-            if selected_header != main.head_block().header().id() {
-                self.chain_service.switch_header(main.fork(selected_header).unwrap());
-            }
-        }
+        let chain = self
+            .chain_service
+            .get_main()
+            .fork(self.chain_service.get_main().status().head().id())
+            .unwrap();
+        self.chain_service.switch_header(
+            chain
+                .selecte_dag_state(msg.executed_block.as_ref().clone())
+                .unwrap(),
+        );
     }
 }
 
