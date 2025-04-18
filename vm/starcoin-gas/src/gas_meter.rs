@@ -4,9 +4,7 @@
 //! This module contains the official gas meter implementation, along with some top-level gas
 //! parameters and traits to help manipulate them.
 
-use clap::__macro_refs::once_cell::sync::Lazy;
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
-use move_binary_format::file_format_common::Opcodes;
 use move_core_types::gas_algebra::{
     AbstractMemorySize, InternalGasPerAbstractMemoryUnit, InternalGasPerArg, InternalGasPerByte,
     NumArgs,
@@ -18,15 +16,16 @@ use move_core_types::{
 };
 use move_vm_types::gas::{GasMeter, SimpleInstruction};
 use move_vm_types::views::{TypeView, ValueView};
-use starcoin_gas_algebra_ext::InstructionGasParameters;
-use starcoin_gas_algebra_ext::TransactionGasParameters;
 use starcoin_gas_algebra_ext::{
     FromOnChainGasSchedule, Gas, InitialGasSchedule, ToOnChainGasSchedule,
 };
 #[cfg(feature = "testing")]
 use starcoin_logger::prelude::*;
-use starcoin_vm_types::{gas_schedule::G_LATEST_GAS_COST_TABLE, on_chain_config::GasSchedule};
 use std::collections::BTreeMap;
+
+use move_binary_format::file_format_common::Opcodes;
+use starcoin_gas_algebra_ext::InstructionGasParameters;
+use starcoin_gas_algebra_ext::TransactionGasParameters;
 
 /// The size in bytes for a reference on the stack
 const REFERENCE_SIZE: AbstractMemorySize = AbstractMemorySize::new(8);
@@ -798,8 +797,3 @@ impl GasMeter for StarcoinGasMeter {
         Ok(())
     }
 }
-
-pub static G_LATEST_GAS_PARAMS: Lazy<StarcoinGasParameters> = Lazy::new(|| {
-    let gas_schedule = GasSchedule::from(&G_LATEST_GAS_COST_TABLE.clone());
-    StarcoinGasParameters::from_on_chain_gas_schedule(&gas_schedule.to_btree_map()).unwrap()
-});

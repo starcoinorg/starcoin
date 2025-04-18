@@ -52,7 +52,6 @@ starcoin-transactional-test-harness = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-runtime = { features = ["testing"], workspace = true }
 starcoin-vm-types = { workspace = true }
-starcoin-gas = { workspace = true }
 stdlib = { workspace = true }
 vm-status-translator = { workspace = true }
 move-vm-test-utils = { workspace = true }
