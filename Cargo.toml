@@ -234,8 +234,8 @@ strum = "0.26.3"
 strum_macros = "0.26.3"
 starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588" }
 
-starcoin-abi-decoder = { path = "abi/decoder"}
-starcoin-abi-resolver = { path = "abi/resolver"}
+starcoin-abi-decoder = { path = "abi/decoder" }
+starcoin-abi-resolver = { path = "abi/resolver" }
 starcoin-abi-types = { path = "abi/types" }
 starcoin-dev = { path = "dev" }
 starcoin-framework = { path = "vm/framework" }
@@ -274,7 +274,6 @@ starcoin-statedb = { path = "state/statedb" }
 starcoin-storage = { path = "storage" }
 
 #branch multi-move-vm
-starcoin-config = { git = "https://github.com/starcoinorg/starcoin", rev = "3c5c5c767c339b97e4312972ce72c2e1627f783f" }
 starcoin-accumulator = { git = "https://github.com/starcoinorg/starcoin", rev = "3c5c5c767c339b97e4312972ce72c2e1627f783f" }
 starcoin-infallible = { path = "commons/infallible" }
 starcoin-time-service = { git = "https://github.com/starcoinorg/starcoin", rev = "3c5c5c767c339b97e4312972ce72c2e1627f783f" }
@@ -284,7 +283,7 @@ forkable-jellyfish-merkle = { path = "commons/forkable-jellyfish-merkle" }
 bcs-ext = { git = "https://github.com/starcoinorg/starcoin", rev = "3c5c5c767c339b97e4312972ce72c2e1627f783f" }
 starcoin-metrics = { path = "commons/metrics" }
 timeout-join-handler = { path = "commons/timeout-join-handler" }
-vm-status-translator = { path = "vm/vm-status-translator"}
+vm-status-translator = { path = "vm/vm-status-translator" }
 
 tempfile = "3.2.0"
 textwrap = "0.14.0"
