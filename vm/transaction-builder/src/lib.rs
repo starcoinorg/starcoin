@@ -12,22 +12,22 @@ use starcoin_cached_packages::starcoin_framework_sdk_builder::{
     transfer_scripts_peer_to_peer_v2,
 };
 
-use starcoin_config::genesis_config::G_TOTAL_STC_AMOUNT;
+use starcoin_crypto::_once_cell::sync::Lazy;
 use starcoin_types::account::Account;
-use starcoin_vm_types::on_chain_config::Features;
 use starcoin_vm_types::{
     access::ModuleAccess,
     account_address::AccountAddress,
-    account_config::{self, core_code_address, genesis_address},
+    account_config::{self, core_code_address, genesis_address, STCUnit},
     file_format::CompiledModule,
     genesis_config::{ChainId, GenesisConfig},
     identifier::Identifier,
     language_storage::{ModuleId, StructTag, TypeTag},
-    on_chain_config::VMConfig,
+    on_chain_config::{Features, VMConfig},
     on_chain_resource::nft::NFTUUID,
     token::{
         stc::{stc_type_tag, G_STC_TOKEN_CODE},
         token_code::TokenCode,
+        token_value::TokenValue,
     },
     transaction::{
         authenticator::{AccountPrivateKey, AuthenticationKey},
@@ -38,6 +38,8 @@ use starcoin_vm_types::{
 
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
 pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 40000000;
+pub static G_TOTAL_STC_AMOUNT: Lazy<TokenValue<STCUnit>> =
+    Lazy::new(|| STCUnit::STC.value_of(3185136000));
 
 pub fn build_transfer_from_association(
     addr: AccountAddress,
