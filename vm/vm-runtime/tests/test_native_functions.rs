@@ -1,5 +1,5 @@
 use anyhow::Result;
-use starcoin_config::genesis_config::G_LATEST_GAS_PARAMS;
+use starcoin_gas::G_LATEST_GAS_PARAMS;
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::normalized::Function;
 use std::collections::HashSet;
