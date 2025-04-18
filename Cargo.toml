@@ -262,7 +262,7 @@ atomic-counter = "1.0.1"
 atty = "0.2.14"
 backtrace = "0.3"
 bcs = "0.1"
-bcs-ext = { git = "https://github.com/starcoinorg/starcoin", rev = "3c5c5c767c339b97e4312972ce72c2e1627f783f" }
+bcs-ext = { path = "commons/bcs_ext" }
 bech32 = "0.9"
 bencher = "0.1.5"
 bitflags = "1.3.2"
@@ -458,7 +458,7 @@ starcoin-account = { path = "account" }
 starcoin-account-api = { path = "account/api" }
 starcoin-account-provider = { path = "account/provider" }
 starcoin-account-service = { path = "account/service" }
-starcoin-accumulator = { git = "https://github.com/starcoinorg/starcoin", rev = "3c5c5c767c339b97e4312972ce72c2e1627f783f" }
+starcoin-accumulator = { path = "commons/accumulator", package = "starcoin-accumulator" }
 starcoin-block-relayer = { path = "block-relayer" }
 starcoin-chain = { path = "chain" }
 starcoin-chain-api = { path = "chain/api" }
@@ -474,7 +474,7 @@ starcoin-dev = { path = "vm/dev" }
 starcoin-executor = { path = "executor" }
 starcoin-framework = { git = "https://github.com/starcoinorg/starcoin-framework", rev = "198d236f071819257ebdf54ed4502099a7daaaf5" }
 starcoin-genesis = { path = "genesis" }
-starcoin-logger = { git = "https://github.com/starcoinorg/starcoin", rev = "3c5c5c767c339b97e4312972ce72c2e1627f783f" }
+starcoin-logger = { path = "commons/logger" }
 starcoin-metrics = { path = "commons/metrics" }
 starcoin-miner = { path = "miner" }
 starcoin-miner-client = { path = "cmd/miner_client" }
@@ -507,7 +507,7 @@ starcoin-stratum = { path = "stratum" }
 starcoin-sync = { path = "sync" }
 starcoin-sync-api = { path = "sync/api" }
 starcoin-system = { path = "commons/system", package = "starcoin-system" }
-starcoin-time-service = { git = "https://github.com/starcoinorg/starcoin", rev = "3c5c5c767c339b97e4312972ce72c2e1627f783f" }
+starcoin-time-service = { path = "commons/time-service" }
 starcoin-transaction-builder = { path = "vm/transaction-builder" }
 starcoin-transactional-test-harness = { path = "vm/starcoin-transactional-test-harness" }
 starcoin-txpool = { path = "txpool" }
@@ -609,4 +609,3 @@ debug = false
 [patch.crates-io]
 x25519-dalek = { git = "https://github.com/aptos-labs/x25519-dalek", branch = "zeroize_v1" }
 merlin = { git = "https://github.com/aptos-labs/merlin" }
-starcoin-config = { git = "https://github.com/starcoinorg/starcoin", rev = "3c5c5c767c339b97e4312972ce72c2e1627f783f" }
