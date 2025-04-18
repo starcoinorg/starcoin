@@ -1935,6 +1935,8 @@ impl BlockInfoView {
             self.total_difficulty,
             self.txn_accumulator_info.into_info(),
             self.block_accumulator_info.into_info(),
+            // todo: add vmstate
+            AccumulatorInfo::default(),
         )
     }
 }

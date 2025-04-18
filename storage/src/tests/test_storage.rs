@@ -321,6 +321,7 @@ fn generate_old_db(path: &Path) -> Result<Vec<HashValue>> {
         0.into(),
         AccumulatorInfo::new(HashValue::random(), vec![], 2, 3),
         AccumulatorInfo::new(HashValue::random(), vec![], 1, 1),
+        AccumulatorInfo::new(HashValue::random(), vec![], 1, 1),
     );
     storage
         .transaction_storage

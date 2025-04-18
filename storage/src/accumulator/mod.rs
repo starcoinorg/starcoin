@@ -1,9 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::define_storage;
 use crate::storage::{CodecKVStore, ValueCodec};
 use crate::StorageInstance;
+use crate::{define_storage, VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME};
 use crate::{BLOCK_ACCUMULATOR_NODE_PREFIX_NAME, TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME};
 use anyhow::Result;
 use bcs_ext::BCSCodec;
@@ -22,6 +22,13 @@ define_storage!(
     HashValue,
     AccumulatorNode,
     TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME
+);
+
+define_storage!(
+    VMStateAccumulatorStorage,
+    HashValue,
+    AccumulatorNode,
+    VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME
 );
 
 impl ValueCodec for AccumulatorNode {
@@ -58,6 +65,16 @@ impl AccumulatorStorage<TransactionAccumulatorStorage> {
     ) -> AccumulatorStorage<TransactionAccumulatorStorage> {
         Self {
             store: TransactionAccumulatorStorage::new(instance),
+        }
+    }
+}
+
+impl AccumulatorStorage<VMStateAccumulatorStorage> {
+    pub fn new_vm_state_accumulator_storage(
+        instance: StorageInstance,
+    ) -> AccumulatorStorage<VMStateAccumulatorStorage> {
+        Self {
+            store: VMStateAccumulatorStorage::new(instance),
         }
     }
 }

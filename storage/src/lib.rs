@@ -3,6 +3,7 @@
 
 use crate::accumulator::{
     AccumulatorStorage, BlockAccumulatorStorage, TransactionAccumulatorStorage,
+    VMStateAccumulatorStorage,
 };
 use crate::block::BlockStorage;
 use crate::block_info::{BlockInfoStorage, BlockInfoStore};
@@ -21,6 +22,8 @@ use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorTreeStore;
 use starcoin_crypto::HashValue;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
+//use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use starcoin_types::account_address::AccountAddress;
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus, SnapshotRange};
 use starcoin_types::transaction::{RichTransactionInfo, Transaction};
@@ -28,8 +31,6 @@ use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
     startup_info::StartupInfo,
 };
-//use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
-use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Display, Formatter};
@@ -62,6 +63,7 @@ pub mod storage_macros;
 pub const DEFAULT_PREFIX_NAME: ColumnFamilyName = "default";
 pub const BLOCK_ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node_block";
 pub const TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node_transaction";
+pub const VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node_vm_state";
 pub const BLOCK_PREFIX_NAME: ColumnFamilyName = "block";
 pub const BLOCK_HEADER_PREFIX_NAME: ColumnFamilyName = "block_header";
 pub const BLOCK_BODY_PREFIX_NAME: ColumnFamilyName = "block_body";
@@ -273,6 +275,7 @@ pub struct Storage {
     state_node_storage: StateStorage,
     block_accumulator_storage: AccumulatorStorage<BlockAccumulatorStorage>,
     transaction_accumulator_storage: AccumulatorStorage<TransactionAccumulatorStorage>,
+    vm_state_accumulator_storage: AccumulatorStorage<VMStateAccumulatorStorage>,
     block_info_storage: BlockInfoStorage,
     event_storage: ContractEventStorage,
     chain_info_storage: ChainInfoStorage,
@@ -293,6 +296,9 @@ impl Storage {
             ),
             transaction_accumulator_storage:
                 AccumulatorStorage::new_transaction_accumulator_storage(instance.clone()),
+            vm_state_accumulator_storage: AccumulatorStorage::new_vm_state_accumulator_storage(
+                instance.clone(),
+            ),
             block_info_storage: BlockInfoStorage::new(instance.clone()),
             event_storage: ContractEventStorage::new(instance.clone()),
             chain_info_storage: ChainInfoStorage::new(instance.clone()),
@@ -653,6 +659,7 @@ impl Store for Storage {
             AccumulatorStoreType::Transaction => {
                 Arc::new(self.transaction_accumulator_storage.clone())
             }
+            AccumulatorStoreType::VMState => Arc::new(self.vm_state_accumulator_storage.clone()),
         }
     }
 }

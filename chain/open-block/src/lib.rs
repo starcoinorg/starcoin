@@ -55,7 +55,7 @@ pub struct OpenedBlock {
 
     state: (ChainStateDB, ChainStateDB2),
     txn_accumulator: MerkleAccumulator,
-    vm_state_accumulator: Option<MerkleAccumulator>,
+    vm_state_accumulator: MerkleAccumulator,
 
     gas_used: u64,
     included_user_txns: Vec<SignedUserTransaction>,
@@ -90,20 +90,18 @@ impl OpenedBlock {
             txn_accumulator_info.clone(),
             storage.get_accumulator_store(AccumulatorStoreType::Transaction),
         );
-        let vm_state_accumulator = vm_state_accumulator_info.map(|info| {
-            MerkleAccumulator::new_with_info(
-                info.clone(),
-                storage.get_accumulator_store(AccumulatorStoreType::VMState),
-            )
-        });
+        let vm_state_accumulator = MerkleAccumulator::new_with_info(
+            vm_state_accumulator_info.clone(),
+            storage.get_accumulator_store(AccumulatorStoreType::VMState),
+        );
         // todo: handle unwrap
         let state_root2 = vm_state_accumulator
-            .as_ref()
-            .map(|acc| acc.get_leaf(acc.num_leaves() - 1)?.unwrap());
+            .get_leaf(vm_state_accumulator.num_leaves() - 1)?
+            .unwrap();
 
         let chain_state =
             ChainStateDB::new(storage.into_super_arc(), Some(previous_header.state_root()));
-        let chain_state2 = ChainStateDB2::new(storage2.into_super_arc(), state_root2);
+        let chain_state2 = ChainStateDB2::new(storage2.into_super_arc(), Some(state_root2));
 
         let chain_id = previous_header.chain_id();
         let block_meta = BlockMetadata::new(
