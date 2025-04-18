@@ -1718,15 +1718,14 @@ impl BlockChain {
                 U256::MAX
             };
 
-            let eclapse_time = u64::try_from(
-                std::time::Duration::from_millis(self.epoch.start_time()).as_millis(),
-            )?;
-            let bps = if let Some(bps) = total_blocks.checked_div(eclapse_time) {
-                bps
-            } else {
-                info!("BPS overflow");
-                0
+            let eclapse_time = {
+                let now = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis();
+                now.saturating_sub(self.epoch.start_time() as u128) as f64 / 1000.0
             };
+            let bps = (total_blocks as f64) / eclapse_time;
 
             info!("the epoch data will be updated, this epoch data: total blue blocks: {:?}, total difficulty: {:?}, avg total difficulty: {:?}, BPS: {:?}, eclapse time: {:?}, start block id: {:?}, end block id: {:?}", 
                 total_blocks, total_difficulty, avg_total_difficulty, bps, eclapse_time, start_block_id, end_block_id);
