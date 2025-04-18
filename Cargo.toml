@@ -466,7 +466,7 @@ starcoin-chain-mock = { path = "chain/mock" }
 starcoin-chain-notify = { path = "chain/chain-notify" }
 starcoin-chain-service = { path = "chain/service" }
 starcoin-cmd = { path = "cmd/starcoin" }
-starcoin-config = { path = "config" }
+starcoin-config = { git = "https://github.com/starcoinorg/starcoin", rev = "3c5c5c767c339b97e4312972ce72c2e1627f783f" }
 starcoin-consensus = { path = "consensus" }
 starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "bc3ca2138cf66d646f14a0f673ae5d853743f50a" }
 starcoin-decrypt = { path = "commons/decrypt" }
