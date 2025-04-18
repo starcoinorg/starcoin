@@ -73,10 +73,10 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
     let mut block_in_order: Vec<BlockHeader> = block_set.into_iter().collect();
 
     block_in_order.sort_by(|a, b| {
-        a.number()
-            .cmp(&b.number())
-            .then_with(|| a.timestamp().cmp(&b.timestamp()))
-            .then_with(|| a.id().cmp(&b.id()))
+        b.number()
+            .cmp(&a.number())
+            .then_with(|| b.timestamp().cmp(&a.timestamp()))
+            .then_with(|| b.id().cmp(&a.id()))
     });
 
     let target = get_next_target_helper(
