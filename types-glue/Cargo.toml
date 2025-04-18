@@ -13,8 +13,10 @@ version.workspace = true
 [dependencies]
 
 starcoin-crypto = { workspace = true }
-starcoin-vm-types = { workspace = true}
+starcoin-vm-types = { workspace = true }
+starcoin-types = { workspace = true }
 
-starcoin-vm2-crypto = { workspace = true}
-starcoin-vm2-vm-types = { workspace = true}
+starcoin-vm2-crypto = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
+starcoin-vm2-types = { workspace = true }
 
