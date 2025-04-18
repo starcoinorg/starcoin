@@ -1479,6 +1479,10 @@ impl ChainReader for BlockChain {
     fn get_genesis_hash(&self) -> HashValue {
         self.genesis_hash
     }
+
+    fn get_dag(&self) -> BlockDAG {
+        self.dag()
+    }
 }
 
 impl BlockChain {

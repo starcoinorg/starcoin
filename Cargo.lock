@@ -9804,6 +9804,7 @@ dependencies = [
  "sha3",
  "starcoin-chain-api",
  "starcoin-crypto",
+ "starcoin-dag",
  "starcoin-logger",
  "starcoin-state-api",
  "starcoin-time-service",

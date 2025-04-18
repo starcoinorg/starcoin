@@ -100,8 +100,7 @@ impl EventHandler<Self, NewDagBlock> for ChainReaderService {
                     "selecte_dag_state error when handle NewDagBlock in chain reader service: {:?}",
                     e
                 )
-            })
-            .into();
+            });
     }
 }
 
