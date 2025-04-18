@@ -1,5 +1,6 @@
 [dependencies]
 starcoin-gas-algebra-ext = { workspace = true }
+starcoin-vm-types = { workspace = true }
 clap = { version = "3", features = ["derive"] }
 move-binary-format = { workspace = true }
 move-core-types = { workspace = true }
