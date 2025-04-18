@@ -1483,6 +1483,10 @@ impl ChainReader for BlockChain {
     fn get_dag(&self) -> BlockDAG {
         self.dag()
     }
+
+    fn get_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>> {
+        self.storage.get_block_header_by_hash(block_id)
+    }
 }
 
 impl BlockChain {

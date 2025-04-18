@@ -63,7 +63,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
                     .flat_map(|blue_id| blue_id.as_ref().clone())
             })
             .map(|id| {
-                chain.get_header(id)?.ok_or_else(|| {
+                chain.get_header_by_hash(id)?.ok_or_else(|| {
                     format_err!("failed to get the block header when getting next work required")
                 })
             })

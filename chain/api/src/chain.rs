@@ -120,6 +120,7 @@ pub trait ChainReader {
     fn get_pruning_config(&self) -> (u64, u64);
     fn get_genesis_hash(&self) -> HashValue;
     fn get_dag(&self) -> BlockDAG;
+    fn get_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>>;
 }
 
 pub trait ChainWriter {
