@@ -12195,7 +12195,6 @@ dependencies = [
  "starcoin-uint 1.13.19",
  "starcoin-vm-types 1.13.19",
  "starcoin-vm-types 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=919629bf41a0d4404e8f176feb1d280efb166939)",
- "stdlib 1.13.19",
  "tempfile",
  "thiserror 1.0.69",
  "toml 0.5.11",
