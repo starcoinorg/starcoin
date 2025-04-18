@@ -167,6 +167,10 @@ where
         Ok(this)
     }
 
+    pub fn switch_header(&mut self, chain: BlockChain) {
+        self.main = chain;
+    }
+
     fn find_or_fork(
         &self,
         header: &BlockHeader,
@@ -207,6 +211,10 @@ where
 
     pub fn get_main(&self) -> &BlockChain {
         &self.main
+    }
+
+    pub fn get_bus(&self) -> ServiceRef<BusService> {
+        self.bus.clone()
     }
 
     //todo: return a reference

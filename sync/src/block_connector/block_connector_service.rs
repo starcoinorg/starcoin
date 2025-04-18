@@ -15,6 +15,8 @@ use crate::tasks::{BlockConnectedEvent, BlockConnectedFinishEvent, BlockDiskChec
 use anyhow::{bail, format_err, Ok, Result};
 use network_api::PeerProvider;
 use starcoin_chain::BlockChain;
+use starcoin_chain::ChainWriter;
+use starcoin_chain_api::VerifiedBlock;
 use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
 use starcoin_consensus::Consensus;
@@ -25,6 +27,7 @@ use starcoin_executor::VMMetrics;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
+use starcoin_service_registry::bus::Bus;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
 };
@@ -38,6 +41,7 @@ use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
+use starcoin_types::system_events::NewDagBlock;
 use starcoin_types::system_events::NewDagBlockFromPeer;
 use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown};
 use std::sync::Arc;
@@ -207,6 +211,7 @@ where
         ctx.set_mailbox_capacity(1024);
         ctx.subscribe::<SyncStatusChangeEvent>();
         ctx.subscribe::<MinedBlock>();
+        ctx.subscribe::<NewDagBlock>();
 
         ctx.run_interval(std::time::Duration::from_secs(3), move |ctx| {
             ctx.notify(crate::tasks::BlockDiskCheckEvent {});
@@ -218,6 +223,7 @@ where
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<SyncStatusChangeEvent>();
         ctx.unsubscribe::<MinedBlock>();
+        ctx.unsubscribe::<NewDagBlock>();
         Ok(())
     }
 }
@@ -239,6 +245,31 @@ where
                 }
             }
         }
+    }
+}
+
+impl<TransactionPoolServiceT> EventHandler<Self, NewDagBlock>
+    for BlockConnectorService<TransactionPoolServiceT>
+where
+    TransactionPoolServiceT: TxPoolSyncService + 'static,
+{
+    fn handle_event(&mut self, msg: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
+        info!("NewDagBlock in block connect service");
+        let chain = self
+            .chain_service
+            .get_main()
+            .fork(self.chain_service.get_main().status().head().id())
+            .unwrap_or_else(|e| {
+                panic!(
+                    "fork error when handle NewDagBlock in block connect service: {:?}",
+                    e
+                )
+            });
+        self.chain_service.switch_header(
+            chain
+                .selecte_dag_state(msg.executed_block.as_ref().clone())
+                .unwrap_or_else(|e| panic!("select dag state error when handle NewDagBlock in block connect service: {:?}", e))
+        );
     }
 }
 
@@ -296,24 +327,56 @@ impl<TransactionPoolServiceT> EventHandler<Self, MinedBlock>
 where
     TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
-    fn handle_event(&mut self, msg: MinedBlock, _ctx: &mut ServiceContext<Self>) {
+    fn handle_event(&mut self, msg: MinedBlock, ctx: &mut ServiceContext<Self>) {
         let MinedBlock(new_block) = msg;
         let id = new_block.header().id();
         debug!("try connect mined block: {}", id);
 
-        match self.chain_service.try_connect(new_block.as_ref().clone()) {
-            std::result::Result::Ok(()) => {
-                debug!("Process mined block {} success.", id);
+        let main = self.chain_service.get_main();
+        let mut chain = BlockChain::new(
+            main.time_service(),
+            new_block.header().parent_hash(),
+            main.get_storage(),
+            None,
+            main.dag(),
+        )
+        .unwrap_or_else(|e| {
+            panic!(
+                "new block chain error when processing the mined block: {:?}",
+                e
+            )
+        });
+        let bus = self.chain_service.get_bus();
 
-                match self.chain_service.broadcast_new_dag_block(id) {
-                    std::result::Result::Ok(_) => (),
-                    Err(e) => warn!("Process mined block {} fail, error: {:?}", id, e),
-                }
-            }
-            Err(e) => {
-                warn!("Process mined block {} fail, error: {:?}", id, e);
-            }
-        }
+        ctx.spawn(async move {
+            let executed_block = chain
+                .execute(VerifiedBlock {
+                    block: new_block.as_ref().clone(),
+                    ghostdata: None,
+                })
+                .unwrap();
+            chain.connect(executed_block.clone()).unwrap();
+            let _ = bus.broadcast(NewDagBlock {
+                executed_block: Arc::new(executed_block),
+            });
+        });
+        // let MinedBlock(new_block) = msg;
+        // let id = new_block.header().id();
+        // debug!("try connect mined block: {}", id);
+
+        // match self.chain_service.try_connect(new_block.as_ref().clone()) {
+        //     std::result::Result::Ok(()) => {
+        //         debug!("Process mined block {} success.", id);
+
+        //         match self.chain_service.broadcast_new_dag_block(id) {
+        //             std::result::Result::Ok(_) => (),
+        //             Err(e) => warn!("Process mined block {} fail, error: {:?}", id, e),
+        //         }
+        //     }
+        //     Err(e) => {
+        //         warn!("Process mined block {} fail, error: {:?}", id, e);
+        //     }
+        // }
     }
 }
 
