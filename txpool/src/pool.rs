@@ -167,7 +167,6 @@ impl VerifiedTransaction {
         let sender = match tx.sender() {
             MultiAccountAddress::VM1(sender) => sender,
             MultiAccountAddress::VM2(sender) => {
-                // XXX FIXME YSG
                 let addr = sender.into_bytes();
                 AccountAddress::new(addr)
             }

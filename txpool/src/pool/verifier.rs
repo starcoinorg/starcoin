@@ -102,7 +102,6 @@ impl<C: Client> tx_pool::Verifier<PoolTransaction>
         let sender = match verified_txn.sender() {
             MultiAccountAddress::VM1(sender) => sender,
             MultiAccountAddress::VM2(sender) => {
-                // XXX FIXME YSG
                 let val = sender.into_bytes();
                 AccountAddress::new(val)
             }
