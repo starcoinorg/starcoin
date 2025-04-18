@@ -547,6 +547,7 @@ starcoin-vm2-state-api = { git = "https://github.com/starcoinorg/starcoin", rev 
 starcoin-vm2-framework = { git = "https://github.com/starcoinorg/starcoin", rev = "919629bf41a0d4404e8f176feb1d280efb166939", package = "starcoin-framework" }
 starcoin-vm2-transaction-builder = { git = "https://github.com/starcoinorg/starcoin", rev = "919629bf41a0d4404e8f176feb1d280efb166939", package = "starcoin-transaction-builder" }
 starcoin-vm2-move-compiler = { git = "https://github.com/starcoinorg/starcoin", rev = "919629bf41a0d4404e8f176feb1d280efb166939", package = "starcoin-move-compiler" }
+starcoin-vm2-forkable-jellyfish-merkle = { git = "https://github.com/starcoinorg/starcoin", rev = "919629bf41a0d4404e8f176feb1d280efb166939", package = "forkable-jellyfish-merkle" }
 
 move-vm2-core-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", package = "move-core-types" }
 move-vm2-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", package = "move-transactional-test-runner" }
