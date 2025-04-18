@@ -13581,6 +13581,7 @@ dependencies = [
  "starcoin-sync-api",
  "starcoin-txpool-api",
  "starcoin-types 1.13.19",
+ "starcoin-types 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=919629bf41a0d4404e8f176feb1d280efb166939)",
  "starcoin-vm-types 1.13.19",
  "starcoin-vm-types 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=919629bf41a0d4404e8f176feb1d280efb166939)",
  "test-helper",

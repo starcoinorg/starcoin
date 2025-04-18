@@ -155,7 +155,6 @@ impl MultiSignedUserTransaction {
         }
     }
 
-    // XXX FIXME YSG
     pub fn payload(&self) -> MultiTransactionPayload {
         match self {
             Self::VM1(sign) => MultiTransactionPayload::VM1(sign.payload().clone()),

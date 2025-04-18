@@ -29,7 +29,6 @@ impl<'a, S: 'a + StateView> ExecutorTask for StarcoinVMWrapper<'a, S> {
     type Error = VMStatus;
     type Argument = &'a S;
 
-
     fn init(argument: &'a S) -> Self {
         let mut vm = StarcoinVM::new(None);
         vm.load_configs(argument)

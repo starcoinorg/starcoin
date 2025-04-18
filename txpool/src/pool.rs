@@ -164,10 +164,13 @@ impl VerifiedTransaction {
     /// 2. In case we are converting pending block transactions that are already in the queue to match the function signature.
     pub fn from_pending_block_transaction(tx: MultiSignedUserTransaction) -> Self {
         let hash = tx.id();
-        // XXX FIXME YSG
         let sender = match tx.sender() {
             MultiAccountAddress::VM1(sender) => sender,
-            _ => panic!("[{:?}] VerifiedTransaction must have a VM1 sender", hash),
+            MultiAccountAddress::VM2(sender) => {
+                // XXX FIXME YSG
+                let addr = sender.into_bytes();
+                AccountAddress::new(addr)
+            }
         };
         VerifiedTransaction {
             transaction: tx.into(),

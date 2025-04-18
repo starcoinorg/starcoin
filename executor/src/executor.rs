@@ -40,7 +40,6 @@ fn do_execute_block_transactions<S: StateView>(
     Ok(result)
 }
 
-
 pub fn validate_transaction<S: StateView>(
     chain_state: &S,
     txn: MultiSignedUserTransaction,

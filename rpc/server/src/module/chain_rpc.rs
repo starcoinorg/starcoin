@@ -508,7 +508,7 @@ fn try_decode_txn_payload(
             MultiSignedUserTransactionView::VM1(txn) => {
                 txn.raw_txn.decoded_payload = Some(d.into());
             }
-            _ => panic!("XXX FIXME YSG"),
+            _ => panic!("VM2 should not in this situation"),
         },
     }
     Ok(())
