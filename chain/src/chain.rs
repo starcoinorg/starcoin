@@ -50,6 +50,7 @@ use std::collections::HashSet;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::{SystemTime, UNIX_EPOCH};
 use std::{collections::HashMap, sync::Arc};
 
 static OUTPUT_BLOCK: AtomicBool = AtomicBool::new(false);
@@ -1727,8 +1728,8 @@ impl BlockChain {
             };
             let bps = (total_blocks as f64) / eclapse_time;
 
-            info!("the epoch data will be updated, this epoch data: total blue blocks: {:?}, total difficulty: {:?}, avg total difficulty: {:?}, BPS: {:?}, eclapse time: {:?}, start block id: {:?}, end block id: {:?}", 
-                total_blocks, total_difficulty, avg_total_difficulty, bps, eclapse_time, start_block_id, end_block_id);
+            info!("the epoch data will be updated, this epoch data: total blue blocks: {:?}, total difficulty: {:?}, avg total difficulty: {:?}, block time target: {:?}, BPS: {:?}, eclapse time: {:?}, start block id: {:?}, end block id: {:?}", 
+                total_blocks, total_difficulty, avg_total_difficulty, self.epoch.block_time_target(), bps, eclapse_time, start_block_id, end_block_id);
         }
 
         self.renew_tips(&parent_header, new_tip_block.header(), tips)?;
