@@ -1,7 +1,5 @@
 [dependencies]
 anyhow = { workspace = true }
-async-trait = { workspace = true }
-futures = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-logger = { workspace = true }
@@ -15,10 +13,12 @@ stest = { workspace = true }
 tokio = { workspace = true }
 starcoin-vm-types = { workspace = true }
 
-starcoin-vm2-statedb = { workspace = true }
 starcoin-types-glue = { workspace = true }
+starcoin-vm2-statedb = { workspace = true }
+starcoin-vm2-state-api = { workspace = true }
+starcoin-vm2-storage = { workspace = true }
 
-[dev-dependencies]
+[dev-dependencies] 
 test-helper = { workspace = true }
 
 [package]

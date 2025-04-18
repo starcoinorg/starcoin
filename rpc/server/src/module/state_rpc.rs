@@ -18,7 +18,7 @@ use starcoin_rpc_api::types::{
     TableInfoView,
 };
 use starcoin_rpc_api::FutureResult;
-use starcoin_state_api::{ChainStateAsyncService, StateView};
+use starcoin_state_api::{chain_state_async_service::ChainStateAsyncService, StateView};
 use starcoin_state_tree::StateNodeStore;
 use starcoin_statedb::{ChainStateDB, ChainStateReader};
 use starcoin_types::language_storage::ModuleId;

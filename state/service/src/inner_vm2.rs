@@ -1,9 +1,6 @@
 use starcoin_config::TimeService;
 use starcoin_crypto::HashValue;
-use starcoin_logger::prelude::error;
-use starcoin_state_api::{
-    ChainStateReader, StateNodeStore, StateWithProof, StateWithTableItemProof,
-};
+use starcoin_state_api::{ChainStateReader, StateWithProof, StateWithTableItemProof};
 use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_types::{
     account_state::AccountState, state_set::AccountStateSet, state_set::ChainStateSet,
@@ -17,6 +14,8 @@ use starcoin_vm_types::{
     access_path::AccessPath, account_address::AccountAddress, state_store::state_key::StateKey,
     state_store::table::TableHandle, state_store::table::TableInfo, state_view::StateView,
 };
+
+use starcoin_vm2_state_api::StateNodeStore as StateNodeStoreVM2;
 use std::sync::Arc;
 
 pub struct InnerVM2 {
@@ -27,7 +26,7 @@ pub struct InnerVM2 {
 
 impl InnerVM2 {
     pub fn new(
-        store: Arc<dyn StateNodeStore>,
+        store: Arc<dyn StateNodeStoreVM2>,
         root_hash: Option<HashValue>,
         time_service: Arc<dyn TimeService>,
     ) -> Self {
@@ -82,7 +81,9 @@ impl InnerVM2 {
         state_root: HashValue,
     ) -> anyhow::Result<Option<AccountState>> {
         let reader = self.state_db.fork_at(state_root);
-        reader.get_account_state(&account)
+        reader
+            .get_account_state(&account_address::vm1_to_vm2(account))
+            .map(|s| Some(account_state::vm2_to_vm1(s)))
     }
 
     pub(crate) fn change_root(&mut self, state_root: HashValue) {
@@ -91,14 +92,15 @@ impl InnerVM2 {
     }
 
     pub fn adjust_time(&self) {
-        match self.state_db.get_timestamp() {
-            Ok(on_chain_time) => {
-                self.time_service.adjust(on_chain_time.microseconds / 1000);
-            }
-            Err(e) => {
-                error!("Get global time on chain fail: {:?}", e);
-            }
-        }
+        // TODO(BobOng): [dual-vm] get_timestamp not implement for state_db, check and confirm it which layer to implement
+        // match self.state_db.get_timestamp() {
+        //     Ok(on_chain_time) => {
+        //         self.time_service.adjust(on_chain_time.microseconds / 1000);
+        //     }
+        //     Err(e) => {
+        //         error!("Get global time on chain fail: {:?}", e);
+        //     }
+        // }
     }
 }
 
@@ -155,8 +157,10 @@ impl ChainStateReader for InnerVM2 {
 }
 
 impl StateView for InnerVM2 {
-    fn get_state_value(&self, state_key: &StateKey) -> anyhow::Result<Option<Vec<u8>>> {
-        self.state_db.get_state_value(state_key)
+    fn get_state_value(&self, _state_key: &StateKey) -> anyhow::Result<Option<Vec<u8>>> {
+        // self.state_db.get(state_key)
+        // TODO(BobOng): [dual-vm] maybe not need to implements
+        Ok(None)
     }
 
     fn is_genesis(&self) -> bool {

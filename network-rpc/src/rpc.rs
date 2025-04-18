@@ -16,7 +16,9 @@ use starcoin_network_rpc_api::{
     MAX_BLOCK_REQUEST_SIZE, MAX_TXN_REQUEST_SIZE,
 };
 use starcoin_service_registry::ServiceRef;
-use starcoin_state_api::{ChainStateAsyncService, StateWithProof, StateWithTableItemProof};
+use starcoin_state_api::{
+    chain_state_async_service::ChainStateAsyncService, StateWithProof, StateWithTableItemProof,
+};
 use starcoin_state_service::ChainStateService;
 use starcoin_state_tree::StateNode;
 use starcoin_storage::Store;

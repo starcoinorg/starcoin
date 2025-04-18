@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use once_cell::sync::Lazy;
-use starcoin_service_registry::{ActorService, ServiceHandler};
 use starcoin_types::access_path::AccessPath;
 use std::str::FromStr;
 
@@ -10,12 +9,9 @@ pub use chain_state::{
     AccountStateReader, ChainStateReader, ChainStateWriter, StateProof, StateWithProof,
     StateWithTableItemProof,
 };
-use serde::de::DeserializeOwned;
 pub use starcoin_state_tree::StateNodeStore;
 pub use starcoin_vm_types::state_view::{StateReaderExt, StateView};
-use starcoin_vm_types::{
-    access_path::DataPath, account_config::TABLE_HANDLE_ADDRESS_LIST, move_resource::MoveResource,
-};
+use starcoin_vm_types::{access_path::DataPath, account_config::TABLE_HANDLE_ADDRESS_LIST};
 
 mod chain_state;
 pub mod chain_state_async_service;

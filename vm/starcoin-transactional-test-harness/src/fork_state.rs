@@ -8,8 +8,8 @@ use crate::HashValue;
 use anyhow::{anyhow, Result};
 use move_core_types::account_address::AccountAddress;
 use starcoin_state_api::{
-    ChainStateAsyncService, ChainStateReader, StateNodeStore, StateView, StateWithProof,
-    StateWithTableItemProof,
+    chain_state_async_service::ChainStateAsyncService, ChainStateReader, StateNodeStore, StateView,
+    StateWithProof, StateWithTableItemProof,
 };
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::state_node::StateStorage;

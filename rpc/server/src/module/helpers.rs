@@ -1,7 +1,7 @@
 use starcoin_account_api::AccountAsyncService;
 use starcoin_config::NodeConfig;
 use starcoin_rpc_api::types::TransactionRequest;
-use starcoin_state_api::ChainStateAsyncService;
+use starcoin_state_api::chain_state_async_service::ChainStateAsyncService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_config::AccountResource;
 use starcoin_types::transaction::{Module, Package, RawUserTransaction, TransactionPayload};

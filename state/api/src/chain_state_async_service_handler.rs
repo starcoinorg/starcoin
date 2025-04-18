@@ -22,9 +22,7 @@ where
     S: ActorService + ServiceHandler<S, StateRequest>,
 {
     async fn get(self, access_path: AccessPath) -> anyhow::Result<Option<Vec<u8>>> {
-        let response = self
-            .send(StateRequest::Get(MoveVm1, access_path))
-            .await??;
+        let response = self.send(StateRequest::Get(MoveVm1, access_path)).await??;
         if let StateResponse::State(state) = response {
             Ok(state)
         } else {

@@ -1,11 +1,9 @@
 use crate::{account_address, type_tag};
 use starcoin_vm2_types::{
-    identifier::Identifier as IdentifierVM2,
-    language_storage::{StructTag as StructTagVM2, TypeTag as TypeTagVM2},
+    identifier::Identifier as IdentifierVM2, language_storage::StructTag as StructTagVM2,
 };
 use starcoin_vm_types::{
-    identifier::Identifier as IdentifierVM1,
-    language_storage::{StructTag as StructTagVM1, TypeTag as TypeTagVM1},
+    identifier::Identifier as IdentifierVM1, language_storage::StructTag as StructTagVM1,
 };
 use std::str::FromStr;
 

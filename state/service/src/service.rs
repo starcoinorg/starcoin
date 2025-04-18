@@ -9,23 +9,19 @@ use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
-use starcoin_state_api::message::StateRequestVMType::{MoveVm1, MoveVm2};
-use starcoin_state_api::message::{StateRequest, StateResponse};
 use starcoin_state_api::{
-    ChainStateReader, StateNodeStore, StateReaderExt, StateView, StateWithProof,
-    StateWithTableItemProof,
+    message::{
+        StateRequest,
+        StateRequestVMType::{MoveVm1, MoveVm2},
+        StateResponse,
+    },
+    ChainStateReader, StateNodeStore, StateView,
 };
-use starcoin_state_tree::AccountStateSetIterator;
-use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{BlockStore, Storage};
-use starcoin_types::state_set::AccountStateSet;
 use starcoin_types::system_events::NewHeadBlock;
-use starcoin_types::{
-    access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
-    state_set::ChainStateSet,
-};
+use starcoin_vm2_state_api::StateNodeStore as StateNodeStoreVM2;
+use starcoin_vm2_storage::Storage as StorageVM2;
 use starcoin_vm_types::state_store::state_key::StateKey;
-use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::sync::Arc;
 
 pub struct ChainStateService {
@@ -36,7 +32,7 @@ impl ChainStateService {
     pub fn new(
         store: Arc<dyn StateNodeStore>,
         root_hash: Option<HashValue>,
-        store_vm2: Arc<dyn StateNodeStore>,
+        store_vm2: Arc<dyn StateNodeStoreVM2>,
         root_hash_vm2: Option<HashValue>,
         time_service: Arc<dyn TimeService>,
     ) -> Self {
@@ -51,18 +47,25 @@ impl ChainStateService {
 
 impl ServiceFactory<Self> for ChainStateService {
     fn create(ctx: &mut ServiceContext<ChainStateService>) -> Result<ChainStateService> {
-        let config = ctx.get_shared::<Arc<NodeConfig>>()?;
-        let storage = ctx.get_shared::<Arc<Storage>>()?;
-        let startup_info = storage
+        let config_vm1 = ctx.get_shared::<Arc<NodeConfig>>()?;
+        let storage_vm1 = ctx.get_shared::<Arc<Storage>>()?;
+        let startup_info = storage_vm1
             .get_startup_info()?
             .ok_or_else(|| format_err!("Startup info should exist at service init."))?;
-        let head_block = storage.get_block(startup_info.main)?.ok_or_else(|| {
-            format_err!("Can not find head block by hash:{:?}", startup_info.main)
-        })?;
+        let state_root_vm1 = storage_vm1
+            .get_block(startup_info.main)?
+            .ok_or_else(|| format_err!("Can not find head block by hash:{:?}", startup_info.main))?
+            .header()
+            .state_root();
+
+        let storage_vm2 = ctx.get_shared::<Arc<StorageVM2>>()?;
+
         Ok(Self::new(
-            storage,
-            Some(head_block.header().state_root()),
-            config.net().time_service(),
+            storage_vm1,
+            Some(state_root_vm1),
+            storage_vm2,
+            None, // TODO(BobOng): [dual-vm] to comfirm vm2 state root
+            config_vm1.net().time_service(),
         ))
     }
 }
@@ -204,7 +207,6 @@ mod tests {
     use super::*;
     use starcoin_config::NodeConfig;
     use starcoin_service_registry::{RegistryAsyncService, RegistryService};
-    use starcoin_state_api::ChainStateAsyncService;
     use starcoin_types::account_config::genesis_address;
 
     #[stest::test]

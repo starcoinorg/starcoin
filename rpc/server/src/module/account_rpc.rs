@@ -10,7 +10,7 @@ use starcoin_account_api::{AccountAsyncService, AccountInfo};
 use starcoin_config::NodeConfig;
 use starcoin_rpc_api::types::{SignedMessageView, StrView, TransactionRequest};
 use starcoin_rpc_api::{account::AccountApi, FutureResult};
-use starcoin_state_api::ChainStateAsyncService;
+use starcoin_state_api::chain_state_async_service::ChainStateAsyncService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::token_code::TokenCode;
