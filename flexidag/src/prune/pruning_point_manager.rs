@@ -90,6 +90,7 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
                 if next_ghostdata.blue_score - next_pruning_ghostdata.blue_score < pruning_depth {
                     break;
                 }
+
                 if self.finality_score(next_pruning_ghostdata.blue_score, pruning_finality)
                     > self.finality_score(latest_pruning_ghost_data.blue_score, pruning_finality)
                 {
@@ -98,6 +99,7 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
                         blue_work: next_pruning_ghostdata.blue_work,
                         selected_parent: next_pruning_ghostdata.selected_parent,
                     };
+                    break;
                 }
             }
 
