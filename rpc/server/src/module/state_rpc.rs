@@ -9,15 +9,17 @@ use starcoin_abi_resolver::ABIResolver;
 use starcoin_crypto::HashValue;
 use starcoin_dev::playground::view_resource;
 use starcoin_resource_viewer::MoveValueAnnotator;
-use starcoin_rpc_api::state::{
-    GetCodeOption, GetResourceOption, ListCodeOption, ListResourceOption, StateApi,
-};
-use starcoin_rpc_api::types::{
-    AccountStateSetView, AnnotatedMoveStructView, CodeView, ListCodeView, ListResourceView,
-    ResourceView, StateWithProofView, StateWithTableItemProofView, StrView, StructTagView,
-    TableInfoView,
-};
 use starcoin_rpc_api::FutureResult;
+use starcoin_rpc_api::{
+    state::StateApi,
+    types::state_api_types::VmType,
+    types::{
+        state_api_types::{GetCodeOption, GetResourceOption, ListCodeOption, ListResourceOption},
+        AccountStateSetView, AnnotatedMoveStructView, CodeView, ListCodeView, ListResourceView,
+        ResourceView, StateWithProofView, StateWithTableItemProofView, StrView, StructTagView,
+        TableInfoView,
+    },
+};
 use starcoin_state_api::{chain_state_async_service::ChainStateAsyncService, StateView};
 use starcoin_state_tree::StateNodeStore;
 use starcoin_statedb::{ChainStateDB, ChainStateReader};
@@ -25,6 +27,7 @@ use starcoin_types::language_storage::ModuleId;
 use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
 };
+use starcoin_vm2_state_tree::StateNodeStore as StateNodeStoreVm2;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::{struct_tag_match, StructTag};
 use starcoin_vm_types::state_store::state_key::StateKey;
@@ -38,16 +41,22 @@ where
 {
     service: S,
     state_store: Arc<dyn StateNodeStore>,
+    state_store_vm2: Arc<dyn StateNodeStoreVm2>,
 }
 
 impl<S> StateRpcImpl<S>
 where
     S: ChainStateAsyncService,
 {
-    pub fn new(service: S, state_store: Arc<dyn StateNodeStore>) -> Self {
+    pub fn new(
+        service: S,
+        state_store: Arc<dyn StateNodeStore>,
+        state_store_vm2: Arc<dyn StateNodeStoreVm2>,
+    ) -> Self {
         Self {
             service,
             state_store,
+            state_store_vm2,
         }
     }
 }
@@ -56,12 +65,24 @@ impl<S> StateApi for StateRpcImpl<S>
 where
     S: ChainStateAsyncService,
 {
-    fn get(&self, access_path: AccessPath) -> FutureResult<Option<Vec<u8>>> {
-        let fut = self.service.clone().get(access_path).map_err(map_err);
+    fn get(
+        &self,
+        access_path: AccessPath,
+        vm_type: Option<VmType>,
+    ) -> FutureResult<Option<Vec<u8>>> {
+        let fut = self
+            .service
+            .clone()
+            .get(access_path, vm_type.unwrap_or(VmType::MoveVm1).into())
+            .map_err(map_err);
         Box::pin(fut)
     }
 
-    fn get_state_node_by_node_hash(&self, key_hash: HashValue) -> FutureResult<Option<Vec<u8>>> {
+    fn get_state_node_by_node_hash(
+        &self,
+        key_hash: HashValue,
+        vm_type: Option<VmType>,
+    ) -> FutureResult<Option<Vec<u8>>> {
         let state_store = self.state_store.clone();
         let f = async move {
             let node = state_store.get(&key_hash)?.map(|n| n.0);
@@ -70,21 +91,29 @@ where
         Box::pin(f.map_err(map_err).boxed())
     }
 
-    fn get_with_proof(&self, access_path: AccessPath) -> FutureResult<StateWithProofView> {
+    fn get_with_proof(
+        &self,
+        access_path: AccessPath,
+        vm_type: Option<VmType>,
+    ) -> FutureResult<StateWithProofView> {
         let fut = self
             .service
             .clone()
-            .get_with_proof(access_path)
+            .get_with_proof(access_path, vm_type.unwrap_or(VmType::MoveVm1).into())
             .map_ok(|p| p.into())
             .map_err(map_err);
         Box::pin(fut)
     }
 
-    fn get_with_proof_raw(&self, access_path: AccessPath) -> FutureResult<StrView<Vec<u8>>> {
+    fn get_with_proof_raw(
+        &self,
+        access_path: AccessPath,
+        vm_type: Option<VmType>,
+    ) -> FutureResult<StrView<Vec<u8>>> {
         let fut = self
             .service
             .clone()
-            .get_with_proof(access_path)
+            .get_with_proof(access_path, vm_type.unwrap_or(VmType::MoveVm1).into())
             .map_ok(|p| {
                 StrView(bcs_ext::to_bytes(&p).expect("Serialize StateWithProof should success."))
             })
@@ -92,11 +121,15 @@ where
         Box::pin(fut)
     }
 
-    fn get_account_state(&self, address: AccountAddress) -> FutureResult<Option<AccountState>> {
+    fn get_account_state(
+        &self,
+        address: AccountAddress,
+        vm_type: Option<VmType>,
+    ) -> FutureResult<Option<AccountState>> {
         let fut = self
             .service
             .clone()
-            .get_account_state(address)
+            .get_account_state(address, vm_type.unwrap_or(VmType::MoveVm1).into())
             .map_err(map_err);
         Box::pin(fut)
     }
@@ -105,11 +138,17 @@ where
         &self,
         address: AccountAddress,
         state_root: Option<HashValue>,
+        vm_type: Option<VmType>,
     ) -> FutureResult<Option<AccountStateSetView>> {
         let state_service = self.service.clone();
         let db = self.state_store.clone();
         let fut = async move {
-            let state_root = state_root.unwrap_or(state_service.state_root().await?);
+            // TODO(BobOng): [dual-vm] to handle the implementation of each vm
+            let state_root = state_root.unwrap_or(
+                state_service
+                    .state_root(vm_type.unwrap_or(VmType::MoveVm1).into())
+                    .await?,
+            );
             let statedb = ChainStateDB::new(db, Some(state_root));
             let state = statedb.get_account_state_set(&address)?;
             let annotator = MoveValueAnnotator::new(&statedb);
@@ -151,8 +190,12 @@ where
         Box::pin(fut.map_err(map_err).boxed())
     }
 
-    fn get_state_root(&self) -> FutureResult<HashValue> {
-        let fut = self.service.clone().state_root().map_err(map_err);
+    fn get_state_root(&self, vm_type: Option<VmType>) -> FutureResult<HashValue> {
+        let fut = self
+            .service
+            .clone()
+            .state_root(vm_type.unwrap_or(VmType::MoveVm1).into())
+            .map_err(map_err);
         Box::pin(fut)
     }
 
@@ -160,11 +203,16 @@ where
         &self,
         access_path: AccessPath,
         state_root: HashValue,
+        vm_type: Option<VmType>,
     ) -> FutureResult<StateWithProofView> {
         let fut = self
             .service
             .clone()
-            .get_with_proof_by_root(access_path, state_root)
+            .get_with_proof_by_root(
+                access_path,
+                state_root,
+                vm_type.unwrap_or(VmType::MoveVm1).into(),
+            )
             .map_ok(|p| p.into())
             .map_err(map_err);
         Box::pin(fut)
@@ -174,11 +222,16 @@ where
         &self,
         access_path: AccessPath,
         state_root: HashValue,
+        vm_type: Option<VmType>,
     ) -> FutureResult<StrView<Vec<u8>>> {
         let fut = self
             .service
             .clone()
-            .get_with_proof_by_root(access_path, state_root)
+            .get_with_proof_by_root(
+                access_path,
+                state_root,
+                vm_type.unwrap_or(VmType::MoveVm1).into(),
+            )
             .map_ok(|p| {
                 StrView(bcs_ext::to_bytes(&p).expect("Serialize StateWithProof should success."))
             })
@@ -186,11 +239,15 @@ where
         Box::pin(fut)
     }
 
-    fn get_table_info(&self, address: AccountAddress) -> FutureResult<Option<TableInfoView>> {
+    fn get_table_info(
+        &self,
+        address: AccountAddress,
+        vm_type: Option<VmType>,
+    ) -> FutureResult<Option<TableInfoView>> {
         let fut = self
             .service
             .clone()
-            .get_table_info(address)
+            .get_table_info(address, vm_type.unwrap_or(VmType::MoveVm1).into())
             .map_ok(|v| v.map(Into::into))
             .map_err(map_err);
         Box::pin(fut)
@@ -200,11 +257,12 @@ where
         &self,
         handle: TableHandle,
         key: Vec<u8>,
+        vm_type: Option<VmType>,
     ) -> FutureResult<StateWithTableItemProofView> {
         let fut = self
             .service
             .clone()
-            .get_with_table_item_proof(handle, key)
+            .get_with_table_item_proof(handle, key, vm_type.unwrap_or(VmType::MoveVm1).into())
             .map_ok(|p| p.into())
             .map_err(map_err);
         Box::pin(fut)
@@ -215,11 +273,17 @@ where
         handle: TableHandle,
         key: Vec<u8>,
         state_root: HashValue,
+        vm_type: Option<VmType>,
     ) -> FutureResult<StateWithTableItemProofView> {
         let fut = self
             .service
             .clone()
-            .get_with_table_item_proof_by_root(handle, key, state_root)
+            .get_with_table_item_proof_by_root(
+                handle,
+                key,
+                state_root,
+                vm_type.unwrap_or(VmType::MoveVm1).into(),
+            )
             .map_ok(|p| p.into())
             .map_err(map_err);
         Box::pin(fut)
@@ -229,14 +293,19 @@ where
         &self,
         module_id: StrView<ModuleId>,
         option: Option<GetCodeOption>,
+        vm_type: Option<VmType>,
     ) -> FutureResult<Option<CodeView>> {
         let service = self.service.clone();
         let state_store = self.state_store.clone();
         let option = option.unwrap_or_default();
         let f = async move {
-            let state_root = option
-                .state_root
-                .unwrap_or(service.clone().state_root().await?);
+            // TODO(BobOng): [dual-vm] to handle the implementation of each vm
+            let state_root = option.state_root.unwrap_or(
+                service
+                    .clone()
+                    .state_root(vm_type.unwrap_or(VmType::MoveVm1).into())
+                    .await?,
+            );
             let chain_state = ChainStateDB::new(state_store, Some(state_root));
             let code = chain_state
                 .get_state_value(&StateKey::AccessPath(AccessPath::from(&module_id.0)))?;
@@ -264,14 +333,19 @@ where
         addr: AccountAddress,
         resource_type: StrView<StructTag>,
         option: Option<GetResourceOption>,
+        vm_type: Option<VmType>,
     ) -> FutureResult<Option<ResourceView>> {
+        // TODO(BobOng): [dual-vm] to handle the implementation of each vm
         let service = self.service.clone();
         let state_store = self.state_store.clone();
         let option = option.unwrap_or_default();
         let f = async move {
-            let state_root = option
-                .state_root
-                .unwrap_or(service.clone().state_root().await?);
+            let state_root = option.state_root.unwrap_or(
+                service
+                    .clone()
+                    .state_root(vm_type.unwrap_or(VmType::MoveVm1).into())
+                    .await?,
+            );
             let chain_state = ChainStateDB::new(state_store, Some(state_root));
             let data = chain_state.get_state_value(&StateKey::AccessPath(
                 AccessPath::resource_access_path(addr, resource_type.0.clone()),
@@ -300,14 +374,17 @@ where
         &self,
         addr: AccountAddress,
         option: Option<ListResourceOption>,
+        vm_type: Option<VmType>,
     ) -> FutureResult<ListResourceView> {
         let state_service = self.service.clone();
         let db = self.state_store.clone();
         let option = option.unwrap_or_default();
         let fut = async move {
-            let state_root = option
-                .state_root
-                .unwrap_or(state_service.state_root().await?);
+            let state_root = option.state_root.unwrap_or(
+                state_service
+                    .state_root(vm_type.unwrap_or(VmType::MoveVm1).into())
+                    .await?,
+            );
             let statedb = ChainStateDB::new(db, Some(state_root));
 
             let state = statedb.get_account_state_set(&addr)?;
@@ -372,14 +449,17 @@ where
         &self,
         addr: AccountAddress,
         option: Option<ListCodeOption>,
+        vm_type: Option<VmType>,
     ) -> FutureResult<ListCodeView> {
         let state_service = self.service.clone();
         let db = self.state_store.clone();
         let option = option.unwrap_or_default();
         let fut = async move {
-            let state_root = option
-                .state_root
-                .unwrap_or(state_service.state_root().await?);
+            let state_root = option.state_root.unwrap_or(
+                state_service
+                    .state_root(vm_type.unwrap_or(VmType::MoveVm1).into())
+                    .await?,
+            );
             let statedb = ChainStateDB::new(db, Some(state_root));
             //TODO implement list state by iter, and pagination
             let state = statedb.get_account_state_set(&addr)?;

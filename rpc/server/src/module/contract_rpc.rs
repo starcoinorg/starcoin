@@ -24,7 +24,9 @@ use starcoin_rpc_api::{
     },
     FutureResult,
 };
-use starcoin_state_api::chain_state_async_service::ChainStateAsyncService;
+use starcoin_state_api::{
+    chain_state_async_service::ChainStateAsyncService, message::StateRequestVMType::MoveVm1,
+};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Storage;
 use starcoin_txpool_api::TxPoolSyncService;
@@ -89,7 +91,7 @@ where
     fn get_code(&self, module_id: StrView<ModuleId>) -> FutureResult<Option<StrView<Vec<u8>>>> {
         let service = self.chain_state.clone();
         let f = async move {
-            let code = service.get(AccessPath::from(&module_id.0)).await?;
+            let code = service.get(AccessPath::from(&module_id.0), MoveVm1).await?;
             Ok(code.map(StrView))
         };
         Box::pin(f.map_err(map_err).boxed())
@@ -103,12 +105,12 @@ where
         let service = self.chain_state.clone();
         let playground = self.playground.clone();
         let f = async move {
-            let state_root = service.clone().state_root().await?;
+            let state_root = service.clone().state_root(MoveVm1).await?;
             let data = service
-                .get(AccessPath::resource_access_path(
-                    addr,
-                    resource_type.0.clone(),
-                ))
+                .get(
+                    AccessPath::resource_access_path(addr, resource_type.0.clone()),
+                    MoveVm1,
+                )
                 .await?;
             match data {
                 None => Ok(None),
@@ -130,7 +132,7 @@ where
             args,
         } = call;
         let f = async move {
-            let state_root = service.state_root().await?;
+            let state_root = service.state_root(MoveVm1).await?;
             let output = playground.call_contract(
                 state_root,
                 function_id.0.module,
@@ -154,7 +156,7 @@ where
         } = call;
         let metrics = self.playground.metrics.clone();
         let f = async move {
-            let state_root = service.state_root().await?;
+            let state_root = service.state_root(MoveVm1).await?;
             let state = ChainStateDB::new(storage, Some(state_root));
             let output = call_contract(
                 &state,
@@ -180,7 +182,7 @@ where
         let txn_builder = self.txn_request_filler();
         let metrics = self.playground.metrics.clone();
         let f = async move {
-            let state_root = service.state_root().await?;
+            let state_root = service.state_root(MoveVm1).await?;
             let DryRunTransactionRequest {
                 transaction,
                 sender_public_key,
@@ -210,7 +212,7 @@ where
         let storage = self.storage.clone();
         let metrics = self.playground.metrics.clone();
         let f = async move {
-            let state_root = service.state_root().await?;
+            let state_root = service.state_root(MoveVm1).await?;
             let raw_txn = RawUserTransaction::from_str(raw_txn.as_str())?;
             let state_view = ChainStateDB::new(storage, Some(state_root));
             dry_run(
@@ -230,7 +232,7 @@ where
         let service = self.chain_state.clone();
         let storage = self.storage.clone();
         let fut = async move {
-            let state = ChainStateDB::new(storage, Some(service.state_root().await?));
+            let state = ChainStateDB::new(storage, Some(service.state_root(MoveVm1).await?));
             ABIResolver::new(&state)
                 .resolve_function(&function_id.0.module, function_id.0.function.as_ident_str())
         }
@@ -246,7 +248,7 @@ where
         let service = self.chain_state.clone();
         let storage = self.storage.clone();
         let fut = async move {
-            let state = ChainStateDB::new(storage, Some(service.state_root().await?));
+            let state = ChainStateDB::new(storage, Some(service.state_root(MoveVm1).await?));
             ABIResolver::new(&state).resolve_module_function_index(&module_id.0, function_idx)
         }
         .map_err(map_err);
@@ -257,7 +259,7 @@ where
         let service = self.chain_state.clone();
         let storage = self.storage.clone();
         let fut = async move {
-            let state = ChainStateDB::new(storage, Some(service.state_root().await?));
+            let state = ChainStateDB::new(storage, Some(service.state_root(MoveVm1).await?));
             ABIResolver::new(&state).resolve_struct_tag(&struct_tag.0)
         }
         .map_err(map_err);
@@ -268,7 +270,7 @@ where
         let service = self.chain_state.clone();
         let storage = self.storage.clone();
         let fut = async move {
-            let state = ChainStateDB::new(storage, Some(service.state_root().await?));
+            let state = ChainStateDB::new(storage, Some(service.state_root(MoveVm1).await?));
             ABIResolver::new(&state).resolve_module(&module_id.0)
         }
         .map_err(map_err);

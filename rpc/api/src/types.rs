@@ -57,6 +57,7 @@ use std::str::FromStr;
 pub type ByteCode = Vec<u8>;
 mod node_api_types;
 pub mod pubsub;
+pub mod state_api_types;
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct MintedBlockView {

@@ -67,8 +67,9 @@ async fn is_accept_token(
     token_type: StructTag,
     client: &StateClient,
 ) -> Result<bool> {
+    // TODO(BobOng): [dual-vm] to choice vm type
     let account = client
-        .get_resource(address, AccountResource::struct_tag().into(), None)
+        .get_resource(address, AccountResource::struct_tag().into(), None, None)
         .await
         .map_err(map_rpc_error)?;
 
@@ -82,6 +83,7 @@ async fn is_accept_token(
             address,
             BalanceResource::struct_tag_for_token(token_type).into(),
             None,
+            None,
         )
         .await
         .map_err(map_rpc_error)?;
@@ -90,8 +92,9 @@ async fn is_accept_token(
         return Ok(true);
     }
 
+    // TODO(BobOng): [dual-vm] to choice vm type
     let auto_accept_token: Option<ResourceView> = client
-        .get_resource(address, AutoAcceptToken::struct_tag().into(), None)
+        .get_resource(address, AutoAcceptToken::struct_tag().into(), None, None)
         .await
         .map_err(map_rpc_error)?;
 
@@ -219,7 +222,8 @@ async fn main() -> Result<()> {
     // read from onchain
     let account_sequence_number = {
         let ap = AccessPath::new(sender, DataPath::Resource(account_struct_tag()));
-        let account_data: Option<Vec<u8>> = state_client.get(ap).await.map_err(map_rpc_error)?;
+        // TODO(BobOng): [dual-vm] to choice vm type
+        let account_data: Option<Vec<u8>> = state_client.get(ap, None).await.map_err(map_rpc_error)?;
         account_data
             .map(|account_data| AccountResource::decode(&account_data))
             .transpose()?

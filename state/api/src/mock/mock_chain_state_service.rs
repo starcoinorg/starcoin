@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    chain_state_async_service::ChainStateAsyncService, StateWithProof, StateWithTableItemProof,
+    chain_state_async_service::ChainStateAsyncService, message::StateRequestVMType, StateWithProof,
+    StateWithTableItemProof,
 };
 use anyhow::Result;
 use starcoin_crypto::HashValue;
@@ -24,15 +25,27 @@ impl MockChainStateService {
 
 #[async_trait::async_trait]
 impl ChainStateAsyncService for MockChainStateService {
-    async fn get(self, _access_path: AccessPath) -> Result<Option<Vec<u8>>> {
+    async fn get(
+        self,
+        _access_path: AccessPath,
+        _vm_type: StateRequestVMType,
+    ) -> Result<Option<Vec<u8>>> {
         unimplemented!()
     }
 
-    async fn get_with_proof(self, _access_path: AccessPath) -> Result<StateWithProof> {
+    async fn get_with_proof(
+        self,
+        _access_path: AccessPath,
+        _vm_type: StateRequestVMType,
+    ) -> Result<StateWithProof> {
         unimplemented!()
     }
 
-    async fn get_account_state(self, _address: AccountAddress) -> Result<Option<AccountState>> {
+    async fn get_account_state(
+        self,
+        _address: AccountAddress,
+        _vm_type: StateRequestVMType,
+    ) -> Result<Option<AccountState>> {
         unimplemented!()
     }
 
@@ -40,11 +53,12 @@ impl ChainStateAsyncService for MockChainStateService {
         self,
         _address: AccountAddress,
         _state_root: Option<HashValue>,
+        _vm_type: StateRequestVMType,
     ) -> Result<Option<AccountStateSet>> {
         unimplemented!()
     }
 
-    async fn state_root(self) -> Result<HashValue> {
+    async fn state_root(self, _vm_type: StateRequestVMType) -> Result<HashValue> {
         unimplemented!()
     }
 
@@ -52,6 +66,7 @@ impl ChainStateAsyncService for MockChainStateService {
         self,
         _access_path: AccessPath,
         _state_root: HashValue,
+        _vm_type: StateRequestVMType,
     ) -> Result<StateWithProof> {
         unimplemented!()
     }
@@ -60,6 +75,7 @@ impl ChainStateAsyncService for MockChainStateService {
         self,
         _address: AccountAddress,
         _state_root: HashValue,
+        _vm_type: StateRequestVMType,
     ) -> Result<Option<AccountState>> {
         unimplemented!()
     }
@@ -68,6 +84,7 @@ impl ChainStateAsyncService for MockChainStateService {
         self,
         _handle: TableHandle,
         _key: Vec<u8>,
+        _vm_type: StateRequestVMType,
     ) -> Result<StateWithTableItemProof> {
         unimplemented!()
     }
@@ -77,11 +94,16 @@ impl ChainStateAsyncService for MockChainStateService {
         _handle: TableHandle,
         _key: Vec<u8>,
         _state_root: HashValue,
+        _vm_type: StateRequestVMType,
     ) -> Result<StateWithTableItemProof> {
         unimplemented!()
     }
 
-    async fn get_table_info(self, _address: AccountAddress) -> Result<Option<TableInfo>> {
+    async fn get_table_info(
+        self,
+        _address: AccountAddress,
+        _vm_type: StateRequestVMType,
+    ) -> Result<Option<TableInfo>> {
         Ok(None)
     }
 }

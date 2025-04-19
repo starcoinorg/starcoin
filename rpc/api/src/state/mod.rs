@@ -3,49 +3,72 @@
 
 pub use self::gen_client::Client as StateClient;
 use crate::types::{
+    state_api_types::{
+        GetCodeOption, GetResourceOption, ListCodeOption, ListResourceOption, VmType,
+    },
     AccountStateSetView, CodeView, ListCodeView, ListResourceView, ResourceView,
-    StateWithProofView, StateWithTableItemProofView, StrView, StructTagView, TableInfoView,
+    StateWithProofView, StateWithTableItemProofView, StrView, TableInfoView,
 };
 use crate::FutureResult;
 use openrpc_derive::openrpc;
-use schemars::JsonSchema;
-use serde::Deserialize;
-use serde::Serialize;
 use starcoin_crypto::HashValue;
-use starcoin_types::language_storage::{ModuleId, StructTag};
 use starcoin_types::{
-    access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
+    access_path::AccessPath,
+    account_address::AccountAddress,
+    account_state::AccountState,
+    language_storage::{ModuleId, StructTag},
 };
 use starcoin_vm_types::state_store::table::TableHandle;
 #[openrpc]
 pub trait StateApi {
     #[rpc(name = "state.get")]
-    fn get(&self, access_path: AccessPath) -> FutureResult<Option<Vec<u8>>>;
+    fn get(
+        &self,
+        access_path: AccessPath,
+        vm_type: Option<VmType>,
+    ) -> FutureResult<Option<Vec<u8>>>;
 
     /// Return state from StateTree storage directly by tree node key.
     #[rpc(name = "state.get_state_node_by_node_hash")]
-    fn get_state_node_by_node_hash(&self, key_hash: HashValue) -> FutureResult<Option<Vec<u8>>>;
+    fn get_state_node_by_node_hash(
+        &self,
+        key_hash: HashValue,
+        vm_type: Option<VmType>,
+    ) -> FutureResult<Option<Vec<u8>>>;
 
     /// Return the Resource Or Code at the `access_path`, and provide a State Proof.
     #[rpc(name = "state.get_with_proof")]
-    fn get_with_proof(&self, access_path: AccessPath) -> FutureResult<StateWithProofView>;
+    fn get_with_proof(
+        &self,
+        access_path: AccessPath,
+        vm_type: Option<VmType>,
+    ) -> FutureResult<StateWithProofView>;
 
     /// Same as `state.get_with_proof` but return `StateWithProof` in BCS serialize bytes.
     #[rpc(name = "state.get_with_proof_raw")]
-    fn get_with_proof_raw(&self, access_path: AccessPath) -> FutureResult<StrView<Vec<u8>>>;
+    fn get_with_proof_raw(
+        &self,
+        access_path: AccessPath,
+        vm_type: Option<VmType>,
+    ) -> FutureResult<StrView<Vec<u8>>>;
 
     #[rpc(name = "state.get_account_state")]
-    fn get_account_state(&self, address: AccountAddress) -> FutureResult<Option<AccountState>>;
+    fn get_account_state(
+        &self,
+        address: AccountAddress,
+        vm_type: Option<VmType>,
+    ) -> FutureResult<Option<AccountState>>;
 
     #[rpc(name = "state.get_account_state_set")]
     fn get_account_state_set(
         &self,
         address: AccountAddress,
         state_root: Option<HashValue>,
+        vm_type: Option<VmType>,
     ) -> FutureResult<Option<AccountStateSetView>>;
 
     #[rpc(name = "state.get_state_root")]
-    fn get_state_root(&self) -> FutureResult<HashValue>;
+    fn get_state_root(&self, vm_type: Option<VmType>) -> FutureResult<HashValue>;
 
     /// Return the Resource Or Code at the `access_path` and provide a State Proof at `state_root`
     #[rpc(name = "state.get_with_proof_by_root")]
@@ -53,6 +76,7 @@ pub trait StateApi {
         &self,
         access_path: AccessPath,
         state_root: HashValue,
+        vm_type: Option<VmType>,
     ) -> FutureResult<StateWithProofView>;
 
     /// Same as `state.get_with_proof_by_root` but return `StateWithProof` in BCS serialize bytes.
@@ -61,11 +85,16 @@ pub trait StateApi {
         &self,
         access_path: AccessPath,
         state_root: HashValue,
+        vm_type: Option<VmType>,
     ) -> FutureResult<StrView<Vec<u8>>>;
 
     /// Return the TableInfo according to queried AccountAddress
     #[rpc(name = "state.get_table_info")]
-    fn get_table_info(&self, address: AccountAddress) -> FutureResult<Option<TableInfoView>>;
+    fn get_table_info(
+        &self,
+        address: AccountAddress,
+        vm_type: Option<VmType>,
+    ) -> FutureResult<Option<TableInfoView>>;
 
     /// Return the TableItem value  and provide a State Proof at `state_root`
     #[rpc(name = "state.get_with_table_item_proof")]
@@ -73,6 +102,7 @@ pub trait StateApi {
         &self,
         handle: TableHandle,
         key: Vec<u8>,
+        vm_type: Option<VmType>,
     ) -> FutureResult<StateWithTableItemProofView>;
 
     /// Return the TableItem value  and provide a State Proof at `state_root`
@@ -82,6 +112,7 @@ pub trait StateApi {
         handle: TableHandle,
         key: Vec<u8>,
         state_root: HashValue,
+        vm_type: Option<VmType>,
     ) -> FutureResult<StateWithTableItemProofView>;
 
     /// get code of module
@@ -90,6 +121,7 @@ pub trait StateApi {
         &self,
         module_id: StrView<ModuleId>,
         option: Option<GetCodeOption>,
+        vm_type: Option<VmType>,
     ) -> FutureResult<Option<CodeView>>;
 
     /// get resource data of `addr`
@@ -99,6 +131,7 @@ pub trait StateApi {
         addr: AccountAddress,
         resource_type: StrView<StructTag>,
         option: Option<GetResourceOption>,
+        vm_type: Option<VmType>,
     ) -> FutureResult<Option<ResourceView>>;
 
     /// list resources data of `addr`
@@ -107,6 +140,7 @@ pub trait StateApi {
         &self,
         addr: AccountAddress,
         option: Option<ListResourceOption>,
+        vm_type: Option<VmType>,
     ) -> FutureResult<ListResourceView>;
 
     /// list resources data of `addr`
@@ -115,54 +149,10 @@ pub trait StateApi {
         &self,
         addr: AccountAddress,
         option: Option<ListCodeOption>,
+        vm_type: Option<VmType>,
     ) -> FutureResult<ListCodeView>;
 }
 
-#[derive(Default, Clone, Debug, Serialize, Deserialize, Eq, Hash, PartialEq, JsonSchema)]
-#[serde(default)]
-pub struct GetResourceOption {
-    pub decode: bool,
-    pub state_root: Option<HashValue>,
-}
-
-#[derive(Default, Clone, Debug, Serialize, Deserialize, Eq, Hash, PartialEq, JsonSchema)]
-#[serde(default)]
-pub struct GetCodeOption {
-    pub resolve: bool,
-    pub state_root: Option<HashValue>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, Eq, Hash, PartialEq, JsonSchema)]
-#[serde(default)]
-pub struct ListResourceOption {
-    pub decode: bool,
-    /// The state tree root, default is the latest block state root
-    pub state_root: Option<HashValue>,
-    pub start_index: usize,
-    pub max_size: usize,
-    pub resource_types: Option<Vec<StructTagView>>,
-}
-
-impl Default for ListResourceOption {
-    fn default() -> Self {
-        ListResourceOption {
-            decode: false,
-            state_root: None,
-            start_index: 0,
-            max_size: usize::MAX,
-            resource_types: None,
-        }
-    }
-}
-
-#[derive(Default, Clone, Debug, Serialize, Deserialize, Eq, Hash, PartialEq, JsonSchema)]
-#[serde(default)]
-pub struct ListCodeOption {
-    pub resolve: bool,
-    /// The state tree root, default is the latest block state root
-    pub state_root: Option<HashValue>,
-    //TODO support filter by type and pagination
-}
 #[test]
 fn test() {
     let schema = self::gen_schema();

@@ -2,6 +2,7 @@ use starcoin_account_api::AccountAsyncService;
 use starcoin_config::NodeConfig;
 use starcoin_rpc_api::types::TransactionRequest;
 use starcoin_state_api::chain_state_async_service::ChainStateAsyncService;
+use starcoin_state_api::message::StateRequestVMType::MoveVm1;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_config::AccountResource;
 use starcoin_types::transaction::{Module, Package, RawUserTransaction, TransactionPayload};
@@ -67,7 +68,7 @@ where
             None => match self
                 .chain_state
                 .clone()
-                .get_resource::<AccountResource>(sender)
+                .get_resource::<AccountResource>(sender, MoveVm1)
                 .await?
             {
                 Some(r) => r.sequence_number(),

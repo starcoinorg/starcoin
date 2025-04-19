@@ -22,47 +22,55 @@ use starcoin_abi_types::{FunctionABI, ModuleABI, StructInstantiation};
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
 use starcoin_logger::{prelude::*, LogPattern};
-use starcoin_rpc_api::chain::{
-    GetBlockOption, GetBlocksOption, GetEventOption, GetTransactionOption,
-};
-use starcoin_rpc_api::node::NodeInfo;
-use starcoin_rpc_api::service::RpcAsyncService;
-use starcoin_rpc_api::state::{
-    GetCodeOption, GetResourceOption, ListCodeOption, ListResourceOption,
-};
-use starcoin_rpc_api::types::pubsub::EventFilter;
-use starcoin_rpc_api::types::{
-    AccountStateSetView, AnnotatedMoveStructView, BlockHeaderView, BlockInfoView, BlockView,
-    ChainId, ChainInfoView, CodeView, ContractCall, DecodedMoveValue, DryRunOutputView,
-    DryRunTransactionRequest, FactoryAction, FunctionIdView, ListCodeView, ListResourceView,
-    MintedBlockView, ModuleIdView, PeerInfoView, ResourceView, SignedMessageView,
-    StateWithProofView, StateWithTableItemProofView, StrView, StructTagView, TableInfoView,
-    TransactionEventResponse, TransactionInfoView, TransactionInfoWithProofView,
-    TransactionRequest, TransactionView,
-};
 use starcoin_rpc_api::{
-    account::AccountClient, chain::ChainClient, contract_api::ContractClient, debug::DebugClient,
-    miner::MinerClient, multi_types::MultiSignedUserTransactionView,
-    network_manager::NetworkManagerClient, node::NodeClient, node_manager::NodeManagerClient,
-    state::StateClient, sync_manager::SyncManagerClient, txpool::TxPoolClient,
+    account::AccountClient,
+    chain::ChainClient,
+    chain::{GetBlockOption, GetBlocksOption, GetEventOption, GetTransactionOption},
+    contract_api::ContractClient,
+    debug::DebugClient,
+    miner::MinerClient,
+    multi_types::MultiSignedUserTransactionView,
+    network_manager::NetworkManagerClient,
+    node::NodeClient,
+    node::NodeInfo,
+    node_manager::NodeManagerClient,
+    service::RpcAsyncService,
+    state::StateClient,
+    sync_manager::SyncManagerClient,
+    txpool::TxPoolClient,
     types::TransactionEventView,
+    types::{
+        pubsub::EventFilter,
+        state_api_types::{GetResourceOption, ListCodeOption, ListResourceOption},
+        AccountStateSetView, AnnotatedMoveStructView, BlockHeaderView, BlockInfoView, BlockView,
+        ChainId, ChainInfoView, CodeView, ContractCall, DecodedMoveValue, DryRunOutputView,
+        DryRunTransactionRequest, FactoryAction, FunctionIdView, ListCodeView, ListResourceView,
+        MintedBlockView, ModuleIdView, PeerInfoView, ResourceView, SignedMessageView,
+        StateWithProofView, StateWithTableItemProofView, StrView, StructTagView, TableInfoView,
+        TransactionEventResponse, TransactionInfoView, TransactionInfoWithProofView,
+        TransactionRequest, TransactionView,
+    },
 };
+
+use starcoin_rpc_api::types::state_api_types::VmType;
 use starcoin_service_registry::{ServiceInfo, ServiceStatus};
 use starcoin_sync_api::{PeerScoreResponse, SyncProgressReport};
 use starcoin_txpool_api::TxPoolStatus;
-use starcoin_types::access_path::AccessPath;
-use starcoin_types::account_address::AccountAddress;
-use starcoin_types::account_state::AccountState;
-use starcoin_types::block::BlockNumber;
-use starcoin_types::multi_transaction::MultiSignedUserTransaction;
-use starcoin_types::sign_message::SigningMessage;
-use starcoin_types::sync_status::SyncStatus;
-use starcoin_types::system_events::MintBlockEvent;
-use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
-use starcoin_vm_types::language_storage::{ModuleId, StructTag};
-use starcoin_vm_types::state_store::table::TableHandle;
-use starcoin_vm_types::token::token_code::TokenCode;
-use starcoin_vm_types::transaction::DryRunTransaction;
+use starcoin_types::{
+    access_path::AccessPath,
+    account_address::AccountAddress,
+    block::BlockNumber,
+    multi_transaction::MultiSignedUserTransaction,
+    sign_message::SigningMessage,
+    sync_status::SyncStatus,
+    system_events::MintBlockEvent,
+    transaction::{RawUserTransaction, SignedUserTransaction},
+};
+use starcoin_vm_types::{
+    language_storage::{ModuleId, StructTag},
+    token::token_code::TokenCode,
+    transaction::DryRunTransaction,
+};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::thread::JoinHandle;
@@ -72,6 +80,7 @@ use tokio::runtime::Runtime;
 pub mod chain_watcher;
 mod pubsub_client;
 mod remote_state_reader;
+mod rpc_client_impl_for_state;
 
 #[derive(Clone)]
 enum ConnSource {
@@ -217,6 +226,14 @@ impl RpcClient {
             r.await?
         };
         futures::executor::block_on(f)
+    }
+
+    pub fn state_reader(
+        &self,
+        state_root_opt: StateRootOption,
+        vm_type: Option<VmType>,
+    ) -> anyhow::Result<RemoteStateReader> {
+        RemoteStateReader::new(self, state_root_opt, vm_type)
     }
 
     pub fn node_status(&self) -> anyhow::Result<bool> {
@@ -493,185 +510,6 @@ impl RpcClient {
                 .get_resource(addr, StrView(resource_type))
         })
         .map_err(map_err)
-    }
-
-    pub fn state_reader(
-        &self,
-        state_root_opt: StateRootOption,
-    ) -> anyhow::Result<RemoteStateReader> {
-        RemoteStateReader::new(self, state_root_opt)
-    }
-
-    pub fn state_get(&self, access_path: AccessPath) -> anyhow::Result<Option<Vec<u8>>> {
-        self.call_rpc_blocking(|inner| inner.state_client.get(access_path))
-            .map_err(map_err)
-    }
-
-    pub fn state_get_with_proof(
-        &self,
-        access_path: AccessPath,
-    ) -> anyhow::Result<StateWithProofView> {
-        self.call_rpc_blocking(|inner| inner.state_client.get_with_proof(access_path))
-            .map_err(map_err)
-    }
-
-    pub fn state_get_with_proof_by_root(
-        &self,
-        access_path: AccessPath,
-        state_root: HashValue,
-    ) -> anyhow::Result<StateWithProofView> {
-        self.call_rpc_blocking(|inner| {
-            inner
-                .state_client
-                .get_with_proof_by_root(access_path, state_root)
-        })
-        .map_err(map_err)
-    }
-
-    pub fn state_get_with_proof_by_root_raw(
-        &self,
-        access_path: AccessPath,
-        state_root: HashValue,
-    ) -> anyhow::Result<StrView<Vec<u8>>> {
-        self.call_rpc_blocking(|inner| {
-            inner
-                .state_client
-                .get_with_proof_by_root_raw(access_path, state_root)
-        })
-        .map_err(map_err)
-    }
-
-    pub fn state_get_state_root(&self) -> anyhow::Result<HashValue> {
-        self.call_rpc_blocking(|inner| inner.state_client.get_state_root())
-            .map_err(map_err)
-    }
-
-    pub fn state_get_account_state(
-        &self,
-        address: AccountAddress,
-    ) -> anyhow::Result<Option<AccountState>> {
-        self.call_rpc_blocking(|inner| inner.state_client.get_account_state(address))
-            .map_err(map_err)
-    }
-
-    pub fn state_get_account_state_set(
-        &self,
-        address: AccountAddress,
-        state_root: Option<HashValue>,
-    ) -> anyhow::Result<Option<AccountStateSetView>> {
-        self.call_rpc_blocking(|inner| {
-            inner
-                .state_client
-                .get_account_state_set(address, state_root)
-        })
-        .map_err(map_err)
-    }
-
-    pub fn state_get_resource(
-        &self,
-        address: AccountAddress,
-        resource_type: StructTag,
-        decode: bool,
-        state_root: Option<HashValue>,
-    ) -> anyhow::Result<Option<ResourceView>> {
-        self.call_rpc_blocking(|inner| {
-            inner.state_client.get_resource(
-                address,
-                StrView(resource_type),
-                Some(GetResourceOption { decode, state_root }),
-            )
-        })
-        .map_err(map_err)
-    }
-
-    pub fn state_list_resource(
-        &self,
-        address: AccountAddress,
-        decode: bool,
-        state_root: Option<HashValue>,
-        start_index: usize,
-        max_size: usize,
-        resource_types: Option<Vec<StructTagView>>,
-    ) -> anyhow::Result<ListResourceView> {
-        self.call_rpc_blocking(|inner| {
-            inner.state_client.list_resource(
-                address,
-                Some(ListResourceOption {
-                    decode,
-                    state_root,
-                    start_index,
-                    max_size,
-                    resource_types,
-                }),
-            )
-        })
-        .map_err(map_err)
-    }
-
-    pub fn state_get_code(
-        &self,
-        module_id: ModuleId,
-        resolve: bool,
-        state_root: Option<HashValue>,
-    ) -> anyhow::Result<Option<CodeView>> {
-        self.call_rpc_blocking(|inner| {
-            inner.state_client.get_code(
-                StrView(module_id),
-                Some(GetCodeOption {
-                    resolve,
-                    state_root,
-                }),
-            )
-        })
-        .map_err(map_err)
-    }
-
-    pub fn state_list_code(
-        &self,
-        address: AccountAddress,
-        resolve: bool,
-        state_root: Option<HashValue>,
-    ) -> anyhow::Result<ListCodeView> {
-        self.call_rpc_blocking(|inner| {
-            inner.state_client.list_code(
-                address,
-                Some(ListCodeOption {
-                    resolve,
-                    state_root,
-                }),
-            )
-        })
-        .map_err(map_err)
-    }
-
-    pub fn state_get_with_table_item_proof_by_root(
-        &self,
-        handle: TableHandle,
-        key: Vec<u8>,
-        state_root: HashValue,
-    ) -> anyhow::Result<StateWithTableItemProofView> {
-        self.call_rpc_blocking(|inner| {
-            inner
-                .state_client
-                .get_with_table_item_proof_by_root(handle, key, state_root)
-        })
-        .map_err(map_err)
-    }
-
-    pub fn state_get_table_info(
-        &self,
-        address: AccountAddress,
-    ) -> anyhow::Result<Option<TableInfoView>> {
-        self.call_rpc_blocking(|inner| inner.state_client.get_table_info(address))
-            .map_err(map_err)
-    }
-
-    pub fn get_state_node_by_node_hash(
-        &self,
-        key_hash: HashValue,
-    ) -> anyhow::Result<Option<Vec<u8>>> {
-        self.call_rpc_blocking(|inner| inner.state_client.get_state_node_by_node_hash(key_hash))
-            .map_err(map_err)
     }
 
     pub fn contract_call(&self, call: ContractCall) -> anyhow::Result<Vec<DecodedMoveValue>> {

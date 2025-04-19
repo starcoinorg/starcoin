@@ -16,6 +16,7 @@ use starcoin_network_rpc_api::{
     MAX_BLOCK_REQUEST_SIZE, MAX_TXN_REQUEST_SIZE,
 };
 use starcoin_service_registry::ServiceRef;
+use starcoin_state_api::message::StateRequestVMType::MoveVm1;
 use starcoin_state_api::{
     chain_state_async_service::ChainStateAsyncService, StateWithProof, StateWithTableItemProof,
 };
@@ -235,7 +236,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         let state_service = self.state_service.clone();
         let fut = async move {
             state_service
-                .get_with_proof_by_root(req.access_path, req.state_root)
+                .get_with_proof_by_root(req.access_path, req.state_root, MoveVm1)
                 .await
         };
         Box::pin(fut)
@@ -249,7 +250,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         let state_service = self.state_service.clone();
         let fut = async move {
             state_service
-                .get_with_table_item_proof_by_root(req.handle, req.key, req.state_root)
+                .get_with_table_item_proof_by_root(req.handle, req.key, req.state_root, MoveVm1)
                 .await
         };
         Box::pin(fut)
@@ -261,7 +262,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         request: GetTableInfo,
     ) -> BoxFuture<Result<Option<TableInfo>>> {
         let state_service = self.state_service.clone();
-        let fut = async move { state_service.get_table_info(request.0).await };
+        let fut = async move { state_service.get_table_info(request.0, MoveVm1).await };
         Box::pin(fut)
     }
 
@@ -273,7 +274,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         let state_service = self.state_service.clone();
         let fut = async move {
             state_service
-                .get_account_state_by_root(req.account_address, req.state_root)
+                .get_account_state_by_root(req.account_address, req.state_root, MoveVm1)
                 .await
         };
         Box::pin(fut)
