@@ -747,7 +747,7 @@ impl BlockDAG {
             pruning_finality,
         )?;
 
-        let (mut tips, mut ghostdata, mut pruning_point) = if next_pruning_point == Hash::zero()
+        let (tips, ghostdata, mut pruning_point) = if next_pruning_point == Hash::zero()
             || next_pruning_point == previous_pruning_point
         {
             info!(
