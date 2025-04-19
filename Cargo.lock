@@ -12770,7 +12770,10 @@ dependencies = [
 
 [[package]]
 name = "starcoin-infallible"
-version = "1.13.19"
+version = "2.0.1"
+dependencies = [
+ "time 0.3.41",
+]
 
 [[package]]
 name = "starcoin-infallible"
@@ -13482,7 +13485,7 @@ dependencies = [
  "proptest",
  "proptest-derive 0.3.0",
  "rayon",
- "starcoin-infallible 1.13.19",
+ "starcoin-infallible 2.0.1",
  "starcoin-logger 1.13.19",
  "starcoin-mvhashmap 1.13.19",
 ]
