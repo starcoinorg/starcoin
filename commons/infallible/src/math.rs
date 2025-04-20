@@ -104,8 +104,4 @@ impl std::fmt::Display for ArithmeticError {
     }
 }
 
-impl std::error::Error for ArithmeticError {
-    fn description(&self) -> &str {
-        &self.0
-    }
-}
+impl std::error::Error for ArithmeticError {}
