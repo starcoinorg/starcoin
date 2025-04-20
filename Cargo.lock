@@ -679,7 +679,7 @@ dependencies = [
 [[package]]
 name = "bcs-ext"
 version = "1.13.19"
-source = "git+https://github.com/starcoinorg/starcoin?rev=3c5c5c767c339b97e4312972ce72c2e1627f783f#3c5c5c767c339b97e4312972ce72c2e1627f783f"
+source = "git+https://github.com/starcoinorg/starcoin?rev=515acac0cc25521b215898d833831bd02ef1106d#515acac0cc25521b215898d833831bd02ef1106d"
 dependencies = [
  "anyhow",
  "bcs 0.1.6",
@@ -2096,25 +2096,20 @@ checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 
 [[package]]
 name = "forkable-jellyfish-merkle"
-version = "2.0.1"
+version = "1.13.19"
+source = "git+https://github.com/starcoinorg/starcoin?rev=515acac0cc25521b215898d833831bd02ef1106d#515acac0cc25521b215898d833831bd02ef1106d"
 dependencies = [
  "anyhow",
  "backtrace",
- "bcs 0.1.6",
  "bcs-ext",
  "byteorder",
- "criterion",
  "hex",
  "mirai-annotations",
  "num-derive",
  "num-traits",
- "proptest",
- "proptest-derive 0.3.0",
- "rand 0.7.3",
- "rand_core 0.6.4",
  "serde",
  "serde_bytes",
- "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-logger",
  "thiserror 1.0.69",
 ]
@@ -2354,35 +2349,16 @@ dependencies = [
 
 [[package]]
 name = "h2"
-version = "0.3.26"
+version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81fe527a889e1532da5c525686d96d4c2e74cdd345badf8dfef9f6b39dd5f5e8"
-dependencies = [
- "bytes",
- "fnv",
- "futures-core",
- "futures-sink",
- "futures-util",
- "http 0.2.12",
- "indexmap 2.8.0",
- "slab",
- "tokio",
- "tokio-util",
- "tracing",
-]
-
-[[package]]
-name = "h2"
-version = "0.4.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5017294ff4bb30944501348f6f8e42e6ad28f42c8bbef7a74029aff064a4e3c2"
+checksum = "75249d144030531f8dee69fe9cea04d3edf809a017ae445e2abdff6629e86633"
 dependencies = [
  "atomic-waker",
  "bytes",
  "fnv",
  "futures-core",
  "futures-sink",
- "http 1.3.1",
+ "http",
  "indexmap 2.8.0",
  "slab",
  "tokio",
@@ -2542,17 +2518,6 @@ dependencies = [
 
 [[package]]
 name = "http"
-version = "0.2.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "601cbb57e577e2f5ef5be8e7b83f0f63994f25aa94d673e54a92d5c516d101f1"
-dependencies = [
- "bytes",
- "fnv",
- "itoa",
-]
-
-[[package]]
-name = "http"
 version = "1.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f4a85d31aea989eead29a3aaf9e1115a180df8282431156e533de47660892565"
@@ -2564,23 +2529,12 @@ dependencies = [
 
 [[package]]
 name = "http-body"
-version = "0.4.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ceab25649e9960c0311ea418d17bee82c0dcec1bd053b5f9a66e265a693bed2"
-dependencies = [
- "bytes",
- "http 0.2.12",
- "pin-project-lite",
-]
-
-[[package]]
-name = "http-body"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1efedce1fb8e6913f23e0c92de8e62cd5b772a67e7b3946df930a62566c93184"
 dependencies = [
  "bytes",
- "http 1.3.1",
+ "http",
 ]
 
 [[package]]
@@ -2591,8 +2545,8 @@ checksum = "b021d93e26becf5dc7e1b75b1bed1fd93124b374ceb73f43d4d4eafec896a64a"
 dependencies = [
  "bytes",
  "futures-core",
- "http 1.3.1",
- "http-body 1.0.1",
+ "http",
+ "http-body",
  "pin-project-lite",
 ]
 
@@ -2601,12 +2555,6 @@ name = "httparse"
 version = "1.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6dbf3de79e51f3d586ab4cb9d5c3e2c14aa28ed23d180cf89b4df0454a69cc87"
-
-[[package]]
-name = "httpdate"
-version = "1.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df3b46402a9d5adb4c86a0cf463f42e19994e3ee891101b1841f30a545cb49a9"
 
 [[package]]
 name = "humansize"
@@ -2625,30 +2573,6 @@ checksum = "9b112acc8b3adf4b107a8ec20977da0273a8c386765a3ec0229bd500a1443f9f"
 
 [[package]]
 name = "hyper"
-version = "0.14.32"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41dfc780fdec9373c01bae43289ea34c972e40ee3c9f6b3c8801a35f35586ce7"
-dependencies = [
- "bytes",
- "futures-channel",
- "futures-core",
- "futures-util",
- "h2 0.3.26",
- "http 0.2.12",
- "http-body 0.4.6",
- "httparse",
- "httpdate",
- "itoa",
- "pin-project-lite",
- "socket2",
- "tokio",
- "tower-service",
- "tracing",
- "want",
-]
-
-[[package]]
-name = "hyper"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cc2b571658e38e0c01b1fdca3bbbe93c00d3d71693ff2770043f8c29bc7d6f80"
@@ -2656,9 +2580,9 @@ dependencies = [
  "bytes",
  "futures-channel",
  "futures-util",
- "h2 0.4.8",
- "http 1.3.1",
- "http-body 1.0.1",
+ "h2",
+ "http",
+ "http-body",
  "httparse",
  "itoa",
  "pin-project-lite",
@@ -2675,7 +2599,7 @@ checksum = "70206fc6890eaca9fde8a0bf71caa2ddfc9fe045ac9e5c70df101a7dbde866e0"
 dependencies = [
  "bytes",
  "http-body-util",
- "hyper 1.6.0",
+ "hyper",
  "hyper-util",
  "native-tls",
  "tokio",
@@ -2685,16 +2609,17 @@ dependencies = [
 
 [[package]]
 name = "hyper-util"
-version = "0.1.10"
+version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df2dcfbe0677734ab2f3ffa7fa7bfd4706bfdc1ef393f2ee30184aed67e631b4"
+checksum = "497bbc33a26fdd4af9ed9c70d63f61cf56a938375fbb32df34db9b1cd6d643f2"
 dependencies = [
  "bytes",
  "futures-channel",
  "futures-util",
- "http 1.3.1",
- "http-body 1.0.1",
- "hyper 1.6.0",
+ "http",
+ "http-body",
+ "hyper",
+ "libc",
  "pin-project-lite",
  "socket2",
  "tokio",
@@ -4355,9 +4280,9 @@ dependencies = [
 
 [[package]]
 name = "openssl"
-version = "0.10.71"
+version = "0.10.72"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e14130c6a98cd258fdcb0fb6d744152343ff729cbfcb28c656a9d12b999fbcd"
+checksum = "fedfea7d58a1f73118430a55da6a286e7b044961736ce96a16a17068ea25e5da"
 dependencies = [
  "bitflags 2.9.0",
  "cfg-if",
@@ -4387,9 +4312,9 @@ checksum = "d05e27ee213611ffe7d6348b942e8f942b37114c00cc03cec254295a4a17852e"
 
 [[package]]
 name = "openssl-sys"
-version = "0.9.106"
+version = "0.9.107"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8bb61ea9811cc39e3c2069f40b8b8e2e70d8569b361f879786cc7ed48b777cdd"
+checksum = "8288979acd84749c744a9014b4382d42b8f7b2592847b5afb2ed29e5d16ede07"
 dependencies = [
  "cc",
  "libc",
@@ -5216,11 +5141,11 @@ dependencies = [
  "futures-channel",
  "futures-core",
  "futures-util",
- "h2 0.4.8",
- "http 1.3.1",
- "http-body 1.0.1",
+ "h2",
+ "http",
+ "http-body",
  "http-body-util",
- "hyper 1.6.0",
+ "hyper",
  "hyper-tls",
  "hyper-util",
  "ipnet",
@@ -5847,9 +5772,9 @@ checksum = "b7c388c1b5e93756d0c740965c41e8822f866621d41acbdf6336a6a168f8840c"
 
 [[package]]
 name = "socket2"
-version = "0.5.8"
+version = "0.5.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c970269d99b64e60ec3bd6ad27270092a5394c4e309314b18ae3fe575695fbe8"
+checksum = "4f5fd57c80058a56cf5c777ab8a126398ece8e442983605d280a44ce79d0edef"
 dependencies = [
  "libc",
  "windows-sys 0.52.0",
@@ -5932,7 +5857,7 @@ dependencies = [
 [[package]]
 name = "starcoin-accumulator"
 version = "1.13.19"
-source = "git+https://github.com/starcoinorg/starcoin?rev=3c5c5c767c339b97e4312972ce72c2e1627f783f#3c5c5c767c339b97e4312972ce72c2e1627f783f"
+source = "git+https://github.com/starcoinorg/starcoin?rev=515acac0cc25521b215898d833831bd02ef1106d#515acac0cc25521b215898d833831bd02ef1106d"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -6178,6 +6103,7 @@ dependencies = [
 [[package]]
 name = "starcoin-infallible"
 version = "2.0.1"
+source = "git+https://github.com/starcoinorg/starcoin?rev=515acac0cc25521b215898d833831bd02ef1106d#515acac0cc25521b215898d833831bd02ef1106d"
 dependencies = [
  "time",
 ]
@@ -6185,7 +6111,7 @@ dependencies = [
 [[package]]
 name = "starcoin-logger"
 version = "1.13.19"
-source = "git+https://github.com/starcoinorg/starcoin?rev=3c5c5c767c339b97e4312972ce72c2e1627f783f#3c5c5c767c339b97e4312972ce72c2e1627f783f"
+source = "git+https://github.com/starcoinorg/starcoin?rev=515acac0cc25521b215898d833831bd02ef1106d#515acac0cc25521b215898d833831bd02ef1106d"
 dependencies = [
  "anyhow",
  "arc-swap",
@@ -6205,10 +6131,9 @@ dependencies = [
 [[package]]
 name = "starcoin-metrics"
 version = "2.0.1"
+source = "git+https://github.com/starcoinorg/starcoin?rev=515acac0cc25521b215898d833831bd02ef1106d#515acac0cc25521b215898d833831bd02ef1106d"
 dependencies = [
  "anyhow",
- "futures",
- "hyper 0.14.32",
  "prometheus",
  "psutil",
  "serde_json",
@@ -6490,7 +6415,7 @@ dependencies = [
 [[package]]
 name = "starcoin-time-service"
 version = "1.13.19"
-source = "git+https://github.com/starcoinorg/starcoin?rev=3c5c5c767c339b97e4312972ce72c2e1627f783f#3c5c5c767c339b97e4312972ce72c2e1627f783f"
+source = "git+https://github.com/starcoinorg/starcoin?rev=515acac0cc25521b215898d833831bd02ef1106d#515acac0cc25521b215898d833831bd02ef1106d"
 dependencies = [
  "log",
  "serde",
@@ -7070,8 +6995,8 @@ dependencies = [
 [[package]]
 name = "timeout-join-handler"
 version = "2.0.1"
+source = "git+https://github.com/starcoinorg/starcoin?rev=515acac0cc25521b215898d833831bd02ef1106d#515acac0cc25521b215898d833831bd02ef1106d"
 dependencies = [
- "anyhow",
  "thiserror 1.0.69",
 ]
 

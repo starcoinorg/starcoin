@@ -264,26 +264,23 @@ starcoin-parallel-executor = { path = "vm/parallel-executor" }
 #starcoin-language-e2e-tests = { path = "e2e-tests" }
 #starcoin-proptest-helpers = { path = "proptest-helpers" }
 
-# starcoin shared dependencies
 starcoin-types = { path = "types" }
 starcoin-uint = { path = "types/uint" }
 starcoin-state-api = { path = "state/api" }
 starcoin-state-store-api = { path = "state/state-store-api" }
 starcoin-state-tree = { path = "state/state-tree" }
 starcoin-statedb = { path = "state/statedb" }
-starcoin-storage = { path = "storage" }
-
-#branch multi-move-vm
-starcoin-accumulator = { git = "https://github.com/starcoinorg/starcoin", rev = "3c5c5c767c339b97e4312972ce72c2e1627f783f" }
-starcoin-infallible = { path = "commons/infallible" }
-starcoin-time-service = { git = "https://github.com/starcoinorg/starcoin", rev = "3c5c5c767c339b97e4312972ce72c2e1627f783f" }
-starcoin-logger = { git = "https://github.com/starcoinorg/starcoin", rev = "3c5c5c767c339b97e4312972ce72c2e1627f783f" }
-forkable-jellyfish-merkle = { path = "commons/forkable-jellyfish-merkle" }
-#branch multi-move-vm
-bcs-ext = { git = "https://github.com/starcoinorg/starcoin", rev = "3c5c5c767c339b97e4312972ce72c2e1627f783f" }
-starcoin-metrics = { path = "commons/metrics" }
-timeout-join-handler = { path = "commons/timeout-join-handler" }
 vm-status-translator = { path = "vm/vm-status-translator" }
+
+# starcoin shared dependencies
+# branch multi-move-vm
+starcoin-accumulator = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
+starcoin-infallible = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
+starcoin-time-service = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
+starcoin-logger = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
+forkable-jellyfish-merkle = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
+bcs-ext = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
+starcoin-metrics = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
 
 tempfile = "3.2.0"
 textwrap = "0.14.0"
