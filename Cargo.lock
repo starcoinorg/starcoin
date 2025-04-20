@@ -8066,7 +8066,7 @@ dependencies = [
  "serde 1.0.195",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-logger 1.13.19",
- "starcoin-metrics 1.13.19",
+ "starcoin-metrics 2.0.1",
  "starcoin-service-registry 1.13.19",
  "starcoin-types 1.13.19",
 ]
@@ -8090,7 +8090,7 @@ dependencies = [
  "serde 1.0.195",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-logger 1.13.19 (git+https://github.com/starcoinorg/starcoin?rev=3c5c5c767c339b97e4312972ce72c2e1627f783f)",
- "starcoin-metrics 1.13.19 (git+https://github.com/starcoinorg/starcoin?rev=3c5c5c767c339b97e4312972ce72c2e1627f783f)",
+ "starcoin-metrics 1.13.19",
  "starcoin-service-registry 1.13.19 (git+https://github.com/starcoinorg/starcoin?rev=3c5c5c767c339b97e4312972ce72c2e1627f783f)",
  "starcoin-types 1.13.19 (git+https://github.com/starcoinorg/starcoin?rev=3c5c5c767c339b97e4312972ce72c2e1627f783f)",
 ]
@@ -8131,7 +8131,7 @@ dependencies = [
  "smallvec 1.14.0",
  "starcoin-config 1.13.19",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
- "starcoin-metrics 1.13.19",
+ "starcoin-metrics 2.0.1",
  "starcoin-types 1.13.19",
  "stest",
  "tempfile",
@@ -11930,7 +11930,7 @@ dependencies = [
  "starcoin-config 1.13.19",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-logger 1.13.19",
- "starcoin-metrics 1.13.19",
+ "starcoin-metrics 2.0.1",
  "starcoin-network",
  "starcoin-network-rpc-api",
  "starcoin-service-registry 1.13.19",
@@ -12188,7 +12188,7 @@ dependencies = [
  "starcoin-gas 1.13.19",
  "starcoin-gas-algebra-ext 1.13.19",
  "starcoin-logger 1.13.19",
- "starcoin-metrics 1.13.19",
+ "starcoin-metrics 2.0.1",
  "starcoin-system 1.13.19",
  "starcoin-time-service 1.13.19",
  "starcoin-types 1.13.19",
@@ -12229,7 +12229,7 @@ dependencies = [
  "starcoin-gas 1.13.19 (git+https://github.com/starcoinorg/starcoin?rev=3c5c5c767c339b97e4312972ce72c2e1627f783f)",
  "starcoin-gas-algebra-ext 1.13.19 (git+https://github.com/starcoinorg/starcoin?rev=3c5c5c767c339b97e4312972ce72c2e1627f783f)",
  "starcoin-logger 1.13.19 (git+https://github.com/starcoinorg/starcoin?rev=3c5c5c767c339b97e4312972ce72c2e1627f783f)",
- "starcoin-metrics 1.13.19 (git+https://github.com/starcoinorg/starcoin?rev=3c5c5c767c339b97e4312972ce72c2e1627f783f)",
+ "starcoin-metrics 1.13.19",
  "starcoin-system 1.13.19 (git+https://github.com/starcoinorg/starcoin?rev=3c5c5c767c339b97e4312972ce72c2e1627f783f)",
  "starcoin-time-service 1.13.19 (git+https://github.com/starcoinorg/starcoin?rev=3c5c5c767c339b97e4312972ce72c2e1627f783f)",
  "starcoin-types 1.13.19 (git+https://github.com/starcoinorg/starcoin?rev=3c5c5c767c339b97e4312972ce72c2e1627f783f)",
@@ -12770,7 +12770,10 @@ dependencies = [
 
 [[package]]
 name = "starcoin-infallible"
-version = "1.13.19"
+version = "2.0.1"
+dependencies = [
+ "time 0.3.41",
+]
 
 [[package]]
 name = "starcoin-infallible"
@@ -12883,6 +12886,19 @@ dependencies = [
 [[package]]
 name = "starcoin-metrics"
 version = "1.13.19"
+source = "git+https://github.com/starcoinorg/starcoin?rev=3c5c5c767c339b97e4312972ce72c2e1627f783f#3c5c5c767c339b97e4312972ce72c2e1627f783f"
+dependencies = [
+ "anyhow",
+ "prometheus",
+ "psutil",
+ "serde_json",
+ "starcoin-logger 1.13.19 (git+https://github.com/starcoinorg/starcoin?rev=3c5c5c767c339b97e4312972ce72c2e1627f783f)",
+ "timeout-join-handler 1.13.19",
+]
+
+[[package]]
+name = "starcoin-metrics"
+version = "2.0.1"
 dependencies = [
  "anyhow",
  "futures 0.3.31",
@@ -12891,20 +12907,7 @@ dependencies = [
  "psutil",
  "serde_json",
  "starcoin-logger 1.13.19",
- "timeout-join-handler 1.13.19",
-]
-
-[[package]]
-name = "starcoin-metrics"
-version = "1.13.19"
-source = "git+https://github.com/starcoinorg/starcoin?rev=3c5c5c767c339b97e4312972ce72c2e1627f783f#3c5c5c767c339b97e4312972ce72c2e1627f783f"
-dependencies = [
- "anyhow",
- "prometheus",
- "psutil",
- "serde_json",
- "starcoin-logger 1.13.19 (git+https://github.com/starcoinorg/starcoin?rev=3c5c5c767c339b97e4312972ce72c2e1627f783f)",
- "timeout-join-handler 1.13.19 (git+https://github.com/starcoinorg/starcoin?rev=3c5c5c767c339b97e4312972ce72c2e1627f783f)",
+ "timeout-join-handler 2.0.1",
 ]
 
 [[package]]
@@ -12917,7 +12920,7 @@ dependencies = [
  "psutil",
  "serde_json",
  "starcoin-logger 1.13.19 (git+https://github.com/starcoinorg/starcoin?rev=3c5c5c767c339b97e4312972ce72c2e1627f783f)",
- "timeout-join-handler 2.0.1",
+ "timeout-join-handler 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=919629bf41a0d4404e8f176feb1d280efb166939)",
 ]
 
 [[package]]
@@ -12941,7 +12944,7 @@ dependencies = [
  "starcoin-executor",
  "starcoin-genesis",
  "starcoin-logger 1.13.19",
- "starcoin-metrics 1.13.19",
+ "starcoin-metrics 2.0.1",
  "starcoin-network-rpc",
  "starcoin-network-rpc-api",
  "starcoin-node",
@@ -13263,7 +13266,7 @@ dependencies = [
  "starcoin-config 1.13.19",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-logger 1.13.19",
- "starcoin-metrics 1.13.19",
+ "starcoin-metrics 2.0.1",
  "starcoin-network-rpc",
  "starcoin-network-rpc-api",
  "starcoin-service-registry 1.13.19",
@@ -13374,7 +13377,7 @@ dependencies = [
  "starcoin-executor",
  "starcoin-genesis",
  "starcoin-logger 1.13.19",
- "starcoin-metrics 1.13.19",
+ "starcoin-metrics 2.0.1",
  "starcoin-miner",
  "starcoin-miner-client",
  "starcoin-network",
@@ -13398,7 +13401,7 @@ dependencies = [
  "starcoin-vm-runtime 1.13.19",
  "stest",
  "thiserror 1.0.69",
- "timeout-join-handler 1.13.19",
+ "timeout-join-handler 2.0.1",
  "tokio",
 ]
 
@@ -13482,7 +13485,7 @@ dependencies = [
  "proptest",
  "proptest-derive 0.3.0",
  "rayon",
- "starcoin-infallible 1.13.19",
+ "starcoin-infallible 2.0.1",
  "starcoin-logger 1.13.19",
  "starcoin-mvhashmap 1.13.19",
 ]
@@ -13644,7 +13647,7 @@ dependencies = [
  "serde_json",
  "starcoin-config 1.13.19",
  "starcoin-logger 1.13.19",
- "starcoin-metrics 1.13.19",
+ "starcoin-metrics 2.0.1",
  "starcoin-rpc-api",
  "stest",
  "thiserror 1.0.69",
@@ -13698,7 +13701,7 @@ dependencies = [
  "starcoin-executor",
  "starcoin-genesis",
  "starcoin-logger 1.13.19",
- "starcoin-metrics 1.13.19",
+ "starcoin-metrics 2.0.1",
  "starcoin-miner",
  "starcoin-network",
  "starcoin-node-api",
@@ -13963,7 +13966,7 @@ dependencies = [
  "starcoin-config 1.13.19",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-logger 1.13.19",
- "starcoin-metrics 1.13.19",
+ "starcoin-metrics 2.0.1",
  "starcoin-state-store-api 1.13.19",
  "starcoin-types 1.13.19",
  "starcoin-uint 1.13.19",
@@ -13992,7 +13995,7 @@ dependencies = [
  "starcoin-accumulator 1.13.19 (git+https://github.com/starcoinorg/starcoin?rev=3c5c5c767c339b97e4312972ce72c2e1627f783f)",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-logger 1.13.19 (git+https://github.com/starcoinorg/starcoin?rev=3c5c5c767c339b97e4312972ce72c2e1627f783f)",
- "starcoin-metrics 2.0.1",
+ "starcoin-metrics 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=919629bf41a0d4404e8f176feb1d280efb166939)",
  "starcoin-state-store-api 2.0.1",
  "starcoin-types 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=919629bf41a0d4404e8f176feb1d280efb166939)",
  "starcoin-uint 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=919629bf41a0d4404e8f176feb1d280efb166939)",
@@ -14057,7 +14060,7 @@ dependencies = [
  "starcoin-executor",
  "starcoin-genesis",
  "starcoin-logger 1.13.19",
- "starcoin-metrics 1.13.19",
+ "starcoin-metrics 2.0.1",
  "starcoin-miner",
  "starcoin-network",
  "starcoin-network-rpc",
@@ -14311,7 +14314,7 @@ dependencies = [
  "starcoin-executor",
  "starcoin-genesis",
  "starcoin-logger 1.13.19",
- "starcoin-metrics 1.13.19",
+ "starcoin-metrics 2.0.1",
  "starcoin-open-block",
  "starcoin-service-registry 1.13.19",
  "starcoin-state-api 1.13.19",
@@ -14544,7 +14547,7 @@ dependencies = [
  "starcoin-gas 1.13.19",
  "starcoin-gas-algebra-ext 1.13.19",
  "starcoin-logger 1.13.19",
- "starcoin-metrics 1.13.19",
+ "starcoin-metrics 2.0.1",
  "starcoin-natives 1.13.19",
  "starcoin-parallel-executor 1.13.19",
  "starcoin-types 1.13.19",
@@ -14586,7 +14589,7 @@ dependencies = [
  "starcoin-gas-meter 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=919629bf41a0d4404e8f176feb1d280efb166939)",
  "starcoin-gas-schedule 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=919629bf41a0d4404e8f176feb1d280efb166939)",
  "starcoin-logger 1.13.19 (git+https://github.com/starcoinorg/starcoin?rev=3c5c5c767c339b97e4312972ce72c2e1627f783f)",
- "starcoin-metrics 2.0.1",
+ "starcoin-metrics 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=919629bf41a0d4404e8f176feb1d280efb166939)",
  "starcoin-move-stdlib",
  "starcoin-native-interface",
  "starcoin-parallel-executor 2.0.1",
@@ -14916,7 +14919,7 @@ dependencies = [
  "log 0.4.27",
  "starcoin-logger 1.13.19",
  "stest-macro",
- "timeout-join-handler 1.13.19",
+ "timeout-join-handler 2.0.1",
  "tokio",
 ]
 
@@ -15394,7 +15397,7 @@ dependencies = [
  "starcoin-executor",
  "starcoin-genesis",
  "starcoin-logger 1.13.19",
- "starcoin-metrics 1.13.19",
+ "starcoin-metrics 2.0.1",
  "starcoin-miner",
  "starcoin-move-compiler 1.13.19",
  "starcoin-network",
@@ -15610,16 +15613,16 @@ dependencies = [
 [[package]]
 name = "timeout-join-handler"
 version = "1.13.19"
+source = "git+https://github.com/starcoinorg/starcoin?rev=3c5c5c767c339b97e4312972ce72c2e1627f783f#3c5c5c767c339b97e4312972ce72c2e1627f783f"
 dependencies = [
- "anyhow",
  "thiserror 1.0.69",
 ]
 
 [[package]]
 name = "timeout-join-handler"
-version = "1.13.19"
-source = "git+https://github.com/starcoinorg/starcoin?rev=3c5c5c767c339b97e4312972ce72c2e1627f783f#3c5c5c767c339b97e4312972ce72c2e1627f783f"
+version = "2.0.1"
 dependencies = [
+ "anyhow",
  "thiserror 1.0.69",
 ]
 

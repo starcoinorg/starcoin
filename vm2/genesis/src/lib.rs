@@ -20,7 +20,6 @@ use starcoin_vm2_vm_types::{
     transaction::TransactionInfo,
     transaction::{Package, RawUserTransaction, SignedUserTransaction, TransactionPayload},
     transaction::{Transaction, TransactionStatus},
-    write_set::WriteSet,
     StateView,
 };
 use std::sync::Arc;
@@ -93,14 +92,6 @@ pub fn execute_genesis_transaction<S: StateView + ChainStateWriter + Sync>(
         .expect("genesis txn must have one output")
         .clone()
         .into_inner();
-    let extra_write_set =
-        extract_extra_writeset(chain_state).expect("extract extra write set failed");
-    let write_set = write_set
-        .into_mut()
-        .squash(extra_write_set.into_mut())
-        .expect("failed to squash write set")
-        .freeze()
-        .expect("failed to freeze write set");
     match status {
         TransactionStatus::Keep(status) => {
             assert_eq!(status, KeptVMStatus::Executed);
@@ -126,8 +117,4 @@ pub fn execute_genesis_transaction<S: StateView + ChainStateWriter + Sync>(
     }
 
     Ok(executed_data)
-}
-
-fn extract_extra_writeset<S: StateView>(_chain_state: &S) -> anyhow::Result<WriteSet> {
-    Ok(WriteSet::default())
 }
