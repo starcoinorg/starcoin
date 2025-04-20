@@ -659,17 +659,6 @@ impl From<SignedUserTransactionView> for SignedUserTransaction {
     }
 }
 
-impl TryFrom<MultiSignedUserTransaction> for SignedUserTransactionView {
-    type Error = anyhow::Error;
-    fn try_from(txn: MultiSignedUserTransaction) -> Result<Self, Self::Error> {
-        match txn {
-            MultiSignedUserTransaction::VM1(txn) => txn.try_into(),
-            // XXX FIXME YSG
-            MultiSignedUserTransaction::VM2(_txn) => panic!("not supported"),
-        }
-    }
-}
-
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
 pub struct BlockMetadataView {
     /// Parent block hash.

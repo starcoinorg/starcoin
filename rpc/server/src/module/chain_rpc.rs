@@ -29,6 +29,7 @@ use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainInfo;
 use std::convert::TryInto;
 use std::sync::Arc;
+//use starcoin_vm2_abi_decoder::decode_txn_payload as decode_txn_payload_v2;
 
 pub struct ChainRpcImpl<S>
 where
@@ -485,31 +486,33 @@ fn try_decode_txn_payload(
     state: &dyn StateView,
     txn: &mut MultiSignedUserTransactionView,
 ) -> anyhow::Result<()> {
-    let txn_payload = match txn {
+    match txn {
         MultiSignedUserTransactionView::VM1(txn) => {
-            bcs_ext::from_bytes(txn.raw_txn.payload.0.as_slice())?
-        }
-        _ => panic!("XXX FIXME YSG"),
-    };
-
-    match decode_txn_payload(state, &txn_payload) {
-        // ignore decode failure, as txns may has invalid payload here.
-        Err(e) => {
-            let transaction_hash = match txn {
-                MultiSignedUserTransactionView::VM1(txn) => txn.transaction_hash,
-                MultiSignedUserTransactionView::VM2(txn) => txn.transaction_hash,
-            };
-            debug!(
-                "decode payload of txn {} failure, {:?}",
-                transaction_hash, e
-            );
-        }
-        Ok(d) => match txn {
-            MultiSignedUserTransactionView::VM1(txn) => {
-                txn.raw_txn.decoded_payload = Some(d.into());
+            let txn_payload = bcs_ext::from_bytes(txn.raw_txn.payload.0.as_slice())?;
+            match decode_txn_payload(state, &txn_payload) {
+                Err(e) => {
+                    debug!(
+                        "decode payload of txn {} failure, {:?}",
+                        txn.transaction_hash, e
+                    );
+                }
+                Ok(d) => txn.raw_txn.decoded_payload = Some(d.into()),
             }
-            _ => panic!("XXX FIXME YSG"),
-        },
+        }
+        MultiSignedUserTransactionView::VM2(_txn) => {
+            panic!("XXX FIXME YSG StateView need the same")
+            /*
+            let txn_payload = bcs_ext::from_bytes(txn.raw_txn.payload.0.as_slice())?;
+            match decode_txn_payload_v2(state, &txn_payload) {
+                Err(e) => {
+                    debug!(
+                        "decode payload of txn {} failure, {:?}",
+                        txn.transaction_hash, e
+                    );
+                }
+                Ok(d) => txn.raw_txn.decoded_payload = Some(d.into()),
+            } */
+        }
     }
     Ok(())
 }

@@ -23,7 +23,6 @@ pub fn do_execute_block_transactions<S: StateView>(
     Ok(output.into_iter().map(|r| r.1).collect())
 }
 
-// XXX FIXME YSG, refactor use VMValidator
 #[allow(dead_code)]
 pub fn validate_transaction<S: StateView>(
     chain_state: &S,

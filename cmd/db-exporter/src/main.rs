@@ -2085,7 +2085,7 @@ impl serde::Serialize for MoveValue {
             }
             AnnotatedMoveValue::Bytes(v) => hex::encode(v).serialize(serializer),
             AnnotatedMoveValue::Struct(v) => MoveStruct(v.clone()).serialize(serializer),
-            _ => todo!("XXX FXIME YSG"),
+            _ => todo!("XXX FIXME YSG"),
         }
     }
 }

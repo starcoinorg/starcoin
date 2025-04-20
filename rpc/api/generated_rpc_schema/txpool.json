@@ -927,9 +927,250 @@
                   "VM2": {
                     "type": "object",
                     "required": [
+                      "authenticator",
+                      "raw_txn",
                       "transaction_hash"
                     ],
                     "properties": {
+                      "authenticator": {
+                        "description": "Public key and signature to authenticate",
+                        "oneOf": [
+                          {
+                            "description": "Single signature",
+                            "type": "object",
+                            "required": [
+                              "Ed25519"
+                            ],
+                            "properties": {
+                              "Ed25519": {
+                                "type": "object",
+                                "required": [
+                                  "public_key",
+                                  "signature"
+                                ],
+                                "properties": {
+                                  "public_key": {
+                                    "type": "string"
+                                  },
+                                  "signature": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          {
+                            "description": "K-of-N multisignature",
+                            "type": "object",
+                            "required": [
+                              "MultiEd25519"
+                            ],
+                            "properties": {
+                              "MultiEd25519": {
+                                "type": "object",
+                                "required": [
+                                  "public_key",
+                                  "signature"
+                                ],
+                                "properties": {
+                                  "public_key": {
+                                    "type": "string"
+                                  },
+                                  "signature": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        ]
+                      },
+                      "raw_txn": {
+                        "description": "The raw transaction",
+                        "type": "object",
+                        "required": [
+                          "chain_id",
+                          "expiration_timestamp_secs",
+                          "gas_token_code",
+                          "gas_unit_price",
+                          "max_gas_amount",
+                          "payload",
+                          "sender",
+                          "sequence_number"
+                        ],
+                        "properties": {
+                          "chain_id": {
+                            "type": "integer",
+                            "format": "uint8",
+                            "minimum": 0.0
+                          },
+                          "decoded_payload": {
+                            "anyOf": [
+                              {
+                                "oneOf": [
+                                  {
+                                    "description": "A transaction that executes code.",
+                                    "type": "object",
+                                    "required": [
+                                      "Script"
+                                    ],
+                                    "properties": {
+                                      "Script": {
+                                        "type": "object",
+                                        "required": [
+                                          "args",
+                                          "code",
+                                          "ty_args"
+                                        ],
+                                        "properties": {
+                                          "args": {
+                                            "type": "array",
+                                            "items": true
+                                          },
+                                          "code": {
+                                            "type": "string"
+                                          },
+                                          "ty_args": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "description": "A transaction that publish or update module code by a package.",
+                                    "type": "object",
+                                    "required": [
+                                      "Package"
+                                    ],
+                                    "properties": {
+                                      "Package": {
+                                        "type": "object",
+                                        "required": [
+                                          "modules",
+                                          "package_address"
+                                        ],
+                                        "properties": {
+                                          "init_script": {
+                                            "type": [
+                                              "object",
+                                              "null"
+                                            ],
+                                            "required": [
+                                              "args",
+                                              "function",
+                                              "module",
+                                              "ty_args"
+                                            ],
+                                            "properties": {
+                                              "args": {
+                                                "type": "array",
+                                                "items": true
+                                              },
+                                              "function": {
+                                                "type": "string"
+                                              },
+                                              "module": {
+                                                "type": "string"
+                                              },
+                                              "ty_args": {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "string"
+                                                }
+                                              }
+                                            }
+                                          },
+                                          "modules": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "package_address": {
+                                            "type": "string",
+                                            "format": "AccountAddress"
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "description": "A transaction that executes an existing script function published on-chain.",
+                                    "type": "object",
+                                    "required": [
+                                      "ScriptFunction"
+                                    ],
+                                    "properties": {
+                                      "ScriptFunction": {
+                                        "type": "object",
+                                        "required": [
+                                          "args",
+                                          "function",
+                                          "module",
+                                          "ty_args"
+                                        ],
+                                        "properties": {
+                                          "args": {
+                                            "type": "array",
+                                            "items": true
+                                          },
+                                          "function": {
+                                            "type": "string"
+                                          },
+                                          "module": {
+                                            "type": "string"
+                                          },
+                                          "ty_args": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "expiration_timestamp_secs": {
+                            "type": "string"
+                          },
+                          "gas_token_code": {
+                            "type": "string"
+                          },
+                          "gas_unit_price": {
+                            "type": "string"
+                          },
+                          "max_gas_amount": {
+                            "type": "string"
+                          },
+                          "payload": {
+                            "type": "string"
+                          },
+                          "sender": {
+                            "description": "Sender's address.",
+                            "type": "string",
+                            "format": "AccountAddress"
+                          },
+                          "sequence_number": {
+                            "type": "string"
+                          }
+                        }
+                      },
                       "transaction_hash": {
                         "type": "string",
                         "format": "HashValue"
@@ -1236,9 +1477,250 @@
                     "VM2": {
                       "type": "object",
                       "required": [
+                        "authenticator",
+                        "raw_txn",
                         "transaction_hash"
                       ],
                       "properties": {
+                        "authenticator": {
+                          "description": "Public key and signature to authenticate",
+                          "oneOf": [
+                            {
+                              "description": "Single signature",
+                              "type": "object",
+                              "required": [
+                                "Ed25519"
+                              ],
+                              "properties": {
+                                "Ed25519": {
+                                  "type": "object",
+                                  "required": [
+                                    "public_key",
+                                    "signature"
+                                  ],
+                                  "properties": {
+                                    "public_key": {
+                                      "type": "string"
+                                    },
+                                    "signature": {
+                                      "type": "string"
+                                    }
+                                  }
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            {
+                              "description": "K-of-N multisignature",
+                              "type": "object",
+                              "required": [
+                                "MultiEd25519"
+                              ],
+                              "properties": {
+                                "MultiEd25519": {
+                                  "type": "object",
+                                  "required": [
+                                    "public_key",
+                                    "signature"
+                                  ],
+                                  "properties": {
+                                    "public_key": {
+                                      "type": "string"
+                                    },
+                                    "signature": {
+                                      "type": "string"
+                                    }
+                                  }
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          ]
+                        },
+                        "raw_txn": {
+                          "description": "The raw transaction",
+                          "type": "object",
+                          "required": [
+                            "chain_id",
+                            "expiration_timestamp_secs",
+                            "gas_token_code",
+                            "gas_unit_price",
+                            "max_gas_amount",
+                            "payload",
+                            "sender",
+                            "sequence_number"
+                          ],
+                          "properties": {
+                            "chain_id": {
+                              "type": "integer",
+                              "format": "uint8",
+                              "minimum": 0.0
+                            },
+                            "decoded_payload": {
+                              "anyOf": [
+                                {
+                                  "oneOf": [
+                                    {
+                                      "description": "A transaction that executes code.",
+                                      "type": "object",
+                                      "required": [
+                                        "Script"
+                                      ],
+                                      "properties": {
+                                        "Script": {
+                                          "type": "object",
+                                          "required": [
+                                            "args",
+                                            "code",
+                                            "ty_args"
+                                          ],
+                                          "properties": {
+                                            "args": {
+                                              "type": "array",
+                                              "items": true
+                                            },
+                                            "code": {
+                                              "type": "string"
+                                            },
+                                            "ty_args": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "string"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      },
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "description": "A transaction that publish or update module code by a package.",
+                                      "type": "object",
+                                      "required": [
+                                        "Package"
+                                      ],
+                                      "properties": {
+                                        "Package": {
+                                          "type": "object",
+                                          "required": [
+                                            "modules",
+                                            "package_address"
+                                          ],
+                                          "properties": {
+                                            "init_script": {
+                                              "type": [
+                                                "object",
+                                                "null"
+                                              ],
+                                              "required": [
+                                                "args",
+                                                "function",
+                                                "module",
+                                                "ty_args"
+                                              ],
+                                              "properties": {
+                                                "args": {
+                                                  "type": "array",
+                                                  "items": true
+                                                },
+                                                "function": {
+                                                  "type": "string"
+                                                },
+                                                "module": {
+                                                  "type": "string"
+                                                },
+                                                "ty_args": {
+                                                  "type": "array",
+                                                  "items": {
+                                                    "type": "string"
+                                                  }
+                                                }
+                                              }
+                                            },
+                                            "modules": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "string"
+                                              }
+                                            },
+                                            "package_address": {
+                                              "type": "string",
+                                              "format": "AccountAddress"
+                                            }
+                                          }
+                                        }
+                                      },
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "description": "A transaction that executes an existing script function published on-chain.",
+                                      "type": "object",
+                                      "required": [
+                                        "ScriptFunction"
+                                      ],
+                                      "properties": {
+                                        "ScriptFunction": {
+                                          "type": "object",
+                                          "required": [
+                                            "args",
+                                            "function",
+                                            "module",
+                                            "ty_args"
+                                          ],
+                                          "properties": {
+                                            "args": {
+                                              "type": "array",
+                                              "items": true
+                                            },
+                                            "function": {
+                                              "type": "string"
+                                            },
+                                            "module": {
+                                              "type": "string"
+                                            },
+                                            "ty_args": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "string"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      },
+                                      "additionalProperties": false
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "expiration_timestamp_secs": {
+                              "type": "string"
+                            },
+                            "gas_token_code": {
+                              "type": "string"
+                            },
+                            "gas_unit_price": {
+                              "type": "string"
+                            },
+                            "max_gas_amount": {
+                              "type": "string"
+                            },
+                            "payload": {
+                              "type": "string"
+                            },
+                            "sender": {
+                              "description": "Sender's address.",
+                              "type": "string",
+                              "format": "AccountAddress"
+                            },
+                            "sequence_number": {
+                              "type": "string"
+                            }
+                          }
+                        },
                         "transaction_hash": {
                           "type": "string",
                           "format": "HashValue"

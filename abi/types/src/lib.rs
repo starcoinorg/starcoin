@@ -682,7 +682,6 @@ impl<'d> serde::de::DeserializeSeed<'d> for &TypeInstantiation {
             T::Reference(_, _) => Err(D::Error::custom("type abi cannot be Reference variant")),
             T::U16 => u16::deserialize(deserializer).map(Into::into),
             T::U32 => u32::deserialize(deserializer).map(Into::into),
-            // XXX FIXME YSG is it right?
             T::U256 => u256::U256::deserialize(deserializer).map(|val| V::String(val.to_string())),
         }
     }

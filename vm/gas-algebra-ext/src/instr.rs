@@ -185,7 +185,6 @@ crate::params::define_gas_parameters!(
             (572 + 1) * MUL
         ],
         [vec_swap_base: InternalGas, optional "vec_swap.base", (1436 + 1) * MUL],
-        // XXX FIXME YSG, check v6 bytecode cost
         [cast_u16: InternalGas,  "cast_u16", (2 + 1) * MUL],
         [cast_u32: InternalGas,  "cast_u32", (1 + 1)* MUL],
         [cast_u256: InternalGas,  "cast_u256", (2 + 1)* MUL],
