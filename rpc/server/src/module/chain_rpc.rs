@@ -27,9 +27,12 @@ use starcoin_types::access_path::AccessPath;
 use starcoin_types::block::BlockNumber;
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainInfo;
+use starcoin_vm2_abi_decoder::decode_txn_payload as decode_txn_payload_v2;
+use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
+use starcoin_vm2_storage::Storage as Storage2;
+use starcoin_vm2_vm_types::StateView as StateView2;
 use std::convert::TryInto;
 use std::sync::Arc;
-//use starcoin_vm2_abi_decoder::decode_txn_payload as decode_txn_payload_v2;
 
 pub struct ChainRpcImpl<S>
 where
@@ -38,6 +41,7 @@ where
     config: Arc<NodeConfig>,
     genesis_hash: HashValue,
     storage: Arc<Storage>,
+    storage2: Arc<Storage2>,
     service: S,
 }
 
@@ -49,12 +53,14 @@ where
         config: Arc<NodeConfig>,
         genesis_hash: HashValue,
         storage: Arc<Storage>,
+        storage2: Arc<Storage2>,
         service: S,
     ) -> Self {
         Self {
             config,
             genesis_hash,
             storage,
+            storage2,
             service,
         }
     }
@@ -89,6 +95,7 @@ where
         let decode = option.unwrap_or_default().decode;
         let raw = option.unwrap_or_default().raw;
         let storage = self.storage.clone();
+        let storage2 = self.storage2.clone();
         let fut = async move {
             let result = service.get_block_by_hash(hash).await?;
             let mut block: Option<BlockView> = result
@@ -96,11 +103,14 @@ where
                 .transpose()?;
             if decode {
                 let state = ChainStateDB::new(
-                    storage,
+                    storage.clone(),
                     Some(service.main_head_header().await?.state_root()),
                 );
+                let (state_root1, state_root2) = state.get_multi_vm_state_roots();
+                let state = ChainStateDB::new(storage, Some(state_root1));
+                let state2 = ChainStateDB2::new(storage2, state_root2);
                 if let Some(block) = block.as_mut() {
-                    try_decode_block_txns(&state, block)?;
+                    try_decode_block_txns(&state, &state2, block)?;
                 }
             }
             Ok(block)
@@ -119,6 +129,7 @@ where
         let decode = option.unwrap_or_default().decode;
         let raw = option.unwrap_or_default().raw;
         let storage = self.storage.clone();
+        let storage2 = self.storage2.clone();
 
         let fut = async move {
             let result = service.main_block_by_number(number).await?;
@@ -127,11 +138,14 @@ where
                 .transpose()?;
             if decode {
                 let state = ChainStateDB::new(
-                    storage,
+                    storage.clone(),
                     Some(service.main_head_header().await?.state_root()),
                 );
+                let (state_root1, state_root2) = state.get_multi_vm_state_roots();
+                let state = ChainStateDB::new(storage, Some(state_root1));
+                let state2 = ChainStateDB2::new(storage2, state_root2);
                 if let Some(block) = block.as_mut() {
-                    try_decode_block_txns(&state, block)?;
+                    try_decode_block_txns(&state, &state2, block)?;
                 }
             }
             Ok(block)
@@ -196,6 +210,7 @@ where
         let service = self.service.clone();
         let decode_payload = option.unwrap_or_default().decode;
         let storage = self.storage.clone();
+        let storage2 = self.storage2.clone();
         let fut = async move {
             let transaction = service.get_transaction(transaction_hash).await?;
             match transaction {
@@ -214,11 +229,14 @@ where
                     let mut txn = TransactionView::new(t, &block)?;
                     if decode_payload {
                         let state = ChainStateDB::new(
-                            storage,
+                            storage.clone(),
                             Some(service.main_head_header().await?.state_root()),
                         );
+                        let (state_root1, state_root2) = state.get_multi_vm_state_roots();
+                        let state = ChainStateDB::new(storage, Some(state_root1));
+                        let state2 = ChainStateDB2::new(storage2, state_root2);
                         if let Some(txn) = txn.user_transaction.as_mut() {
-                            try_decode_txn_payload(&state, txn)?;
+                            try_decode_txn_payload(&state, &state2, txn)?;
                         }
                     }
                     Ok(Some(txn))
@@ -473,10 +491,14 @@ where
     }
 }
 
-fn try_decode_block_txns(state: &dyn StateView, block: &mut BlockView) -> anyhow::Result<()> {
+fn try_decode_block_txns(
+    state: &dyn StateView,
+    state2: &dyn StateView2,
+    block: &mut BlockView,
+) -> anyhow::Result<()> {
     if let BlockTransactionsView::Full(txns) = &mut block.body {
         for txn in txns.iter_mut() {
-            try_decode_txn_payload(state, txn)?;
+            try_decode_txn_payload(state, state2, txn)?;
         }
     }
     Ok(())
@@ -484,6 +506,7 @@ fn try_decode_block_txns(state: &dyn StateView, block: &mut BlockView) -> anyhow
 
 fn try_decode_txn_payload(
     state: &dyn StateView,
+    state2: &dyn StateView2,
     txn: &mut MultiSignedUserTransactionView,
 ) -> anyhow::Result<()> {
     match txn {
@@ -499,11 +522,9 @@ fn try_decode_txn_payload(
                 Ok(d) => txn.raw_txn.decoded_payload = Some(d.into()),
             }
         }
-        MultiSignedUserTransactionView::VM2(_txn) => {
-            panic!("XXX FIXME YSG StateView need the same")
-            /*
+        MultiSignedUserTransactionView::VM2(txn) => {
             let txn_payload = bcs_ext::from_bytes(txn.raw_txn.payload.0.as_slice())?;
-            match decode_txn_payload_v2(state, &txn_payload) {
+            match decode_txn_payload_v2(state2, &txn_payload) {
                 Err(e) => {
                     debug!(
                         "decode payload of txn {} failure, {:?}",
@@ -511,7 +532,7 @@ fn try_decode_txn_payload(
                     );
                 }
                 Ok(d) => txn.raw_txn.decoded_payload = Some(d.into()),
-            } */
+            }
         }
     }
     Ok(())
