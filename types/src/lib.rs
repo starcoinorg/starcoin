@@ -60,24 +60,7 @@ pub mod system_events;
 
 pub mod multi_transaction;
 
-pub mod transaction {
-    pub use starcoin_vm_types::transaction::*;
-
-    /// try to parse_transaction_argument and auto convert no address 0x hex string to Move's vector<u8>
-    pub fn parse_transaction_argument_advance(s: &str) -> anyhow::Result<TransactionArgument> {
-        let arg = match parse_transaction_argument(s) {
-            Ok(arg) => arg,
-            Err(e) => {
-                //auto convert 0xxx to vector<u8>
-                match s.strip_prefix("0x") {
-                    Some(stripped) => TransactionArgument::U8Vector(hex::decode(stripped)?),
-                    None => return Err(e),
-                }
-            }
-        };
-        Ok(arg)
-    }
-}
+pub mod transaction;
 
 //TODO rename or remove this mode.
 pub mod vm_error {

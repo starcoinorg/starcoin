@@ -96,7 +96,7 @@ pub fn execute_genesis_transaction<S: StateView + ChainStateWriter + Sync>(
         TransactionStatus::Keep(status) => {
             assert_eq!(status, KeptVMStatus::Executed);
             chain_state
-                .apply_write_set(write_set.clone())
+                .apply_write_set(write_set)
                 .map_err(BlockExecutorError::BlockChainStateErr)?;
 
             let txn_state_root = chain_state
@@ -111,7 +111,6 @@ pub fn execute_genesis_transaction<S: StateView + ChainStateWriter + Sync>(
                 status,
             ));
             executed_data.txn_events.push(events);
-            executed_data.write_sets.push(write_set);
         }
         _ => unreachable!("genesis txn output must be keep"),
     }

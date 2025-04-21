@@ -6,8 +6,9 @@ use anyhow::{bail, format_err, Result};
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::proof::AccumulatorProof;
 use starcoin_state_api::StateWithProof;
-use starcoin_types::multi_transaction::MultiSignedUserTransaction;
-use starcoin_vm_types::transaction::RichTransactionInfo;
+use starcoin_types::{
+    multi_transaction::MultiSignedUserTransaction, transaction::RichTransactionInfo,
+};
 
 mod chain;
 mod errors;

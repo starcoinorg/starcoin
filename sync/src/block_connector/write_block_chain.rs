@@ -109,7 +109,7 @@ where
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
         let net = config.net();
-        let main = BlockChain::new_v2(
+        let main = BlockChain::new(
             net.time_service(),
             startup_info.main,
             storage.clone(),
@@ -145,7 +145,7 @@ where
                 None
             } else {
                 let net = self.config.net();
-                Some(BlockChain::new_v2(
+                Some(BlockChain::new(
                     net.time_service(),
                     block_id,
                     self.storage.clone(),
@@ -155,7 +155,7 @@ where
             }
         } else if self.block_exist(header.parent_hash())? {
             let net = self.config.net();
-            Some(BlockChain::new_v2(
+            Some(BlockChain::new(
                 net.time_service(),
                 header.parent_hash(),
                 self.storage.clone(),
@@ -249,7 +249,7 @@ where
             .main
             .get_block(block_id)?
             .ok_or_else(|| format_err!("Can not find block {} in main chain", block_id,))?;
-        let new_branch = BlockChain::new_v2(
+        let new_branch = BlockChain::new(
             self.config.net().time_service(),
             block_id,
             self.storage.clone(),
@@ -287,7 +287,7 @@ where
 
     ///Directly execute the block and save result, do not try to connect.
     pub fn execute(&mut self, block: Block) -> Result<ExecutedBlock> {
-        let chain = BlockChain::new_v2(
+        let chain = BlockChain::new(
             self.config.net().time_service(),
             block.header().parent_hash(),
             self.storage.clone(),

@@ -181,7 +181,7 @@ pub async fn test_failed_block() -> Result<()> {
     let net = ChainNetwork::new_builtin(BuiltinNetworkID::Halley);
     let (storage, storage2, chain_info, _) = Genesis::init_storage_for_test_v2(&net)?;
 
-    let chain = BlockChain::new_v2(
+    let chain = BlockChain::new(
         net.time_service(),
         chain_info.head().id(),
         storage.clone(),

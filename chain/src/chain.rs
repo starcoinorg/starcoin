@@ -28,7 +28,7 @@ use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
-use starcoin_types::transaction::RichTransactionInfo;
+use starcoin_types::transaction::{RichTransactionInfo, TransactionInfo};
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
@@ -37,10 +37,9 @@ use starcoin_types::{
     transaction::Transaction,
     U256,
 };
+use starcoin_vm2_state_api::ChainStateWriter as ChainStateWriter2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
-use starcoin_vm2_storage::{
-    storage::StorageInstance as StorageInstance2, Storage as Storage2, Store as Store2,
-};
+use starcoin_vm2_storage::Store as Store2;
 use starcoin_vm2_vm_types::transaction::Transaction as Transaction2;
 use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
 use starcoin_vm_types::access_path::AccessPath;
@@ -605,19 +604,6 @@ impl BlockChain {
         time_service: Arc<dyn TimeService>,
         head_block_hash: HashValue,
         storage: Arc<dyn Store>,
-        vm_metrics: Option<VMMetrics>,
-    ) -> Result<Self> {
-        let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance())?);
-        let head = storage
-            .get_block_by_hash(head_block_hash)?
-            .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
-        Self::new_with_uncles(time_service, head, None, storage, storage2, vm_metrics)
-    }
-
-    pub fn new_v2(
-        time_service: Arc<dyn TimeService>,
-        head_block_hash: HashValue,
-        storage: Arc<dyn Store>,
         storage2: Arc<dyn Store2>,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<Self> {
@@ -710,7 +696,7 @@ impl BlockChain {
             &chain_id,
             None,
         )?;
-        Self::new_v2(
+        Self::new(
             time_service,
             executed_block.block.id(),
             storage,
@@ -1010,19 +996,14 @@ impl BlockChain {
             epoch.block_gas_limit(),
             vm_metrics,
         )?;
-        let (state_root2, included_txn_info_hashes2) = if !transactions2.is_empty() {
-            let (state_root, hashes) = starcoin_vm2_chain::execute_txns_and_save(
-                block_id,
-                block.header.number(),
-                storage2,
+        let (executed_data2, included_txn_info_hashes2) = if !transactions2.is_empty() {
+            let (executed_data, hashes) = starcoin_vm2_chain::execute_transactions(
                 &statedb2,
-                transactions2,
-                // fixme: set txn info properly
-                txn_accumulator.num_leaves(),
+                transactions2.clone(),
                 epoch.block_gas_limit() - executed_data.gas_used(),
                 None,
             );
-            (state_root, hashes)
+            (executed_data, hashes)
         } else {
             (None, vec![])
         };
@@ -1066,6 +1047,7 @@ impl BlockChain {
             txn_accumulator.append(&included_txn_info_hashes)?;
 
             if !included_txn_info_hashes2.is_empty() {
+                assert!(executed_data2.is_some());
                 txn_accumulator.append(&included_txn_info_hashes2)?;
             }
             txn_accumulator.root_hash()
@@ -1078,9 +1060,13 @@ impl BlockChain {
         );
 
         watch(CHAIN_WATCH_NAME, "n23");
+        statedb2
+            .flush()
+            .map_err(BlockExecutorError::BlockChainStateErr)?;
         statedb
             .flush()
             .map_err(BlockExecutorError::BlockChainStateErr)?;
+
         // If chain state is matched, and accumulator is matched,
         // then, we save flush states, and save block data.
         watch(CHAIN_WATCH_NAME, "n24");
@@ -1105,8 +1091,29 @@ impl BlockChain {
             txn_accumulator_info,
             block_accumulator_info,
         );
-        if let Some(state_root2) = state_root2 {
-            block_info.add_vm2_state_root(state_root2);
+
+        let mut vm2_txn_infos = vec![];
+        // save transaction relationship and save transaction to storage2
+        if let Some(executed_data2) = executed_data2 {
+            let state_root = executed_data2.state_root;
+            block_info.add_vm2_state_root(state_root);
+
+            vm2_txn_infos = executed_data2
+                .txn_infos
+                .clone()
+                .into_iter()
+                .map(Into::into)
+                .collect::<Vec<TransactionInfo>>();
+
+            starcoin_vm2_chain::save_executed_transactions(
+                block_id,
+                header.number(),
+                storage2,
+                transactions2,
+                executed_data2,
+                // todo: how to track vm2 transaction global index?
+                transaction_global_index + executed_data.txn_infos.len() as u64,
+            );
         }
 
         watch(CHAIN_WATCH_NAME, "n25");
@@ -1133,6 +1140,7 @@ impl BlockChain {
         storage.save_transaction_infos(
             txn_infos
                 .into_iter()
+                .chain(vm2_txn_infos)
                 .enumerate()
                 .map(|(transaction_index, info)| {
                     RichTransactionInfo::new(

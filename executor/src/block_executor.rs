@@ -99,7 +99,7 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
         let txn_hash = txn.id();
         let (mut table_infos, write_set, events, gas_used, status) = output.into_inner();
         let balance_amount = get_logger_balance_amount();
-        events.iter().any(|e| {
+        let _ = events.iter().any(|e| {
             if let Ok(balance_event) = BalanceEvent::try_from(e) {
                 let res = balance_event.token_code() == &G_STC_TOKEN_CODE.clone()
                     && balance_event.amount()
