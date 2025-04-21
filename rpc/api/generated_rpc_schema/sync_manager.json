@@ -138,7 +138,8 @@
                     "block_accumulator_info",
                     "block_id",
                     "total_difficulty",
-                    "txn_accumulator_info"
+                    "txn_accumulator_info",
+                    "vm_state_accumulator_info"
                   ],
                   "properties": {
                     "block_accumulator_info": {
@@ -224,12 +225,42 @@
                         }
                       }
                     },
-                    "vm2_state_root": {
-                      "type": [
-                        "string",
-                        "null"
+                    "vm_state_accumulator_info": {
+                      "description": "The vm state accumulator info for dual-vm",
+                      "type": "object",
+                      "required": [
+                        "accumulator_root",
+                        "frozen_subtree_roots",
+                        "num_leaves",
+                        "num_nodes"
                       ],
-                      "format": "HashValue"
+                      "properties": {
+                        "accumulator_root": {
+                          "description": "Accumulator root hash",
+                          "type": "string",
+                          "format": "HashValue"
+                        },
+                        "frozen_subtree_roots": {
+                          "description": "Frozen subtree roots of this accumulator.",
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "format": "HashValue"
+                          }
+                        },
+                        "num_leaves": {
+                          "description": "The total number of leaves in this accumulator.",
+                          "type": "integer",
+                          "format": "uint64",
+                          "minimum": 0.0
+                        },
+                        "num_nodes": {
+                          "description": "The total number of nodes in this accumulator.",
+                          "type": "integer",
+                          "format": "uint64",
+                          "minimum": 0.0
+                        }
+                      }
                     }
                   }
                 }
