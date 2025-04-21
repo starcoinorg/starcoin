@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{format_err, Result};
+use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_config::{NodeConfig, TimeService};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
@@ -15,7 +16,8 @@ use starcoin_state_api::{
 };
 use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_statedb::ChainStateDB;
-use starcoin_storage::{BlockStore, Storage};
+use starcoin_storage::block_info::BlockInfoStore;
+use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_types::state_set::AccountStateSet;
 use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::{
@@ -52,9 +54,27 @@ impl ServiceFactory<Self> for ChainStateService {
         let head_block = storage.get_block(startup_info.main)?.ok_or_else(|| {
             format_err!("Can not find head block by hash:{:?}", startup_info.main)
         })?;
+        let head_block_info = storage.get_block_info(startup_info.main)?.ok_or_else(|| {
+            format_err!(
+                "Can not find head block info by hash:{:?}",
+                startup_info.main
+            )
+        })?;
+        let state_root = {
+            let info = head_block_info.get_vm_state_accumulator_info();
+            if info.num_leaves > 0 {
+                let accumulator = MerkleAccumulator::new_with_info(
+                    info.clone(),
+                    storage.get_accumulator_store(AccumulatorStoreType::VMState),
+                );
+                accumulator.get_leaf(info.num_leaves - 2)?.unwrap()
+            } else {
+                head_block.header().state_root()
+            }
+        };
         Ok(Self::new(
             storage,
-            Some(head_block.header().state_root()),
+            Some(state_root),
             config.net().time_service(),
         ))
     }

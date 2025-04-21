@@ -23,7 +23,6 @@ use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter}
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
-use starcoin_types::block::{BlockIdAndNumber, LegacyBlockInfo};
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
@@ -31,7 +30,10 @@ use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::{RichTransactionInfo, TransactionInfo};
 use starcoin_types::{
     account_address::AccountAddress,
-    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
+    block::{
+        Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber, BlockTemplate,
+        LegacyBlockInfo,
+    },
     contract_event::ContractEvent,
     error::BlockExecutorError,
     transaction::Transaction,
