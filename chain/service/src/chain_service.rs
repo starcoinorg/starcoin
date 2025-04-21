@@ -11,7 +11,7 @@ use starcoin_chain_api::{
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
-use starcoin_dag::consensusdb::consenses_state::DagStateView;
+use starcoin_dag::consensusdb::consensus_state::DagStateView;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_dag::GetAbsentBlock;
 use starcoin_logger::prelude::*;

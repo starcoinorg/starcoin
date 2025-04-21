@@ -7,7 +7,7 @@ use starcoin_abi_decoder::decode_txn_payload;
 use starcoin_chain_service::ChainAsyncService;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
-use starcoin_dag::consensusdb::consenses_state::DagStateView;
+use starcoin_dag::consensusdb::consensus_state::DagStateView;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_logger::prelude::*;
 use starcoin_resource_viewer::MoveValueAnnotator;
@@ -503,7 +503,7 @@ where
         &self,
         ancestor: HashValue,
         descendants: Vec<HashValue>,
-    ) -> FutureResult<starcoin_dag::consensusdb::consenses_state::ReachabilityView> {
+    ) -> FutureResult<starcoin_dag::consensusdb::consensus_state::ReachabilityView> {
         let service = self.service.clone();
         let fut =
             async move { service.is_ancestor_of(ancestor, descendants).await }.map_err(map_err);

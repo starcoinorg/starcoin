@@ -5,7 +5,7 @@ use crate::range_locate::RangeInLocation;
 use crate::{ChainType, TransactionInfoWithProof};
 use anyhow::Result;
 use starcoin_crypto::HashValue;
-use starcoin_dag::consensusdb::consenses_state::{DagStateView, ReachabilityView};
+use starcoin_dag::consensusdb::consensus_state::{DagStateView, ReachabilityView};
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::transaction::RichTransactionInfo;

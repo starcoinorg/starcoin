@@ -17,7 +17,7 @@ use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::{BlockDAG, MineNewDagBlockInfo};
-use starcoin_dag::consensusdb::consenses_state::DagState;
+use starcoin_dag::consensusdb::consensus_state::DagState;
 use starcoin_dag::consensusdb::prelude::StoreError;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;

@@ -12,7 +12,7 @@ use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
-use starcoin_dag::consensusdb::consenses_state::DagState;
+use starcoin_dag::consensusdb::consensus_state::DagState;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::bus::{Bus, BusService};

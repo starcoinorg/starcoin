@@ -4,7 +4,7 @@ use starcoin_logger::prelude::info;
 use crate::reachability::reachability_service::ReachabilityService;
 use crate::{
     consensusdb::{
-        consenses_state::DagState,
+        consensus_state::DagState,
         schemadb::{DbGhostdagStore, GhostdagStoreReader, ReachabilityStoreReader},
     },
     reachability::reachability_service::MTReachabilityService,
@@ -99,7 +99,6 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
                         blue_work: next_pruning_ghostdata.blue_work,
                         selected_parent: next_pruning_ghostdata.selected_parent,
                     };
-                    break;
                 }
             }
 

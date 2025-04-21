@@ -1,11 +1,12 @@
 mod access;
 mod cache;
-pub mod consenses_state;
 pub mod consensus_block_depth;
 mod consensus_ghostdag;
 mod consensus_header;
+mod consensus_pruning_info;
 mod consensus_reachability;
 pub mod consensus_relations;
+pub mod consensus_state;
 mod db;
 mod error;
 mod item;

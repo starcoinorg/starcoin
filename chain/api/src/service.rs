@@ -5,7 +5,7 @@ use crate::range_locate::RangeInLocation;
 use crate::{ChainType, TransactionInfoWithProof};
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
-use starcoin_dag::consensusdb::consenses_state::{DagStateView, ReachabilityView};
+use starcoin_dag::consensusdb::consensus_state::{DagStateView, ReachabilityView};
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_network_rpc_api::{
     GetAbsentBlockRequest, GetAbsentBlockResponse, GetRangeInLocationRequest,
@@ -166,7 +166,7 @@ pub trait ChainAsyncService:
         &self,
         ancestor: HashValue,
         descendants: Vec<HashValue>,
-    ) -> Result<starcoin_dag::consensusdb::consenses_state::ReachabilityView>;
+    ) -> Result<starcoin_dag::consensusdb::consensus_state::ReachabilityView>;
     async fn get_absent_blocks(&self, req: GetAbsentBlockRequest)
         -> Result<GetAbsentBlockResponse>;
 }

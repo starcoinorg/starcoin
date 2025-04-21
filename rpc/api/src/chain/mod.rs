@@ -13,7 +13,7 @@ use openrpc_derive::openrpc;
 use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
-use starcoin_dag::consensusdb::consenses_state::DagStateView;
+use starcoin_dag::consensusdb::consensus_state::DagStateView;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_types::block::BlockNumber;
 use starcoin_vm_types::access_path::AccessPath;
@@ -141,7 +141,7 @@ pub trait ChainApi {
         &self,
         ancestor: HashValue,
         descendants: Vec<HashValue>,
-    ) -> FutureResult<starcoin_dag::consensusdb::consenses_state::ReachabilityView>;
+    ) -> FutureResult<starcoin_dag::consensusdb::consensus_state::ReachabilityView>;
 }
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize, JsonSchema)]

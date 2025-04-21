@@ -4308,7 +4308,7 @@
         }
       ],
       "result": {
-        "name": "starcoin_dag :: consensusdb :: consenses_state :: ReachabilityView",
+        "name": "starcoin_dag :: consensusdb :: consensus_state :: ReachabilityView",
         "schema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "title": "ReachabilityView",

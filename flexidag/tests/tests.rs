@@ -7,7 +7,7 @@ use starcoin_crypto::HashValue as Hash;
 use starcoin_dag::{
     blockdag::{BlockDAG, MineNewDagBlockInfo},
     consensusdb::{
-        consenses_state::{DagState, DagStateReader, DagStateStore},
+        consensus_state::{DagState, DagStateReader, DagStateStore},
         schemadb::{
             DbReachabilityStore, GhostdagStoreReader, ReachabilityStore, ReachabilityStoreReader,
             RelationsStore, RelationsStoreReader,

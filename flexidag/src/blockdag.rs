@@ -1,11 +1,11 @@
 use super::reachability::{inquirer, reachability_service::MTReachabilityService};
 use super::types::ghostdata::GhostdagData;
 use crate::block_depth::block_depth_info::BlockDepthManagerT;
-use crate::consensusdb::consenses_state::{
-    DagState, DagStateReader, DagStateStore, ReachabilityView,
-};
 use crate::consensusdb::consensus_block_depth::{
     BlockDepthInfo, BlockDepthInfoStore, DbBlockDepthInfoStore,
+};
+use crate::consensusdb::consensus_state::{
+    DagState, DagStateReader, DagStateStore, ReachabilityView,
 };
 use crate::consensusdb::prelude::{FlexiDagStorageConfig, StoreError};
 use crate::consensusdb::schemadb::{

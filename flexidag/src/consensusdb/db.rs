@@ -1,6 +1,6 @@
 use super::{
-    consenses_state::{DbDagStateStore, DAG_STATE_STORE_CF},
     consensus_block_depth::{DbBlockDepthInfoStore, DAG_BLOCK_DEPTH_INFO_STORE_CF},
+    consensus_state::{DbDagStateStore, DAG_STATE_STORE_CF},
     error::StoreError,
     schemadb::{
         DbGhostdagStore, DbHeadersStore, DbReachabilityStore, DbRelationsStore, CHILDREN_CF,

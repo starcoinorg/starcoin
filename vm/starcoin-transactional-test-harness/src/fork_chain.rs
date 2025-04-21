@@ -11,7 +11,7 @@ use starcoin_abi_decoder::decode_txn_payload;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_config::{BuiltinNetworkID, ChainNetworkID};
 use starcoin_crypto::HashValue;
-use starcoin_dag::consensusdb::consenses_state::DagStateView;
+use starcoin_dag::consensusdb::consensus_state::DagStateView;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_rpc_api::chain::{ChainApi, GetBlockOption};
 use starcoin_rpc_api::chain::{ChainApiClient, GetBlocksOption};
@@ -523,7 +523,7 @@ impl ChainApi for MockChainApi {
         &self,
         _ancestor: HashValue,
         _descendants: Vec<HashValue>,
-    ) -> FutureResult<starcoin_dag::consensusdb::consenses_state::ReachabilityView> {
+    ) -> FutureResult<starcoin_dag::consensusdb::consensus_state::ReachabilityView> {
         unimplemented!()
     }
 }

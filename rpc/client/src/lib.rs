@@ -21,7 +21,7 @@ use serde_json::Value;
 use starcoin_abi_types::{FunctionABI, ModuleABI, StructInstantiation};
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
-use starcoin_dag::consensusdb::consenses_state::{DagStateView, ReachabilityView};
+use starcoin_dag::consensusdb::consensus_state::{DagStateView, ReachabilityView};
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_logger::{prelude::*, LogPattern};
 use starcoin_rpc_api::chain::{
