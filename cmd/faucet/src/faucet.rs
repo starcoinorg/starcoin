@@ -60,6 +60,7 @@ impl Faucet {
         {
             Some(sequence_number) => sequence_number,
             None => {
+                // TODO(BobOng): [dual-vm] to choice vm type
                 let chain_state_reader = self.client.state_reader(StateRootOption::Latest)?;
                 chain_state_reader
                     .get_account_resource(*self.faucet_account.address())?

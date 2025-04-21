@@ -122,7 +122,8 @@ impl FutureBlockParameterResolver for RpcFutureBlockParameterResolver {
         let ws_rpc_url = format!("ws://{}:{}", parameter.network.boot_nodes_domain(), 9870);
         info!("Connect to {} for get genesis block parameter.", ws_rpc_url);
         let rpc_client: RpcClient = RpcClient::connect_websocket(ws_rpc_url.as_str())?;
-        let state_reader = rpc_client.state_reader(StateRootOption::Latest)?;
+        // TODO(BobOng): [dual-vm] to choice vm type
+        let state_reader = rpc_client.state_reader(StateRootOption::Latest, None)?;
         loop {
             match Self::get_latest_block_number(&rpc_client) {
                 Ok(block_number) => {

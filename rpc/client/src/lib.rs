@@ -81,6 +81,8 @@ pub mod chain_watcher;
 mod pubsub_client;
 mod remote_state_reader;
 mod rpc_client_impl_for_state;
+mod remote_state_reader_vm2;
+mod state_root_option;
 
 #[derive(Clone)]
 enum ConnSource {
@@ -231,9 +233,8 @@ impl RpcClient {
     pub fn state_reader(
         &self,
         state_root_opt: StateRootOption,
-        vm_type: Option<VmType>,
     ) -> anyhow::Result<RemoteStateReader> {
-        RemoteStateReader::new(self, state_root_opt, vm_type)
+        RemoteStateReader::new(self, state_root_opt)
     }
 
     pub fn node_status(&self) -> anyhow::Result<bool> {

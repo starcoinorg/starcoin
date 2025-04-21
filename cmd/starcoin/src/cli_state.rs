@@ -22,6 +22,7 @@ use starcoin_config::{ChainNetworkID, DataDirPath};
 use starcoin_dev::playground;
 use starcoin_node::NodeHandle;
 use starcoin_rpc_api::chain::GetEventOption;
+use starcoin_rpc_api::types::state_api_types::VmType;
 use starcoin_rpc_api::types::{
     DryRunOutputView, RawUserTransactionView, SignedUserTransactionView, TransactionPayloadView,
     TransactionStatusView,
@@ -151,16 +152,19 @@ impl CliState {
         }
     }
 
-    pub fn get_resource<R>(&self, address: AccountAddress) -> Result<Option<R>>
+    pub fn get_resource<R>(
+        &self,
+        address: AccountAddress,
+    ) -> Result<Option<R>>
     where
         R: MoveResource + DeserializeOwned,
     {
-        let chain_state_reader = self.client.state_reader(StateRootOption::Latest)?;
+        let chain_state_reader = self.client.state_reader(StateRootOption::Latest, vm_type)?;
         chain_state_reader.get_resource::<R>(address)
     }
 
-    pub fn get_account_resource(&self, address: AccountAddress) -> Result<Option<AccountResource>> {
-        self.get_resource::<AccountResource>(address)
+    pub fn get_account_resource(&self, address: AccountAddress, vm_type: Option<VmType>) -> Result<Option<AccountResource>> {
+        self.get_resource::<AccountResource>(address, vm_type)
     }
 
     pub fn association_account(&self) -> Result<Option<AccountInfo>> {
@@ -240,7 +244,7 @@ impl CliState {
                     (sequence_number, true)
                 }
                 None => self
-                    .get_account_resource(*sender.address())?
+                    .get_account_resource(*sender.address(), Some(VmType::MoveVm1))?
                     .map(|account| (account.sequence_number(), false))
                     .ok_or_else(|| {
                         format_err!(
@@ -270,8 +274,8 @@ impl CliState {
         ))
     }
 
-    pub fn dry_run_transaction(&self, txn: DryRunTransaction) -> Result<DryRunOutputView> {
-        let state_reader = self.client().state_reader(StateRootOption::Latest)?;
+    pub fn dry_run_transaction(&self, txn: DryRunTransaction, vm_type: Option<VmType>) -> Result<DryRunOutputView> {
+        let state_reader = self.client().state_reader(StateRootOption::Latest, vm_type)?;
         playground::dry_run_explain(&state_reader, txn, None)
     }
 
@@ -289,7 +293,7 @@ impl CliState {
         })?;
         let mut raw_txn_view: RawUserTransactionView = raw_txn.clone().try_into()?;
         raw_txn_view.decoded_payload = Some(TransactionPayloadView::from(
-            self.decode_txn_payload(raw_txn.payload())?,
+            self.decode_txn_payload(raw_txn.payload(), Some(VmType::MoveVm1))?,
         ));
 
         let mut execute_result = ExecuteResultView::new(raw_txn_view, raw_txn.to_hex(), dry_output);
@@ -356,8 +360,9 @@ impl CliState {
     pub fn decode_txn_payload(
         &self,
         payload: &TransactionPayload,
+        vm_type: Option<VmType>,
     ) -> Result<DecodedTransactionPayload> {
-        let chain_state_reader = self.client.state_reader(StateRootOption::Latest)?;
+        let chain_state_reader = self.client.state_reader(StateRootOption::Latest, vm_type)?;
         decode_txn_payload(&chain_state_reader, payload)
     }
 
@@ -445,10 +450,13 @@ impl CliState {
         &self,
         signed_txn: SignedUserTransaction,
         blocking: bool,
+        vm_type: Option<VmType>,
     ) -> Result<ExecutionOutputView> {
         let mut signed_txn_view: SignedUserTransactionView = signed_txn.clone().try_into()?;
-        signed_txn_view.raw_txn.decoded_payload =
-            Some(self.decode_txn_payload(signed_txn.payload())?.into());
+        signed_txn_view.raw_txn.decoded_payload = Some(
+            self.decode_txn_payload(signed_txn.payload(), vm_type)?
+                .into(),
+        );
 
         eprintln!(
             "Prepare to submit the transaction: \n {}",

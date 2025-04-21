@@ -207,6 +207,7 @@ mod tests {
     use super::*;
     use starcoin_config::NodeConfig;
     use starcoin_service_registry::{RegistryAsyncService, RegistryService};
+    use starcoin_state_api::chain_state_async_service::ChainStateAsyncService;
     use starcoin_types::account_config::genesis_address;
 
     #[stest::test]
@@ -218,7 +219,10 @@ mod tests {
         registry.put_shared(config).await?;
         registry.put_shared(storage).await?;
         let service_ref = registry.register::<ChainStateService>().await?;
-        let account_state = service_ref.get_account_state(genesis_address()).await?;
+        // TODO(BobOng): [dual-vm] to choice vm type
+        let account_state = service_ref
+            .get_account_state(genesis_address(), MoveVm1)
+            .await?;
         assert!(account_state.is_some());
         Ok(())
     }

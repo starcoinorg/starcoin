@@ -38,19 +38,14 @@ async-trait = { workspace = true }
 bcs-ext = { workspace = true }
 futures = { workspace = true }
 jsonrpc-core = { features = ["arbitrary_precision"], workspace = true }
-jsonrpc-derive = { workspace = true }
-jsonrpc-http-server = { workspace = true }
 move-resource-viewer = { workspace = true }
 starcoin-abi-decoder = { workspace = true }
 starcoin-accumulator = { workspace = true }
-starcoin-chain-api = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-dev = { workspace = true }
 starcoin-genesis = { workspace = true }
-starcoin-resource-viewer = { workspace = true }
 starcoin-rpc-api = { workspace = true }
-starcoin-rpc-client = { workspace = true }
 starcoin-rpc-server = { workspace = true }
 starcoin-state-api = { workspace = true }
 starcoin-state-tree = { workspace = true }

@@ -68,6 +68,8 @@ thiserror = { workspace = true }
 vm-status-translator = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
 
+starcoin-vm2-state-tree = { workspace = true}
+
 [dev-dependencies]
 starcoin-chain-mock = { workspace = true }
 starcoin-executor = { workspace = true }

@@ -122,7 +122,8 @@ impl CommandAction for GenerateMultisigTxnCommand {
                 let payload = TransactionPayload::ScriptFunction(script_function);
 
                 let node_info = rpc_client.node_info()?;
-                let chain_state_reader = rpc_client.state_reader(StateRootOption::Latest)?;
+                // TODO(BobOng): [dual-vm] to choice vm type
+                let chain_state_reader = rpc_client.state_reader(StateRootOption::Latest, None)?;
                 let account_resource = chain_state_reader.get_account_resource(sender)?;
 
                 if account_resource.is_none() {

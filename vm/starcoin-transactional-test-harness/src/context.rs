@@ -10,6 +10,8 @@ use starcoin_rpc_server::module::StateRpcImpl;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter, StateNodeStore};
 use starcoin_statedb::ChainStateDB;
 use starcoin_types::write_set::WriteSet;
+use starcoin_vm2_state_api::StateNodeStore as StateNodeStoreVm2;
+use starcoin_vm2_statedb::ChainStateDB as ChainStateDBVm2;
 use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use tokio::runtime::Runtime;

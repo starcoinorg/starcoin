@@ -34,7 +34,8 @@ impl CommandAction for EpochInfoCommand {
         let client = ctx.state().client();
         let opt = ctx.opt();
 
-        let chain_state_reader = client.state_reader(opt.state_root.unwrap_or_default())?;
+        // TODO(BobOng): [dual-vm] to choice vm type
+        let chain_state_reader = client.state_reader(opt.state_root.unwrap_or_default(), None)?;
         chain_state_reader.get_epoch_info()
     }
 }

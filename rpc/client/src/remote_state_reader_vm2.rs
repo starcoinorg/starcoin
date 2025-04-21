@@ -1,10 +1,11 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use crate::RpcClient;
+use crate::{RpcClient, state_root_option::StateRootOption};
 use anyhow::{format_err, Result};
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::types::state_api_types::VmType;
+use starcoin_rpc_api::types::state_api_types::VmType::MoveVm2;
 use starcoin_state_api::{ChainStateReader, StateView, StateWithProof, StateWithTableItemProof};
 use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_types::{
@@ -18,28 +19,6 @@ use starcoin_vm_types::{
     state_store::state_key::StateKey,
     state_store::table::{TableHandle, TableInfo},
 };
-use std::str::FromStr;
-use starcoin_rpc_api::types::state_api_types::VmType::MoveVm1;
-
-#[derive(Debug, Default, Clone, Copy)]
-pub enum StateRootOption {
-    #[default]
-    Latest,
-    BlockHash(HashValue),
-    BlockNumber(BlockNumber),
-}
-
-impl FromStr for StateRootOption {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if let Ok(number) = s.parse::<u64>() {
-            Ok(StateRootOption::BlockNumber(number))
-        } else {
-            Ok(StateRootOption::BlockHash(HashValue::from_str(s)?))
-        }
-    }
-}
 
 pub struct RemoteStateReader<'a> {
     //TODO add cache.
@@ -53,7 +32,7 @@ impl<'a> RemoteStateReader<'a> {
         state_root_opt: StateRootOption,
     ) -> Result<Self> {
         let state_root = match state_root_opt {
-            StateRootOption::Latest => client.state_get_state_root(Some(MoveVm1))?,
+            StateRootOption::Latest => client.state_get_state_root()?,
             StateRootOption::BlockHash(block_hash) => {
                 let block = client
                     .chain_get_block_by_hash(block_hash, None)?
@@ -81,7 +60,7 @@ impl<'a> ChainStateReader for RemoteStateReader<'a> {
             .state_get_with_proof_by_root(
                 access_path.clone(),
                 self.state_root,
-                self.vm_type.clone(),
+                Some(MoveVm2),
             )
             .map(Into::into)
     }
@@ -123,7 +102,7 @@ impl<'a> ChainStateReader for RemoteStateReader<'a> {
     }
     fn get_table_info(&self, address: AccountAddress) -> Result<Option<TableInfo>> {
         self.client
-            .state_get_table_info(address, self.vm_type.clone())
+            .state_get_table_info(address, Some(MoveVm2))
             .map(|v| v.map(Into::into))
     }
 }

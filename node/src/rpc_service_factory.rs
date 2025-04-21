@@ -23,6 +23,7 @@ use starcoin_state_service::ChainStateService;
 use starcoin_storage::Storage;
 use starcoin_sync::sync::SyncService;
 use starcoin_txpool::TxPoolService;
+use starcoin_vm2_storage::Storage as StorageVm2;
 use std::sync::Arc;
 
 pub struct RpcServiceFactory;
@@ -33,6 +34,9 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let genesis = ctx.get_shared::<Genesis>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
+
+        let storage_vm2 = ctx.get_shared::<Arc<StorageVm2>>()?;
+
         let log_handler = ctx.get_shared::<Arc<LoggerHandle>>()?;
         let network_service = ctx.get_shared::<NetworkServiceRef>()?;
         let node_api = NodeRpcImpl::new(config.clone(), Some(network_service.clone()));
@@ -58,7 +62,9 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
 
         let state_api = ctx
             .service_ref_opt::<ChainStateService>()?
-            .map(|service_ref| StateRpcImpl::new(service_ref.clone(), storage.clone()));
+            .map(|service_ref| {
+                StateRpcImpl::new(service_ref.clone(), storage.clone(), storage_vm2.clone())
+            });
         let chain_state_service = ctx.service_ref::<ChainStateService>()?.clone();
         let account_service = ctx.service_ref_opt::<AccountService>()?.cloned();
         let account_api = account_service.clone().map(|service_ref| {

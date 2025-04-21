@@ -16,6 +16,7 @@ use starcoin_storage::state_node::StateStorage;
 use starcoin_storage::storage::{CodecKVStore, CodecWriteBatch, StorageInstance};
 
 use starcoin_rpc_api::state::StateApiClient;
+use starcoin_state_api::message::StateRequestVMType;
 use starcoin_state_tree::StateNode;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_state::AccountState;
@@ -51,8 +52,9 @@ impl StateNodeStore for MockStateNodeStore {
                 let client = self.remote.clone();
                 let handle = self.rt.handle().clone();
                 let hash = *hash;
+                // TODO(BobOng): [dual-vm] to choice vm type
                 let blob = handle
-                    .block_on(client.get_state_node_by_node_hash(hash))
+                    .block_on(client.get_state_node_by_node_hash(hash, None))
                     .map(|res| res.map(StateNode))
                     .map_err(|e| anyhow!("{}", e))?;
 
@@ -97,22 +99,35 @@ impl MockChainStateAsyncService {
 
 #[async_trait::async_trait]
 impl ChainStateAsyncService for MockChainStateAsyncService {
-    async fn get(self, access_path: AccessPath) -> Result<Option<Vec<u8>>> {
+    async fn get(
+        self,
+        access_path: AccessPath,
+        _vm_type: StateRequestVMType,
+    ) -> Result<Option<Vec<u8>>> {
         self.state_db()
             .get_state_value(&StateKey::AccessPath(access_path))
     }
 
-    async fn get_with_proof(self, access_path: AccessPath) -> Result<StateWithProof> {
+    async fn get_with_proof(
+        self,
+        access_path: AccessPath,
+        _vm_type: StateRequestVMType,
+    ) -> Result<StateWithProof> {
         self.state_db().get_with_proof(&access_path)
     }
 
-    async fn get_account_state(self, address: AccountAddress) -> Result<Option<AccountState>> {
+    async fn get_account_state(
+        self,
+        address: AccountAddress,
+        _vm_type: StateRequestVMType,
+    ) -> Result<Option<AccountState>> {
         self.state_db().get_account_state(&address)
     }
     async fn get_account_state_set(
         self,
         address: AccountAddress,
         state_root: Option<HashValue>,
+        _vm_type: StateRequestVMType,
     ) -> Result<Option<AccountStateSet>> {
         match state_root {
             Some(root) => {
@@ -122,7 +137,7 @@ impl ChainStateAsyncService for MockChainStateAsyncService {
             None => self.state_db().get_account_state_set(&address),
         }
     }
-    async fn state_root(self) -> Result<HashValue> {
+    async fn state_root(self, _vm_type: StateRequestVMType) -> Result<HashValue> {
         Ok(self.state_db().state_root())
     }
 
@@ -130,6 +145,7 @@ impl ChainStateAsyncService for MockChainStateAsyncService {
         self,
         access_path: AccessPath,
         state_root: HashValue,
+        _vm_type: StateRequestVMType,
     ) -> Result<StateWithProof> {
         let reader = self.state_db().fork_at(state_root);
         reader.get_with_proof(&access_path)
@@ -139,6 +155,7 @@ impl ChainStateAsyncService for MockChainStateAsyncService {
         self,
         account_address: AccountAddress,
         state_root: HashValue,
+        _vm_type: StateRequestVMType,
     ) -> Result<Option<AccountState>> {
         let reader = self.state_db().fork_at(state_root);
         reader.get_account_state(&account_address)
@@ -148,6 +165,7 @@ impl ChainStateAsyncService for MockChainStateAsyncService {
         self,
         handle: TableHandle,
         key: Vec<u8>,
+        _vm_type: StateRequestVMType,
     ) -> Result<StateWithTableItemProof> {
         let reader = self.state_db();
         reader.get_with_table_item_proof(&handle, &key)
@@ -158,12 +176,17 @@ impl ChainStateAsyncService for MockChainStateAsyncService {
         handle: TableHandle,
         key: Vec<u8>,
         state_root: HashValue,
+        _vm_type: StateRequestVMType,
     ) -> Result<StateWithTableItemProof> {
         let reader = self.state_db().fork_at(state_root);
         reader.get_with_table_item_proof(&handle, &key)
     }
 
-    async fn get_table_info(self, address: AccountAddress) -> Result<Option<TableInfo>> {
+    async fn get_table_info(
+        self,
+        address: AccountAddress,
+        _vm_type: StateRequestVMType,
+    ) -> Result<Option<TableInfo>> {
         let reader = self.state_db().fork();
         reader.get_table_info(address)
     }

@@ -9,29 +9,30 @@ use starcoin_abi_resolver::ABIResolver;
 use starcoin_crypto::HashValue;
 use starcoin_dev::playground::view_resource;
 use starcoin_resource_viewer::MoveValueAnnotator;
-use starcoin_rpc_api::FutureResult;
 use starcoin_rpc_api::{
     state::StateApi,
-    types::state_api_types::VmType,
     types::{
-        state_api_types::{GetCodeOption, GetResourceOption, ListCodeOption, ListResourceOption},
+        state_api_types::{GetCodeOption, GetResourceOption, ListCodeOption, ListResourceOption, VmType},
         AccountStateSetView, AnnotatedMoveStructView, CodeView, ListCodeView, ListResourceView,
         ResourceView, StateWithProofView, StateWithTableItemProofView, StrView, StructTagView,
         TableInfoView,
     },
+    FutureResult
 };
-use starcoin_state_api::{chain_state_async_service::ChainStateAsyncService, StateView};
+use starcoin_state_api::{
+    chain_state_async_service::ChainStateAsyncService, message::StateRequestVMType, StateView,
+};
 use starcoin_state_tree::StateNodeStore;
 use starcoin_statedb::{ChainStateDB, ChainStateReader};
-use starcoin_types::language_storage::ModuleId;
 use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
 };
 use starcoin_vm2_state_tree::StateNodeStore as StateNodeStoreVm2;
-use starcoin_vm_types::identifier::Identifier;
-use starcoin_vm_types::language_storage::{struct_tag_match, StructTag};
-use starcoin_vm_types::state_store::state_key::StateKey;
-use starcoin_vm_types::state_store::table::TableHandle;
+use starcoin_vm_types::{
+    identifier::Identifier,
+    language_storage::{struct_tag_match, StructTag, ModuleId},
+    state_store::{state_key::StateKey, table::TableHandle},
+};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -83,12 +84,25 @@ where
         key_hash: HashValue,
         vm_type: Option<VmType>,
     ) -> FutureResult<Option<Vec<u8>>> {
-        let state_store = self.state_store.clone();
-        let f = async move {
-            let node = state_store.get(&key_hash)?.map(|n| n.0);
-            Ok(node)
-        };
-        Box::pin(f.map_err(map_err).boxed())
+        let vm_type: StateRequestVMType = vm_type.unwrap_or(VmType::MoveVm1).into();
+        match vm_type {
+            StateRequestVMType::MoveVm1 => {
+                let state_store = self.state_store.clone();
+                let f = async move {
+                    let node = state_store.get(&key_hash)?.map(|n| n.0);
+                    Ok(node)
+                };
+                Box::pin(f.map_err(map_err).boxed())
+            }
+            StateRequestVMType::MoveVm2 => {
+                let state_store = self.state_store_vm2.clone();
+                let f = async move {
+                    let node = state_store.get(&key_hash)?.map(|n| n.0);
+                    Ok(node)
+                };
+                Box::pin(f.map_err(map_err).boxed())
+            }
+        }
     }
 
     fn get_with_proof(

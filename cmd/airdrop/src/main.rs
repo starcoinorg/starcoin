@@ -223,7 +223,8 @@ async fn main() -> Result<()> {
     let account_sequence_number = {
         let ap = AccessPath::new(sender, DataPath::Resource(account_struct_tag()));
         // TODO(BobOng): [dual-vm] to choice vm type
-        let account_data: Option<Vec<u8>> = state_client.get(ap, None).await.map_err(map_rpc_error)?;
+        let account_data: Option<Vec<u8>> =
+            state_client.get(ap, None).await.map_err(map_rpc_error)?;
         account_data
             .map(|account_data| AccountResource::decode(&account_data))
             .transpose()?

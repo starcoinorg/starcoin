@@ -237,9 +237,10 @@ impl RemoteRpcAsyncClient {
         &self,
         addr: AccountAddress,
     ) -> VMResult<Option<BTreeMap<Identifier, Vec<u8>>>> {
+        // TODO(BobOng): [dual-vm] to choice vm type
         let state = self
             .state_client
-            .get_account_state_set(addr, Some(self.state_root))
+            .get_account_state_set(addr, Some(self.state_root), None)
             .await
             .map_err(|_| {
                 PartialVMError::new(StatusCode::STORAGE_ERROR).finish(Location::Undefined)
@@ -261,9 +262,10 @@ impl RemoteRpcAsyncClient {
             *module_id.address(),
             DataPath::Code(module_id.name().to_owned()),
         );
+        // TODO(BobOng): [dual-vm] to choice vm type
         let state_with_proof: StateWithProofView = self
             .state_client
-            .get_with_proof_by_root(ap, self.state_root)
+            .get_with_proof_by_root(ap, self.state_root, None)
             .await
             .map_err(|_| {
                 PartialVMError::new(StatusCode::STORAGE_ERROR).finish(Location::Undefined)
@@ -276,10 +278,11 @@ impl RemoteRpcAsyncClient {
         address: &AccountAddress,
         tag: &StructTag,
     ) -> PartialVMResult<Option<Vec<u8>>> {
+        // TODO(BobOng): [dual-vm] to choice vm type
         let ap = AccessPath::new(*address, DataPath::Resource(tag.clone()));
         let state_with_proof = self
             .state_client
-            .get_with_proof_by_root(ap, self.state_root)
+            .get_with_proof_by_root(ap, self.state_root, None)
             .await
             .map_err(|_| PartialVMError::new(StatusCode::STORAGE_ERROR))?;
         Ok(state_with_proof.state.map(|v| v.0))
@@ -289,10 +292,11 @@ impl RemoteRpcAsyncClient {
         handle: &TableHandle,
         key: &[u8],
     ) -> Result<Option<Vec<u8>>> {
+        // TODO(BobOng): [dual-vm] to choice vm type
         let handle1: StarcoinTableHandle = StarcoinTableHandle(handle.0);
         let state_table_item_proof: StateWithTableItemProofView = self
             .state_client
-            .get_with_table_item_proof_by_root(handle1, key.to_vec(), self.state_root)
+            .get_with_table_item_proof_by_root(handle1, key.to_vec(), self.state_root, None)
             .await
             .map_err(|_| PartialVMError::new(StatusCode::STORAGE_ERROR))?;
         Ok(state_table_item_proof.key_proof.0.map(|v| v.0))

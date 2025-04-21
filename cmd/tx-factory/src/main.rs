@@ -95,7 +95,8 @@ fn get_account_or_default(
             }
 
             let addr = default_account.clone().unwrap().address;
-            let state_reader = client.state_reader(StateRootOption::Latest)?;
+            // TODO(BobOng): [dual-vm] to choice vm type
+            let state_reader = client.state_reader(StateRootOption::Latest, None)?;
             let mut balance = state_reader.get_balance(addr)?;
             // balance resource has not been created
             while balance.is_none() {
@@ -226,7 +227,8 @@ impl TxnMocker {
         unlock_duration: Duration,
         watch_timeout: u32,
     ) -> Result<Self> {
-        let state_reader = client.state_reader(StateRootOption::Latest)?;
+        // TODO(BobOng): [dual-vm] to choice vm type
+        let state_reader = client.state_reader(StateRootOption::Latest, None)?;
 
         let account_resource = state_reader.get_account_resource(account_address)?;
         if account_resource.is_none() {
@@ -275,7 +277,8 @@ impl TxnMocker {
         self.next_sequence_number = match seq_number_in_pool {
             Some(n) => n,
             None => {
-                let state_reader = self.client.state_reader(StateRootOption::Latest)?;
+                // TODO(BobOng): [dual-vm] to choice vm type
+                let state_reader = self.client.state_reader(StateRootOption::Latest, None)?;
 
                 let account_resource = state_reader.get_account_resource(self.account_address)?;
                 if account_resource.is_none() {
@@ -414,7 +417,8 @@ impl TxnMocker {
         let mut account_local = self.client.account_list()?;
         let mut available_list = vec![];
         let mut index = 0;
-        let state_reader = self.client.state_reader(StateRootOption::Latest)?;
+        // TODO(BobOng): [dual-vm] to choice vm type
+        let state_reader = self.client.state_reader(StateRootOption::Latest, None)?;
         while index < account_num {
             if let Some(account) = account_local.pop() {
                 if self
@@ -455,7 +459,8 @@ impl TxnMocker {
             }
             let lack = self.create_accounts(lack_len, batch_size)?;
             //TODO fix me for reuse state_reader.
-            let state_reader = self.client.state_reader(StateRootOption::Latest)?;
+            // TODO(BobOng): [dual-vm] to choice vm type
+            let state_reader = self.client.state_reader(StateRootOption::Latest, None)?;
             for account in lack {
                 let account_resource = state_reader
                     .get_account_resource(*account.address())
@@ -542,7 +547,8 @@ impl TxnMocker {
             info!("node syncing, pause stress");
             return Ok(());
         }
-        let state_reader = self.client.state_reader(StateRootOption::Latest)?;
+        // TODO(BobOng): [dual-vm] to choice vm type
+        let state_reader = self.client.state_reader(StateRootOption::Latest, None)?;
 
         //unlock all account and get sequence
         let mut sequences = vec![];
