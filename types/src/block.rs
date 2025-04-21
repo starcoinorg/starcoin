@@ -874,6 +874,34 @@ pub struct BlockInfo {
     pub vm_state_accumulator_info: AccumulatorInfo,
 }
 
+#[derive(
+    Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash, JsonSchema,
+)]
+#[serde(rename = "BlockInfo")]
+pub struct LegacyBlockInfo {
+    /// Block id
+    pub block_id: HashValue,
+    /// The total difficulty.
+    #[schemars(with = "String")]
+    pub total_difficulty: U256,
+    /// The transaction accumulator info
+    pub txn_accumulator_info: AccumulatorInfo,
+    /// The block accumulator info.
+    pub block_accumulator_info: AccumulatorInfo,
+}
+
+impl From<LegacyBlockInfo> for BlockInfo {
+    fn from(legacy_block_info: LegacyBlockInfo) -> Self {
+        BlockInfo {
+            block_id: legacy_block_info.block_id,
+            total_difficulty: legacy_block_info.total_difficulty,
+            txn_accumulator_info: legacy_block_info.txn_accumulator_info,
+            block_accumulator_info: legacy_block_info.block_accumulator_info,
+            vm_state_accumulator_info: AccumulatorInfo::default(),
+        }
+    }
+}
+
 impl BlockInfo {
     pub fn new(
         block_id: HashValue,
