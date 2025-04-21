@@ -145,17 +145,25 @@ static VEC_PREFIX_NAME_V3: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         TABLE_INFO_PREFIX_NAME,
     ]
 });
+
+static VEC_PREFIX_NAME_V4: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
+    let mut prefix_vec = VEC_PREFIX_NAME_V3.to_vec();
+    prefix_vec.push(VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME);
+    prefix_vec
+});
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, IntoPrimitive, TryFromPrimitive)]
 #[repr(u8)]
 pub enum StorageVersion {
     V1 = 1,
     V2 = 2,
     V3 = 3,
+    V4 = 4,
 }
 
 impl StorageVersion {
     pub fn current_version() -> StorageVersion {
-        StorageVersion::V3
+        StorageVersion::V4
     }
 
     pub fn get_column_family_names(&self) -> &'static [ColumnFamilyName] {
@@ -163,6 +171,7 @@ impl StorageVersion {
             StorageVersion::V1 => &VEC_PREFIX_NAME_V1,
             StorageVersion::V2 => &VEC_PREFIX_NAME_V2,
             StorageVersion::V3 => &VEC_PREFIX_NAME_V3,
+            StorageVersion::V4 => &VEC_PREFIX_NAME_V4,
         }
     }
 }

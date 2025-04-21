@@ -193,6 +193,14 @@ impl DBUpgrade {
             (StorageVersion::V2, StorageVersion::V3) => {
                 Self::db_upgrade_v2_v3(instance)?;
             }
+
+            (StorageVersion::V1, StorageVersion::V4) => {
+                Self::db_upgrade_v1_v2(instance)?;
+                Self::db_upgrade_v2_v3(instance)?;
+            }
+            (StorageVersion::V3, StorageVersion::V4) => {
+                debug!("nothing to do for V3");
+            }
             _ => bail!(
                 "Can not upgrade db from {:?} to {:?}",
                 version_in_db,
