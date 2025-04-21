@@ -14,7 +14,7 @@ use starcoin_chain_api::{
     ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
 };
 use starcoin_consensus::Consensus;
-use starcoin_crypto::hash::PlainCryptoHash;
+use starcoin_crypto::hash::{PlainCryptoHash, SPARSE_MERKLE_PLACEHOLDER_HASH};
 use starcoin_crypto::HashValue;
 use starcoin_executor::{BlockExecutedData, VMMetrics};
 use starcoin_logger::prelude::*;
@@ -1044,13 +1044,18 @@ impl BlockChain {
         watch(CHAIN_WATCH_NAME, "n22");
 
         let state_root = {
+            // todo: how to check the genesis2 initialized correctly, check txn_hash?
+            let current_state_root2 = statedb2.state_root();
             let state_root1 = executed_data.state_root;
-            // if none state_root, use the last state root in statedb2
+            // if no new state_root, use current state root of statedb2
             let state_root2 = executed_data2
                 .as_ref()
                 .map(|data| data.state_root)
-                .unwrap_or_else(|| statedb2.state_root());
-            if vm_state_accumulator.num_leaves() != 0 {
+                .unwrap_or(current_state_root2);
+            // no vm2 txn or statedb2 has never been updated
+            if state_root2 != *SPARSE_MERKLE_PLACEHOLDER_HASH
+                || vm_state_accumulator.num_leaves() > 1
+            {
                 vm_state_accumulator.append(&[state_root1, state_root2])?;
                 vm_state_accumulator.root_hash()
             } else {
