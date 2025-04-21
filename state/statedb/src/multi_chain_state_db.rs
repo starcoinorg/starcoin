@@ -31,14 +31,14 @@ static MULTI_STATE_PATH: Lazy<AccessPath> = Lazy::new(|| {
     AccessPath::from_str(str.as_str()).unwrap()
 });
 #[allow(clippy::upper_case_acronyms)]
-pub struct ChainStateDBV2 {
+pub struct MultiChainStateDB {
     #[allow(dead_code)]
     store: Arc<dyn StateNodeStore>,
     chain_state_db: [ChainStateDB; MULTI_VM_NUMS],
 }
 
 #[allow(dead_code)]
-impl ChainStateDBV2 {
+impl MultiChainStateDB {
     pub fn new(store: Arc<dyn StateNodeStore>, root_hash: Option<HashValue>) -> Self {
         let global_state_tree: StateTree<AccountAddress> = StateTree::new(store.clone(), root_hash);
         let res = global_state_tree
@@ -154,7 +154,7 @@ impl ChainStateDBV2 {
 
 #[cfg(test)]
 mod tests {
-    use crate::chain_state_db_v2::MULTI_STATE_PATH;
+    use crate::multi_chain_state_db::MULTI_STATE_PATH;
     use crate::ChainStateDB;
     use bcs_ext::BCSCodec;
     use starcoin_crypto::HashValue;

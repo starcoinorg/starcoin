@@ -23,6 +23,7 @@ use starcoin_state_service::ChainStateService;
 use starcoin_storage::Storage;
 use starcoin_sync::sync::SyncService;
 use starcoin_txpool::TxPoolService;
+use starcoin_vm2_storage::Storage as Storage2;
 use std::sync::Arc;
 
 pub struct RpcServiceFactory;
@@ -33,6 +34,7 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let genesis = ctx.get_shared::<Genesis>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
+        let storage2 = ctx.get_shared::<Arc<Storage2>>()?;
         let log_handler = ctx.get_shared::<Arc<LoggerHandle>>()?;
         let network_service = ctx.get_shared::<NetworkServiceRef>()?;
         let node_api = NodeRpcImpl::new(config.clone(), Some(network_service.clone()));
@@ -50,6 +52,7 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
                     config.clone(),
                     genesis.block().id(),
                     storage.clone(),
+                    storage2.clone(),
                     service_ref.clone(),
                 )
             });
