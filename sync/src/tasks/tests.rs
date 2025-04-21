@@ -748,6 +748,7 @@ impl MockLocalBlockStore {
             U256::from(1),
             AccumulatorInfo::new(HashValue::random(), vec![], 0, 0),
             AccumulatorInfo::new(HashValue::random(), vec![], 0, 0),
+            AccumulatorInfo::new(HashValue::random(), vec![], 0, 0),
         );
         self.store.lock().unwrap().insert(
             block.id(),

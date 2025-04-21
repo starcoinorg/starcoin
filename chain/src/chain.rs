@@ -37,7 +37,9 @@ use starcoin_types::{
     transaction::Transaction,
     U256,
 };
-use starcoin_vm2_state_api::ChainStateWriter as ChainStateWriter2;
+use starcoin_vm2_state_api::{
+    ChainStateReader as ChainStateReader2, ChainStateWriter as ChainStateWriter2,
+};
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_storage::Store as Store2;
 use starcoin_vm2_vm_types::transaction::Transaction as Transaction2;
@@ -647,17 +649,23 @@ impl BlockChain {
             storage.as_ref(),
         );
 
-        let state_root2 = if vm_state_accumulator.num_leaves() == 0 {
-            None
+        let (state_root1, state_root2) = if vm_state_accumulator.num_leaves() == 0 {
+            (state_root, None)
         } else {
-            Some(
+            assert!(vm_state_accumulator.num_leaves() > 1,);
+            (
                 vm_state_accumulator
-                    .get_leaf(vm_state_accumulator.num_leaves() - 1)?
+                    .get_leaf(vm_state_accumulator.num_leaves() - 2)?
                     .unwrap(),
+                Some(
+                    vm_state_accumulator
+                        .get_leaf(vm_state_accumulator.num_leaves() - 1)?
+                        .unwrap(),
+                ),
             )
         };
 
-        let chain_state = ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root));
+        let chain_state = ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root1));
         let chain_state2 = ChainStateDB2::new(storage2.clone().into_super_arc(), state_root2);
         let epoch = get_epoch_from_statedb(&chain_state)?;
         let genesis = storage
@@ -669,6 +677,7 @@ impl BlockChain {
             time_service,
             txn_accumulator,
             block_accumulator,
+            vm_state_accumulator,
             status: ChainStatusWithBlock {
                 status: ChainStatus::new(head_block.header.clone(), block_info),
                 head: head_block,
@@ -1035,19 +1044,17 @@ impl BlockChain {
         watch(CHAIN_WATCH_NAME, "n22");
 
         let state_root = {
-            let state_root = executed_data.state_root;
-            // todo: make sure state_root2 always be updated
-            if let Some(state_root2) = state_root2 {
-                vm_state_accumulator.append(&[state_root, state_root2])?;
-                vm_state_accumulator.root_hash()
-            } else if vm_state_accumulator.num_leaves() != 0 {
-                let state_root2 = vm_state_accumulator
-                    .get_leaf(vm_state_accumulator.num_leaves() - 1)?
-                    .unwrap();
-                vm_state_accumulator.append(&[state_root, state_root2])?;
+            let state_root1 = executed_data.state_root;
+            // if none state_root, use the last state root in statedb2
+            let state_root2 = executed_data2
+                .as_ref()
+                .map(|data| data.state_root)
+                .unwrap_or_else(|| statedb2.state_root());
+            if vm_state_accumulator.num_leaves() != 0 {
+                vm_state_accumulator.append(&[state_root1, state_root2])?;
                 vm_state_accumulator.root_hash()
             } else {
-                state_root
+                state_root1
             }
         };
 
@@ -1111,6 +1118,10 @@ impl BlockChain {
         // If chain state is matched, and accumulator is matched,
         // then, we save flush states, and save block data.
         watch(CHAIN_WATCH_NAME, "n24");
+        vm_state_accumulator
+            .flush()
+            .map_err(BlockExecutorError::BlockChainStateErr)?;
+
         txn_accumulator
             .flush()
             .map_err(|_err| BlockExecutorError::BlockAccumulatorFlushErr)?;
@@ -1126,19 +1137,18 @@ impl BlockChain {
 
         let txn_accumulator_info: AccumulatorInfo = txn_accumulator.get_info();
         let block_accumulator_info: AccumulatorInfo = block_accumulator.get_info();
-        let mut block_info = BlockInfo::new(
+        let vm_state_accumulator_info: AccumulatorInfo = vm_state_accumulator.get_info();
+        let block_info = BlockInfo::new(
             block_id,
             total_difficulty,
             txn_accumulator_info,
             block_accumulator_info,
+            vm_state_accumulator_info,
         );
 
         let mut vm2_txn_infos = vec![];
         // save transaction relationship and save transaction to storage2
         if let Some(executed_data2) = executed_data2 {
-            let state_root = executed_data2.state_root;
-            block_info.add_vm2_state_root(state_root);
-
             vm2_txn_infos = executed_data2
                 .txn_infos
                 .clone()
@@ -1454,6 +1464,8 @@ impl BlockChain {
             total_difficulty,
             txn_accumulator_info,
             block_accumulator_info,
+            // todo: just add default info for compatibility.
+            AccumulatorInfo::default(),
         );
 
         watch(CHAIN_WATCH_NAME, "n25");
@@ -1485,6 +1497,10 @@ impl BlockChain {
 
     pub fn get_block_accumulator(&self) -> &MerkleAccumulator {
         &self.block_accumulator
+    }
+
+    pub fn get_vm_state_accumulator(&self) -> &MerkleAccumulator {
+        &self.vm_state_accumulator
     }
 }
 
@@ -1985,8 +2001,7 @@ impl ChainWriter for BlockChain {
         //TODO try reuse accumulator and state db.
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
-        let state_root = block.header().state_root();
-        let state_root2 = block_info.state_root();
+        let vm_state_accumulator_info = block_info.get_vm_state_accumulator_info();
         self.txn_accumulator = info_2_accumulator(
             txn_accumulator_info.clone(),
             AccumulatorStoreType::Transaction,
@@ -1997,9 +2012,33 @@ impl ChainWriter for BlockChain {
             AccumulatorStoreType::Block,
             storage.as_ref(),
         );
+        self.vm_state_accumulator = info_2_accumulator(
+            vm_state_accumulator_info.clone(),
+            AccumulatorStoreType::VMState,
+            storage.as_ref(),
+        );
+
+        let (state_root1, state_root2) = {
+            let num_leaves = self.vm_state_accumulator.num_leaves();
+            if num_leaves > 0 {
+                assert!(num_leaves > 1);
+                (
+                    self.vm_state_accumulator
+                        .get_leaf(self.vm_state_accumulator.num_leaves() - 2)?
+                        .unwrap(),
+                    Some(
+                        self.vm_state_accumulator
+                            .get_leaf(self.vm_state_accumulator.num_leaves() - 1)?
+                            .unwrap(),
+                    ),
+                )
+            } else {
+                (block.header().state_root(), None)
+            }
+        };
 
         self.statedb = (
-            ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root)),
+            ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root1)),
             ChainStateDB2::new(storage2.clone().into_super_arc(), state_root2),
         );
         self.status = ChainStatusWithBlock {

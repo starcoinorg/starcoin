@@ -94,14 +94,32 @@ impl OpenedBlock {
             vm_state_accumulator_info.clone(),
             storage.get_accumulator_store(AccumulatorStoreType::VMState),
         );
-        // todo: handle unwrap
-        let state_root2 = vm_state_accumulator
-            .get_leaf(vm_state_accumulator.num_leaves() - 1)?
-            .unwrap();
+        let (state_root1, state_root2) = {
+            let num_leaves = vm_state_accumulator.num_leaves();
+            if num_leaves == 0 {
+                (previous_header.state_root(), None)
+            } else {
+                assert!(
+                    num_leaves > 1,
+                    "vm_state_accumulator num_leaves should be greater than 1"
+                );
+                (
+                    vm_state_accumulator.get_leaf(num_leaves - 2)?.unwrap(),
+                    Some(vm_state_accumulator.get_leaf(num_leaves - 1)?.unwrap()),
+                )
+            }
+        };
 
-        let chain_state =
-            ChainStateDB::new(storage.into_super_arc(), Some(previous_header.state_root()));
-        let chain_state2 = ChainStateDB2::new(storage2.into_super_arc(), Some(state_root2));
+        if state_root2.is_none() {
+            // todo: init vm_state_accumulator if certain block height is reached.
+            debug!(
+                "current block height is {}, vm_state_accumulator is empty",
+                previous_header.number()
+            );
+        }
+
+        let chain_state = ChainStateDB::new(storage.into_super_arc(), Some(state_root1));
+        let chain_state2 = ChainStateDB2::new(storage2.into_super_arc(), state_root2);
 
         let chain_id = previous_header.chain_id();
         let block_meta = BlockMetadata::new(
@@ -153,11 +171,13 @@ impl OpenedBlock {
     pub fn included_user_txns(&self) -> &[SignedUserTransaction] {
         &self.included_user_txns
     }
+
     pub fn state_root(&self) -> HashValue {
-        self.vm_state_accumulator
-            .as_ref()
-            .map(|x| x.root_hash())
-            .unwrap_or(self.state.0.state_root())
+        if self.vm_state_accumulator.num_leaves() > 0 {
+            self.vm_state_accumulator.root_hash()
+        } else {
+            self.state.0.state_root()
+        }
     }
     pub fn accumulator_root(&self) -> HashValue {
         self.txn_accumulator.root_hash()
@@ -420,11 +440,11 @@ impl OpenedBlock {
     /// Construct a block template for mining.
     pub fn finalize(self) -> Result<BlockTemplate> {
         let accumulator_root = self.txn_accumulator.root_hash();
-        let state_root = if let Some(acc) = self.vm_state_accumulator {
-            acc.append(&[self.state.0.state_root(), self.state.1.state_root()])?;
-            acc.root_hash()
-        } else {
-            self.state.0.state_root()
+        // update state_root accumulator, state_root order is important
+        let state_root = {
+            self.vm_state_accumulator
+                .append(&[self.state.0.state_root(), self.state.1.state_root()])?;
+            self.vm_state_accumulator.root_hash()
         };
         let uncles = if !self.uncles.is_empty() {
             Some(self.uncles)

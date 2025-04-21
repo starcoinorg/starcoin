@@ -122,11 +122,16 @@ impl ForkBlockChain {
             self.storage
                 .get_accumulator_store(AccumulatorStoreType::Block),
         );
+        let vm_state_accumulator = MerkleAccumulator::new_empty(
+            self.storage
+                .get_accumulator_store(AccumulatorStoreType::VMState),
+        );
         let block_info = BlockInfo::new(
             block.header.id(),
             block.header.difficulty(),
             self.txn_accumulator.get_info(),
             block_accumulator.get_info(),
+            vm_state_accumulator.get_info(),
         );
         self.current_number = block.header().number();
         self.head_block_hash = block.header().id();
