@@ -106,7 +106,6 @@ pub fn add_command(
                 .subcommand(chain::GetDagStateCommand)
                 .subcommand(chain::IsAncestorOfCommand)
                 .subcommand(chain::GetGhostDagDataCommand),
-	    
         )
         .command(
             CustomCommand::with_name("txpool")

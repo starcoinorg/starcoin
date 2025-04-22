@@ -50,6 +50,7 @@ use starcoin_types::system_events::SystemStarted;
 use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown};
 use std::sync::Arc;
 use sysinfo::{DiskExt, System, SystemExt};
+use tokio::task::JoinHandle;
 const DISK_CHECKPOINT_FOR_PANIC: u64 = 1024 * 1024 * 1024 * 3;
 const DISK_CHECKPOINT_FOR_WARN: u64 = 1024 * 1024 * 1024 * 5;
 
@@ -65,6 +66,7 @@ where
     genesis: Genesis,
     pruning_sender: Sender<PruningPointMessage>,
     pruning_receiver: Receiver<PruningPointMessage>,
+    pruning_point_thread_handle: Option<JoinHandle<()>>,
 }
 
 impl<TransactionPoolServiceT> BlockConnectorService<TransactionPoolServiceT>
@@ -91,6 +93,7 @@ where
             genesis,
             pruning_sender,
             pruning_receiver,
+            pruning_point_thread_handle: None,
         }
     }
 
@@ -263,6 +266,14 @@ where
                 );
             }
         }
+
+        if let Some(handle) = self.pruning_point_thread_handle.take() {
+            ctx.spawn(async move {
+                if let Err(e) = handle.await {
+                    error!("failed to join pruning point thread: {:?}", e);
+                }
+            });
+        }
     }
 }
 
@@ -291,7 +302,7 @@ impl<TransactionPoolServiceT> EventHandler<Self, SystemStarted>
 where
     TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
-    fn handle_event(&mut self, _: SystemStarted, ctx: &mut ServiceContext<Self>) {
+    fn handle_event(&mut self, _: SystemStarted, _ctx: &mut ServiceContext<Self>) {
         let pruning_point_receiver = self.pruning_receiver.clone();
         let mut main = BlockChain::new(
             self.config.net().time_service(),
@@ -306,7 +317,8 @@ where
                 e
             )
         });
-        ctx.spawn(async move {
+
+        let handle = tokio::spawn(async move {
             loop {
                 match pruning_point_receiver.recv() {
                     std::result::Result::Ok(new_dag_block) => {
@@ -314,16 +326,23 @@ where
                             break;
                         }
 
-                        main = main.fork(new_dag_block.block_header.id()).unwrap_or_else(|e| {
-                            panic!(
+                        main = main
+                            .fork(new_dag_block.block_header.id())
+                            .unwrap_or_else(|e| {
+                                panic!(
                                 "fork error when handle NewDagBlock in block connect service: {:?}",
                                 e
                             )
-                        });
+                            });
 
                         let (pruning_depth, pruning_finality) = main.get_pruning_config();
 
-                        match main.dag().generate_pruning_point(&new_dag_block.block_header, pruning_depth, pruning_finality, main.get_genesis_hash()) {
+                        match main.dag().generate_pruning_point(
+                            &new_dag_block.block_header,
+                            pruning_depth,
+                            pruning_finality,
+                            main.get_genesis_hash(),
+                        ) {
                             std::result::Result::Ok(_) => (),
                             Err(e) => warn!("failed to generate pruning point, error: {:?}", e),
                         }
@@ -335,6 +354,7 @@ where
                 }
             }
         });
+        self.pruning_point_thread_handle = Some(handle);
     }
 }
 
