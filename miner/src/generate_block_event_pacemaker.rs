@@ -100,7 +100,7 @@ impl EventHandler<Self, SyncStatusChangeEvent> for GenerateBlockEventPacemaker {
         let is_synced = msg.0.is_synced();
         self.sync_status = Some(msg.0);
         if is_synced {
-            self.send_event(false, ctx);
+            self.send_event(true, ctx);
         }
     }
 }

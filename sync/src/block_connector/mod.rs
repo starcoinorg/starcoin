@@ -104,5 +104,4 @@ impl ServiceRequest for CheckBlockConnectorHashValue {
 #[derive(Clone)]
 pub struct PruningPointMessage {
     pub block_header: BlockHeader,
-    pub continue_pruning: bool,
 }
