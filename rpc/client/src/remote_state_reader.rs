@@ -75,8 +75,8 @@ impl<'a> ChainStateReader for RemoteStateReader<'a> {
     }
 
     fn get_account_state(&self, _address: &AccountAddress) -> Result<Option<AccountState>> {
-        unimplemented!()
         //TODO implement get_account_state by root
+        unimplemented!()
     }
 
     fn get_account_state_set(&self, _address: &AccountAddress) -> Result<Option<AccountStateSet>> {
@@ -87,6 +87,12 @@ impl<'a> ChainStateReader for RemoteStateReader<'a> {
         //TODO change trait api to return Result<HashValue>
         self.state_root
     }
+
+    fn state_root_for_vm(&self) -> Result<(HashValue, Option<HashValue>)> {
+        // TODO(BobOng): [dual-vm] rpc for vm2 state root
+        unimplemented!()
+    }
+
     fn dump(&self) -> Result<ChainStateSet> {
         unimplemented!()
     }

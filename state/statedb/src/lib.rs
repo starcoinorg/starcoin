@@ -490,6 +490,10 @@ impl ChainStateReader for ChainStateDB {
     fn state_root(&self) -> HashValue {
         self.state_tree.root_hash()
     }
+    fn state_root_for_vm(&self) -> Result<(HashValue, Option<HashValue>)> {
+        // TODO(BobOng): [dual-vm] rpc for vm2 state root
+        unimplemented!()
+    }
 
     // this interface on large records is slow, use dump_iter
     fn dump(&self) -> Result<ChainStateSet> {

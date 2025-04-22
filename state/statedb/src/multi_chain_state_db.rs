@@ -11,13 +11,15 @@ use starcoin_state_api::{
 };
 use starcoin_state_tree::StateTree;
 use starcoin_types::account_address::AccountAddress;
+use starcoin_types::account_state::AccountState;
 use starcoin_types::multi_state::MultiState;
-use starcoin_types::state_set::ChainStateSet;
+use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::multi_vm_address;
+use starcoin_vm_types::on_chain_config::GlobalTimeOnChain;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
-use starcoin_vm_types::state_view::StateView;
+use starcoin_vm_types::state_view::{StateReaderExt, StateView};
 use starcoin_vm_types::write_set::WriteSet;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -61,7 +63,11 @@ impl MultiChainStateDB {
     }
 
     /// impl [`StateView::get_state_value`]
-    fn get_state_value(&self, idx: usize, state_key: &StateKey) -> anyhow::Result<Option<Vec<u8>>> {
+    pub fn get_state_value(
+        &self,
+        idx: usize,
+        state_key: &StateKey,
+    ) -> anyhow::Result<Option<Vec<u8>>> {
         if idx >= self.chain_state_db.len() {
             return Err(format_err!("index out of bounds: {}", idx));
         }
@@ -69,7 +75,7 @@ impl MultiChainStateDB {
     }
 
     /// impl [`ChainStateReader::get_with_proof`]
-    fn get_with_proof(
+    pub fn get_with_proof(
         &self,
         idx: usize,
         access_path: &AccessPath,
@@ -81,7 +87,7 @@ impl MultiChainStateDB {
     }
 
     /// impl [`ChainStateReader::get_with_table_item_proof`]
-    fn get_with_table_item_proof(
+    pub fn get_with_table_item_proof(
         &self,
         idx: usize,
         handle: &TableHandle,
@@ -94,7 +100,7 @@ impl MultiChainStateDB {
     }
 
     /// impl [`ChainStateReader::get_table_info`]
-    fn get_table_info(
+    pub fn get_table_info(
         &self,
         idx: usize,
         address: AccountAddress,
@@ -106,7 +112,7 @@ impl MultiChainStateDB {
     }
 
     /// impl [`ChainStateWriter::set`]
-    fn set(&self, idx: usize, access_path: &AccessPath, value: Vec<u8>) -> anyhow::Result<()> {
+    pub fn set(&self, idx: usize, access_path: &AccessPath, value: Vec<u8>) -> anyhow::Result<()> {
         if idx >= self.chain_state_db.len() {
             return Err(format_err!("index out of bounds: {}", idx));
         }
@@ -114,7 +120,7 @@ impl MultiChainStateDB {
     }
 
     /// impl [`ChainStateWriter::remove`]
-    fn remove(&self, idx: usize, access_path: &AccessPath) -> anyhow::Result<()> {
+    pub fn remove(&self, idx: usize, access_path: &AccessPath) -> anyhow::Result<()> {
         if idx >= self.chain_state_db.len() {
             return Err(format_err!("index out of bounds: {}", idx));
         }
@@ -123,7 +129,7 @@ impl MultiChainStateDB {
 
     /// impl [`ChainStateWriter::apply`]
 
-    fn apply(&self, idx: usize, chain_state_set: ChainStateSet) -> anyhow::Result<()> {
+    pub fn apply(&self, idx: usize, chain_state_set: ChainStateSet) -> anyhow::Result<()> {
         if idx >= self.chain_state_db.len() {
             return Err(format_err!("index out of bounds: {}", idx));
         }
@@ -131,7 +137,7 @@ impl MultiChainStateDB {
     }
 
     /// impl [`ChainStateWriter::apply_write_set`]
-    fn apply_write_set(&self, idx: usize, write_set: WriteSet) -> anyhow::Result<()> {
+    pub fn apply_write_set(&self, idx: usize, write_set: WriteSet) -> anyhow::Result<()> {
         if idx >= self.chain_state_db.len() {
             return Err(format_err!("index out of bounds: {}", idx));
         }
@@ -139,7 +145,7 @@ impl MultiChainStateDB {
     }
 
     /// impl [`ChainStateWriter::commit`]
-    fn commit(&self) -> anyhow::Result<HashValue> {
+    pub fn commit(&self) -> anyhow::Result<HashValue> {
         let state_root1 = self.chain_state_db[0].commit()?;
         let state_root2 = self.chain_state_db[1].commit()?;
         let multi_state = MultiState::new(state_root1, state_root2);
@@ -148,10 +154,47 @@ impl MultiChainStateDB {
     }
 
     /// impl [`ChainStateWriter::flush`]
-    fn flush(&self) -> anyhow::Result<()> {
+    pub fn flush(&self) -> anyhow::Result<()> {
         self.chain_state_db[0].flush()?;
         self.chain_state_db[1].flush()?;
         Ok(())
+    }
+
+    /// Fork a new statedb at `root_hash`
+    pub fn fork_at(&self, state_root: HashValue) -> Self {
+        Self::new(self.store.clone(), Some(state_root))
+    }
+
+    pub fn state_root(&self) -> (HashValue, HashValue) {
+        (
+            self.chain_state_db[0].state_root(),
+            self.chain_state_db[1].state_root(),
+        )
+    }
+
+    pub fn get_account_state(
+        &self,
+        idx: usize,
+        address: &AccountAddress,
+    ) -> anyhow::Result<Option<AccountState>> {
+        Ok(self.chain_state_db[idx]
+            .get_account_state_object_option(address)?
+            .map(|state_object| state_object.to_state()))
+    }
+
+    pub fn get_account_state_set(
+        &self,
+        idx: usize,
+        address: &AccountAddress,
+    ) -> anyhow::Result<Option<AccountStateSet>> {
+        self.chain_state_db[idx]
+            .get_account_state_object_option(address)?
+            .map(|s| s.to_state_set())
+            .transpose()
+    }
+
+    pub fn get_timestamp(&self) -> anyhow::Result<GlobalTimeOnChain> {
+        self.chain_state_db[0].get_timestamp()
     }
 }
 

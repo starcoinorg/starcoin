@@ -156,6 +156,11 @@ where
         Box::pin(fut)
     }
 
+    fn get_vm_state_root(&self) -> FutureResult<(HashValue, Option<HashValue>)> {
+        let fut = self.service.clone().state_root_for_vm().map_err(map_err);
+        Box::pin(fut)
+    }
+
     fn get_with_proof_by_root(
         &self,
         access_path: AccessPath,

@@ -91,6 +91,12 @@ impl ChainStateReader for RemoteChainStateReader {
             None => unreachable!(),
         }
     }
+
+    fn state_root_for_vm(&self) -> Result<(HashValue, Option<HashValue>)> {
+        // TODO(BobOng): [dual-vm] rpc for vm2 state root
+        unimplemented!()
+    }
+
     fn dump(&self) -> Result<ChainStateSet> {
         unimplemented!()
     }

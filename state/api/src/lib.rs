@@ -69,6 +69,9 @@ pub trait ChainStateAsyncService: Clone + std::marker::Unpin + Send + Sync {
 
     async fn state_root(self) -> Result<HashValue>;
 
+    /// get vm state root from rpc
+    async fn state_root_for_vm(self) -> Result<(HashValue, Option<HashValue>)>;
+
     async fn get_with_proof_by_root(
         self,
         access_path: AccessPath,
@@ -148,6 +151,15 @@ where
         let response = self.send(StateRequest::StateRoot()).await??;
         if let StateResponse::StateRoot(root) = response {
             Ok(root)
+        } else {
+            panic!("Unexpect response type.")
+        }
+    }
+
+    async fn state_root_for_vm(self) -> Result<(HashValue, Option<HashValue>)> {
+        let response = self.send(StateRequest::StateRootForVm()).await??;
+        if let StateResponse::StateRootForVm(vm1_root, vm2_root) = response {
+            Ok((vm1_root, vm2_root))
         } else {
             panic!("Unexpect response type.")
         }

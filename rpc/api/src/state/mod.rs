@@ -47,6 +47,9 @@ pub trait StateApi {
     #[rpc(name = "state.get_state_root")]
     fn get_state_root(&self) -> FutureResult<HashValue>;
 
+    #[rpc(name = "state.get_vm_state_root")]
+    fn get_vm_state_root(&self) -> FutureResult<(HashValue, Option<HashValue>)>;
+
     /// Return the Resource Or Code at the `access_path` and provide a State Proof at `state_root`
     #[rpc(name = "state.get_with_proof_by_root")]
     fn get_with_proof_by_root(

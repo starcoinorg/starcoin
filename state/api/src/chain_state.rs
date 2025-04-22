@@ -126,6 +126,8 @@ pub trait ChainStateReader: StateView {
     /// Gets current state root.
     fn state_root(&self) -> HashValue;
 
+    fn state_root_for_vm(&self) -> Result<(HashValue, Option<HashValue>)>;
+
     fn dump(&self) -> Result<ChainStateSet>;
 
     fn dump_iter(&self) -> Result<AccountStateSetIterator>;

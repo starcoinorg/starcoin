@@ -126,6 +126,10 @@ impl ChainStateAsyncService for MockChainStateAsyncService {
         Ok(self.state_db().state_root())
     }
 
+    async fn state_root_for_vm(self) -> Result<(HashValue, Option<HashValue>)> {
+        self.state_db().state_root_for_vm()
+    }
+
     async fn get_with_proof_by_root(
         self,
         access_path: AccessPath,
