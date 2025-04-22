@@ -19,7 +19,7 @@ use network_p2p_types::peer_id::PeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
 use starcoin_accumulator::node::AccumulatorStoreType;
-use starcoin_accumulator::AccumulatorTreeStore;
+use starcoin_accumulator::{Accumulator, AccumulatorTreeStore, MerkleAccumulator};
 use starcoin_crypto::HashValue;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
 //use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
@@ -634,6 +634,27 @@ pub trait Store:
         &self,
         accumulator_type: AccumulatorStoreType,
     ) -> Arc<dyn AccumulatorTreeStore>;
+
+    fn get_vm_state_root_hashes(&self, block_id: HashValue) -> Result<Vec<HashValue>> {
+        if let Some(block_info) = self.get_block_info(block_id)? {
+            let acc_info = block_info.vm_state_accumulator_info;
+            let num_leaves = acc_info.num_leaves;
+            if num_leaves > 0 {
+                assert!(num_leaves > 1);
+                let acc = MerkleAccumulator::new_with_info(
+                    acc_info,
+                    self.get_accumulator_store(AccumulatorStoreType::VMState),
+                );
+                return Ok([
+                    acc.get_leaf(num_leaves - 2)?.unwrap(),
+                    acc.get_leaf(num_leaves - 1)?.unwrap(),
+                ]
+                .to_vec());
+            }
+        };
+
+        Ok(vec![])
+    }
 }
 
 pub trait IntoSuper<Super: ?Sized> {
