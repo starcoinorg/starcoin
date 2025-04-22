@@ -762,6 +762,33 @@
       }
     },
     {
+      "name": "state.get_vm_state_root",
+      "params": [],
+      "result": {
+        "name": "(HashValue, Option < HashValue >)",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Tuple_of_HashValue_and_Nullable_HashValue",
+          "type": "array",
+          "items": [
+            {
+              "type": "string",
+              "format": "HashValue"
+            },
+            {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "HashValue"
+            }
+          ],
+          "maxItems": 2,
+          "minItems": 2
+        }
+      }
+    },
+    {
       "name": "state.get_with_proof_by_root",
       "params": [
         {
