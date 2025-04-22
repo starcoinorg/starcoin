@@ -271,7 +271,7 @@ where
         let pruning_point_receiver = self.pruning_receiver.clone();
         let mut main = BlockChain::new(
             self.config.net().time_service(),
-            self.chain_service.get_main().status().head().parent_hash(),
+            self.chain_service.get_main().status().head().id(),
             self.storage.clone(),
             self.vm_metrics.clone(),
             self.chain_service.get_dag().clone(),
