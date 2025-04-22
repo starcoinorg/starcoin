@@ -84,7 +84,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
             .into_iter()
             .map(|header| header.try_into())
             .collect::<Result<Vec<BlockDiffInfo>>>()?,
-        2_00,
+        100,
     )?;
     debug!(
         "get_next_work_required current_number: {}, epoch: {:?}, target: {}",
