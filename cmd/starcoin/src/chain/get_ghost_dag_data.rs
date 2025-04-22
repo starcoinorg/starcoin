@@ -17,9 +17,9 @@ pub struct GetGhostdagData {
     id: HashValue,
 }
 
-pub struct GetDagStateCommand;
+pub struct GetGhostDagDataCommand;
 
-impl CommandAction for GetDagStateCommand {
+impl CommandAction for GetGhostDagDataCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = GetGhostdagData;

@@ -28,3 +28,4 @@ pub use get_txn_infos_cmd::*;
 pub use info_cmd::*;
 pub use is_ancestor_of_cmd::*;
 pub use list_block_cmd::*;
+pub use get_ghost_dag_data::*;

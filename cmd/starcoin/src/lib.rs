@@ -104,7 +104,9 @@ pub fn add_command(
                 .subcommand(chain::get_txn_proof_cmd::GetTransactionProofCommand)
                 .subcommand(chain::GetBlockInfoCommand)
                 .subcommand(chain::GetDagStateCommand)
-                .subcommand(chain::IsAncestorOfCommand),
+                .subcommand(chain::IsAncestorOfCommand)
+                .subcommand(chain::GetGhostDagDataCommand),
+	    
         )
         .command(
             CustomCommand::with_name("txpool")
