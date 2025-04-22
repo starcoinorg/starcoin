@@ -4,7 +4,7 @@
 use anyhow::{bail, format_err, Result};
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_chain_api::ExcludedTxns;
-use starcoin_crypto::HashValue;
+use starcoin_crypto::{hash::SPARSE_MERKLE_PLACEHOLDER_HASH, HashValue};
 use starcoin_executor::{execute_block_transactions, execute_transactions, VMMetrics};
 use starcoin_force_upgrade::ForceUpgrade;
 use starcoin_logger::prelude::*;
@@ -441,10 +441,12 @@ impl OpenedBlock {
     pub fn finalize(self) -> Result<BlockTemplate> {
         let accumulator_root = self.txn_accumulator.root_hash();
         // update state_root accumulator, state_root order is important
-        let state_root = {
+        let state_root = if self.state.1.state_root() != *SPARSE_MERKLE_PLACEHOLDER_HASH {
             self.vm_state_accumulator
                 .append(&[self.state.0.state_root(), self.state.1.state_root()])?;
             self.vm_state_accumulator.root_hash()
+        } else {
+            self.state.0.state_root()
         };
         let uncles = if !self.uncles.is_empty() {
             Some(self.uncles)
