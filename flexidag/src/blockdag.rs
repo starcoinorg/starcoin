@@ -33,7 +33,7 @@ use rocksdb::WriteBatch;
 use starcoin_config::miner_config::G_MERGE_DEPTH;
 use starcoin_config::temp_dir;
 use starcoin_crypto::{HashValue as Hash, HashValue};
-use starcoin_logger::prelude::{debug, info, warn};
+use starcoin_logger::prelude::{debug, error, info, warn};
 use starcoin_state_api::AccountStateReader;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{IntoSuper, Storage};
@@ -761,6 +761,15 @@ impl BlockDAG {
         }
 
         let next_ghostdata = self.ghostdata(&dag_state.tips)?;
+        match self.storage.ghost_dag_store.insert(self.ghost_dag_manager().find_selected_parent(dag_state.tips.iter().cloned())?,  Arc::new(next_ghostdata.clone())) {
+            std::result::Result::Ok(_) => (),
+            Err(e) => {
+                match e {
+                    StoreError::KeyAlreadyExists(_) => (),
+                    _ => return Err(e.into()),
+                }
+            }
+        }
 
         // let next_pruning_point = self.pruning_point_manager().next_pruning_point(
         //     previous_pruning_point,
@@ -1180,9 +1189,42 @@ impl BlockDAG {
         )?;
         let reader = self.storage.pruning_point_store.upgradable_read();
 
-        let current_pruning_point_info = reader
-            .get_pruning_point_info()?
-            .ok_or_else(|| format_err!("Cannot find pruning point info"))?;
+        let current_pruning_point_info = match reader
+            .get_pruning_point_info() {
+                std::result::Result::Ok(info) => {
+                    match info {
+                        Some(info) => info,
+                        None => {
+                            let writer = RwLockUpgradableReadGuard::upgrade(reader);
+
+                            writer.insert(PruningPointInfo {
+                                pruning_point: header.pruning_point(),
+                            })?;
+                    
+                            drop(writer);
+                            return Ok(());
+                        }
+                    }
+                }
+                Err(e) => {
+                    match e {
+                        StoreError::KeyNotFound(_) => {
+                            let writer = RwLockUpgradableReadGuard::upgrade(reader);
+
+                            writer.insert(PruningPointInfo {
+                                pruning_point: header.pruning_point(),
+                            })?;
+                    
+                            drop(writer);
+                            return Ok(());
+                        }
+                        _ => {
+                            error!("Failed to get pruning point info: {:?}", e);
+                            return Err(e.into());
+                        }
+                    }
+                }
+            };
 
         let current_pruning_point_ghostdata = self
             .storage
