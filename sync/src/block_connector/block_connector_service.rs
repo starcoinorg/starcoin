@@ -7,12 +7,15 @@ use super::CheckBlockConnectorHashValue;
 use super::CreateBlockRequest;
 #[cfg(test)]
 use super::CreateBlockResponse;
+use super::PruningPointMessage;
 use crate::block_connector::{
     ExecuteRequest, MinerRequest, MinerResponse, ResetRequest, WriteBlockChainService,
 };
 use crate::sync::{CheckSyncEvent, SyncService};
 use crate::tasks::{BlockConnectedEvent, BlockConnectedFinishEvent, BlockDiskCheckEvent};
 use anyhow::{bail, format_err, Ok, Result};
+use crossbeam::channel::Receiver;
+use crossbeam::channel::Sender;
 use network_api::PeerProvider;
 use starcoin_chain::BlockChain;
 use starcoin_chain::ChainWriter;
@@ -43,6 +46,7 @@ use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::NewDagBlock;
 use starcoin_types::system_events::NewDagBlockFromPeer;
+use starcoin_types::system_events::SystemStarted;
 use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown};
 use std::sync::Arc;
 use sysinfo::{DiskExt, System, SystemExt};
@@ -59,6 +63,8 @@ where
     storage: Arc<Storage>,
     vm_metrics: Option<VMMetrics>,
     genesis: Genesis,
+    pruning_sender: Sender<PruningPointMessage>,
+    pruning_receiver: Receiver<PruningPointMessage>,
 }
 
 impl<TransactionPoolServiceT> BlockConnectorService<TransactionPoolServiceT>
@@ -72,6 +78,10 @@ where
         vm_metrics: Option<VMMetrics>,
         genesis: Genesis,
     ) -> Self {
+        let (pruning_sender, pruning_receiver): (
+            Sender<PruningPointMessage>,
+            Receiver<PruningPointMessage>,
+        ) = crossbeam::channel::bounded(2);
         Self {
             chain_service,
             sync_status: None,
@@ -79,6 +89,8 @@ where
             storage,
             vm_metrics,
             genesis,
+            pruning_sender,
+            pruning_receiver,
         }
     }
 
@@ -212,6 +224,7 @@ where
         ctx.subscribe::<SyncStatusChangeEvent>();
         ctx.subscribe::<MinedBlock>();
         ctx.subscribe::<NewDagBlock>();
+        ctx.subscribe::<SystemStarted>();
 
         ctx.run_interval(std::time::Duration::from_secs(3), move |ctx| {
             ctx.notify(crate::tasks::BlockDiskCheckEvent {});
@@ -224,6 +237,7 @@ where
         ctx.unsubscribe::<SyncStatusChangeEvent>();
         ctx.unsubscribe::<MinedBlock>();
         ctx.unsubscribe::<NewDagBlock>();
+        ctx.unsubscribe::<SystemStarted>();
         Ok(())
     }
 }
@@ -248,6 +262,58 @@ where
     }
 }
 
+impl<TransactionPoolServiceT> EventHandler<Self, SystemStarted>
+    for BlockConnectorService<TransactionPoolServiceT>
+where
+    TransactionPoolServiceT: TxPoolSyncService + 'static,
+{
+    fn handle_event(&mut self, _: SystemStarted, ctx: &mut ServiceContext<Self>) {
+        let pruning_point_receiver = self.pruning_receiver.clone();
+        let mut main = BlockChain::new(
+            self.config.net().time_service(),
+            self.chain_service.get_main().status().head().parent_hash(),
+            self.storage.clone(),
+            self.vm_metrics.clone(),
+            self.chain_service.get_dag().clone(),
+        )
+        .unwrap_or_else(|e| {
+            panic!(
+                "new block chain error when Block connecror service starts: {:?}",
+                e
+            )
+        });
+        ctx.spawn(async move {
+            loop {
+                match pruning_point_receiver.recv() {
+                    std::result::Result::Ok(new_dag_block) => {
+                        if !new_dag_block.continue_pruning {
+                            break;
+                        }
+
+                        main = main.fork(new_dag_block.block_header.id()).unwrap_or_else(|e| {
+                            panic!(
+                                "fork error when handle NewDagBlock in block connect service: {:?}",
+                                e
+                            )
+                        });
+
+                        let (pruning_depth, pruning_finality) = main.get_pruning_config();
+
+                        match main.dag().generate_pruning_point(&new_dag_block.block_header, pruning_depth, pruning_finality, main.get_genesis_hash()) {
+                            std::result::Result::Ok(_) => (),
+                            Err(e) => warn!("failed to generate pruning point, error: {:?}", e),
+                        }
+                    }
+                    Err(e) => {
+                        error!("failed to receive NewDagBlock for calculating the pruning point, error: {:?}", e);
+                        break;
+                    }
+                }
+            }
+        });
+    }
+}
+
 impl<TransactionPoolServiceT> EventHandler<Self, NewDagBlock>
     for BlockConnectorService<TransactionPoolServiceT>
 where
@@ -265,11 +331,30 @@ where
                     e
                 )
             });
-        self.chain_service.switch_header(
-            chain
-                .selecte_dag_state(msg.executed_block.as_ref().clone())
-                .unwrap_or_else(|e| panic!("select dag state error when handle NewDagBlock in block connect service: {:?}", e))
-        );
+        let new_chain = chain
+            .selecte_dag_state(msg.executed_block.as_ref().clone())
+            .unwrap_or_else(|e| {
+                panic!(
+                    "select dag state error when handle NewDagBlock in block connect service: {:?}",
+                    e
+                )
+            });
+        let block_header = new_chain.head_block().block.header().clone();
+        self.chain_service.switch_header(new_chain);
+
+        let _consume = self.pruning_receiver.try_iter().count();
+        match self.pruning_sender.send(PruningPointMessage {
+            block_header,
+            continue_pruning: true,
+        }) {
+            std::result::Result::Ok(_) => (),
+            Err(e) => {
+                error!(
+                    "failed to send NewDagBlock for calculating the pruning point, error: {:?}",
+                    e
+                );
+            }
+        }
     }
 }
 
@@ -360,23 +445,6 @@ where
                 executed_block: Arc::new(executed_block),
             });
         });
-        // let MinedBlock(new_block) = msg;
-        // let id = new_block.header().id();
-        // debug!("try connect mined block: {}", id);
-
-        // match self.chain_service.try_connect(new_block.as_ref().clone()) {
-        //     std::result::Result::Ok(()) => {
-        //         debug!("Process mined block {} success.", id);
-
-        //         match self.chain_service.broadcast_new_dag_block(id) {
-        //             std::result::Result::Ok(_) => (),
-        //             Err(e) => warn!("Process mined block {} fail, error: {:?}", id, e),
-        //         }
-        //     }
-        //     Err(e) => {
-        //         warn!("Process mined block {} fail, error: {:?}", id, e);
-        //     }
-        // }
     }
 }
 
@@ -506,33 +574,14 @@ where
             blue_blocks,
             pruning_point,
         } = if main_header.number() >= self.chain_service.get_main().get_pruning_height() {
-            let (previous_ghostdata, pruning_point) = if main_header.pruning_point()
-                == HashValue::zero()
-            {
-                (
-                        self.chain_service
-                            .get_dag()
-                            .ghostdata_by_hash(genesis.block().id())?
-                            .ok_or_else(|| format_err!("The ghostdata of Genesis block header dose not exist., genesis id: {:?}", genesis.block().id()))?,
-                        genesis.block().id(),
-                    )
+            let pruning_point = if main_header.pruning_point() == HashValue::zero() {
+                genesis.block().id()
             } else {
-                (
-                        self.chain_service
-                            .get_dag()
-                            .ghostdata_by_hash(main_header.pruning_point())?
-                            .ok_or_else(|| format_err!("The ghostdata of the pruning point does not exist. pruning point id: {:?}", main_header.pruning_point()))?,
-                        main_header.pruning_point(),
-                    )
+                main_header.pruning_point()
             };
-            let (pruning_depth, pruning_finality) =
-                self.chain_service.get_main().get_pruning_config();
 
             dag.calc_mergeset_and_tips(
                 pruning_point,
-                previous_ghostdata.as_ref(),
-                pruning_depth,
-                pruning_finality,
                 self.config.miner.maximum_parents_count(),
                 self.chain_service.get_main().get_genesis_hash(),
             )?

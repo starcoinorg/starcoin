@@ -61,7 +61,7 @@ impl<T: ReachabilityStoreReader + Clone> PruningPointManagerT<T> {
         )
     }
 
-    pub(crate) fn next_pruning_point(
+    pub fn next_pruning_point(
         &self,
         previous_pruning_point: HashValue,
         previous_ghostdata: &GhostdagData,

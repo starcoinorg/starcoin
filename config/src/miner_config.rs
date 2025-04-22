@@ -7,7 +7,7 @@ use clap::Parser;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
-pub static G_MAX_PARENTS_COUNT: u64 = 5;
+pub static G_MAX_PARENTS_COUNT: u64 = 10;
 pub static G_DAG_BLOCK_RECEIVE_TIME_WINDOW: u64 = 2; // in second, 2s for default
 pub static G_MERGE_DEPTH: u64 = 3600; // the merge depth should be smaller than the pruning finality
 

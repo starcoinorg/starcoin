@@ -11090,6 +11090,7 @@ dependencies = [
  "async-trait",
  "bcs-ext",
  "byteorder",
+ "crossbeam",
  "forkable-jellyfish-merkle",
  "futures 0.3.26",
  "futures-retry",

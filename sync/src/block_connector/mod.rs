@@ -100,3 +100,9 @@ pub struct CheckBlockConnectorHashValue {
 impl ServiceRequest for CheckBlockConnectorHashValue {
     type Response = anyhow::Result<()>;
 }
+
+#[derive(Clone)]
+pub struct PruningPointMessage {
+    pub block_header: BlockHeader,
+    pub continue_pruning: bool,
+}

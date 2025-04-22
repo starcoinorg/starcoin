@@ -1,5 +1,6 @@
 use super::{
     consensus_block_depth::{DbBlockDepthInfoStore, DAG_BLOCK_DEPTH_INFO_STORE_CF},
+    consensus_pruning_info::{PruningPointInfoStore, PRUNING_POINT_INFO_STORE_CF},
     consensus_state::{DbDagStateStore, DAG_STATE_STORE_CF},
     error::StoreError,
     schemadb::{
@@ -23,6 +24,7 @@ pub struct FlexiDagStorage {
     pub relations_store: Arc<RwLock<DbRelationsStore>>,
     pub state_store: Arc<RwLock<DbDagStateStore>>,
     pub block_depth_info_store: Arc<DbBlockDepthInfoStore>,
+    pub pruning_point_store: Arc<RwLock<PruningPointInfoStore>>,
     pub(crate) db: Arc<DBStorage>,
 }
 
@@ -77,6 +79,7 @@ impl FlexiDagStorage {
                     COMPACT_GHOST_DAG_STORE_CF,
                     DAG_STATE_STORE_CF,
                     DAG_BLOCK_DEPTH_INFO_STORE_CF,
+                    PRUNING_POINT_INFO_STORE_CF,
                 ],
                 false,
                 config.rocksdb_config,
@@ -106,6 +109,10 @@ impl FlexiDagStorage {
                 db.clone(),
                 config.cache_size,
             )),
+            pruning_point_store: Arc::new(RwLock::new(PruningPointInfoStore::new(
+                db.clone(),
+                config.cache_size,
+            ))),
             db,
         })
     }

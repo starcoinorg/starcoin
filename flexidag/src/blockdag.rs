@@ -4,6 +4,9 @@ use crate::block_depth::block_depth_info::BlockDepthManagerT;
 use crate::consensusdb::consensus_block_depth::{
     BlockDepthInfo, BlockDepthInfoStore, DbBlockDepthInfoStore,
 };
+use crate::consensusdb::consensus_pruning_info::{
+    PruningPointInfo, PruningPointInfoReader, PruningPointInfoWriter,
+};
 use crate::consensusdb::consensus_state::{
     DagState, DagStateReader, DagStateStore, ReachabilityView,
 };
@@ -25,7 +28,7 @@ use crate::reachability::ReachabilityError;
 use crate::{process_key_already_error, GetAbsentBlock, GetAbsentBlockResult};
 use anyhow::{bail, ensure, format_err, Ok};
 use itertools::Itertools;
-use parking_lot::Mutex;
+use parking_lot::{Mutex, RwLockUpgradableReadGuard};
 use rocksdb::WriteBatch;
 use starcoin_config::miner_config::G_MERGE_DEPTH;
 use starcoin_config::temp_dir;
@@ -693,13 +696,33 @@ impl BlockDAG {
     pub fn calc_mergeset_and_tips(
         &self,
         previous_pruning_point: HashValue,
-        previous_ghostdata: &GhostdagData,
-        pruning_depth: u64,
-        pruning_finality: u64,
         max_parents_count: u64,
         genesis_id: HashValue,
     ) -> anyhow::Result<MineNewDagBlockInfo> {
         let mut dag_state = self.get_dag_state(previous_pruning_point)?;
+
+        let latest_pruning_point = if let Some(pruning_point_info) = self
+            .storage
+            .pruning_point_store
+            .read()
+            .get_pruning_point_info()?
+        {
+            pruning_point_info.pruning_point
+        } else {
+            warn!(
+                "failed to get the pruning point info by hash: {:?}, the block should be re-executed",
+                previous_pruning_point
+            );
+            previous_pruning_point
+        };
+
+        let pruned_tips = self.pruning_point_manager().prune(
+            &dag_state,
+            previous_pruning_point,
+            latest_pruning_point,
+        )?;
+        let mut next_pruning_point = latest_pruning_point;
+        dag_state.tips = pruned_tips;
 
         // filter
         if dag_state.tips.len() > max_parents_count as usize {
@@ -739,38 +762,38 @@ impl BlockDAG {
 
         let next_ghostdata = self.ghostdata(&dag_state.tips)?;
 
-        let next_pruning_point = self.pruning_point_manager().next_pruning_point(
-            previous_pruning_point,
-            previous_ghostdata,
-            &next_ghostdata,
-            pruning_depth,
-            pruning_finality,
-        )?;
+        // let next_pruning_point = self.pruning_point_manager().next_pruning_point(
+        //     previous_pruning_point,
+        //     previous_ghostdata,
+        //     &next_ghostdata,
+        //     pruning_depth,
+        //     pruning_finality,
+        // )?;
 
-        let (tips, ghostdata, mut pruning_point) = if next_pruning_point == Hash::zero()
-            || next_pruning_point == previous_pruning_point
-        {
-            info!(
-                "tips: {:?}, the next pruning point is: {:?}, the current ghostdata's selected parent: {:?}, blue blocks are: {:?} and its red blocks are: {:?}",
-                dag_state.tips, next_pruning_point, next_ghostdata.selected_parent, next_ghostdata.mergeset_blues, next_ghostdata.mergeset_reds.len(),
-            );
-            (dag_state.tips, next_ghostdata, next_pruning_point)
-        } else {
-            let pruned_tips = self.pruning_point_manager().prune(
-                &dag_state,
-                previous_pruning_point,
-                next_pruning_point,
-            )?;
-            let pruned_ghostdata = self.ghost_dag_manager().ghostdag(&pruned_tips)?;
-            info!(
-                "the pruning was triggered, before pruning, the tips: {:?}, after pruning tips: {:?}, the next pruning point is: {:?}, the current ghostdata's selected parent: {:?}, blue blocks are: {:?} and its red blocks are: {:?}",
-                pruned_tips, dag_state.tips, next_pruning_point, pruned_ghostdata.selected_parent, pruned_ghostdata.mergeset_blues, pruned_ghostdata.mergeset_reds.len(),
-            );
-            (pruned_tips, pruned_ghostdata, next_pruning_point)
-        };
+        // let (tips, ghostdata, mut pruning_point) = if next_pruning_point == Hash::zero()
+        //     || next_pruning_point == previous_pruning_point
+        // {
+        //     info!(
+        //         "tips: {:?}, the next pruning point is: {:?}, the current ghostdata's selected parent: {:?}, blue blocks are: {:?} and its red blocks are: {:?}",
+        //         dag_state.tips, next_pruning_point, next_ghostdata.selected_parent, next_ghostdata.mergeset_blues, next_ghostdata.mergeset_reds.len(),
+        //     );
+        //     (dag_state.tips, next_ghostdata, next_pruning_point)
+        // } else {
+        //     let pruned_tips = self.pruning_point_manager().prune(
+        //         &dag_state,
+        //         previous_pruning_point,
+        //         next_pruning_point,
+        //     )?;
+        //     let pruned_ghostdata = self.ghost_dag_manager().ghostdag(&pruned_tips)?;
+        //     info!(
+        //         "the pruning was triggered, before pruning, the tips: {:?}, after pruning tips: {:?}, the next pruning point is: {:?}, the current ghostdata's selected parent: {:?}, blue blocks are: {:?} and its red blocks are: {:?}",
+        //         pruned_tips, dag_state.tips, next_pruning_point, pruned_ghostdata.selected_parent, pruned_ghostdata.mergeset_blues, pruned_ghostdata.mergeset_reds.len(),
+        //     );
+        //     (pruned_tips, pruned_ghostdata, next_pruning_point)
+        // };
 
-        if pruning_point == Hash::zero() {
-            pruning_point = genesis_id;
+        if next_pruning_point == Hash::zero() {
+            next_pruning_point = genesis_id;
         }
         // else {
         //     self.generate_the_block_depth(pruning_point, &ghostdata, pruning_finality)?;
@@ -784,9 +807,9 @@ impl BlockDAG {
         //     tips, ghostdata
         // );
         anyhow::Ok(MineNewDagBlockInfo {
-            tips,
-            blue_blocks: ghostdata.mergeset_blues.as_ref().clone(),
-            pruning_point,
+            tips: dag_state.tips,
+            blue_blocks: next_ghostdata.mergeset_blues.as_ref().clone(),
+            pruning_point: next_pruning_point,
         })
     }
 
@@ -1128,5 +1151,74 @@ impl BlockDAG {
         Ok(GetAbsentBlockResult {
             absent_blocks: result.into_iter().collect(),
         })
+    }
+
+    pub fn generate_pruning_point(
+        &self,
+        header: &BlockHeader,
+        pruning_depth: u64,
+        pruning_finality: u64,
+        genesis_id: Hash,
+    ) -> anyhow::Result<()> {
+        let previous_ghostdata = if header.pruning_point() == HashValue::zero() {
+            self.ghostdata_by_hash(genesis_id)?.ok_or_else(|| format_err!("Cannot find ghostdata by hash when trying to calculate the pruning point: {:?}", header.id()))?
+        } else {
+            self.ghostdata_by_hash(header.pruning_point())?.ok_or_else(|| format_err!("Cannot find ghostdata by hash when trying to calculate the pruning point: {:?}", header.id()))?
+        };
+        let next_ghostdata = self.ghostdata_by_hash(header.id())?.ok_or_else(|| {
+            format_err!(
+                "Cannot find ghostdata by hash when trying to calculate the pruning point: {:?}",
+                header.id()
+            )
+        })?;
+        let new_pruning_point = self.pruning_point_manager().next_pruning_point(
+            header.pruning_point(),
+            previous_ghostdata.as_ref(),
+            next_ghostdata.as_ref(),
+            pruning_depth,
+            pruning_finality,
+        )?;
+        let reader = self.storage.pruning_point_store.upgradable_read();
+
+        let current_pruning_point_info = reader
+            .get_pruning_point_info()?
+            .ok_or_else(|| format_err!("Cannot find pruning point info"))?;
+
+        let current_pruning_point_ghostdata = self
+            .storage
+            .ghost_dag_store
+            .get_data(current_pruning_point_info.pruning_point)?;
+        let new_pruning_point_ghostdata =
+            self.storage.ghost_dag_store.get_data(new_pruning_point)?;
+
+        let should_update = match current_pruning_point_ghostdata
+            .blue_score
+            .cmp(&new_pruning_point_ghostdata.blue_score)
+        {
+            std::cmp::Ordering::Less => true,
+            std::cmp::Ordering::Equal => {
+                match new_pruning_point.cmp(&current_pruning_point_info.pruning_point) {
+                    std::cmp::Ordering::Less => false,
+                    std::cmp::Ordering::Equal => false,
+                    std::cmp::Ordering::Greater => true,
+                }
+            }
+            std::cmp::Ordering::Greater => false,
+        };
+
+        if !should_update {
+            drop(reader);
+            return Ok(());
+        }
+
+        let writer = RwLockUpgradableReadGuard::upgrade(reader);
+
+        writer.insert(PruningPointInfo {
+            pruning_point: new_pruning_point,
+        })?;
+
+        drop(writer);
+
+        Ok(())
     }
 }

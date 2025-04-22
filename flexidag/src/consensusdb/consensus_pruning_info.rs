@@ -16,7 +16,7 @@ use super::{
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug, Default)]
 pub struct PruningPointInfo {
-    pruning_point: Hash,
+    pub pruning_point: Hash,
 }
 
 pub(crate) const PRUNING_POINT_INFO_STORE_CF: &str = "pruning_point_info_store_cf";
