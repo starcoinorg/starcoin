@@ -445,15 +445,6 @@ impl BlockChain {
         self.execute_without_save(verified_block)
     }
 
-    //TODO remove this function.
-    pub fn update_chain_head(&mut self, block: Block) -> Result<ExecutedBlock> {
-        let (storage, _storage2) = &self.storage;
-        let block_info = storage
-            .get_block_info(block.id())?
-            .ok_or_else(|| format_err!("Can not find block info by hash {:?}", block.id()))?;
-        self.connect(ExecutedBlock::new(block, block_info, None))
-    }
-
     //TODO consider move this logic to BlockExecutor
     fn execute_block_and_save(
         storage: (&dyn Store, &dyn Store2),
@@ -1484,7 +1475,7 @@ impl ChainWriter for BlockChain {
         executed_block.block().header().parent_hash() == self.status.status.head().id()
     }
 
-    fn connect(&mut self, mut executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
+    fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock> {
         let (storage, storage2) = &self.storage;
         let (block, block_info) = (executed_block.block(), executed_block.block_info());
         debug_assert!(block.header().parent_hash() == self.status.status.head().id());
