@@ -225,6 +225,7 @@ where
         ctx.subscribe::<MinedBlock>();
         ctx.subscribe::<NewDagBlock>();
         ctx.subscribe::<SystemStarted>();
+        ctx.subscribe::<SystemShutdown>();
 
         ctx.run_interval(std::time::Duration::from_secs(3), move |ctx| {
             ctx.notify(crate::tasks::BlockDiskCheckEvent {});
@@ -238,7 +239,30 @@ where
         ctx.unsubscribe::<MinedBlock>();
         ctx.unsubscribe::<NewDagBlock>();
         ctx.unsubscribe::<SystemStarted>();
+        ctx.unsubscribe::<SystemShutdown>();
         Ok(())
+    }
+}
+
+impl<TransactionPoolServiceT> EventHandler<Self, SystemShutdown>
+    for BlockConnectorService<TransactionPoolServiceT>
+where
+    TransactionPoolServiceT: TxPoolSyncService + 'static,
+{
+    fn handle_event(&mut self, _: SystemShutdown, ctx: &mut ServiceContext<Self>) {
+        let _consume = self.pruning_receiver.try_iter().count();
+        match self.pruning_sender.send(PruningPointMessage {
+            block_header: BlockHeader::random(),
+            continue_pruning: false,
+        }) {
+            std::result::Result::Ok(_) => (),
+            Err(e) => {
+                error!(
+                    "failed to send NewDagBlock for calculating the pruning point, error: {:?}",
+                    e
+                );
+            }
+        }
     }
 }
 
