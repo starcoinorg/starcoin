@@ -19,7 +19,7 @@ use std::sync::Arc;
 #[stest::test]
 fn test_network_rpc() {
     let (handle1, net_addr_1) = {
-        let config_1 = NodeConfig::random_for_test();
+        let config_1 = NodeConfig::random_for_test_without_vm2();
         let net_addr = config_1.network.self_address();
         debug!("First node address: {:?}", net_addr);
         (gen_chain_env(config_1).unwrap(), net_addr)
@@ -27,7 +27,7 @@ fn test_network_rpc() {
 
     let network_1 = handle1.network();
     let (handle2, peer_id_2) = {
-        let mut config_2 = NodeConfig::random_for_test();
+        let mut config_2 = NodeConfig::random_for_test_without_vm2();
         config_2.network.seeds = vec![net_addr_1].into();
         let peer_id_2 = config_2.network.self_peer_id();
         (gen_chain_env(config_2).unwrap(), peer_id_2)
