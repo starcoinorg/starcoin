@@ -571,10 +571,14 @@ mod tests {
             .get_block(chain_info2.status().head().id())?
             .expect("Genesis block must exist.");
 
-        let state_db = ChainStateDB::new(
-            storage1_2.clone().into_super_arc(),
-            Some(genesis_block.header().state_root()),
-        );
+        let state_db = {
+            let multi_state = storage1_2.get_vm_multi_state(genesis_block.header().id())?;
+            let state_root = multi_state
+                .as_ref()
+                .map(|s| s.state_root1())
+                .unwrap_or_else(|| genesis_block.header().state_root());
+            ChainStateDB::new(storage1_2.clone().into_super_arc(), Some(state_root))
+        };
         let account_state_reader = AccountStateReader::new(&state_db);
         let chain_id = account_state_reader.get_chain_id()?;
         assert_eq!(
