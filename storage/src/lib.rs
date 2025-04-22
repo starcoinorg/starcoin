@@ -25,6 +25,7 @@ use starcoin_state_store_api::{StateNode, StateNodeStore};
 //use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::contract_event::ContractEvent;
+use starcoin_types::multi_state::MultiState;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus, SnapshotRange};
 use starcoin_types::transaction::{RichTransactionInfo, Transaction};
 use starcoin_types::{
@@ -635,7 +636,7 @@ pub trait Store:
         accumulator_type: AccumulatorStoreType,
     ) -> Arc<dyn AccumulatorTreeStore>;
 
-    fn get_vm_state_root_hashes(&self, block_id: HashValue) -> Result<Vec<HashValue>> {
+    fn get_vm_multi_state(&self, block_id: HashValue) -> Result<Option<MultiState>> {
         if let Some(block_info) = self.get_block_info(block_id)? {
             let acc_info = block_info.vm_state_accumulator_info;
             let num_leaves = acc_info.num_leaves;
@@ -645,15 +646,14 @@ pub trait Store:
                     acc_info,
                     self.get_accumulator_store(AccumulatorStoreType::VMState),
                 );
-                return Ok([
+                return Ok(Some(MultiState::new(
                     acc.get_leaf(num_leaves - 2)?.unwrap(),
                     acc.get_leaf(num_leaves - 1)?.unwrap(),
-                ]
-                .to_vec());
+                )));
             }
         };
 
-        Ok(vec![])
+        Ok(None)
     }
 }
 

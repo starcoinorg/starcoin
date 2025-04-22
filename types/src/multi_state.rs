@@ -19,11 +19,11 @@ impl MultiState {
         }
     }
 
-    pub fn state_root1(&self) -> &HashValue {
-        &self.state_root1
+    pub fn state_root1(&self) -> HashValue {
+        self.state_root1
     }
 
-    pub fn state_root2(&self) -> &HashValue {
-        &self.state_root2
+    pub fn state_root2(&self) -> HashValue {
+        self.state_root2
     }
 }

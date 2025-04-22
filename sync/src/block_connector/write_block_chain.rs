@@ -14,6 +14,7 @@ use starcoin_service_registry::ServiceRef;
 use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::BlockInfo;
+use starcoin_types::multi_state::MultiState;
 use starcoin_types::{
     block::{Block, BlockHeader, ExecutedBlock},
     startup_info::StartupInfo,
@@ -137,10 +138,12 @@ where
     fn find_or_fork(
         &self,
         header: &BlockHeader,
-    ) -> Result<(Option<BlockInfo>, Option<BlockChain>)> {
+    ) -> Result<(Option<(BlockInfo, Option<MultiState>)>, Option<BlockChain>)> {
         let block_id = header.id();
+        let mut multi_state = None;
         let block_info = self.storage.get_block_info(block_id)?;
         let block_chain = if block_info.is_some() {
+            multi_state = self.storage.get_vm_multi_state(block_id)?;
             if self.is_main_head(&header.parent_hash()) {
                 None
             } else {
@@ -165,7 +168,7 @@ where
         } else {
             None
         };
-        Ok((block_info, block_chain))
+        Ok((block_info.map(|i| (i, multi_state)), block_chain))
     }
 
     fn block_exist(&self, block_id: HashValue) -> Result<bool> {
@@ -440,10 +443,10 @@ where
                 Ok(ConnectOk::Duplicate)
             }
             //block has been processed, and its parent is main chain, so just connect it to main chain.
-            (Some(block_info), None) => {
+            (Some((block_info, multi_sate)), None) => {
                 let executed_block =
                     self.main
-                        .connect(ExecutedBlock::new(block.clone(), block_info, None))?;
+                        .connect(ExecutedBlock::new(block.clone(), block_info, multi_sate))?;
                 info!(
                     "Block {} main has been processed, trigger head selection",
                     block_id

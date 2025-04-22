@@ -61,6 +61,7 @@ static OUTPUT_BLOCK: AtomicBool = AtomicBool::new(false);
 pub struct ChainStatusWithBlock {
     pub status: ChainStatus,
     pub head: Block,
+    pub multi_state: Option<MultiState>,
 }
 
 pub struct BlockChain {
@@ -156,6 +157,7 @@ impl BlockChain {
             status: ChainStatusWithBlock {
                 status: ChainStatus::new(head_block.header.clone(), block_info),
                 head: head_block,
+                multi_state: state_root2.map(|r| MultiState::new(state_root1, r)),
             },
             statedb: (chain_state, chain_state2),
             storage: (storage, storage2),
@@ -998,7 +1000,7 @@ impl ChainReader for BlockChain {
         ExecutedBlock::new(
             self.status.head.clone(),
             self.status.status.info.clone(),
-            None,
+            self.status.multi_state.clone(),
         )
     }
 
@@ -1500,19 +1502,8 @@ impl ChainWriter for BlockChain {
         );
 
         let (state_root1, state_root2) = {
-            let num_leaves = self.vm_state_accumulator.num_leaves();
-            if num_leaves > 0 {
-                assert!(num_leaves > 1);
-                (
-                    self.vm_state_accumulator
-                        .get_leaf(self.vm_state_accumulator.num_leaves() - 2)?
-                        .unwrap(),
-                    Some(
-                        self.vm_state_accumulator
-                            .get_leaf(self.vm_state_accumulator.num_leaves() - 1)?
-                            .unwrap(),
-                    ),
-                )
+            if let Some(state) = executed_block.multi_state() {
+                (state.state_root1(), Some(state.state_root2()))
             } else {
                 (block.header().state_root(), None)
             }
@@ -1525,6 +1516,7 @@ impl ChainWriter for BlockChain {
         self.status = ChainStatusWithBlock {
             status: ChainStatus::new(block.header().clone(), block_info.clone()),
             head: block.clone(),
+            multi_state: executed_block.multi_state().cloned(),
         };
         if self.epoch.end_block_number() == block.header().number() {
             self.epoch = get_epoch_from_statedb(&self.statedb.0)?;

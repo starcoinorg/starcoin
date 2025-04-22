@@ -53,10 +53,9 @@ impl ServiceFactory<Self> for ChainStateService {
             format_err!("Can not find head block by hash:{:?}", startup_info.main)
         })?;
         let state_root = {
-            let hashes = storage.get_vm_state_root_hashes(startup_info.main)?;
-            if let Some(state_root) = hashes.first() {
-                assert_eq!(hashes.len(), 2);
-                *state_root
+            let state = storage.get_vm_multi_state(startup_info.main)?;
+            if let Some(state) = state {
+                state.state_root1()
             } else {
                 head_block.header().state_root()
             }
@@ -144,7 +143,7 @@ impl EventHandler<Self, NewHeadBlock> for ChainStateService {
 
         let state_root = block
             .multi_state()
-            .map(|m| *m.state_root1())
+            .map(|m| m.state_root1())
             .unwrap_or(block.header().state_root());
         debug!("ChainStateActor change StateRoot to : {:?}", state_root);
         self.service.change_root(state_root);
