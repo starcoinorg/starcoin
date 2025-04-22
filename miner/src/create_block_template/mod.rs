@@ -122,7 +122,7 @@ impl EventHandler<Self, NewHeadBlock> for BlockBuilderService {
 
 impl EventHandler<Self, NewBranch> for BlockBuilderService {
     fn handle_event(&mut self, msg: NewBranch, _ctx: &mut ServiceContext<BlockBuilderService>) {
-        self.inner.insert_uncle(msg.0.block.header().clone());
+        self.inner.insert_uncle(msg.0.block().header().clone());
     }
 }
 

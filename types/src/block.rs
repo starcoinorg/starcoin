@@ -5,6 +5,7 @@ use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
 use crate::genesis_config::{ChainId, ConsensusStrategy};
 use crate::language_storage::CORE_CODE_ADDRESS;
+use crate::multi_state::MultiState;
 use crate::multi_transaction::MultiSignedUserTransaction;
 use crate::transaction::SignedUserTransaction;
 use crate::U256;
@@ -1091,13 +1092,19 @@ impl BlockTemplate {
 
 #[derive(Clone, Debug, Hash, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct ExecutedBlock {
-    pub block: Block,
-    pub block_info: BlockInfo,
+    block: Block,
+    block_info: BlockInfo,
+    // only for inner system modules
+    state_root: Option<MultiState>,
 }
 
 impl ExecutedBlock {
-    pub fn new(block: Block, block_info: BlockInfo) -> Self {
-        ExecutedBlock { block, block_info }
+    pub fn new(block: Block, block_info: BlockInfo, state_root: Option<MultiState>) -> Self {
+        ExecutedBlock {
+            block,
+            block_info,
+            state_root,
+        }
     }
 
     pub fn total_difficulty(&self) -> U256 {
@@ -1112,8 +1119,16 @@ impl ExecutedBlock {
         &self.block_info
     }
 
+    pub fn multi_state(&self) -> Option<&MultiState> {
+        self.state_root.as_ref()
+    }
+
     pub fn header(&self) -> &BlockHeader {
         self.block.header()
+    }
+
+    pub fn add_multi_state(&mut self, multi_state: MultiState) {
+        self.state_root = Some(multi_state);
     }
 }
 

@@ -187,7 +187,7 @@ where
                 if !parent_is_main_head {
                     self.find_ancestors_from_accumulator(&new_branch)?
                 } else {
-                    (1, vec![executed_block.block.clone()], 0, vec![])
+                    (1, vec![executed_block.block().clone()], 0, vec![])
                 };
             self.main = new_branch;
 
@@ -231,11 +231,11 @@ where
         if let Some(metrics) = self.metrics.as_ref() {
             metrics
                 .chain_block_num
-                .set(executed_block.block.header().number());
+                .set(executed_block.block().header().number());
 
             metrics
                 .chain_txn_num
-                .set(executed_block.block_info.txn_accumulator_info.num_leaves);
+                .set(executed_block.block_info().txn_accumulator_info.num_leaves);
         }
 
         self.broadcast_new_head(executed_block);
@@ -274,7 +274,7 @@ where
         self.main = new_branch;
 
         let (enacted_count, enacted_blocks, retracted_count, retracted_blocks) =
-            (1, vec![executed_block.block.clone()], 0, vec![]);
+            (1, vec![executed_block.block().clone()], 0, vec![]);
         self.do_new_head(
             executed_block,
             enacted_count,
@@ -441,10 +441,9 @@ where
             }
             //block has been processed, and its parent is main chain, so just connect it to main chain.
             (Some(block_info), None) => {
-                let executed_block = self.main.connect(ExecutedBlock {
-                    block: block.clone(),
-                    block_info,
-                })?;
+                let executed_block =
+                    self.main
+                        .connect(ExecutedBlock::new(block.clone(), block_info, None))?;
                 info!(
                     "Block {} main has been processed, trigger head selection",
                     block_id

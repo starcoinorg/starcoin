@@ -362,7 +362,7 @@ impl ReadableChainService for ChainReaderServiceInner {
     }
 
     fn main_head_block(&self) -> Block {
-        self.main.head_block().block
+        self.main.head_block().block().clone()
     }
 
     fn main_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>> {

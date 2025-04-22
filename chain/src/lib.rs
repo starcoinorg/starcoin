@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #![allow(clippy::arithmetic_side_effects)]
 mod chain;
+mod fixed_blocks;
 pub mod verifier;
 
 pub use chain::BlockChain;
