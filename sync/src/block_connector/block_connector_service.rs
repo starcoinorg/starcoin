@@ -306,7 +306,7 @@ where
                         pruning_depth,
                         pruning_finality,
                         main.get_genesis_hash(),
-                    ) {
+                    ).await {
                         std::result::Result::Ok(_) => (),
                         Err(e) => warn!("failed to generate pruning point, error: {:?}", e),
                     }

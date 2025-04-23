@@ -872,7 +872,7 @@ impl BlockDAG {
         let pruning_point_blue_score =
             self.storage.ghost_dag_store.get_blue_score(pruning_point)?;
 
-        if selected_header_blue_score >= pruning_point_blue_score + pruning_depth {
+        if selected_header_blue_score < pruning_point_blue_score + pruning_depth {
             warn!("the pruning point blue score is not correct");
             return Err(anyhow::anyhow!("the pruning point blue score: {:?} + pruning depth: {:?} is larger than selected header blue score: {:?}", pruning_point_blue_score, pruning_depth, selected_header_blue_score));
         }
@@ -1197,7 +1197,7 @@ impl BlockDAG {
         })
     }
 
-    pub fn generate_pruning_point(
+    pub async fn generate_pruning_point(
         &self,
         header: &BlockHeader,
         pruning_depth: u64,
