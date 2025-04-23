@@ -14,6 +14,7 @@ use starcoin_state_api::{
     StateWithTableItemProof,
 };
 use starcoin_state_tree::AccountStateSetIterator;
+use starcoin_statedb::multi_chain_state_db::MultiChainStateDB;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_types::state_set::AccountStateSet;
@@ -24,6 +25,7 @@ use starcoin_types::{
 };
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use starcoin_vm_types::state_view::StateReaderExt;
 use std::sync::Arc;
 
 pub struct ChainStateService {
@@ -145,10 +147,7 @@ impl EventHandler<Self, NewHeadBlock> for ChainStateService {
     fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<ChainStateService>) {
         let NewHeadBlock(block) = msg;
 
-        let state_root = block
-            .multi_state()
-            .map(|m| m.state_root1())
-            .unwrap_or(block.header().state_root());
+        let state_root = block.header().state_root();
         debug!("ChainStateActor change StateRoot to : {:?}", state_root);
         self.service.change_root(state_root);
     }
@@ -233,24 +232,24 @@ impl Inner {
 
 impl ChainStateReader for Inner {
     fn get_with_proof(&self, access_path: &AccessPath) -> Result<StateWithProof> {
-        self.state_db.get_with_proof(0, access_path)
+        self.state_db.get_with_proof(access_path)
     }
 
     fn get_account_state(&self, address: &AccountAddress) -> Result<Option<AccountState>> {
-        self.state_db.get_account_state(0, address)
+        self.state_db.get_account_state(address)
     }
     fn get_account_state_set(&self, address: &AccountAddress) -> Result<Option<AccountStateSet>> {
-        self.state_db.get_account_state_set(0, address)
+        self.state_db.get_account_state_set(address)
     }
 
     fn state_root(&self) -> HashValue {
         // TODO(BobOng): [dual-vm] build total state root
-        self.state_db.state_root().0
+        self.state_db.state_root()
     }
 
     fn state_root_for_vm(&self) -> Result<(HashValue, Option<HashValue>)> {
         let state_roots = self.state_db.state_root();
-        Ok((state_roots.0, Some(state_roots.1)))
+        Ok((state_roots, None))
     }
 
     fn dump(&self) -> Result<ChainStateSet> {
@@ -266,17 +265,17 @@ impl ChainStateReader for Inner {
         handle: &TableHandle,
         key: &[u8],
     ) -> Result<StateWithTableItemProof> {
-        self.state_db.get_with_table_item_proof(0, handle, key)
+        self.state_db.get_with_table_item_proof(handle, key)
     }
 
     fn get_table_info(&self, address: AccountAddress) -> Result<Option<TableInfo>> {
-        self.state_db.get_table_info(0, address)
+        self.state_db.get_table_info(address)
     }
 }
 
 impl StateView for Inner {
     fn get_state_value(&self, state_key: &StateKey) -> Result<Option<Vec<u8>>> {
-        self.state_db.get_state_value(0, state_key)
+        self.state_db.get_state_value(state_key)
     }
 
     fn is_genesis(&self) -> bool {
