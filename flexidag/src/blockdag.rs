@@ -761,14 +761,16 @@ impl BlockDAG {
         }
 
         let next_ghostdata = self.ghostdata(&dag_state.tips)?;
-        match self.storage.ghost_dag_store.insert(self.ghost_dag_manager().find_selected_parent(dag_state.tips.iter().cloned())?,  Arc::new(next_ghostdata.clone())) {
+        match self.storage.ghost_dag_store.insert(
+            self.ghost_dag_manager()
+                .find_selected_parent(dag_state.tips.iter().cloned())?,
+            Arc::new(next_ghostdata.clone()),
+        ) {
             std::result::Result::Ok(_) => (),
-            Err(e) => {
-                match e {
-                    StoreError::KeyAlreadyExists(_) => (),
-                    _ => return Err(e.into()),
-                }
-            }
+            Err(e) => match e {
+                StoreError::KeyAlreadyExists(_) => (),
+                _ => return Err(e.into()),
+            },
         }
 
         // let next_pruning_point = self.pruning_point_manager().next_pruning_point(
@@ -842,6 +844,39 @@ impl BlockDAG {
         if next_pruning_point != inside_next_pruning_point {
             bail!("pruning point is not correct, the local next pruning point is {}, but the block header pruning point is {}", next_pruning_point, inside_next_pruning_point);
         }
+        anyhow::Ok(())
+    }
+
+    pub fn validate_pruning_point(
+        &self,
+        selected_header: Hash,
+        pruning_point: Hash,
+        pruning_depth: u64,
+    ) -> anyhow::Result<()> {
+        if !self
+            .reachability_service()
+            .is_chain_ancestor_of(pruning_point, selected_header)
+        {
+            warn!("the pruning point is not the ancestor of the selected header");
+            return Err(anyhow::anyhow!(
+                "the pruning point: {:?} is not the ancestor of the selected header: {:?}",
+                pruning_point,
+                selected_header
+            ));
+        }
+
+        let selected_header_blue_score = self
+            .storage
+            .ghost_dag_store
+            .get_blue_score(selected_header)?;
+        let pruning_point_blue_score =
+            self.storage.ghost_dag_store.get_blue_score(pruning_point)?;
+
+        if selected_header_blue_score >= pruning_point_blue_score + pruning_depth {
+            warn!("the pruning point blue score is not correct");
+            return Err(anyhow::anyhow!("the pruning point blue score: {:?} + pruning depth: {:?} is larger than selected header blue score: {:?}", pruning_point_blue_score, pruning_depth, selected_header_blue_score));
+        }
+
         anyhow::Ok(())
     }
 
@@ -1189,42 +1224,37 @@ impl BlockDAG {
         )?;
         let reader = self.storage.pruning_point_store.upgradable_read();
 
-        let current_pruning_point_info = match reader
-            .get_pruning_point_info() {
-                std::result::Result::Ok(info) => {
-                    match info {
-                        Some(info) => info,
-                        None => {
-                            let writer = RwLockUpgradableReadGuard::upgrade(reader);
+        let current_pruning_point_info = match reader.get_pruning_point_info() {
+            std::result::Result::Ok(info) => match info {
+                Some(info) => info,
+                None => {
+                    let writer = RwLockUpgradableReadGuard::upgrade(reader);
 
-                            writer.insert(PruningPointInfo {
-                                pruning_point: header.pruning_point(),
-                            })?;
-                    
-                            drop(writer);
-                            return Ok(());
-                        }
-                    }
-                }
-                Err(e) => {
-                    match e {
-                        StoreError::KeyNotFound(_) => {
-                            let writer = RwLockUpgradableReadGuard::upgrade(reader);
+                    writer.insert(PruningPointInfo {
+                        pruning_point: header.pruning_point(),
+                    })?;
 
-                            writer.insert(PruningPointInfo {
-                                pruning_point: header.pruning_point(),
-                            })?;
-                    
-                            drop(writer);
-                            return Ok(());
-                        }
-                        _ => {
-                            error!("Failed to get pruning point info: {:?}", e);
-                            return Err(e.into());
-                        }
-                    }
+                    drop(writer);
+                    return Ok(());
                 }
-            };
+            },
+            Err(e) => match e {
+                StoreError::KeyNotFound(_) => {
+                    let writer = RwLockUpgradableReadGuard::upgrade(reader);
+
+                    writer.insert(PruningPointInfo {
+                        pruning_point: header.pruning_point(),
+                    })?;
+
+                    drop(writer);
+                    return Ok(());
+                }
+                _ => {
+                    error!("Failed to get pruning point info: {:?}", e);
+                    return Err(e.into());
+                }
+            },
+        };
 
         let current_pruning_point_ghostdata = self
             .storage
