@@ -853,17 +853,17 @@ impl BlockDAG {
         pruning_point: Hash,
         pruning_depth: u64,
     ) -> anyhow::Result<()> {
-        if !self
-            .reachability_service()
-            .is_chain_ancestor_of(pruning_point, selected_header)
-        {
-            warn!("the pruning point is not the ancestor of the selected header");
-            return Err(anyhow::anyhow!(
-                "the pruning point: {:?} is not the ancestor of the selected header: {:?}",
-                pruning_point,
-                selected_header
-            ));
-        }
+        // if !self
+        //     .reachability_service()
+        //     .is_chain_ancestor_of(pruning_point, selected_header)
+        // {
+        //     warn!("the pruning point is not the ancestor of the selected header");
+        //     return Err(anyhow::anyhow!(
+        //         "the pruning point: {:?} is not the ancestor of the selected header: {:?}",
+        //         pruning_point,
+        //         selected_header
+        //     ));
+        // }
 
         let selected_header_blue_score = self
             .storage

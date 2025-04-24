@@ -30,6 +30,8 @@ starcoin-accumulator = { workspace = true }
 schemars = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-vm-runtime ={ workspace = true }
+crossbeam = { workspace = true }
+starcoin-service-registry = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

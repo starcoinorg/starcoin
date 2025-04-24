@@ -509,9 +509,6 @@ pub struct BlockConnectedEvent {
 }
 
 #[derive(Clone, Debug)]
-pub struct PruningPointInfoGeneration;
-
-#[derive(Clone, Debug)]
 pub struct BlockConnectedFinishEvent;
 
 #[derive(Clone, Debug)]

@@ -7,16 +7,12 @@ use super::CheckBlockConnectorHashValue;
 use super::CreateBlockRequest;
 #[cfg(test)]
 use super::CreateBlockResponse;
-use super::PruningPointMessage;
 use crate::block_connector::{
     ExecuteRequest, MinerRequest, MinerResponse, ResetRequest, WriteBlockChainService,
 };
 use crate::sync::{CheckSyncEvent, SyncService};
-use crate::tasks::PruningPointInfoGeneration;
 use crate::tasks::{BlockConnectedEvent, BlockConnectedFinishEvent, BlockDiskCheckEvent};
 use anyhow::{bail, format_err, Ok, Result};
-use crossbeam::channel::Receiver;
-use crossbeam::channel::Sender;
 use network_api::PeerProvider;
 use starcoin_chain::BlockChain;
 use starcoin_chain::ChainWriter;
@@ -27,6 +23,8 @@ use starcoin_consensus::Consensus;
 use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::BlockDAG;
 use starcoin_dag::blockdag::MineNewDagBlockInfo;
+use starcoin_dag::service::pruning_point_service::PruningPointInfoChannel;
+use starcoin_dag::service::pruning_point_service::PruningPointMessage;
 use starcoin_executor::VMMetrics;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
@@ -47,7 +45,6 @@ use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::NewDagBlock;
 use starcoin_types::system_events::NewDagBlockFromPeer;
-use starcoin_types::system_events::SystemStarted;
 use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown};
 use std::sync::Arc;
 use sysinfo::{DiskExt, System, SystemExt};
@@ -64,8 +61,7 @@ where
     storage: Arc<Storage>,
     vm_metrics: Option<VMMetrics>,
     genesis: Genesis,
-    pruning_sender: Sender<PruningPointMessage>,
-    pruning_receiver: Receiver<PruningPointMessage>,
+    pruning_point_channel: PruningPointInfoChannel,
 }
 
 impl<TransactionPoolServiceT> BlockConnectorService<TransactionPoolServiceT>
@@ -78,11 +74,8 @@ where
         storage: Arc<Storage>,
         vm_metrics: Option<VMMetrics>,
         genesis: Genesis,
+        pruning_point_channel: PruningPointInfoChannel,
     ) -> Self {
-        let (pruning_sender, pruning_receiver): (
-            Sender<PruningPointMessage>,
-            Receiver<PruningPointMessage>,
-        ) = crossbeam::channel::bounded(2);
         Self {
             chain_service,
             sync_status: None,
@@ -90,8 +83,7 @@ where
             storage,
             vm_metrics,
             genesis,
-            pruning_sender,
-            pruning_receiver,
+            pruning_point_channel,
         }
     }
 
@@ -195,6 +187,7 @@ where
         let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
         let dag = ctx.get_shared::<BlockDAG>()?;
         let genesis = ctx.get_shared::<Genesis>()?;
+        let pruning_point_channel = ctx.get_shared::<PruningPointInfoChannel>()?;
         let chain_service = WriteBlockChainService::new(
             config.clone(),
             startup_info,
@@ -211,6 +204,7 @@ where
             storage,
             vm_metrics,
             genesis,
+            pruning_point_channel,
         ))
     }
 }
@@ -225,8 +219,6 @@ where
         ctx.subscribe::<SyncStatusChangeEvent>();
         ctx.subscribe::<MinedBlock>();
         ctx.subscribe::<NewDagBlock>();
-        ctx.subscribe::<SystemStarted>();
-        ctx.subscribe::<PruningPointInfoGeneration>();
 
         ctx.run_interval(std::time::Duration::from_secs(3), move |ctx| {
             ctx.notify(crate::tasks::BlockDiskCheckEvent {});
@@ -239,8 +231,6 @@ where
         ctx.unsubscribe::<SyncStatusChangeEvent>();
         ctx.unsubscribe::<MinedBlock>();
         ctx.unsubscribe::<NewDagBlock>();
-        ctx.unsubscribe::<SystemStarted>();
-        ctx.unsubscribe::<PruningPointInfoGeneration>();
         Ok(())
     }
 }
@@ -262,80 +252,6 @@ where
                 }
             }
         }
-    }
-}
-
-impl<TransactionPoolServiceT> EventHandler<Self, PruningPointInfoGeneration>
-    for BlockConnectorService<TransactionPoolServiceT>
-where
-    TransactionPoolServiceT: TxPoolSyncService + 'static,
-{
-    fn handle_event(&mut self, _msg: PruningPointInfoGeneration, ctx: &mut ServiceContext<Self>) {
-        let pruning_point_receiver = self.pruning_receiver.clone();
-        let mut main = BlockChain::new(
-            self.config.net().time_service(),
-            self.chain_service.get_main().status().head().id(),
-            self.storage.clone(),
-            self.vm_metrics.clone(),
-            self.chain_service.get_dag().clone(),
-        )
-        .unwrap_or_else(|e| {
-            panic!(
-                "new block chain error when Block connecror service starts: {:?}",
-                e
-            )
-        });
-        let self_ref = ctx.self_ref();
-
-        ctx.spawn(async move {
-            match pruning_point_receiver.try_recv() {
-                std::result::Result::Ok(new_dag_block) => {
-                    main = main
-                        .fork(new_dag_block.block_header.id())
-                        .unwrap_or_else(|e| {
-                            panic!(
-                                "fork error when handle NewDagBlock in block connect service: {:?}",
-                                e
-                            )
-                        });
-
-                    let (pruning_depth, pruning_finality) = main.get_pruning_config();
-
-                    match main.dag().generate_pruning_point(
-                        &new_dag_block.block_header,
-                        pruning_depth,
-                        pruning_finality,
-                        main.get_genesis_hash(),
-                    ).await {
-                        std::result::Result::Ok(_) => (),
-                        Err(e) => warn!("failed to generate pruning point, error: {:?}", e),
-                    }
-                }
-                Err(e) => match e {
-                    crossbeam::channel::TryRecvError::Empty => (),
-                    crossbeam::channel::TryRecvError::Disconnected => {
-                        info!("pruning point receiver disconnected")
-                    }
-                },
-            }
-            match self_ref.notify(PruningPointInfoGeneration) {
-                std::result::Result::Ok(_) => (),
-                Err(e) => error!(
-                    "failed to notify pruning point info generation, error: {:?}",
-                    e
-                ),
-            }
-        });
-    }
-}
-
-impl<TransactionPoolServiceT> EventHandler<Self, SystemStarted>
-    for BlockConnectorService<TransactionPoolServiceT>
-where
-    TransactionPoolServiceT: TxPoolSyncService + 'static,
-{
-    fn handle_event(&mut self, _: SystemStarted, ctx: &mut ServiceContext<Self>) {
-        ctx.notify(PruningPointInfoGeneration);
     }
 }
 
@@ -367,8 +283,13 @@ where
         let block_header = new_chain.head_block().block.header().clone();
         self.chain_service.switch_header(new_chain);
 
-        let _consume = self.pruning_receiver.try_iter().count();
+        let _consume = self
+            .pruning_point_channel
+            .pruning_receiver
+            .try_iter()
+            .count();
         match self
+            .pruning_point_channel
             .pruning_sender
             .send(PruningPointMessage { block_header })
         {
@@ -591,6 +512,8 @@ where
         _msg: MinerRequest,
         _ctx: &mut ServiceContext<Self>,
     ) -> <MinerRequest as ServiceRequest>::Response {
+        info!("jacktest: now try to miner request");
+
         let main_header = self.chain_service.get_main().status().head().clone();
         let dag = self.chain_service.get_dag();
         let genesis = self.genesis.clone();
