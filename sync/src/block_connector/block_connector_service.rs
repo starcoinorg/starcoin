@@ -512,8 +512,6 @@ where
         _msg: MinerRequest,
         _ctx: &mut ServiceContext<Self>,
     ) -> <MinerRequest as ServiceRequest>::Response {
-        info!("jacktest: now try to miner request");
-
         let main_header = self.chain_service.get_main().status().head().clone();
         let dag = self.chain_service.get_dag();
         let genesis = self.genesis.clone();
