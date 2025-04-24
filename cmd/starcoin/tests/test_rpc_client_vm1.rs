@@ -1,4 +1,5 @@
 use anyhow::Result;
+use itertools::assert_equal;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
 use move_core_types::identifier::Identifier;
@@ -116,7 +117,20 @@ pub fn test_connect_vm1_rpc_server() -> Result<()> {
         )
         .ok();
 
-    assert_eq!(account1.auth_key().to_string(), "0x6fb11390600e537f77cfd0cfc8047081d1969148774e82f576597fc870687adc"); 
+    assert_eq!(
+        account1.auth_key().to_string(),
+        "0x6fb11390600e537f77cfd0cfc8047081d1969148774e82f576597fc870687adc"
+    );
+    assert_eq!(
+        account2.auth_key().to_string(),
+        "0x04a82bf2f306b0dd31f20d9449adc9f445601528550cce4d6881577e23a5eafc"
+    );
+
+    let account1_info = ipc_client.account_get(account1.address().clone())?;
+    assert_eq!(
+        account1_info.unwrap().public_key.to_encoded_string()?,
+        "0x29e7ee6c40be7f4fc8c2eff20e13b4217d00b127f0158770161705df3aef7009"
+    );
 
     // Check account exists
     let ret_acc_opt = ipc_client.account_get(account1.address().clone())?;
