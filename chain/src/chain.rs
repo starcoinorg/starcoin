@@ -360,23 +360,26 @@ impl BlockChain {
 
         let MineNewDagBlockInfo {
             tips,
-            blue_blocks,
+            ghostdata,
             pruning_point: _,
         } = {
-            let blue_blocks = ghostdata.mergeset_blues.clone()[1..].to_vec();
             MineNewDagBlockInfo {
                 tips,
-                blue_blocks,
+                ghostdata,
                 pruning_point, // TODO: new test cases will need pass this field if they have some special requirements.
             }
         };
 
         debug!(
             "Blue blocks:{:?} in chain/create_block_template_by_header",
-            blue_blocks
+            ghostdata.mergeset_blues
         );
-        let blue_blocks = blue_blocks
-            .into_iter()
+        let blue_blocks = ghostdata
+            .mergeset_blues
+            .as_ref()
+            .iter()
+            .skip(1)
+            .cloned()
             .map(|block| self.storage.get_block_by_hash(block))
             .collect::<Result<Vec<Option<Block>>>>()?
             .into_iter()
@@ -1054,6 +1057,35 @@ impl BlockChain {
             self.dag.get_dag_state(current_pruning_point)
         }
     }
+
+    pub fn get_merge_bound_hash(&self, selected_parent: HashValue) -> Result<HashValue> {
+        let header = self
+            .storage
+            .get_block_header_by_hash(selected_parent)?
+            .ok_or_else(|| {
+                format_err!(
+                    "Cannot find block header by hash {:?} when get merge bound hash",
+                    selected_parent
+                )
+            })?;
+        let merge_depth = self.dag().block_depth_manager().merge_depth();
+        if header.number() < merge_depth {
+            return Ok(self.genesis_hash);
+        }
+        let merge_depth_index = (header.number().checked_div(merge_depth))
+            .ok_or_else(|| format_err!("header number overflowed when get merge bound hash"))?
+            .checked_mul(merge_depth)
+            .ok_or_else(|| format_err!("header number overflowed when get merge bound hash"))?;
+        Ok(self
+            .block_accumulator
+            .get_leaf(merge_depth_index)?
+            .ok_or_else(|| {
+                format_err!(
+                    "Cannot find block header by number {} when get merge bound hash",
+                    merge_depth_index
+                )
+            })?)
+    }
 }
 
 impl ChainReader for BlockChain {
@@ -1453,7 +1485,10 @@ impl ChainReader for BlockChain {
         //     header.pruning_point()
         // };
 
-        // dag.check_bounded_merge_depth(pruning_point, &ghostdata, self.get_pruning_config().0)?;
+        dag.check_bounded_merge_depth(
+            &ghostdata,
+            self.get_merge_bound_hash(ghostdata.selected_parent)?,
+        )?;
 
         Ok(ghostdata)
     }

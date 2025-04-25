@@ -1,9 +1,7 @@
 use super::reachability::{inquirer, reachability_service::MTReachabilityService};
 use super::types::ghostdata::GhostdagData;
 use crate::block_depth::block_depth_info::BlockDepthManagerT;
-use crate::consensusdb::consensus_block_depth::{
-    BlockDepthInfo, BlockDepthInfoStore, DbBlockDepthInfoStore,
-};
+use crate::consensusdb::consensus_block_depth::DbBlockDepthInfoStore;
 use crate::consensusdb::consensus_pruning_info::{
     PruningPointInfo, PruningPointInfoReader, PruningPointInfoWriter,
 };
@@ -64,7 +62,7 @@ pub type BlockDepthManager =
 
 pub struct MineNewDagBlockInfo {
     pub tips: Vec<HashValue>,
-    pub blue_blocks: Vec<HashValue>,
+    pub ghostdata: GhostdagData,
     pub pruning_point: HashValue,
 }
 
@@ -819,7 +817,7 @@ impl BlockDAG {
         // );
         anyhow::Ok(MineNewDagBlockInfo {
             tips: dag_state.tips,
-            blue_blocks: next_ghostdata.mergeset_blues.as_ref().clone(),
+            ghostdata: next_ghostdata,
             pruning_point: next_pruning_point,
         })
     }
@@ -880,49 +878,57 @@ impl BlockDAG {
         anyhow::Ok(())
     }
 
-    pub fn generate_the_block_depth(
-        &self,
-        pruning_point: Hash,
-        ghostdata: &GhostdagData,
-        finality_depth: u64,
-    ) -> anyhow::Result<BlockDepthInfo> {
-        let merge_depth_root = self
-            .block_depth_manager
-            .calc_merge_depth_root(ghostdata, pruning_point)?;
-        if merge_depth_root == Hash::zero() {
-            return anyhow::Ok(BlockDepthInfo {
-                merge_depth_root,
-                finality_point: Hash::zero(),
-            });
-        }
-        let finality_point = self.block_depth_manager.calc_finality_point(
-            ghostdata,
-            pruning_point,
-            finality_depth,
-        )?;
-        self.storage.block_depth_info_store.insert(
-            ghostdata.selected_parent,
-            BlockDepthInfo {
-                merge_depth_root,
-                finality_point,
-            },
-        )?;
-        info!(
-            "the merge depth root is: {:?}, the finality point is: {:?}",
-            merge_depth_root, finality_point
-        );
-        Ok(BlockDepthInfo {
-            merge_depth_root,
-            finality_point,
-        })
+    pub fn block_depth_manager(&self) -> BlockDepthManager {
+        self.block_depth_manager.clone()
     }
 
-    pub fn check_bounded_merge_depth(&self, ghostdata: &GhostdagData) -> anyhow::Result<()> {
-        let merge_depth_root = self
-            .block_depth_manager
-            .get_block_depth_info(ghostdata.selected_parent)?
-            .ok_or_else(|| format_err!("failed to get block depth info"))?
-            .merge_depth_root;
+    // pub fn generate_the_block_depth(
+    //     &self,
+    //     merge_depth_root: Hash,
+    //     finality_point: Hash,
+    //     ghostdata: &GhostdagData,
+    // ) -> anyhow::Result<BlockDepthInfo> {
+    //     // let merge_depth_root = self
+    //     //     .block_depth_manager
+    //     //     .calc_merge_depth_root(ghostdata, pruning_point)?;
+    //     // if merge_depth_root == Hash::zero() {
+    //     //     return anyhow::Ok(BlockDepthInfo {
+    //     //         merge_depth_root,
+    //     //         finality_point: Hash::zero(),
+    //     //     });
+    //     // }
+    //     // let finality_point = self.block_depth_manager.calc_finality_point(
+    //     //     ghostdata,
+    //     //     pruning_point,
+    //     //     finality_depth,
+    //     // )?;
+    //     self.storage.block_depth_info_store.insert(
+    //         ghostdata.selected_parent,
+    //         BlockDepthInfo {
+    //             merge_depth_root,
+    //             finality_point,
+    //         },
+    //     )?;
+    //     info!(
+    //         "the merge depth root is: {:?}, the finality point is: {:?}",
+    //         merge_depth_root, finality_point
+    //     );
+    //     Ok(BlockDepthInfo {
+    //         merge_depth_root,
+    //         finality_point,
+    //     })
+    // }
+
+    pub fn check_bounded_merge_depth(
+        &self,
+        ghostdata: &GhostdagData,
+        merge_depth_root: Hash,
+    ) -> anyhow::Result<()> {
+        // let merge_depth_root = self
+        //     .block_depth_manager
+        //     .get_block_depth_info(ghostdata.selected_parent)?
+        //     .ok_or_else(|| format_err!("failed to get block depth info"))?
+        //     .merge_depth_root;
 
         let mut kosherizing_blues: Option<Vec<Hash>> = None;
 
@@ -957,18 +963,19 @@ impl BlockDAG {
         mut parents: Vec<Hash>,
         mut ghostdata: GhostdagData,
         pruning_point: Hash,
+        merge_depth_root: Hash,
     ) -> anyhow::Result<(Vec<Hash>, GhostdagData)> {
         if pruning_point == Hash::zero() {
             return anyhow::Ok((parents, ghostdata));
         }
-        let merge_depth_root = self
-            .block_depth_manager
-            .calc_merge_depth_root(&ghostdata, pruning_point)
-            .map_err(|e| anyhow::anyhow!("Failed to calculate merge depth root: {}", e))?;
+        // let merge_depth_root = self
+        //     .block_depth_manager
+        //     .calc_merge_depth_root(&ghostdata, pruning_point)
+        //     .map_err(|e| anyhow::anyhow!("Failed to calculate merge depth root: {}", e))?;
         if merge_depth_root == Hash::zero() {
             return anyhow::Ok((parents, ghostdata));
         }
-        debug!("merge depth root: {:?}", merge_depth_root);
+        // debug!("merge depth root: {:?}", merge_depth_root);
         let mut kosherizing_blues: Option<Vec<Hash>> = None;
         let mut bad_reds = Vec::new();
 

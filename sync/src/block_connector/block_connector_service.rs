@@ -12,7 +12,9 @@ use crate::block_connector::{
 };
 use crate::sync::{CheckSyncEvent, SyncService};
 use crate::tasks::{BlockConnectedEvent, BlockConnectedFinishEvent, BlockDiskCheckEvent};
-use anyhow::{bail, format_err, Ok, Result};
+#[cfg(test)]
+use anyhow::bail;
+use anyhow::{format_err, Ok, Result};
 use network_api::PeerProvider;
 use starcoin_chain::BlockChain;
 use starcoin_chain::ChainWriter;
@@ -517,7 +519,7 @@ where
         let genesis = self.genesis.clone();
         let MineNewDagBlockInfo {
             tips,
-            blue_blocks,
+            ghostdata,
             pruning_point,
         } = if main_header.number() >= self.chain_service.get_main().get_pruning_height() {
             let pruning_point = if main_header.pruning_point() == HashValue::zero() {
@@ -526,28 +528,42 @@ where
                 main_header.pruning_point()
             };
 
-            dag.calc_mergeset_and_tips(
+            let MineNewDagBlockInfo {
+                tips,
+                ghostdata,
+                pruning_point,
+            } = dag.calc_mergeset_and_tips(
                 pruning_point,
                 self.config.miner.maximum_parents_count(),
                 self.chain_service.get_main().get_genesis_hash(),
-            )?
+            )?;
+            let merge_bound_hash = self
+                .chain_service
+                .get_main()
+                .get_merge_bound_hash(ghostdata.selected_parent)?;
+
+            let (tips, ghostdata) = dag.remove_bounded_merge_breaking_parents(
+                tips,
+                ghostdata,
+                pruning_point,
+                merge_bound_hash,
+            )?;
+            MineNewDagBlockInfo {
+                tips,
+                ghostdata,
+                pruning_point,
+            }
         } else {
             let tips = dag.get_dag_state(genesis.block().id())?.tips;
             let ghostdata = dag.ghostdata(&tips)?;
             MineNewDagBlockInfo {
-                tips: tips.clone(),
-                blue_blocks: ghostdata.mergeset_blues.as_ref().clone(),
+                tips,
+                ghostdata,
                 pruning_point: HashValue::zero(),
             }
         };
 
-        if blue_blocks.is_empty() {
-            bail!("failed to get the blue blocks from the DAG");
-        }
-
-        let selected_parent = *blue_blocks
-            .first()
-            .ok_or_else(|| format_err!("the blue blocks must be not be 0!"))?;
+        let selected_parent = ghostdata.selected_parent;
 
         let time_service = self.config.net().time_service();
         let storage = self.storage.clone();
@@ -568,7 +584,7 @@ where
             previous_header,
             on_chain_block_gas_limit,
             tips_hash: tips,
-            blue_blocks_hash: blue_blocks[1..].to_vec(),
+            blue_blocks_hash: ghostdata.mergeset_blues.as_ref()[1..].to_vec(),
             strategy,
             next_difficulty,
             now_milliseconds,
