@@ -1126,10 +1126,6 @@ impl ExecutedBlock {
     pub fn header(&self) -> &BlockHeader {
         self.block.header()
     }
-
-    pub fn add_multi_state(&mut self, multi_state: MultiState) {
-        self.state_root = Some(multi_state);
-    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
