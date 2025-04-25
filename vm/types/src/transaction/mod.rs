@@ -95,7 +95,7 @@ pub struct RawUserTransaction {
     // transaction has not been included, you can be certain that it will
     // never be included.
     // A transaction that doesn't expire is represented by a very large value like
-    // u64::MAX.
+    // u64::max_value().
     expiration_timestamp_secs: u64,
     chain_id: ChainId,
 }
@@ -321,7 +321,7 @@ impl RawUserTransaction {
             TransactionPayload::Script(Script::new(vec![], vec![], vec![])),
             0,
             0,
-            u64::MAX,
+            u64::max_value(),
             ChainId::test(),
         )
     }
@@ -333,7 +333,7 @@ impl RawUserTransaction {
             TransactionPayload::Script(Script::new(compiled_script, vec![], vec![])),
             600,
             0,
-            u64::MAX,
+            u64::max_value(),
             ChainId::test(),
         )
     }

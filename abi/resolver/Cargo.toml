@@ -7,8 +7,8 @@ starcoin-vm-types = { workspace = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
-# stdlib = { workspace = true }
-# test-helper = { workspace = true }
+stdlib = { workspace = true }
+test-helper = { workspace = true }
 
 [package]
 authors = { workspace = true }

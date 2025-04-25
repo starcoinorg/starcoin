@@ -10,7 +10,7 @@ use move_core_types::gas_algebra::{
 };
 use starcoin_gas_algebra::{FeePerGasUnit, Gas, GasScalingFactor, GasUnit};
 
-// see starcoin/config/src/config G_GAS_CONSTANTS_V2
+// see starcoin/config/src/genesis_config.rs G_GAS_CONSTANTS_V2
 // convert from https://github.com/starcoinorg/starcoin-framework/blob/main/sources/VMConfig.move#GasConstants
 // modify should with impl From<VMConfig> for GasSchedule
 crate::gas_schedule::macros::define_gas_parameters!(

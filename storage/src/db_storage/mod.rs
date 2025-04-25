@@ -18,7 +18,6 @@ use rocksdb::{
 };
 use std::{collections::HashSet, iter, marker::PhantomData, path::Path};
 
-#[allow(dead_code)]
 const RES_FDS: u64 = 4096;
 
 #[allow(clippy::upper_case_acronyms)]

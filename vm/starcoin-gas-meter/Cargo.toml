@@ -20,6 +20,3 @@ version = "2.0.1"
 homepage = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }
-
-[features]
-testing = []

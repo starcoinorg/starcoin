@@ -4,13 +4,10 @@
 //! This module contains the official gas meter implementation, along with some top-level gas
 //! parameters and traits to help manipulate them.
 
-#[cfg(feature = "testing")]
-use move_binary_format::file_format_common::Opcodes;
 use move_binary_format::{
     errors::{Location, PartialVMError, PartialVMResult, VMResult},
     file_format::CodeOffset,
 };
-
 use move_core_types::{
     account_address::AccountAddress,
     gas_algebra::{
@@ -29,7 +26,7 @@ use starcoin_gas_algebra::{Gas, GasExpression};
 use starcoin_gas_schedule::{
     gas_params::instr::*, StarcoinGasParameters, VMGasParameters, LATEST_GAS_FEATURE_VERSION,
 };
-#[cfg(feature = "testing")]
+#[cfg(testing)]
 use starcoin_logger::prelude::*;
 
 /// The size in bytes for a reference on the stack
@@ -100,7 +97,7 @@ impl StarcoinGasMeter {
 
     pub fn charge_intrinsic_gas_for_transaction(&mut self, txn_size: NumBytes) -> VMResult<()> {
         let cost = self.gas_params.vm.txn.calculate_intrinsic_gas(txn_size);
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         info!(
             "charge_intrinsic_gas cost InternalGasUnits({}) {}",
             cost, self.charge
@@ -268,8 +265,11 @@ impl GasMeter for StarcoinGasMeter {
     }
 
     fn charge_pop(&mut self, _popped_val: impl ValueView) -> PartialVMResult<()> {
-        #[cfg(feature = "testing")]
-        info!("simple_instr pop cost InternalGasUnits {}", self.charge);
+        #[cfg(testing)]
+        info!(
+            "simple_instr pop cost InternalGasUnits({}) {}",
+            cost, self.charge
+        );
         self.charge_execution(POP)
     }
 
@@ -284,10 +284,10 @@ impl GasMeter for StarcoinGasMeter {
         let params = &self.gas_params.vm.instr;
         // Note args.len() may be zero, can't use args.len() + 1 directly
         let cost1 = cal_instr_with_arg(params.call_per_arg, NumArgs::new(1));
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         info!("CALL cost InternalGasUnits({}) {}", cost1, self.charge);
         let cost2 = cal_instr_with_arg(params.call_per_arg, NumArgs::new(args.len() as u64));
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         info!("CALL cost InternalGasUnits({}) {}", cost2, self.charge);
         self.deduct_gas(cost1 + cost2)
     }
@@ -307,14 +307,14 @@ impl GasMeter for StarcoinGasMeter {
             params.call_generic_per_arg,
             NumArgs::new((ty_args.len() + 1) as u64),
         );
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         info!(
             "CALL_GENERIC cost InternalGasUnits({}) {}",
             cost1, self.charge
         );
         let cost2 =
             cal_instr_with_arg(params.call_generic_per_arg, NumArgs::new(args.len() as u64));
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         info!(
             "CALL_GENERIC cost InternalGasUnits({}) {}",
             cost2, self.charge
@@ -326,7 +326,7 @@ impl GasMeter for StarcoinGasMeter {
     fn charge_ld_const(&mut self, size: NumBytes) -> PartialVMResult<()> {
         let instr = &self.gas_params.vm.instr;
         let cost = cal_instr_with_byte(instr.ld_const_per_byte, size);
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         info!("LD_CONST cost InternalGasUnits({}) {}", cost, self.charge);
         self.deduct_gas(cost)
     }
@@ -345,7 +345,7 @@ impl GasMeter for StarcoinGasMeter {
             instr_params.copy_loc_per_abs_mem_unit,
             val.legacy_abstract_memory_size(),
         );
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         info!("COPY_LOC cost InternalGasUnits({}) {}", cost, self.charge);
         self.deduct_gas(cost)
     }
@@ -357,7 +357,7 @@ impl GasMeter for StarcoinGasMeter {
             instr_params.move_loc_per_abs_mem_unit,
             val.legacy_abstract_memory_size(),
         );
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         info!("MOVE_LOC cost InternalGasUnits({}) {}", cost, self.charge);
         self.deduct_gas(cost)
     }
@@ -369,7 +369,7 @@ impl GasMeter for StarcoinGasMeter {
             instr_params.st_loc_per_abs_mem_unit,
             val.legacy_abstract_memory_size(),
         );
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         info!("ST_LOC cost InternalGasUnits({}) {}", cost, self.charge);
         self.deduct_gas(cost)
     }
@@ -389,7 +389,7 @@ impl GasMeter for StarcoinGasMeter {
             false => cal_instr_with_size(params.pack_per_abs_mem_unit, size),
             true => cal_instr_with_size(params.pack_generic_per_abs_mem_unit, size),
         };
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         {
             if is_generic {
                 info!(
@@ -409,7 +409,7 @@ impl GasMeter for StarcoinGasMeter {
         is_generic: bool,
         args: impl ExactSizeIterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         let opcode = {
             if is_generic {
                 Opcodes::UNPACK_GENERIC
@@ -425,14 +425,14 @@ impl GasMeter for StarcoinGasMeter {
         };
         let field_count = AbstractMemorySize::new(args.len() as u64);
         let mut cost = cal_instr_with_size(param, field_count);
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         info!(
             "{:#?} cost InternalGasUnits({}) {}",
             opcode, cost, self.charge
         );
         for val in args {
             let cost2 = cal_instr_with_size(param, val.legacy_abstract_memory_size());
-            #[cfg(feature = "testing")]
+            #[cfg(testing)]
             info!(
                 "{:#?} cost InternalGasUnits({}) {}",
                 opcode, cost2, self.charge
@@ -448,7 +448,7 @@ impl GasMeter for StarcoinGasMeter {
             self.gas_params.vm.instr.read_ref_per_abs_mem_unit,
             val.legacy_abstract_memory_size(),
         );
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         info!("READ_REF cost InternalGasUnits({}) {}", cost, self.charge);
         self.deduct_gas(cost)
     }
@@ -463,7 +463,7 @@ impl GasMeter for StarcoinGasMeter {
             self.gas_params.vm.instr.write_ref_per_abs_mem_unit,
             val.legacy_abstract_memory_size(),
         );
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         info!("WRITE_REF cost InternalGasUnits({}) {}", cost, self.charge);
         self.deduct_gas(cost)
     }
@@ -475,7 +475,7 @@ impl GasMeter for StarcoinGasMeter {
             instr_params.eq_per_abs_mem_unit,
             lhs.legacy_abstract_memory_size() + rhs.legacy_abstract_memory_size(),
         );
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         info!("EQ cost InternalGasUnits({}) {}", cost, self.charge);
         self.deduct_gas(cost)
     }
@@ -487,7 +487,7 @@ impl GasMeter for StarcoinGasMeter {
             instr_params.eq_per_abs_mem_unit,
             lhs.legacy_abstract_memory_size() + rhs.legacy_abstract_memory_size(),
         );
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         info!("NEQ cost InternalGasUnits({}) {}", cost, self.charge);
         self.deduct_gas(cost)
     }
@@ -511,12 +511,12 @@ impl GasMeter for StarcoinGasMeter {
             };
             cal_instr_with_size(param, REFERENCE_SIZE)
         };
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         let opcode = match is_generic {
             false => Opcodes::MUT_BORROW_GLOBAL,
             true => Opcodes::MUT_BORROW_GLOBAL_GENERIC,
         };
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         info!(
             "{:#?} cost InternalGasUnits({}) {}",
             opcode, cost, self.charge
@@ -541,12 +541,12 @@ impl GasMeter for StarcoinGasMeter {
             true => REFERENCE_SIZE,
         };
         let cost = cal_instr_with_size(param, size);
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         let opcode = match is_generic {
             false => Opcodes::EXISTS,
             true => Opcodes::EXISTS_GENERIC,
         };
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         info!(
             "{:#?} cost InternalGasUnits({}) {}",
             opcode, cost, self.charge
@@ -568,12 +568,12 @@ impl GasMeter for StarcoinGasMeter {
                 true => params.move_from_generic_per_abs_mem_unit,
             };
             let cost = cal_instr_with_size(param, val.legacy_abstract_memory_size());
-            #[cfg(feature = "testing")]
+            #[cfg(testing)]
             let opcode = match is_generic {
                 false => Opcodes::MOVE_FROM,
                 true => Opcodes::MOVE_FROM_GENERIC,
             };
-            #[cfg(feature = "testing")]
+            #[cfg(testing)]
             info!(
                 "MOVE_FROM {:#?} cost InternalGasUnits({}) {}",
                 opcode, cost, self.charge
@@ -601,12 +601,12 @@ impl GasMeter for StarcoinGasMeter {
             };
             cal_instr_with_size(param, val.legacy_abstract_memory_size())
         };
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         let opcode = match is_generic {
             false => Opcodes::MOVE_TO,
             true => Opcodes::MOVE_TO_GENERIC,
         };
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         info!(
             "charge_MOVE_TO {:#?} cost InternalGasUnits({}) {}",
             opcode, cost, self.charge
@@ -623,7 +623,7 @@ impl GasMeter for StarcoinGasMeter {
         let num_args = NumArgs::new(args.len() as u64);
         let params = &self.gas_params.vm.instr;
         let cost = cal_instr_with_arg(params.vec_pack_per_elem, num_args);
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         info!("VEC_PACK cost InternalGasUnits({}) {}", cost, self.charge);
         self.deduct_gas(cost)
     }
@@ -631,7 +631,7 @@ impl GasMeter for StarcoinGasMeter {
     #[inline]
     fn charge_vec_len(&mut self, _ty: impl TypeView) -> PartialVMResult<()> {
         let cost = self.gas_params.vm.instr.vec_len_base;
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         info!("VEC_LEN cost InternalGasUnits({}) {}", cost, self.charge);
         self.deduct_gas(cost)
     }
@@ -652,12 +652,12 @@ impl GasMeter for StarcoinGasMeter {
                 true => params.vec_mut_borrow_base,
             }
         };
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         let opcode = match is_mut {
             false => Opcodes::VEC_MUT_BORROW,
             true => Opcodes::VEC_IMM_BORROW,
         };
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         info!(
             "{:#?} cost InternalGasUnits({}) {}",
             opcode, cost, self.charge
@@ -675,7 +675,7 @@ impl GasMeter for StarcoinGasMeter {
             self.gas_params.vm.instr.vec_push_back_per_abs_mem_unit,
             val.legacy_abstract_memory_size(),
         );
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         info!(
             "VEC_PUSH_BACK cost InternalGasUnits({}) {}",
             cost, self.charge
@@ -690,7 +690,7 @@ impl GasMeter for StarcoinGasMeter {
         _val: Option<impl ValueView>,
     ) -> PartialVMResult<()> {
         let cost = self.gas_params.vm.instr.vec_pop_back_base;
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         info!(
             "VEC_POP_BACK cost InternalGasUnits({}) {}",
             cost, self.charge
@@ -709,7 +709,7 @@ impl GasMeter for StarcoinGasMeter {
             self.gas_params.vm.instr.vec_unpack_per_expected_elem,
             expect_num_elements,
         );
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         info!("VEC_UNPACK cost InternalGasUnits({}) {}", cost, self.charge);
         self.deduct_gas(cost)
     }
@@ -717,7 +717,7 @@ impl GasMeter for StarcoinGasMeter {
     #[inline]
     fn charge_vec_swap(&mut self, _ty: impl TypeView) -> PartialVMResult<()> {
         let cost = self.gas_params.vm.instr.vec_swap_base;
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         info!("VEC_SWAP cost InternalGasUnits({}) {}", cost, self.charge);
         self.deduct_gas(cost)
     }
@@ -739,7 +739,7 @@ impl GasMeter for StarcoinGasMeter {
         amount: InternalGas,
         _ret_vals: Option<impl ExactSizeIterator<Item = impl ValueView>>,
     ) -> PartialVMResult<()> {
-        #[cfg(feature = "testing")]
+        #[cfg(testing)]
         info!(
             "NATIVE_FUNCTION cost InternalGasUnits({}) {}",
             amount, self.charge

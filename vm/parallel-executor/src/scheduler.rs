@@ -265,10 +265,12 @@ impl Scheduler {
         // Mark dependencies as resolved and find the minimum index among them.
         let min_dep = txn_deps
             .into_iter()
-            .inspect(|&dep| {
+            .map(|dep| {
                 // Mark the status of dependencies as 'ReadyToExecute' since dependency on
                 // transaction txn_idx is now resolved.
                 self.resume(dep);
+
+                dep
             })
             .min();
         if let Some(execution_target_idx) = min_dep {

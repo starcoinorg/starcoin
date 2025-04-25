@@ -9,7 +9,7 @@ STARCOIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd .. && pwd)"
 # cargo fmt check
 cargo fmt -- --check
 # cargo clippy check
-cargo clippy -- -Aclippy::doc_lazy_continuation -D warnings
+cargo clippy --all-targets -- -D warnings
 # generate stdlib
 cargo run -p stdlib
 # generate genesis

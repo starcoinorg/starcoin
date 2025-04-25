@@ -206,11 +206,7 @@ impl From<BlockBody> for crate::block::BlockBody {
 
         Self {
             transactions,
-            uncles: uncles.map(|u| {
-                u.into_iter()
-                    .map(Into::<crate::block::BlockHeader>::into)
-                    .collect()
-            }),
+            uncles: uncles.map(|u| u.into_iter().map(Into::into).collect()),
         }
     }
 }
