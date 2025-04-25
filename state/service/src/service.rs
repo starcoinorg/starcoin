@@ -14,7 +14,6 @@ use starcoin_state_api::{
     StateWithTableItemProof,
 };
 use starcoin_state_tree::AccountStateSetIterator;
-use starcoin_statedb::multi_chain_state_db::MultiChainStateDB;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_types::state_set::AccountStateSet;
