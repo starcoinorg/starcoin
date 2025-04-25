@@ -3,6 +3,7 @@
 
 use crate::accumulator::{
     AccumulatorStorage, BlockAccumulatorStorage, TransactionAccumulatorStorage,
+    VMStateAccumulatorStorage,
 };
 use crate::block::BlockStorage;
 use crate::block_info::{BlockInfoStorage, BlockInfoStore};
@@ -18,18 +19,19 @@ use network_p2p_types::peer_id::PeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
 use starcoin_accumulator::node::AccumulatorStoreType;
-use starcoin_accumulator::AccumulatorTreeStore;
+use starcoin_accumulator::{Accumulator, AccumulatorTreeStore, MerkleAccumulator};
 use starcoin_crypto::HashValue;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
+//use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
+use starcoin_types::account_address::AccountAddress;
 use starcoin_types::contract_event::ContractEvent;
+use starcoin_types::multi_state::MultiState;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus, SnapshotRange};
 use starcoin_types::transaction::{RichTransactionInfo, Transaction};
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
     startup_info::StartupInfo,
 };
-//use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
-use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Display, Formatter};
@@ -62,6 +64,7 @@ pub mod storage_macros;
 pub const DEFAULT_PREFIX_NAME: ColumnFamilyName = "default";
 pub const BLOCK_ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node_block";
 pub const TRANSACTION_ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node_transaction";
+pub const VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME: ColumnFamilyName = "acc_node_vm_state";
 pub const BLOCK_PREFIX_NAME: ColumnFamilyName = "block";
 pub const BLOCK_HEADER_PREFIX_NAME: ColumnFamilyName = "block_header";
 pub const BLOCK_BODY_PREFIX_NAME: ColumnFamilyName = "block_body";
@@ -143,17 +146,25 @@ static VEC_PREFIX_NAME_V3: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         TABLE_INFO_PREFIX_NAME,
     ]
 });
+
+static VEC_PREFIX_NAME_V4: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
+    let mut prefix_vec = VEC_PREFIX_NAME_V3.to_vec();
+    prefix_vec.push(VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME);
+    prefix_vec
+});
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, IntoPrimitive, TryFromPrimitive)]
 #[repr(u8)]
 pub enum StorageVersion {
     V1 = 1,
     V2 = 2,
     V3 = 3,
+    V4 = 4,
 }
 
 impl StorageVersion {
     pub fn current_version() -> StorageVersion {
-        StorageVersion::V3
+        StorageVersion::V4
     }
 
     pub fn get_column_family_names(&self) -> &'static [ColumnFamilyName] {
@@ -161,6 +172,7 @@ impl StorageVersion {
             StorageVersion::V1 => &VEC_PREFIX_NAME_V1,
             StorageVersion::V2 => &VEC_PREFIX_NAME_V2,
             StorageVersion::V3 => &VEC_PREFIX_NAME_V3,
+            StorageVersion::V4 => &VEC_PREFIX_NAME_V4,
         }
     }
 }
@@ -273,6 +285,7 @@ pub struct Storage {
     state_node_storage: StateStorage,
     block_accumulator_storage: AccumulatorStorage<BlockAccumulatorStorage>,
     transaction_accumulator_storage: AccumulatorStorage<TransactionAccumulatorStorage>,
+    vm_state_accumulator_storage: AccumulatorStorage<VMStateAccumulatorStorage>,
     block_info_storage: BlockInfoStorage,
     event_storage: ContractEventStorage,
     chain_info_storage: ChainInfoStorage,
@@ -293,6 +306,9 @@ impl Storage {
             ),
             transaction_accumulator_storage:
                 AccumulatorStorage::new_transaction_accumulator_storage(instance.clone()),
+            vm_state_accumulator_storage: AccumulatorStorage::new_vm_state_accumulator_storage(
+                instance.clone(),
+            ),
             block_info_storage: BlockInfoStorage::new(instance.clone()),
             event_storage: ContractEventStorage::new(instance.clone()),
             chain_info_storage: ChainInfoStorage::new(instance.clone()),
@@ -619,6 +635,26 @@ pub trait Store:
         &self,
         accumulator_type: AccumulatorStoreType,
     ) -> Arc<dyn AccumulatorTreeStore>;
+
+    fn get_vm_multi_state(&self, block_id: HashValue) -> Result<Option<MultiState>> {
+        if let Some(block_info) = self.get_block_info(block_id)? {
+            let acc_info = block_info.vm_state_accumulator_info;
+            let num_leaves = acc_info.num_leaves;
+            if num_leaves > 0 {
+                assert!(num_leaves > 1);
+                let acc = MerkleAccumulator::new_with_info(
+                    acc_info,
+                    self.get_accumulator_store(AccumulatorStoreType::VMState),
+                );
+                return Ok(Some(MultiState::new(
+                    acc.get_leaf(num_leaves - 2)?.unwrap(),
+                    acc.get_leaf(num_leaves - 1)?.unwrap(),
+                )));
+            }
+        };
+
+        Ok(None)
+    }
 }
 
 pub trait IntoSuper<Super: ?Sized> {
@@ -653,6 +689,7 @@ impl Store for Storage {
             AccumulatorStoreType::Transaction => {
                 Arc::new(self.transaction_accumulator_storage.clone())
             }
+            AccumulatorStoreType::VMState => Arc::new(self.vm_state_accumulator_storage.clone()),
         }
     }
 }

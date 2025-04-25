@@ -500,6 +500,22 @@ impl NodeConfig {
         Self::load_with_opt(&opt).expect("Auto generate test config should success.")
     }
 
+    pub fn random_for_test_without_vm2() -> Self {
+        let opt = StarcoinOpt {
+            net: Some(BuiltinNetworkID::Test.into()),
+            ..StarcoinOpt::default()
+        };
+        let mut base = BaseConfig::load_with_opt(&opt).expect("Base config should load ok.");
+        // todo: do this with StarcoinOpt
+        base.net = ChainNetwork::new(
+            base.net.id().clone(),
+            base.net.genesis_config().clone(),
+            None,
+        );
+        base.into_node_config(&opt)
+            .expect("Auto generate test config should success.")
+    }
+
     pub fn customize_for_test() -> Self {
         let opt = StarcoinOpt {
             net: Some(BuiltinNetworkID::Test.into()),

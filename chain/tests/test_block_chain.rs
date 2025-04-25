@@ -222,11 +222,11 @@ fn test_uncle() {
     let uncles = vec![uncle_block_header.clone()];
     let block = product_a_block(mock_chain.head(), miner, uncles);
     mock_chain.apply(block).unwrap();
-    assert!(mock_chain.head().head_block().block.uncles().is_some());
+    assert!(mock_chain.head().head_block().block().uncles().is_some());
     assert!(mock_chain
         .head()
         .head_block()
-        .block
+        .block()
         .uncles()
         .unwrap()
         .contains(&uncle_block_header));
@@ -241,11 +241,11 @@ fn test_uncle_exist() {
     let uncles = vec![uncle_block_header.clone()];
     let block = product_a_block(mock_chain.head(), &miner, uncles);
     mock_chain.apply(block).unwrap();
-    assert!(mock_chain.head().head_block().block.uncles().is_some());
+    assert!(mock_chain.head().head_block().block().uncles().is_some());
     assert!(mock_chain
         .head()
         .head_block()
-        .block
+        .block()
         .uncles()
         .unwrap()
         .contains(&uncle_block_header));
@@ -294,11 +294,11 @@ fn test_switch_epoch() {
     let uncles = vec![uncle_block_header.clone()];
     let block = product_a_block(mock_chain.head(), &miner, uncles);
     mock_chain.apply(block).unwrap();
-    assert!(mock_chain.head().head_block().block.uncles().is_some());
+    assert!(mock_chain.head().head_block().block().uncles().is_some());
     assert!(mock_chain
         .head()
         .head_block()
-        .block
+        .block()
         .uncles()
         .unwrap()
         .contains(&uncle_block_header));
@@ -319,7 +319,7 @@ fn test_switch_epoch() {
     // 5. switch epoch
     let block = product_a_block(mock_chain.head(), &miner, Vec::new());
     mock_chain.apply(block).unwrap();
-    assert!(mock_chain.head().head_block().block.uncles().is_none());
+    assert!(mock_chain.head().head_block().block().uncles().is_none());
     assert_eq!(mock_chain.head().current_epoch_uncles_size(), 0);
 }
 
@@ -344,7 +344,7 @@ fn test_uncle_in_diff_epoch() {
     // 4. switch epoch
     let block = product_a_block(mock_chain.head(), &miner, Vec::new());
     mock_chain.apply(block).unwrap();
-    assert!(mock_chain.head().head_block().block.uncles().is_none());
+    assert!(mock_chain.head().head_block().block().uncles().is_none());
     assert_eq!(mock_chain.head().current_epoch_uncles_size(), 0);
 
     // 5. mock chain apply

@@ -135,8 +135,15 @@ impl PoolClient {
         cache: NonceCache,
         vm_metrics: Option<VMMetrics>,
     ) -> Self {
-        let root_hash = best_block_header.state_root();
-        let statedb = ChainStateDB::new(storage.into_super_arc(), Some(root_hash));
+        let state = storage.get_vm_multi_state(best_block_header.id()).unwrap();
+        let statedb = ChainStateDB::new(
+            storage.into_super_arc(),
+            Some(
+                state
+                    .map(|s| s.state_root1())
+                    .unwrap_or(best_block_header.state_root()),
+            ),
+        );
         let nonce_client = CachedSeqNumberClient::new(statedb, cache);
         Self {
             best_block_header,

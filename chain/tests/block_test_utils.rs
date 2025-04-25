@@ -4,7 +4,7 @@
 use proptest::{collection::vec, prelude::*};
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::ChainWriter;
-use starcoin_config::{ChainNetwork, NodeConfig};
+use starcoin_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_crypto::HashValue;
 use starcoin_executor::block_execute;
 use starcoin_genesis::Genesis;
@@ -34,12 +34,16 @@ fn get_storage() -> impl Strategy<Value = Storage> {
 
 /// This produces the genesis block
 pub fn genesis_strategy(storage: Arc<Storage>) -> impl Strategy<Value = Block> {
-    let net = &ChainNetwork::new_test();
-    let genesis = Genesis::load_or_build(net).unwrap();
+    let net = ChainNetwork::new(
+        BuiltinNetworkID::Test.into(),
+        BuiltinNetworkID::Test.genesis_config().clone(),
+        None,
+    );
+    let genesis = Genesis::load_or_build(&net).unwrap();
     // todo: remove this
     let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance()).unwrap());
     genesis
-        .execute_genesis_block(net, storage, storage2)
+        .execute_genesis_block(&net, storage, storage2)
         .unwrap();
     Just(genesis.block().clone())
 }
@@ -262,8 +266,12 @@ proptest! {
         blocks in block_forest(
             // recursion depth
             10)) {
-        let config = Arc::new(NodeConfig::random_for_test());
-        let mut block_chain = test_helper::gen_blockchain_for_test(config.net()).unwrap();
+        let net = ChainNetwork::new(
+            BuiltinNetworkID::Test.into(),
+            BuiltinNetworkID::Test.genesis_config().clone(),
+            None,
+        );
+        let mut block_chain = test_helper::gen_blockchain_for_test(&net).unwrap();
         // blocks in ;
         for block in blocks {
             if !block.header().is_genesis() {

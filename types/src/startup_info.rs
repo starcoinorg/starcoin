@@ -118,6 +118,12 @@ impl ChainStatus {
                 head.number().saturating_sub(1),
                 rand::random::<u64>(),
             ),
+            AccumulatorInfo::new(
+                head.state_root(),
+                vec![],
+                head.number().saturating_sub(1),
+                rand::random::<u64>(),
+            ),
         );
         Self {
             head,

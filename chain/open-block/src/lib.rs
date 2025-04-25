@@ -4,7 +4,7 @@
 use anyhow::{bail, format_err, Result};
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_chain_api::ExcludedTxns;
-use starcoin_crypto::HashValue;
+use starcoin_crypto::{hash::SPARSE_MERKLE_PLACEHOLDER_HASH, HashValue};
 use starcoin_executor::{execute_block_transactions, execute_transactions, VMMetrics};
 use starcoin_force_upgrade::ForceUpgrade;
 use starcoin_logger::prelude::*;
@@ -27,7 +27,6 @@ use starcoin_types::{
     vm_error::KeptVMStatus,
     U256,
 };
-use starcoin_vm2_crypto::HashValue as HashValue2;
 use starcoin_vm2_state_api::ChainStateReader as ChainStateReader2;
 use starcoin_vm2_statedb::{ChainStateDB as ChainStateDB2, ChainStateWriter as ChainStateWriter2};
 use starcoin_vm2_storage::Store as Store2;
@@ -56,6 +55,7 @@ pub struct OpenedBlock {
 
     state: (ChainStateDB, ChainStateDB2),
     txn_accumulator: MerkleAccumulator,
+    vm_state_accumulator: MerkleAccumulator,
 
     gas_used: u64,
     included_user_txns: Vec<SignedUserTransaction>,
@@ -85,13 +85,40 @@ impl OpenedBlock {
             .get_block_info(previous_block_id)?
             .ok_or_else(|| format_err!("Can not find block info by hash {}", previous_block_id))?;
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
+        let vm_state_accumulator_info = block_info.get_vm_state_accumulator_info();
         let txn_accumulator = MerkleAccumulator::new_with_info(
             txn_accumulator_info.clone(),
             storage.get_accumulator_store(AccumulatorStoreType::Transaction),
         );
-        let state_root2 = block_info.state_root();
-        let chain_state =
-            ChainStateDB::new(storage.into_super_arc(), Some(previous_header.state_root()));
+        let vm_state_accumulator = MerkleAccumulator::new_with_info(
+            vm_state_accumulator_info.clone(),
+            storage.get_accumulator_store(AccumulatorStoreType::VMState),
+        );
+        let (state_root1, state_root2) = {
+            let num_leaves = vm_state_accumulator.num_leaves();
+            if num_leaves == 0 {
+                (previous_header.state_root(), None)
+            } else {
+                assert!(
+                    num_leaves > 1,
+                    "vm_state_accumulator num_leaves should be greater than 1"
+                );
+                (
+                    vm_state_accumulator.get_leaf(num_leaves - 2)?.unwrap(),
+                    Some(vm_state_accumulator.get_leaf(num_leaves - 1)?.unwrap()),
+                )
+            }
+        };
+
+        if state_root2.is_none() {
+            // todo: init vm_state_accumulator if certain block height is reached.
+            debug!(
+                "current block height is {}, vm_state_accumulator is empty",
+                previous_header.number()
+            );
+        }
+
+        let chain_state = ChainStateDB::new(storage.into_super_arc(), Some(state_root1));
         let chain_state2 = ChainStateDB2::new(storage2.into_super_arc(), state_root2);
 
         let chain_id = previous_header.chain_id();
@@ -112,6 +139,7 @@ impl OpenedBlock {
             gas_limit: block_gas_limit,
             state: (chain_state, chain_state2),
             txn_accumulator,
+            vm_state_accumulator,
             gas_used: 0,
             included_user_txns: vec![],
             included_user_txns2: vec![],
@@ -143,8 +171,13 @@ impl OpenedBlock {
     pub fn included_user_txns(&self) -> &[SignedUserTransaction] {
         &self.included_user_txns
     }
+
     pub fn state_root(&self) -> HashValue {
-        self.state.0.state_root()
+        if self.vm_state_accumulator.num_leaves() > 0 {
+            self.vm_state_accumulator.root_hash()
+        } else {
+            self.state.0.state_root()
+        }
     }
     pub fn accumulator_root(&self) -> HashValue {
         self.txn_accumulator.root_hash()
@@ -377,7 +410,7 @@ impl OpenedBlock {
 
     fn push_txn_and_state2(
         &mut self,
-        txn_hash: HashValue2,
+        txn_hash: HashValue,
         output: TransactionOutput2,
     ) -> Result<()> {
         let state = &mut self.state.1;
@@ -407,7 +440,14 @@ impl OpenedBlock {
     /// Construct a block template for mining.
     pub fn finalize(self) -> Result<BlockTemplate> {
         let accumulator_root = self.txn_accumulator.root_hash();
-        let state_root = self.state.0.state_root();
+        // update state_root accumulator, state_root order is important
+        let state_root = if self.state.1.state_root() != *SPARSE_MERKLE_PLACEHOLDER_HASH {
+            self.vm_state_accumulator
+                .append(&[self.state.0.state_root(), self.state.1.state_root()])?;
+            self.vm_state_accumulator.root_hash()
+        } else {
+            self.state.0.state_root()
+        };
         let uncles = if !self.uncles.is_empty() {
             Some(self.uncles)
         } else {

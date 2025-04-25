@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::{CryptoHash, CryptoHasher};
@@ -19,11 +22,11 @@ impl MultiState {
         }
     }
 
-    pub fn state_root1(&self) -> &HashValue {
-        &self.state_root1
+    pub fn state_root1(&self) -> HashValue {
+        self.state_root1
     }
 
-    pub fn state_root2(&self) -> &HashValue {
-        &self.state_root2
+    pub fn state_root2(&self) -> HashValue {
+        self.state_root2
     }
 }

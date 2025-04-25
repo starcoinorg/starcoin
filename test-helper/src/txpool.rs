@@ -38,7 +38,7 @@ pub async fn start_txpool_with_miner(
     ServiceRef<TxPoolActorService>,
     ServiceRef<RegistryService>,
 ) {
-    let mut config = NodeConfig::random_for_test();
+    let mut config = NodeConfig::random_for_test_without_vm2();
     config.tx_pool.set_max_count(pool_size);
     config.miner.disable_miner_client = Some(!enable_miner);
 

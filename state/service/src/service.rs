@@ -15,7 +15,7 @@ use starcoin_state_api::{
 };
 use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_statedb::ChainStateDB;
-use starcoin_storage::{BlockStore, Storage};
+use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_types::state_set::AccountStateSet;
 use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::{
@@ -52,9 +52,17 @@ impl ServiceFactory<Self> for ChainStateService {
         let head_block = storage.get_block(startup_info.main)?.ok_or_else(|| {
             format_err!("Can not find head block by hash:{:?}", startup_info.main)
         })?;
+        let state_root = {
+            let state = storage.get_vm_multi_state(startup_info.main)?;
+            if let Some(state) = state {
+                state.state_root1()
+            } else {
+                head_block.header().state_root()
+            }
+        };
         Ok(Self::new(
             storage,
-            Some(head_block.header().state_root()),
+            Some(state_root),
             config.net().time_service(),
         ))
     }
@@ -133,7 +141,10 @@ impl EventHandler<Self, NewHeadBlock> for ChainStateService {
     fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<ChainStateService>) {
         let NewHeadBlock(block) = msg;
 
-        let state_root = block.header().state_root();
+        let state_root = block
+            .multi_state()
+            .map(|m| m.state_root1())
+            .unwrap_or(block.header().state_root());
         debug!("ChainStateActor change StateRoot to : {:?}", state_root);
         self.service.change_root(state_root);
     }

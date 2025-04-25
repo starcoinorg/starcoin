@@ -161,19 +161,19 @@ impl Genesis {
             difficulty,
         }) = genesis_config.genesis_block_parameter()
         {
-            let (txn2, txn2_info_hash) = if net
+            let (txn2, txn2_info) = if net
                 .id()
                 .as_builtin()
                 .map(|b| !net_with_legacy_genesis(b))
                 .unwrap_or(true)
                 && genesis_config2.is_some()
             {
-                let (user_txn, txn_info_hash) =
+                let (user_txn, txn_info) =
                     starcoin_vm2_genesis::build_and_execute_genesis_transaction(
                         net.chain_id().id(),
                         genesis_config2.as_ref().unwrap(),
                     );
-                (Some(user_txn), Some(txn_info_hash))
+                (Some(user_txn), Some(txn_info))
             } else {
                 (None, None)
             };
@@ -190,10 +190,23 @@ impl Genesis {
                 AccumulatorInfo::default(),
                 storage.get_accumulator_store(AccumulatorStoreType::Transaction),
             );
-            let txn_info_hash_vec = if let Some(txn2_info_hash) = txn2_info_hash {
-                vec![transaction_info.id(), txn2_info_hash]
+            let vm_state_accumulator = MerkleAccumulator::new_with_info(
+                AccumulatorInfo::default(),
+                storage.get_accumulator_store(AccumulatorStoreType::VMState),
+            );
+            let (state_root, txn_info_hash_vec) = if let Some(txn2_info) = txn2_info {
+                let state_root1 = transaction_info.state_root_hash();
+                let state_root2 = txn2_info.state_root_hash();
+                vm_state_accumulator.append(&[state_root1, state_root2])?;
+                (
+                    vm_state_accumulator.root_hash(),
+                    vec![transaction_info.id(), txn2_info.id()],
+                )
             } else {
-                vec![transaction_info.id()]
+                (
+                    transaction_info.state_root_hash(),
+                    vec![transaction_info.id()],
+                )
             };
 
             let accumulator_root = accumulator.append(txn_info_hash_vec.as_slice())?;
@@ -206,7 +219,7 @@ impl Genesis {
                 *parent_hash,
                 *timestamp,
                 accumulator_root,
-                transaction_info.state_root_hash(),
+                state_root,
                 *difficulty,
                 txn,
                 txn2,
@@ -558,10 +571,14 @@ mod tests {
             .get_block(chain_info2.status().head().id())?
             .expect("Genesis block must exist.");
 
-        let state_db = ChainStateDB::new(
-            storage1_2.clone().into_super_arc(),
-            Some(genesis_block.header().state_root()),
-        );
+        let state_db = {
+            let multi_state = storage1_2.get_vm_multi_state(genesis_block.header().id())?;
+            let state_root = multi_state
+                .as_ref()
+                .map(|s| s.state_root1())
+                .unwrap_or_else(|| genesis_block.header().state_root());
+            ChainStateDB::new(storage1_2.clone().into_super_arc(), Some(state_root))
+        };
         let account_state_reader = AccountStateReader::new(&state_db);
         let chain_id = account_state_reader.get_chain_id()?;
         assert_eq!(

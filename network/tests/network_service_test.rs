@@ -245,6 +245,7 @@ fn mock_block_info(total_difficulty: U256) -> BlockInfo {
         total_difficulty,
         AccumulatorInfo::default(),
         AccumulatorInfo::default(),
+        AccumulatorInfo::default(),
     )
 }
 

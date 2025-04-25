@@ -299,10 +299,10 @@ where
             Some(block_info) => {
                 //If block_info exists, it means that this block was already executed and try connect in the previous sync, but the sync task was interrupted.
                 //So, we just need to update chain and continue
-                self.chain.connect(ExecutedBlock {
-                    block,
-                    block_info: block_info.clone(),
-                })?;
+                // todo: double check if there is better way to do this.
+                let multi_state = self.chain.get_storage().get_vm_multi_state(block_id)?;
+                self.chain
+                    .connect(ExecutedBlock::new(block, block_info.clone(), multi_state))?;
                 block_info
             }
             None => {
@@ -332,14 +332,14 @@ where
                     RpcVerifyError::new_with_peers(
                         self.target.peers.clone(),
                         format!(
-                    "Verify target error, expect target: {:?}, collect target block_info:{:?}",
-                    self.target.block_info,
-                    block_info
-                ),
+                            "Verify target error, expect target: {:?}, collect target block_info:{:?}",
+                            self.target.block_info,
+                            block_info
+                        ),
                     )
-                    .into(),
+                        .into(),
                 )
-                .into())
+                    .into())
             } else {
                 Ok(CollectorState::Enough)
             }

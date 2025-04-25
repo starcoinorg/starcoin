@@ -85,7 +85,7 @@ impl BlockRelayer {
         }
         let compact_block = executed_block.block().clone().into();
         let compact_block_msg =
-            CompactBlockMessage::new(compact_block, executed_block.block_info.clone());
+            CompactBlockMessage::new(compact_block, executed_block.block_info().clone());
         network.broadcast(NotificationMessage::CompactBlock(Box::new(
             compact_block_msg,
         )));

@@ -14,6 +14,7 @@ use starcoin_service_registry::ServiceRef;
 use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::BlockInfo;
+use starcoin_types::multi_state::MultiState;
 use starcoin_types::{
     block::{Block, BlockHeader, ExecutedBlock},
     startup_info::StartupInfo,
@@ -137,10 +138,12 @@ where
     fn find_or_fork(
         &self,
         header: &BlockHeader,
-    ) -> Result<(Option<BlockInfo>, Option<BlockChain>)> {
+    ) -> Result<(Option<(BlockInfo, Option<MultiState>)>, Option<BlockChain>)> {
         let block_id = header.id();
+        let mut multi_state = None;
         let block_info = self.storage.get_block_info(block_id)?;
         let block_chain = if block_info.is_some() {
+            multi_state = self.storage.get_vm_multi_state(block_id)?;
             if self.is_main_head(&header.parent_hash()) {
                 None
             } else {
@@ -165,7 +168,7 @@ where
         } else {
             None
         };
-        Ok((block_info, block_chain))
+        Ok((block_info.map(|i| (i, multi_state)), block_chain))
     }
 
     fn block_exist(&self, block_id: HashValue) -> Result<bool> {
@@ -187,7 +190,7 @@ where
                 if !parent_is_main_head {
                     self.find_ancestors_from_accumulator(&new_branch)?
                 } else {
-                    (1, vec![executed_block.block.clone()], 0, vec![])
+                    (1, vec![executed_block.block().clone()], 0, vec![])
                 };
             self.main = new_branch;
 
@@ -231,11 +234,11 @@ where
         if let Some(metrics) = self.metrics.as_ref() {
             metrics
                 .chain_block_num
-                .set(executed_block.block.header().number());
+                .set(executed_block.block().header().number());
 
             metrics
                 .chain_txn_num
-                .set(executed_block.block_info.txn_accumulator_info.num_leaves);
+                .set(executed_block.block_info().txn_accumulator_info.num_leaves);
         }
 
         self.broadcast_new_head(executed_block);
@@ -274,7 +277,7 @@ where
         self.main = new_branch;
 
         let (enacted_count, enacted_blocks, retracted_count, retracted_blocks) =
-            (1, vec![executed_block.block.clone()], 0, vec![]);
+            (1, vec![executed_block.block().clone()], 0, vec![]);
         self.do_new_head(
             executed_block,
             enacted_count,
@@ -440,11 +443,12 @@ where
                 Ok(ConnectOk::Duplicate)
             }
             //block has been processed, and its parent is main chain, so just connect it to main chain.
-            (Some(block_info), None) => {
-                let executed_block = self.main.connect(ExecutedBlock {
-                    block: block.clone(),
+            (Some((block_info, multi_state)), None) => {
+                let executed_block = self.main.connect(ExecutedBlock::new(
+                    block.clone(),
                     block_info,
-                })?;
+                    multi_state,
+                ))?;
                 info!(
                     "Block {} main has been processed, trigger head selection",
                     block_id

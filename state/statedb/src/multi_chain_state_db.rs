@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::ChainStateDB;
 use anyhow::format_err;
 use bcs_ext::BCSCodec;
@@ -48,8 +51,8 @@ impl MultiChainStateDB {
         let multi_state =
             bcs_ext::from_bytes::<MultiState>(res.as_slice()).expect("multi state should decode");
         let chain_state_db = [
-            ChainStateDB::new(store.clone(), Some(*multi_state.state_root1())),
-            ChainStateDB::new(store.clone(), Some(*multi_state.state_root2())),
+            ChainStateDB::new(store.clone(), Some(multi_state.state_root1())),
+            ChainStateDB::new(store.clone(), Some(multi_state.state_root2())),
         ];
         Self {
             store,
@@ -182,7 +185,7 @@ mod tests {
             .unwrap()
             .unwrap();
         let multi_state = MultiState::decode(&buf).unwrap();
-        assert_eq!(*multi_state.state_root1(), state_root1);
-        assert_eq!(*multi_state.state_root2(), state_root2);
+        assert_eq!(multi_state.state_root1(), state_root1);
+        assert_eq!(multi_state.state_root2(), state_root2);
     }
 }

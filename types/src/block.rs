@@ -5,6 +5,7 @@ use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
 use crate::genesis_config::{ChainId, ConsensusStrategy};
 use crate::language_storage::CORE_CODE_ADDRESS;
+use crate::multi_state::MultiState;
 use crate::multi_transaction::MultiSignedUserTransaction;
 use crate::transaction::SignedUserTransaction;
 use crate::U256;
@@ -870,7 +871,36 @@ pub struct BlockInfo {
     pub txn_accumulator_info: AccumulatorInfo,
     /// The block accumulator info.
     pub block_accumulator_info: AccumulatorInfo,
-    pub vm2_state_root: Option<HashValue>,
+    /// The vm state accumulator info for dual-vm
+    pub vm_state_accumulator_info: AccumulatorInfo,
+}
+
+#[derive(
+    Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash, JsonSchema,
+)]
+#[serde(rename = "BlockInfo")]
+pub struct LegacyBlockInfo {
+    /// Block id
+    pub block_id: HashValue,
+    /// The total difficulty.
+    #[schemars(with = "String")]
+    pub total_difficulty: U256,
+    /// The transaction accumulator info
+    pub txn_accumulator_info: AccumulatorInfo,
+    /// The block accumulator info.
+    pub block_accumulator_info: AccumulatorInfo,
+}
+
+impl From<LegacyBlockInfo> for BlockInfo {
+    fn from(legacy_block_info: LegacyBlockInfo) -> Self {
+        BlockInfo {
+            block_id: legacy_block_info.block_id,
+            total_difficulty: legacy_block_info.total_difficulty,
+            txn_accumulator_info: legacy_block_info.txn_accumulator_info,
+            block_accumulator_info: legacy_block_info.block_accumulator_info,
+            vm_state_accumulator_info: AccumulatorInfo::default(),
+        }
+    }
 }
 
 impl BlockInfo {
@@ -879,18 +909,15 @@ impl BlockInfo {
         total_difficulty: U256,
         txn_accumulator_info: AccumulatorInfo,
         block_accumulator_info: AccumulatorInfo,
+        vm_state_accumulator_info: AccumulatorInfo,
     ) -> Self {
         Self {
             block_id,
             total_difficulty,
             txn_accumulator_info,
             block_accumulator_info,
-            vm2_state_root: None,
+            vm_state_accumulator_info,
         }
-    }
-
-    pub fn add_vm2_state_root(&mut self, vm2_state_root: HashValue) {
-        self.vm2_state_root = Some(vm2_state_root);
     }
 
     pub fn id(&self) -> HashValue {
@@ -909,12 +936,12 @@ impl BlockInfo {
         &self.txn_accumulator_info
     }
 
-    pub fn block_id(&self) -> &HashValue {
-        &self.block_id
+    pub fn get_vm_state_accumulator_info(&self) -> &AccumulatorInfo {
+        &self.vm_state_accumulator_info
     }
 
-    pub fn state_root(&self) -> Option<HashValue> {
-        self.vm2_state_root
+    pub fn block_id(&self) -> &HashValue {
+        &self.block_id
     }
 }
 
@@ -925,7 +952,7 @@ impl Sample for BlockInfo {
             total_difficulty: 0.into(),
             txn_accumulator_info: AccumulatorInfo::sample(),
             block_accumulator_info: AccumulatorInfo::sample(),
-            vm2_state_root: None,
+            vm_state_accumulator_info: AccumulatorInfo::sample(),
         }
     }
 }
@@ -1065,13 +1092,19 @@ impl BlockTemplate {
 
 #[derive(Clone, Debug, Hash, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct ExecutedBlock {
-    pub block: Block,
-    pub block_info: BlockInfo,
+    block: Block,
+    block_info: BlockInfo,
+    // only for inner system modules
+    state_root: Option<MultiState>,
 }
 
 impl ExecutedBlock {
-    pub fn new(block: Block, block_info: BlockInfo) -> Self {
-        ExecutedBlock { block, block_info }
+    pub fn new(block: Block, block_info: BlockInfo, state_root: Option<MultiState>) -> Self {
+        ExecutedBlock {
+            block,
+            block_info,
+            state_root,
+        }
     }
 
     pub fn total_difficulty(&self) -> U256 {
@@ -1084,6 +1117,10 @@ impl ExecutedBlock {
 
     pub fn block_info(&self) -> &BlockInfo {
         &self.block_info
+    }
+
+    pub fn multi_state(&self) -> Option<&MultiState> {
+        self.state_root.as_ref()
     }
 
     pub fn header(&self) -> &BlockHeader {

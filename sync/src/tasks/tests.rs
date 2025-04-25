@@ -42,13 +42,21 @@ use test_helper::DummyNetworkService;
 
 #[stest::test(timeout = 120)]
 pub async fn test_full_sync_new_node() -> Result<()> {
-    let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let net1 = ChainNetwork::new(
+        BuiltinNetworkID::Test.into(),
+        BuiltinNetworkID::Test.genesis_config().clone(),
+        None,
+    );
     let mut node1 = SyncNodeMocker::new(net1, 1, 50)?;
     node1.produce_block(10)?;
 
     let mut arc_node1 = Arc::new(node1);
 
-    let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let net2 = ChainNetwork::new(
+        BuiltinNetworkID::Test.into(),
+        BuiltinNetworkID::Test.genesis_config().clone(),
+        None,
+    );
 
     let node2 = SyncNodeMocker::new(net2.clone(), 1, 50)?;
 
@@ -124,13 +132,21 @@ pub async fn test_full_sync_new_node() -> Result<()> {
 
 #[stest::test]
 pub async fn test_sync_invalid_target() -> Result<()> {
-    let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let net1 = ChainNetwork::new(
+        BuiltinNetworkID::Test.into(),
+        BuiltinNetworkID::Test.genesis_config().clone(),
+        None,
+    );
     let mut node1 = SyncNodeMocker::new(net1, 1, 0)?;
     node1.produce_block(10)?;
 
     let arc_node1 = Arc::new(node1);
 
-    let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let net2 = ChainNetwork::new(
+        BuiltinNetworkID::Test.into(),
+        BuiltinNetworkID::Test.genesis_config().clone(),
+        None,
+    );
 
     let node2 = SyncNodeMocker::new(net2.clone(), 1, 0)?;
 
@@ -217,13 +233,21 @@ pub async fn test_failed_block() -> Result<()> {
 
 #[stest::test(timeout = 120)]
 pub async fn test_full_sync_fork() -> Result<()> {
-    let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let net1 = ChainNetwork::new(
+        BuiltinNetworkID::Test.into(),
+        BuiltinNetworkID::Test.genesis_config().clone(),
+        None,
+    );
     let mut node1 = SyncNodeMocker::new(net1, 1, 50)?;
     node1.produce_block(10)?;
 
     let mut arc_node1 = Arc::new(node1);
 
-    let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let net2 = ChainNetwork::new(
+        BuiltinNetworkID::Test.into(),
+        BuiltinNetworkID::Test.genesis_config().clone(),
+        None,
+    );
 
     let node2 = SyncNodeMocker::new(net2.clone(), 1, 50)?;
 
@@ -300,13 +324,21 @@ pub async fn test_full_sync_fork() -> Result<()> {
 
 #[stest::test(timeout = 120)]
 pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
-    let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let net1 = ChainNetwork::new(
+        BuiltinNetworkID::Test.into(),
+        BuiltinNetworkID::Test.genesis_config().clone(),
+        None,
+    );
     let mut node1 = SyncNodeMocker::new(net1, 1, 50)?;
     node1.produce_block(10)?;
 
     let arc_node1 = Arc::new(node1);
 
-    let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let net2 = ChainNetwork::new(
+        BuiltinNetworkID::Test.into(),
+        BuiltinNetworkID::Test.genesis_config().clone(),
+        None,
+    );
 
     //fork from genesis
     let mut node2 = SyncNodeMocker::new(net2.clone(), 1, 50)?;
@@ -355,13 +387,21 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
 
 #[stest::test(timeout = 120)]
 pub async fn test_full_sync_continue() -> Result<()> {
-    let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let net1 = ChainNetwork::new(
+        BuiltinNetworkID::Test.into(),
+        BuiltinNetworkID::Test.genesis_config().clone(),
+        None,
+    );
     let mut node1 = SyncNodeMocker::new(net1, 10, 50)?;
     node1.produce_block(10)?;
 
     let arc_node1 = Arc::new(node1);
 
-    let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let net2 = ChainNetwork::new(
+        BuiltinNetworkID::Test.into(),
+        BuiltinNetworkID::Test.genesis_config().clone(),
+        None,
+    );
 
     //fork from genesis
     let mut node2 = SyncNodeMocker::new(net2.clone(), 1, 50)?;
@@ -448,13 +488,21 @@ pub async fn test_full_sync_continue() -> Result<()> {
 
 #[stest::test]
 pub async fn test_full_sync_cancel() -> Result<()> {
-    let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let net1 = ChainNetwork::new(
+        BuiltinNetworkID::Test.into(),
+        BuiltinNetworkID::Test.genesis_config().clone(),
+        None,
+    );
     let mut node1 = SyncNodeMocker::new(net1, 1, 50)?;
     node1.produce_block(10)?;
 
     let arc_node1 = Arc::new(node1);
 
-    let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let net2 = ChainNetwork::new(
+        BuiltinNetworkID::Test.into(),
+        BuiltinNetworkID::Test.genesis_config().clone(),
+        None,
+    );
 
     let node2 = SyncNodeMocker::new(net2.clone(), 10, 50)?;
 
@@ -748,6 +796,7 @@ impl MockLocalBlockStore {
             U256::from(1),
             AccumulatorInfo::new(HashValue::random(), vec![], 0, 0),
             AccumulatorInfo::new(HashValue::random(), vec![], 0, 0),
+            AccumulatorInfo::new(HashValue::random(), vec![], 0, 0),
         );
         self.store.lock().unwrap().insert(
             block.id(),
@@ -893,13 +942,21 @@ async fn test_block_sync_with_local() -> Result<()> {
 
 #[stest::test(timeout = 120)]
 async fn test_net_rpc_err() -> Result<()> {
-    let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let net1 = ChainNetwork::new(
+        BuiltinNetworkID::Test.into(),
+        BuiltinNetworkID::Test.genesis_config().clone(),
+        None,
+    );
     let mut node1 = SyncNodeMocker::new_with_strategy(net1, ErrorStrategy::MethodNotFound, 50)?;
     node1.produce_block(10)?;
 
     let arc_node1 = Arc::new(node1);
 
-    let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let net2 = ChainNetwork::new(
+        BuiltinNetworkID::Test.into(),
+        BuiltinNetworkID::Test.genesis_config().clone(),
+        None,
+    );
 
     let node2 = SyncNodeMocker::new_with_strategy(net2.clone(), ErrorStrategy::MethodNotFound, 50)?;
 
@@ -952,7 +1009,11 @@ async fn test_err_context() -> Result<()> {
 #[stest::test]
 async fn test_sync_target() {
     let mut peer_infos = vec![];
-    let net1 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let net1 = ChainNetwork::new(
+        BuiltinNetworkID::Test.into(),
+        BuiltinNetworkID::Test.genesis_config().clone(),
+        None,
+    );
     let mut node1 = SyncNodeMocker::new(net1, 1, 0).unwrap();
     node1.produce_block(10).unwrap();
     let low_chain_info = node1.peer_info().chain_info().clone();
@@ -973,7 +1034,11 @@ async fn test_sync_target() {
         None,
     ));
 
-    let net2 = ChainNetwork::new_builtin(BuiltinNetworkID::Test);
+    let net2 = ChainNetwork::new(
+        BuiltinNetworkID::Test.into(),
+        BuiltinNetworkID::Test.genesis_config().clone(),
+        None,
+    );
     let (_, genesis_chain_info, _) =
         Genesis::init_storage_for_test(&net2).expect("init storage by genesis fail.");
     let mock_chain = MockChain::new_with_chain(

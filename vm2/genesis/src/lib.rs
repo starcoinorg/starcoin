@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use starcoin_vm2_crypto::{ed25519::genesis_key_pair, HashValue};
+use starcoin_vm2_crypto::ed25519::genesis_key_pair;
 use starcoin_vm2_executor::{
     block_executor::BlockExecutedData, executor::do_execute_block_transactions,
 };
@@ -53,7 +53,7 @@ fn build_genesis_transaction(
 pub fn build_and_execute_genesis_transaction(
     chain_id: u8,
     genesis_config: &GenesisConfig,
-) -> (SignedUserTransaction, HashValue) {
+) -> (SignedUserTransaction, TransactionInfo) {
     let user_txn = build_genesis_transaction(chain_id, genesis_config).unwrap();
 
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance()).unwrap());
@@ -61,14 +61,14 @@ pub fn build_and_execute_genesis_transaction(
 
     let txn = Transaction::UserTransaction(user_txn.clone());
 
+    let executed_data = execute_genesis_transaction(&chain_state, txn).unwrap();
     (
         user_txn,
-        execute_genesis_transaction(&chain_state, txn)
-            .unwrap()
+        executed_data
+            .clone()
             .txn_infos
             .pop()
-            .expect("Execute output must exist.")
-            .id(),
+            .expect("Execute output must exist."),
     )
 }
 
