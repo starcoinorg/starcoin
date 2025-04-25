@@ -411,16 +411,6 @@ impl BasicDagVerifier {
             })?;
         }
 
-        let (pruning_depth, _pruning_finality) = current_chain.get_pruning_config();
-        match current_chain.get_dag().validate_pruning_point(
-            new_block_header.id(),
-            new_block_header.pruning_point(),
-            pruning_depth,
-        ) {
-            Ok(()) => (),
-            Err(e) => warn!("validate the pruning point failed, error: {:?}", e),
-        }
-
         ConsensusVerifier::verify_header(current_chain, new_block_header)
     }
 
@@ -478,10 +468,13 @@ impl BlockVerifier for DagVerifierWithGhostData {
     where
         R: ChainReader,
     {
-        Ok(Some(BasicDagVerifier::verify_blue_blocks(
-            current_chain,
-            uncles,
-            header,
-        )?))
+        let ghostdata = BasicDagVerifier::verify_blue_blocks(current_chain, uncles, header)?;
+
+        match current_chain.validate_pruning_point(&ghostdata, header.pruning_point()) {
+            Ok(()) => (),
+            Err(e) => warn!("validate the pruning point failed, error: {:?}", e),
+        }
+
+        Ok(Some(ghostdata))
     }
 }

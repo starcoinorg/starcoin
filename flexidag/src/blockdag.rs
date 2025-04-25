@@ -1070,7 +1070,13 @@ impl BlockDAG {
             header.pruning_point(),
             latest_pruning_point
         );
-        if self.check_historical_block(header, latest_pruning_point)? {
+
+        // 3500000 is the block number that the pruning logic was delivered in vega
+        // when the logic is delivered onto the vega,  we should check a number larger than 3500000 to ignore this logic
+        if header.chain_id().is_vega()
+            && header.number() < 3500000
+            && self.check_historical_block(header, latest_pruning_point)?
+        {
             info!(
                 "the block is a historical block, the header id: {:?}",
                 header.id()

@@ -19,6 +19,8 @@ use starcoin_crypto::HashValue;
 use starcoin_dag::blockdag::{BlockDAG, MineNewDagBlockInfo};
 use starcoin_dag::consensusdb::consensus_state::DagState;
 use starcoin_dag::consensusdb::prelude::StoreError;
+use starcoin_dag::consensusdb::schemadb::GhostdagStoreReader;
+use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_executor::VMMetrics;
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
@@ -1486,6 +1488,60 @@ impl ChainReader for BlockChain {
 
     fn get_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>> {
         self.storage.get_block_header_by_hash(block_id)
+    }
+
+    fn validate_pruning_point(
+        &self,
+        ghostdata: &GhostdagData,
+        pruning_point: HashValue,
+    ) -> Result<()> {
+        let chain_pruning_point = if pruning_point == HashValue::zero() {
+            self.genesis_hash
+        } else {
+            pruning_point
+        };
+        let pruning_point_header = self
+            .storage
+            .get_block_header_by_hash(chain_pruning_point)?
+            .ok_or_else(|| {
+                format_err!(
+                    "Cannot find block header by hash when validating the block header {:?}",
+                    pruning_point
+                )
+            })?;
+        let pruning_point_hash = self
+            .get_hash_by_number(pruning_point_header.number())?
+            .ok_or_else(|| {
+                format_err!(
+                    "Cannot find block hash by number when validating the block header {:?}",
+                    pruning_point_header.number()
+                )
+            })?;
+        if pruning_point_header.id() != pruning_point_hash {
+            bail!(
+                "Pruning point header id: {:?} not match with pruning point: {:?}",
+                pruning_point_header.id(),
+                pruning_point_hash
+            );
+        }
+
+        let pruning_point_blue_score = self
+            .dag()
+            .storage
+            .ghost_dag_store
+            .get_blue_score(chain_pruning_point)?;
+        let (pruning_depth, _pruning_finality) = self.get_pruning_config();
+        if let Some(blue_score) = pruning_point_blue_score.checked_add(pruning_depth) {
+            if ghostdata.blue_score < blue_score {
+                bail!("Pruning point blue score: {:?} not match with ghostdag blue score: {:?} and pruning depth: {:?}", pruning_point_blue_score, ghostdata.blue_score, pruning_depth);
+            }
+        } else {
+            bail!(
+                "Overflow occurred when computing pruning_point_blue_score + pruning_depth: {:?} + {:?}",
+                pruning_point_blue_score, pruning_depth
+            );
+        }
+        Ok(())
     }
 }
 

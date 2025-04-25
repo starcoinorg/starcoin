@@ -121,6 +121,11 @@ pub trait ChainReader {
     fn get_genesis_hash(&self) -> HashValue;
     fn get_dag(&self) -> BlockDAG;
     fn get_header_by_hash(&self, block_id: HashValue) -> Result<Option<BlockHeader>>;
+    fn validate_pruning_point(
+        &self,
+        ghostdata: &GhostdagData,
+        pruning_point: HashValue,
+    ) -> Result<()>;
 }
 
 pub trait ChainWriter {
