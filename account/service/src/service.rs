@@ -89,7 +89,7 @@ impl ServiceFactory<Self> for AccountService {
     fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let account_storage = ctx.get_shared::<AccountStorage>()?;
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
-        let manager = AccountManager::new(account_storage, config.net().chain_id())?;
+        let manager = AccountManager::new(account_storage, config.net().chain_id().id().into())?;
         Ok(Self { manager })
     }
 }

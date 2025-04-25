@@ -1,6 +1,10 @@
 [workspace]
 resolver = "2"
 members = [
+    "types",
+    "account",
+    "account/api",
+    "account/service",
     "abi/decoder",
     "abi/resolver",
     "abi/types",
@@ -45,6 +49,11 @@ members = [
 ]
 
 default-members = [
+    "types",
+    "storage",
+    "account",
+    "account/api",
+    "account/service",
     "abi/decoder",
     "abi/resolver",
     "abi/types",
@@ -240,7 +249,6 @@ starcoin-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev 
 starcoin-abi-decoder = { path = "abi/decoder" }
 starcoin-abi-resolver = { path = "abi/resolver" }
 starcoin-abi-types = { path = "abi/types" }
-#starcoin-dev = { path = "vm/dev" }
 starcoin-framework = { path = "vm/framework" }
 starcoin-sdk-builder = { path = "vm/starcoin-sdk-builder" }
 starcoin-move-compiler = { path = "vm/compiler" }
@@ -269,6 +277,8 @@ starcoin-parallel-executor = { path = "vm/parallel-executor" }
 
 starcoin-types = { path = "types" }
 starcoin-uint = { path = "types/uint" }
+starcoin-account = { path = "account" }
+starcoin-account-api = { path = "account/api" }
 starcoin-state-api = { path = "state/api" }
 starcoin-state-service = { path = "state/service" }
 starcoin-state-store-api = { path = "state/state-store-api" }
@@ -287,6 +297,8 @@ starcoin-logger = { git = "https://github.com/starcoinorg/starcoin", rev = "515a
 forkable-jellyfish-merkle = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
 bcs-ext = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
 starcoin-metrics = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
+starcoin-decrypt = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
+starcoin-chain-notify = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
 
 tempfile = "3.2.0"
 textwrap = "0.14.0"

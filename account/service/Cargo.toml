@@ -11,10 +11,10 @@ starcoin-crypto = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-types = { workspace = true }
-tokio = { workspace = true }
+#tokio = { workspace = true }
 
 [dev-dependencies]
-stest = { workspace = true }
+#stest = { workspace = true }
 tempfile = { workspace = true }
 
 [package]
