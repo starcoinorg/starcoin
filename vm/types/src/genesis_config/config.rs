@@ -30,7 +30,7 @@ use starcoin_crypto::{
 use starcoin_gas_algebra::CostTable;
 use starcoin_gas_meter::StarcoinGasParameters;
 use starcoin_gas_schedule::{InitialGasSchedule, ToOnChainGasSchedule, LATEST_GAS_FEATURE_VERSION};
-use starcoin_time_service::TimeServiceType;
+use starcoin_time_service::{TimeService, TimeServiceType};
 use starcoin_uint::U256;
 use std::convert::TryFrom;
 use std::fmt::Debug;
@@ -40,6 +40,42 @@ use std::io::{Read, Write};
 use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
+
+#[derive(Clone, Debug)]
+pub struct ChainNetwork {
+    chain_name: String,
+    id: ChainId,
+    genesis_config: GenesisConfig,
+    time_service: Arc<dyn TimeService>,
+}
+
+impl ChainNetwork {
+    pub fn new(chain_name: String, id: ChainId, genesis_config: GenesisConfig) -> Self {
+        let time_service = genesis_config.time_service_type.new_time_service();
+        Self {
+            chain_name,
+            id,
+            genesis_config,
+            time_service,
+        }
+    }
+
+    pub fn chain_name(&self) -> &str {
+        &self.chain_name
+    }
+
+    pub fn id(&self) -> ChainId {
+        self.id
+    }
+
+    pub fn genesis_config(&self) -> &GenesisConfig {
+        &self.genesis_config
+    }
+
+    pub fn time_service(&self) -> Arc<dyn TimeService> {
+        self.time_service.clone()
+    }
+}
 
 #[derive(
     Clone,

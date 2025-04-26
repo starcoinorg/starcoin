@@ -4,8 +4,8 @@
 mod config;
 
 pub use config::{
-    GenesisConfig, G_BARNARD_CONFIG, G_DAG_TEST_CONFIG, G_DEV_CONFIG, G_HALLEY_CONFIG,
-    G_MAIN_CONFIG, G_PROXIMA_CONFIG, G_TEST_CONFIG, G_VEGA_CONFIG,
+    ChainNetwork, GenesisConfig, G_BARNARD_CONFIG, G_DAG_TEST_CONFIG, G_DEV_CONFIG,
+    G_HALLEY_CONFIG, G_MAIN_CONFIG, G_PROXIMA_CONFIG, G_TEST_CONFIG, G_VEGA_CONFIG,
 };
 
 use anyhow::{format_err, Result};
