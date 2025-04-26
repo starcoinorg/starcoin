@@ -1,8 +1,8 @@
 [dependencies]
 anyhow = { workspace = true }
-async-trait = { workspace = true }
-futures = { workspace = true }
-starcoin-config = { workspace = true }
+#async-trait = { workspace = true }
+#futures = { workspace = true }
+#starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-service-registry = { workspace = true }
@@ -11,6 +11,7 @@ starcoin-state-tree = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-types = { workspace = true }
+starcoin-time-service = { workspace = true }
 #stest = { workspace = true }
 #tokio = { workspace = true }
 starcoin-vm-types = { workspace = true }

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{format_err, Result};
-use starcoin_config::{NodeConfig, TimeService};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
@@ -15,11 +14,13 @@ use starcoin_state_api::{
 use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{BlockStore, Storage};
+use starcoin_time_service::TimeService;
 use starcoin_types::state_set::AccountStateSet;
 use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::{
     account_address::AccountAddress, account_state::AccountState, state_set::ChainStateSet,
 };
+use starcoin_vm_types::genesis_config::ChainNetwork;
 use starcoin_vm_types::state_store::errors::StateviewError;
 use starcoin_vm_types::state_store::state_key::inner::StateKeyInner;
 use starcoin_vm_types::state_store::state_key::StateKey;
@@ -47,7 +48,7 @@ impl ChainStateService {
 
 impl ServiceFactory<Self> for ChainStateService {
     fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
-        let config = ctx.get_shared::<Arc<NodeConfig>>()?;
+        let net = ctx.get_shared::<Arc<ChainNetwork>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let startup_info = storage
             .get_startup_info()?
@@ -58,7 +59,7 @@ impl ServiceFactory<Self> for ChainStateService {
         Ok(Self::new(
             storage,
             Some(head_block.header().state_root()),
-            config.net().time_service(),
+            net.time_service(),
         ))
     }
 }
