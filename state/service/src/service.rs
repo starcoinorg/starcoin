@@ -100,9 +100,9 @@ impl ServiceHandler<Self, StateRequest> for ChainStateService {
                 StateResponse::AccountState(self.service.get_account_state(&address)?)
             }
             StateRequest::StateRoot() => StateResponse::StateRoot(self.service.state_root()),
-            StateRequest::StateRootForVm() => {
-                let vm_state_root = self.service.state_root_for_vm()?;
-                StateResponse::StateRootForVm(vm_state_root.0, vm_state_root.1)
+            StateRequest::GetMultiVMStateRoots() => {
+                let vm_state_root = self.service.get_multi_vm_state_roots()?;
+                StateResponse::GetMultiVMStateRoots(vm_state_root.0, vm_state_root.1)
             }
             StateRequest::GetWithProofByRoot(access_path, state_root) => {
                 StateResponse::StateWithProof(Box::new(
@@ -246,7 +246,7 @@ impl ChainStateReader for Inner {
         self.state_db.state_root()
     }
 
-    fn state_root_for_vm(&self) -> Result<(HashValue, Option<HashValue>)> {
+    fn get_multi_vm_state_roots(&self) -> Result<(HashValue, Option<HashValue>)> {
         let state_roots = self.state_db.state_root();
         Ok((state_roots, None))
     }

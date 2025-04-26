@@ -490,7 +490,7 @@ impl ChainStateReader for ChainStateDB {
     fn state_root(&self) -> HashValue {
         self.state_tree.root_hash()
     }
-    fn state_root_for_vm(&self) -> Result<(HashValue, Option<HashValue>)> {
+    fn get_multi_vm_state_roots(&self) -> Result<(HashValue, Option<HashValue>)> {
         // TODO(BobOng): [dual-vm] rpc for vm2 state root
         unimplemented!()
     }

@@ -156,8 +156,12 @@ where
         Box::pin(fut)
     }
 
-    fn get_vm_state_root(&self) -> FutureResult<(HashValue, Option<HashValue>)> {
-        let fut = self.service.clone().state_root_for_vm().map_err(map_err);
+    fn get_multi_vm_state_roots(&self) -> FutureResult<(HashValue, Option<HashValue>)> {
+        let fut = self
+            .service
+            .clone()
+            .get_multi_vm_state_roots()
+            .map_err(map_err);
         Box::pin(fut)
     }
 

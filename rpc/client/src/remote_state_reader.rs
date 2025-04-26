@@ -88,7 +88,7 @@ impl<'a> ChainStateReader for RemoteStateReader<'a> {
         self.state_root
     }
 
-    fn state_root_for_vm(&self) -> Result<(HashValue, Option<HashValue>)> {
+    fn get_multi_vm_state_roots(&self) -> Result<(HashValue, Option<HashValue>)> {
         // TODO(BobOng): [dual-vm] rpc for vm2 state root
         unimplemented!()
     }

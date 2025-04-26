@@ -762,7 +762,7 @@
       }
     },
     {
-      "name": "state.get_vm_state_root",
+      "name": "state.get_multi_vm_state_roots",
       "params": [],
       "result": {
         "name": "(HashValue, Option < HashValue >)",

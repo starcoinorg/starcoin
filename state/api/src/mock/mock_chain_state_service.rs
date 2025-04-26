@@ -46,7 +46,7 @@ impl ChainStateAsyncService for MockChainStateService {
         unimplemented!()
     }
 
-    async fn state_root_for_vm(self) -> Result<(HashValue, Option<HashValue>)> {
+    async fn get_multi_vm_state_roots(self) -> Result<(HashValue, Option<HashValue>)> {
         unimplemented!()
     }
 
