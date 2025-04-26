@@ -1,15 +1,15 @@
 [dependencies]
 anyhow = { workspace = true }
-async-trait = { workspace = true }
+#async-trait = { workspace = true }
 bcs-ext = { workspace = true }
-futures = { workspace = true }
+#futures = { workspace = true }
 parking_lot = { workspace = true }
 rand_0_7_3 = { workspace = true }
-rand_core = { default-features = false, workspace = true }
+#rand_core = { default-features = false, workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 starcoin-account-api = { workspace = true }
-starcoin-config = { workspace = true }
+#starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-decrypt = { workspace = true }
 starcoin-logger = { workspace = true }
