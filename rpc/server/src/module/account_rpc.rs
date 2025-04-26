@@ -7,7 +7,6 @@ use futures::future::TryFutureExt;
 use futures::FutureExt;
 use starcoin_account_api::{AccountAsyncService, AccountInfo};
 
-use starcoin_config::NodeConfig;
 use starcoin_rpc_api::types::{SignedMessageView, StrView, TransactionRequest};
 use starcoin_rpc_api::{account::AccountApi, FutureResult};
 use starcoin_state_api::ChainStateAsyncService;
@@ -16,6 +15,7 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::token_code::TokenCode;
 use starcoin_types::sign_message::SigningMessage;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
+use starcoin_vm_types::genesis_config::ChainNetwork;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -29,7 +29,7 @@ where
     account: Account,
     pool: Pool,
     chain_state: State,
-    node_config: Arc<NodeConfig>,
+    node_config: Arc<ChainNetwork>,
 }
 
 impl<Account, Pool, State> AccountRpcImpl<Account, Pool, State>
@@ -39,7 +39,7 @@ where
     State: ChainStateAsyncService + 'static,
 {
     pub fn new(
-        node_config: Arc<NodeConfig>,
+        node_config: Arc<ChainNetwork>,
         account: Account,
         pool: Pool,
         chain_state: State,

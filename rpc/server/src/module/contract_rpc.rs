@@ -10,9 +10,7 @@ use starcoin_abi_decoder::{decode_move_value, DecodedMoveValue};
 use starcoin_abi_resolver::ABIResolver;
 use starcoin_abi_types::{FunctionABI, ModuleABI, StructInstantiation, TypeInstantiation};
 use starcoin_account_api::AccountAsyncService;
-use starcoin_config::NodeConfig;
 use starcoin_dev::playground::{call_contract, PlaygroudService};
-use starcoin_executor::VMMetrics;
 use starcoin_resource_viewer::module_cache::ModuleCache;
 use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_rpc_api::contract_api::ContractApi;
@@ -29,7 +27,9 @@ use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::language_storage::{ModuleId, StructTag};
 use starcoin_types::transaction::{DryRunTransaction, RawUserTransaction, TransactionPayload};
+use starcoin_vm_runtime::metrics::VMMetrics;
 use starcoin_vm_types::file_format::CompiledModule;
+use starcoin_vm_types::genesis_config::ChainNetwork;
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::StateView;
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
@@ -40,7 +40,7 @@ pub struct ContractRpcImpl<Account, Pool, State> {
     pub(crate) account: Option<Account>,
     pub(crate) pool: Pool,
     pub(crate) chain_state: State,
-    pub(crate) node_config: Arc<NodeConfig>,
+    pub(crate) node_config: Arc<ChainNetwork>,
     playground: PlaygroudService,
     storage: Arc<Storage>,
 }
@@ -52,7 +52,7 @@ where
     State: ChainStateAsyncService + 'static,
 {
     pub fn new(
-        node_config: Arc<NodeConfig>,
+        node_config: Arc<ChainNetwork>,
         account: Option<Account>,
         pool: Pool,
         chain_state: State,

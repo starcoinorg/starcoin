@@ -1,10 +1,10 @@
 use starcoin_account_api::AccountAsyncService;
-use starcoin_config::NodeConfig;
 use starcoin_rpc_api::types::TransactionRequest;
 use starcoin_state_api::ChainStateAsyncService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_config::AccountResource;
 use starcoin_types::transaction::{Module, Package, RawUserTransaction, TransactionPayload};
+use starcoin_vm_types::genesis_config::ChainNetwork;
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -12,7 +12,7 @@ pub(crate) struct TransactionRequestFiller<Account, Pool, State> {
     pub(crate) account: Option<Account>,
     pub(crate) pool: Pool,
     pub(crate) chain_state: State,
-    pub(crate) node_config: Arc<NodeConfig>,
+    pub(crate) node_config: Arc<ChainNetwork>,
 }
 
 impl<Account, Pool, State> TransactionRequestFiller<Account, Pool, State>
@@ -59,9 +59,10 @@ where
             },
         };
 
+        // todo: Is there better way to handle AccountAddress conversion?
         let next_seq_number = match txn_request
             .sequence_number
-            .or_else(|| self.pool.next_sequence_number(sender))
+            .or_else(|| self.pool.next_sequence_number(sender.into_bytes().into()))
         {
             Some(n) => n,
             None => self
@@ -75,9 +76,9 @@ where
         let max_gas_price = txn_request.gas_unit_price.unwrap_or(1);
         let expire = txn_request
             .expiration_timestamp_secs
-            .unwrap_or_else(|| self.node_config.net().time_service().now_secs() + 60 * 60 * 12); // default to 0.5d
+            .unwrap_or_else(|| self.node_config.time_service().now_secs() + 60 * 60 * 12); // default to 0.5d
 
-        let chain_id = self.node_config.net().chain_id();
+        let chain_id = self.node_config.id();
         if let Some(cid) = txn_request.chain_id {
             if cid != chain_id.id() {
                 anyhow::bail!(
