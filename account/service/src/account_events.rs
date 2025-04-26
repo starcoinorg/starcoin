@@ -1,6 +1,6 @@
+use crate::chain_notify_message::ContractEventNotification;
 use anyhow::{Error, Result};
 use starcoin_account::account_storage::AccountStorage;
-use starcoin_chain_notify::message::ContractEventNotification;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_types::account_config::accept_token_payment::AcceptTokenEvent;

@@ -5,13 +5,13 @@ use anyhow::Result;
 use starcoin_account::{account_storage::AccountStorage, AccountManager};
 use starcoin_account_api::message::{AccountRequest, AccountResponse};
 use starcoin_account_api::DefaultAccountChangeEvent;
-use starcoin_config::NodeConfig;
 use starcoin_crypto::ValidCryptoMaterial;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::mocker::MockHandler;
 use starcoin_service_registry::{ActorService, ServiceContext, ServiceFactory, ServiceHandler};
 use starcoin_types::account_config::{association_address, G_STC_TOKEN_CODE};
 use starcoin_types::genesis_config::ChainId;
+use starcoin_vm_types::genesis_config::ChainNetwork;
 use std::any::Any;
 use std::sync::Arc;
 
@@ -60,14 +60,12 @@ impl ActorService for AccountService {
                 }
             }
         }
-        let config = ctx
-            .get_shared::<Arc<NodeConfig>>()
+        let net = ctx
+            .get_shared::<Arc<ChainNetwork>>()
             .expect("Get NodeConfig should success.");
 
         //Only test/dev network association_key_pair contains private_key.
-        if let (Some(association_private_key), _) =
-            &config.net().genesis_config().association_key_pair
-        {
+        if let (Some(association_private_key), _) = &net.genesis_config().association_key_pair {
             let association_account = self.manager.account_info(association_address())?;
             if association_account.is_none() {
                 if let Err(e) = self.manager.import_account(
@@ -88,8 +86,8 @@ impl ActorService for AccountService {
 impl ServiceFactory<Self> for AccountService {
     fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let account_storage = ctx.get_shared::<AccountStorage>()?;
-        let config = ctx.get_shared::<Arc<NodeConfig>>()?;
-        let manager = AccountManager::new(account_storage, config.net().chain_id().id().into())?;
+        let config = ctx.get_shared::<Arc<ChainNetwork>>()?;
+        let manager = AccountManager::new(account_storage, config.id())?;
         Ok(Self { manager })
     }
 }
