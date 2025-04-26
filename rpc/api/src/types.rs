@@ -7,9 +7,9 @@ use bytes::Bytes;
 use hex::FromHex;
 use jsonrpc_core_client::RpcChannel;
 use move_core_types::u256;
-use network_p2p_types::peer_id::PeerId;
-use network_types::peer_info::PeerInfo;
-pub use node_api_types::*;
+//use network_p2p_types::peer_id::PeerId;
+//use network_types::peer_info::PeerInfo;
+//pub use node_api_types::*;
 use schemars::{self, JsonSchema};
 use serde::de::Error;
 use serde::{Deserialize, Serializer};
@@ -57,8 +57,8 @@ use std::str::FromStr;
 
 pub type ByteCode = Vec<u8>;
 
-mod node_api_types;
-pub mod pubsub;
+//mod node_api_types;
+//pub mod pubsub;
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct MintedBlockView {
@@ -1182,7 +1182,7 @@ use crate::types::TransactionStatusView::Retry;
 use schemars::gen::SchemaGenerator;
 use schemars::schema::{InstanceType, Schema, SchemaObject};
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
-use starcoin_chain_api::{EventWithProof, TransactionInfoWithProof};
+//use starcoin_chain_api::{EventWithProof, TransactionInfoWithProof};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::state_store::state_key::inner::StateKeyInner;
@@ -1355,7 +1355,7 @@ impl From<ChainInfo> for ChainInfoView {
         }
     }
 }
-
+/*
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct PeerInfoView {
     pub peer_id: PeerId,
@@ -1376,6 +1376,7 @@ impl From<PeerInfo> for PeerInfoView {
         }
     }
 }
+*/
 
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct SparseMerkleProofView {
@@ -1523,6 +1524,7 @@ impl From<AccumulatorProofView> for AccumulatorProof {
     }
 }
 
+/*
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct EventWithProofView {
     /// event is serialized bytes in bcs format.
@@ -1581,6 +1583,7 @@ impl TryFrom<TransactionInfoWithProofView> for TransactionInfoWithProof {
         })
     }
 }
+ */
 
 #[derive(Debug, PartialEq, Hash, Eq, Clone, Copy, PartialOrd, Ord)]
 pub struct StrView<T>(pub T);

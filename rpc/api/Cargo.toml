@@ -1,6 +1,6 @@
-[[bin]]
-name = "starcoin-rpc-schema-generate"
-path = "src/generate_schema.rs"
+#[[bin]]
+#name = "starcoin-rpc-schema-generate"
+#path = "src/generate_schema.rs"
 
 [dependencies]
 anyhow = { workspace = true }
@@ -19,36 +19,35 @@ jsonrpc-core-client = { features = [
     "tls",
 ], workspace = true }
 jsonrpc-derive = { workspace = true }
-jsonrpc-pubsub = { workspace = true }
-jsonrpc-server-utils = { workspace = true }
-network-api = { workspace = true }
-network-p2p-types = { workspace = true }
-network-types = { workspace = true }
+#jsonrpc-pubsub = { workspace = true }
+#jsonrpc-server-utils = { workspace = true }
+#network-api = { workspace = true }
+#network-p2p-types = { workspace = true }
+#network-types = { workspace = true }
 openrpc-derive = { workspace = true }
 openrpc-schema = { workspace = true }
 schemars = { workspace = true }
 serde = { features = ["derive"], workspace = true }
-serde-helpers = { workspace = true }
+#serde-helpers = { workspace = true }
 serde_json = { features = ["arbitrary_precision"], workspace = true }
 starcoin-abi-decoder = { workspace = true }
 starcoin-abi-types = { workspace = true }
 starcoin-account-api = { workspace = true }
 starcoin-accumulator = { workspace = true }
-starcoin-chain-api = { workspace = true }
-starcoin-config = { workspace = true }
+#starcoin-chain-api = { workspace = true }
+#starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-logger = { workspace = true }
 starcoin-resource-viewer = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-state-api = { workspace = true }
-starcoin-sync-api = { workspace = true }
-starcoin-txpool-api = { workspace = true }
+#starcoin-sync-api = { workspace = true }
+#starcoin-txpool-api = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
 vm-status-translator = { workspace = true }
 move-core-types = { workspace = true }
-starcoin-dag = { workspace = true }
 
 [package]
 authors = { workspace = true }

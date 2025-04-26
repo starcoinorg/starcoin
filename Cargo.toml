@@ -8,6 +8,8 @@ members = [
     "abi/decoder",
     "abi/resolver",
     "abi/types",
+    "rpc/api",
+    "rpc/server",
     "types",
     "storage",
     "state/api",
@@ -56,6 +58,8 @@ default-members = [
     "account/service",
     "abi/decoder",
     "abi/resolver",
+    "rpc/api",
+    "rpc/server",
     "abi/types",
     "types",
     "storage",
@@ -152,7 +156,13 @@ crossbeam = "0.8.1"
 flate2 = "1.0.24"
 fxhash = "0.2.1"
 hashbrown = "0.14.3"
-
+openrpc-derive = { git = "https://github.com/starcoinorg/openrpc-rs", rev = "1f2f7d3495e3bd3ef3b6fcf7c4e0602cad090d5e", features = [
+    "jsonrpc",
+] }
+openrpc-schema = { git = "https://github.com/starcoinorg/openrpc-rs", rev = "1f2f7d3495e3bd3ef3b6fcf7c4e0602cad090d5e" }
+jsonrpc-core = "18"
+jsonrpc-core-client = "18"
+jsonrpc-derive = "18"
 dashmap = "~5"
 datatest-stable = "0.1.3"
 dirs-next = "2.0.0"
@@ -279,6 +289,8 @@ starcoin-types = { path = "types" }
 starcoin-uint = { path = "types/uint" }
 starcoin-account = { path = "account" }
 starcoin-account-api = { path = "account/api" }
+starcoin-account-service = { path = "account/service" }
+starcoin-rpc-api = { path = "rpc/api" }
 starcoin-state-api = { path = "state/api" }
 starcoin-state-service = { path = "state/service" }
 starcoin-state-store-api = { path = "state/state-store-api" }
