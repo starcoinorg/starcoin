@@ -9489,6 +9489,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-dev"
+version = "2.0.1"
+dependencies = [
+ "anyhow",
+ "bcs-ext 1.13.19 (git+https://github.com/starcoinorg/starcoin?rev=515acac0cc25521b215898d833831bd02ef1106d)",
+ "starcoin-abi-decoder 2.0.1",
+ "starcoin-abi-resolver 2.0.1",
+ "starcoin-abi-types 2.0.1",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
+ "starcoin-logger 1.13.19 (git+https://github.com/starcoinorg/starcoin?rev=515acac0cc25521b215898d833831bd02ef1106d)",
+ "starcoin-resource-viewer 2.0.1",
+ "starcoin-rpc-api",
+ "starcoin-state-api",
+ "starcoin-statedb",
+ "starcoin-vm-runtime",
+ "starcoin-vm-types 2.0.1",
+ "thiserror 1.0.69",
+ "vm-status-translator 2.0.1",
+]
+
+[[package]]
 name = "starcoin-framework"
 version = "0.1.0"
 dependencies = [

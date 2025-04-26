@@ -33,7 +33,7 @@ members = [
     "vm/package-builder",
     "vm/resource-viewer",
     "vm/starcoin-gas-meter",
-    #"vm/dev",
+    "vm/dev",
     "vm/gas-algebra",
     "vm/gas-schedule",
     #"vm/move-explain",
@@ -86,7 +86,7 @@ default-members = [
     "vm/move-coverage",
     "vm/resource-viewer",
     "vm/starcoin-gas-meter",
-    #"vm/dev",
+    "vm/dev",
     "vm/gas-algebra",
     "vm/gas-schedule",
     #"vm/move-explain",
@@ -290,6 +290,7 @@ starcoin-uint = { path = "types/uint" }
 starcoin-account = { path = "account" }
 starcoin-account-api = { path = "account/api" }
 starcoin-account-service = { path = "account/service" }
+starcoin-dev = { path = "vm/dev" }
 starcoin-rpc-api = { path = "rpc/api" }
 starcoin-state-api = { path = "state/api" }
 starcoin-state-service = { path = "state/service" }
