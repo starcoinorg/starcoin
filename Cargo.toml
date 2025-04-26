@@ -1,6 +1,9 @@
 [workspace]
 resolver = "2"
 members = [
+    "abi/decoder",
+    "abi/resolver",
+    "abi/types",
     "types",
     "storage",
     "state/api",
@@ -21,7 +24,7 @@ members = [
     #"vm/transaction-builder-generator",
     "vm/move-coverage",
     "vm/package-builder",
-    #"vm/resource-viewer",
+    "vm/resource-viewer",
     "vm/starcoin-gas-meter",
     #"vm/dev",
     "vm/gas-algebra",
@@ -41,6 +44,9 @@ members = [
 ]
 
 default-members = [
+    "abi/decoder",
+    "abi/resolver",
+    "abi/types",
     "types",
     "storage",
     "state/api",
@@ -63,7 +69,7 @@ default-members = [
     "vm/transaction-builder",
     #"vm/transaction-builder-generator",
     "vm/move-coverage",
-    #"vm/resource-viewer",
+    "vm/resource-viewer",
     "vm/starcoin-gas-meter",
     #"vm/dev",
     "vm/gas-algebra",
@@ -198,6 +204,7 @@ num-traits = "0.2"
 num_cpus = "1.13"
 num_enum = "0.5.7"
 once_cell = "1.13.0"
+ordinal = "0.3.1"
 parking_lot = "0.12.1"
 petgraph = "0.5.1"
 pretty = "0.10.0"
