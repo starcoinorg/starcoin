@@ -311,7 +311,6 @@ forkable-jellyfish-merkle = { git = "https://github.com/starcoinorg/starcoin", r
 bcs-ext = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
 starcoin-metrics = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
 starcoin-decrypt = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
-starcoin-chain-notify = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
 
 tempfile = "3.2.0"
 textwrap = "0.14.0"

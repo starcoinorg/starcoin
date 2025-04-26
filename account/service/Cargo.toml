@@ -5,7 +5,7 @@ anyhow = { workspace = true }
 #futures = { workspace = true }
 starcoin-account = { workspace = true }
 starcoin-account-api = { features = ["mock"], workspace = true }
-starcoin-chain-notify = { workspace = true }
+#starcoin-chain-notify = { workspace = true }
 #starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-logger = { workspace = true }
