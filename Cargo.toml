@@ -279,7 +279,6 @@ vm-status-translator = { path = "vm/vm-status-translator" }
 
 # starcoin shared dependencies
 # branch multi-move-vm
-starcoin-config = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
 starcoin-accumulator = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
 starcoin-infallible = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
 starcoin-time-service = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
