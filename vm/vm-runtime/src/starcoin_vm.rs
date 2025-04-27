@@ -364,7 +364,8 @@ impl StarcoinVM {
                         self.check_move_version(compiled_module.version() as u64)?;
                     };
                 }
-                let enforced = Self::is_enforced(remote_cache, package.package_address()).unwrap_or_default();
+                let enforced =
+                    Self::is_enforced(remote_cache, package.package_address()).unwrap_or_default();
                 let only_new_module =
                     match Self::only_new_module_strategy(remote_cache, package.package_address()) {
                         Err(e) => {
