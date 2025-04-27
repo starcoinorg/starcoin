@@ -7,6 +7,8 @@ use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
+use starcoin_storage::{BlockStore, Storage, Store};
+use starcoin_types::system_events::NewHeadBlock;
 use starcoin_vm2_crypto::HashValue;
 use starcoin_vm2_state_api::{
     message::{StateRequest, StateResponse},
@@ -14,10 +16,10 @@ use starcoin_vm2_state_api::{
 };
 use starcoin_vm2_state_tree::AccountStateSetIterator;
 use starcoin_vm2_statedb::ChainStateDB;
-use starcoin_vm2_storage::{BlockStore, Storage};
+use starcoin_vm2_storage::Storage as Storage2;
 use starcoin_vm2_types::{
     account_address::AccountAddress, account_state::AccountState, state_set::AccountStateSet,
-    state_set::ChainStateSet, system_events::NewHeadBlock,
+    state_set::ChainStateSet,
 };
 use starcoin_vm2_vm_types::state_store::{
     errors::StateviewError,
@@ -50,15 +52,18 @@ impl ServiceFactory<Self> for ChainStateService {
     fn create(ctx: &mut ServiceContext<Self>) -> Result<Self> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
+        let storage2 = ctx.get_shared::<Arc<Storage2>>()?;
         let startup_info = storage
             .get_startup_info()?
             .ok_or_else(|| format_err!("Startup info should exist at service init."))?;
-        let head_block = storage.get_block(startup_info.main)?.ok_or_else(|| {
-            format_err!("Can not find head block by hash:{:?}", startup_info.main)
-        })?;
+        let multi_state = storage
+            .get_vm_multi_state(startup_info.main)?
+            .ok_or_else(|| {
+                format_err!("Can not find multi_state by hash:{:?}", startup_info.main)
+            })?;
         Ok(Self::new(
-            storage,
-            Some(head_block.header().state_root()),
+            storage2,
+            Some(multi_state.state_root2()),
             config.net().time_service(),
         ))
     }
@@ -146,9 +151,10 @@ impl ServiceHandler<Self, StateRequest> for ChainStateService {
 
 impl EventHandler<Self, NewHeadBlock> for ChainStateService {
     fn handle_event(&mut self, msg: NewHeadBlock, _ctx: &mut ServiceContext<Self>) {
-        let state_root = msg.executed_block.header().state_root();
-        debug!("ChainStateActor change StateRoot to : {:?}", state_root);
-        self.service.change_root(state_root);
+        if let Some(state_root) = msg.0.multi_state() {
+            debug!("VM2 ChainStateActor change StateRoot to : {:?}", state_root);
+            self.service.change_root(state_root.state_root2());
+        }
     }
 }
 
@@ -292,10 +298,11 @@ mod tests {
     #[stest::test]
     async fn test_actor_launch() -> Result<()> {
         let config = Arc::new(NodeConfig::random_for_test());
-        let (_storage, storage2, _startup_info, _) =
+        let (storage, storage2, _startup_info, _) =
             test_helper::Genesis::init_storage_for_test_v2(config.net())?;
         let registry = RegistryService::launch();
         registry.put_shared(config).await?;
+        registry.put_shared(storage).await?;
         registry.put_shared(storage2).await?;
         let service_ref = registry.register::<ChainStateService>().await?;
         let account_state = service_ref.get_account_state(genesis_address()).await;

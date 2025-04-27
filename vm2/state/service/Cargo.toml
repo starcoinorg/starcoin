@@ -14,6 +14,8 @@ starcoin-vm2-types = { workspace = true }
 stest = { workspace = true }
 tokio = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
+starcoin-types = { workspace = true }
+starcoin-storage = { workspace = true }
 
 [dev-dependencies]
 test-helper = { workspace = true }
