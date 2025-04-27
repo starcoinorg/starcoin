@@ -113,8 +113,7 @@ where
         if let StateResponse::State(state) = response {
             Ok(state)
         } else {
-            panic!("Unexpect response type.")
-        }
+            panic!("Unexpected response type.")
     }
 
     async fn get_with_proof(self, state_key: StateKey) -> Result<StateWithProof> {
