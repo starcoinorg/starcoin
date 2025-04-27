@@ -1,0 +1,30 @@
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+starcoin-config = { workspace = true }
+starcoin-vm2-crypto = { workspace = true }
+starcoin-logger = { workspace = true }
+starcoin-service-registry = { workspace = true }
+starcoin-vm2-state-api = { workspace = true }
+starcoin-vm2-state-tree = { workspace = true }
+starcoin-vm2-statedb = { workspace = true }
+starcoin-vm2-storage = { workspace = true }
+starcoin-vm2-types = { workspace = true }
+stest = { workspace = true }
+tokio = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
+
+[dev-dependencies]
+test-helper = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-vm2-state-service"
+publish = { workspace = true }
+version = "2.0.1"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
