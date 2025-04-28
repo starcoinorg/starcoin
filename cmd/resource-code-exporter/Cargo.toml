@@ -1,0 +1,25 @@
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "resource-code-exporter"
+publish = { workspace = true }
+version = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+anyhow = { workspace = true }
+bcs-ext = { workspace = true }
+clap = { workspace = true }
+csv = { workspace = true }
+serde_json = { workspace = true }
+starcoin-crypto = { workspace = true }
+starcoin-resource-viewer = { workspace = true }
+starcoin-state-tree = { workspace = true }
+starcoin-statedb = { workspace = true }
+starcoin-storage = { workspace = true }
+starcoin-types = { workspace = true }
+starcoin-vm-types = { workspace = true }
+cmd-utils = { workspace = true }

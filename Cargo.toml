@@ -107,6 +107,7 @@ members = [
     #"cmd/generator",
     "dataformat-generator",
     "cmd/resource-exporter",
+    "cmd/resource-code-exporter",
     "cmd/merkle-generator",
     #"cmd/peer-watcher",
     "cmd/airdrop",
@@ -115,6 +116,8 @@ members = [
     "cmd/miner_client/api",
     #"cmd/db-exporter",
     "cmd/genesis-nft-miner",
+    "cmd/cmd-utils",
+    
 ]
 
 default-members = [
@@ -217,6 +220,7 @@ default-members = [
     #"cmd/generator",
     "dataformat-generator",
     "cmd/resource-exporter",
+    "cmd/resource-code-exporter",
     "cmd/merkle-generator",
     #"cmd/peer-watcher",
     "cmd/airdrop",
@@ -225,6 +229,7 @@ default-members = [
     "stratum",
     "cmd/miner_client/api",
     #"cmd/db-exporter",
+    "cmd/cmd-utils",
 ]
 
 [profile.dev]
@@ -395,6 +400,8 @@ network-p2p-types = { path = "network-p2p/types" }
 network-p2p-core = { path = "network-p2p/core" }
 network-p2p-derive = { path = "network-p2p/derive" }
 network-types = { path = "network/types" }
+cmd-utils = { path = "cmd/cmd-utils" }
+
 num = "0.4.0"
 num-derive = "0.3.3"
 num-traits = "0.2"
