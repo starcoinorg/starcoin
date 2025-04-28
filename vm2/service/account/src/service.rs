@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::mocker::MockHandler;
@@ -96,6 +96,11 @@ impl ServiceFactory<Self> for AccountService {
         let account_storage = ctx.get_shared::<AccountStorage>()?;
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let chain_id = config.net().chain_id().id().into();
+        if config.net().genesis_config2().is_none() {
+            return Err(anyhow!(
+                "Account Service VM2 not supported for this network."
+            ));
+        }
         let manager = AccountManager::new(account_storage, chain_id)?;
         Ok(Self { manager })
     }
