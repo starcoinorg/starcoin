@@ -95,7 +95,7 @@ members = [
     "vm2/executor",
     "vm2/genesis",
     "vm2/test-helper",
-    "vm2/state/service",
+    "vm2/service/state",
     "vm2/chain",
     "vm2/rpc",
     "abi/types",
@@ -537,7 +537,7 @@ starcoin-vm2-chain = { path = "vm2/chain" }
 starcoin-vm2-genesis = { path = "vm2/genesis" }
 starcoin-vm2-executor = { path = "vm2/executor" }
 starcoin-vm2-test-helper = { path = "vm2/test-helper" }
-starcoin-vm2-state-service = { path = "vm2/state/service" }
+starcoin-vm2-state-service = { path = "vm2/service/state" }
 
 
 
