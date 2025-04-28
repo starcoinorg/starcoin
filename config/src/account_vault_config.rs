@@ -38,6 +38,12 @@ impl AccountVaultConfig {
             self.base().data_dir().join(path)
         }
     }
+
+    pub fn dir2(&self) -> PathBuf {
+        let mut path = self.dir().as_mut_os_string().clone().into_string().unwrap();
+        path.push('2');
+        path.into()
+    }
 }
 
 impl ConfigModule for AccountVaultConfig {

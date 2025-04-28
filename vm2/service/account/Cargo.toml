@@ -1,0 +1,32 @@
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+bcs-ext = { workspace = true }
+futures = { workspace = true }
+starcoin-vm2-account = { workspace = true }
+starcoin-vm2-account-api = { features = ["mock"], workspace = true }
+starcoin-chain-notify = { workspace = true }
+starcoin-config = { workspace = true }
+starcoin-vm2-crypto = { workspace = true }
+starcoin-logger = { workspace = true }
+starcoin-service-registry = { workspace = true }
+starcoin-vm2-types = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
+starcoin-types = { workspace = true }
+tokio = { workspace = true }
+
+[dev-dependencies]
+stest = { workspace = true }
+tempfile = { workspace = true }
+starcoin-vm2-storage = { workspace = true }
+
+[package]
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+name = "starcoin-vm2-account-service"
+publish = { workspace = true }
+version = "2.0.1"
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
