@@ -2,6 +2,7 @@
 anyhow = { workspace = true }
 starcoin-vm2-account = { workspace = true }
 starcoin-vm2-account-api = { features = ["mock"], workspace = true }
+starcoin-chain-notify = { workspace = true }
 starcoin-config = { workspace = true }
 starcoin-vm2-crypto = { workspace = true }
 starcoin-logger = { workspace = true }

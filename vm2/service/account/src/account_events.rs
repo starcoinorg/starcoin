@@ -1,8 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::message::ContractEventNotification;
 use anyhow::{Error, Result};
+use starcoin_chain_notify::message::ContractEventNotification;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_vm2_account::account_storage::AccountStorage;
@@ -56,7 +56,7 @@ impl EventHandler<Self, ContractEventNotification> for AccountEventService {
             return;
         }
 
-        for i in item.0 .1.as_ref() {
+        for i in item.0 .2.as_ref() {
             let contract_event = &i.contract_event;
             if watched_keys.contains(&contract_event.event_key()) {
                 if let Err(e) = self.handle_contract_event(contract_event) {

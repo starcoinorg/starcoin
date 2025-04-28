@@ -31,6 +31,7 @@ starcoin-types = { workspace = true }
 starcoin-vm2-storage = { workspace = true }
 starcoin-vm2-types = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
+starcoin-vm2-account-service = { workspace = true }
 
 [dev-dependencies]
 starcoin-network-rpc = { workspace = true }
