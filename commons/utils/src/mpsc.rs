@@ -103,11 +103,10 @@ mod inner {
 
         /// Proxy function to mpsc::UnboundedSender
         pub fn unbounded_send(&self, msg: T) -> Result<(), TrySendError<T>> {
-            self.1.unbounded_send(msg).map(|s| {
+            self.1.unbounded_send(msg).inspect(|_s| {
                 G_UNBOUNDED_CHANNELS_COUNTER
                     .with_label_values(&[self.0, "send"])
                     .inc();
-                s
             })
         }
 
@@ -149,13 +148,12 @@ mod inner {
         /// Proxy function to mpsc::UnboundedReceiver
         /// that discounts the messages taken out
         pub fn try_next(&mut self) -> Result<Option<T>, TryRecvError> {
-            self.1.try_next().map(|s| {
+            self.1.try_next().inspect(|s| {
                 if s.is_some() {
                     G_UNBOUNDED_CHANNELS_COUNTER
                         .with_label_values(&[self.0, "received"])
                         .inc();
                 }
-                s
             })
         }
     }
