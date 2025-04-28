@@ -115,133 +115,134 @@ where
         } else {
             panic!("Unexpected response type.")
         }
+    }
 
-        async fn get_with_proof(self, state_key: StateKey) -> Result<StateWithProof> {
-            let response = self.send(StateRequest::GetWithProof(state_key)).await??;
-            if let StateResponse::StateWithProof(state) = response {
-                Ok(*state)
-            } else {
-                panic!("Unexpect response type.")
-            }
+    async fn get_with_proof(self, state_key: StateKey) -> Result<StateWithProof> {
+        let response = self.send(StateRequest::GetWithProof(state_key)).await??;
+        if let StateResponse::StateWithProof(state) = response {
+            Ok(*state)
+        } else {
+            panic!("Unexpect response type.")
         }
+    }
 
-        async fn get_account_state(self, address: AccountAddress) -> Result<AccountState> {
-            let response = self.send(StateRequest::GetAccountState(address)).await??;
-            if let StateResponse::AccountState(state) = response {
-                Ok(state.ok_or_else(|| {
-                    format_err!("AccountState not exists for address: {}", address)
-                })?)
-            } else {
-                panic!("Unexpect response type.")
-            }
+    async fn get_account_state(self, address: AccountAddress) -> Result<AccountState> {
+        let response = self.send(StateRequest::GetAccountState(address)).await??;
+        if let StateResponse::AccountState(state) = response {
+            Ok(state
+                .ok_or_else(|| format_err!("AccountState not exists for address: {}", address))?)
+        } else {
+            panic!("Unexpect response type.")
         }
-        async fn get_account_state_set(
-            self,
-            address: AccountAddress,
-            state_root: Option<HashValue>,
-        ) -> Result<AccountStateSet> {
-            let response = self
-                .send(StateRequest::GetAccountStateSet {
-                    address,
-                    state_root,
-                })
-                .await??;
-            if let StateResponse::AccountStateSet(state) = response {
-                Ok(state.ok_or_else(|| {
-                    format_err!("AccountStateSet not exists for address: {}", address)
-                })?)
-            } else {
-                panic!("Unexpected response type.")
-            }
+    }
+    async fn get_account_state_set(
+        self,
+        address: AccountAddress,
+        state_root: Option<HashValue>,
+    ) -> Result<AccountStateSet> {
+        let response = self
+            .send(StateRequest::GetAccountStateSet {
+                address,
+                state_root,
+            })
+            .await??;
+        if let StateResponse::AccountStateSet(state) = response {
+            Ok(state.ok_or_else(|| {
+                format_err!("AccountStateSet not exists for address: {}", address)
+            })?)
+        } else {
+            panic!("Unexpected response type.")
         }
-        async fn state_root(self) -> Result<HashValue> {
-            let response = self.send(StateRequest::StateRoot()).await??;
-            if let StateResponse::StateRoot(root) = response {
-                Ok(root)
-            } else {
-                panic!("Unexpect response type.")
-            }
+    }
+    async fn state_root(self) -> Result<HashValue> {
+        let response = self.send(StateRequest::StateRoot()).await??;
+        if let StateResponse::StateRoot(root) = response {
+            Ok(root)
+        } else {
+            panic!("Unexpect response type.")
         }
+    }
 
-        async fn get_with_proof_by_root(
-            self,
-            state_key: StateKey,
-            state_root: HashValue,
-        ) -> Result<StateWithProof> {
-            let response = self
-                .send(StateRequest::GetWithProofByRoot(
-                    state_key.clone(),
-                    state_root,
-                ))
-                .await??;
-            if let StateResponse::StateWithProof(state) = response {
-                Ok(*state)
-            } else {
-                panic!("Unexpect response type.")
-            }
+    async fn get_with_proof_by_root(
+        self,
+        state_key: StateKey,
+        state_root: HashValue,
+    ) -> Result<StateWithProof> {
+        let response = self
+            .send(StateRequest::GetWithProofByRoot(
+                state_key.clone(),
+                state_root,
+            ))
+            .await??;
+        if let StateResponse::StateWithProof(state) = response {
+            Ok(*state)
+        } else {
+            panic!("Unexpect response type.")
         }
+    }
 
-        async fn get_account_state_by_root(
-            self,
-            account_address: AccountAddress,
-            state_root: HashValue,
-        ) -> Result<AccountState> {
-            let response = self
-                .send(StateRequest::GetAccountStateByRoot(
-                    account_address,
-                    state_root,
-                ))
-                .await??;
-            if let StateResponse::AccountState(state) = response {
-                Ok(state.ok_or_else(|| {
-                    format_err!("AccountState not exists for address: {}", account_address)
-                })?)
-            } else {
-                panic!("Unexpect response type.")
-            }
+    async fn get_account_state_by_root(
+        self,
+        account_address: AccountAddress,
+        state_root: HashValue,
+    ) -> Result<AccountState> {
+        let response = self
+            .send(StateRequest::GetAccountStateByRoot(
+                account_address,
+                state_root,
+            ))
+            .await??;
+        if let StateResponse::AccountState(state) = response {
+            Ok(state.ok_or_else(|| {
+                format_err!("AccountState not exists for address: {}", account_address)
+            })?)
+        } else {
+            panic!("Unexpect response type.")
         }
+    }
 
-        async fn get_with_table_item_proof(
-            self,
-            handle: TableHandle,
-            key: Vec<u8>,
-        ) -> Result<StateWithTableItemProof> {
-            let response = self
-                .send(StateRequest::GetWithTableItemProof(handle, key))
-                .await??;
-            if let StateResponse::StateWithTableItemProof(state) = response {
-                Ok(*state)
-            } else {
-                panic!("Unexpect response type.")
-            }
+    async fn get_with_table_item_proof(
+        self,
+        handle: TableHandle,
+        key: Vec<u8>,
+    ) -> Result<StateWithTableItemProof> {
+        let response = self
+            .send(StateRequest::GetWithTableItemProof(handle, key))
+            .await??;
+        if let StateResponse::StateWithTableItemProof(state) = response {
+            Ok(*state)
+        } else {
+            panic!("Unexpect response type.")
         }
+    }
 
-        async fn get_with_table_item_proof_by_root(
-            self,
-            handle: TableHandle,
-            key: Vec<u8>,
-            state_root: HashValue,
-        ) -> Result<StateWithTableItemProof> {
-            let response = self
-                .send(StateRequest::GetWithTableItemProofByRoot(
-                    handle, key, state_root,
-                ))
-                .await??;
-            if let StateResponse::StateWithTableItemProof(state) = response {
-                Ok(*state)
-            } else {
-                panic!("Unexpect response type.")
-            }
+    async fn get_with_table_item_proof_by_root(
+        self,
+        handle: TableHandle,
+        key: Vec<u8>,
+        state_root: HashValue,
+    ) -> Result<StateWithTableItemProof> {
+        let response = self
+            .send(StateRequest::GetWithTableItemProofByRoot(
+                handle, key, state_root,
+            ))
+            .await??;
+        if let StateResponse::StateWithTableItemProof(state) = response {
+            Ok(*state)
+        } else {
+            panic!("Unexpect response type.")
         }
+    }
 
-        async fn get_table_info(self, address: AccountAddress) -> Result<TableInfo> {
-            let response = self.send(StateRequest::GetTableInfo(address)).await??;
-            if let StateResponse::TableInfo(state) = response {
-                Ok(state
-                    .ok_or_else(|| format_err!("TableInfo not exists for address: {}", address))?)
-            } else {
-                panic!("Unexpect response type.")
-            }
+    async fn get_table_info(self, address: AccountAddress) -> Result<TableInfo> {
+        let response = self.send(StateRequest::GetTableInfo(address)).await??;
+        if let StateResponse::TableInfo(state) = response {
+            Ok(
+                state
+                    .ok_or_else(|| format_err!("TableInfo not exists for address: {}", address))?,
+            )
+        } else {
+            panic!("Unexpect response type.")
         }
     }
 }
