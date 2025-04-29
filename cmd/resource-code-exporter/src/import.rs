@@ -8,7 +8,7 @@ use starcoin_types::{
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-pub fn import_from_db_path(db_path: &PathBuf, csv_path: &PathBuf) -> anyhow::Result<()> {
+pub fn import(csv_path: &PathBuf, db_path: &PathBuf) -> anyhow::Result<()> {
     let db_storage = DBStorage::open_with_cfs(
         &db_path,
         StorageVersion::current_version()
@@ -21,11 +21,11 @@ pub fn import_from_db_path(db_path: &PathBuf, csv_path: &PathBuf) -> anyhow::Res
     let storage = Storage::new(StorageInstance::new_db_instance(db_storage))?;
     let storage = Arc::new(storage);
     let statedb = ChainStateDB::new(storage.clone(), None);
-    import(&statedb, csv_path)
+    import_from_statedb(&statedb, csv_path)
 }
 
 /// Import resources and code from CSV file to a new statedb
-pub fn import(statedb: &ChainStateDB, csv_path: &Path) -> anyhow::Result<()> {
+pub fn import_from_statedb(statedb: &ChainStateDB, csv_path: &Path) -> anyhow::Result<()> {
     // Read CSV file
     let mut csv_reader = csv::Reader::from_path(csv_path)?;
     let mut expected_state_root = None;
