@@ -1,19 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use clap::Parser;
 use starcoin_crypto::HashValue;
 use starcoin_statedb::{ChainStateDB, ChainStateReader};
 use starcoin_storage::{
     db_storage::DBStorage, storage::StorageInstance, BlockStore, Storage, StorageVersion,
 };
-use std::{
-    convert::TryInto,
-    fmt::Debug,
-    io::Write,
-    path::{Path, PathBuf},
-    sync::Arc,
-};
+use std::{fmt::Debug, io::Write, path::Path, sync::Arc};
 
 /// Export resources and code from storage for a specific block
 pub fn export(db: &str, output: &Path, block_id: HashValue) -> anyhow::Result<()> {
@@ -83,24 +76,6 @@ pub fn export_from_statedb<W: Write>(
     // flush csv writer
     writer.flush()?;
     Ok(())
-}
-
-#[derive(Debug, Clone, Parser)]
-#[clap(
-    name = "resource-code-exporter",
-    about = "onchain resource and code exporter"
-)]
-pub struct ExporterOptions {
-    #[clap(long, short = 'o', parse(from_os_str))]
-    /// output file, like accounts.csv
-    pub output: PathBuf,
-    #[clap(long, short = 'i', parse(from_os_str))]
-    /// starcoin node db path. like ~/.starcoin/barnard/starcoindb/db/starcoindb
-    pub db_path: PathBuf,
-
-    #[clap(long)]
-    /// block id which snapshot at.
-    pub block_id: HashValue,
 }
 
 #[cfg(test)]
