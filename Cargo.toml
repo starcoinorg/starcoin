@@ -1,6 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
+    "account",
+    "account/api",
     "abi/decoder",
     "abi/resolver",
     "abi/types",
@@ -44,6 +46,8 @@ members = [
 ]
 
 default-members = [
+    "account",
+    "account/api",
     "abi/decoder",
     "abi/resolver",
     "abi/types",
@@ -113,6 +117,7 @@ ark-ec = "0.4.0"
 ark-ff = "0.4.0"
 ark-serialize = "0.4.0"
 ark-std = { version = "0.4.0", features = ["getrandom"] }
+async-trait = "0.1.88"
 atty = "0.2.14"
 backtrace = "0.3"
 blake2 = "0.10.4"
@@ -266,10 +271,13 @@ starcoin-parallel-executor = { path = "vm/parallel-executor" }
 
 starcoin-types = { path = "types" }
 starcoin-uint = { path = "types/uint" }
+starcoin-account-api = { path = "account/api" }
 starcoin-state-api = { path = "state/api" }
+starcoin-state-service = { path = "state/service" }
 starcoin-state-store-api = { path = "state/state-store-api" }
 starcoin-state-tree = { path = "state/state-tree" }
 starcoin-statedb = { path = "state/statedb" }
+starcoin-storage = { path = "storage" }
 vm-status-translator = { path = "vm/vm-status-translator" }
 
 # starcoin shared dependencies
@@ -277,7 +285,9 @@ vm-status-translator = { path = "vm/vm-status-translator" }
 starcoin-accumulator = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
 starcoin-infallible = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
 starcoin-time-service = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
+starcoin-service-registry = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
 starcoin-logger = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
+starcoin-decrypt = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
 forkable-jellyfish-merkle = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
 bcs-ext = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
 starcoin-metrics = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }

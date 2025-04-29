@@ -19,6 +19,63 @@ dependencies = [
 ]
 
 [[package]]
+name = "actix"
+version = "0.13.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "de7fa236829ba0841304542f7614c42b80fca007455315c45c785ccfa873a85b"
+dependencies = [
+ "actix-macros",
+ "actix-rt",
+ "actix_derive",
+ "bitflags 2.9.0",
+ "bytes",
+ "crossbeam-channel",
+ "futures-core",
+ "futures-sink",
+ "futures-task",
+ "futures-util",
+ "log",
+ "once_cell",
+ "parking_lot",
+ "pin-project-lite",
+ "smallvec",
+ "tokio",
+ "tokio-util",
+]
+
+[[package]]
+name = "actix-macros"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e01ed3140b2f8d422c68afa1ed2e85d996ea619c988ac834d255db32138655cb"
+dependencies = [
+ "quote 1.0.40",
+ "syn 2.0.100",
+]
+
+[[package]]
+name = "actix-rt"
+version = "2.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "24eda4e2a6e042aa4e55ac438a2ae052d3b5da0ecf83d7411e1a368946925208"
+dependencies = [
+ "actix-macros",
+ "futures-core",
+ "tokio",
+]
+
+[[package]]
+name = "actix_derive"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b6ac1e58cded18cb28ddc17143c4dea5345b3ad575e14f32f66e4054a56eb271"
+dependencies = [
+ "proc-macro2 1.0.94",
+ "quote 1.0.40",
+ "syn 2.0.100",
+]
+
+[[package]]
 name = "addchain"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -55,6 +112,15 @@ dependencies = [
 
 [[package]]
 name = "aead"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b613b8e1e3cf911a086f53f03bf286f52fd7a7258e4fa606f0ef220d39d8877"
+dependencies = [
+ "generic-array",
+]
+
+[[package]]
+name = "aead"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d122413f284cf2d62fb1b7db97e02edb8cda96d769b16e443a4f6195e35662b0"
@@ -72,6 +138,18 @@ dependencies = [
  "aes-soft",
  "aesni",
  "cipher 0.2.5",
+]
+
+[[package]]
+name = "aes"
+version = "0.7.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9e8b47f52ea9bae42228d07ec09eb676433d7c4ed1ebdf0f1d1c29ed446f1ab8"
+dependencies = [
+ "cfg-if",
+ "cipher 0.3.0",
+ "cpufeatures",
+ "opaque-debug",
 ]
 
 [[package]]
@@ -96,6 +174,20 @@ dependencies = [
  "cipher 0.2.5",
  "ctr 0.6.0",
  "ghash 0.3.1",
+ "subtle",
+]
+
+[[package]]
+name = "aes-gcm"
+version = "0.9.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "df5f85a83a7d8b0442b6aa7b504b8212c1733da07b98aae43d4bc21b2cb3cdf6"
+dependencies = [
+ "aead 0.4.3",
+ "aes 0.7.5",
+ "cipher 0.3.0",
+ "ctr 0.8.0",
+ "ghash 0.4.4",
  "subtle",
 ]
 
@@ -1072,6 +1164,15 @@ dependencies = [
 
 [[package]]
 name = "cipher"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7ee52072ec15386f770805afd189a01c8841be8696bed250fa2f13c4c0d6dfb7"
+dependencies = [
+ "generic-array",
+]
+
+[[package]]
+name = "cipher"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "773f3b9af64447d2ce9850330c473515014aa235e6a783b02db81ff39e4a3dad"
@@ -1562,6 +1663,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fb4a30d54f7443bf3d6191dcd486aca19e67cb3c49fa7a06a319966346707e7f"
 dependencies = [
  "cipher 0.2.5",
+]
+
+[[package]]
+name = "ctr"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "049bb91fb4aaf0e3c7efa6cd5ef877dbbbd15b39dad06d9948de4ec8a75761ea"
+dependencies = [
+ "cipher 0.3.0",
 ]
 
 [[package]]
@@ -2207,6 +2317,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f90f7dce0722e95104fcb095585910c0977252f286e354b5e3bd38902cd99988"
 
 [[package]]
+name = "futures-timer"
+version = "3.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f288b0a4f20f9a56b5d1da57e2227c661b7b16168e2f72365f57b63326e29b24"
+
+[[package]]
 name = "futures-util"
 version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2286,6 +2402,16 @@ checksum = "97304e4cd182c3846f7575ced3890c53012ce534ad9114046b0a9e00bb30a375"
 dependencies = [
  "opaque-debug",
  "polyval 0.4.5",
+]
+
+[[package]]
+name = "ghash"
+version = "0.4.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1583cc1656d7839fd3732b80cf4f38850336cdb9b8ded1cd399ca62958de3c99"
+dependencies = [
+ "opaque-debug",
+ "polyval 0.5.3",
 ]
 
 [[package]]
@@ -4458,6 +4584,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "password-hash"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7676374caaee8a325c9e7a2ae557f216c5563a171d6997b0ef8a65af35147700"
+dependencies = [
+ "base64ct",
+ "rand_core 0.6.4",
+ "subtle",
+]
+
+[[package]]
 name = "pasta_curves"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4479,6 +4616,18 @@ name = "paste"
 version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
+
+[[package]]
+name = "pbkdf2"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "83a0692ec44e4cf1ef28ca317f14f8f07da2d95ec3fa01f86e4467b725e60917"
+dependencies = [
+ "digest 0.10.7",
+ "hmac 0.12.1",
+ "password-hash",
+ "sha2 0.10.8",
+]
 
 [[package]]
 name = "peeking_take_while"
@@ -4657,6 +4806,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eebcc4aa140b9abd2bc40d9c3f7ccec842679cd79045ac3a7ac698c1a064b7cd"
 dependencies = [
  "cpuid-bool",
+ "opaque-debug",
+ "universal-hash 0.4.1",
+]
+
+[[package]]
+name = "polyval"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8419d2b623c7c0896ff2d5d96e2cb4ede590fed28fcc34934f4c33c036e620a1"
+dependencies = [
+ "cfg-if",
+ "cpufeatures",
  "opaque-debug",
  "universal-hash 0.4.1",
 ]
@@ -5855,6 +6016,50 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-account"
+version = "2.0.1"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bcs-ext",
+ "futures",
+ "hex",
+ "parking_lot",
+ "rand 0.7.3",
+ "rand_core 0.6.4",
+ "serde",
+ "serde_json",
+ "starcoin-account-api",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
+ "starcoin-decrypt",
+ "starcoin-logger",
+ "starcoin-storage",
+ "starcoin-types",
+ "tempfile",
+]
+
+[[package]]
+name = "starcoin-account-api"
+version = "2.0.1"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bcs-ext",
+ "futures",
+ "hex",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "schemars",
+ "serde",
+ "serde_bytes",
+ "serde_json",
+ "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
+ "starcoin-service-registry",
+ "starcoin-types",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "starcoin-accumulator"
 version = "1.13.19"
 source = "git+https://github.com/starcoinorg/starcoin?rev=515acac0cc25521b215898d833831bd02ef1106d#515acac0cc25521b215898d833831bd02ef1106d"
@@ -5961,6 +6166,21 @@ dependencies = [
  "proc-macro2 1.0.94",
  "quote 1.0.40",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "starcoin-decrypt"
+version = "1.13.19"
+source = "git+https://github.com/starcoinorg/starcoin?rev=515acac0cc25521b215898d833831bd02ef1106d#515acac0cc25521b215898d833831bd02ef1106d"
+dependencies = [
+ "aes-gcm 0.9.4",
+ "anyhow",
+ "byteorder",
+ "hmac 0.12.1",
+ "pbkdf2",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "sha2 0.10.8",
 ]
 
 [[package]]
@@ -6305,16 +6525,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-service-registry"
+version = "1.13.19"
+source = "git+https://github.com/starcoinorg/starcoin?rev=515acac0cc25521b215898d833831bd02ef1106d#515acac0cc25521b215898d833831bd02ef1106d"
+dependencies = [
+ "actix",
+ "actix-rt",
+ "anyhow",
+ "async-trait",
+ "futures",
+ "futures-timer",
+ "log",
+ "once_cell",
+ "schemars",
+ "serde",
+ "thiserror 1.0.69",
+ "tokio",
+]
+
+[[package]]
 name = "starcoin-state-api"
 version = "2.0.1"
 dependencies = [
  "anyhow",
+ "async-trait",
  "bcs-ext",
  "bytes",
  "forkable-jellyfish-merkle",
  "once_cell",
  "serde",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
+ "starcoin-service-registry",
  "starcoin-state-tree",
  "starcoin-types",
  "starcoin-vm-types",

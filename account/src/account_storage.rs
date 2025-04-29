@@ -6,11 +6,10 @@ use bcs_ext::BCSCodec;
 use serde::Deserialize;
 use serde::Serialize;
 use starcoin_account_api::{AccountPrivateKey, AccountPublicKey, Setting};
-use starcoin_config::RocksdbConfig;
 use starcoin_crypto::ValidCryptoMaterial;
 use starcoin_decrypt::{decrypt, encrypt};
 use starcoin_storage::cache_storage::CacheStorage;
-use starcoin_storage::db_storage::DBStorage;
+use starcoin_storage::db_storage::{DBStorage, RocksdbConfig};
 use starcoin_storage::storage::{KeyCodec, ValueCodec};
 use starcoin_storage::{
     define_storage,
