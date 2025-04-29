@@ -17,6 +17,8 @@ serde_json = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-storage = { workspace = true }
+starcoin-types = { workspace = true }
+tempfile = "3.19.1"
 
 
 [dev-dependencies]

@@ -4426,7 +4426,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite 0.2.16",
- "socket2 0.4.10",
+ "socket2 0.5.8",
  "tokio",
  "tower-service",
  "tracing",
@@ -10225,6 +10225,8 @@ dependencies = [
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-statedb 1.13.19",
  "starcoin-storage 1.13.19",
+ "starcoin-types 1.13.19",
+ "tempfile",
  "test-helper",
 ]
 
