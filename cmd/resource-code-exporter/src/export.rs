@@ -1,15 +1,9 @@
-
 use clap::Parser;
-use cmd_utils::move_struct_serde::MoveStruct;
 use starcoin_crypto::HashValue;
-use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_statedb::{ChainStateDB, ChainStateReader};
 use starcoin_storage::{
     db_storage::DBStorage, storage::StorageInstance, BlockStore, Storage, StorageVersion,
 };
-use starcoin_types::language_storage::StructTag;
-use starcoin_types::state_set::AccountStateSet;
-use starcoin_vm_types::account_address::AccountAddress;
 use std::{
     convert::TryInto,
     fmt::Debug,
@@ -51,16 +45,11 @@ pub fn export_from_statedb<W: Write>(
     root: HashValue,
     writer: &mut csv::Writer<W>,
 ) -> anyhow::Result<()> {
-    let value_annotator = MoveValueAnnotator::new(statedb);
-
     // write csv header
     {
         writer.write_field("address")?;
         writer.write_field("state_root")?;
-        writer.write_field("resource_state_root")?;
-        writer.write_field("resource_blob")?;
-        writer.write_field("code_state_root")?;
-        writer.write_field("code_blob")?;
+        writer.write_field("account_state")?;
         writer.write_record(None::<&[u8]>)?;
     }
 
@@ -72,17 +61,14 @@ pub fn export_from_statedb<W: Write>(
     let mut processed = 0;
 
     for (account_address, account_state) in global_states.into_iter() {
-        let (resource_root_hash, code_root_hash, resources, codes) =
-            process_account(statedb, account_address, &account_state, &value_annotator)?;
+        // Serialize the entire account state
+        let account_state_json = serde_json::to_string(&account_state)?;
 
         // write csv record
         let record = vec![
             serde_json::to_string(&account_address)?,
             serde_json::to_string(&root)?,
-            resource_root_hash,
-            serde_json::to_string(&resources)?,
-            code_root_hash,
-            serde_json::to_string(&codes)?,
+            account_state_json,
         ];
 
         writer.serialize(record)?;
@@ -94,50 +80,6 @@ pub fn export_from_statedb<W: Write>(
     // flush csv writer
     writer.flush()?;
     Ok(())
-}
-pub fn process_account(
-    statedb: &ChainStateDB,
-    account: &AccountAddress,
-    account_state_set: &AccountStateSet,
-    value_annotator: &MoveValueAnnotator,
-) -> anyhow::Result<(
-    String,
-    String,
-    Vec<(String, serde_json::Value)>,
-    Vec<(String, serde_json::Value)>,
-)> {
-    // Handle resource set
-    let mut resources = Vec::new();
-    if let Some(resource_set) = account_state_set.resource_set() {
-        for (tag_bytes, data) in resource_set.iter() {
-            let tag: StructTag = bcs_ext::from_bytes(tag_bytes)?;
-            let annotated_struct = value_annotator.view_struct(tag.clone(), data.as_slice())?;
-            let resource_json_value = serde_json::to_value(MoveStruct(annotated_struct))?;
-            resources.push((tag.to_string(), resource_json_value));
-        }
-    }
-
-    // Handle code set
-    let mut codes = Vec::new();
-    if let Some(code_set) = account_state_set.code_set() {
-        for (tag_bytes, data) in code_set.iter() {
-            let tag: StructTag = bcs_ext::from_bytes(tag_bytes)?;
-            let annotated_struct = value_annotator.view_struct(tag.clone(), data.as_slice())?;
-            let code_json_value = serde_json::to_value(MoveStruct(annotated_struct))?;
-            codes.push((tag.to_string(), code_json_value));
-        }
-    }
-
-    let account_state = statedb
-        .get_account_state(account)?
-        .ok_or_else(|| anyhow::anyhow!("account state set not found"))?;
-
-    Ok((
-        account_state.resource_root().to_hex_literal(),
-        account_state.code_root().unwrap_or_default().to_string(),
-        resources,
-        codes,
-    ))
 }
 
 #[derive(Debug, Clone, Parser)]
@@ -162,121 +104,37 @@ pub struct ExporterOptions {
 mod test {
     use super::*;
     use starcoin_config::ChainNetwork;
-    use starcoin_resource_viewer::MoveValueAnnotator;
-    use starcoin_statedb::ChainStateReader;
-    use starcoin_vm_types::account_config::core_code_address;
     use test_helper::executor::prepare_genesis;
+    use std::io::Cursor;
 
     #[test]
-    fn test_process_genesis_account() -> anyhow::Result<()> {
+    fn test_export_from_statedb() -> anyhow::Result<()> {
         // Initialize test storage with genesis
         let net = ChainNetwork::new_test();
         let (chain_statedb, _net) = prepare_genesis();
 
-        // Create statedb from genesis state
-        let value_annotator = MoveValueAnnotator::new(&chain_statedb);
-
-        // Get account state for 0x1 address
-        let global_states = chain_statedb.dump()?;
-
-        // Find 0x1 account state
-        let mut found = false;
-        for (account_address, account_state) in global_states.into_iter() {
-            if account_address.to_hex_literal() != core_code_address().to_hex_literal() {
-                continue;
-            }
-            found = true;
-
-            // Process 0x1 account
-            let (_resource_state_root, _code_state_root, resources_blob, codes_blob) =
-                process_account(
-                    &chain_statedb,
-                    &account_address,
-                    account_state,
-                    &value_annotator,
-                )?;
-
-            // Verify 0x1 has resources and code
-            assert!(
-                !resources_blob.is_empty(),
-                "0x1 account should have resources"
-            );
-            // assert!(
-            //     !codes_blob.is_empty(),
-            //     "0x1 account should have code modules"
-            // );
-
-            // Print some debug info
-            println!(
-                "Found {} resources in 0x1, blob: {:?}",
-                resources_blob.len(),
-                resources_blob
-            );
-            println!("Found {} code modules in 0x1", codes_blob.len());
-
-            break;
+        // Create a buffer to write CSV data
+        let mut buffer = Cursor::new(Vec::new());
+        {
+            let mut csv_writer = csv::WriterBuilder::new().from_writer(&mut buffer);
+            export_from_statedb(&chain_statedb, chain_statedb.state_root(), &mut csv_writer)?;
         }
 
-        assert!(found, "0x1 account should exist in genesis state");
+        // Get the written data
+        let data = buffer.into_inner();
+        let data_str = String::from_utf8(data)?;
+        println!("Exported CSV data:\n{}", data_str);
 
+        // Verify the data contains expected content
+        let mut csv_reader = csv::Reader::from_reader(data_str.as_bytes());
+        let mut has_data = false;
+        for result in csv_reader.records() {
+            let record = result?;
+            // println!("Record: {:?}", record);
+            has_data = true;
+        }
+
+        assert!(has_data, "CSV should contain exported data");
         Ok(())
     }
-
-    // #[test]
-    // fn test_export_from_statedb() -> anyhow::Result<()> {
-    //     // Initialize test storage with genesis
-    //     let net = ChainNetwork::new_test();
-    //     let (storage, _, chain_info, _) = Genesis::init_storage_for_test_v2(&net)?;
-    //
-    //     // Get genesis block
-    //     let genesis_block = storage
-    //         .get_block(chain_info.status().head().id())?
-    //         .expect("Genesis block must exist");
-    //
-    //     // Create statedb from genesis state
-    //     let state_root = genesis_block.header().state_root();
-    //     let statedb = ChainStateDB::new(storage.clone(), Some(state_root));
-    //
-    //     // Create a temporary CSV file for output
-    //     let temp_dir = TempDir::new()?;
-    //     let output_path = temp_dir.path().join("export.csv");
-    //     let mut csv_writer = csv::WriterBuilder::new().from_path(&output_path)?;
-    //
-    //     // Export from statedb
-    //     export_from_statedb(&statedb, storage.clone(), state_root, &mut csv_writer)?;
-    //
-    //     // Verify the CSV file exists and has content
-    //     let metadata = std::fs::metadata(&output_path)?;
-    //     assert!(metadata.len() > 0, "Export CSV should not be empty");
-    //
-    //     // Read back the CSV to verify content
-    //     let mut csv_reader = csv::ReaderBuilder::new().from_path(&output_path)?;
-    //     let mut has_core_address = false;
-    //
-    //     for result in csv_reader.records() {
-    //         let record = result?;
-    //         let address: String = record.get(0).unwrap().trim_matches('"').to_string();
-    //         if address == "\"0x1\""
-    //             || address == "0x1"
-    //             || address == "0x00000000000000000000000000000001"
-    //         {
-    //             has_core_address = true;
-    //
-    //             // Verify resources and code are not empty
-    //             let resources = record.get(2).unwrap();
-    //             let codes = record.get(3).unwrap();
-    //
-    //             assert!(resources.len() > 2, "Resources for 0x1 should not be empty");
-    //             assert!(codes.len() > 2, "Code for 0x1 should not be empty");
-    //
-    //             break;
-    //         }
-    //     }
-    //     assert!(
-    //         has_core_address,
-    //         "Export should contain the core 0x1 address"
-    //     );
-    //
-    //     Ok(())
-    // }
 }
