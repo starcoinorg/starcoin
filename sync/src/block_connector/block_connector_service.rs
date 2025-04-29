@@ -263,27 +263,20 @@ where
     TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
     fn handle_event(&mut self, msg: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
-        info!("NewDagBlock in block connect service");
-        let chain = self
+        let block_header = match self
             .chain_service
-            .get_main()
-            .fork(self.chain_service.get_main().status().head().id())
-            .unwrap_or_else(|e| {
-                panic!(
-                    "fork error when handle NewDagBlock in block connect service: {:?}",
-                    e
-                )
-            });
-        let new_chain = chain
-            .selecte_dag_state(msg.executed_block.as_ref().clone())
-            .unwrap_or_else(|e| {
-                panic!(
-                    "select dag state error when handle NewDagBlock in block connect service: {:?}",
-                    e
-                )
-            });
-        let block_header = new_chain.head_block().block.header().clone();
-        self.chain_service.switch_header(new_chain);
+            .switch_header(msg.executed_block.header())
+        {
+            std::result::Result::Ok(block_header) => block_header,
+            Err(e) => {
+                error!(
+                    "failed to switch header when processing NewDagBlock, error: {:?}, id: {:?}",
+                    e,
+                    msg.executed_block.header().id()
+                );
+                return;
+            }
+        };
 
         let _consume = self
             .pruning_point_channel
@@ -382,15 +375,26 @@ where
         let bus = self.chain_service.get_bus();
 
         ctx.spawn(async move {
-            let executed_block = chain
-                .execute(VerifiedBlock {
+            let executed_block = match chain.execute(VerifiedBlock {
                     block: new_block.as_ref().clone(),
                     ghostdata: None,
-                })
-                .unwrap();
-            chain.connect(executed_block.clone()).unwrap();
+                }) {
+                    std::result::Result::Ok(executed_block) => executed_block,
+                    Err(e) => {
+                        error!("when executing the mined block, failed to execute block error: {:?}, id: {:?}", e, new_block.id());
+                        return;
+                    },
+                };
+            match chain.connect(executed_block.clone()) {
+                std::result::Result::Ok(_) => (),
+                Err(e) => {
+                    error!("when connecting the mined block, failed to connect block error: {:?}, id: {:?}", e, new_block.id());
+                    return;
+                },
+            }
+
             let _ = bus.broadcast(NewDagBlock {
-                executed_block: Arc::new(executed_block),
+                executed_block: Arc::new(executed_block.clone()),
             });
         });
     }

@@ -285,8 +285,8 @@ impl BlockChain {
         )
     }
 
-    pub fn selecte_dag_state(self, executed_block: ExecutedBlock) -> Result<Self> {
-        let new_pruning_point = executed_block.header().pruning_point();
+    pub fn selecte_dag_state(&mut self, header: &BlockHeader) -> Result<Self> {
+        let new_pruning_point = header.pruning_point();
         let current_pruning_point = self.status().head().pruning_point();
         let chain = if current_pruning_point == new_pruning_point
             || current_pruning_point == HashValue::zero()
@@ -319,11 +319,7 @@ impl BlockChain {
                 .find_selected_parent([new_header, current_header])
                 .unwrap();
 
-            if selected_header != self.status().head().id() {
-                self.fork(selected_header)?
-            } else {
-                self
-            }
+            self.fork(selected_header)?
         };
 
         Ok(chain)

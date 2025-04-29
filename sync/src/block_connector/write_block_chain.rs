@@ -167,8 +167,10 @@ where
         Ok(this)
     }
 
-    pub fn switch_header(&mut self, chain: BlockChain) {
-        self.main = chain;
+    pub fn switch_header(&mut self, header: &BlockHeader) -> Result<BlockHeader> {
+        self.main = self.main.selecte_dag_state(header)?;
+        self.update_startup_info(&self.main.current_header())?;
+        Ok(self.main.current_header())
     }
 
     fn find_or_fork(
