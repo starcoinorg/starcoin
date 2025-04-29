@@ -1,15 +1,24 @@
 pub use self::gen_client::Client as ContractClient;
-use crate::types::{
-    AnnotatedMoveStructView, AnnotatedMoveValueView, ContractCall, DryRunOutputView,
-    DryRunTransactionRequest, FunctionIdView, ModuleIdView, StrView, StructTagView,
-};
 use crate::FutureResult;
 use openrpc_derive::openrpc;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use starcoin_abi_decoder::DecodedMoveValue;
 use starcoin_abi_types::{FunctionABI, ModuleABI, StructInstantiation};
+use starcoin_types::view::{
+    AnnotatedMoveStructView, AnnotatedMoveValueView, DryRunOutputView, DryRunTransactionRequest,
+    FunctionIdView, ModuleIdView, StrView, StructTagView, TransactionArgumentView, TypeTagView,
+};
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+pub struct ContractCall {
+    pub function_id: FunctionIdView,
+    pub type_args: Vec<TypeTagView>,
+    pub args: Vec<TransactionArgumentView>,
+}
 #[openrpc]
 pub trait ContractApi {
     /// get code of module

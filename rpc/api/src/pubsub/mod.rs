@@ -7,8 +7,9 @@ use jsonrpc_core::Result;
 use jsonrpc_derive::rpc;
 use jsonrpc_pubsub::{typed, SubscriptionId};
 
-use crate::types::pubsub;
+//use crate::types::pubsub;
 
+/*
 /// Starcoin PUB-SUB rpc interface.
 /// Example:
 /// ```bash
@@ -43,3 +44,4 @@ pub trait StarcoinPubSub {
     )]
     fn unsubscribe(&self, meta: Option<Self::Metadata>, id: SubscriptionId) -> Result<bool>;
 }
+*/

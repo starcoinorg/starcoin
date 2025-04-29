@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2
 
 pub use self::gen_client::Client as AccountClient;
-use crate::types::{SignedMessageView, StrView, TransactionRequest};
 use crate::FutureResult;
 use openrpc_derive::openrpc;
 use starcoin_account_api::AccountInfo;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::sign_message::SigningMessage;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
+use starcoin_types::view::{SignedMessageView, StrView, TransactionRequest};
 use starcoin_vm_types::token::token_code::TokenCode;
 
 #[openrpc]

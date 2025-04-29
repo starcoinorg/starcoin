@@ -2,10 +2,6 @@
 // SPDX-License-Identifier: Apache-2
 
 pub use self::gen_client::Client as StateClient;
-use crate::types::{
-    AccountStateSetView, CodeView, ListCodeView, ListResourceView, ResourceView,
-    StateWithProofView, StateWithTableItemProofView, StrView, StructTagView, TableInfoView,
-};
 use crate::FutureResult;
 use bytes::Bytes;
 use openrpc_derive::openrpc;
@@ -14,6 +10,10 @@ use serde::Deserialize;
 use serde::Serialize;
 use starcoin_crypto::HashValue;
 use starcoin_types::language_storage::{ModuleId, StructTag};
+use starcoin_types::view::{
+    AccountStateSetView, CodeView, ListCodeView, ListResourceView, ResourceView,
+    StateWithProofView, StateWithTableItemProofView, StrView, StructTagView, TableInfoView,
+};
 use starcoin_types::{account_address::AccountAddress, account_state::AccountState};
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::table::TableHandle;

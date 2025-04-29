@@ -1,8 +1,10 @@
 use anyhow::Result;
 use clap::Parser;
 use starcoin_rpc_api::{
-    account, chain, contract_api, debug, miner, network_manager, node, node_manager, state,
-    sync_manager, txpool,
+    account, /* chain ,*/ contract_api,
+    /*debug, miner, network_manager, node, node_manager, */
+    state,
+    /* sync_manager, txpool, */
 };
 use std::fs::{create_dir_all, File};
 use std::path::Path;
@@ -38,15 +40,17 @@ fn main() {
             data_dir
         },
         account,
-        chain,
+        /*
+        chain, */
         contract_api,
+        /*
         debug,
         miner,
         network_manager,
         node,
-        node_manager,
-        state,
-        sync_manager,
-        txpool
+        node_manager, */
+        state /*,
+              sync_manager,
+              txpool */
     );
 }

@@ -7,20 +7,20 @@ pub type FutureResult<T> = BoxFuture<Result<T, Error>>;
 pub use jsonrpc_core::Params;
 
 pub mod account;
-pub mod chain;
+//pub mod chain;
 pub mod contract_api;
-pub mod debug;
+//pub mod debug;
 pub mod errors;
 pub mod metadata;
-pub mod miner;
-pub mod network_manager;
-pub mod node;
-pub mod node_manager;
+//pub mod miner;
+//pub mod network_manager;
+//pub mod node;
+//pub mod node_manager;
 pub mod pubsub;
-pub mod service;
+//pub mod service;
 pub mod state;
-pub mod sync_manager;
-#[cfg(test)]
-mod tests;
-pub mod txpool;
-pub mod types;
+// pub mod sync_manager;
+// #[cfg(test)]
+// mod tests;
+// pub mod txpool;
+//pub mod types;
