@@ -112,7 +112,6 @@ mod test {
             // println!("Record: {:?}", record);
             has_data = true;
         }
-
         assert!(has_data, "CSV should contain exported data");
         Ok(())
     }
