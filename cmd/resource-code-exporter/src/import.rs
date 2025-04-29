@@ -71,7 +71,6 @@ mod test {
             export_from_statedb(&export_chain_statedb, export_state_root, &mut csv_writer)?;
         }
 
-
         //////////////////////////////////////////////////////
         // Step 2: Do Import
         let import_db_path = temp_dir.path().join("import_db");

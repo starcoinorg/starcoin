@@ -107,9 +107,9 @@ pub struct ExporterOptions {
 mod test {
     use super::*;
     use starcoin_config::ChainNetwork;
-    use test_helper::executor::prepare_genesis;
     use std::io::Cursor;
     use tempfile::TempDir;
+    use test_helper::executor::prepare_genesis;
 
     #[test]
     fn test_export_from_statedb() -> anyhow::Result<()> {
