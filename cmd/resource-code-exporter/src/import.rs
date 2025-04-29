@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use starcoin_crypto::HashValue;
 use starcoin_statedb::{ChainStateDB, ChainStateReader, ChainStateWriter};
 use starcoin_storage::{db_storage::DBStorage, storage::StorageInstance, Storage, StorageVersion};
@@ -5,12 +8,12 @@ use starcoin_types::{
     account_address::AccountAddress,
     state_set::{AccountStateSet, ChainStateSet},
 };
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::Arc;
 
-pub fn import(csv_path: &PathBuf, db_path: &PathBuf) -> anyhow::Result<()> {
+pub fn import(csv_path: &Path, db_path: &Path) -> anyhow::Result<()> {
     let db_storage = DBStorage::open_with_cfs(
-        &db_path,
+        db_path,
         StorageVersion::current_version()
             .get_column_family_names()
             .to_vec(),
