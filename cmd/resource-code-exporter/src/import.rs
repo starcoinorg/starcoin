@@ -1,10 +1,28 @@
 use starcoin_crypto::HashValue;
 use starcoin_statedb::{ChainStateDB, ChainStateReader, ChainStateWriter};
 use starcoin_storage::{db_storage::DBStorage, storage::StorageInstance, Storage, StorageVersion};
-use starcoin_types::account_address::AccountAddress;
-use starcoin_types::state_set::{AccountStateSet, ChainStateSet};
-use std::path::Path;
+use starcoin_types::{
+    account_address::AccountAddress,
+    state_set::{AccountStateSet, ChainStateSet},
+};
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
+
+pub fn import_from_db_path(db_path: &PathBuf, csv_path: &PathBuf) -> anyhow::Result<()> {
+    let db_storage = DBStorage::open_with_cfs(
+        &db_path,
+        StorageVersion::current_version()
+            .get_column_family_names()
+            .to_vec(),
+        false,
+        Default::default(),
+        None,
+    )?;
+    let storage = Storage::new(StorageInstance::new_db_instance(db_storage))?;
+    let storage = Arc::new(storage);
+    let statedb = ChainStateDB::new(storage.clone(), None);
+    import(&statedb, csv_path)
+}
 
 /// Import resources and code from CSV file to a new statedb
 pub fn import(statedb: &ChainStateDB, csv_path: &Path) -> anyhow::Result<()> {
@@ -50,7 +68,9 @@ pub fn import(statedb: &ChainStateDB, csv_path: &Path) -> anyhow::Result<()> {
 mod test {
     use super::*;
     use crate::export::export_from_statedb;
+    use starcoin_storage::db_storage::DBStorage;
     use std::fs::create_dir_all;
+    use std::sync::Arc;
     use tempfile::TempDir;
     use test_helper::executor::prepare_genesis;
 
