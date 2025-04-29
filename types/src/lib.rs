@@ -31,10 +31,7 @@ pub mod block_metadata {
     pub use starcoin_vm_types::block_metadata::BlockMetadata;
 }
 
-pub mod contract_event {
-    pub use crate::event_info::ContractEventInfo;
-    pub use starcoin_vm_types::contract_event::*;
-}
+pub mod contract_event;
 
 // pub mod time {
 //     pub use starcoin_vm_types::time::*;
@@ -44,6 +41,15 @@ pub mod error;
 
 pub mod event {
     pub use starcoin_vm_types::event::*;
+
+    use serde::{Deserialize, Serialize};
+    use starcoin_vm2_vm_types::event::EventKey as EventKey2;
+
+    #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+    pub enum StcEventKey {
+        V1(EventKey),
+        V2(EventKey2),
+    }
 }
 
 pub mod filter;
@@ -68,9 +74,30 @@ pub mod vm_error {
 }
 
 pub mod language_storage {
+    use serde::{Deserialize, Serialize};
     pub use starcoin_vm_types::language_storage::{
         ModuleId, ResourceKey, StructTag, TypeTag, CODE_TAG, CORE_CODE_ADDRESS, RESOURCE_TAG,
     };
+
+    use starcoin_vm2_vm_types::language_storage::TypeTag as TypeTag2;
+
+    #[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
+    pub enum StcTypeTag {
+        V1(TypeTag),
+        V2(TypeTag2),
+    }
+
+    impl From<TypeTag> for StcTypeTag {
+        fn from(tag: TypeTag) -> Self {
+            StcTypeTag::V1(tag)
+        }
+    }
+
+    impl From<TypeTag2> for StcTypeTag {
+        fn from(tag: TypeTag2) -> Self {
+            StcTypeTag::V2(tag)
+        }
+    }
 }
 
 pub mod identifier {

@@ -6,7 +6,7 @@ use crate::TransactionInfoWithProof;
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
-use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
+use starcoin_types::contract_event::{ContractEvent, StcContractEventInfo};
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::transaction::{RichTransactionInfo, Transaction};
@@ -48,7 +48,7 @@ pub trait ReadableChainService {
         reverse: bool,
         count: u64,
     ) -> Result<Vec<Block>>;
-    fn get_main_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>>;
+    fn get_main_events(&self, filter: Filter) -> Result<Vec<StcContractEventInfo>>;
     fn get_block_ids(
         &self,
         start_number: BlockNumber,
@@ -101,7 +101,10 @@ pub trait ChainAsyncService:
         block_hash: HashValue,
         idx: u64,
     ) -> Result<Option<RichTransactionInfo>>;
-    async fn get_events_by_txn_hash(&self, txn_hash: HashValue) -> Result<Vec<ContractEventInfo>>;
+    async fn get_events_by_txn_hash(
+        &self,
+        txn_hash: HashValue,
+    ) -> Result<Vec<StcContractEventInfo>>;
     /// for main
     async fn main_head_header(&self) -> Result<BlockHeader>;
     async fn main_head_block(&self) -> Result<Block>;
@@ -116,7 +119,7 @@ pub trait ChainAsyncService:
         -> Result<Option<BlockHeader>>;
     async fn main_startup_info(&self) -> Result<StartupInfo>;
     async fn main_status(&self) -> Result<ChainStatus>;
-    async fn main_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>>;
+    async fn main_events(&self, filter: Filter) -> Result<Vec<StcContractEventInfo>>;
     async fn get_block_ids(
         &self,
         start_number: BlockNumber,
@@ -271,7 +274,10 @@ where
             bail!("get txn info by block and idx error.")
         }
     }
-    async fn get_events_by_txn_hash(&self, txn_hash: HashValue) -> Result<Vec<ContractEventInfo>> {
+    async fn get_events_by_txn_hash(
+        &self,
+        txn_hash: HashValue,
+    ) -> Result<Vec<StcContractEventInfo>> {
         let response = self
             .send(ChainRequest::GetEventsByTxnHash { txn_hash })
             .await??;
@@ -357,7 +363,7 @@ where
         }
     }
 
-    async fn main_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>> {
+    async fn main_events(&self, filter: Filter) -> Result<Vec<StcContractEventInfo>> {
         let response = self.send(ChainRequest::MainEvents(filter)).await??;
         if let ChainResponse::MainEvents(evts) = response {
             Ok(evts)
