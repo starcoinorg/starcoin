@@ -6,7 +6,7 @@ use starcoin_statedb::{ChainStateDB, ChainStateReader};
 use starcoin_storage::{
     db_storage::DBStorage, storage::StorageInstance, BlockStore, Storage, StorageVersion,
 };
-use std::{fmt::Debug, io::Write, path::Path, sync::Arc};
+ use std::{io::Write, path::Path, sync::Arc};
 
 /// Export resources and code from storage for a specific block
 pub fn export(db: &str, output: &Path, block_id: HashValue) -> anyhow::Result<()> {
@@ -81,15 +81,12 @@ pub fn export_from_statedb<W: Write>(
 #[cfg(test)]
 mod test {
     use super::*;
-    use starcoin_config::ChainNetwork;
     use std::io::Cursor;
-    use tempfile::TempDir;
     use test_helper::executor::prepare_genesis;
 
     #[test]
     fn test_export_from_statedb() -> anyhow::Result<()> {
         // Initialize test storage with genesis
-        let net = ChainNetwork::new_test();
         let (chain_statedb, _net) = prepare_genesis();
 
         // Create a buffer to write CSV data
@@ -108,7 +105,7 @@ mod test {
         let mut csv_reader = csv::Reader::from_reader(data_str.as_bytes());
         let mut has_data = false;
         for result in csv_reader.records() {
-            let record = result?;
+            let _record = result?;
             // println!("Record: {:?}", record);
             has_data = true;
         }
