@@ -110,7 +110,7 @@ mod test {
         let storage = Storage::new(StorageInstance::new_db_instance(db_storage))?;
         let storage = Arc::new(storage);
         let imported_statedb = ChainStateDB::new(storage.clone(), None);
-        import(&imported_statedb, &export_path)?;
+        import_from_statedb(&imported_statedb, &export_path)?;
 
         // Verify state root matches
         assert_eq!(
