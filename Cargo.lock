@@ -10218,8 +10218,10 @@ name = "resource-code-exporter"
 version = "1.13.19"
 dependencies = [
  "anyhow",
+ "bcs-ext 1.13.19",
  "clap 3.2.25",
  "csv",
+ "log 0.4.27",
  "serde_json",
  "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
@@ -13507,6 +13509,7 @@ dependencies = [
  "lru 0.7.8",
  "once_cell",
  "parking_lot 0.12.3",
+ "rayon",
  "serde 1.0.195",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-logger 1.13.19",

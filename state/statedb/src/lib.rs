@@ -22,7 +22,7 @@ use starcoin_types::{
     access_path::{AccessPath, DataType},
     account_address::AccountAddress,
     account_state::AccountState,
-    state_set::{AccountStateSet, ChainStateSet},
+    state_set::{AccountStateSet, ChainStateSet, StateSet},
 };
 use starcoin_vm_types::access_path::{DataPath, ModuleName};
 #[cfg(test)]
@@ -789,5 +789,6 @@ impl TableHandleStateObject {
     }
 }
 
+mod parallel_state_set;
 #[cfg(test)]
 mod tests;
