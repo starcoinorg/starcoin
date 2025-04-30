@@ -44,7 +44,7 @@ pub fn import_from_statedb(
         println!("record len: {:?}", record.len());
 
         let code_state_set = if !record[1].is_empty() && !record[2].is_empty() {
-            let code_state_hash: String = serde_json::from_str(&record[1])?;
+            let code_state_hash = &record[1];
             let code_state_set_str = &record[2];
             assert_eq!(
                 code_state_hash,
@@ -56,13 +56,13 @@ pub fn import_from_statedb(
         };
 
         let resource_state_set = if !record[3].is_empty() && !record[4].is_empty() {
-            let resrouce_blob_hash: String = serde_json::from_str(&record[3])?;
+            let resource_blob_hash = &record[3];
             let resource_state_set_str = &record[4];
             assert_eq!(
-                resrouce_blob_hash,
+                resource_blob_hash,
                 HashValue::sha3_256_of(resource_state_set_str.as_bytes()).to_hex_literal()
             );
-            Some(serde_json::from_str(resource_state_set_str)?)
+            Some(serde_json::from_str::<StateSet>(resource_state_set_str)?)
         } else {
             None
         };
