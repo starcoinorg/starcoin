@@ -42,6 +42,10 @@ enum Commands {
         #[clap(long, short = 'd', parse(from_os_str))]
         /// Output database path
         db_path: PathBuf,
+
+        #[clap(long)]
+        /// expect state root hash
+        state_root: starcoin_crypto::HashValue,
     },
 }
 
@@ -56,8 +60,12 @@ fn main() -> anyhow::Result<()> {
         } => {
             export::export(db_path.display().to_string().as_str(), &output, block_id)?;
         }
-        Commands::Import { csv_input, db_path } => {
-            import::import(&csv_input, &db_path)?;
+        Commands::Import {
+            csv_input,
+            db_path,
+            state_root,
+        } => {
+            import::import(&csv_input, &db_path, state_root)?;
         }
     }
 
