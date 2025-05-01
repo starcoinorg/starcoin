@@ -1563,7 +1563,7 @@ impl ChainReader for BlockChain {
             .get_blue_score(chain_pruning_point)?;
         let (pruning_depth, _pruning_finality) = self.get_pruning_config();
         if let Some(blue_score) = pruning_point_blue_score.checked_add(pruning_depth) {
-            if ghostdata.blue_score < blue_score {
+            if ghostdata.blue_score < blue_score && chain_pruning_point != self.genesis_hash {
                 bail!("Pruning point blue score: {:?} not match with ghostdag blue score: {:?} and pruning depth: {:?}", pruning_point_blue_score, ghostdata.blue_score, pruning_depth);
             }
         } else {
