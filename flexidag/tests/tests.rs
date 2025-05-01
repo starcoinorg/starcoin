@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, format_err, Ok, Result};
+use starcoin_config::miner_config::G_MAX_PARENTS_COUNT;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_dag::{
-    blockdag::BlockDAG,
+    blockdag::{BlockDAG, MineNewDagBlockInfo},
     consensusdb::{
+        consensus_pruning_info::PruningPointInfoReader,
         consensus_state::{DagState, DagStateReader, DagStateStore},
         schemadb::{
             DbReachabilityStore, GhostdagStoreReader, ReachabilityStore, ReachabilityStoreReader,
@@ -23,6 +25,7 @@ use starcoin_types::{
 };
 
 use std::{
+    collections::HashSet,
     ops::{Deref, DerefMut},
     sync::Arc,
     time::Instant,
@@ -938,139 +941,173 @@ fn test_big_data_commit() -> anyhow::Result<()> {
     anyhow::Result::Ok(())
 }
 
-// #[test]
-// fn test_prune() -> anyhow::Result<()> {
-//     // initialzie the dag firstly
-//     let k = 3;
-//     let pruning_depth = 4;
-//     let pruning_finality = 3;
+#[test]
+fn test_prune() -> anyhow::Result<()> {
+    // initialzie the dag firstly
+    let k = 3;
+    let pruning_depth = 4;
+    let pruning_finality = 3;
 
-//     let mut dag = BlockDAG::create_for_testing_with_parameters(k).unwrap();
+    let mut dag = BlockDAG::create_for_testing_with_parameters(k).unwrap();
 
-//     let origin = BlockHeaderBuilder::random().with_number(0).build();
-//     let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;
+    let origin = BlockHeaderBuilder::random().with_number(0).build();
+    let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;
+    println!("genesis: {}", genesis.id());
 
-//     dag.init_with_genesis(genesis.clone()).unwrap();
+    dag.init_with_genesis(genesis.clone()).unwrap();
 
-//     let block1 = add_and_print(1, genesis.id(), vec![genesis.id()], &mut dag)?;
+    let block1 = add_and_print(1, genesis.id(), vec![genesis.id()], &mut dag)?;
+    futures::executor::block_on(dag.generate_pruning_point(
+        &block1,
+        pruning_depth,
+        pruning_finality,
+        genesis.id(),
+    ))?;
 
-//     let block_main_2 = add_and_print(2, block1.id(), vec![block1.id()], &mut dag)?;
-//     let block_main_3 = add_and_print(3, block_main_2.id(), vec![block_main_2.id()], &mut dag)?;
-//     let block_main_3_1 = add_and_print(3, block_main_2.id(), vec![block_main_2.id()], &mut dag)?;
-//     let block_main_4 = add_and_print(
-//         4,
-//         block_main_3.id(),
-//         vec![block_main_3.id(), block_main_3_1.id()],
-//         &mut dag,
-//     )?;
-//     let block_main_5 = add_and_print(5, block_main_4.id(), vec![block_main_4.id()], &mut dag)?;
+    let block_main_2 = add_and_print(2, block1.id(), vec![block1.id()], &mut dag)?;
+    let block_main_3 = add_and_print(3, block_main_2.id(), vec![block_main_2.id()], &mut dag)?;
+    let block_main_3_1 = add_and_print(3, block_main_2.id(), vec![block_main_2.id()], &mut dag)?;
+    let block_main_4 = add_and_print(
+        4,
+        block_main_3.id(),
+        vec![block_main_3.id(), block_main_3_1.id()],
+        &mut dag,
+    )?;
+    let block_main_5 = add_and_print(5, block_main_4.id(), vec![block_main_4.id()], &mut dag)?;
+    let block_main_6 = add_and_print(6, block_main_5.id(), vec![block_main_5.id()], &mut dag)?;
 
-//     let block_red_2 = add_and_print(2, block1.id(), vec![block1.id()], &mut dag)?;
-//     let block_red_2_1 = add_and_print(2, block1.id(), vec![block1.id()], &mut dag)?;
-//     let block_red_3 = add_and_print(
-//         3,
-//         block_red_2.id(),
-//         vec![block_red_2.id(), block_red_2_1.id()],
-//         &mut dag,
-//     )?;
+    let block_red_2 = add_and_print(2, block1.id(), vec![block1.id()], &mut dag)?;
+    let block_red_2_1 = add_and_print(2, block1.id(), vec![block1.id()], &mut dag)?;
+    let block_red_3 = add_and_print(
+        3,
+        block_red_2.id(),
+        vec![block_red_2.id(), block_red_2_1.id()],
+        &mut dag,
+    )?;
 
-//     // let's obser the blue scores which show how blue the tips are
-//     let observer1 = dag.ghostdata(&[block_red_3.id()])?;
-//     println!("observer 1 data: {:?}, ", observer1);
+    // let's obser the blue scores which show how blue the tips are
+    let observer1 = dag.ghostdata(&[block_red_3.id()])?;
+    println!("observer 1 data: {:?}, ", observer1);
 
-//     let observer2 = dag.ghostdata(&[block_red_3.id(), block_main_5.id()])?;
-//     println!("observer 2 dag data: {:?}, ", observer2);
+    let observer2 = dag.ghostdata(&[block_red_3.id(), block_main_6.id()])?;
+    println!("observer 2 dag data: {:?}, ", observer2);
 
-//     let observer3 = dag.ghostdata(&[block_main_5.id()])?;
-//     println!("observer 3 dag data: {:?}, ", observer3);
+    let observer3 = dag.ghostdata(&[block_main_6.id()])?;
+    println!("observer 3 dag data: {:?}, ", observer3);
 
-//     assert!(observer1.blue_score < observer2.blue_score);
-//     assert!(observer1.selected_parent != observer2.selected_parent);
+    assert!(observer1.blue_score < observer2.blue_score);
+    assert!(observer1.selected_parent != observer2.selected_parent);
 
-//     assert_eq!(observer3.blue_score, observer2.blue_score);
-//     assert_eq!(observer3.selected_parent, observer2.selected_parent);
+    assert_eq!(observer3.blue_score, observer2.blue_score);
+    assert_eq!(observer3.selected_parent, observer2.selected_parent);
 
-//     dag.save_dag_state(
-//         genesis.id(),
-//         DagState {
-//             tips: vec![block_red_3.id(), block_main_5.id()],
-//         },
-//     )?;
+    dag.save_dag_state(
+        genesis.id(),
+        DagState {
+            tips: vec![block_red_3.id(), block_main_6.id()],
+        },
+    )?;
 
-//     // prunning process begins
-//     let (previous_ghostdata, previous_pruning_point) =
-//         if block_main_5.pruning_point() == Hash::zero() {
-//             (
-//                 dag.ghostdata_by_hash(genesis.id())?.ok_or_else(|| {
-//                     format_err!("failed to get the ghostdata by genesis: {:?}", genesis.id())
-//                 })?,
-//                 genesis.id(),
-//             )
-//         } else {
-//             (
-//                 dag.ghostdata_by_hash(block_main_5.pruning_point())?
-//                     .ok_or_else(|| {
-//                         format_err!(
-//                             "failed to get the ghostdata by pruning point: {:?}",
-//                             block_main_5.pruning_point()
-//                         )
-//                     })?,
-//                 block_main_5.pruning_point(),
-//             )
-//         };
-//     // test the pruning point calculation
-//     let MineNewDagBlockInfo {
-//         tips,
-//         blue_blocks: _,
-//         pruning_point,
-//     } = dag.calc_mergeset_and_tips(
-//         previous_pruning_point,
-//         previous_ghostdata.as_ref(),
-//         pruning_depth,
-//         pruning_finality,
-//         G_MAX_PARENTS_COUNT,
-//         genesis.id(),
-//     )?;
+    // prunning process begins
+    // test the pruning point calculation
+    futures::executor::block_on(dag.generate_pruning_point(
+        &block_main_6,
+        pruning_depth,
+        pruning_finality,
+        genesis.id(),
+    ))?;
 
-//     assert_eq!(pruning_point, block_main_2.id());
-//     assert_eq!(tips.len(), 1);
-//     assert_eq!(*tips.last().unwrap(), block_main_5.id());
+    let latest_pruning_point = dag
+        .storage
+        .pruning_point_store
+        .read()
+        .get_pruning_point_info()?
+        .unwrap()
+        .pruning_point;
 
-//     // test the pruning logic
+    dag.save_dag_state(
+        latest_pruning_point,
+        DagState {
+            tips: vec![block_red_3.id(), block_main_6.id()],
+        },
+    )?; // update the dag state to the latest pruning point(5, state)
 
-//     let block_main_6 = add_and_print(6, block_main_5.id(), tips.clone(), &mut dag)?;
-//     let block_main_6_1 = add_and_print(6, block_main_5.id(), tips, &mut dag)?;
-//     let block_fork = add_and_print(4, block_red_3.id(), vec![block_red_3.id()], &mut dag)?;
+    let MineNewDagBlockInfo {
+        tips,
+        ghostdata: _,
+        pruning_point,
+    } = dag
+        .calc_mergeset_and_tips(genesis.id(), G_MAX_PARENTS_COUNT, genesis.id())
+        .unwrap();
 
-//     dag.save_dag_state(
-//         genesis.id(),
-//         DagState {
-//             tips: vec![block_main_6.id(), block_main_6_1.id(), block_fork.id()],
-//         },
-//     )?;
+    assert_eq!(pruning_point, block_main_2.id());
+    assert_eq!(tips.len(), 1);
+    assert_eq!(*tips.last().unwrap(), block_main_6.id());
 
-//     let MineNewDagBlockInfo {
-//         tips,
-//         blue_blocks: _,
-//         pruning_point,
-//     } = dag.calc_mergeset_and_tips(
-//         previous_pruning_point,
-//         previous_ghostdata.as_ref(),
-//         pruning_depth,
-//         pruning_finality,
-//         G_MAX_PARENTS_COUNT,
-//         genesis.id(),
-//     )?;
+    // test the pruning logic
 
-//     assert_eq!(pruning_point, block_main_2.id());
-//     assert_eq!(tips.len(), 2);
-//     assert_eq!(
-//         tips.into_iter().collect::<HashSet<_>>(),
-//         HashSet::from_iter(vec![block_main_6.id(), block_main_6_1.id()])
-//     );
+    let block_main_7 = add_and_print(7, block_main_6.id(), tips.clone(), &mut dag)?;
+    let block_main_7_1 = add_and_print(7, block_main_6.id(), tips, &mut dag)?;
+    let block_fork = add_and_print(4, block_red_3.id(), vec![block_red_3.id()], &mut dag)?;
 
-//     anyhow::Result::Ok(())
-// }
+    let tips = vec![
+        block_main_7.clone(),
+        block_main_7_1.clone(),
+        block_fork.clone(),
+    ];
+    dag.save_dag_state(
+        genesis.id(),
+        DagState {
+            tips: tips.iter().map(|header| header.id()).collect(),
+        },
+    )?;
+
+    let selected_parent = dag
+        .ghost_dag_manager()
+        .find_selected_parent(tips.iter().map(|header| header.id()))?;
+
+    let selected_header = tips
+        .into_iter()
+        .find(|header| header.id() == selected_parent)
+        .unwrap();
+
+    futures::executor::block_on(dag.generate_pruning_point(
+        &selected_header,
+        pruning_depth,
+        pruning_finality,
+        genesis.id(),
+    ))?;
+
+    let latest_pruning_point = dag
+        .storage
+        .pruning_point_store
+        .read()
+        .get_pruning_point_info()?
+        .unwrap()
+        .pruning_point;
+
+    dag.save_dag_state(
+        latest_pruning_point,
+        DagState {
+            tips: vec![block_main_7.id(), block_main_7_1.id(), block_fork.id()],
+        },
+    )?;
+
+    let MineNewDagBlockInfo {
+        tips,
+        ghostdata: _,
+        pruning_point,
+    } = dag.calc_mergeset_and_tips(genesis.id(), G_MAX_PARENTS_COUNT, genesis.id())?;
+
+    assert_eq!(pruning_point, block_main_2.id());
+    assert_eq!(tips.len(), 2);
+    assert_eq!(
+        tips.into_iter().collect::<HashSet<_>>(),
+        HashSet::from_iter(vec![block_main_7.id(), block_main_7_1.id()])
+    );
+
+    anyhow::Result::Ok(())
+}
 
 #[test]
 fn test_verification_blue_block() -> anyhow::Result<()> {

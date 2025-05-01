@@ -771,50 +771,10 @@ impl BlockDAG {
             },
         }
 
-        // let next_pruning_point = self.pruning_point_manager().next_pruning_point(
-        //     previous_pruning_point,
-        //     previous_ghostdata,
-        //     &next_ghostdata,
-        //     pruning_depth,
-        //     pruning_finality,
-        // )?;
-
-        // let (tips, ghostdata, mut pruning_point) = if next_pruning_point == Hash::zero()
-        //     || next_pruning_point == previous_pruning_point
-        // {
-        //     info!(
-        //         "tips: {:?}, the next pruning point is: {:?}, the current ghostdata's selected parent: {:?}, blue blocks are: {:?} and its red blocks are: {:?}",
-        //         dag_state.tips, next_pruning_point, next_ghostdata.selected_parent, next_ghostdata.mergeset_blues, next_ghostdata.mergeset_reds.len(),
-        //     );
-        //     (dag_state.tips, next_ghostdata, next_pruning_point)
-        // } else {
-        //     let pruned_tips = self.pruning_point_manager().prune(
-        //         &dag_state,
-        //         previous_pruning_point,
-        //         next_pruning_point,
-        //     )?;
-        //     let pruned_ghostdata = self.ghost_dag_manager().ghostdag(&pruned_tips)?;
-        //     info!(
-        //         "the pruning was triggered, before pruning, the tips: {:?}, after pruning tips: {:?}, the next pruning point is: {:?}, the current ghostdata's selected parent: {:?}, blue blocks are: {:?} and its red blocks are: {:?}",
-        //         pruned_tips, dag_state.tips, next_pruning_point, pruned_ghostdata.selected_parent, pruned_ghostdata.mergeset_blues, pruned_ghostdata.mergeset_reds.len(),
-        //     );
-        //     (pruned_tips, pruned_ghostdata, next_pruning_point)
-        // };
-
         if next_pruning_point == Hash::zero() {
             next_pruning_point = genesis_id;
         }
-        // else {
-        //     self.generate_the_block_depth(pruning_point, &ghostdata, pruning_finality)?;
-        // }
 
-        // info!("try to remove the red blocks when mining, tips: {:?} and ghostdata: {:?}, pruning point: {:?}", tips, ghostdata, pruning_point);
-        // (tips, ghostdata) =
-        //     self.remove_bounded_merge_breaking_parents(tips, ghostdata, pruning_point)?;
-        // info!(
-        //     "after removing the bounded merge breaking parents, tips: {:?} and ghostdata: {:?}",
-        //     tips, ghostdata
-        // );
         anyhow::Ok(MineNewDagBlockInfo {
             tips: dag_state.tips,
             ghostdata: next_ghostdata,
@@ -1228,13 +1188,7 @@ impl BlockDAG {
                 header.id()
             )
         })?;
-        let new_pruning_point = self.pruning_point_manager().next_pruning_point(
-            header.pruning_point(),
-            previous_ghostdata.as_ref(),
-            next_ghostdata.as_ref(),
-            pruning_depth,
-            pruning_finality,
-        )?;
+
         let reader = self.storage.pruning_point_store.upgradable_read();
 
         let current_pruning_point_info = match reader.get_pruning_point_info() {
@@ -1244,7 +1198,11 @@ impl BlockDAG {
                     let writer = RwLockUpgradableReadGuard::upgrade(reader);
 
                     writer.insert(PruningPointInfo {
-                        pruning_point: header.pruning_point(),
+                        pruning_point: if header.pruning_point() == HashValue::zero() {
+                            genesis_id
+                        } else {
+                            header.pruning_point()
+                        },
                     })?;
 
                     drop(writer);
@@ -1254,9 +1212,12 @@ impl BlockDAG {
             Err(e) => match e {
                 StoreError::KeyNotFound(_) => {
                     let writer = RwLockUpgradableReadGuard::upgrade(reader);
-
                     writer.insert(PruningPointInfo {
-                        pruning_point: header.pruning_point(),
+                        pruning_point: if header.pruning_point() == HashValue::zero() {
+                            genesis_id
+                        } else {
+                            header.pruning_point()
+                        },
                     })?;
 
                     drop(writer);
@@ -1273,8 +1234,23 @@ impl BlockDAG {
             .storage
             .ghost_dag_store
             .get_data(current_pruning_point_info.pruning_point)?;
+
+        let new_pruning_point = self.pruning_point_manager().next_pruning_point(
+            current_pruning_point_info.pruning_point,
+            previous_ghostdata.as_ref(),
+            next_ghostdata.as_ref(),
+            pruning_depth,
+            pruning_finality,
+        )?;
+
         let new_pruning_point_ghostdata =
-            self.storage.ghost_dag_store.get_data(new_pruning_point)?;
+            self.storage
+                .ghost_dag_store
+                .get_data(if new_pruning_point == HashValue::zero() {
+                    genesis_id
+                } else {
+                    new_pruning_point
+                })?;
 
         let should_update = match current_pruning_point_ghostdata
             .blue_score
