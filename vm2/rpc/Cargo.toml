@@ -1,0 +1,19 @@
+[package]
+name = "rpc-vm2-client"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+publish.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
+starcoin-vm2-types = { workspace = true }
+serde_json = "1.0.140"
+openrpc-derive = { workspace = true }
+openrpc-schema = { workspace = true }
+starcoin-vm2-abi-decoder = { workspace = true }
