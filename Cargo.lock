@@ -10345,6 +10345,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "rpc-vm2-client"
+version = "1.13.19"
+dependencies = [
+ "anyhow",
+ "openrpc-derive",
+ "openrpc-schema",
+ "serde_json",
+ "starcoin-types 2.0.1",
+ "starcoin-vm-types 2.0.1",
+]
+
+[[package]]
 name = "rtcp"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
