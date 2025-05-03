@@ -61,9 +61,9 @@ pub fn export_from_statedb<W: Write>(
         // Process codes
         let (code_state_set_hash, code_state_set) = match account_state_set.code_set() {
             Some(state_set) => {
-                let code_state_set = serde_json::to_string(&state_set).unwrap();
+                let code_state_set = serde_json::to_string(&state_set)?;
                 (
-                    HashValue::sha3_256_of(&code_state_set.as_bytes()).to_hex_literal(),
+                    HashValue::sha3_256_of(code_state_set.as_bytes()).to_hex_literal(),
                     code_state_set,
                 )
             }
@@ -73,9 +73,9 @@ pub fn export_from_statedb<W: Write>(
         // Process resources
         let (resource_state_set_hash, resource_state_set) = match account_state_set.resource_set() {
             Some(state_set) => {
-                let resource_state_set = serde_json::to_string(&state_set).unwrap();
+                let resource_state_set = serde_json::to_string(&state_set)?;
                 (
-                    HashValue::sha3_256_of(&resource_state_set.as_bytes()).to_hex_literal(),
+                    HashValue::sha3_256_of(resource_state_set.as_bytes()).to_hex_literal(),
                     resource_state_set,
                 )
             }
