@@ -22,7 +22,7 @@ use starcoin_types::{
     access_path::{AccessPath, DataType},
     account_address::AccountAddress,
     account_state::AccountState,
-    state_set::{AccountStateSet, ChainStateSet, StateSet},
+    state_set::{AccountStateSet, ChainStateSet},
 };
 use starcoin_vm_types::access_path::{DataPath, ModuleName};
 #[cfg(test)]
