@@ -14245,13 +14245,12 @@ name = "starcoin-vm2-rpc"
 version = "1.13.19"
 dependencies = [
  "anyhow",
+ "jsonrpc-client-transports 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-core 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-core-client 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-derive 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "jsonrpc-pubsub 18.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "openrpc-derive",
  "openrpc-schema",
- "schemars",
  "starcoin-abi-decoder 2.0.1",
  "starcoin-abi-types 2.0.1",
  "starcoin-types 2.0.1",
