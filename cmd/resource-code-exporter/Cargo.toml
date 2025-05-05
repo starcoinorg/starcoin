@@ -23,3 +23,9 @@ starcoin-storage = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 cmd-utils = { workspace = true }
+
+[dev-dependencies]
+starcoin-config = { workspace = true }
+starcoin-genesis = { workspace = true }
+tempfile = { workspace = true }
+test-helper = { workspace = true }
