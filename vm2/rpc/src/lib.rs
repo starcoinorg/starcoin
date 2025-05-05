@@ -1,7 +1,7 @@
-use anyhow::anyhow;
-use jsonrpc_core_client::{RawClient, RpcChannel};
 /// this is in cargo expand contract_api.rs
 use crate::contract_api::ContractApiClient;
+use anyhow::anyhow;
+use jsonrpc_core_client::{RawClient, RpcChannel};
 
 #[allow(dead_code)]
 #[derive(Clone)]
@@ -29,6 +29,5 @@ impl From<RpcChannel> for RpcClientInner {
         Self::new(channel)
     }
 }
-
 
 pub mod contract_api;

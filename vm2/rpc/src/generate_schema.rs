@@ -1,8 +1,8 @@
 use anyhow::Result;
 use clap::Parser;
+use starcoin_vm2_rpc::contract_api;
 use std::fs::{create_dir_all, File};
 use std::path::Path;
-use starcoin_vm2_rpc::contract_api;
 #[derive(Debug, Parser)]
 #[clap(name = "rpc2_generator")]
 pub struct RpcSchemaGenerateOpt {
@@ -10,8 +10,6 @@ pub struct RpcSchemaGenerateOpt {
     /// data dir to generate rpc schema.
     pub data_dir: String,
 }
-
-
 
 macro_rules! generate_rpc_schema_docs {
     ($data_dir: expr,$($name: ident),+) => {
