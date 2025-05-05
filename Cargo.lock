@@ -1273,6 +1273,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "cmd-utils"
+version = "1.13.19"
+dependencies = [
+ "hex",
+ "serde 1.0.152",
+ "starcoin-resource-viewer",
+]
+
+[[package]]
 name = "coarsetime"
 version = "0.1.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8068,6 +8077,25 @@ checksum = "52e44394d2086d010551b14b53b1f24e31647570cd1deb0379e2c21b329aba00"
 dependencies = [
  "hostname",
  "quick-error 1.2.3",
+]
+
+[[package]]
+name = "resource-code-exporter"
+version = "1.13.19"
+dependencies = [
+ "anyhow",
+ "bcs-ext",
+ "clap 3.2.23",
+ "cmd-utils",
+ "csv",
+ "serde_json",
+ "starcoin-crypto",
+ "starcoin-resource-viewer",
+ "starcoin-state-tree",
+ "starcoin-statedb",
+ "starcoin-storage",
+ "starcoin-types",
+ "starcoin-vm-types",
 ]
 
 [[package]]
