@@ -259,6 +259,7 @@ asynchronous-codec = "0.5"
 atomic-counter = "1.0.1"
 atty = "0.2.14"
 backtrace = "0.3"
+base64 = "0.22.1"
 bcs = "0.1"
 bcs-ext = { path = "commons/bcs_ext" }
 bech32 = "0.9"
