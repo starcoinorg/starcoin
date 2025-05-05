@@ -12,6 +12,12 @@ version.workspace = true
 [dependencies]
 anyhow = { workspace = true }
 
+jsonrpc-client-transports = { features = [
+    "http",
+    "ipc",
+    "ws",
+    "arbitrary_precision",
+], workspace = true }
 jsonrpc-core = { features = ["arbitrary_precision"], workspace = true }
 jsonrpc-core-client = { features = [
     "http",
@@ -21,11 +27,8 @@ jsonrpc-core-client = { features = [
     "tls",
 ], workspace = true }
 jsonrpc-derive = { workspace = true }
-jsonrpc-pubsub = { workspace = true }
-
 openrpc-derive = { workspace = true }
 openrpc-schema = { workspace = true }
-schemars = { workspace = true }
 starcoin-vm2-types = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
 starcoin-vm2-abi-decoder = { workspace = true }
