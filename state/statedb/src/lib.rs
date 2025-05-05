@@ -784,6 +784,5 @@ impl TableHandleStateObject {
     }
 }
 
-mod parallel_state_set;
 #[cfg(test)]
 mod tests;
