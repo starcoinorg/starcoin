@@ -31,7 +31,7 @@ enum Commands {
 
         #[clap(long)]
         /// Block id to export state at
-        block_id: starcoin_crypto::HashValue,
+        block_hash: starcoin_crypto::HashValue,
     },
     /// Import state data from CSV file
     Import {
@@ -56,9 +56,9 @@ fn main() -> anyhow::Result<()> {
         Commands::Export {
             output,
             db_path,
-            block_id,
+            block_hash,
         } => {
-            export::export(db_path.display().to_string().as_str(), &output, block_id)?;
+            export::export(db_path.display().to_string().as_str(), &output, block_hash)?;
         }
         Commands::Import {
             csv_input,
