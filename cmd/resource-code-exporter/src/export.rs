@@ -60,7 +60,7 @@ pub fn export_from_statedb<W: Write>(
         writer.write_field("code_blob_hash")?;
         writer.write_field("code_blob")?;
         writer.write_field("resource_blob_hash")?;
-        writer.write_field("resrouce_blob")?;
+        writer.write_field("resource_blob")?;
         writer.write_record(None::<&[u8]>)?;
         println!("CSV header written successfully");
     }
