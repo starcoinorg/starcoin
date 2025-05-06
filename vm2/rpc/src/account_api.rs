@@ -1,18 +1,14 @@
-
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
 use jsonrpc_core::{BoxFuture, Error};
 pub type FutureResult<T> = BoxFuture<Result<T, Error>>;
 use openrpc_derive::openrpc;
-use serde::{Deserialize, Serialize};
-use starcoin_vm2_types::view::{
-
-    StrView, SignedMessageView, TransactionRequest,
-};
+use starcoin_vm2_account_api::AccountInfo;
 use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_types::sign_message::SigningMessage;
 use starcoin_vm2_types::transaction::{RawUserTransaction, SignedUserTransaction};
+use starcoin_vm2_types::view::{SignedMessageView, StrView, TransactionRequest};
 use starcoin_vm2_vm_types::token::token_code::TokenCode;
 
 #[openrpc]

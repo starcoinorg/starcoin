@@ -536,7 +536,10 @@ starcoin-vm2-executor = { path = "vm2/executor" }
 starcoin-vm2-test-helper = { path = "vm2/test-helper" }
 
 
+
+
 starcoin-vm2-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588", package = "starcoin-crypto" }
+starcoin-vm2-account-api = { git = "https://github.com/starcoinorg/starcoin", rev = "df02c2025d036d3b00255378edeb3ea738934a1b", package = "starcoin-account-api" }
 starcoin-vm2-storage = { git = "https://github.com/starcoinorg/starcoin", rev = "df02c2025d036d3b00255378edeb3ea738934a1b", package = "starcoin-storage" }
 starcoin-vm2-vm-runtime = { git = "https://github.com/starcoinorg/starcoin", rev = "df02c2025d036d3b00255378edeb3ea738934a1b", package = "starcoin-vm-runtime" }
 starcoin-vm2-types = { git = "https://github.com/starcoinorg/starcoin", rev = "df02c2025d036d3b00255378edeb3ea738934a1b", package = "starcoin-types" }
