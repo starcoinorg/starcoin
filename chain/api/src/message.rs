@@ -8,8 +8,7 @@ use starcoin_service_registry::ServiceRequest;
 use starcoin_types::contract_event::StcContractEventInfo;
 use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{
-    block::{Block, BlockHeader, BlockInfo, BlockNumber}
-    ,
+    block::{Block, BlockHeader, BlockInfo, BlockNumber},
     filter::Filter,
     startup_info::{ChainStatus, StartupInfo},
     transaction::Transaction,
