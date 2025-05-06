@@ -1,5 +1,7 @@
-use jsonrpc_core::{BoxFuture, Error};
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2
 
+use jsonrpc_core::{BoxFuture, Error};
 pub type FutureResult<T> = BoxFuture<Result<T, Error>>;
 use openrpc_derive::openrpc;
 use starcoin_vm2_abi_decoder::DecodedMoveValue;

@@ -2,12 +2,14 @@
 use crate::contract_api::ContractApiClient;
 use anyhow::anyhow;
 use jsonrpc_core_client::{RawClient, RpcChannel};
+use crate::state_api::StateApiClient;
 
 #[allow(dead_code)]
 #[derive(Clone)]
 pub struct RpcClientInner {
     raw_client: RawClient,
     contract_client: ContractApiClient,
+    state_client: StateApiClient,
 }
 
 impl RpcClientInner {
@@ -15,6 +17,7 @@ impl RpcClientInner {
         Self {
             raw_client: channel.clone().into(),
             contract_client: channel.clone().into(),
+            state_client: channel.clone().into(),
         }
     }
 }
@@ -30,4 +33,6 @@ impl From<RpcChannel> for RpcClientInner {
     }
 }
 
+//pub mod account_api;
 pub mod contract_api;
+pub mod state_api;
