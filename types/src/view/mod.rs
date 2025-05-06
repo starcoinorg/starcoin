@@ -1,51 +1,105 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+pub struct ContractCall {
+    pub function_id: FunctionIdView,
+    pub type_args: Vec<TypeTagView>,
+    pub args: Vec<TransactionArgumentView>,
+}
 pub type ByteCode = Vec<u8>;
 
 pub mod account_state_set_view;
+pub use account_state_set_view::*;
 pub mod accumulator_info_view;
+pub use accumulator_info_view::*;
 pub mod accumulator_proof_view;
+pub use accumulator_proof_view::*;
 pub mod annotated_move_struct_view;
+pub use annotated_move_struct_view::*;
 pub mod annotated_move_value_view;
+pub use annotated_move_value_view::*;
 pub mod arguments_view;
+pub use arguments_view::*;
 pub mod block_header_view;
+pub use block_header_view::*;
 pub mod block_info_view;
+pub use block_info_view::*;
 pub mod block_metadata_view;
+pub use block_metadata_view::*;
 pub mod block_transaction_view;
+pub use block_transaction_view::*;
 pub mod block_view;
+pub use block_view::*;
 pub mod byte_code_or_script_function;
+pub use byte_code_or_script_function::*;
 pub mod bytes_view;
+pub use bytes_view::*;
 pub mod chain_info_view;
+pub use chain_info_view::*;
 pub mod code_view;
+pub use code_view::*;
 pub mod decoded_script_view;
+pub use decoded_script_view::*;
 pub mod dry_run_output_view;
+pub use dry_run_output_view::*;
 pub mod event_with_proof_view;
+pub use event_with_proof_view::*;
 pub mod function_arg_type_view;
+pub use function_arg_type_view::*;
 pub mod minted_block_view;
+pub use minted_block_view::*;
 pub mod peer_info_view;
+pub use peer_info_view::*;
 pub mod raw_block_view;
+pub use raw_block_view::*;
 pub mod raw_user_transaction_view;
+pub use raw_user_transaction_view::*;
 pub mod resource_view;
+pub use resource_view::*;
 pub mod scripts_data;
+pub use scripts_data::*;
 pub mod signed_user_transaction_view;
+pub use signed_user_transaction_view::*;
 pub mod spare_merkle_proof_view;
+pub use spare_merkle_proof_view::*;
 pub mod state_key_view;
+pub use state_key_view::*;
 pub mod state_with_proof_view;
+pub use state_with_proof_view::*;
 pub mod state_with_table_item_proof_view;
+pub use state_with_table_item_proof_view::*;
 pub mod str_view;
+pub use str_view::*;
 pub mod table_info_view;
+pub use table_info_view::*;
 pub mod table_item_view;
+pub use table_item_view::*;
 pub mod transaction_event_response;
+pub use transaction_event_response::*;
 pub mod transaction_event_view;
+pub use transaction_event_view::*;
 pub mod transaction_info_view;
+pub use transaction_info_view::*;
 pub mod transaction_output_action;
+pub use transaction_output_action::*;
 pub mod transaction_output_table_item_action;
+pub use transaction_output_table_item_action::*;
 pub mod transaction_output_view;
+pub use transaction_output_view::*;
 pub mod transaction_payload_view;
+pub use transaction_payload_view::*;
 pub mod transaction_request;
+pub use transaction_request::*;
 pub mod transaction_status_view;
+pub use transaction_status_view::*;
 pub mod transaction_view;
+pub use transaction_view::*;
 pub mod transaction_with_proof;
+pub use transaction_with_proof::*;
 pub mod write_op_value_view;
+pub use write_op_value_view::*;
 pub mod write_op_view;
+pub use write_op_view::*;
