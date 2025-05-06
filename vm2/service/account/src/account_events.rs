@@ -56,7 +56,7 @@ impl EventHandler<Self, ContractEventNotification> for AccountEventService {
             return;
         }
 
-        for i in item.0 .2.as_ref() {
+        for i in item.0 .3.as_ref() {
             let contract_event = &i.contract_event;
             if watched_keys.contains(&contract_event.event_key()) {
                 if let Err(e) = self.handle_contract_event(contract_event) {

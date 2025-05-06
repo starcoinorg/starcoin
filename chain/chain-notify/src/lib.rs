@@ -85,6 +85,7 @@ impl ChainNotifyHandlerService {
     ) -> Result<()> {
         let block_number = block.header().number();
         let block_id = block.id();
+        let multi_state_root = store.get_vm_multi_state(block_id)?;
         let txn_info_ids = store.get_block_txn_info_ids(block_id)?;
         let mut all_events: Vec<Event> = vec![];
         let mut all_events2 = vec![];
@@ -123,9 +124,13 @@ impl ChainNotifyHandlerService {
                 }));
             }
         }
+        let (state_root1, state_root2) = multi_state_root
+            .map(|s| (s.state_root1(), Some(s.state_root2())))
+            .unwrap_or((block.header.state_root(), None));
         let events_notification: ContractEventNotification = Notification((
-            block.header.state_root(),
+            state_root1,
             all_events.into(),
+            state_root2,
             all_events2.into(),
         ));
         ctx.broadcast(events_notification);

@@ -10,7 +10,8 @@ use std::sync::Arc;
 #[derive(Debug, Clone)]
 pub struct Notification<T>(pub T);
 
-pub type ContractEventNotification = Notification<(HashValue, Arc<[Event]>, Arc<[Event2]>)>;
+pub type ContractEventNotification =
+    Notification<(HashValue, Arc<[Event]>, Option<HashValue>, Arc<[Event2]>)>;
 pub type NewHeadEventNotification = Notification<ThinBlock>;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
