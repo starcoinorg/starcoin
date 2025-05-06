@@ -29,7 +29,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 #[derive(Clone)]
-pub struct AccountRpcImpl2<Account, Pool, State>
+pub struct AccountRpcImpl<Account, Pool, State>
 where
     Account: AccountAsyncService2 + 'static,
     Pool: TxPoolSyncService + 'static,
@@ -41,7 +41,7 @@ where
     node_config: Arc<NodeConfig>,
 }
 
-impl<Account, Pool, State> AccountRpcImpl2<Account, Pool, State>
+impl<Account, Pool, State> AccountRpcImpl<Account, Pool, State>
 where
     Account: AccountAsyncService2,
     Pool: TxPoolSyncService + 'static,
@@ -71,7 +71,7 @@ where
     }
 }
 
-impl<S, Pool, State> AccountApi2 for AccountRpcImpl2<S, Pool, State>
+impl<S, Pool, State> AccountApi2 for AccountRpcImpl<S, Pool, State>
 where
     S: AccountAsyncService2,
     Pool: TxPoolSyncService + 'static,

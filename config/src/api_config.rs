@@ -17,6 +17,9 @@ pub enum Api {
     SyncManager,
     TxPool,
     Contract,
+    Account2,
+    State2,
+    Contract2,
 }
 
 impl Serialize for Api {
@@ -53,6 +56,9 @@ impl std::fmt::Display for Api {
             Self::SyncManager => "sync_manager",
             Self::TxPool => "txpool",
             Self::Contract => "contract",
+            Self::Account2 => "account2",
+            Self::State2 => "state2",
+            Self::Contract2 => "contract2",
         };
         write!(f, "{}", display)
     }
@@ -77,6 +83,9 @@ impl FromStr for Api {
             "sync_manager" => Ok(SyncManager),
             "txpool" => Ok(TxPool),
             "contract" => Ok(Contract),
+            "account2" => Ok(Account2),
+            "state2" => Ok(State2),
+            "contract2" => Ok(Contract2),
             api => Err(format!("Unknown api: {}", api)),
         }
     }
@@ -184,8 +193,10 @@ impl ApiSet {
             Api::Miner,
             Api::Node,
             Api::State,
+            Api::State2,
             Api::TxPool,
             Api::Contract,
+            Api::Contract2,
         ]
         .iter()
         .cloned()
@@ -199,6 +210,7 @@ impl ApiSet {
                 public_list.insert(Api::PubSub);
                 public_list.insert(Api::Debug);
                 public_list.insert(Api::Account);
+                public_list.insert(Api::Account2);
                 public_list.insert(Api::NetworkManager);
                 public_list.insert(Api::SyncManager);
                 public_list.insert(Api::NodeManager);

@@ -29,6 +29,10 @@ use starcoin_rpc_api::{
 };
 use starcoin_rpc_middleware::RpcMetrics;
 use starcoin_service_registry::{ActorService, ServiceContext, ServiceHandler};
+use starcoin_vm2_rpc_api::{
+    account_api::AccountApi as AccountApi2, contract_api::ContractApi as ContractApi2,
+    state_api::StateApi as StateApi2,
+};
 use std::collections::HashSet;
 use std::ops::Deref;
 use std::sync::Arc;
@@ -70,7 +74,7 @@ impl RpcService {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn new_with_api<C, N, NM, SM, NWM, T, A, S, D, P, M, Contract>(
+    pub fn new_with_api<C, N, NM, SM, NWM, T, A, A2, S, S2, D, P, M, Contract, Contract2>(
         config: Arc<NodeConfig>,
         node_api: N,
         node_manager_api: Option<NM>,
@@ -84,6 +88,9 @@ impl RpcService {
         debug_api: Option<D>,
         miner_api: Option<M>,
         contract_api: Option<Contract>,
+        account_api2: Option<A2>,
+        state_api2: Option<S2>,
+        contract_api2: Option<Contract2>,
     ) -> Self
     where
         N: NodeApi,
@@ -93,11 +100,14 @@ impl RpcService {
         C: ChainApi,
         T: TxPoolApi,
         A: AccountApi,
+        A2: AccountApi2,
         S: StateApi,
+        S2: StateApi2,
         P: StarcoinPubSub<Metadata = Metadata>,
         D: DebugApi,
         M: MinerApi,
         Contract: ContractApi,
+        Contract2: ContractApi2,
     {
         let metrics = config
             .metrics
@@ -148,6 +158,15 @@ impl RpcService {
         }
         if let Some(contract_api) = contract_api {
             api_registry.register(Api::Contract, ContractApi::to_delegate(contract_api));
+        }
+        if let Some(account_api) = account_api2 {
+            api_registry.register(Api::Account2, AccountApi2::to_delegate(account_api));
+        }
+        if let Some(state_api) = state_api2 {
+            api_registry.register(Api::State2, StateApi2::to_delegate(state_api));
+        }
+        if let Some(contract_api) = contract_api2 {
+            api_registry.register(Api::Contract2, ContractApi2::to_delegate(contract_api));
         }
         Self::new(config, api_registry)
     }

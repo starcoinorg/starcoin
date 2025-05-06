@@ -51,6 +51,8 @@ num_cpus = { workspace = true }
 starcoin-vm2-storage = { workspace = true }
 starcoin-vm2-state-service = { workspace = true }
 starcoin-vm2-account-service = { workspace = true }
+starcoin-vm2-rpc-server = { workspace = true }
+starcoin-vm2-dev = { workspace = true }
 
 [dev-dependencies]
 stest = { workspace = true }
