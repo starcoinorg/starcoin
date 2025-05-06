@@ -22,9 +22,10 @@ pub fn import(csv_path: &Path, db_path: &Path, expect_root_hash: HashValue) -> a
         Default::default(),
         None,
     )?;
-    let storage = Storage::new(StorageInstance::new_db_instance(db_storage))?;
-    let storage = Arc::new(storage);
-    let statedb = ChainStateDB::new(storage.clone(), None);
+    let statedb = ChainStateDB::new(
+        Arc::new(Storage::new(StorageInstance::new_db_instance(db_storage))?),
+        None,
+    );
     import_from_statedb(&statedb, csv_path, expect_root_hash)
 }
 
@@ -133,9 +134,10 @@ mod test {
             Default::default(),
             None,
         )?;
-        let storage = Storage::new(StorageInstance::new_db_instance(db_storage))?;
-        let storage = Arc::new(storage);
-        let imported_statedb = ChainStateDB::new(storage.clone(), None);
+        let imported_statedb = ChainStateDB::new(
+            Arc::new(Storage::new(StorageInstance::new_db_instance(db_storage))?),
+            None,
+        );
         import_from_statedb(&imported_statedb, &export_path, export_state_root)?;
 
         Ok(())

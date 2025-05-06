@@ -24,8 +24,7 @@ pub fn export(db: &str, output: &Path, block_hash: HashValue) -> anyhow::Result<
     println!("Database opened successfully");
 
     println!("Initializing storage...");
-    let storage = Storage::new(StorageInstance::new_db_instance(db_storage))?;
-    let storage = Arc::new(storage);
+    let storage = Arc::new(Storage::new(StorageInstance::new_db_instance(db_storage))?);
 
     println!("Fetching block {} from storage...", block_hash);
     let block = storage
@@ -36,7 +35,7 @@ pub fn export(db: &str, output: &Path, block_hash: HashValue) -> anyhow::Result<
     let root = block.header.state_root();
     println!("State root: {}", root);
     println!("Initializing ChainStateDB...");
-    let statedb = ChainStateDB::new(storage.clone(), Some(root));
+    let statedb = ChainStateDB::new(storage, Some(root));
 
     println!("Creating CSV writer for output: {}", output.display());
     let mut csv_writer = csv::WriterBuilder::new().from_path(output)?;
