@@ -16,6 +16,8 @@ cargo run -p stdlib
 cargo run -p starcoin-genesis
 # generate rpc schema document
 cargo run -p starcoin-rpc-api -- -d ./rpc/api/generated_rpc_schema
+# generate rpc2 schema document
+cargo run -p starcoin-vm2-rpc -- -d ./vm2/rpc/generated_rpc_schema
 # test config file
 cargo test -p starcoin-config test_example_config_compact
 # check changed files
