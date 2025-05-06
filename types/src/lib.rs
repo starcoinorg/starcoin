@@ -42,13 +42,25 @@ pub mod error;
 pub mod event {
     pub use starcoin_vm_types::event::*;
 
+    use schemars::JsonSchema;
     use serde::{Deserialize, Serialize};
     use starcoin_vm2_vm_types::event::EventKey as EventKey2;
 
-    #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+    #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
     pub enum StcEventKey {
         V1(EventKey),
         V2(EventKey2),
+    }
+
+    impl TryFrom<StcEventKey> for EventKey {
+        type Error = anyhow::Error;
+
+        fn try_from(value: StcEventKey) -> Result<Self, Self::Error> {
+            match value {
+                StcEventKey::V1(key) => Ok(key),
+                StcEventKey::V2(_key) => anyhow::bail!("V2 EventKey cannot be convert to V1"),
+            }
+        }
     }
 }
 
@@ -96,6 +108,15 @@ pub mod language_storage {
     impl From<TypeTag2> for StcTypeTag {
         fn from(tag: TypeTag2) -> Self {
             StcTypeTag::V2(tag)
+        }
+    }
+
+    impl StcTypeTag {
+        pub fn to_canonical_string(&self) -> String {
+            match self {
+                StcTypeTag::V1(tag) => tag.to_canonical_string(),
+                StcTypeTag::V2(tag) => tag.to_canonical_string(),
+            }
         }
     }
 }
