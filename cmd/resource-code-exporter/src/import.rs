@@ -41,6 +41,7 @@ pub fn import_from_statedb(
     for result in csv_reader.records() {
         let record = result?;
         let account_address: AccountAddress = serde_json::from_str(&record[0])?;
+        assert_eq!(record.len(), 5);
         println!("record len: {:?}", record.len());
 
         let code_state_set = if !record[1].is_empty() && !record[2].is_empty() {

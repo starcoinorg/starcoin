@@ -22,11 +22,11 @@ pub fn export(db: &str, output: &Path, block_hash: HashValue) -> anyhow::Result<
         None,
     )?;
     println!("Database opened successfully");
-    
+
     println!("Initializing storage...");
     let storage = Storage::new(StorageInstance::new_db_instance(db_storage))?;
     let storage = Arc::new(storage);
-    
+
     println!("Fetching block {} from storage...", block_hash);
     let block = storage
         .get_block(block_hash)?
@@ -43,7 +43,7 @@ pub fn export(db: &str, output: &Path, block_hash: HashValue) -> anyhow::Result<
     println!("Starting export from StateDB...");
     export_from_statedb(&statedb, &mut csv_writer)?;
     println!("Export completed successfully");
-    
+
     Ok(())
 }
 
@@ -77,7 +77,7 @@ pub fn export_from_statedb<W: Write>(
 
     for (account_address, account_state_set) in global_states.into_iter() {
         println!("Processing account: {}", account_address);
-        
+
         // Process codes
         let (code_state_set_hash, code_state_set) = match account_state_set.code_set() {
             Some(state_set) => {
@@ -125,10 +125,11 @@ pub fn export_from_statedb<W: Write>(
 
         writer.serialize(record)?;
         processed += 1;
-        
+
         if processed % 100 == 0 {
-            println!("Progress: {}/{} accounts processed ({}%)", 
-                processed, 
+            println!(
+                "Progress: {}/{} accounts processed ({}%)",
+                processed,
                 global_states.len(),
                 (processed as f64 / global_states.len() as f64 * 100.0) as u32
             );
@@ -140,7 +141,7 @@ pub fn export_from_statedb<W: Write>(
     println!("  Total code size: {} bytes", total_code_size);
     println!("  Total resource size: {} bytes", total_resource_size);
     println!("  Total processing time: {} ms", now.elapsed().as_millis());
-    
+
     println!("Flushing CSV writer...");
     writer.flush()?;
     println!("CSV writer flushed successfully");
