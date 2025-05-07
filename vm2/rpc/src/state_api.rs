@@ -149,7 +149,7 @@ impl Default for ListResourceOption {
             decode: false,
             state_root: None,
             start_index: 0,
-            max_size: std::usize::MAX,
+            max_size: usize::MAX,
             resource_types: None,
         }
     }
