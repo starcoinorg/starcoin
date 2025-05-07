@@ -15,7 +15,7 @@ use starcoin_service_registry::{
 };
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_types::block::ExecutedBlock;
-use starcoin_types::contract_event::ContractEventInfo;
+use starcoin_types::contract_event::StcContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::transaction::RichTransactionInfo;
@@ -186,14 +186,14 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                     events
                         .into_iter()
                         .enumerate()
-                        .map(|(idx, evt)| ContractEventInfo {
+                        .map(|(idx, evt)| StcContractEventInfo {
                             block_hash: txn_info.block_id,
                             block_number: txn_info.block_number,
                             transaction_hash: txn_hash,
                             transaction_index: txn_info.transaction_index,
                             transaction_global_index: txn_info.transaction_global_index,
                             event_index: idx as u32,
-                            event: evt,
+                            event: evt.into(),
                         })
                         .collect()
                 };
@@ -389,7 +389,7 @@ impl ReadableChainService for ChainReaderServiceInner {
         self.main.get_blocks_by_number(number, reverse, count)
     }
 
-    fn get_main_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>> {
+    fn get_main_events(&self, filter: Filter) -> Result<Vec<StcContractEventInfo>> {
         self.main.filter_events(filter)
     }
 

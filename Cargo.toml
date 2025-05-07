@@ -95,6 +95,8 @@ members = [
     "vm2/executor",
     "vm2/genesis",
     "vm2/test-helper",
+    "vm2/service/state",
+    "vm2/service/account",
     "vm2/chain",
     "vm2/rpc",
     "abi/types",
@@ -208,6 +210,8 @@ default-members = [
     "vm2/genesis",
     "vm2/test-helper",
     "vm2/rpc",
+    "vm2/service/state",
+    "vm2/service/account",
     "abi/types",
     "abi/decoder",
     "abi/resolver",
@@ -245,7 +249,7 @@ homepage = "https://starcoin.org"
 license = "Apache-2.0"
 publish = false
 repository = "https://github.com/starcoinorg/starcoin"
-rust-version = "1.64"
+rust-version = "1.82"
 version = "1.13.19"
 
 [workspace.dependencies]
@@ -498,7 +502,8 @@ starcoin-rpc-api = { path = "rpc/api" }
 starcoin-rpc-client = { path = "rpc/client" }
 starcoin-rpc-middleware = { path = "rpc/middleware" }
 starcoin-rpc-server = { path = "rpc/server" }
-starcoin-service-registry = { path = "commons/service-registry" }
+#starcoin-service-registry = { path = "commons/service-registry" }
+starcoin-service-registry = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
 starcoin-state-api = { path = "state/api" }
 starcoin-state-service = { path = "state/service" }
 starcoin-state-store-api = { path = "state/state-store-api" }
@@ -534,23 +539,26 @@ starcoin-vm2-chain = { path = "vm2/chain" }
 starcoin-vm2-genesis = { path = "vm2/genesis" }
 starcoin-vm2-executor = { path = "vm2/executor" }
 starcoin-vm2-test-helper = { path = "vm2/test-helper" }
-
+starcoin-vm2-state-service = { path = "vm2/service/state" }
+starcoin-vm2-account-service = { path = "vm2/service/account" }
 
 
 
 starcoin-vm2-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588", package = "starcoin-crypto" }
-starcoin-vm2-account-api = { git = "https://github.com/starcoinorg/starcoin", rev = "df02c2025d036d3b00255378edeb3ea738934a1b", package = "starcoin-account-api" }
 starcoin-vm2-storage = { git = "https://github.com/starcoinorg/starcoin", rev = "df02c2025d036d3b00255378edeb3ea738934a1b", package = "starcoin-storage" }
 starcoin-vm2-vm-runtime = { git = "https://github.com/starcoinorg/starcoin", rev = "df02c2025d036d3b00255378edeb3ea738934a1b", package = "starcoin-vm-runtime" }
 starcoin-vm2-types = { git = "https://github.com/starcoinorg/starcoin", rev = "df02c2025d036d3b00255378edeb3ea738934a1b", package = "starcoin-types" }
 starcoin-vm2-vm-types = { git = "https://github.com/starcoinorg/starcoin", rev = "df02c2025d036d3b00255378edeb3ea738934a1b", package = "starcoin-vm-types" }
 starcoin-vm2-statedb = { git = "https://github.com/starcoinorg/starcoin", rev = "df02c2025d036d3b00255378edeb3ea738934a1b", package = "starcoin-statedb" }
 starcoin-vm2-state-api = { git = "https://github.com/starcoinorg/starcoin", rev = "df02c2025d036d3b00255378edeb3ea738934a1b", package = "starcoin-state-api" }
+starcoin-vm2-state-tree = { git = "https://github.com/starcoinorg/starcoin", rev = "df02c2025d036d3b00255378edeb3ea738934a1b", package = "starcoin-state-tree" }
 starcoin-vm2-framework = { git = "https://github.com/starcoinorg/starcoin", rev = "df02c2025d036d3b00255378edeb3ea738934a1b", package = "starcoin-framework" }
 starcoin-vm2-transaction-builder = { git = "https://github.com/starcoinorg/starcoin", rev = "df02c2025d036d3b00255378edeb3ea738934a1b", package = "starcoin-transaction-builder" }
 starcoin-vm2-move-compiler = { git = "https://github.com/starcoinorg/starcoin", rev = "df02c2025d036d3b00255378edeb3ea738934a1b", package = "starcoin-move-compiler" }
 starcoin-vm2-abi-decoder = { git = "https://github.com/starcoinorg/starcoin", rev = "df02c2025d036d3b00255378edeb3ea738934a1b", package = "starcoin-abi-decoder" }
 starcoin-vm2-abi-types = { git = "https://github.com/starcoinorg/starcoin", rev = "df02c2025d036d3b00255378edeb3ea738934a1b", package = "starcoin-abi-types" }
+starcoin-vm2-account = { git = "https://github.com/starcoinorg/starcoin", rev = "df02c2025d036d3b00255378edeb3ea738934a1b", package = "starcoin-account" }
+starcoin-vm2-account-api = { git = "https://github.com/starcoinorg/starcoin", rev = "df02c2025d036d3b00255378edeb3ea738934a1b", package = "starcoin-account-api" }
 
 move-vm2-core-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", package = "move-core-types" }
 move-vm2-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", package = "move-transactional-test-runner" }

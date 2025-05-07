@@ -26,12 +26,14 @@ use starcoin_storage::Storage;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::block::BlockNumber;
 use starcoin_types::filter::Filter;
+use starcoin_types::language_storage::TypeTag;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_vm2_abi_decoder::decode_txn_payload as decode_txn_payload_v2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_storage::Storage as Storage2;
 use starcoin_vm2_vm_types::StateView as StateView2;
 use std::convert::TryInto;
+use std::str::FromStr;
 use std::sync::Arc;
 
 pub struct ChainRpcImpl<S>
@@ -326,7 +328,10 @@ where
                 for elem in resp_data.iter_mut() {
                     elem.decode_event_data = Some(
                         annotator
-                            .view_value(&elem.event.type_tag.0, elem.event.data.0.as_slice())?
+                            .view_value(
+                                &TypeTag::from_str(&elem.event.type_tag)?,
+                                elem.event.data.0.as_slice(),
+                            )?
                             .into(),
                     );
                 }
@@ -391,7 +396,10 @@ where
                 for elem in data.iter_mut() {
                     elem.decode_event_data = Some(
                         annotator
-                            .view_value(&elem.event.type_tag.0, elem.event.data.0.as_slice())?
+                            .view_value(
+                                &TypeTag::from_str(&elem.event.type_tag)?,
+                                elem.event.data.0.as_slice(),
+                            )?
                             .into(),
                     );
                 }

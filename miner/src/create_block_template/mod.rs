@@ -70,6 +70,8 @@ impl ServiceFactory<Self> for BlockBuilderService {
             .expect("Startup info should exist when service start.");
         //TODO support get service ref by AsyncAPI;
         let account_service = ctx.service_ref::<AccountService>()?;
+        // todo: use vm2 account as default?
+        //let _account_service = ctx.service_ref::<AccountService2>()?;
         let miner_account = block_on(async { account_service.get_default_account().await })?
             .ok_or_else(|| {
                 format_err!("Default account should exist when BlockBuilderService start.")

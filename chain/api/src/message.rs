@@ -5,10 +5,10 @@ use crate::TransactionInfoWithProof;
 use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::ServiceRequest;
+use starcoin_types::contract_event::StcContractEventInfo;
 use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
-    contract_event::ContractEventInfo,
     filter::Filter,
     startup_info::{ChainStatus, StartupInfo},
     transaction::Transaction,
@@ -83,8 +83,8 @@ pub enum ChainResponse {
     BlockHeaderVec(Vec<Option<BlockHeader>>),
     TransactionInfos(Vec<RichTransactionInfo>),
     TransactionInfo(Option<RichTransactionInfo>),
-    Events(Vec<ContractEventInfo>),
-    MainEvents(Vec<ContractEventInfo>),
+    Events(Vec<StcContractEventInfo>),
+    MainEvents(Vec<StcContractEventInfo>),
     HashVec(Vec<HashValue>),
     TransactionProof(Box<Option<TransactionInfoWithProof>>),
     BlockInfoVec(Box<Vec<Option<BlockInfo>>>),

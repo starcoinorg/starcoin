@@ -522,7 +522,7 @@ pub struct ContractEventHandler {
 
 impl EventHandler<ContractEventNotification> for ContractEventHandler {
     fn handle(&self, msg: ContractEventNotification) -> Vec<jsonrpc_core::Result<pubsub::Result>> {
-        let Notification((state_root, events)) = msg;
+        let Notification((state_root, events, _state_root2, _events2)) = msg;
         let filtered = events
             .as_ref()
             .iter()

@@ -16,7 +16,7 @@ use starcoin_types::account_address;
 use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::filter::Filter;
 use starcoin_types::identifier::Identifier;
-use starcoin_types::language_storage::TypeTag;
+use starcoin_types::language_storage::{StcTypeTag, TypeTag};
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::language_storage::StructTag;
 use std::str::FromStr;
@@ -53,7 +53,7 @@ fn test_chain_filter_events() {
         let evt = evts.first().unwrap();
         assert_eq!(evt.block_number, 1);
         assert_eq!(evt.transaction_index, 0);
-        assert_eq!(evt.event.type_tag(), &event_type_tag);
+        assert_eq!(evt.event.type_tag(), StcTypeTag::V1(event_type_tag.clone()));
     }
 
     {

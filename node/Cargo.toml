@@ -37,7 +37,6 @@ starcoin-state-api = { workspace = true }
 starcoin-state-service = { workspace = true }
 starcoin-statedb = { workspace = true }
 starcoin-storage = { workspace = true }
-starcoin-vm2-storage = { workspace = true }
 starcoin-stratum = { workspace = true }
 starcoin-sync = { workspace = true }
 starcoin-sync-api = { workspace = true }
@@ -49,6 +48,9 @@ thiserror = { workspace = true }
 timeout-join-handler = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 num_cpus = { workspace = true }
+starcoin-vm2-storage = { workspace = true }
+starcoin-vm2-state-service = { workspace = true }
+starcoin-vm2-account-service = { workspace = true }
 
 [dev-dependencies]
 stest = { workspace = true }

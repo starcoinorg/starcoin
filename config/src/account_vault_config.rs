@@ -38,6 +38,10 @@ impl AccountVaultConfig {
             self.base().data_dir().join(path)
         }
     }
+
+    pub fn dir2(&self) -> PathBuf {
+        self.dir().join("vm2")
+    }
 }
 
 impl ConfigModule for AccountVaultConfig {

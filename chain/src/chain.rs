@@ -25,7 +25,7 @@ use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter}
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
-use starcoin_types::contract_event::ContractEventInfo;
+use starcoin_types::contract_event::StcContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::multi_state::MultiState;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
@@ -1370,7 +1370,7 @@ impl ChainReader for BlockChain {
 }
 
 impl BlockChain {
-    pub fn filter_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>> {
+    pub fn filter_events(&self, filter: Filter) -> Result<Vec<StcContractEventInfo>> {
         let (storage, _storage2) = &self.storage;
         let reverse = filter.reverse;
         let chain_header = self.current_header();
@@ -1427,14 +1427,14 @@ impl BlockChain {
                 })?;
 
                 let filtered_event_with_info =
-                    filtered_events.map(|(idx, evt)| ContractEventInfo {
+                    filtered_events.map(|(idx, evt)| StcContractEventInfo {
                         block_hash: block_id,
                         block_number: block.header().number(),
                         transaction_hash: txn_info.transaction_hash(),
                         transaction_index: txn_info.transaction_index,
                         transaction_global_index: txn_info.transaction_global_index,
                         event_index: idx as u32,
-                        event: evt,
+                        event: evt.into(),
                     });
                 if reverse {
                     event_with_infos.extend(filtered_event_with_info.rev())

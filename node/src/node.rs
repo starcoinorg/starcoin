@@ -51,6 +51,11 @@ use starcoin_sync::txn_sync::TxnSyncService;
 use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
 use starcoin_txpool::TxPoolActorService;
 use starcoin_types::system_events::{SystemShutdown, SystemStarted};
+use starcoin_vm2_account_service::{
+    AccountEventService as AccountEventService2, AccountService as AccountService2,
+    AccountStorage as AccountStorage2,
+};
+use starcoin_vm2_state_service::ChainStateService as ChainStateService2;
 use starcoin_vm2_storage::{
     cache_storage::CacheStorage as CacheStorage2, db_storage::DBStorage as DBStorage2,
     storage::StorageInstance as StorageInstance2, Storage as Storage2,
@@ -345,6 +350,7 @@ impl NodeService {
         let node_service = registry.register::<NodeService>().await?;
 
         registry.register::<ChainStateService>().await?;
+        registry.register::<ChainStateService2>().await?;
 
         let vault_config = &config.vault;
         let account_storage =
@@ -353,8 +359,23 @@ impl NodeService {
             .put_shared::<AccountStorage>(account_storage.clone())
             .await?;
 
+        // todo: remove me
+        let config2 = starcoin_vm2_storage::db_storage::RocksdbConfig {
+            max_open_files: config.storage.rocksdb_config().max_open_files,
+            max_total_wal_size: config.storage.rocksdb_config().max_total_wal_size,
+            bytes_per_sync: config.storage.rocksdb_config().bytes_per_sync,
+            wal_bytes_per_sync: config.storage.rocksdb_config().wal_bytes_per_sync,
+        };
+        let account_storage2 = AccountStorage2::create_from_path(vault_config.dir2(), config2)?;
+        registry
+            .put_shared::<AccountStorage2>(account_storage2.clone())
+            .await?;
+
         registry.register::<AccountService>().await?;
         registry.register::<AccountEventService>().await?;
+
+        registry.register::<AccountService2>().await?;
+        registry.register::<AccountEventService2>().await?;
 
         let txpool_service = registry.register::<TxPoolActorService>().await?;
 

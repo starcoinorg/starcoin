@@ -29,6 +29,7 @@ starcoin-storage = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-state-tree = { workspace = true }
 starcoin-vm-types = { workspace = true }
+starcoin-vm2-state-service = { workspace = true }
 
 [dev-dependencies]
 starcoin-account-api = { workspace = true }
