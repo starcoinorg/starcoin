@@ -43,7 +43,7 @@ use starcoin_rpc_api::types::{
 };
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, contract_api::ContractClient, debug::DebugClient,
-    miner::MinerClient, multi_types::MultiSignedUserTransactionView,
+    miner::MinerClient, multi_signed_user_transaction_view::MultiSignedUserTransactionView,
     network_manager::NetworkManagerClient, node::NodeClient, node_manager::NodeManagerClient,
     state::StateClient, sync_manager::SyncManagerClient, txpool::TxPoolClient,
     types::TransactionEventView,

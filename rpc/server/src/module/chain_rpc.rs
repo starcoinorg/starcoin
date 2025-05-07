@@ -12,7 +12,7 @@ use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_rpc_api::chain::{
     ChainApi, GetBlockOption, GetBlocksOption, GetEventOption, GetTransactionOption,
 };
-use starcoin_rpc_api::multi_types::MultiSignedUserTransactionView;
+use starcoin_rpc_api::multi_signed_user_transaction_view::MultiSignedUserTransactionView;
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
     BlockHeaderView, BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,

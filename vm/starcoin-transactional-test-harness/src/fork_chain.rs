@@ -13,7 +13,7 @@ use starcoin_config::{BuiltinNetworkID, ChainNetworkID};
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::chain::{ChainApi, GetBlockOption};
 use starcoin_rpc_api::chain::{ChainApiClient, GetBlocksOption};
-use starcoin_rpc_api::multi_types::MultiSignedUserTransactionView;
+use starcoin_rpc_api::multi_signed_user_transaction_view::MultiSignedUserTransactionView;
 use starcoin_rpc_api::types::{
     BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView, TransactionInfoView,
     TransactionView,

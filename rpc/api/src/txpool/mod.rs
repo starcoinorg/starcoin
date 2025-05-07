@@ -6,7 +6,7 @@ use openrpc_derive::openrpc;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 
 pub use self::gen_client::Client as TxPoolClient;
-use crate::multi_types::MultiSignedUserTransactionView;
+use crate::multi_signed_user_transaction_view::MultiSignedUserTransactionView;
 use crate::types::StrView;
 use starcoin_crypto::HashValue;
 use starcoin_txpool_api::TxPoolStatus;

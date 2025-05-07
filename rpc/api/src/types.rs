@@ -1221,7 +1221,7 @@ impl TransactionEventView {
     }
 }
 
-use crate::multi_types::MultiSignedUserTransactionView;
+use crate::multi_signed_user_transaction_view::MultiSignedUserTransactionView;
 use crate::types::TransactionStatusView::Retry;
 use schemars::gen::SchemaGenerator;
 use schemars::schema::{InstanceType, Schema, SchemaObject};

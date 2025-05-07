@@ -26,4 +26,6 @@ pub mod txpool;
 pub mod types;
 
 pub mod multi_dry_run_output_view;
-pub mod multi_types;
+pub mod multi_signed_user_transaction_view;
+pub mod muti_raw_user_transaction_view;
+pub mod multi_transaction_payload_view;

@@ -14,11 +14,15 @@ use starcoin_crypto::{
 use starcoin_dev::playground;
 use starcoin_node::NodeHandle;
 use starcoin_rpc_api::multi_dry_run_output_view::MultiDryRunOutputView;
-use starcoin_rpc_api::{chain::GetEventOption, multi_types::MultiSignedUserTransactionView};
+use starcoin_rpc_api::multi_transaction_payload_view::MultiTransactionPayloadView;
+use starcoin_rpc_api::types::{RawUserTransactionView, TransactionPayloadView, TransactionStatusView};
+use starcoin_rpc_api::{
+    chain::GetEventOption, multi_signed_user_transaction_view::MultiSignedUserTransactionView,
+};
 use starcoin_rpc_client::{RpcClient, StateRootOption};
 use starcoin_state_api::ChainStateReader;
 use starcoin_types::multi_dry_run_transaction::MultiDryRunTransaction;
-use starcoin_types::multi_transaction::MultiTransactionPayload;
+use starcoin_types::multi_transaction::{MultiAccountAddress, MultiTransactionPayload};
 use starcoin_types::{
     account_address::AccountAddress,
     multi_transaction::{MultiRawUserTransaction, MultiSignedUserTransaction},
@@ -41,7 +45,11 @@ use std::{
     sync::Arc,
     time::Duration,
 };
-use starcoin_rpc_api::types::TransactionStatusView;
+use starcoin_vm2_abi_decoder::{decode_txn_payload as decode_txn_payload_v2};
+use starcoin_rpc_api::muti_raw_user_transaction_view::MultiRawUserTransactionView;
+use starcoin_vm_types::state_view::StateView as StateViewV2;
+use crate::multi_vm::multi_decoded_transaction_payload::MultiDecodedTransactionPayload;
+use crate::multi_vm::multi_execute_result_view::MultiExecuteResultView;
 
 static G_HISTORY_FILE_NAME: &str = "history";
 
@@ -54,6 +62,7 @@ pub struct CliStateDualVM {
     data_dir: PathBuf,
     temp_dir: DataDirPath,
     account_client: Box<dyn AccountProvider>,
+    mock_db: Arc<dyn StateViewV2>,
 }
 
 impl CliStateDualVM {
@@ -189,7 +198,8 @@ impl CliStateDualVM {
                 if let Some(info) = self.client.chain_get_transaction_info(txn_hash)? {
                     info
                 } else {
-                    bail!("transaction execute success, but get transaction info return none, block: {}", block.map(|b|b.header.number.to_string()).unwrap_or_else(||"unknown".to_string()));
+                    bail!("transaction execute success, but get transaction info return none, block: {}",
+                        block.map(|b|b.header.number.to_string()).unwrap_or_else(||"unknown".to_string()));
                 }
             }
         };
@@ -206,7 +216,7 @@ impl CliStateDualVM {
         &self,
         txn_opts: TransactionOptions,
         payload: MultiTransactionPayload,
-    ) -> Result<ExecuteResultView> {
+    ) -> Result<MultiExecuteResultView> {
         let (raw_txn, future_transaction) = self.build_transaction(
             txn_opts.sender,
             txn_opts.sequence_number,
@@ -218,8 +228,9 @@ impl CliStateDualVM {
         )?;
         if future_transaction {
             //TODO figure out more graceful method to handle future transaction.
-            bail!("there is transaction from sender({}) in the txpool, please wait it to been executed or use sequence_number({}) to replace it.", 
-                raw_txn.sender(), raw_txn.sequence_number()-1
+            bail!("there is transaction from sender({}) in the txpool, please wait it to been executed or use sequence_number({}) to replace it.",
+                raw_txn.sender(),
+                raw_txn.sequence_number() - 1
             );
         }
         self.execute_transaction(raw_txn, txn_opts.dry_run, txn_opts.blocking)
@@ -326,19 +337,24 @@ impl CliStateDualVM {
         raw_txn: MultiRawUserTransaction,
         only_dry_run: bool,
         blocking: bool,
-    ) -> Result<ExecuteResultView> {
+    ) -> Result<MultiExecuteResultView> {
         let sender = self.get_account(raw_txn.sender())?;
         let public_key = sender.public_key;
 
-        let multi_txn = self.build_multi_dry_run_transaction(raw_txn.clone(), public_key.clone())?;
+        let multi_txn =
+            self.build_multi_dry_run_transaction(raw_txn.clone(), public_key.clone())?;
         let dry_output = self.dry_run_transaction(multi_txn)?;
 
-        let mut raw_txn_view: RawUserTransactionView = raw_txn.clone().try_into()?;
-        raw_txn_view.decoded_payload = Some(TransactionPayloadView::from(
-            self.decode_txn_payload(raw_txn.payload())?,
-        ));
+        let mut raw_txn_view: MultiRawUserTransactionView = raw_txn.clone().try_into()?;
 
-        let mut execute_result = ExecuteResultView::new(raw_txn_view, raw_txn.to_hex(), dry_output);
+        // TODO(BobOng): [dual-vm] decode payload
+        // raw_txn_view.decoded_payload = Some(self.decode_txn_payload(&raw_txn.payload())?);
+
+        let mut execute_result = MultiExecuteResultView::new(
+            raw_txn_view,
+            raw_txn.to_hex(),
+            dry_output.try_into().unwrap(),
+        );
         if only_dry_run
             || !matches!(
                 execute_result.dry_run_output.txn_output.status,
@@ -353,7 +369,9 @@ impl CliStateDualVM {
         }
 
         // TODO(BobOng):[dual-vm] How to sign txn using vm2?
-        let signed_txn = self.account_client.sign_txn(raw_txn.into(), sender.address)?;
+        let signed_txn = self
+            .account_client
+            .sign_txn(raw_txn.into(), sender.address)?;
 
         let multisig_public_key = match &public_key {
             AccountPublicKey::Single(_) => {
@@ -403,9 +421,16 @@ impl CliStateDualVM {
     pub fn decode_txn_payload(
         &self,
         payload: &MultiTransactionPayload,
-    ) -> Result<DecodedTransactionPayload> {
+    ) -> Result<MultiDecodedTransactionPayload> {
         let chain_state_reader = self.client.state_reader(StateRootOption::Latest)?;
-        decode_txn_payload(&chain_state_reader, payload)
+        Ok(match payload {
+            MultiTransactionPayload::VM1(payload) => {
+                MultiDecodedTransactionPayload::VM1(decode_txn_payload(&chain_state_reader, payload)?),
+            }
+            MultiTransactionPayload::VM2(payload) => {
+                MultiDecodedTransactionPayload::VM2(decode_txn_payload_v2(self.get_vm2_state_view(), payload)?)
+            }
+        })
     }
 
     pub fn into_inner(self) -> (ChainNetworkID, Arc<RpcClient>, Option<NodeHandle>) {
@@ -417,7 +442,7 @@ impl CliStateDualVM {
     // Otherwise, keep signatures into file.
     pub fn sign_multisig_txn_to_file_or_submit(
         &self,
-        sender: AccountAddress,
+        sender: MultiAccountAddress,
         multisig_public_key: MultiEd25519PublicKey,
         existing_signatures: Option<MultiEd25519SignatureShard>,
         partial_signed_txn: MultiSignedUserTransaction,
@@ -546,5 +571,10 @@ impl CliStateDualVM {
             }
         };
         Ok(multi_txn)
+    }
+
+    fn get_vm2_state_view(&self) -> &dyn StateViewV2 {
+        // TODO(BobOng): [dual-vm] To Get Storage for construction StateView
+        self.mock_db.as_ref()
     }
 }

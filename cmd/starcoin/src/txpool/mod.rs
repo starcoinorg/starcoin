@@ -7,7 +7,7 @@ use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
-use starcoin_rpc_api::multi_types::MultiSignedUserTransactionView;
+use starcoin_rpc_api::multi_signed_user_transaction_view::MultiSignedUserTransactionView;
 use starcoin_txpool_api::TxPoolStatus;
 use starcoin_vm_types::account_address::AccountAddress;
 

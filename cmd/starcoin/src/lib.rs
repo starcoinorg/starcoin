@@ -9,10 +9,13 @@ pub mod contract;
 pub mod dev;
 pub mod helper;
 pub mod mutlisig_transaction;
+
+// pub mod multi_execution_output_view;
 pub mod node;
 pub mod state;
 mod txpool;
 pub mod view;
+pub mod multi_vm;
 
 pub use cli_state::CliState;
 use scmd::{CmdContext, CustomCommand};

@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2
+
 use crate::types::SignedUserTransactionView;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
