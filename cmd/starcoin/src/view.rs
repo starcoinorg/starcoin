@@ -63,6 +63,10 @@ pub struct TransactionOptions {
     #[clap(name = "gas-token", long = "gas-token", name = "token code of gas")]
     /// "token code of gas to pay, for example: 0x1::STC::STC, default is STC."
     pub gas_token: Option<String>,
+
+    #[clap(long = "vm2", default_value = "false")]
+    /// using vm2
+    pub vm2: bool,
 }
 
 #[derive(Debug, Clone)]

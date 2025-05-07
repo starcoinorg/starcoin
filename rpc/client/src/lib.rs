@@ -681,6 +681,11 @@ impl RpcClient {
             .map_err(map_err)
     }
 
+    pub fn state_get_multi_vm_state_roots(&self) -> anyhow::Result<(HashValue, Option<HashValue>)> {
+        self.call_rpc_blocking(|inner| inner.state_client.get_multi_vm_state_roots())
+            .map_err(map_err)
+    }
+
     pub fn contract_call(&self, call: ContractCall) -> anyhow::Result<Vec<DecodedMoveValue>> {
         self.call_rpc_blocking(|inner| inner.contract_client.call_v2(call))
             .map_err(map_err)

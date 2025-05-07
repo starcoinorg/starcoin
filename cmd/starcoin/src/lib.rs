@@ -4,6 +4,7 @@
 pub mod account;
 pub mod chain;
 pub mod cli_state;
+pub mod cli_state_dual_vm;
 pub mod contract;
 pub mod dev;
 pub mod helper;

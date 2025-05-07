@@ -25,4 +25,5 @@ mod tests;
 pub mod txpool;
 pub mod types;
 
+pub mod multi_dry_run_output_view;
 pub mod multi_types;

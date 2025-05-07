@@ -76,6 +76,7 @@ pub mod startup_info;
 pub mod state_set;
 pub mod system_events;
 
+pub mod multi_dry_run_transaction;
 pub mod multi_transaction;
 
 pub mod transaction;
@@ -135,6 +136,7 @@ pub mod genesis_config {
 
 pub mod stress_test;
 pub mod sync_status;
+pub mod multi_transaction_authenticator;
 
 pub mod proof {
     pub use forkable_jellyfish_merkle::proof::SparseMerkleProof;

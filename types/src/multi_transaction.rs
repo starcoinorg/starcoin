@@ -1,3 +1,7 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
+use std::fmt::{Display, Formatter, Pointer};
 use crate::account_address::AccountAddress;
 use anyhow::{format_err, Error};
 use bcs_ext::Sample;
@@ -8,15 +12,17 @@ use starcoin_vm2_vm_types::{
     account_address::AccountAddress as AccountAddressV2,
     genesis_config::ChainId as ChainIdV2,
     transaction::{
+        RawUserTransaction as RawUserTransactionV2,
         SignatureCheckedTransaction as SignatureCheckedTransactionV2,
         SignedUserTransaction as SignedUserTransactionV2,
         TransactionPayload as TransactionPayloadV2,
     },
 };
 use starcoin_vm_types::transaction::{
-    SignatureCheckedTransaction, Transaction, TransactionPayload,
+    RawUserTransaction, SignatureCheckedTransaction, Transaction, TransactionPayload,
 };
 use starcoin_vm_types::{genesis_config::ChainId, transaction::SignedUserTransaction};
+use crate::multi_transaction_authenticator::MultiTransactionAuthenticator;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 pub enum MultiChainId {
@@ -60,6 +66,33 @@ pub enum MultiAccountAddress {
     VM1(AccountAddress),
     VM2(AccountAddressV2),
 }
+
+impl Into<AccountAddress> for MultiAccountAddress {
+    fn into(self) -> AccountAddress {
+        match self {
+            MultiAccountAddress::VM1(addr) => addr,
+            MultiAccountAddress::VM2(addr) => AccountAddress::new(addr.into_bytes()),
+        }
+    }
+}
+
+impl Display for MultiAccountAddress {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MultiAccountAddress::VM1(addr) => addr.fmt(f),
+            MultiAccountAddress::VM2(addr) => addr.fmt(f)
+        }
+    }
+}
+
+// impl From<AccountAddressV2> for MultiAccountAddress {
+//     fn from(addr: MultiAccountAddress) -> Self {
+//         match addr {
+//             MultiAccountAddress::VM1(addr) => AccountAddressV2::new(addr.into_bytes()),
+//             MultiAccountAddress::VM2(addr) => addr,
+//         }
+//     }
+// }
 
 impl Sample for MultiSignedUserTransaction {
     fn sample() -> Self {
@@ -112,13 +145,13 @@ impl MultiSignedUserTransaction {
         }
     }
 
-    /*
-    pub fn authenticator(&self) -> TransactionAuthenticator {
+
+    pub fn authenticator(&self) -> MultiTransactionAuthenticator {
         match self {
-            Self::VM1(sign) => sign.authenticator(),
-            Self::VM2(sign_with_type) => sign_with_type.authenticator(),
+            Self::VM1(sign) => MultiTransactionAuthenticator::VM1(sign.authenticator()),
+            Self::VM2(sign_with_type) => MultiTransactionAuthenticator::VM2(sign_with_type.authenticator()),
         }
-    } */
+    }
 
     pub fn sender(&self) -> MultiAccountAddress {
         match self {
@@ -190,6 +223,121 @@ impl From<MultiSignedUserTransaction> for Transaction {
         match txn {
             MultiSignedUserTransaction::VM1(txn) => Transaction::UserTransaction(txn),
             _ => panic!("Not a vm1 transaction."),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum MultiRawUserTransaction {
+    VM1(RawUserTransaction),
+    VM2(RawUserTransactionV2),
+}
+
+impl MultiRawUserTransaction {
+    pub fn into_payload(self) -> MultiTransactionPayload {
+        match self {
+            MultiRawUserTransaction::VM1(raw_txn) => {
+                MultiTransactionPayload::VM1(raw_txn.payload().clone())
+            }
+            MultiRawUserTransaction::VM2(raw_txn) => {
+                MultiTransactionPayload::VM2(raw_txn.payload().clone())
+            }
+        }
+    }
+
+    /// Return the sender of this transaction.
+    pub fn sender(&self) -> MultiAccountAddress {
+        match self {
+            MultiRawUserTransaction::VM1(raw_txn) => {
+                MultiAccountAddress::VM1(raw_txn.sender().clone())
+            }
+            MultiRawUserTransaction::VM2(raw_txn) => {
+                MultiAccountAddress::VM2(raw_txn.sender().clone())
+            }
+        }
+    }
+    pub fn sequence_number(&self) -> u64 {
+        match self {
+            MultiRawUserTransaction::VM1(raw_txn) => raw_txn.sequence_number(),
+            MultiRawUserTransaction::VM2(raw_txn) => raw_txn.sequence_number(),
+        }
+    }
+    pub fn max_gas_amount(&self) -> u64 {
+        match self {
+            MultiRawUserTransaction::VM1(raw_txn) => raw_txn.max_gas_amount(),
+            MultiRawUserTransaction::VM2(raw_txn) => raw_txn.max_gas_amount(),
+        }
+    }
+    pub fn gas_unit_price(&self) -> u64 {
+        match self {
+            MultiRawUserTransaction::VM1(raw_txn) => raw_txn.gas_unit_price(),
+            MultiRawUserTransaction::VM2(raw_txn) => raw_txn.gas_unit_price(),
+        }
+    }
+    pub fn gas_token_code(&self) -> String {
+        match self {
+            MultiRawUserTransaction::VM1(raw_txn) => raw_txn.gas_token_code(),
+            MultiRawUserTransaction::VM2(raw_txn) => raw_txn.gas_token_code(),
+        }
+    }
+    pub fn expiration_timestamp_secs(&self) -> u64 {
+        match self {
+            MultiRawUserTransaction::VM1(raw_txn) => raw_txn.expiration_timestamp_secs(),
+            MultiRawUserTransaction::VM2(raw_txn) => raw_txn.expiration_timestamp_secs(),
+        }
+    }
+    pub fn chain_id(&self) -> MultiChainId {
+        match self {
+            MultiRawUserTransaction::VM1(raw_txn) => MultiChainId::VM1(raw_txn.chain_id()),
+            MultiRawUserTransaction::VM2(raw_txn) => MultiChainId::VM2(raw_txn.chain_id()),
+        }
+    }
+    pub fn payload(&self) -> MultiTransactionPayload {
+        match self {
+            MultiRawUserTransaction::VM1(raw_txn) => {
+                MultiTransactionPayload::VM1(raw_txn.payload().clone())
+            }
+            MultiRawUserTransaction::VM2(raw_txn) => {
+                MultiTransactionPayload::VM2(raw_txn.payload().clone())
+            }
+        }
+    }
+
+    pub fn txn_size(&self) -> usize {
+        match self {
+            MultiRawUserTransaction::VM1(raw_txn) => bcs_ext::to_bytes(raw_txn)
+                .expect("Unable to serialize RawUserTransaction")
+                .len(),
+            MultiRawUserTransaction::VM2(raw_txn) => bcs_ext::to_bytes(raw_txn)
+                .expect("Unable to serialize RawUserTransaction")
+                .len(),
+        }
+    }
+
+    // pub fn from_hex<T: AsRef<[u8]>>(hex: T) -> anyhow::Result<Self> {
+    //     Self::from_bytes(hex::decode(hex)?)
+    // }
+    //
+    // pub fn from_bytes<T: AsRef<[u8]>>(bytes: T) -> anyhow::Result<Self> {
+    //     bcs_ext::from_bytes(bytes.as_ref())
+    // }
+
+    pub fn to_hex(&self) -> String {
+        match self {
+            MultiRawUserTransaction::VM1(raw_txn) => format!(
+                "0x{}",
+                hex::encode(
+                    bcs_ext::to_bytes(&raw_txn)
+                        .expect("Serialize RawUserTransaction should success.")
+                )
+            ),
+            MultiRawUserTransaction::VM2(raw_txn) => format!(
+                "0x{}",
+                hex::encode(
+                    bcs_ext::to_bytes(&raw_txn)
+                        .expect("Serialize RawUserTransaction should success.")
+                )
+            ),
         }
     }
 }
