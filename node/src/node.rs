@@ -21,6 +21,7 @@ use starcoin_genesis::{Genesis, GenesisError};
 use starcoin_logger::prelude::*;
 use starcoin_logger::structured_log::init_slog_logger;
 use starcoin_logger::LoggerHandle;
+use starcoin_metrics::metrics::VMMetrics;
 use starcoin_miner::generate_block_event_pacemaker::GenerateBlockEventPacemaker;
 use starcoin_miner::{BlockBuilderService, MinerService};
 use starcoin_miner_client::job_bus_client::JobBusClient;
@@ -60,7 +61,6 @@ use starcoin_vm2_storage::{
     cache_storage::CacheStorage as CacheStorage2, db_storage::DBStorage as DBStorage2,
     storage::StorageInstance as StorageInstance2, Storage as Storage2,
 };
-use starcoin_vm_runtime::metrics::VMMetrics;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 

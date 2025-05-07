@@ -17,7 +17,7 @@ pub use executor::*;
 //     encode_transfer_script_function, peer_to_peer_txn_sent_as_association, DEFAULT_EXPIRATION_TIME,
 //     DEFAULT_MAX_GAS_AMOUNT,
 // };
-pub use starcoin_vm_runtime::metrics::VMMetrics;
+pub use starcoin_metrics::metrics::VMMetrics;
 
 mod block_executor;
 

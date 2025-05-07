@@ -73,9 +73,9 @@ use std::sync::Arc;
 
 static EXECUTION_CONCURRENCY_LEVEL: OnceCell<usize> = OnceCell::new();
 
-#[cfg(feature = "metrics")]
-use crate::metrics::VMMetrics;
 use crate::VMExecutor;
+#[cfg(feature = "metrics")]
+use starcoin_metrics::metrics::VMMetrics;
 
 #[derive(Clone)]
 #[allow(clippy::upper_case_acronyms)]
