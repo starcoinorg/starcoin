@@ -53,8 +53,7 @@
                 "block_accumulator_info",
                 "block_hash",
                 "total_difficulty",
-                "txn_accumulator_info",
-                "vm_state_accumulator_info"
+                "txn_accumulator_info"
               ],
               "properties": {
                 "block_accumulator_info": {
@@ -101,39 +100,6 @@
                 },
                 "txn_accumulator_info": {
                   "description": "The transaction accumulator info",
-                  "type": "object",
-                  "required": [
-                    "accumulator_root",
-                    "frozen_subtree_roots",
-                    "num_leaves",
-                    "num_nodes"
-                  ],
-                  "properties": {
-                    "accumulator_root": {
-                      "description": "Accumulator root hash",
-                      "type": "string",
-                      "format": "HashValue"
-                    },
-                    "frozen_subtree_roots": {
-                      "description": "Frozen subtree roots of this accumulator.",
-                      "type": "array",
-                      "items": {
-                        "type": "string",
-                        "format": "HashValue"
-                      }
-                    },
-                    "num_leaves": {
-                      "description": "The total number of leaves in this accumulator.",
-                      "type": "string"
-                    },
-                    "num_nodes": {
-                      "description": "The total number of nodes in this accumulator.",
-                      "type": "string"
-                    }
-                  }
-                },
-                "vm_state_accumulator_info": {
-                  "description": "The VM State accumulator info.",
                   "type": "object",
                   "required": [
                     "accumulator_root",
@@ -2787,8 +2753,7 @@
             "block_accumulator_info",
             "block_hash",
             "total_difficulty",
-            "txn_accumulator_info",
-            "vm_state_accumulator_info"
+            "txn_accumulator_info"
           ],
           "properties": {
             "block_accumulator_info": {
@@ -2835,39 +2800,6 @@
             },
             "txn_accumulator_info": {
               "description": "The transaction accumulator info",
-              "type": "object",
-              "required": [
-                "accumulator_root",
-                "frozen_subtree_roots",
-                "num_leaves",
-                "num_nodes"
-              ],
-              "properties": {
-                "accumulator_root": {
-                  "description": "Accumulator root hash",
-                  "type": "string",
-                  "format": "HashValue"
-                },
-                "frozen_subtree_roots": {
-                  "description": "Frozen subtree roots of this accumulator.",
-                  "type": "array",
-                  "items": {
-                    "type": "string",
-                    "format": "HashValue"
-                  }
-                },
-                "num_leaves": {
-                  "description": "The total number of leaves in this accumulator.",
-                  "type": "string"
-                },
-                "num_nodes": {
-                  "description": "The total number of nodes in this accumulator.",
-                  "type": "string"
-                }
-              }
-            },
-            "vm_state_accumulator_info": {
-              "description": "The VM State accumulator info.",
               "type": "object",
               "required": [
                 "accumulator_root",
@@ -4139,49 +4071,8 @@
                 "minimum": 0.0
               },
               "event_key": {
-                "oneOf": [
-                  {
-                    "type": "object",
-                    "required": [
-                      "V1"
-                    ],
-                    "properties": {
-                      "V1": {
-                        "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. By design, the lower part of EventKey is the same as account address.",
-                        "type": "string"
-                      }
-                    },
-                    "additionalProperties": false
-                  },
-                  {
-                    "type": "object",
-                    "required": [
-                      "V2"
-                    ],
-                    "properties": {
-                      "V2": {
-                        "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. By design, the lower part of EventKey is the same as account address.",
-                        "type": "object",
-                        "required": [
-                          "account_address",
-                          "creation_number"
-                        ],
-                        "properties": {
-                          "account_address": {
-                            "type": "string",
-                            "format": "AccountAddress"
-                          },
-                          "creation_number": {
-                            "type": "integer",
-                            "format": "uint64",
-                            "minimum": 0.0
-                          }
-                        }
-                      }
-                    },
-                    "additionalProperties": false
-                  }
-                ]
+                "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. By design, the lower part of EventKey is the same as account address.",
+                "type": "string"
               },
               "event_seq_number": {
                 "type": "string"
@@ -4354,49 +4245,8 @@
                 "minimum": 0.0
               },
               "event_key": {
-                "oneOf": [
-                  {
-                    "type": "object",
-                    "required": [
-                      "V1"
-                    ],
-                    "properties": {
-                      "V1": {
-                        "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. By design, the lower part of EventKey is the same as account address.",
-                        "type": "string"
-                      }
-                    },
-                    "additionalProperties": false
-                  },
-                  {
-                    "type": "object",
-                    "required": [
-                      "V2"
-                    ],
-                    "properties": {
-                      "V2": {
-                        "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. By design, the lower part of EventKey is the same as account address.",
-                        "type": "object",
-                        "required": [
-                          "account_address",
-                          "creation_number"
-                        ],
-                        "properties": {
-                          "account_address": {
-                            "type": "string",
-                            "format": "AccountAddress"
-                          },
-                          "creation_number": {
-                            "type": "integer",
-                            "format": "uint64",
-                            "minimum": 0.0
-                          }
-                        }
-                      }
-                    },
-                    "additionalProperties": false
-                  }
-                ]
+                "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. By design, the lower part of EventKey is the same as account address.",
+                "type": "string"
               },
               "event_seq_number": {
                 "type": "string"
