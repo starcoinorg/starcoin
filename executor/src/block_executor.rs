@@ -7,6 +7,7 @@ use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_force_upgrade::ForceUpgrade;
+use starcoin_metrics::metrics::VMMetrics;
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_types::account::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::error::BlockExecutorError;
@@ -17,7 +18,6 @@ use starcoin_types::transaction::{Transaction, TransactionInfo};
 use starcoin_vm_runtime::force_upgrade_management::{
     get_force_upgrade_account, get_force_upgrade_block_number,
 };
-use starcoin_vm_runtime::metrics::VMMetrics;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::{
     genesis_address, BalanceEvent, ModuleUpgradeStrategy, STCUnit, G_STC_TOKEN_CODE,

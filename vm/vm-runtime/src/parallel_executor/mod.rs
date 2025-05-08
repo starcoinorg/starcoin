@@ -4,7 +4,6 @@
 mod storage_wrapper;
 mod vm_wrapper;
 
-use crate::metrics::VMMetrics;
 use crate::{
     adapter_common::{preprocess_transaction, PreprocessedTransaction},
     parallel_executor::vm_wrapper::StarcoinVMWrapper,
@@ -12,6 +11,7 @@ use crate::{
 };
 use move_core_types::vm_status::{StatusCode, VMStatus};
 use rayon::prelude::*;
+use starcoin_metrics::metrics::VMMetrics;
 use starcoin_parallel_executor::{
     errors::Error,
     executor::ParallelTransactionExecutor,

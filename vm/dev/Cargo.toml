@@ -14,6 +14,7 @@ starcoin-vm-runtime = { workspace = true }
 starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
 vm-status-translator = { workspace = true }
+starcoin-metrics = { workspace = true }
 
 [package]
 authors = { workspace = true }

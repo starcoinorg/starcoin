@@ -10,6 +10,7 @@ use starcoin_chain_api::{
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
+use starcoin_metrics::metrics::VMMetrics;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
@@ -26,7 +27,6 @@ use starcoin_types::{
     transaction::Transaction,
 };
 use starcoin_vm2_storage::{Storage as Storage2, Store as Store2};
-use starcoin_vm_runtime::metrics::VMMetrics;
 use starcoin_vm_types::access_path::AccessPath;
 use std::sync::Arc;
 

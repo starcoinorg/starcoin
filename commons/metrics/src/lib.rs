@@ -249,5 +249,7 @@ pub fn get_metric_from_registry(
     })
 }
 
+pub mod metrics;
+
 #[cfg(test)]
 mod tests;

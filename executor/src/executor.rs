@@ -1,9 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 use anyhow::Result;
+use starcoin_metrics::metrics::VMMetrics;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::transaction::{Transaction, TransactionOutput};
-use starcoin_vm_runtime::{metrics::VMMetrics, starcoin_vm::StarcoinVM, VMExecutor};
+use starcoin_vm_runtime::{starcoin_vm::StarcoinVM, VMExecutor};
 use starcoin_vm_types::{
     identifier::Identifier,
     language_storage::{ModuleId, TypeTag},
