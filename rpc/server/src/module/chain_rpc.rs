@@ -25,6 +25,7 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Storage;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::block::BlockNumber;
+use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_vm2_abi_decoder::decode_txn_payload as decode_txn_payload_v2;
@@ -314,9 +315,13 @@ where
 
             let mut resp_data: Vec<_> = events
                 .into_iter()
-                .map(|e| TransactionEventResponse {
-                    event: e.into(),
-                    decode_event_data: None,
+                .filter_map(|e| {
+                    e.try_into()
+                        .ok()
+                        .map(|e: ContractEventInfo| TransactionEventResponse {
+                            event: e.into(),
+                            decode_event_data: None,
+                        })
                 })
                 .collect();
 
@@ -380,9 +385,13 @@ where
                 .main_events(filter)
                 .await?
                 .into_iter()
-                .map(|e| TransactionEventResponse {
-                    event: e.into(),
-                    decode_event_data: None,
+                .filter_map(|e| {
+                    e.try_into()
+                        .ok()
+                        .map(|e: ContractEventInfo| TransactionEventResponse {
+                            event: e.into(),
+                            decode_event_data: None,
+                        })
                 })
                 .collect();
             if let Some(state_root) = state_root {

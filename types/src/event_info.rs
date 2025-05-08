@@ -29,3 +29,33 @@ pub struct StcContractEventInfo {
     pub event_index: u32,
     pub event: StcContractEvent,
 }
+
+impl TryFrom<StcContractEventInfo> for ContractEventInfo {
+    type Error = anyhow::Error;
+
+    fn try_from(value: StcContractEventInfo) -> Result<Self, Self::Error> {
+        let StcContractEventInfo {
+            block_hash,
+            block_number,
+            transaction_hash,
+            transaction_index,
+            transaction_global_index,
+            event_index,
+            event,
+        } = value;
+        match event {
+            StcContractEvent::V1(event) => Ok(ContractEventInfo {
+                block_hash,
+                block_number,
+                transaction_hash,
+                transaction_index,
+                transaction_global_index,
+                event_index,
+                event,
+            }),
+            StcContractEvent::V2(_event) => Err(anyhow::anyhow!(
+                "StcContractEvent V2 is not compatible with V1"
+            )),
+        }
+    }
+}
