@@ -1,59 +1,48 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::cli_state_trait::CliStateTrait;
 use crate::view::{ExecuteResultView, ExecutionOutputView, TransactionOptions};
-use anyhow::{bail, format_err, Result};
+use anyhow::{bail, Result};
 use bcs_ext::BCSCodec;
 use serde::de::DeserializeOwned;
 use starcoin_account_api::{AccountInfo, AccountProvider};
 use starcoin_config::{ChainNetworkID, DataDirPath};
-use starcoin_crypto::{
-    multi_ed25519::{multi_shard::MultiEd25519SignatureShard, MultiEd25519PublicKey},
-    HashValue, ValidCryptoMaterial,
-};
-use starcoin_dev::playground;
 use starcoin_node::NodeHandle;
-use starcoin_rpc_api::multi_dry_run_output_view::MultiDryRunOutputView;
-use starcoin_rpc_api::multi_transaction_payload_view::MultiTransactionPayloadView;
-use starcoin_rpc_api::types::{RawUserTransactionView, TransactionPayloadView, TransactionStatusView};
-use starcoin_rpc_api::{
-    chain::GetEventOption, multi_signed_user_transaction_view::MultiSignedUserTransactionView,
-};
+use starcoin_rpc_api::chain::GetEventOption;
 use starcoin_rpc_client::{RpcClient, StateRootOption};
-use starcoin_state_api::ChainStateReader;
-use starcoin_types::multi_dry_run_transaction::MultiDryRunTransaction;
-use starcoin_types::multi_transaction::{MultiAccountAddress, MultiTransactionPayload};
-use starcoin_types::{
-    account_address::AccountAddress,
-    multi_transaction::{MultiRawUserTransaction, MultiSignedUserTransaction},
+use starcoin_vm2_abi_decoder::{decode_txn_payload, DecodedTransactionPayload};
+use starcoin_vm2_crypto::{
+    hash::PlainCryptoHash,
+    multi_ed25519::{multi_shard::MultiEd25519SignatureShard, MultiEd25519PublicKey},
+    HashValue,
 };
-use starcoin_vm2_dev::playground as playground_vm2;
-use starcoin_vm2_statedb::{ChainStateDB as ChainStateDB2, ChainStateWriter as ChainStateWriter2};
-use starcoin_vm2_storage::Storage as Storage2;
-use starcoin_vm2_vm_types::account_config::STC_TOKEN_CODE_STR as STC_TOKEN_CODE_STR_VM2;
-use starcoin_vm_types::transaction::authenticator::{AccountPublicKey, TransactionAuthenticator};
-use starcoin_vm_types::{
-    account_config::{association_address, AccountResource, STC_TOKEN_CODE_STR},
+use starcoin_vm2_dev::playground;
+use starcoin_vm2_types::view::{
+    DryRunOutputView, RawUserTransactionView, SignedUserTransactionView, TransactionPayloadView,
+    TransactionStatusView,
+};
+use starcoin_vm2_vm_types::{
+    account_address::AccountAddress,
+    account_config::{AccountResource, STC_TOKEN_CODE_STR},
     move_resource::MoveResource,
     state_view::StateReaderExt,
+    transaction::authenticator::{AccountPublicKey, TransactionAuthenticator},
+    transaction::{
+        DryRunTransaction, RawUserTransaction, SignedUserTransaction, TransactionPayload,
+    },
 };
 use std::{
-    convert::TryInto,
     env::current_dir,
     fs::File,
     path::{Path, PathBuf},
     sync::Arc,
     time::Duration,
 };
-use starcoin_vm2_abi_decoder::{decode_txn_payload as decode_txn_payload_v2};
-use starcoin_rpc_api::muti_raw_user_transaction_view::MultiRawUserTransactionView;
-use starcoin_vm_types::state_view::StateView as StateViewV2;
-use crate::multi_vm::multi_decoded_transaction_payload::MultiDecodedTransactionPayload;
-use crate::multi_vm::multi_execute_result_view::MultiExecuteResultView;
 
 static G_HISTORY_FILE_NAME: &str = "history";
 
-pub struct CliStateDualVM {
+pub struct CliStateVM2 {
     net: ChainNetworkID,
     client: Arc<RpcClient>,
     watch_timeout: Duration,
@@ -62,24 +51,16 @@ pub struct CliStateDualVM {
     data_dir: PathBuf,
     temp_dir: DataDirPath,
     account_client: Box<dyn AccountProvider>,
-    mock_db: Arc<dyn StateViewV2>,
 }
 
-impl CliStateDualVM {
-    pub const DEFAULT_WATCH_TIMEOUT: Duration = Duration::from_secs(300);
-    pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 10000000;
-    pub const DEFAULT_GAS_PRICE: u64 = 1;
-    pub const DEFAULT_EXPIRATION_TIME_SECS: u64 = 3600;
-    pub const DEFAULT_GAS_TOKEN: &'static str = STC_TOKEN_CODE_STR;
-    pub const DEFAULT_GAS_TOKEN_VM2: &'static str = STC_TOKEN_CODE_STR_VM2;
-
-    pub fn new(
+impl CliStateTrait for CliStateVM2 {
+    fn new(
         net: ChainNetworkID,
         client: Arc<RpcClient>,
         watch_timeout: Option<Duration>,
         node_handle: Option<NodeHandle>,
         account_client: Box<dyn AccountProvider>,
-    ) -> CliStateDualVM {
+    ) -> CliStateVM2 {
         let data_dir = starcoin_config::G_DEFAULT_BASE_DATA_DIR
             .clone()
             .join("cli")
@@ -105,6 +86,14 @@ impl CliStateDualVM {
             account_client,
         }
     }
+}
+
+impl CliStateVM2 {
+    pub const DEFAULT_WATCH_TIMEOUT: Duration = Duration::from_secs(300);
+    pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 10000000;
+    pub const DEFAULT_GAS_PRICE: u64 = 1;
+    pub const DEFAULT_EXPIRATION_TIME_SECS: u64 = 3600;
+    pub const DEFAULT_GAS_TOKEN: &'static str = STC_TOKEN_CODE_STR;
 
     pub fn net(&self) -> &ChainNetworkID {
         &self.net
@@ -135,17 +124,22 @@ impl CliStateDualVM {
     }
 
     pub fn default_account(&self) -> Result<AccountInfo> {
-        self.account_client
-            .get_default_account()?
-            .ok_or_else(|| format_err!("Can not find default account, Please input from account."))
+        // TODO(BobOng): [dual-vm] get account info from vm2 provider
+        // self.account_client
+        //     .get_default_account()?
+        //     .ok_or_else(|| format_err!("Can not find default account, Please input from account."))
+        unimplemented!()
     }
 
     /// Get account from node managed wallet.
-    pub fn get_account<T: Into<AccountAddress>>(&self, account_address: T) -> Result<AccountInfo> {
-        let address = account_address.into();
-        self.account_client
-            .get_account(address)?
-            .ok_or_else(|| format_err!("Can not find WalletAccount by address: {:?}", address))
+    pub fn get_account(&self, _account_address: AccountAddress) -> Result<AccountInfo> {
+        // TODO(BobOng): [dual-vm] get account info from vm2 provide
+        // self.account_client
+        //     .get_account(account_address)?
+        //     .ok_or_else(|| {
+        //         format_err!("Can not find WalletAccount by address: {}", account_address)
+        //     })
+        unimplemented!()
     }
 
     pub fn get_account_or_default(
@@ -153,11 +147,13 @@ impl CliStateDualVM {
         account_address: Option<AccountAddress>,
     ) -> Result<AccountInfo> {
         if let Some(account_address) = account_address {
-            self.account_client
-                .get_account(account_address)?
-                .ok_or_else(|| {
-                    format_err!("Can not find WalletAccount by address: {}", account_address)
-                })
+            // self.account_client
+            //     .get_account(account_address)?
+            //     .ok_or_else(|| {
+            //         format_err!("Can not find WalletAccount by address: {}", account_address)
+            //     })
+            // TODO(BobOng): [dual-vm] get account from rpc vm2
+            unimplemented!()
         } else {
             self.default_account()
         }
@@ -167,8 +163,11 @@ impl CliStateDualVM {
     where
         R: MoveResource + DeserializeOwned,
     {
-        let chain_state_reader = self.client.state_reader(StateRootOption::Latest)?;
-        chain_state_reader.get_resource::<R>(address)
+        // let chain_state_reader = self.client.state_reader(StateRootOption::Latest)?;
+        // chain_state_reader.get_resource::<R>(address)
+
+        // TODO(BobOng): [dual-vm] get resource from chain state reader vm2
+        unimplemented!()
     }
 
     pub fn get_account_resource(&self, address: AccountAddress) -> Result<Option<AccountResource>> {
@@ -176,7 +175,8 @@ impl CliStateDualVM {
     }
 
     pub fn association_account(&self) -> Result<Option<AccountInfo>> {
-        self.client.account_get(association_address())
+        // self.client.account_get(association_address())
+        unimplemented!()
     }
 
     pub fn watch_txn(&self, txn_hash: HashValue) -> Result<ExecutionOutputView> {
@@ -203,6 +203,7 @@ impl CliStateDualVM {
                 }
             }
         };
+
         let events = self
             .client
             .chain_get_events_by_txn_hash(txn_hash, Some(GetEventOption { decode: true }))?;
@@ -215,10 +216,12 @@ impl CliStateDualVM {
     pub fn build_and_execute_transaction(
         &self,
         txn_opts: TransactionOptions,
-        payload: MultiTransactionPayload,
-    ) -> Result<MultiExecuteResultView> {
+        payload: TransactionPayload,
+    ) -> Result<ExecuteResultView> {
         let (raw_txn, future_transaction) = self.build_transaction(
-            txn_opts.sender,
+            txn_opts
+                .sender
+                .map(|addr| AccountAddress::new(addr.into_bytes())),
             txn_opts.sequence_number,
             txn_opts.gas_unit_price,
             txn_opts.max_gas_amount,
@@ -229,9 +232,7 @@ impl CliStateDualVM {
         if future_transaction {
             //TODO figure out more graceful method to handle future transaction.
             bail!("there is transaction from sender({}) in the txpool, please wait it to been executed or use sequence_number({}) to replace it.",
-                raw_txn.sender(),
-                raw_txn.sequence_number() - 1
-            );
+                raw_txn.sender(), raw_txn.sequence_number() - 1);
         }
         self.execute_transaction(raw_txn, txn_opts.dry_run, txn_opts.blocking)
     }
@@ -243,118 +244,71 @@ impl CliStateDualVM {
         gas_price: Option<u64>,
         max_gas_amount: Option<u64>,
         expiration_time_secs: Option<u64>,
-        payload: MultiTransactionPayload,
+        payload: TransactionPayload,
         gas_token: Option<String>,
-    ) -> Result<(MultiRawUserTransaction, bool)> {
+    ) -> Result<(RawUserTransaction, bool)> {
         let chain_id = self.net().chain_id();
         let sender = self.get_account_or_default(sender)?;
         let (sequence_number, future_transaction) = match sequence_number {
             Some(sequence_number) => (sequence_number, false),
-            None => match self.client.next_sequence_number_in_txpool(sender.address)? {
+            None => match self
+                .client
+                .next_sequence_number_in_txpool(sender.address())?
+            {
                 Some(sequence_number) => {
                     eprintln!("get sequence_number {} from txpool", sequence_number);
                     (sequence_number, true)
                 }
-                None => self
-                    .get_account_resource(*sender.address())?
-                    .map(|account| (account.sequence_number(), false))
-                    .ok_or_else(|| {
-                        format_err!(
-                            "Can not find account on chain by address:{}",
-                            sender.address()
-                        )
-                    })?,
+                None => (
+                    self.get_account_resource(*sender.address())?
+                        .sequence_number(),
+                    false,
+                ),
             },
         };
         let node_info = self.client.node_info()?;
         let expiration_timestamp_secs = expiration_time_secs
             .unwrap_or(Self::DEFAULT_EXPIRATION_TIME_SECS)
             + node_info.now_seconds;
-        // let gas_token_code = gas_token.unwrap_or_else(|| Self::DEFAULT_GAS_TOKEN.to_string());
-
-        let result_txn = match payload {
-            MultiTransactionPayload::VM1(payload) => {
-                let gas_token_code =
-                    gas_token.unwrap_or_else(|| Self::DEFAULT_GAS_TOKEN.to_string());
-                MultiRawUserTransaction::VM1(
-                    starcoin_vm_types::transaction::RawUserTransaction::new(
-                        sender.address,
-                        sequence_number,
-                        payload,
-                        max_gas_amount.unwrap_or(Self::DEFAULT_MAX_GAS_AMOUNT),
-                        gas_price.unwrap_or(Self::DEFAULT_GAS_PRICE),
-                        expiration_timestamp_secs,
-                        chain_id,
-                        gas_token_code,
-                    ),
-                )
-            }
-            MultiTransactionPayload::VM2(payload) => {
-                let gas_token_code =
-                    gas_token.unwrap_or_else(|| Self::DEFAULT_GAS_TOKEN_VM2.to_string());
-                MultiRawUserTransaction::VM2(
-                    starcoin_vm2_vm_types::transaction::RawUserTransaction::new(
-                        starcoin_vm2_vm_types::account_address::AccountAddress::new(
-                            sender.address.into_bytes(),
-                        ),
-                        sequence_number,
-                        payload,
-                        max_gas_amount.unwrap_or(Self::DEFAULT_MAX_GAS_AMOUNT),
-                        gas_price.unwrap_or(Self::DEFAULT_GAS_PRICE),
-                        expiration_timestamp_secs,
-                        starcoin_vm2_vm_types::genesis_config::ChainId::new(chain_id.id()),
-                        gas_token_code,
-                    ),
-                )
-            }
-        };
-        Ok((result_txn, future_transaction))
+        let gas_token_code = gas_token.unwrap_or_else(|| Self::DEFAULT_GAS_TOKEN.to_string());
+        Ok((
+            RawUserTransaction::new(
+                sender.address,
+                sequence_number,
+                payload,
+                max_gas_amount.unwrap_or(Self::DEFAULT_MAX_GAS_AMOUNT),
+                gas_price.unwrap_or(Self::DEFAULT_GAS_PRICE),
+                expiration_timestamp_secs,
+                chain_id,
+                gas_token_code,
+            ),
+            future_transaction,
+        ))
     }
 
-    pub fn dry_run_transaction(
-        &self,
-        txn: MultiDryRunTransaction,
-    ) -> Result<MultiDryRunOutputView> {
-        Ok(match txn {
-            MultiDryRunTransaction::VM1(txn) => {
-                let state_reader = self.client().state_reader(StateRootOption::Latest)?;
-                MultiDryRunOutputView::VM1(playground::dry_run_explain(&state_reader, txn, None)?)
-            }
-            MultiDryRunTransaction::VM2(txn) => {
-                let state_reader = self.client().state_reader(StateRootOption::Latest)?;
-                let (_, _state_root_vm2) = state_reader.get_multi_vm_state_roots()?;
-
-                // TODO(BobOng): [dual-vm] To Get Storage for construction StateView
-                // let state_view = ChainStateDB2::new(store, state_root_vm2);
-                let state_view = ChainStateDB2::mock();
-                MultiDryRunOutputView::VM2(playground_vm2::dry_run_explain(&state_view, txn, None)?)
-            }
-        })
+    pub fn dry_run_transaction(&self, txn: DryRunTransaction) -> Result<DryRunOutputView> {
+        let state_reader = self.client().state_reader(StateRootOption::Latest)?;
+        playground::dry_run_explain(&state_reader, txn, None)
     }
 
     pub fn execute_transaction(
         &self,
-        raw_txn: MultiRawUserTransaction,
+        raw_txn: RawUserTransaction,
         only_dry_run: bool,
         blocking: bool,
-    ) -> Result<MultiExecuteResultView> {
+    ) -> Result<ExecuteResultView> {
         let sender = self.get_account(raw_txn.sender())?;
         let public_key = sender.public_key;
+        let dry_output = self.dry_run_transaction(DryRunTransaction {
+            public_key: public_key.clone(),
+            raw_txn: raw_txn.clone(),
+        })?;
+        let mut raw_txn_view: RawUserTransactionView = raw_txn.clone().try_into()?;
+        raw_txn_view.decoded_payload = Some(TransactionPayloadView::from(
+            self.decode_txn_payload(raw_txn.payload())?,
+        ));
 
-        let multi_txn =
-            self.build_multi_dry_run_transaction(raw_txn.clone(), public_key.clone())?;
-        let dry_output = self.dry_run_transaction(multi_txn)?;
-
-        let mut raw_txn_view: MultiRawUserTransactionView = raw_txn.clone().try_into()?;
-
-        // TODO(BobOng): [dual-vm] decode payload
-        // raw_txn_view.decoded_payload = Some(self.decode_txn_payload(&raw_txn.payload())?);
-
-        let mut execute_result = MultiExecuteResultView::new(
-            raw_txn_view,
-            raw_txn.to_hex(),
-            dry_output.try_into().unwrap(),
-        );
+        let mut execute_result = ExecuteResultView::new(raw_txn_view, raw_txn.to_hex(), dry_output);
         if only_dry_run
             || !matches!(
                 execute_result.dry_run_output.txn_output.status,
@@ -368,10 +322,8 @@ impl CliStateDualVM {
             return Ok(execute_result);
         }
 
-        // TODO(BobOng):[dual-vm] How to sign txn using vm2?
-        let signed_txn = self
-            .account_client
-            .sign_txn(raw_txn.into(), sender.address)?;
+        // TODO(BobOng): [dual-vm] Signed by Account provider vm2
+        let signed_txn = SignedUserTransaction::mock(); //self.account_client.sign_txn(raw_txn, sender.address)?;
 
         let multisig_public_key = match &public_key {
             AccountPublicKey::Single(_) => {
@@ -393,7 +345,7 @@ impl CliStateDualVM {
         let mut output_dir = current_dir()?;
 
         let execute_output_view = self.sign_multisig_txn_to_file_or_submit(
-            sender.address,
+            sender.address(),
             multisig_public_key,
             None,
             signed_txn,
@@ -420,17 +372,10 @@ impl CliStateDualVM {
 
     pub fn decode_txn_payload(
         &self,
-        payload: &MultiTransactionPayload,
-    ) -> Result<MultiDecodedTransactionPayload> {
+        payload: &TransactionPayload,
+    ) -> Result<DecodedTransactionPayload> {
         let chain_state_reader = self.client.state_reader(StateRootOption::Latest)?;
-        Ok(match payload {
-            MultiTransactionPayload::VM1(payload) => {
-                MultiDecodedTransactionPayload::VM1(decode_txn_payload(&chain_state_reader, payload)?),
-            }
-            MultiTransactionPayload::VM2(payload) => {
-                MultiDecodedTransactionPayload::VM2(decode_txn_payload_v2(self.get_vm2_state_view(), payload)?)
-            }
-        })
+        decode_txn_payload(&chain_state_reader, payload)
     }
 
     pub fn into_inner(self) -> (ChainNetworkID, Arc<RpcClient>, Option<NodeHandle>) {
@@ -442,10 +387,10 @@ impl CliStateDualVM {
     // Otherwise, keep signatures into file.
     pub fn sign_multisig_txn_to_file_or_submit(
         &self,
-        sender: MultiAccountAddress,
+        sender: AccountAddress,
         multisig_public_key: MultiEd25519PublicKey,
         existing_signatures: Option<MultiEd25519SignatureShard>,
-        partial_signed_txn: MultiSignedUserTransaction,
+        partial_signed_txn: SignedUserTransaction,
         output_dir: &mut PathBuf,
         submit: bool,
         blocking: bool,
@@ -515,12 +460,12 @@ impl CliStateDualVM {
 
     pub fn submit_txn(
         &self,
-        signed_txn: MultiSignedUserTransaction,
+        signed_txn: SignedUserTransaction,
         blocking: bool,
     ) -> Result<ExecutionOutputView> {
-        let mut signed_txn_view: MultiSignedUserTransactionView = signed_txn.clone().try_into()?;
+        let mut signed_txn_view: SignedUserTransactionView = signed_txn.clone().try_into()?;
         signed_txn_view.raw_txn.decoded_payload =
-            Some(self.decode_txn_payload(&signed_txn.payload())?.into());
+            Some(self.decode_txn_payload(signed_txn.payload())?.into());
 
         eprintln!(
             "Prepare to submit the transaction: \n {}",
@@ -536,45 +481,5 @@ impl CliStateDualVM {
         } else {
             Ok(ExecutionOutputView::new(txn_hash))
         }
-    }
-
-    fn build_multi_dry_run_transaction(
-        &self,
-        txn: MultiRawUserTransaction,
-        sender_pub_key: AccountPublicKey,
-    ) -> Result<MultiDryRunTransaction> {
-        let multi_txn = match txn {
-            MultiRawUserTransaction::VM1(raw_txn) => {
-                MultiDryRunTransaction::VM1(starcoin_vm_types::transaction::DryRunTransaction {
-                    raw_txn,
-                    public_key: sender_pub_key.clone(),
-                })
-            }
-            MultiRawUserTransaction::VM2(raw_txn) => {
-                MultiDryRunTransaction::VM2(starcoin_vm2_vm_types::transaction::DryRunTransaction {
-                    raw_txn: starcoin_vm2_vm_types::transaction::RawUserTransaction::new(
-                        starcoin_vm2_vm_types::account_address::AccountAddress::new(
-                            raw_txn.sender().into_bytes(),
-                        ),
-                        raw_txn.sequence_number(),
-                        raw_txn.payload().clone(),
-                        raw_txn.max_gas_amount(),
-                        raw_txn.gas_unit_price(),
-                        raw_txn.expiration_timestamp_secs(),
-                        starcoin_vm2_vm_types::genesis_config::ChainId::new(
-                            raw_txn.chain_id().id(),
-                        ),
-                        raw_txn.gas_token_code(),
-                    ),
-                    public_key: starcoin_vm2_vm_types::transaction::authenticator::AccountPublicKey::try_from(sender_pub_key.to_bytes().as_slice())?,
-                })
-            }
-        };
-        Ok(multi_txn)
-    }
-
-    fn get_vm2_state_view(&self) -> &dyn StateViewV2 {
-        // TODO(BobOng): [dual-vm] To Get Storage for construction StateView
-        self.mock_db.as_ref()
     }
 }

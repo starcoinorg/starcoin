@@ -18,7 +18,9 @@ impl TryInto<DryRunOutputView> for MultiDryRunOutputView {
     fn try_into(self) -> Result<DryRunOutputView, Self::Error> {
         Ok(match self {
             MultiDryRunOutputView::VM1(view) => view,
-            MultiDryRunOutputView::VM2(_view) => { unimplemented!() }
+            MultiDryRunOutputView::VM2(_view) => {
+                unimplemented!()
+            }
         })
     }
 }

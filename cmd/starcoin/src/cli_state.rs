@@ -15,6 +15,8 @@ use starcoin_crypto::multi_ed25519::multi_shard::MultiEd25519SignatureShard;
 use starcoin_crypto::multi_ed25519::MultiEd25519PublicKey;
 use starcoin_crypto::HashValue;
 
+use crate::cli_state_trait::CliStateTrait;
+use crate::view::{ExecuteResultView, ExecutionOutputView, TransactionOptions};
 use bcs_ext::BCSCodec;
 use starcoin_abi_decoder::{decode_txn_payload, DecodedTransactionPayload};
 use starcoin_account_api::{AccountInfo, AccountProvider};
@@ -38,8 +40,6 @@ use starcoin_vm_types::transaction::{
     DryRunTransaction, RawUserTransaction, SignedUserTransaction, TransactionPayload,
 };
 
-use crate::view::{ExecuteResultView, ExecutionOutputView, TransactionOptions};
-
 static G_HISTORY_FILE_NAME: &str = "history";
 
 pub struct CliState {
@@ -53,14 +53,8 @@ pub struct CliState {
     account_client: Box<dyn AccountProvider>,
 }
 
-impl CliState {
-    pub const DEFAULT_WATCH_TIMEOUT: Duration = Duration::from_secs(300);
-    pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 10000000;
-    pub const DEFAULT_GAS_PRICE: u64 = 1;
-    pub const DEFAULT_EXPIRATION_TIME_SECS: u64 = 3600;
-    pub const DEFAULT_GAS_TOKEN: &'static str = STC_TOKEN_CODE_STR;
-
-    pub fn new(
+impl CliStateTrait for CliState {
+    fn new(
         net: ChainNetworkID,
         client: Arc<RpcClient>,
         watch_timeout: Option<Duration>,
@@ -92,6 +86,14 @@ impl CliState {
             account_client,
         }
     }
+}
+
+impl CliState {
+    pub const DEFAULT_WATCH_TIMEOUT: Duration = Duration::from_secs(300);
+    pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 10000000;
+    pub const DEFAULT_GAS_PRICE: u64 = 1;
+    pub const DEFAULT_EXPIRATION_TIME_SECS: u64 = 3600;
+    pub const DEFAULT_GAS_TOKEN: &'static str = STC_TOKEN_CODE_STR;
 
     pub fn net(&self) -> &ChainNetworkID {
         &self.net
