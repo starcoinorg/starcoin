@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
+pub use self::gen_client::Client as ContractClient;
 use jsonrpc_core::{BoxFuture, Error};
 pub type FutureResult<T> = BoxFuture<Result<T, Error>>;
 use openrpc_derive::openrpc;
