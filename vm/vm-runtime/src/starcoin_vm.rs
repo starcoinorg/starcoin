@@ -62,9 +62,9 @@ use starcoin_vm_types::{
 };
 use std::{borrow::Borrow, cmp::min, sync::Arc};
 
-#[cfg(feature = "metrics")]
-use crate::metrics::VMMetrics;
 use crate::{verifier, VMExecutor};
+#[cfg(feature = "metrics")]
+use starcoin_metrics::metrics::VMMetrics;
 
 static EXECUTION_CONCURRENCY_LEVEL: OnceCell<usize> = OnceCell::new();
 
