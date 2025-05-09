@@ -21,7 +21,6 @@ use starcoin_abi_decoder::{decode_txn_payload, DecodedTransactionPayload};
 use starcoin_account_api::{AccountInfo, AccountProvider};
 use starcoin_config::{ChainNetworkID, DataDirPath};
 use starcoin_dev::playground;
-use starcoin_node::NodeHandle;
 use starcoin_rpc_api::chain::GetEventOption;
 use starcoin_rpc_api::types::{
     DryRunOutputView, RawUserTransactionView, SignedUserTransactionView, TransactionPayloadView,

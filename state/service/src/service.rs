@@ -15,7 +15,7 @@ use starcoin_state_api::{
 };
 use starcoin_state_tree::AccountStateSetIterator;
 use starcoin_statedb::ChainStateDB;
-use starcoin_storage::{BlockStore, Storage};
+use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_types::state_set::AccountStateSet;
 use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::{
@@ -24,7 +24,6 @@ use starcoin_types::{
 };
 use starcoin_vm_types::state_store::state_key::StateKey;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
-use starcoin_vm_types::state_view::StateReaderExt;
 use std::sync::Arc;
 
 pub struct ChainStateService {

@@ -91,7 +91,7 @@ impl CliStateRouter {
         self.cli_state_vm2().net()
     }
 
-    fn client(&self) -> &RpcClient {
+    pub fn client(&self) -> &RpcClient {
         if self.state_vm1.is_some() {
             return self.cli_state_vm1().client();
         }
