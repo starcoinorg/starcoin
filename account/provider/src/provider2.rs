@@ -3,12 +3,14 @@
 
 use crate::{rpc_provider2::AccountRpcProvider, ProviderFactory};
 use anyhow::{anyhow, Result};
-use starcoin_config::account_provider_config::G_ENV_PRIVATE_KEY;
+use starcoin_account_api::AccountProviderStrategy;
+use starcoin_config::account_provider_config::{AccountProviderConfig, G_ENV_PRIVATE_KEY};
 use starcoin_rpc_client::RpcClient;
-use starcoin_vm2_account_api::{AccountProvider, AccountProviderStrategy};
+use starcoin_vm2_account_api::AccountProvider;
 use starcoin_vm2_account_provider::{
     local_provider::AccountLocalProvider, private_key_provider::AccountPrivateKeyProvider,
 };
+use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_types::genesis_config::ChainId;
 use std::sync::Arc;
 
@@ -32,7 +34,9 @@ impl ProviderFactory {
             },
             AccountProviderStrategy::PrivateKey => match AccountPrivateKeyProvider::create(
                 config.secret_file.clone(),
-                config.account_address,
+                config
+                    .account_address
+                    .map(|x| AccountAddress::from_str_strict(&x.to_canonical_string()).unwrap()),
                 config.from_env,
                 chain_id,
                 G_ENV_PRIVATE_KEY.to_string(),
