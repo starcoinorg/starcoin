@@ -4,6 +4,8 @@ use crate::contract_api::ContractApiClient;
 use crate::state_api::StateApiClient;
 use jsonrpc_core_client::RpcChannel;
 
+pub use starcoin_vm2_abi_decoder::DecodedMoveValue;
+
 #[allow(dead_code)]
 #[derive(Clone)]
 pub struct RpcClientInner {

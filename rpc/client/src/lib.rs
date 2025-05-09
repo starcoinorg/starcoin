@@ -4,6 +4,7 @@
 use crate::chain_watcher::{ChainWatcher, StartSubscribe, WatchBlock, WatchTxn};
 use crate::pubsub_client::PubSubClient;
 pub use crate::remote_state_reader::{RemoteStateReader, StateRootOption};
+pub use crate::remote_state_reader2::RemoteStateReader as RemoteStateReader2;
 use actix::{Addr, Arbiter, System};
 use anyhow::anyhow;
 use bcs_ext::BCSCodec;
@@ -76,6 +77,7 @@ use tokio::runtime::Runtime;
 pub mod chain_watcher;
 mod pubsub_client;
 mod remote_state_reader;
+mod remote_state_reader2;
 mod vm2;
 
 #[derive(Clone)]

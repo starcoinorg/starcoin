@@ -1,12 +1,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use super::{map_err, RpcClient, StateRootOption};
+use crate::{map_err, remote_state_reader2::RemoteStateReader, RpcClient, StateRootOption};
+use bcs_ext::BCSCodec;
 use starcoin_vm2_abi_types::{FunctionABI, ModuleABI, StructInstantiation};
 use starcoin_vm2_account_api::AccountInfo;
 use starcoin_vm2_crypto::HashValue;
-use starcoin_vm2_rpc::state_api::{
-    GetCodeOption, GetResourceOption, ListCodeOption, ListResourceOption,
+use starcoin_vm2_rpc::{
+    state_api::{GetCodeOption, GetResourceOption, ListCodeOption, ListResourceOption},
+    DecodedMoveValue,
 };
 use starcoin_vm2_types::view::{
     AnnotatedMoveStructView, ContractCall, DryRunOutputView, DryRunTransactionRequest,
