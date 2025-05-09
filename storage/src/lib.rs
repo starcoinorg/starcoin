@@ -740,6 +740,9 @@ impl Store for Storage {
             AccumulatorStoreType::Transaction => {
                 Arc::new(self.transaction_accumulator_storage.clone())
             }
+            _ => {
+                panic!("Unsupported accumulator type: {:?}", accumulator_type);
+            }
         }
     }
 }

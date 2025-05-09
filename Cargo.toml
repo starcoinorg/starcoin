@@ -282,15 +282,15 @@ vm-status-translator = { path = "vm/vm-status-translator" }
 
 # starcoin shared dependencies
 # branch multi-move-vm
-starcoin-accumulator = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
-starcoin-infallible = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
-starcoin-time-service = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
-starcoin-service-registry = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
-starcoin-logger = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
-starcoin-decrypt = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
-forkable-jellyfish-merkle = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
-bcs-ext = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
-starcoin-metrics = { git = "https://github.com/starcoinorg/starcoin", rev = "515acac0cc25521b215898d833831bd02ef1106d" }
+starcoin-accumulator = { git = "https://github.com/starcoinorg/starcoin", rev = "401ce6289a78b9f44e62e2b9f907030ad26d8d79" }
+starcoin-infallible = { git = "https://github.com/starcoinorg/starcoin", rev = "401ce6289a78b9f44e62e2b9f907030ad26d8d79" }
+starcoin-time-service = { git = "https://github.com/starcoinorg/starcoin", rev = "401ce6289a78b9f44e62e2b9f907030ad26d8d79" }
+starcoin-service-registry = { git = "https://github.com/starcoinorg/starcoin", rev = "401ce6289a78b9f44e62e2b9f907030ad26d8d79" }
+starcoin-logger = { git = "https://github.com/starcoinorg/starcoin", rev = "401ce6289a78b9f44e62e2b9f907030ad26d8d79" }
+starcoin-decrypt = { git = "https://github.com/starcoinorg/starcoin", rev = "401ce6289a78b9f44e62e2b9f907030ad26d8d79" }
+forkable-jellyfish-merkle = { git = "https://github.com/starcoinorg/starcoin", rev = "401ce6289a78b9f44e62e2b9f907030ad26d8d79" }
+bcs-ext = { git = "https://github.com/starcoinorg/starcoin", rev = "401ce6289a78b9f44e62e2b9f907030ad26d8d79" }
+starcoin-metrics = { git = "https://github.com/starcoinorg/starcoin", rev = "401ce6289a78b9f44e62e2b9f907030ad26d8d79" }
 
 tempfile = "3.2.0"
 textwrap = "0.14.0"

@@ -6,6 +6,7 @@ use starcoin_abi_decoder::decode_move_value;
 use starcoin_abi_resolver::ABIResolver;
 use starcoin_abi_types::TypeInstantiation;
 use starcoin_crypto::HashValue;
+use starcoin_metrics::metrics::VMMetrics;
 use starcoin_resource_viewer::module_cache::ModuleCache;
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
 use starcoin_state_api::StateNodeStore;
@@ -15,7 +16,6 @@ use starcoin_types::view::{
     write_op_value_view::WriteOpValueView,
 };
 use starcoin_vm_runtime::data_cache::{AsMoveResolver, StateViewCache};
-use starcoin_vm_runtime::metrics::VMMetrics;
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::identifier::{IdentStr, Identifier};

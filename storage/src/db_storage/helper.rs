@@ -1,3 +1,7 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
+#[derive(Clone, Debug)]
 pub struct RocksdbConfig {
     pub max_open_files: i32,
     pub max_total_wal_size: u64,
@@ -14,6 +18,20 @@ impl RocksdbConfig {
     #[cfg(windows)]
     fn default_max_open_files() -> i32 {
         256
+    }
+
+    pub fn new(
+        max_open_files: i32,
+        max_total_wal_size: u64,
+        wal_bytes_per_sync: u64,
+        bytes_per_sync: u64,
+    ) -> Self {
+        Self {
+            max_open_files,
+            max_total_wal_size,
+            wal_bytes_per_sync,
+            bytes_per_sync,
+        }
     }
 }
 

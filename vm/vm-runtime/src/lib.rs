@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub mod data_cache;
-#[cfg(feature = "metrics")]
-pub mod metrics;
 pub mod natives;
 pub mod starcoin_vm;
 
@@ -22,7 +20,7 @@ pub mod move_vm_ext;
 pub mod parallel_executor;
 mod verifier;
 
-use crate::metrics::VMMetrics;
+use starcoin_metrics::metrics::VMMetrics;
 use starcoin_vm_types::block_metadata::BlockMetadata;
 use starcoin_vm_types::on_chain_config::GasSchedule;
 use starcoin_vm_types::transaction::{

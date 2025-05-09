@@ -1,6 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+pub use starcoin_storage::db_storage::RocksdbConfig;
+
 use anyhow::{Error, Result};
 use bcs_ext::BCSCodec;
 use serde::Deserialize;
@@ -9,7 +11,7 @@ use starcoin_account_api::{AccountPrivateKey, AccountPublicKey, Setting};
 use starcoin_crypto::ValidCryptoMaterial;
 use starcoin_decrypt::{decrypt, encrypt};
 use starcoin_storage::cache_storage::CacheStorage;
-use starcoin_storage::db_storage::{DBStorage, RocksdbConfig};
+use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::{KeyCodec, ValueCodec};
 use starcoin_storage::{
     define_storage,

@@ -22,3 +22,4 @@ starcoin-statedb = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
 starcoin-vm-types = { workspace = true }
 vm-status-translator = { workspace = true }
+starcoin-metrics = { workspace = true }
