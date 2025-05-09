@@ -104,18 +104,6 @@ impl PeerInfo {
     }
 }
 
-impl From<PeerInfo> for PeerInfoView {
-    fn from(info: PeerInfo) -> Self {
-        Self {
-            peer_id: info.peer_id,
-            chain_info: info.chain_info.into(),
-            notif_protocols: info.notif_protocols.join(","),
-            rpc_protocols: info.rpc_protocols.join(","),
-            version_string: info.version_string,
-        }
-    }
-}
-
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct RpcInfo {
