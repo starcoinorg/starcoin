@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_state::CliState;
+use crate::cli_state_router::CliStateRouter;
 use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
 use clap::Parser;
@@ -31,7 +31,7 @@ pub struct GenerateKeypairCommand;
 const SEED_HEX_LENGTH: usize = 64;
 
 impl CommandAction for GenerateKeypairCommand {
-    type State = CliState;
+    type State = CliStateRouter;
     type GlobalOpt = StarcoinOpt;
     type Opt = GenerateKeypairOpt;
     type ReturnItem = Vec<GenerateKeypairData>;

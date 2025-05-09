@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_state::CliState;
+ use crate::cli_state_router::CliStateRouter;
 use crate::view::AccountWithStateView;
 use crate::StarcoinOpt;
 use anyhow::{format_err, Result};
@@ -32,7 +32,7 @@ pub struct ShowOpt {
 pub struct ShowCommand;
 
 impl CommandAction for ShowCommand {
-    type State = CliState;
+    type State = CliStateRouter;
     type GlobalOpt = StarcoinOpt;
     type Opt = ShowOpt;
     type ReturnItem = AccountWithStateView;

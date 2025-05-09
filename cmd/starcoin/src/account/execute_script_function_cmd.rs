@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_state::CliState;
+use crate::cli_state_router::CliStateRouter;
 use crate::view::{ExecuteResultView, TransactionOptions};
 use crate::StarcoinOpt;
 use anyhow::Result;
@@ -41,7 +41,7 @@ pub struct ExecuteScriptFunctionOpt {
 pub struct ExecuteScriptFunctionCmd;
 
 impl CommandAction for ExecuteScriptFunctionCmd {
-    type State = CliState;
+    type State = CliStateRouter;
     type GlobalOpt = StarcoinOpt;
     type Opt = ExecuteScriptFunctionOpt;
     type ReturnItem = ExecuteResultView;

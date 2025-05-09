@@ -2,7 +2,8 @@
 // Copyright (c) The Starcoin Core Contributors
 
 use crate::view::{ExecuteResultView, TransactionOptions};
-use crate::{CliState, StarcoinOpt};
+use crate::{StarcoinOpt};
+use crate::cli_state_router::CliStateRouter;
 use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
@@ -73,7 +74,7 @@ pub enum NFTResult {
 pub struct NFTCommand;
 
 impl CommandAction for NFTCommand {
-    type State = CliState;
+    type State = CliStateRouter;
     type GlobalOpt = StarcoinOpt;
     type Opt = NFTOpt;
     type ReturnItem = NFTResult;

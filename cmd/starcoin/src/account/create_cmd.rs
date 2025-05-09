@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_state::CliState;
+use crate::cli_state_router::CliStateRouter;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use clap::Parser;
@@ -19,7 +19,7 @@ pub struct CreateOpt {
 pub struct CreateCommand;
 
 impl CommandAction for CreateCommand {
-    type State = CliState;
+    type State = CliStateRouter;
     type GlobalOpt = StarcoinOpt;
     type Opt = CreateOpt;
     type ReturnItem = AccountInfo;

@@ -4,7 +4,7 @@
 use crate::view::{ExecuteResultView, TransactionOptions};
 use crate::view_vm2::ExecuteResultView as ExecuteResultViewVM2;
 use crate::{cli_state_vm2::CliStateVM2, CliState};
-use starcoin_account_api::AccountProvider;
+use starcoin_account_api::{AccountInfo, AccountProvider};
 use starcoin_config::ChainNetworkID;
 use starcoin_node::NodeHandle;
 use starcoin_rpc_client::RpcClient;
@@ -16,6 +16,7 @@ use starcoin_vm_types::transaction::TransactionPayload;
 use std::sync::Arc;
 use std::time::Duration;
 
+use starcoin_types::account_address::AccountAddress as AccountAddressV1;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 static USING_VM2: AtomicBool = AtomicBool::new(false);
@@ -112,6 +113,13 @@ impl CliStateRouter {
         self.cli_state_vm2().history_file()
     }
 
+    pub fn get_account_or_default(
+        &self,
+        account_address: Option<AccountAddressV1>,
+    ) -> Result<AccountInfo> {
+        self.cli_state_vm1().get_account_or_default(account_address)
+    }
+
     pub fn into_inner(mut self) -> (ChainNetworkID, Arc<RpcClient>, Option<NodeHandle>) {
         let ret = if self.state_vm1.is_some() {
             self.state_vm1.take().unwrap().into_inner()
@@ -125,4 +133,3 @@ impl CliStateRouter {
         USING_VM2.load(Ordering::SeqCst)
     }
 }
-
