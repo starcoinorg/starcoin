@@ -1,7 +1,7 @@
+use crate::G_ENV_PRIVATE_KEY;
 use anyhow::{bail, Result};
 use starcoin_account::{account_storage::AccountStorage, AccountManager};
 use starcoin_account_api::{AccountInfo, AccountPrivateKey, AccountProvider};
-use starcoin_config::account_provider_config::G_ENV_PRIVATE_KEY;
 use starcoin_crypto::{ValidCryptoMaterial, ValidCryptoMaterialStringExt};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::token_code::TokenCode;

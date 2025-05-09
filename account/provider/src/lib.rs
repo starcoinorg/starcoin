@@ -1,5 +1,6 @@
-mod local_provider;
-mod private_key_provider;
-mod provider;
-mod rpc_provider;
-pub use provider::ProviderFactory;
+pub mod local_provider;
+pub mod private_key_provider;
+//mod provider;
+//mod rpc_provider;
+//pub use provider::ProviderFactory;
+pub const G_ENV_PRIVATE_KEY: &str = "STARCOIN_PRIVATE_KEY";
