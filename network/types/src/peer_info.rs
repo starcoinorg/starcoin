@@ -104,7 +104,6 @@ impl PeerInfo {
     }
 }
 
-
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct RpcInfo {
     protocols: Vec<Cow<'static, str>>,
