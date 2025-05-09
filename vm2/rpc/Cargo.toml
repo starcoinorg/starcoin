@@ -13,13 +13,6 @@ version.workspace = true
 anyhow = { workspace = true }
 bytes = { workspace = true }
 clap = { features = ["derive"], workspace = true }
-
-jsonrpc-client-transports = { features = [
-    "http",
-    "ipc",
-    "ws",
-    "arbitrary_precision",
-], workspace = true }
 jsonrpc-core = { features = ["arbitrary_precision"], workspace = true }
 jsonrpc-core-client = { features = [
     "http",
