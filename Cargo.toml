@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "account",
     "account/api",
+    "account/provider",
     "abi/decoder",
     "abi/resolver",
     "abi/types",
@@ -48,6 +49,7 @@ members = [
 default-members = [
     "account",
     "account/api",
+    "account/provider",
     "abi/decoder",
     "abi/resolver",
     "abi/types",
@@ -271,9 +273,9 @@ starcoin-parallel-executor = { path = "vm/parallel-executor" }
 
 starcoin-types = { path = "types" }
 starcoin-uint = { path = "types/uint" }
+starcoin-account = { path = "account" }
 starcoin-account-api = { path = "account/api" }
 starcoin-state-api = { path = "state/api" }
-starcoin-state-service = { path = "state/service" }
 starcoin-state-store-api = { path = "state/state-store-api" }
 starcoin-state-tree = { path = "state/state-tree" }
 starcoin-statedb = { path = "state/statedb" }
