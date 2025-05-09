@@ -911,7 +911,7 @@ impl BlockDAG {
                 red,
                 &mut kosherizing_blues.as_ref().unwrap().iter().copied(),
             ) {
-                bail!("failed to verify the bounded merge depth, the header refers too many bad red blocks");
+                warn!("failed to verify the bounded merge depth, the header refers too many bad red blocks, red: {:?}, kosherizing blues: {:?}", red, kosherizing_blues);
             }
         }
 
