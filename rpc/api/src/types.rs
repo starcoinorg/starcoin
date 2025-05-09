@@ -26,8 +26,8 @@ use starcoin_state_api::{StateProof, StateWithProof, StateWithTableItemProof};
 use starcoin_types::block::{
     Block, BlockBody, BlockHeader, BlockHeaderExtra, BlockInfo, BlockNumber,
 };
-use starcoin_types::contract_event::{ContractEvent, StcContractEventInfo};
-use starcoin_types::event::StcEventKey;
+use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
+use starcoin_types::event::EventKey;
 use starcoin_types::genesis_config;
 use starcoin_types::language_storage::TypeTag;
 use starcoin_types::proof::SparseMerkleProof;
@@ -1155,15 +1155,15 @@ pub struct TransactionEventView {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transaction_global_index: Option<StrView<u64>>,
     pub data: StrView<Vec<u8>>,
-    pub type_tag: String,
+    pub type_tag: TypeTagView,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub event_index: Option<u32>,
-    pub event_key: StcEventKey,
+    pub event_key: EventKey,
     pub event_seq_number: StrView<u64>,
 }
 
-impl From<StcContractEventInfo> for TransactionEventView {
-    fn from(info: StcContractEventInfo) -> Self {
+impl From<ContractEventInfo> for TransactionEventView {
+    fn from(info: ContractEventInfo) -> Self {
         TransactionEventView {
             block_hash: Some(info.block_hash),
             block_number: Some(info.block_number.into()),
@@ -1171,9 +1171,9 @@ impl From<StcContractEventInfo> for TransactionEventView {
             transaction_index: Some(info.transaction_index),
             transaction_global_index: Some(info.transaction_global_index.into()),
             data: StrView(info.event.event_data().to_vec()),
-            type_tag: info.event.type_tag().clone().to_canonical_string(),
+            type_tag: info.event.type_tag().clone().into(),
             event_index: Some(info.event_index),
-            event_key: info.event.key(),
+            event_key: *info.event.key(),
             event_seq_number: info.event.sequence_number().into(),
         }
     }
@@ -1188,9 +1188,9 @@ impl From<ContractEvent> for TransactionEventView {
             transaction_index: None,
             transaction_global_index: None,
             data: StrView(event.event_data().to_vec()),
-            type_tag: event.type_tag().clone().to_canonical_string(),
+            type_tag: event.type_tag().clone().into(),
             event_index: None,
-            event_key: StcEventKey::V1(*event.key()),
+            event_key: *event.key(),
             event_seq_number: event.sequence_number().into(),
         }
     }
@@ -1213,9 +1213,9 @@ impl TransactionEventView {
             transaction_index,
             transaction_global_index: transaction_global_index.map(Into::into),
             data: StrView(contract_event.event_data().to_vec()),
-            type_tag: contract_event.type_tag().clone().to_canonical_string(),
+            type_tag: contract_event.type_tag().clone().into(),
             event_index,
-            event_key: StcEventKey::V1(*contract_event.key()),
+            event_key: *contract_event.key(),
             event_seq_number: contract_event.sequence_number().into(),
         }
     }
@@ -1926,8 +1926,6 @@ pub struct BlockInfoView {
     pub txn_accumulator_info: AccumulatorInfoView,
     /// The block accumulator info.
     pub block_accumulator_info: AccumulatorInfoView,
-    /// The VM State accumulator info.
-    pub vm_state_accumulator_info: AccumulatorInfoView,
 }
 
 impl BlockInfoView {
@@ -1937,7 +1935,8 @@ impl BlockInfoView {
             self.total_difficulty,
             self.txn_accumulator_info.into_info(),
             self.block_accumulator_info.into_info(),
-            self.vm_state_accumulator_info.into_info(),
+            // todo: add vmstate
+            AccumulatorInfo::default(),
         )
     }
 }
@@ -1949,7 +1948,6 @@ impl From<BlockInfo> for BlockInfoView {
             total_difficulty: block_info.total_difficulty,
             txn_accumulator_info: block_info.txn_accumulator_info.into(),
             block_accumulator_info: block_info.block_accumulator_info.into(),
-            vm_state_accumulator_info: block_info.vm_state_accumulator_info.into(),
         }
     }
 }

@@ -1,20 +1,21 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
+pub use self::gen_client::Client as StateClient;
 use jsonrpc_core::{BoxFuture, Error};
 pub type FutureResult<T> = BoxFuture<Result<T, Error>>;
+// copy from https://github.com/starcoinorg/starcoin/blob/bf5ec6e44a242e9dff5ac177c1565c64c6e4b0d0/rpc/api/src/state/mod.rs#L14 etc
+use bytes::Bytes;
 use openrpc_derive::openrpc;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_vm2_crypto::HashValue;
 use starcoin_vm2_types::view::{
     AccountStateSetView, CodeView, ListCodeView, ListResourceView, ResourceView,
     StateWithProofView, StateWithTableItemProofView, StrView, StructTagView, TableInfoView,
 };
-use starcoin_vm2_vm_types::language_storage::{ModuleId, StructTag};
-// copy from https://github.com/starcoinorg/starcoin/blob/bf5ec6e44a242e9dff5ac177c1565c64c6e4b0d0/rpc/api/src/state/mod.rs#L14 etc
-use bytes::Bytes;
-use schemars::JsonSchema;
 use starcoin_vm2_types::{account_address::AccountAddress, account_state::AccountState};
+use starcoin_vm2_vm_types::language_storage::{ModuleId, StructTag};
 use starcoin_vm2_vm_types::state_store::state_key::StateKey;
 use starcoin_vm2_vm_types::state_store::table::TableHandle;
 #[openrpc]

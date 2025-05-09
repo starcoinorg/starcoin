@@ -254,21 +254,15 @@ impl From<BlockRewardEvent> for EventDataView {
         }
     }
 }
-
-// todo: handle unwrap
 impl From<TransactionEventView> for EventView {
     fn from(event_view: TransactionEventView) -> Self {
         EventView {
-            key: event_view.event_key.try_into().unwrap(),
+            key: event_view.event_key,
             sequence_number: event_view.event_seq_number.0,
-            data: EventDataView::new(
-                &TypeTag::from_str(&event_view.type_tag).unwrap(),
-                &event_view.data.0,
-            )
-            .unwrap_or({
+            data: EventDataView::new(&event_view.type_tag.0, &event_view.data.0).unwrap_or({
                 EventDataView::Unknown {
                     data: event_view.data.0,
-                    type_tag: TypeTag::from_str(&event_view.type_tag).unwrap().into(),
+                    type_tag: event_view.type_tag,
                 }
             }),
         }

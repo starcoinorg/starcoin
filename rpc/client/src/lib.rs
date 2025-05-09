@@ -4,6 +4,7 @@
 use crate::chain_watcher::{ChainWatcher, StartSubscribe, WatchBlock, WatchTxn};
 use crate::pubsub_client::PubSubClient;
 pub use crate::remote_state_reader::{RemoteStateReader, StateRootOption};
+pub use crate::remote_state_reader2::RemoteStateReader as RemoteStateReader2;
 use actix::{Addr, Arbiter, System};
 use anyhow::anyhow;
 use bcs_ext::BCSCodec;
@@ -59,6 +60,10 @@ use starcoin_types::sign_message::SigningMessage;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
+use starcoin_vm2_rpc::{
+    account_api::AccountClient as AccountClient2, contract_api::ContractClient as ContractClient2,
+    state_api::StateClient as StateClient2,
+};
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 use starcoin_vm_types::state_store::table::TableHandle;
 use starcoin_vm_types::token::token_code::TokenCode;
@@ -72,6 +77,8 @@ use tokio::runtime::Runtime;
 pub mod chain_watcher;
 mod pubsub_client;
 mod remote_state_reader;
+mod remote_state_reader2;
+mod vm2;
 
 #[derive(Clone)]
 enum ConnSource {
@@ -1150,11 +1157,14 @@ pub(crate) struct RpcClientInner {
     node_manager_client: NodeManagerClient,
     txpool_client: TxPoolClient,
     account_client: AccountClient,
+    account_client2: AccountClient2,
     state_client: StateClient,
+    state_client2: StateClient2,
     debug_client: DebugClient,
     chain_client: ChainClient,
     pubsub_client: PubSubClient,
     contract_client: ContractClient,
+    contract_client2: ContractClient2,
     miner_client: MinerClient,
     sync_client: SyncManagerClient,
     network_client: NetworkManagerClient,
@@ -1168,10 +1178,13 @@ impl RpcClientInner {
             node_manager_client: channel.clone().into(),
             txpool_client: channel.clone().into(),
             account_client: channel.clone().into(),
+            account_client2: channel.clone().into(),
             state_client: channel.clone().into(),
+            state_client2: channel.clone().into(),
             debug_client: channel.clone().into(),
             chain_client: channel.clone().into(),
             contract_client: channel.clone().into(),
+            contract_client2: channel.clone().into(),
             pubsub_client: channel.clone().into(),
             miner_client: channel.clone().into(),
             sync_client: channel.clone().into(),
