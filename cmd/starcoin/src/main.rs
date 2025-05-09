@@ -18,9 +18,10 @@ use std::time::Duration;
 static G_EXIT_CODE_NEED_HELP: i32 = 120;
 
 use run::run;
+use starcoin_cmd::cli_state_router::CliStateRouter;
 
 fn main() {
-    match run::<CliState, StarcoinOpt>() {
+    match run() {
         Ok(()) => {}
         Err(e) => {
             match e.downcast::<NodeStartError>() {

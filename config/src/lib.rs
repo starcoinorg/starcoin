@@ -197,6 +197,10 @@ pub struct StarcoinOpt {
     pub watch_timeout: Option<u64>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(long = "vm2")]
+    pub vm2: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long = "genesis-config")]
     /// Init chain by a custom genesis config. if want to reuse builtin network config, just pass a builtin network name.
     /// This option only work for node init start.

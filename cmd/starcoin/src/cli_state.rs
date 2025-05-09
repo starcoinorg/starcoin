@@ -15,7 +15,6 @@ use starcoin_crypto::multi_ed25519::multi_shard::MultiEd25519SignatureShard;
 use starcoin_crypto::multi_ed25519::MultiEd25519PublicKey;
 use starcoin_crypto::HashValue;
 
-use crate::cli_state_trait::CliStateTrait;
 use crate::view::{ExecuteResultView, ExecutionOutputView, TransactionOptions};
 use bcs_ext::BCSCodec;
 use starcoin_abi_decoder::{decode_txn_payload, DecodedTransactionPayload};
@@ -46,19 +45,23 @@ pub struct CliState {
     net: ChainNetworkID,
     client: Arc<RpcClient>,
     watch_timeout: Duration,
-    node_handle: Option<NodeHandle>,
     /// Cli data dir, different with Node data dir.
     data_dir: PathBuf,
     temp_dir: DataDirPath,
     account_client: Box<dyn AccountProvider>,
 }
 
-impl CliStateTrait for CliState {
-    fn new(
+impl CliState {
+    pub const DEFAULT_WATCH_TIMEOUT: Duration = Duration::from_secs(300);
+    pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 10000000;
+    pub const DEFAULT_GAS_PRICE: u64 = 1;
+    pub const DEFAULT_EXPIRATION_TIME_SECS: u64 = 3600;
+    pub const DEFAULT_GAS_TOKEN: &'static str = STC_TOKEN_CODE_STR;
+
+    pub fn new(
         net: ChainNetworkID,
         client: Arc<RpcClient>,
         watch_timeout: Option<Duration>,
-        node_handle: Option<NodeHandle>,
         account_client: Box<dyn AccountProvider>,
     ) -> CliState {
         let data_dir = starcoin_config::G_DEFAULT_BASE_DATA_DIR
@@ -80,20 +83,11 @@ impl CliStateTrait for CliState {
             net,
             client,
             watch_timeout: watch_timeout.unwrap_or(Self::DEFAULT_WATCH_TIMEOUT),
-            node_handle,
             data_dir,
             temp_dir,
             account_client,
         }
     }
-}
-
-impl CliState {
-    pub const DEFAULT_WATCH_TIMEOUT: Duration = Duration::from_secs(300);
-    pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 10000000;
-    pub const DEFAULT_GAS_PRICE: u64 = 1;
-    pub const DEFAULT_EXPIRATION_TIME_SECS: u64 = 3600;
-    pub const DEFAULT_GAS_TOKEN: &'static str = STC_TOKEN_CODE_STR;
 
     pub fn net(&self) -> &ChainNetworkID {
         &self.net
@@ -117,10 +111,6 @@ impl CliState {
 
     pub fn history_file(&self) -> PathBuf {
         self.data_dir().join(G_HISTORY_FILE_NAME)
-    }
-
-    pub fn node_handle(&self) -> Option<&NodeHandle> {
-        self.node_handle.as_ref()
     }
 
     pub fn default_account(&self) -> Result<AccountInfo> {
@@ -363,8 +353,8 @@ impl CliState {
         decode_txn_payload(&chain_state_reader, payload)
     }
 
-    pub fn into_inner(self) -> (ChainNetworkID, Arc<RpcClient>, Option<NodeHandle>) {
-        (self.net, self.client, self.node_handle)
+    pub fn into_inner(self) -> (ChainNetworkID, Arc<RpcClient>) {
+        (self.net, self.client)
     }
 
     // Sign multisig transaction, if enough signatures collected & submit is true,

@@ -1,8 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli_state_trait::CliStateTrait;
-use crate::view::{ExecuteResultView, ExecutionOutputView, TransactionOptions};
+use crate::view::TransactionOptions;
+use crate::view_vm2::{ExecuteResultView, ExecutionOutputView};
 use anyhow::{bail, Result};
 use bcs_ext::BCSCodec;
 use serde::de::DeserializeOwned;
@@ -46,19 +46,23 @@ pub struct CliStateVM2 {
     net: ChainNetworkID,
     client: Arc<RpcClient>,
     watch_timeout: Duration,
-    node_handle: Option<NodeHandle>,
     /// Cli data dir, different with Node data dir.
     data_dir: PathBuf,
     temp_dir: DataDirPath,
     account_client: Box<dyn AccountProvider>,
 }
 
-impl CliStateTrait for CliStateVM2 {
-    fn new(
+impl CliStateVM2 {
+    pub const DEFAULT_WATCH_TIMEOUT: Duration = Duration::from_secs(300);
+    pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 10000000;
+    pub const DEFAULT_GAS_PRICE: u64 = 1;
+    pub const DEFAULT_EXPIRATION_TIME_SECS: u64 = 3600;
+    pub const DEFAULT_GAS_TOKEN: &'static str = STC_TOKEN_CODE_STR;
+
+    pub fn new(
         net: ChainNetworkID,
         client: Arc<RpcClient>,
         watch_timeout: Option<Duration>,
-        node_handle: Option<NodeHandle>,
         account_client: Box<dyn AccountProvider>,
     ) -> CliStateVM2 {
         let data_dir = starcoin_config::G_DEFAULT_BASE_DATA_DIR
@@ -80,20 +84,11 @@ impl CliStateTrait for CliStateVM2 {
             net,
             client,
             watch_timeout: watch_timeout.unwrap_or(Self::DEFAULT_WATCH_TIMEOUT),
-            node_handle,
             data_dir,
             temp_dir,
             account_client,
         }
     }
-}
-
-impl CliStateVM2 {
-    pub const DEFAULT_WATCH_TIMEOUT: Duration = Duration::from_secs(300);
-    pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 10000000;
-    pub const DEFAULT_GAS_PRICE: u64 = 1;
-    pub const DEFAULT_EXPIRATION_TIME_SECS: u64 = 3600;
-    pub const DEFAULT_GAS_TOKEN: &'static str = STC_TOKEN_CODE_STR;
 
     pub fn net(&self) -> &ChainNetworkID {
         &self.net
@@ -119,10 +114,6 @@ impl CliStateVM2 {
         self.data_dir().join(G_HISTORY_FILE_NAME)
     }
 
-    pub fn node_handle(&self) -> Option<&NodeHandle> {
-        self.node_handle.as_ref()
-    }
-
     pub fn default_account(&self) -> Result<AccountInfo> {
         // TODO(BobOng): [dual-vm] get account info from vm2 provider
         // self.account_client
@@ -146,20 +137,20 @@ impl CliStateVM2 {
         &self,
         account_address: Option<AccountAddress>,
     ) -> Result<AccountInfo> {
-        if let Some(account_address) = account_address {
-            // self.account_client
-            //     .get_account(account_address)?
-            //     .ok_or_else(|| {
-            //         format_err!("Can not find WalletAccount by address: {}", account_address)
-            //     })
-            // TODO(BobOng): [dual-vm] get account from rpc vm2
-            unimplemented!()
-        } else {
-            self.default_account()
-        }
+        // TODO(BobOng): [dual-vm] get account from rpc vm2
+        unimplemented!()
+        // if let Some(_account_address) = account_address {
+        //     self.account_client
+        //         .get_account(account_address)?
+        //         .ok_or_else(|| {
+        //             format_err!("Can not find WalletAccount by address: {}", account_address)
+        //         })
+        // } else {
+        //     self.default_account()
+        // }
     }
 
-    pub fn get_resource<R>(&self, address: AccountAddress) -> Result<Option<R>>
+    pub fn get_resource<R>(&self, _address: AccountAddress) -> Result<Option<R>>
     where
         R: MoveResource + DeserializeOwned,
     {
@@ -180,37 +171,38 @@ impl CliStateVM2 {
     }
 
     pub fn watch_txn(&self, txn_hash: HashValue) -> Result<ExecutionOutputView> {
-        let block = self
-            .client
-            .watch_txn(txn_hash, Some(self.watch_timeout))
-            .map(Some)
-            .unwrap_or_else(|e| {
-                eprintln!("Watch txn {:?}  err: {:?}", txn_hash, e);
-                None
-            });
-
-        let txn_info = {
-            if let Some(info) = self.client.chain_get_transaction_info(txn_hash)? {
-                info
-            } else {
-                //sleep and try again.
-                std::thread::sleep(Duration::from_secs(5));
-                if let Some(info) = self.client.chain_get_transaction_info(txn_hash)? {
-                    info
-                } else {
-                    bail!("transaction execute success, but get transaction info return none, block: {}",
-                        block.map(|b|b.header.number.to_string()).unwrap_or_else(||"unknown".to_string()));
-                }
-            }
-        };
-
-        let events = self
-            .client
-            .chain_get_events_by_txn_hash(txn_hash, Some(GetEventOption { decode: true }))?;
-
-        Ok(ExecutionOutputView::new_with_info(
-            txn_hash, txn_info, events,
-        ))
+        unimplemented!()
+        // let block = self
+        //     .client
+        //     .watch_txn(txn_hash, Some(self.watch_timeout))
+        //     .map(Some)
+        //     .unwrap_or_else(|e| {
+        //         eprintln!("Watch txn {:?}  err: {:?}", txn_hash, e);
+        //         None
+        //     });
+        //
+        // let txn_info = {
+        //     if let Some(info) = self.client.chain_get_transaction_info(txn_hash)? {
+        //         info
+        //     } else {
+        //         //sleep and try again.
+        //         std::thread::sleep(Duration::from_secs(5));
+        //         if let Some(info) = self.client.chain_get_transaction_info(txn_hash)? {
+        //             info
+        //         } else {
+        //             bail!("transaction execute success, but get transaction info return none, block: {}",
+        //                 block.map(|b|b.header.number.to_string()).unwrap_or_else(||"unknown".to_string()));
+        //         }
+        //     }
+        // };
+        //
+        // let events = self
+        //     .client
+        //     .chain_get_events_by_txn_hash(txn_hash, Some(GetEventOption { decode: true }))?;
+        //
+        // Ok(ExecutionOutputView::new_with_info(
+        //     txn_hash, txn_info, events,
+        // ))
     }
 
     pub fn build_and_execute_transaction(
@@ -247,48 +239,52 @@ impl CliStateVM2 {
         payload: TransactionPayload,
         gas_token: Option<String>,
     ) -> Result<(RawUserTransaction, bool)> {
-        let chain_id = self.net().chain_id();
-        let sender = self.get_account_or_default(sender)?;
-        let (sequence_number, future_transaction) = match sequence_number {
-            Some(sequence_number) => (sequence_number, false),
-            None => match self
-                .client
-                .next_sequence_number_in_txpool(sender.address())?
-            {
-                Some(sequence_number) => {
-                    eprintln!("get sequence_number {} from txpool", sequence_number);
-                    (sequence_number, true)
-                }
-                None => (
-                    self.get_account_resource(*sender.address())?
-                        .sequence_number(),
-                    false,
-                ),
-            },
-        };
-        let node_info = self.client.node_info()?;
-        let expiration_timestamp_secs = expiration_time_secs
-            .unwrap_or(Self::DEFAULT_EXPIRATION_TIME_SECS)
-            + node_info.now_seconds;
-        let gas_token_code = gas_token.unwrap_or_else(|| Self::DEFAULT_GAS_TOKEN.to_string());
-        Ok((
-            RawUserTransaction::new(
-                sender.address,
-                sequence_number,
-                payload,
-                max_gas_amount.unwrap_or(Self::DEFAULT_MAX_GAS_AMOUNT),
-                gas_price.unwrap_or(Self::DEFAULT_GAS_PRICE),
-                expiration_timestamp_secs,
-                chain_id,
-                gas_token_code,
-            ),
-            future_transaction,
-        ))
+        unimplemented!()
+        // let chain_id = self.net().chain_id();
+        // let sender = self.get_account_or_default(sender)?;
+        // let (sequence_number, future_transaction) = match sequence_number {
+        //     Some(sequence_number) => (sequence_number, false),
+        //     None => {
+        //         match self
+        //             .client
+        //             .next_sequence_number_in_txpool(sender.address())?
+        //         {
+        //             Some(sequence_number) => {
+        //                 eprintln!("get sequence_number {} from txpool", sequence_number);
+        //                 (sequence_number, true)
+        //             }
+        //             None => (
+        //                 self.get_account_resource(*sender.address())?
+        //                     .sequence_number(),
+        //                 false,
+        //             ),
+        //         }
+        //     },
+        // };
+        // let node_info = self.client.node_info()?;
+        // let expiration_timestamp_secs = expiration_time_secs
+        //     .unwrap_or(Self::DEFAULT_EXPIRATION_TIME_SECS)
+        //     + node_info.now_seconds;
+        // let gas_token_code = gas_token.unwrap_or_else(|| Self::DEFAULT_GAS_TOKEN.to_string());
+        // Ok((
+        //     RawUserTransaction::new(
+        //         sender.address,
+        //         sequence_number,
+        //         payload,
+        //         max_gas_amount.unwrap_or(Self::DEFAULT_MAX_GAS_AMOUNT),
+        //         gas_price.unwrap_or(Self::DEFAULT_GAS_PRICE),
+        //         expiration_timestamp_secs,
+        //         chain_id,
+        //         gas_token_code,
+        //     ),
+        //     future_transaction,
+        // ))
     }
 
     pub fn dry_run_transaction(&self, txn: DryRunTransaction) -> Result<DryRunOutputView> {
-        let state_reader = self.client().state_reader(StateRootOption::Latest)?;
-        playground::dry_run_explain(&state_reader, txn, None)
+        unimplemented!()
+        // let state_reader = self.client().state_reader(StateRootOption::Latest)?;
+        // playground::dry_run_explain(&state_reader, txn, None)
     }
 
     pub fn execute_transaction(
@@ -297,89 +293,91 @@ impl CliStateVM2 {
         only_dry_run: bool,
         blocking: bool,
     ) -> Result<ExecuteResultView> {
-        let sender = self.get_account(raw_txn.sender())?;
-        let public_key = sender.public_key;
-        let dry_output = self.dry_run_transaction(DryRunTransaction {
-            public_key: public_key.clone(),
-            raw_txn: raw_txn.clone(),
-        })?;
-        let mut raw_txn_view: RawUserTransactionView = raw_txn.clone().try_into()?;
-        raw_txn_view.decoded_payload = Some(TransactionPayloadView::from(
-            self.decode_txn_payload(raw_txn.payload())?,
-        ));
-
-        let mut execute_result = ExecuteResultView::new(raw_txn_view, raw_txn.to_hex(), dry_output);
-        if only_dry_run
-            || !matches!(
-                execute_result.dry_run_output.txn_output.status,
-                TransactionStatusView::Executed
-            )
-        {
-            eprintln!(
-                "txn dry run result: {:?}",
-                execute_result.dry_run_output.txn_output
-            );
-            return Ok(execute_result);
-        }
-
-        // TODO(BobOng): [dual-vm] Signed by Account provider vm2
-        let signed_txn = SignedUserTransaction::mock(); //self.account_client.sign_txn(raw_txn, sender.address)?;
-
-        let multisig_public_key = match &public_key {
-            AccountPublicKey::Single(_) => {
-                let signed_txn_hex = hex::encode(signed_txn.encode()?);
-                let txn_hash = self.client.submit_hex_transaction(signed_txn_hex)?;
-                eprintln!("txn {} submitted.", txn_hash);
-                let execute_output = if blocking {
-                    self.watch_txn(txn_hash)?
-                } else {
-                    ExecutionOutputView::new(txn_hash)
-                };
-                execute_result.execute_output = Some(execute_output);
-                return Ok(execute_result);
-            }
-
-            AccountPublicKey::Multi(m) => m.clone(),
-        };
-
-        let mut output_dir = current_dir()?;
-
-        let execute_output_view = self.sign_multisig_txn_to_file_or_submit(
-            sender.address(),
-            multisig_public_key,
-            None,
-            signed_txn,
-            &mut output_dir,
-            true,
-            blocking,
-        )?;
-
-        let cur_dir = current_dir()?.to_str().unwrap().to_string();
-        if output_dir.to_str().unwrap() != cur_dir {
-            // There is signature file, print the file path.
-            eprintln!(
-                "multisig txn signatures filepath: {}",
-                output_dir.to_str().unwrap()
-            )
-        }
-
-        if let Some(o) = execute_output_view {
-            execute_result.execute_output = Some(o)
-        };
-
-        Ok(execute_result)
+        unimplemented!()
+        // let sender = self.get_account(raw_txn.sender())?;
+        // let public_key = sender.public_key;
+        // let dry_output = self.dry_run_transaction(DryRunTransaction {
+        //     public_key: public_key.clone(),
+        //     raw_txn: raw_txn.clone(),
+        // })?;
+        // let mut raw_txn_view: RawUserTransactionView = raw_txn.clone().try_into()?;
+        // raw_txn_view.decoded_payload = Some(TransactionPayloadView::from(
+        //     self.decode_txn_payload(raw_txn.payload())?,
+        // ));
+        //
+        // let mut execute_result = ExecuteResultView::new(raw_txn_view, raw_txn.to_hex(), dry_output);
+        // if only_dry_run
+        //     || !matches!(
+        //         execute_result.dry_run_output.txn_output.status,
+        //         TransactionStatusView::Executed
+        //     )
+        // {
+        //     eprintln!(
+        //         "txn dry run result: {:?}",
+        //         execute_result.dry_run_output.txn_output
+        //     );
+        //     return Ok(execute_result);
+        // }
+        //
+        // // TODO(BobOng): [dual-vm] Signed by Account provider vm2
+        // let signed_txn = SignedUserTransaction::mock(); //self.account_client.sign_txn(raw_txn, sender.address)?;
+        //
+        // let multisig_public_key = match &public_key {
+        //     AccountPublicKey::Single(_) => {
+        //         let signed_txn_hex = hex::encode(signed_txn.encode()?);
+        //         let txn_hash = self.client.submit_hex_transaction(signed_txn_hex)?;
+        //         eprintln!("txn {} submitted.", txn_hash);
+        //         let execute_output = if blocking {
+        //             self.watch_txn(txn_hash)?
+        //         } else {
+        //             ExecutionOutputView::new(txn_hash)
+        //         };
+        //         execute_result.execute_output = Some(execute_output);
+        //         return Ok(execute_result);
+        //     }
+        //
+        //     AccountPublicKey::Multi(m) => m.clone(),
+        // };
+        //
+        // let mut output_dir = current_dir()?;
+        //
+        // let execute_output_view = self.sign_multisig_txn_to_file_or_submit(
+        //     sender.address(),
+        //     multisig_public_key,
+        //     None,
+        //     signed_txn,
+        //     &mut output_dir,
+        //     true,
+        //     blocking,
+        // )?;
+        //
+        // let cur_dir = current_dir()?.to_str().unwrap().to_string();
+        // if output_dir.to_str().unwrap() != cur_dir {
+        //     // There is signature file, print the file path.
+        //     eprintln!(
+        //         "multisig txn signatures filepath: {}",
+        //         output_dir.to_str().unwrap()
+        //     )
+        // }
+        //
+        // if let Some(o) = execute_output_view {
+        //     execute_result.execute_output = Some(o)
+        // };
+        //
+        // Ok(execute_result)
     }
 
     pub fn decode_txn_payload(
         &self,
         payload: &TransactionPayload,
     ) -> Result<DecodedTransactionPayload> {
-        let chain_state_reader = self.client.state_reader(StateRootOption::Latest)?;
-        decode_txn_payload(&chain_state_reader, payload)
+        unimplemented!()
+        // let chain_state_reader = self.client.state_reader(StateRootOption::Latest)?;
+        // decode_txn_payload(&chain_state_reader, payload)
     }
 
-    pub fn into_inner(self) -> (ChainNetworkID, Arc<RpcClient>, Option<NodeHandle>) {
-        (self.net, self.client, self.node_handle)
+    pub fn into_inner(self) -> (ChainNetworkID, Arc<RpcClient>) {
+        (self.net, self.client)
     }
 
     // Sign multisig transaction, if enough signatures collected & submit is true,

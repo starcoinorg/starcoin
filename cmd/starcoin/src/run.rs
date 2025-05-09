@@ -1,5 +1,10 @@
-use crate::cli_state_trait::CliStateTrait;
-use crate::{account, chain, contract, dev, helper, node, state, txpool};
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
+use crate::{
+    account, chain, cli_state_router::CliStateRouter, contract, dev, helper, node, state,
+    subcommand_vm2::install_command_vm2, txpool, CliState,
+};
 use scmd::{CmdContext, CustomCommand};
 use starcoin_account_provider::ProviderFactory;
 use starcoin_config::{Connect, StarcoinOpt, G_APP_VERSION, G_CRATE_VERSION};
@@ -8,14 +13,15 @@ use starcoin_rpc_client::RpcClient;
 use std::sync::Arc;
 use std::time::Duration;
 
-pub fn run<State: CliStateTrait, GlobalOpt>() -> anyhow::Result<()> {
+pub fn run() -> anyhow::Result<()> {
     let logger_handle = starcoin_logger::init();
-    let context = CmdContext::<State, GlobalOpt>::with_default_action(
+    let mut using_vm2 = false;
+    let context = CmdContext::<CliStateRouter, StarcoinOpt>::with_default_action(
         G_CRATE_VERSION,
         Some(G_APP_VERSION.as_str()),
-        |opt| -> anyhow::Result<State> {
+        |opt| -> anyhow::Result<CliStateRouter> {
             info!("Starcoin opts: {}", opt);
-            let connect = opt.connect().as_ref().unwrap_or(&Connect::IPC(None));
+            let connect = opt.connect.as_ref().unwrap_or(&Connect::IPC(None));
             let (client, node_handle) = match connect {
                 Connect::IPC(ipc_file) => {
                     if let Some(ipc_file) = ipc_file {
@@ -26,7 +32,6 @@ pub fn run<State: CliStateTrait, GlobalOpt>() -> anyhow::Result<()> {
                         info!("Start starcoin node...");
                         let (node_handle, config) = starcoin_node::run_node_by_opt(opt)?;
                         match node_handle {
-                            //first cli use local connect.
                             Some(node_handle) => {
                                 info!("Connect by in process channel");
                                 let rpc_service = node_handle.rpc_service()?;
@@ -66,16 +71,18 @@ pub fn run<State: CliStateTrait, GlobalOpt>() -> anyhow::Result<()> {
             let rpc_client = ProviderFactory::create_provider(
                 client.clone(),
                 node_info.net.chain_id(),
-                &opt.account_provider(),
+                &opt.account_provider,
             )?;
-            let state = State::new(
+            using_vm2 = opt.vm2.unwrap_or(false);
+
+            Ok(CliStateRouter::new(
+                opt.vm2.unwrap_or(false),
                 node_info.net,
                 client,
-                opt.watch_timeout().map(Duration::from_secs),
+                opt.watch_timeout.map(Duration::from_secs),
                 node_handle,
                 rpc_client,
-            );
-            Ok(state)
+            ))
         },
         |_, _, state| {
             let (_, client, handle) = state.into_inner();
@@ -110,12 +117,16 @@ pub fn run<State: CliStateTrait, GlobalOpt>() -> anyhow::Result<()> {
             }
         },
     );
-    add_command(context).exec()
+    if CliStateRouter::is_using_vm2() {
+        install_command_vm2(context).exec()
+    } else {
+        add_command(context).exec()
+    }
 }
 
-pub fn add_command<State, GlobalOpt>(
-    context: CmdContext<State, GlobalOpt>,
-) -> CmdContext<State, GlobalOpt> {
+pub fn add_command(
+    context: CmdContext<CliStateRouter, StarcoinOpt>,
+) -> CmdContext<CliStateRouter, StarcoinOpt> {
     context
         .command(
             CustomCommand::with_name("account")
