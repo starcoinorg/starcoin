@@ -3,4 +3,3 @@ pub mod private_key_provider;
 //mod provider;
 //mod rpc_provider;
 //pub use provider::ProviderFactory;
-pub const G_ENV_PRIVATE_KEY: &str = "STARCOIN_PRIVATE_KEY";

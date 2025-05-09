@@ -1,4 +1,3 @@
-use crate::G_ENV_PRIVATE_KEY;
 use anyhow::{bail, Result};
 use starcoin_account::{account_storage::AccountStorage, AccountManager};
 use starcoin_account_api::{AccountInfo, AccountPrivateKey, AccountProvider};
@@ -22,6 +21,7 @@ impl AccountPrivateKeyProvider {
         address: Option<AccountAddress>,
         from_env: bool,
         chain_id: ChainId,
+        env_private_key: String,
     ) -> Result<Self> {
         if !(secret_file.is_some() ^ from_env) {
             bail!("Please input one and only one in args [secret_file, from_env].")
@@ -32,7 +32,7 @@ impl AccountPrivateKeyProvider {
         let data = if secret_file.is_some() {
             std::fs::read_to_string(secret_file.unwrap())?
         } else {
-            match env::var_os(G_ENV_PRIVATE_KEY) {
+            match env::var_os(env_private_key) {
                 Some(value) => value.into_string().unwrap_or_else(|_| String::from("")),
                 None => String::from(""),
             }
