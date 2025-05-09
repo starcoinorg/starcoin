@@ -8,6 +8,7 @@ use forkable_jellyfish_merkle::{blob::Blob, proof::SparseMerkleProof, RawKey};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_state_tree::AccountStateSetIterator;
+use starcoin_types::view::{StateWithProofView, StateWithTableItemProofView, StrView};
 use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_config::AccountResource,
     account_state::AccountState, state_set::AccountStateSet, state_set::ChainStateSet,
@@ -110,6 +111,30 @@ impl StateWithProof {
     pub fn verify(&self, expect_root: HashValue, access_path: AccessPath) -> Result<()> {
         self.proof
             .verify(expect_root, access_path, self.state.as_deref())
+    }
+}
+
+impl From<StateWithProof> for StateWithProofView {
+    fn from(state_proof: StateWithProof) -> Self {
+        let state = state_proof.state.map(StrView);
+        Self {
+            state,
+            account_state: state_proof.proof.account_state.map(|b| StrView(b.into())),
+            account_proof: state_proof.proof.account_proof.into(),
+            account_state_proof: state_proof.proof.account_state_proof.into(),
+        }
+    }
+}
+
+impl From<StateWithProofView> for StateWithProof {
+    fn from(view: StateWithProofView) -> Self {
+        let state = view.state.map(|v| v.0);
+        let proof = StateProof::new(
+            view.account_state.map(|v| v.0),
+            view.account_proof.into(),
+            view.account_state_proof.into(),
+        );
+        Self::new(state, proof)
     }
 }
 
@@ -270,5 +295,43 @@ impl StateWithTableItemProof {
                 .as_ref(),
         )?;
         Ok(())
+    }
+}
+
+impl From<StateWithTableItemProof> for StateWithTableItemProofView {
+    fn from(state_table_item_proof: StateWithTableItemProof) -> Self {
+        Self {
+            state_proof: (
+                state_table_item_proof.state_proof.0.into(),
+                state_table_item_proof.state_proof.1,
+            ),
+            table_handle_proof: (
+                state_table_item_proof.table_handle_proof.0.map(StrView),
+                state_table_item_proof.table_handle_proof.1.into(),
+                state_table_item_proof.table_handle_proof.2,
+            ),
+            key_proof: (
+                state_table_item_proof.key_proof.0.map(StrView),
+                state_table_item_proof.key_proof.1.into(),
+                state_table_item_proof.key_proof.2,
+            ),
+        }
+    }
+}
+
+impl From<StateWithTableItemProofView> for StateWithTableItemProof {
+    fn from(view: StateWithTableItemProofView) -> Self {
+        let state_proof = (StateWithProof::from(view.state_proof.0), view.state_proof.1);
+        let table_handle_proof = (
+            view.table_handle_proof.0.map(|v| v.0),
+            SparseMerkleProof::from(view.table_handle_proof.1),
+            view.table_handle_proof.2,
+        );
+        let key_proof = (
+            view.key_proof.0.map(|v| v.0),
+            SparseMerkleProof::from(view.key_proof.1),
+            view.key_proof.2,
+        );
+        Self::new(state_proof, table_handle_proof, key_proof)
     }
 }
