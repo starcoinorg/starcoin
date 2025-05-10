@@ -6,6 +6,10 @@ starcoin-config = { workspace = true }
 starcoin-crypto = { workspace = true }
 starcoin-rpc-client = { workspace = true }
 starcoin-types = { workspace = true }
+#dependences for move 2.0
+starcoin-vm2-types = { workspace = true }
+starcoin-vm2-account-api = { workspace = true }
+starcoin-vm2-account-provider = { workspace = true }
 
 [package]
 edition = { workspace = true }
