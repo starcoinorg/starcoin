@@ -60,7 +60,7 @@ use starcoin_types::sign_message::SigningMessage;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
-use starcoin_vm2_rpc::{
+use starcoin_vm2_rpc_api::{
     account_api::AccountClient as AccountClient2, contract_api::ContractClient as ContractClient2,
     state_api::StateClient as StateClient2,
 };

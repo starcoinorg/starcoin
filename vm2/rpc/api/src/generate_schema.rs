@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use starcoin_vm2_rpc::{account_api, contract_api, state_api};
+use starcoin_vm2_rpc_api::{account_api, contract_api, state_api};
 use std::fs::{create_dir_all, File};
 use std::path::Path;
 #[derive(Debug, Parser)]
