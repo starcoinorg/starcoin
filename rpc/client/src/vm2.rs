@@ -6,7 +6,7 @@ use bcs_ext::BCSCodec;
 use starcoin_vm2_abi_types::{FunctionABI, ModuleABI, StructInstantiation};
 use starcoin_vm2_account_api::AccountInfo;
 use starcoin_vm2_crypto::HashValue;
-use starcoin_vm2_rpc::{
+use starcoin_vm2_rpc_api::{
     state_api::{GetCodeOption, GetResourceOption, ListCodeOption, ListResourceOption},
     DecodedMoveValue,
 };

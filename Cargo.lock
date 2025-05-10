@@ -13289,7 +13289,7 @@ dependencies = [
  "starcoin-types 2.0.1",
  "starcoin-vm-types 1.13.19",
  "starcoin-vm-types 2.0.1",
- "starcoin-vm2-rpc",
+ "starcoin-vm2-rpc-api",
  "stest",
  "test-helper",
  "thiserror 1.0.69",
@@ -14337,7 +14337,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "starcoin-vm2-rpc"
+name = "starcoin-vm2-rpc-api"
 version = "1.13.19"
 dependencies = [
  "anyhow",
