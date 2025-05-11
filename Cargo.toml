@@ -99,6 +99,7 @@ members = [
     "vm2/service/account",
     "vm2/chain",
     "vm2/rpc/api",
+    "vm2/rpc/server",
     "abi/types",
     "abi/decoder",
     "abi/resolver",
@@ -210,6 +211,7 @@ default-members = [
     "vm2/genesis",
     "vm2/test-helper",
     "vm2/rpc/api",
+    "vm2/rpc/server",
     "vm2/service/state",
     "vm2/service/account",
     "abi/types",
@@ -543,6 +545,7 @@ starcoin-vm2-test-helper = { path = "vm2/test-helper" }
 starcoin-vm2-state-service = { path = "vm2/service/state" }
 starcoin-vm2-account-service = { path = "vm2/service/account" }
 starcoin-vm2-rpc-api = { path = "vm2/rpc/api" }
+starcoin-vm2-rpc-server = { path = "vm2/rpc/server" }
 
 starcoin-vm2-crypto = { git = "https://github.com/starcoinorg/starcoin-crypto", rev = "5417dce574142c3da24adf987194a6931869f588", package = "starcoin-crypto" }
 starcoin-vm2-storage = { git = "https://github.com/starcoinorg/starcoin", rev = "37e8f6b460bd803e8219de24aaf5363cc776918b", package = "starcoin-storage" }
