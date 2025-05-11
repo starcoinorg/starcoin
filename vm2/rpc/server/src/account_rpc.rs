@@ -83,7 +83,7 @@ where
             let result = service.get_default_account().await?;
             Ok(result)
         }
-            .map_err(map_err);
+        .map_err(map_err);
         Box::pin(fut.boxed())
     }
 
@@ -93,7 +93,7 @@ where
             let result = service.set_default_account(addr).await?;
             Ok(result)
         }
-            .map_err(map_err);
+        .map_err(map_err);
         Box::pin(fut.boxed())
     }
 
@@ -103,7 +103,7 @@ where
             let result = service.create_account(password).await?;
             Ok(result)
         }
-            .map_err(map_err);
+        .map_err(map_err);
         Box::pin(fut.boxed())
     }
 
@@ -113,7 +113,7 @@ where
             let result = service.get_accounts().await?;
             Ok(result)
         }
-            .map_err(map_err);
+        .map_err(map_err);
         Box::pin(fut.boxed())
     }
 
@@ -123,7 +123,7 @@ where
             let result = service.get_account(address).await?;
             Ok(result)
         }
-            .map_err(map_err);
+        .map_err(map_err);
         Box::pin(fut.boxed())
     }
     fn sign(
@@ -153,7 +153,7 @@ where
                 hex::encode(bcs_ext::to_bytes(&signed_txn)?)
             ))
         }
-            .map_err(map_err);
+        .map_err(map_err);
         Box::pin(fut.boxed())
     }
 
@@ -167,7 +167,7 @@ where
             let result = service.sign_txn(raw_txn, signer).await?;
             Ok(result)
         }
-            .map_err(map_err);
+        .map_err(map_err);
         Box::pin(fut.boxed())
     }
 
@@ -187,7 +187,7 @@ where
                 )
                 .await
         }
-            .map_err(map_err);
+        .map_err(map_err);
         Box::pin(fut.boxed())
     }
 
@@ -211,7 +211,7 @@ where
                 .await?;
             Ok(result)
         }
-            .map_err(map_err);
+        .map_err(map_err);
         Box::pin(fut.boxed())
     }
 
@@ -227,7 +227,7 @@ where
                 .await?;
             Ok(result)
         }
-            .map_err(map_err);
+        .map_err(map_err);
         Box::pin(fut.boxed())
     }
 
@@ -238,7 +238,7 @@ where
             let result = service.export_account(address, password).await?;
             Ok(result)
         }
-            .map_err(map_err);
+        .map_err(map_err);
         Box::pin(fut.boxed())
     }
 
@@ -262,7 +262,7 @@ where
             let result = service.accepted_tokens(address).await?;
             Ok(result)
         }
-            .map_err(map_err);
+        .map_err(map_err);
         Box::pin(fut.boxed())
     }
 
