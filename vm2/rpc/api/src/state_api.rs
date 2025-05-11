@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2
 
 pub use self::gen_client::Client as StateClient;
-use jsonrpc_core::{BoxFuture, Error};
-pub type FutureResult<T> = BoxFuture<Result<T, Error>>;
+use crate::FutureResult;
 // copy from https://github.com/starcoinorg/starcoin/blob/bf5ec6e44a242e9dff5ac177c1565c64c6e4b0d0/rpc/api/src/state/mod.rs#L14 etc
 use bytes::Bytes;
 use openrpc_derive::openrpc;
