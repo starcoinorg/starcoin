@@ -59,3 +59,4 @@ impl From<anyhow::Error> for RpcError {
 
 mod account_rpc;
 mod helpers;
+mod state_rpc;
