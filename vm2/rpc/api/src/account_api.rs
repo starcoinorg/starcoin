@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2
 
 pub use self::gen_client::Client as AccountClient;
-use jsonrpc_core::{BoxFuture, Error};
-pub type FutureResult<T> = BoxFuture<Result<T, Error>>;
+use crate::FutureResult;
 use openrpc_derive::openrpc;
 use starcoin_vm2_account_api::AccountInfo;
 use starcoin_vm2_types::account_address::AccountAddress;

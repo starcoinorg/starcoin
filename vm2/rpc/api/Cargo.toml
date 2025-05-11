@@ -1,5 +1,5 @@
 [package]
-name = "starcoin-vm2-rpc"
+name = "starcoin-vm2-rpc-api"
 authors.workspace = true
 edition.workspace = true
 homepage.workspace = true
