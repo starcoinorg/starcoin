@@ -31,6 +31,7 @@ openrpc-schema = { workspace = true }
 serde = { features = ["derive"], workspace = true }
 serde_json = { features = ["arbitrary_precision"], workspace = true }
 starcoin-config = { workspace = true }
+starcoin-metrics = { workspace = true }
 starcoin-txpool-api = { workspace = true }
 starcoin-vm2-types = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
@@ -44,5 +45,7 @@ starcoin-vm2-resource-viewer = { workspace = true }
 starcoin-vm2-rpc-api = { workspace = true }
 starcoin-vm2-statedb = { workspace = true }
 starcoin-vm2-state-api = { workspace = true }
+starcoin-vm2-storage = { workspace = true }
+starcoin-vm2-status-translator = { workspace = true }
 
 schemars = { workspace = true }
