@@ -25,12 +25,12 @@ use starcoin_vm_types::vm_status::VMStatus;
 use std::sync::Arc;
 
 #[derive(Clone)]
-pub struct PlaygroudService {
+pub struct PlaygroundService {
     state: Arc<dyn StateNodeStore>,
     pub metrics: Option<VMMetrics>,
 }
 
-impl PlaygroudService {
+impl PlaygroundService {
     pub fn new(state_store: Arc<dyn StateNodeStore>, metrics: Option<VMMetrics>) -> Self {
         Self {
             state: state_store,
@@ -39,7 +39,7 @@ impl PlaygroudService {
     }
 }
 
-impl PlaygroudService {
+impl PlaygroundService {
     pub fn dry_run(
         &self,
         state_root: HashValue,

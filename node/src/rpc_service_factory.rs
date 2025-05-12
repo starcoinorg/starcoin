@@ -6,7 +6,7 @@ use anyhow::Result;
 use starcoin_account_service::AccountService;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
-use starcoin_dev::playground::PlaygroudService;
+use starcoin_dev::playground::PlaygroundService;
 use starcoin_executor::VMMetrics;
 use starcoin_genesis::Genesis;
 use starcoin_logger::LoggerHandle;
@@ -24,7 +24,7 @@ use starcoin_storage::Storage;
 use starcoin_sync::sync::SyncService;
 use starcoin_txpool::TxPoolService;
 use starcoin_vm2_account_service::AccountService as AccountService2;
-use starcoin_vm2_dev::playground::PlaygroudService as PlaygroudService2;
+use starcoin_vm2_dev::playground::PlaygroudService as PlaygroundService2;
 use starcoin_vm2_rpc_server::{
     account_rpc::AccountRpcImpl as AccountRpcImpl2,
     contract_rpc::ContractRpcImpl as ContractRpcImpl2, state_rpc::StateRpcImpl as StateRpcImpl2,
@@ -105,7 +105,7 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
 
         let contract_api = {
             let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
-            let dev_playground = PlaygroudService::new(storage.clone(), vm_metrics);
+            let dev_playground = PlaygroundService::new(storage.clone(), vm_metrics);
             ContractRpcImpl::new(
                 config.clone(),
                 account_service,
@@ -117,7 +117,7 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
         };
         let contract_api2 = {
             let vm_metrics = ctx.get_shared_opt::<VMMetrics>()?;
-            let dev_playground = PlaygroudService2::new(storage2.clone(), vm_metrics);
+            let dev_playground = PlaygroundService2::new(storage2.clone(), vm_metrics);
             ContractRpcImpl2::new(
                 config.clone(),
                 account_service2,

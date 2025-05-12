@@ -11,7 +11,7 @@ use starcoin_abi_resolver::ABIResolver;
 use starcoin_abi_types::{FunctionABI, ModuleABI, StructInstantiation, TypeInstantiation};
 use starcoin_account_api::AccountAsyncService;
 use starcoin_config::NodeConfig;
-use starcoin_dev::playground::{call_contract, PlaygroudService};
+use starcoin_dev::playground::{call_contract, PlaygroundService};
 use starcoin_executor::VMMetrics;
 use starcoin_resource_viewer::module_cache::ModuleCache;
 use starcoin_resource_viewer::MoveValueAnnotator;
@@ -41,7 +41,7 @@ pub struct ContractRpcImpl<Account, Pool, State> {
     pub(crate) pool: Pool,
     pub(crate) chain_state: State,
     pub(crate) node_config: Arc<NodeConfig>,
-    playground: PlaygroudService,
+    playground: PlaygroundService,
     storage: Arc<Storage>,
 }
 
@@ -56,7 +56,7 @@ where
         account: Option<Account>,
         pool: Pool,
         chain_state: State,
-        playground: PlaygroudService,
+        playground: PlaygroundService,
         storage: Arc<Storage>,
     ) -> Self {
         Self {
