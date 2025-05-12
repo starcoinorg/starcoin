@@ -111,7 +111,7 @@ impl CliState {
     }
 
     pub fn account_client(&self) -> &dyn AccountProvider {
-        &*self.account_client
+        self.account_client.as_ref()
     }
     pub fn temp_dir(&self) -> &Path {
         self.temp_dir.path()

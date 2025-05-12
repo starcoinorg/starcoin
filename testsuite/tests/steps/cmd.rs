@@ -12,7 +12,6 @@ use starcoin_cmd::{CliState, StarcoinOpt};
 use starcoin_config::account_provider_config::AccountProviderConfig;
 use starcoin_config::{G_APP_VERSION, G_CRATE_VERSION};
 use starcoin_logger::prelude::*;
-use std::sync::Arc;
 use std::time::Duration;
 
 pub fn steps() -> Steps<MyWorld> {
