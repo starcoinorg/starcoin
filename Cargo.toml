@@ -562,6 +562,7 @@ starcoin-vm2-abi-types = { git = "https://github.com/starcoinorg/starcoin", rev 
 starcoin-vm2-account = { git = "https://github.com/starcoinorg/starcoin", rev = "37e8f6b460bd803e8219de24aaf5363cc776918b", package = "starcoin-account" }
 starcoin-vm2-account-api = { git = "https://github.com/starcoinorg/starcoin", rev = "37e8f6b460bd803e8219de24aaf5363cc776918b", package = "starcoin-account-api" }
 starcoin-vm2-account-provider = { git = "https://github.com/starcoinorg/starcoin", rev = "37e8f6b460bd803e8219de24aaf5363cc776918b", package = "starcoin-account-provider" }
+starcoin-vm2-dev = { git = "https://github.com/starcoinorg/starcoin", rev = "37e8f6b460bd803e8219de24aaf5363cc776918b", package = "starcoin-dev" }
 
 move-vm2-core-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", package = "move-core-types" }
 move-vm2-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", package = "move-transactional-test-runner" }
