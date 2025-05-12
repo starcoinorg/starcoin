@@ -35,7 +35,7 @@ pub fn steps() -> Steps<MyWorld> {
                     client.clone(),
                     Some(Duration::from_secs(5)),
                     None,
-                    Arc::new(account_client),
+                    account_client,
                     None,
                 );
                 let context = CmdContext::<CliState, StarcoinOpt>::with_state(
