@@ -5,6 +5,7 @@ use starcoin_vm2_crypto::HashValue;
 use starcoin_vm2_executor::block_executor::{self, BlockExecutedData, VMMetrics};
 use starcoin_vm2_statedb::ChainStateDB;
 use starcoin_vm2_storage::Store;
+use starcoin_vm2_types::error::ExecutorResult;
 use starcoin_vm2_types::transaction::{RichTransactionInfo, Transaction};
 
 pub fn execute_transactions(
@@ -12,11 +13,11 @@ pub fn execute_transactions(
     transactions: Vec<Transaction>,
     gas_limit: u64,
     vm_metrics: Option<VMMetrics>,
-) -> (Option<BlockExecutedData>, Vec<HashValue>) {
+) -> ExecutorResult<(Option<BlockExecutedData>, Vec<HashValue>)> {
     // This function will execute the transactions in the block using vm2
     // Note: The actual implementation of VM2 execution and saving logic will depend on your VM2 setup.
     let executed_data =
-        block_executor::block_execute(statedb, transactions, gas_limit, vm_metrics).unwrap();
+        block_executor::block_execute(statedb, transactions, gas_limit, vm_metrics)?;
 
     let included_txn_info_hashes: Vec<_> = executed_data
         .txn_infos
@@ -24,7 +25,7 @@ pub fn execute_transactions(
         .map(|info| info.id())
         .collect::<Vec<_>>();
 
-    (Some(executed_data), included_txn_info_hashes)
+    Ok((Some(executed_data), included_txn_info_hashes))
 }
 
 pub fn save_executed_transactions(
@@ -34,7 +35,7 @@ pub fn save_executed_transactions(
     transactions: Vec<Transaction>,
     executed_data: BlockExecutedData,
     transaction_global_index: u64,
-) {
+) -> anyhow::Result<()> {
     // Save the state root and transaction info to the database.
     let txn_infos = executed_data.txn_infos;
     let txn_events = executed_data.txn_events;
@@ -49,42 +50,38 @@ pub fn save_executed_transactions(
     );
     let txn_info_ids: Vec<_> = txn_infos.iter().map(|info| info.id()).collect();
     for (info_id, events) in txn_info_ids.iter().zip(txn_events.into_iter()) {
-        storage.save_contract_events(*info_id, events).unwrap();
+        storage.save_contract_events(*info_id, events)?;
     }
 
-    storage
-        .save_transaction_infos(
-            txn_infos
-                .iter()
-                .enumerate()
-                .map(|(transaction_index, info)| {
-                    RichTransactionInfo::new(
-                        block_id,
-                        block_number,
-                        info.clone(),
-                        transaction_index as u32,
-                        transaction_global_index
-                            .checked_add(transaction_index as u64)
-                            .expect("transaction_global_index overflow."),
-                    )
-                })
-                .collect(),
-        )
-        .unwrap();
+    storage.save_transaction_infos(
+        txn_infos
+            .iter()
+            .enumerate()
+            .map(|(transaction_index, info)| {
+                RichTransactionInfo::new(
+                    block_id,
+                    block_number,
+                    info.clone(),
+                    transaction_index as u32,
+                    transaction_global_index
+                        .checked_add(transaction_index as u64)
+                        .expect("transaction_global_index overflow."),
+                )
+            })
+            .collect(),
+    )?;
 
     let txn_id_vec = transactions
         .iter()
         .map(|user_txn| user_txn.id())
         .collect::<Vec<HashValue>>();
     // save transactions
-    storage.save_transaction_batch(transactions).unwrap();
+    storage.save_transaction_batch(transactions)?;
 
     // save block's transactions
-    storage
-        .save_block_transaction_ids(block_id, txn_id_vec)
-        .unwrap();
-    storage
-        .save_block_txn_info_ids(block_id, txn_info_ids)
-        .unwrap();
-    storage.save_table_infos(txn_table_infos).unwrap();
+    storage.save_block_transaction_ids(block_id, txn_id_vec)?;
+    storage.save_block_txn_info_ids(block_id, txn_info_ids)?;
+    storage.save_table_infos(txn_table_infos)?;
+
+    Ok(())
 }

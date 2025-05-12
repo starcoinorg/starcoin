@@ -497,15 +497,15 @@ impl BlockChain {
             &statedb,
             transactions.clone(),
             epoch.block_gas_limit(),
-            vm_metrics,
+            vm_metrics.clone(),
         )?;
         let (executed_data2, included_txn_info_hashes2) = if !transactions2.is_empty() {
             let (executed_data, hashes) = starcoin_vm2_chain::execute_transactions(
                 &statedb2,
                 transactions2.clone(),
                 epoch.block_gas_limit() - executed_data.gas_used(),
-                None,
-            );
+                vm_metrics,
+            )?;
             (executed_data, hashes)
         } else {
             (None, vec![])
@@ -644,7 +644,7 @@ impl BlockChain {
                 executed_data2,
                 // todo: how to track vm2 transaction global index?
                 transaction_global_index + executed_data.txn_infos.len() as u64,
-            );
+            )?;
         }
 
         watch(CHAIN_WATCH_NAME, "n25");

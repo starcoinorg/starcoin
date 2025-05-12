@@ -10,6 +10,7 @@ rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
+anyhow = { workspace = true }
 starcoin-vm2-crypto = { workspace = true }
 starcoin-vm2-executor = { workspace = true }
 starcoin-vm2-statedb = { workspace = true }

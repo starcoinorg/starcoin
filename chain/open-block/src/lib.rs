@@ -289,7 +289,7 @@ impl OpenedBlock {
             state,
             txns.clone(),
             Some(self.gas_limit),
-            None,
+            self.vm_metrics.clone(),
         )
         .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
 
