@@ -58,5 +58,6 @@ impl From<anyhow::Error> for RpcError {
 }
 
 mod account_rpc;
+pub mod contract_rpc;
 mod helpers;
 mod state_rpc;

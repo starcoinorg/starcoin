@@ -17,7 +17,6 @@ use starcoin_vm2_rpc_api::state_api::{
 use starcoin_vm2_rpc_api::{state_api::StateApi, FutureResult};
 use starcoin_vm2_state_api::{ChainStateAsyncService, StateNodeStore};
 use starcoin_vm2_statedb::{ChainStateDB, ChainStateReader};
-use starcoin_vm2_types::language_storage::ModuleId;
 use starcoin_vm2_types::view::{
     AccountStateSetView, AnnotatedMoveStructView, CodeView, ListCodeView, ListResourceView,
     ResourceView, StateWithProofView, StateWithTableItemProofView, StrView, StructTagView,
@@ -25,7 +24,7 @@ use starcoin_vm2_types::view::{
 };
 use starcoin_vm2_types::{account_address::AccountAddress, account_state::AccountState};
 use starcoin_vm2_vm_types::identifier::Identifier;
-use starcoin_vm2_vm_types::language_storage::{struct_tag_match, StructTag};
+use starcoin_vm2_vm_types::language_storage::{struct_tag_match, ModuleId, StructTag};
 use starcoin_vm2_vm_types::state_store::state_key::StateKey;
 use starcoin_vm2_vm_types::state_store::table::TableHandle;
 use starcoin_vm2_vm_types::state_store::TStateView;

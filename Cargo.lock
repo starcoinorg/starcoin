@@ -14422,13 +14422,16 @@ dependencies = [
  "starcoin-config",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=5417dce574142c3da24adf987194a6931869f588)",
  "starcoin-dev 2.0.1",
+ "starcoin-metrics 2.0.1 (git+https://github.com/starcoinorg/starcoin?rev=401ce6289a78b9f44e62e2b9f907030ad26d8d79)",
  "starcoin-resource-viewer 2.0.1",
  "starcoin-state-api 2.0.1",
  "starcoin-statedb 2.0.1",
+ "starcoin-storage 2.0.1",
  "starcoin-txpool-api",
  "starcoin-types 2.0.1",
  "starcoin-vm-types 2.0.1",
  "starcoin-vm2-rpc-api",
+ "vm-status-translator 2.0.1",
 ]
 
 [[package]]
