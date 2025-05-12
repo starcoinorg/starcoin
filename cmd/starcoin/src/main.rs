@@ -4,18 +4,22 @@ use anyhow::Result;
 use scmd::error::CmdError;
 use scmd::CmdContext;
 use starcoin_account_provider::ProviderFactory;
+use starcoin_cmd::subcommand_vm2::add_command_vm2;
 use starcoin_cmd::*;
 use starcoin_cmd::{CliState, StarcoinOpt};
 use starcoin_config::{Connect, G_APP_VERSION, G_CRATE_VERSION};
 use starcoin_logger::prelude::*;
 use starcoin_node_api::errors::NodeStartError;
 use starcoin_rpc_client::RpcClient;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
 /// This exit code means is that the node failed to start and required human intervention.
 /// Node start script can do auto task when meet this exist code.
 static G_EXIT_CODE_NEED_HELP: i32 = 120;
+
+static USING_VM2: AtomicBool = AtomicBool::new(false);
 
 fn run() -> Result<()> {
     let logger_handle = starcoin_logger::init();
@@ -77,13 +81,16 @@ fn run() -> Result<()> {
                 node_info.net.chain_id(),
                 &opt.account_provider,
             )?;
+            let using_vm2 = opt.vm2.unwrap_or_else(|| false);
             let state = CliState::new(
+                using_vm2,
                 node_info.net,
                 client,
                 opt.watch_timeout.map(Duration::from_secs),
                 node_handle,
-                rpc_client,
+                Arc::new(rpc_client),
             );
+            USING_VM2.store(using_vm2, Ordering::SeqCst);
             Ok(state)
         },
         |_, _, state| {
@@ -119,7 +126,12 @@ fn run() -> Result<()> {
             }
         },
     );
-    add_command(context).exec()
+
+    if USING_VM2.load(Ordering::SeqCst) {
+        add_command_vm2(context).exec()
+    } else {
+        add_command(context).exec()
+    }
 }
 
 #[rustfmt::skip]
