@@ -44,10 +44,10 @@ impl CommandAction for AcceptTokenCommand {
         ctx.state().vm2()?.build_and_execute_transaction(
             opt.transaction_opts.clone(),
             TransactionPayload::EntryFunction(EntryFunction::new(
-                ModuleId::new(core_code_address(), Identifier::new("Account").unwrap()),
-                Identifier::new("accept_token").unwrap(),
+                ModuleId::new(core_code_address(), Identifier::new("Account")?),
+                Identifier::new("accept_token")?,
                 vec![TypeTag::Struct(Box::new(
-                    opt.token_code.clone().try_into()?
+                    opt.token_code.clone().try_into()?,
                 ))],
                 vec![],
             )),

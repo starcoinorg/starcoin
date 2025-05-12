@@ -1,11 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::view::TransactionOptions;
-use crate::view_vm2::{ExecuteResultView, ExecutionOutputView};
+use crate::{
+    view::TransactionOptions,
+    view_vm2::{ExecuteResultView, ExecutionOutputView},
+};
 use anyhow::{bail, Result};
 use serde::de::DeserializeOwned;
-use starcoin_account_api::{AccountInfo, AccountProvider};
+use starcoin_account_api::AccountInfo;
 
 use starcoin_rpc_client::RpcClient;
 use starcoin_vm2_abi_decoder::DecodedTransactionPayload;
@@ -27,10 +29,10 @@ use starcoin_vm2_vm_types::{
 use std::{fs::File, path::PathBuf, sync::Arc, time::Duration};
 
 /// A reduced version of clistate, retaining only the necessary execution action functions
+#[allow(dead_code)]
 pub struct CliStateVM2 {
     client: Arc<RpcClient>, // TODO(BobOng):[dual-vm] to change rpc vm2
     watch_timeout: Duration,
-    account_client: Arc<Box<dyn AccountProvider>>, // TODO(BobOng):[dual-vm] to change provider vm2
 }
 
 impl CliStateVM2 {
@@ -40,15 +42,10 @@ impl CliStateVM2 {
     pub const DEFAULT_EXPIRATION_TIME_SECS: u64 = 3600;
     pub const DEFAULT_GAS_TOKEN: &'static str = STC_TOKEN_CODE_STR;
 
-    pub fn new(
-        client: Arc<RpcClient>,
-        watch_timeout: Option<Duration>,
-        account_client: Arc<Box<dyn AccountProvider>>,
-    ) -> CliStateVM2 {
+    pub fn new(client: Arc<RpcClient>, watch_timeout: Option<Duration>) -> CliStateVM2 {
         Self {
             client,
             watch_timeout: watch_timeout.unwrap_or(Self::DEFAULT_WATCH_TIMEOUT),
-            account_client,
         }
     }
 
@@ -56,9 +53,9 @@ impl CliStateVM2 {
         &self.client
     }
 
-    pub fn account_client(&self) -> &dyn AccountProvider {
-        &**self.account_client
-    }
+    // pub fn account_client<'a>(&self, account_provider: &'a Box<dyn AccountProvider>) -> &'a dyn AccountProvider {
+    //     &**account_provider
+    // }
 
     pub fn default_account(&self) -> Result<AccountInfo> {
         // TODO(BobOng): [dual-vm] get account info from vm2 provider

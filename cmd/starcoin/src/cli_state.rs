@@ -50,7 +50,7 @@ pub struct CliState {
     /// Cli data dir, different with Node data dir.
     data_dir: PathBuf,
     temp_dir: DataDirPath,
-    account_client: Arc<Box<dyn AccountProvider>>,
+    account_client: Box<dyn AccountProvider>,
     vm2_state: Option<CliStateVM2>,
 }
 
@@ -62,12 +62,12 @@ impl CliState {
     pub const DEFAULT_GAS_TOKEN: &'static str = STC_TOKEN_CODE_STR;
 
     pub fn new(
-        build_vm2: bool,
         net: ChainNetworkID,
         client: Arc<RpcClient>,
         watch_timeout: Option<Duration>,
         node_handle: Option<NodeHandle>,
-        account_client: Arc<Box<dyn AccountProvider>>,
+        account_client: Box<dyn AccountProvider>,
+        build_vm2: Option<bool>,
     ) -> CliState {
         let data_dir = starcoin_config::G_DEFAULT_BASE_DATA_DIR
             .clone()
@@ -84,15 +84,12 @@ impl CliState {
         }
         let temp_dir = starcoin_config::temp_dir_in(temp_dir);
 
-        let vm2_state = if build_vm2 {
-            Some(CliStateVM2::new(
-                client.clone(),
-                watch_timeout,
-                account_client.clone(),
-            ))
+        let vm2_state = if build_vm2.unwrap_or(false) {
+            Some(CliStateVM2::new(client.clone(), watch_timeout))
         } else {
             None
         };
+
         Self {
             net,
             client,
@@ -114,7 +111,7 @@ impl CliState {
     }
 
     pub fn account_client(&self) -> &dyn AccountProvider {
-        &**self.account_client
+        &*self.account_client
     }
     pub fn temp_dir(&self) -> &Path {
         self.temp_dir.path()

@@ -81,14 +81,14 @@ fn run() -> Result<()> {
                 node_info.net.chain_id(),
                 &opt.account_provider,
             )?;
-            let using_vm2 = opt.vm2.unwrap_or_else(|| false);
+            let using_vm2 = opt.vm2.unwrap_or(false);
             let state = CliState::new(
-                using_vm2,
                 node_info.net,
                 client,
                 opt.watch_timeout.map(Duration::from_secs),
                 node_handle,
-                Arc::new(rpc_client),
+                rpc_client,
+                Some(using_vm2),
             );
             USING_VM2.store(using_vm2, Ordering::SeqCst);
             Ok(state)
