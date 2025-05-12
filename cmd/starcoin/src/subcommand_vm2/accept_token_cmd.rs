@@ -47,7 +47,7 @@ impl CommandAction for AcceptTokenCommand {
                 ModuleId::new(core_code_address(), Identifier::new("Account").unwrap()),
                 Identifier::new("accept_token").unwrap(),
                 vec![TypeTag::Struct(Box::new(
-                    opt.token_code.clone().try_into().unwrap(),
+                    opt.token_code.clone().try_into()?
                 ))],
                 vec![],
             )),
