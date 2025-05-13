@@ -14,6 +14,8 @@ use bytes::Bytes;
 use starcoin_config::{ChainNetworkID, DataDirPath};
 use starcoin_rpc_client::{RpcClient, StateRootOption};
 use starcoin_vm2_abi_decoder::{decode_txn_payload, DecodedTransactionPayload};
+
+use starcoin_logger::prelude::info;
 use starcoin_vm2_crypto::{
     hash::PlainCryptoHash,
     multi_ed25519::{multi_shard::MultiEd25519SignatureShard, MultiEd25519PublicKey},
@@ -195,7 +197,7 @@ impl CliStateVM2 {
                 .next_sequence_number_in_txpool2(sender.address)?
             {
                 Some(sequence_number) => {
-                    log::info!("get sequence_number {} from txpool", sequence_number);
+                    info!("get sequence_number {} from txpool", sequence_number);
                     (sequence_number, true)
                 }
                 None => (
