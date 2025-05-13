@@ -114,10 +114,6 @@ impl Display for Genesis {
     }
 }
 
-pub fn net_with_legacy_genesis(net: &BuiltinNetworkID) -> bool {
-    !(net.is_test_or_dev() || net.is_proxima())
-}
-
 impl Genesis {
     pub const GENESIS_FILE_NAME: &'static str = "genesis";
 
@@ -161,30 +157,17 @@ impl Genesis {
             difficulty,
         }) = genesis_config.genesis_block_parameter()
         {
-            let (txn2, txn2_info) = if net
-                .id()
-                .as_builtin()
-                .map(|b| !net_with_legacy_genesis(b))
-                .unwrap_or(true)
-                && genesis_config2.is_some()
-            {
-                let (user_txn, txn_info) =
-                    starcoin_vm2_genesis::build_and_execute_genesis_transaction(
-                        net.chain_id().id(),
-                        genesis_config2.as_ref().unwrap(),
-                    );
-                (Some(user_txn), Some(txn_info))
-            } else {
-                (None, None)
-            };
+            let (txn2, txn2_info) = starcoin_vm2_genesis::build_and_execute_genesis_transaction(
+                net.chain_id().id(),
+                &genesis_config2,
+            );
 
             let txn = Self::build_genesis_transaction(net)?;
 
             let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
             let chain_state_db = ChainStateDB::new(storage.clone(), None);
 
-            let (table_infos, transaction_info) =
-                Self::execute_genesis_txn(&chain_state_db, txn.clone())?;
+            let (_, txn_info) = Self::execute_genesis_txn(&chain_state_db, txn.clone())?;
 
             let accumulator = MerkleAccumulator::new_with_info(
                 AccumulatorInfo::default(),
@@ -194,26 +177,18 @@ impl Genesis {
                 AccumulatorInfo::default(),
                 storage.get_accumulator_store(AccumulatorStoreType::VMState),
             );
-            let (state_root, txn_info_hash_vec) = if let Some(txn2_info) = txn2_info {
-                let state_root1 = transaction_info.state_root_hash();
+            let (state_root, txn_info_hash_vec) = {
+                let state_root1 = txn_info.state_root_hash();
                 let state_root2 = txn2_info.state_root_hash();
                 vm_state_accumulator.append(&[state_root1, state_root2])?;
                 (
                     vm_state_accumulator.root_hash(),
-                    vec![transaction_info.id(), txn2_info.id()],
-                )
-            } else {
-                (
-                    transaction_info.state_root_hash(),
-                    vec![transaction_info.id()],
+                    vec![txn_info.id(), txn2_info.id()],
                 )
             };
 
             let accumulator_root = accumulator.append(txn_info_hash_vec.as_slice())?;
             accumulator.flush()?;
-
-            // Persist newly created table_infos to storage
-            storage.save_table_infos(table_infos.into_iter().collect())?;
 
             Ok(Block::genesis_block(
                 *parent_hash,

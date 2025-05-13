@@ -39,6 +39,7 @@ use starcoin_types::{
     transaction::Transaction,
     U256,
 };
+use starcoin_vm2_chain::build_block_transactions;
 use starcoin_vm2_state_api::{
     ChainStateReader as ChainStateReader2, ChainStateWriter as ChainStateWriter2,
 };
@@ -485,12 +486,12 @@ impl BlockChain {
             t
         };
 
-        let transactions2 = block
-            .transactions2()
-            .iter()
-            .cloned()
-            .map(Transaction2::UserTransaction)
-            .collect::<Vec<_>>();
+        let transactions2 = build_block_transactions(
+            block.transactions2(),
+            parent_status.map(|p| block.to_metadata2(p.head.gas_used())),
+        );
+
+        assert!(!transactions.is_empty() && !transactions2.is_empty());
 
         watch(CHAIN_WATCH_NAME, "n21");
         let executed_data = starcoin_executor::block_execute(
@@ -499,17 +500,12 @@ impl BlockChain {
             epoch.block_gas_limit(),
             vm_metrics.clone(),
         )?;
-        let (executed_data2, included_txn_info_hashes2) = if !transactions2.is_empty() {
-            let (executed_data, hashes) = starcoin_vm2_chain::execute_transactions(
-                &statedb2,
-                transactions2.clone(),
-                epoch.block_gas_limit() - executed_data.gas_used(),
-                vm_metrics,
-            )?;
-            (executed_data, hashes)
-        } else {
-            (None, vec![])
-        };
+        let (executed_data2, included_txn_info_hashes2) = starcoin_vm2_chain::execute_transactions(
+            &statedb2,
+            transactions2.clone(),
+            epoch.block_gas_limit() - executed_data.gas_used(),
+            vm_metrics,
+        )?;
         watch(CHAIN_WATCH_NAME, "n22");
 
         let (state_root, multi_state) = {
