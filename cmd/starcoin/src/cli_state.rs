@@ -15,6 +15,8 @@ use starcoin_crypto::multi_ed25519::multi_shard::MultiEd25519SignatureShard;
 use starcoin_crypto::multi_ed25519::MultiEd25519PublicKey;
 use starcoin_crypto::HashValue;
 
+use crate::cli_state_vm2::CliStateVM2;
+use crate::view::{ExecuteResultView, ExecutionOutputView, TransactionOptions};
 use bcs_ext::BCSCodec;
 use starcoin_abi_decoder::{decode_txn_payload, DecodedTransactionPayload};
 use starcoin_account_api::{AccountInfo, AccountProvider};
@@ -38,8 +40,6 @@ use starcoin_vm_types::transaction::{
     DryRunTransaction, RawUserTransaction, SignedUserTransaction, TransactionPayload,
 };
 
-use crate::view::{ExecuteResultView, ExecutionOutputView, TransactionOptions};
-
 static G_HISTORY_FILE_NAME: &str = "history";
 
 pub struct CliState {
@@ -51,6 +51,7 @@ pub struct CliState {
     data_dir: PathBuf,
     temp_dir: DataDirPath,
     account_client: Box<dyn AccountProvider>,
+    vm2_state: Option<CliStateVM2>,
 }
 
 impl CliState {
@@ -66,6 +67,8 @@ impl CliState {
         watch_timeout: Option<Duration>,
         node_handle: Option<NodeHandle>,
         account_client: Box<dyn AccountProvider>,
+        // account_client_vm2: Box<dyn AccountProviderVm2>, // TODO(BobOng):[dual-vm] to get vm2 provider
+        build_vm2: Option<bool>,
     ) -> CliState {
         let data_dir = starcoin_config::G_DEFAULT_BASE_DATA_DIR
             .clone()
@@ -82,6 +85,12 @@ impl CliState {
         }
         let temp_dir = starcoin_config::temp_dir_in(temp_dir);
 
+        let vm2_state = if build_vm2.unwrap_or(false) {
+            Some(CliStateVM2::new(client.clone(), watch_timeout))
+        } else {
+            None
+        };
+
         Self {
             net,
             client,
@@ -90,6 +99,7 @@ impl CliState {
             data_dir,
             temp_dir,
             account_client,
+            vm2_state,
         }
     }
 
@@ -125,6 +135,13 @@ impl CliState {
         self.account_client
             .get_default_account()?
             .ok_or_else(|| format_err!("Can not find default account, Please input from account."))
+    }
+
+    pub fn vm2(&self) -> Result<&CliStateVM2> {
+        Ok(self
+            .vm2_state
+            .as_ref()
+            .expect("This model not support state vm2"))
     }
 
     /// Get account from node managed wallet.

@@ -4,14 +4,17 @@
 pub mod account;
 pub mod chain;
 pub mod cli_state;
+mod cli_state_vm2;
 pub mod contract;
 pub mod dev;
 pub mod helper;
 pub mod mutlisig_transaction;
 pub mod node;
 pub mod state;
-mod txpool;
+pub mod subcommand_vm2;
+pub mod txpool;
 pub mod view;
+pub mod view_vm2;
 
 pub use cli_state::CliState;
 use scmd::{CmdContext, CustomCommand};

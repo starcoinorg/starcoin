@@ -35,6 +35,7 @@ pub fn steps() -> Steps<MyWorld> {
                     Some(Duration::from_secs(5)),
                     None,
                     account_client,
+                    None,
                 );
                 let context = CmdContext::<CliState, StarcoinOpt>::with_state(
                     G_CRATE_VERSION,
