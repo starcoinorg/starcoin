@@ -310,15 +310,15 @@ impl NodeService {
             )?,
         );
 
-        let config2 = starcoin_vm2_storage::db_storage::RocksdbConfig {
-            max_open_files: config.storage.rocksdb_config().max_open_files,
-            max_total_wal_size: config.storage.rocksdb_config().max_total_wal_size,
-            bytes_per_sync: config.storage.rocksdb_config().bytes_per_sync,
-            wal_bytes_per_sync: config.storage.rocksdb_config().wal_bytes_per_sync,
-        };
+        let config2 = starcoin_vm2_storage::db_storage::RocksdbConfig::new(
+            config.storage.rocksdb_config().max_open_files,
+            config.storage.rocksdb_config().max_total_wal_size,
+            config.storage.rocksdb_config().bytes_per_sync,
+            config.storage.rocksdb_config().wal_bytes_per_sync,
+        );
         let storage_instance2 = StorageInstance2::new_cache_and_db_instance(
             CacheStorage2::new_with_capacity(config.storage.cache_size(), None),
-            DBStorage2::new(config.storage.dir(), config2, None)?,
+            DBStorage2::new(config.storage.dir(), config2.clone(), None)?,
         );
 
         let start_time = SystemTime::now();
@@ -328,7 +328,7 @@ impl NodeService {
         //storage_instance.dragon_hard_fork(config.clone())?;
         let upgrade_time = SystemTime::now().duration_since(start_time)?;
         let storage = Arc::new(Storage::new(storage_instance)?);
-        let storage2 = Arc::new(Storage2::new(storage_instance2).unwrap());
+        let storage2 = Arc::new(Storage2::new(storage_instance2)?);
         registry.put_shared(storage.clone()).await?;
         registry.put_shared(storage2.clone()).await?;
         let (chain_info, genesis) = Genesis::init_and_check_storage(
@@ -359,13 +359,6 @@ impl NodeService {
             .put_shared::<AccountStorage>(account_storage.clone())
             .await?;
 
-        // todo: remove me
-        let config2 = starcoin_vm2_storage::db_storage::RocksdbConfig {
-            max_open_files: config.storage.rocksdb_config().max_open_files,
-            max_total_wal_size: config.storage.rocksdb_config().max_total_wal_size,
-            bytes_per_sync: config.storage.rocksdb_config().bytes_per_sync,
-            wal_bytes_per_sync: config.storage.rocksdb_config().wal_bytes_per_sync,
-        };
         let account_storage2 = AccountStorage2::create_from_path(vault_config.dir2(), config2)?;
         registry
             .put_shared::<AccountStorage2>(account_storage2.clone())
