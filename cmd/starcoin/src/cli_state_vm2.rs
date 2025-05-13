@@ -7,8 +7,9 @@ use crate::{
 };
 use anyhow::{bail, Result};
 use serde::de::DeserializeOwned;
-use starcoin_account_api::{AccountInfo, AccountProvider};// TODO(BobOng):[dual-vm] to change account info vm2
+use starcoin_account_api::AccountInfo; // TODO(BobOng):[dual-vm] to change account info vm2
 
+use starcoin_config::DataDirPath;
 use starcoin_rpc_client::RpcClient;
 use starcoin_vm2_abi_decoder::DecodedTransactionPayload;
 use starcoin_vm2_crypto::{
@@ -27,7 +28,6 @@ use starcoin_vm2_vm_types::{
     },
 };
 use std::{fs::File, path::PathBuf, sync::Arc, time::Duration};
-use starcoin_config::DataDirPath;
 
 /// A reduced version of clistate, retaining only the necessary execution action functions
 #[allow(dead_code)]
@@ -48,8 +48,7 @@ impl CliStateVM2 {
 
     pub fn new(
         client: Arc<RpcClient>,
-        watch_timeout: Option<Duration>
-        // account_provider: Box<dyn AccountProvider>,  // TODO(BobOng):[dual-vm] to change vm2 provider
+        watch_timeout: Option<Duration>, // account_provider: Box<dyn AccountProvider>,  // TODO(BobOng):[dual-vm] to change vm2 provider
     ) -> CliStateVM2 {
         // TODO(BobOng):[dual-vm] to change rpc vm2
         Self {
@@ -64,7 +63,6 @@ impl CliStateVM2 {
     pub fn client(&self) -> &RpcClient {
         &self.client
     }
-
 
     pub fn default_account(&self) -> Result<AccountInfo> {
         // TODO(BobOng): [dual-vm] get account info from vm2 provider
