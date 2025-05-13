@@ -32,6 +32,8 @@ starcoin-statedb = { workspace = true }
 starcoin-vm-runtime ={ workspace = true }
 crossbeam = { workspace = true }
 starcoin-service-registry = { workspace = true }
+smallvec = { workspace = true }
+indexmap = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

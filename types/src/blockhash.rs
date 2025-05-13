@@ -1,5 +1,8 @@
 use starcoin_crypto::hash::HashValue;
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    hash::{BuildHasher, Hasher},
+};
 
 pub const BLOCK_VERSION: u16 = 1;
 
@@ -66,6 +69,41 @@ pub type BlockHashSet = HashSet<HashValue>;
 pub struct ChainPath {
     pub added: Vec<HashValue>,
     pub removed: Vec<HashValue>,
+}
+
+/// `hashes::Hash` writes 4 u64s so we just use the last one as the hash here
+#[derive(Default, Clone, Copy)]
+pub struct BlockHasher(u64);
+
+impl BlockHasher {
+    #[inline(always)]
+    pub const fn new() -> Self {
+        Self(0)
+    }
+}
+
+impl Hasher for BlockHasher {
+    #[inline(always)]
+    fn finish(&self) -> u64 {
+        self.0
+    }
+    #[inline(always)]
+    fn write_u64(&mut self, v: u64) {
+        self.0 = v;
+    }
+    #[cold]
+    fn write(&mut self, _: &[u8]) {
+        unimplemented!("use write_u64")
+    }
+}
+
+impl BuildHasher for BlockHasher {
+    type Hasher = Self;
+
+    #[inline(always)]
+    fn build_hasher(&self) -> Self::Hasher {
+        Self(0)
+    }
 }
 
 pub type BlockLevel = u8;

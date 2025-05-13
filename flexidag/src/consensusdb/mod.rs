@@ -1,4 +1,4 @@
-mod access;
+pub mod access;
 mod cache;
 pub mod consensus_block_depth;
 mod consensus_ghostdag;

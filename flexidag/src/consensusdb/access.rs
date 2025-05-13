@@ -3,12 +3,33 @@ use super::{cache::DagCache, db::DBStorage, error::StoreError};
 use super::prelude::DbWriter;
 use super::schema::{KeyCodec, Schema, ValueCodec};
 use itertools::Itertools;
+use parking_lot::{RwLock, RwLockReadGuard};
 use rocksdb::{Direction, IteratorMode, ReadOptions};
 use starcoin_storage::storage::RawDBStorage;
 use std::{
     collections::hash_map::RandomState, error::Error, hash::BuildHasher, marker::PhantomData,
     sync::Arc,
 };
+
+/// A read-only lock. Essentially a wrapper to [`parking_lot::RwLock`] which allows only reading.
+#[derive(Default, Debug)]
+pub struct ReadLock<T>(Arc<RwLock<T>>);
+
+impl<T> ReadLock<T> {
+    pub fn new(rwlock: Arc<RwLock<T>>) -> Self {
+        Self(rwlock)
+    }
+
+    pub fn read(&self) -> RwLockReadGuard<T> {
+        self.0.read()
+    }
+}
+
+impl<T> From<T> for ReadLock<T> {
+    fn from(value: T) -> Self {
+        Self::new(Arc::new(RwLock::new(value)))
+    }
+}
 
 /// A concurrent DB store access with typed caching.
 #[derive(Clone)]
