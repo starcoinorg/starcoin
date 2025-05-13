@@ -195,7 +195,7 @@ impl CliStateVM2 {
                 .next_sequence_number_in_txpool2(sender.address)?
             {
                 Some(sequence_number) => {
-                    eprintln!("get sequence_number {} from txpool", sequence_number);
+                    log::info!("get sequence_number {} from txpool", sequence_number);
                     (sequence_number, true)
                 }
                 None => (
