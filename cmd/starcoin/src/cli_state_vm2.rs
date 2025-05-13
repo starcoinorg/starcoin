@@ -7,7 +7,7 @@ use crate::{
 };
 use anyhow::{bail, Result};
 use serde::de::DeserializeOwned;
-use starcoin_account_api::AccountInfo;
+use starcoin_account_api::AccountInfo;// TODO(BobOng):[dual-vm] to change account info vm2
 
 use starcoin_rpc_client::RpcClient;
 use starcoin_vm2_abi_decoder::DecodedTransactionPayload;
@@ -27,12 +27,15 @@ use starcoin_vm2_vm_types::{
     },
 };
 use std::{fs::File, path::PathBuf, sync::Arc, time::Duration};
+use starcoin_config::DataDirPath;
 
 /// A reduced version of clistate, retaining only the necessary execution action functions
 #[allow(dead_code)]
 pub struct CliStateVM2 {
     client: Arc<RpcClient>, // TODO(BobOng):[dual-vm] to change rpc vm2
     watch_timeout: Duration,
+    data_dir: PathBuf,
+    temp_dir: DataDirPath,
 }
 
 impl CliStateVM2 {
@@ -42,9 +45,15 @@ impl CliStateVM2 {
     pub const DEFAULT_EXPIRATION_TIME_SECS: u64 = 3600;
     pub const DEFAULT_GAS_TOKEN: &'static str = STC_TOKEN_CODE_STR;
 
-    pub fn new(client: Arc<RpcClient>, watch_timeout: Option<Duration>) -> CliStateVM2 {
+    pub fn new(
+        client: Arc<RpcClient>,
+        watch_timeout: Option<Duration>
+    ) -> CliStateVM2 {
+        // TODO(BobOng):[dual-vm] to change rpc vm2
         Self {
             client,
+            data_dir: PathBuf::new(), // TODO(BobOng): [dual-vm] to intialize dir for vm2
+            temp_dir: DataDirPath::default(), // TODO(BobOng): [dual-vm] to intialize dir for vm2
             watch_timeout: watch_timeout.unwrap_or(Self::DEFAULT_WATCH_TIMEOUT),
         }
     }
@@ -129,10 +138,12 @@ impl CliStateVM2 {
         _payload: TransactionPayload,
         _gas_token: Option<String>,
     ) -> Result<(RawUserTransaction, bool)> {
+        // TODO(BobOng): [dual-vm] to build transaction for vm2
         unimplemented!()
     }
 
     pub fn dry_run_transaction(&self, _txn: DryRunTransaction) -> Result<DryRunOutputView> {
+        // TODO(BobOng): [dual-vm] to dry run transaction for vm2
         unimplemented!()
     }
 
@@ -142,6 +153,7 @@ impl CliStateVM2 {
         _only_dry_run: bool,
         _blocking: bool,
     ) -> Result<ExecuteResultView> {
+        // TODO(BobOng): [dual-vm] to execute transaction for vm2
         unimplemented!()
     }
 
@@ -149,6 +161,7 @@ impl CliStateVM2 {
         &self,
         _payload: &TransactionPayload,
     ) -> Result<DecodedTransactionPayload> {
+        // TODO(BobOng): [dual-vm] to decode transaction payload transaction for vm2
         unimplemented!()
     }
 
