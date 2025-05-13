@@ -7,7 +7,7 @@ use crate::{
 };
 use anyhow::{bail, Result};
 use serde::de::DeserializeOwned;
-use starcoin_account_api::AccountInfo;// TODO(BobOng):[dual-vm] to change account info vm2
+use starcoin_account_api::{AccountInfo, AccountProvider};// TODO(BobOng):[dual-vm] to change account info vm2
 
 use starcoin_rpc_client::RpcClient;
 use starcoin_vm2_abi_decoder::DecodedTransactionPayload;
@@ -33,6 +33,7 @@ use starcoin_config::DataDirPath;
 #[allow(dead_code)]
 pub struct CliStateVM2 {
     client: Arc<RpcClient>, // TODO(BobOng):[dual-vm] to change rpc vm2
+    // account_provider: Box<dyn AccountProvider>,  // TODO(BobOng):[dual-vm] to change vm2 provider
     watch_timeout: Duration,
     data_dir: PathBuf,
     temp_dir: DataDirPath,
@@ -48,10 +49,12 @@ impl CliStateVM2 {
     pub fn new(
         client: Arc<RpcClient>,
         watch_timeout: Option<Duration>
+        // account_provider: Box<dyn AccountProvider>,  // TODO(BobOng):[dual-vm] to change vm2 provider
     ) -> CliStateVM2 {
         // TODO(BobOng):[dual-vm] to change rpc vm2
         Self {
             client,
+            // account_provider, // TODO(BobOng):[dual-vm] to change vm2 provider
             data_dir: PathBuf::new(), // TODO(BobOng): [dual-vm] to intialize dir for vm2
             temp_dir: DataDirPath::default(), // TODO(BobOng): [dual-vm] to intialize dir for vm2
             watch_timeout: watch_timeout.unwrap_or(Self::DEFAULT_WATCH_TIMEOUT),

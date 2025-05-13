@@ -67,6 +67,7 @@ impl CliState {
         watch_timeout: Option<Duration>,
         node_handle: Option<NodeHandle>,
         account_client: Box<dyn AccountProvider>,
+        // account_client_vm2: Box<dyn AccountProviderVm2>, // TODO(BobOng):[dual-vm] to get vm2 provider
         build_vm2: Option<bool>,
     ) -> CliState {
         let data_dir = starcoin_config::G_DEFAULT_BASE_DATA_DIR
