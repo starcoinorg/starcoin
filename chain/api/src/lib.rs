@@ -15,12 +15,6 @@ mod errors;
 pub mod message;
 mod service;
 
-#[derive(Clone, Debug)]
-pub struct ExcludedTxns {
-    pub discarded_txns: Vec<MultiSignedUserTransaction>,
-    pub untouched_txns: Vec<MultiSignedUserTransaction>,
-}
-
 pub use chain::{Chain, ChainReader, ChainWriter, ExecutedBlock, MintedUncleNumber, VerifiedBlock};
 pub use errors::*;
 pub use service::{ChainAsyncService, ReadableChainService, WriteableChainService};
@@ -28,6 +22,20 @@ use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::contract_event::ContractEvent;
+
+#[derive(Clone, Debug)]
+pub struct ExcludedTxns {
+    pub discarded_txns: Vec<MultiSignedUserTransaction>,
+    pub untouched_txns: Vec<MultiSignedUserTransaction>,
+}
+
+impl ExcludedTxns {
+    pub fn absorb(mut self, mut other: ExcludedTxns) -> Self {
+        self.discarded_txns.append(&mut other.discarded_txns);
+        self.untouched_txns.append(&mut other.untouched_txns);
+        self
+    }
+}
 
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct EventWithProof {

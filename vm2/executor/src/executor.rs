@@ -34,7 +34,6 @@ pub fn validate_transaction<S: StateView>(
     vm.verify_transaction(chain_state, txn)
 }
 
-#[allow(dead_code)]
 pub fn execute_readonly_function<S: StateView>(
     chain_state: &S,
     module: &ModuleId,

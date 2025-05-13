@@ -276,14 +276,14 @@ impl OpenedBlock {
         })
     }
 
-    // todo: construct ExcludedTxns
     pub fn push_txns2(&mut self, user_txns: Vec<SignedUserTransaction2>) -> Result<ExcludedTxns> {
         let state = &self.state.1;
-        let txns = user_txns
+        let mut txns = user_txns
             .into_iter()
             .map(Transaction2::UserTransaction)
             .collect::<Vec<_>>();
-        let mut discard_txns: Vec<SignedUserTransaction2> = Vec::new();
+        let mut discarded_txns: Vec<MultiSignedUserTransaction> = Vec::new();
+        let mut untouched_txns: Vec<MultiSignedUserTransaction> = Vec::new();
 
         let txn_outputs = starcoin_vm2_executor::do_execute_block_transactions(
             state,
@@ -293,12 +293,19 @@ impl OpenedBlock {
         )
         .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
 
+        if txn_outputs.len() < txns.len() {
+            untouched_txns = txns
+                .drain(txn_outputs.len()..)
+                .map(|t| t.try_into().expect("user txn"))
+                .collect()
+        };
+        debug_assert_eq!(txns.len(), txn_outputs.len());
         for (txn, output) in txns.into_iter().zip(txn_outputs.into_iter()) {
             let txn_hash = txn.id();
             match output.status() {
                 TransactionStatus2::Discard(status) => {
                     debug!("discard txn {}, vm status: {:?}", txn_hash, status);
-                    discard_txns.push(txn.try_into().expect("user txn"));
+                    discarded_txns.push(txn.try_into().expect("user txn"));
                 }
                 TransactionStatus2::Keep(status) => {
                     if !status.is_success() {
@@ -312,14 +319,14 @@ impl OpenedBlock {
                 }
                 TransactionStatus2::Retry => {
                     debug!("impossible retry txn {}", txn_hash);
-                    discard_txns.push(txn.try_into().expect("user txn"));
+                    discarded_txns.push(txn.try_into().expect("user txn"));
                 }
             };
         }
 
         Ok(ExcludedTxns {
-            discarded_txns: vec![],
-            untouched_txns: vec![],
+            discarded_txns,
+            untouched_txns,
         })
     }
 

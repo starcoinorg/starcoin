@@ -9,7 +9,7 @@ use starcoin_vm2_vm_types::{
     genesis_config::ChainId as ChainIdV2,
     transaction::{
         SignatureCheckedTransaction as SignatureCheckedTransactionV2,
-        SignedUserTransaction as SignedUserTransactionV2,
+        SignedUserTransaction as SignedUserTransactionV2, Transaction as TransactionV2,
         TransactionPayload as TransactionPayloadV2,
     },
 };
@@ -180,6 +180,17 @@ impl TryFrom<Transaction> for MultiSignedUserTransaction {
     fn try_from(txn: Transaction) -> Result<Self, Self::Error> {
         match txn {
             Transaction::UserTransaction(txn) => Ok(Self::VM1(txn)),
+            _ => Err(format_err!("Not a user transaction.")),
+        }
+    }
+}
+
+impl TryFrom<TransactionV2> for MultiSignedUserTransaction {
+    type Error = Error;
+
+    fn try_from(txn: TransactionV2) -> Result<Self, Self::Error> {
+        match txn {
+            TransactionV2::UserTransaction(txn) => Ok(Self::VM2(txn)),
             _ => Err(format_err!("Not a user transaction.")),
         }
     }
