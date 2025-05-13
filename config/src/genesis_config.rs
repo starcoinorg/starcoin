@@ -435,7 +435,7 @@ pub struct ChainNetwork {
     id: ChainNetworkID,
     // todo: deduplicate same items in both configurations
     genesis_config: GenesisConfig,
-    genesis_config2: Option<GenesisConfig2>,
+    genesis_config2: GenesisConfig2,
     time_service: Arc<dyn TimeService>,
 }
 
@@ -455,7 +455,7 @@ impl ChainNetwork {
     pub fn new(
         id: ChainNetworkID,
         genesis_config: GenesisConfig,
-        genesis_config2: Option<GenesisConfig2>,
+        genesis_config2: GenesisConfig2,
     ) -> Self {
         let time_service = genesis_config.time_service_type.new_time_service();
         Self {
@@ -470,7 +470,7 @@ impl ChainNetwork {
         Self::new(
             builtin_id.into(),
             builtin_id.genesis_config().clone(),
-            Some(builtin_id.genesis_config2().clone()),
+            builtin_id.genesis_config2().clone(),
         )
     }
 
@@ -478,7 +478,7 @@ impl ChainNetwork {
         chain_name: String,
         chain_id: ChainId,
         genesis_config: GenesisConfig,
-        genesis_config2: Option<GenesisConfig2>,
+        genesis_config2: GenesisConfig2,
     ) -> Result<Self> {
         Ok(Self::new(
             ChainNetworkID::new_custom(chain_name, chain_id)?,
@@ -499,7 +499,7 @@ impl ChainNetwork {
         &self.genesis_config
     }
 
-    pub fn genesis_config2(&self) -> &Option<GenesisConfig2> {
+    pub fn genesis_config2(&self) -> &GenesisConfig2 {
         &self.genesis_config2
     }
 
