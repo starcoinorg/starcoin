@@ -98,7 +98,7 @@ impl OpenedBlock {
             previous_header.number() + 1,
             chain_id,
             previous_header.gas_used(),
-            tips_hash,
+            vec![tips_hash],
         );
         let mut opened_block = Self {
             previous_block_info: block_info,

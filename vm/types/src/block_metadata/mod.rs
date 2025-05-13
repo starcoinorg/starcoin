@@ -44,7 +44,7 @@ pub struct BlockMetadata {
     number: u64,
     chain_id: ChainId,
     parent_gas_used: u64,
-    parents_hash: Option<Vec<HashValue>>,
+    parents_hash: Option<Vec<Vec<HashValue>>>,
 }
 
 impl BlockMetadata {
@@ -82,7 +82,7 @@ impl BlockMetadata {
         number: u64,
         chain_id: ChainId,
         parent_gas_used: u64,
-        parents_hash: Vec<HashValue>,
+        parents_hash: Vec<Vec<HashValue>>,
     ) -> Self {
         let mut txn = Self {
             id: None,
@@ -111,7 +111,7 @@ impl BlockMetadata {
         u64,
         ChainId,
         u64,
-        Vec<HashValue>,
+        Vec<Vec<HashValue>>,
     ) {
         (
             self.parent_hash,
@@ -168,7 +168,7 @@ impl<'de> Deserialize<'de> for BlockMetadata {
             number: u64,
             chain_id: ChainId,
             parent_gas_used: u64,
-            parents_hash: Option<Vec<HashValue>>,
+            parents_hash: Option<Vec<Vec<HashValue>>>,
         }
         let data = BlockMetadataData::deserialize(deserializer)?;
         Ok(if let Some(parents_hash) = data.parents_hash {

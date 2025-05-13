@@ -108,7 +108,7 @@ fn test_block_chain_prune() -> anyhow::Result<()> {
             .parents_hash()
             .into_iter()
             .collect::<HashSet<_>>(),
-        HashSet::from_iter(vec![block_blue_6.id(), block_blue_6_1.id()])
+        HashSet::from_iter(vec![vec![block_blue_6.id(), block_blue_6_1.id()]])
     );
 
     let tips = mock_chain.head().get_dag_state()?.tips;
@@ -128,7 +128,7 @@ fn test_block_chain_prune() -> anyhow::Result<()> {
             .parents_hash()
             .into_iter()
             .collect::<HashSet<_>>(),
-        HashSet::from_iter(vec![block_red_4.id(), block_blue_7.id()])
+        HashSet::from_iter(vec![vec![block_red_4.id(), block_blue_7.id()]])
     );
     let result = mock_chain.apply(failure_block);
     debug!("apply failure block result: {:?}", result);

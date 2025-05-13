@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use anyhow::anyhow;
+use anyhow::{anyhow, format_err};
 use starcoin_chain_api::ExecutedBlock;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::{debug, error, info};
@@ -64,6 +64,8 @@ impl<'a> ContinueExecuteAbsentBlock<'a> {
                         .block
                         .header()
                         .parents_hash()
+                        .first()
+                        .ok_or_else(|| format_err!("failed to get the level 0 blocks for executing the block when syncing"))?
                         .iter()
                         .all(|parent| match self.operator.has_dag_block(*parent) {
                             Ok(has) => has,
@@ -97,10 +99,12 @@ impl<'a> ContinueExecuteAbsentBlock<'a> {
 
     fn check_parents_exist(&self, block_header: &BlockHeader) -> anyhow::Result<bool> {
         let mut result = Ok(true);
-        for parent in block_header.parents_hash() {
-            if !self.operator.has_dag_block(parent)? {
+        for parent in block_header.parents_hash().first().ok_or_else(|| {
+            format_err!("failed to get the level 0 blocks for checking the parents exist")
+        })? {
+            if !self.operator.has_dag_block(*parent)? {
                 info!("block: {:?}, number: {:?}, its parent({:?}) still dose not exist, waiting for next round", block_header.id(), block_header.number(), parent);
-                let mut parent_block = self.local_store.get_dag_sync_block(parent)?.ok_or_else(|| {
+                let mut parent_block = self.local_store.get_dag_sync_block(*parent)?.ok_or_else(|| {
                     anyhow!(
                         "the dag block should exist in local store, parent block id: {:?}, number: {:?}",
                         block_header.id(),

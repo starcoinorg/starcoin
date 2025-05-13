@@ -2,7 +2,7 @@ use super::util::Refs;
 use crate::consensusdb::schemadb::{GhostdagStoreReader, HeaderStoreReader, RelationsStoreReader};
 use crate::reachability::reachability_service::ReachabilityService;
 use crate::types::{ghostdata::GhostdagData, ordering::*};
-use anyhow::{ensure, Context, Result};
+use anyhow::{ensure, format_err, Context, Result};
 use parking_lot::RwLock;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_logger::prelude::*;
@@ -203,7 +203,7 @@ impl<
             !parents.is_empty(),
             "genesis must be added via a call to init"
         );
-        let selected_parent = self.find_selected_parent(header.parents_hash().into_iter())?;
+        let selected_parent = self.find_selected_parent(header.parents_hash().first().ok_or_else(|| format_err!("no level 0 blocks when building the ghostdata for finding the selected parents"))?.iter().cloned())?;
         let k = self.k_store.get_k();
         // Initialize new GHOSTDAG block data with the selected parent
         let mut new_block_data = GhostdagData::new_with_selected_parent(selected_parent, k);
@@ -216,7 +216,12 @@ impl<
         new_block_data.mergeset_reds = Arc::new(
             header
                 .parents_hash()
-                .into_iter()
+                .first()
+                .ok_or_else(|| {
+                    format_err!("no level 0 blocks when building the ghostdata for the blue set")
+                })?
+                .iter()
+                .cloned()
                 .filter(|header_id| !new_block_data.mergeset_blues.contains(header_id))
                 .collect(),
         );

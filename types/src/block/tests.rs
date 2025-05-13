@@ -218,11 +218,11 @@ fn test_header_with_dag_but_pruning_adaptable() -> anyhow::Result<()> {
         .with_chain_id(ChainId::vega())
         .with_number(1024)
         .with_parent_hash(HashValue::random())
-        .with_parents_hash(vec![
+        .with_parents_hash(vec![vec![
             HashValue::random(),
             HashValue::random(),
             HashValue::random(),
-        ])
+        ]])
         .build();
 
     // test encoding and decoding
@@ -283,11 +283,11 @@ fn test_block_compatible_for_main() -> anyhow::Result<()> {
         .with_number(2048)
         .with_chain_id(ChainId::dag_test())
         .with_parent_hash(HashValue::random())
-        .with_parents_hash(vec![
+        .with_parents_hash(vec![vec![
             HashValue::random(),
             HashValue::random(),
             HashValue::random(),
-        ])
+        ]])
         .with_pruning_point(HashValue::random())
         .with_body_hash(uncle_body.hash())
         .build();
@@ -296,11 +296,11 @@ fn test_block_compatible_for_main() -> anyhow::Result<()> {
         .with_number(2049)
         .with_chain_id(ChainId::dag_test())
         .with_parent_hash(HashValue::random())
-        .with_parents_hash(vec![
+        .with_parents_hash(vec![vec![
             HashValue::random(),
             HashValue::random(),
             HashValue::random(),
-        ])
+        ]])
         .with_pruning_point(HashValue::random())
         .with_body_hash(uncle_body.hash())
         .build();
@@ -317,11 +317,11 @@ fn test_block_compatible_for_main() -> anyhow::Result<()> {
         .with_number(2050)
         .with_chain_id(ChainId::dag_test())
         .with_parent_hash(HashValue::random())
-        .with_parents_hash(vec![
+        .with_parents_hash(vec![vec![
             HashValue::random(),
             HashValue::random(),
             HashValue::random(),
-        ])
+        ]])
         .with_pruning_point(HashValue::random())
         .with_body_hash(body.hash())
         .build();

@@ -470,11 +470,22 @@ impl BlockDAG {
         }
 
         let mut relations_write = self.storage.relations_store.write();
-        process_key_already_error(relations_write.insert_batch(
-            &mut batch,
-            header.id(),
-            BlockHashes::new(parents),
-        ))
+        process_key_already_error(
+            relations_write.insert_batch(
+                &mut batch,
+                header.id(),
+                BlockHashes::new(
+                    parents
+                        .first()
+                        .ok_or_else(|| {
+                            format_err!(
+                                "failed to get the level 0 blocks when inserting the relationship"
+                            )
+                        })?
+                        .clone(),
+                ),
+            ),
+        )
         .expect("failed to insert relations in batch");
 
         // Store header store
@@ -521,7 +532,13 @@ impl BlockDAG {
                 if header.is_genesis() {
                     Arc::new(self.ghostdag_manager.genesis_ghostdag_data(&header))
                 } else {
-                    let ghostdata = self.ghostdag_manager.ghostdag(&parents)?;
+                    let ghostdata =
+                        self.ghostdag_manager
+                            .ghostdag(parents.first().ok_or_else(|| {
+                                format_err!(
+                                    "failed to get the level 0 blocks when commiting the data"
+                                )
+                            })?)?;
                     Arc::new(ghostdata)
                 }
             }
@@ -607,11 +624,22 @@ impl BlockDAG {
         }
 
         let mut relations_write = self.storage.relations_store.write();
-        process_key_already_error(relations_write.insert_batch(
-            &mut batch,
-            header.id(),
-            BlockHashes::new(parents),
-        ))
+        process_key_already_error(
+            relations_write.insert_batch(
+                &mut batch,
+                header.id(),
+                BlockHashes::new(
+                    parents
+                        .first()
+                        .ok_or_else(|| {
+                            format_err!(
+                                "failed to get the block level 0 when commiting the dag block!"
+                            )
+                        })?
+                        .clone(),
+                ),
+            ),
+        )
         .expect("failed to insert relations in batch");
 
         // Store header store
@@ -1069,7 +1097,10 @@ impl BlockDAG {
                 "the block is not a historical block, the header id: {:?}",
                 header.id()
             );
-            self.ghost_dag_manager().ghostdag(&header.parents())
+            self.ghost_dag_manager()
+                .ghostdag(header.parents().first().ok_or_else(|| {
+                    format_err!("failed to get the level 0 blocks when calculating the ghostdata")
+                })?)
         }
     }
 

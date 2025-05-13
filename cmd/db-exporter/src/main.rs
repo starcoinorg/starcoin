@@ -830,7 +830,12 @@ pub fn export_block_range(
     );
     let mut visit: HashSet<HashValue> = block_list.iter().map(|block| block.id()).collect();
     for block in block_list {
-        let parents = block.header().parents_hash();
+        let parents = block
+            .header()
+            .parents_hash()
+            .first()
+            .ok_or_else(|| format_err!("failed to get the level 0 blocks in export block range!"))?
+            .clone();
         let mut queue = vec![];
         let mut block_ids = vec![];
         for parent in parents {
@@ -844,7 +849,12 @@ pub fn export_block_range(
         while !queue.is_empty() {
             let mut queue2 = vec![];
             for block2 in queue {
-                let parents2 = block2.header().parents_hash();
+                let parents2 = block2
+                    .header()
+                    .parents_hash()
+                    .first()
+                    .ok_or_else(|| format_err!("failed to get the level 0 blocks block range!2"))?
+                    .clone();
                 for parent in parents2 {
                     if !visit.contains(&parent) {
                         visit.insert(parent);

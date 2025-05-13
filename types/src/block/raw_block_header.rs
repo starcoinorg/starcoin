@@ -9,7 +9,7 @@ use starcoin_vm_types::{
     transaction::authenticator::AuthenticationKey,
 };
 
-use super::{BlockNumber, Version};
+use super::{BlockNumber, ParentsHash, Version};
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct RawBlockHeader {
@@ -39,7 +39,7 @@ pub struct RawBlockHeader {
     /// The chain id
     pub chain_id: ChainId,
     /// parents in dag
-    pub parents_hash: Vec<HashValue>,
+    pub parents_hash: ParentsHash,
     /// version
     pub version: Version,
     /// pruning point

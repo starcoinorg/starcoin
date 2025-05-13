@@ -105,7 +105,12 @@ impl DagBlockExecutor {
                             match Self::waiting_for_parents(
                                 &self.dag,
                                 self.storage.clone(),
-                                block.header().parents_hash(),
+                                block
+                                .header()
+                                .parents_hash()
+                                .first()
+                                .unwrap_or_else(|| panic!("failed to get the level 0 blocks in dag block executor when waiting for the parents ready"))
+                                .clone(),
                             ) {
                                 Ok(true) => break,
                                 Ok(false) => {

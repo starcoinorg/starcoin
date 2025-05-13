@@ -392,12 +392,17 @@ impl BlockChain {
     }
 
     pub fn check_parents_ready(&self, header: &BlockHeader) -> bool {
-        header.parents_hash().into_iter().all(|parent| {
-            self.has_dag_block(parent).unwrap_or_else(|e| {
-                warn!("check_parents_ready error: {:?}", e);
-                false
+        header
+            .parents_hash()
+            .first()
+            .unwrap_or_else(|| panic!("no level 0 blocks when check parents ready"))
+            .iter()
+            .all(|parent| {
+                self.has_dag_block(*parent).unwrap_or_else(|e| {
+                    warn!("check_parents_ready error: {:?}", e);
+                    false
+                })
             })
-        })
     }
 
     fn check_exist_block(&self, block_id: HashValue, block_number: BlockNumber) -> Result<bool> {
