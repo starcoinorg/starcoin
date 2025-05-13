@@ -84,7 +84,7 @@ impl CliStateVM2 {
     ) -> CliStateVM2 {
         let (data_dir, temp_dir) =
             build_dirs_from_net(&net).expect("build dir faild while new CliStateVM2");
-        
+
         Self {
             net,
             client,
