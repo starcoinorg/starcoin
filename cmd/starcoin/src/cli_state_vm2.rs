@@ -83,7 +83,7 @@ impl CliStateVM2 {
         account_client: Box<dyn AccountProvider>,
     ) -> CliStateVM2 {
         let (data_dir, temp_dir) =
-            build_dirs_from_net(&net).expect("build dir faild while new CliStateVM2");
+            build_dirs_from_net(&net).expect("build dir failed while new CliStateVM2");
 
         Self {
             net,
