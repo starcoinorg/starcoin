@@ -213,12 +213,12 @@ mod tests {
         let config = Arc::new(NodeConfig::random_for_test());
         let registry = RegistryService::launch();
         let vault_config = &config.vault;
-        let rocksdb_config = RocksdbConfig {
-            max_open_files: config.storage.rocksdb_config().max_open_files,
-            max_total_wal_size: config.storage.rocksdb_config().max_total_wal_size,
-            wal_bytes_per_sync: config.storage.rocksdb_config().wal_bytes_per_sync,
-            bytes_per_sync: config.storage.rocksdb_config().bytes_per_sync,
-        };
+        let rocksdb_config = RocksdbConfig::new(
+            config.storage.rocksdb_config().max_open_files,
+            config.storage.rocksdb_config().max_total_wal_size,
+            config.storage.rocksdb_config().wal_bytes_per_sync,
+            config.storage.rocksdb_config().bytes_per_sync,
+        );
         let account_storage =
             AccountStorage::create_from_path(vault_config.dir2(), rocksdb_config)?;
         registry.put_shared(config).await?;
