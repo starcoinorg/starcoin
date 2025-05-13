@@ -5,10 +5,12 @@ pub use self::gen_client::Client as AccountClient;
 use crate::FutureResult;
 use openrpc_derive::openrpc;
 use starcoin_vm2_account_api::AccountInfo;
-use starcoin_vm2_types::account_address::AccountAddress;
-use starcoin_vm2_types::sign_message::SigningMessage;
-use starcoin_vm2_types::transaction::{RawUserTransaction, SignedUserTransaction};
-use starcoin_vm2_types::view::{SignedMessageView, StrView, TransactionRequest};
+use starcoin_vm2_types::{
+    account_address::AccountAddress,
+    sign_message::SigningMessage,
+    transaction::{RawUserTransaction, SignedUserTransaction},
+    view::{SignedMessageView, StrView, TransactionRequest},
+};
 use starcoin_vm2_vm_types::token::token_code::TokenCode;
 
 #[openrpc]

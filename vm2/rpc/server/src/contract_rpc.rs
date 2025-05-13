@@ -29,10 +29,11 @@ use starcoin_vm2_types::{
     language_storage::{ModuleId, StructTag},
     transaction::{DryRunTransaction, RawUserTransaction, TransactionPayload},
 };
-use starcoin_vm2_vm_types::file_format::CompiledModule;
-use starcoin_vm2_vm_types::state_store::state_key::StateKey;
-use starcoin_vm2_vm_types::state_store::StateView;
-use starcoin_vm2_vm_types::transaction::authenticator::AccountPublicKey;
+use starcoin_vm2_vm_types::{
+    file_format::CompiledModule,
+    state_store::{state_key::StateKey, StateView},
+    transaction::authenticator::AccountPublicKey,
+};
 use std::str::FromStr;
 use std::sync::Arc;
 

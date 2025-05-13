@@ -23,11 +23,11 @@ use starcoin_vm2_types::view::{
     TableInfoView,
 };
 use starcoin_vm2_types::{account_address::AccountAddress, account_state::AccountState};
-use starcoin_vm2_vm_types::identifier::Identifier;
-use starcoin_vm2_vm_types::language_storage::{struct_tag_match, ModuleId, StructTag};
-use starcoin_vm2_vm_types::state_store::state_key::StateKey;
-use starcoin_vm2_vm_types::state_store::table::TableHandle;
-use starcoin_vm2_vm_types::state_store::TStateView;
+use starcoin_vm2_vm_types::{
+    identifier::Identifier,
+    language_storage::{struct_tag_match, ModuleId, StructTag},
+    state_store::{state_key::StateKey, table::TableHandle, TStateView},
+};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 

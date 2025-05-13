@@ -2,9 +2,11 @@ use starcoin_config::NodeConfig;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_vm2_account_api::AccountAsyncService;
 use starcoin_vm2_state_api::ChainStateAsyncService as ChainStateAsyncService2;
-use starcoin_vm2_types::account_config::AccountResource;
-use starcoin_vm2_types::transaction::{Module, Package, RawUserTransaction, TransactionPayload};
-use starcoin_vm2_types::view::TransactionRequest as TransactionRequest2;
+use starcoin_vm2_types::{
+    account_config::AccountResource,
+    transaction::{Module, Package, RawUserTransaction, TransactionPayload},
+    view::TransactionRequest as TransactionRequest2,
+};
 use std::sync::Arc;
 
 #[derive(Clone)]
