@@ -50,7 +50,8 @@ BlockMetadata:
     - parents_hash:
         OPTION:
           SEQ:
-            TYPENAME: HashValue
+            SEQ:
+              TYPENAME: HashValue
 ChainId:
   STRUCT:
     - id: U8

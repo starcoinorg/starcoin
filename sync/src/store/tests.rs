@@ -41,12 +41,12 @@ fn build_version_0_block_header(body: HashValue, number: BlockNumber) -> BlockHe
             rand::random::<u8>(),
             rand::random::<u8>(),
         ]))
-        .with_parents_hash(vec![
+        .with_parents_hash(vec![vec![
             HashValue::random(),
             HashValue::random(),
             HashValue::random(),
             HashValue::random(),
-        ])
+        ]])
         .with_version(0)
         .with_pruning_point(HashValue::zero())
         .build()

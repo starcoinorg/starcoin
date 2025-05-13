@@ -616,6 +616,8 @@ where
         if !block
             .header()
             .parents_hash()
+            .first()
+            .ok_or_else(|| format_err!("failed to get the level 0 blocks in connect_inner"))?
             .iter()
             .all(|parent_hash| self.main.has_dag_block(*parent_hash).unwrap_or(false))
         {

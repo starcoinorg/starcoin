@@ -611,9 +611,9 @@ fn test_handshake_message() -> Result<()> {
         ChainId::dag_test(),
         620209232,
         BlockHeaderExtra::new([0, 0, 0, 0]),
-        vec![HashValue::from_hex_literal(
+        vec![vec![HashValue::from_hex_literal(
             "0x82b85e25967cd4077f4df26a8975ab34ec6eba954e2c38d2b8393c6c42c2963c",
-        )?],
+        )?]],
         0,
         HashValue::from_hex_literal(
             "0x82b85e25967cd4077f4df26a8975ab34ec6eba954e2c38d2b8393c6c42c2963c",

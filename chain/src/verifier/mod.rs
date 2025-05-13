@@ -357,39 +357,46 @@ impl BasicDagVerifier {
 
         verify_block!(
             VerifyBlockField::Header,
-            parents_hash.contains(&new_block_header.parent_hash()),
+            parents_hash
+                .first()
+                .ok_or_else(|| format_err!("failed to verify header for checking the contain"))?
+                .contains(&new_block_header.parent_hash()),
             "header: {:?}, tips {:?} do not contain the selected parent {:?}",
             new_block_header,
             parents_hash,
             new_block_header.parent_hash()
         );
 
-        parents_hash.iter().try_for_each(|parent_hash| {
-            verify_block!(
-                VerifyBlockField::Header,
-                current_chain.has_dag_block(*parent_hash).map_err(|e| {
-                    ConnectBlockError::VerifyBlockFailed(
-                        VerifyBlockField::Header,
-                        anyhow::anyhow!(
+        parents_hash
+            .first()
+            .ok_or_else(|| format_err!("failed to verify header for parents executed"))?
+            .iter()
+            .try_for_each(|parent_hash| {
+                verify_block!(
+                    VerifyBlockField::Header,
+                    current_chain.has_dag_block(*parent_hash).map_err(|e| {
+                        ConnectBlockError::VerifyBlockFailed(
+                            VerifyBlockField::Header,
+                            anyhow::anyhow!(
                             "failed to get the block: {:?} 's parent: {:?} from db, error: {:?}",
                             new_block_header.id(),
                             parent_hash,
                             e
                         ),
-                    )
-                })?,
-                "Invalid block: parent {} might not exist.",
-                parent_hash
-            );
-            Ok::<(), ConnectBlockError>(())
-        })?;
+                        )
+                    })?,
+                    "Invalid block: parent {} might not exist.",
+                    parent_hash
+                );
+                Ok::<(), ConnectBlockError>(())
+            })?;
 
         // verify the pruning point
         let parent_header = current_chain.current_header();
         if parent_header.pruning_point() != HashValue::zero() {
             // the chain had pruning point already checking the descendants of the pruning point is a must
             // check the parents are the descendants of the pruning point
-            parents_hash.iter().try_for_each(|parent_hash| {
+            parents_hash.first().ok_or_else(|| format_err!("failed to verify header for the pruning point"))?.iter().try_for_each(|parent_hash| {
                 verify_block!(
                     VerifyBlockField::Header,
                     current_chain.is_dag_ancestor_of(new_block_header.pruning_point(), *parent_hash).map_err(|e| {

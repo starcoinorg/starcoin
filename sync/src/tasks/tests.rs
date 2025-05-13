@@ -634,11 +634,13 @@ impl BlockFetcher for MockBlockFetcher {
         let mut result = vec![];
         block_ids.iter().for_each(|block_id| {
             if let Some(block) = blocks.get(block_id).cloned() {
-                for hash in block.header().parents_hash() {
-                    if result.contains(&hash) {
+                for hash in block.header().parents_hash().first().unwrap_or_else(|| {
+                    panic!("failed to get the level 0 blocks in mock block fetcher")
+                }) {
+                    if result.contains(hash) {
                         continue;
                     }
-                    result.push(hash);
+                    result.push(*hash);
                 }
             } else {
                 info!("Can not find block by id: {:?}", block_id)

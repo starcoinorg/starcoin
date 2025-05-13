@@ -675,7 +675,7 @@ pub struct BlockMetadataView {
     pub number: StrView<BlockNumber>,
     pub chain_id: u8,
     pub parent_gas_used: StrView<u64>,
-    pub parents_hash: Vec<HashValue>,
+    pub parents_hash: ParentsHash,
 }
 
 impl From<BlockMetadata> for BlockMetadataView {

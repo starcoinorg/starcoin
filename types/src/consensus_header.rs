@@ -1,19 +1,19 @@
-use crate::block::BlockHeader;
+use crate::block::{BlockHeader, ParentsHash};
 use crate::blockhash::BlockLevel;
 use crate::U256;
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::{HashValue as Hash, HashValue};
+use starcoin_crypto::HashValue as Hash;
 use std::sync::Arc;
 
 pub trait ConsensusHeader {
-    fn parents(&self) -> Vec<HashValue>;
+    fn parents(&self) -> ParentsHash;
     fn difficulty(&self) -> U256;
     fn hash(&self) -> Hash;
     fn timestamp(&self) -> u64;
 }
 
 impl ConsensusHeader for BlockHeader {
-    fn parents(&self) -> Vec<HashValue> {
+    fn parents(&self) -> ParentsHash {
         self.parents_hash()
     }
     fn difficulty(&self) -> U256 {

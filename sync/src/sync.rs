@@ -283,7 +283,14 @@ impl SyncService {
                 specific_block.id()
             );
 
-            let mut current_round = specific_block.header().parents_hash();
+            let mut current_round = specific_block
+                .header()
+                .parents_hash()
+                .first()
+                .ok_or_else(|| {
+                    format_err!("failed to get the level 0 blocks when check and start light sync")
+                })?
+                .clone();
             let mut next_round = vec![];
             let mut blocks_to_be_executed = vec![specific_block.clone()];
 
@@ -332,7 +339,7 @@ impl SyncService {
                 }
                 current_round = next_round
                     .iter()
-                    .flat_map(|block| block.header().parents_hash())
+                    .flat_map(|block| block.header().parents_hash().first().unwrap_or_else(|| panic!("failed to get the level 0 blocks when get next round parent blocks")).clone())
                     .collect::<HashSet<_>>()
                     .into_iter()
                     .collect::<Vec<_>>();

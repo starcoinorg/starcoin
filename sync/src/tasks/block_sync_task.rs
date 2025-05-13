@@ -407,7 +407,15 @@ where
         block_header: BlockHeader,
         absent_blocks: &mut Vec<HashValue>,
     ) -> Result<()> {
-        let parents = block_header.parents_hash();
+        let parents = block_header
+            .parents_hash()
+            .first()
+            .ok_or_else(|| {
+                format_err!(
+                    "failed to get the level 0 blocks when finding absent parent dag blocks"
+                )
+            })?
+            .clone();
         if parents.is_empty() {
             return Ok(());
         }
@@ -621,13 +629,20 @@ where
         Ok(result
             .into_iter()
             .filter(|block_header| {
-                !block_header.parents_hash().iter().all(|parent_id| {
-                    self.local_store
-                        .get_dag_sync_block(*parent_id)
-                        .map(|opt_block| opt_block.is_none())
-                        .unwrap_or(true)
-                        || self.chain.has_dag_block(*parent_id).unwrap_or(false)
-                })
+                !block_header
+                    .parents_hash()
+                    .first()
+                    .unwrap_or_else(|| {
+                        panic!("failed to get the level 0 blocks when fetch blocks in batch")
+                    })
+                    .iter()
+                    .all(|parent_id| {
+                        self.local_store
+                            .get_dag_sync_block(*parent_id)
+                            .map(|opt_block| opt_block.is_none())
+                            .unwrap_or(true)
+                            || self.chain.has_dag_block(*parent_id).unwrap_or(false)
+                    })
             })
             .collect())
     }

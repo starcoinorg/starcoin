@@ -1,5 +1,6 @@
 use std::{sync::Arc, vec};
 
+use anyhow::format_err;
 use starcoin_config::TimeService;
 use starcoin_dag::{blockdag::BlockDAG, consensusdb::schema::ValueCodec};
 use starcoin_executor::VMMetrics;
@@ -63,7 +64,16 @@ impl<'a> DagBlockSender<'a> {
             match &executor.state {
                 ExecuteState::Executing(header_id) => {
                     if *header_id == block.header().parent_hash()
-                        || block.header.parents_hash().contains(header_id)
+                        || block
+                            .header
+                            .parents_hash()
+                            .first()
+                            .ok_or_else(|| {
+                                format_err!(
+                                    "failed to get the level 0 blocks in dispatch to worker"
+                                )
+                            })?
+                            .contains(header_id)
                     {
                         executor.state = ExecuteState::Executing(block.id());
                         executor

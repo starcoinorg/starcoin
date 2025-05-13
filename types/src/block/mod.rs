@@ -39,7 +39,7 @@ use std::sync::Mutex;
 /// Type for block number.
 pub type BlockNumber = u64;
 
-pub type ParentsHash = Vec<HashValue>;
+pub type ParentsHash = Vec<Vec<HashValue>>;
 
 pub type Version = u32;
 
@@ -445,7 +445,7 @@ impl BlockHeader {
         anyhow::Result::Ok(
             header_builder
                 .with_parent_hash(parent.id())
-                .with_parents_hash(vec![parent.id()])
+                .with_parents_hash(vec![vec![parent.id()]])
                 .with_number(0)
                 .build(),
         )
@@ -466,7 +466,7 @@ impl BlockHeader {
             ChainId::test(),
             0,
             BlockHeaderExtra([0u8; 4]),
-            vec![HashValue::random(), HashValue::random()],
+            vec![vec![HashValue::random(), HashValue::random()]],
             rand::random::<Version>(),
             HashValue::random(),
         )
@@ -487,7 +487,7 @@ impl BlockHeader {
             ChainId::test(),
             0,
             BlockHeaderExtra([0u8; 4]),
-            vec![HashValue::random(), HashValue::random()],
+            vec![vec![HashValue::random(), HashValue::random()]],
             rand::random::<Version>(),
             HashValue::random(),
         )
@@ -1070,22 +1070,22 @@ impl Block {
             .with_chain_id(ChainId::vega())
             .with_number(512)
             .with_parent_hash(HashValue::random())
-            .with_parents_hash(vec![
+            .with_parents_hash(vec![vec![
                 HashValue::random(),
                 HashValue::random(),
                 HashValue::random(),
-            ])
+            ]])
             .build();
 
         let uncle2 = crate::block::BlockHeaderBuilder::new()
             .with_number(128)
             .with_chain_id(ChainId::vega())
             .with_parent_hash(HashValue::random())
-            .with_parents_hash(vec![
+            .with_parents_hash(vec![vec![
                 HashValue::random(),
                 HashValue::random(),
                 HashValue::random(),
-            ])
+            ]])
             .build();
         let body = crate::block::BlockBody {
             transactions: vec![
@@ -1100,11 +1100,11 @@ impl Block {
             .with_number(1024)
             .with_chain_id(ChainId::vega())
             .with_parent_hash(HashValue::random())
-            .with_parents_hash(vec![
+            .with_parents_hash(vec![vec![
                 HashValue::random(),
                 HashValue::random(),
                 HashValue::random(),
-            ])
+            ]])
             .with_body_hash(body.hash())
             .build();
 
