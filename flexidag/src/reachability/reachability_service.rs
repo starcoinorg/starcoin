@@ -22,6 +22,7 @@ pub trait ReachabilityService {
         queried: &mut impl Iterator<Item = Hash>,
     ) -> Result<bool>;
     fn get_next_chain_ancestor(&self, descendant: Hash, ancestor: Hash) -> Hash;
+    fn has_reachability_data(&self, this: Hash) -> bool;
 }
 
 /// Multi-threaded reachability service imp
@@ -95,6 +96,10 @@ impl<T: ReachabilityStoreReader + ?Sized> ReachabilityService for MTReachability
     fn get_next_chain_ancestor(&self, descendant: Hash, ancestor: Hash) -> Hash {
         let read_guard = self.store.read();
         inquirer::get_next_chain_ancestor(read_guard.deref(), descendant, ancestor).unwrap()
+    }
+
+    fn has_reachability_data(&self, this: Hash) -> bool {
+        self.store.read().has(this).unwrap()
     }
 }
 

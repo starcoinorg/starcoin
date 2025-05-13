@@ -198,7 +198,7 @@ pub struct BlockHeader {
     /// block header extra
     extra: BlockHeaderExtra,
     /// Parents hash.
-    parents_hash: ParentsHash,
+    pub parents_hash: ParentsHash,
     /// Header version
     version: Version,
     /// pruning point

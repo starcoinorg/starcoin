@@ -5,6 +5,7 @@ mod block_depth;
 pub mod blockdag;
 pub mod consensusdb;
 pub mod ghostdag;
+pub mod level;
 pub mod prune;
 pub mod reachability;
 pub mod service;
