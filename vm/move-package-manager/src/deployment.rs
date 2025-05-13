@@ -98,6 +98,7 @@ pub fn handle_deployment(_move_args: &Move, cmd: DeploymentCommand) -> anyhow::R
         private_key_provider
     };
 
+    // TODO(BobOng):[dual-vm] to support vm2 deployment in mvm command
     let state = CliState::new(node_info.net, client, None, node_handle, provider, None);
 
     let item =

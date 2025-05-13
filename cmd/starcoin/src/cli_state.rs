@@ -31,6 +31,7 @@ use starcoin_rpc_api::types::{
 use starcoin_rpc_client::{RpcClient, StateRootOption};
 use starcoin_state_api::StateReaderExt;
 use starcoin_types::account_config::AccountResource;
+use starcoin_vm2_account_api::AccountProvider as AccountProviderVm2;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::association_address;
 use starcoin_vm_types::move_resource::MoveResource;
@@ -67,8 +68,7 @@ impl CliState {
         watch_timeout: Option<Duration>,
         node_handle: Option<NodeHandle>,
         account_client: Box<dyn AccountProvider>,
-        // account_client_vm2: Box<dyn AccountProviderVm2>, // TODO(BobOng):[dual-vm] to get vm2 provider
-        build_vm2: Option<bool>,
+        account_client_vm2: Option<Box<dyn AccountProviderVm2>>,
     ) -> CliState {
         let data_dir = starcoin_config::G_DEFAULT_BASE_DATA_DIR
             .clone()
@@ -85,11 +85,9 @@ impl CliState {
         }
         let temp_dir = starcoin_config::temp_dir_in(temp_dir);
 
-        let vm2_state = if build_vm2.unwrap_or(false) {
-            Some(CliStateVM2::new(client.clone(), watch_timeout))
-        } else {
-            None
-        };
+        let vm2_state = account_client_vm2.map(|client_vm2| {
+            CliStateVM2::new(net.clone(), client.clone(), watch_timeout, client_vm2)
+        });
 
         Self {
             net,

@@ -420,4 +420,12 @@ impl RpcClient {
         })
         .map_err(map_err)
     }
+
+    pub fn next_sequence_number_in_txpool2(
+        &self,
+        _address: AccountAddress,
+    ) -> anyhow::Result<Option<u64>> {
+        // TODO(BobOng): [dual-vm] to implement
+        unimplemented!()
+    }
 }

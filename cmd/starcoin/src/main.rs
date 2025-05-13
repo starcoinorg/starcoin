@@ -11,6 +11,7 @@ use starcoin_config::{Connect, G_APP_VERSION, G_CRATE_VERSION};
 use starcoin_logger::prelude::*;
 use starcoin_node_api::errors::NodeStartError;
 use starcoin_rpc_client::RpcClient;
+use starcoin_vm2_vm_types::genesis_config::ChainId;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
@@ -76,19 +77,30 @@ fn run() -> Result<()> {
 
             let node_info = client.node_info()?;
             let client = Arc::new(client);
-            let rpc_client = ProviderFactory::create_provider(
+            let account_provider = ProviderFactory::create_provider(
                 client.clone(),
                 node_info.net.chain_id(),
                 &opt.account_provider,
             )?;
             let using_vm2 = opt.vm2.unwrap_or(false);
+
+            let account_provider_vm2_option = if using_vm2 {
+                Some(ProviderFactory::create_provider2(
+                    client.clone(),
+                    ChainId::new(node_info.net.chain_id().id()),
+                    &opt.account_provider,
+                )?)
+            } else {
+                None
+            };
+
             let state = CliState::new(
                 node_info.net,
                 client,
                 opt.watch_timeout.map(Duration::from_secs),
                 node_handle,
-                rpc_client,
-                Some(using_vm2),
+                account_provider,
+                account_provider_vm2_option,
             );
             USING_VM2.store(using_vm2, Ordering::SeqCst);
             Ok(state)
