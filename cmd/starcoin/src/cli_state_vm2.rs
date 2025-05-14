@@ -5,38 +5,70 @@ use crate::{
     view::TransactionOptions,
     view_vm2::{ExecuteResultView, ExecutionOutputView},
 };
-use anyhow::{bail, Result};
+use anyhow::{bail, format_err, Result};
 use serde::de::DeserializeOwned;
-use starcoin_account_api::AccountInfo; // TODO(BobOng):[dual-vm] to change account info vm2
+use starcoin_vm2_account_api::{AccountInfo, AccountProvider};
 
-use starcoin_config::DataDirPath;
-use starcoin_rpc_client::RpcClient;
-use starcoin_vm2_abi_decoder::DecodedTransactionPayload;
+use bcs_ext::BCSCodec;
+use bytes::Bytes;
+use starcoin_config::{ChainNetworkID, DataDirPath};
+use starcoin_rpc_client::{RpcClient, StateRootOption};
+use starcoin_vm2_abi_decoder::{decode_txn_payload, DecodedTransactionPayload};
+
+use starcoin_logger::prelude::info;
 use starcoin_vm2_crypto::{
     hash::PlainCryptoHash,
     multi_ed25519::{multi_shard::MultiEd25519SignatureShard, MultiEd25519PublicKey},
     HashValue,
 };
-use starcoin_vm2_types::view::{DryRunOutputView, SignedUserTransactionView};
+use starcoin_vm2_dev::playground;
+use starcoin_vm2_types::view::{
+    DryRunOutputView, RawUserTransactionView, SignedUserTransactionView, TransactionPayloadView,
+    TransactionStatusView,
+};
+use starcoin_vm2_vm_types::genesis_config::ChainId;
+use starcoin_vm2_vm_types::transaction::authenticator::AccountPublicKey;
 use starcoin_vm2_vm_types::{
     account_address::AccountAddress,
+    account_config::association_address,
     account_config::{AccountResource, STC_TOKEN_CODE_STR},
     move_resource::MoveResource,
+    state_view::StateReaderExt,
     transaction::authenticator::TransactionAuthenticator,
     transaction::{
         DryRunTransaction, RawUserTransaction, SignedUserTransaction, TransactionPayload,
     },
 };
+use std::env::current_dir;
 use std::{fs::File, path::PathBuf, sync::Arc, time::Duration};
 
 /// A reduced version of clistate, retaining only the necessary execution action functions
 #[allow(dead_code)]
 pub struct CliStateVM2 {
-    client: Arc<RpcClient>, // TODO(BobOng):[dual-vm] to change rpc vm2
-    // account_provider: Box<dyn AccountProvider>,  // TODO(BobOng):[dual-vm] to change vm2 provider
+    net: ChainNetworkID,
+    client: Arc<RpcClient>,
+    account_client: Box<dyn AccountProvider>,
     watch_timeout: Duration,
     data_dir: PathBuf,
     temp_dir: DataDirPath,
+}
+
+fn build_dirs_from_net(net: &ChainNetworkID) -> Result<(PathBuf, DataDirPath)> {
+    let data_dir = starcoin_config::G_DEFAULT_BASE_DATA_DIR
+        .clone()
+        .join("cli-vm2")
+        .join(net.to_string());
+    if !data_dir.exists() {
+        std::fs::create_dir_all(data_dir.as_path())
+            .unwrap_or_else(|e| panic!("Create cli data dir {:?} fail, err:{:?}", data_dir, e))
+    }
+    let temp_dir = data_dir.join("tmp-vm2");
+    if !temp_dir.exists() {
+        std::fs::create_dir_all(temp_dir.as_path())
+            .unwrap_or_else(|e| panic!("Create cli temp dir {:?} fail, err:{:?}", temp_dir, e))
+    }
+    let temp_dir = starcoin_config::temp_dir_in(temp_dir);
+    Ok((data_dir, temp_dir))
 }
 
 impl CliStateVM2 {
@@ -47,15 +79,20 @@ impl CliStateVM2 {
     pub const DEFAULT_GAS_TOKEN: &'static str = STC_TOKEN_CODE_STR;
 
     pub fn new(
+        net: ChainNetworkID,
         client: Arc<RpcClient>,
-        watch_timeout: Option<Duration>, // account_provider: Box<dyn AccountProvider>,  // TODO(BobOng):[dual-vm] to change vm2 provider
+        watch_timeout: Option<Duration>,
+        account_client: Box<dyn AccountProvider>,
     ) -> CliStateVM2 {
-        // TODO(BobOng):[dual-vm] to change rpc vm2
+        let (data_dir, temp_dir) =
+            build_dirs_from_net(&net).expect("build dir failed while new CliStateVM2");
+
         Self {
+            net,
             client,
-            // account_provider, // TODO(BobOng):[dual-vm] to change vm2 provider
-            data_dir: PathBuf::new(), // TODO(BobOng): [dual-vm] to intialize dir for vm2
-            temp_dir: DataDirPath::default(), // TODO(BobOng): [dual-vm] to intialize dir for vm2
+            account_client,
+            data_dir,
+            temp_dir,
             watch_timeout: watch_timeout.unwrap_or(Self::DEFAULT_WATCH_TIMEOUT),
         }
     }
@@ -65,39 +102,51 @@ impl CliStateVM2 {
     }
 
     pub fn default_account(&self) -> Result<AccountInfo> {
-        // TODO(BobOng): [dual-vm] get account info from vm2 provider
-        unimplemented!()
+        self.account_client
+            .get_default_account()?
+            .ok_or_else(|| format_err!("Can not find default account, Please input from account."))
     }
 
     /// Get account from node managed wallet.
-    pub fn get_account(&self, _account_address: AccountAddress) -> Result<AccountInfo> {
-        // TODO(BobOng): [dual-vm] get account info from vm2 provider
-        unimplemented!()
+    pub fn get_account(&self, account_address: AccountAddress) -> Result<AccountInfo> {
+        self.account_client
+            .get_account(account_address)?
+            .ok_or_else(|| {
+                format_err!("Can not find WalletAccount by address: {}", account_address)
+            })
     }
 
     pub fn get_account_or_default(
         &self,
-        _account_address: Option<AccountAddress>,
+        account_address: Option<AccountAddress>,
     ) -> Result<AccountInfo> {
-        // TODO(BobOng): [dual-vm] get account from rpc vm2
-        unimplemented!()
+        if let Some(account_address) = account_address {
+            self.account_client
+                .get_account(account_address)?
+                .ok_or_else(|| {
+                    format_err!("Can not find WalletAccount by address: {}", account_address)
+                })
+        } else {
+            self.default_account()
+        }
     }
 
-    pub fn get_resource<R>(&self, _address: AccountAddress) -> Result<Option<R>>
+    pub fn get_resource<R>(&self, address: AccountAddress) -> Result<Bytes>
     where
         R: MoveResource + DeserializeOwned,
     {
-        // TODO(BobOng): [dual-vm] get resource from chain state reader vm2
-        unimplemented!()
+        let chain_state_reader = self.client.state_reader2(StateRootOption::Latest)?;
+        chain_state_reader.get_resource_type_bytes::<R>(address)
     }
 
-    pub fn get_account_resource(&self, address: AccountAddress) -> Result<Option<AccountResource>> {
-        self.get_resource::<AccountResource>(address)
+    pub fn get_account_resource(&self, address: AccountAddress) -> Result<AccountResource> {
+        self.client
+            .state_reader2(StateRootOption::Latest)?
+            .get_account_resource(address)
     }
 
     pub fn association_account(&self) -> Result<Option<AccountInfo>> {
-        // TODO(BobOng): [dual-vm] get account info for vm2
-        unimplemented!()
+        self.client.account_get2(association_address())
     }
 
     pub fn watch_txn(&self, _txn_hash: HashValue) -> Result<ExecutionOutputView> {
@@ -131,39 +180,142 @@ impl CliStateVM2 {
 
     fn build_transaction(
         &self,
-        _sender: Option<AccountAddress>,
-        _sequence_number: Option<u64>,
-        _gas_price: Option<u64>,
-        _max_gas_amount: Option<u64>,
-        _expiration_time_secs: Option<u64>,
-        _payload: TransactionPayload,
-        _gas_token: Option<String>,
+        sender: Option<AccountAddress>,
+        sequence_number: Option<u64>,
+        gas_price: Option<u64>,
+        max_gas_amount: Option<u64>,
+        expiration_time_secs: Option<u64>,
+        payload: TransactionPayload,
+        gas_token: Option<String>,
     ) -> Result<(RawUserTransaction, bool)> {
-        // TODO(BobOng): [dual-vm] to build transaction for vm2
-        unimplemented!()
+        let chain_id = self.net.chain_id();
+        let sender = self.get_account_or_default(sender)?;
+        let (sequence_number, future_transaction) = match sequence_number {
+            Some(sequence_number) => (sequence_number, false),
+            None => match self
+                .client
+                .next_sequence_number2_in_txpool(sender.address)?
+            {
+                Some(sequence_number) => {
+                    info!("get sequence_number {} from txpool", sequence_number);
+                    (sequence_number, true)
+                }
+                None => (
+                    self.get_account_resource(*sender.address())?
+                        .sequence_number(),
+                    false,
+                ),
+            },
+        };
+        let node_info = self.client.node_info()?;
+        let expiration_timestamp_secs = expiration_time_secs
+            .unwrap_or(Self::DEFAULT_EXPIRATION_TIME_SECS)
+            + node_info.now_seconds;
+        let gas_token_code = gas_token.unwrap_or_else(|| Self::DEFAULT_GAS_TOKEN.to_string());
+        Ok((
+            RawUserTransaction::new(
+                sender.address,
+                sequence_number,
+                payload,
+                max_gas_amount.unwrap_or(Self::DEFAULT_MAX_GAS_AMOUNT),
+                gas_price.unwrap_or(Self::DEFAULT_GAS_PRICE),
+                expiration_timestamp_secs,
+                ChainId::new(chain_id.id()),
+                gas_token_code,
+            ),
+            future_transaction,
+        ))
     }
 
-    pub fn dry_run_transaction(&self, _txn: DryRunTransaction) -> Result<DryRunOutputView> {
-        // TODO(BobOng): [dual-vm] to dry run transaction for vm2
-        unimplemented!()
+    pub fn dry_run_transaction(&self, txn: DryRunTransaction) -> Result<DryRunOutputView> {
+        let state_reader = self.client().state_reader2(StateRootOption::Latest)?;
+        playground::dry_run_explain(&state_reader, txn, None)
     }
 
     pub fn execute_transaction(
         &self,
-        _raw_txn: RawUserTransaction,
-        _only_dry_run: bool,
-        _blocking: bool,
+        raw_txn: RawUserTransaction,
+        only_dry_run: bool,
+        blocking: bool,
     ) -> Result<ExecuteResultView> {
-        // TODO(BobOng): [dual-vm] to execute transaction for vm2
-        unimplemented!()
+        let sender = self.get_account(raw_txn.sender())?;
+        let public_key = sender.public_key;
+        let dry_output = self.dry_run_transaction(DryRunTransaction {
+            public_key: public_key.clone(),
+            raw_txn: raw_txn.clone(),
+        })?;
+        let mut raw_txn_view: RawUserTransactionView = raw_txn.clone().try_into()?;
+        raw_txn_view.decoded_payload = Some(TransactionPayloadView::from(
+            self.decode_txn_payload(raw_txn.payload())?,
+        ));
+
+        let mut execute_result = ExecuteResultView::new(raw_txn_view, raw_txn.to_hex(), dry_output);
+        if only_dry_run
+            || !matches!(
+                execute_result.dry_run_output.txn_output.status,
+                TransactionStatusView::Executed
+            )
+        {
+            eprintln!(
+                "txn dry run result: {:?}",
+                execute_result.dry_run_output.txn_output
+            );
+            return Ok(execute_result);
+        }
+
+        let signed_txn = self.account_client.sign_txn(raw_txn, sender.address)?;
+
+        let multisig_public_key = match &public_key {
+            AccountPublicKey::Single(_) => {
+                let signed_txn_hex = hex::encode(signed_txn.encode()?);
+                let txn_hash = self.client.submit_hex_transaction(signed_txn_hex)?;
+                eprintln!("txn {} submitted.", txn_hash);
+                let execute_output = if blocking {
+                    self.watch_txn(txn_hash)?
+                } else {
+                    ExecutionOutputView::new(txn_hash)
+                };
+                execute_result.execute_output = Some(execute_output);
+                return Ok(execute_result);
+            }
+
+            AccountPublicKey::Multi(m) => m.clone(),
+        };
+
+        let mut output_dir = current_dir()?;
+
+        let execute_output_view = self.sign_multisig_txn_to_file_or_submit(
+            sender.address,
+            multisig_public_key,
+            None,
+            signed_txn,
+            &mut output_dir,
+            true,
+            blocking,
+        )?;
+
+        let cur_dir = current_dir()?.to_str().unwrap().to_string();
+        if output_dir.to_str().unwrap() != cur_dir {
+            // There is signature file, print the file path.
+            eprintln!(
+                "multisig txn signatures filepath: {}",
+                output_dir.to_str().unwrap()
+            )
+        }
+
+        if let Some(o) = execute_output_view {
+            execute_result.execute_output = Some(o)
+        };
+
+        Ok(execute_result)
     }
 
     pub fn decode_txn_payload(
         &self,
-        _payload: &TransactionPayload,
+        payload: &TransactionPayload,
     ) -> Result<DecodedTransactionPayload> {
-        // TODO(BobOng): [dual-vm] to decode transaction payload transaction for vm2
-        unimplemented!()
+        let chain_state_reader = self.client.state_reader2(StateRootOption::Latest)?;
+        decode_txn_payload(&chain_state_reader, payload)
     }
 
     // Sign multisig transaction, if enough signatures collected & submit is true,

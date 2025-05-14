@@ -11962,6 +11962,7 @@ version = "1.13.19"
 dependencies = [
  "anyhow",
  "bcs-ext 1.13.19",
+ "bytes 1.10.1",
  "clap 3.2.25",
  "crossbeam-channel",
  "forkable-jellyfish-merkle 1.13.19",
@@ -11984,6 +11985,7 @@ dependencies = [
  "starcoin-abi-resolver 1.13.19",
  "starcoin-abi-types 1.13.19",
  "starcoin-account-api 1.13.19",
+ "starcoin-account-api 2.0.1",
  "starcoin-account-provider 1.13.19",
  "starcoin-chain-api",
  "starcoin-config",

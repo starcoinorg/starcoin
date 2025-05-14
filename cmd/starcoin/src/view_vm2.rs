@@ -37,7 +37,7 @@ pub struct ExecuteResultView {
     pub raw_txn: RawUserTransactionView,
     pub raw_txn_hex: String,
     pub dry_run_output: DryRunOutputView,
-    pub execute_output: Option<crate::view::ExecutionOutputView>,
+    pub execute_output: Option<ExecutionOutputView>,
 }
 
 impl ExecuteResultView {
@@ -53,7 +53,7 @@ impl ExecuteResultView {
             execute_output: None,
         }
     }
-    pub fn get_transaction_info(&self) -> Option<starcoin_rpc_api::types::TransactionInfoView> {
+    pub fn get_transaction_info(&self) -> Option<TransactionInfoView> {
         if let Some(info) = &self.execute_output {
             info.txn_info.clone()
         } else {
