@@ -12,13 +12,14 @@ use starcoin_config::{RealTimeService, TimeService};
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::RpcClient;
 use starcoin_types::block::BlockHeaderExtra;
+use starcoin_types::blockhash::BlockLevel;
 use starcoin_types::system_events::MintBlockEvent;
 use std::sync::Arc;
 use std::time::Duration;
 #[derive(Clone)]
 pub struct JobRpcClient {
     rpc_client: Arc<RpcClient>,
-    seal_sender: UnboundedSender<(Vec<u8>, u32, BlockHeaderExtra)>,
+    seal_sender: UnboundedSender<(Vec<u8>, u32, BlockHeaderExtra, BlockLevel)>,
     time_service: Arc<dyn TimeService>,
 }
 
@@ -26,13 +27,15 @@ impl JobRpcClient {
     pub fn new(rpc_client: RpcClient) -> Self {
         let rpc_client = Arc::new(rpc_client);
         let seal_client = rpc_client.clone();
-        let (seal_sender, mut seal_receiver) = unbounded::<(Vec<u8>, u32, BlockHeaderExtra)>();
+        let (seal_sender, mut seal_receiver) =
+            unbounded::<(Vec<u8>, u32, BlockHeaderExtra, BlockLevel)>();
         let fut = async move {
-            while let Some((minting_blob, nonce, extra)) = seal_receiver.next().await {
+            while let Some((minting_blob, nonce, extra, block_level)) = seal_receiver.next().await {
                 if let Err(e) = seal_client.miner_submit(
                     hex::encode(minting_blob),
                     nonce,
                     hex::encode(extra.to_vec()),
+                    block_level,
                 ) {
                     warn!("Submit seal error: {}", e);
                     Delay::new(Duration::from_secs(1)).await;
@@ -107,8 +110,12 @@ impl JobClient for JobRpcClient {
             None => BlockHeaderExtra::default(),
             Some(extra) => extra.extra,
         };
-        self.seal_sender
-            .unbounded_send((seal.minting_blob, seal.nonce, extra))?;
+        self.seal_sender.unbounded_send((
+            seal.minting_blob,
+            seal.nonce,
+            extra,
+            seal.block_level,
+        ))?;
         Ok(())
     }
 

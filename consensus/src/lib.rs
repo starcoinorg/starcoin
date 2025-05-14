@@ -13,6 +13,7 @@ use starcoin_chain_api::ChainReader;
 use starcoin_crypto::HashValue;
 use starcoin_time_service::TimeService;
 use starcoin_types::block::{BlockHeader, BlockHeaderExtra};
+use starcoin_types::blockhash::BlockLevel;
 use starcoin_types::U256;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 
@@ -71,7 +72,7 @@ impl Consensus for ConsensusStrategy {
         mining_hash: &[u8],
         difficulty: U256,
         time_service: &dyn TimeService,
-    ) -> u32 {
+    ) -> (u32, BlockLevel) {
         match self {
             Self::Dummy => G_DUMMY.solve_consensus_nonce(mining_hash, difficulty, time_service),
             Self::Argon => G_ARGON.solve_consensus_nonce(mining_hash, difficulty, time_service),
@@ -82,7 +83,7 @@ impl Consensus for ConsensusStrategy {
         }
     }
 
-    fn verify(&self, reader: &dyn ChainReader, header: &BlockHeader) -> Result<()> {
+    fn verify(&self, reader: &dyn ChainReader, header: &BlockHeader) -> Result<BlockLevel> {
         match self {
             Self::Dummy => G_DUMMY.verify(reader, header),
             Self::Argon => G_ARGON.verify(reader, header),

@@ -38,15 +38,15 @@ fn verify_header_test() {
         .build();
     let raw_header: RawBlockHeader = header.clone().into();
     let time_service = TimeServiceType::RealTimeService.new_time_service();
-    let nonce = G_CRYPTONIGHT.solve_consensus_nonce(
+    let (nonce, _block_level) = G_CRYPTONIGHT.solve_consensus_nonce(
         &header.as_pow_header_blob(),
         raw_header.difficulty,
         time_service.as_ref(),
     );
     let header = header.as_builder().with_nonce(nonce).build();
-    G_CRYPTONIGHT
+    let _ = G_CRYPTONIGHT
         .verify_header_difficulty(header.difficulty(), &header)
-        .unwrap()
+        .unwrap();
 }
 
 #[stest::test]
@@ -94,9 +94,9 @@ fn verify_header_test_barnard_block3_ubuntu22() {
         0,
         HashValue::zero(),
     );
-    G_CRYPTONIGHT
+    let _ = G_CRYPTONIGHT
         .verify_header_difficulty(header.difficulty(), &header)
-        .unwrap()
+        .unwrap();
 }
 
 fn simulate_blocks(time_plan: u64, init_difficulty: U256) -> u64 {

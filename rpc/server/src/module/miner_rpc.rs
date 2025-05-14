@@ -9,6 +9,7 @@ use starcoin_rpc_api::types::MintedBlockView;
 use starcoin_rpc_api::FutureResult;
 use starcoin_service_registry::ServiceRef;
 use starcoin_types::block::BlockHeaderExtra;
+use starcoin_types::blockhash::BlockLevel;
 use starcoin_types::system_events::MintBlockEvent;
 use std::convert::TryInto;
 
@@ -28,6 +29,7 @@ impl MinerApi for MinerRpcImpl {
         minting_blob: String,
         nonce: u32,
         extra: String,
+        block_level: BlockLevel,
     ) -> FutureResult<MintedBlockView> {
         let miner_service = self.miner_service.clone();
         let fut = async move {
@@ -43,6 +45,7 @@ impl MinerApi for MinerRpcImpl {
                     nonce,
                     extra,
                     minting_blob,
+                    block_level,
                 })
                 .await??;
             Ok(MintedBlockView { block_hash })

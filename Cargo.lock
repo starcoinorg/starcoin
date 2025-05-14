@@ -9804,6 +9804,7 @@ dependencies = [
  "serde_json",
  "sha3",
  "starcoin-chain-api",
+ "starcoin-config",
  "starcoin-crypto",
  "starcoin-dag",
  "starcoin-logger",

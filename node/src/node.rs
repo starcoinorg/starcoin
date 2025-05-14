@@ -292,6 +292,7 @@ impl NodeService {
             KType::try_from(G_BASE_MAX_UNCLES_PER_BLOCK)?,
             config.miner.dag_merge_depth(),
             dag_storage.clone(),
+            config.miner.max_block_level(),
         );
         registry.put_shared(dag.clone()).await?;
         let (chain_info, genesis) = Genesis::init_and_check_storage(

@@ -41,7 +41,7 @@ pub struct GhostdagManager<
 > {
     pub(super) k_store: Arc<KStore>,
     pub(super) ghostdag_store: T,
-    pub(super) relations_store: Arc<RwLock<S>>,
+    pub(super) relations_store: Arc<RwLock<Vec<S>>>,
     pub(super) headers_store: V,
     pub(super) reachability_service: U,
 }
@@ -56,7 +56,7 @@ impl<
     pub fn new(
         k_store: Arc<KStore>,
         ghostdag_store: T,
-        relations_store: Arc<RwLock<S>>,
+        relations_store: Arc<RwLock<Vec<S>>>,
         headers_store: V,
         reachability_service: U,
     ) -> Self {

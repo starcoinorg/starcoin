@@ -11,6 +11,7 @@ use starcoin_service_registry::{
     ServiceRequest,
 };
 use starcoin_types::block::BlockTemplate;
+use starcoin_types::blockhash::BlockLevel;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -63,6 +64,7 @@ pub struct SubmitSealRequest {
     pub nonce: u32,
     pub extra: BlockHeaderExtra,
     pub minting_blob: Vec<u8>,
+    pub block_level: BlockLevel,
 }
 
 impl fmt::Display for SubmitSealRequest {
@@ -78,11 +80,17 @@ impl fmt::Display for SubmitSealRequest {
 }
 
 impl SubmitSealRequest {
-    pub fn new(minting_blob: Vec<u8>, nonce: u32, extra: BlockHeaderExtra) -> Self {
+    pub fn new(
+        minting_blob: Vec<u8>,
+        nonce: u32,
+        extra: BlockHeaderExtra,
+        block_level: BlockLevel,
+    ) -> Self {
         Self {
             minting_blob,
             nonce,
             extra,
+            block_level,
         }
     }
 }
@@ -145,11 +153,17 @@ impl ServiceHandler<Self, SubmitSealRequest> for MinerService {
         req: SubmitSealRequest,
         ctx: &mut ServiceContext<Self>,
     ) -> Result<HashValue> {
-        self.finish_task(req.nonce, req.extra, req.minting_blob.clone(), ctx)
-            .map_err(|e| {
-                warn!(target: "miner", "process seal: {} failed: {}", req, e);
-                e
-            })
+        self.finish_task(
+            req.nonce,
+            req.extra,
+            req.minting_blob.clone(),
+            req.block_level,
+            ctx,
+        )
+        .map_err(|e| {
+            warn!(target: "miner", "process seal: {} failed: {}", req, e);
+            e
+        })
     }
 }
 
@@ -294,6 +308,7 @@ impl MinerService {
         nonce: u32,
         extra: BlockHeaderExtra,
         minting_blob: Vec<u8>,
+        block_level: BlockLevel,
         ctx: &mut ServiceContext<Self>,
     ) -> Result<HashValue> {
         if self.task_pool.is_empty() {
@@ -309,7 +324,10 @@ impl MinerService {
             let block = task.finish(nonce, extra);
             let block_hash: HashValue = block.id();
             info!(target: "miner", "Minted new block: {}", block);
-            ctx.broadcast(MinedBlock(Arc::new(block)));
+            ctx.broadcast(MinedBlock {
+                block: Arc::new(block),
+                block_level,
+            });
             if let Some(metrics) = self.metrics.as_ref() {
                 metrics.block_mint_count.inc();
             }

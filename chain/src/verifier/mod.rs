@@ -11,7 +11,10 @@ use starcoin_crypto::HashValue;
 use starcoin_dag::types::ghostdata::GhostdagData;
 use starcoin_logger::prelude::{debug, warn};
 use starcoin_open_block::AddressFilter;
-use starcoin_types::block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME};
+use starcoin_types::{
+    block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME},
+    blockhash::BlockLevel,
+};
 use std::{collections::HashSet, str::FromStr};
 
 #[derive(Debug, Clone)]
@@ -61,7 +64,7 @@ impl StaticVerifier {
 
 //TODO this trait should move to consensus?
 pub trait BlockVerifier {
-    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
+    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<BlockLevel>
     where
         R: ChainReader;
 
@@ -73,7 +76,7 @@ pub trait BlockVerifier {
         //verify header
         let new_block_header = new_block.header();
         Self::verify_blacklisted_txns(&new_block)?;
-        Self::verify_header(current_chain, new_block_header)?;
+        let block_level = Self::verify_header(current_chain, new_block_header)?;
         watch(CHAIN_WATCH_NAME, "n12");
         StaticVerifier::verify_body_hash(&new_block)?;
         watch(CHAIN_WATCH_NAME, "n13");
@@ -87,6 +90,7 @@ pub trait BlockVerifier {
         Ok(VerifiedBlock {
             block: new_block,
             ghostdata,
+            block_level,
         })
     }
 
@@ -189,7 +193,7 @@ pub trait BlockVerifier {
 pub struct BasicVerifier;
 
 impl BlockVerifier for BasicVerifier {
-    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
+    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<BlockLevel>
     where
         R: ChainReader,
     {
@@ -270,37 +274,37 @@ impl BlockVerifier for BasicVerifier {
             new_block_header.block_accumulator_root(),
         );
 
-        Ok(())
+        Ok(0)
     }
 }
 
 pub struct ConsensusVerifier;
 
 impl BlockVerifier for ConsensusVerifier {
-    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
+    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<BlockLevel>
     where
         R: ChainReader,
     {
         let epoch = current_chain.epoch();
         let consensus = epoch.strategy();
-        if let Err(e) = consensus.verify(current_chain, new_block_header) {
-            return match e.downcast::<ConsensusVerifyError>() {
+        match consensus.verify(current_chain, new_block_header) {
+            Ok(block_level) => Ok(block_level),
+            Err(e) => match e.downcast::<ConsensusVerifyError>() {
                 Ok(e) => Err(ConnectBlockError::VerifyBlockFailed(
                     VerifyBlockField::Consensus,
                     e.into(),
                 )
                 .into()),
                 Err(e) => Err(e),
-            };
+            },
         }
-        Ok(())
     }
 }
 
 pub struct FullVerifier;
 
 impl BlockVerifier for FullVerifier {
-    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
+    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<BlockLevel>
     where
         R: ChainReader,
     {
@@ -312,11 +316,11 @@ impl BlockVerifier for FullVerifier {
 pub struct NoneVerifier;
 
 impl BlockVerifier for NoneVerifier {
-    fn verify_header<R>(_current_chain: &R, _new_block_header: &BlockHeader) -> Result<()>
+    fn verify_header<R>(_current_chain: &R, _new_block_header: &BlockHeader) -> Result<BlockLevel>
     where
         R: ChainReader,
     {
-        Ok(())
+        Ok(0)
     }
 
     fn verify_block<R>(_current_chain: &R, new_block: Block) -> Result<VerifiedBlock>
@@ -326,6 +330,7 @@ impl BlockVerifier for NoneVerifier {
         Ok(VerifiedBlock {
             block: new_block,
             ghostdata: None,
+            block_level: 0,
         })
     }
 
@@ -343,7 +348,7 @@ impl BlockVerifier for NoneVerifier {
 
 struct BasicDagVerifier;
 impl BasicDagVerifier {
-    pub fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
+    pub fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<BlockLevel>
     where
         R: ChainReader,
     {
@@ -435,7 +440,7 @@ impl BasicDagVerifier {
 
 pub struct DagVerifier;
 impl BlockVerifier for DagVerifier {
-    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
+    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<BlockLevel>
     where
         R: ChainReader,
     {
@@ -460,7 +465,7 @@ impl BlockVerifier for DagVerifier {
 
 pub struct DagVerifierWithGhostData;
 impl BlockVerifier for DagVerifierWithGhostData {
-    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
+    fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<BlockLevel>
     where
         R: ChainReader,
     {

@@ -13,6 +13,7 @@ use starcoin_logger::prelude::*;
 use starcoin_miner::SubmitSealRequest as MinerSubmitSealRequest;
 use starcoin_service_registry::{ServiceRef, ServiceRequest};
 use starcoin_types::block::BlockHeaderExtra;
+use starcoin_types::blockhash::BlockLevel;
 use starcoin_types::system_events::MintBlockEvent;
 use std::convert::TryInto;
 use std::sync::Arc;
@@ -47,6 +48,7 @@ pub struct ShareRequest {
     pub job_id: String,
     pub nonce: String,
     pub result: String,
+    pub block_level: BlockLevel,
 }
 
 impl TryInto<MinerSubmitSealRequest> for ShareRequest {
@@ -64,6 +66,7 @@ impl TryInto<MinerSubmitSealRequest> for ShareRequest {
             nonce,
             extra: BlockHeaderExtra::new(extra),
             minting_blob: vec![],
+            block_level: self.block_level,
         })
     }
 }

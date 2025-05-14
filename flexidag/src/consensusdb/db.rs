@@ -11,7 +11,7 @@ use super::{
 };
 use parking_lot::RwLock;
 use rocksdb::WriteBatch;
-use starcoin_config::{RocksdbConfig, StorageConfig};
+use starcoin_config::{miner_config::G_MAX_BLOCK_LEVEL, RocksdbConfig, StorageConfig};
 pub(crate) use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::RawDBStorage;
 use std::{path::Path, sync::Arc};
@@ -21,7 +21,7 @@ pub struct FlexiDagStorage {
     pub ghost_dag_store: DbGhostdagStore,
     pub header_store: DbHeadersStore,
     pub reachability_store: Arc<RwLock<DbReachabilityStore>>,
-    pub relations_store: Arc<RwLock<DbRelationsStore>>,
+    pub relations_store: Arc<RwLock<Vec<DbRelationsStore>>>,
     pub state_store: Arc<RwLock<DbDagStateStore>>,
     pub block_depth_info_store: Arc<DbBlockDepthInfoStore>,
     pub pruning_point_store: Arc<RwLock<PruningPointInfoStore>>,
@@ -96,11 +96,11 @@ impl FlexiDagStorage {
                 db.clone(),
                 config.cache_size,
             ))),
-            relations_store: Arc::new(RwLock::new(DbRelationsStore::new(
-                db.clone(),
-                1,
-                config.cache_size,
-            ))),
+            relations_store: Arc::new(RwLock::new(
+                (0..G_MAX_BLOCK_LEVEL)
+                    .map(|level| DbRelationsStore::new(db.clone(), level, config.cache_size))
+                    .collect(),
+            )),
             state_store: Arc::new(RwLock::new(DbDagStateStore::new(
                 db.clone(),
                 config.cache_size,

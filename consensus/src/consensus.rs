@@ -3,10 +3,12 @@
 
 use crate::{difficult_to_target, generate_nonce, ChainReader};
 use anyhow::Result;
+use starcoin_config::miner_config::G_MAX_BLOCK_LEVEL;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockHeaderExtra;
+use starcoin_types::blockhash::BlockLevel;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate},
     U256,
@@ -38,9 +40,10 @@ pub trait Consensus {
         mining_hash: &[u8],
         difficulty: U256,
         _time_service: &dyn TimeService,
-    ) -> u32 {
+    ) -> (u32, BlockLevel) {
         let mut nonce = generate_nonce();
         let extra = BlockHeaderExtra::new([0u8; 4]);
+        let block_level: BlockLevel;
         loop {
             let pow_hash: U256 = self
                 .calculate_pow_hash(mining_hash, nonce, &extra)
@@ -51,12 +54,14 @@ pub trait Consensus {
                 nonce = nonce.saturating_add(1);
                 continue;
             }
+            block_level =
+                Self::calc_block_level(pow_hash).expect("failed to calculate block level");
             break;
         }
-        nonce
+        (nonce, block_level)
     }
 
-    fn verify(&self, reader: &dyn ChainReader, header: &BlockHeader) -> Result<()> {
+    fn verify(&self, reader: &dyn ChainReader, header: &BlockHeader) -> Result<BlockLevel> {
         let difficulty = self.calculate_next_difficulty(reader)?;
         self.verify_header_difficulty(difficulty, header)
     }
@@ -76,13 +81,17 @@ pub trait Consensus {
         time_service: &dyn TimeService,
     ) -> Result<Block> {
         let mining_hash = block_template.as_pow_header_blob();
-        let consensus_nonce =
+        let (consensus_nonce, _block_level) =
             self.solve_consensus_nonce(&mining_hash, block_template.difficulty, time_service);
         let extra = BlockHeaderExtra::new([0u8; 4]);
         Ok(block_template.into_block(consensus_nonce, extra))
     }
     /// Inner helper for verify and unit testing
-    fn verify_header_difficulty(&self, difficulty: U256, header: &BlockHeader) -> Result<()> {
+    fn verify_header_difficulty(
+        &self,
+        difficulty: U256,
+        header: &BlockHeader,
+    ) -> Result<BlockLevel> {
         debug!(
             "verify_header_difficulty, calculate target:{}, header target: {}, nonce: {}",
             difficulty,
@@ -113,7 +122,12 @@ pub trait Consensus {
             }
             .into());
         }
-        Ok(())
+        Self::calc_block_level(pow_hash)
+    }
+
+    fn calc_block_level(pow_hash: U256) -> Result<BlockLevel> {
+        let signed_block_level = (G_MAX_BLOCK_LEVEL as i64).saturating_sub(pow_hash.bits() as i64);
+        Ok(std::cmp::max(signed_block_level, 0) as BlockLevel)
     }
 
     fn verify_blob(

@@ -84,7 +84,7 @@ impl Solver for CpuSolver {
                             }
                             match strategy {
                                 ConsensusStrategy::Dummy => {
-                                    let nonce = strategy.solve_consensus_nonce(
+                                    let (nonce, block_level) = strategy.solve_consensus_nonce(
                                         &minting_blob,
                                         diff,
                                         time_service.as_ref(),
@@ -94,6 +94,7 @@ impl Solver for CpuSolver {
                                         nonce,
                                         extra: mint_extra,
                                         hash_result: Default::default(),
+                                        block_level,
                                     })) {
                                         error!("Failed to send nonce: {:?}", e);
                                     };
@@ -103,6 +104,7 @@ impl Solver for CpuSolver {
                                     let nonce = Self::nonce_generator(&nonce_range);
                                     if let Ok(pow_hash) = strategy.calculate_pow_hash(&minting_blob, nonce, &extra) {
                                         let pow_hash_u256: U256 = pow_hash.into();
+                                        let block_level = ConsensusStrategy::calc_block_level(pow_hash_u256).expect("failed to calculate block level");
                                         hash_counter += 1;
                                         if let Ok(target) = difficult_to_target(diff) {
                                             if pow_hash_u256 <= target {
@@ -114,6 +116,7 @@ impl Solver for CpuSolver {
                                                     nonce,
                                                     extra: mint_extra,
                                                     hash_result: Default::default(),
+                                                    block_level,
                                                 })) {
                                                     error!("[miner-client-solver] Failed to send seal: {:?}", e);
                                                 };

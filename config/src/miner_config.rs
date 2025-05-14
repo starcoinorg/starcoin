@@ -5,11 +5,13 @@ use crate::{BaseConfig, ConfigModule, StarcoinOpt};
 use anyhow::Result;
 use clap::Parser;
 use serde::{Deserialize, Serialize};
+use starcoin_types::blockhash::BlockLevel;
 use std::sync::Arc;
 
 pub static G_MAX_PARENTS_COUNT: u64 = 10;
 pub static G_DAG_BLOCK_RECEIVE_TIME_WINDOW: u64 = 2; // in second, 2s for default
 pub static G_MERGE_DEPTH: u64 = 3600; // the merge depth should be smaller than the pruning finality
+pub static G_MAX_BLOCK_LEVEL: u8 = 250;
 
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
@@ -50,6 +52,10 @@ pub struct MinerConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long = "dag-merge-depth")]
     pub dag_merge_depth: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(long = "max-block-level")]
+    pub max_block_level: Option<BlockLevel>,
 }
 
 impl MinerConfig {
@@ -88,6 +94,10 @@ impl MinerConfig {
 
     pub fn dag_merge_depth(&self) -> u64 {
         self.dag_merge_depth.unwrap_or(G_MERGE_DEPTH)
+    }
+
+    pub fn max_block_level(&self) -> BlockLevel {
+        self.max_block_level.unwrap_or(G_MAX_BLOCK_LEVEL)
     }
 }
 
@@ -142,6 +152,10 @@ impl ConfigModule for MinerConfig {
 
         if opt.miner.dag_merge_depth.is_some() {
             self.dag_merge_depth = opt.miner.dag_merge_depth;
+        }
+
+        if opt.miner.max_block_level.is_some() {
+            self.max_block_level = opt.miner.max_block_level;
         }
 
         Ok(())
