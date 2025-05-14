@@ -16,7 +16,7 @@ use starcoin_chain_api::{
     ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
 };
 use starcoin_consensus::Consensus;
-use starcoin_crypto::hash::{PlainCryptoHash, SPARSE_MERKLE_PLACEHOLDER_HASH};
+use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_executor::{BlockExecutedData, VMMetrics};
 use starcoin_logger::prelude::*;
@@ -40,12 +40,9 @@ use starcoin_types::{
     U256,
 };
 use starcoin_vm2_chain::build_block_transactions;
-use starcoin_vm2_state_api::{
-    ChainStateReader as ChainStateReader2, ChainStateWriter as ChainStateWriter2,
-};
+use starcoin_vm2_state_api::ChainStateWriter as ChainStateWriter2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_storage::Store as Store2;
-use starcoin_vm2_vm_types::transaction::Transaction as Transaction2;
 use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
@@ -62,7 +59,7 @@ static OUTPUT_BLOCK: AtomicBool = AtomicBool::new(false);
 pub struct ChainStatusWithBlock {
     pub status: ChainStatus,
     pub head: Block,
-    pub multi_state: Option<MultiState>,
+    pub multi_state: MultiState,
 }
 
 pub struct BlockChain {
@@ -105,7 +102,6 @@ impl BlockChain {
             .get_block_info(head_block.id())?
             .ok_or_else(|| format_err!("Can not find block info by hash {:?}", head_block.id()))?;
         debug!("Init chain with block_info: {:?}", block_info);
-        let state_root = head_block.header().state_root();
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
         let vm_state_accumulator_info = block_info.get_vm_state_accumulator_info();
@@ -126,24 +122,20 @@ impl BlockChain {
             storage.as_ref(),
         );
 
-        let (state_root1, state_root2) = if vm_state_accumulator.num_leaves() == 0 {
-            (state_root, None)
-        } else {
+        let (state_root1, state_root2) = {
             assert!(vm_state_accumulator.num_leaves() > 1,);
             (
                 vm_state_accumulator
                     .get_leaf(vm_state_accumulator.num_leaves() - 2)?
                     .unwrap(),
-                Some(
-                    vm_state_accumulator
-                        .get_leaf(vm_state_accumulator.num_leaves() - 1)?
-                        .unwrap(),
-                ),
+                vm_state_accumulator
+                    .get_leaf(vm_state_accumulator.num_leaves() - 1)?
+                    .unwrap(),
             )
         };
 
         let chain_state = ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root1));
-        let chain_state2 = ChainStateDB2::new(storage2.clone().into_super_arc(), state_root2);
+        let chain_state2 = ChainStateDB2::new(storage2.clone().into_super_arc(), Some(state_root2));
         let epoch = get_epoch_from_statedb(&chain_state)?;
         let genesis = storage
             .get_genesis()?
@@ -158,7 +150,7 @@ impl BlockChain {
             status: ChainStatusWithBlock {
                 status: ChainStatus::new(head_block.header.clone(), block_info),
                 head: head_block,
-                multi_state: state_root2.map(|r| MultiState::new(state_root1, r)),
+                multi_state: MultiState::new(state_root1, state_root2),
             },
             statedb: (chain_state, chain_state2),
             storage: (storage, storage2),
@@ -488,10 +480,12 @@ impl BlockChain {
 
         let transactions2 = build_block_transactions(
             block.transactions2(),
-            parent_status.map(|p| block.to_metadata2(p.head.gas_used())),
+            parent_status
+                .as_ref()
+                .map(|p| block.to_metadata2(p.head.gas_used())),
         );
 
-        assert!(!transactions.is_empty() && !transactions2.is_empty());
+        assert!(!transactions2.is_empty());
 
         watch(CHAIN_WATCH_NAME, "n21");
         let executed_data = starcoin_executor::block_execute(
@@ -509,26 +503,14 @@ impl BlockChain {
         watch(CHAIN_WATCH_NAME, "n22");
 
         let (state_root, multi_state) = {
-            // todo: how to check the genesis2 initialized correctly, check txn_hash?
-            let current_state_root2 = statedb2.state_root();
+            // if no txns, state_root is kept unchanged after calling txn-execution
             let state_root1 = executed_data.state_root;
-            // if no new state_root, use current state root of statedb2
-            let state_root2 = executed_data2
-                .as_ref()
-                .map(|data| data.state_root)
-                .unwrap_or(current_state_root2);
-            // no vm2 txn or statedb2 has never been updated
-            if state_root2 != *SPARSE_MERKLE_PLACEHOLDER_HASH
-                || vm_state_accumulator.num_leaves() > 1
-            {
-                vm_state_accumulator.append(&[state_root1, state_root2])?;
-                (
-                    vm_state_accumulator.root_hash(),
-                    Some(MultiState::new(state_root1, state_root2)),
-                )
-            } else {
-                (state_root1, None)
-            }
+            let state_root2 = executed_data2.state_root;
+            vm_state_accumulator.append(&[state_root1, state_root2])?;
+            (
+                vm_state_accumulator.root_hash(),
+                MultiState::new(state_root1, state_root2),
+            )
         };
 
         let vec_transaction_info = &executed_data.txn_infos;
@@ -568,12 +550,9 @@ impl BlockChain {
         let executed_accumulator_root = {
             let included_txn_info_hashes: Vec<_> =
                 vec_transaction_info.iter().map(|info| info.id()).collect();
+            // NO need to check whether info_hashes is empty or not, accmulator.append will handle it.
             txn_accumulator.append(&included_txn_info_hashes)?;
-
-            if !included_txn_info_hashes2.is_empty() {
-                assert!(executed_data2.is_some());
-                txn_accumulator.append(&included_txn_info_hashes2)?;
-            }
+            txn_accumulator.append(&included_txn_info_hashes2)?;
             txn_accumulator.root_hash()
         };
 
@@ -622,26 +601,23 @@ impl BlockChain {
             vm_state_accumulator_info,
         );
 
-        let mut vm2_txn_infos = vec![];
         // save transaction relationship and save transaction to storage2
-        if let Some(executed_data2) = executed_data2 {
-            vm2_txn_infos = executed_data2
-                .txn_infos
-                .clone()
-                .into_iter()
-                .map(Into::into)
-                .collect::<Vec<TransactionInfo>>();
+        let vm2_txn_infos = executed_data2
+            .txn_infos
+            .clone()
+            .into_iter()
+            .map(Into::into)
+            .collect::<Vec<TransactionInfo>>();
 
-            starcoin_vm2_chain::save_executed_transactions(
-                block_id,
-                header.number(),
-                storage2,
-                transactions2,
-                executed_data2,
-                // todo: how to track vm2 transaction global index?
-                transaction_global_index + executed_data.txn_infos.len() as u64,
-            )?;
-        }
+        starcoin_vm2_chain::save_executed_transactions(
+            block_id,
+            header.number(),
+            storage2,
+            transactions2,
+            executed_data2,
+            // todo: how to track vm2 transaction global index?
+            transaction_global_index + executed_data.txn_infos.len() as u64,
+        )?;
 
         watch(CHAIN_WATCH_NAME, "n25");
 
@@ -844,7 +820,7 @@ impl BlockChain {
 
         storage.save_table_infos(txn_table_infos)?;
 
-        Ok(ExecutedBlock::new(block, block_info, None))
+        Ok(ExecutedBlock::new(block, block_info, MultiState::default()))
     }
 
     pub fn set_output_block() {
@@ -964,7 +940,7 @@ impl BlockChain {
             );
         }
 
-        Ok(ExecutedBlock::new(block, block_info, None))
+        Ok(ExecutedBlock::new(block, block_info, MultiState::default()))
     }
 
     pub fn get_txn_accumulator(&self) -> &MerkleAccumulator {
@@ -1499,21 +1475,18 @@ impl ChainWriter for BlockChain {
         );
 
         let (state_root1, state_root2) = {
-            if let Some(state) = executed_block.multi_state() {
-                (state.state_root1(), Some(state.state_root2()))
-            } else {
-                (block.header().state_root(), None)
-            }
+            let state = executed_block.multi_state();
+            (state.state_root1(), state.state_root2())
         };
 
         self.statedb = (
             ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root1)),
-            ChainStateDB2::new(storage2.clone().into_super_arc(), state_root2),
+            ChainStateDB2::new(storage2.clone().into_super_arc(), Some(state_root2)),
         );
         self.status = ChainStatusWithBlock {
             status: ChainStatus::new(block.header().clone(), block_info.clone()),
             head: block.clone(),
-            multi_state: executed_block.multi_state().cloned(),
+            multi_state: executed_block.multi_state().clone(),
         };
         if self.epoch.end_block_number() == block.header().number() {
             self.epoch = get_epoch_from_statedb(&self.statedb.0)?;
