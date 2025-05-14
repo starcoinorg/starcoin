@@ -455,7 +455,7 @@ async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
         "block_test".to_string(),
         ChainId::new(100),
         genesis_config,
-        Some(genesis_config2),
+        genesis_config2,
     )?;
     let mut mock_chain = MockChain::new(net.clone()).unwrap();
     let mut times = 3;

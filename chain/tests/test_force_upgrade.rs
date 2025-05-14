@@ -42,7 +42,7 @@ pub fn test_force_upgrade_1() -> anyhow::Result<()> {
         "test123".to_string(),
         123.into(),
         BuiltinNetworkID::Test.genesis_config().clone(),
-        None,
+        BuiltinNetworkID::Test.genesis_config2().clone(),
     )
     .unwrap();
 
@@ -274,7 +274,7 @@ fn test_force_upgrade_2() -> anyhow::Result<()> {
         "test123".to_string(),
         123.into(),
         BuiltinNetworkID::Test.genesis_config().clone(),
-        None,
+        BuiltinNetworkID::Test.genesis_config2().clone(),
     )
     .unwrap();
 
@@ -305,7 +305,7 @@ fn test_frozen_account() -> anyhow::Result<()> {
         "test123".to_string(),
         123.into(),
         BuiltinNetworkID::Test.genesis_config().clone(),
-        None,
+        BuiltinNetworkID::Test.genesis_config2().clone(),
     )
     .unwrap();
 
@@ -372,7 +372,7 @@ fn test_frozen_for_global_frozen() -> anyhow::Result<()> {
         "test123".to_string(),
         123.into(),
         BuiltinNetworkID::Test.genesis_config().clone(),
-        None,
+        BuiltinNetworkID::Test.genesis_config2().clone(),
     )
     .unwrap();
 

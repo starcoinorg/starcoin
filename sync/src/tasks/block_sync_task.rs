@@ -301,8 +301,12 @@ where
                 //So, we just need to update chain and continue
                 // todo: double check if there is better way to do this.
                 let multi_state = self.chain.get_storage().get_vm_multi_state(block_id)?;
-                self.chain
-                    .connect(ExecutedBlock::new(block, block_info.clone(), multi_state))?;
+                self.chain.connect(ExecutedBlock::new(
+                    block,
+                    block_info.clone(),
+                    // todo: remove unwrap
+                    multi_state.unwrap(),
+                ))?;
                 block_info
             }
             None => {

@@ -510,7 +510,7 @@ mod tests {
             "testx".to_string(),
             ChainId::new(123),
             BuiltinNetworkID::Test.genesis_config().clone(),
-            Some(BuiltinNetworkID::Test.genesis_config2().clone()),
+            BuiltinNetworkID::Test.genesis_config2().clone(),
         )?;
         let temp_dir = starcoin_config::temp_dir();
         do_test_genesis(&net, temp_dir.path(), false)

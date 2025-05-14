@@ -447,7 +447,8 @@ where
                 let executed_block = self.main.connect(ExecutedBlock::new(
                     block.clone(),
                     block_info,
-                    multi_state,
+                    // todo: remove unwrap
+                    multi_state.unwrap(),
                 ))?;
                 info!(
                     "Block {} main has been processed, trigger head selection",

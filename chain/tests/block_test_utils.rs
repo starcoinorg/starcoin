@@ -37,10 +37,9 @@ pub fn genesis_strategy(storage: Arc<Storage>) -> impl Strategy<Value = Block> {
     let net = ChainNetwork::new(
         BuiltinNetworkID::Test.into(),
         BuiltinNetworkID::Test.genesis_config().clone(),
-        None,
+        BuiltinNetworkID::Test.genesis_config2().clone(),
     );
     let genesis = Genesis::load_or_build(&net).unwrap();
-    // todo: remove this
     let storage2 = Arc::new(Storage2::new(StorageInstance2::new_cache_instance()).unwrap());
     genesis
         .execute_genesis_block(&net, storage, storage2)
@@ -269,7 +268,7 @@ proptest! {
         let net = ChainNetwork::new(
             BuiltinNetworkID::Test.into(),
             BuiltinNetworkID::Test.genesis_config().clone(),
-            None,
+            BuiltinNetworkID::Test.genesis_config2().clone(),
         );
         let mut block_chain = test_helper::gen_blockchain_for_test(&net).unwrap();
         // blocks in ;
