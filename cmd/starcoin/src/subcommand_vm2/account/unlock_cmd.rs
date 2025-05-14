@@ -24,7 +24,7 @@ pub struct UnlockOpt {
     duration: u32,
     #[clap(
         name = "account_address",
-        help = "The wallet account address witch to unlock, if absent, unlock the default wallet."
+        help = "The wallet account address which to unlock, if absent, unlock the default wallet."
     )]
     account_address: Option<AccountAddress>,
 }
