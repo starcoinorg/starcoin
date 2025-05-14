@@ -2,20 +2,82 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::OpenedBlock;
+use anyhow::bail;
 use starcoin_accumulator::Accumulator;
 use starcoin_chain_api::ExcludedTxns;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::debug;
 use starcoin_types::error::BlockExecutorError;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
+use starcoin_vm2_executor::do_execute_block_transactions;
 use starcoin_vm2_state_api::ChainStateWriter;
+use starcoin_vm2_types::account_address::AccountAddress;
 use starcoin_vm2_types::transaction::{
     SignedUserTransaction as SignedUserTransaction2, Transaction as Transaction2,
     TransactionInfo as TransactionInfo2, TransactionOutput as TransactionOutput2,
     TransactionStatus as TransactionStatus2,
 };
 
+fn convert_block_meta(
+    block_meta: starcoin_types::block_metadata::BlockMetadata,
+) -> starcoin_vm2_types::block_metadata::BlockMetadata {
+    let (
+        parent_hash,
+        timestamp,
+        author,
+        _author_auth_key,
+        uncles,
+        number,
+        chain_id,
+        parent_gas_used,
+    ) = block_meta.into_inner();
+    let author = AccountAddress::new(author.into_bytes());
+    starcoin_vm2_types::block_metadata::BlockMetadata::new(
+        parent_hash,
+        timestamp,
+        author,
+        uncles,
+        number,
+        chain_id.id().into(),
+        parent_gas_used,
+    )
+}
+
 impl OpenedBlock {
+    pub fn initialize2(&mut self) -> anyhow::Result<()> {
+        let (_state, state) = &self.state;
+        let block_metadata_txn =
+            Transaction2::BlockMetadata(convert_block_meta(self.block_meta.clone()));
+        let block_meta_txn_hash = block_metadata_txn.id();
+        let mut results = do_execute_block_transactions(
+            state,
+            vec![block_metadata_txn],
+            None,
+            self.vm_metrics.clone(),
+        )
+        .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
+        let output = results.pop().expect("execute txn has output");
+
+        match output.status() {
+            TransactionStatus2::Discard(status) => {
+                bail!(
+                    "block_metadata txn {:?} is discarded, vm status: {:?}",
+                    self.block_meta,
+                    status
+                );
+            }
+            TransactionStatus2::Keep(_) => {
+                self.push_txn_and_state2(block_meta_txn_hash, output)?;
+            }
+            TransactionStatus2::Retry => {
+                bail!(
+                    "block_metadata txn {:?} is retry impossible",
+                    self.block_meta
+                );
+            }
+        };
+        Ok(())
+    }
     pub fn push_txns2(
         &mut self,
         user_txns: Vec<SignedUserTransaction2>,
@@ -98,7 +160,7 @@ impl OpenedBlock {
             gas_used,
             status,
         );
-        let _accumulator_root = self.txn_accumulator.append(&[txn_info.id()])?;
+        self.txn_accumulator.append(&[txn_info.id()])?;
         Ok(())
     }
 }

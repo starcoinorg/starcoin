@@ -136,6 +136,8 @@ impl OpenedBlock {
             vm_metrics,
         };
 
+        // Donot execute vm2 blockmeta txn util we need to execute vm2 user txns,
+        // For executor, we will execute vm1 txns first, and then vm2 txns.
         opened_block.initialize()?;
         Ok(opened_block)
     }

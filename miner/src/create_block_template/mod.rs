@@ -365,9 +365,16 @@ where
             self.vm_metrics.clone(),
         )?;
         let excluded_txns = opened_block.push_txns(txns)?;
-        let _ = opened_block.push_txns2(txns2)?;
+        let excluded_txns2 = {
+            opened_block.initialize2()?;
+            opened_block.push_txns2(txns2)?
+        };
         let template = opened_block.finalize()?;
-        for invalid_txn in excluded_txns.discarded_txns {
+        for invalid_txn in excluded_txns
+            .discarded_txns
+            .into_iter()
+            .chain(excluded_txns2.discarded_txns)
+        {
             self.tx_provider.remove_invalid_txn(invalid_txn.id());
         }
 
