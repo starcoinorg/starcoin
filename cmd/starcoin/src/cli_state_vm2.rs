@@ -194,7 +194,7 @@ impl CliStateVM2 {
             Some(sequence_number) => (sequence_number, false),
             None => match self
                 .client
-                .next_sequence_number_in_txpool2(sender.address)?
+                .next_sequence_number2_in_txpool(sender.address)?
             {
                 Some(sequence_number) => {
                     info!("get sequence_number {} from txpool", sequence_number);

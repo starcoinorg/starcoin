@@ -421,7 +421,7 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn next_sequence_number_in_txpool2(
+    pub fn next_sequence_number2_in_txpool(
         &self,
         _address: AccountAddress,
     ) -> anyhow::Result<Option<u64>> {
