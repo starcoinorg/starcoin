@@ -50,7 +50,7 @@ impl CommandAction for ShowCommand {
         };
         let account = account_client
             .get_account(account_address)?
-            .ok_or_else(|| format_err!("Account with address {} not exist.", account_address))?;
+            .ok_or_else(|| format_err!("Account with address {} does not exist.", account_address))?;
 
         let chain_state_reader = rpc_client.state_reader2(opt.state_root.unwrap_or_default())?;
         let sequence_number = chain_state_reader
