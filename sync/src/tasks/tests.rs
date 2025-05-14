@@ -45,7 +45,7 @@ pub async fn test_full_sync_new_node() -> Result<()> {
     let net1 = ChainNetwork::new(
         BuiltinNetworkID::Test.into(),
         BuiltinNetworkID::Test.genesis_config().clone(),
-        None,
+        BuiltinNetworkID::Test.genesis_config2().clone(),
     );
     let mut node1 = SyncNodeMocker::new(net1, 1, 50)?;
     node1.produce_block(10)?;
@@ -55,7 +55,7 @@ pub async fn test_full_sync_new_node() -> Result<()> {
     let net2 = ChainNetwork::new(
         BuiltinNetworkID::Test.into(),
         BuiltinNetworkID::Test.genesis_config().clone(),
-        None,
+        BuiltinNetworkID::Test.genesis_config2().clone(),
     );
 
     let node2 = SyncNodeMocker::new(net2.clone(), 1, 50)?;
@@ -135,7 +135,7 @@ pub async fn test_sync_invalid_target() -> Result<()> {
     let net1 = ChainNetwork::new(
         BuiltinNetworkID::Test.into(),
         BuiltinNetworkID::Test.genesis_config().clone(),
-        None,
+        BuiltinNetworkID::Test.genesis_config2().clone(),
     );
     let mut node1 = SyncNodeMocker::new(net1, 1, 0)?;
     node1.produce_block(10)?;
@@ -145,7 +145,7 @@ pub async fn test_sync_invalid_target() -> Result<()> {
     let net2 = ChainNetwork::new(
         BuiltinNetworkID::Test.into(),
         BuiltinNetworkID::Test.genesis_config().clone(),
-        None,
+        BuiltinNetworkID::Test.genesis_config2().clone(),
     );
 
     let node2 = SyncNodeMocker::new(net2.clone(), 1, 0)?;
@@ -236,7 +236,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
     let net1 = ChainNetwork::new(
         BuiltinNetworkID::Test.into(),
         BuiltinNetworkID::Test.genesis_config().clone(),
-        None,
+        BuiltinNetworkID::Test.genesis_config2().clone(),
     );
     let mut node1 = SyncNodeMocker::new(net1, 1, 50)?;
     node1.produce_block(10)?;
@@ -246,7 +246,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
     let net2 = ChainNetwork::new(
         BuiltinNetworkID::Test.into(),
         BuiltinNetworkID::Test.genesis_config().clone(),
-        None,
+        BuiltinNetworkID::Test.genesis_config2().clone(),
     );
 
     let node2 = SyncNodeMocker::new(net2.clone(), 1, 50)?;
@@ -327,7 +327,7 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
     let net1 = ChainNetwork::new(
         BuiltinNetworkID::Test.into(),
         BuiltinNetworkID::Test.genesis_config().clone(),
-        None,
+        BuiltinNetworkID::Test.genesis_config2().clone(),
     );
     let mut node1 = SyncNodeMocker::new(net1, 1, 50)?;
     node1.produce_block(10)?;
@@ -337,7 +337,7 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
     let net2 = ChainNetwork::new(
         BuiltinNetworkID::Test.into(),
         BuiltinNetworkID::Test.genesis_config().clone(),
-        None,
+        BuiltinNetworkID::Test.genesis_config2().clone(),
     );
 
     //fork from genesis
@@ -390,7 +390,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
     let net1 = ChainNetwork::new(
         BuiltinNetworkID::Test.into(),
         BuiltinNetworkID::Test.genesis_config().clone(),
-        None,
+        BuiltinNetworkID::Test.genesis_config2().clone(),
     );
     let mut node1 = SyncNodeMocker::new(net1, 10, 50)?;
     node1.produce_block(10)?;
@@ -400,7 +400,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
     let net2 = ChainNetwork::new(
         BuiltinNetworkID::Test.into(),
         BuiltinNetworkID::Test.genesis_config().clone(),
-        None,
+        BuiltinNetworkID::Test.genesis_config2().clone(),
     );
 
     //fork from genesis
@@ -491,7 +491,7 @@ pub async fn test_full_sync_cancel() -> Result<()> {
     let net1 = ChainNetwork::new(
         BuiltinNetworkID::Test.into(),
         BuiltinNetworkID::Test.genesis_config().clone(),
-        None,
+        BuiltinNetworkID::Test.genesis_config2().clone(),
     );
     let mut node1 = SyncNodeMocker::new(net1, 1, 50)?;
     node1.produce_block(10)?;
@@ -501,7 +501,7 @@ pub async fn test_full_sync_cancel() -> Result<()> {
     let net2 = ChainNetwork::new(
         BuiltinNetworkID::Test.into(),
         BuiltinNetworkID::Test.genesis_config().clone(),
-        None,
+        BuiltinNetworkID::Test.genesis_config2().clone(),
     );
 
     let node2 = SyncNodeMocker::new(net2.clone(), 10, 50)?;
@@ -945,7 +945,7 @@ async fn test_net_rpc_err() -> Result<()> {
     let net1 = ChainNetwork::new(
         BuiltinNetworkID::Test.into(),
         BuiltinNetworkID::Test.genesis_config().clone(),
-        None,
+        BuiltinNetworkID::Test.genesis_config2().clone(),
     );
     let mut node1 = SyncNodeMocker::new_with_strategy(net1, ErrorStrategy::MethodNotFound, 50)?;
     node1.produce_block(10)?;
@@ -955,7 +955,7 @@ async fn test_net_rpc_err() -> Result<()> {
     let net2 = ChainNetwork::new(
         BuiltinNetworkID::Test.into(),
         BuiltinNetworkID::Test.genesis_config().clone(),
-        None,
+        BuiltinNetworkID::Test.genesis_config2().clone(),
     );
 
     let node2 = SyncNodeMocker::new_with_strategy(net2.clone(), ErrorStrategy::MethodNotFound, 50)?;
@@ -1012,7 +1012,7 @@ async fn test_sync_target() {
     let net1 = ChainNetwork::new(
         BuiltinNetworkID::Test.into(),
         BuiltinNetworkID::Test.genesis_config().clone(),
-        None,
+        BuiltinNetworkID::Test.genesis_config2().clone(),
     );
     let mut node1 = SyncNodeMocker::new(net1, 1, 0).unwrap();
     node1.produce_block(10).unwrap();
@@ -1037,7 +1037,7 @@ async fn test_sync_target() {
     let net2 = ChainNetwork::new(
         BuiltinNetworkID::Test.into(),
         BuiltinNetworkID::Test.genesis_config().clone(),
-        None,
+        BuiltinNetworkID::Test.genesis_config2().clone(),
     );
     let (_, genesis_chain_info, _) =
         Genesis::init_storage_for_test(&net2).expect("init storage by genesis fail.");

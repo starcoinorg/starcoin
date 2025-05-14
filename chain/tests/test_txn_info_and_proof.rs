@@ -22,7 +22,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
         "test128".to_string(),
         128.into(),
         BuiltinNetworkID::Test.genesis_config().clone(),
-        None,
+        BuiltinNetworkID::Test.genesis_config2().clone(),
     )
     .unwrap();
     let mut block_chain = test_helper::gen_blockchain_for_test(&net)?;
