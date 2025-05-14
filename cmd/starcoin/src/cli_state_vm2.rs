@@ -101,6 +101,10 @@ impl CliStateVM2 {
         &self.client
     }
 
+    pub fn account_client(&self) -> &dyn AccountProvider {
+        self.account_client.as_ref()
+    }
+
     pub fn default_account(&self) -> Result<AccountInfo> {
         self.account_client
             .get_default_account()?
