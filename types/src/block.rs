@@ -829,7 +829,7 @@ impl Block {
         BlockMetadataV2::new(
             self.header.parent_hash(),
             self.header.timestamp,
-            AccountAddressV2::new(self.header.author.clone().into_bytes()),
+            AccountAddressV2::new(self.header.author.into_bytes()),
             uncles,
             self.header.number,
             self.header.chain_id.id().into(),
@@ -1110,11 +1110,11 @@ pub struct ExecutedBlock {
     block: Block,
     block_info: BlockInfo,
     // only for inner system modules
-    state_root: Option<MultiState>,
+    state_root: MultiState,
 }
 
 impl ExecutedBlock {
-    pub fn new(block: Block, block_info: BlockInfo, state_root: Option<MultiState>) -> Self {
+    pub fn new(block: Block, block_info: BlockInfo, state_root: MultiState) -> Self {
         ExecutedBlock {
             block,
             block_info,
@@ -1134,8 +1134,8 @@ impl ExecutedBlock {
         &self.block_info
     }
 
-    pub fn multi_state(&self) -> Option<&MultiState> {
-        self.state_root.as_ref()
+    pub fn multi_state(&self) -> &MultiState {
+        &self.state_root
     }
 
     pub fn header(&self) -> &BlockHeader {

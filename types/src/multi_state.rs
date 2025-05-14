@@ -7,7 +7,17 @@ use starcoin_crypto::hash::{CryptoHash, CryptoHasher};
 use starcoin_crypto::HashValue;
 
 #[derive(
-    Debug, Eq, PartialEq, Hash, Clone, Serialize, Deserialize, CryptoHasher, CryptoHash, JsonSchema,
+    Debug,
+    Eq,
+    PartialEq,
+    Default,
+    Hash,
+    Clone,
+    Serialize,
+    Deserialize,
+    CryptoHasher,
+    CryptoHash,
+    JsonSchema,
 )]
 pub struct MultiState {
     state_root1: HashValue,

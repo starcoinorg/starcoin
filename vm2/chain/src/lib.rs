@@ -99,4 +99,5 @@ pub fn build_block_transactions(
             .iter()
             .map(|t| Transaction::UserTransaction(t.clone())),
     );
+    txns
 }

@@ -119,7 +119,7 @@ pub fn build_transfer_from_association(
         amount,
         expire_time,
         net.chain_id().id().into(),
-        net.genesis_config2().as_ref().unwrap(),
+        net.genesis_config2(),
     )
 }
 
@@ -141,7 +141,7 @@ pub fn create_account_txn_sent_as_association(
         1,
         expiration_timestamp_secs,
         net.chain_id().id().into(),
-        net.genesis_config2().as_ref().unwrap(),
+        net.genesis_config2(),
     )
 }
 
@@ -177,8 +177,6 @@ pub fn create_user_txn(
     );
     let txn = net
         .genesis_config2()
-        .as_ref()
-        .unwrap()
         .sign_with_association(build_transaction(
             address,
             seq_number,

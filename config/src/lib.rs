@@ -306,7 +306,7 @@ impl BaseConfig {
             data_dir.as_path(),
             opt.genesis_config.clone(),
         )?;
-        let net = ChainNetwork::new(id, genesis_config, Some(genesis_config2));
+        let net = ChainNetwork::new(id, genesis_config, genesis_config2);
         Ok(Self {
             net,
             base_data_dir,
@@ -506,11 +506,10 @@ impl NodeConfig {
             ..StarcoinOpt::default()
         };
         let mut base = BaseConfig::load_with_opt(&opt).expect("Base config should load ok.");
-        // todo: do this with StarcoinOpt
         base.net = ChainNetwork::new(
             base.net.id().clone(),
             base.net.genesis_config().clone(),
-            None,
+            base.net.genesis_config2().clone(),
         );
         base.into_node_config(&opt)
             .expect("Auto generate test config should success.")

@@ -224,7 +224,7 @@ impl From<BuiltinNetworkID> for ChainNetwork {
         ChainNetwork::new(
             ChainNetworkID::Builtin(network),
             network.genesis_config().clone(),
-            Some(network.genesis_config2().clone()),
+            network.genesis_config2().clone(),
         )
     }
 }

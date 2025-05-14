@@ -38,7 +38,6 @@ use std::sync::Arc;
 mod errors;
 
 pub use errors::GenesisError;
-use starcoin_storage::table_info::TableInfoStore;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_view::StateView;
 
@@ -114,6 +113,10 @@ impl Display for Genesis {
     }
 }
 
+pub fn net_with_legacy_genesis(net: &BuiltinNetworkID) -> bool {
+    !(net.is_test_or_dev() || net.is_proxima())
+}
+
 impl Genesis {
     pub const GENESIS_FILE_NAME: &'static str = "genesis";
 
@@ -159,7 +162,7 @@ impl Genesis {
         {
             let (txn2, txn2_info) = starcoin_vm2_genesis::build_and_execute_genesis_transaction(
                 net.chain_id().id(),
-                &genesis_config2,
+                genesis_config2,
             );
 
             let txn = Self::build_genesis_transaction(net)?;
@@ -309,17 +312,10 @@ impl Genesis {
     }
 
     pub fn load_generated(net: BuiltinNetworkID) -> Result<Option<Self>> {
-        match Self::genesis_bytes(net) {
-            Some(bytes) => {
-                if net_with_legacy_genesis(&net) {
-                    let genesis = bcs_ext::from_bytes::<LegacyGenesis>(bytes)?;
-                    Ok(Some(genesis.into()))
-                } else {
-                    Ok(Some(bcs_ext::from_bytes::<Genesis>(bytes)?))
-                }
-            }
-            None => Ok(None),
-        }
+        Ok(match Self::genesis_bytes(net) {
+            Some(bytes) => Some(bcs_ext::from_bytes::<Genesis>(bytes)?),
+            None => None,
+        })
     }
 
     pub fn execute_genesis_block(
@@ -364,12 +360,8 @@ impl Genesis {
     }
 
     fn load_and_check_genesis(net: &ChainNetwork, data_dir: &Path, init: bool) -> Result<Genesis> {
-        // for custom network or test/dev/proxima network, using new format genesis
-        let legacy_genesis = net
-            .id()
-            .as_builtin()
-            .map(net_with_legacy_genesis)
-            .unwrap_or_default();
+        // todo: how and when upgrade legacy genesis?
+        let legacy_genesis = false;
         let genesis = match Genesis::load_from_dir(data_dir, legacy_genesis) {
             Ok(Some(genesis)) => {
                 let expect_genesis = Genesis::load_or_build(net)?;
