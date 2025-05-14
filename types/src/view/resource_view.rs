@@ -17,6 +17,17 @@ pub struct ResourceView {
 }
 
 impl ResourceView {
+    /// # Parameters
+    /// - Generic parameter `R`: The target deserialization type, which must satisfy:
+    ///   - Implements `MoveResource` (indicating it's a standard Move resource)
+    ///   - Implements `DeserializeOwned` (ensuring complete ownership of deserialized data)
+    ///
+    /// # Returns
+    /// - `Ok(R)`: Successfully deserialized instance of type R
+    /// - `Err(anyhow::Error)`: Contains error details if deserialization fails, which could occur because:
+    ///   - Byte data doesn't match BCS structure of type R
+    ///   - Byte data is incomplete or malformed
+    ///
     pub fn decode<R: MoveResource + DeserializeOwned>(&self) -> anyhow::Result<R> {
         bcs_ext::from_bytes(self.raw.0.as_slice())
     }
