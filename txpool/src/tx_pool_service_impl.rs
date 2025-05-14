@@ -255,14 +255,18 @@ impl Inner {
         self.sequence_number_cache.clear();
     }
 
-    pub(crate) fn get_chain_reader(&self) -> ChainStateDB {
-        ChainStateDB::new(
+    pub(crate) fn get_chain_reader(&self) -> Result<ChainStateDB> {
+        let multi_state = self
+            .storage
+            .get_vm_multi_state(self.chain_header.read().id())?;
+        Ok(ChainStateDB::new(
             self.storage.clone().into_super_arc(),
-            Some(self.get_chain_header().state_root()),
-        )
-    }
-    pub(crate) fn get_chain_header(&self) -> BlockHeader {
-        self.chain_header.read().clone()
+            Some(
+                multi_state
+                    .map(|m| m.state_root1())
+                    .unwrap_or_else(|| self.chain_header.read().state_root()),
+            ),
+        ))
     }
 
     pub(crate) fn cull(&self) {
