@@ -56,11 +56,7 @@ impl ServiceFactory<Self> for ChainStateService {
         let startup_info = storage
             .get_startup_info()?
             .ok_or_else(|| format_err!("Startup info should exist at service init."))?;
-        let multi_state = storage
-            .get_vm_multi_state(startup_info.main)?
-            .ok_or_else(|| {
-                format_err!("Can not find multi_state by hash:{:?}", startup_info.main)
-            })?;
+        let multi_state = storage.get_vm_multi_state(startup_info.main)?;
         Ok(Self::new(
             storage2,
             Some(multi_state.state_root2()),

@@ -636,24 +636,21 @@ pub trait Store:
         accumulator_type: AccumulatorStoreType,
     ) -> Arc<dyn AccumulatorTreeStore>;
 
-    fn get_vm_multi_state(&self, block_id: HashValue) -> Result<Option<MultiState>> {
-        if let Some(block_info) = self.get_block_info(block_id)? {
-            let acc_info = block_info.vm_state_accumulator_info;
-            let num_leaves = acc_info.num_leaves;
-            if num_leaves > 0 {
-                assert!(num_leaves > 1);
-                let acc = MerkleAccumulator::new_with_info(
-                    acc_info,
-                    self.get_accumulator_store(AccumulatorStoreType::VMState),
-                );
-                return Ok(Some(MultiState::new(
-                    acc.get_leaf(num_leaves - 2)?.unwrap(),
-                    acc.get_leaf(num_leaves - 1)?.unwrap(),
-                )));
-            }
-        };
-
-        Ok(None)
+    fn get_vm_multi_state(&self, block_id: HashValue) -> Result<MultiState> {
+        let block_info = self
+            .get_block_info(block_id)?
+            .ok_or_else(|| format_err!("Can not find block info {}", block_id))?;
+        let acc_info = block_info.vm_state_accumulator_info;
+        let num_leaves = acc_info.num_leaves;
+        assert!(acc_info.num_leaves > 1);
+        let acc = MerkleAccumulator::new_with_info(
+            acc_info,
+            self.get_accumulator_store(AccumulatorStoreType::VMState),
+        );
+        Ok(MultiState::new(
+            acc.get_leaf(num_leaves - 2)?.unwrap(),
+            acc.get_leaf(num_leaves - 1)?.unwrap(),
+        ))
     }
 }
 
