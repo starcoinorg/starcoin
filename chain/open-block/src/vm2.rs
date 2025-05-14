@@ -11,16 +11,17 @@ use starcoin_types::error::BlockExecutorError;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_vm2_executor::do_execute_block_transactions;
 use starcoin_vm2_state_api::ChainStateWriter;
-use starcoin_vm2_types::account_address::AccountAddress;
-use starcoin_vm2_types::transaction::{
-    SignedUserTransaction as SignedUserTransaction2, Transaction as Transaction2,
-    TransactionInfo as TransactionInfo2, TransactionOutput as TransactionOutput2,
-    TransactionStatus as TransactionStatus2,
+use starcoin_vm2_types::{
+    account_address::AccountAddress,
+    block_metadata::BlockMetadata,
+    transaction::{
+        SignedUserTransaction as SignedUserTransaction2, Transaction as Transaction2,
+        TransactionInfo as TransactionInfo2, TransactionOutput as TransactionOutput2,
+        TransactionStatus as TransactionStatus2,
+    },
 };
 
-fn convert_block_meta(
-    block_meta: starcoin_types::block_metadata::BlockMetadata,
-) -> starcoin_vm2_types::block_metadata::BlockMetadata {
+fn convert_block_meta(block_meta: starcoin_types::block_metadata::BlockMetadata) -> BlockMetadata {
     let (
         parent_hash,
         timestamp,
@@ -32,7 +33,7 @@ fn convert_block_meta(
         parent_gas_used,
     ) = block_meta.into_inner();
     let author = AccountAddress::new(author.into_bytes());
-    starcoin_vm2_types::block_metadata::BlockMetadata::new(
+    BlockMetadata::new(
         parent_hash,
         timestamp,
         author,

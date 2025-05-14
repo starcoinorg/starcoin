@@ -503,7 +503,6 @@ mod tests {
         Ok(())
     }
 
-    // fixme: currently, vm2 does not support custom genesis.
     #[stest::test]
     pub fn test_custom_genesis() -> Result<()> {
         let net = ChainNetwork::new_custom(
