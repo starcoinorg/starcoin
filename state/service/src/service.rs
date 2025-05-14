@@ -49,17 +49,10 @@ impl ServiceFactory<Self> for ChainStateService {
         let startup_info = storage
             .get_startup_info()?
             .ok_or_else(|| format_err!("Startup info should exist at service init."))?;
-        let head_block = storage.get_block(startup_info.main)?.ok_or_else(|| {
+        let _head_block = storage.get_block(startup_info.main)?.ok_or_else(|| {
             format_err!("Can not find head block by hash:{:?}", startup_info.main)
         })?;
-        let state_root = {
-            let state = storage.get_vm_multi_state(startup_info.main)?;
-            if let Some(state) = state {
-                state.state_root1()
-            } else {
-                head_block.header().state_root()
-            }
-        };
+        let state_root = storage.get_vm_multi_state(startup_info.main)?.state_root1();
         Ok(Self::new(
             storage,
             Some(state_root),

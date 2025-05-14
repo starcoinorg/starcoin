@@ -540,10 +540,7 @@ mod tests {
 
         let state_db = {
             let multi_state = storage1_2.get_vm_multi_state(genesis_block.header().id())?;
-            let state_root = multi_state
-                .as_ref()
-                .map(|s| s.state_root1())
-                .unwrap_or_else(|| genesis_block.header().state_root());
+            let state_root = multi_state.state_root1();
             ChainStateDB::new(storage1_2.clone().into_super_arc(), Some(state_root))
         };
         let account_state_reader = AccountStateReader::new(&state_db);
