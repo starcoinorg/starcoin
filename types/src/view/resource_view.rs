@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::view::{function_arg_type_view::StructTagView, str_view::StrView};
+use move_core_types::move_resource::MoveResource;
 use schemars::JsonSchema;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use starcoin_abi_decoder::DecodedMoveValue;
 use std::collections::BTreeMap;
@@ -12,6 +14,12 @@ pub struct ResourceView {
     pub raw: StrView<Vec<u8>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub json: Option<DecodedMoveValue>,
+}
+
+impl ResourceView {
+    pub fn decode<R: MoveResource + DeserializeOwned>(&self) -> anyhow::Result<R> {
+        bcs_ext::from_bytes(self.raw.0.as_slice())
+    }
 }
 
 impl From<Vec<u8>> for ResourceView {
