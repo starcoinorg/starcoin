@@ -43,10 +43,9 @@ use starcoin_vm2_chain::build_block_transactions;
 use starcoin_vm2_state_api::ChainStateWriter as ChainStateWriter2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_storage::Store as Store2;
-use starcoin_vm_runtime::force_upgrade_management::get_force_upgrade_block_number;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
-use starcoin_vm_types::genesis_config::{ChainId, ConsensusStrategy};
+use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_resource::Epoch;
 use std::cmp::min;
 use std::iter::Extend;
@@ -184,7 +183,6 @@ impl BlockChain {
         let vm_state_accumulator = MerkleAccumulator::new_empty(
             storage.get_accumulator_store(AccumulatorStoreType::VMState),
         );
-        let chain_id = genesis_block.header().chain_id();
         let statedb = ChainStateDB::new(storage.clone().into_super_arc(), None);
         let statedb2 = ChainStateDB2::new(storage2.clone().into_super_arc(), None);
         let executed_block = Self::execute_block_and_save(
@@ -196,7 +194,6 @@ impl BlockChain {
             &genesis_epoch,
             None,
             genesis_block,
-            &chain_id,
             None,
         )?;
         Self::new(
@@ -453,7 +450,6 @@ impl BlockChain {
         epoch: &Epoch,
         parent_status: Option<ChainStatus>,
         block: Block,
-        chain_id: &ChainId,
         vm_metrics: Option<VMMetrics>,
     ) -> Result<ExecutedBlock> {
         let (storage, storage2) = storage;
@@ -537,13 +533,7 @@ impl BlockChain {
 
         verify_block!(
             VerifyBlockField::State,
-            {
-                if header.number() == get_force_upgrade_block_number(chain_id) {
-                    vec_transaction_info.len() == transactions.len().checked_add(1).unwrap()
-                } else {
-                    vec_transaction_info.len() == transactions.len()
-                }
-            },
+            vec_transaction_info.len() == transactions.len(),
             "invalid txn num in the block"
         );
 
@@ -1227,7 +1217,6 @@ impl ChainReader for BlockChain {
                 &self.epoch,
                 Some(self.status.status.clone()),
                 verified_block.0,
-                &self.info().chain_id(),
                 self.vm_metrics.clone(),
             )
         }

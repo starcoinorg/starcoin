@@ -244,9 +244,6 @@ impl OpenedBlock {
             };
         }
 
-        self.execute_extra_txn()
-            .expect("Extra txn must be executed successfully");
-
         Ok(ExcludedTxns {
             discarded_txns: discard_txns,
             untouched_txns: untouched_user_txns,
@@ -372,6 +369,7 @@ impl OpenedBlock {
     /// The logic for handling the forced upgrade will be processed.
     /// First, set the account policy in `0x1::PackageTxnManager` to 100,
     /// Second, after the contract deployment is successful, revert it back.
+    #[allow(unused)]
     fn execute_extra_txn(&mut self) -> Result<()> {
         let (state, _state2) = &self.state;
         let extra_txn =
