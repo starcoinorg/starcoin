@@ -354,7 +354,10 @@ where
     TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
     fn handle_event(&mut self, msg: MinedBlock, ctx: &mut ServiceContext<Self>) {
-        let MinedBlock(new_block) = msg;
+        let MinedBlock {
+            block: new_block,
+            block_level,
+        } = msg;
         let id = new_block.header().id();
         debug!("try connect mined block: {}", id);
 
@@ -378,6 +381,7 @@ where
             let executed_block = match chain.execute(VerifiedBlock {
                     block: new_block.as_ref().clone(),
                     ghostdata: None,
+                    block_level,
                 }) {
                     std::result::Result::Ok(executed_block) => executed_block,
                     Err(e) => {

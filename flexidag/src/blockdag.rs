@@ -28,7 +28,7 @@ use anyhow::{bail, ensure, format_err, Ok};
 use itertools::Itertools;
 use parking_lot::{Mutex, RwLockUpgradableReadGuard};
 use rocksdb::WriteBatch;
-use starcoin_config::miner_config::G_MERGE_DEPTH;
+use starcoin_config::miner_config::{G_MAX_BLOCK_LEVEL, G_MERGE_DEPTH};
 use starcoin_config::temp_dir;
 use starcoin_crypto::{HashValue as Hash, HashValue};
 use starcoin_logger::prelude::{debug, error, info, warn};
@@ -73,14 +73,20 @@ pub struct BlockDAG {
     pruning_point_manager: PruningPointManager,
     block_depth_manager: BlockDepthManager,
     commit_lock: Arc<Mutex<FlexiDagStorage>>,
+    max_block_level: u8,
 }
 
 impl BlockDAG {
     pub fn create_blockdag(dag_storage: FlexiDagStorage) -> Self {
-        Self::new(DEFAULT_GHOSTDAG_K, G_MERGE_DEPTH, dag_storage)
+        Self::new(
+            DEFAULT_GHOSTDAG_K,
+            G_MERGE_DEPTH,
+            dag_storage,
+            G_MAX_BLOCK_LEVEL,
+        )
     }
 
-    pub fn new(k: KType, merge_depth: u64, db: FlexiDagStorage) -> Self {
+    pub fn new(k: KType, merge_depth: u64, db: FlexiDagStorage, max_block_level: u8) -> Self {
         let ghostdag_store = db.ghost_dag_store.clone();
         let header_store = db.header_store.clone();
         let relations_store = db.relations_store.clone();
@@ -108,6 +114,7 @@ impl BlockDAG {
             pruning_point_manager,
             block_depth_manager,
             commit_lock: Arc::new(Mutex::new(db)),
+            max_block_level,
         }
     }
 
@@ -123,7 +130,7 @@ impl BlockDAG {
     pub fn create_for_testing_with_parameters(k: KType) -> anyhow::Result<Self> {
         let dag_storage =
             FlexiDagStorage::create_from_path(temp_dir(), FlexiDagStorageConfig::default())?;
-        Ok(Self::new(k, G_MERGE_DEPTH, dag_storage))
+        Ok(Self::new(k, G_MERGE_DEPTH, dag_storage, G_MAX_BLOCK_LEVEL))
     }
 
     pub fn create_for_testing_with_k_and_merge_depth(
@@ -132,7 +139,7 @@ impl BlockDAG {
     ) -> anyhow::Result<Self> {
         let dag_storage =
             FlexiDagStorage::create_from_path(temp_dir(), FlexiDagStorageConfig::default())?;
-        Ok(Self::new(k, merge_depth, dag_storage))
+        Ok(Self::new(k, merge_depth, dag_storage, G_MAX_BLOCK_LEVEL))
     }
 
     pub fn has_block_connected(&self, block_header: &BlockHeader) -> anyhow::Result<bool> {
@@ -170,6 +177,8 @@ impl BlockDAG {
             .storage
             .relations_store
             .read()
+            .first()
+            .ok_or_else(|| format_err!("cannot find level 0 relation in storage when checking the block connected for parents"))?
             .get_parents(block_header.id())
         {
             std::result::Result::Ok(parents) => parents,
@@ -183,7 +192,10 @@ impl BlockDAG {
         };
 
         if !parents.iter().all(|parent| {
-            let children = match self.storage.relations_store.read().get_children(*parent) {
+            let children = match self.storage.relations_store.read()
+            .first()
+            .unwrap_or_else(|| panic!("cannot find level 0 relation in storage when checking the block connected for children"))
+            .get_children(*parent) {
                 std::result::Result::Ok(children) => children,
                 Err(e) => {
                     warn!("failed to get children by hash: {:?}, the block should be re-executed", e);
@@ -268,10 +280,20 @@ impl BlockDAG {
 
         inquirer::init(self.storage.reachability_store.write().deref_mut(), origin)?;
 
-        self.storage
-            .relations_store
-            .write()
-            .insert(origin, BlockHashes::new(vec![]))?;
+        (0..self.max_block_level).try_for_each(|level| {
+            self.storage
+                .relations_store
+                .write()
+                .get(level as usize)
+                .ok_or_else(|| {
+                    format_err!(
+                        "cannot find level {} relation in storage when init with genesis",
+                        level
+                    )
+                })?
+                .insert(origin, BlockHashes::new(vec![]))
+                .map_err(|e| format_err!("failed to insert genesis into level {}: {}", level, e))
+        })?;
 
         self.commit(genesis)?;
         self.save_dag_state(
@@ -456,24 +478,26 @@ impl BlockDAG {
         }
 
         let mut relations_write = self.storage.relations_store.write();
-        process_key_already_error(
-            relations_write.insert_batch(
-                &mut batch,
-                header.id(),
-                BlockHashes::new(
-                    parents
-                        .first()
-                        .ok_or_else(|| {
-                            format_err!(
-                                "failed to get the level 0 blocks when inserting the relationship"
-                            )
-                        })?
-                        .clone(),
+        relations_write.iter_mut().try_for_each(|relations_write_level| {
+            process_key_already_error(
+                relations_write_level.insert_batch(
+                    &mut batch,
+                    header.id(),
+                    BlockHashes::new(
+                        parents
+                            .first()
+                            .ok_or_else(|| {
+                                format_err!(
+                                    "failed to get the level 0 blocks when inserting the relationship"
+                                )
+                            })?
+                            .clone(),
+                    ),
                 ),
-            ),
-        )
-        .expect("failed to insert relations in batch");
-
+            )
+            .expect("failed to insert relations in batch");
+            Ok(())
+        })?;
         // Store header store
         process_key_already_error(self.storage.header_store.insert(
             header.id(),
@@ -610,24 +634,28 @@ impl BlockDAG {
         }
 
         let mut relations_write = self.storage.relations_store.write();
-        process_key_already_error(
-            relations_write.insert_batch(
-                &mut batch,
-                header.id(),
-                BlockHashes::new(
-                    parents
-                        .first()
-                        .ok_or_else(|| {
-                            format_err!(
-                                "failed to get the block level 0 when commiting the dag block!"
-                            )
-                        })?
-                        .clone(),
-                ),
-            ),
-        )
-        .expect("failed to insert relations in batch");
-
+        relations_write
+            .iter_mut()
+            .try_for_each(|relations_write_level| {
+                process_key_already_error(
+                    relations_write_level.insert_batch(
+                        &mut batch,
+                        header.id(),
+                        BlockHashes::new(
+                            parents
+                                .first()
+                                .ok_or_else(|| {
+                                    format_err!(
+                                    "failed to get the block level 0 when commiting the dag block!"
+                                )
+                                })?
+                                .clone(),
+                        ),
+                    ),
+                )
+                .expect("failed to insert relations in batch");
+                Ok(())
+            })?;
         // Store header store
         process_key_already_error(self.storage.header_store.insert_batch(
             &mut batch,
@@ -659,7 +687,14 @@ impl BlockDAG {
     }
 
     pub fn get_parents(&self, hash: Hash) -> anyhow::Result<Vec<Hash>> {
-        match self.storage.relations_store.write().get_parents(hash) {
+        match self
+            .storage
+            .relations_store
+            .write()
+            .first()
+            .ok_or_else(|| format_err!("cannot find level 0 relation in storage in get parents"))?
+            .get_parents(hash)
+        {
             anyhow::Result::Ok(parents) => anyhow::Result::Ok((*parents).clone()),
             Err(error) => {
                 bail!("failed to get parents by hash: {}", error);
@@ -668,7 +703,14 @@ impl BlockDAG {
     }
 
     pub fn get_children(&self, hash: Hash) -> anyhow::Result<Vec<Hash>> {
-        match self.storage.relations_store.read().get_children(hash) {
+        match self
+            .storage
+            .relations_store
+            .read()
+            .first()
+            .ok_or_else(|| format_err!("cannot find level 0 relation in storage in get children"))?
+            .get_children(hash)
+        {
             anyhow::Result::Ok(children) => anyhow::Result::Ok((*children).clone()),
             Err(error) => {
                 bail!("failed to get parents by hash: {}", error);
@@ -1179,7 +1221,15 @@ impl BlockDAG {
     }
 
     pub fn get_absent_blocks(&self, req: GetAbsentBlock) -> anyhow::Result<GetAbsentBlockResult> {
-        let relation = self.storage.relations_store.read();
+        let relation = self
+            .storage
+            .relations_store
+            .read()
+            .first()
+            .ok_or_else(|| {
+                format_err!("cannot find level 0 relation in storage in get absent blocks")
+            })?
+            .clone();
         let mut result = HashSet::from_iter(req.absent_id.clone());
         let mut roud = req.absent_id.into_iter().collect::<HashSet<HashValue>>();
         for _ in 0..req.exp {

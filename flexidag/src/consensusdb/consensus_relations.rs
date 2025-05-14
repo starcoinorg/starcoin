@@ -230,7 +230,14 @@ mod tests {
 
         let db = FlexiDagStorage::create_from_path(db_tempdir.path(), config)
             .expect("failed to create flexidag storage");
-        test_relations_store(db.relations_store.write().deref_mut().clone());
+        test_relations_store(
+            db.relations_store
+                .write()
+                .first_mut()
+                .unwrap()
+                .deref_mut()
+                .clone(),
+        );
     }
 
     fn test_relations_store<T: RelationsStore>(store: T) {

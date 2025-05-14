@@ -94,6 +94,7 @@ impl JobClient for StratumJobClient {
             job_id: mint_extra.job_id,
             nonce,
             result: seal.hash_result,
+            block_level: seal.block_level,
         })) {
             error!("failed to submit seal request {:?}", e);
         }

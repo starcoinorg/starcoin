@@ -37,6 +37,12 @@ impl<
             let current_parents = self
                 .relations_store
                 .read()
+                .first()
+                .unwrap_or_else(|| {
+                    panic!(
+                        "no level 0 blocks when getting unordered mergeset without selected parent"
+                    )
+                })
                 .get_parents(current)
                 .unwrap_or_else(|err| {
                     println!("WUT");

@@ -9,6 +9,7 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_time_service::TimeService;
 use starcoin_types::block::{BlockHeader, BlockHeaderExtra};
+use starcoin_types::blockhash::BlockLevel;
 use starcoin_types::U256;
 
 #[derive(Default)]
@@ -33,7 +34,7 @@ impl Consensus for DummyConsensus {
         _mining_hash: &[u8],
         difficulty: U256,
         time_service: &dyn TimeService,
-    ) -> u32 {
+    ) -> (u32, BlockLevel) {
         let mut rng = rand::thread_rng();
         let low = difficulty.as_u32() / 2;
         let high = difficulty.as_u32().saturating_add(low);
@@ -44,11 +45,11 @@ impl Consensus for DummyConsensus {
             difficulty.as_u32()
         );
         time_service.sleep(time as u64);
-        time
+        (time, 0)
     }
 
-    fn verify(&self, _reader: &dyn ChainReader, _header: &BlockHeader) -> Result<()> {
-        Ok(())
+    fn verify(&self, _reader: &dyn ChainReader, _header: &BlockHeader) -> Result<BlockLevel> {
+        Ok(0)
     }
 
     fn calculate_pow_hash(

@@ -44,7 +44,12 @@ impl JobClient for JobBusClient {
         };
         let _ = self
             .miner_service
-            .send(SubmitSealRequest::new(seal.minting_blob, seal.nonce, extra))
+            .send(SubmitSealRequest::new(
+                seal.minting_blob,
+                seal.nonce,
+                extra,
+                seal.block_level,
+            ))
             .await??;
         Ok(())
     }

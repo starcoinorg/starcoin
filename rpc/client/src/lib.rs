@@ -55,6 +55,7 @@ use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::block::BlockNumber;
+use starcoin_types::blockhash::BlockLevel;
 use starcoin_types::sign_message::SigningMessage;
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
@@ -946,19 +947,29 @@ impl RpcClient {
         minting_blob: String,
         nonce: u32,
         extra: String,
+        block_level: BlockLevel,
     ) -> anyhow::Result<MintedBlockView> {
-        self.call_rpc_blocking(|inner| inner.miner_client.submit(minting_blob, nonce, extra))
-            .map_err(map_err)
+        self.call_rpc_blocking(|inner| {
+            inner
+                .miner_client
+                .submit(minting_blob, nonce, extra, block_level)
+        })
+        .map_err(map_err)
     }
     pub async fn miner_submit_async(
         &self,
         minting_blob: String,
         nonce: u32,
         extra: String,
+        block_level: BlockLevel,
     ) -> anyhow::Result<MintedBlockView> {
-        self.call_rpc_async(|inner| inner.miner_client.submit(minting_blob, nonce, extra))
-            .await
-            .map_err(map_err)
+        self.call_rpc_async(|inner| {
+            inner
+                .miner_client
+                .submit(minting_blob, nonce, extra, block_level)
+        })
+        .await
+        .map_err(map_err)
     }
 
     pub fn txpool_status(&self) -> anyhow::Result<TxPoolStatus> {

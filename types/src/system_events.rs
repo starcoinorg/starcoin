@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block::{Block, BlockHeaderExtra, ExecutedBlock};
+use crate::blockhash::BlockLevel;
 use crate::sync_status::SyncStatus;
 use crate::U256;
 use schemars::JsonSchema;
@@ -24,7 +25,10 @@ pub struct NewDagBlock {
 pub struct NewBranch(pub Arc<ExecutedBlock>);
 
 #[derive(Clone, Debug)]
-pub struct MinedBlock(pub Arc<Block>);
+pub struct MinedBlock {
+    pub block: Arc<Block>,
+    pub block_level: BlockLevel,
+}
 
 ///Fire this event on System start and all service is init.
 #[derive(Clone, Debug)]
@@ -116,4 +120,5 @@ pub struct SealEvent {
     pub nonce: u32,
     pub extra: Option<MintEventExtra>,
     pub hash_result: String,
+    pub block_level: BlockLevel,
 }

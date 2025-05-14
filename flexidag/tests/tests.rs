@@ -202,6 +202,8 @@ fn test_write_asynchronization() -> anyhow::Result<()> {
     dag.storage
         .relations_store
         .write()
+        .first_mut()
+        .unwrap()
         .insert(parent.id(), Arc::new(vec![genesis.id()]))?;
 
     let dag_one = dag.clone();
@@ -212,6 +214,8 @@ fn test_write_asynchronization() -> anyhow::Result<()> {
             .storage
             .relations_store
             .write()
+            .first_mut()
+            .unwrap()
             .insert(one_clone.id(), Arc::new(vec![parent_clone.id()]))
             .expect("failed to insert one");
     });
@@ -223,6 +227,8 @@ fn test_write_asynchronization() -> anyhow::Result<()> {
             .storage
             .relations_store
             .write()
+            .first_mut()
+            .unwrap()
             .insert(two_clone.id(), Arc::new(vec![parent_clone.id()]))
             .expect("failed to insert two");
     });
@@ -234,12 +240,16 @@ fn test_write_asynchronization() -> anyhow::Result<()> {
         .storage
         .relations_store
         .read()
+        .first()
+        .unwrap()
         .get_children(parent.id())?
         .contains(&one.id()));
     assert!(dag
         .storage
         .relations_store
         .read()
+        .first()
+        .unwrap()
         .get_children(parent.id())?
         .contains(&two.id()));
 
@@ -1711,7 +1721,17 @@ fn test_get_blocks_in_batch() -> anyhow::Result<()> {
         pre = result
             .absent_blocks
             .into_iter()
-            .flat_map(|id| (*dag.storage.relations_store.read().get_parents(id).unwrap()).clone())
+            .flat_map(|id| {
+                (*dag
+                    .storage
+                    .relations_store
+                    .read()
+                    .first()
+                    .unwrap()
+                    .get_parents(id)
+                    .unwrap())
+                .clone()
+            })
             .collect();
     }
     assert!(all_results.contains(&genesis.id()));

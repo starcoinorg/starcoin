@@ -71,7 +71,7 @@ async fn test_miner_service() {
     let diff = U256::from(1024);
     let minting_blob = vec![0u8; 76];
 
-    let nonce = config
+    let (nonce, block_level) = config
         .net()
         .genesis_config()
         .consensus()
@@ -81,6 +81,7 @@ async fn test_miner_service() {
             minting_blob,
             nonce,
             BlockHeaderExtra::new([0u8; 4]),
+            block_level,
         ))
         .unwrap();
 
