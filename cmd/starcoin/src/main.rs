@@ -84,7 +84,7 @@ fn run() -> Result<()> {
             )?;
             let using_vm2 = opt.vm2.unwrap_or(false);
 
-            let account_provider_vm2_option = if using_vm2 {
+            let account_provider2_option = if using_vm2 {
                 Some(ProviderFactory::create_provider2(
                     client.clone(),
                     ChainId::new(node_info.net.chain_id().id()),
@@ -100,7 +100,7 @@ fn run() -> Result<()> {
                 opt.watch_timeout.map(Duration::from_secs),
                 node_handle,
                 account_provider,
-                account_provider_vm2_option,
+                account_provider2_option,
             );
             USING_VM2.store(using_vm2, Ordering::SeqCst);
             Ok(state)
