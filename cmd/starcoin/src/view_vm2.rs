@@ -1,8 +1,11 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
+use starcoin_vm2_account_api::AccountInfo;
 use starcoin_vm2_types::view::{
     DryRunOutputView, RawUserTransactionView, TransactionEventResponse, TransactionInfoView,
 };
+use starcoin_vm2_vm_types::account_config::token_code::TokenCode;
+use std::collections::HashMap;
 
 #[derive(Serialize, Debug, Clone)]
 pub struct ExecutionOutputView {
@@ -60,4 +63,12 @@ impl ExecuteResultView {
             None
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AccountWithStateView {
+    pub account: AccountInfo,
+    pub auth_key: String,
+    pub sequence_number: Option<u64>,
+    pub balances: HashMap<TokenCode, u128>,
 }
