@@ -202,10 +202,6 @@ pub struct StarcoinOpt {
     /// This option only work for node init start.
     pub genesis_config: Option<String>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long = "vm2")]
-    pub vm2: Option<bool>,
-
     #[clap(flatten)]
     pub rpc: RpcConfig,
     #[clap(flatten)]

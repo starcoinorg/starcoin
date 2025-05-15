@@ -12011,6 +12011,7 @@ dependencies = [
  "starcoin-storage 2.0.1",
  "starcoin-sync-api",
  "starcoin-transaction-builder 1.13.19",
+ "starcoin-transaction-builder 2.0.1",
  "starcoin-txpool-api",
  "starcoin-types 1.13.19",
  "starcoin-types 2.0.1",

@@ -12,15 +12,12 @@ use starcoin_logger::prelude::*;
 use starcoin_node_api::errors::NodeStartError;
 use starcoin_rpc_client::RpcClient;
 use starcoin_vm2_vm_types::genesis_config::ChainId;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
 /// This exit code means is that the node failed to start and required human intervention.
 /// Node start script can do auto task when meet this exist code.
 static G_EXIT_CODE_NEED_HELP: i32 = 120;
-
-static USING_VM2: AtomicBool = AtomicBool::new(false);
 
 fn run() -> Result<()> {
     let logger_handle = starcoin_logger::init();
@@ -77,22 +74,18 @@ fn run() -> Result<()> {
 
             let node_info = client.node_info()?;
             let client = Arc::new(client);
+
             let account_provider = ProviderFactory::create_provider(
                 client.clone(),
                 node_info.net.chain_id(),
                 &opt.account_provider,
             )?;
-            let using_vm2 = opt.vm2.unwrap_or(false);
 
-            let account_provider2_option = if using_vm2 {
-                Some(ProviderFactory::create_provider2(
-                    client.clone(),
-                    ChainId::new(node_info.net.chain_id().id()),
-                    &opt.account_provider,
-                )?)
-            } else {
-                None
-            };
+            let account_provider2_option = Some(ProviderFactory::create_provider2(
+                client.clone(),
+                ChainId::new(node_info.net.chain_id().id()),
+                &opt.account_provider,
+            )?);
 
             let state = CliState::new(
                 node_info.net,
@@ -102,7 +95,6 @@ fn run() -> Result<()> {
                 account_provider,
                 account_provider2_option,
             );
-            USING_VM2.store(using_vm2, Ordering::SeqCst);
             Ok(state)
         },
         |_, _, state| {
@@ -139,11 +131,8 @@ fn run() -> Result<()> {
         },
     );
 
-    if USING_VM2.load(Ordering::SeqCst) {
-        add_command_vm2(context).exec()
-    } else {
-        add_command(context).exec()
-    }
+    let context = add_command(context);
+    add_command_vm2(context).exec()
 }
 
 #[rustfmt::skip]
