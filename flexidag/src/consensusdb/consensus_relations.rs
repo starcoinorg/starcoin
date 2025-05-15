@@ -5,6 +5,8 @@ use super::{
     prelude::{CachedDbAccess, StoreError},
 };
 use crate::define_schema;
+use byteorder::{ReadBytesExt, WriteBytesExt};
+use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue as Hash;
 use starcoin_storage::batch::{WriteBatch, WriteBatchData, WriteBatchWithColumn};
 use starcoin_storage::storage::{InnerStore, WriteOp};
@@ -29,18 +31,65 @@ pub trait RelationsStore: RelationsStoreReader {
 pub(crate) const PARENTS_CF: &str = "block-parents";
 pub(crate) const CHILDREN_CF: &str = "block-children";
 
-define_schema!(RelationParent, Hash, Arc<Vec<Hash>>, PARENTS_CF);
-define_schema!(RelationChildren, Hash, Arc<Vec<Hash>>, CHILDREN_CF);
+#[derive(
+    Clone, Copy, Eq, Hash, PartialEq, PartialOrd, Ord, Default, Debug, Serialize, Deserialize,
+)]
+pub struct RelationHashKey {
+    pub block_level: BlockLevel,
+    pub block_id: Hash,
+}
 
-impl KeyCodec<RelationParent> for Hash {
+impl RelationHashKey {
+    pub fn new(block_level: BlockLevel, block_id: Hash) -> Self {
+        Self {
+            block_level,
+            block_id,
+        }
+    }
+}
+
+define_schema!(RelationParent, RelationHashKey, Arc<Vec<Hash>>, PARENTS_CF);
+define_schema!(
+    RelationChildren,
+    RelationHashKey,
+    Arc<Vec<Hash>>,
+    CHILDREN_CF
+);
+
+impl KeyCodec<RelationParent> for RelationHashKey {
     fn encode_key(&self) -> Result<Vec<u8>, StoreError> {
-        Ok(self.to_vec())
+        let mut buf = Vec::new();
+        buf.write_u8(self.block_level).map_err(|e| {
+            StoreError::EncodeError(format!(
+                "failed to encode block level:{:?} for {:?}",
+                self.block_level, e
+            ))
+        })?;
+        buf.extend(bcs_ext::to_bytes(&self.block_id).map_err(|e| {
+            StoreError::EncodeError(format!(
+                "failed to encode block id:{:?} for {:?}",
+                self.block_id, e
+            ))
+        })?);
+        Ok(buf)
     }
 
     fn decode_key(data: &[u8]) -> Result<Self, StoreError> {
-        Self::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+        let (block_level_bytes, block_id_bytes) = data.split_at(1);
+        let block_level = &mut &block_level_bytes[..];
+        let block_level = block_level.read_u8().map_err(|e| {
+            StoreError::DecodeError(format!("failed to decode block level for {:?}", e))
+        })?;
+        let block_id = bcs_ext::from_bytes(block_id_bytes).map_err(|e| {
+            StoreError::DecodeError(format!("failed to decode block id for {:?}", e))
+        })?;
+        Ok(Self {
+            block_level,
+            block_id,
+        })
     }
 }
+
 impl ValueCodec<RelationParent> for Arc<Vec<Hash>> {
     fn encode_value(&self) -> Result<Vec<u8>, StoreError> {
         bcs_ext::to_bytes(self).map_err(|e| StoreError::EncodeError(e.to_string()))
@@ -50,13 +99,38 @@ impl ValueCodec<RelationParent> for Arc<Vec<Hash>> {
         bcs_ext::from_bytes(data).map_err(|e| StoreError::DecodeError(e.to_string()))
     }
 }
-impl KeyCodec<RelationChildren> for Hash {
+
+impl KeyCodec<RelationChildren> for RelationHashKey {
     fn encode_key(&self) -> Result<Vec<u8>, StoreError> {
-        Ok(self.to_vec())
+        let mut buf = Vec::new();
+        buf.write_u8(self.block_level).map_err(|e| {
+            StoreError::EncodeError(format!(
+                "failed to encode block level:{:?} for {:?}",
+                self.block_level, e
+            ))
+        })?;
+        buf.extend(bcs_ext::to_bytes(&self.block_id).map_err(|e| {
+            StoreError::EncodeError(format!(
+                "failed to encode block id:{:?} for {:?}",
+                self.block_id, e
+            ))
+        })?);
+        Ok(buf)
     }
 
     fn decode_key(data: &[u8]) -> Result<Self, StoreError> {
-        Self::from_slice(data).map_err(|e| StoreError::DecodeError(e.to_string()))
+        let (block_level_bytes, block_id_bytes) = data.split_at(1);
+        let block_level = &mut &block_level_bytes[..];
+        let block_level = block_level.read_u8().map_err(|e| {
+            StoreError::DecodeError(format!("failed to decode block level for {:?}", e))
+        })?;
+        let block_id = bcs_ext::from_bytes(block_id_bytes).map_err(|e| {
+            StoreError::DecodeError(format!("failed to decode block id for {:?}", e))
+        })?;
+        Ok(Self {
+            block_level,
+            block_id,
+        })
     }
 }
 
@@ -104,13 +178,16 @@ impl DbRelationsStore {
         }
 
         // Insert a new entry for `hash`
-        self.parents_access
-            .write(BatchDbWriter::new(batch, &self.db), hash, parents.clone())?;
+        self.parents_access.write(
+            BatchDbWriter::new(batch, &self.db),
+            RelationHashKey::new(self.level, hash),
+            parents.clone(),
+        )?;
 
         // The new hash has no children yet
         self.children_access.write(
             BatchDbWriter::new(batch, &self.db),
-            hash,
+            RelationHashKey::new(self.level, hash),
             BlockHashes::new(Vec::new()),
         )?;
 
@@ -120,7 +197,7 @@ impl DbRelationsStore {
             children.push(hash);
             self.children_access.write(
                 BatchDbWriter::new(batch, &self.db),
-                parent,
+                RelationHashKey::new(self.level, parent),
                 BlockHashes::new(children),
             )?;
         }
@@ -131,16 +208,19 @@ impl DbRelationsStore {
 
 impl RelationsStoreReader for DbRelationsStore {
     fn get_parents(&self, hash: Hash) -> Result<BlockHashes, StoreError> {
-        self.parents_access.read(hash)
+        self.parents_access
+            .read(RelationHashKey::new(self.level, hash))
     }
 
     fn get_children(&self, hash: Hash) -> Result<BlockHashes, StoreError> {
-        self.children_access.read(hash)
+        self.children_access
+            .read(RelationHashKey::new(self.level, hash))
     }
 
     fn has(&self, hash: Hash) -> Result<bool, StoreError> {
-        if self.parents_access.has(hash)? {
-            debug_assert!(self.children_access.has(hash)?);
+        let key = RelationHashKey::new(self.level, hash);
+        if self.parents_access.has(key)? {
+            debug_assert!(self.children_access.has(key)?);
             Ok(true)
         } else {
             Ok(false)
@@ -204,11 +284,17 @@ impl RelationsStore for DbRelationsStore {
             .write_batch_with_column(batch)
             .map_err(|e| StoreError::DBIoError(format!("Failed to write batch when writing batch with column for the dag releationship: {:?}", e)))?;
 
-        self.parents_access.flush_cache(&[(hash, parents)])?;
+        self.parents_access
+            .flush_cache(&[(RelationHashKey::new(self.level, hash), parents)])?;
         self.children_access.flush_cache(
             &parent_to_children
                 .into_iter()
-                .map(|(key, value)| (key, BlockHashes::new(value)))
+                .map(|(key, value)| {
+                    (
+                        RelationHashKey::new(self.level, key),
+                        BlockHashes::new(value),
+                    )
+                })
                 .collect::<Vec<_>>(),
         )?;
 
