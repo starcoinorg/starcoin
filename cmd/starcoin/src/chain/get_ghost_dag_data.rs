@@ -31,7 +31,10 @@ impl CommandAction for GetGhostDagDataCommand {
     ) -> Result<Self::ReturnItem> {
         ctx.state()
             .client()
-            .get_ghost_dag_data(ctx.opt().id)?
+            .get_ghost_dag_data(vec![ctx.opt().id])?
+            .into_iter()
+            .next()
+            .flatten()
             .ok_or_else(|| anyhow!("Ghostdag data not found for block hash: {}", ctx.opt().id))
     }
 }

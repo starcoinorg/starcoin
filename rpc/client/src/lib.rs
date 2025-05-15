@@ -799,8 +799,11 @@ impl RpcClient {
             .map_err(map_err)
     }
 
-    pub fn get_ghost_dag_data(&self, id: HashValue) -> anyhow::Result<Option<GhostdagData>> {
-        self.call_rpc_blocking(|inner| inner.chain_client.get_ghostdagdata(id))
+    pub fn get_ghost_dag_data(
+        &self,
+        ids: Vec<HashValue>,
+    ) -> anyhow::Result<Vec<Option<GhostdagData>>> {
+        self.call_rpc_blocking(|inner| inner.chain_client.get_ghostdagdata(ids))
             .map_err(map_err)
     }
 
