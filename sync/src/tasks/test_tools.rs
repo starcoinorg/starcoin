@@ -14,6 +14,7 @@ use starcoin_chain_api::ChainReader;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::{BuiltinNetworkID, ChainNetwork, NodeConfig, RocksdbConfig};
 use starcoin_dag::consensusdb::prelude::FlexiDagStorageConfig;
+use starcoin_dag::service::pruning_point_service::PruningPointService;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
@@ -94,6 +95,7 @@ impl SyncTestSystem {
 
                 registry.put_shared(config.clone()).await.unwrap();
                 registry.put_shared(storage.clone()).await.unwrap();
+                registry.put_shared(genesis).await.unwrap();
                 registry
                     .put_shared(dag)
                     .await
@@ -103,6 +105,7 @@ impl SyncTestSystem {
                 Delay::new(Duration::from_secs(2)).await;
 
                 registry.register::<ChainReaderService>().await.unwrap();
+                registry.register::<PruningPointService>().await.unwrap();
                 registry
                     .register::<BlockConnectorService<MockTxPoolService>>()
                     .await
