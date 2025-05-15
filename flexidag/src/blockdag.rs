@@ -478,26 +478,32 @@ impl BlockDAG {
         }
 
         let mut relations_write = self.storage.relations_store.write();
-        relations_write.iter_mut().try_for_each(|relations_write_level| {
-            process_key_already_error(
-                relations_write_level.insert_batch(
-                    &mut batch,
-                    header.id(),
-                    BlockHashes::new(
-                        parents
-                            .first()
-                            .ok_or_else(|| {
-                                format_err!(
-                                    "failed to get the level 0 blocks when inserting the relationship"
-                                )
-                            })?
-                            .clone(),
-                    ),
-                ),
-            )
-            .expect("failed to insert relations in batch");
-            Ok(())
-        })?;
+        if !header.is_genesis() {
+            parents.iter().enumerate().try_for_each(|(level, parents)| {
+                relations_write.get_mut(level)
+                .ok_or_else(|| format_err!(
+                    "failed to get the block level {} when commiting the dag block!",
+                    level))?
+                .insert_batch(&mut batch, header.id(), Arc::new(parents.clone()))
+                .map_err(|e| format_err!("failed to isnert the relations of level {:?} when commiting the dag block! error: {:?}", level, e))
+            })?;
+        } else {
+            (0..self.max_block_level).try_for_each(|level| {
+                relations_write.get_mut(level as usize)
+                .ok_or_else(|| format_err!(
+                    "failed to get the block level {} when commiting the dag block!",
+                    level))?
+                    .insert_batch(
+                        &mut batch,
+                        header.id(),
+                        Arc::new(
+                            vec![]
+                        )
+                    )
+                .map_err(|e| format_err!("failed to isnert the relations of level {:?} when commiting the dag block for genesis! error: {:?}", level, e))
+            })?;
+        }
+
         // Store header store
         process_key_already_error(self.storage.header_store.insert(
             header.id(),
@@ -634,28 +640,32 @@ impl BlockDAG {
         }
 
         let mut relations_write = self.storage.relations_store.write();
-        relations_write
-            .iter_mut()
-            .try_for_each(|relations_write_level| {
-                process_key_already_error(
-                    relations_write_level.insert_batch(
+        if !header.is_genesis() {
+            parents.iter().enumerate().try_for_each(|(level, parents)| {
+                relations_write.get_mut(level)
+                .ok_or_else(|| format_err!(
+                    "failed to get the block level {} when commiting the dag block!",
+                    level))?
+                .insert_batch(&mut batch, header.id(), Arc::new(parents.clone()))
+                .map_err(|e| format_err!("failed to isnert the relations of level {:?} when commiting the dag block! error: {:?}", level, e))
+            })?;
+        } else {
+            (0..self.max_block_level).try_for_each(|level| {
+                relations_write.get_mut(level as usize)
+                .ok_or_else(|| format_err!(
+                    "failed to get the block level {} when commiting the dag block!",
+                    level))?
+                    .insert_batch(
                         &mut batch,
                         header.id(),
-                        BlockHashes::new(
-                            parents
-                                .first()
-                                .ok_or_else(|| {
-                                    format_err!(
-                                    "failed to get the block level 0 when commiting the dag block!"
-                                )
-                                })?
-                                .clone(),
-                        ),
-                    ),
-                )
-                .expect("failed to insert relations in batch");
-                Ok(())
+                        Arc::new(
+                            vec![]
+                        )
+                    )
+                .map_err(|e| format_err!("failed to isnert the relations of level {:?} when commiting the dag block for genesis! error: {:?}", level, e))
             })?;
+        }
+
         // Store header store
         process_key_already_error(self.storage.header_store.insert_batch(
             &mut batch,
