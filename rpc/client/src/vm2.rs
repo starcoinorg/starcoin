@@ -3,6 +3,7 @@
 
 use crate::{map_err, remote_state_reader2::RemoteStateReader, RpcClient, StateRootOption};
 use bcs_ext::BCSCodec;
+use starcoin_types::account_address::AccountAddress as AccountAddressV1;
 use starcoin_vm2_abi_types::{FunctionABI, ModuleABI, StructInstantiation};
 use starcoin_vm2_account_api::AccountInfo;
 use starcoin_vm2_crypto::HashValue;
@@ -423,9 +424,8 @@ impl RpcClient {
 
     pub fn next_sequence_number2_in_txpool(
         &self,
-        _address: AccountAddress,
+        address: AccountAddress,
     ) -> anyhow::Result<Option<u64>> {
-        // TODO(BobOng): [dual-vm] to implement
-        unimplemented!()
+        self.next_sequence_number_in_txpool(AccountAddressV1::new(address.into_bytes()))
     }
 }

@@ -8,7 +8,10 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_client::StateRootOption;
 use starcoin_vm2_crypto::ValidCryptoMaterialStringExt;
 use starcoin_vm2_statedb::ChainStateReader;
-use starcoin_vm2_vm_types::{account_address::AccountAddress, state_view::StateReaderExt};
+use starcoin_vm2_vm_types::{
+    account_address::AccountAddress, account_config::BalanceResource, state_view::StateReaderExt,
+    token::token_code::TokenCode,
+};
 use std::collections::HashMap;
 
 /// Show a account info, only the accounts managed by the current node are supported
@@ -60,7 +63,7 @@ impl CommandAction for ShowCommand {
             .map(|r| r.sequence_number())
             .ok();
 
-        let _resources = rpc_client.state_list_resource2(
+        let resources = rpc_client.state_list_resource2(
             *account.address(),
             false,
             Some(chain_state_reader.state_root()),
@@ -68,24 +71,22 @@ impl CommandAction for ShowCommand {
             usize::MAX,
             None,
         )?;
-        // TODO(BobOng): [dual-vm] decode function not valid now
-        // let balances: HashMap<TokenCode, u128> = resources
-        //     .resources
-        //     .into_iter()
-        //     .filter_map(|(resource_type, resource)| {
-        //         if let Some(token_code) = BalanceResource::token_code(&resource_type.0) {
-        //             let balance = resource
-        //                 .decode::<BalanceResource>()
-        //                 .ok()
-        //                 .map(|balance| balance.token());
-        //             Some((token_code, balance.unwrap_or(0)))
-        //         } else {
-        //             None
-        //         }
-        //     })
-        //     .collect();
 
-        let balances = HashMap::new();
+        let balances: HashMap<TokenCode, u128> = resources
+            .resources
+            .into_iter()
+            .filter_map(|(resource_type, resource)| {
+                if let Some(token_code) = BalanceResource::token_code(&resource_type.0) {
+                    let balance = resource
+                        .decode::<BalanceResource>()
+                        .ok()
+                        .map(|balance| balance.token());
+                    Some((token_code, balance.unwrap_or(0)))
+                } else {
+                    None
+                }
+            })
+            .collect();
 
         let auth_key = account.public_key.authentication_key();
         Ok(AccountWithStateView {
