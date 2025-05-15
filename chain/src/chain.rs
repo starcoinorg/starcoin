@@ -126,10 +126,20 @@ impl BlockChain {
             (
                 vm_state_accumulator
                     .get_leaf(vm_state_accumulator.num_leaves() - 2)?
-                    .unwrap(),
+                    .ok_or_else(|| {
+                        format_err!(
+                            "Can not find acc leaf {}",
+                            vm_state_accumulator.num_leaves() - 2
+                        )
+                    })?,
                 vm_state_accumulator
                     .get_leaf(vm_state_accumulator.num_leaves() - 1)?
-                    .unwrap(),
+                    .ok_or_else(|| {
+                        format_err!(
+                            "Can not find acc leaf {}",
+                            vm_state_accumulator.num_leaves() - 1
+                        )
+                    })?,
             )
         };
 

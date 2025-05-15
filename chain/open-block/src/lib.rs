@@ -3,7 +3,7 @@
 
 mod vm2;
 
-use anyhow::{bail, format_err, Result};
+use anyhow::{bail, ensure, format_err, Result};
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_chain_api::ExcludedTxns;
 use starcoin_crypto::HashValue;
@@ -94,13 +94,17 @@ impl OpenedBlock {
         );
         let (state_root1, state_root2) = {
             let num_leaves = vm_state_accumulator.num_leaves();
-            assert!(
+            ensure!(
                 num_leaves > 1,
-                "vm_state_accumulator num_leaves should be greater than 1"
+                "vm_state_accumulator num_leaves should have 2 leaves at least",
             );
             (
-                vm_state_accumulator.get_leaf(num_leaves - 2)?.unwrap(),
-                vm_state_accumulator.get_leaf(num_leaves - 1)?.unwrap(),
+                vm_state_accumulator
+                    .get_leaf(num_leaves - 2)?
+                    .ok_or_else(|| format_err!("failed to get leaf at {}", num_leaves - 2))?,
+                vm_state_accumulator
+                    .get_leaf(num_leaves - 1)?
+                    .ok_or_else(|| format_err!("failed to get leaf at {}", num_leaves - 1))?,
             )
         };
 

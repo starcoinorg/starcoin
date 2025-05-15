@@ -91,7 +91,7 @@ impl OpenedBlock {
         let mut discarded_txns: Vec<MultiSignedUserTransaction> = Vec::new();
         let mut untouched_txns: Vec<MultiSignedUserTransaction> = Vec::new();
 
-        let txn_outputs = starcoin_vm2_executor::do_execute_block_transactions(
+        let txn_outputs = do_execute_block_transactions(
             state,
             txns.clone(),
             Some(self.gas_limit),
