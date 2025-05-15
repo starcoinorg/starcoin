@@ -47,6 +47,7 @@ test-helper = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 starcoin-network-rpc-api = { workspace = true }
 starcoin-force-upgrade = { workspace = true }
+futures = { workspace = true }
 
 [features]
 default = []

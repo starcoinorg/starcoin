@@ -9549,6 +9549,7 @@ dependencies = [
  "async-std",
  "bcs-ext",
  "clap 3.2.23",
+ "futures 0.3.26",
  "once_cell",
  "proptest",
  "proptest-derive",
