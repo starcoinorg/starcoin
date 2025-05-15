@@ -79,7 +79,7 @@ impl CommandAction for GetCoinCommand {
                 .get_transaction_info()
         } else {
             bail!(
-                "The network {} is not support get-coin command, please go to https://faucet.starcoin.org/",
+                "The network {} does not support the get-coin command, please go to https://faucet.starcoin.org/",
                 net
             );
         };
