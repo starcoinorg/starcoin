@@ -515,7 +515,7 @@ impl ChainApi for MockChainApi {
         todo!("not implement yet")
     }
 
-    fn get_ghostdagdata(&self, _block_hash: HashValue) -> FutureResult<Option<GhostdagData>> {
+    fn get_ghostdagdata(&self, _ids: Vec<HashValue>) -> FutureResult<Vec<Option<GhostdagData>>> {
         unimplemented!()
     }
 

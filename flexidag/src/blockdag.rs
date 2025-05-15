@@ -293,6 +293,20 @@ impl BlockDAG {
             Err(e) => Err(e.into()),
         }
     }
+    pub fn ghostdata_by_hashes(
+        &self,
+        hashes: &[HashValue],
+    ) -> anyhow::Result<Vec<Option<Arc<GhostdagData>>>> {
+        let mut results = Vec::with_capacity(hashes.len());
+        for &hash in hashes {
+            match self.storage.ghost_dag_store.get_data(hash) {
+                Result::Ok(data) => results.push(Some(data)),
+                Err(StoreError::KeyNotFound(_)) => results.push(None),
+                Err(e) => return Err(e.into()),
+            }
+        }
+        Ok(results)
+    }
 
     pub fn pruning_point_manager(&self) -> PruningPointManager {
         self.pruning_point_manager.clone()
