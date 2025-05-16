@@ -68,7 +68,7 @@ impl TxPoolActorService {
     }
 
     fn transactions_to_propagate(&self) -> Result<Vec<MultiSignedUserTransaction>> {
-        let statedb = self.inner.get_chain_reader();
+        let statedb = self.inner.get_chain_reader()?;
         let reader = AccountStateReader::new(&statedb);
 
         // TODO: fetch from a gas constants

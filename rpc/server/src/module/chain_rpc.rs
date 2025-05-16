@@ -22,7 +22,7 @@ use starcoin_rpc_api::types::{
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::StateView;
 use starcoin_statedb::ChainStateDB;
-use starcoin_storage::Storage;
+use starcoin_storage::{Storage, Store};
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::block::BlockNumber;
 use starcoin_types::contract_event::ContractEventInfo;
@@ -103,12 +103,13 @@ where
                 .map(|b| BlockView::try_from_block(b, false, raw))
                 .transpose()?;
             if decode {
-                let state = ChainStateDB::new(
-                    storage.clone(),
-                    Some(service.main_head_header().await?.state_root()),
-                );
-                let (state_root1, state_root2) = state.get_multi_vm_state_roots();
-                let state = ChainStateDB::new(storage, Some(state_root1));
+                let header = service.main_head_header().await?;
+                let multi_state = storage.get_vm_multi_state(header.id())?;
+                let (state_root1, state_root2) = multi_state
+                    .map(|m| (m.state_root1(), Some(m.state_root2())))
+                    .unwrap_or((header.state_root(), None));
+                let state = ChainStateDB::new(storage.clone(), Some(state_root1));
+                // todo: fix me if state_root2 is None
                 let state2 = ChainStateDB2::new(storage2, state_root2);
                 if let Some(block) = block.as_mut() {
                     try_decode_block_txns(&state, &state2, block)?;
@@ -138,12 +139,13 @@ where
                 .map(|b| BlockView::try_from_block(b, false, raw))
                 .transpose()?;
             if decode {
-                let state = ChainStateDB::new(
-                    storage.clone(),
-                    Some(service.main_head_header().await?.state_root()),
-                );
-                let (state_root1, state_root2) = state.get_multi_vm_state_roots();
-                let state = ChainStateDB::new(storage, Some(state_root1));
+                let header = service.main_head_header().await?;
+                let multi_state = storage.get_vm_multi_state(header.id())?;
+                let (state_root1, state_root2) = multi_state
+                    .map(|m| (m.state_root1(), Some(m.state_root2())))
+                    .unwrap_or((header.state_root(), None));
+                let state = ChainStateDB::new(storage.clone(), Some(state_root1));
+                // todo: fix me if state_root2 is None
                 let state2 = ChainStateDB2::new(storage2, state_root2);
                 if let Some(block) = block.as_mut() {
                     try_decode_block_txns(&state, &state2, block)?;
@@ -229,12 +231,14 @@ where
 
                     let mut txn = TransactionView::new(t, &block)?;
                     if decode_payload {
-                        let state = ChainStateDB::new(
-                            storage.clone(),
-                            Some(service.main_head_header().await?.state_root()),
-                        );
-                        let (state_root1, state_root2) = state.get_multi_vm_state_roots();
-                        let state = ChainStateDB::new(storage, Some(state_root1));
+                        let header = service.main_head_header().await?;
+                        let multi_state =
+                            storage.get_vm_multi_state(service.main_head_header().await?.id())?;
+                        let (state_root1, state_root2) = multi_state
+                            .map(|m| (m.state_root1(), Some(m.state_root2())))
+                            .unwrap_or((header.state_root(), None));
+                        let state = ChainStateDB::new(storage.clone(), Some(state_root1));
+                        // todo: fix me if state_root2 is None
                         let state2 = ChainStateDB2::new(storage2, state_root2);
                         if let Some(txn) = txn.user_transaction.as_mut() {
                             try_decode_txn_payload(&state, &state2, txn)?;
@@ -308,7 +312,13 @@ where
         let fut = async move {
             let events = service.get_events_by_txn_hash(txn_hash).await?;
             let state_root = if event_option.decode {
-                Some(service.main_head_header().await?.state_root())
+                let header = service.main_head_header().await?;
+                let multi_state = storage.get_vm_multi_state(header.id())?;
+                Some(
+                    multi_state
+                        .map(|m| m.state_root1())
+                        .unwrap_or(header.state_root()),
+                )
             } else {
                 None
             };
@@ -377,7 +387,13 @@ where
             }
 
             let state_root = if event_option.decode {
-                Some(service.main_head_header().await?.state_root())
+                let header = service.main_head_header().await?;
+                let multi_state = storage.get_vm_multi_state(header.id())?;
+                Some(
+                    multi_state
+                        .map(|m| m.state_root1())
+                        .unwrap_or(header.state_root()),
+                )
             } else {
                 None
             };

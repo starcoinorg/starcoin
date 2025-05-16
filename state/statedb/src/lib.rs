@@ -405,11 +405,6 @@ impl ChainStateDB {
             )),
         }
     }
-
-    pub fn get_multi_vm_state_roots(&self) -> (HashValue, Option<HashValue>) {
-        // XXX FIXME YSG
-        (self.state_tree.root_hash(), None)
-    }
 }
 
 impl StateView for ChainStateDB {
