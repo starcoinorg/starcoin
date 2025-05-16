@@ -496,9 +496,8 @@ mod tests {
                 continue;
             }
             let net = ChainNetwork::new_builtin(id);
-            let legacy = net_with_legacy_genesis(&id);
             let temp_dir = starcoin_config::temp_dir();
-            do_test_genesis(&net, temp_dir.path(), legacy)?;
+            do_test_genesis(&net, temp_dir.path(), false)?;
         }
         Ok(())
     }
