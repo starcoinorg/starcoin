@@ -279,8 +279,8 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::CheckChainType => Ok(ChainResponse::CheckChainType({
                 self.inner.check_chain_type()?
             })),
-            ChainRequest::GetGhostdagData(id) => Ok(ChainResponse::GhostdagDataOption(Box::new(
-                self.inner.get_ghostdagdata(id)?,
+            ChainRequest::GetGhostdagData(ids) => Ok(ChainResponse::GhostdagDataOption(Box::new(
+                self.inner.get_ghostdagdata(ids)?,
             ))),
             ChainRequest::IsAncestorOfCommand {
                 ancestor,
@@ -538,14 +538,18 @@ impl ReadableChainService for ChainReaderServiceInner {
     fn check_chain_type(&self) -> Result<ChainType> {
         self.main.check_chain_type()
     }
-    fn get_ghostdagdata(&self, id: HashValue) -> Result<Option<GhostdagData>> {
-        self.dag
-            .ghostdata_by_hash(id)
-            .map(|option_arc_ghostdagdata| {
-                option_arc_ghostdagdata.map(|arc_ghostdagdata| {
-                    Arc::try_unwrap(arc_ghostdagdata).unwrap_or_else(|arc| (*arc).clone())
-                })
+
+    fn get_ghostdagdata(&self, ids: Vec<HashValue>) -> Result<Vec<Option<GhostdagData>>> {
+        let arc_results = self.dag.ghostdata_by_hashes(&ids)?;
+
+        let results = arc_results
+            .into_iter()
+            .map(|maybe_arc| {
+                maybe_arc.map(|arc| Arc::try_unwrap(arc).unwrap_or_else(|arc| (*arc).clone()))
             })
+            .collect();
+
+        Ok(results)
     }
 
     fn get_range_in_location(

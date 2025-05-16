@@ -68,7 +68,7 @@ pub enum ChainRequest {
     },
     GetDagStateView,
     CheckChainType,
-    GetGhostdagData(HashValue),
+    GetGhostdagData(Vec<HashValue>),
     IsAncestorOfCommand {
         ancestor: HashValue,
         descendants: Vec<HashValue>,
@@ -111,7 +111,7 @@ pub enum ChainResponse {
     BlockInfoVec(Box<Vec<Option<BlockInfo>>>),
     DagStateView(Box<DagStateView>),
     CheckChainType(ChainType),
-    GhostdagDataOption(Box<Option<GhostdagData>>),
+    GhostdagDataOption(Box<Vec<Option<GhostdagData>>>),
     IsAncestorOfCommand { reachability_view: ReachabilityView },
     GetRangeInLocation { range: RangeInLocation },
     GetAbsentBlocks { absent_blocks: Vec<Block> },

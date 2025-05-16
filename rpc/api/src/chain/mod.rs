@@ -133,7 +133,7 @@ pub trait ChainApi {
 
     /// Get block ghostdag data
     #[rpc(name = "chain.get_ghostdagdata")]
-    fn get_ghostdagdata(&self, block_hash: HashValue) -> FutureResult<Option<GhostdagData>>;
+    fn get_ghostdagdata(&self, ids: Vec<HashValue>) -> FutureResult<Vec<Option<GhostdagData>>>;
 
     /// Check the ancestor and descendants' relationship
     #[rpc(name = "chain.is_ancestor_of")]
