@@ -291,7 +291,11 @@ impl BlockChain {
         } else {
             header.pruning_point()
         };
-        let current_pruning_point = self.status().head().pruning_point();
+        let current_pruning_point = if self.status().head().pruning_point() == HashValue::zero() {
+            self.genesis_hash
+        } else {
+            self.status().head().pruning_point()
+        };
         let chain = if current_pruning_point == new_pruning_point
             || current_pruning_point == HashValue::zero()
         {
