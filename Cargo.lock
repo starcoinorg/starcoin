@@ -14026,6 +14026,7 @@ dependencies = [
  "starcoin-txpool-api",
  "starcoin-types 1.13.19",
  "starcoin-types 2.0.1",
+ "starcoin-vm2-executor",
  "stdlib",
  "stest",
  "tempfile",
