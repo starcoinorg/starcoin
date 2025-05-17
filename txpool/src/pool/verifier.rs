@@ -13,8 +13,6 @@ use crate::pool::{
     client::Client, scoring, PoolTransaction, Priority, UnverifiedUserTransaction,
     VerifiedTransaction,
 };
-use starcoin_types::account_address::AccountAddress;
-use starcoin_types::multi_transaction::MultiAccountAddress;
 use starcoin_types::transaction;
 use std::sync::{atomic::AtomicUsize, Arc};
 
@@ -99,13 +97,7 @@ impl<C: Client> tx_pool::Verifier<PoolTransaction>
             }
         };
 
-        let sender = match verified_txn.sender() {
-            MultiAccountAddress::VM1(sender) => sender,
-            MultiAccountAddress::VM2(sender) => {
-                let val = sender.into_bytes();
-                AccountAddress::new(val)
-            }
-        };
+        let sender = verified_txn.sender();
         let priority = match (is_local_txn, is_retracted) {
             (true, _) => Priority::Local,
             (false, true) => Priority::Retracted,

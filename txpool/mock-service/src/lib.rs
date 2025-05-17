@@ -5,7 +5,7 @@ use anyhow::Result;
 use futures_channel::mpsc;
 use starcoin_crypto::hash::HashValue;
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService, TxnStatusFullEvent};
-use starcoin_types::multi_transaction::MultiSignedUserTransaction;
+use starcoin_types::multi_transaction::{MultiAccountAddress, MultiSignedUserTransaction};
 use starcoin_types::{account_address::AccountAddress, block::Block, transaction};
 use std::{
     iter::Iterator,
@@ -99,7 +99,7 @@ impl TxPoolSyncService for MockTxPoolService {
 
     fn txns_of_sender(
         &self,
-        _sender: &AccountAddress,
+        _sender: &MultiAccountAddress,
         _max_len: Option<usize>,
     ) -> Vec<MultiSignedUserTransaction> {
         todo!()

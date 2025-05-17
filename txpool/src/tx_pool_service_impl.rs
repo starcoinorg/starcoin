@@ -22,7 +22,7 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService, TxnStatusFullEvent};
 use starcoin_types::multi_transaction::{
-    MultiSignatureCheckedTransaction, MultiSignedUserTransaction,
+    MultiAccountAddress, MultiSignatureCheckedTransaction, MultiSignedUserTransaction,
 };
 use starcoin_types::{
     account_address::AccountAddress,
@@ -208,7 +208,7 @@ impl TxPoolSyncService for TxPoolService {
     }
     fn txns_of_sender(
         &self,
-        sender: &AccountAddress,
+        sender: &MultiAccountAddress,
         max_len: Option<usize>,
     ) -> Vec<MultiSignedUserTransaction> {
         self.inner
@@ -310,7 +310,7 @@ impl Inner {
     }
     pub(crate) fn next_sequence_number(&self, address: AccountAddress) -> Option<u64> {
         self.queue
-            .next_sequence_number(self.get_pool_client(), &address)
+            .next_sequence_number(self.get_pool_client(), &MultiAccountAddress::VM1(address))
     }
 
     pub(crate) fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<TxnStatusFullEvent> {

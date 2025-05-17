@@ -9,7 +9,7 @@ use starcoin_rpc_api::{multi_types::MultiSignedUserTransactionView, types::StrVi
 use starcoin_rpc_api::{txpool::TxPoolApi, FutureResult};
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService};
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::multi_transaction::MultiSignedUserTransaction;
+use starcoin_types::multi_transaction::{MultiAccountAddress, MultiSignedUserTransaction};
 use std::convert::TryInto;
 
 /// Re-export the API
@@ -73,9 +73,10 @@ where
         addr: AccountAddress,
         max_len: Option<u32>,
     ) -> FutureResult<Vec<MultiSignedUserTransactionView>> {
+        let multi_address = MultiAccountAddress::VM1(addr);
         let txns: Result<Vec<MultiSignedUserTransactionView>, _> = self
             .service
-            .txns_of_sender(&addr, max_len.map(|v| v as usize))
+            .txns_of_sender(&multi_address, max_len.map(|v| v as usize))
             .into_iter()
             .map(TryInto::try_into)
             .collect();

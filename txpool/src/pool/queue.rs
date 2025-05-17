@@ -13,7 +13,8 @@ use futures_channel::mpsc;
 use parking_lot::RwLock;
 use starcoin_crypto::hash::HashValue;
 use starcoin_txpool_api::TxPoolStatus;
-use starcoin_types::{account_address::AccountAddress as Address, transaction};
+use starcoin_types::multi_transaction::MultiAccountAddress;
+use starcoin_types::transaction;
 use std::{
     cmp,
     collections::{BTreeMap, HashMap},
@@ -347,7 +348,7 @@ impl TransactionQueue {
 
     pub fn txns_of_sender(
         &self,
-        sender: &Address,
+        sender: &MultiAccountAddress,
         max_len: usize,
     ) -> Vec<Arc<pool::VerifiedTransaction>> {
         // always ready
@@ -449,7 +450,7 @@ impl TransactionQueue {
     pub fn next_sequence_number<C: client::AccountSeqNumberClient>(
         &self,
         client: C,
-        address: &Address,
+        address: &MultiAccountAddress,
     ) -> Option<SeqNumber> {
         // Also we ignore stale transactions in the queue.
         let stale_id = None;
@@ -504,7 +505,7 @@ impl TransactionQueue {
     }
 
     /// Penalize given senders.
-    pub fn penalize<'a, T: IntoIterator<Item = &'a Address>>(&self, senders: T) {
+    pub fn penalize<'a, T: IntoIterator<Item = &'a MultiAccountAddress>>(&self, senders: T) {
         for sender in senders {
             self.pool.write().update_scores(sender, ());
         }

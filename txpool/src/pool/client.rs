@@ -8,14 +8,14 @@
 //! any consensus-required structure of the transaction.
 
 use super::{SeqNumber, UnverifiedUserTransaction};
-use starcoin_types::multi_transaction::MultiSignatureCheckedTransaction;
-use starcoin_types::{account_address::AccountAddress as Address, transaction};
+use starcoin_types::multi_transaction::{MultiAccountAddress, MultiSignatureCheckedTransaction};
+use starcoin_types::transaction;
 use std::{any::Any, fmt};
 
 /// State sequence number client
 pub trait AccountSeqNumberClient: fmt::Debug + Clone + Any {
     /// Fetch only account nonce for given sender.
-    fn account_seq_number(&self, address: &Address) -> SeqNumber;
+    fn account_seq_number(&self, address: &MultiAccountAddress) -> SeqNumber;
 }
 
 /// Verification client.

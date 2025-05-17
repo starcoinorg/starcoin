@@ -29,13 +29,13 @@ use std::{cmp, collections::HashMap};
 
 use super::{client::AccountSeqNumberClient, SeqNumber, VerifiedTransaction};
 use crate::pending_transaction;
-use starcoin_types::account_address::AccountAddress as Address;
+use starcoin_types::multi_transaction::MultiAccountAddress;
 use tx_pool::{self, VerifiedTransaction as PoolVerifiedTransaction};
 
 /// Checks readiness of transactions by comparing the nonce to state nonce.
 #[derive(Debug)]
 pub struct State<C> {
-    nonces: HashMap<Address, SeqNumber>,
+    nonces: HashMap<MultiAccountAddress, SeqNumber>,
     state: C,
     max_seq_number: Option<SeqNumber>,
     stale_id: Option<usize>,
@@ -144,7 +144,7 @@ impl tx_pool::Ready<VerifiedTransaction> for Condition {
 /// isn't found in provided state nonce store, defaults to the tx nonce and updates
 /// the nonce store. Useful for using with a state nonce cache when false positives are allowed.
 pub struct OptionalState<C> {
-    nonces: HashMap<Address, SeqNumber>,
+    nonces: HashMap<MultiAccountAddress, SeqNumber>,
     state: C,
 }
 
@@ -157,7 +157,7 @@ impl<C> OptionalState<C> {
     }
 }
 
-impl<C: Fn(&Address) -> Option<SeqNumber>> tx_pool::Ready<VerifiedTransaction>
+impl<C: Fn(&MultiAccountAddress) -> Option<SeqNumber>> tx_pool::Ready<VerifiedTransaction>
     for OptionalState<C>
 {
     fn is_ready(&mut self, tx: &VerifiedTransaction) -> tx_pool::Readiness {

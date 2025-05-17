@@ -14,7 +14,6 @@ use crate::pending_transaction::PendingTransaction;
 pub use client::{AccountSeqNumberClient, Client};
 pub use queue::{Status, TransactionQueue};
 use starcoin_crypto::hash::HashValue;
-use starcoin_types::account_address::AccountAddress;
 use starcoin_types::multi_transaction::{MultiAccountAddress, MultiSignedUserTransaction};
 use std::ops::Deref;
 use transaction_pool as tx_pool;
@@ -151,7 +150,7 @@ pub struct VerifiedTransaction {
     transaction: PendingTransaction,
     // TODO: use transaction's hash/sender
     hash: HashValue,
-    sender: AccountAddress,
+    sender: MultiAccountAddress,
     priority: Priority,
     insertion_id: usize,
 }
@@ -164,13 +163,7 @@ impl VerifiedTransaction {
     /// 2. In case we are converting pending block transactions that are already in the queue to match the function signature.
     pub fn from_pending_block_transaction(tx: MultiSignedUserTransaction) -> Self {
         let hash = tx.id();
-        let sender = match tx.sender() {
-            MultiAccountAddress::VM1(sender) => sender,
-            MultiAccountAddress::VM2(sender) => {
-                let addr = sender.into_bytes();
-                AccountAddress::new(addr)
-            }
-        };
+        let sender = tx.sender();
         VerifiedTransaction {
             transaction: tx.into(),
             hash,
@@ -198,7 +191,7 @@ impl VerifiedTransaction {
 
 impl tx_pool::VerifiedTransaction for VerifiedTransaction {
     type Hash = HashValue;
-    type Sender = AccountAddress;
+    type Sender = MultiAccountAddress;
 
     fn hash(&self) -> &Self::Hash {
         &self.hash

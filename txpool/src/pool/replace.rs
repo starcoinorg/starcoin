@@ -11,7 +11,7 @@
 //! on the `Readiness` of the transactions when comparing them
 
 use crate::pool::{client, ScoredTransaction};
-use starcoin_types::account_address::AccountAddress as Address;
+use starcoin_types::multi_transaction::MultiAccountAddress;
 use std::cmp;
 use tx_pool::{
     self,
@@ -36,7 +36,7 @@ impl<S, C> ReplaceByScoreAndReadiness<S, C> {
 
 impl<T, S, C> tx_pool::ShouldReplace<T> for ReplaceByScoreAndReadiness<S, C>
 where
-    T: VerifiedTransaction<Sender = Address> + ScoredTransaction + PartialEq,
+    T: VerifiedTransaction<Sender = MultiAccountAddress> + ScoredTransaction + PartialEq,
     S: Scoring<T> + Sync,
     C: client::AccountSeqNumberClient,
 {
