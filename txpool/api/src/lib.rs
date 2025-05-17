@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::HashValue;
 use starcoin_types::multi_transaction::{MultiAccountAddress, MultiSignedUserTransaction};
 use starcoin_types::{account_address::AccountAddress, block::Block, transaction};
+use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
 use std::fmt::Debug;
 use std::sync::Arc;
 
@@ -71,6 +72,10 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
         sender: &MultiAccountAddress,
         max_len: Option<usize>,
     ) -> Vec<MultiSignedUserTransaction>;
+
+    /// Returns next valid sequence number for given sender (vm2 AccountAddress)
+    /// or `None` if there are no pending transactions from that sender.
+    fn next_sequence_number2(&self, address: AccountAddress2) -> Option<u64>;
 }
 
 #[derive(Clone, Debug)]
