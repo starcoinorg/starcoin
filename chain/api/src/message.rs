@@ -6,6 +6,7 @@ use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::contract_event::StcContractEventInfo;
+use starcoin_types::multi_state::MultiState;
 use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
@@ -60,6 +61,7 @@ pub enum ChainRequest {
         access_path: Option<AccessPath>,
     },
     GetBlockInfos(Vec<HashValue>),
+    GetMultiStateByHash(HashValue),
 }
 
 impl ServiceRequest for ChainRequest {
@@ -88,4 +90,5 @@ pub enum ChainResponse {
     HashVec(Vec<HashValue>),
     TransactionProof(Box<Option<TransactionInfoWithProof>>),
     BlockInfoVec(Box<Vec<Option<BlockInfo>>>),
+    MultiStateResp(Option<MultiState>),
 }

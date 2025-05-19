@@ -39,4 +39,8 @@ impl MultiState {
     pub fn state_root2(&self) -> HashValue {
         self.state_root2
     }
+
+    pub fn to_vec(self) -> Vec<HashValue> {
+        vec![self.state_root1, self.state_root2]
+    }
 }

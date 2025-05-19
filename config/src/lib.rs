@@ -372,7 +372,10 @@ impl BaseConfig {
             }
             (None, ChainNetworkID::Custom(_net)) => {
                 let config_name_or_path = genesis_config_name.clone().ok_or_else(|| format_err!("Can not load genesis config from {:?}, please set `genesis-config` cli option.", config_path))?;
-                let config_name_or_path2 = genesis_config_name.map(|mut name| {name.push_str(".2"); name}).ok_or_else(|| format_err!("Can not load genesis config from {:?}, please set `genesis-config` cli option.", config_path))?;
+                let config_name_or_path2 = genesis_config_name.map(|mut name| {
+                    name.push_str(".2");
+                    name
+                }).ok_or_else(|| format_err!("Can not load genesis config from {:?}, please set `genesis-config` cli option.", config_path))?;
                 let genesis_configs = match BuiltinNetworkID::from_str(config_name_or_path.as_str())
                 {
                     Ok(net) => (net.genesis_config().clone(), net.genesis_config2().clone()),
@@ -498,21 +501,6 @@ impl NodeConfig {
             ..StarcoinOpt::default()
         };
         Self::load_with_opt(&opt).expect("Auto generate test config should success.")
-    }
-
-    pub fn random_for_test_without_vm2() -> Self {
-        let opt = StarcoinOpt {
-            net: Some(BuiltinNetworkID::Test.into()),
-            ..StarcoinOpt::default()
-        };
-        let mut base = BaseConfig::load_with_opt(&opt).expect("Base config should load ok.");
-        base.net = ChainNetwork::new(
-            base.net.id().clone(),
-            base.net.genesis_config().clone(),
-            base.net.genesis_config2().clone(),
-        );
-        base.into_node_config(&opt)
-            .expect("Auto generate test config should success.")
     }
 
     pub fn customize_for_test() -> Self {

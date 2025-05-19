@@ -8,6 +8,7 @@ use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
 use starcoin_types::contract_event::{ContractEvent, StcContractEventInfo};
 use starcoin_types::filter::Filter;
+use starcoin_types::multi_state::MultiState;
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::transaction::{RichTransactionInfo, Transaction};
 use starcoin_types::{
@@ -142,6 +143,7 @@ pub trait ChainAsyncService:
     ) -> Result<Option<TransactionInfoWithProof>>;
 
     async fn get_block_infos(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
+    async fn get_multi_state_by_hash(&self, hash: HashValue) -> Result<Option<MultiState>>;
 }
 
 #[async_trait::async_trait]
@@ -440,6 +442,15 @@ where
             Ok(*block_infos)
         } else {
             bail!("get block_infos error")
+        }
+    }
+
+    async fn get_multi_state_by_hash(&self, hash: HashValue) -> Result<Option<MultiState>> {
+        let response = self.send(ChainRequest::GetMultiStateByHash(hash)).await??;
+        if let ChainResponse::MultiStateResp(multi_state) = response {
+            Ok(multi_state)
+        } else {
+            bail!("get multi state error")
         }
     }
 }

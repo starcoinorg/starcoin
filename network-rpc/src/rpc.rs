@@ -318,4 +318,22 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         };
         Box::pin(fut)
     }
+
+    fn get_vm_state_roots(
+        &self,
+        _peer_id: PeerId,
+        id: HashValue,
+    ) -> BoxFuture<Result<Option<Vec<HashValue>>>> {
+        let chain_service = self.chain_service.clone();
+        let fut = async move {
+            chain_service
+                .get_multi_state_by_hash(id)
+                .await
+                .map(|state| state.map(|s| s.to_vec()))
+                .map_err(|e| {
+                    NetRpcError::client_err(format!("get_multi_state error: {:?}", e)).into()
+                })
+        };
+        Box::pin(fut)
+    }
 }
