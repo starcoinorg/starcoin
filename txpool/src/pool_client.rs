@@ -6,10 +6,9 @@ use starcoin_state_api::AccountStateReader;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_types::multi_transaction::{
-    MultiSignatureCheckedTransaction, MultiSignedUserTransaction,
+    MultiAccountAddress, MultiSignatureCheckedTransaction, MultiSignedUserTransaction,
 };
 use starcoin_types::{
-    account_address::AccountAddress,
     block::BlockHeader,
     transaction,
     transaction::{CallError, TransactionError},
@@ -19,7 +18,7 @@ use std::{collections::HashMap, fmt::Debug, sync::Arc};
 /// Cache for state nonces.
 #[derive(Clone)]
 pub struct NonceCache {
-    nonces: Arc<RwLock<HashMap<AccountAddress, u64>>>,
+    nonces: Arc<RwLock<HashMap<MultiAccountAddress, u64>>>,
     limit: usize,
 }
 
@@ -33,7 +32,7 @@ impl NonceCache {
     }
 
     /// Retrieve a cached nonce for given sender.
-    pub fn get(&self, sender: &AccountAddress) -> Option<u64> {
+    pub fn get(&self, sender: &MultiAccountAddress) -> Option<u64> {
         self.nonces.read().get(sender).cloned()
     }
 
@@ -75,25 +74,32 @@ impl CachedSeqNumberClient {
         }
     }
 
-    fn latest_sequence_number(&self, address: &AccountAddress) -> u64 {
-        let account_state_reader = AccountStateReader::new(self.statedb.as_ref());
-        match account_state_reader.get_account_resource(address) {
-            Err(e) => {
-                error!(
+    fn latest_sequence_number(&self, address: &MultiAccountAddress) -> u64 {
+        match address {
+            MultiAccountAddress::VM1(address) => {
+                let account_state_reader = AccountStateReader::new(self.statedb.as_ref());
+                match account_state_reader.get_account_resource(address) {
+                    Err(e) => {
+                        error!(
                     "Get account {} resource from statedb error: {:?}, return 0 as sequence_number",
                     address, e
                 );
-                0
+                        0
+                    }
+                    Ok(account_resource) => account_resource
+                        .map(|res| res.sequence_number())
+                        .unwrap_or_default(),
+                }
             }
-            Ok(account_resource) => account_resource
-                .map(|res| res.sequence_number())
-                .unwrap_or_default(),
+            MultiAccountAddress::VM2(_address) => {
+                unimplemented!(" XXX FIXME YSG")
+            }
         }
     }
 }
 
 impl AccountSeqNumberClient for CachedSeqNumberClient {
-    fn account_seq_number(&self, address: &AccountAddress) -> u64 {
+    fn account_seq_number(&self, address: &MultiAccountAddress) -> u64 {
         if let Some(nonce) = self.cache.get(address) {
             return nonce;
         }
@@ -147,7 +153,7 @@ impl PoolClient {
 }
 
 impl crate::pool::AccountSeqNumberClient for PoolClient {
-    fn account_seq_number(&self, address: &AccountAddress) -> u64 {
+    fn account_seq_number(&self, address: &MultiAccountAddress) -> u64 {
         self.nonce_client.account_seq_number(address)
     }
 }

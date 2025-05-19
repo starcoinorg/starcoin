@@ -20,8 +20,8 @@ use starcoin_storage::BlockStore;
 use starcoin_txpool_api::{TxPoolSyncService, TxnStatusFullEvent};
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::{
-    account_address::{self, AccountAddress},
-    account_config,
+    account_address, account_config,
+    multi_transaction::MultiAccountAddress,
     transaction::{SignedUserTransaction, Transaction, TransactionPayload},
     U256,
 };
@@ -31,7 +31,7 @@ use tokio::time::sleep;
 
 #[derive(Clone, Debug)]
 struct MockNonceClient {
-    cache: Arc<RwLock<HashMap<AccountAddress, u64>>>,
+    cache: Arc<RwLock<HashMap<MultiAccountAddress, u64>>>,
 }
 
 impl Default for MockNonceClient {
@@ -43,7 +43,7 @@ impl Default for MockNonceClient {
 }
 
 impl AccountSeqNumberClient for MockNonceClient {
-    fn account_seq_number(&self, address: &AccountAddress) -> u64 {
+    fn account_seq_number(&self, address: &MultiAccountAddress) -> u64 {
         let cached = self.cache.read().get(address).cloned();
         match cached {
             Some(v) => v,

@@ -55,10 +55,19 @@ impl MultiSignatureCheckedTransaction {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum MultiAccountAddress {
     VM1(AccountAddress),
     VM2(AccountAddressV2),
+}
+
+impl MultiAccountAddress {
+    pub fn to_hex(&self) -> String {
+        match self {
+            MultiAccountAddress::VM1(addr) => addr.to_hex(),
+            MultiAccountAddress::VM2(addr) => addr.to_hex(),
+        }
+    }
 }
 
 impl Sample for MultiSignedUserTransaction {
