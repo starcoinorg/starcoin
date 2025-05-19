@@ -158,15 +158,7 @@ impl PoolClient {
         vm_metrics: Option<VMMetrics>,
     ) -> Self {
         let state = storage.get_vm_multi_state(best_block_header.id()).unwrap();
-        let (state_root1, state_root2) = state.map_or_else(
-            || {
-                (
-                    best_block_header.state_root(),
-                    best_block_header.state_root(),
-                )
-            },
-            |s| (s.state_root1(), s.state_root2()),
-        );
+        let (state_root1, state_root2) = (state.state_root1(), state.state_root2());
         let statedb = ChainStateDB::new(storage.into_super_arc(), Some(state_root1));
         let statedb2 = ChainStateDB2::new(storage2.into_super_arc(), Some(state_root2));
         let nonce_client = CachedSeqNumberClient::new(statedb, statedb2, cache);

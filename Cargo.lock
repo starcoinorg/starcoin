@@ -14016,13 +14016,16 @@ dependencies = [
  "starcoin-open-block",
  "starcoin-service-registry 1.13.19 (git+https://github.com/starcoinorg/starcoin?rev=401ce6289a78b9f44e62e2b9f907030ad26d8d79)",
  "starcoin-state-api 1.13.19",
+ "starcoin-state-api 2.0.1",
  "starcoin-state-tree 1.13.19",
  "starcoin-statedb 1.13.19",
+ "starcoin-statedb 2.0.1",
  "starcoin-storage 1.13.19",
  "starcoin-storage 2.0.1",
  "starcoin-transaction-builder 1.13.19",
  "starcoin-txpool-api",
  "starcoin-types 1.13.19",
+ "starcoin-types 2.0.1",
  "stdlib",
  "stest",
  "tempfile",
@@ -14043,6 +14046,7 @@ dependencies = [
  "serde 1.0.195",
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-types 1.13.19",
+ "starcoin-types 2.0.1",
 ]
 
 [[package]]
@@ -14055,6 +14059,7 @@ dependencies = [
  "starcoin-crypto 1.10.0-rc.2 (git+https://github.com/starcoinorg/starcoin-crypto?rev=bc3ca2138cf66d646f14a0f673ae5d853743f50a)",
  "starcoin-txpool-api",
  "starcoin-types 1.13.19",
+ "starcoin-types 2.0.1",
  "stest",
  "tokio",
 ]
