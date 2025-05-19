@@ -447,7 +447,7 @@ mod tests {
     async fn test_actor_launch() -> Result<()> {
         let config = Arc::new(NodeConfig::random_for_test());
         let (storage, storage2, chain_info, _) =
-            test_helper::Genesis::init_storage_for_test_v2(config.net())?;
+            test_helper::Genesis::init_storage_for_test(config.net())?;
         let registry = RegistryService::launch();
         registry.put_shared(config).await?;
         registry.put_shared(storage).await?;

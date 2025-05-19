@@ -28,7 +28,7 @@ pub async fn create_writeable_block_chain() -> (
     let node_config = Arc::new(node_config);
 
     let (storage, storage2, chain_info, _) =
-        StarcoinGenesis::init_storage_for_test_v2(node_config.net())
+        StarcoinGenesis::init_storage_for_test(node_config.net())
             .expect("init storage by genesis fail.");
     let registry = RegistryService::launch();
     let bus = registry.service_ref::<BusService>().await.unwrap();
@@ -43,7 +43,7 @@ pub async fn create_writeable_block_chain() -> (
             bus,
             None,
         )
-        .unwrap(),
+            .unwrap(),
         node_config,
         storage,
         storage2,
@@ -130,7 +130,7 @@ fn gen_fork_block_chain(
                 writeable_block_chain_service.get_main().get_storage2(),
                 None,
             )
-            .unwrap();
+                .unwrap();
             let (block_template, _) = block_chain
                 .create_block_template_simple(*miner_account.address())
                 .unwrap();
