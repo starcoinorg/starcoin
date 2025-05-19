@@ -19,7 +19,11 @@ use starcoin_crypto::{
     hash::{CryptoHash, CryptoHasher, PlainCryptoHash},
     HashValue,
 };
-use starcoin_vm2_vm_types::transaction::SignedUserTransaction as SignedUserTransactionV2;
+use starcoin_vm2_vm_types::{
+    account_address::AccountAddress as AccountAddressV2,
+    block_metadata::BlockMetadata as BlockMetadataV2,
+    transaction::SignedUserTransaction as SignedUserTransactionV2,
+};
 use starcoin_vm_types::{
     account_config::genesis_address, transaction::authenticator::AuthenticationKey,
 };
@@ -773,20 +777,12 @@ impl Block {
         state_root: HashValue,
         difficulty: U256,
         genesis_txn: SignedUserTransaction,
-        genesis_txn2: Option<SignedUserTransactionV2>,
+        genesis_txn2: SignedUserTransactionV2,
     ) -> Self {
         let chain_id = genesis_txn.chain_id();
-        let txns2 = genesis_txn2.clone().map(|x| vec![x]).unwrap_or_default();
-        let block_body = BlockBody::new_v2(vec![genesis_txn.clone()], txns2, None);
-        let body_hash = if genesis_txn2.is_none() {
-            let b = LegacyBlockBody {
-                transactions: vec![genesis_txn],
-                uncles: None,
-            };
-            b.crypto_hash()
-        } else {
-            block_body.hash()
-        };
+        let block_body =
+            BlockBody::new_v2(vec![genesis_txn.clone()], vec![genesis_txn2.clone()], None);
+        let body_hash = block_body.hash();
         let header = BlockHeader::genesis_block_header(
             parent_hash,
             timestamp,
@@ -818,6 +814,25 @@ impl Block {
             uncles,
             self.header.number,
             self.header.chain_id,
+            parent_gas_used,
+        )
+    }
+
+    pub fn to_metadata2(&self, parent_gas_used: u64) -> BlockMetadataV2 {
+        let uncles = self
+            .body
+            .uncles
+            .as_ref()
+            .map(|uncles| uncles.len() as u64)
+            .unwrap_or(0);
+
+        BlockMetadataV2::new(
+            self.header.parent_hash(),
+            self.header.timestamp,
+            AccountAddressV2::new(self.header.author.into_bytes()),
+            uncles,
+            self.header.number,
+            self.header.chain_id.id().into(),
             parent_gas_used,
         )
     }
@@ -1095,11 +1110,11 @@ pub struct ExecutedBlock {
     block: Block,
     block_info: BlockInfo,
     // only for inner system modules
-    state_root: Option<MultiState>,
+    state_root: MultiState,
 }
 
 impl ExecutedBlock {
-    pub fn new(block: Block, block_info: BlockInfo, state_root: Option<MultiState>) -> Self {
+    pub fn new(block: Block, block_info: BlockInfo, state_root: MultiState) -> Self {
         ExecutedBlock {
             block,
             block_info,
@@ -1119,8 +1134,8 @@ impl ExecutedBlock {
         &self.block_info
     }
 
-    pub fn multi_state(&self) -> Option<&MultiState> {
-        self.state_root.as_ref()
+    pub fn multi_state(&self) -> &MultiState {
+        &self.state_root
     }
 
     pub fn header(&self) -> &BlockHeader {

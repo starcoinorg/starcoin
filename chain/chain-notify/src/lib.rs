@@ -124,13 +124,11 @@ impl ChainNotifyHandlerService {
                 }));
             }
         }
-        let (state_root1, state_root2) = multi_state_root
-            .map(|s| (s.state_root1(), Some(s.state_root2())))
-            .unwrap_or((block.header.state_root(), None));
+
         let events_notification: ContractEventNotification = Notification((
-            state_root1,
+            multi_state_root.state_root1(),
             all_events.into(),
-            state_root2,
+            multi_state_root.state_root2(),
             all_events2.into(),
         ));
         ctx.broadcast(events_notification);

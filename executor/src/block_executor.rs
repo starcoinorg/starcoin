@@ -145,18 +145,11 @@ pub fn block_execute<S: ChainStateReader + ChainStateWriter>(
         };
     }
 
-    if let Some(extra_txn) = create_force_upgrade_extra_txn(chain_state)
-        .map_err(BlockExecutorError::BlockChainStateErr)?
-    {
-        // !!! commit suicide if any error or exception happens !!!
-        execute_extra_txn(chain_state, extra_txn, vm_metrics, &mut executed_data)
-            .expect("extra txn must be executed successfully");
-    }
-
     executed_data.state_root = chain_state.state_root();
     Ok(executed_data)
 }
 
+#[allow(unused)]
 fn create_force_upgrade_extra_txn<S: ChainStateReader + ChainStateWriter>(
     statedb: &S,
 ) -> anyhow::Result<Option<Transaction>> {
@@ -182,6 +175,7 @@ fn create_force_upgrade_extra_txn<S: ChainStateReader + ChainStateWriter>(
 }
 
 // todo: check the execute_extra_txn in OpenedBlock, and merge with it
+#[allow(unused)]
 fn execute_extra_txn<S: ChainStateReader + ChainStateWriter>(
     chain_state: &S,
     txn: Transaction,

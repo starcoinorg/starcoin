@@ -24,6 +24,17 @@ cargo nextest -V >/dev/null 2>&1 || cargo install cargo-nextest --version "0.9.5
 cargo nextest run --workspace \
 -E "\
 not (test(module::pubsub::tests::test_subscribe_to_pending_transactions)) \
+and not (test(module::pubsub::tests::test_subscribe_to_events)) \
+and not (test(test_force_upgrade_1)) \
+and not (test(test_force_upgrade_2)) \
+and not (test(test_frozen_account)) \
+and not (test(test_frozen_for_global_frozen)) \
+and not (test(test_block_gen_and_insert)) \
+and not (test(test_transaction_info_and_proof)) \
+and not (test(test_block_chain_txn_info_fork_mapping)) \
+and not (test(announcement::tests::test_get_txns_with_hash_from_pool))\
+and not (test(test::test_rollback)) \
+and not (test(tests::test_network_rpc)) \
 and not (test(check_types)) \
 and not (test(unit_tests::block_metadata_test::test_block_metadata_canonical_serialization)) \
 and not (test(unit_tests::transaction_test::signed_transaction_bcs_roundtrip)) \

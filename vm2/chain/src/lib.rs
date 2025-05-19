@@ -5,15 +5,16 @@ use starcoin_vm2_crypto::HashValue;
 use starcoin_vm2_executor::block_executor::{self, BlockExecutedData, VMMetrics};
 use starcoin_vm2_statedb::ChainStateDB;
 use starcoin_vm2_storage::Store;
+use starcoin_vm2_types::block_metadata::BlockMetadata;
 use starcoin_vm2_types::error::ExecutorResult;
-use starcoin_vm2_types::transaction::{RichTransactionInfo, Transaction};
+use starcoin_vm2_types::transaction::{RichTransactionInfo, SignedUserTransaction, Transaction};
 
 pub fn execute_transactions(
     statedb: &ChainStateDB,
     transactions: Vec<Transaction>,
     gas_limit: u64,
     vm_metrics: Option<VMMetrics>,
-) -> ExecutorResult<(Option<BlockExecutedData>, Vec<HashValue>)> {
+) -> ExecutorResult<(BlockExecutedData, Vec<HashValue>)> {
     // This function will execute the transactions in the block using vm2
     // Note: The actual implementation of VM2 execution and saving logic will depend on your VM2 setup.
     let executed_data =
@@ -25,7 +26,7 @@ pub fn execute_transactions(
         .map(|info| info.id())
         .collect::<Vec<_>>();
 
-    Ok((Some(executed_data), included_txn_info_hashes))
+    Ok((executed_data, included_txn_info_hashes))
 }
 
 pub fn save_executed_transactions(
@@ -84,4 +85,19 @@ pub fn save_executed_transactions(
     storage.save_table_infos(txn_table_infos)?;
 
     Ok(())
+}
+
+pub fn build_block_transactions(
+    signed_txns: &[SignedUserTransaction],
+    block_meta: Option<BlockMetadata>,
+) -> Vec<Transaction> {
+    let mut txns = block_meta
+        .map(|m| vec![Transaction::BlockMetadata(m)])
+        .unwrap_or_default();
+    txns.extend(
+        signed_txns
+            .iter()
+            .map(|t| Transaction::UserTransaction(t.clone())),
+    );
+    txns
 }

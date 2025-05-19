@@ -138,37 +138,42 @@ where
     fn find_or_fork(
         &self,
         header: &BlockHeader,
-    ) -> Result<(Option<(BlockInfo, Option<MultiState>)>, Option<BlockChain>)> {
+    ) -> Result<(Option<(BlockInfo, MultiState)>, Option<BlockChain>)> {
         let block_id = header.id();
-        let mut multi_state = None;
         let block_info = self.storage.get_block_info(block_id)?;
-        let block_chain = if block_info.is_some() {
-            multi_state = self.storage.get_vm_multi_state(block_id)?;
+        let res = if let Some(block_info) = block_info {
+            let multi_state = self.storage.get_vm_multi_state(block_id)?;
             if self.is_main_head(&header.parent_hash()) {
-                None
+                (Some((block_info, multi_state)), None)
             } else {
                 let net = self.config.net();
-                Some(BlockChain::new(
-                    net.time_service(),
-                    block_id,
-                    self.storage.clone(),
-                    self.storage2.clone(),
-                    self.vm_metrics.clone(),
-                )?)
+                (
+                    Some((block_info, multi_state)),
+                    Some(BlockChain::new(
+                        net.time_service(),
+                        block_id,
+                        self.storage.clone(),
+                        self.storage2.clone(),
+                        self.vm_metrics.clone(),
+                    )?),
+                )
             }
         } else if self.block_exist(header.parent_hash())? {
             let net = self.config.net();
-            Some(BlockChain::new(
-                net.time_service(),
-                header.parent_hash(),
-                self.storage.clone(),
-                self.storage2.clone(),
-                self.vm_metrics.clone(),
-            )?)
+            (
+                None,
+                Some(BlockChain::new(
+                    net.time_service(),
+                    header.parent_hash(),
+                    self.storage.clone(),
+                    self.storage2.clone(),
+                    self.vm_metrics.clone(),
+                )?),
+            )
         } else {
-            None
+            (None, None)
         };
-        Ok((block_info.map(|i| (i, multi_state)), block_chain))
+        Ok(res)
     }
 
     fn block_exist(&self, block_id: HashValue) -> Result<bool> {

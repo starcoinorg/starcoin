@@ -38,7 +38,6 @@ use std::sync::Arc;
 mod errors;
 
 pub use errors::GenesisError;
-use starcoin_storage::table_info::TableInfoStore;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_vm_types::state_view::StateView;
 
@@ -161,30 +160,17 @@ impl Genesis {
             difficulty,
         }) = genesis_config.genesis_block_parameter()
         {
-            let (txn2, txn2_info) = if net
-                .id()
-                .as_builtin()
-                .map(|b| !net_with_legacy_genesis(b))
-                .unwrap_or(true)
-                && genesis_config2.is_some()
-            {
-                let (user_txn, txn_info) =
-                    starcoin_vm2_genesis::build_and_execute_genesis_transaction(
-                        net.chain_id().id(),
-                        genesis_config2.as_ref().unwrap(),
-                    );
-                (Some(user_txn), Some(txn_info))
-            } else {
-                (None, None)
-            };
+            let (txn2, txn2_info) = starcoin_vm2_genesis::build_and_execute_genesis_transaction(
+                net.chain_id().id(),
+                genesis_config2,
+            );
 
             let txn = Self::build_genesis_transaction(net)?;
 
             let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
             let chain_state_db = ChainStateDB::new(storage.clone(), None);
 
-            let (table_infos, transaction_info) =
-                Self::execute_genesis_txn(&chain_state_db, txn.clone())?;
+            let (_, txn_info) = Self::execute_genesis_txn(&chain_state_db, txn.clone())?;
 
             let accumulator = MerkleAccumulator::new_with_info(
                 AccumulatorInfo::default(),
@@ -194,26 +180,18 @@ impl Genesis {
                 AccumulatorInfo::default(),
                 storage.get_accumulator_store(AccumulatorStoreType::VMState),
             );
-            let (state_root, txn_info_hash_vec) = if let Some(txn2_info) = txn2_info {
-                let state_root1 = transaction_info.state_root_hash();
+            let (state_root, txn_info_hash_vec) = {
+                let state_root1 = txn_info.state_root_hash();
                 let state_root2 = txn2_info.state_root_hash();
                 vm_state_accumulator.append(&[state_root1, state_root2])?;
                 (
                     vm_state_accumulator.root_hash(),
-                    vec![transaction_info.id(), txn2_info.id()],
-                )
-            } else {
-                (
-                    transaction_info.state_root_hash(),
-                    vec![transaction_info.id()],
+                    vec![txn_info.id(), txn2_info.id()],
                 )
             };
 
             let accumulator_root = accumulator.append(txn_info_hash_vec.as_slice())?;
             accumulator.flush()?;
-
-            // Persist newly created table_infos to storage
-            storage.save_table_infos(table_infos.into_iter().collect())?;
 
             Ok(Block::genesis_block(
                 *parent_hash,
@@ -334,17 +312,10 @@ impl Genesis {
     }
 
     pub fn load_generated(net: BuiltinNetworkID) -> Result<Option<Self>> {
-        match Self::genesis_bytes(net) {
-            Some(bytes) => {
-                if net_with_legacy_genesis(&net) {
-                    let genesis = bcs_ext::from_bytes::<LegacyGenesis>(bytes)?;
-                    Ok(Some(genesis.into()))
-                } else {
-                    Ok(Some(bcs_ext::from_bytes::<Genesis>(bytes)?))
-                }
-            }
-            None => Ok(None),
-        }
+        Ok(match Self::genesis_bytes(net) {
+            Some(bytes) => Some(bcs_ext::from_bytes::<Genesis>(bytes)?),
+            None => None,
+        })
     }
 
     pub fn execute_genesis_block(
@@ -389,12 +360,8 @@ impl Genesis {
     }
 
     fn load_and_check_genesis(net: &ChainNetwork, data_dir: &Path, init: bool) -> Result<Genesis> {
-        // for custom network or test/dev/proxima network, using new format genesis
-        let legacy_genesis = net
-            .id()
-            .as_builtin()
-            .map(net_with_legacy_genesis)
-            .unwrap_or_default();
+        // todo: how and when upgrade legacy genesis?
+        let legacy_genesis = false;
         let genesis = match Genesis::load_from_dir(data_dir, legacy_genesis) {
             Ok(Some(genesis)) => {
                 let expect_genesis = Genesis::load_or_build(net)?;
@@ -529,21 +496,19 @@ mod tests {
                 continue;
             }
             let net = ChainNetwork::new_builtin(id);
-            let legacy = net_with_legacy_genesis(&id);
             let temp_dir = starcoin_config::temp_dir();
-            do_test_genesis(&net, temp_dir.path(), legacy)?;
+            do_test_genesis(&net, temp_dir.path(), false)?;
         }
         Ok(())
     }
 
-    // fixme: currently, vm2 does not support custom genesis.
     #[stest::test]
     pub fn test_custom_genesis() -> Result<()> {
         let net = ChainNetwork::new_custom(
             "testx".to_string(),
             ChainId::new(123),
             BuiltinNetworkID::Test.genesis_config().clone(),
-            Some(BuiltinNetworkID::Test.genesis_config2().clone()),
+            BuiltinNetworkID::Test.genesis_config2().clone(),
         )?;
         let temp_dir = starcoin_config::temp_dir();
         do_test_genesis(&net, temp_dir.path(), false)
@@ -573,10 +538,7 @@ mod tests {
 
         let state_db = {
             let multi_state = storage1_2.get_vm_multi_state(genesis_block.header().id())?;
-            let state_root = multi_state
-                .as_ref()
-                .map(|s| s.state_root1())
-                .unwrap_or_else(|| genesis_block.header().state_root());
+            let state_root = multi_state.state_root1();
             ChainStateDB::new(storage1_2.clone().into_super_arc(), Some(state_root))
         };
         let account_state_reader = AccountStateReader::new(&state_db);

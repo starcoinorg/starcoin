@@ -14,7 +14,7 @@ use crate::storage::{CodecKVStore, CodecWriteBatch, ColumnFamilyName, StorageIns
 use crate::table_info::{TableInfoStorage, TableInfoStore};
 use crate::transaction::TransactionStorage;
 use crate::transaction_info::{TransactionInfoHashStorage, TransactionInfoStorage};
-use anyhow::{bail, format_err, Error, Result};
+use anyhow::{bail, ensure, format_err, Error, Result};
 use network_p2p_types::peer_id::PeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
@@ -636,24 +636,28 @@ pub trait Store:
         accumulator_type: AccumulatorStoreType,
     ) -> Arc<dyn AccumulatorTreeStore>;
 
-    fn get_vm_multi_state(&self, block_id: HashValue) -> Result<Option<MultiState>> {
-        if let Some(block_info) = self.get_block_info(block_id)? {
-            let acc_info = block_info.vm_state_accumulator_info;
-            let num_leaves = acc_info.num_leaves;
-            if num_leaves > 0 {
-                assert!(num_leaves > 1);
-                let acc = MerkleAccumulator::new_with_info(
-                    acc_info,
-                    self.get_accumulator_store(AccumulatorStoreType::VMState),
-                );
-                return Ok(Some(MultiState::new(
-                    acc.get_leaf(num_leaves - 2)?.unwrap(),
-                    acc.get_leaf(num_leaves - 1)?.unwrap(),
-                )));
-            }
-        };
-
-        Ok(None)
+    fn get_vm_multi_state(&self, block_id: HashValue) -> Result<MultiState> {
+        let block_info = self
+            .get_block_info(block_id)?
+            .ok_or_else(|| format_err!("Can not find block info {}", block_id))?;
+        let acc_info = block_info.vm_state_accumulator_info;
+        let num_leaves = acc_info.num_leaves;
+        ensure!(
+            acc_info.num_leaves > 1,
+            "vm state accumulator should have at least 2 leaves"
+        );
+        let acc = MerkleAccumulator::new_with_info(
+            acc_info,
+            self.get_accumulator_store(AccumulatorStoreType::VMState),
+        );
+        Ok(MultiState::new(
+            acc.get_leaf(num_leaves - 2)?.ok_or_else(|| {
+                format_err!("failed to get leaf for state1 at {}", num_leaves - 2)
+            })?,
+            acc.get_leaf(num_leaves - 1)?.ok_or_else(|| {
+                format_err!("failed to get leaf for state2 at {}", num_leaves - 1)
+            })?,
+        ))
     }
 }
 

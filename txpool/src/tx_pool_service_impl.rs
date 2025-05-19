@@ -261,11 +261,7 @@ impl Inner {
             .get_vm_multi_state(self.chain_header.read().id())?;
         Ok(ChainStateDB::new(
             self.storage.clone().into_super_arc(),
-            Some(
-                multi_state
-                    .map(|m| m.state_root1())
-                    .unwrap_or_else(|| self.chain_header.read().state_root()),
-            ),
+            Some(multi_state.state_root1()),
         ))
     }
 

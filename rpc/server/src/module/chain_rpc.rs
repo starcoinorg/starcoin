@@ -105,12 +105,8 @@ where
             if decode {
                 let header = service.main_head_header().await?;
                 let multi_state = storage.get_vm_multi_state(header.id())?;
-                let (state_root1, state_root2) = multi_state
-                    .map(|m| (m.state_root1(), Some(m.state_root2())))
-                    .unwrap_or((header.state_root(), None));
-                let state = ChainStateDB::new(storage.clone(), Some(state_root1));
-                // todo: fix me if state_root2 is None
-                let state2 = ChainStateDB2::new(storage2, state_root2);
+                let state = ChainStateDB::new(storage.clone(), Some(multi_state.state_root1()));
+                let state2 = ChainStateDB2::new(storage2, Some(multi_state.state_root2()));
                 if let Some(block) = block.as_mut() {
                     try_decode_block_txns(&state, &state2, block)?;
                 }
@@ -141,12 +137,8 @@ where
             if decode {
                 let header = service.main_head_header().await?;
                 let multi_state = storage.get_vm_multi_state(header.id())?;
-                let (state_root1, state_root2) = multi_state
-                    .map(|m| (m.state_root1(), Some(m.state_root2())))
-                    .unwrap_or((header.state_root(), None));
-                let state = ChainStateDB::new(storage.clone(), Some(state_root1));
-                // todo: fix me if state_root2 is None
-                let state2 = ChainStateDB2::new(storage2, state_root2);
+                let state = ChainStateDB::new(storage.clone(), Some(multi_state.state_root1()));
+                let state2 = ChainStateDB2::new(storage2, Some(multi_state.state_root2()));
                 if let Some(block) = block.as_mut() {
                     try_decode_block_txns(&state, &state2, block)?;
                 }
@@ -232,14 +224,10 @@ where
                     let mut txn = TransactionView::new(t, &block)?;
                     if decode_payload {
                         let header = service.main_head_header().await?;
-                        let multi_state =
-                            storage.get_vm_multi_state(service.main_head_header().await?.id())?;
-                        let (state_root1, state_root2) = multi_state
-                            .map(|m| (m.state_root1(), Some(m.state_root2())))
-                            .unwrap_or((header.state_root(), None));
-                        let state = ChainStateDB::new(storage.clone(), Some(state_root1));
-                        // todo: fix me if state_root2 is None
-                        let state2 = ChainStateDB2::new(storage2, state_root2);
+                        let multi_state = storage.get_vm_multi_state(header.id())?;
+                        let state =
+                            ChainStateDB::new(storage.clone(), Some(multi_state.state_root1()));
+                        let state2 = ChainStateDB2::new(storage2, Some(multi_state.state_root2()));
                         if let Some(txn) = txn.user_transaction.as_mut() {
                             try_decode_txn_payload(&state, &state2, txn)?;
                         }
@@ -314,11 +302,7 @@ where
             let state_root = if event_option.decode {
                 let header = service.main_head_header().await?;
                 let multi_state = storage.get_vm_multi_state(header.id())?;
-                Some(
-                    multi_state
-                        .map(|m| m.state_root1())
-                        .unwrap_or(header.state_root()),
-                )
+                Some(multi_state.state_root1())
             } else {
                 None
             };
@@ -389,11 +373,7 @@ where
             let state_root = if event_option.decode {
                 let header = service.main_head_header().await?;
                 let multi_state = storage.get_vm_multi_state(header.id())?;
-                Some(
-                    multi_state
-                        .map(|m| m.state_root1())
-                        .unwrap_or(header.state_root()),
-                )
+                Some(multi_state.state_root1())
             } else {
                 None
             };

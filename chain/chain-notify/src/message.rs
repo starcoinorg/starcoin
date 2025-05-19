@@ -11,7 +11,7 @@ use std::sync::Arc;
 pub struct Notification<T>(pub T);
 
 pub type ContractEventNotification =
-    Notification<(HashValue, Arc<[Event]>, Option<HashValue>, Arc<[Event2]>)>;
+    Notification<(HashValue, Arc<[Event]>, HashValue, Arc<[Event2]>)>;
 pub type NewHeadEventNotification = Notification<ThinBlock>;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
