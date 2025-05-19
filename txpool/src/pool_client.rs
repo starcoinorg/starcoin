@@ -13,6 +13,9 @@ use starcoin_types::{
     transaction,
     transaction::{CallError, TransactionError},
 };
+use starcoin_vm2_state_api::AccountStateReader as AccountStateReader2;
+use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
+use starcoin_vm2_storage::Store as Store2;
 use std::{collections::HashMap, fmt::Debug, sync::Arc};
 
 /// Cache for state nonces.
@@ -54,6 +57,7 @@ impl std::fmt::Debug for NonceCache {
 #[derive(Clone)]
 pub struct CachedSeqNumberClient {
     statedb: Arc<ChainStateDB>,
+    statedb2: Arc<ChainStateDB2>,
     cache: NonceCache,
 }
 
@@ -67,9 +71,10 @@ impl Debug for CachedSeqNumberClient {
 }
 
 impl CachedSeqNumberClient {
-    pub fn new(statedb: ChainStateDB, cache: NonceCache) -> Self {
+    pub fn new(statedb: ChainStateDB, statedb2: ChainStateDB2, cache: NonceCache) -> Self {
         Self {
             statedb: Arc::new(statedb),
+            statedb2: Arc::new(statedb2),
             cache,
         }
     }
@@ -91,8 +96,18 @@ impl CachedSeqNumberClient {
                         .unwrap_or_default(),
                 }
             }
-            MultiAccountAddress::VM2(_address) => {
-                unimplemented!(" XXX FIXME YSG")
+            MultiAccountAddress::VM2(address) => {
+                let account_state_reader2 = AccountStateReader2::new(self.statedb2.as_ref());
+                match account_state_reader2.get_account_resource(address) {
+                    Err(e) => {
+                        error!(
+                    "Get account {} resource from statedb2 error: {:?}, return 0 as sequence_number",
+                    address, e
+                );
+                        0
+                    }
+                    Ok(account_resource) => account_resource.sequence_number(),
+                }
             }
         }
     }
@@ -138,12 +153,15 @@ impl PoolClient {
     pub fn new(
         best_block_header: BlockHeader,
         storage: Arc<dyn Store>,
+        storage2: Arc<dyn Store2>,
         cache: NonceCache,
         vm_metrics: Option<VMMetrics>,
     ) -> Self {
         let state = storage.get_vm_multi_state(best_block_header.id()).unwrap();
-        let statedb = ChainStateDB::new(storage.into_super_arc(), Some(state.state_root1()));
-        let nonce_client = CachedSeqNumberClient::new(statedb, cache);
+        let (state_root1, state_root2) = (state.state_root1(), state.state_root2());
+        let statedb = ChainStateDB::new(storage.into_super_arc(), Some(state_root1));
+        let statedb2 = ChainStateDB2::new(storage2.into_super_arc(), Some(state_root2));
+        let nonce_client = CachedSeqNumberClient::new(statedb, statedb2, cache);
         Self {
             best_block_header,
             nonce_client,
@@ -168,6 +186,7 @@ impl crate::pool::Client for PoolClient {
             .clone()
             .check_signature()
             .map_err(|e| TransactionError::InvalidSignature(e.to_string()))?;
+        // XXX FIXME YSG next prs
         match starcoin_executor::validate_transaction(
             self.nonce_client.statedb.as_ref(),
             txn,

@@ -7,6 +7,7 @@ use starcoin_crypto::hash::HashValue;
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService, TxnStatusFullEvent};
 use starcoin_types::multi_transaction::{MultiAccountAddress, MultiSignedUserTransaction};
 use starcoin_types::{account_address::AccountAddress, block::Block, transaction};
+use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
 use std::{
     iter::Iterator,
     sync::{Arc, Mutex},
@@ -102,7 +103,11 @@ impl TxPoolSyncService for MockTxPoolService {
         _sender: &MultiAccountAddress,
         _max_len: Option<usize>,
     ) -> Vec<MultiSignedUserTransaction> {
-        todo!()
+        unimplemented!("no need implemented for MockTxPoolService")
+    }
+
+    fn next_sequence_number2(&self, _address: AccountAddress2) -> Option<u64> {
+        unimplemented!("no need implemented for MockTxPoolService")
     }
 }
 

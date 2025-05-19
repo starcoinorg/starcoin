@@ -30,6 +30,7 @@ use starcoin_types::{
     transaction,
 };
 use starcoin_vm2_storage::Store as Store2;
+use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
 use std::sync::Arc;
 
 #[derive(Clone, Debug)]
@@ -218,6 +219,16 @@ impl TxPoolSyncService for TxPoolService {
             .map(|t| t.signed().clone())
             .collect()
     }
+
+    fn next_sequence_number2(&self, address: AccountAddress2) -> Option<u64> {
+        let _timer = self.inner.metrics.as_ref().map(|metrics| {
+            metrics
+                .txpool_service_time
+                .with_label_values(&["next_sequence_number2"])
+                .start_timer()
+        });
+        self.inner.next_sequence_number2(address)
+    }
 }
 
 pub(crate) type TxnQueue = TransactionQueue;
@@ -365,8 +376,14 @@ impl Inner {
         PoolClient::new(
             self.chain_header.read().clone(),
             self.storage.clone(),
+            self.storage2.clone(),
             self.sequence_number_cache.clone(),
             self.vm_metrics.clone(),
         )
+    }
+
+    pub(crate) fn next_sequence_number2(&self, address: AccountAddress2) -> Option<u64> {
+        self.queue
+            .next_sequence_number(self.get_pool_client(), &MultiAccountAddress::VM2(address))
     }
 }
