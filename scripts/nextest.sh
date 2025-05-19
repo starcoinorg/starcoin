@@ -35,7 +35,6 @@ and not (test(test_block_chain_txn_info_fork_mapping)) \
 and not (test(announcement::tests::test_get_txns_with_hash_from_pool))\
 and not (test(test::test_rollback)) \
 and not (test(tests::test_network_rpc)) \
-and not (test(check_types)) \
 and not (test(unit_tests::block_metadata_test::test_block_metadata_canonical_serialization)) \
 and not (test(unit_tests::transaction_test::signed_transaction_bcs_roundtrip)) \
 and not (test(consensus_test::verify_header_test_barnard_block5061847_ubuntu20)) \

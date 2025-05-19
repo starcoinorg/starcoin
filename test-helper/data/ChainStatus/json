@@ -10,7 +10,7 @@
     "state_root": "0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000",
     "gas_used": 0,
     "difficulty": "0x01",
-    "body_hash": "0xc01e0329de6d899348a8ef4bd51db56175b3fa0988e57c3dcec8eaf13a164d97",
+    "body_hash": "0x265769f51a109287f945b2ddbe82714a30bcd0fba4d326853d01512e6f87130e",
     "chain_id": {
       "id": 255
     },
@@ -18,7 +18,7 @@
     "extra": "0x00000000"
   },
   "info": {
-    "block_id": "0x772acd09032fe354de7a43bda37f4b93dabede991e5fdabbd601b20834684cdb",
+    "block_id": "0x3e43d2035d5600c8c806180033648e7c6cdf0699837752bfac49b6e7a189e7eb",
     "total_difficulty": "0x00",
     "txn_accumulator_info": {
       "accumulator_root": "0x414343554d554c41544f525f504c414345484f4c4445525f4841534800000000",
@@ -27,6 +27,12 @@
       "num_nodes": 0
     },
     "block_accumulator_info": {
+      "accumulator_root": "0x414343554d554c41544f525f504c414345484f4c4445525f4841534800000000",
+      "frozen_subtree_roots": [],
+      "num_leaves": 0,
+      "num_nodes": 0
+    },
+    "vm_state_accumulator_info": {
       "accumulator_root": "0x414343554d554c41544f525f504c414345484f4c4445525f4841534800000000",
       "frozen_subtree_roots": [],
       "num_leaves": 0,
