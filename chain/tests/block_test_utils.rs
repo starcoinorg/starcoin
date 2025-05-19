@@ -11,7 +11,7 @@ use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::Storage;
+use starcoin_storage::{Storage, Store};
 use starcoin_transaction_builder::{build_empty_script, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
@@ -28,12 +28,12 @@ use std::sync::Arc;
 
 type LinearizedBlockForest = Vec<Block>;
 
-fn get_storage() -> impl Strategy<Value = Storage> {
+fn get_storage() -> impl Strategy<Value=Storage> {
     Just(Storage::new(StorageInstance::new_cache_instance()).unwrap())
 }
 
 /// This produces the genesis block
-pub fn genesis_strategy(storage: Arc<Storage>) -> impl Strategy<Value = Block> {
+pub fn genesis_strategy(storage: Arc<Storage>) -> impl Strategy<Value=Block> {
     let net = ChainNetwork::new(
         BuiltinNetworkID::Test.into(),
         BuiltinNetworkID::Test.genesis_config().clone(),
@@ -48,7 +48,7 @@ pub fn genesis_strategy(storage: Arc<Storage>) -> impl Strategy<Value = Block> {
 }
 
 /// Offers the genesis block.
-pub fn leaf_strategy(storage: Arc<Storage>) -> impl Strategy<Value = Block> {
+pub fn leaf_strategy(storage: Arc<Storage>) -> impl Strategy<Value=Block> {
     genesis_strategy(storage).boxed()
 }
 
@@ -114,7 +114,7 @@ fn txn_transfer(
                     expired,
                     Some(gen_script_payload()),
                 )
-                .into_inner(),
+                    .into_inner(),
             )
         })
         .collect::<Vec<_>>()
@@ -159,12 +159,13 @@ prop_compose! {
         p_header.gas_used(),
     );
     txns.insert(0, Transaction::BlockMetadata(block_metadata));
+    let state_root = storage.get_vm_multi_state(parent_header.id()).unwrap().state_root1();
 
     //gen state_root, acc_root
     let (state_root, acc_root) = gen_root_hashes(
         storage,
         parent_header.txn_accumulator_root(),
-        parent_header.state_root(),
+        state_root,
         txns,
         u64::MAX, /*block_gas_limit*/
     );
@@ -209,7 +210,7 @@ prop_compose! {
 
 /// This creates a block forest with keys extracted from a specific
 /// vector
-pub fn block_forest(depth: u32) -> impl Strategy<Value = LinearizedBlockForest> {
+pub fn block_forest(depth: u32) -> impl Strategy<Value=LinearizedBlockForest> {
     let temp_depth = depth;
     get_storage().prop_flat_map(move |storage| {
         let store = Arc::new(storage);
