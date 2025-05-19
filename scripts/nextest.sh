@@ -29,7 +29,6 @@ and not (test(test_force_upgrade_1)) \
 and not (test(test_force_upgrade_2)) \
 and not (test(test_frozen_account)) \
 and not (test(test_frozen_for_global_frozen)) \
-and not (test(test_transaction_info_and_proof)) \
 and not (test(test::test_rollback)) \
 and not (test(unit_tests::block_metadata_test::test_block_metadata_canonical_serialization)) \
 and not (test(unit_tests::transaction_test::signed_transaction_bcs_roundtrip)) \
