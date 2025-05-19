@@ -1,72 +1,74 @@
 {
   "txns": [
     {
-      "raw_txn": {
-        "sender": "0x00000000000000000000000000000001",
-        "sequence_number": 0,
-        "payload": {
-          "Package": {
-            "package_address": "0x00000000000000000000000000000001",
-            "modules": [
-              {
-                "code": [
-                  161,
-                  28,
-                  235,
-                  11,
-                  1,
-                  0,
-                  0,
-                  0,
-                  3,
-                  1,
-                  0,
-                  2,
-                  7,
-                  2,
-                  2,
-                  8,
-                  4,
-                  16,
-                  0,
-                  0,
-                  1,
-                  77,
-                  0,
-                  0,
-                  0,
-                  0,
-                  0,
-                  0,
-                  0,
-                  0,
-                  0,
-                  0,
-                  0,
-                  0,
-                  0,
-                  0,
-                  0,
-                  1,
-                  0
-                ]
-              }
-            ],
-            "init_script": null
+      "VM1": {
+        "raw_txn": {
+          "sender": "0x00000000000000000000000000000001",
+          "sequence_number": 0,
+          "payload": {
+            "Package": {
+              "package_address": "0x00000000000000000000000000000001",
+              "modules": [
+                {
+                  "code": [
+                    161,
+                    28,
+                    235,
+                    11,
+                    1,
+                    0,
+                    0,
+                    0,
+                    3,
+                    1,
+                    0,
+                    2,
+                    7,
+                    2,
+                    2,
+                    8,
+                    4,
+                    16,
+                    0,
+                    0,
+                    1,
+                    77,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0
+                  ]
+                }
+              ],
+              "init_script": null
+            }
+          },
+          "max_gas_amount": 0,
+          "gas_unit_price": 1,
+          "gas_token_code": "0x1::STC::STC",
+          "expiration_timestamp_secs": 3600,
+          "chain_id": {
+            "id": 255
           }
         },
-        "max_gas_amount": 0,
-        "gas_unit_price": 1,
-        "gas_token_code": "0x1::STC::STC",
-        "expiration_timestamp_secs": 3600,
-        "chain_id": {
-          "id": 255
-        }
-      },
-      "authenticator": {
-        "Ed25519": {
-          "public_key": "0x4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29",
-          "signature": "0xa41e1724b7bddc548e0d66ed40cb48c95a280ef1d185cced438350d220bcbc6721419c129d01082bad6d0f0e5de2fa915498068b3b54e0d5779b527a20bb180b"
+        "authenticator": {
+          "Ed25519": {
+            "public_key": "0x4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29",
+            "signature": "0xa41e1724b7bddc548e0d66ed40cb48c95a280ef1d185cced438350d220bcbc6721419c129d01082bad6d0f0e5de2fa915498068b3b54e0d5779b527a20bb180b"
+          }
         }
       }
     }

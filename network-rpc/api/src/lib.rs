@@ -294,6 +294,12 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         peer_id: PeerId,
         request: GetTableInfo,
     ) -> BoxFuture<Result<Option<TableInfo>>>;
+
+    fn get_vm_state_roots(
+        &self,
+        peer_id: PeerId,
+        id: HashValue,
+    ) -> BoxFuture<Result<Option<Vec<HashValue>>>>;
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

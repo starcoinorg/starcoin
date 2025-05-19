@@ -4,6 +4,7 @@
 use anyhow::Result;
 use futures::executor::block_on;
 use starcoin_config::*;
+use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::{
     gen_client as starcoin_gen_client, GetBlockHeadersByNumber, GetBlockIds, GetStateWithProof,
@@ -11,7 +12,7 @@ use starcoin_network_rpc_api::{
 };
 use starcoin_node::NodeHandle;
 use starcoin_state_api::StateWithProof;
-use starcoin_types::{access_path, account_config::genesis_address, block::BlockHeader};
+use starcoin_types::{access_path, account_config::genesis_address};
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::on_chain_resource::Epoch;
 use std::sync::Arc;
@@ -19,7 +20,7 @@ use std::sync::Arc;
 #[stest::test]
 fn test_network_rpc() {
     let (handle1, net_addr_1) = {
-        let config_1 = NodeConfig::random_for_test_without_vm2();
+        let config_1 = NodeConfig::random_for_test();
         let net_addr = config_1.network.self_address();
         debug!("First node address: {:?}", net_addr);
         (gen_chain_env(config_1).unwrap(), net_addr)
@@ -27,7 +28,7 @@ fn test_network_rpc() {
 
     let network_1 = handle1.network();
     let (handle2, peer_id_2) = {
-        let mut config_2 = NodeConfig::random_for_test_without_vm2();
+        let mut config_2 = NodeConfig::random_for_test();
         config_2.network.seeds = vec![net_addr_1].into();
         let peer_id_2 = config_2.network.self_peer_id();
         (gen_chain_env(config_2).unwrap(), peer_id_2)
@@ -63,14 +64,18 @@ fn test_network_rpc() {
     assert!(ping.is_err(), "expect return err, but return ok");
 
     let req = GetBlockHeadersByNumber::new(1, 1, 1);
-    let resp: Vec<Option<BlockHeader>> = block_on(async {
-        client
+    let resp: Option<Vec<HashValue>> = block_on(async {
+        let headers = client
             .get_headers_by_number(peer_id_2.clone(), req)
+            .await
+            .unwrap();
+        let block_id = headers[0].as_ref().unwrap().id();
+        client
+            .get_vm_state_roots(peer_id_2.clone(), block_id)
             .await
             .unwrap()
     });
-    assert!(!resp.is_empty());
-    let state_root = resp[0].as_ref().unwrap().state_root();
+    let state_root = resp.unwrap()[0];
 
     let state_req = GetStateWithProof {
         state_root,

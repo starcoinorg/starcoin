@@ -55,7 +55,7 @@ impl EventHandler<Self, PeerAnnouncementMessage> for AnnouncementService {
                 let fresh_ids = announcement_msg.message.ids().into_iter().filter(|txn_id| {
                     if txpool.find_txn(txn_id).is_none() {
                         if let Ok(None) = storage.get_transaction_info(*txn_id) {
-                            return true
+                            return true;
                         }
                     }
                     false
@@ -68,7 +68,7 @@ impl EventHandler<Self, PeerAnnouncementMessage> for AnnouncementService {
                         peer_selector,
                         network.clone(),
                     );
-                    match rpc_client.get_txns_with_hash_from_pool(Some(peer_id.clone()), GetTxnsWithHash { ids:fresh_ids }).await {
+                    match rpc_client.get_txns_with_hash_from_pool(Some(peer_id.clone()), GetTxnsWithHash { ids: fresh_ids }).await {
                         Err(err) => error!(
                             "[sync] handle announcement msg result error: {:?}, peer_id:{:?} ",
                             err, peer_id
@@ -113,7 +113,7 @@ mod tests {
 
     #[stest::test]
     fn test_get_txns_with_hash_from_pool() {
-        let mut config_1 = NodeConfig::random_for_test_without_vm2();
+        let mut config_1 = NodeConfig::random_for_test();
         config_1.miner.disable_miner_client = Some(true);
         let config_1 = Arc::new(config_1);
         let service1 = test_helper::run_node_by_config(config_1.clone()).unwrap();
@@ -126,7 +126,7 @@ mod tests {
             config_1.network.listen(),
             peer_1.clone().into(),
         )];
-        let mut config_2 = NodeConfig::random_for_test_without_vm2();
+        let mut config_2 = NodeConfig::random_for_test();
         config_2.network.seeds = nodes.into();
         config_2.network.unsupported_protocols = Some(vec![TXN_PROTOCOL_NAME.to_string()]);
         config_2.miner.disable_miner_client = Some(true);

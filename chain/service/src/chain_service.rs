@@ -241,6 +241,10 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetBlockInfos(ids) => Ok(ChainResponse::BlockInfoVec(Box::new(
                 self.inner.get_block_infos(ids)?,
             ))),
+            ChainRequest::GetMultiStateByHash(hash) => {
+                let state = self.inner.storage.get_vm_multi_state(hash)?;
+                Ok(ChainResponse::MultiStateResp(Some(state)))
+            }
         }
     }
 }
