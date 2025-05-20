@@ -10,6 +10,7 @@ use starcoin_rpc_api::{txpool::TxPoolApi, FutureResult};
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::multi_transaction::{MultiAccountAddress, MultiSignedUserTransaction};
+use starcoin_vm2_vm_types::account_address::AccountAddress as AccountAddress2;
 use std::convert::TryInto;
 
 /// Re-export the API
@@ -104,6 +105,11 @@ where
     fn state(&self) -> FutureResult<TxPoolStatus> {
         let state = self.service.status();
         Box::pin(futures::future::ok(state))
+    }
+
+    fn next_sequence_number2(&self, address: AccountAddress2) -> FutureResult<Option<u64>> {
+        let result = self.service.next_sequence_number2(address);
+        Box::pin(futures::future::ok(result))
     }
 }
 

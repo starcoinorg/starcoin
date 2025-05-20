@@ -1815,6 +1815,33 @@
           }
         }
       }
+    },
+    {
+      "name": "txpool.next_sequence_number2",
+      "params": [
+        {
+          "name": "address",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "AccountAddress",
+            "type": "string",
+            "format": "AccountAddress"
+          }
+        }
+      ],
+      "result": {
+        "name": "Option < u64 >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Nullable_uint64",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0.0
+        }
+      }
     }
   ]
 }
