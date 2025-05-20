@@ -523,6 +523,13 @@ impl BlockChain {
         };
 
         let vec_transaction_info = &executed_data.txn_infos;
+        let vm2_txn_infos = executed_data2
+            .txn_infos
+            .clone()
+            .into_iter()
+            .map(Into::into)
+            .collect::<Vec<TransactionInfo>>();
+
         verify_block!(
             VerifyBlockField::State,
             state_root == header.state_root(),
@@ -534,6 +541,7 @@ impl BlockChain {
         );
         let block_gas_used = vec_transaction_info
             .iter()
+            .chain(vm2_txn_infos.iter())
             .fold(0u64, |acc, i| acc.saturating_add(i.gas_used()));
         verify_block!(
             VerifyBlockField::State,
@@ -544,6 +552,12 @@ impl BlockChain {
         verify_block!(
             VerifyBlockField::State,
             vec_transaction_info.len() == transactions.len(),
+            "invalid txn num in the block"
+        );
+
+        verify_block!(
+            VerifyBlockField::State,
+            vm2_txn_infos.len() == transactions2.len(),
             "invalid txn num in the block"
         );
 
@@ -605,13 +619,6 @@ impl BlockChain {
         );
 
         // save transaction relationship and save transaction to storage2
-        let vm2_txn_infos = executed_data2
-            .txn_infos
-            .clone()
-            .into_iter()
-            .map(Into::into)
-            .collect::<Vec<TransactionInfo>>();
-
         starcoin_vm2_chain::save_executed_transactions(
             block_id,
             header.number(),
