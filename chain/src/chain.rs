@@ -558,7 +558,7 @@ impl BlockChain {
         verify_block!(
             VerifyBlockField::State,
             vm2_txn_infos.len() == transactions2.len(),
-            "invalid txn num in the block"
+            "invalid vm2 txn num in the block"
         );
 
         let transaction_global_index = txn_accumulator.num_leaves();
