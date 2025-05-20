@@ -11,6 +11,7 @@ use crate::types::StrView;
 use starcoin_crypto::HashValue;
 use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::account_address::AccountAddress;
+use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
 
 #[openrpc]
 pub trait TxPoolApi {
@@ -47,6 +48,11 @@ pub trait TxPoolApi {
     /// or `None` if there are no pending transactions from that sender in txpool.
     #[rpc(name = "txpool.state")]
     fn state(&self) -> FutureResult<TxPoolStatus>;
+
+    /// Returns next valid sequence number for given sender
+    /// or `None` if there are no pending transactions from that sender in txpool.
+    #[rpc(name = "txpool.next_sequence_number2")]
+    fn next_sequence_number2(&self, address: AccountAddress2) -> FutureResult<Option<u64>>;
 }
 #[test]
 fn test() {
