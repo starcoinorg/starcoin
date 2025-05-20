@@ -8,6 +8,7 @@ use starcoin_storage::Store;
 use starcoin_types::multi_transaction::{
     MultiAccountAddress, MultiSignatureCheckedTransaction, MultiSignedUserTransaction,
 };
+use starcoin_types::vm_error::VMStatus;
 use starcoin_types::{
     block::BlockHeader,
     transaction,
@@ -186,14 +187,32 @@ impl crate::pool::Client for PoolClient {
             .clone()
             .check_signature()
             .map_err(|e| TransactionError::InvalidSignature(e.to_string()))?;
-        // XXX FIXME YSG next prs
-        match starcoin_executor::validate_transaction(
-            self.nonce_client.statedb.as_ref(),
-            txn,
-            self.vm_metrics.clone(),
-        ) {
-            None => Ok(checked_txn),
-            Some(status) => Err(TransactionError::CallErr(CallError::ExecutionError(status))),
+        match txn {
+            MultiSignedUserTransaction::VM1(txn) => {
+                match starcoin_executor::validate_transaction(
+                    self.nonce_client.statedb.as_ref(),
+                    txn,
+                    self.vm_metrics.clone(),
+                ) {
+                    None => Ok(checked_txn),
+                    Some(status) => {
+                        Err(TransactionError::CallErr(CallError::ExecutionError(status)))
+                    }
+                }
+            }
+            MultiSignedUserTransaction::VM2(txn) => {
+                match starcoin_vm2_executor::validate_transaction(
+                    self.nonce_client.statedb2.as_ref(),
+                    txn,
+                    self.vm_metrics.clone(),
+                ) {
+                    None => Ok(checked_txn),
+                    // XXX FIXME YSG
+                    Some(_status) => Err(TransactionError::CallErr(CallError::ExecutionError(
+                        VMStatus::Executed,
+                    ))),
+                }
+            }
         }
     }
 }

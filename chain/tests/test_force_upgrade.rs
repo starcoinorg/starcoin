@@ -327,8 +327,7 @@ fn test_frozen_account() -> anyhow::Result<()> {
             1,
             net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
             &net,
-        )
-        .into();
+        );
 
         assert!(starcoin_executor::validate_transaction(
             chain.chain_state(),
@@ -352,8 +351,7 @@ fn test_frozen_account() -> anyhow::Result<()> {
                 net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
                 net.chain_id(),
             ))
-            .unwrap()
-            .into();
+            .unwrap();
 
         assert_eq!(
             starcoin_executor::validate_transaction(chain.chain_state(), black_as_sender_txn, None)
@@ -429,8 +427,7 @@ fn test_frozen_for_global_frozen() -> anyhow::Result<()> {
             random_user_seq_num,
             amount,
             &net,
-        )
-        .into();
+        );
 
         assert_eq!(
             starcoin_executor::validate_transaction(
@@ -461,8 +458,7 @@ fn test_frozen_for_global_frozen() -> anyhow::Result<()> {
             random_user_seq_num,
             amount,
             &net,
-        )
-        .into();
+        );
 
         assert!(starcoin_executor::validate_transaction(
             chain.chain_state(),
