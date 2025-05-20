@@ -155,10 +155,10 @@ impl Genesis {
         let genesis_config = net.genesis_config();
         let genesis_config2 = net.genesis_config2();
         if let Some(GenesisBlockParameter {
-                        parent_hash,
-                        timestamp,
-                        difficulty,
-                    }) = genesis_config.genesis_block_parameter()
+            parent_hash,
+            timestamp,
+            difficulty,
+        }) = genesis_config.genesis_block_parameter()
         {
             let (txn2, txn2_info) = starcoin_vm2_genesis::build_and_execute_genesis_transaction(
                 net.chain_id().id(),
@@ -370,7 +370,7 @@ impl Genesis {
                         expect: expect_genesis.block.header.id(),
                         real: genesis.block.header.id(),
                     }
-                        .into());
+                    .into());
                 }
                 genesis
             }
@@ -410,7 +410,7 @@ impl Genesis {
                                 expect: genesis.block.header.id(),
                                 real: block.header.id(),
                             }
-                                .into());
+                            .into());
                         }
                     }
                     Ok(None) => {

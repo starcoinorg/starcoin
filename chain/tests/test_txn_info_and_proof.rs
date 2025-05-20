@@ -25,7 +25,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
         BuiltinNetworkID::Test.genesis_config().clone(),
         BuiltinNetworkID::Test.genesis_config2().clone(),
     )
-        .unwrap();
+    .unwrap();
     let mut block_chain = test_helper::gen_blockchain_for_test(&net)?;
     let mut current_header = block_chain.current_header();
     let miner_account = AccountInfo::random();
@@ -84,12 +84,12 @@ fn test_transaction_info_and_proof() -> Result<()> {
         all_txns.extend_from_slice(&[Transaction::BlockMetadata(
             block.to_metadata(current_header.gas_used()),
         )
-            .into()]);
+        .into()]);
         all_txns.extend(txns.into_iter().map(|txn| Transaction::from(txn).into()));
         all_txns.extend_from_slice(&[Transaction2::BlockMetadata(
             block.to_metadata2(current_header.gas_used()),
         )
-            .into()]);
+        .into()]);
         current_header = block.header().clone();
     });
 

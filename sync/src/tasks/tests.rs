@@ -589,7 +589,7 @@ async fn test_accumulator_sync_by_stream_task() -> Result<()> {
         event_handle.clone(),
         Arc::new(DefaultCustomErrorHandle),
     )
-        .generate();
+    .generate();
     let info2 = sync_task.await?.1.get_info();
     assert_eq!(info1, info2);
     let report = event_handle.get_reports().pop().unwrap();
@@ -625,7 +625,7 @@ pub async fn test_find_ancestor_same_number() -> Result<()> {
         event_handle.clone(),
         Arc::new(DefaultCustomErrorHandle),
     )
-        .generate();
+    .generate();
     let ancestor = task.await?;
     assert_eq!(ancestor.number, info0.num_leaves - 1);
     let report = event_handle.get_reports().pop().unwrap();
@@ -665,7 +665,7 @@ pub async fn test_find_ancestor_block_number_behind() -> Result<()> {
         event_handle.clone(),
         Arc::new(DefaultCustomErrorHandle),
     )
-        .generate();
+    .generate();
     let ancestor = task.await?;
     assert_eq!(ancestor.number, info0.num_leaves - 1);
     let report = event_handle.get_reports().pop().unwrap();
@@ -714,7 +714,7 @@ pub async fn test_find_ancestor_chain_fork() -> Result<()> {
         event_handle.clone(),
         Arc::new(DefaultCustomErrorHandle),
     )
-        .generate();
+    .generate();
     let ancestor = task.await?;
     assert_eq!(ancestor.number, info0.num_leaves - 1);
     let report = event_handle.get_reports().pop().unwrap();
@@ -760,7 +760,7 @@ impl BlockFetcher for MockBlockFetcher {
             Delay::new(Duration::from_millis(100)).await;
             result
         }
-            .boxed()
+        .boxed()
     }
 }
 
@@ -843,7 +843,7 @@ async fn block_sync_task_test(total_blocks: u64, ancestor_number: u64) -> Result
         event_handle.clone(),
         Arc::new(DefaultCustomErrorHandle),
     )
-        .generate();
+    .generate();
     let result = sync_task.await?;
     assert!(!result.is_empty(), "task result is empty.");
     let last_block_number = result
@@ -911,7 +911,7 @@ async fn test_block_sync_with_local() -> Result<()> {
         event_handle.clone(),
         Arc::new(DefaultCustomErrorHandle),
     )
-        .generate();
+    .generate();
     let result = sync_task.await?;
     let last_block_number = result
         .iter()
@@ -1045,7 +1045,7 @@ async fn test_sync_target() {
         net2,
         node1.chain().fork(high_chain_info.head().id()).unwrap(),
     )
-        .unwrap();
+    .unwrap();
 
     let peer_selector = PeerSelector::new(peer_infos, PeerStrategy::default(), None);
     let node2 = Arc::new(SyncNodeMocker::new_with_chain_selector(

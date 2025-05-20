@@ -44,8 +44,8 @@ pub async fn start_txpool_with_miner(
 
     let node_config = Arc::new(config);
 
-    let (storage, storage2, _chain_info, _) = Genesis::init_storage_for_test(node_config.net())
-        .expect("init storage by genesis fail.");
+    let (storage, storage2, _chain_info, _) =
+        Genesis::init_storage_for_test(node_config.net()).expect("init storage by genesis fail.");
     let registry = RegistryService::launch();
     registry.put_shared(node_config.clone()).await.unwrap();
     registry.put_shared(storage.clone()).await.unwrap();
