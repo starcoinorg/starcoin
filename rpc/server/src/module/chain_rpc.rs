@@ -4,6 +4,7 @@
 use crate::module::map_err;
 use futures::future::{FutureExt, TryFutureExt};
 use starcoin_abi_decoder::decode_txn_payload;
+use starcoin_chain_api::TransactionInfoWithProof;
 use starcoin_chain_service::ChainAsyncService;
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
@@ -450,15 +451,23 @@ where
     ) -> FutureResult<Option<TransactionInfoWithProofView>> {
         let service = self.service.clone();
         let fut = async move {
-            Ok(service
-                .get_transaction_proof(
-                    block_hash,
-                    transaction_global_index,
-                    event_index,
-                    access_path.map(Into::into),
-                )
-                .await?
-                .map(Into::into))
+            Ok({
+                let txn_info_proof = service
+                    .get_transaction_proof(
+                        block_hash,
+                        transaction_global_index,
+                        event_index,
+                        access_path.map(AccessPath::from).map(Into::into),
+                    )
+                    .await?;
+                match txn_info_proof {
+                    Some(txn_info_proof) => {
+                        Some(TransactionInfoWithProof::try_from(txn_info_proof)?)
+                    }
+                    None => None,
+                }
+                .map(Into::into)
+            })
         }
         .map_err(map_err);
 
@@ -474,20 +483,24 @@ where
     ) -> FutureResult<Option<StrView<Vec<u8>>>> {
         let service = self.service.clone();
         let fut = async move {
-            let proof = service
+            let txn_info_proof = service
                 .get_transaction_proof(
                     block_hash,
                     transaction_global_index,
                     event_index,
-                    access_path.map(Into::into),
+                    access_path.map(AccessPath::from).map(Into::into),
                 )
-                .await?
-                .map(|proof| {
-                    StrView(
-                        bcs_ext::to_bytes(&proof)
-                            .expect("serialize TransactionInfoWithProof to bcs should success."),
-                    )
-                });
+                .await?;
+            let proof = match txn_info_proof {
+                Some(txn_info_proof) => Some(TransactionInfoWithProof::try_from(txn_info_proof)?),
+                None => None,
+            };
+            let proof = proof.map(|proof| {
+                StrView(
+                    bcs_ext::to_bytes(&proof)
+                        .expect("serialize TransactionInfoWithProof to bcs should success."),
+                )
+            });
             Ok(proof)
         }
         .map_err(map_err);

@@ -2,13 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub use crate::event_info::{ContractEventInfo, StcContractEventInfo};
+use serde::{Deserialize, Serialize};
 pub use starcoin_vm_types::contract_event::*;
 
 use crate::event::StcEventKey;
 use crate::language_storage::StcTypeTag;
 use starcoin_vm2_vm_types::contract_event::ContractEvent as ContractEvent2;
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub enum StcContractEvent {
     V1(ContractEvent),
     V2(ContractEvent2),
@@ -23,6 +24,26 @@ impl From<ContractEvent> for StcContractEvent {
 impl From<ContractEvent2> for StcContractEvent {
     fn from(event: ContractEvent2) -> Self {
         Self::V2(event)
+    }
+}
+
+impl TryFrom<StcContractEvent> for ContractEvent {
+    type Error = anyhow::Error;
+    fn try_from(value: StcContractEvent) -> Result<Self, Self::Error> {
+        match value {
+            StcContractEvent::V1(event) => Ok(event),
+            StcContractEvent::V2(_) => anyhow::bail!("V2 ContractEvent cannot be convert to V1"),
+        }
+    }
+}
+
+impl TryFrom<StcContractEvent> for ContractEvent2 {
+    type Error = anyhow::Error;
+    fn try_from(value: StcContractEvent) -> Result<Self, Self::Error> {
+        match value {
+            StcContractEvent::V1(_) => anyhow::bail!("V1 ContractEvent cannot be convert to V2"),
+            StcContractEvent::V2(event) => Ok(event),
+        }
     }
 }
 

@@ -14,6 +14,7 @@ mod chain;
 mod errors;
 pub mod message;
 mod service;
+mod types;
 
 pub use chain::{Chain, ChainReader, ChainWriter, ExecutedBlock, MintedUncleNumber, VerifiedBlock};
 pub use errors::*;
@@ -22,6 +23,7 @@ use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::contract_event::ContractEvent;
+pub use types::*;
 
 #[derive(Clone, Debug)]
 pub struct ExcludedTxns {

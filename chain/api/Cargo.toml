@@ -16,6 +16,9 @@ starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
 
+# dependencies for move2
+starcoin-vm2-state-api = { workspace = true }
+
 
 [dev-dependencies]
 

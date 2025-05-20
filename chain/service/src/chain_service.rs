@@ -230,14 +230,23 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                 transaction_global_index,
                 event_index,
                 access_path,
-            } => Ok(ChainResponse::TransactionProof(Box::new(
-                self.inner.get_transaction_proof(
-                    block_id,
-                    transaction_global_index,
-                    event_index,
-                    access_path,
-                )?,
-            ))),
+            } => Ok({
+                // todo: handle vm2 access_path?
+                let access_path = match access_path {
+                    Some(path) => Some(path.try_into()?),
+                    None => None,
+                };
+                ChainResponse::TransactionProof(Box::new(
+                    self.inner
+                        .get_transaction_proof(
+                            block_id,
+                            transaction_global_index,
+                            event_index,
+                            access_path,
+                        )?
+                        .map(Into::into),
+                ))
+            }),
             ChainRequest::GetBlockInfos(ids) => Ok(ChainResponse::BlockInfoVec(Box::new(
                 self.inner.get_block_infos(ids)?,
             ))),

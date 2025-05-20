@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2
 
 use crate::message::{ChainRequest, ChainResponse};
-use crate::TransactionInfoWithProof;
+use crate::{StcTransactionInfoWithProof, TransactionInfoWithProof};
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
+use starcoin_types::access_path::StcAccessPath;
 use starcoin_types::contract_event::{ContractEvent, StcContractEventInfo};
 use starcoin_types::filter::Filter;
 use starcoin_types::multi_state::MultiState;
@@ -139,8 +140,8 @@ pub trait ChainAsyncService:
         block_id: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
-        access_path: Option<AccessPath>,
-    ) -> Result<Option<TransactionInfoWithProof>>;
+        access_path: Option<StcAccessPath>,
+    ) -> Result<Option<StcTransactionInfoWithProof>>;
 
     async fn get_block_infos(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
     async fn get_multi_state_by_hash(&self, hash: HashValue) -> Result<Option<MultiState>>;
@@ -414,13 +415,14 @@ where
         }
     }
 
+    // for both vms
     async fn get_transaction_proof(
         &self,
         block_id: HashValue,
         transaction_global_index: u64,
         event_index: Option<u64>,
-        access_path: Option<AccessPath>,
-    ) -> Result<Option<TransactionInfoWithProof>> {
+        access_path: Option<StcAccessPath>,
+    ) -> Result<Option<StcTransactionInfoWithProof>> {
         let response = self
             .send(ChainRequest::GetTransactionProof {
                 block_id,
