@@ -11,7 +11,7 @@ use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::Storage;
+use starcoin_storage::{Storage, Store};
 use starcoin_transaction_builder::{build_empty_script, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
@@ -159,12 +159,13 @@ prop_compose! {
         p_header.gas_used(),
     );
     txns.insert(0, Transaction::BlockMetadata(block_metadata));
+    let state_root = storage.get_vm_multi_state(parent_header.id()).unwrap().state_root1();
 
     //gen state_root, acc_root
     let (state_root, acc_root) = gen_root_hashes(
         storage,
         parent_header.txn_accumulator_root(),
-        parent_header.state_root(),
+        state_root,
         txns,
         u64::MAX, /*block_gas_limit*/
     );

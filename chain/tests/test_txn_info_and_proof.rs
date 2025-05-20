@@ -9,11 +9,12 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::debug;
 use starcoin_transaction_builder::{peer_to_peer_txn_sent_as_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
+use starcoin_vm2_vm_types::transaction::Transaction as Transaction2;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::AccountResource;
 use starcoin_vm_types::move_resource::MoveResource;
-use starcoin_vm_types::transaction::Transaction;
+use starcoin_vm_types::transaction::{StcTransaction, Transaction};
 use std::collections::HashMap;
 
 #[stest::test(timeout = 480)]
@@ -33,15 +34,18 @@ fn test_transaction_info_and_proof() -> Result<()> {
 
     let block_count: u64 = rng.gen_range(2..10);
     let mut seq_number = 0;
-    let mut all_txns = vec![];
+    let mut all_txns: Vec<StcTransaction> = vec![];
     let mut all_address = HashMap::<HashValue, AccountAddress>::new();
 
     let genesis_block = block_chain.get_block_by_number(0).unwrap().unwrap();
     //put the genesis txn, the genesis block metadata txn do not generate txn info
 
-    all_txns.push(Transaction::UserTransaction(
-        genesis_block.body.transactions.first().cloned().unwrap(),
-    ));
+    all_txns.extend_from_slice(&[
+        Transaction::UserTransaction(genesis_block.body.transactions.first().cloned().unwrap())
+            .into(),
+        Transaction2::UserTransaction(genesis_block.body.transactions2.first().cloned().unwrap())
+            .into(),
+    ]);
 
     (0..block_count).for_each(|_block_idx| {
         let txn_count: u64 = rng.gen_range(1..10);
@@ -77,10 +81,15 @@ fn test_transaction_info_and_proof() -> Result<()> {
             .create_block(template, net.time_service().as_ref())
             .unwrap();
         block_chain.apply(block.clone()).unwrap();
-        all_txns.push(Transaction::BlockMetadata(
+        all_txns.extend_from_slice(&[Transaction::BlockMetadata(
             block.to_metadata(current_header.gas_used()),
-        ));
-        all_txns.extend(txns.into_iter().map(Transaction::from));
+        )
+        .into()]);
+        all_txns.extend(txns.into_iter().map(|txn| Transaction::from(txn).into()));
+        all_txns.extend_from_slice(&[Transaction2::BlockMetadata(
+            block.to_metadata2(current_header.gas_used()),
+        )
+        .into()]);
         current_header = block.header().clone();
     });
 
@@ -114,6 +123,13 @@ fn test_transaction_info_and_proof() -> Result<()> {
             "txn_global_index:{}",
             txn_global_index
         );
+
+        let txn = match txn.to_v1() {
+            Some(txn) => txn,
+            None => {
+                continue;
+            }
+        };
 
         let account_address = match &txn {
             Transaction::UserTransaction(user_txn) => user_txn.sender(),

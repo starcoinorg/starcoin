@@ -11,7 +11,7 @@ use starcoin_genesis::Genesis;
 
 pub fn gen_blockchain_for_test(net: &ChainNetwork) -> Result<BlockChain> {
     let (storage, storage2, chain_info, _) =
-        Genesis::init_storage_for_test_v2(net).expect("init storage by genesis fail.");
+        Genesis::init_storage_for_test(net).expect("init storage by genesis fail.");
 
     let block_chain = BlockChain::new(
         net.time_service(),

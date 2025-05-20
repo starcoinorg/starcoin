@@ -195,7 +195,7 @@ pub async fn test_sync_invalid_target() -> Result<()> {
 #[stest::test]
 pub async fn test_failed_block() -> Result<()> {
     let net = ChainNetwork::new_builtin(BuiltinNetworkID::Halley);
-    let (storage, storage2, chain_info, _) = Genesis::init_storage_for_test_v2(&net)?;
+    let (storage, storage2, chain_info, _) = Genesis::init_storage_for_test(&net)?;
 
     let chain = BlockChain::new(
         net.time_service(),
@@ -1039,7 +1039,7 @@ async fn test_sync_target() {
         BuiltinNetworkID::Test.genesis_config().clone(),
         BuiltinNetworkID::Test.genesis_config2().clone(),
     );
-    let (_, genesis_chain_info, _) =
+    let (_, _, genesis_chain_info, _) =
         Genesis::init_storage_for_test(&net2).expect("init storage by genesis fail.");
     let mock_chain = MockChain::new_with_chain(
         net2,

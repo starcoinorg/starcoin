@@ -432,12 +432,7 @@ impl Genesis {
         Ok((chain_info, genesis))
     }
 
-    pub fn init_storage_for_test(net: &ChainNetwork) -> Result<(Arc<Storage>, ChainInfo, Genesis)> {
-        let ret = Self::init_storage_for_test_v2(net)?;
-        Ok((ret.0, ret.2, ret.3))
-    }
-
-    pub fn init_storage_for_test_v2(
+    pub fn init_storage_for_test(
         net: &ChainNetwork,
     ) -> Result<(Arc<Storage>, Arc<Storage2>, ChainInfo, Genesis)> {
         debug!("init storage by genesis for test.");
