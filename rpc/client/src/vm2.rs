@@ -426,6 +426,7 @@ impl RpcClient {
         &self,
         address: AccountAddress,
     ) -> anyhow::Result<Option<u64>> {
-        self.next_sequence_number_in_txpool(AccountAddressV1::new(address.into_bytes()))
+        self.call_rpc_blocking(|inner| inner.txpool_client.next_sequence_number2(address))
+            .map_err(map_err)
     }
 }
