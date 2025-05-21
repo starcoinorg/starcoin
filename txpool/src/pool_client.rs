@@ -7,16 +7,18 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_types::multi_transaction::{
     MultiAccountAddress, MultiSignatureCheckedTransaction, MultiSignedUserTransaction,
+    MultiTransactionError,
 };
-use starcoin_types::vm_error::VMStatus;
 use starcoin_types::{
     block::BlockHeader,
-    transaction,
     transaction::{CallError, TransactionError},
 };
 use starcoin_vm2_state_api::AccountStateReader as AccountStateReader2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_storage::Store as Store2;
+use starcoin_vm2_vm_types::transaction::{
+    CallError as CallError2, TransactionError as TransactionError2,
+};
 use std::{collections::HashMap, fmt::Debug, sync::Arc};
 
 /// Cache for state nonces.
@@ -181,12 +183,11 @@ impl crate::pool::Client for PoolClient {
     fn verify_transaction(
         &self,
         tx: UnverifiedUserTransaction,
-    ) -> Result<MultiSignatureCheckedTransaction, transaction::TransactionError> {
+    ) -> Result<MultiSignatureCheckedTransaction, MultiTransactionError> {
         let txn = MultiSignedUserTransaction::from(tx);
-        let checked_txn = txn
-            .clone()
-            .check_signature()
-            .map_err(|e| TransactionError::InvalidSignature(e.to_string()))?;
+        let checked_txn = txn.clone().check_signature().map_err(|e| {
+            MultiTransactionError::VM1(TransactionError::InvalidSignature(e.to_string()))
+        })?;
         match txn {
             MultiSignedUserTransaction::VM1(txn) => {
                 match starcoin_executor::validate_transaction(
@@ -196,7 +197,7 @@ impl crate::pool::Client for PoolClient {
                 ) {
                     None => Ok(checked_txn),
                     Some(status) => {
-                        Err(TransactionError::CallErr(CallError::ExecutionError(status)))
+                        Err(TransactionError::CallErr(CallError::ExecutionError(status)).into())
                     }
                 }
             }
@@ -207,10 +208,9 @@ impl crate::pool::Client for PoolClient {
                     self.vm_metrics.clone(),
                 ) {
                     None => Ok(checked_txn),
-                    // XXX FIXME YSG
-                    Some(_status) => Err(TransactionError::CallErr(CallError::ExecutionError(
-                        VMStatus::Executed,
-                    ))),
+                    Some(status) => {
+                        Err(TransactionError2::CallErr(CallError2::ExecutionError(status)).into())
+                    }
                 }
             }
         }

@@ -17,6 +17,7 @@ use starcoin_vm_types::transaction::{
     SignatureCheckedTransaction, Transaction, TransactionError, TransactionPayload,
 };
 use starcoin_vm_types::{genesis_config::ChainId, transaction::SignedUserTransaction};
+use std::fmt::Display;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 pub enum MultiChainId {
@@ -210,4 +211,25 @@ impl From<MultiSignedUserTransaction> for Transaction {
 pub enum MultiTransactionError {
     VM1(TransactionError),
     VM2(TransactionError2),
+}
+
+impl Display for MultiTransactionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MultiTransactionError::VM1(e) => write!(f, "VM1 error: {}", e),
+            MultiTransactionError::VM2(e) => write!(f, "VM2 error: {}", e),
+        }
+    }
+}
+
+impl From<TransactionError> for MultiTransactionError {
+    fn from(error: TransactionError) -> Self {
+        Self::VM1(error)
+    }
+}
+
+impl From<TransactionError2> for MultiTransactionError {
+    fn from(error: TransactionError2) -> Self {
+        Self::VM2(error)
+    }
 }

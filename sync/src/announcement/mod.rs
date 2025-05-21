@@ -11,7 +11,9 @@ use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, Serv
 use starcoin_storage::{BlockTransactionInfoStore, Storage};
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
+use starcoin_types::multi_transaction::MultiTransactionError;
 use starcoin_types::transaction::TransactionError;
+use starcoin_vm2_vm_types::transaction::TransactionError as TransactionError2;
 
 /// Service which handle Announcement message
 pub struct AnnouncementService {
@@ -83,8 +85,12 @@ impl EventHandler<Self, PeerAnnouncementMessage> for AnnouncementService {
                                             "[sync] handle announcement msg error: {:?}, peer_id:{:?} ",
                                             err, peer_id
                                         );
-                                        if let TransactionError::InvalidSignature(_) = err {
-                                            network.report_peer(peer_id.clone(), ReputationChange::new(i32::MIN / 2, "InvalidSignature"))
+                                        if let MultiTransactionError::VM1(TransactionError::InvalidSignature(_)) = err {
+                                            network.report_peer(peer_id.clone(), ReputationChange::new(i32::MIN / 2, "VM1 InvalidSignature"))
+                                        }
+
+                                        if let MultiTransactionError::VM2(TransactionError2::InvalidSignature(_)) = err {
+                                            network.report_peer(peer_id.clone(), ReputationChange::new(i32::MIN / 2, "VM1 InvalidSignature"))
                                         }
                                     }
                                 }
