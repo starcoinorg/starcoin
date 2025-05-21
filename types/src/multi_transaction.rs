@@ -5,41 +5,41 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_vm2_vm_types::{
-    account_address::AccountAddress as AccountAddressV2,
-    genesis_config::ChainId as ChainIdV2,
+    account_address::AccountAddress as AccountAddress2,
+    genesis_config::ChainId as ChainId2,
     transaction::{
-        SignatureCheckedTransaction as SignatureCheckedTransactionV2,
-        SignedUserTransaction as SignedUserTransactionV2, Transaction as TransactionV2,
-        TransactionPayload as TransactionPayloadV2,
+        SignatureCheckedTransaction as SignatureCheckedTransaction2,
+        SignedUserTransaction as SignedUserTransaction2, Transaction as Transaction2,
+        TransactionError as TransactionError2, TransactionPayload as TransactionPayload2,
     },
 };
 use starcoin_vm_types::transaction::{
-    SignatureCheckedTransaction, Transaction, TransactionPayload,
+    SignatureCheckedTransaction, Transaction, TransactionError, TransactionPayload,
 };
 use starcoin_vm_types::{genesis_config::ChainId, transaction::SignedUserTransaction};
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 pub enum MultiChainId {
     VM1(ChainId),
-    VM2(ChainIdV2),
+    VM2(ChainId2),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 pub enum MultiSignedUserTransaction {
     VM1(SignedUserTransaction),
-    VM2(SignedUserTransactionV2),
+    VM2(SignedUserTransaction2),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 pub enum MultiTransactionPayload {
     VM1(TransactionPayload),
-    VM2(TransactionPayloadV2),
+    VM2(TransactionPayload2),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum MultiSignatureCheckedTransaction {
     VM1(SignatureCheckedTransaction),
-    VM2(SignatureCheckedTransactionV2),
+    VM2(SignatureCheckedTransaction2),
 }
 
 impl MultiSignatureCheckedTransaction {
@@ -58,7 +58,7 @@ impl MultiSignatureCheckedTransaction {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum MultiAccountAddress {
     VM1(AccountAddress),
-    VM2(AccountAddressV2),
+    VM2(AccountAddress2),
 }
 
 impl MultiAccountAddress {
@@ -82,8 +82,8 @@ impl From<SignedUserTransaction> for MultiSignedUserTransaction {
     }
 }
 
-impl From<SignedUserTransactionV2> for MultiSignedUserTransaction {
-    fn from(txn: SignedUserTransactionV2) -> Self {
+impl From<SignedUserTransaction2> for MultiSignedUserTransaction {
+    fn from(txn: SignedUserTransaction2) -> Self {
         Self::VM2(txn)
     }
 }
@@ -120,14 +120,6 @@ impl MultiSignedUserTransaction {
                 .map(MultiSignatureCheckedTransaction::VM2),
         }
     }
-
-    /*
-    pub fn authenticator(&self) -> TransactionAuthenticator {
-        match self {
-            Self::VM1(sign) => sign.authenticator(),
-            Self::VM2(sign_with_type) => sign_with_type.authenticator(),
-        }
-    } */
 
     pub fn sender(&self) -> MultiAccountAddress {
         match self {
@@ -194,12 +186,12 @@ impl TryFrom<Transaction> for MultiSignedUserTransaction {
     }
 }
 
-impl TryFrom<TransactionV2> for MultiSignedUserTransaction {
+impl TryFrom<Transaction2> for MultiSignedUserTransaction {
     type Error = Error;
 
-    fn try_from(txn: TransactionV2) -> Result<Self, Self::Error> {
+    fn try_from(txn: Transaction2) -> Result<Self, Self::Error> {
         match txn {
-            TransactionV2::UserTransaction(txn) => Ok(Self::VM2(txn)),
+            Transaction2::UserTransaction(txn) => Ok(Self::VM2(txn)),
             _ => Err(format_err!("Not a user transaction.")),
         }
     }
@@ -212,4 +204,10 @@ impl From<MultiSignedUserTransaction> for Transaction {
             _ => panic!("Not a vm1 transaction."),
         }
     }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum MultiTransactionError {
+    VM1(TransactionError),
+    VM2(TransactionError2),
 }
