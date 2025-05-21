@@ -14,19 +14,13 @@ pub fn execute_transactions(
     transactions: Vec<Transaction>,
     gas_limit: u64,
     vm_metrics: Option<VMMetrics>,
-) -> ExecutorResult<(BlockExecutedData, Vec<HashValue>)> {
+) -> ExecutorResult<BlockExecutedData> {
     // This function will execute the transactions in the block using vm2
     // Note: The actual implementation of VM2 execution and saving logic will depend on your VM2 setup.
     let executed_data =
         block_executor::block_execute(statedb, transactions, gas_limit, vm_metrics)?;
 
-    let included_txn_info_hashes: Vec<_> = executed_data
-        .txn_infos
-        .iter()
-        .map(|info| info.id())
-        .collect::<Vec<_>>();
-
-    Ok((executed_data, included_txn_info_hashes))
+    Ok(executed_data)
 }
 
 pub fn save_executed_transactions(

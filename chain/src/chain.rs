@@ -503,7 +503,7 @@ impl BlockChain {
             epoch.block_gas_limit(),
             vm_metrics.clone(),
         )?;
-        let (executed_data2, included_txn_info_hashes2) = starcoin_vm2_chain::execute_transactions(
+        let executed_data2 = starcoin_vm2_chain::execute_transactions(
             &statedb2,
             transactions2.clone(),
             epoch.block_gas_limit() - executed_data.gas_used(),
@@ -567,6 +567,8 @@ impl BlockChain {
         let executed_accumulator_root = {
             let included_txn_info_hashes: Vec<_> =
                 vec_transaction_info.iter().map(|info| info.id()).collect();
+            let included_txn_info_hashes2: Vec<_> =
+                vm2_txn_infos.iter().map(|info| info.id()).collect();
             // NO need to check whether info_hashes is empty or not, accmulator.append will handle it.
             txn_accumulator.append(&included_txn_info_hashes)?;
             txn_accumulator.append(&included_txn_info_hashes2)?;
