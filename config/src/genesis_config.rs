@@ -44,7 +44,7 @@ use std::io::{Read, Write};
 use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
-use strum::EnumIter;
+use strum::{EnumIter, IntoEnumIterator};
 
 #[derive(
     Clone,
@@ -169,14 +169,7 @@ impl BuiltinNetworkID {
     }
 
     pub fn networks() -> Vec<BuiltinNetworkID> {
-        vec![
-            BuiltinNetworkID::Test,
-            BuiltinNetworkID::Dev,
-            BuiltinNetworkID::Halley,
-            BuiltinNetworkID::Proxima,
-            BuiltinNetworkID::Barnard,
-            BuiltinNetworkID::Main,
-        ]
+        BuiltinNetworkID::iter().collect()
     }
 
     pub fn genesis_config(self) -> &'static GenesisConfig {
