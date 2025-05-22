@@ -15,6 +15,7 @@ use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, EventWithProof, ExcludedTxns,
     ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
 };
+use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
@@ -467,20 +468,28 @@ impl BlockChain {
         let block_id = header.id();
         let transactions = {
             // genesis block do not generate BlockMetadata transaction.
-            let mut t = match &parent_status {
-                None => vec![],
+            let (vm1_offline, mut t) = match &parent_status {
+                None => (false, vec![]),
                 Some(parent) => {
-                    let block_metadata = block.to_metadata(parent.head().gas_used());
-                    vec![Transaction::BlockMetadata(block_metadata)]
+                    let vm1_offline = vm1_offline_height(parent.head.chain_id().id().into());
+                    if header.number() < vm1_offline {
+                        let block_metadata = block.to_metadata(parent.head().gas_used());
+                        (false, vec![Transaction::BlockMetadata(block_metadata)])
+                    } else {
+                        (true, vec![])
+                    }
                 }
             };
-            t.extend(
-                block
-                    .transactions()
-                    .iter()
-                    .cloned()
-                    .map(Transaction::UserTransaction),
-            );
+            if !vm1_offline {
+                t.extend(
+                    block
+                        .transactions()
+                        .iter()
+                        .cloned()
+                        .map(Transaction::UserTransaction),
+                );
+            }
+            debug_assert!((vm1_offline && t.is_empty()) || (!vm1_offline && !t.is_empty()));
             t
         };
 
