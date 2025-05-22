@@ -61,12 +61,9 @@ where
             },
         };
 
-        let inner = sender.into_bytes();
-
-        // XXX FIXME YSG (ask Bob)
         let next_seq_number = match txn_request
             .sequence_number
-            .or_else(|| self.pool.next_sequence_number(inner.into()))
+            .or_else(|| self.pool.next_sequence_number2(sender))
         {
             Some(n) => n,
             None => self
