@@ -23,11 +23,11 @@ use starcoin_storage::Store;
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService, TxnStatusFullEvent};
 use starcoin_types::multi_transaction::{
     MultiAccountAddress, MultiSignatureCheckedTransaction, MultiSignedUserTransaction,
+    MultiTransactionError,
 };
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader},
-    transaction,
 };
 use starcoin_vm2_storage::Store as Store2;
 use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
@@ -93,7 +93,7 @@ impl TxPoolService {
     pub fn verify_transaction(
         &self,
         tx: MultiSignedUserTransaction,
-    ) -> Result<MultiSignatureCheckedTransaction, transaction::TransactionError> {
+    ) -> Result<MultiSignatureCheckedTransaction, MultiTransactionError> {
         self.get_inner()
             .get_pool_client()
             .verify_transaction(tx.into())
@@ -104,7 +104,7 @@ impl TxPoolSyncService for TxPoolService {
     fn add_txns(
         &self,
         txns: Vec<MultiSignedUserTransaction>,
-    ) -> Vec<Result<(), transaction::TransactionError>> {
+    ) -> Vec<Result<(), MultiTransactionError>> {
         // _timer will observe_duration when it's dropped.
         // We don't need to call it explicitly.
         let _timer = self.inner.metrics.as_ref().map(|metrics| {
@@ -288,7 +288,7 @@ impl Inner {
     pub(crate) fn import_txns(
         &self,
         txns: Vec<MultiSignedUserTransaction>,
-    ) -> Vec<Result<(), transaction::TransactionError>> {
+    ) -> Vec<Result<(), MultiTransactionError>> {
         let txns = txns
             .into_iter()
             .map(|t| PoolTransaction::Unverified(UnverifiedUserTransaction::from(t)));

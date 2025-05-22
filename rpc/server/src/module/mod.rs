@@ -36,9 +36,14 @@ use hex::FromHexError;
 use jsonrpc_core::ErrorCode;
 use starcoin_account_api::error::AccountError;
 use starcoin_rpc_api::types::TransactionStatusView;
+use starcoin_types::multi_transaction::MultiTransactionError;
+use starcoin_vm2_types::view::TransactionStatusView as TransactionStatusView2;
+use starcoin_vm2_vm_types::transaction::{
+    CallError as CallError2, TransactionError as TransactionError2,
+    TransactionStatus as TransactionStatus2,
+};
 use starcoin_vm_types::transaction::{CallError, TransactionError, TransactionStatus};
 use starcoin_vm_types::vm_status::VMStatus;
-
 pub fn map_err(err: anyhow::Error) -> jsonrpc_core::Error {
     // if err is a jsonrpc error, return directly.
     if err.is::<jsonrpc_core::Error>() {
@@ -206,4 +211,56 @@ where
     let anyhow_err: anyhow::Error = err.into();
     let message = format!("Invalid param error: {:?}", anyhow_err);
     jsonrpc_core::Error::invalid_params(message)
+}
+
+impl From<TransactionError2> for RpcError {
+    fn from(err: TransactionError2) -> Self {
+        let err_message = err.to_string();
+        let (err_code, err_data) = match err {
+            TransactionError2::AlreadyImported
+            | TransactionError2::Old
+            | TransactionError2::InsufficientGasPrice { .. }
+            | TransactionError2::TooCheapToReplace { .. }
+            | TransactionError2::InsufficientGas { .. }
+            | TransactionError2::InsufficientBalance { .. }
+            | TransactionError2::GasLimitExceeded { .. }
+            | TransactionError2::SenderBanned
+            | TransactionError2::RecipientBanned
+            | TransactionError2::CodeBanned
+            | TransactionError2::InvalidChainId
+            | TransactionError2::InvalidSignature(..)
+            | TransactionError2::NotAllowed
+            | TransactionError2::TooBig => (ErrorCode::InvalidParams, None),
+            TransactionError2::LimitReached => (ErrorCode::ServerError(TXN_ERROR_BASE), None),
+            TransactionError2::CallErr(call_err) => match call_err {
+                CallError2::TransactionNotFound => (ErrorCode::InvalidParams, None),
+                CallError2::StatePruned | CallError2::StateCorrupt => {
+                    (ErrorCode::ServerError(TXN_ERROR_BASE + 1), None)
+                }
+                CallError2::ExecutionError(vm_status) => (
+                    ErrorCode::ServerError(TXN_ERROR_BASE + 2),
+                    Some(
+                        // translate to jsonrpc types
+                        serde_json::to_value(TransactionStatusView2::from(
+                            TransactionStatus2::from(vm_status),
+                        ))
+                        .expect("vm status to json should be ok"),
+                    ),
+                ),
+            },
+        };
+        RpcError(jsonrpc_core::Error {
+            code: err_code,
+            message: err_message,
+            data: err_data,
+        })
+    }
+}
+impl From<MultiTransactionError> for RpcError {
+    fn from(err: MultiTransactionError) -> Self {
+        match err {
+            MultiTransactionError::VM1(error) => error.into(),
+            MultiTransactionError::VM2(error) => error.into(),
+        }
+    }
 }

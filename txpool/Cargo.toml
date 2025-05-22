@@ -32,11 +32,12 @@ proptest = { optional = true, workspace = true }
 proptest-derive = { optional = true, workspace = true }
 
 # dependencies for Move 2.0
-starcoin-vm2-storage = { workspace = true }
-starcoin-vm2-types = { workspace = true }
+starcoin-vm2-executor = { workspace = true }
 starcoin-vm2-state-api = { workspace = true }
 starcoin-vm2-statedb = { workspace = true }
-starcoin-vm2-executor = { workspace = true }
+starcoin-vm2-storage = { workspace = true }
+starcoin-vm2-types = { workspace = true }
+starcoin-vm2-vm-types = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

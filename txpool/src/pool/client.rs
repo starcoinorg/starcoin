@@ -8,8 +8,9 @@
 //! any consensus-required structure of the transaction.
 
 use super::{SeqNumber, UnverifiedUserTransaction};
-use starcoin_types::multi_transaction::{MultiAccountAddress, MultiSignatureCheckedTransaction};
-use starcoin_types::transaction;
+use starcoin_types::multi_transaction::{
+    MultiAccountAddress, MultiSignatureCheckedTransaction, MultiTransactionError,
+};
 use std::{any::Any, fmt};
 
 /// State sequence number client
@@ -35,5 +36,5 @@ pub trait Client: fmt::Debug {
     fn verify_transaction(
         &self,
         tx: UnverifiedUserTransaction,
-    ) -> Result<MultiSignatureCheckedTransaction, transaction::TransactionError>;
+    ) -> Result<MultiSignatureCheckedTransaction, MultiTransactionError>;
 }

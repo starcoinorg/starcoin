@@ -13,7 +13,7 @@ use futures_channel::mpsc;
 use parking_lot::RwLock;
 use starcoin_crypto::hash::HashValue;
 use starcoin_txpool_api::TxPoolStatus;
-use starcoin_types::multi_transaction::MultiAccountAddress;
+use starcoin_types::multi_transaction::{MultiAccountAddress, MultiTransactionError};
 use starcoin_types::transaction;
 use std::{
     cmp,
@@ -169,7 +169,7 @@ impl CachedPending {
 
 #[derive(Debug)]
 struct RecentlyRejected {
-    inner: RwLock<HashMap<HashValue, transaction::TransactionError>>,
+    inner: RwLock<HashMap<HashValue, MultiTransactionError>>,
     limit: usize,
 }
 
@@ -185,11 +185,11 @@ impl RecentlyRejected {
         self.inner.write().clear();
     }
 
-    fn get(&self, hash: &HashValue) -> Option<transaction::TransactionError> {
+    fn get(&self, hash: &HashValue) -> Option<MultiTransactionError> {
         self.inner.read().get(hash).cloned()
     }
 
-    fn insert(&self, hash: HashValue, err: &transaction::TransactionError) {
+    fn insert(&self, hash: HashValue, err: &MultiTransactionError) {
         if self.inner.read().contains_key(&hash) {
             return;
         }
@@ -269,11 +269,7 @@ impl TransactionQueue {
     ///
     /// Given blockchain and state access (Client)
     /// verifies and imports transactions to the pool.
-    pub fn import<T, C>(
-        &self,
-        client: C,
-        transactions: T,
-    ) -> Vec<Result<(), transaction::TransactionError>>
+    pub fn import<T, C>(&self, client: C, transactions: T) -> Vec<Result<(), MultiTransactionError>>
     where
         T: IntoIterator<Item = PoolTransaction>,
         C: client::AccountSeqNumberClient + client::Client,
@@ -311,7 +307,7 @@ impl TransactionQueue {
             let hash = transaction.hash();
 
             if self.pool.read().find(&hash).is_some() {
-                results.push(Err(transaction::TransactionError::AlreadyImported));
+                results.push(Err(transaction::TransactionError::AlreadyImported.into()));
             }
 
             if let Some(err) = self.recently_rejected.get(&hash) {
@@ -576,9 +572,7 @@ impl TransactionQueue {
     }
 }
 
-fn convert_error<H: fmt::Debug + fmt::LowerHex>(
-    err: tx_pool::Error<H>,
-) -> transaction::TransactionError {
+fn convert_error<H: fmt::Debug + fmt::LowerHex>(err: tx_pool::Error<H>) -> MultiTransactionError {
     use tx_pool::Error;
 
     match err {
@@ -589,4 +583,5 @@ fn convert_error<H: fmt::Debug + fmt::LowerHex>(
             new: None,
         },
     }
+    .into()
 }

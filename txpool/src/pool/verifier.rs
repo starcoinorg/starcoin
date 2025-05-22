@@ -13,6 +13,7 @@ use crate::pool::{
     client::Client, scoring, PoolTransaction, Priority, UnverifiedUserTransaction,
     VerifiedTransaction,
 };
+use starcoin_types::multi_transaction::MultiTransactionError;
 use starcoin_types::transaction;
 use std::sync::{atomic::AtomicUsize, Arc};
 
@@ -56,7 +57,7 @@ impl<C, S, V> Verifier<C, S, V> {
 impl<C: Client> tx_pool::Verifier<PoolTransaction>
     for Verifier<C, scoring::SeqNumberAndGasPrice, VerifiedTransaction>
 {
-    type Error = transaction::TransactionError;
+    type Error = MultiTransactionError;
     type VerifiedTransaction = VerifiedTransaction;
 
     fn verify_transaction(
@@ -67,7 +68,8 @@ impl<C: Client> tx_pool::Verifier<PoolTransaction>
             return Err(transaction::TransactionError::InsufficientGasPrice {
                 minimal: self.options.min_gas_price,
                 got: tx.gas_price(),
-            });
+            }
+            .into());
         }
         let hash = tx.hash();
         let is_local_txn = tx.is_local();

@@ -6,7 +6,9 @@ use futures_channel::mpsc;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::HashValue;
-use starcoin_types::multi_transaction::{MultiAccountAddress, MultiSignedUserTransaction};
+use starcoin_types::multi_transaction::{
+    MultiAccountAddress, MultiSignedUserTransaction, MultiTransactionError,
+};
 use starcoin_types::{account_address::AccountAddress, block::Block, transaction};
 use starcoin_vm2_types::account_address::AccountAddress as AccountAddress2;
 use std::fmt::Debug;
@@ -28,7 +30,7 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
     fn add_txns(
         &self,
         txns: Vec<MultiSignedUserTransaction>,
-    ) -> Vec<Result<(), transaction::TransactionError>>;
+    ) -> Vec<Result<(), MultiTransactionError>>;
 
     /// Removes transaction from the pool.
     ///
