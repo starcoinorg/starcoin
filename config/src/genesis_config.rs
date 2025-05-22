@@ -382,7 +382,7 @@ impl ChainNetworkID {
     }
 
     /// Default data dir name of this network
-    pub fn dir_name(&self) -> String {
+    pub fn chain_name(&self) -> String {
         match self {
             Self::Builtin(net) => net.to_string(),
             Self::Custom(net) => net.chain_name().to_string(),
