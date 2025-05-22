@@ -29,10 +29,11 @@ static VM1_OFFLINE_HEIGHT: Lazy<HashMap<IdOrName, u64>> = Lazy::new(|| {
     let mut update_height = |x: BuiltinNetworkID, height: u64| {
         let id = x.chain_id().id();
         let name = x.chain_name().to_lowercase();
+        assert!(height > 0, "vm1 offline height must be greater than 0");
         map.insert(id.into(), height);
         map.insert(name.as_str().into(), height);
     };
-    // insert configured height for Builtin Network
+    // configured height for Builtin Network
     for x in BuiltinNetworkID::iter() {
         match x {
             BuiltinNetworkID::Main => {
@@ -55,9 +56,14 @@ static VM1_OFFLINE_HEIGHT: Lazy<HashMap<IdOrName, u64>> = Lazy::new(|| {
             }
         }
     }
-    // insert custom network height for test
-    map.insert("vm2-only-testnet".into(), 0);
-    map.insert("vm1-offline-testnet".into(), 3);
+    let mut update_custom_network = |x: IdOrName, height: u64| {
+        assert!(height > 0, "VM1 offline height must be greater than 0");
+        assert!(!map.contains_key(&x), "Network id or name already exists");
+        map.insert(x, height);
+    };
+    // custom network height for test
+    update_custom_network("vm2-only-testnet".into(), 1);
+    update_custom_network("vm1-offline-testnet".into(), 3);
     map
 });
 
