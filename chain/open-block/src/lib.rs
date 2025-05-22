@@ -199,7 +199,7 @@ impl OpenedBlock {
     pub fn push_txns(&mut self, user_txns: Vec<SignedUserTransaction>) -> Result<ExcludedTxns> {
         // All vm1 txns should be executed before vm2 block_meta txn
         // shortcut for quick return
-        if self.vm2_initialized {
+        if self.vm2_initialized && !user_txns.is_empty() {
             return Err(format_err!(
                 "vm2 already initialized, can not push vm1 txns any more"
             ));

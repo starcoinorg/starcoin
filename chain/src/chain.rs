@@ -41,7 +41,9 @@ use starcoin_types::{
     U256,
 };
 use starcoin_vm2_chain::build_block_transactions;
-use starcoin_vm2_state_api::ChainStateWriter as ChainStateWriter2;
+use starcoin_vm2_state_api::{
+    ChainStateReader as ChainStateReader2, ChainStateWriter as ChainStateWriter2,
+};
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_storage::Store as Store2;
 use starcoin_vm_types::access_path::AccessPath;
@@ -1109,6 +1111,10 @@ impl ChainReader for BlockChain {
         &self.statedb.0
     }
 
+    fn chain_state_reader2(&self) -> &dyn ChainStateReader2 {
+        &self.statedb.1
+    }
+
     fn get_block_info(&self, block_id: Option<HashValue>) -> Result<Option<BlockInfo>> {
         let (storage, _storage2) = &self.storage;
         match block_id {
@@ -1523,6 +1529,10 @@ impl ChainWriter for BlockChain {
 
     fn chain_state(&mut self) -> &ChainStateDB {
         &self.statedb.0
+    }
+
+    fn chain_state2(&mut self) -> &ChainStateDB2 {
+        &self.statedb.1
     }
 }
 

@@ -15,7 +15,9 @@ starcoin-time-service = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
-
+# dependencies for move2
+starcoin-vm2-state-api = { workspace = true }
+starcoin-vm2-statedb = { workspace = true }
 
 [dev-dependencies]
 

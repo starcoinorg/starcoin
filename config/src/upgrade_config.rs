@@ -20,7 +20,7 @@ impl From<u8> for IdOrName {
 
 impl From<&str> for IdOrName {
     fn from(name: &str) -> Self {
-        IdOrName::Name(name.to_string().to_lowercase())
+        IdOrName::Name(name.to_lowercase())
     }
 }
 
@@ -62,8 +62,8 @@ static VM1_OFFLINE_HEIGHT: Lazy<HashMap<IdOrName, u64>> = Lazy::new(|| {
         map.insert(x, height);
     };
     // custom network height for test
-    update_custom_network("vm2-only-testnet".into(), 1);
-    update_custom_network("vm1-offline-testnet".into(), 3);
+    // vm2-only-testnet
+    update_custom_network(123.into(), 2);
     map
 });
 
