@@ -362,10 +362,7 @@ impl BlockChain {
             }
         }
         let excluded_txns = opened_block.push_txns(vm1_txns)?;
-        let excluded_txns2 = {
-            opened_block.initialize2()?;
-            opened_block.push_txns2(vm2_txns)?
-        };
+        let excluded_txns2 = opened_block.push_txns2(vm2_txns)?;
         let template = opened_block.finalize()?;
         Ok((template, excluded_txns.absorb(excluded_txns2)))
     }

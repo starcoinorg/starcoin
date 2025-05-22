@@ -65,10 +65,7 @@ pub fn test_open_block() -> Result<()> {
         )
     };
     let excluded = opened_block.push_txns(vec![txn1])?;
-    let _ = {
-        opened_block.initialize2()?;
-        opened_block.push_txns2(vec![txn2])?
-    };
+    let _ = opened_block.push_txns2(vec![txn2])?;
     assert_eq!(excluded.discarded_txns.len(), 0);
     assert_eq!(excluded.untouched_txns.len(), 0);
 
