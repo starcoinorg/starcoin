@@ -233,3 +233,12 @@ impl From<TransactionError2> for MultiTransactionError {
         Self::VM2(error)
     }
 }
+
+impl std::error::Error for MultiTransactionError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::VM1(e) => Some(e),
+            Self::VM2(e) => Some(e),
+        }
+    }
+}
