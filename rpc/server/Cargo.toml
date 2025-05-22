@@ -67,7 +67,10 @@ starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
 vm-status-translator = { workspace = true }
 starcoin-vm-runtime = { workspace = true }
+
+# dependencies for Move 2.0
 starcoin-vm2-abi-decoder = { workspace = true }
+starcoin-vm2-types = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
 starcoin-vm2-storage = { workspace = true }
 starcoin-vm2-statedb = { workspace = true }

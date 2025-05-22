@@ -37,9 +37,13 @@ use jsonrpc_core::ErrorCode;
 use starcoin_account_api::error::AccountError;
 use starcoin_rpc_api::types::TransactionStatusView;
 use starcoin_types::multi_transaction::MultiTransactionError;
+use starcoin_vm2_types::view::TransactionStatusView as TransactionStatusView2;
+use starcoin_vm2_vm_types::transaction::{
+    CallError as CallError2, TransactionError as TransactionError2,
+    TransactionStatus as TransactionStatus2,
+};
 use starcoin_vm_types::transaction::{CallError, TransactionError, TransactionStatus};
 use starcoin_vm_types::vm_status::VMStatus;
-use starcoin_vm2_vm_types::transaction::{TransactionError as TransactionError2, CallError as CallError2, TransactionStatus as TransactionStatus2};
 pub fn map_err(err: anyhow::Error) -> jsonrpc_core::Error {
     // if err is a jsonrpc error, return directly.
     if err.is::<jsonrpc_core::Error>() {
@@ -237,10 +241,10 @@ impl From<TransactionError2> for RpcError {
                     ErrorCode::ServerError(TXN_ERROR_BASE + 2),
                     Some(
                         // translate to jsonrpc types
-                        serde_json::to_value(TransactionStatusView::from(TransactionStatus2::from(
-                            vm_status,
-                        )))
-                            .expect("vm status to json should be ok"),
+                        serde_json::to_value(TransactionStatusView2::from(
+                            TransactionStatus2::from(vm_status),
+                        ))
+                        .expect("vm status to json should be ok"),
                     ),
                 ),
             },
