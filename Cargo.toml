@@ -571,7 +571,7 @@ starcoin-vm2-status-translator = { git = "https://github.com/starcoinorg/starcoi
 move-vm2-core-types = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", package = "move-core-types" }
 move-vm2-transactional-test-runner = { git = "https://github.com/starcoinorg/move", rev = "7c0ec30b6dd783cc0377b5b2c85650130028d3b5", package = "move-transactional-test-runner" }
 
-
+strum = "0.27"
 syn = { version = "1.0.107", features = [
     "full",
     "extra-traits",

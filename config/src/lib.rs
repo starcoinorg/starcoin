@@ -42,6 +42,7 @@ mod sync_config;
 #[cfg(test)]
 mod tests;
 mod txpool_config;
+pub mod upgrade_config;
 
 use thiserror::Error;
 
