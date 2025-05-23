@@ -7,7 +7,6 @@ use crate::U256;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
-use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::sync::Arc;
 #[derive(Clone, Debug)]
 pub struct NewHeadBlock {
@@ -69,7 +68,7 @@ impl GenerateBlockEvent {
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct MintBlockEvent {
     pub parent_hash: HashValue,
-    pub strategy: ConsensusStrategy,
+    pub strategy: u8,
     #[serde(with = "hex")]
     #[schemars(with = "String")]
     pub minting_blob: Vec<u8>,
@@ -90,7 +89,7 @@ pub struct MintEventExtra {
 impl MintBlockEvent {
     pub fn new(
         parent_hash: HashValue,
-        strategy: ConsensusStrategy,
+        strategy: u8,
         minting_blob: Vec<u8>,
         difficulty: U256,
         block_number: u64,

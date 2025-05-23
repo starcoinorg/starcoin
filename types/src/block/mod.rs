@@ -7,7 +7,7 @@ mod tests;
 
 use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
-use crate::genesis_config::{ChainId, ConsensusStrategy};
+use crate::genesis_config::ChainId;
 use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::transaction::SignedUserTransaction;
 use crate::U256;
@@ -976,7 +976,7 @@ pub struct BlockTemplate {
     /// Block difficulty
     pub difficulty: U256,
     /// Block consensus strategy
-    pub strategy: ConsensusStrategy,
+    pub strategy: u8,
     /// parents
     parents_hash: ParentsHash,
 }
@@ -990,7 +990,7 @@ impl BlockTemplate {
         body: BlockBody,
         chain_id: ChainId,
         difficulty: U256,
-        strategy: ConsensusStrategy,
+        strategy: u8,
         block_metadata: BlockMetadata,
     ) -> Self {
         let (parent_hash, timestamp, author, _, number, _, _, parents_hash) =
