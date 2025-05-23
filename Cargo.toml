@@ -293,7 +293,6 @@ starcoin-decrypt = { git = "https://github.com/starcoinorg/starcoin", rev = "401
 forkable-jellyfish-merkle = { git = "https://github.com/starcoinorg/starcoin", rev = "401ce6289a78b9f44e62e2b9f907030ad26d8d79" }
 bcs-ext = { git = "https://github.com/starcoinorg/starcoin", rev = "401ce6289a78b9f44e62e2b9f907030ad26d8d79" }
 starcoin-metrics = { git = "https://github.com/starcoinorg/starcoin", rev = "401ce6289a78b9f44e62e2b9f907030ad26d8d79" }
-starcoin-consensus = { git = "https://github.com/starcoinorg/starcoin", rev = "401ce6289a78b9f44e62e2b9f907030ad26d8d79" }
 
 tempfile = "3.2.0"
 textwrap = "0.14.0"
