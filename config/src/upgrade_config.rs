@@ -26,9 +26,18 @@ impl From<&str> for IdOrName {
 
 static VM1_OFFLINE_HEIGHT: Lazy<HashMap<IdOrName, u64>> = Lazy::new(|| {
     let mut map: HashMap<IdOrName, u64> = HashMap::new();
-    let mut update_height = |x: BuiltinNetworkID, height: u64| {
-        let id = x.chain_id().id();
+    let mut update_height = |x: BuiltinNetworkID, height: Option<u64>| {
         let name = x.chain_name().to_lowercase();
+        let height = height.unwrap_or_else(|| {
+            if let Ok(height_str) =
+                std::env::var(format!("VM1_OFFLINE_HEIGHT_{}", name.to_uppercase()))
+            {
+                height_str.parse::<u64>().expect("invalid height")
+            } else {
+                u64::MAX
+            }
+        });
+        let id = x.chain_id().id();
         assert!(height > 0, "vm1 offline height must be greater than 0");
         map.insert(id.into(), height);
         map.insert(name.as_str().into(), height);
@@ -36,23 +45,11 @@ static VM1_OFFLINE_HEIGHT: Lazy<HashMap<IdOrName, u64>> = Lazy::new(|| {
     // configured height for Builtin Network
     for x in BuiltinNetworkID::iter() {
         match x {
-            BuiltinNetworkID::Main => {
-                update_height(x, u64::MAX);
-            }
-            BuiltinNetworkID::Test => {
-                update_height(x, u64::MAX);
-            }
             BuiltinNetworkID::Dev => {
-                update_height(x, 200);
+                update_height(x, None);
             }
-            BuiltinNetworkID::Halley => {
-                update_height(x, u64::MAX);
-            }
-            BuiltinNetworkID::Proxima => {
-                update_height(x, u64::MAX);
-            }
-            BuiltinNetworkID::Barnard => {
-                update_height(x, u64::MAX);
+            _ => {
+                update_height(x, Some(u64::MAX));
             }
         }
     }
