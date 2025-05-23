@@ -348,8 +348,7 @@ where
             now_millis,
         );
 
-        let epoch = self.chain.epoch();
-        let strategy = epoch.strategy();
+        let strategy = self.chain.consensus();
         let difficulty = strategy.calculate_next_difficulty(&self.chain)?;
 
         let mut opened_block = OpenedBlock::new(

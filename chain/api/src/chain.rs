@@ -16,7 +16,7 @@ use starcoin_types::{
 };
 use starcoin_vm2_state_api::ChainStateReader as ChainStateReader2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
-use starcoin_vm_types::on_chain_resource::Epoch;
+use starcoin_vm2_vm_types::on_chain_resource::Epoch;
 use std::collections::HashMap;
 
 use crate::TransactionInfoWithProof;

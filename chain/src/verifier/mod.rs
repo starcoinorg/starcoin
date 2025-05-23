@@ -11,6 +11,7 @@ use starcoin_consensus::{Consensus, ConsensusVerifyError};
 use starcoin_logger::prelude::debug;
 use starcoin_open_block::AddressFilter;
 use starcoin_types::block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME};
+use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::{collections::HashSet, str::FromStr};
 
 #[derive(Debug, Clone)]
@@ -291,7 +292,7 @@ impl BlockVerifier for ConsensusVerifier {
         R: ChainReader,
     {
         let epoch = current_chain.epoch();
-        let consensus = epoch.strategy();
+        let consensus = ConsensusStrategy::try_from(epoch.strategy())?;
         if let Err(e) = consensus.verify(current_chain, new_block_header) {
             return match e.downcast::<ConsensusVerifyError>() {
                 Ok(e) => Err(ConnectBlockError::VerifyBlockFailed(

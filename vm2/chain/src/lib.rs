@@ -3,11 +3,14 @@
 
 use starcoin_vm2_crypto::HashValue;
 use starcoin_vm2_executor::block_executor::{self, BlockExecutedData, VMMetrics};
+use starcoin_vm2_state_api::AccountStateReader;
 use starcoin_vm2_statedb::ChainStateDB;
 use starcoin_vm2_storage::Store;
 use starcoin_vm2_types::block_metadata::BlockMetadata;
 use starcoin_vm2_types::error::ExecutorResult;
 use starcoin_vm2_types::transaction::{RichTransactionInfo, SignedUserTransaction, Transaction};
+use starcoin_vm2_vm_types::account_config::genesis_address;
+use starcoin_vm2_vm_types::on_chain_resource::Epoch;
 
 pub fn execute_transactions(
     statedb: &ChainStateDB,
@@ -94,4 +97,9 @@ pub fn build_block_transactions(
             .map(|t| Transaction::UserTransaction(t.clone())),
     );
     txns
+}
+
+pub fn get_epoch_from_statedb(statedb: &ChainStateDB) -> anyhow::Result<Epoch> {
+    let account_reader = AccountStateReader::new(statedb);
+    account_reader.get_resource::<Epoch>(genesis_address())
 }

@@ -199,11 +199,20 @@ impl OpenedBlock {
     pub fn push_txns(&mut self, user_txns: Vec<SignedUserTransaction>) -> Result<ExcludedTxns> {
         // All vm1 txns should be executed before vm2 block_meta txn
         // shortcut for quick return
-        if self.vm2_initialized && !user_txns.is_empty() {
-            return Err(format_err!(
-                "vm2 already initialized, can not push vm1 txns any more"
-            ));
+        if self.vm2_initialized {
+            if !user_txns.is_empty() {
+                warn!("vm2 is initialized, all following vm1 user txns are discarded!");
+            }
+            let discarded_txns = user_txns
+                .into_iter()
+                .map(|txn| txn.into())
+                .collect::<Vec<_>>();
+            return Ok(ExcludedTxns {
+                discarded_txns,
+                untouched_txns: vec![],
+            });
         }
+
         let (state, _state2) = &self.state;
         let mut discard_txns = Vec::new();
         let mut txns: Vec<_> = user_txns

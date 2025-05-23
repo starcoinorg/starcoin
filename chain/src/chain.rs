@@ -22,7 +22,7 @@ use starcoin_crypto::HashValue;
 use starcoin_executor::{BlockExecutedData, VMMetrics};
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
-use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
+use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
@@ -40,16 +40,15 @@ use starcoin_types::{
     transaction::Transaction,
     U256,
 };
-use starcoin_vm2_chain::build_block_transactions;
+use starcoin_vm2_chain::{build_block_transactions, get_epoch_from_statedb};
 use starcoin_vm2_state_api::{
     ChainStateReader as ChainStateReader2, ChainStateWriter as ChainStateWriter2,
 };
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_storage::Store as Store2;
+use starcoin_vm2_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::access_path::AccessPath;
-use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
-use starcoin_vm_types::on_chain_resource::Epoch;
 use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
@@ -148,7 +147,7 @@ impl BlockChain {
 
         let chain_state = ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root1));
         let chain_state2 = ChainStateDB2::new(storage2.clone().into_super_arc(), Some(state_root2));
-        let epoch = get_epoch_from_statedb(&chain_state)?;
+        let epoch = get_epoch_from_statedb(&chain_state2)?;
         let genesis = storage
             .get_genesis()?
             .ok_or_else(|| format_err!("Can not find genesis hash in storage."))?;
@@ -227,7 +226,7 @@ impl BlockChain {
     }
 
     pub fn consensus(&self) -> ConsensusStrategy {
-        self.epoch.strategy()
+        ConsensusStrategy::try_from(self.epoch.strategy()).expect("epoch consensus must be valid")
     }
     pub fn time_service(&self) -> Arc<dyn TimeService> {
         self.time_service.clone()
@@ -341,7 +340,7 @@ impl BlockChain {
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
 
-        let strategy = epoch.strategy();
+        let strategy = self.consensus();
         let difficulty = strategy.calculate_next_difficulty(self)?;
         let mut opened_block = OpenedBlock::new(
             self.storage.0.clone(),
@@ -1512,7 +1511,7 @@ impl ChainWriter for BlockChain {
             multi_state: executed_block.multi_state().clone(),
         };
         if self.epoch.end_block_number() == block.header().number() {
-            self.epoch = get_epoch_from_statedb(&self.statedb.0)?;
+            self.epoch = get_epoch_from_statedb(&self.statedb.1)?;
             self.update_uncle_cache()?;
         } else if let Some(block_uncles) = block.uncles() {
             block_uncles.iter().for_each(|uncle_header| {
@@ -1545,11 +1544,4 @@ pub(crate) fn info_2_accumulator(
         accumulator_info,
         node_store.get_accumulator_store(store_type),
     )
-}
-
-fn get_epoch_from_statedb(statedb: &ChainStateDB) -> Result<Epoch> {
-    let account_reader = AccountStateReader::new(statedb);
-    account_reader
-        .get_resource::<Epoch>(genesis_address())?
-        .ok_or_else(|| format_err!("Epoch is none."))
 }
