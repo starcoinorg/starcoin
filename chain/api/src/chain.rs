@@ -19,6 +19,7 @@ use std::collections::HashMap;
 
 use crate::TransactionInfoWithProof;
 pub use starcoin_types::block::ExecutedBlock;
+use starcoin_types::multi_transaction::MultiRichTransactionInfo;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::contract_event::ContractEvent;
 
@@ -48,7 +49,13 @@ pub trait ChainReader {
     fn get_hash_by_number(&self, number: BlockNumber) -> Result<Option<HashValue>>;
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
     /// Get transaction info by transaction's hash
-    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<RichTransactionInfo>>;
+    fn get_transaction_info(&self, txn_hash: HashValue)
+        -> Result<Option<MultiRichTransactionInfo>>;
+
+    fn get_transaction_info2(
+        &self,
+        txn_hash: HashValue,
+    ) -> Result<Option<MultiRichTransactionInfo>>;
 
     /// get transaction info by global index in chain.
     fn get_transaction_info_by_global_index(

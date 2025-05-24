@@ -15,6 +15,7 @@ starcoin-time-service = { workspace = true }
 starcoin-types = { workspace = true }
 starcoin-vm-types = { workspace = true }
 thiserror = { workspace = true }
+starcoin-vm2-types = { workspace = true }
 
 
 [dev-dependencies]

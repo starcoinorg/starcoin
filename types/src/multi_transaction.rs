@@ -1,4 +1,5 @@
-use crate::account_address::AccountAddress;
+use crate::transaction::TransactionInfo;
+use crate::{account_address::AccountAddress, transaction::RichTransactionInfo};
 use anyhow::{format_err, Error};
 use bcs_ext::Sample;
 use schemars::JsonSchema;
@@ -8,9 +9,11 @@ use starcoin_vm2_vm_types::{
     account_address::AccountAddress as AccountAddress2,
     genesis_config::ChainId as ChainId2,
     transaction::{
+        RichTransactionInfo as RichTransactionInfo2,
         SignatureCheckedTransaction as SignatureCheckedTransaction2,
         SignedUserTransaction as SignedUserTransaction2, Transaction as Transaction2,
-        TransactionError as TransactionError2, TransactionPayload as TransactionPayload2,
+        TransactionError as TransactionError2, TransactionInfo as TransactionInfo2,
+        TransactionPayload as TransactionPayload2,
     },
 };
 use starcoin_vm_types::transaction::{
@@ -18,6 +21,7 @@ use starcoin_vm_types::transaction::{
 };
 use starcoin_vm_types::{genesis_config::ChainId, transaction::SignedUserTransaction};
 use std::fmt::Display;
+use std::ops::Deref;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 pub enum MultiChainId {
@@ -239,6 +243,87 @@ impl std::error::Error for MultiTransactionError {
         match self {
             Self::VM1(e) => Some(e),
             Self::VM2(e) => Some(e),
+        }
+    }
+}
+
+pub enum MultiRichTransactionInfo {
+    VM1(RichTransactionInfo),
+    VM2(RichTransactionInfo2),
+}
+
+impl MultiRichTransactionInfo {
+    pub fn block_id(&self) -> HashValue {
+        match self {
+            Self::VM1(info) => info.block_id,
+            Self::VM2(info) => info.block_id,
+        }
+    }
+
+    pub fn block_number(&self) -> u64 {
+        match self {
+            Self::VM1(info) => info.block_number,
+            Self::VM2(info) => info.block_number,
+        }
+    }
+
+    pub fn transaction_index(&self) -> u32 {
+        match self {
+            Self::VM1(info) => info.transaction_index,
+            Self::VM2(info) => info.transaction_index,
+        }
+    }
+
+    pub fn transaction_global_index(&self) -> u64 {
+        match self {
+            Self::VM1(info) => info.transaction_global_index,
+            Self::VM2(info) => info.transaction_global_index,
+        }
+    }
+
+    pub fn txn_info(&self) -> &TransactionInfo {
+        match self {
+            Self::VM1(info) => info.txn_info(),
+            Self::VM2(_) => panic!("Not a VM1 transaction."),
+        }
+    }
+
+    pub fn txn_info2(&self) -> &TransactionInfo2 {
+        match self {
+            Self::VM1(_) => panic!("Not a VM1 transaction."),
+            Self::VM2(info) => info.txn_info(),
+        }
+    }
+}
+
+impl From<RichTransactionInfo> for MultiRichTransactionInfo {
+    fn from(info: RichTransactionInfo) -> Self {
+        Self::VM1(info)
+    }
+}
+
+impl From<RichTransactionInfo2> for MultiRichTransactionInfo {
+    fn from(info: RichTransactionInfo2) -> Self {
+        Self::VM2(info)
+    }
+}
+
+impl Into<RichTransactionInfo> for MultiRichTransactionInfo {
+    fn into(self) -> RichTransactionInfo {
+        match self {
+            MultiRichTransactionInfo::VM1(info) => info,
+            MultiRichTransactionInfo::VM2(_) => {
+                panic!("Not supported on VM2.")
+            }
+        }
+    }
+}
+
+impl Into<RichTransactionInfo2> for MultiRichTransactionInfo {
+    fn into(self) -> RichTransactionInfo2 {
+        match self {
+            MultiRichTransactionInfo::VM1(_) => panic!("Not supported on VM1."),
+            MultiRichTransactionInfo::VM2(info) => info,
         }
     }
 }

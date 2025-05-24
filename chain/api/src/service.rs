@@ -9,12 +9,14 @@ use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
 use starcoin_types::contract_event::{ContractEvent, StcContractEventInfo};
 use starcoin_types::filter::Filter;
 use starcoin_types::multi_state::MultiState;
+use starcoin_types::multi_transaction::MultiRichTransactionInfo;
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::transaction::{RichTransactionInfo, Transaction};
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     startup_info::StartupInfo,
 };
+use starcoin_vm2_types::transaction::RichTransactionInfo as RichTransactionInfo2;
 use starcoin_vm_types::access_path::AccessPath;
 
 /// Readable block chain service trait
@@ -25,7 +27,8 @@ pub trait ReadableChainService {
     fn get_headers(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockHeader>>>;
     fn get_block_info_by_hash(&self, hash: HashValue) -> Result<Option<BlockInfo>>;
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
-    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<RichTransactionInfo>>;
+    fn get_transaction_info(&self, txn_hash: HashValue)
+        -> Result<Option<MultiRichTransactionInfo>>;
     fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<RichTransactionInfo>>;
     fn get_txn_info_by_block_and_index(
         &self,
@@ -95,6 +98,11 @@ pub trait ChainAsyncService:
         &self,
         txn_hash: HashValue,
     ) -> Result<Option<RichTransactionInfo>>;
+    async fn get_transaction_info2(
+        &self,
+        txn_hash: HashValue,
+    ) -> Result<Option<RichTransactionInfo2>>;
+
     async fn get_transaction_block(&self, txn_hash: HashValue) -> Result<Option<Block>>;
     async fn get_block_txn_infos(&self, block_hash: HashValue) -> Result<Vec<RichTransactionInfo>>;
     async fn get_txn_info_by_block_and_index(
@@ -106,6 +114,11 @@ pub trait ChainAsyncService:
         &self,
         txn_hash: HashValue,
     ) -> Result<Vec<StcContractEventInfo>>;
+    async fn get_events_by_txn_hash2(
+        &self,
+        txn_hash: HashValue,
+    ) -> Result<Vec<StcContractEventInfo>>;
+
     /// for main
     async fn main_head_header(&self) -> Result<BlockHeader>;
     async fn main_head_block(&self) -> Result<Block>;
@@ -231,7 +244,21 @@ where
             .send(ChainRequest::GetTransactionInfo(txn_hash))
             .await??;
         if let ChainResponse::TransactionInfo(txn_info) = response {
-            Ok(txn_info)
+            Ok(txn_info.map(|b| b.into()))
+        } else {
+            bail!("get transaction_info error:{:?}", txn_hash)
+        }
+    }
+
+    async fn get_transaction_info2(
+        &self,
+        txn_hash: HashValue,
+    ) -> Result<Option<RichTransactionInfo2>> {
+        let response = self
+            .send(ChainRequest::GetTransactionInfo2(txn_hash))
+            .await??;
+        if let ChainResponse::TransactionInfo(txn_info) = response {
+            Ok(txn_info.map(|info| info.into()))
         } else {
             bail!("get transaction_info error:{:?}", txn_hash)
         }
@@ -271,7 +298,7 @@ where
             })
             .await??;
         if let ChainResponse::TransactionInfo(info) = response {
-            Ok(info)
+            Ok(info.map(|b| b.into()))
         } else {
             bail!("get txn info by block and idx error.")
         }
@@ -282,6 +309,20 @@ where
     ) -> Result<Vec<StcContractEventInfo>> {
         let response = self
             .send(ChainRequest::GetEventsByTxnHash { txn_hash })
+            .await??;
+        if let ChainResponse::Events(events) = response {
+            Ok(events)
+        } else {
+            bail!("get txn info by block and idx error.")
+        }
+    }
+
+    async fn get_events_by_txn_hash2(
+        &self,
+        txn_hash: HashValue,
+    ) -> Result<Vec<StcContractEventInfo>> {
+        let response = self
+            .send(ChainRequest::GetEventsByTxnHash2 { txn_hash })
             .await??;
         if let ChainResponse::Events(events) = response {
             Ok(events)

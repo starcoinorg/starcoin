@@ -18,6 +18,7 @@ use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::contract_event::StcContractEventInfo;
 use starcoin_types::filter::Filter;
+use starcoin_types::multi_transaction::MultiRichTransactionInfo;
 use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{
@@ -28,6 +29,7 @@ use starcoin_types::{
 };
 use starcoin_vm2_storage::{Storage as Storage2, Store as Store2};
 use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm_types::transaction::authenticator::AccountPrivateKey::Multi;
 use std::sync::Arc;
 
 /// A Chain reader service to provider Reader API.
@@ -156,6 +158,9 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetTransactionInfo(hash) => Ok(ChainResponse::TransactionInfo(
                 self.inner.get_transaction_info(hash)?,
             )),
+            ChainRequest::GetTransactionInfo2(hash) => Ok(ChainResponse::TransactionInfo(
+                self.inner.get_transaction_info2(hash)?,
+            )),
             ChainRequest::GetBlocksByNumber(number, reverse, count) => Ok(ChainResponse::BlockVec(
                 self.inner.main_blocks_by_number(number, reverse, count)?,
             )),
@@ -167,7 +172,8 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                 txn_idx,
             } => Ok(ChainResponse::TransactionInfo(
                 self.inner
-                    .get_txn_info_by_block_and_index(block_id, txn_idx)?,
+                    .get_txn_info_by_block_and_index(block_id, txn_idx)?
+                    .map(|info| MultiRichTransactionInfo::VM1(info)),
             )),
             ChainRequest::GetEventsByTxnHash { txn_hash } => {
                 let txn_info = self
@@ -177,7 +183,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
 
                 let events = self
                     .inner
-                    .get_events_by_txn_info_hash(txn_info.id())?
+                    .get_events_by_txn_info_hash(txn_info.txn_info().id())?
                     .unwrap_or_default();
 
                 let event_infos = if events.is_empty() {
@@ -187,11 +193,11 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                         .into_iter()
                         .enumerate()
                         .map(|(idx, evt)| StcContractEventInfo {
-                            block_hash: txn_info.block_id,
-                            block_number: txn_info.block_number,
+                            block_hash: txn_info.block_id(),
+                            block_number: txn_info.block_number(),
                             transaction_hash: txn_hash,
-                            transaction_index: txn_info.transaction_index,
-                            transaction_global_index: txn_info.transaction_global_index,
+                            transaction_index: txn_info.transaction_index(),
+                            transaction_global_index: txn_info.transaction_global_index(),
                             event_index: idx as u32,
                             event: evt.into(),
                         })
@@ -199,6 +205,9 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                 };
                 Ok(ChainResponse::Events(event_infos))
             }
+            ChainRequest::GetEventsByTxnHash2 { txn_hash } => Ok(ChainResponse::Events(
+                self.inner.get_event_by_txn_hash2(txn_hash)?,
+            )),
             ChainRequest::MainEvents(filter) => Ok(ChainResponse::MainEvents(
                 self.inner.get_main_events(filter)?,
             )),
@@ -252,9 +261,9 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
 pub struct ChainReaderServiceInner {
     config: Arc<NodeConfig>,
     startup_info: StartupInfo,
-    main: BlockChain,
+    pub(crate) main: BlockChain,
     storage: Arc<dyn Store>,
-    storage2: Arc<dyn Store2>,
+    pub storage2: Arc<dyn Store2>,
     vm_metrics: Option<VMMetrics>,
 }
 
@@ -338,7 +347,7 @@ impl ReadableChainService for ChainReaderServiceInner {
     fn get_transaction_info(
         &self,
         txn_hash: HashValue,
-    ) -> Result<Option<RichTransactionInfo>, Error> {
+    ) -> Result<Option<MultiRichTransactionInfo>, Error> {
         self.main.get_transaction_info(txn_hash)
     }
 

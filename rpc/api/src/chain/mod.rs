@@ -7,6 +7,7 @@ use crate::types::{
     BlockHeaderView, BlockInfoView, BlockView, ChainId, ChainInfoView, StrView,
     TransactionEventResponse, TransactionInfoView, TransactionInfoWithProofView, TransactionView,
 };
+
 use crate::FutureResult;
 use jsonrpc_core::Result;
 use openrpc_derive::openrpc;
@@ -14,6 +15,10 @@ use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_types::block::BlockNumber;
+use starcoin_vm2_types::view::{
+    TransactionEventResponse as TransactionEventResponse2,
+    TransactionInfoView as TransactionInfoView2,
+};
 use starcoin_vm_types::access_path::AccessPath;
 
 #[openrpc]
@@ -63,6 +68,13 @@ pub trait ChainApi {
         transaction_hash: HashValue,
     ) -> FutureResult<Option<TransactionInfoView>>;
 
+    /// Get chain transaction info for vm2
+    #[rpc(name = "chain.get_transaction_info2")]
+    fn get_transaction_info2(
+        &self,
+        transaction_hash: HashValue,
+    ) -> FutureResult<Option<TransactionInfoView2>>;
+
     /// Get chain transactions infos by block id
     #[rpc(name = "chain.get_block_txn_infos")]
     fn get_block_txn_infos(&self, block_hash: HashValue) -> FutureResult<Vec<TransactionInfoView>>;
@@ -80,6 +92,14 @@ pub trait ChainApi {
         txn_hash: HashValue,
         option: Option<GetEventOption>,
     ) -> FutureResult<Vec<TransactionEventResponse>>;
+
+    #[rpc(name = "chain.get_events_by_txn_hash2")]
+    fn get_events_by_txn_hash2(
+        &self,
+        txn_hash: HashValue,
+        option: Option<GetEventOption>,
+    ) -> FutureResult<Vec<TransactionEventResponse2>>;
+
     #[rpc(name = "chain.get_events")]
     fn get_events(
         &self,

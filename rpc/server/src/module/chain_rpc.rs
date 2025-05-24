@@ -31,6 +31,10 @@ use starcoin_types::startup_info::ChainInfo;
 use starcoin_vm2_abi_decoder::decode_txn_payload as decode_txn_payload_v2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_storage::Storage as Storage2;
+use starcoin_vm2_types::view::{
+    TransactionEventResponse as TransactionEventResponse2,
+    TransactionInfoView as TransactionInfoView2,
+};
 use starcoin_vm2_vm_types::StateView as StateView2;
 use std::convert::TryInto;
 use std::sync::Arc;
@@ -257,6 +261,22 @@ where
         Box::pin(fut.boxed())
     }
 
+    fn get_transaction_info2(
+        &self,
+        transaction_hash: HashValue,
+    ) -> FutureResult<Option<TransactionInfoView2>> {
+        let service = self.service.clone();
+        let fut = async move {
+            Ok(service
+                .get_transaction_info2(transaction_hash)
+                .await?
+                .map(Into::into))
+        }
+        .map_err(map_err);
+
+        Box::pin(fut.boxed())
+    }
+
     fn get_block_txn_infos(&self, block_hash: HashValue) -> FutureResult<Vec<TransactionInfoView>> {
         let service = self.service.clone();
         let fut = async move {
@@ -335,6 +355,15 @@ where
         .map_err(map_err);
 
         Box::pin(fut.boxed())
+    }
+
+    fn get_events_by_txn_hash2(
+        &self,
+        txn_hash: HashValue,
+        option: Option<GetEventOption>,
+    ) -> FutureResult<Vec<TransactionEventResponse2>> {
+        // TODO(BobOng): [dual-vm] to get event s by txn hash for vm2
+        unimplemented!()
     }
 
     fn get_events(

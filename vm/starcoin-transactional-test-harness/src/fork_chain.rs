@@ -11,7 +11,7 @@ use starcoin_abi_decoder::decode_txn_payload;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_config::{BuiltinNetworkID, ChainNetworkID};
 use starcoin_crypto::HashValue;
-use starcoin_rpc_api::chain::{ChainApi, GetBlockOption};
+use starcoin_rpc_api::chain::{ChainApi, GetBlockOption, GetEventOption};
 use starcoin_rpc_api::chain::{ChainApiClient, GetBlocksOption};
 use starcoin_rpc_api::multi_types::MultiSignedUserTransactionView;
 use starcoin_rpc_api::types::{
@@ -34,6 +34,11 @@ use starcoin_vm_types::access_path::AccessPath;
 use std::hash::Hash;
 use std::option::Option::{None, Some};
 use std::sync::{Arc, Mutex};
+
+use starcoin_vm2_types::view::{
+    transaction_info_view::TransactionInfoView as TransactionInfoView2,
+    TransactionEventResponse as TransactionEventResponse2,
+};
 
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub struct ChainStatusWithBlock {
@@ -408,6 +413,14 @@ impl ChainApi for MockChainApi {
         Box::pin(fut.boxed().map_err(map_err))
     }
 
+    fn get_transaction_info2(
+        &self,
+        _transaction_hash: HashValue,
+    ) -> FutureResult<Option<TransactionInfoView2>> {
+        // TODO(BobOng): to implement transaction info
+        unimplemented!()
+    }
+
     fn get_block_txn_infos(
         &self,
         _block_hash: HashValue,
@@ -439,6 +452,14 @@ impl ChainApi for MockChainApi {
             bail!("not implemented.");
         };
         Box::pin(fut.boxed().map_err(map_err))
+    }
+
+    fn get_events_by_txn_hash2(
+        &self,
+        _txn_hash: HashValue,
+        _option: Option<GetEventOption>,
+    ) -> FutureResult<Vec<TransactionEventResponse2>> {
+        unimplemented!()
     }
 
     fn get_events(

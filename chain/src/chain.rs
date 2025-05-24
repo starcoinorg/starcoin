@@ -28,7 +28,7 @@ use starcoin_time_service::TimeService;
 use starcoin_types::contract_event::StcContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::multi_state::MultiState;
-use starcoin_types::multi_transaction::MultiSignedUserTransaction;
+use starcoin_types::multi_transaction::{MultiRichTransactionInfo, MultiSignedUserTransaction};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::{RichTransactionInfo, TransactionInfo};
 use starcoin_types::{
@@ -1072,14 +1072,34 @@ impl ChainReader for BlockChain {
         storage.get_transaction(txn_hash)
     }
 
-    fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<RichTransactionInfo>> {
+    fn get_transaction_info(
+        &self,
+        txn_hash: HashValue,
+    ) -> Result<Option<MultiRichTransactionInfo>> {
         let (storage, _storage2) = &self.storage;
         let txn_info_ids = storage.get_transaction_info_ids_by_txn_hash(txn_hash)?;
         for txn_info_id in txn_info_ids {
             let txn_info = storage.get_transaction_info(txn_info_id)?;
             if let Some(txn_info) = txn_info {
                 if self.exist_block(txn_info.block_id())? {
-                    return Ok(Some(txn_info));
+                    return Ok(Some(MultiRichTransactionInfo::VM1(txn_info)));
+                }
+            }
+        }
+        Ok(None)
+    }
+
+    fn get_transaction_info2(
+        &self,
+        txn_hash: HashValue,
+    ) -> Result<Option<MultiRichTransactionInfo>> {
+        let (_, storage) = &self.storage;
+        let txn_info_ids = storage.get_transaction_info_ids_by_txn_hash(txn_hash)?;
+        for txn_info_id in txn_info_ids {
+            let txn_info = storage.get_transaction_info(txn_info_id)?;
+            if let Some(txn_info) = txn_info {
+                if self.exist_block(txn_info.block_id())? {
+                    return Ok(Some(MultiRichTransactionInfo::VM2(txn_info)));
                 }
             }
         }
