@@ -80,6 +80,14 @@ pub trait ChainApi {
         txn_hash: HashValue,
         option: Option<GetEventOption>,
     ) -> FutureResult<Vec<TransactionEventResponse>>;
+
+    #[rpc(name = "chain.get_events_by_txn_hash2")]
+    fn get_events_by_txn_hash2(
+        &self,
+        txn_hash: HashValue,
+        option: Option<GetEventOption>,
+    ) -> FutureResult<Vec<TransactionEventResponse>>;
+
     #[rpc(name = "chain.get_events")]
     fn get_events(
         &self,

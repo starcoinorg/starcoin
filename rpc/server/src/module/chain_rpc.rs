@@ -337,6 +337,15 @@ where
         Box::pin(fut.boxed())
     }
 
+    fn get_events_by_txn_hash2(
+        &self,
+        _txn_hash: HashValue,
+        _option: Option<GetEventOption>,
+    ) -> FutureResult<Vec<TransactionEventResponse>> {
+        // TODO(BobOng): [dual-vm] to get event s by txn hash for vm2
+        unimplemented!()
+    }
+
     fn get_events(
         &self,
         mut filter: EventFilter,

@@ -4107,6 +4107,112 @@
       }
     },
     {
+      "name": "chain.get_events_by_txn_hash2",
+      "params": [
+        {
+          "name": "txn_hash",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "HashValue",
+            "type": "string",
+            "format": "HashValue"
+          }
+        },
+        {
+          "name": "option",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Nullable_GetEventOption",
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "decode": {
+                "default": false,
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      ],
+      "result": {
+        "name": "Vec < TransactionEventResponse >",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Array_of_TransactionEventResponse",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "data",
+              "event_key",
+              "event_seq_number",
+              "type_tag"
+            ],
+            "properties": {
+              "block_hash": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "HashValue"
+              },
+              "block_number": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "data": {
+                "type": "string"
+              },
+              "decode_event_data": true,
+              "event_index": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint32",
+                "minimum": 0.0
+              },
+              "event_key": {
+                "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. By design, the lower part of EventKey is the same as account address.",
+                "type": "string"
+              },
+              "event_seq_number": {
+                "type": "string"
+              },
+              "transaction_global_index": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "transaction_hash": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "HashValue"
+              },
+              "transaction_index": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint32",
+                "minimum": 0.0
+              },
+              "type_tag": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "name": "chain.get_events",
       "params": [
         {

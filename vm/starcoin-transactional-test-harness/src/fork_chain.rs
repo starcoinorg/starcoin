@@ -11,12 +11,12 @@ use starcoin_abi_decoder::decode_txn_payload;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_config::{BuiltinNetworkID, ChainNetworkID};
 use starcoin_crypto::HashValue;
-use starcoin_rpc_api::chain::{ChainApi, GetBlockOption};
+use starcoin_rpc_api::chain::{ChainApi, GetBlockOption, GetEventOption};
 use starcoin_rpc_api::chain::{ChainApiClient, GetBlocksOption};
 use starcoin_rpc_api::multi_types::MultiSignedUserTransactionView;
 use starcoin_rpc_api::types::{
-    BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView, TransactionInfoView,
-    TransactionView,
+    BlockInfoView, BlockTransactionsView, BlockView, ChainId, ChainInfoView,
+    TransactionEventResponse, TransactionInfoView, TransactionView,
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_rpc_server::module::map_err;
@@ -435,6 +435,17 @@ impl ChainApi for MockChainApi {
         _option: Option<starcoin_rpc_api::chain::GetEventOption>,
     ) -> starcoin_rpc_api::FutureResult<Vec<starcoin_rpc_api::types::TransactionEventResponse>>
     {
+        let fut = async move {
+            bail!("not implemented.");
+        };
+        Box::pin(fut.boxed().map_err(map_err))
+    }
+
+    fn get_events_by_txn_hash2(
+        &self,
+        _txn_hash: HashValue,
+        _option: Option<GetEventOption>,
+    ) -> FutureResult<Vec<TransactionEventResponse>> {
         let fut = async move {
             bail!("not implemented.");
         };

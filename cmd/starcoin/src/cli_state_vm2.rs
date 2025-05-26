@@ -16,6 +16,7 @@ use starcoin_rpc_client::{RpcClient, StateRootOption};
 use starcoin_vm2_abi_decoder::{decode_txn_payload, DecodedTransactionPayload};
 
 use starcoin_logger::prelude::info;
+use starcoin_rpc_api::chain::GetEventOption;
 use starcoin_vm2_crypto::{
     hash::PlainCryptoHash,
     multi_ed25519::{multi_shard::MultiEd25519SignatureShard, MultiEd25519PublicKey},
@@ -153,9 +154,38 @@ impl CliStateVM2 {
         self.client.account_get2(association_address())
     }
 
-    pub fn watch_txn(&self, _txn_hash: HashValue) -> Result<ExecutionOutputView> {
-        // TODO(BobOng): [dual-vm] to implement
-        unimplemented!()
+    pub fn watch_txn(&self, txn_hash: HashValue) -> Result<ExecutionOutputView> {
+        let block = self
+            .client
+            .watch_txn(txn_hash, Some(self.watch_timeout))
+            .map(Some)
+            .unwrap_or_else(|e| {
+                eprintln!("Watch txn {:?}  err: {:?}", txn_hash, e);
+                None
+            });
+
+        let _txn_info = {
+            if let Some(info) = self.client.chain_get_transaction_info(txn_hash)? {
+                info
+            } else {
+                //sleep and try again.
+                std::thread::sleep(Duration::from_secs(5));
+                if let Some(info) = self.client.chain_get_transaction_info(txn_hash)? {
+                    info
+                } else {
+                    bail!("transaction execute success, but get transaction info return none, block: {}", block.map(|b|b.header.number.to_string()).unwrap_or_else(||"unknown".to_string()));
+                }
+            }
+        };
+        let _events = self
+            .client
+            .chain_get_events_by_txn_hash(txn_hash, Some(GetEventOption { decode: true }))?;
+
+        // TODO(BobOng): [dual-vm] to put result into output view
+        // Ok(ExecutionOutputView1::new_with_info(
+        //     txn_hash, txn_info, events,
+        // ))
+        Ok(ExecutionOutputView::new(HashValue::random()))
     }
 
     pub fn build_and_execute_transaction(
