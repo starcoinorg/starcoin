@@ -1477,7 +1477,7 @@ impl BlockChain {
                 txn_info_ids.reverse();
             }
             for id in txn_info_ids.iter() {
-                let events = storage.get_contract_events(*id)?.ok_or_else(|| {
+                let events = storage.get_contract_events_v2(*id)?.ok_or_else(|| {
                     anyhow::anyhow!(format!(
                         "cannot find events of txn with txn_info_id {} on main chain(header: {})",
                         id,

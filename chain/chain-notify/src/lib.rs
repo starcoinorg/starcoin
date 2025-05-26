@@ -9,6 +9,7 @@ use starcoin_logger::prelude::*;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_storage::{Storage, Store};
 use starcoin_types::block::Block;
+use starcoin_types::contract_event::StcContractEvent;
 use starcoin_types::system_events::NewHeadBlock;
 use starcoin_vm2_storage::{Storage as Storage2, Store as Store2};
 use std::sync::Arc;
@@ -99,35 +100,36 @@ impl ChainNotifyHandlerService {
                 .get_transaction_info(txn_info_id)?
                 .ok_or_else(|| format_err!("cannot find txn info by it's id {}", &txn_info_id))?;
             // get events directly by txn_info_id
-            let (in_vm1, events) = store
-                .get_contract_events(txn_info_id)?
-                .map(|e| (true, e))
-                .unwrap_or((false, vec![]));
-            all_events.extend(events.into_iter().enumerate().map(|(idx, evt)| {
-                Event::new(
-                    block_id,
-                    block_number,
-                    txn_info.transaction_hash(),
-                    Some(txn_info.transaction_index),
-                    Some(txn_info.transaction_global_index),
-                    Some(idx as u32),
-                    evt,
-                )
-            }));
-            if !in_vm1 {
-                let events = store2.get_contract_events(txn_info_id)?.unwrap_or_default();
-                all_events2.extend(events.into_iter().enumerate().map(|(idx, evt)| {
-                    Event2::new(
-                        block_id,
-                        block_number,
-                        txn_info.transaction_hash(),
-                        Some(txn_info.transaction_index),
-                        Some(txn_info.transaction_global_index),
-                        Some(idx as u32),
-                        evt,
-                    )
-                }));
-            }
+            let events = store
+                .get_contract_events_v2(txn_info_id)?
+                .unwrap_or_default();
+            events.into_iter().enumerate().for_each(|(idx, evt)|
+                match evt {
+                    StcContractEvent::V1(evt) => {
+                        let event = Event::new(
+                            block_id,
+                            block_number,
+                            txn_info.transaction_hash(),
+                            Some(txn_info.transaction_index),
+                            Some(txn_info.transaction_global_index),
+                            Some(idx as u32),
+                            evt,
+                        );
+                        all_events.push(event);
+                    }
+                    StcContractEvent::V2(evt) => {
+                        let event2 = Event2::new(
+                            block_id,
+                            block_number,
+                            txn_info.transaction_hash(),
+                            Some(txn_info.transaction_index),
+                            Some(txn_info.transaction_global_index),
+                            Some(idx as u32),
+                            evt,
+                        );
+                        all_events2.push(event2);
+                    }
+                });
         }
 
         let events_notification: ContractEventNotification = Notification((

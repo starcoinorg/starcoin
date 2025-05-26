@@ -30,11 +30,18 @@ impl ValueCodec for Vec<StcContractEvent> {
 }
 
 impl ContractEventStore for StcContractEventStorage {
-    fn save_contract_events_v2(&self, txn_info_id: HashValue, events: Vec<StcContractEvent>) -> Result<()> {
+    fn save_contract_events_v2(
+        &self,
+        txn_info_id: HashValue,
+        events: Vec<StcContractEvent>,
+    ) -> Result<()> {
         self.put(txn_info_id, events)
     }
 
-    fn get_contract_events_v2(&self, txn_info_id: HashValue) -> Result<Option<Vec<StcContractEvent>>> {
+    fn get_contract_events_v2(
+        &self,
+        txn_info_id: HashValue,
+    ) -> Result<Option<Vec<StcContractEvent>>> {
         self.get(txn_info_id)
     }
 
@@ -43,13 +50,19 @@ impl ContractEventStore for StcContractEventStorage {
         txn_info_id: HashValue,
         events: Vec<ContractEvent>,
     ) -> Result<()> {
-        self.put(txn_info_id, events.into_iter().map(Into::into).collect::<Vec<_>>())
+        self.put(
+            txn_info_id,
+            events.into_iter().map(Into::into).collect::<Vec<_>>(),
+        )
     }
 
     fn get_contract_events(&self, txn_info_id: HashValue) -> Result<Option<Vec<ContractEvent>>> {
         let events = self.get(txn_info_id)?;
-        Ok(
-            events.map(|events| events.into_iter().filter_map(|e| e.to_v1()).collect::<Vec<_>>()),
-        )
+        Ok(events.map(|events| {
+            events
+                .into_iter()
+                .filter_map(|e| e.to_v1())
+                .collect::<Vec<_>>()
+        }))
     }
 }

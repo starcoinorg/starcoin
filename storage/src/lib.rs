@@ -268,11 +268,13 @@ pub trait ContractEventStore {
     /// Get events by `txn_info_id`.
     /// If the txn_info_id does not exists in the store, return `None`.
     /// NOTICE: *don't exists* is different with *no events produced*.
-    fn get_contract_events_v2(&self, txn_info_id: HashValue) -> Result<Option<Vec<StcContractEvent>>>;
+    fn get_contract_events_v2(
+        &self,
+        txn_info_id: HashValue,
+    ) -> Result<Option<Vec<StcContractEvent>>>;
 
     /// Save events by key `txn_info_id`.
     /// As txn_info has accumulator root of events, so there is a one-to-one mapping.
-    #[deprecated]
     fn save_contract_events(
         &self,
         txn_info_id: HashValue,
@@ -282,7 +284,6 @@ pub trait ContractEventStore {
     /// Get events by `txn_info_id`.
     /// If the txn_info_id does not exists in the store, return `None`.
     /// NOTICE: *don't exists* is different with *no events produced*.
-    #[deprecated]
     fn get_contract_events(&self, txn_info_id: HashValue) -> Result<Option<Vec<ContractEvent>>>;
 }
 
@@ -323,7 +324,7 @@ impl Storage {
                 instance.clone(),
             ),
             transaction_accumulator_storage:
-            AccumulatorStorage::new_transaction_accumulator_storage(instance.clone()),
+                AccumulatorStorage::new_transaction_accumulator_storage(instance.clone()),
             vm_state_accumulator_storage: AccumulatorStorage::new_vm_state_accumulator_storage(
                 instance.clone(),
             ),
@@ -568,11 +569,19 @@ impl BlockTransactionInfoStore for Storage {
 }
 
 impl ContractEventStore for Storage {
-    fn save_contract_events_v2(&self, txn_info_id: HashValue, events: Vec<StcContractEvent>) -> Result<()> {
-        self.event_storage.save_contract_events_v2(txn_info_id, events)
+    fn save_contract_events_v2(
+        &self,
+        txn_info_id: HashValue,
+        events: Vec<StcContractEvent>,
+    ) -> Result<()> {
+        self.event_storage
+            .save_contract_events_v2(txn_info_id, events)
     }
 
-    fn get_contract_events_v2(&self, txn_info_id: HashValue) -> Result<Option<Vec<StcContractEvent>>> {
+    fn get_contract_events_v2(
+        &self,
+        txn_info_id: HashValue,
+    ) -> Result<Option<Vec<StcContractEvent>>> {
         self.event_storage.get_contract_events_v2(txn_info_id)
     }
 
@@ -615,14 +624,14 @@ impl TransactionStore for Storage {
 
 /// Chain storage define
 pub trait Store:
-StateNodeStore
-+ BlockStore
-+ BlockInfoStore
-+ TransactionStore
-+ BlockTransactionInfoStore
-+ ContractEventStore
-+ IntoSuper<dyn StateNodeStore>
-+ TableInfoStore
+    StateNodeStore
+    + BlockStore
+    + BlockInfoStore
+    + TransactionStore
+    + BlockTransactionInfoStore
+    + ContractEventStore
+    + IntoSuper<dyn StateNodeStore>
+    + TableInfoStore
 {
     fn get_transaction_info_by_block_and_index(
         &self,
