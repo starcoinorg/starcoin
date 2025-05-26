@@ -262,6 +262,11 @@ impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService<TxPoolSer
                 if let Err(e) = self.chain_service.try_connect(block.clone()) {
                     error!("Process connected new block from sync error: {:?}", e);
                 }
+                let _consume = self
+                    .pruning_point_channel
+                    .pruning_receiver
+                    .try_iter()
+                    .count();
                 match self
                     .pruning_point_channel
                     .pruning_sender
@@ -324,6 +329,11 @@ where
             std::result::Result::Ok(()) => {
                 debug!("Process mined block {} success.", id);
 
+                let _consume = self
+                    .pruning_point_channel
+                    .pruning_receiver
+                    .try_iter()
+                    .count();
                 match self
                     .pruning_point_channel
                     .pruning_sender
@@ -428,6 +438,11 @@ where
                 Err(e) => warn!("BlockConnector fail: {:?}, peer_id:{:?}", e, peer_id),
             }
         } else {
+            let _consume = self
+                .pruning_point_channel
+                .pruning_receiver
+                .try_iter()
+                .count();
             match self
                 .pruning_point_channel
                 .pruning_sender
@@ -576,6 +591,11 @@ where
                 msg.tips.clone(),
             )?;
             self.chain_service.try_connect(block.clone())?;
+            let _consume = self
+                .pruning_point_channel
+                .pruning_receiver
+                .try_iter()
+                .count();
             self.pruning_point_channel
                 .pruning_sender
                 .send(PruningPointMessage {
