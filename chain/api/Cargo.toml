@@ -19,6 +19,7 @@ thiserror = { workspace = true }
 starcoin-vm2-state-api = { workspace = true }
 starcoin-vm2-statedb = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
+starcoin-vm2-types = { workspace = true }
 
 [dev-dependencies]
 
