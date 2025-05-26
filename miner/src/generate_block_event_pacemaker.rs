@@ -9,7 +9,7 @@ use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, Serv
 use starcoin_txpool_api::PropagateTransactions;
 use starcoin_types::{
     sync_status::SyncStatus,
-    system_events::{NewDagBlock, NewDagBlockFromPeer, NewHeadBlock, SyncStatusChangeEvent},
+    system_events::{NewHeadBlock, SyncStatusChangeEvent},
 };
 use std::sync::Arc;
 
@@ -44,8 +44,6 @@ impl ActorService for GenerateBlockEventPacemaker {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<SyncStatusChangeEvent>();
         ctx.subscribe::<NewHeadBlock>();
-        ctx.subscribe::<NewDagBlockFromPeer>();
-        ctx.subscribe::<NewDagBlock>();
         //if mint empty block is disabled, trigger mint event for on demand mint (Dev)
         if self.config.miner.is_disable_mint_empty_block() {
             ctx.subscribe::<PropagateTransactions>();
@@ -56,22 +54,10 @@ impl ActorService for GenerateBlockEventPacemaker {
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<SyncStatusChangeEvent>();
         ctx.unsubscribe::<NewHeadBlock>();
-        ctx.unsubscribe::<NewDagBlockFromPeer>();
-        ctx.unsubscribe::<NewDagBlock>();
         if self.config.miner.is_disable_mint_empty_block() {
             ctx.unsubscribe::<PropagateTransactions>();
         }
         Ok(())
-    }
-}
-
-impl EventHandler<Self, NewDagBlock> for GenerateBlockEventPacemaker {
-    fn handle_event(&mut self, _msg: NewDagBlock, ctx: &mut ServiceContext<Self>) {
-        if self.is_synced() {
-            self.send_event(true, ctx)
-        } else {
-            debug!("[pacemaker] Ignore NewHeadBlock event because the node has not been synchronized yet.")
-        }
     }
 }
 
@@ -102,11 +88,5 @@ impl EventHandler<Self, SyncStatusChangeEvent> for GenerateBlockEventPacemaker {
         if is_synced {
             self.send_event(true, ctx);
         }
-    }
-}
-
-impl EventHandler<Self, NewDagBlockFromPeer> for GenerateBlockEventPacemaker {
-    fn handle_event(&mut self, _msg: NewDagBlockFromPeer, ctx: &mut ServiceContext<Self>) {
-        self.send_event(true, ctx);
     }
 }

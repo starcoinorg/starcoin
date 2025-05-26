@@ -17,8 +17,6 @@ use anyhow::bail;
 use anyhow::{format_err, Ok, Result};
 use network_api::PeerProvider;
 use starcoin_chain::BlockChain;
-use starcoin_chain::ChainWriter;
-use starcoin_chain_api::VerifiedBlock;
 use starcoin_chain_api::{ChainReader, ConnectBlockError, WriteableChainService};
 use starcoin_config::{NodeConfig, G_CRATE_VERSION};
 use starcoin_consensus::Consensus;
@@ -31,7 +29,6 @@ use starcoin_executor::VMMetrics;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkServiceRef;
-use starcoin_service_registry::bus::Bus;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
 };
@@ -45,8 +42,6 @@ use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::sync_status::SyncStatus;
-use starcoin_types::system_events::NewDagBlock;
-use starcoin_types::system_events::NewDagBlockFromPeer;
 use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent, SystemShutdown};
 use std::sync::Arc;
 use sysinfo::{DiskExt, System, SystemExt};
@@ -220,7 +215,6 @@ where
         ctx.set_mailbox_capacity(1024);
         ctx.subscribe::<SyncStatusChangeEvent>();
         ctx.subscribe::<MinedBlock>();
-        ctx.subscribe::<NewDagBlock>();
 
         ctx.run_interval(std::time::Duration::from_secs(3), move |ctx| {
             ctx.notify(crate::tasks::BlockDiskCheckEvent {});
@@ -232,7 +226,6 @@ where
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<SyncStatusChangeEvent>();
         ctx.unsubscribe::<MinedBlock>();
-        ctx.unsubscribe::<NewDagBlock>();
         Ok(())
     }
 }
@@ -257,48 +250,6 @@ where
     }
 }
 
-impl<TransactionPoolServiceT> EventHandler<Self, NewDagBlock>
-    for BlockConnectorService<TransactionPoolServiceT>
-where
-    TransactionPoolServiceT: TxPoolSyncService + 'static,
-{
-    fn handle_event(&mut self, msg: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
-        let block_header = match self
-            .chain_service
-            .switch_header(msg.executed_block.header())
-        {
-            std::result::Result::Ok(block_header) => block_header,
-            Err(e) => {
-                error!(
-                    "failed to switch header when processing NewDagBlock, error: {:?}, id: {:?}",
-                    e,
-                    msg.executed_block.header().id()
-                );
-                return;
-            }
-        };
-
-        let _consume = self
-            .pruning_point_channel
-            .pruning_receiver
-            .try_iter()
-            .count();
-        match self
-            .pruning_point_channel
-            .pruning_sender
-            .send(PruningPointMessage { block_header })
-        {
-            std::result::Result::Ok(_) => (),
-            Err(e) => {
-                error!(
-                    "failed to send NewDagBlock for calculating the pruning point, error: {:?}",
-                    e
-                );
-            }
-        }
-    }
-}
-
 impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService<TxPoolService> {
     fn handle_event(&mut self, msg: BlockConnectedEvent, ctx: &mut ServiceContext<Self>) {
         //because this block has execute at sync task, so just try connect to select head chain.
@@ -308,8 +259,19 @@ impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService<TxPoolSer
 
         match msg.action {
             crate::tasks::BlockConnectAction::ConnectNewBlock => {
-                if let Err(e) = self.chain_service.try_connect(block) {
+                if let Err(e) = self.chain_service.try_connect(block.clone()) {
                     error!("Process connected new block from sync error: {:?}", e);
+                }
+                match self
+                    .pruning_point_channel
+                    .pruning_sender
+                    .send(PruningPointMessage {
+                        block_header: block.header().clone(),
+                    }) {
+                    std::result::Result::Ok(()) => (),
+                    Err(e) => {
+                        error!("Failed to send pruning point message: {:?} when processing block connect event", e)
+                    }
                 }
             }
             crate::tasks::BlockConnectAction::ConnectExecutedBlock => {
@@ -353,50 +315,36 @@ impl<TransactionPoolServiceT> EventHandler<Self, MinedBlock>
 where
     TransactionPoolServiceT: TxPoolSyncService + 'static,
 {
-    fn handle_event(&mut self, msg: MinedBlock, ctx: &mut ServiceContext<Self>) {
+    fn handle_event(&mut self, msg: MinedBlock, _ctx: &mut ServiceContext<Self>) {
         let MinedBlock(new_block) = msg;
         let id = new_block.header().id();
         debug!("try connect mined block: {}", id);
 
-        let main = self.chain_service.get_main();
-        let mut chain = BlockChain::new(
-            main.time_service(),
-            new_block.header().parent_hash(),
-            main.get_storage(),
-            None,
-            main.dag(),
-        )
-        .unwrap_or_else(|e| {
-            panic!(
-                "new block chain error when processing the mined block: {:?}",
-                e
-            )
-        });
-        let bus = self.chain_service.get_bus();
+        match self.chain_service.try_connect(new_block.as_ref().clone()) {
+            std::result::Result::Ok(()) => {
+                debug!("Process mined block {} success.", id);
 
-        ctx.spawn(async move {
-            let executed_block = match chain.execute(VerifiedBlock {
-                    block: new_block.as_ref().clone(),
-                    ghostdata: None,
-                }) {
-                    std::result::Result::Ok(executed_block) => executed_block,
+                match self
+                    .pruning_point_channel
+                    .pruning_sender
+                    .send(PruningPointMessage {
+                        block_header: new_block.header().clone(),
+                    }) {
+                    std::result::Result::Ok(()) => (),
                     Err(e) => {
-                        error!("when executing the mined block, failed to execute block error: {:?}, id: {:?}", e, new_block.id());
-                        return;
-                    },
-                };
-            match chain.connect(executed_block.clone()) {
-                std::result::Result::Ok(_) => (),
-                Err(e) => {
-                    error!("when connecting the mined block, failed to connect block error: {:?}, id: {:?}", e, new_block.id());
-                    return;
-                },
-            }
+                        error!("Failed to send pruning point message: {:?} when processing mined block", e);
+                    }
+                }
 
-            let _ = bus.broadcast(NewDagBlock {
-                executed_block: Arc::new(executed_block.clone()),
-            });
-        });
+                match self.chain_service.broadcast_new_dag_block(id) {
+                    std::result::Result::Ok(_) => (),
+                    Err(e) => warn!("Process mined block {} fail, error: {:?}", id, e),
+                }
+            }
+            Err(e) => {
+                warn!("Process mined block {} fail, error: {:?}", id, e);
+            }
+        }
     }
 }
 
@@ -480,7 +428,17 @@ where
                 Err(e) => warn!("BlockConnector fail: {:?}, peer_id:{:?}", e, peer_id),
             }
         } else {
-            ctx.broadcast(NewDagBlockFromPeer);
+            match self
+                .pruning_point_channel
+                .pruning_sender
+                .send(PruningPointMessage {
+                    block_header: msg.get_block().header().clone(),
+                }) {
+                std::result::Result::Ok(()) => (),
+                Err(e) => {
+                    error!("faield to send generating pruning point massge for: {:?} when processing the peer new block", e);
+                }
+            }
         }
     }
 }
@@ -617,7 +575,12 @@ where
                 msg.block_gas_limit,
                 msg.tips.clone(),
             )?;
-            self.chain_service.try_connect(block)?;
+            self.chain_service.try_connect(block.clone())?;
+            self.pruning_point_channel
+                .pruning_sender
+                .send(PruningPointMessage {
+                    block_header: block.header().clone(),
+                })?;
         }
         Ok(CreateBlockResponse)
     }

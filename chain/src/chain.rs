@@ -285,54 +285,6 @@ impl BlockChain {
         )
     }
 
-    pub fn selecte_dag_state(&mut self, header: &BlockHeader) -> Result<Self> {
-        let new_pruning_point = if header.pruning_point() == HashValue::zero() {
-            self.genesis_hash
-        } else {
-            header.pruning_point()
-        };
-        let current_pruning_point = if self.status().head().pruning_point() == HashValue::zero() {
-            self.genesis_hash
-        } else {
-            self.status().head().pruning_point()
-        };
-        let chain = if current_pruning_point == new_pruning_point
-            || current_pruning_point == HashValue::zero()
-        {
-            let state = self.dag.get_dag_state(new_pruning_point).unwrap();
-            let block_id = self
-                .dag
-                .ghost_dag_manager()
-                .find_selected_parent(state.tips)
-                .unwrap();
-            self.fork(block_id)?
-        } else {
-            let new_state = self.dag.get_dag_state(new_pruning_point).unwrap();
-            let current_state = self.dag.get_dag_state(current_pruning_point).unwrap();
-
-            let new_header = self
-                .dag
-                .ghost_dag_manager()
-                .find_selected_parent(new_state.tips)
-                .unwrap();
-            let current_header = self
-                .dag
-                .ghost_dag_manager()
-                .find_selected_parent(current_state.tips)
-                .unwrap();
-
-            let selected_header = self
-                .dag
-                .ghost_dag_manager()
-                .find_selected_parent([new_header, current_header])
-                .unwrap();
-
-            self.fork(selected_header)?
-        };
-
-        Ok(chain)
-    }
-
     // This is only for testing.
     // Uncles, pruning point and tips must be coherent, if not,
     // there will be some unexpected behaviour happening.

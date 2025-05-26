@@ -22,7 +22,7 @@ use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_types::block::ExecutedBlock;
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
-use starcoin_types::system_events::{NewDagBlock, NewHeadBlock};
+use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
@@ -69,38 +69,12 @@ impl ServiceFactory<Self> for ChainReaderService {
 impl ActorService for ChainReaderService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<NewHeadBlock>();
-        ctx.subscribe::<NewDagBlock>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<NewHeadBlock>();
-        ctx.unsubscribe::<NewDagBlock>();
         Ok(())
-    }
-}
-
-impl EventHandler<Self, NewDagBlock> for ChainReaderService {
-    fn handle_event(&mut self, event: NewDagBlock, _ctx: &mut ServiceContext<Self>) {
-        info!("NewDagBlock in chain reader service");
-        let mut main = self
-            .inner
-            .get_main()
-            .fork(self.inner.main_head_header().id())
-            .unwrap_or_else(|e| {
-                panic!(
-                    "fork error when handle NewDagBlock in chain reader service: {:?}",
-                    e
-                )
-            });
-        self.inner.main = main
-            .selecte_dag_state(event.executed_block.as_ref().header())
-            .unwrap_or_else(|e| {
-                panic!(
-                    "selecte_dag_state error when handle NewDagBlock in chain reader service: {:?}",
-                    e
-                )
-            });
     }
 }
 

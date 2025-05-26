@@ -257,7 +257,6 @@ impl ActorService for BlockRelayer {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<SyncStatusChangeEvent>();
         ctx.subscribe::<NewHeadBlock>();
-        ctx.subscribe::<NewDagBlock>();
         ctx.subscribe::<NewBranch>();
         Ok(())
     }
