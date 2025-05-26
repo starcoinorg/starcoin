@@ -348,8 +348,7 @@ where
             now_millis,
         );
 
-        let epoch = self.chain.epoch();
-        let strategy = epoch.strategy();
+        let strategy = self.chain.consensus();
         let difficulty = strategy.calculate_next_difficulty(&self.chain)?;
 
         let mut opened_block = OpenedBlock::new(
@@ -365,10 +364,7 @@ where
             self.vm_metrics.clone(),
         )?;
         let excluded_txns = opened_block.push_txns(txns)?;
-        let excluded_txns2 = {
-            opened_block.initialize2()?;
-            opened_block.push_txns2(txns2)?
-        };
+        let excluded_txns2 = opened_block.push_txns2(txns2)?;
         let template = opened_block.finalize()?;
         for invalid_txn in excluded_txns
             .discarded_txns

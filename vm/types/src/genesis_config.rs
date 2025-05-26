@@ -226,3 +226,16 @@ impl MoveResource for ChainId {
     const MODULE_NAME: &'static str = "ChainId";
     const STRUCT_NAME: &'static str = "ChainId";
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::genesis_config::ConsensusStrategy;
+
+    #[test]
+    fn test_consensus_strategy() {
+        assert_eq!(ConsensusStrategy::Dummy.value(), 0);
+        assert_eq!(ConsensusStrategy::Argon.value(), 1);
+        assert_eq!(ConsensusStrategy::Keccak.value(), 2);
+        assert_eq!(ConsensusStrategy::CryptoNight.value(), 3);
+    }
+}

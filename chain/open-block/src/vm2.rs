@@ -46,6 +46,10 @@ fn convert_block_meta(block_meta: starcoin_types::block_metadata::BlockMetadata)
 
 impl OpenedBlock {
     pub fn initialize2(&mut self) -> anyhow::Result<()> {
+        if self.vm2_initialized {
+            // Nothing to do here
+            return Ok(());
+        }
         let (_state, state) = &self.state;
         let block_metadata_txn =
             Transaction2::BlockMetadata(convert_block_meta(self.block_meta.clone()));
@@ -77,12 +81,18 @@ impl OpenedBlock {
                 );
             }
         };
+        self.vm2_initialized = true;
         Ok(())
     }
     pub fn push_txns2(
         &mut self,
         user_txns: Vec<SignedUserTransaction2>,
     ) -> anyhow::Result<ExcludedTxns> {
+        // if the vm2 block meta has not been executed, do it first.
+        if !self.vm2_initialized {
+            self.initialize2()?;
+            debug_assert!(self.vm2_initialized);
+        }
         let state = &self.state.1;
         let mut txns = user_txns
             .into_iter()

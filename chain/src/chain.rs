@@ -15,13 +15,14 @@ use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, EventWithProof, ExcludedTxns,
     ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
 };
+use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_executor::{BlockExecutedData, VMMetrics};
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
-use starcoin_state_api::{AccountStateReader, ChainStateReader, ChainStateWriter};
+use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Store;
 use starcoin_time_service::TimeService;
@@ -39,14 +40,15 @@ use starcoin_types::{
     transaction::Transaction,
     U256,
 };
-use starcoin_vm2_chain::build_block_transactions;
-use starcoin_vm2_state_api::ChainStateWriter as ChainStateWriter2;
+use starcoin_vm2_chain::{build_block_transactions, get_epoch_from_statedb};
+use starcoin_vm2_state_api::{
+    ChainStateReader as ChainStateReader2, ChainStateWriter as ChainStateWriter2,
+};
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_storage::Store as Store2;
+use starcoin_vm2_vm_types::on_chain_resource::Epoch;
 use starcoin_vm_types::access_path::AccessPath;
-use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
-use starcoin_vm_types::on_chain_resource::Epoch;
 use std::cmp::min;
 use std::iter::Extend;
 use std::option::Option::{None, Some};
@@ -145,7 +147,7 @@ impl BlockChain {
 
         let chain_state = ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root1));
         let chain_state2 = ChainStateDB2::new(storage2.clone().into_super_arc(), Some(state_root2));
-        let epoch = get_epoch_from_statedb(&chain_state)?;
+        let epoch = get_epoch_from_statedb(&chain_state2)?;
         let genesis = storage
             .get_genesis()?
             .ok_or_else(|| format_err!("Can not find genesis hash in storage."))?;
@@ -224,7 +226,7 @@ impl BlockChain {
     }
 
     pub fn consensus(&self) -> ConsensusStrategy {
-        self.epoch.strategy()
+        ConsensusStrategy::try_from(self.epoch.strategy()).expect("epoch consensus must be valid")
     }
     pub fn time_service(&self) -> Arc<dyn TimeService> {
         self.time_service.clone()
@@ -338,7 +340,7 @@ impl BlockChain {
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
 
-        let strategy = epoch.strategy();
+        let strategy = self.consensus();
         let difficulty = strategy.calculate_next_difficulty(self)?;
         let mut opened_block = OpenedBlock::new(
             self.storage.0.clone(),
@@ -362,10 +364,7 @@ impl BlockChain {
             }
         }
         let excluded_txns = opened_block.push_txns(vm1_txns)?;
-        let excluded_txns2 = {
-            opened_block.initialize2()?;
-            opened_block.push_txns2(vm2_txns)?
-        };
+        let excluded_txns2 = opened_block.push_txns2(vm2_txns)?;
         let template = opened_block.finalize()?;
         Ok((template, excluded_txns.absorb(excluded_txns2)))
     }
@@ -470,20 +469,28 @@ impl BlockChain {
         let block_id = header.id();
         let transactions = {
             // genesis block do not generate BlockMetadata transaction.
-            let mut t = match &parent_status {
-                None => vec![],
+            let (vm1_offline, mut t) = match &parent_status {
+                None => (false, vec![]),
                 Some(parent) => {
-                    let block_metadata = block.to_metadata(parent.head().gas_used());
-                    vec![Transaction::BlockMetadata(block_metadata)]
+                    let vm1_offline = vm1_offline_height(parent.head.chain_id().id().into());
+                    if header.number() < vm1_offline {
+                        let block_metadata = block.to_metadata(parent.head().gas_used());
+                        (false, vec![Transaction::BlockMetadata(block_metadata)])
+                    } else {
+                        (true, vec![])
+                    }
                 }
             };
-            t.extend(
-                block
-                    .transactions()
-                    .iter()
-                    .cloned()
-                    .map(Transaction::UserTransaction),
-            );
+            if !vm1_offline {
+                t.extend(
+                    block
+                        .transactions()
+                        .iter()
+                        .cloned()
+                        .map(Transaction::UserTransaction),
+                );
+            }
+            debug_assert!((vm1_offline && t.is_empty()) || (!vm1_offline && !t.is_empty()));
             t
         };
 
@@ -503,7 +510,7 @@ impl BlockChain {
             epoch.block_gas_limit(),
             vm_metrics.clone(),
         )?;
-        let (executed_data2, included_txn_info_hashes2) = starcoin_vm2_chain::execute_transactions(
+        let executed_data2 = starcoin_vm2_chain::execute_transactions(
             &statedb2,
             transactions2.clone(),
             epoch.block_gas_limit() - executed_data.gas_used(),
@@ -567,6 +574,8 @@ impl BlockChain {
         let executed_accumulator_root = {
             let included_txn_info_hashes: Vec<_> =
                 vec_transaction_info.iter().map(|info| info.id()).collect();
+            let included_txn_info_hashes2: Vec<_> =
+                vm2_txn_infos.iter().map(|info| info.id()).collect();
             // NO need to check whether info_hashes is empty or not, accmulator.append will handle it.
             txn_accumulator.append(&included_txn_info_hashes)?;
             txn_accumulator.append(&included_txn_info_hashes2)?;
@@ -1101,6 +1110,10 @@ impl ChainReader for BlockChain {
         &self.statedb.0
     }
 
+    fn chain_state_reader2(&self) -> &dyn ChainStateReader2 {
+        &self.statedb.1
+    }
+
     fn get_block_info(&self, block_id: Option<HashValue>) -> Result<Option<BlockInfo>> {
         let (storage, _storage2) = &self.storage;
         match block_id {
@@ -1498,7 +1511,7 @@ impl ChainWriter for BlockChain {
             multi_state: executed_block.multi_state().clone(),
         };
         if self.epoch.end_block_number() == block.header().number() {
-            self.epoch = get_epoch_from_statedb(&self.statedb.0)?;
+            self.epoch = get_epoch_from_statedb(&self.statedb.1)?;
             self.update_uncle_cache()?;
         } else if let Some(block_uncles) = block.uncles() {
             block_uncles.iter().for_each(|uncle_header| {
@@ -1516,6 +1529,10 @@ impl ChainWriter for BlockChain {
     fn chain_state(&mut self) -> &ChainStateDB {
         &self.statedb.0
     }
+
+    fn chain_state2(&mut self) -> &ChainStateDB2 {
+        &self.statedb.1
+    }
 }
 
 pub(crate) fn info_2_accumulator(
@@ -1527,11 +1544,4 @@ pub(crate) fn info_2_accumulator(
         accumulator_info,
         node_store.get_accumulator_store(store_type),
     )
-}
-
-fn get_epoch_from_statedb(statedb: &ChainStateDB) -> Result<Epoch> {
-    let account_reader = AccountStateReader::new(statedb);
-    account_reader
-        .get_resource::<Epoch>(genesis_address())?
-        .ok_or_else(|| format_err!("Epoch is none."))
 }

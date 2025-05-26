@@ -6,6 +6,7 @@ starcoin-crypto = { workspace = true }
 futures = { workspace = true }
 starcoin-logger = { workspace = true }
 parking_lot = { workspace = true }
+starcoin-config = { workspace = true }
 starcoin-accumulator = { workspace = true }
 starcoin-chain-api = { workspace = true }
 starcoin-executor = { workspace = true }

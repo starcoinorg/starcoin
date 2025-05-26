@@ -42,6 +42,7 @@ mod sync_config;
 #[cfg(test)]
 mod tests;
 mod txpool_config;
+pub mod upgrade_config;
 
 use thiserror::Error;
 
@@ -296,7 +297,7 @@ impl BaseConfig {
             None => DataDirPath::PathBuf(G_DEFAULT_BASE_DATA_DIR.to_path_buf()),
         };
 
-        let data_dir = base_data_dir.as_ref().join(id.dir_name());
+        let data_dir = base_data_dir.as_ref().join(id.chain_name());
         if !data_dir.exists() {
             create_dir_all(data_dir.as_path())?;
         }

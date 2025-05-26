@@ -6,10 +6,12 @@ use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_chain_api::{
     verify_block, ChainReader, ConnectBlockError, VerifiedBlock, VerifyBlockField,
 };
+use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_consensus::{Consensus, ConsensusVerifyError};
 use starcoin_logger::prelude::debug;
 use starcoin_open_block::AddressFilter;
 use starcoin_types::block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME};
+use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::{collections::HashSet, str::FromStr};
 
 #[derive(Debug, Clone)]
@@ -54,6 +56,20 @@ impl StaticVerifier {
         );
         Ok(())
     }
+
+    pub fn verify_vm1_offline(block: &Block) -> Result<()> {
+        let vm1_offline_height = vm1_offline_height(block.header().chain_id().id().into());
+        let vm1_offline = block.header().number() >= vm1_offline_height;
+        verify_block!(
+            VerifyBlockField::Body,
+            !vm1_offline || block.transactions().is_empty(),
+            "vm1 offline at {} but block {} has {} vm1 transactions",
+            vm1_offline_height,
+            block.header().number(),
+            block.transactions().len()
+        );
+        Ok(())
+    }
 }
 
 //TODO this trait should move to consensus?
@@ -73,6 +89,7 @@ pub trait BlockVerifier {
         Self::verify_header(current_chain, new_block_header)?;
         watch(CHAIN_WATCH_NAME, "n12");
         StaticVerifier::verify_body_hash(&new_block)?;
+        StaticVerifier::verify_vm1_offline(&new_block)?;
         watch(CHAIN_WATCH_NAME, "n13");
         //verify uncles
         Self::verify_uncles(
@@ -275,7 +292,7 @@ impl BlockVerifier for ConsensusVerifier {
         R: ChainReader,
     {
         let epoch = current_chain.epoch();
-        let consensus = epoch.strategy();
+        let consensus = ConsensusStrategy::try_from(epoch.strategy())?;
         if let Err(e) = consensus.verify(current_chain, new_block_header) {
             return match e.downcast::<ConsensusVerifyError>() {
                 Ok(e) => Err(ConnectBlockError::VerifyBlockFailed(

@@ -14,7 +14,9 @@ use starcoin_types::{
     transaction::Transaction,
     U256,
 };
-use starcoin_vm_types::on_chain_resource::Epoch;
+use starcoin_vm2_state_api::ChainStateReader as ChainStateReader2;
+use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
+use starcoin_vm2_vm_types::on_chain_resource::Epoch;
 use std::collections::HashMap;
 
 use crate::TransactionInfoWithProof;
@@ -57,6 +59,7 @@ pub trait ChainReader {
     ) -> Result<Option<RichTransactionInfo>>;
 
     fn chain_state_reader(&self) -> &dyn ChainStateReader;
+    fn chain_state_reader2(&self) -> &dyn ChainStateReader2;
     fn get_block_info(&self, block_id: Option<HashValue>) -> Result<Option<BlockInfo>>;
     fn get_total_difficulty(&self) -> Result<U256>;
     fn exist_block(&self, block_id: HashValue) -> Result<bool>;
@@ -112,6 +115,8 @@ pub trait ChainWriter {
     fn apply(&mut self, block: Block) -> Result<ExecutedBlock>;
 
     fn chain_state(&mut self) -> &ChainStateDB;
+
+    fn chain_state2(&mut self) -> &ChainStateDB2;
 }
 
 /// `Chain` is a trait that defines a single Chain.

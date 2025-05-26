@@ -194,6 +194,7 @@ impl BlockRelayer {
         let block = Block::new(compact_block.header, body);
         //ensure the block is filled correct.
         StaticVerifier::verify_body_hash(&block)?;
+        StaticVerifier::verify_vm1_offline(&block)?;
         Ok(block)
     }
 
