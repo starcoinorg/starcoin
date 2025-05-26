@@ -2,13 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub use crate::event_info::{ContractEventInfo, StcContractEventInfo};
+use serde::{Deserialize, Serialize};
 pub use starcoin_vm_types::contract_event::*;
 
 use crate::event::StcEventKey;
 use crate::language_storage::StcTypeTag;
 use starcoin_vm2_vm_types::contract_event::ContractEvent as ContractEvent2;
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, Hash, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum StcContractEvent {
     V1(ContractEvent),
     V2(ContractEvent2),
@@ -52,6 +53,13 @@ impl StcContractEvent {
         match self {
             Self::V1(event) => StcTypeTag::V1(event.type_tag().clone()),
             Self::V2(event) => StcTypeTag::V2(event.type_tag().clone()),
+        }
+    }
+
+    pub fn to_v1(&self) -> Option<ContractEvent> {
+        match self {
+            Self::V1(event) => Some(event.clone()),
+            Self::V2(_) => None,
         }
     }
 }
