@@ -972,7 +972,7 @@ impl Sample for BlockInfo {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BlockTemplate {
     /// Parent hash.
     pub parent_hash: HashValue,

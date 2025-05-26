@@ -15,8 +15,8 @@ use std::str::FromStr;
 use test_helper::gen_blockchain_for_test;
 
 #[stest::test]
-fn test_vm2_only_chain() -> anyhow::Result<()> {
-    let chain_name = "vm2-only-testnet".to_string();
+fn test_vm1_offline_at_block_two() -> anyhow::Result<()> {
+    let chain_name = "vm2-testnet".to_string();
     let net = ChainNetwork::new_custom(
         chain_name,
         123.into(),
@@ -52,17 +52,17 @@ fn test_vm2_only_chain() -> anyhow::Result<()> {
     // For block 2, vm1 txns are not allowed because vm1 is offline
     {
         let vm1_txn = build_a_vm1_txn(&mut chain, &net, receiver)?;
-        let res = chain.create_block_template_simple_with_txns(miner_account, vec![vm1_txn.into()]);
-        let Err(e) = res else {
-            panic!("vm1 offline chain should not be able to create block with vm1 txn");
-        };
+        let (_, excluded_txns) = chain
+            .create_block_template_simple_with_txns(miner_account, vec![vm1_txn.clone().into()])?;
+        // vm1 txns are discarded
+        assert_eq!(excluded_txns.discarded_txns.len(), 1);
         assert_eq!(
-            e.to_string(),
-            "vm2 already initialized, can not push vm1 txns any more"
+            excluded_txns.discarded_txns.first(),
+            Some(&(vm1_txn.into()))
         );
     }
 
-    // For block 2, vm2 txns are allowed
+    // For block 2, same as above, only vm2 txns are allowed
     {
         let vm2_txn = build_a_vm2_txn(&mut chain, &net, receiver)?;
         let res =
@@ -74,27 +74,29 @@ fn test_vm2_only_chain() -> anyhow::Result<()> {
         chain.apply_with_verifier::<FullVerifier>(block_2)?;
     }
 
-    // For block 3, only vm2 txns are allowed
+    // For block 3, same as block 2, only vm2 txns are allowed, vm1 txns will be discarded.
     {
         let vm1_txn = build_a_vm1_txn(&mut chain, &net, receiver)?;
         let vm2_txn = build_a_vm2_txn(&mut chain, &net, receiver)?;
-        let res = chain.create_block_template_simple_with_txns(
+        let (template_1, excluded_txns) = chain.create_block_template_simple_with_txns(
             miner_account,
-            vec![vm1_txn.into(), vm2_txn.clone().into()],
-        );
-        let Err(e) = res else {
-            panic!("vm1 offline chain should not be able to create block with vm1 txn");
-        };
+            vec![vm1_txn.clone().into(), vm2_txn.clone().into()],
+        )?;
+        // vm1 txns are discarded
+        assert_eq!(excluded_txns.discarded_txns.len(), 1);
         assert_eq!(
-            e.to_string(),
-            "vm2 already initialized, can not push vm1 txns any more"
+            excluded_txns.discarded_txns.first(),
+            Some(&(vm1_txn.into()))
         );
 
         let res =
             chain.create_block_template_simple_with_txns(miner_account, vec![vm2_txn.into()])?;
+        assert_eq!(template_1, res.0);
         let block_3 = chain
             .consensus()
             .create_block(res.0, net.time_service().as_ref())?;
+        assert_eq!(block_3.transactions().len(), 0);
+        assert_eq!(block_3.transactions2().len(), 1);
         assert_eq!(block_3.header().number(), vm1_offline_height + 1);
         chain.apply_with_verifier::<FullVerifier>(block_3)?;
     }
