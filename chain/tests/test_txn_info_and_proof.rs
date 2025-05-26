@@ -112,14 +112,15 @@ fn test_transaction_info_and_proof() -> Result<()> {
             .get_leaf(txn_global_index as u64)?
             .unwrap();
         assert_eq!(
-            txn_info.transaction_info.id(),
+            txn_info.txn_info().id(),
             txn_info_leaf,
             "txn_info hash do not match txn info leaf in accumulator, index: {}",
             txn_global_index
         );
 
         assert_eq!(
-            txn_info.transaction_global_index, txn_global_index as u64,
+            txn_info.transaction_global_index(),
+            txn_global_index as u64,
             "txn_global_index:{}",
             txn_global_index
         );
@@ -140,9 +141,7 @@ fn test_transaction_info_and_proof() -> Result<()> {
             AccountResource::struct_tag(),
         ));
 
-        let events = block_chain
-            .get_events(txn_info.transaction_info.id())?
-            .unwrap();
+        let events = block_chain.get_events(txn_info.txn_info().id())?.unwrap();
 
         for (event_index, event) in events.into_iter().enumerate() {
             let txn_proof = block_chain

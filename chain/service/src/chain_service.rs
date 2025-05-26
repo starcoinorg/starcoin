@@ -29,7 +29,6 @@ use starcoin_types::{
 };
 use starcoin_vm2_storage::{Storage as Storage2, Store as Store2};
 use starcoin_vm_types::access_path::AccessPath;
-use starcoin_vm_types::transaction::authenticator::AccountPrivateKey::Multi;
 use std::sync::Arc;
 
 /// A Chain reader service to provider Reader API.
@@ -173,7 +172,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             } => Ok(ChainResponse::TransactionInfo(
                 self.inner
                     .get_txn_info_by_block_and_index(block_id, txn_idx)?
-                    .map(|info| MultiRichTransactionInfo::VM1(info)),
+                    .map(MultiRichTransactionInfo::VM1),
             )),
             ChainRequest::GetEventsByTxnHash { txn_hash } => {
                 let txn_info = self

@@ -21,7 +21,6 @@ use starcoin_vm_types::transaction::{
 };
 use starcoin_vm_types::{genesis_config::ChainId, transaction::SignedUserTransaction};
 use std::fmt::Display;
-use std::ops::Deref;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 pub enum MultiChainId {
@@ -247,6 +246,7 @@ impl std::error::Error for MultiTransactionError {
     }
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum MultiRichTransactionInfo {
     VM1(RichTransactionInfo),
     VM2(RichTransactionInfo2),
@@ -294,6 +294,20 @@ impl MultiRichTransactionInfo {
             Self::VM2(info) => info.txn_info(),
         }
     }
+
+    pub fn as_vm1(self) -> RichTransactionInfo {
+        match self {
+            Self::VM1(info) => info,
+            _ => panic!("Not a VM2 transaction."),
+        }
+    }
+
+    pub fn as_vm2(self) -> RichTransactionInfo2 {
+        match self {
+            Self::VM2(info) => info,
+            _ => panic!("Not a VM1 transaction."),
+        }
+    }
 }
 
 impl From<RichTransactionInfo> for MultiRichTransactionInfo {
@@ -305,25 +319,5 @@ impl From<RichTransactionInfo> for MultiRichTransactionInfo {
 impl From<RichTransactionInfo2> for MultiRichTransactionInfo {
     fn from(info: RichTransactionInfo2) -> Self {
         Self::VM2(info)
-    }
-}
-
-impl Into<RichTransactionInfo> for MultiRichTransactionInfo {
-    fn into(self) -> RichTransactionInfo {
-        match self {
-            MultiRichTransactionInfo::VM1(info) => info,
-            MultiRichTransactionInfo::VM2(_) => {
-                panic!("Not supported on VM2.")
-            }
-        }
-    }
-}
-
-impl Into<RichTransactionInfo2> for MultiRichTransactionInfo {
-    fn into(self) -> RichTransactionInfo2 {
-        match self {
-            MultiRichTransactionInfo::VM1(_) => panic!("Not supported on VM1."),
-            MultiRichTransactionInfo::VM2(info) => info,
-        }
     }
 }

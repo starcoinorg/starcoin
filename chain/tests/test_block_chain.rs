@@ -431,16 +431,16 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let txn_info1 = block_chain.get_transaction_info(txn_hash)?;
     assert!(txn_info1.is_some());
     let txn_info1 = txn_info1.unwrap();
-    assert!(vec_txn.contains(&txn_info1.id()));
+    assert!(vec_txn.contains(&txn_info1.txn_info().id()));
 
     let txn_info2 = block_chain2.get_transaction_info(txn_hash)?;
     assert!(txn_info2.is_some());
     let txn_info2 = txn_info2.unwrap();
-    assert!(vec_txn.contains(&txn_info2.id()));
+    assert!(vec_txn.contains(&txn_info2.txn_info().id()));
 
     assert_ne!(txn_info1, txn_info2);
 
-    assert_eq!(txn_info1.transaction_hash(), txn_hash);
+    assert_eq!(txn_info1.txn_info().transaction_hash(), txn_hash);
     assert_eq!(
         txn_info1.block_id(),
         block_b2.id(),
@@ -448,7 +448,7 @@ fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         txn_info1
     );
 
-    assert_eq!(txn_info2.transaction_hash(), txn_hash);
+    assert_eq!(txn_info2.txn_info().transaction_hash(), txn_hash);
     assert_eq!(
         txn_info2.block_id(),
         block_b3.id(),

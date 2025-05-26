@@ -359,8 +359,8 @@ where
 
     fn get_events_by_txn_hash2(
         &self,
-        txn_hash: HashValue,
-        option: Option<GetEventOption>,
+        _txn_hash: HashValue,
+        _option: Option<GetEventOption>,
     ) -> FutureResult<Vec<TransactionEventResponse2>> {
         // TODO(BobOng): [dual-vm] to get event s by txn hash for vm2
         unimplemented!()

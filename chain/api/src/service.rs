@@ -244,7 +244,7 @@ where
             .send(ChainRequest::GetTransactionInfo(txn_hash))
             .await??;
         if let ChainResponse::TransactionInfo(txn_info) = response {
-            Ok(txn_info.map(|b| b.into()))
+            Ok(txn_info.map(|txn_info| txn_info.as_vm1()))
         } else {
             bail!("get transaction_info error:{:?}", txn_hash)
         }
@@ -258,7 +258,7 @@ where
             .send(ChainRequest::GetTransactionInfo2(txn_hash))
             .await??;
         if let ChainResponse::TransactionInfo(txn_info) = response {
-            Ok(txn_info.map(|info| info.into()))
+            Ok(txn_info.map(|info| info.as_vm2()))
         } else {
             bail!("get transaction_info error:{:?}", txn_hash)
         }
@@ -298,7 +298,7 @@ where
             })
             .await??;
         if let ChainResponse::TransactionInfo(info) = response {
-            Ok(info.map(|b| b.into()))
+            Ok(info.map(|b| b.as_vm1()))
         } else {
             bail!("get txn info by block and idx error.")
         }
