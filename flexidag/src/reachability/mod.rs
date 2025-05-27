@@ -4,7 +4,6 @@ pub mod reachability_service;
 mod reindex;
 pub mod relations_service;
 
-#[cfg(test)]
 pub mod tests;
 mod tree;
 

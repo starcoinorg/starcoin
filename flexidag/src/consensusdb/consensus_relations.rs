@@ -1,16 +1,18 @@
+use super::error::StoreResult;
 use super::schema::{KeyCodec, ValueCodec};
-use super::writer::BatchDbWriter;
+use super::writer::{BatchDbWriter, DbWriter};
 use super::{
     db::DBStorage,
     prelude::{CachedDbAccess, StoreError},
 };
 use crate::define_schema;
 use byteorder::{ReadBytesExt, WriteBytesExt};
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue as Hash;
 use starcoin_storage::batch::{WriteBatch, WriteBatchData, WriteBatchWithColumn};
 use starcoin_storage::storage::{InnerStore, WriteOp};
-use starcoin_types::blockhash::{BlockHashes, BlockLevel};
+use starcoin_types::blockhash::{BlockHashMap, BlockHashSet, BlockHashes, BlockLevel};
 use std::collections::HashMap;
 use std::sync::Arc;
 /// Reader API for `RelationsStore`.
@@ -300,6 +302,21 @@ impl RelationsStore for DbRelationsStore {
 
         Ok(())
     }
+}
+
+pub trait ChildrenStore {
+    fn insert_child(
+        &mut self,
+        writer: impl DbWriter,
+        parent: Hash,
+        child: Hash,
+    ) -> Result<(), StoreError>;
+    fn delete_child(
+        &mut self,
+        writer: impl DbWriter,
+        parent: Hash,
+        child: Hash,
+    ) -> Result<(), StoreError>;
 }
 
 #[cfg(test)]

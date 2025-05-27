@@ -62,6 +62,44 @@ impl FlexiDagStorage {
         db_path: P,
         config: FlexiDagStorageConfig,
     ) -> Result<Self, StoreError> {
+        let cache_size = config.cache_size;
+        let db = Self::create_db(db_path, config)?;
+        Ok(Self {
+            ghost_dag_store: DbGhostdagStore::new(db.clone(), 1, cache_size),
+
+            header_store: DbHeadersStore::new(db.clone(), cache_size),
+            reachability_store: Arc::new(RwLock::new(DbReachabilityStore::new(
+                db.clone(),
+                cache_size,
+            ))),
+            relations_store: Arc::new(RwLock::new(
+                (0..G_MAX_BLOCK_LEVEL)
+                    .map(|level| DbRelationsStore::new(db.clone(), level, cache_size))
+                    .collect(),
+            )),
+            state_store: Arc::new(RwLock::new(DbDagStateStore::new(db.clone(), cache_size))),
+            block_depth_info_store: Arc::new(DbBlockDepthInfoStore::new(db.clone(), cache_size)),
+            pruning_point_store: Arc::new(RwLock::new(PruningPointInfoStore::new(
+                db.clone(),
+                cache_size,
+            ))),
+            db,
+        })
+    }
+
+    pub fn write_batch(&self, batch: WriteBatch) -> Result<(), StoreError> {
+        self.db.raw_write_batch(batch).map_err(|e| {
+            StoreError::DBIoError(format!(
+                "failed to write in batch for dag data, error: {:?}",
+                e.to_string()
+            ))
+        })
+    }
+
+    pub fn create_db<P: AsRef<Path>>(
+        db_path: P,
+        config: FlexiDagStorageConfig,
+    ) -> Result<Arc<DBStorage>, StoreError> {
         let db = Arc::new(
             DBStorage::open_with_cfs(
                 db_path,
@@ -88,41 +126,6 @@ impl FlexiDagStorage {
             .map_err(|e| StoreError::DBIoError(e.to_string()))?,
         );
 
-        Ok(Self {
-            ghost_dag_store: DbGhostdagStore::new(db.clone(), 1, config.cache_size),
-
-            header_store: DbHeadersStore::new(db.clone(), config.cache_size),
-            reachability_store: Arc::new(RwLock::new(DbReachabilityStore::new(
-                db.clone(),
-                config.cache_size,
-            ))),
-            relations_store: Arc::new(RwLock::new(
-                (0..G_MAX_BLOCK_LEVEL)
-                    .map(|level| DbRelationsStore::new(db.clone(), level, config.cache_size))
-                    .collect(),
-            )),
-            state_store: Arc::new(RwLock::new(DbDagStateStore::new(
-                db.clone(),
-                config.cache_size,
-            ))),
-            block_depth_info_store: Arc::new(DbBlockDepthInfoStore::new(
-                db.clone(),
-                config.cache_size,
-            )),
-            pruning_point_store: Arc::new(RwLock::new(PruningPointInfoStore::new(
-                db.clone(),
-                config.cache_size,
-            ))),
-            db,
-        })
-    }
-
-    pub fn write_batch(&self, batch: WriteBatch) -> Result<(), StoreError> {
-        self.db.raw_write_batch(batch).map_err(|e| {
-            StoreError::DBIoError(format!(
-                "failed to write in batch for dag data, error: {:?}",
-                e.to_string()
-            ))
-        })
+        Ok(db)
     }
 }
