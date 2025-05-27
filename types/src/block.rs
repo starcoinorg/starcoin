@@ -651,10 +651,6 @@ impl BlockBody {
             uncles,
         }
     }
-    pub fn get_txn(&self, index: usize) -> Option<&SignedUserTransaction> {
-        self.transactions.get(index)
-    }
-
     /// Just for test
     pub fn new_empty() -> BlockBody {
         BlockBody {
@@ -856,6 +852,10 @@ impl std::fmt::Display for Block {
         }
         write!(f, "transactions:[")?;
         for txn in &self.body.transactions {
+            write!(f, "\"{}\",", txn.id())?;
+        }
+        write!(f, "transactions2:[")?;
+        for txn in &self.body.transactions2 {
             write!(f, "\"{}\",", txn.id())?;
         }
         write!(f, "]}}")
