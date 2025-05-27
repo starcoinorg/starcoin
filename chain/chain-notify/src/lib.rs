@@ -86,7 +86,7 @@ impl ChainNotifyHandlerService {
         &self,
         block: &Block,
         store: Arc<dyn Store>,
-        store2: Arc<dyn Store2>,
+        _store2: Arc<dyn Store2>,
         ctx: &mut ServiceContext<Self>,
     ) -> Result<()> {
         let block_number = block.header().number();
@@ -103,8 +103,10 @@ impl ChainNotifyHandlerService {
             let events = store
                 .get_contract_events_v2(txn_info_id)?
                 .unwrap_or_default();
-            events.into_iter().enumerate().for_each(|(idx, evt)|
-                match evt {
+            events
+                .into_iter()
+                .enumerate()
+                .for_each(|(idx, evt)| match evt {
                     StcContractEvent::V1(evt) => {
                         let event = Event::new(
                             block_id,

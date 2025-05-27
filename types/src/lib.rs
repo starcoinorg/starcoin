@@ -62,6 +62,18 @@ pub mod event {
             }
         }
     }
+
+    impl From<EventKey> for StcEventKey {
+        fn from(key: EventKey) -> Self {
+            StcEventKey::V1(key)
+        }
+    }
+
+    impl From<EventKey2> for StcEventKey {
+        fn from(key: EventKey2) -> Self {
+            StcEventKey::V2(key)
+        }
+    }
 }
 
 pub mod filter;
@@ -116,6 +128,20 @@ pub mod language_storage {
             match self {
                 StcTypeTag::V1(tag) => tag.to_canonical_string(),
                 StcTypeTag::V2(tag) => tag.to_canonical_string(),
+            }
+        }
+
+        pub fn as_v1(&self) -> Option<&TypeTag> {
+            match self {
+                StcTypeTag::V1(tag) => Some(tag),
+                StcTypeTag::V2(_) => None,
+            }
+        }
+
+        pub fn as_v2(&self) -> Option<&TypeTag2> {
+            match self {
+                StcTypeTag::V1(_) => None,
+                StcTypeTag::V2(tag) => Some(tag),
             }
         }
     }

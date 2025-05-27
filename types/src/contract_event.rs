@@ -7,7 +7,7 @@ pub use starcoin_vm_types::contract_event::*;
 
 use crate::event::StcEventKey;
 use crate::language_storage::StcTypeTag;
-use starcoin_vm2_vm_types::contract_event::ContractEvent as ContractEvent2;
+pub(crate) use starcoin_vm2_vm_types::contract_event::ContractEvent as ContractEvent2;
 
 #[derive(Debug, Hash, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum StcContractEvent {

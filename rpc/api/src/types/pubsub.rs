@@ -137,13 +137,18 @@ impl TryInto<Filter> for EventFilter {
         Ok(Filter {
             from_block: self.from_block.unwrap_or(0),
             to_block: self.to_block.unwrap_or(u64::MAX),
-            event_keys: self.event_keys.unwrap_or_default(),
+            event_keys: self
+                .event_keys
+                .unwrap_or_default()
+                .into_iter()
+                .map(Into::into)
+                .collect(),
             addrs: self.addrs.unwrap_or_default(),
             type_tags: self
                 .type_tags
                 .unwrap_or_default()
                 .into_iter()
-                .map(|t| t.0)
+                .map(|t| t.0.into())
                 .collect(),
             limit: self.limit,
             reverse: true,

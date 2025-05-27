@@ -44,7 +44,7 @@ fn test_chain_filter_events() {
             to_block: 5,
             event_keys: vec![],
             addrs: vec![],
-            type_tags: vec![event_type_tag.clone()],
+            type_tags: vec![event_type_tag.clone().into()],
             limit: None,
             reverse: false,
         };
@@ -62,7 +62,7 @@ fn test_chain_filter_events() {
             to_block: 10,
             event_keys: vec![],
             addrs: vec![],
-            type_tags: vec![event_type_tag.clone()],
+            type_tags: vec![event_type_tag.clone().into()],
             limit: Some(5),
             reverse: false,
         };
@@ -78,7 +78,7 @@ fn test_chain_filter_events() {
             to_block: 10,
             event_keys: vec![],
             addrs: vec![],
-            type_tags: vec![event_type_tag.clone()],
+            type_tags: vec![event_type_tag.clone().into()],
             limit: Some(5),
             reverse: true,
         };
@@ -96,7 +96,7 @@ fn test_chain_filter_events() {
             to_block: 10,
             event_keys: vec![],
             addrs: vec![],
-            type_tags: vec![event_type_tag.clone()],
+            type_tags: vec![event_type_tag.clone().into()],
             limit: Some(20),
             reverse: true,
         };
@@ -114,7 +114,7 @@ fn test_chain_filter_events() {
             to_block: 20,
             event_keys: vec![],
             addrs: vec![],
-            type_tags: vec![event_type_tag],
+            type_tags: vec![event_type_tag.into()],
             limit: Some(20),
             reverse: true,
         };

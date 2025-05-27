@@ -1509,7 +1509,7 @@ impl BlockChain {
                         transaction_index: txn_info.transaction_index,
                         transaction_global_index: txn_info.transaction_global_index,
                         event_index: idx as u32,
-                        event: evt.into(),
+                        event: evt,
                     });
                 if reverse {
                     event_with_infos.extend(filtered_event_with_info.rev())
