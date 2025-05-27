@@ -201,7 +201,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                 Ok(ChainResponse::Events(event_infos))
             }
             ChainRequest::GetEventsByTxnHash2 { txn_hash } => Ok(ChainResponse::Events(
-                self.inner.get_event_by_txn_hash2(txn_hash)?,
+                self.inner.get_events_by_txn_hash2(txn_hash)?,
             )),
             ChainRequest::MainEvents(filter) => Ok(ChainResponse::MainEvents(
                 self.inner.get_main_events(filter)?,

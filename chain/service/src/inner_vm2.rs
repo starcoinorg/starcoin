@@ -12,7 +12,7 @@ impl ChainReaderServiceInner {
         let (_, storage2) = self.get_storages();
         storage2.get_contract_events(txn_info_id)
     }
-    pub fn get_event_by_txn_hash2(
+    pub fn get_events_by_txn_hash2(
         &self,
         txn_hash: HashValue,
     ) -> anyhow::Result<Vec<StcContractEventInfo>> {
