@@ -12003,6 +12003,7 @@ dependencies = [
  "starcoin-genesis",
  "starcoin-logger 1.13.19",
  "starcoin-move-compiler 1.13.19",
+ "starcoin-move-compiler 2.0.1",
  "starcoin-move-explain",
  "starcoin-network-rpc-api",
  "starcoin-node",
