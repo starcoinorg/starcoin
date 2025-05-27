@@ -5,8 +5,10 @@ use crate::{cli_state::CliState, StarcoinOpt};
 use anyhow::Result;
 use clap::Parser;
 use scmd::{CommandAction, ExecContext};
-use starcoin_abi_decoder::DecodedMoveValue;
-use starcoin_rpc_api::types::{ContractCall, FunctionIdView, TransactionArgumentView, TypeTagView};
+use starcoin_vm2_abi_decoder::DecodedMoveValue;
+use starcoin_vm2_types::view::{
+    ContractCall, FunctionIdView, TransactionArgumentView, TypeTagView,
+};
 
 /// Call Contract command
 ///  Some examples:
@@ -57,8 +59,6 @@ impl CommandAction for CallContractCommand {
             type_args: opt.type_tags.clone().unwrap_or_default(),
             args: opt.args.clone().unwrap_or_default(),
         };
-
-        let result = ctx.state().vm2()?.client().contract_call(call)?;
-        Ok(result)
+        ctx.state().vm2()?.client().contract_call2(call)
     }
 }
