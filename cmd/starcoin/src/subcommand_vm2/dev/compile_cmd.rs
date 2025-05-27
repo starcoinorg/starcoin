@@ -12,7 +12,6 @@ use starcoin_vm2_move_compiler::{
     shared::Flags,
     starcoin_framework_named_addresses, Compiler,
 };
-// use starcoin_vm_types::account_address::AccountAddress as AccountAddress1;
 use starcoin_vm2_types::account_address::AccountAddress;
 use std::{fs::File, io::Write, path::PathBuf};
 use stdlib::stdlib_files;
