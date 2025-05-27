@@ -24,23 +24,20 @@ impl ChainReaderServiceInner {
             .get_events_by_txn_info_hash2(txn_info.id())?
             .unwrap_or_default();
 
-        let event_infos = if events.is_empty() {
-            vec![]
-        } else {
-            events
-                .into_iter()
-                .enumerate()
-                .map(|(idx, evt)| StcContractEventInfo {
-                    block_hash: txn_info.block_id(),
-                    block_number: txn_info.block_number,
-                    transaction_hash: txn_hash,
-                    transaction_index: txn_info.transaction_index,
-                    transaction_global_index: txn_info.transaction_global_index,
-                    event_index: idx as u32,
-                    event: evt.into(),
-                })
-                .collect()
-        };
+        let event_infos = events
+            .into_iter()
+            .enumerate()
+            .map(|(idx, evt)| StcContractEventInfo {
+                block_hash: txn_info.block_id(),
+                block_number: txn_info.block_number,
+                transaction_hash: txn_hash,
+                transaction_index: txn_info.transaction_index,
+                transaction_global_index: txn_info.transaction_global_index,
+                event_index: idx as u32,
+                event: evt.into(),
+            })
+            .collect();
+
         Ok(event_infos)
     }
 }
