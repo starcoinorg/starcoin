@@ -6,6 +6,7 @@ use starcoin_chain::BlockChain;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
 use starcoin_chain_api::{
     ChainReader, ChainWriter, ReadableChainService, TransactionInfoWithProof,
+    TransactionInfoWithProof2,
 };
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
@@ -255,7 +256,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                 transaction_global_index,
                 event_index,
                 access_path,
-            } => Ok(ChainResponse::TransactionProof(Box::new(
+            } => Ok(ChainResponse::TransactionProof2(Box::new(
                 self.inner.get_transaction_proof2(
                     block_id,
                     transaction_global_index,
@@ -470,7 +471,7 @@ impl ReadableChainService for ChainReaderServiceInner {
         transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<AccessPath2>,
-    ) -> Result<Option<TransactionInfoWithProof>> {
+    ) -> Result<Option<TransactionInfoWithProof2>> {
         self.main.get_transaction_proof2(
             block_id,
             transaction_global_index,

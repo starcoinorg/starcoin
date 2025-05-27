@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use crate::TransactionInfoWithProof;
+use crate::{TransactionInfoWithProof, TransactionInfoWithProof2};
 use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::ServiceRequest;
@@ -101,4 +101,5 @@ pub enum ChainResponse {
     TransactionProof(Box<Option<TransactionInfoWithProof>>),
     BlockInfoVec(Box<Vec<Option<BlockInfo>>>),
     MultiStateResp(Option<MultiState>),
+    TransactionProof2(Box<Option<TransactionInfoWithProof2>>),
 }

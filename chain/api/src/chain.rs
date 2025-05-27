@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use crate::TransactionInfoWithProof;
+use crate::{TransactionInfoWithProof, TransactionInfoWithProof2};
 use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_state_api::ChainStateReader;
@@ -110,7 +110,7 @@ pub trait ChainReader {
         transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<AccessPath2>,
-    ) -> Result<Option<TransactionInfoWithProof>>;
+    ) -> Result<Option<TransactionInfoWithProof2>>;
 }
 
 pub trait ChainWriter {

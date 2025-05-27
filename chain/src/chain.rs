@@ -13,7 +13,8 @@ use starcoin_accumulator::{
 };
 use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, EventWithProof, ExcludedTxns,
-    ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, VerifiedBlock, VerifyBlockField,
+    ExecutedBlock, MintedUncleNumber, TransactionInfoWithProof, TransactionInfoWithProof2,
+    VerifiedBlock, VerifyBlockField,
 };
 use starcoin_config::upgrade_config::vm1_offline_height;
 use starcoin_consensus::Consensus;
@@ -1368,7 +1369,7 @@ impl ChainReader for BlockChain {
         _transaction_global_index: u64,
         _event_index: Option<u64>,
         _access_path: Option<AccessPath2>,
-    ) -> Result<Option<TransactionInfoWithProof>> {
+    ) -> Result<Option<TransactionInfoWithProof2>> {
         unimplemented!("get_transaction_proof2")
     }
 }
