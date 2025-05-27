@@ -5,8 +5,6 @@ use crate::create_block_template::{
     BlockBuilderService, BlockTemplateRequest, EmptyProvider, Inner,
 };
 use anyhow::Result;
-use starcoin_account_api::AccountInfo;
-use starcoin_account_service::AccountService;
 use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_config::ChainNetworkID;
@@ -18,6 +16,8 @@ use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::BlockStore;
 use starcoin_time_service::MockTimeService;
 use starcoin_txpool::TxPoolService;
+use starcoin_vm2_account_api::AccountInfo;
+use starcoin_vm2_account_service::AccountService;
 use std::sync::Arc;
 
 #[stest::test]

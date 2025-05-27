@@ -29,9 +29,8 @@ starcoin-types = { workspace = true }
 
 # dependencies for move 2.0
 starcoin-vm2-storage = { workspace = true }
-starcoin-vm2-types = { workspace = true }
-starcoin-vm2-vm-types = { workspace = true }
 starcoin-vm2-account-service = { workspace = true }
+starcoin-vm2-account-api = { workspace = true }
 
 [dev-dependencies]
 starcoin-network-rpc = { workspace = true }

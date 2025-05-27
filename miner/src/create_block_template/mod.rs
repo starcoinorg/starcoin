@@ -4,8 +4,6 @@
 use crate::create_block_template::metrics::BlockBuilderMetrics;
 use anyhow::{format_err, Result};
 use futures::executor::block_on;
-use starcoin_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
-use starcoin_account_service::AccountService;
 use starcoin_chain::BlockChain;
 use starcoin_chain::{ChainReader, ChainWriter};
 use starcoin_config::ChainNetwork;
@@ -21,11 +19,14 @@ use starcoin_service_registry::{
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
+use starcoin_types::account_address::AccountAddress;
 use starcoin_types::multi_transaction::MultiSignedUserTransaction;
 use starcoin_types::{
     block::{BlockHeader, BlockTemplate, ExecutedBlock},
     system_events::{NewBranch, NewHeadBlock},
 };
+use starcoin_vm2_account_api::{AccountAsyncService, AccountInfo, DefaultAccountChangeEvent};
+use starcoin_vm2_account_service::AccountService;
 use starcoin_vm2_storage::{Storage as Storage2, Store as Store2};
 use std::cmp::min;
 use std::{collections::HashMap, sync::Arc};
@@ -69,9 +70,8 @@ impl ServiceFactory<Self> for BlockBuilderService {
             .get_startup_info()?
             .expect("Startup info should exist when service start.");
         //TODO support get service ref by AsyncAPI;
+        //Currently use vm2 account as default
         let account_service = ctx.service_ref::<AccountService>()?;
-        // todo: use vm2 account as default?
-        //let _account_service = ctx.service_ref::<AccountService2>()?;
         let miner_account = block_on(async { account_service.get_default_account().await })?
             .ok_or_else(|| {
                 format_err!("Default account should exist when BlockBuilderService start.")
@@ -326,7 +326,8 @@ where
             MultiSignedUserTransaction::VM2(txn) => txns2.push(txn),
         });
 
-        let author = *self.miner_account.address();
+        // todo: donot convert
+        let author = AccountAddress::new((*self.miner_account.address()).into_bytes());
         let previous_header = self.chain.current_header();
         let uncles = self.find_uncles();
         let mut now_millis = self.chain.time_service().now_millis();
