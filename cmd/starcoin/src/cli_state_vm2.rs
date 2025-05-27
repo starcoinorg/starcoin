@@ -155,6 +155,10 @@ impl CliStateVM2 {
         &self.client
     }
 
+    pub fn net(&self) -> &ChainNetworkID {
+        &self.net
+    }
+
     pub fn account_client(&self) -> &dyn AccountProvider {
         self.account_client.as_ref()
     }
