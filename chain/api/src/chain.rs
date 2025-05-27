@@ -104,6 +104,19 @@ pub trait ChainReader {
         event_index: Option<u64>,
         access_path: Option<AccessPath>,
     ) -> Result<Option<TransactionInfoWithProof>>;
+    /// Get transaction info proof by `transaction_global_index` using VM2 types.
+    /// 
+    /// # Parameters
+    /// - `block_id`: The ID of the block whose `txn_accumulator_root` is used to generate the proof.
+    /// - `transaction_global_index`: The global index of the transaction for which the proof is requested.
+    /// - `event_index`: (Optional) The index of the event within the transaction, if applicable.
+    /// - `access_path`: (Optional) The access path for the resource or data being queried, using VM2's `AccessPath2` type.
+    /// 
+    /// # Returns
+    /// - `Result<Option<TransactionInfoWithProof2>>`: 
+    ///   - `Ok(Some(TransactionInfoWithProof2))`: The proof for the specified transaction and optional event or access path.
+    ///   - `Ok(None)`: If no proof is available for the given parameters.
+    ///   - `Err`: If an error occurs while generating the proof.
     fn get_transaction_proof2(
         &self,
         block_id: HashValue,
