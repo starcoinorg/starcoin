@@ -4,9 +4,7 @@
 use crate::block_connector::metrics::ChainMetrics;
 use anyhow::{format_err, Ok, Result};
 use starcoin_chain::BlockChain;
-use starcoin_chain_api::{
-    ChainReader, ChainType, ChainWriter, ConnectBlockError, WriteableChainService,
-};
+use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
 use starcoin_config::NodeConfig;
 #[cfg(test)]
 use starcoin_consensus::Consensus;
@@ -252,18 +250,10 @@ where
     #[cfg(test)]
     pub fn apply_failed(&mut self, block: Block) -> Result<()> {
         use anyhow::bail;
-        use starcoin_chain::verifier::{DagVerifier, FullVerifier};
+        use starcoin_chain::verifier::DagVerifier;
 
-        let verified_block = match self.main.check_chain_type()? {
-            ChainType::Single => {
-                // apply but no connection
-                self.main.verify_with_verifier::<FullVerifier>(block)?
-            }
-            ChainType::Dag => {
-                // apply but no connection
-                self.main.verify_with_verifier::<DagVerifier>(block)?
-            }
-        };
+        // apply but no connection
+        let verified_block = self.main.verify_with_verifier::<DagVerifier>(block)?;
         let _executed_block = self.main.execute(verified_block)?;
         bail!("In test case, return a failure intentionally to force sync to reconnect the block");
     }
@@ -551,16 +541,6 @@ where
         }
 
         let chain = self.get_main();
-
-        // the execution process broadcast the block already
-        if chain.current_header().id() == block_id {
-            return Ok(());
-        }
-
-        // the single chain no need to broadcast the block, it is only for dag
-        if chain.check_chain_type()? == ChainType::Single {
-            return Ok(());
-        }
 
         let block = chain
             .get_storage()

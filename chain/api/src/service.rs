@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2
 use crate::message::{ChainRequest, ChainResponse};
 use crate::range_locate::RangeInLocation;
-use crate::{ChainType, TransactionInfoWithProof};
+use crate::TransactionInfoWithProof;
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::consensus_state::{DagStateView, ReachabilityView};
@@ -80,7 +80,6 @@ pub trait ReadableChainService {
     fn get_block_infos(&self, ids: Vec<HashValue>) -> Result<Vec<Option<BlockInfo>>>;
     fn get_dag_block_children(&self, ids: Vec<HashValue>) -> Result<Vec<HashValue>>;
     fn get_dag_state(&self) -> Result<DagStateView>;
-    fn check_chain_type(&self) -> Result<ChainType>;
     fn get_ghostdagdata(&self, ids: Vec<HashValue>) -> Result<Vec<Option<GhostdagData>>>;
     fn get_range_in_location(
         &self,
@@ -160,7 +159,6 @@ pub trait ChainAsyncService:
         req: GetRangeInLocationRequest,
     ) -> Result<GetRangeInLocationResponse>;
     async fn get_dag_state(&self) -> Result<DagStateView>;
-    async fn check_chain_type(&self) -> Result<ChainType>;
     async fn get_ghostdagdata(&self, ids: Vec<HashValue>) -> Result<Vec<Option<GhostdagData>>>;
     async fn is_ancestor_of(
         &self,
@@ -530,15 +528,6 @@ where
             Ok(*dag_state)
         } else {
             bail!("get dag state error")
-        }
-    }
-
-    async fn check_chain_type(&self) -> Result<ChainType> {
-        let response = self.send(ChainRequest::CheckChainType).await??;
-        if let ChainResponse::CheckChainType(dag_type) = response {
-            Ok(dag_type)
-        } else {
-            bail!("check chain type error")
         }
     }
 

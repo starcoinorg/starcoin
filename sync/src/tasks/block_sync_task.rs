@@ -6,7 +6,6 @@ use crate::store::sync_absent_ancestor::DagSyncBlock;
 use crate::store::sync_dag_store::SyncDagStore;
 use crate::tasks::continue_execute_absent_block::ContinueExecuteAbsentBlock;
 use crate::tasks::{BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
-use crate::verified_rpc_client::RpcVerifyError;
 use anyhow::{format_err, Context, Result};
 use futures::future::BoxFuture;
 use futures::FutureExt;
@@ -14,7 +13,7 @@ use network_api::PeerId;
 use network_api::PeerProvider;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::{verifier::BasicVerifier, BlockChain};
-use starcoin_chain_api::{ChainReader, ChainType, ChainWriter, ConnectBlockError, ExecutedBlock};
+use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBlock};
 use starcoin_config::G_CRATE_VERSION;
 use starcoin_crypto::HashValue;
 use starcoin_dag::consensusdb::schema::ValueCodec;
@@ -27,7 +26,7 @@ use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, Blo
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
-use stream_task::{CollectorState, TaskError, TaskResultCollector, TaskState};
+use stream_task::{CollectorState, TaskResultCollector, TaskState};
 
 use super::continue_execute_absent_block::ContinueChainOperator;
 use super::{BlockConnectAction, BlockConnectedFinishEvent};
@@ -636,24 +635,7 @@ where
         if block_info.block_accumulator_info.num_leaves
             == self.target.block_info.block_accumulator_info.num_leaves
         {
-            if self.chain.check_chain_type()? == ChainType::Dag {
-                Ok(CollectorState::Enough)
-            } else if block_info != self.target.block_info {
-                Err(TaskError::BreakError(
-                    RpcVerifyError::new_with_peers(
-                        self.target.peers.clone(),
-                        format!(
-                    "Verify target error, expect target: {:?}, collect target block_info:{:?}",
-                    self.target.block_info,
-                    block_info
-                ),
-                    )
-                    .into(),
-                )
-                .into())
-            } else {
-                Ok(CollectorState::Enough)
-            }
+            Ok(CollectorState::Enough)
         } else {
             Ok(CollectorState::Need)
         }

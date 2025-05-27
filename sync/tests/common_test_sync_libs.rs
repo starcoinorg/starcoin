@@ -67,10 +67,7 @@ pub fn generate_dag_block(handle: &NodeHandle, count: usize) -> Result<Vec<DagBl
     let mut result = vec![];
     let dag = handle.get_dag()?;
     while result.len() < count {
-        let (block, is_dag) = handle.generate_block()?;
-        if is_dag {
-            result.push(block);
-        }
+        result.push(handle.generate_block()?);
     }
     Ok(result
         .into_iter()
