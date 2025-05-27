@@ -5,23 +5,19 @@ use anyhow::{bail, format_err, Ok, Result};
 use starcoin_config::miner_config::G_MAX_PARENTS_COUNT;
 use starcoin_crypto::HashValue as Hash;
 use starcoin_dag::{
-    blockdag::{BlockDAG, MineNewDagBlockInfo},
-    consensusdb::{
+    blockdag::{BlockDAG, MineNewDagBlockInfo}, consensusdb::{
         consensus_pruning_info::PruningPointInfoReader,
         consensus_state::{DagState, DagStateReader, DagStateStore},
         schemadb::{
             DbReachabilityStore, GhostdagStoreReader, ReachabilityStore, ReachabilityStoreReader,
             RelationsStore, RelationsStoreReader,
         },
-    },
-    reachability::{inquirer, ReachabilityError},
-    types::{ghostdata::GhostdagData, interval::Interval},
-    GetAbsentBlock,
+    }, level::parents_builder::ParentsManager, reachability::{inquirer, reachability_service, relations_service::{self, MTRelationsService}, tests::DagBuilder, ReachabilityError}, types::{ghostdata::GhostdagData, interval::Interval}, GetAbsentBlock
 };
 use starcoin_logger::prelude::debug;
 use starcoin_types::{
     block::{BlockHeader, BlockHeaderBuilder, BlockNumber},
-    blockhash::{BlockHashMap, HashKTypeMap, KType},
+    blockhash::{BlockHashMap, BlockLevel, HashKTypeMap, KType}, consensus_header::HeaderWithBlockLevel,
 };
 
 use std::{
@@ -820,6 +816,8 @@ fn add_and_print_with_ghostdata(
     // );
     Ok(header)
 }
+
+
 
 fn add_and_print_with_pruning_point(
     number: BlockNumber,
@@ -1736,4 +1734,57 @@ fn test_get_blocks_in_batch() -> anyhow::Result<()> {
     }
     assert!(all_results.contains(&genesis.id()));
     anyhow::Result::Ok(())
+}
+
+fn create_block_with_level(pruning_point: Hash, selected_parent: Hash, parents: Vec<Vec<Hash>>, level: BlockLevel, number: BlockNumber) -> HeaderWithBlockLevel {
+    let header_builder = BlockHeaderBuilder::random();
+    let header = header_builder
+        .with_parent_hash(selected_parent)
+        .with_parents_hash(parents)
+        .with_number(number)
+        .with_pruning_point(pruning_point)
+        .build();
+
+    HeaderWithBlockLevel { header: Arc::new(header), block_level: level }
+}
+
+#[test]
+fn test_parents_builder() -> anyhow::Result<()> {
+    // initialzie the dag firstly
+    let k = 3;
+    let max_block_level = 5;
+    let dag = BlockDAG::create_for_testing_with_parameters(k)?;
+
+    let headers_store: Arc<starcoin_dag::consensusdb::schemadb::DbHeadersStore> = Arc::new(dag.storage.header_store.clone());
+    let reachability_service = dag.reachability_service().clone();
+    let relations_service = MTRelationsService::new(dag.storage.relations_store.clone(), 0);
+
+    let origin = BlockHeaderBuilder::random().with_number(0).build();
+    let genesis = BlockHeader::dag_genesis_random_with_parent(origin)?;
+
+    let mut parents_manager = ParentsManager::new(max_block_level, genesis.id(), headers_store.clone(), reachability_service.clone(), relations_service.clone());
+    let mut dag_builder = DagBuilder::new();
+
+    // dag.init_with_genesis(genesis.clone()).unwrap();
+    let pruning_point = create_block_with_level(genesis.id(), genesis.id(), vec![
+        vec![genesis.id()],
+        vec![1001.into()],
+        vec![1001.into()],
+        vec![1001.into()],
+        vec![1001.into()],
+    ], 0, 1);
+
+    let header2 = create_block_with_level(pruning_point.header.id(), pruning_point.header.id(), vec![
+        vec![pruning_point.header.id()],
+        vec![1001.into()],
+        vec![1001.into()],
+        vec![1001.into()],
+        vec![1001.into()],
+    ], 0, 2);
+
+
+
+
+
+    return Ok(());
 }

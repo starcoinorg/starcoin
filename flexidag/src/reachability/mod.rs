@@ -5,7 +5,7 @@ mod reindex;
 pub mod relations_service;
 
 #[cfg(test)]
-mod tests;
+pub mod tests;
 mod tree;
 
 use crate::consensusdb::prelude::StoreError;
