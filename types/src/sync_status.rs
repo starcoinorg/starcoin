@@ -40,7 +40,7 @@ pub struct SyncStatus {
     state: SyncState,
 }
 
-pub const NEARLY_SYNCED_BLOCKS: u64 = 240;
+pub const NEARLY_SYNCED_BLOCKS: u64 = 256; // k * k, 16 * 16 = 256
 
 impl SyncStatus {
     pub fn new(chain_status: ChainStatus) -> Self {
@@ -97,7 +97,7 @@ impl SyncStatus {
                 total_difficulty: _,
             } => {
                 if target.number() < self.chain_status.head().number() {
-                    false
+                    true
                 } else {
                     target
                         .number
