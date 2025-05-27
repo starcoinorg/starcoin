@@ -34,6 +34,7 @@ use starcoin_service_registry::{
 };
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::PeerNewBlock;
+use starcoin_sync_api::SyncSpecificTargretRequest;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 #[cfg(test)]
@@ -144,7 +145,6 @@ where
     // else return true.
     // return false will trigger the burden sync operation.
     // return true will trigger the specific(light) sync operation.
-    #[allow(dead_code)]
     fn is_near_block(&self, block_header: &BlockHeader) -> bool {
         let current_number = self.chain_service.get_main().status().head().number();
         if current_number <= block_header.number() {
@@ -394,15 +394,15 @@ where
                                     block.header().number(),
                                     peer_id
                                 );
-                                // if !self.is_near_block(block.as_ref().header()) {
-                                let _ = sync_service.notify(CheckSyncEvent::default());
-                                // } else {
-                                //     let _ = sync_service.notify(SyncSpecificTargretRequest {
-                                //         block: Some(block.as_ref().clone()),
-                                //         block_id: block.id(),
-                                //         peer_id: Some(peer_id),
-                                //     });
-                                // }
+                                if !self.is_near_block(block.as_ref().header()) {
+                                    let _ = sync_service.notify(CheckSyncEvent::default());
+                                } else {
+                                    let _ = sync_service.notify(SyncSpecificTargretRequest {
+                                        block: Some(block.as_ref().clone()),
+                                        block_id: block.id(),
+                                        peer_id: Some(peer_id),
+                                    });
+                                }
                             }
                         }
                         e => {
