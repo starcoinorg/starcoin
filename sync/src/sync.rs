@@ -220,6 +220,9 @@ impl SyncService {
         msg: SyncSpecificTargretRequest,
         ctx: &mut ServiceContext<Self>,
     ) -> Result<()> {
+        if !self.try_to_start_sync()? {
+            return Ok(());
+        }
         let network = ctx.get_shared::<NetworkServiceRef>()?;
         let config = self.config.clone();
         let storage = self.storage.clone();
