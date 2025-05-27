@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use starcoin_account_service::AccountService;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
 use starcoin_genesis::Genesis;
@@ -12,6 +11,7 @@ use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::BlockStore;
 use starcoin_txpool::TxPoolService;
 use starcoin_types::{system_events::GenerateBlockEvent, U256};
+use starcoin_vm2_account_service::AccountService;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::sleep;
