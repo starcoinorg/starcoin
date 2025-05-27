@@ -46,7 +46,7 @@ use starcoin_vm2_state_api::{
 };
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
 use starcoin_vm2_storage::Store as Store2;
-use starcoin_vm2_vm_types::on_chain_resource::Epoch;
+use starcoin_vm2_vm_types::{access_path::AccessPath as AccessPath2, on_chain_resource::Epoch};
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::cmp::min;
@@ -1360,6 +1360,16 @@ impl ChainReader for BlockChain {
             event_proof,
             state_proof,
         }))
+    }
+
+    fn get_transaction_proof2(
+        &self,
+        _block_id: HashValue,
+        _transaction_global_index: u64,
+        _event_index: Option<u64>,
+        _access_path: Option<AccessPath2>,
+    ) -> Result<Option<TransactionInfoWithProof>> {
+        unimplemented!("get_transaction_proof2")
     }
 }
 

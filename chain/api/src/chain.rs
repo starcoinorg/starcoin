@@ -1,12 +1,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
+use crate::TransactionInfoWithProof;
 use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_state_api::ChainStateReader;
 use starcoin_statedb::ChainStateDB;
 use starcoin_time_service::TimeService;
 use starcoin_types::block::BlockIdAndNumber;
+pub use starcoin_types::block::ExecutedBlock;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::RichTransactionInfo;
 use starcoin_types::{
@@ -16,13 +18,11 @@ use starcoin_types::{
 };
 use starcoin_vm2_state_api::ChainStateReader as ChainStateReader2;
 use starcoin_vm2_statedb::ChainStateDB as ChainStateDB2;
+use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 use starcoin_vm2_vm_types::on_chain_resource::Epoch;
-use std::collections::HashMap;
-
-use crate::TransactionInfoWithProof;
-pub use starcoin_types::block::ExecutedBlock;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::contract_event::ContractEvent;
+use std::collections::HashMap;
 
 pub struct VerifiedBlock(pub Block);
 pub type MintedUncleNumber = u64;
@@ -103,6 +103,13 @@ pub trait ChainReader {
         transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<AccessPath>,
+    ) -> Result<Option<TransactionInfoWithProof>>;
+    fn get_transaction_proof2(
+        &self,
+        block_id: HashValue,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<AccessPath2>,
     ) -> Result<Option<TransactionInfoWithProof>>;
 }
 

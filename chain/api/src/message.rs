@@ -14,6 +14,7 @@ use starcoin_types::{
     startup_info::{ChainStatus, StartupInfo},
     transaction::Transaction,
 };
+use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 use starcoin_vm_types::access_path::AccessPath;
 
 #[allow(clippy::large_enum_variant)]
@@ -65,6 +66,12 @@ pub enum ChainRequest {
     },
     GetBlockInfos(Vec<HashValue>),
     GetMultiStateByHash(HashValue),
+    GetTransactionProof2 {
+        block_id: HashValue,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<AccessPath2>,
+    },
 }
 
 impl ServiceRequest for ChainRequest {
