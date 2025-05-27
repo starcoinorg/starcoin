@@ -5,7 +5,6 @@ starcoin-logger = { workspace = true }
 starcoin-service-registry = { workspace = true }
 starcoin-storage = { workspace = true }
 starcoin-types = { workspace = true }
-starcoin-vm2-storage = { workspace = true }
 starcoin-vm2-vm-types = { workspace = true }
 
 [package]

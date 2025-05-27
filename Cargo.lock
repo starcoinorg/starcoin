@@ -11926,7 +11926,6 @@ dependencies = [
  "starcoin-logger 1.13.19",
  "starcoin-service-registry 1.13.19 (git+https://github.com/starcoinorg/starcoin?rev=401ce6289a78b9f44e62e2b9f907030ad26d8d79)",
  "starcoin-storage 1.13.19",
- "starcoin-storage 2.0.1",
  "starcoin-types 1.13.19",
  "starcoin-vm-types 2.0.1",
 ]

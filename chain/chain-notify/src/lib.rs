@@ -11,7 +11,6 @@ use starcoin_storage::{Storage, Store};
 use starcoin_types::block::Block;
 use starcoin_types::contract_event::StcContractEvent;
 use starcoin_types::system_events::NewHeadBlock;
-use starcoin_vm2_storage::{Storage as Storage2, Store as Store2};
 use std::sync::Arc;
 
 /// ChainNotify watch `NewHeadBlock` message from bus,
@@ -19,12 +18,11 @@ use std::sync::Arc;
 /// User can subscribe the two notification to watch onchain events.
 pub struct ChainNotifyHandlerService {
     store: Arc<dyn Store>,
-    store2: Arc<dyn Store2>,
 }
 
 impl ChainNotifyHandlerService {
-    pub fn new(store: Arc<dyn Store>, store2: Arc<dyn Store2>) -> Self {
-        Self { store, store2 }
+    pub fn new(store: Arc<dyn Store>) -> Self {
+        Self { store }
     }
 }
 
@@ -33,8 +31,7 @@ impl ServiceFactory<Self> for ChainNotifyHandlerService {
         ctx: &mut ServiceContext<ChainNotifyHandlerService>,
     ) -> Result<ChainNotifyHandlerService> {
         let storage = ctx.get_shared::<Arc<Storage>>()?;
-        let storage2 = ctx.get_shared::<Arc<Storage2>>()?;
-        Ok(Self::new(storage, storage2))
+        Ok(Self::new(storage))
     }
 }
 
@@ -62,7 +59,7 @@ impl EventHandler<Self, NewHeadBlock> for ChainNotifyHandlerService {
         self.notify_new_block(block, ctx);
 
         // notify events
-        if let Err(e) = self.notify_events(block, self.store.clone(), self.store2.clone(), ctx) {
+        if let Err(e) = self.notify_events(block, self.store.clone(), ctx) {
             error!(target: "pubsub", "fail to notify events to client, err: {}", &e);
         }
     }
@@ -86,7 +83,6 @@ impl ChainNotifyHandlerService {
         &self,
         block: &Block,
         store: Arc<dyn Store>,
-        _store2: Arc<dyn Store2>,
         ctx: &mut ServiceContext<Self>,
     ) -> Result<()> {
         let block_number = block.header().number();
