@@ -2,14 +2,14 @@ use anyhow::Result;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::ChainReader;
 use starcoin_config::NodeConfig;
-use starcoin_crypto::keygen::KeyGen;
 use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
-use starcoin_state_api::StateReaderExt;
-use starcoin_transaction_builder::{
-    build_transfer_from_association, build_transfer_txn, DEFAULT_EXPIRATION_TIME,
-};
-use starcoin_types::{account_address, account_config, U256};
+use starcoin_transaction_builder::DEFAULT_EXPIRATION_TIME;
+use starcoin_types::U256;
+use starcoin_vm2_crypto::keygen::KeyGen;
+use starcoin_vm2_state_api::{AccountStateReader, StateReaderExt};
+use starcoin_vm2_test_helper::{build_transfer_from_association, build_transfer_txn};
+use starcoin_vm2_types::{account_address, account_config};
 use std::{convert::TryInto, sync::Arc};
 
 #[stest::test]
@@ -35,7 +35,7 @@ pub fn test_open_block() -> Result<()> {
         )?
     };
 
-    let account_reader = chain.chain_state_reader();
+    let account_reader = chain.chain_state_reader2();
     let association_sequence_num =
         account_reader.get_sequence_number(account_config::association_address())?;
     let (receive_prikey, receive_public_key) = KeyGen::from_os_rng().generate_keypair();
@@ -48,17 +48,18 @@ pub fn test_open_block() -> Result<()> {
         config.net(),
     )
     .try_into()?;
-    let excluded = opened_block.push_txns(vec![txn1])?;
+    let excluded = opened_block.push_txns2(vec![txn1])?;
     assert_eq!(excluded.discarded_txns.len(), 0);
     assert_eq!(excluded.untouched_txns.len(), 0);
 
     // check state changed
     {
-        let account_reader = opened_block.state_reader();
-        let account_balance = account_reader.get_balance(receiver)?;
-        assert_eq!(account_balance, Some(50_000_000));
+        let state_reader = opened_block.state_reader2();
+        let account_reader = AccountStateReader::new(state_reader);
+        let account_balance = account_reader.get_balance(&receiver)?;
+        assert_eq!(account_balance, 50_000_000);
 
-        let account_resource = account_reader.get_account_resource(receiver)?.unwrap();
+        let account_resource = account_reader.get_account_resource(&receiver)?;
         assert_eq!(account_resource.sequence_number(), 0);
     }
 
@@ -76,7 +77,7 @@ pub fn test_open_block() -> Result<()> {
             1,
             1_000_000,
             config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
-            config.net().chain_id(),
+            config.net().chain_id().id(),
         )
         .sign(&receive_prikey, receive_public_key.clone())
         .unwrap()
@@ -87,7 +88,7 @@ pub fn test_open_block() -> Result<()> {
     // transferring to an non-exists account uses about 30w gas.
     let transfer_txn_gas = {
         let txn = build_transfer_txn(0);
-        let excluded = opened_block.push_txns(vec![txn])?;
+        let excluded = opened_block.push_txns2(vec![txn])?;
         assert_eq!(excluded.discarded_txns.len(), 0);
         assert_eq!(excluded.untouched_txns.len(), 0);
         opened_block.gas_used() - initial_gas_used
@@ -103,42 +104,9 @@ pub fn test_open_block() -> Result<()> {
 
         assert_eq!(max_include_txn_num + 1, user_txns.len() as u64);
 
-        let excluded_txns = opened_block.push_txns(user_txns)?;
+        let excluded_txns = opened_block.push_txns2(user_txns)?;
         assert_eq!(excluded_txns.untouched_txns.len(), 1);
         assert_eq!(excluded_txns.discarded_txns.len(), 0);
-    }
-
-    let (receiver2, txn2) = {
-        use starcoin_vm2_types::account::Account;
-        let receiver = Account::new();
-        let address = *receiver.address();
-        (
-            receiver,
-            starcoin_vm2_test_helper::build_transfer_from_association(
-                address,
-                0,
-                50_000_000,
-                config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
-                config.net(),
-            )
-            .try_into()?,
-        )
-    };
-
-    let excluded = opened_block.push_txns2(vec![txn2])?;
-    assert_eq!(excluded.discarded_txns.len(), 0);
-    assert_eq!(excluded.untouched_txns.len(), 0);
-
-    // check state changed in vm2
-    {
-        use starcoin_vm2_state_api::AccountStateReader;
-        let state_reader = opened_block.state_reader2();
-        let account_reader = AccountStateReader::new(state_reader);
-        let account_balance = account_reader.get_balance(receiver2.address())?;
-        assert_eq!(account_balance, 50_000_000);
-
-        let account_resource = account_reader.get_account_resource(receiver2.address())?;
-        assert_eq!(account_resource.sequence_number(), 0);
     }
 
     Ok(())
