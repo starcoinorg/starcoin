@@ -292,8 +292,8 @@ impl ChainReaderServiceInner {
         &self.main
     }
 
-    pub fn get_storages(&self) -> Result<(Arc<dyn Store>, Arc<dyn Store2>)> {
-        Ok((self.storage.clone(), self.storage2.clone()))
+    pub fn get_storages(&self) -> (Arc<dyn Store>, Arc<dyn Store2>) {
+        (self.storage.clone(), self.storage2.clone())
     }
 
     pub fn update_chain_head(&mut self, block: ExecutedBlock) -> Result<()> {
