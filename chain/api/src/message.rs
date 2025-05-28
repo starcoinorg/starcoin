@@ -40,6 +40,9 @@ pub enum ChainRequest {
     GetEventsByTxnHash {
         txn_hash: HashValue,
     },
+    GetEventsByTxnHash2 {
+        txn_hash: HashValue,
+    },
     GetBlocksByNumber(Option<BlockNumber>, bool, u64),
     MainEvents(Filter),
     GetBlockIds {

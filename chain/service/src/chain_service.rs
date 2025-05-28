@@ -27,6 +27,7 @@ use starcoin_types::{
     transaction::Transaction,
 };
 use starcoin_vm2_storage::{Storage as Storage2, Store as Store2};
+use starcoin_vm2_types::contract_event::ContractEvent as ContractEvent2;
 use starcoin_vm_types::access_path::AccessPath;
 use std::sync::Arc;
 
@@ -199,6 +200,9 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                 };
                 Ok(ChainResponse::Events(event_infos))
             }
+            ChainRequest::GetEventsByTxnHash2 { txn_hash } => Ok(ChainResponse::Events(
+                self.inner.get_events_by_txn_hash2(txn_hash)?,
+            )),
             ChainRequest::MainEvents(filter) => Ok(ChainResponse::MainEvents(
                 self.inner.get_main_events(filter)?,
             )),
@@ -288,6 +292,10 @@ impl ChainReaderServiceInner {
         &self.main
     }
 
+    pub fn get_storages(&self) -> (Arc<dyn Store>, Arc<dyn Store2>) {
+        (self.storage.clone(), self.storage2.clone())
+    }
+
     pub fn update_chain_head(&mut self, block: ExecutedBlock) -> Result<()> {
         self.main.connect(block)?;
         Ok(())
@@ -359,6 +367,13 @@ impl ReadableChainService for ChainReaderServiceInner {
         txn_info_id: HashValue,
     ) -> Result<Option<Vec<ContractEvent>>, Error> {
         self.storage.get_contract_events(txn_info_id)
+    }
+
+    fn get_events_by_txn_info_hash2(
+        &self,
+        txn_info_id: HashValue,
+    ) -> Result<Option<Vec<ContractEvent2>>, Error> {
+        self.storage2.get_contract_events(txn_info_id)
     }
 
     fn main_head_header(&self) -> BlockHeader {

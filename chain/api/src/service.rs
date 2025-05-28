@@ -15,6 +15,7 @@ use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     startup_info::StartupInfo,
 };
+use starcoin_vm2_types::contract_event::ContractEvent as ContractEvent2;
 use starcoin_vm_types::access_path::AccessPath;
 
 /// Readable block chain service trait
@@ -36,6 +37,12 @@ pub trait ReadableChainService {
         &self,
         txn_info_id: HashValue,
     ) -> Result<Option<Vec<ContractEvent>>>;
+
+    fn get_events_by_txn_info_hash2(
+        &self,
+        txn_info_id: HashValue,
+    ) -> Result<Option<Vec<ContractEvent2>>>;
+
     /// for main
     fn main_head_header(&self) -> BlockHeader;
     fn main_head_block(&self) -> Block;
@@ -106,6 +113,11 @@ pub trait ChainAsyncService:
         &self,
         txn_hash: HashValue,
     ) -> Result<Vec<StcContractEventInfo>>;
+    async fn get_events_by_txn_hash2(
+        &self,
+        txn_hash: HashValue,
+    ) -> Result<Vec<StcContractEventInfo>>;
+
     /// for main
     async fn main_head_header(&self) -> Result<BlockHeader>;
     async fn main_head_block(&self) -> Result<Block>;
@@ -282,6 +294,20 @@ where
     ) -> Result<Vec<StcContractEventInfo>> {
         let response = self
             .send(ChainRequest::GetEventsByTxnHash { txn_hash })
+            .await??;
+        if let ChainResponse::Events(events) = response {
+            Ok(events)
+        } else {
+            bail!("get txn info by block and idx error.")
+        }
+    }
+
+    async fn get_events_by_txn_hash2(
+        &self,
+        txn_hash: HashValue,
+    ) -> Result<Vec<StcContractEventInfo>> {
+        let response = self
+            .send(ChainRequest::GetEventsByTxnHash2 { txn_hash })
             .await??;
         if let ChainResponse::Events(events) = response {
             Ok(events)
