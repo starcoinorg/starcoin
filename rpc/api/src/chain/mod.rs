@@ -14,6 +14,8 @@ use schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_types::block::BlockNumber;
+use starcoin_vm2_types::view::TransactionInfoWithProofView as TransactionInfoWithProofView2;
+use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 use starcoin_vm_types::access_path::AccessPath;
 
 #[openrpc]
@@ -129,6 +131,28 @@ pub trait ChainApi {
         transaction_global_index: u64,
         event_index: Option<u64>,
         access_path: Option<StrView<AccessPath>>,
+    ) -> FutureResult<Option<StrView<Vec<u8>>>>;
+
+    /// Get TransactionInfoWithProof2, if the block with `block_hash` or transaction with `transaction_global_index` do not exists, return None.
+    /// if `event_index` is some, also return the EventWithProof in current transaction event_root
+    /// if `access_path` is some, also return the StateWithProof in current transaction state_root
+    #[rpc(name = "chain.get_transaction_proof2")]
+    fn get_transaction_proof2(
+        &self,
+        block_hash: HashValue,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<StrView<AccessPath2>>,
+    ) -> FutureResult<Option<TransactionInfoWithProofView2>>;
+
+    /// Get TransactionInfoWithProof2Raw, same as `chain.get_transaction_proof`, but return result is TransactionInfoWithProof's BCS serialize bytes.
+    #[rpc(name = "chain.get_transaction_proof_raw")]
+    fn get_transaction_proof2_raw(
+        &self,
+        block_hash: HashValue,
+        transaction_global_index: u64,
+        event_index: Option<u64>,
+        access_path: Option<StrView<AccessPath2>>,
     ) -> FutureResult<Option<StrView<Vec<u8>>>>;
 }
 
