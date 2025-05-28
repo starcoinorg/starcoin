@@ -43,7 +43,10 @@ impl TransactionStore for StcTransactionStorage {
         self.write_batch(batch)
     }
 
-    fn get_transactions(&self, txn_hash_vec: Vec<HashValue>) -> Result<Vec<Option<StcTransaction>>> {
+    fn get_transactions(
+        &self,
+        txn_hash_vec: Vec<HashValue>,
+    ) -> Result<Vec<Option<StcTransaction>>> {
         self.multiple_get(txn_hash_vec)
     }
 }

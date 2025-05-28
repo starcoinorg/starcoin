@@ -293,7 +293,8 @@ pub trait TransactionStore {
     fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<StcTransaction>>;
     fn save_transaction(&self, txn_info: StcTransaction) -> Result<()>;
     fn save_transaction_batch(&self, txn_vec: Vec<StcTransaction>) -> Result<()>;
-    fn get_transactions(&self, txn_hash_vec: Vec<HashValue>) -> Result<Vec<Option<StcTransaction>>>;
+    fn get_transactions(&self, txn_hash_vec: Vec<HashValue>)
+        -> Result<Vec<Option<StcTransaction>>>;
 }
 
 // TODO: remove Arc<dyn Store>, we can clone Storage directly.
@@ -326,7 +327,7 @@ impl Storage {
                 instance.clone(),
             ),
             transaction_accumulator_storage:
-            AccumulatorStorage::new_transaction_accumulator_storage(instance.clone()),
+                AccumulatorStorage::new_transaction_accumulator_storage(instance.clone()),
             vm_state_accumulator_storage: AccumulatorStorage::new_vm_state_accumulator_storage(
                 instance.clone(),
             ),
@@ -626,14 +627,14 @@ impl TransactionStore for Storage {
 
 /// Chain storage define
 pub trait Store:
-StateNodeStore
-+ BlockStore
-+ BlockInfoStore
-+ TransactionStore
-+ BlockTransactionInfoStore
-+ ContractEventStore
-+ IntoSuper<dyn StateNodeStore>
-+ TableInfoStore
+    StateNodeStore
+    + BlockStore
+    + BlockInfoStore
+    + TransactionStore
+    + BlockTransactionInfoStore
+    + ContractEventStore
+    + IntoSuper<dyn StateNodeStore>
+    + TableInfoStore
 {
     fn get_transaction_info_by_block_and_index(
         &self,
