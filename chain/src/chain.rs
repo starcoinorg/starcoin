@@ -635,12 +635,9 @@ impl BlockChain {
         // save transaction relationship and save transaction to storage2
         starcoin_vm2_chain::save_executed_transactions(
             block_id,
-            header.number(),
             storage2,
             transactions2,
-            executed_data2,
-            // todo: how to track vm2 transaction global index?
-            transaction_global_index + executed_data.txn_infos.len() as u64,
+            executed_data2.clone(),
         )?;
 
         watch(CHAIN_WATCH_NAME, "n25");
@@ -660,8 +657,29 @@ impl BlockChain {
             "events' length should be equal to txn infos' length"
         );
         let txn_info_ids: Vec<_> = txn_infos.iter().map(|info| info.id()).collect();
-        for (info_id, events) in txn_info_ids.iter().zip(txn_events.into_iter()) {
-            storage.save_contract_events(*info_id, events)?;
+        for (info_id, events) in txn_info_ids.iter().zip(
+            txn_events
+                .into_iter()
+                .map(|events| events.into_iter().map(Into::into).collect::<Vec<_>>()),
+        ) {
+            storage.save_contract_events_v2(*info_id, events)?;
+        }
+
+        // save vm2 txn events
+        let vm2_txn_info_ids: Vec<_> = vm2_txn_infos.iter().map(|info| info.id()).collect();
+        {
+            debug_assert!(
+                executed_data2.txn_events.len() == vm2_txn_infos.len(),
+                "vm2 events' length should be equal to txn infos' length"
+            );
+            for (info_id, events) in vm2_txn_info_ids.iter().zip(
+                executed_data2
+                    .txn_events
+                    .into_iter()
+                    .map(|events| events.into_iter().map(Into::into).collect::<Vec<_>>()),
+            ) {
+                storage.save_contract_events_v2(*info_id, events)?;
+            }
         }
 
         storage.save_transaction_infos(
@@ -692,7 +710,10 @@ impl BlockChain {
 
         // save block's transactions
         storage.save_block_transaction_ids(block_id, txn_id_vec)?;
-        storage.save_block_txn_info_ids(block_id, txn_info_ids)?;
+        storage.save_block_txn_info_ids(
+            block_id,
+            txn_info_ids.into_iter().chain(vm2_txn_info_ids).collect(),
+        )?;
         storage.commit_block(block.clone())?;
 
         storage.save_block_info(block_info.clone())?;
@@ -1373,7 +1394,7 @@ impl ChainReader for BlockChain {
         event_index: Option<u64>,
         access_path: Option<AccessPath2>,
     ) -> Result<Option<TransactionInfoWithProof2>> {
-        let (storage, storage2) = &self.storage;
+        let (storage, _) = &self.storage;
         let (_, statedb2) = &self.statedb;
         let block_info = match self.get_block_info(Some(block_id))? {
             Some(block_info) => block_info,
@@ -1401,9 +1422,13 @@ impl ChainReader for BlockChain {
             .ok_or_else(|| format_err!("Can not find txn info by hash:{}", txn_info_hash))?;
 
         let event_proof = if let Some(event_index) = event_index {
-            let events = storage2
-                .get_contract_events(txn_info_hash)?
+            let events = storage
+                .get_contract_events_v2(txn_info_hash)?
                 .unwrap_or_default();
+            let events = events
+                .into_iter()
+                .filter_map(|e| e.to_v2())
+                .collect::<Vec<_>>();
             let event = events.get(event_index as usize).cloned().ok_or_else(|| {
                 format_err!("event index out of range, events len:{}", events.len())
             })?;
@@ -1477,7 +1502,7 @@ impl BlockChain {
                 txn_info_ids.reverse();
             }
             for id in txn_info_ids.iter() {
-                let events = storage.get_contract_events(*id)?.ok_or_else(|| {
+                let events = storage.get_contract_events_v2(*id)?.ok_or_else(|| {
                     anyhow::anyhow!(format!(
                         "cannot find events of txn with txn_info_id {} on main chain(header: {})",
                         id,
@@ -1509,7 +1534,7 @@ impl BlockChain {
                         transaction_index: txn_info.transaction_index,
                         transaction_global_index: txn_info.transaction_global_index,
                         event_index: idx as u32,
-                        event: evt.into(),
+                        event: evt,
                     });
                 if reverse {
                     event_with_infos.extend(filtered_event_with_info.rev())

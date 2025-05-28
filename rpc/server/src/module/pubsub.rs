@@ -26,6 +26,7 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_storage::Storage;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
+use starcoin_types::contract_event::StcContractEvent;
 use starcoin_types::filter::Filter;
 use starcoin_types::system_events::MintBlockEvent;
 use std::collections::HashMap;
@@ -523,10 +524,12 @@ pub struct ContractEventHandler {
 impl EventHandler<ContractEventNotification> for ContractEventHandler {
     fn handle(&self, msg: ContractEventNotification) -> Vec<jsonrpc_core::Result<pubsub::Result>> {
         let Notification((state_root, events, _state_root2, _events2)) = msg;
-        let filtered = events
-            .as_ref()
-            .iter()
-            .filter(|e| self.filter.matching(e.block_number, &e.contract_event));
+        let filtered = events.as_ref().iter().filter(|e| {
+            self.filter.matching(
+                e.block_number,
+                &StcContractEvent::V1(e.contract_event.clone()),
+            )
+        });
         let filtered_events: Vec<_> = match self.filter.limit {
             None => filtered.collect(),
             Some(l) => {

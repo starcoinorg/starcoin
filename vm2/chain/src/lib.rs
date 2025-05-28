@@ -8,7 +8,7 @@ use starcoin_vm2_statedb::ChainStateDB;
 use starcoin_vm2_storage::Store;
 use starcoin_vm2_types::block_metadata::BlockMetadata;
 use starcoin_vm2_types::error::ExecutorResult;
-use starcoin_vm2_types::transaction::{RichTransactionInfo, SignedUserTransaction, Transaction};
+use starcoin_vm2_types::transaction::{SignedUserTransaction, Transaction};
 use starcoin_vm2_vm_types::account_config::genesis_address;
 use starcoin_vm2_vm_types::on_chain_resource::Epoch;
 
@@ -26,48 +26,17 @@ pub fn execute_transactions(
     Ok(executed_data)
 }
 
+// todo: remove me.
 pub fn save_executed_transactions(
     block_id: HashValue,
-    block_number: u64,
     storage: &dyn Store,
     transactions: Vec<Transaction>,
     executed_data: BlockExecutedData,
-    transaction_global_index: u64,
 ) -> anyhow::Result<()> {
-    // Save the state root and transaction info to the database.
-    let txn_infos = executed_data.txn_infos;
-    let txn_events = executed_data.txn_events;
     let txn_table_infos = executed_data
         .txn_table_infos
         .into_iter()
         .collect::<Vec<_>>();
-
-    debug_assert!(
-        txn_events.len() == txn_infos.len(),
-        "events' length should be equal to txn infos' length"
-    );
-    let txn_info_ids: Vec<_> = txn_infos.iter().map(|info| info.id()).collect();
-    for (info_id, events) in txn_info_ids.iter().zip(txn_events.into_iter()) {
-        storage.save_contract_events(*info_id, events)?;
-    }
-
-    storage.save_transaction_infos(
-        txn_infos
-            .iter()
-            .enumerate()
-            .map(|(transaction_index, info)| {
-                RichTransactionInfo::new(
-                    block_id,
-                    block_number,
-                    info.clone(),
-                    transaction_index as u32,
-                    transaction_global_index
-                        .checked_add(transaction_index as u64)
-                        .expect("transaction_global_index overflow."),
-                )
-            })
-            .collect(),
-    )?;
 
     let txn_id_vec = transactions
         .iter()
@@ -78,7 +47,6 @@ pub fn save_executed_transactions(
 
     // save block's transactions
     storage.save_block_transaction_ids(block_id, txn_id_vec)?;
-    storage.save_block_txn_info_ids(block_id, txn_info_ids)?;
     storage.save_table_infos(txn_table_infos)?;
 
     Ok(())

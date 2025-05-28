@@ -1,16 +1,15 @@
 use crate::chain_service::ChainReaderServiceInner;
 use starcoin_chain_api::ReadableChainService;
 use starcoin_crypto::HashValue;
-use starcoin_types::contract_event::StcContractEventInfo;
-use starcoin_vm2_types::contract_event::ContractEvent as ContractEvent2;
+use starcoin_types::contract_event::{StcContractEvent, StcContractEventInfo};
 
 impl ChainReaderServiceInner {
     pub fn get_events_by_txn_info_hash2(
         &self,
         txn_info_id: HashValue,
-    ) -> anyhow::Result<Option<Vec<ContractEvent2>>> {
-        let (_, storage2) = self.get_storages();
-        storage2.get_contract_events(txn_info_id)
+    ) -> anyhow::Result<Option<Vec<StcContractEvent>>> {
+        let (storage, _) = self.get_storages();
+        storage.get_contract_events_v2(txn_info_id)
     }
     pub fn get_events_by_txn_hash2(
         &self,
@@ -34,7 +33,7 @@ impl ChainReaderServiceInner {
                 transaction_index: txn_info.transaction_index,
                 transaction_global_index: txn_info.transaction_global_index,
                 event_index: idx as u32,
-                event: evt.into(),
+                event: evt,
             })
             .collect();
 

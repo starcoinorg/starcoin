@@ -1,12 +1,12 @@
 //! Blockchain filter
 
-use starcoin_vm_types::language_storage::type_tag_match;
-
 use crate::account_address::AccountAddress;
 use crate::block::BlockNumber;
-use crate::contract_event::ContractEvent;
-use crate::event::EventKey;
-use crate::language_storage::TypeTag;
+use crate::contract_event::StcContractEvent;
+use crate::event::StcEventKey;
+use crate::language_storage::StcTypeTag;
+use starcoin_vm2_vm_types::language_storage::type_tag_match as type_tag_match_v2;
+use starcoin_vm_types::language_storage::type_tag_match;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Filter {
@@ -19,7 +19,7 @@ pub struct Filter {
     ///
     /// If empty, match all.
     /// If specified, event must produced from one of the event keys.
-    pub event_keys: Vec<EventKey>,
+    pub event_keys: Vec<StcEventKey>,
 
     /// Account addresses which event comes from.
     /// match if event belongs to any og the addresses.
@@ -28,7 +28,7 @@ pub struct Filter {
     /// type tags of the event.
     /// match if the event is any type of the type tags.
     /// if `type_tags` is empty, event always match.
-    pub type_tags: Vec<TypeTag>,
+    pub type_tags: Vec<StcTypeTag>,
 
     /// Events limit
     ///
@@ -54,18 +54,35 @@ impl Default for Filter {
 }
 
 impl Filter {
-    pub fn matching(&self, block_number: BlockNumber, e: &ContractEvent) -> bool {
+    pub fn matching(&self, block_number: BlockNumber, e: &StcContractEvent) -> bool {
+        let creator_address = match e {
+            StcContractEvent::V1(event) => event.key().get_creator_address(),
+            StcContractEvent::V2(event) => {
+                AccountAddress::new(event.event_key().get_creator_address().into_bytes())
+            }
+        };
         if self.from_block <= block_number
             && block_number <= self.to_block
-            && (self.event_keys.is_empty() || self.event_keys.contains(e.key()))
-            && (self.addrs.is_empty() || self.addrs.contains(&e.key().get_creator_address()))
+            && (self.event_keys.is_empty() || self.event_keys.contains(&e.key()))
+            && (self.addrs.is_empty() || self.addrs.contains(&creator_address))
         {
             if self.type_tags.is_empty() {
                 return true;
             } else {
                 for filter_type_tag in &self.type_tags {
-                    if type_tag_match(filter_type_tag, e.type_tag()) {
-                        return true;
+                    match (filter_type_tag, e.type_tag()) {
+                        (StcTypeTag::V1(filter_tag), StcTypeTag::V1(event_tag)) => {
+                            if type_tag_match(filter_tag, &event_tag) {
+                                return true;
+                            }
+                        }
+                        (StcTypeTag::V2(filter_tag), StcTypeTag::V2(event_tag)) => {
+                            if type_tag_match_v2(filter_tag, &event_tag) {
+                                return true;
+                            }
+                        }
+                        (StcTypeTag::V2(_), StcTypeTag::V1(_)) => continue,
+                        (StcTypeTag::V1(_), StcTypeTag::V2(_)) => continue,
                     }
                 }
             }

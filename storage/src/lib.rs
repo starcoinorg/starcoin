@@ -8,7 +8,7 @@ use crate::accumulator::{
 use crate::block::BlockStorage;
 use crate::block_info::{BlockInfoStorage, BlockInfoStore};
 use crate::chain_info::ChainInfoStorage;
-use crate::contract_event::ContractEventStorage;
+use crate::contract_event::StcContractEventStorage;
 use crate::state_node::StateStorage;
 use crate::storage::{CodecKVStore, CodecWriteBatch, ColumnFamilyName, StorageInstance};
 use crate::table_info::{TableInfoStorage, TableInfoStore};
@@ -24,7 +24,7 @@ use starcoin_crypto::HashValue;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
 //use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::contract_event::ContractEvent;
+use starcoin_types::contract_event::StcContractEvent;
 use starcoin_types::multi_state::MultiState;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus, SnapshotRange};
 use starcoin_types::transaction::{RichTransactionInfo, Transaction};
@@ -32,6 +32,7 @@ use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
     startup_info::StartupInfo,
 };
+use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::state_store::table::{TableHandle, TableInfo};
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Display, Formatter};
@@ -79,6 +80,7 @@ pub const TRANSACTION_INFO_PREFIX_NAME: ColumnFamilyName = "transaction_info";
 pub const TRANSACTION_INFO_PREFIX_NAME_V2: ColumnFamilyName = "transaction_info_v2";
 pub const TRANSACTION_INFO_HASH_PREFIX_NAME: ColumnFamilyName = "transaction_info_hash";
 pub const CONTRACT_EVENT_PREFIX_NAME: ColumnFamilyName = "contract_event";
+pub const CONTRACT_EVENT_PREFIX_NAME_V2: ColumnFamilyName = "contract_event_v2";
 pub const FAILED_BLOCK_PREFIX_NAME: ColumnFamilyName = "failed_block";
 pub const TABLE_INFO_PREFIX_NAME: ColumnFamilyName = "table_info";
 
@@ -150,6 +152,7 @@ static VEC_PREFIX_NAME_V3: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
 static VEC_PREFIX_NAME_V4: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
     let mut prefix_vec = VEC_PREFIX_NAME_V3.to_vec();
     prefix_vec.push(VM_STATE_ACCUMULATOR_NODE_PREFIX_NAME);
+    prefix_vec.push(CONTRACT_EVENT_PREFIX_NAME_V2);
     prefix_vec
 });
 
@@ -256,6 +259,22 @@ pub trait BlockTransactionInfoStore {
 pub trait ContractEventStore {
     /// Save events by key `txn_info_id`.
     /// As txn_info has accumulator root of events, so there is a one-to-one mapping.
+    fn save_contract_events_v2(
+        &self,
+        txn_info_id: HashValue,
+        events: Vec<StcContractEvent>,
+    ) -> Result<()>;
+
+    /// Get events by `txn_info_id`.
+    /// If the txn_info_id does not exists in the store, return `None`.
+    /// NOTICE: *don't exists* is different with *no events produced*.
+    fn get_contract_events_v2(
+        &self,
+        txn_info_id: HashValue,
+    ) -> Result<Option<Vec<StcContractEvent>>>;
+
+    /// Save events by key `txn_info_id`.
+    /// As txn_info has accumulator root of events, so there is a one-to-one mapping.
     fn save_contract_events(
         &self,
         txn_info_id: HashValue,
@@ -287,7 +306,7 @@ pub struct Storage {
     transaction_accumulator_storage: AccumulatorStorage<TransactionAccumulatorStorage>,
     vm_state_accumulator_storage: AccumulatorStorage<VMStateAccumulatorStorage>,
     block_info_storage: BlockInfoStorage,
-    event_storage: ContractEventStorage,
+    event_storage: StcContractEventStorage,
     chain_info_storage: ChainInfoStorage,
     table_info_storage: TableInfoStorage,
     // instance: StorageInstance,
@@ -310,7 +329,7 @@ impl Storage {
                 instance.clone(),
             ),
             block_info_storage: BlockInfoStorage::new(instance.clone()),
-            event_storage: ContractEventStorage::new(instance.clone()),
+            event_storage: StcContractEventStorage::new(instance.clone()),
             chain_info_storage: ChainInfoStorage::new(instance.clone()),
             table_info_storage: TableInfoStorage::new(instance),
             // instance,
@@ -550,6 +569,22 @@ impl BlockTransactionInfoStore for Storage {
 }
 
 impl ContractEventStore for Storage {
+    fn save_contract_events_v2(
+        &self,
+        txn_info_id: HashValue,
+        events: Vec<StcContractEvent>,
+    ) -> Result<()> {
+        self.event_storage
+            .save_contract_events_v2(txn_info_id, events)
+    }
+
+    fn get_contract_events_v2(
+        &self,
+        txn_info_id: HashValue,
+    ) -> Result<Option<Vec<StcContractEvent>>> {
+        self.event_storage.get_contract_events_v2(txn_info_id)
+    }
+
     fn save_contract_events(
         &self,
         txn_info_id: HashValue,
@@ -562,7 +597,7 @@ impl ContractEventStore for Storage {
         &self,
         txn_info_id: HashValue,
     ) -> Result<Option<Vec<ContractEvent>>, Error> {
-        self.event_storage.get(txn_info_id)
+        self.event_storage.get_contract_events(txn_info_id)
     }
 }
 

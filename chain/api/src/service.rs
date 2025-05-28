@@ -6,7 +6,7 @@ use crate::{TransactionInfoWithProof, TransactionInfoWithProof2};
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
-use starcoin_types::contract_event::{ContractEvent, StcContractEventInfo};
+use starcoin_types::contract_event::{ContractEvent, StcContractEvent, StcContractEventInfo};
 use starcoin_types::filter::Filter;
 use starcoin_types::multi_state::MultiState;
 use starcoin_types::startup_info::ChainStatus;
@@ -15,7 +15,6 @@ use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     startup_info::StartupInfo,
 };
-use starcoin_vm2_types::contract_event::ContractEvent as ContractEvent2;
 use starcoin_vm2_vm_types::access_path::AccessPath as AccessPath2;
 use starcoin_vm_types::access_path::AccessPath;
 
@@ -42,7 +41,7 @@ pub trait ReadableChainService {
     fn get_events_by_txn_info_hash2(
         &self,
         txn_info_id: HashValue,
-    ) -> Result<Option<Vec<ContractEvent2>>>;
+    ) -> Result<Option<Vec<StcContractEvent>>>;
 
     /// for main
     fn main_head_header(&self) -> BlockHeader;

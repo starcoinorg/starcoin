@@ -199,6 +199,7 @@ impl DBUpgrade {
                 Self::db_upgrade_v2_v3(instance)?;
             }
             (StorageVersion::V3, StorageVersion::V4) => {
+                // todo: upgrade contract event storage
                 debug!("nothing to do for V3");
             }
             _ => bail!(
